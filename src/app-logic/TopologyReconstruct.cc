@@ -1054,7 +1054,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_point_using_
 		boost::optional<
 				std::pair<
 						GPlatesMaths::PointOnSphere,
-						ResolvedTriangulation::Network::point_location_type> > deformed_point_result =
+						ResolvedTriangulation::Network::PointLocation> > deformed_point_result =
 				resolved_network->get_triangulation_network().calculate_deformed_point(
 						point,
 						time_increment,
@@ -1098,7 +1098,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_last_point_u
 	{
 		const ResolvedTopologicalNetwork::non_null_ptr_type resolved_network = *resolved_networks_iter;
 
-		boost::optional<ResolvedTriangulation::Network::point_location_type> point_location_result =
+		boost::optional<ResolvedTriangulation::Network::PointLocation> point_location_result =
 				resolved_network->get_triangulation_network().get_point_location(point);
 		if (!point_location_result)
 		{
@@ -1301,7 +1301,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::is_point_active(
 		boost::optional<
 				std::pair<
 						GPlatesMaths::Vector3D,
-						boost::optional<const ResolvedTriangulation::Network::RigidBlock &> > > velocity_curr_point_curr_location_prev_time_result =
+						ResolvedTriangulation::Network::PointLocation> > velocity_curr_point_curr_location_prev_time_result =
 				current_resolved_network->get_triangulation_network().calculate_velocity(
 						current_point,
 						time_increment,
@@ -1503,7 +1503,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::is_point_active(
 	boost::optional<
 			std::pair<
 					GPlatesMaths::Vector3D,
-					boost::optional<const ResolvedTriangulation::Network::RigidBlock &> > > velocity_prev_point_prev_location_prev_time_result =
+					ResolvedTriangulation::Network::PointLocation> > velocity_prev_point_prev_location_prev_time_result =
 			prev_resolved_network->get_triangulation_network().calculate_velocity(
 					prev_point,
 					time_increment,
@@ -2168,6 +2168,7 @@ bool
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_geometry_data(
 		const double &reconstruction_time,
 		boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> points,
+		boost::optional< std::vector<TopologyPointLocation> &> point_locations,
 		boost::optional< std::vector<DeformationStrainRate> &> strain_rates,
 		boost::optional< std::vector<DeformationStrain> &> strains) const
 {
@@ -2199,6 +2200,10 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_geometry_data(
 	{
 		points->reserve(num_geometry_points);
 	}
+	if (point_locations)
+	{
+		point_locations->reserve(num_geometry_points);
+	}
 	if (strain_rates)
 	{
 		strain_rates->reserve(num_geometry_points);
@@ -2223,6 +2228,11 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_geometry_data(
 		if (points)
 		{
 			points->push_back(GPlatesMaths::PointOnSphere(geometry_point->position));
+		}
+
+		if (point_locations)
+		{
+			point_locations->push_back(geometry_point->location);
 		}
 
 		if (strain_rates)
@@ -2260,6 +2270,7 @@ bool
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 		const double &reconstruction_time,
 		boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> points,
+		boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> point_locations,
 		boost::optional< std::vector< boost::optional<DeformationStrainRate> > &> strain_rates,
 		boost::optional< std::vector< boost::optional<DeformationStrain> > &> strains) const
 {
@@ -2291,6 +2302,10 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 	{
 		points->reserve(num_geometry_points);
 	}
+	if (point_locations)
+	{
+		point_locations->reserve(num_geometry_points);
+	}
 	if (strain_rates)
 	{
 		strain_rates->reserve(num_geometry_points);
@@ -2311,6 +2326,11 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 			if (points)
 			{
 				points->push_back(GPlatesMaths::PointOnSphere(geometry_point->position));
+			}
+
+			if (point_locations)
+			{
+				point_locations->push_back(geometry_point->location);
 			}
 
 			if (strain_rates)
@@ -2347,6 +2367,11 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 				points->push_back(boost::none);
 			}
 
+			if (point_locations)
+			{
+				point_locations->push_back(boost::none);
+			}
+
 			if (strain_rates)
 			{
 				// Inactive point.
@@ -2367,12 +2392,12 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 
 bool
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_velocities(
-		std::vector<GPlatesMaths::PointOnSphere> &domain_points,
 		std::vector<GPlatesMaths::Vector3D> &velocities,
-		std::vector< boost::optional<const ReconstructionGeometry *> > &surfaces,
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type) const
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points,
+		boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations) const
 {
 	// Determine the two nearest time slots bounding the reconstruction time.
 	double interpolate_time_slots;
@@ -2396,12 +2421,12 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_velocities(
 		// any resolved boundaries/networks (and hence all velocities will be rigid stage rotations).
 		calc_velocities(
 				domain_sample.get(),
-				domain_points,
 				velocities,
-				surfaces,
 				reconstruction_time,
 				velocity_delta_time,
-				velocity_delta_time_type);
+				velocity_delta_time_type,
+				domain_points,
+				domain_point_locations);
 
 		return true;
 	}
@@ -2439,47 +2464,50 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_velocities(
 	}
 
 	// Calculate velocities at the initial time slot.
-	std::vector<GPlatesMaths::PointOnSphere> initial_points;
 	calc_velocities(
 			initial_domain_sample.get(),
-			initial_points,
 			velocities,
-			surfaces,
 			initial_time,
 			velocity_delta_time,
-			velocity_delta_time_type);
+			velocity_delta_time_type,
+			boost::none/*domain_points*/,
+			domain_point_locations);
 
-	const std::vector<GeometryPoint *> &domain_geometry_points =
-			domain_sample.get()->get_geometry_points(d_accessing_strain_rates);
 
-	const unsigned int num_domain_geometry_points = domain_geometry_points.size();
-
-	domain_points.reserve(num_domain_geometry_points);
-
-	// Return the interpolated domain positions.
-	for (unsigned int domain_geometry_point_index = 0;
-		domain_geometry_point_index < num_domain_geometry_points;
-		++domain_geometry_point_index)
+	if (domain_points)
 	{
-		GeometryPoint *domain_geometry_point = domain_geometry_points[domain_geometry_point_index];
+		const std::vector<GeometryPoint *> &domain_geometry_points =
+				domain_sample.get()->get_geometry_points(d_accessing_strain_rates);
 
-		// Ignore domain geometry point if it's not active.
-		if (domain_geometry_point == NULL)
+		const unsigned int num_domain_geometry_points = domain_geometry_points.size();
+
+		domain_points->reserve(num_domain_geometry_points);
+
+		// Return the interpolated domain positions.
+		for (unsigned int domain_geometry_point_index = 0;
+			domain_geometry_point_index < num_domain_geometry_points;
+			++domain_geometry_point_index)
 		{
-			continue;
+			GeometryPoint *domain_geometry_point = domain_geometry_points[domain_geometry_point_index];
+
+			// Ignore domain geometry point if it's not active.
+			if (domain_geometry_point == NULL)
+			{
+				continue;
+			}
+
+			const GPlatesMaths::PointOnSphere domain_point(domain_geometry_point->position);
+			domain_points->push_back(domain_point);
 		}
 
-		const GPlatesMaths::PointOnSphere domain_point(domain_geometry_point->position);
-		domain_points.push_back(domain_point);
+		// Both the reconstruction time geometry sample and the initial time sample should have
+		// the same number of active points. This is due to 'interpolate_geometry_sample()' using
+		// the nearest time slot that is closer to the geometry import time and hence both samples are
+		// essentially the same (same active geometry points, just with different positions).
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				domain_points->size() == velocities.size(),
+				GPLATES_ASSERTION_SOURCE);
 	}
-
-	// Both the reconstruction time geometry sample and the initial time sample should have
-	// the same number of active points. This is due to 'interpolate_geometry_sample()' using
-	// the nearest time slot that is closer to the geometry import time and hence both samples are
-	// essentially the same (same active geometry points, just with different positions).
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			domain_points.size() == velocities.size(),
-			GPLATES_ASSERTION_SOURCE);
 
 	return true;
 }
@@ -2488,12 +2516,12 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_velocities(
 void
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 		const GeometrySample::non_null_ptr_type &domain_geometry_sample,
-		std::vector<GPlatesMaths::PointOnSphere> &domain_points,
 		std::vector<GPlatesMaths::Vector3D> &velocities,
-		std::vector< boost::optional<const ReconstructionGeometry *> > &surfaces,
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type) const
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points,
+		boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations) const
 {
 	//
 	// Calculate the velocities at the geometry (domain) points.
@@ -2504,9 +2532,15 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 
 	const unsigned int num_domain_geometry_points = domain_geometry_points.size();
 
-	domain_points.reserve(num_domain_geometry_points);
 	velocities.reserve(num_domain_geometry_points);
-	surfaces.reserve(num_domain_geometry_points);
+	if (domain_points)
+	{
+		domain_points->reserve(num_domain_geometry_points);
+	}
+	if (domain_point_locations)
+	{
+		domain_point_locations->reserve(num_domain_geometry_points);
+	}
 
 	// Only calculate rigid stage rotation if some points need to be rigidly rotated.
 	boost::optional<GPlatesMaths::FiniteRotation> rigid_stage_rotation;
@@ -2529,20 +2563,28 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 		}
 
 		const GPlatesMaths::PointOnSphere domain_point(domain_geometry_point->position);
-		const TopologyPointLocation &topology_point_location = domain_geometry_point->location;
+		const TopologyPointLocation &domain_point_location = domain_geometry_point->location;
+
+		if (domain_points)
+		{
+			domain_points->push_back(domain_point);
+		}
+		if (domain_point_locations)
+		{
+			domain_point_locations->push_back(domain_point_location);
+		}
 
 		// Get the resolved network point location that the current point lies within (if any).
-		const boost::optional<TopologyPointLocation::network_location_type> network_point_location =
-				topology_point_location.located_in_resolved_network();
-		if (network_point_location)
+		if (const boost::optional<TopologyPointLocation::network_location_type> network_point_location =
+			domain_point_location.located_in_resolved_network())
 		{
 			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = network_point_location->first;
-			const ResolvedTriangulation::Network::point_location_type &point_location = network_point_location->second;
+			const ResolvedTriangulation::Network::PointLocation &point_location = network_point_location->second;
 
 			boost::optional<
 					std::pair<
 							GPlatesMaths::Vector3D,
-							boost::optional<const ResolvedTriangulation::Network::RigidBlock &> > >
+							ResolvedTriangulation::Network::PointLocation> >
 					velocity = resolved_network->get_triangulation_network().calculate_velocity(
 							domain_point,
 							velocity_delta_time,
@@ -2551,27 +2593,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 			if (velocity)
 			{
 				const GPlatesMaths::Vector3D &velocity_vector = velocity->first;
-
-				// If the point was in one of the network's rigid blocks.
-				if (velocity->second)
-				{
-					const ResolvedTriangulation::Network::RigidBlock &rigid_block = velocity->second.get();
-					const ReconstructionGeometry *velocity_recon_geom =
-							rigid_block.get_reconstructed_feature_geometry().get();
-
-					domain_points.push_back(domain_point);
-					velocities.push_back(velocity_vector);
-					surfaces.push_back(velocity_recon_geom);
-
-					// Continue to the next domain point.
-					continue;
-				}
-
-				const ReconstructionGeometry *velocity_recon_geom = resolved_network.get();
-
-				domain_points.push_back(domain_point);
 				velocities.push_back(velocity_vector);
-				surfaces.push_back(velocity_recon_geom);
 
 				// Continue to the next domain point.
 				continue;
@@ -2579,9 +2601,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 		}
 
 		// Get the resolved boundary point location that the current point lies within (if any).
-		const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> resolved_boundary =
-				topology_point_location.located_in_resolved_boundary();
-		if (resolved_boundary)
+		if (const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> resolved_boundary =
+			domain_point_location.located_in_resolved_boundary())
 		{
 			// Get the plate ID from resolved boundary.
 			const boost::optional<GPlatesModel::integer_plate_id_type> resolved_boundary_plate_id =
@@ -2604,11 +2625,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 								resolved_boundary_stage_rotation,
 								velocity_delta_time);
 
-				const ReconstructionGeometry *velocity_recon_geom = resolved_boundary.get().get();
-
-				domain_points.push_back(domain_point);
 				velocities.push_back(velocity_vector);
-				surfaces.push_back(velocity_recon_geom);
 
 				// Continue to the next domain point.
 				continue;
@@ -2639,9 +2656,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 						velocity_delta_time);
 
 		// Add the velocity - there was no surface (ie, resolved boundary/network) intersection though.
-		domain_points.push_back(domain_point);
 		velocities.push_back(velocity_vector);
-		surfaces.push_back(boost::none/*surface*/);
 	}
 }
 
@@ -2767,13 +2782,13 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::interpolate_geometry_sam
 		if (network_point_location)
 		{
 			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = network_point_location->first;
-			const ResolvedTriangulation::Network::point_location_type &point_location = network_point_location->second;
+			const ResolvedTriangulation::Network::PointLocation &point_location = network_point_location->second;
 
 			// Deform the initial point by the interpolate time increment.
 			boost::optional<
 					std::pair<
 							GPlatesMaths::PointOnSphere,
-							ResolvedTriangulation::Network::point_location_type> > interpolated_point_result =
+							ResolvedTriangulation::Network::PointLocation> > interpolated_point_result =
 					resolved_network->get_triangulation_network().calculate_deformed_point(
 							initial_point,
 							time_increment,
@@ -3098,7 +3113,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::calc_def
 			const GPlatesMaths::PointOnSphere point(geometry_point->position);
 
 			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = network_point_location->first;
-			const ResolvedTriangulation::Network::point_location_type &point_location = network_point_location->second;
+			const ResolvedTriangulation::Network::PointLocation &point_location = network_point_location->second;
 
 			boost::optional<ResolvedTriangulation::DeformationInfo> face_deformation_info =
 					resolved_network->get_triangulation_network().calculate_deformation(point, point_location);

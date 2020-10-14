@@ -252,6 +252,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::evolve_time_
 	{
 		geometry_time_span->get_all_geometry_data(
 				time_range.get_time(start_time_slot),
+				boost::none/*point_locations*/,
 				boost::none/*points*/,
 				current_domain_strain_rates/*strain rates*/);
 
@@ -278,8 +279,8 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::evolve_time_
 		domain_strain_rate_seq_type next_domain_strain_rates;
 
 		const bool scalar_values_sample_active = scalar_evolution_function
-				? geometry_time_span->get_all_geometry_data(next_time, boost::none, next_domain_strain_rates)
-				: geometry_time_span->get_all_geometry_data(next_time, next_domain_points, boost::none);
+				? geometry_time_span->get_all_geometry_data(next_time, boost::none, boost::none, next_domain_strain_rates)
+				: geometry_time_span->get_all_geometry_data(next_time, next_domain_points, boost::none, boost::none);
 		if (!scalar_values_sample_active)
 		{
 			// Next time slot is not active - so the last active time slot is the current time slot.

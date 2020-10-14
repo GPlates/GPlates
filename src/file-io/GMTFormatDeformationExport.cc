@@ -346,6 +346,7 @@ namespace GPlatesFileIO
 				// Get the current (per-point) geometry data.
 				deformed_feature_geometry.get_geometry_data(
 						deformed_domain_points,
+						boost::none/*deformed_domain_point_locations*/,
 						deformation_strain_rates_option,
 						deformation_strains_option);
 

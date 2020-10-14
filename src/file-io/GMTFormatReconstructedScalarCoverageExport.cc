@@ -344,6 +344,7 @@ namespace GPlatesFileIO
 						point_deformation_total_strain_seq_type deformation_strains;
 						dfg.get()->get_geometry_data(
 								boost::none/*points*/,
+								boost::none/*point_locations*/,
 								deformation_strain_rates,
 								deformation_strains);
 						// The number of strain rates should match the number of scalars.

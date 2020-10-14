@@ -243,6 +243,7 @@ namespace GPlatesAppLogic
 			get_geometry_data(
 					const double &reconstruction_time,
 					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> points = boost::none,
+					boost::optional< std::vector<TopologyPointLocation> &> point_locations = boost::none,
 					boost::optional< std::vector<DeformationStrainRate> &> strain_rates = boost::none,
 					boost::optional< std::vector<DeformationStrain> &> strains = boost::none) const;
 
@@ -258,6 +259,7 @@ namespace GPlatesAppLogic
 			get_all_geometry_data(
 					const double &reconstruction_time,
 					boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> points = boost::none,
+					boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> point_locations = boost::none,
 					boost::optional< std::vector< boost::optional<DeformationStrainRate> > &> strain_rates = boost::none,
 					boost::optional< std::vector< boost::optional<DeformationStrain> > &> strains = boost::none) const;
 
@@ -278,22 +280,24 @@ namespace GPlatesAppLogic
 			/**
 			 * Calculate velocities at the geometry (domain) points at the specified time.
 			 *
-			 * @a surfaces returns the resolved network (or network interior rigid block) or resolved plate boundary
+			 * Optional @a domain_points returns the domain points (at the reconstruction time).
+			 *
+			 * Optional @a domain_point_locations returns the resolved network (or network interior rigid block) or resolved plate boundary
 			 * that each domain point intersects (if any).
 			 *
-			 * The sizes of @a domain_points, @a velocities and @a surfaces are the same and match the number
+			 * The sizes of @a velocities, @a domain_points and @a domain_point_locations are the same and match the number
 			 * of original geometry points that have not been subducted/consumed at the reconstruction time.
 			 *
 			 * Returns false if @a is_valid returns false.
 			 */
 			bool
 			get_velocities(
-					std::vector<GPlatesMaths::PointOnSphere> &domain_points,
 					std::vector<GPlatesMaths::Vector3D> &velocities,
-					std::vector< boost::optional<const ReconstructionGeometry *> > &surfaces,
 					const double &reconstruction_time,
 					const double &velocity_delta_time,
-					VelocityDeltaTime::Type velocity_delta_time_type) const;
+					VelocityDeltaTime::Type velocity_delta_time_type,
+					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points = boost::none,
+					boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations = boost::none) const;
 
 
 			//
@@ -932,12 +936,12 @@ namespace GPlatesAppLogic
 			void
 			calc_velocities(
 					const GeometrySample::non_null_ptr_type &domain_geometry_sample,
-					std::vector<GPlatesMaths::PointOnSphere> &domain_points,
 					std::vector<GPlatesMaths::Vector3D> &velocities,
-					std::vector< boost::optional<const ReconstructionGeometry *> > &surfaces,
 					const double &reconstruction_time,
 					const double &velocity_delta_time,
-					VelocityDeltaTime::Type velocity_delta_time_type) const;
+					VelocityDeltaTime::Type velocity_delta_time_type,
+					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points,
+					boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations) const;
 
 			/**
 			 * Returns the geometry sample at the specified time (which can be any time).

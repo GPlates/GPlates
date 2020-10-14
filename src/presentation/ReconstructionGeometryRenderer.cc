@@ -538,6 +538,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		point_deformation_total_strain_seq_type point_deformation_total_strains;
 		trfg->get_geometry_data(
 				geometry_points,
+				boost::none/*geometry_point_locations*/,
 				boost::none/*strain_rates*/,
 				point_deformation_total_strains/*strains*/);
 
