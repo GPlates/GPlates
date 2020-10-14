@@ -517,16 +517,16 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_velocities(
 			topology_reconstructed_geometry_time_spans.get())
 	{
 		// Calculate the velocities at the topology reconstructed geometry (domain) points.
-		std::vector<GPlatesMaths::PointOnSphere> domain_points;
 		std::vector<GPlatesMaths::Vector3D> velocities;
-		std::vector< boost::optional<const ReconstructionGeometry *> > surfaces;
+		std::vector<GPlatesMaths::PointOnSphere> domain_points;
+		std::vector<TopologyPointLocation> domain_point_locations;
 		if (!topology_reconstructed_geometry_time_span.geometry_time_span->get_velocities(
-				domain_points,
 				velocities,
-				surfaces,
 				reconstruction_time,
 				velocity_delta_time,
-				velocity_delta_time_type))
+				velocity_delta_time_type,
+				domain_points,
+				domain_point_locations))
 		{
 			// The geometry has been subducted/consumed at the reconstruction time so there are no domain points.
 			continue;
@@ -563,30 +563,45 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_velocities(
 
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				domain_points.size() == velocities.size() &&
-					domain_points.size() == surfaces.size(),
+					domain_points.size() == domain_point_locations.size(),
 				GPLATES_ASSERTION_SOURCE);
 
 		// Set the velocities in the multi-point vector field.
-		std::vector<GPlatesMaths::Vector3D>::const_iterator velocities_iter = velocities.begin();
-		std::vector< boost::optional<const ReconstructionGeometry *> >::const_iterator surfaces_iter = surfaces.begin();
-		MultiPointVectorField::codomain_type::iterator field_iter = vector_field->begin();
-		MultiPointVectorField::codomain_type::iterator field_end = vector_field->end();
-		for ( ; field_iter != field_end; ++field_iter, ++velocities_iter, ++surfaces_iter)
+		auto velocities_iter = velocities.begin();
+		auto domain_point_locations_iter = domain_point_locations.begin();
+		auto field_iter = vector_field->begin();
+		auto field_end = vector_field->end();
+		for ( ; field_iter != field_end; ++field_iter, ++velocities_iter, ++domain_point_locations_iter)
 		{
 			// Set the velocity and determine the codomain reason, plate id and reconstruction geometry.
-			boost::optional<const ReconstructionGeometry *> surface = *surfaces_iter;
-			if (surface)
+			const TopologyPointLocation &domain_point_location = *domain_point_locations_iter;
+
+			// See if domain point is located within a resolved network.
+			if (boost::optional<TopologyPointLocation::network_location_type> network_point_location =
+				domain_point_location.located_in_resolved_network())
 			{
+				MultiPointVectorField::CodomainElement::Reason reason;
+				ReconstructionGeometry::maybe_null_ptr_to_const_type plate_id_reconstruction_geometry;
+
+				// Determine if point was in the deforming region or interior rigid block of network.
+				// It's either a resolved topological network or a reconstructed feature geometry...
+				if (boost::optional<const ResolvedTriangulation::Network::RigidBlock &> rigid_block =
+					network_point_location->second.located_in_rigid_block())
+				{
+					reason = MultiPointVectorField::CodomainElement::InNetworkRigidBlock;
+					plate_id_reconstruction_geometry = rigid_block->get_reconstructed_feature_geometry().get();
+				}
+				else
+				{
+					reason = MultiPointVectorField::CodomainElement::InNetworkDeformingRegion;
+					plate_id_reconstruction_geometry = network_point_location->first.get(); // ResolvedTopologicalNetwork
+				}
+
 				*field_iter = MultiPointVectorField::CodomainElement(
 						*velocities_iter,
-						// Determine if point was in the deforming region or interior rigid block of network.
-						// It's either a resolved topological network or a reconstructed feature geometry...
-						ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-								const ResolvedTopologicalNetwork *>(surface.get())
-							? MultiPointVectorField::CodomainElement::InNetworkDeformingRegion
-							: MultiPointVectorField::CodomainElement::InNetworkRigidBlock,
-						ReconstructionGeometryUtils::get_plate_id(surface.get()),
-						surface.get());
+						reason,
+						ReconstructionGeometryUtils::get_plate_id(plate_id_reconstruction_geometry),
+						plate_id_reconstruction_geometry);
 			}
 			else // rigid rotation...
 			{

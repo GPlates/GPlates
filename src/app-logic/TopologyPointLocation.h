@@ -53,7 +53,7 @@ namespace GPlatesAppLogic
 	 *             ...,
 	 *             // resolved network...
 	 *             std::pair<
-	 *                 ResolvedTriangulation::Network::point_location_type,
+	 *                 ResolvedTriangulation::Network::PointLocation,
 	 *                 ResolvedTopologicalNetwork::non_null_ptr_type>
 	 *             >
 	 *         >
@@ -66,7 +66,7 @@ namespace GPlatesAppLogic
 		//! Location in a network (delaunay face or rigid block).
 		typedef std::pair<
 				ResolvedTopologicalNetwork::non_null_ptr_type,
-				ResolvedTriangulation::Network::point_location_type>
+				ResolvedTriangulation::Network::PointLocation>
 						network_location_type;
 
 
@@ -85,8 +85,8 @@ namespace GPlatesAppLogic
 		//! Point located inside resolved network.
 		TopologyPointLocation(
 				const ResolvedTopologicalNetwork::non_null_ptr_type &network,
-				const ResolvedTriangulation::Network::point_location_type &network_point_location) :
-			d_location(boost::apply_visitor(ConstructNetworkVisitor(network), network_point_location))
+				const ResolvedTriangulation::Network::PointLocation &network_point_location) :
+			d_location(boost::apply_visitor(ConstructNetworkVisitor(network), network_point_location.get_location()))
 		{  }
 
 
@@ -131,13 +131,13 @@ namespace GPlatesAppLogic
 		{
 			NetworkDelaunayFaceLocation(
 					const ResolvedTopologicalNetwork::non_null_ptr_type &network_,
-					const ResolvedTriangulation::Delaunay_2::Face_handle &delauny_face_) :
+					const ResolvedTriangulation::Delaunay_2::Face_handle &delaunay_face_) :
 				network(network_),
-				delauny_face(delauny_face_)
+				delaunay_face(delaunay_face_)
 			{  }
 
 			ResolvedTopologicalNetwork::non_null_ptr_type network;
-			ResolvedTriangulation::Delaunay_2::Face_handle delauny_face;
+			ResolvedTriangulation::Delaunay_2::Face_handle delaunay_face;
 		};
 
 		struct NetworkRigidBlockLocation
@@ -239,7 +239,7 @@ namespace GPlatesAppLogic
 			{
 				return network_location_type(
 						network_delaunay_face_location.network,
-						network_delaunay_face_location.delauny_face);
+						ResolvedTriangulation::Network::PointLocation(network_delaunay_face_location.delaunay_face));
 			}
 
 			boost::optional<network_location_type>
@@ -248,7 +248,7 @@ namespace GPlatesAppLogic
 			{
 				return network_location_type(
 						network_rigid_block_location.network,
-						network_rigid_block_location.rigid_block);
+						ResolvedTriangulation::Network::PointLocation(network_rigid_block_location.rigid_block));
 			}
 
 			template <class LocationType>
