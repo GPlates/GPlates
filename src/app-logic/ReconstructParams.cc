@@ -57,11 +57,11 @@ GPlatesAppLogic::ReconstructParams::ReconstructParams() :
 	d_topology_reconstruction_line_tessellation_degrees(INITIAL_LINE_TESSELLATION_DEGREES),
 	d_topology_reconstruction_enable_lifetime_detection(true),
 	d_topology_reconstruction_lifetime_detection_threshold_velocity_delta(
-			TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS.threshold_velocity_delta),
+			TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_VELOCITY_DELTA),
 	d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary(
-			TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS.threshold_distance_to_boundary_in_kms_per_my),
+			TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_DISTANCE_TO_BOUNDARY_IN_KMS_PER_MY),
 	d_topology_reconstruction_deactivate_points_that_fall_outside_a_network(
-			TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS.deactivate_points_that_fall_outside_a_network)
+			TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK)
 {
 }
 

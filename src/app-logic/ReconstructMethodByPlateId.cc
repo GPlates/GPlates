@@ -736,10 +736,11 @@ GPlatesAppLogic::ReconstructMethodByPlateId::get_topology_reconstruction_info(
 		}
 
 		// Lifetime detection of individual points in the reconstructed/deformed geometries.
-		boost::optional<TopologyReconstruct::ActivePointParameters> active_point_parameters;
+		boost::optional<TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type> deactivate_points;
 		if (context.reconstruct_params.get_topology_reconstruction_enable_lifetime_detection())
 		{
-			active_point_parameters = TopologyReconstruct::ActivePointParameters(
+			deactivate_points = TopologyReconstruct::DefaultDeactivatePoint::create(
+					context.topology_reconstruct.get()->get_time_range().get_time_increment(),
 					context.reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_velocity_delta(),
 					context.reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary(),
 					context.reconstruct_params.get_topology_reconstruction_deactivate_points_that_fall_outside_a_network());
@@ -760,8 +761,8 @@ GPlatesAppLogic::ReconstructMethodByPlateId::get_topology_reconstruction_info(
 							present_day_geometry.geometry,
 							reconstruction_info.reconstruction_plate_id,
 							reconstruction_info.geometry_import_time,
+							deactivate_points,
 							line_tessellation_radians,
-							active_point_parameters,
 							deformation_use_natural_neighbour_interpolation);
 
 			d_topology_reconstructed_geometry_time_spans->push_back(

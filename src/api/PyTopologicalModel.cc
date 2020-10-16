@@ -783,6 +783,10 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 	// Extract the geometry.
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = get_geometry(geometry_object);
 
+	GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type deactivate_points =
+			GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(
+					time_range.get_time_increment());
+
 	// Create time span of reconstructed geometry.
 	GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span =
 			topology_reconstruct->create_geometry_time_span(
@@ -792,7 +796,8 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 					reconstruction_plate_id
 							? reconstruction_plate_id.get()
 							: d_rotation_model->get_reconstruction_tree_creator().get_default_anchor_plate_id(),
-					initial_time.value());
+					initial_time.value(),
+					deactivate_points);
 
 	// Extract the optional scalar values.
 	ReconstructedGeometryTimeSpan::scalar_type_to_time_span_map_type scalar_type_to_time_span_map;
