@@ -1766,7 +1766,12 @@ GPlatesMaths::minimum_distance(
 		// If the polyline is completely inside the polygon then we only need to test if one of
 		// the polyline's points (any arbitrary point) is inside the polygon (because we know the
 		// polyline did not intersect the polygon boundary).
-		if (polygon.is_point_in_polygon(polyline.start_point()/*arbitrary*/))
+		if (polygon.is_point_in_polygon(
+				polyline.start_point()/*arbitrary*/,
+				GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
+				// Note we turn off point-on-polygon outline threshold testing.
+				// We don't want test to return true if point is outside polygon but *very* close to it...
+				false/*use_point_on_polygon_threshold*/))
 		{
 			if (closest_positions ||
 				closest_segment_indices)
@@ -1950,7 +1955,12 @@ GPlatesMaths::minimum_distance(
 		// If polygon2 is completely inside polygon1 then we only need to test if one of
 		// the polygon2's points (any arbitrary point) is inside polygon1 (because we know that
 		// polygon2 did not intersect polygon1's boundary).
-		if (polygon1.is_point_in_polygon(polygon2.first_exterior_ring_vertex()/*arbitrary*/))
+		if (polygon1.is_point_in_polygon(
+				polygon2.first_exterior_ring_vertex()/*arbitrary*/,
+				GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
+				// Note we turn off point-on-polygon outline threshold testing.
+				// We don't want test to return true if point is outside polygon but *very* close to it...
+				false/*use_point_on_polygon_threshold*/))
 		{
 			if (closest_positions ||
 				closest_segment_indices)
@@ -1996,7 +2006,12 @@ GPlatesMaths::minimum_distance(
 		// If polygon1 is completely inside polygon2 then we only need to test if one of
 		// the polygon1's points (any arbitrary point) is inside polygon2 (because we know that
 		// polygon1 did not intersect polygon2's boundary).
-		if (polygon2.is_point_in_polygon(polygon1.first_exterior_ring_vertex()/*arbitrary*/))
+		if (polygon2.is_point_in_polygon(
+				polygon1.first_exterior_ring_vertex()/*arbitrary*/,
+				GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
+				// Note we turn off point-on-polygon outline threshold testing.
+				// We don't want test to return true if point is outside polygon but *very* close to it...
+				false/*use_point_on_polygon_threshold*/))
 		{
 			if (closest_positions ||
 				closest_segment_indices)

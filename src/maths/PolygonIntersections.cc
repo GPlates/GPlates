@@ -609,11 +609,11 @@ GPlatesMaths::PolygonIntersections::is_non_intersecting_polyline_or_polygon_full
 	// threshold distance of the partitioning polygon. So we know the polyline (or polygon) to be
 	// partitioned is either fully inside or fully outside the partitioning polygon. If it's fully
 	// outside then we don't want the point-in-polygon test to return true if the point is *very*
-	// close to the partitioning polygon, so we turn of point-on-polygon threshold testing.
+	// close to the partitioning polygon, so we turn off point-on-polygon threshold testing.
 	return d_partitioning_polygon->is_point_in_polygon(
 					arbitrary_point_on_geometry,
 					d_partition_point_speed_and_memory,
-					// Note we turned off point-on-polygon outline threshold testing...
+					// Note we turn off point-on-polygon outline threshold testing...
 					false/*use_point_on_polygon_threshold*/);
 }
 
