@@ -51,33 +51,63 @@ find_package(CGAL REQUIRED)
 # And put the Python major/minor versions in variables GPLATES_PYTHON_VERSION_MAJOR/GPLATES_PYTHON_VERSION_MINOR
 # since needed by Boost Python.
 #
+if (GPLATES_PYTHON_3)
+	set(_GPLATES_PYTHON_MAJOR_VER 3)
+else()
+	set(_GPLATES_PYTHON_MAJOR_VER 2)
+endif()
 # CMake 3.12 and above support the Python2 and Python3 find modules, otherwise
 # we fall back on the PythonLibs find module.
 if (CMAKE_VERSION VERSION_LESS 3.12)
-	# Note that we don't really need to find 'PythonInterp' but we do in case it makes 'PythonLibs' more robust.
-	# In which case it should be called first.
-	if (GPLATES_PYTHON_3)
-		find_package(PythonInterp 3 EXACT)
-		find_package(PythonLibs 3 EXACT REQUIRED)
-	else()
-		find_package(PythonInterp 2 EXACT)
-		find_package(PythonLibs 2 EXACT REQUIRED)
-	endif()
+	# Note that we don't require 'PythonInterp' but we include it in case it makes 'PythonLibs' more robust
+	# (in which case it should be called first). However 'PythonInterp' is used to find the NumPy include directories
+	# (since we need to run the Python executable to print the numpy include path) but that's currently optional.
+	find_package(PythonInterp ${_GPLATES_PYTHON_MAJOR_VER} EXACT)
+	find_package(PythonLibs ${_GPLATES_PYTHON_MAJOR_VER} EXACT REQUIRED)
 	# Get the Python major/minor versions.
-	string(REGEX MATCHALL "[0-9]+" GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR ${PYTHONLIBS_VERSION_STRING})
-	list(GET GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR 0 GPLATES_PYTHON_VERSION_MAJOR)
-	list(GET GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR 1 GPLATES_PYTHON_VERSION_MINOR)
-	unset(GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR)
-else()
+	string(REGEX MATCHALL "[0-9]+" _GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR ${PYTHONLIBS_VERSION_STRING})
+	list(GET _GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR 0 GPLATES_PYTHON_VERSION_MAJOR)
+	list(GET _GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR 1 GPLATES_PYTHON_VERSION_MINOR)
+else()  # CMake 3.12 and later...
+	# CMake 3.12 and later have find_package(Python2) and find_package(Python3).
 	# Note that we don't really need to specify the 'Interpreter' component but we do in case it makes 'Development' more robust.
-	if (GPLATES_PYTHON_3)
-		find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-		set(GPLATES_PYTHON_VERSION_MAJOR ${Python3_VERSION_MAJOR})
-		set(GPLATES_PYTHON_VERSION_MINOR ${Python3_VERSION_MINOR})
-	else()
-		find_package(Python2 REQUIRED COMPONENTS Interpreter Development)
-		set(GPLATES_PYTHON_VERSION_MAJOR ${Python2_VERSION_MAJOR})
-		set(GPLATES_PYTHON_VERSION_MINOR ${Python2_VERSION_MINOR})
+	if (CMAKE_VERSION VERSION_LESS 3.14)
+		find_package(Python${_GPLATES_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter Development)
+	else()  # CMake 3.14 and later...
+		# We also specify the optional component NumPy to get access to the numpy C-API header include directories
+		# (however the NumPy component is only available in CMake 3.14 and later).
+		find_package(Python${_GPLATES_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter Development OPTIONAL_COMPONENTS NumPy)
+	endif()
+	set(GPLATES_PYTHON_VERSION_MAJOR ${Python${_GPLATES_PYTHON_MAJOR_VER}_VERSION_MAJOR})
+	set(GPLATES_PYTHON_VERSION_MINOR ${Python${_GPLATES_PYTHON_MAJOR_VER}_VERSION_MINOR})
+endif()
+#
+# Find the Python NumPy include directories (and store in GPLATES_Python_NumPy_INCLUDE_DIRS if found).
+#
+# CMake versions older than 3.14 do not support the NumPy component (in 'find_package') - so we need to find it ourself.
+if (CMAKE_VERSION VERSION_LESS 3.14)
+	if (CMAKE_VERSION VERSION_LESS 3.12)
+		# From find_package(PythonInterp)...
+		set(_GPLATES_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE})
+	else()  # CMake 3.12 and later...
+		# From find_package(Python2) or find_package(Python3)...
+		set(_GPLATES_PYTHON_EXECUTABLE ${Python${_GPLATES_PYTHON_MAJOR_VER}_EXECUTABLE})
+	endif()
+	# Get Python to import numpy and then print out the numpy include directory.
+	execute_process(COMMAND "${_GPLATES_PYTHON_EXECUTABLE}" "-c"
+		"from __future__ import print_function; import numpy as np; print(np.get_include());"
+		RESULT_VARIABLE _NUMPY_RESULT
+		OUTPUT_VARIABLE _NUMPY_OUTPUT
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if (NOT _NUMPY_RESULT)
+		# Make sure all directory separators are '/'.
+		string(REGEX REPLACE "\\\\" "/" GPLATES_Python_NumPy_INCLUDE_DIRS ${_NUMPY_OUTPUT})
+	endif()
+else()  # CMake 3.14 and later...
+	# We called find_package(Python2) or find_package(Python3) with optional NumPy component.
+	# If NumPy not found then numpy hasn't been installed into Python.
+	if (Python${_GPLATES_PYTHON_MAJOR_VER}_NumPy_FOUND)
+		set(GPLATES_Python_NumPy_INCLUDE_DIRS ${Python${_GPLATES_PYTHON_MAJOR_VER}_NumPy_INCLUDE_DIRS})
 	endif()
 endif()
 
@@ -95,32 +125,48 @@ find_package(Boost 1.35 REQUIRED)
 # First, note that CMake 3.15 and above switched Boost_VERSION from macro format (106700) to x.y.z format (1.67.0)
 if (CMAKE_VERSION VERSION_LESS 3.15)
 	set(Boost_VERSION_1_67 106700)
+	set(Boost_VERSION_1_63 106300)
 else()
 	set(Boost_VERSION_1_67 1.67.0)
+	set(Boost_VERSION_1_63 1.63.0)
 endif()
+unset(GPLATES_BOOST_PYTHON_COMPONENT_NAMES)
 if (Boost_VERSION VERSION_LESS ${Boost_VERSION_1_67})
 	# Boost versions prior to 1.67 use 'python' and 'python3' for Python 2 and 3 Boost python components respectively.
 	if (GPLATES_PYTHON_VERSION_MAJOR EQUAL 3)
-		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python3)
+		list(APPEND GPLATES_BOOST_PYTHON_COMPONENT_NAMES python3)
+		# Boost python *numpy* is only available for boost >= 1.63.
+		if (NOT Boost_VERSION VERSION_LESS ${Boost_VERSION_1_63})
+			list(APPEND GPLATES_BOOST_PYTHON_COMPONENT_NAMES numpy3)
+		endif()
 	else()
-		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python)
+		list(APPEND GPLATES_BOOST_PYTHON_COMPONENT_NAMES python)
+		# Boost python *numpy* is only available for boost >= 1.63.
+		if (NOT Boost_VERSION VERSION_LESS ${Boost_VERSION_1_63})
+			list(APPEND GPLATES_BOOST_PYTHON_COMPONENT_NAMES numpy)
+		endif()
 	endif()
 else()
-	# Boost 1.67 and above use 2-digit Python version suffixes (eg, 'python37').
+	# Boost 1.67 and above use 2-digit Python version suffixes (eg, 'python37' and 'numpy37').
 	# Match Boost Python with the Python version we found earlier.
-	set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
+	list(APPEND GPLATES_BOOST_PYTHON_COMPONENT_NAMES
+			python${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR}
+			numpy${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
 endif()
 # Now find the Boost library components.
 find_package(Boost 1.35 REQUIRED
 	# These components are mandatory (including boost python)...
-	COMPONENTS program_options thread system ${GPLATES_BOOST_PYTHON_COMPONENT_NAME}
+	COMPONENTS program_options thread system ${GPLATES_BOOST_PYTHON_COMPONENT_NAMES}
 	# Unit test framework is optional because we only need it for the GPlates unit-test executable and
 	# it is possible to compile the GUI version of GPlates without it.
 	# If it's found then 'Boost_UNIT_TEST_FRAMEWORK_FOUND' will be true...
 	OPTIONAL_COMPONENTS unit_test_framework)
-# Imported target name for boost python (for later).
+# Imported target names for boost python/numpy (used further below).
 # CMake 3.5 and above support imported targets for Boost.
-set(GPLATES_BOOST_PYTHON_IMPORTED_TARGET Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
+unset(GPLATES_BOOST_PYTHON_IMPORTED_TARGETS)
+foreach(_component_name IN LISTS GPLATES_BOOST_PYTHON_COMPONENT_NAMES)
+	list(APPEND GPLATES_BOOST_PYTHON_IMPORTED_TARGETS Boost::${_component_name})
+endforeach()
 
 #
 # Find Qt5.
@@ -691,8 +737,8 @@ target_link_libraries(pygplates PUBLIC ZLIB::ZLIB)
 # Boost dependency.
 #
 # CMake 3.5 and above support imported targets for Boost.
-target_link_libraries(gplates-lib PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system ${GPLATES_BOOST_PYTHON_IMPORTED_TARGET})
-target_link_libraries(pygplates PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system ${GPLATES_BOOST_PYTHON_IMPORTED_TARGET})
+target_link_libraries(gplates-lib PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system ${GPLATES_BOOST_PYTHON_IMPORTED_TARGETS})
+target_link_libraries(pygplates PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system ${GPLATES_BOOST_PYTHON_IMPORTED_TARGETS})
 if (TARGET gplates-unit-test)
 	# Link to the Boost unit test framework.
 	target_link_libraries(gplates-unit-test PRIVATE Boost::unit_test_framework)
@@ -799,6 +845,11 @@ else()
 	target_link_libraries(pygplates PUBLIC ${PYTHON_LIBRARIES})
 	target_include_directories(gplates-lib SYSTEM PUBLIC ${PYTHON_INCLUDE_DIRS})
 	target_include_directories(pygplates SYSTEM PUBLIC ${PYTHON_INCLUDE_DIRS})
+endif()
+# Add the NumPy include directories if found.
+if (GPLATES_Python_NumPy_INCLUDE_DIRS)
+	target_include_directories(gplates-lib SYSTEM PUBLIC ${GPLATES_Python_NumPy_INCLUDE_DIRS})
+	target_include_directories(pygplates SYSTEM PUBLIC ${GPLATES_Python_NumPy_INCLUDE_DIRS})
 endif()
 # Python is embedded in the GPlates application (as opposed to pygplates which is a Python extension library).
 target_compile_definitions(gplates-lib PUBLIC GPLATES_PYTHON_EMBEDDING)
