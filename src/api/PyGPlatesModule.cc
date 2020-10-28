@@ -23,6 +23,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+// We are going to import the numpy C-API in this file.
+// This tells 'global/python.h' not to define NO_IMPORT_ARRAY.
+#define PYGPLATES_IMPORT_NUMPY_ARRAY_API
 #include "global/python.h"
 
 #include "maths/MathsUtils.h"
@@ -228,10 +231,81 @@ GPlatesApi::get_builtin_next()
 	return builtin_next;
 }
 
+//
+// Wrap the numpy C-API 'import_array()' macro.
+//
+// We only need to call 'import_array()' once and it should be done during our module initialisation.
+//
+#ifdef GPLATES_HAVE_NUMPY_C_API
+#	if PY_MAJOR_VERSION < 3
+	static
+	void
+	pygplates_numpy_c_api_import_array()
+	{
+		// For Python 2 the 'import_array()' macro is defined as:
+		//
+		//   if (_import_array() < 0) { ...; return; }
+		//
+		// ...so our function signature should not have a return type and therefore we don't need to
+		// return anything (even if macro condition fails).
+		import_array();
+	}
+#	else
+	static
+	void *
+	pygplates_numpy_c_api_import_array()
+	{
+		import_array();
+		// For Python 3 the 'import_array()' macro is defined as:
+		//
+		//   if (_import_array() < 0) { ...; return NULL; }
+		//
+		// ...so our function signature must have a *pointer* return type and therefore we need to return
+		// something (in case macro condition fails).
+		return nullptr;
+	}
+#	endif
+#endif
+
 
 BOOST_PYTHON_MODULE(pygplates)
 {
 	namespace bp = boost::python;
+
+	//
+	// Apparently Py_Initialize should be called before initialising numpy.
+	//
+	// According to the docs for Py_Initialize:
+	// 
+	//   "This is a no-op when called for a second time (without calling Py_FinalizeEx() first)."
+	//   
+	//...so it should be OK to call twice.
+	//
+	// Calling twice happens when embedding pyGPlates into GPlates (as opposed to loading pyGPlates
+	// into an external Python interpreter) because PyImport_AppendInittab("pygplates", &PyInit_pygplates)
+	// is called (which calls us) and then Py_Initialize() is called (after calling us). However I don't
+	// know if it's a problem to call Py_Initialize() here before PyImport_AppendInittab() has returned.
+	//
+	// Also this seems to upset the order of things because the docs state that other functions,
+	// like Py_SetProgramName(), should be called before Py_Initialize(). But that won't happen if
+	// Py_Initialize() is called here (because Py_SetProgramName() is called after
+	// PyImport_AppendInittab() has returned and hence Py_Initialize() has already been called).
+	//
+	Py_Initialize();
+	//
+	// We're importing the numpy C-API directly because we use it to register converters from
+	// numpy integers/floats to C++ integers/floats.
+	//
+#ifdef GPLATES_HAVE_NUMPY_C_API
+	pygplates_numpy_c_api_import_array();
+#endif
+	//
+	// We also use boost::python::numpy to return numpy arrays (from C++ to Python).
+	// Note that boost::python::numpy also needs initialisation (and it also internally imports the numpy C-API).
+	//
+#ifdef GPLATES_HAVE_BOOST_NUMPY // Only available for Boost >= 1.63
+	bp::numpy::initialize();
+#endif
 
 	// Sanity check: Proceed only if we have access to infinity and NaN.
 	// This should pass on all systems that we support.
