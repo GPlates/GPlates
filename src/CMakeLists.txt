@@ -98,10 +98,16 @@ if (CMAKE_VERSION VERSION_LESS 3.14)
 		"from __future__ import print_function; import numpy as np; print(np.get_include());"
 		RESULT_VARIABLE _NUMPY_RESULT
 		OUTPUT_VARIABLE _NUMPY_OUTPUT
+		ERROR_QUIET
 		OUTPUT_STRIP_TRAILING_WHITESPACE)
-	if (NOT _NUMPY_RESULT)
+	if (NOT _NUMPY_RESULT)  # success
 		# Make sure all directory separators are '/'.
 		string(REGEX REPLACE "\\\\" "/" GPLATES_Python_NumPy_INCLUDE_DIRS ${_NUMPY_OUTPUT})
+	else()  # failure
+		message(WARNING [[
+		Unable to 'import numpy':
+			You will not be able to pass NumPy int/float scalars as arguments to pyGPlates functions.
+			To enable this functionality please install NumPy and then re-run CMake (to enable use of NumPy C-API).]])
 	endif()
 else()  # CMake 3.14 and later...
 	# We called find_package(Python2) or find_package(Python3) with optional NumPy component.
@@ -125,48 +131,46 @@ find_package(Boost 1.35 REQUIRED)
 # First, note that CMake 3.15 and above switched Boost_VERSION from macro format (106700) to x.y.z format (1.67.0)
 if (CMAKE_VERSION VERSION_LESS 3.15)
 	set(Boost_VERSION_1_67 106700)
-	set(Boost_VERSION_1_63 106300)
 else()
 	set(Boost_VERSION_1_67 1.67.0)
-	set(Boost_VERSION_1_63 1.63.0)
 endif()
-unset(GPLATES_BOOST_PYTHON_COMPONENT_NAMES)
 if (Boost_VERSION VERSION_LESS ${Boost_VERSION_1_67})
 	# Boost versions prior to 1.67 use 'python' and 'python3' for Python 2 and 3 Boost python components respectively.
 	if (GPLATES_PYTHON_VERSION_MAJOR EQUAL 3)
-		list(APPEND GPLATES_BOOST_PYTHON_COMPONENT_NAMES python3)
-		# Boost python *numpy* is only available for boost >= 1.63.
-		if (NOT Boost_VERSION VERSION_LESS ${Boost_VERSION_1_63})
-			list(APPEND GPLATES_BOOST_PYTHON_COMPONENT_NAMES numpy3)
-		endif()
+		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python3)
+		set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy3)
 	else()
-		list(APPEND GPLATES_BOOST_PYTHON_COMPONENT_NAMES python)
-		# Boost python *numpy* is only available for boost >= 1.63.
-		if (NOT Boost_VERSION VERSION_LESS ${Boost_VERSION_1_63})
-			list(APPEND GPLATES_BOOST_PYTHON_COMPONENT_NAMES numpy)
-		endif()
+		set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python)
+		set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy)
 	endif()
 else()
 	# Boost 1.67 and above use 2-digit Python version suffixes (eg, 'python37' and 'numpy37').
 	# Match Boost Python with the Python version we found earlier.
-	list(APPEND GPLATES_BOOST_PYTHON_COMPONENT_NAMES
-			python${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR}
-			numpy${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
+	set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
+	set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
 endif()
 # Now find the Boost library components.
 find_package(Boost 1.35 REQUIRED
 	# These components are mandatory (including boost python)...
-	COMPONENTS program_options thread system ${GPLATES_BOOST_PYTHON_COMPONENT_NAMES}
-	# Unit test framework is optional because we only need it for the GPlates unit-test executable and
-	# it is possible to compile the GUI version of GPlates without it.
-	# If it's found then 'Boost_UNIT_TEST_FRAMEWORK_FOUND' will be true...
-	OPTIONAL_COMPONENTS unit_test_framework)
+	COMPONENTS program_options thread system ${GPLATES_BOOST_PYTHON_COMPONENT_NAME}
+	OPTIONAL_COMPONENTS
+			# Unit test framework is optional because we only need it for the GPlates unit-test executable and
+			# it is possible to compile the GUI version of GPlates without it.
+			# If it's found then 'Boost_UNIT_TEST_FRAMEWORK_FOUND' will be true...
+			unit_test_framework
+			# Boost.Python.Numpy is optional because we actually haven't started using it yet and
+			# it requires Boost >= 1.63 (which is above our current minimum Boost requirement).
+			# Once it's mandatory, move this from OPTIONAL_COMPONENTS to COMPONENTS.
+			${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
 # Imported target names for boost python/numpy (used further below).
 # CMake 3.5 and above support imported targets for Boost.
 unset(GPLATES_BOOST_PYTHON_IMPORTED_TARGETS)
-foreach(_component_name IN LISTS GPLATES_BOOST_PYTHON_COMPONENT_NAMES)
-	list(APPEND GPLATES_BOOST_PYTHON_IMPORTED_TARGETS Boost::${_component_name})
-endforeach()
+# Add Boost.Python target.
+list(APPEND GPLATES_BOOST_PYTHON_IMPORTED_TARGETS Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
+# Add Boost.Python.Numpy target (it's currently optional - only add if found).
+if (TARGET Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
+	list(APPEND GPLATES_BOOST_PYTHON_IMPORTED_TARGETS Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
+endif()
 
 #
 # Find Qt5.

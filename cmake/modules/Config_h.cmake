@@ -51,6 +51,14 @@ IF (NOT EXISTS "${BOOST_CSTDINT_HPP_PATH}")
 	SET (BOOST_CSTDINT_HPP_PATH "")
 ENDIF()
 
+# Do we have boost.python.numpy?
+#
+# Only available for Boost >= 1.63, and if boost.python.numpy installed since
+# it's currently optional (because we don't actually use it yet).
+if (TARGET Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
+  set(GPLATES_HAVE_BOOST_PYTHON_NUMPY 1)
+endif()
+
 # Do we have the NumPy C-API include directories?
 #
 # If GPLATES_Python_NumPy_INCLUDE_DIRS is set then it's also been added

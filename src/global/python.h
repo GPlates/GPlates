@@ -108,14 +108,12 @@
 //
 // boost::python::numpy
 //
-// Only supported for Boost >= 1.63 (can use "#ifdef GPLATES_HAVE_BOOST_NUMPY ..." to test for existence).
+// Only available for Boost >= 1.63, and if boost.python.numpy installed since it's currently optional
+// (because we don't actually use it yet).
 //
-#	include <boost/version.hpp>
-#	if BOOST_VERSION >= 106300
-#		define GPLATES_HAVE_BOOST_NUMPY
+#	ifdef GPLATES_HAVE_BOOST_PYTHON_NUMPY
 #		include <boost/python/numpy.hpp>
-#	endif
-
+#	endif // GPLATES_HAVE_BOOST_PYTHON_NUMPY
 //
 // This is required for any direct use of the numpy C-API (beyond what we might use boost::python::numpy for).
 //

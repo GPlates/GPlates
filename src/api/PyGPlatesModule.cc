@@ -300,10 +300,12 @@ BOOST_PYTHON_MODULE(pygplates)
 	pygplates_numpy_c_api_import_array();
 #endif
 	//
-	// We also use boost::python::numpy to return numpy arrays (from C++ to Python).
+	// In future we will also use boost::python::numpy to return numpy arrays (from C++ to Python).
 	// Note that boost::python::numpy also needs initialisation (and it also internally imports the numpy C-API).
 	//
-#ifdef GPLATES_HAVE_BOOST_NUMPY // Only available for Boost >= 1.63
+	// Only available for Boost >= 1.63, and if boost.python.numpy installed since it's currently optional
+	// (because we don't actually use it yet).
+#ifdef GPLATES_HAVE_BOOST_PYTHON_NUMPY
 	bp::numpy::initialize();
 #endif
 
@@ -330,7 +332,7 @@ BOOST_PYTHON_MODULE(pygplates)
 #endif
 
 	//
-	// Specify the 'pygplate' module's docstring options.
+	// Specify the 'pygplates' module's docstring options.
 	//
 	// Note that we *disable* python and C++ signatures since we explicitly specify the
 	// signatures in the first line of each function's (or class method's) docstring.
