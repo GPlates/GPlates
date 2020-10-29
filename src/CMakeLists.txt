@@ -103,11 +103,6 @@ if (CMAKE_VERSION VERSION_LESS 3.14)
 	if (NOT _NUMPY_RESULT)  # success
 		# Make sure all directory separators are '/'.
 		string(REGEX REPLACE "\\\\" "/" GPLATES_Python_NumPy_INCLUDE_DIRS ${_NUMPY_OUTPUT})
-	else()  # failure
-		message(WARNING [[
-		Unable to 'import numpy':
-			You will not be able to pass NumPy int/float scalars as arguments to pyGPlates functions.
-			To enable this functionality please install NumPy and then re-run CMake (to enable use of NumPy C-API).]])
 	endif()
 else()  # CMake 3.14 and later...
 	# We called find_package(Python2) or find_package(Python3) with optional NumPy component.
@@ -115,6 +110,13 @@ else()  # CMake 3.14 and later...
 	if (Python${_GPLATES_PYTHON_MAJOR_VER}_NumPy_FOUND)
 		set(GPLATES_Python_NumPy_INCLUDE_DIRS ${Python${_GPLATES_PYTHON_MAJOR_VER}_NumPy_INCLUDE_DIRS})
 	endif()
+endif()
+# Warn if numpy not found.
+if (NOT GPLATES_Python_NumPy_INCLUDE_DIRS)
+	message(WARNING [[
+	Unable to 'import numpy':
+		You will not be able to pass NumPy int/float scalars as arguments to pyGPlates functions.
+		To enable this functionality please install NumPy and then re-run CMake (to enable use of NumPy C-API).]])
 endif()
 
 #
