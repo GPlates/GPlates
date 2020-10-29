@@ -446,7 +446,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_time_steps(
 
 		// Reconstruct from the current time slot to the next time slot.
 		// This also determines whether the *current* time slot is active
-		// (it signals this by returning none for the *next* time slot).
+		// (it signals this by returning none for the *next* time slot, because it can't
+		// deactivate the current points until it reconstructs to the next time slot).
 		boost::optional<GeometrySample::non_null_ptr_type> next_geometry_sample =
 				reconstruct_intermediate_time_step(
 						prev_geometry_sample,
@@ -2711,6 +2712,11 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::calc_def
 
 	d_have_initialised_strain_rates = true;
 }
+
+
+constexpr double GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_VELOCITY_DELTA;
+constexpr double GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_DISTANCE_TO_BOUNDARY_IN_KMS_PER_MY;
+constexpr bool GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK;
 
 
 GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::non_null_ptr_type

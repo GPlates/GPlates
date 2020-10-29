@@ -146,9 +146,9 @@ namespace GPlatesAppLogic
 			typedef GPlatesUtils::non_null_intrusive_ptr<const DefaultDeactivatePoint> non_null_ptr_to_const_type;
 
 			// Default parameters.
-			constexpr static double DEFAULT_THRESHOLD_VELOCITY_DELTA = 0.7;
-			constexpr static double DEFAULT_THRESHOLD_DISTANCE_TO_BOUNDARY_IN_KMS_PER_MY = 10.0;
-			constexpr static bool DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK = false;
+			static constexpr double DEFAULT_THRESHOLD_VELOCITY_DELTA = 0.7;
+			static constexpr double DEFAULT_THRESHOLD_DISTANCE_TO_BOUNDARY_IN_KMS_PER_MY = 10.0;
+			static constexpr bool DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK = false;
 
 			/**
 			 * NOTE: Ensure that @a time_increment matches that in the time range of @a TopologyReconstruct::create.
