@@ -149,7 +149,6 @@ else()
 	set(GPLATES_BOOST_PYTHON_COMPONENT_NAME python${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
 	set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
 endif()
-# Now find the Boost library components.
 #
 # These components are required (including boost python)...
 set(_GPLATES_BOOST_REQUIRED_COMPONENTS program_options thread system ${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
@@ -160,17 +159,20 @@ set(_GPLATES_BOOST_REQUIRED_COMPONENTS program_options thread system ${GPLATES_B
 #
 # Boost.Python.Numpy is optional because we actually haven't started using it yet and
 # it requires Boost >= 1.63 (which is above our current minimum Boost requirement).
-set(_GPLATES_BOOST_OPTIONAL_COMPONENTS unit_test_framework ${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
-# NOTE: Boost did not support OPTIONAL_COMPONENTS in find_package() until CMake 3.11.
-#       So we'll just use COMPONENTS and remove the REQUIRED keyword and manually check that the required components were found.
-find_package(Boost 1.35 COMPONENTS ${_GPLATES_BOOST_REQUIRED_COMPONENTS} ${_GPLATES_BOOST_OPTIONAL_COMPONENTS})
-# Check the required components were found.
-foreach(_component_name IN LISTS _GPLATES_BOOST_REQUIRED_COMPONENTS)
-	# Check using target existence since CMake 3.5 and above support imported targets for Boost.
-	if (NOT TARGET Boost::${_component_name})
-		message(FATAL_ERROR "Boost component required but not found: ${_component_name}")
-	endif()
-endforeach()
+#
+# NOTE: Boost treated OPTIONAL_COMPONENTS in find_package() as required until CMake 3.11.
+#       So for CMake < 3.11 the unit_test_framework component is essentially required, but
+#       we'll not require the numpy component since it won't always be available (requires Boost >= 1.63).
+if (CMAKE_VERSION VERSION_LESS 3.11)
+	set(_GPLATES_BOOST_OPTIONAL_COMPONENTS unit_test_framework)  # Treated as required
+else()  # CMake 3.11 and later...
+	set(_GPLATES_BOOST_OPTIONAL_COMPONENTS unit_test_framework ${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
+endif()
+# Now find the Boost library components.
+# CMake 3.5 and above support imported targets for Boost, so we'll access the components as targets later on.
+find_package(Boost 1.35 REQUIRED
+		COMPONENTS ${_GPLATES_BOOST_REQUIRED_COMPONENTS}
+		OPTIONAL_COMPONENTS ${_GPLATES_BOOST_OPTIONAL_COMPONENTS})
 
 #
 # Find Qt5.
