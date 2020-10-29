@@ -150,27 +150,27 @@ else()
 	set(GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME numpy${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
 endif()
 # Now find the Boost library components.
-find_package(Boost 1.35 REQUIRED
-	# These components are mandatory (including boost python)...
-	COMPONENTS program_options thread system ${GPLATES_BOOST_PYTHON_COMPONENT_NAME}
-	OPTIONAL_COMPONENTS
-			# Unit test framework is optional because we only need it for the GPlates unit-test executable and
-			# it is possible to compile the GUI version of GPlates without it.
-			# If it's found then 'Boost_UNIT_TEST_FRAMEWORK_FOUND' will be true...
-			unit_test_framework
-			# Boost.Python.Numpy is optional because we actually haven't started using it yet and
-			# it requires Boost >= 1.63 (which is above our current minimum Boost requirement).
-			# Once it's mandatory, move this from OPTIONAL_COMPONENTS to COMPONENTS.
-			${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
-# Imported target names for boost python/numpy (used further below).
-# CMake 3.5 and above support imported targets for Boost.
-unset(GPLATES_BOOST_PYTHON_IMPORTED_TARGETS)
-# Add Boost.Python target.
-list(APPEND GPLATES_BOOST_PYTHON_IMPORTED_TARGETS Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
-# Add Boost.Python.Numpy target (it's currently optional - only add if found).
-if (TARGET Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
-	list(APPEND GPLATES_BOOST_PYTHON_IMPORTED_TARGETS Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
-endif()
+#
+# These components are required (including boost python)...
+set(_GPLATES_BOOST_REQUIRED_COMPONENTS program_options thread system ${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
+# These components are optional...
+#
+# Unit test framework is optional because we only need it for the GPlates unit-test executable and
+# it is possible to compile the GUI version of GPlates without it.
+#
+# Boost.Python.Numpy is optional because we actually haven't started using it yet and
+# it requires Boost >= 1.63 (which is above our current minimum Boost requirement).
+set(_GPLATES_BOOST_OPTIONAL_COMPONENTS unit_test_framework ${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
+# NOTE: Boost did not support OPTIONAL_COMPONENTS in find_package() until CMake 3.11.
+#       So we'll just use COMPONENTS and remove the REQUIRED keyword and manually check that the required components were found.
+find_package(Boost 1.35 COMPONENTS ${_GPLATES_BOOST_REQUIRED_COMPONENTS} ${_GPLATES_BOOST_OPTIONAL_COMPONENTS})
+# Check the required components were found.
+foreach(_component_name IN LISTS _GPLATES_BOOST_REQUIRED_COMPONENTS)
+	# Check using target existence since CMake 3.5 and above support imported targets for Boost.
+	if (NOT TARGET Boost::${_component_name})
+		message(FATAL_ERROR "Boost component required but not found: ${_component_name}")
+	endif()
+endforeach()
 
 #
 # Find Qt5.
@@ -310,7 +310,7 @@ target_link_libraries(gplates-no-gui PRIVATE gplates-lib)
 #
 # It's only added if we have a Boost unit test framework.
 # It will be populated by source files from the 'unit-test/' sub-directory.
-if (Boost_UNIT_TEST_FRAMEWORK_FOUND)
+if (TARGET Boost::unit_test_framework)
 	add_executable(gplates-unit-test EXCLUDE_FROM_ALL gplates_unit_test_main.cc ScribeExportGPlatesUnitTest.cc)
 	target_link_libraries(gplates-unit-test PRIVATE gplates-lib)
 else()
@@ -741,8 +741,15 @@ target_link_libraries(pygplates PUBLIC ZLIB::ZLIB)
 # Boost dependency.
 #
 # CMake 3.5 and above support imported targets for Boost.
-target_link_libraries(gplates-lib PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system ${GPLATES_BOOST_PYTHON_IMPORTED_TARGETS})
-target_link_libraries(pygplates PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system ${GPLATES_BOOST_PYTHON_IMPORTED_TARGETS})
+#
+# Add required Boost components.
+target_link_libraries(gplates-lib PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
+target_link_libraries(pygplates PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
+# Add optional Boost.Python.Numpy component (if found).
+if (TARGET Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
+	target_link_libraries(gplates-lib PUBLIC Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
+	target_link_libraries(pygplates PUBLIC Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
+endif()
 if (TARGET gplates-unit-test)
 	# Link to the Boost unit test framework.
 	target_link_libraries(gplates-unit-test PRIVATE Boost::unit_test_framework)
