@@ -83,6 +83,7 @@ else()  # CMake 3.12 and later...
 endif()
 #
 # Find the Python NumPy include directories (and store in GPLATES_Python_NumPy_INCLUDE_DIRS if found).
+unset(GPLATES_Python_NumPy_INCLUDE_DIRS)
 #
 # CMake versions older than 3.14 do not support the NumPy component (in 'find_package') - so we need to find it ourself.
 if (CMAKE_VERSION VERSION_LESS 3.14)
@@ -93,16 +94,18 @@ if (CMAKE_VERSION VERSION_LESS 3.14)
 		# From find_package(Python2) or find_package(Python3)...
 		set(_GPLATES_PYTHON_EXECUTABLE ${Python${_GPLATES_PYTHON_MAJOR_VER}_EXECUTABLE})
 	endif()
-	# Get Python to import numpy and then print out the numpy include directory.
-	execute_process(COMMAND "${_GPLATES_PYTHON_EXECUTABLE}" "-c"
-		"from __future__ import print_function; import numpy as np; print(np.get_include());"
-		RESULT_VARIABLE _NUMPY_RESULT
-		OUTPUT_VARIABLE _NUMPY_OUTPUT
-		ERROR_QUIET
-		OUTPUT_STRIP_TRAILING_WHITESPACE)
-	if (NOT _NUMPY_RESULT)  # success
-		# Make sure all directory separators are '/'.
-		string(REGEX REPLACE "\\\\" "/" GPLATES_Python_NumPy_INCLUDE_DIRS ${_NUMPY_OUTPUT})
+	if (_GPLATES_PYTHON_EXECUTABLE)
+		# Get Python to import numpy and then print out the numpy include directory.
+		execute_process(COMMAND "${_GPLATES_PYTHON_EXECUTABLE}" "-c"
+			"from __future__ import print_function; import numpy as np; print(np.get_include());"
+			RESULT_VARIABLE _NUMPY_RESULT
+			OUTPUT_VARIABLE _NUMPY_OUTPUT
+			ERROR_QUIET
+			OUTPUT_STRIP_TRAILING_WHITESPACE)
+		if (NOT _NUMPY_RESULT)  # success
+			# Make sure all directory separators are '/'.
+			string(REGEX REPLACE "\\\\" "/" GPLATES_Python_NumPy_INCLUDE_DIRS ${_NUMPY_OUTPUT})
+		endif()
 	endif()
 else()  # CMake 3.14 and later...
 	# We called find_package(Python2) or find_package(Python3) with optional NumPy component.
