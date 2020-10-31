@@ -785,7 +785,7 @@ export_resolve_topologies()
 			"  |                                   |      |                                                                 |                                                                                  |\n"
 			"  |                                   |      |                                                                 | .. note:: Only applies when exporting to a file (ESRI Shapefile).                |\n"
 			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
-			"  | export_force_boundary_orientation | bool | ``None`` (don't force)                                          | Optionally force boundary orientation (clockwise or counter-clockwise):          |\n"
+			"  | export_force_boundary_orientation | int  | ``None`` (don't force)                                          | Optionally force boundary orientation (clockwise or counter-clockwise):          |\n"
 			"  |                                   |      |                                                                 |                                                                                  |\n"
 			"  |                                   |      |                                                                 | - ``PolygonOnSphere.Orientation.clockwise``                                      |\n"
 			"  |                                   |      |                                                                 | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |\n"
