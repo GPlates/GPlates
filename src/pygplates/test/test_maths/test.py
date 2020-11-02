@@ -600,6 +600,56 @@ class Vector3DCase(unittest.TestCase):
         self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.Vector3D(0,0,0).to_normalised)
         self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.Vector3D.create_normalised, 0, 0, 0)
 
+
+class IntegerFloatCase(unittest.TestCase):
+    
+    def test_numpy_scalar_to_integer_float(self):
+        try:
+            import numpy as np;
+        except ImportError:
+            print('NumPy not installed: skipping NumPy scalar conversion test')
+            return
+        
+        #
+        # Just using XsInteger and XsDouble as a way of accepting integer and floating-point numbers.
+        #
+        # These should all not raise an exception (Boost.Python.ArgumentError).
+        #
+
+        pygplates.XsInteger(np.longlong(1000))
+        pygplates.XsInteger(np.int64(1000))
+        pygplates.XsInteger(np.int32(-1000))
+        pygplates.XsInteger(np.int16(-1000))
+        pygplates.XsInteger(np.uint8(100))
+        pygplates.XsInteger(np.int(-1000))
+        pygplates.XsInteger(np.uint(1000))
+        self.assertTrue(pygplates.XsInteger(np.uint(1000)).get_integer() == 1000)
+        
+        f = pygplates.Feature()
+        f.set_reconstruction_plate_id(np.uint32(801))
+        self.assertTrue(f.get_reconstruction_plate_id() == 801)
+
+        pygplates.XsDouble(np.longlong(-1000))
+        pygplates.XsDouble(np.int64(1000))
+        pygplates.XsDouble(np.int32(-1000))
+        pygplates.XsDouble(np.int(-1000))
+        pygplates.XsDouble(np.uint(1000))
+        pygplates.XsDouble(np.float64(1000))
+        pygplates.XsDouble(np.float32(-1000))
+        pygplates.XsDouble(np.float_(1000))
+        pygplates.XsDouble(np.double(1000))
+        pygplates.XsDouble(np.longdouble(-1000))
+        self.assertAlmostEqual(pygplates.XsDouble(np.float64(105.67)).get_double(), 105.67)
+
+        pygplates.GeoTimeInstant(np.float64(140.6))
+        self.assertTrue(pygplates.GeoTimeInstant(np.float64(140.6)) == pygplates.GeoTimeInstant(140.6))
+
+        f.set_valid_time(np.longdouble(140.23), np.single(10.54))
+        begin, end = f.get_valid_time()
+        self.assertAlmostEqual(begin, 140.23)
+        self.assertAlmostEqual(end, 10.54)
+
+
 def suite():
     suite = unittest.TestSuite()
     
@@ -610,7 +660,8 @@ def suite():
             GreatCircleArcCase,
             LatLonPointCase,
             LocalCartesianCase,
-            Vector3DCase
+            Vector3DCase,
+            IntegerFloatCase
         ]
 
     for test_case in test_cases:
