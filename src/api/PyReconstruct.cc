@@ -486,7 +486,7 @@ namespace GPlatesApi
 		template <class ReconstructionGeometryType>
 		void
 		output_reconstruction_geometries(
-				bp::list output_reconstruction_geometries_list,
+				bp::list &output_reconstruction_geometries_list,
 				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &rfgs,
 				const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
 				bool group_with_feature)

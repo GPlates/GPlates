@@ -321,10 +321,13 @@ namespace GPlatesApi
 
 		/**
 		 * Append the resolved topologies python list @a output_resolved_topologies_list.
+		 *
+		 * We also make sure the resolved topologies are written out in the order of the features
+		 * in the topological files (and the order across files).
 		 */
 		void
 		output_resolved_topologies(
-				bp::list output_resolved_topologies_list,
+				bp::list &output_resolved_topologies_list,
 				const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> &resolved_topologies,
 				const std::vector<const GPlatesFileIO::File::Reference *> &topological_file_ptrs)
 		{
@@ -385,6 +388,92 @@ namespace GPlatesApi
 					GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type rg(*rg_iter);
 
 					output_resolved_topologies_list.append(rg);
+				}
+			}
+		}
+
+
+		/**
+		 * Append the resolved topological sections python list @a output_resolved_topological_sections_list.
+		 *
+		 * We also make sure the resolved topological sections are written out in the order of the features
+		 * in the topological files (and the order across files).
+		 */
+		void
+		output_resolved_topological_sections(
+				bp::list &output_resolved_topological_sections_list,
+				const std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
+				const std::vector<const GPlatesFileIO::File::Reference *> &topological_file_ptrs)
+		{
+			// We need to determine which resolved topological sections belong to which feature group
+			// so we know which sections to write out which output file.
+			typedef std::map<
+					const GPlatesAppLogic::ReconstructionGeometry *,
+					const GPlatesAppLogic::ResolvedTopologicalSection *>
+							recon_geom_to_resolved_section_map_type;
+			recon_geom_to_resolved_section_map_type recon_geom_to_resolved_section_map;
+
+			// List of the resolved topological section ReconstructionGeometry's.
+			// We'll use these to determine which features/collections each section came from.
+			std::vector<const GPlatesAppLogic::ReconstructionGeometry *> resolved_topological_section_recon_geom_ptrs;
+
+			for (auto resolved_topological_section : resolved_topological_sections)
+			{
+				const GPlatesAppLogic::ReconstructionGeometry *resolved_topological_section_recon_geom_ptr =
+						resolved_topological_section->get_reconstruction_geometry().get();
+
+				recon_geom_to_resolved_section_map.insert(
+						recon_geom_to_resolved_section_map_type::value_type(
+								resolved_topological_section_recon_geom_ptr,
+								resolved_topological_section.get()));
+
+				resolved_topological_section_recon_geom_ptrs.push_back(
+						resolved_topological_section_recon_geom_ptr);
+			}
+
+			//
+			// Order the resolved topological sections according to the order of the features in the feature collections.
+			//
+
+			// Get the list of active topological feature collection files that contain
+			// the features referenced by the ReconstructionGeometry objects.
+			GPlatesFileIO::ReconstructionGeometryExportImpl::feature_handle_to_collection_map_type feature_to_collection_map;
+			GPlatesFileIO::ReconstructionGeometryExportImpl::populate_feature_handle_to_collection_map(
+					feature_to_collection_map,
+					topological_file_ptrs);
+
+			// Group the ReconstructionGeometry objects by their feature.
+			typedef GPlatesFileIO::ReconstructionGeometryExportImpl::FeatureGeometryGroup<
+					GPlatesAppLogic::ReconstructionGeometry> feature_geometry_group_type;
+			std::list<feature_geometry_group_type> grouped_recon_geoms_seq;
+			GPlatesFileIO::ReconstructionGeometryExportImpl::group_reconstruction_geometries_with_their_feature(
+					grouped_recon_geoms_seq,
+					resolved_topological_section_recon_geom_ptrs,
+					feature_to_collection_map);
+
+			//
+			// Append the ordered resolved topological sections to the output list.
+			//
+
+			for (const feature_geometry_group_type &feature_geom_group : grouped_recon_geoms_seq)
+			{
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref = feature_geom_group.feature_ref;
+				if (!feature_ref.is_valid())
+				{
+					continue;
+				}
+
+				// Iterate through the reconstruction geometries of the current feature and write to output.
+				for (const GPlatesAppLogic::ReconstructionGeometry *recon_geom : feature_geom_group.recon_geoms)
+				{
+					auto resolved_section_iter = recon_geom_to_resolved_section_map.find(recon_geom);
+					if (resolved_section_iter != recon_geom_to_resolved_section_map.end())
+					{
+						const GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_to_const_type
+								resolved_section(resolved_section_iter->second);
+
+						output_resolved_topological_sections_list.append(resolved_section);
+					}
 				}
 			}
 		}
@@ -680,12 +769,10 @@ namespace GPlatesApi
 				bp::list output_resolved_topological_sections_list =
 						boost::get<bp::list>(resolved_topological_sections_argument.get());
 
-				BOOST_FOREACH(
-						const GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type &resolved_topological_section,
-						resolved_topological_sections)
-				{
-					output_resolved_topological_sections_list.append(resolved_topological_section);
-				}
+				output_resolved_topological_sections(
+						output_resolved_topological_sections_list,
+						resolved_topological_sections,
+						topological_file_ptrs);
 			}
 		}
 
@@ -816,6 +903,11 @@ export_resolve_topologies()
 			"  | In the latter case the :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>` "
 			"generated by the reconstruction are appended to the python ``list`` (instead of exported to a file).\n"
 			"\n"
+			"  | Both *resolved_topologies* and *resolved_topological_sections* are output in the same order as that of their "
+			"respective features in *topological_features* (the order across feature collections is also retained). "
+			"This happens regardless of whether *topological_features*, and *resolved_topologies* and *resolved_topological_sections*, "
+			"include files or not.\n"
+			"\n"
 			"  .. note:: | :class:`Resolved topological sections<pygplates.ResolvedTopologicalSection>` can be used "
 			"to find the unique (non-overlapping) set of boundary sub-segments that are shared by the resolved topologies.\n"
 			"            | Each resolved topology also has a list of its boundary sub-segments but they overlap with the "
@@ -909,7 +1001,12 @@ export_resolve_topologies()
 			"    resolved_topological_sections = []\n"
             "    pygplates.resolve_topologies(\n"
 			"        'plate_polygons_and_networks.gpml', 'rotations.rot', resolved_topologies, 10,\n"
-			"         resolved_topological_sections)\n";
+			"         resolved_topological_sections)\n"
+			"\n"
+			"  .. versionchanged:: 29\n"
+			"     The output order of *resolved_topological_sections* is now same as that of their "
+			"respective features in *topological_features* (the order across feature collections is also retained). "
+			"Previously the order was only retained for *resolved_topologies*.\n";
 
 	// Register 'resolved topologies' variant.
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<
