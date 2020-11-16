@@ -459,6 +459,51 @@ GPlatesMaths::GreatCircleArc::rotation_axis() const
 }
 
 
+GPlatesMaths::PointOnSphere
+GPlatesMaths::GreatCircleArc::point_on_arc(
+		const real_t &normalised_distance_from_start_point) const
+{
+	// If arc is zero length then all arc points are the same.
+	if (is_zero_length())
+	{
+		// Start and end points are the same.
+		return start_point();
+	}
+
+	// Return exactly the start or end point if requested.
+	// This avoids numerical precision differences due to rotating at 0 or 1.
+	if (normalised_distance_from_start_point == 0)
+	{
+		return start_point();
+	}
+	if (normalised_distance_from_start_point == 1)
+	{
+		return end_point();
+	}
+
+	// Rotation from start point to requested arc point.
+	const Real angle_from_start_to_end = acos(dot_of_endpoints());
+	const Rotation rotation = Rotation::create(
+			rotation_axis(),
+			normalised_distance_from_start_point * angle_from_start_to_end);
+
+	return rotation * start_point();
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesMaths::GreatCircleArc::direction_on_arc(
+		const real_t &normalised_distance_from_start_point) const
+{
+	const PointOnSphere arc_point = point_on_arc(normalised_distance_from_start_point);
+
+	// Get unit-magnitude direction at the arc point towards the end point (from start point).
+	//
+	// NOTE: 'rotation_axis()' will throw 'IndeterminateArcRotationAxisException' if arc is zero length.
+	return Vector3D(cross(rotation_axis(), arc_point.position_vector()).get_normalisation());
+}
+
+
 boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesMaths::GreatCircleArc::is_close_to(
 		const PointOnSphere &test_point,

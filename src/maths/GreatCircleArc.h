@@ -39,6 +39,7 @@
 #include "AngularDistance.h"
 #include "AngularExtent.h"
 #include "PointOnSphere.h"
+#include "Vector3D.h"
 
 #include "global/PointerTraits.h"
 
@@ -163,6 +164,18 @@ namespace GPlatesMaths
 		{
 			return d_dot_of_endpoints;
 		}
+		
+		/**
+		 * Returns the arc length (in radians).
+		 *
+		 * NOTE: It's possible for @a is_zero_length to return true but this method to return non-zero
+		 *       (if the arc length is below the numerical threshold used by @a is_zero_length).
+		 */
+		real_t
+		arc_length() const
+		{
+			return acos(dot_of_endpoints());
+		}
 
 		/**
 		 * Return whether this great-circle arc is of zero length.
@@ -194,6 +207,30 @@ namespace GPlatesMaths
 		rotation_axis() const;
 
 		/**
+		 * Returns a point on this arc at a specified distance from the arc start point.
+		 *
+		 * @param normalised_distance_from_start_point zero is the start point, one is the end point
+		 * and between zero and one are points along the arc. It's possible to have values less than zero
+		 * and greater than one (eg, 2.0 is twice the distance from start point, going past end point).
+		 */
+		PointOnSphere
+		point_on_arc(
+				const real_t &normalised_distance_from_start_point) const;
+
+		/**
+		 * Returns the direction along this arc at a specified distance from the arc start point.
+		 *
+		 * @param normalised_distance_from_start_point zero is the start point, one is the end point
+		 * and between zero and one are points along the arc. It's possible to have values less than zero
+		 * and greater than one (eg, 2.0 is twice the distance from start point, going past end point).
+		 *
+		 * @throws IndeterminateArcRotationAxisException if this arc is zero length (@a is_zero_length).
+		 */
+		Vector3D
+		direction_on_arc(
+				const real_t &normalised_distance_from_start_point) const;
+
+		/**
 		 * Evaluate whether @a test_point is "close" to this arc.
 		 *
 		 * The measure of what is "close" is provided by @a closeness_angular_extent_threshold.
@@ -202,7 +239,7 @@ namespace GPlatesMaths
 		 * exactly @em how close, and store that value in @a closeness and
 		 * return the closest point on the GreatCircleArc.
 		 */
-		boost::optional<GPlatesMaths::PointOnSphere>
+		boost::optional<PointOnSphere>
 		is_close_to(
 				const PointOnSphere &test_point,
 				const AngularExtent &closeness_angular_extent_threshold,
@@ -211,7 +248,7 @@ namespace GPlatesMaths
 		/**
 		 * Finds the closest point on this arc to @a test_point.
 		 */
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		PointOnSphere::non_null_ptr_to_const_type
 		get_closest_point(
 				const PointOnSphere &test_point) const;
 
