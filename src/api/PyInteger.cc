@@ -85,7 +85,7 @@ namespace GPlatesApi
 				PyObject *obj,
 				boost::python::converter::rvalue_from_python_stage1_data *data)
 		{
-			// Convert the numpy type (integer) to a 'long'.
+			// Convert the numpy type (integer) to a 'long long'.
 			// This should not result in an overflow except for a 64-bit NumPy *unsigned* integer that's
 			// larger than the maximum 64-bit *signed* integer being passed to a C++ 64-bit *signed* integer
 			// (however we're extremely unlikely to use such large numbers).
