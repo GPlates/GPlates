@@ -142,8 +142,9 @@ GPlatesMaths::FiniteRotation::create(
 	return FiniteRotation(uq, axis);
 }
 
+
 const GPlatesMaths::FiniteRotation
-GPlatesMaths::FiniteRotation::create(
+GPlatesMaths::FiniteRotation::create_great_circle_point_rotation(
 		const PointOnSphere &from_point,
 		const PointOnSphere &to_point)
 {
@@ -151,13 +152,81 @@ GPlatesMaths::FiniteRotation::create(
 
 	// If the points are the same or antipodal then there are an infinite number of rotation axes
 	// possible, so we just pick one arbitrarily.
-	const PointOnSphere pole = (rotation_axis.magSqrd() == 0)
+	const PointOnSphere pole = rotation_axis.is_zero_magnitude()
 			? PointOnSphere(generate_perpendicular(from_point.position_vector()))
 			: PointOnSphere(rotation_axis.get_normalisation());
 
 	const real_t angle = acos(dot(from_point.position_vector(), to_point.position_vector()));
 
 	return create(pole, angle);
+}
+
+
+const GPlatesMaths::FiniteRotation
+GPlatesMaths::FiniteRotation::create_small_circle_point_rotation(
+		const PointOnSphere &rotation_pole,
+		const PointOnSphere &from_point,
+		const PointOnSphere &to_point)
+{
+	// Get the rotation axes of the arcs from the rotation pole to the 'from' and 'to' points.
+	const Vector3D from_rotation_axis = cross(rotation_pole.position_vector(), from_point.position_vector());
+	const Vector3D to_rotation_axis = cross(rotation_pole.position_vector(), to_point.position_vector());
+
+	// If either rotation axis is zero magnitude then we cannot determine both 'from' and 'to' point
+	// orientations relative to the rotation pole, so just return the identity rotation.
+	// This means one or both points lie on the rotation pole.
+	if (from_rotation_axis.is_zero_magnitude() ||
+		to_rotation_axis.is_zero_magnitude())
+	{
+		return create_identity_rotation();
+	}
+
+	// The angle between the rotation axes is the angle we need to rotate.
+	// This is the orientation of the 'to' point relative to the 'from' point with respect to the rotation pole.
+	real_t angle = acos(dot(from_rotation_axis.get_normalisation(), to_rotation_axis.get_normalisation()));
+
+	// Positive rotation angles rotate counter-clockwise so if we need to rotate clockwise then negate angle.
+	if (dot(from_rotation_axis, to_point.position_vector()).dval() < 0)
+	{
+		angle = -angle;
+	}
+
+	return create(rotation_pole, angle);
+}
+
+
+const GPlatesMaths::FiniteRotation
+GPlatesMaths::FiniteRotation::create_segment_rotation(
+		const PointOnSphere &from_segment_start,
+		const PointOnSphere &from_segment_end,
+		const PointOnSphere &to_segment_start,
+		const PointOnSphere &to_segment_end)
+{
+	// First rotate the start point of the 'from' segment to the start point of the 'to' segment.
+	//
+	// There are an infinite number of possible rotations (all with rotation poles on the great circle
+	// that separates the two points). We can pick any, so the easiest is the rotation that moves
+	// along the great circle arc between the two points.
+	const FiniteRotation rotate_from_segment_start_to_segment_start =
+			create_great_circle_point_rotation(from_segment_start, to_segment_start);
+
+    // So far we can rotate the start point of the 'from' segment onto the start point of the 'to' segment.
+    // However if we use that rotation to rotate the end point of the 'from' segment then it will not land
+    // on the end point of the 'to' segment.
+    // So we need to further rotate it by another rotation to get to the end point of the 'to' segment.
+    // That extra rotation rotates around the start point of the 'to' segment until the result lands on
+    // the end point of the 'to' segment.
+    //
+    // Note that since it's a rotation around the start point of the 'to' segment it doesn't affect
+    // the start point of the 'to' segment and so it won't mess up our final composed rotation of the
+    // start point of the 'from' segment onto the start point of the 'to' segment.
+	const FiniteRotation rotate_rotated_from_segment_end_to_segment_end =
+			create_small_circle_point_rotation(
+					to_segment_start/*rotation_pole*/,
+					rotate_from_segment_start_to_segment_start * from_segment_end/*from_point*/,
+					to_segment_end/*to_point*/);
+
+	return compose(rotate_rotated_from_segment_end_to_segment_end, rotate_from_segment_start_to_segment_start);
 }
 
 
