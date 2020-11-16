@@ -66,7 +66,15 @@ namespace GPlatesApi
 	}
 
 	boost::shared_ptr<GPlatesMaths::FiniteRotation>
-	finite_rotation_create_between_two_points(
+	finite_rotation_create_identity_rotation()
+	{
+		return boost::shared_ptr<GPlatesMaths::FiniteRotation>(
+				new GPlatesMaths::FiniteRotation(
+						GPlatesMaths::FiniteRotation::create_identity_rotation()));
+	}
+
+	boost::shared_ptr<GPlatesMaths::FiniteRotation>
+	finite_rotation_create_great_circle_point_rotation(
 			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
 			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
 			const GPlatesMaths::PointOnSphere &from_point,
@@ -74,15 +82,36 @@ namespace GPlatesApi
 	{
 		return boost::shared_ptr<GPlatesMaths::FiniteRotation>(
 				new GPlatesMaths::FiniteRotation(
-						GPlatesMaths::FiniteRotation::create(from_point, to_point)));
+						GPlatesMaths::FiniteRotation::create_great_circle_point_rotation(from_point, to_point)));
 	}
 
 	boost::shared_ptr<GPlatesMaths::FiniteRotation>
-	finite_rotation_create_identity_rotation()
+	finite_rotation_create_small_circle_point_rotation(
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &rotation_pole,
+			const GPlatesMaths::PointOnSphere &from_point,
+			const GPlatesMaths::PointOnSphere &to_point)
 	{
 		return boost::shared_ptr<GPlatesMaths::FiniteRotation>(
 				new GPlatesMaths::FiniteRotation(
-						GPlatesMaths::FiniteRotation::create_identity_rotation()));
+						GPlatesMaths::FiniteRotation::create_small_circle_point_rotation(rotation_pole, from_point, to_point)));
+	}
+
+	boost::shared_ptr<GPlatesMaths::FiniteRotation>
+	finite_rotation_create_segment_rotation(
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+				const GPlatesMaths::PointOnSphere &from_segment_start,
+				const GPlatesMaths::PointOnSphere &from_segment_end,
+				const GPlatesMaths::PointOnSphere &to_segment_start,
+				const GPlatesMaths::PointOnSphere &to_segment_end)
+	{
+		return boost::shared_ptr<GPlatesMaths::FiniteRotation>(
+				new GPlatesMaths::FiniteRotation(
+						GPlatesMaths::FiniteRotation::create_segment_rotation(
+								from_segment_start, from_segment_end,
+								to_segment_start, to_segment_end)));
 	}
 
 	GPlatesMaths::FiniteRotation
@@ -465,7 +494,7 @@ export_finite_rotation()
 				"    finite_rotation = pygplates.FiniteRotation(numpy.array([latitude,longitude]), angle_radians)\n")
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::finite_rotation_create_between_two_points,
+						&GPlatesApi::finite_rotation_create_great_circle_point_rotation,
 						bp::default_call_policies(),
 						(bp::arg("from_point"), bp::arg("to_point"))),
 				// Specific overload signature...
@@ -488,7 +517,9 @@ export_finite_rotation()
 				"  ::\n"
 				"\n"
 				"    finite_rotation = pygplates.FiniteRotation(from_point, to_point)\n"
-				"    # assert(to_point == finite_rotation * from_point)\n")
+				"    # assert(to_point == finite_rotation * from_point)\n"
+				"\n"
+				"  .. seealso:: :meth:`create_great_circle_point_rotation`\n")
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::finite_rotation_create_identity_rotation,
@@ -527,6 +558,119 @@ export_finite_rotation()
 				"\n"
 				"    identity_finite_rotation = pygplates.FiniteRotation(any_euler_pole, 0)\n")
 		.staticmethod("create_identity_rotation")
+		.def("create_great_circle_point_rotation",
+				&GPlatesApi::finite_rotation_create_great_circle_point_rotation,
+				"create_great_circle_point_rotation(from_point, to_point)\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a finite rotation that rotates one point to another along the "
+				"great circle arc connecting them.\n"
+				"\n"
+				"  :param from_point: the point to rotate *from*\n"
+				"  :type from_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :param to_point: the point to rotate *to*\n"
+				"  :type to_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
+				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
+				"\n"
+				"  If *from_point* and *to_point* are the same or antipodal (opposite sides of globe) "
+				"then an arbitrary rotation axis (among the infinite possible choices) is selected.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    finite_rotation = pygplates.FiniteRotation.create_great_circle_point_rotation(from_point, to_point)\n"
+				"    # assert(to_point == finite_rotation * from_point)\n"
+				"\n"
+				"  .. versionadded:: 29\n")
+		.staticmethod("create_great_circle_point_rotation")
+		.def("create_small_circle_point_rotation",
+				&GPlatesApi::finite_rotation_create_small_circle_point_rotation,
+				"create_small_circle_point_rotation(rotation_pole, from_point, to_point)\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a finite rotation, using the specified rotation pole, that rotates "
+				"*from_point* to *to_point*.\n"
+				"\n"
+				"  :param rotation_pole: the rotation pole to rotate around\n"
+				"  :type rotation_pole: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :param from_point: the point to rotate *from*\n"
+				"  :type from_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :param to_point: the point to rotate *to*\n"
+				"  :type to_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
+				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
+				"\n"
+				"  .. note:: *from_point* doesn't actually have to rotate onto *to_point*. "
+				"Imagine *rotation_pole* is the North Pole, then the returned rotation will rotate such that "
+				"the longitude matches but not necessarily the latitude.\n"
+				"\n"
+				"  .. note:: If either *from_point* or *to_point* coincides with *rotation_pole* then the identity rotation is returned.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    finite_rotation = pygplates.FiniteRotation.create_small_circle_point_rotation(rotation_pole, from_point, to_point)\n"
+				"\n"
+				"  .. versionadded:: 29\n")
+		.staticmethod("create_small_circle_point_rotation")
+		.def("create_segment_rotation",
+				&GPlatesApi::finite_rotation_create_segment_rotation,
+				"create_segment_rotation(from_segment_start, from_segment_end, to_segment_start, to_segment_end)\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a finite rotation that rotates the *from* line segment to the *to* line segment.\n"
+				"\n"
+				"  :param from_segment_start: the start point of the segment to rotate *from*\n"
+				"  :type from_segment_start: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :param from_segment_end: the end point of the segment to rotate *from*\n"
+				"  :type from_segment_end: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :param to_segment_start: the start point of the segment to rotate *to*\n"
+				"  :type to_segment_start: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :param to_segment_end: the end point of the segment to rotate *to*\n"
+				"  :type to_segment_end: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
+				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
+				"\n"
+				"  This is useful if you have the same geometry but at two different positions/orientations on the globe and you "
+				"want to determine the rotation that maps one onto the other. In this case you can choose two non-coincident points "
+				"of the geometry (at two different positions/orientations) and pass those four points to this function. "
+				"For example, you might have a geometry that's been reconstructed to two different times but you don't "
+				"have those two reconstruction rotations (you only have the two reconstructed geometries) - you can then "
+				"use this function to find the rotation from one reconstruction time to the other.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    finite_rotation = pygplates.FiniteRotation.create_segment_rotation(\n"
+				"        from_segment_start, from_segment_end,\n"
+				"        to_segment_start, to_segment_end)\n"
+				"\n"
+				"  .. note:: The *from* and *to* segments do not actually have to be the same (arc) length. "
+				"In this case, while *from_segment_start* is always rotated onto *to_segment_start*, "
+				"*from_segment_end* is not rotated onto *to_segment_end*. Instead *from_segment_end* is "
+				"rotated such that it is on the great circle containing the *to* segment. "
+				"In this way the *from* segment is rotated such that its orientation matches the *to* segment "
+				"(as well as having matching start points).\n"
+				"\n"
+				"  .. note:: If either segment is zero length then the returned rotation reduces to one that rotates "
+				"*from_segment_start* to *to_segment_start* along the great circle arc between those two points. "
+				"This is because one (or both) segments has no orientation (so all we can match are the start points).\n"
+				"\n"
+				"  .. note:: It's fine for the start points of both *from* and *to* segments to coincide "
+				"(and it's also fine for the end points of both segments to coincide for that matter).\n"
+				"\n"
+				"  .. versionadded:: 29\n")
+		.staticmethod("create_segment_rotation")
 		.def("are_equivalent",
 				&GPlatesApi::finite_rotation_represent_equivalent_rotations,
 				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),

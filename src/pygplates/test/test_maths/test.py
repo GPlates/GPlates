@@ -150,17 +150,59 @@ class FiniteRotationCase(unittest.TestCase):
             finite_rotation = pygplates.FiniteRotation(numpy.array(lat_lon_tuple), self.angle)
             self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
     
-    def test_construct_rotation_between_two_points(self):
+    def test_create_great_circle_point_rotation(self):
+        self.assertTrue(pygplates.FiniteRotation.create_great_circle_point_rotation((10,10), (55,132)) * pygplates.PointOnSphere(10,10)
+                == pygplates.PointOnSphere(55,132))
         self.assertTrue(pygplates.FiniteRotation((10,10), (55,132)) * pygplates.PointOnSphere(10,10)
                 == pygplates.PointOnSphere(55,132))
+
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_great_circle_point_rotation((10,10), (10,10))))
         self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
                 pygplates.FiniteRotation((10,10), (10,10))))
+        
         self.assertAlmostEqual(pygplates.FiniteRotation((10,10), (-10,-170))
                 .get_lat_lon_euler_pole_and_angle_degrees()[2], 180, 4)
         lat, lon, angle = pygplates.FiniteRotation((10,10), (-30,10)).get_lat_lon_euler_pole_and_angle_degrees()
         self.assertAlmostEqual(lat, 0)
         self.assertAlmostEqual(lon, 100)
         self.assertAlmostEqual(angle, 40)
+    
+    def test_create_small_circle_point_rotation(self):
+        # When pole is North Pole the rotated longitudes much match (but not necessarily latitudes).
+        self.assertTrue(pygplates.FiniteRotation.create_small_circle_point_rotation((90,0), (10,10), (20,20)) * pygplates.PointOnSphere(10,10)
+                == pygplates.PointOnSphere(10,20))
+        self.assertTrue(pygplates.FiniteRotation.create_small_circle_point_rotation((90,0), (20,20), (10,10)) * pygplates.PointOnSphere(20,20)
+                == pygplates.PointOnSphere(20,10))
+        self.assertTrue(pygplates.FiniteRotation.create_small_circle_point_rotation((0,90), (0,100), (10,90)) * pygplates.PointOnSphere(0,100)
+                == pygplates.PointOnSphere(10,90))
+        self.assertTrue(pygplates.FiniteRotation.create_small_circle_point_rotation((0,90), (10,90), (0,100)) * pygplates.PointOnSphere(10,90)
+                == pygplates.PointOnSphere(0,100))
+        # When 'from' or 'to' point coincides with rotation pole then we get identity rotation.
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_small_circle_point_rotation((10,10), (10,10), (20,20))))
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_small_circle_point_rotation((10,10), (20, 20), (10,10))))
+    
+    def test_create_segment_rotation(self):
+        # We know 'from' and 'to' arcs are same length because each is a 90 degree longitude rotation at a 10 degree latitude around their respective poles.
+        # So the start point of 'from' arc rotates onto 'to', and similarly for their end points.
+        segment_rotation = pygplates.FiniteRotation.create_segment_rotation((80,30), (80,120), (0,100), (10,90))
+        self.assertTrue(segment_rotation * pygplates.PointOnSphere(80,30) == pygplates.PointOnSphere(0,100))
+        self.assertTrue(segment_rotation * pygplates.PointOnSphere(80,120) == pygplates.PointOnSphere(10,90))
+        # The 'from' and 'to' arcs don't have to be the same length, in which case the 'from' start point rotates onto the 'to' start point but
+        # the 'from' end point doesn't necessarily rotate onto the 'to' end point, instead the rotated 'from' orientation matches 'to' orientation.
+        segment_rotation = pygplates.FiniteRotation.create_segment_rotation((0,0), (10,0), (0,90), (0,110)) # 'from' points North, 'to' points East
+        self.assertTrue(segment_rotation * pygplates.PointOnSphere(0,0) == pygplates.PointOnSphere(0,90))  # Rotated start point matches
+        self.assertTrue(segment_rotation * pygplates.PointOnSphere(10,0) == pygplates.PointOnSphere(0,100)) # Rotated 'from' end point doesn't match but still East like 'to'
+        # When start point of 'from' or 'to' arcs coincide and either arc is zero length then we get identity rotation.
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_segment_rotation((10,10), (10,10), (10,10), (20,20))))
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_segment_rotation((10,10), (20,20), (10,10), (10,10))))
+        # When start point of 'from' or 'to' arcs coincide and orientation of both arcs coincide then we get identity rotation.
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_segment_rotation((10,0), (20,0), (10,0), (30,0))))
     
     # Attempt to rotate each supported geometry type - an error will be raised if not supported...
     
