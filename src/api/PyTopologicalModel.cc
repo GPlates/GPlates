@@ -82,16 +82,6 @@ namespace GPlatesApi
 				anchor_plate_id);
 	}
 
-	/**
-	 * Returns the anchor plate ID.
-	 */
-	GPlatesModel::integer_plate_id_type
-	topological_model_get_anchor_plate_id(
-			TopologicalModel::non_null_ptr_type topological_model)
-	{
-		return topological_model->get_rotation_model()->get_reconstruction_tree_creator().get_default_anchor_plate_id();
-	}
-
 
 	namespace
 	{
@@ -523,7 +513,6 @@ GPlatesApi::TopologicalModel::TopologicalModel(
 		const FeatureCollectionSequenceFunctionArgument &topological_features,
 		const RotationModel::non_null_ptr_type &rotation_model) :
 	d_rotation_model(rotation_model),
-	d_topological_features(topological_features),
 	d_topological_section_reconstruct_context(d_reconstruct_method_registry),
 	d_topological_section_reconstruct_context_state(
 			d_topological_section_reconstruct_context.create_context_state(
@@ -531,14 +520,14 @@ GPlatesApi::TopologicalModel::TopologicalModel(
 							GPlatesAppLogic::ReconstructParams(),
 							d_rotation_model->get_reconstruction_tree_creator())))
 {
-	// Get the topological feature collections.
-	std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> topological_feature_collections;
-	topological_features.get_feature_collections(topological_feature_collections);
+	// Get the topological feature collections / files.
+	topological_features.get_feature_collections(d_topological_feature_collections);
+	topological_features.get_files(d_topological_files);
 
 	// Separate into regular features (used as topological sections for topological lines/boundaries/networks),
 	// topological lines (can also be used as topological sections for topological boundaries/networks),
 	// topological boundaries and topological networks.
-	for (auto feature_collection : topological_feature_collections)
+	for (auto feature_collection : d_topological_feature_collections)
 	{
 		for (auto feature : *feature_collection)
 		{
@@ -572,8 +561,8 @@ GPlatesApi::TopologicalModel::TopologicalModel(
 }
 
 
-const GPlatesApi::TopologicalModel::ResolvedTopologiesTimeSlot &
-GPlatesApi::TopologicalModel::get_resolved_topologies(
+const GPlatesApi::TopologicalSnapshot &
+GPlatesApi::TopologicalModel::get_topological_snapshot(
 		const double &reconstruction_time_arg)
 {
 	const GPlatesMaths::real_t reconstruction_time = std::round(reconstruction_time_arg);
@@ -583,34 +572,40 @@ GPlatesApi::TopologicalModel::get_resolved_topologies(
 		bp::throw_error_already_set();
 	}
 
-	// Insert an empty ResolvedTopologiesTimeSlot. If it's successfully inserted then fill it with
-	// resolved topologies, otherwise it has already been filled/cached.
-	auto resolved_topologies_insert_result = d_cached_resolved_topologies.insert(
-			{reconstruction_time, ResolvedTopologiesTimeSlot()});
-
-	ResolvedTopologiesTimeSlot &resolved_topologies = resolved_topologies_insert_result.first->second;
-	if (resolved_topologies_insert_result.second)
+	// Return existing snapshot if we've already cached one for the specified reconstruction time.
+	auto topological_snapshot_find_result = d_cached_topological_snapshots.find(reconstruction_time);
+	if (topological_snapshot_find_result != d_cached_topological_snapshots.end())
 	{
-		// We want to have a suitably large reconstruction tree cache size in our rotation model to avoid
-		// slowing down our reconstruct-by-topologies (which happens if reconstruction trees are
-		// continually evicted and re-populated as we reconstruct different geometries through time).
-		//
-		// The +1 accounts for the extra time step used to generate deformed geometries (and velocities).
-		const unsigned int reconstruction_tree_cache_size = d_cached_resolved_topologies.size() + 1;
-		d_rotation_model->get_cached_reconstruction_tree_creator_impl()->set_maximum_cache_size(
-				reconstruction_tree_cache_size);
-
-		// Fill the resolved topologies for the requested reconstruction time.
-		resolve_topologies(resolved_topologies, reconstruction_time.dval());
+		return *topological_snapshot_find_result->second;
 	}
 
-	return resolved_topologies;
+	//
+	// Create a new snapshot.
+	//
+
+	// First we want to have a suitably large reconstruction tree cache size in our rotation model to
+	// avoid slowing down our reconstruct-by-topologies (which happens if reconstruction trees are
+	// continually evicted and re-populated as we reconstruct different geometries through time).
+	//
+	// The +1 accounts for the extra time step used to generate deformed geometries (and velocities).
+	const unsigned int reconstruction_tree_cache_size = d_cached_topological_snapshots.size() + 1;
+	d_rotation_model->get_cached_reconstruction_tree_creator_impl()->set_maximum_cache_size(
+			reconstruction_tree_cache_size);
+
+	// Create snapshot.
+	TopologicalSnapshot::non_null_ptr_type topological_snapshot =
+			create_topological_snapshot(reconstruction_time.dval());
+
+	// Cache snapshot.
+	d_cached_topological_snapshots.insert(
+			topological_snapshots_type::value_type(reconstruction_time, topological_snapshot));
+
+	return *topological_snapshot;
 }
 
 
-void
-GPlatesApi::TopologicalModel::resolve_topologies(
-		GPlatesApi::TopologicalModel::ResolvedTopologiesTimeSlot &resolved_topologies,
+GPlatesApi::TopologicalSnapshot::non_null_ptr_type
+GPlatesApi::TopologicalModel::create_topological_snapshot(
 		const double &reconstruction_time)
 {
 	// Find the topological section feature IDs referenced by any topological features at current reconstruction time.
@@ -652,10 +647,11 @@ GPlatesApi::TopologicalModel::resolve_topologies(
 	// topological boundaries and networks to find this group of resolved lines.
 	//
 	// So we always resolve topological *lines* regardless of whether the user requested it or not.
+	std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> resolved_lines;
 	const GPlatesAppLogic::ReconstructHandle::type resolved_topological_lines_handle =
 			GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
 					// Contains the resolved topological line sections referenced by topological boundaries and networks...
-					resolved_topologies.resolved_lines,
+					resolved_lines,
 					d_topological_line_features,
 					d_rotation_model->get_reconstruction_tree_creator(), 
 					reconstruction_time,
@@ -667,8 +663,9 @@ GPlatesApi::TopologicalModel::resolve_topologies(
 	topological_sections_reconstruct_handles.push_back(resolved_topological_lines_handle);
 
 	// Resolve topological boundaries.
+	std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> resolved_boundaries;
 	GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
-			resolved_topologies.resolved_boundaries,
+			resolved_boundaries,
 			d_topological_boundary_features,
 			d_rotation_model->get_reconstruction_tree_creator(), 
 			reconstruction_time,
@@ -676,12 +673,17 @@ GPlatesApi::TopologicalModel::resolve_topologies(
 			topological_sections_reconstruct_handles);
 
 	// Resolve topological networks.
+	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> resolved_networks;
 	GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
-			resolved_topologies.resolved_networks,
+			resolved_networks,
 			reconstruction_time,
 			d_topological_network_features,
 			// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
 			topological_sections_reconstruct_handles);
+
+	return TopologicalSnapshot::create(
+			resolved_lines, resolved_boundaries, resolved_networks,
+			d_topological_files, d_rotation_model);
 }
 
 
@@ -766,11 +768,11 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 	{
 		const double time = time_range.get_time(time_slot);
 
-		// Get resolved topologies (they'll either be cached or generated on demand).
-		const ResolvedTopologiesTimeSlot &resolved_topologies = get_resolved_topologies(time);
+		// Get topological snapshot (it'll either be cached or generated on demand).
+		const TopologicalSnapshot &topological_snapshot = get_topological_snapshot(time);
 
-		resolved_boundary_time_span->set_sample_in_time_slot(resolved_topologies.resolved_boundaries, time_slot);
-		resolved_network_time_span->set_sample_in_time_slot(resolved_topologies.resolved_networks, time_slot);
+		resolved_boundary_time_span->set_sample_in_time_slot(topological_snapshot.get_resolved_topological_boundaries(), time_slot);
+		resolved_network_time_span->set_sample_in_time_slot(topological_snapshot.get_resolved_topological_networks(), time_slot);
 	}
 
 	GPlatesAppLogic::TopologyReconstruct::non_null_ptr_type topology_reconstruct =
@@ -1116,7 +1118,7 @@ export_topological_model()
 				"\n"
 				"  :rtype: :class:`RotationModel`\n")
 		.def("get_anchor_plate_id",
-				&GPlatesApi::topological_model_get_anchor_plate_id,
+				&GPlatesApi::TopologicalModel::get_anchor_plate_id,
 				"get_anchor_plate_id()\n"
 				"  Return the anchor plate ID (see :meth:`constructor<__init__>`).\n"
 				"\n"

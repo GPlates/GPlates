@@ -189,7 +189,7 @@ namespace GPlatesApi
 		 *
 		 * NOTE: Not accessible from python - only used in C++ when RotationModel passed from python.
 		 */
-		GPlatesAppLogic::ReconstructionTreeCreator
+		const GPlatesAppLogic::ReconstructionTreeCreator &
 		get_reconstruction_tree_creator() const
 		{
 			return d_reconstruction_tree_creator;
@@ -204,7 +204,7 @@ namespace GPlatesApi
 		 *
 		 * NOTE: Not accessible from python - only used in C++ when RotationModel passed from python.
 		 */
-		GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type
+		const GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type &
 		get_cached_reconstruction_tree_creator_impl() const
 		{
 			return d_cached_reconstruction_tree_creator_impl;

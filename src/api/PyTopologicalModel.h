@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 
 #include "PyFeatureCollection.h"
+#include "PyResolveTopologies.h"
 #include "PyRotationModel.h"
 
 #include "app-logic/ReconstructContext.h"
@@ -189,11 +190,10 @@ namespace GPlatesApi
 		/**
 		 * Return the topological feature collections used to create this topological model.
 		 */
-		void
-		get_topological_feature_collections(
-				std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &topological_feature_collections) const
+		const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &
+		get_topological_feature_collections() const
 		{
-			d_topological_features.get_feature_collections(topological_feature_collections);
+			d_topological_feature_collections;
 		}
 
 
@@ -202,11 +202,10 @@ namespace GPlatesApi
 		 *
 		 * NOTE: Any feature collections that did not come from files will have empty filenames.
 		 */
-		void
-		get_files(
-				std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_feature_collections_files) const
+		const std::vector<GPlatesFileIO::File::non_null_ptr_type> &
+		get_files() const
 		{
-			d_topological_features.get_files(topological_feature_collections_files);
+			d_topological_files;
 		}
 
 
@@ -219,20 +218,19 @@ namespace GPlatesApi
 			return d_rotation_model;
 		}
 
+		/**
+		 * Returns the anchor plate ID.
+		 */
+		GPlatesModel::integer_plate_id_type
+		get_anchor_plate_id() const
+		{
+			return get_rotation_model()->get_reconstruction_tree_creator().get_default_anchor_plate_id();
+		}
+
 	private:
 
-		/**
-		 * Resolved topologies at a time instant.
-		 */
-		struct ResolvedTopologiesTimeSlot
-		{
-			std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> resolved_lines;
-			std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> resolved_boundaries;
-			std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> resolved_networks;
-		};
-
-		//! Typedef for a mapping of (integral) times to resolved topologies.
-		typedef std::map<GPlatesMaths::real_t/*time*/, ResolvedTopologiesTimeSlot> resolved_topology_time_slots_type;
+		//! Typedef for a mapping of (integral) times to topological snapshots (resolved topologies).
+		typedef std::map<GPlatesMaths::real_t/*time*/, TopologicalSnapshot::non_null_ptr_type> topological_snapshots_type;
 
 
 		/**
@@ -243,9 +241,10 @@ namespace GPlatesApi
 		/**
 		 * Topological feature collections/files.
 		 */
-		FeatureCollectionSequenceFunctionArgument d_topological_features;
+		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_topological_feature_collections;
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_topological_files;
 
-		// Separate @a d_topological_features into regular features (used as topological sections for
+		// Separate the topological features into regular features (used as topological sections for
 		// topological lines/boundaries/networks), topological lines (can also be used as topological
 		// sections for topological boundaries/networks), topological boundaries and topological networks.
 		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_topological_section_regular_features;
@@ -263,9 +262,9 @@ namespace GPlatesApi
 		GPlatesAppLogic::ReconstructContext::context_state_reference_type d_topological_section_reconstruct_context_state;
 
 		/**
-		 * Cache of resolved topologies at various (integer) time instants.
+		 * Cache of topological snapshots (resolved topologies) at various (integer) time instants.
 		 */
-		resolved_topology_time_slots_type d_cached_resolved_topologies;
+		topological_snapshots_type d_cached_topological_snapshots;
 
 
 		TopologicalModel(
@@ -273,22 +272,21 @@ namespace GPlatesApi
 				const RotationModel::non_null_ptr_type &rotation_model);
 
 		/**
-		 * Returns the resolved topologies for the specified time (creating and caching them if necessary).
+		 * Returns the topological snapshot (resolved topologies) for the specified time (creating and caching them if necessary).
 		 *
 		 * @a reconstruction_time should be an integral value.
 		 */
-		const ResolvedTopologiesTimeSlot &
-		get_resolved_topologies(
+		const TopologicalSnapshot &
+		get_topological_snapshot(
 				const double &reconstruction_time);
 
 		/**
-		 * Resolves topologies for the specified time.
+		 * Resolves topologies for the specified time and returns them as a topological snapshot.
 		 *
-		 * @a reconstruction_timereconstruction_time should be an integral value.
+		 * @a reconstruction_time should be an integral value.
 		 */
-		void
-		resolve_topologies(
-				GPlatesApi::TopologicalModel::ResolvedTopologiesTimeSlot &resolved_topologies,
+		TopologicalSnapshot::non_null_ptr_type
+		create_topological_snapshot(
 				const double &reconstruction_time);
 	};
 }
