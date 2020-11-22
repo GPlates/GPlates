@@ -143,7 +143,7 @@ namespace GPlatesApi
 		 * changing the default anchor plate ID.
 		 *
 		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
-		 * do not specify their 'anchor_plate_id' parameter (which if none then uses default anchor plate
+		 * do not specify their 'anchor_plate_id' parameter (which if none, then uses default anchor plate
 		 * of @a rotation_model instead).
 		 */
 		static

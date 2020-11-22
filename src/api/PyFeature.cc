@@ -789,7 +789,7 @@ namespace GPlatesApi
 			}
 
 			// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default
-			// (which if none then uses default anchor plate of 'rotation_model' instead).
+			// (which if none, then uses default anchor plate of 'rotation_model' instead).
 			// This ensures we will reverse reconstruct using the correct anchor plate.
 			GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 					GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(

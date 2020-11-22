@@ -157,6 +157,16 @@ namespace GPlatesApi
 
 
 		/**
+		 * Returns the topological snapshot (resolved topologies) for the specified time (creating and caching them if necessary).
+		 *
+		 * Raises ValueError if @a reconstruction_time is not an integral value.
+		 */
+		TopologicalSnapshot::non_null_ptr_type
+		get_topological_snapshot(
+				const double &reconstruction_time);
+
+
+		/**
 		 * Reconstruct/deform a geometry or a coverage (geometry + scalars) over a time range.
 		 *
 		 * The time range is from @a oldest_time (defaults to @a initial_time) to
@@ -270,15 +280,6 @@ namespace GPlatesApi
 		TopologicalModel(
 				const FeatureCollectionSequenceFunctionArgument &topological_features,
 				const RotationModel::non_null_ptr_type &rotation_model);
-
-		/**
-		 * Returns the topological snapshot (resolved topologies) for the specified time (creating and caching them if necessary).
-		 *
-		 * @a reconstruction_time should be an integral value.
-		 */
-		const TopologicalSnapshot &
-		get_topological_snapshot(
-				const double &reconstruction_time);
 
 		/**
 		 * Resolves topologies for the specified time and returns them as a topological snapshot.

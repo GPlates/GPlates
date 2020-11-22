@@ -893,31 +893,6 @@ class PlatePartitionerTestCase(unittest.TestCase):
 
 
 class ResolvedTopologiesTestCase(unittest.TestCase):
-    def test_topological_snapshot(self):
-        #
-        # Class pygplates.TopologicalSnapshot is used internally by pygplates.resolved_topologies()
-        # so most of its testing is already done by testing pygplates.resolved_topologies() below.
-        #
-        # Here we're just making sure we can access the pygplates.TopologicalSnapshot methods.
-        #
-        snapshot = pygplates.TopologicalSnapshot(
-            os.path.join(FIXTURES, 'topologies.gpml'),
-            os.path.join(FIXTURES, 'rotations.rot'),
-            pygplates.GeoTimeInstant(10))
-        
-        self.assertTrue(snapshot.get_anchor_plate_id() == 0)
-        self.assertTrue(snapshot.get_rotation_model())
-        
-        resolved_topologies = snapshot.get_resolved_topologies()
-        self.assertTrue(len(resolved_topologies) == 3)
-        
-        snapshot.export_resolved_topologies(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
-        self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topologies.gmt')))
-        os.remove(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
-        
-        #self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topological_sections.gmt')))
-        #os.remove(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
-
     def test_resolve_topologies(self):
         pygplates.resolve_topologies(
             os.path.join(FIXTURES, 'topologies.gpml'),
@@ -1535,6 +1510,11 @@ class TopologicalModelCase(unittest.TestCase):
 
         self.assertTrue(self.topological_model.get_anchor_plate_id() == 0)
 
+    def test_get_topological_snapshot(self):
+        topological_snapshot = self.topological_model.topological_snapshot(10.0)
+        self.assertTrue(topological_snapshot.get_anchor_plate_id() == self.topological_model.get_anchor_plate_id())
+        self.assertTrue(topological_snapshot.get_rotation_model() == self.topological_model.get_rotation_model())
+
     def test_get_rotation_model(self):
         topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, anchor_plate_id=2)
         self.assertTrue(topological_model.get_rotation_model().get_rotation(1.0, 802) == self.rotation_model.get_rotation(1.0, 802, anchor_plate_id=2))
@@ -1689,6 +1669,33 @@ class TopologicalModelCase(unittest.TestCase):
         self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_stretching_factor) == [1.0, 1.0, 1.0])
 
 
+class TopologicalSnapshotCase(unittest.TestCase):
+    def test(self):
+        #
+        # Class pygplates.TopologicalSnapshot is used internally by pygplates.resolved_topologies()
+        # so most of its testing is already done by testing pygplates.resolved_topologies().
+        #
+        # Here we're just making sure we can access the pygplates.TopologicalSnapshot methods.
+        #
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        
+        self.assertTrue(snapshot.get_anchor_plate_id() == 0)
+        self.assertTrue(snapshot.get_rotation_model())
+        
+        resolved_topologies = snapshot.get_resolved_topologies()
+        self.assertTrue(len(resolved_topologies) == 3)
+        
+        snapshot.export_resolved_topologies(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
+        self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topologies.gmt')))
+        os.remove(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
+        
+        #self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topological_sections.gmt')))
+        #os.remove(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
+
+
 def suite():
     suite = unittest.TestSuite()
     
@@ -1702,7 +1709,8 @@ def suite():
             ReconstructionTreeCase,
             ResolvedTopologiesTestCase,
             RotationModelCase,
-            TopologicalModelCase
+            TopologicalModelCase,
+            TopologicalSnapshotCase
         ]
 
     for test_case in test_cases:

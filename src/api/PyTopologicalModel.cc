@@ -82,6 +82,26 @@ namespace GPlatesApi
 				anchor_plate_id);
 	}
 
+	/**
+	 * This is called directly from Python via 'TopologicalModel.get_topological_snapshot()'.
+	 */
+	TopologicalSnapshot::non_null_ptr_type
+	topological_model_get_topological_snapshot(
+			TopologicalModel::non_null_ptr_type topological_model,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
+	{
+		// Time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
+
+		// TopologicalModel::get_topological_snapshot() checks that the reconstruction time is an integral value.
+		return topological_model->get_topological_snapshot(reconstruction_time.value());
+	}
+
 
 	namespace
 	{
@@ -561,7 +581,7 @@ GPlatesApi::TopologicalModel::TopologicalModel(
 }
 
 
-const GPlatesApi::TopologicalSnapshot &
+GPlatesApi::TopologicalSnapshot::non_null_ptr_type
 GPlatesApi::TopologicalModel::get_topological_snapshot(
 		const double &reconstruction_time_arg)
 {
@@ -576,7 +596,7 @@ GPlatesApi::TopologicalModel::get_topological_snapshot(
 	auto topological_snapshot_find_result = d_cached_topological_snapshots.find(reconstruction_time);
 	if (topological_snapshot_find_result != d_cached_topological_snapshots.end())
 	{
-		return *topological_snapshot_find_result->second;
+		return topological_snapshot_find_result->second;
 	}
 
 	//
@@ -600,7 +620,7 @@ GPlatesApi::TopologicalModel::get_topological_snapshot(
 	d_cached_topological_snapshots.insert(
 			topological_snapshots_type::value_type(reconstruction_time, topological_snapshot));
 
-	return *topological_snapshot;
+	return topological_snapshot;
 }
 
 
@@ -683,7 +703,7 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 
 	return TopologicalSnapshot::create(
 			resolved_lines, resolved_boundaries, resolved_networks,
-			d_topological_files, d_rotation_model);
+			d_topological_files, d_rotation_model, reconstruction_time);
 }
 
 
@@ -769,10 +789,10 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 		const double time = time_range.get_time(time_slot);
 
 		// Get topological snapshot (it'll either be cached or generated on demand).
-		const TopologicalSnapshot &topological_snapshot = get_topological_snapshot(time);
+		TopologicalSnapshot::non_null_ptr_type topological_snapshot = get_topological_snapshot(time);
 
-		resolved_boundary_time_span->set_sample_in_time_slot(topological_snapshot.get_resolved_topological_boundaries(), time_slot);
-		resolved_network_time_span->set_sample_in_time_slot(topological_snapshot.get_resolved_topological_networks(), time_slot);
+		resolved_boundary_time_span->set_sample_in_time_slot(topological_snapshot->get_resolved_topological_boundaries(), time_slot);
+		resolved_network_time_span->set_sample_in_time_slot(topological_snapshot->get_resolved_topological_networks(), time_slot);
 	}
 
 	GPlatesAppLogic::TopologyReconstruct::non_null_ptr_type topology_reconstruct =
@@ -1011,7 +1031,7 @@ export_topological_model()
 					"TopologicalModel",
 					"A history of topologies over geological time.\n"
 					"\n"
-					"  .. versionadded:: 29\n",
+					"  .. versionadded:: 30\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1056,6 +1076,16 @@ export_topological_model()
 			"anchor plate ID then you'll need to create a new :class:`TopologicalModel<__init__>`. However this should "
 			"only be done if necessary since each :class:`TopologicalModel` created can consume a reasonable amount of "
 			"CPU and memory (since it caches resolved topologies and reconstructed geometries over geological time).\n")
+		.def("topological_snapshot",
+				&GPlatesApi::topological_model_get_topological_snapshot,
+				(bp::arg("reconstruction_time")),
+				"topological_snapshot(reconstruction_time)\n"
+				"  Returns a snapshot of resolved topologies at the requested reconstruction time.\n"
+				"\n"
+				"  :param reconstruction_time: the geological time of the snapshot (must have an *integral* value)\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :rtype: :class:`TopologicalSnapshot`\n"
+				"  :raises: ValueError if *reconstruction_time* is not an *integral* value\n")
 		.def("reconstruct_geometry",
 				&GPlatesApi::TopologicalModel::reconstruct_geometry,
 				(bp::arg("geometry"),
@@ -1065,22 +1095,22 @@ export_topological_model()
 					bp::arg("time_increment") = GPlatesMaths::real_t(1),
 					bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
 					bp::arg("scalars") = bp::object()/*Py_None*/),
-			"reconstruct_geometry(geometry, initial_time, [oldest_time], [youngest_time=0], [time_increment=1], [reconstruction_plate_id], [scalars])\n"
+				"reconstruct_geometry(geometry, initial_time, [oldest_time], [youngest_time=0], [time_increment=1], [reconstruction_plate_id], [scalars])\n"
 				"  Reconstruct a geometry (and optional scalars) over a time span.\n"
 				"\n"
-			"  :param geometry: The geometry to reconstruct (using topologies). Currently limited to a "
+				"  :param geometry: The geometry to reconstruct (using topologies). Currently limited to a "
 				"multipoint, or a point or sequence of points. Polylines and polygons to be introduced in future.\n"
 				"  :type geometry: :class:`MultiPointOnSphere`, or :class:`PointOnSphere`, or sequence of points "
 				"(where a point can be :class:`PointOnSphere` or (x,y,z) tuple or (latitude,longitude) tuple in degrees)\n"
 				"  :param initial_time: The time that reconstruction by topologies starts at.\n"
 				"  :type initial_time: float or :class:`GeoTimeInstant`\n"
-				"  :param oldest_time: Oldest time in the history of topologies (must have an integral value). "
+				"  :param oldest_time: Oldest time in the history of topologies (must have an *integral* value). "
 				"Defaults to *initial_time*.\n"
 				"  :type oldest_time: float or :class:`GeoTimeInstant`\n"
-				"  :param youngest_time: Youngest time in the history of topologies (must have an integral value). "
+				"  :param youngest_time: Youngest time in the history of topologies (must have an *integral* value). "
 				"Defaults to present day.\n"
 				"  :type youngest_time: float or :class:`GeoTimeInstant`.\n"
-				"  :param time_increment: Time step in the history of topologies (must have an integral value, "
+				"  :param time_increment: Time step in the history of topologies (must have an *integral* value, "
 				"and ``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). "
 				"Defaults to 1My.\n"
 				"  :type time_increment: float\n"
@@ -1101,7 +1131,7 @@ export_topological_model()
 				"  :raises: ValueError if oldest or youngest time is distant-past (``float('inf')``) or "
 				"distant-future (``float('-inf')``), or if oldest time is later than (or same as) youngest time, or if "
 				"time increment is not positive, or if oldest to youngest time period is not an integer multiple "
-				"of the time increment, or if oldest time or youngest time or time increment are not integral values.\n"
+				"of the time increment, or if oldest time or youngest time or time increment are not *integral* values.\n"
 				"\n"
 				"  The *reconstruction_plate_id* is used for any **rigid** reconstructions of *geometry*. This includes "
 				"the initial rigid rotation of *geometry* (assumed to be in its present day position) to its initial position "
