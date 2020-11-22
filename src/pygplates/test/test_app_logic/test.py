@@ -893,6 +893,31 @@ class PlatePartitionerTestCase(unittest.TestCase):
 
 
 class ResolvedTopologiesTestCase(unittest.TestCase):
+    def test_topological_snapshot(self):
+        #
+        # Class pygplates.TopologicalSnapshot is used internally by pygplates.resolved_topologies()
+        # so most of its testing is already done by testing pygplates.resolved_topologies() below.
+        #
+        # Here we're just making sure we can access the pygplates.TopologicalSnapshot methods.
+        #
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        
+        self.assertTrue(snapshot.get_anchor_plate_id() == 0)
+        self.assertTrue(snapshot.get_rotation_model())
+        
+        resolved_topologies = snapshot.get_resolved_topologies()
+        self.assertTrue(len(resolved_topologies) == 3)
+        
+        snapshot.export_resolved_topologies(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
+        self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topologies.gmt')))
+        os.remove(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
+        
+        #self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topological_sections.gmt')))
+        #os.remove(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
+
     def test_resolve_topologies(self):
         pygplates.resolve_topologies(
             os.path.join(FIXTURES, 'topologies.gpml'),

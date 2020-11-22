@@ -30,6 +30,7 @@
 #include <vector>
 #include <map>
 #include <boost/optional.hpp>
+#include <QString>
 
 #include "PyFeatureCollection.h"
 #include "PyRotationModel.h"
@@ -40,6 +41,7 @@
 
 #include "global/python.h"
 
+#include "maths/PolygonOrientation.h"
 #include "maths/types.h"
 
 #include "model/types.h"
@@ -71,8 +73,9 @@ namespace GPlatesApi
 		// Mask of allowed bit flags for 'ResolveTopologyType'.
 		constexpr flags_type RESOLVE_TOPOLOGY_TYPE_MASK = (LINE | BOUNDARY | NETWORK);
 
-		// All resolved topology types.
-		constexpr flags_type ALL_RESOLVE_TOPOLOGY_TYPES = (LINE | BOUNDARY | NETWORK);
+		// Default resolved topology types includes only those with boundaries
+		// (hence topological lines are excluded).
+		constexpr flags_type DEFAULT_RESOLVE_TOPOLOGY_TYPES = (BOUNDARY | NETWORK);
 	};
 
 
@@ -98,7 +101,7 @@ namespace GPlatesApi
 		create(
 				const FeatureCollectionSequenceFunctionArgument &topological_features_argument,
 				const RotationModelFunctionArgument &rotation_model_argument,
-				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+				const double &reconstruction_time,
 				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id);
 
 		/**
@@ -111,12 +114,13 @@ namespace GPlatesApi
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
-				const RotationModel::non_null_ptr_type &rotation_model)
+				const RotationModel::non_null_ptr_type &rotation_model,
+				const double &reconstruction_time)
 		{
 			return non_null_ptr_type(
 					new TopologicalSnapshot(
 							resolved_topological_lines, resolved_topological_boundaries, resolved_topological_networks,
-							topological_files, rotation_model));
+							topological_files, rotation_model, reconstruction_time));
 		}
 
 
@@ -148,11 +152,35 @@ namespace GPlatesApi
 		}
 
 		/**
-		 * Get resolved lines, boundaries, networks.
+		 * Get resolved topologies (lines, boundaries, networks).
+		 *
+		 * If @a same_order_as_topological_features is true then the resolved topologies are
+		 * sorted in the order of the features in the topological files (and the order across files).
+		 *
+		 * By default returns only resolved boundaries and networks (excludes resolved lines).
 		 */
 		std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
 		get_resolved_topologies(
-				ResolveTopologyType::flags_type resolve_topology_types = ResolveTopologyType::ALL_RESOLVE_TOPOLOGY_TYPES) const;
+				ResolveTopologyType::flags_type resolve_topology_types = ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
+				bool same_order_as_topological_features = false) const;
+
+		/**
+		 * Export resolved topologies (lines, boundaries, networks) to a file.
+		 *
+		 * If @a wrap_to_dateline is true then wrap/clip resolved topologies to the dateline
+		 * (currently ignored unless exporting to an ESRI Shapefile format file).
+		 *
+		 * If @a force_boundary_orientation is not none then force boundary orientation (clockwise or counter-clockwise)
+		 * of resolved boundaries and networks. Currently ignored by ESRI Shapefile which always uses clockwise.
+		 *
+		 * By default exports only resolved boundaries and networks (excludes resolved lines).
+		 */
+		void
+		export_resolved_topologies(
+				const QString &export_file_name,
+				ResolveTopologyType::flags_type resolve_topology_types = ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
+				bool wrap_to_dateline = true,
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation = boost::none) const;
 
 
 		/**
@@ -191,25 +219,35 @@ namespace GPlatesApi
 
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_topological_files;
 		RotationModel::non_null_ptr_type d_rotation_model;
+		double d_reconstruction_time;
 
 
 		TopologicalSnapshot(
 				const FeatureCollectionSequenceFunctionArgument &topological_features_argument,
 				const RotationModel::non_null_ptr_type &rotation_model,
-				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time);
+				const double &reconstruction_time);
 
 		TopologicalSnapshot(
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
-				const RotationModel::non_null_ptr_type &rotation_model) :
+				const RotationModel::non_null_ptr_type &rotation_model,
+				const double &reconstruction_time) :
 			d_resolved_topological_lines(resolved_topological_lines),
 			d_resolved_topological_boundaries(resolved_topological_boundaries),
 			d_resolved_topological_networks(resolved_topological_networks),
 			d_topological_files(topological_files),
-			d_rotation_model(rotation_model)
+			d_rotation_model(rotation_model),
+			d_reconstruction_time(reconstruction_time)
 		{  }
+
+		/**
+		 * Sort the resolved topologies in the order of the features in the topological files (and the order across files).
+		 */
+		std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
+		sort_resolved_topologies(
+				const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> &resolved_topologies) const;
 	};
 }
 
