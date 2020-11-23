@@ -1146,13 +1146,20 @@ export_topological_model()
 				"get_rotation_model()\n"
 				"  Return the rotation model used internally.\n"
 				"\n"
-				"  :rtype: :class:`RotationModel`\n")
+				"  :rtype: :class:`RotationModel`\n"
+				"\n"
+				"  .. note:: The :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of the returned rotation model "
+				"may be different to the rotation model passed into the :meth:`constructor<__init__>` if an anchor plate ID was specified "
+				"in the :meth:`constructor<__init__>`.\n")
 		.def("get_anchor_plate_id",
 				&GPlatesApi::TopologicalModel::get_anchor_plate_id,
 				"get_anchor_plate_id()\n"
 				"  Return the anchor plate ID (see :meth:`constructor<__init__>`).\n"
 				"\n"
-				"  :rtype: int\n")
+				"  :rtype: int\n"
+				"\n"
+				"  .. note:: This is the same as the :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` "
+				"of :meth:`get_rotation_model`.\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

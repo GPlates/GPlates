@@ -38,6 +38,7 @@
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalLine.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
+#include "app-logic/ResolvedTopologicalSection.h"
 
 #include "global/python.h"
 
@@ -71,11 +72,18 @@ namespace GPlatesApi
 		typedef unsigned int flags_type;
 
 		// Mask of allowed bit flags for 'ResolveTopologyType'.
-		constexpr flags_type RESOLVE_TOPOLOGY_TYPE_MASK = (LINE | BOUNDARY | NETWORK);
+		constexpr flags_type ALL_RESOLVE_TOPOLOGY_TYPES = (LINE | BOUNDARY | NETWORK);
+
+		// Bit flags for BOUNDARY and NETWORK.
+		constexpr flags_type BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES = (BOUNDARY | NETWORK);
 
 		// Default resolved topology types includes only those with boundaries
 		// (hence topological lines are excluded).
-		constexpr flags_type DEFAULT_RESOLVE_TOPOLOGY_TYPES = (BOUNDARY | NETWORK);
+		constexpr flags_type DEFAULT_RESOLVE_TOPOLOGY_TYPES = BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES;
+
+		// Default resolved topological section types includes only those with boundaries
+		// (hence topological lines are excluded).
+		constexpr flags_type DEFAULT_RESOLVE_TOPOLOGICAL_SECTION_TYPES = BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES;
 	};
 
 
@@ -168,7 +176,7 @@ namespace GPlatesApi
 		 * Export resolved topologies (lines, boundaries, networks) to a file.
 		 *
 		 * If @a wrap_to_dateline is true then wrap/clip resolved topologies to the dateline
-		 * (currently ignored unless exporting to an ESRI Shapefile format file).
+		 * (currently ignored unless exporting to an ESRI Shapefile format file). Defaults to true.
 		 *
 		 * If @a force_boundary_orientation is not none then force boundary orientation (clockwise or counter-clockwise)
 		 * of resolved boundaries and networks. Currently ignored by ESRI Shapefile which always uses clockwise.
@@ -181,6 +189,39 @@ namespace GPlatesApi
 				ResolveTopologyType::flags_type resolve_topology_types = ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
 				bool wrap_to_dateline = true,
 				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation = boost::none) const;
+
+		/**
+		 * Get resolved topological sections (each contains sub-segments of boundaries shared by topological boundaries and networks).
+		 *
+		 * If @a same_order_as_topological_features is true then the resolved topological sections are
+		 * sorted in the order of the features in the topological files (and the order across files).
+		 *
+		 * @a resolve_topological_section_types specifies which resolved topologies the returned sections reference.
+		 * For example, if only ResolveTopologyType::BOUNDARY is specified then deforming networks
+		 * (ResolveTopologyType::NETWORK) are not considered and the return sections contain sub-segments
+		 * that only reference resolved topological *boundaries*.
+		 * Note that ResolveTopologyType::LINE is ignored (if specified) since only boundary and network
+		 * topologies contribute to resolved topological sections.
+		 * By default resolved boundaries and networks are considered.
+		 */
+		std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type>
+		get_resolved_topological_sections(
+				ResolveTopologyType::flags_type resolve_topological_section_types = ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGICAL_SECTION_TYPES,
+				bool same_order_as_topological_features = false) const;
+
+		/**
+		 * Export resolved topological sections (each contains sub-segments of boundaries shared by topological boundaries and networks).
+		 *
+		 * If @a wrap_to_dateline is true then wrap/clip resolved topological sections to the dateline
+		 * (currently ignored unless exporting to an ESRI Shapefile format file). Defaults to true.
+		 *
+		 * By default exports resolved boundaries and networks.
+		 */
+		void
+		export_resolved_topological_sections(
+				const QString &export_file_name,
+				ResolveTopologyType::flags_type resolve_topological_section_types = ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGICAL_SECTION_TYPES,
+				bool wrap_to_dateline = true) const;
 
 
 		/**
@@ -212,14 +253,24 @@ namespace GPlatesApi
 
 	private:
 
-		// Cached resolved topologies created on demand.
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_topological_files;
+		RotationModel::non_null_ptr_type d_rotation_model;
+		double d_reconstruction_time;
+
 		std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> d_resolved_topological_lines;
 		std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> d_resolved_topological_boundaries;
 		std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> d_resolved_topological_networks;
 
-		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_topological_files;
-		RotationModel::non_null_ptr_type d_rotation_model;
-		double d_reconstruction_time;
+		/**
+		 * Cached resolved topological sections created on demand.
+		 *
+		 * The four arrays correspond to finding resolved topological sections considering topologies of:
+		 * - Neither ResolveTopologyType::BOUNDARY nor ResolveTopologyType::NETWORK,
+		 * - Both ResolveTopologyType::BOUNDARY and ResolveTopologyType::NETWORK,
+		 * - Only ResolveTopologyType::BOUNDARY,
+		 * - Only ResolveTopologyType::NETWORK.
+		 */
+		mutable boost::optional<std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type>> d_resolved_topological_sections[4];
 
 
 		TopologicalSnapshot(
@@ -234,13 +285,21 @@ namespace GPlatesApi
 				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
 				const RotationModel::non_null_ptr_type &rotation_model,
 				const double &reconstruction_time) :
-			d_resolved_topological_lines(resolved_topological_lines),
-			d_resolved_topological_boundaries(resolved_topological_boundaries),
-			d_resolved_topological_networks(resolved_topological_networks),
 			d_topological_files(topological_files),
 			d_rotation_model(rotation_model),
-			d_reconstruction_time(reconstruction_time)
+			d_reconstruction_time(reconstruction_time),
+			d_resolved_topological_lines(resolved_topological_lines),
+			d_resolved_topological_boundaries(resolved_topological_boundaries),
+			d_resolved_topological_networks(resolved_topological_networks)
 		{  }
+
+		/**
+		 * Finds all sub-segments shared by resolved topology boundaries and/or network boundaries
+		 * (depending on @a resolve_topological_section_types).
+		 */
+		std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type>
+		find_resolved_topological_sections(
+				ResolveTopologyType::flags_type resolve_topological_section_types) const;
 
 		/**
 		 * Sort the resolved topologies in the order of the features in the topological files (and the order across files).
@@ -248,6 +307,13 @@ namespace GPlatesApi
 		std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
 		sort_resolved_topologies(
 				const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> &resolved_topologies) const;
+
+		/**
+		 * Sort the resolved topological sections in the order of the features in the topological files (and the order across files).
+		 */
+		std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type>
+		sort_resolved_topological_sections(
+				const std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections) const;
 	};
 }
 

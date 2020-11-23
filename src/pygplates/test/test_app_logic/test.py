@@ -1686,14 +1686,18 @@ class TopologicalSnapshotCase(unittest.TestCase):
         self.assertTrue(snapshot.get_rotation_model())
         
         resolved_topologies = snapshot.get_resolved_topologies()
-        self.assertTrue(len(resolved_topologies) == 3)
+        self.assertTrue(len(resolved_topologies) == 3)  # See ResolvedTopologiesTestCase
         
         snapshot.export_resolved_topologies(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
         self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topologies.gmt')))
         os.remove(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
         
-        #self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topological_sections.gmt')))
-        #os.remove(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
+        resolved_topological_sections = snapshot.get_resolved_topological_sections()
+        self.assertTrue(len(resolved_topological_sections) == 11)  # See ResolvedTopologiesTestCase
+        
+        snapshot.export_resolved_topological_sections(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
+        self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topological_sections.gmt')))
+        os.remove(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
 
 
 def suite():
