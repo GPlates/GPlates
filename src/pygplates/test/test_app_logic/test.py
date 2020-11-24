@@ -969,6 +969,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sss.get_resolved_feature().get_geometry() == sss.get_resolved_geometry())
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section2_shared_sub_segments = resolved_topological_sections_dict['section2'].get_shared_sub_segments()
         self.assertTrue(len(section2_shared_sub_segments) == 2)
@@ -977,6 +978,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section3_shared_sub_segments = resolved_topological_sections_dict['section3'].get_shared_sub_segments()
         self.assertTrue(len(section3_shared_sub_segments) == 1)
@@ -985,6 +987,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology1']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section4_shared_sub_segments = resolved_topological_sections_dict['section4'].get_shared_sub_segments()
         self.assertTrue(len(section4_shared_sub_segments) == 2)
@@ -993,6 +996,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology2']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section5_shared_sub_segments = resolved_topological_sections_dict['section5'].get_shared_sub_segments()
         self.assertTrue(len(section5_shared_sub_segments) == 1)
@@ -1001,6 +1005,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology2']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section6_shared_sub_segments = resolved_topological_sections_dict['section6'].get_shared_sub_segments()
         self.assertTrue(len(section6_shared_sub_segments) == 1)
@@ -1009,6 +1014,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section7_shared_sub_segments = resolved_topological_sections_dict['section7'].get_shared_sub_segments()
         self.assertTrue(len(section7_shared_sub_segments) == 2)
@@ -1017,6 +1023,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology1', 'topology2']) or sharing_topologies == set(['topology2', 'topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section8_shared_sub_segments = resolved_topological_sections_dict['section8'].get_shared_sub_segments()
         self.assertTrue(len(section8_shared_sub_segments) == 1)
@@ -1029,6 +1036,10 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(overriding_plate.get_feature().get_reconstruction_plate_id() == 2)
             self.assertTrue(subducting_plate.get_feature().get_reconstruction_plate_id() == 0)
             self.assertTrue(subduction_polarity == 'Left')
+            subducting_plate = sss.get_subducting_plate()
+            subducting_plate, subduction_polarity = sss.get_subducting_plate(True)
+            self.assertTrue(subducting_plate.get_feature().get_reconstruction_plate_id() == 0)
+            self.assertTrue(subduction_polarity == 'Left')
         
         section9_shared_sub_segments = resolved_topological_sections_dict['section9'].get_shared_sub_segments()
         self.assertTrue(len(section9_shared_sub_segments) == 1)
@@ -1037,6 +1048,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section10_shared_sub_segments = resolved_topological_sections_dict['section10'].get_shared_sub_segments()
         self.assertTrue(len(section10_shared_sub_segments) == 1)
@@ -1045,6 +1057,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section14_shared_sub_segments = resolved_topological_sections_dict['section14'].get_shared_sub_segments()
         self.assertTrue(len(section14_shared_sub_segments) == 2)
