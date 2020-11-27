@@ -1898,7 +1898,8 @@ export_polyline_on_sphere()
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolylineOnSphere".
 	bp::class_<GPlatesApi::polyline_on_sphere_points_view_type>(
-			"PolylineOnSpherePointsView",
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_PolylineOnSpherePointsView",
 			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::polyline_on_sphere_points_view_type >())
@@ -1915,7 +1916,8 @@ export_polyline_on_sphere()
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolylineOnSphere".
 	bp::class_< GPlatesApi::polyline_on_sphere_arcs_view_type >(
-			"PolylineOnSphereArcsView",
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_PolylineOnSphereArcsView",
 			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::polyline_on_sphere_arcs_view_type >())
@@ -2657,7 +2659,8 @@ export_polygon_on_sphere()
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
 	bp::class_< GPlatesApi::polygon_on_sphere_ring_points_view_type >(
-			"PolygonOnSphereRingPointsView",
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_PolygonOnSphereRingPointsView",
 			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::polygon_on_sphere_ring_points_view_type >())
@@ -2674,7 +2677,8 @@ export_polygon_on_sphere()
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
 	bp::class_< GPlatesApi::polygon_on_sphere_ring_arcs_view_type >(
-			"PolygonOnSphereRingArcsView",
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_PolygonOnSphereRingArcsView",
 			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::polygon_on_sphere_ring_arcs_view_type >())

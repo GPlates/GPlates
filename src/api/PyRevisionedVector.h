@@ -515,7 +515,8 @@ namespace GPlatesApi
 			std::string class_name = std::string(element_class_name) + "List";
 
 			// The name of the list iterator class.
-			std::string iterator_class_name = class_name + "Iterator";
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			std::string iterator_class_name = std::string("_") + class_name + "Iterator";
 
 			// Note: We don't docstring this - it's not an interface the python user needs to know about.
 			bp::class_<Iterator>(iterator_class_name.c_str(), bp::no_init)
@@ -1269,7 +1270,8 @@ namespace GPlatesApi
 				namespace bp = boost::python;
 
 				// The name of the list iterator class.
-				std::string iterator_class_name = std::string(class_name) + "Iterator";
+				// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+				std::string iterator_class_name = std::string("_") + std::string(class_name) + "Iterator";
 
 				typedef typename revisioned_vector_wrapper_type::Iterator iterator_type;
 

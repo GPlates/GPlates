@@ -670,7 +670,8 @@ export_reconstruction_tree()
 	// We don't document this wrapper (using docstrings) since it's documented in "ReconstructionTree".
 	bp::class_<
 			GPlatesApi::reconstruction_tree_edge_vector_view_type>(
-					"ReconstructionTreeEdgesView",
+					// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+					"_ReconstructionTreeEdgesView",
 					bp::no_init)
 		.def("__iter__",
 				&GPlatesApi::reconstruction_tree_edge_vector_view_type::get_iter)
@@ -702,7 +703,8 @@ export_reconstruction_tree()
 	// We don't document this wrapper (using docstrings) since it's documented in "ReconstructionTree".
 	bp::class_<
 			GPlatesApi::reconstruction_tree_edge_map_view_type>(
-					"AllReconstructionTreeEdgesView",
+					// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+					"_AllReconstructionTreeEdgesView",
 					bp::no_init)
 		.def("__iter__",
 				&GPlatesApi::reconstruction_tree_edge_map_view_type::get_iter)

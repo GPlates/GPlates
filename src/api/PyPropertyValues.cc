@@ -782,7 +782,10 @@ export_gml_data_block()
 {
 	// Iterator over scalar coordinate lists.
 	// Note: We don't docstring this - it's not an interface the python user needs to know about.
-	bp::class_<GPlatesApi::GmlDataBlockCoordinateListIterator>("GmlDataBlockCoordinateListIterator", bp::no_init)
+	bp::class_<GPlatesApi::GmlDataBlockCoordinateListIterator>(
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_GmlDataBlockCoordinateListIterator",
+			bp::no_init)
 		.def("__iter__", &GPlatesApi::GmlDataBlockCoordinateListIterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
 		.def(
 #if PY_MAJOR_VERSION < 3
@@ -2690,7 +2693,10 @@ export_gpml_key_value_dictionary()
 {
 	// Iterator over key value dictionary elements.
 	// Note: We don't docstring this - it's not an interface the python user needs to know about.
-	bp::class_<GPlatesApi::GpmlKeyValueDictionaryIterator>("GpmlKeyValueDictionaryIterator", bp::no_init)
+	bp::class_<GPlatesApi::GpmlKeyValueDictionaryIterator>(
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_GpmlKeyValueDictionaryIterator",
+			bp::no_init)
 		.def("__iter__", &GPlatesApi::GpmlKeyValueDictionaryIterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
 		.def(
 #if PY_MAJOR_VERSION < 3
