@@ -917,7 +917,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             10,
             resolved_topological_sections)
         
-        self.assertTrue(len(resolved_topologies) == 3)
+        self.assertTrue(len(resolved_topologies) == 7)
         for resolved_topology in resolved_topologies:
             self.assertTrue(resolved_topology.get_resolved_feature().get_geometry() == resolved_topology.get_resolved_geometry())
         resolved_topologies_dict = dict(zip(
@@ -954,12 +954,14 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
         
         # Sections 9 and 10 are points that now are separate sub-segments (each point is a rubber-banded line).
         # Previously they were joined into a single sub-segment (a hack).
-        self.assertTrue(len(resolved_topological_sections) == 11)
+        self.assertTrue(len(resolved_topological_sections) == 17)
         resolved_topological_sections_dict = dict(zip(
                 (rts.get_topological_section_feature().get_name() for rts in resolved_topological_sections),
                 (rts for rts in resolved_topological_sections)))
         for rts in resolved_topological_sections:
-            self.assertTrue(rts.get_topological_section_feature().get_name() in ('section1', 'section2', 'section3', 'section4', 'section5', 'section6', 'section7', 'section8', 'section9', 'section10', 'section14'))
+            self.assertTrue(rts.get_topological_section_feature().get_name() in (
+                'section1', 'section2', 'section3', 'section4', 'section5', 'section6', 'section7', 'section8', 'section9', 'section10', 'section14',
+                'section15', 'section16', 'section17', 'section18', 'section19', 'section20'))
         
         section1_shared_sub_segments = resolved_topological_sections_dict['section1'].get_shared_sub_segments()
         self.assertTrue(len(section1_shared_sub_segments) == 1)
@@ -999,13 +1001,21 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section5_shared_sub_segments = resolved_topological_sections_dict['section5'].get_shared_sub_segments()
-        self.assertTrue(len(section5_shared_sub_segments) == 1)
+        self.assertTrue(len(section5_shared_sub_segments) == 3)
         for sss in section5_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
-            self.assertTrue(sharing_topologies == set(['topology2']))
+            self.assertTrue(sharing_topologies == set(['topology2', 'topology4']) or
+                            sharing_topologies == set(['topology2', 'topology5']) or
+                            sharing_topologies == set(['topology5']))
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
-            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
-            self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
+            if sharing_topologies == set(['topology5']):
+                self.assertFalse(sss.get_overriding_and_subducting_plates()) # Only one adjacent plate.
+            else:
+                self.assertTrue(sss.get_overriding_and_subducting_plates()) # Two adjacent plates.
+            subducting_plate = sss.get_subducting_plate(False)
+            # Can always find just the subducting plate though.
+            self.assertTrue(subducting_plate.get_feature().get_name() == 'topology4' or
+                            subducting_plate.get_feature().get_name() == 'topology5')
         
         section6_shared_sub_segments = resolved_topological_sections_dict['section6'].get_shared_sub_segments()
         self.assertTrue(len(section6_shared_sub_segments) == 1)
@@ -1041,44 +1051,112 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(subducting_plate.get_feature().get_reconstruction_plate_id() == 0)
             self.assertTrue(subduction_polarity == 'Left')
         
+        # 'section9' is a single point.
         section9_shared_sub_segments = resolved_topological_sections_dict['section9'].get_shared_sub_segments()
         self.assertTrue(len(section9_shared_sub_segments) == 1)
         for sss in section9_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
+            # Dict of topology names to reversal flags.
+            sharing_topology_reversal_flags = dict(zip(
+                    (srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies()),
+                    sss.get_sharing_resolved_topology_geometry_reversal_flags()))
+            self.assertTrue(len(sharing_topology_reversal_flags) == 2)
+            # One sub-segment should be reversed and the other not.
+            self.assertTrue(sharing_topology_reversal_flags['topology2'] != sharing_topology_reversal_flags['topology3'])
+            resolved_sub_segment_geom = sss.get_resolved_geometry()
+            self.assertTrue(len(resolved_sub_segment_geom) == 3)  # A polyline with 3 points (one section point and two rubber band points).
+            # 'topology2' is clockwise and 'section9' is on its left side so start rubber point should be more Southern than end rubber point (unless reversed).
+            if sharing_topology_reversal_flags['topology2']:
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] > resolved_sub_segment_geom[2].to_lat_lon()[0]) # More Northern
+            else:
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] < resolved_sub_segment_geom[2].to_lat_lon()[0]) # More Southern
+            # 'topology3' is clockwise and 'section9' is on its right side so start rubber point should be more Northern than end rubber point (unless reversed).
+            if sharing_topology_reversal_flags['topology3']:
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] < resolved_sub_segment_geom[2].to_lat_lon()[0]) # More Southern
+            else:
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] > resolved_sub_segment_geom[2].to_lat_lon()[0]) # More Northern
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
+        # 'section10' is a single point.
         section10_shared_sub_segments = resolved_topological_sections_dict['section10'].get_shared_sub_segments()
         self.assertTrue(len(section10_shared_sub_segments) == 1)
         for sss in section10_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
+            # Dict of topology names to reversal flags.
+            sharing_topology_reversal_flags = dict(zip(
+                    (srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies()),
+                    sss.get_sharing_resolved_topology_geometry_reversal_flags()))
+            self.assertTrue(len(sharing_topology_reversal_flags) == 2)
+            # One sub-segment should be reversed and the other not.
+            self.assertTrue(sharing_topology_reversal_flags['topology2'] != sharing_topology_reversal_flags['topology3'])
+            resolved_sub_segment_geom = sss.get_resolved_geometry()
+            self.assertTrue(len(resolved_sub_segment_geom) == 3)  # A polyline with 3 points (one section point and two rubber band points).
+            # 'topology2' is clockwise and 'section10' is on its left side so start rubber point should be more Southern than end rubber point (unless reversed).
+            if sharing_topology_reversal_flags['topology2']:
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] > resolved_sub_segment_geom[2].to_lat_lon()[0]) # More Northern
+            else:
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] < resolved_sub_segment_geom[2].to_lat_lon()[0]) # More Southern
+            # 'topology3' is clockwise and 'section10' is on its right side so start rubber point should be more Northern than end rubber point (unless reversed).
+            if sharing_topology_reversal_flags['topology3']:
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] < resolved_sub_segment_geom[2].to_lat_lon()[0]) # More Southern
+            else:
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] > resolved_sub_segment_geom[2].to_lat_lon()[0]) # More Northern
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
         section14_shared_sub_segments = resolved_topological_sections_dict['section14'].get_shared_sub_segments()
-        self.assertTrue(len(section14_shared_sub_segments) == 2)
+        self.assertTrue(len(section14_shared_sub_segments) == 4)
         for sss in section14_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
-            self.assertTrue(sharing_topologies == set(['topology3']) or sharing_topologies == set(['topology2', 'topology3']))
+            self.assertTrue(sharing_topologies == set(['topology7']) or
+                            sharing_topologies == set(['topology7', 'topology3']) or
+                            sharing_topologies == set(['topology4', 'topology3']) or
+                            sharing_topologies == set(['topology2', 'topology3']))
             sub_sub_segments = set(sub_sub_segment.get_feature().get_name() for sub_sub_segment in sss.get_sub_segments())
-            if sharing_topologies == set(['topology3']):
+            if sharing_topologies == set(['topology7']):
+                self.assertTrue(sub_sub_segments == set(['section13']))
+                # The one shared sub-segment happens to have 3 vertices (two from resolved line and one rubber band).
+                self.assertTrue(len(sss.get_sub_segments()) == 1)
+                self.assertTrue(len(sss.get_sub_segments()[0].get_resolved_geometry()) == 3)
+                self.assertTrue(len(sss.get_resolved_geometry()) == 3)
+                self.assertFalse(sss.get_overriding_and_subducting_plates()) # Don't have two sharing plates (only one).
+            elif sharing_topologies == set(['topology7', 'topology3']):
+                self.assertTrue(sub_sub_segments == set(['section13']))
+                # The one shared sub-segment happens to have 2 vertices (from resolved line).
+                self.assertTrue(len(sss.get_sub_segments()) == 1)
+                self.assertTrue(len(sss.get_sub_segments()[0].get_resolved_geometry()) == 2)
+                self.assertTrue(len(sss.get_resolved_geometry()) == 2)
+                overriding_plate, subducting_plate, subduction_polarity = sss.get_overriding_and_subducting_plates(True)
+                self.assertTrue(overriding_plate.get_feature().get_name() == 'topology3')
+                self.assertTrue(subducting_plate.get_feature().get_name() == 'topology7')
+                self.assertTrue(subduction_polarity == 'Right')
+            elif sharing_topologies == set(['topology4', 'topology3']):
                 self.assertTrue(sub_sub_segments == set(['section12', 'section13']))
                 # All sub-sub-segments in this shared sub-segment happen to have 2 vertices.
                 for sub_sub_segment in sss.get_sub_segments():
                     self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 2)
-                self.assertFalse(sss.get_overriding_and_subducting_plates()) # Don't have two sharing plates (only one).
-            else:
+                # Note that sub-sub-segment rubber band points don't contribute to resolved topo line (otherwise there'd be 3 points)...
+                self.assertTrue(len(sss.get_resolved_geometry()) == 2)
+                overriding_plate, subducting_plate, subduction_polarity = sss.get_overriding_and_subducting_plates(True)
+                self.assertTrue(overriding_plate.get_feature().get_name() == 'topology3')
+                self.assertTrue(subducting_plate.get_feature().get_name() == 'topology4')
+                self.assertTrue(subduction_polarity == 'Right')
+            elif sharing_topologies == set(['topology2', 'topology3']):
                 self.assertTrue(sub_sub_segments == set(['section11', 'section12']))
                 # All sub-sub-segments in this shared sub-segment happen to have 3 vertices.
                 for sub_sub_segment in sss.get_sub_segments():
                     self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 3)
+                # Note that sub-sub-segment rubber band points don't contribute to resolved topo line (which means 3 instead of 4)
+                # but there's a rubber band point on the resolved topo line itself which brings total to 4...
+                self.assertTrue(len(sss.get_resolved_geometry()) == 4)
                 overriding_plate, subducting_plate, subduction_polarity = sss.get_overriding_and_subducting_plates(True)
-                self.assertTrue(overriding_plate.get_feature().get_reconstruction_plate_id() == 0)
-                self.assertTrue(subducting_plate.get_feature().get_reconstruction_plate_id() == 1)
+                self.assertTrue(overriding_plate.get_feature().get_name() == 'topology3')
+                self.assertTrue(subducting_plate.get_feature().get_name() == 'topology2')
                 self.assertTrue(subduction_polarity == 'Right')
 
         # This time exclude networks from the topological sections (but not the topologies).
@@ -1091,8 +1169,8 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             10,
             resolved_topological_sections,
             resolve_topological_section_types = pygplates.ResolveTopologyType.boundary)
-        self.assertTrue(len(resolved_topologies) == 3)
-        self.assertTrue(len(resolved_topological_sections) == 9)
+        self.assertTrue(len(resolved_topologies) == 7)
+        self.assertTrue(len(resolved_topological_sections) == 15)
 
         # This time exclude networks from the topologies (but not the topological sections).
         resolved_topologies = []
@@ -1105,8 +1183,8 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             resolved_topological_sections,
             resolve_topology_types = pygplates.ResolveTopologyType.boundary,
             resolve_topological_section_types = pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network)
-        self.assertTrue(len(resolved_topologies) == 2)
-        self.assertTrue(len(resolved_topological_sections) == 11)
+        self.assertTrue(len(resolved_topologies) == 6)
+        self.assertTrue(len(resolved_topological_sections) == 17)
 
         # This time exclude networks from both the topologies and the topological sections.
         resolved_topologies = []
@@ -1118,8 +1196,8 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             10,
             resolved_topological_sections,
             resolve_topology_types = pygplates.ResolveTopologyType.boundary)
-        self.assertTrue(len(resolved_topologies) == 2)
-        self.assertTrue(len(resolved_topological_sections) == 9)
+        self.assertTrue(len(resolved_topologies) == 6)
+        self.assertTrue(len(resolved_topological_sections) == 15)
 
 
 class ReconstructionTreeCase(unittest.TestCase):
@@ -1699,14 +1777,14 @@ class TopologicalSnapshotCase(unittest.TestCase):
         self.assertTrue(snapshot.get_rotation_model())
         
         resolved_topologies = snapshot.get_resolved_topologies()
-        self.assertTrue(len(resolved_topologies) == 3)  # See ResolvedTopologiesTestCase
+        self.assertTrue(len(resolved_topologies) == 7)  # See ResolvedTopologiesTestCase
         
         snapshot.export_resolved_topologies(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
         self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topologies.gmt')))
         os.remove(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
         
         resolved_topological_sections = snapshot.get_resolved_topological_sections()
-        self.assertTrue(len(resolved_topological_sections) == 11)  # See ResolvedTopologiesTestCase
+        self.assertTrue(len(resolved_topological_sections) == 17)  # See ResolvedTopologiesTestCase
         
         snapshot.export_resolved_topological_sections(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
         self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topological_sections.gmt')))
