@@ -1109,6 +1109,11 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
             self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
         
+        # Sections 11, 12, 13 are not resolved topological sections since they're only used in a resolved topological line (not in boundaries/networks).
+        self.assertTrue('section11' not in resolved_topological_sections_dict)
+        self.assertTrue('section12' not in resolved_topological_sections_dict)
+        self.assertTrue('section13' not in resolved_topological_sections_dict)
+        
         section14_shared_sub_segments = resolved_topological_sections_dict['section14'].get_shared_sub_segments()
         self.assertTrue(len(section14_shared_sub_segments) == 4)
         for sss in section14_shared_sub_segments:
@@ -1158,6 +1163,220 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
                 self.assertTrue(overriding_plate.get_feature().get_name() == 'topology3')
                 self.assertTrue(subducting_plate.get_feature().get_name() == 'topology2')
                 self.assertTrue(subduction_polarity == 'Right')
+        
+        # 'section15' is a single point.
+        section15_shared_sub_segments = resolved_topological_sections_dict['section15'].get_shared_sub_segments()
+        
+        # Make a function for testing 'section15' since we're re-use it later below.
+        def _internal_test_section15_shared_sub_segments(test_case, section15_shared_sub_segments):
+            test_case.assertTrue(len(section15_shared_sub_segments) == 4)
+            for sss in section15_shared_sub_segments:
+                sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+                test_case.assertTrue(sharing_topologies == set(['topology4', 'topology5']) or
+                                sharing_topologies == set(['topology5', 'topology6']) or
+                                sharing_topologies == set(['topology4', 'topology7']) or
+                                sharing_topologies == set(['topology6', 'topology7']))
+                # Dict of topology names to reversal flags.
+                sharing_topology_reversal_flags = dict(zip(
+                        (srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies()),
+                        sss.get_sharing_resolved_topology_geometry_reversal_flags()))
+                if sharing_topologies == set(['topology4', 'topology5']):
+                    test_case.assertTrue(len(sharing_topology_reversal_flags) == 2)
+                    resolved_sub_segment_geom = sss.get_resolved_geometry()
+                    test_case.assertTrue(len(resolved_sub_segment_geom) == 2)  # A polyline with 2 points.
+                    # 'topology4' is clockwise and sub-segment is on its right side so should go North to South (unless reversed).
+                    if sharing_topology_reversal_flags['topology4']:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] < resolved_sub_segment_geom[1].to_lat_lon()[0]) # More Southern
+                    else:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] > resolved_sub_segment_geom[1].to_lat_lon()[0]) # More Northern
+                    # 'topology5' is clockwise and sub-segment is on its left side so should go South to North (unless reversed).
+                    if sharing_topology_reversal_flags['topology5']:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] > resolved_sub_segment_geom[1].to_lat_lon()[0]) # More Northern
+                    else:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] < resolved_sub_segment_geom[1].to_lat_lon()[0]) # More Southern
+                elif sharing_topologies == set(['topology5', 'topology6']):
+                    test_case.assertTrue(len(sharing_topology_reversal_flags) == 2)
+                    resolved_sub_segment_geom = sss.get_resolved_geometry()
+                    test_case.assertTrue(len(resolved_sub_segment_geom) == 2)  # A polyline with 2 points.
+                    # 'topology5' is clockwise and sub-segment is on its lower side so should go East to West (unless reversed).
+                    if sharing_topology_reversal_flags['topology5']:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[1] < resolved_sub_segment_geom[1].to_lat_lon()[1]) # More Western
+                    else:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[1] > resolved_sub_segment_geom[1].to_lat_lon()[1]) # More Eastern
+                    # 'topology6' is counter-clockwise and sub-segment is on its upper side so should go East to West (unless reversed).
+                    if sharing_topology_reversal_flags['topology6']:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[1] < resolved_sub_segment_geom[1].to_lat_lon()[1]) # More Western
+                    else:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[1] > resolved_sub_segment_geom[1].to_lat_lon()[1]) # More Eastern
+                elif sharing_topologies == set(['topology4', 'topology7']):
+                    test_case.assertTrue(len(sharing_topology_reversal_flags) == 2)
+                    resolved_sub_segment_geom = sss.get_resolved_geometry()
+                    test_case.assertTrue(len(resolved_sub_segment_geom) == 2)  # A polyline with 2 points.
+                    # 'topology4' is clockwise and sub-segment is on its lower side so should go East to West (unless reversed).
+                    if sharing_topology_reversal_flags['topology4']:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[1] < resolved_sub_segment_geom[1].to_lat_lon()[1]) # More Western
+                    else:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[1] > resolved_sub_segment_geom[1].to_lat_lon()[1]) # More Eastern
+                    # 'topology7' is clockwise and sub-segment is on its upper side so should go West to East (unless reversed).
+                    if sharing_topology_reversal_flags['topology7']:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[1] > resolved_sub_segment_geom[1].to_lat_lon()[1]) # More Eastern
+                    else:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[1] < resolved_sub_segment_geom[1].to_lat_lon()[1]) # More Western
+                elif sharing_topologies == set(['topology6', 'topology7']):
+                    test_case.assertTrue(len(sharing_topology_reversal_flags) == 2)
+                    resolved_sub_segment_geom = sss.get_resolved_geometry()
+                    test_case.assertTrue(len(resolved_sub_segment_geom) == 2)  # A polyline with 2 points.
+                    # 'topology6' is counter-clockwise and sub-segment is on its left side so should go North to South (unless reversed).
+                    if sharing_topology_reversal_flags['topology6']:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] < resolved_sub_segment_geom[1].to_lat_lon()[0]) # More Southern
+                    else:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] > resolved_sub_segment_geom[1].to_lat_lon()[0]) # More Northern
+                    # 'topology7' is clockwise and sub-segment is on its right side so should go North to South (unless reversed).
+                    if sharing_topology_reversal_flags['topology7']:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] < resolved_sub_segment_geom[1].to_lat_lon()[0]) # More Southern
+                    else:
+                        test_case.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] > resolved_sub_segment_geom[1].to_lat_lon()[0]) # More Northern
+        
+        _internal_test_section15_shared_sub_segments(self, section15_shared_sub_segments)
+        
+        # 'section16' is a single point.
+        section16_shared_sub_segments = resolved_topological_sections_dict['section16'].get_shared_sub_segments()
+        self.assertTrue(len(section16_shared_sub_segments) == 3)
+        for sss in section16_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology6', 'topology7']) or
+                            sharing_topologies == set(['topology6']) or
+                            sharing_topologies == set(['topology7']))
+            # Dict of topology names to reversal flags.
+            sharing_topology_reversal_flags = dict(zip(
+                    (srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies()),
+                    sss.get_sharing_resolved_topology_geometry_reversal_flags()))
+            if sharing_topologies == set(['topology6', 'topology7']):
+                self.assertTrue(len(sharing_topology_reversal_flags) == 2)
+                resolved_sub_segment_geom = sss.get_resolved_geometry()
+                self.assertTrue(len(resolved_sub_segment_geom) == 2)  # A polyline with 2 points.
+                # Both sub-segments not reversed.
+                self.assertTrue(not sharing_topology_reversal_flags['topology6'])
+                self.assertTrue(not sharing_topology_reversal_flags['topology7'])
+                # 'topology7' is clockwise and 'topology6' is counter-clockwise so sub-segment goes North to South.
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] > resolved_sub_segment_geom[1].to_lat_lon()[0]) # More Northern
+            elif sharing_topologies == set(['topology6']):
+                self.assertTrue(len(sharing_topology_reversal_flags) == 1)
+                resolved_sub_segment_geom = sss.get_resolved_geometry()
+                self.assertTrue(len(resolved_sub_segment_geom) == 2)  # A polyline with 2 points.
+                # Sub-segment is not reversed.
+                self.assertTrue(not sharing_topology_reversal_flags['topology6'])
+                # 'topology6' is counter-clockwise so sub-segment goes West to East.
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[1] < resolved_sub_segment_geom[1].to_lat_lon()[1]) # More Western
+            elif sharing_topologies == set(['topology7']):
+                self.assertTrue(len(sharing_topology_reversal_flags) == 1)
+                resolved_sub_segment_geom = sss.get_resolved_geometry()
+                self.assertTrue(len(resolved_sub_segment_geom) == 2)  # A polyline with 2 points.
+                # Sub-segment is not reversed.
+                self.assertTrue(not sharing_topology_reversal_flags['topology7'])
+                # 'topology7' is clockwise so sub-segment goes East to West.
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[1] > resolved_sub_segment_geom[1].to_lat_lon()[1]) # More Eastern
+        
+        # 'section17' is a single point.
+        section17_shared_sub_segments = resolved_topological_sections_dict['section17'].get_shared_sub_segments()
+        self.assertTrue(len(section17_shared_sub_segments) == 3)
+        for sss in section17_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology5', 'topology6']) or
+                            sharing_topologies == set(['topology5']) or
+                            sharing_topologies == set(['topology6']))
+            # Dict of topology names to reversal flags.
+            sharing_topology_reversal_flags = dict(zip(
+                    (srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies()),
+                    sss.get_sharing_resolved_topology_geometry_reversal_flags()))
+            if sharing_topologies == set(['topology5', 'topology6']):
+                self.assertTrue(len(sharing_topology_reversal_flags) == 2)
+                resolved_sub_segment_geom = sss.get_resolved_geometry()
+                self.assertTrue(len(resolved_sub_segment_geom) == 2)  # A polyline with 2 points.
+                # Both sub-segments not reversed.
+                self.assertTrue(not sharing_topology_reversal_flags['topology5'])
+                self.assertTrue(not sharing_topology_reversal_flags['topology6'])
+                # 'topology5' is clockwise and 'topology6' is counter-clockwise so sub-segment goes East to West.
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[1] > resolved_sub_segment_geom[1].to_lat_lon()[1]) # More Eastern
+            elif sharing_topologies == set(['topology5']):
+                self.assertTrue(len(sharing_topology_reversal_flags) == 1)
+                resolved_sub_segment_geom = sss.get_resolved_geometry()
+                self.assertTrue(len(resolved_sub_segment_geom) == 2)  # A polyline with 2 points.
+                # Sub-segment is not reversed.
+                self.assertTrue(not sharing_topology_reversal_flags['topology5'])
+                # 'topology5' is clockwise so sub-segment goes North to South.
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] > resolved_sub_segment_geom[1].to_lat_lon()[0]) # More Northern
+            elif sharing_topologies == set(['topology6']):
+                self.assertTrue(len(sharing_topology_reversal_flags) == 1)
+                resolved_sub_segment_geom = sss.get_resolved_geometry()
+                self.assertTrue(len(resolved_sub_segment_geom) == 2)  # A polyline with 2 points.
+                # Sub-segment is not reversed.
+                self.assertTrue(not sharing_topology_reversal_flags['topology6'])
+                # 'topology6' is counter-clockwise so sub-segment goes South to North.
+                self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] < resolved_sub_segment_geom[1].to_lat_lon()[0]) # More Southern
+        
+        # 'section18' is a single point.
+        section18_shared_sub_segments = resolved_topological_sections_dict['section18'].get_shared_sub_segments()
+        self.assertTrue(len(section18_shared_sub_segments) == 1)
+        for sss in section18_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology6']))
+            # Dict of topology names to reversal flags.
+            sharing_topology_reversal_flags = dict(zip(
+                    (srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies()),
+                    sss.get_sharing_resolved_topology_geometry_reversal_flags()))
+            self.assertTrue(len(sharing_topology_reversal_flags) == 1)
+            # One sub-segment and should not be reversed because it's shared by only a single topology
+            # (and point sections can only get reversed if another topology shares it).
+            self.assertTrue(not sharing_topology_reversal_flags['topology6'])
+            resolved_sub_segment_geom = sss.get_resolved_geometry()
+            self.assertTrue(len(resolved_sub_segment_geom) == 3)  # A polyline with 3 points (one section point and two rubber band points).
+            # 'topology6' is counter-clockwise and 'section18' is on its bottom-right corner so start rubber point should be more Southern than end rubber point (unless reversed).
+            self.assertTrue(resolved_sub_segment_geom[0].to_lat_lon()[0] < resolved_sub_segment_geom[2].to_lat_lon()[0]) # More Southern
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+            self.assertFalse(sss.get_subducting_plate()) # Not a subduction zone.
+        
+        # Test 'section15' still gives correct result when changing order of adding topologies
+        # (from order 4->5->6->7 to order 4->6->5->7) which changes the shared sub-segment reversals.
+        # We still get 4 shared sub-segments rubber banding to the single point of 'section15' and
+        # each shared sub-segment connects 2 topologies as usual. It's just some reversals change
+        # and we're testing a different path through the pyGPlates implementation.
+        def _test_reordered_topological_features(
+                test_case,
+                topological_features,
+                rotation_features,
+                topologies_4_5_6_7_order_keys):
+            
+            reordered_topological_features = sorted(topological_features,
+                key = lambda f:
+                # Assign keys to get order 4->6->5->7...
+                topologies_4_5_6_7_order_keys[0] if f.get_name() == 'topology4' else
+                topologies_4_5_6_7_order_keys[1] if f.get_name() == 'topology5' else
+                topologies_4_5_6_7_order_keys[2] if f.get_name() == 'topology6' else
+                topologies_4_5_6_7_order_keys[3] if f.get_name() == 'topology7' else
+                # All other features get same key and so retain same order...
+                0)
+            resolved_topologies = []
+            resolved_topological_sections = []
+            pygplates.resolve_topologies(
+                reordered_topological_features,
+                rotation_features,
+                resolved_topologies,
+                10,
+                resolved_topological_sections)
+            resolved_topological_section15 = next(filter(lambda rts: rts.get_feature().get_name() == 'section15', resolved_topological_sections))
+            section15_shared_sub_segments = resolved_topological_section15.get_shared_sub_segments()
+            # Re-use function defined above for testing the shared sub-segments of 'section15'.
+            _internal_test_section15_shared_sub_segments(test_case, section15_shared_sub_segments)
+        
+        # Test with different ordering of topologies 4, 5, 6 and 7.
+        #_test_reordered_topological_features(self, topological_features, rotation_features, [1, 2, 3, 4])  # The normal order already tested above.
+        _test_reordered_topological_features(self, topological_features, rotation_features, [1, 2, 4, 3])
+        _test_reordered_topological_features(self, topological_features, rotation_features, [1, 3, 2, 4])
+        _test_reordered_topological_features(self, topological_features, rotation_features, [1, 3, 4, 2])
+        _test_reordered_topological_features(self, topological_features, rotation_features, [1, 4, 2, 3])
+        _test_reordered_topological_features(self, topological_features, rotation_features, [1, 4, 3, 2])
 
         # This time exclude networks from the topological sections (but not the topologies).
         resolved_topologies = []
