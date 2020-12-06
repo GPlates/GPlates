@@ -209,7 +209,7 @@ namespace GPlatesMaths
 
 
 const unsigned
-GPlatesMaths::PolygonOnSphere::s_min_num_collection_points = 3;
+GPlatesMaths::PolygonOnSphere::s_min_num_ring_points = 3;
 
 
 GPlatesMaths::PolygonOnSphere::~PolygonOnSphere()

@@ -42,7 +42,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "maths/PolygonIntersections.h"
+#include "maths/PolygonPartitioner.h"
 #include "maths/SmallCircleBounds.h"
 
 #include "utils/Profile.h"
@@ -914,8 +914,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 		return;
 	}
 
-	const GPlatesMaths::PolygonIntersections::non_null_ptr_type polygon_intersections =
-			GPlatesMaths::PolygonIntersections::create(polygon.get());
+	const GPlatesMaths::PolygonPartitioner::non_null_ptr_type polygon_partitioner =
+			GPlatesMaths::PolygonPartitioner::create(polygon.get());
 
 	// Traverse the quad trees of the cube faces to determine intersection of current polygon
 	// with the nodes of each cube face quad tree.
@@ -937,7 +937,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 		// Recursively generate an intersections quad tree for the current cube face.
 		find_present_day_polygon_mesh_node_intersections(
 				polygon_mesh_handle,
-				*polygon_intersections,
+				*polygon_partitioner,
 				intersections_quad_tree_root_node,
 				cube_subdivision_cache,
 				cube_subdivision_cache_root_node,
@@ -949,7 +949,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 void
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh_node_intersections(
 		const present_day_polygon_mesh_handle_type present_day_polygon_mesh_handle,
-		const GPlatesMaths::PolygonIntersections &polygon_intersections,
+		const GPlatesMaths::PolygonPartitioner &polygon_partitioner,
 		PresentDayPolygonMeshesNodeIntersections::intersection_partition_type::node_type &intersections_quad_tree_node,
 		cube_subdivision_cache_type &cube_subdivision_cache,
 		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_quad_tree_node,
@@ -961,15 +961,15 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 
 	// If the polygon is outside the current quad tree node then we are finished and can return.
 	// TODO: Implement a more optimal path that tests intersection without partitioning.
-	if (GPlatesMaths::PolygonIntersections::GEOMETRY_OUTSIDE ==
-		polygon_intersections.partition_polygon(quad_tree_node_bounding_polygon))
+	if (GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE ==
+		polygon_partitioner.partition_polygon(quad_tree_node_bounding_polygon))
 	{
 		// If the cube quad tree node's polygon boundary is outside our test polygon then it's
 		// still possible for the cube quad tree node to completely surround the test polygon in which
 		// case it's actually intersecting the test polygon's interior region.
 		// We test this by seeing if a vertex on the test polygon is inside the node's bounding polygon.
 		if (!quad_tree_node_bounding_polygon->is_point_in_polygon(
-			polygon_intersections.get_partitioning_polygon()->first_exterior_ring_vertex(),
+			polygon_partitioner.get_partitioning_polygon()->first_exterior_ring_vertex(),
 			GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
 			// Note we turn off point-on-polygon outline threshold testing.
 			// We don't want test to return true if point is outside polygon but *very* close to it...
@@ -1021,7 +1021,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 			// Returns a non-null child if the current polygon mesh possibly intersects the child quad tree node.
 			find_present_day_polygon_mesh_node_intersections(
 					present_day_polygon_mesh_handle,
-					polygon_intersections,
+					polygon_partitioner,
 					child_intersections_quad_tree_node,
 					cube_subdivision_cache,
 					child_cube_subdivision_cache_quad_tree_node,

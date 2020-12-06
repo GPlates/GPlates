@@ -201,6 +201,19 @@ namespace GPlatesMaths
 		public:
 
 			/**
+			 * Returns true if graph is empty.
+			 */
+			bool
+			empty() const;
+
+			/**
+			 * Empties the graph.
+			 */
+			void
+			clear();
+
+
+			/**
 			 * The *unordered* intersections.
 			 *
 			 * These points are not necessarily ordered in any particular way

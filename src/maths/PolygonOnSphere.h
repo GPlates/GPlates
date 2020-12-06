@@ -64,36 +64,31 @@ namespace GPlatesMaths
 	 * Represents a polygon on the surface of a sphere. 
 	 *
 	 * Internally, this is stored as a sequence of GreatCircleArc for the polygon exterior and optional
-	 * sequences for interior rings (holes). You can iterate over this sequence of GreatCircleArc in the usual manner
-	 * using the const_iterators returned by the functions @a begin and
-	 * @a end.
+	 * sequences for interior rings (holes). You can iterate over this sequence of GreatCircleArc in the
+	 * usual manner using the const_iterators returned by the functions @a begin and @a end.
 	 *
-	 * You can also iterate over the @em vertices of the polygon using the
-	 * vertex_const_iterators returned by the functions @a exterior_ring_vertex_begin and
-	 * @a exterior_ring_vertex_end.  For instance, to copy all the vertices of a polygon
-	 * into a list of PointOnSphere, you would use the code snippet:
+	 * You can also iterate over the @em vertices of the polygon using the vertex_const_iterator
+	 * returned by the functions @a vertex_begin and @a vertex_end.
+	 * For instance, to copy all the vertices of a polygon (exterior and interior) into a single
+	 * list of all PointOnSphere, you would use the code snippet:
 	 * @code
-	 * std::list< PointOnSphere > the_list(polygon.exterior_ring_vertex_begin(),
-	 *                                     polygon.exterior_ring_vertex_end());
+	 * std::list< PointOnSphere > the_list(polygon.vertex_begin(),
+	 *                                     polygon.vertex_end());
 	 * @endcode
 	 *
 	 * You can create a polygon by invoking the static member function
 	 * @a PolygonOnSphere::create_on_heap, passing it a sequential STL
 	 * container (list, vector, ...) of PointOnSphere to define the
-	 * vertices of the polygon.  The sequence of points must contain at
-	 * least three distinct elements, enabling the creation of a polygon
-	 * composed of at least three well-defined segments.  The requirements
-	 * upon the sequence of points are described in greater detail in the
-	 * comment for the static member function
-	 * @a PolygonOnSphere::evaluate_construction_parameter_validity.
+	 * exterior vertices of the polygon (and similarly for interior vertices).
+	 * The sequence of points in any ring must contain at least three distinct elements,
+	 * enabling the creation of a ring composed of at least three well-defined segments.
+	 * The requirements upon the sequence of points are described in greater detail in the
+	 * comment for the static member function @a PolygonOnSphere::evaluate_construction_parameter_validity.
 	 *
-	 * Say you have a sequence of PointOnSphere: [A, B, C, D].  If you pass
-	 * this sequence to the @a PolygonOnSphere::create_on_heap function, it
-	 * will create a polygon composed of 4 segments: A->B, B->C, C->D and D->A. 
-	 * (Iterating through the arcs of the polygon using the member functions
-	 * @a exterior_begin and @a exterior_end will return these 4 segments.)
-	 * If you subsequently iterate through the exterior vertices of this polygon,
-	 * you will get the same sequence of points back again: A, B, C, D.
+	 * Say you have a sequence of PointOnSphere [A, B, C, D] for an exterior ring and [E, F, G] for an interior ring.
+	 * If you pass these sequences to the @a PolygonOnSphere::create_on_heap function, it will create a polygon with
+	 * exterior ring composed of 4 segments A->B, B->C, C->D and D->A and interior ring composed of 3 segments
+	 * E->F, F->G, G->E.
 	 *
 	 * Note that PolygonOnSphere does *not* have mutators (non-const member functions
 	 * which enable the modification of the class internals).
@@ -531,6 +526,28 @@ namespace GPlatesMaths
 		 * Create a new PolygonOnSphere instance on the heap from the sequence of exterior points
 		 * in the range @a exterior_begin / @a exterior_end.
 		 *
+		 * Say you have a sequence of PointOnSphere [A, B, C, D] for an exterior ring.
+		 * If you pass these sequences to @a create_on_heap it will create a polygon with exterior ring
+		 * composed of 4 segments A->B, B->C, C->D and D->A:
+		 *
+		 *  Ring segments:
+		 *  - Iterating through the arcs of the exterior ring using the member functions
+		 *    @a exterior_ring_begin and @a exterior_ring_end will return the 4 exterior ring segments.
+		 *  - Iterating through the arcs of all rings using the member functions
+		 *    @a begin and @a end will also return the 4 exterior ring segments.
+		 *
+		 *  Ring vertices:
+		 *  - Iterating through the ring vertices of the exterior ring using the member functions
+		 *    @a exterior_ring_vertex_begin and @a exterior_ring_vertex_end will return the 4 exterior ring vertices (A,B,C,D).
+		 *  - Iterating through the ring vertices of all rings using the member functions @a vertex_begin and @a vertex_end
+		 *    will also return the 4 exterior ring vertices (A,B,C,D).
+		 *
+		 *  Polyline vertices:
+		 *  - Iterating through the 'polyline' vertices of the exterior ring using the member functions
+		 *    @a exterior_polyline_vertex_begin and @a exterior_polyline_vertex_end will return the 5 exterior vertices (A,B,C,D,A).
+		 *  - Note that 'polyline' iteration includes an extra vertex since the first ring vertex is both the first and last vertex
+		 *    of a polyline (unwrapped from the ring).
+		 *
 		 * If @a check_distinct_points is 'true' then the sequence of points
 		 * is validated for insufficient *distinct* points, otherwise it is validated
 		 * for insufficient points (regardless of whether they are distinct or not).
@@ -583,6 +600,34 @@ namespace GPlatesMaths
 		 *
 		 * Each interior ring in the range @a interior_rings_begin / @a interior_rings_end should be
 		 * a sequential STL container (list, vector, ...) of PointOnSphere.
+		 *
+		 * Say you have a sequence of PointOnSphere [A, B, C, D] for an exterior ring and [E, F, G] for an interior ring.
+		 * If you pass these sequences to @a create_on_heap it will create a polygon with exterior ring composed of 4 segments
+		 * A->B, B->C, C->D and D->A and interior ring composed of 3 segments E->F, F->G, G->E:
+		 *
+		 *  Ring segments:
+		 *  - Iterating through the arcs of the exterior ring using the member functions
+		 *    @a exterior_ring_begin and @a exterior_ring_end will return the 4 exterior ring segments, and
+		 *    iterating through the arcs of the interior ring using the member functions @a interior_ring_begin
+		 *    and @a interior_ring_end (with interior ring index 0) will return the 3 interior ring segments.
+		 *  - Iterating through the arcs of all rings using the member functions
+		 *    @a begin and @a end will return the 4 exterior ring segments followed by the 3 interior ring segments.
+		 *
+		 *  Ring vertices:
+		 *  - Iterating through the ring vertices of the exterior ring using the member functions
+		 *    @a exterior_ring_vertex_begin and @a exterior_ring_vertex_end will return the 4 exterior ring vertices (A,B,C,D),
+		 *    and iterating through the ring vertices of the interior ring using the member functions @a interior_ring_vertex_begin
+		 *    and @a interior_ring_vertex_end (with interior ring index 0) will return the 3 interior ring vertices (E,F,G).
+		 *  - Iterating through the ring vertices of all rings using the member functions @a vertex_begin and @a vertex_end
+		 *    will return the 4 exterior ring vertices (A,B,C,D) followed by the 3 interior ring vertices (E,F,G).
+		 *
+		 *  Polyline vertices:
+		 *  - Iterating through the 'polyline' vertices of the exterior ring using the member functions
+		 *    @a exterior_polyline_vertex_begin and @a exterior_polyline_vertex_end will return the 5 exterior vertices (A,B,C,D,A),
+		 *    and iterating through the 'polyline' vertices of the interior ring using the member functions @a interior_ring_polyline_begin
+		 *    and @a interior_polyline_vertex_end (with interior ring index 0) will return the 4 interior vertices (E,F,G,E).
+		 *  - Note that 'polyline' iteration includes an extra vertex since the first ring vertex is both the first and last vertex
+		 *    of a polyline (unwrapped from each ring).
 		 *
 		 * If @a check_distinct_points is 'true' then the exterior ring and interior rings are each
 		 * validated for insufficient *distinct* points, otherwise they are validated for insufficient
@@ -1886,10 +1931,10 @@ namespace GPlatesMaths
 
 
 		/**
-		 * This is the minimum number of (distinct) collection points to be passed into the
-		 * 'create_on_heap' function to enable creation of a closed, well-defined polygon.
+		 * This is the minimum number of (distinct) ring points to be passed into the 'create_on_heap'
+		 * function (for each ring) to enable creation of closed, well-defined polygon rings.
 		 */
-		static const unsigned s_min_num_collection_points;
+		static const unsigned s_min_num_ring_points;
 
 
 		/**
@@ -2025,10 +2070,9 @@ namespace GPlatesMaths
 			num_points = std::distance(begin, end);
 		}
 
-		if (num_points < s_min_num_collection_points)
+		if (num_points < s_min_num_ring_points)
 		{
-			// The collection does not contain enough distinct points to create a
-			// closed, well-defined polygon.
+			// The ring does not contain enough distinct points to create a closed, well-defined polygon ring.
 			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
@@ -2265,9 +2309,11 @@ namespace GPlatesMaths
 	 		PointForwardIter begin,
 			PointForwardIter end)
 	{
+		const unsigned int num_ring_points = std::distance(begin, end);
+
 		// Observe that the number of points used to define a ring (which will become
 		// the number of vertices in the ring) is also the number of segments in the ring.
-		ring.reserve(std::distance(begin, end));
+		ring.reserve(num_ring_points);
 
 		// This for-loop is identical to the corresponding code in PolylineOnSphere.
 		PointForwardIter prev;
@@ -2278,12 +2324,19 @@ namespace GPlatesMaths
 			const PointOnSphere &p2 = *iter;
 			ring.push_back(GreatCircleArc::create(p1, p2));
 		}
+
 		// Now, an additional step, for the last->first point wrap-around.
 		iter = begin;
 		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
-			ring.push_back(GreatCircleArc::create(p1, p2));
+			// Only add last ring vertex if it's not the same as the first
+			// (provided the ring will have at least 3 vertices).
+			if (num_ring_points == s_min_num_ring_points ||
+				p1 != p2)
+			{
+				ring.push_back(GreatCircleArc::create(p1, p2));
+			}
 		}
 	}
 }

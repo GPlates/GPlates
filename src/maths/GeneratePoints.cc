@@ -314,10 +314,10 @@ namespace GPlatesMaths
 					d_contracted_left_bound(d_left_bound.contract(distance_threshold)),
 					d_contracted_right_bound(d_right_bound.contract(distance_threshold)),
 					// Expanded extent...
-					d_expanded_top_bound(d_top_bound.extend(distance_threshold)),
-					d_expanded_bottom_bound(d_bottom_bound.extend(distance_threshold)),
-					d_expanded_left_bound(d_left_bound.extend(distance_threshold)),
-					d_expanded_right_bound(d_right_bound.extend(distance_threshold))
+					d_expanded_top_bound(d_top_bound.expand(distance_threshold)),
+					d_expanded_bottom_bound(d_bottom_bound.expand(distance_threshold)),
+					d_expanded_left_bound(d_left_bound.expand(distance_threshold)),
+					d_expanded_right_bound(d_right_bound.expand(distance_threshold))
 				{  }
 
 				bool

@@ -54,7 +54,7 @@
 
 namespace GPlatesMaths
 {
-	class PolygonIntersections;
+	class PolygonPartitioner;
 }
 
 namespace GPlatesOpenGL
@@ -814,7 +814,7 @@ namespace GPlatesOpenGL
 		void
 		find_present_day_polygon_mesh_node_intersections(
 				const present_day_polygon_mesh_handle_type present_day_polygon_mesh_handle,
-				const GPlatesMaths::PolygonIntersections &polygon_intersections,
+				const GPlatesMaths::PolygonPartitioner &polygon_partitioner,
 				PresentDayPolygonMeshesNodeIntersections::intersection_partition_type::node_type &intersections_quad_tree_node,
 				cube_subdivision_cache_type &cube_subdivision_cache,
 				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_quad_tree_node,

@@ -58,7 +58,7 @@
 #include "maths/MathsUtils.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
-#include "maths/PolygonIntersections.h"
+#include "maths/PolygonPartitioner.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/UnitVector3D.h"
@@ -2569,7 +2569,7 @@ namespace GPlatesApi
 				tessellate(polygon_on_sphere, tessellate_radians));
 	}
 
-	GPlatesMaths::PolygonIntersections::Result
+	GPlatesMaths::PolygonPartitioner::Result
 	polygon_on_sphere_partition(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
@@ -2577,10 +2577,10 @@ namespace GPlatesApi
 			bp::object partitioned_geometries_outside_object)
 	{
 		// Partitioned inside/outside lists may or may not get used.
-		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type> partitioned_geometries_inside_storage;
-		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type> partitioned_geometries_outside_storage;
-		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type &> partitioned_geometries_inside;
-		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type &> partitioned_geometries_outside;
+		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type> partitioned_geometries_inside_storage;
+		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type> partitioned_geometries_outside_storage;
+		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_inside;
+		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_outside;
 		boost::optional<bp::list> partitioned_geometries_inside_list;
 		boost::optional<bp::list> partitioned_geometries_outside_list;
 
@@ -2592,7 +2592,7 @@ namespace GPlatesApi
 				PyErr_SetString(PyExc_TypeError, "Expecting a list or None for 'partitioned_geometries_inside'");
 				bp::throw_error_already_set();
 			}
-			partitioned_geometries_inside_storage = GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type();
+			partitioned_geometries_inside_storage = GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type();
 			partitioned_geometries_inside = partitioned_geometries_inside_storage.get();
 			partitioned_geometries_inside_list = extract_partitioned_geometries_inside_list();
 		}
@@ -2605,7 +2605,7 @@ namespace GPlatesApi
 				PyErr_SetString(PyExc_TypeError, "Expecting a list or None for 'partitioned_geometries_outside'");
 				bp::throw_error_already_set();
 			}
-			partitioned_geometries_outside_storage = GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type();
+			partitioned_geometries_outside_storage = GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type();
 			partitioned_geometries_outside = partitioned_geometries_outside_storage.get();
 			partitioned_geometries_outside_list = extract_partitioned_geometries_outside_list();
 		}
@@ -2614,10 +2614,10 @@ namespace GPlatesApi
 		// Partition the geometry.
 		//
 
-		GPlatesMaths::PolygonIntersections::non_null_ptr_type polygon_intersections =
-				GPlatesMaths::PolygonIntersections::create(polygon_on_sphere);
-		const GPlatesMaths::PolygonIntersections::Result partition_result =
-				polygon_intersections->partition_geometry(
+		GPlatesMaths::PolygonPartitioner::non_null_ptr_type polygon_partitioner =
+				GPlatesMaths::PolygonPartitioner::create(polygon_on_sphere);
+		const GPlatesMaths::PolygonPartitioner::Result partition_result =
+				polygon_partitioner->partition_geometry(
 						geometry,
 						partitioned_geometries_inside,
 						partitioned_geometries_outside);
@@ -3171,13 +3171,13 @@ export_polygon_on_sphere()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonOrientation::Orientation>();
 
 	// An enumeration nested within python class PolygonOnSphere (due to above 'bp::scope').
-	bp::enum_<GPlatesMaths::PolygonIntersections::Result>("PartitionResult")
-			.value("inside", GPlatesMaths::PolygonIntersections::GEOMETRY_INSIDE)
-			.value("outside", GPlatesMaths::PolygonIntersections::GEOMETRY_OUTSIDE)
-			.value("intersecting", GPlatesMaths::PolygonIntersections::GEOMETRY_INTERSECTING);
+	bp::enum_<GPlatesMaths::PolygonPartitioner::Result>("PartitionResult")
+			.value("inside", GPlatesMaths::PolygonPartitioner::GEOMETRY_INSIDE)
+			.value("outside", GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE)
+			.value("intersecting", GPlatesMaths::PolygonPartitioner::GEOMETRY_INTERSECTING);
 
-	// Enable boost::optional<GPlatesMaths::PolygonOrientation::PolygonIntersections::Result> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonIntersections::Result>();
+	// Enable boost::optional<GPlatesMaths::PolygonPartitioner::Result> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonPartitioner::Result>();
 
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.

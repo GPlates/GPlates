@@ -30,7 +30,7 @@
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 
-#include "PolygonIntersections.h"
+#include "PolygonPartitioner.h"
 
 #include "ConstGeometryOnSphereVisitor.h"
 #include "GreatCircleArc.h"
@@ -43,7 +43,7 @@
 
 namespace
 {
-	using GPlatesMaths::PolygonIntersections;
+	using GPlatesMaths::PolygonPartitioner;
 	using GPlatesMaths::GeometryOnSphere;
 	using GPlatesMaths::MultiPointOnSphere;
 	using GPlatesMaths::PointOnSphere;
@@ -55,20 +55,20 @@ namespace
 	{
 	public:
 		GeometryPartitioner(
-				const PolygonIntersections &polygon_intersections,
-				boost::optional<PolygonIntersections::partitioned_geometry_seq_type &> partitioned_geometries_inside,
-				boost::optional<PolygonIntersections::partitioned_geometry_seq_type &> partitioned_geometries_outside) :
-			d_polygon_intersections(polygon_intersections),
+				const PolygonPartitioner &polygon_partitioner,
+				boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_inside,
+				boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_outside) :
+			d_polygon_partitioner(polygon_partitioner),
 			d_partitioned_geometries_inside(partitioned_geometries_inside),
 			d_partitioned_geometries_outside(partitioned_geometries_outside)
 		{  }
 
 
-		PolygonIntersections::Result
+		PolygonPartitioner::Result
 		partition_geometry(
 				const GeometryOnSphere::non_null_ptr_to_const_type &geometry_to_be_partitioned)
 		{
-			d_result = PolygonIntersections::GEOMETRY_OUTSIDE;
+			d_result = PolygonPartitioner::GEOMETRY_OUTSIDE;
 
 			geometry_to_be_partitioned->accept_visitor(*this);
 
@@ -84,13 +84,13 @@ namespace
 			if (!d_partitioned_geometries_inside &&
 				!d_partitioned_geometries_outside)
 			{
-				d_result = d_polygon_intersections.partition_multipoint(multi_point_on_sphere);
+				d_result = d_polygon_partitioner.partition_multipoint(multi_point_on_sphere);
 				return;
 			}
 
-			PolygonIntersections::partitioned_point_seq_type partitioned_points_inside;
-			PolygonIntersections::partitioned_point_seq_type partitioned_points_outside;
-			d_result = d_polygon_intersections.partition_multipoint(
+			PolygonPartitioner::partitioned_point_seq_type partitioned_points_inside;
+			PolygonPartitioner::partitioned_point_seq_type partitioned_points_outside;
+			d_result = d_polygon_partitioner.partition_multipoint(
 					multi_point_on_sphere,
 					partitioned_points_inside,
 					partitioned_points_outside);
@@ -118,9 +118,9 @@ namespace
 		visit_point_on_sphere(
 				PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
-			d_result = d_polygon_intersections.partition_point(*point_on_sphere);
+			d_result = d_polygon_partitioner.partition_point(*point_on_sphere);
 
-			if (d_result == PolygonIntersections::GEOMETRY_OUTSIDE)
+			if (d_result == PolygonPartitioner::GEOMETRY_OUTSIDE)
 			{
 				if (d_partitioned_geometries_outside)
 				{
@@ -144,28 +144,28 @@ namespace
 			if (!d_partitioned_geometries_inside &&
 				!d_partitioned_geometries_outside)
 			{
-				d_result = d_polygon_intersections.partition_polygon(polygon_on_sphere);
+				d_result = d_polygon_partitioner.partition_polygon(polygon_on_sphere);
 				return;
 			}
 
-			PolygonIntersections::partitioned_polyline_seq_type partitioned_polylines_inside;
-			PolygonIntersections::partitioned_polyline_seq_type partitioned_polylines_outside;
-			d_result = d_polygon_intersections.partition_polygon(
+			PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_inside;
+			PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_outside;
+			d_result = d_polygon_partitioner.partition_polygon(
 					polygon_on_sphere,
 					partitioned_polylines_inside,
 					partitioned_polylines_outside);
 
-			// NOTE: 'PolygonIntersections::partition_polygon()' only returns partitioned *polylines*
+			// NOTE: 'PolygonPartitioner::partition_polygon()' only returns partitioned *polylines*
 			// if there was an intersection, otherwise the inside/outside polylines are empty.
 			// Hence if there was no intersection then we add the inside or outside *polygon*.
-			if (d_result == PolygonIntersections::GEOMETRY_INSIDE)
+			if (d_result == PolygonPartitioner::GEOMETRY_INSIDE)
 			{
 				if (d_partitioned_geometries_inside)
 				{
 					d_partitioned_geometries_inside->push_back(polygon_on_sphere);
 				}
 			}
-			else if (d_result == PolygonIntersections::GEOMETRY_OUTSIDE)
+			else if (d_result == PolygonPartitioner::GEOMETRY_OUTSIDE)
 			{
 				if (d_partitioned_geometries_outside)
 				{
@@ -195,13 +195,13 @@ namespace
 			if (!d_partitioned_geometries_inside &&
 				!d_partitioned_geometries_outside)
 			{
-				d_result = d_polygon_intersections.partition_polyline(polyline_on_sphere);
+				d_result = d_polygon_partitioner.partition_polyline(polyline_on_sphere);
 				return;
 			}
 
-			PolygonIntersections::partitioned_polyline_seq_type partitioned_polylines_inside;
-			PolygonIntersections::partitioned_polyline_seq_type partitioned_polylines_outside;
-			d_result = d_polygon_intersections.partition_polyline(
+			PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_inside;
+			PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_outside;
+			d_result = d_polygon_partitioner.partition_polyline(
 					polyline_on_sphere,
 					partitioned_polylines_inside,
 					partitioned_polylines_outside);
@@ -219,11 +219,11 @@ namespace
 		}
 
 	private:
-		const PolygonIntersections &d_polygon_intersections;
+		const PolygonPartitioner &d_polygon_partitioner;
 
-		PolygonIntersections::Result d_result;
-		boost::optional<PolygonIntersections::partitioned_geometry_seq_type &> d_partitioned_geometries_inside;
-		boost::optional<PolygonIntersections::partitioned_geometry_seq_type &> d_partitioned_geometries_outside;
+		PolygonPartitioner::Result d_result;
+		boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> d_partitioned_geometries_inside;
+		boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> d_partitioned_geometries_outside;
 	};
 
 
@@ -240,7 +240,7 @@ namespace
 		 */
 		explicit
 		InsidePartitionedPolylineMerger(
-				GPlatesMaths::PolygonIntersections::partitioned_polyline_seq_type &inside_list) :
+				GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type &inside_list) :
 			d_inside_polyline_list(inside_list)
 		{  }
 
@@ -317,7 +317,7 @@ namespace
 				inside_polyline_seq_type;
 
 		inside_polyline_seq_type d_inside_polylines;
-		GPlatesMaths::PolygonIntersections::partitioned_polyline_seq_type &d_inside_polyline_list;
+		GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type &d_inside_polyline_list;
 	};
 
 
@@ -391,7 +391,7 @@ namespace
 }
 
 
-GPlatesMaths::PolygonIntersections::PolygonIntersections(
+GPlatesMaths::PolygonPartitioner::PolygonPartitioner(
 		const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
 		PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
 	d_partitioning_polygon(partitioning_polygon),
@@ -401,8 +401,8 @@ GPlatesMaths::PolygonIntersections::PolygonIntersections(
 }
 
 
-GPlatesMaths::PolygonIntersections::Result
-GPlatesMaths::PolygonIntersections::partition_geometry(
+GPlatesMaths::PolygonPartitioner::Result
+GPlatesMaths::PolygonPartitioner::partition_geometry(
 		const GeometryOnSphere::non_null_ptr_to_const_type &geometry_to_be_partitioned,
 		boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_inside,
 		boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_outside) const
@@ -414,8 +414,8 @@ GPlatesMaths::PolygonIntersections::partition_geometry(
 }
 
 
-GPlatesMaths::PolygonIntersections::Result
-GPlatesMaths::PolygonIntersections::partition_polyline(
+GPlatesMaths::PolygonPartitioner::Result
+GPlatesMaths::PolygonPartitioner::partition_polyline(
 		const PolylineOnSphere::non_null_ptr_to_const_type &polyline_to_be_partitioned,
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside,
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside) const
@@ -467,8 +467,8 @@ GPlatesMaths::PolygonIntersections::partition_polyline(
 }
 
 
-GPlatesMaths::PolygonIntersections::Result
-GPlatesMaths::PolygonIntersections::partition_polygon(
+GPlatesMaths::PolygonPartitioner::Result
+GPlatesMaths::PolygonPartitioner::partition_polygon(
 		const PolygonOnSphere::non_null_ptr_to_const_type &polygon_to_be_partitioned,
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside,
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside) const
@@ -510,8 +510,8 @@ GPlatesMaths::PolygonIntersections::partition_polygon(
 }
 
 
-GPlatesMaths::PolygonIntersections::Result
-GPlatesMaths::PolygonIntersections::partition_point(
+GPlatesMaths::PolygonPartitioner::Result
+GPlatesMaths::PolygonPartitioner::partition_point(
 		const PointOnSphere &point_to_be_partitioned) const
 {
 	return d_partitioning_polygon->is_point_in_polygon(
@@ -522,8 +522,8 @@ GPlatesMaths::PolygonIntersections::partition_point(
 }
 
 
-GPlatesMaths::PolygonIntersections::Result
-GPlatesMaths::PolygonIntersections::partition_multipoint(
+GPlatesMaths::PolygonPartitioner::Result
+GPlatesMaths::PolygonPartitioner::partition_multipoint(
 		const MultiPointOnSphere::non_null_ptr_to_const_type &multipoint_to_be_partitioned,
 		boost::optional<partitioned_point_seq_type &> partitioned_points_inside_opt,
 		boost::optional<partitioned_point_seq_type &> partitioned_points_outside_opt) const
@@ -602,7 +602,7 @@ GPlatesMaths::PolygonIntersections::partition_multipoint(
 
 
 bool
-GPlatesMaths::PolygonIntersections::is_non_intersecting_polyline_or_polygon_fully_inside_partitioning_polygon(
+GPlatesMaths::PolygonPartitioner::is_non_intersecting_polyline_or_polygon_fully_inside_partitioning_polygon(
 		const PointOnSphere &arbitrary_point_on_geometry) const
 {
 	// PolylineIntersections has guaranteed there are no intersections within an extremely small
@@ -619,7 +619,7 @@ GPlatesMaths::PolygonIntersections::is_non_intersecting_polyline_or_polygon_full
 
 
 void
-GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
+GPlatesMaths::PolygonPartitioner::partition_intersecting_geometry(
 		const PolylineIntersections::Graph &partitioned_polylines_graph,
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside,
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside) const
@@ -690,7 +690,7 @@ GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 
 
 bool
-GPlatesMaths::PolygonIntersections::is_partitioned_polyline_inside_partitioning_polygon(
+GPlatesMaths::PolygonPartitioner::is_partitioned_polyline_inside_partitioning_polygon(
 		const PolylineIntersections::Graph &partitioned_polylines_graph,
 		const PolylineIntersections::PartitionedPolyline &partitioned_poly) const
 {

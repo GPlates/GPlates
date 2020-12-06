@@ -48,8 +48,8 @@
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
+#include "maths/PolygonPartitioner.h"
 #include "maths/PolylineOnSphere.h"
-#include "maths/PolygonIntersections.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureId.h"
