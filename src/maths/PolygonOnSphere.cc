@@ -171,7 +171,7 @@ namespace GPlatesMaths
 			{
 				const GreatCircleArc &gca = *ring_iter;
 
-				ring_arc_length += acos(gca.dot_of_endpoints());
+				ring_arc_length += gca.arc_length();
 			}
 
 			return ring_arc_length;

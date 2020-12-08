@@ -715,7 +715,7 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection::get_interpolate
 					// distance between segment start and end points.
 					d_interpolate_ratio_in_segment =
 							acos(dot(position.position_vector(), segment->start_point().position_vector())).dval() /
-								acos(segment->dot_of_endpoints()).dval();
+								segment->arc_length().dval();
 				}
 			}
 			else // fictitious one-past-the-last segment ...
@@ -797,7 +797,7 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::RubberBand::create_from_inter
 	// divided by distance between rubber band segment's start and end points.
 	const double interpolate_ratio_in_rubber_segment =
 			acos(dot(intersection_position.position_vector(), rubber_band_segment.start_point().position_vector())).dval() /
-				acos(rubber_band_segment.dot_of_endpoints()).dval();
+				rubber_band_segment.arc_length().dval();
 
 	return RubberBand(
 			intersection_position,

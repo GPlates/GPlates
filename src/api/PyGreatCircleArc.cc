@@ -226,6 +226,7 @@ export_great_circle_arc()
 				"and a call to :meth:`get_rotation_axis` will raise an error.\n")
 		.def("get_arc_length",
 				&GPlatesMaths::GreatCircleArc::arc_length,
+				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_arc_length()\n"
 				"  Returns the arc length of this great circle arc (in radians).\n"
 				"\n"

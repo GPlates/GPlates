@@ -2283,7 +2283,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_line_segment(
 				const double segment_interpolation_ratio = line_segment.is_zero_length()
 						? 0.0
 						: acos(dot(NORTH_POLE, line_segment.start_point().position_vector())).dval() /
-							acos(line_segment.dot_of_endpoints()).dval();
+							line_segment.arc_length().dval();
 
 				intersected_north_pole();
 				add_intersection_vertex_on_north_pole(
@@ -2301,7 +2301,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_line_segment(
 				const double segment_interpolation_ratio = line_segment.is_zero_length()
 						? 0.0
 						: acos(dot(SOUTH_POLE, line_segment.start_point().position_vector())).dval() /
-							acos(line_segment.dot_of_endpoints()).dval();
+							line_segment.arc_length().dval();
 
 				intersected_south_pole();
 				add_intersection_vertex_on_south_pole(
@@ -2377,7 +2377,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_line_segment(
 				const double segment_interpolation_ratio = line_segment.is_zero_length()
 						? 0.0
 						: acos(dot(NORTH_POLE, line_segment.start_point().position_vector())).dval() /
-							acos(line_segment.dot_of_endpoints()).dval();
+							line_segment.arc_length().dval();
 
 				intersected_north_pole();
 				add_intersection_vertex_on_north_pole(
@@ -2395,7 +2395,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_line_segment(
 				const double segment_interpolation_ratio = line_segment.is_zero_length()
 						? 0.0
 						: acos(dot(SOUTH_POLE, line_segment.start_point().position_vector())).dval() /
-							acos(line_segment.dot_of_endpoints()).dval();
+							line_segment.arc_length().dval();
 
 				intersected_south_pole();
 				add_intersection_vertex_on_south_pole(
@@ -2613,7 +2613,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::intersect_line_segment(
 			// distance between segment start and end points.
 			segment_interpolation_ratio =
 					acos(dot(SOUTH_POLE, line_segment.start_point().position_vector())).dval() /
-						acos(line_segment.dot_of_endpoints()).dval();
+						line_segment.arc_length().dval();
 
 			intersected_south_pole();
 			return PointOnSphere(SOUTH_POLE);
@@ -2632,7 +2632,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::intersect_line_segment(
 			// distance between segment start and end points.
 			segment_interpolation_ratio =
 					acos(dot(NORTH_POLE, line_segment.start_point().position_vector())).dval() /
-						acos(line_segment.dot_of_endpoints()).dval();
+						line_segment.arc_length().dval();
 
 			intersected_north_pole();
 			return PointOnSphere(NORTH_POLE);
@@ -2702,7 +2702,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::calculate_intersection(
 	// A precondition of caller is that the line segment is not zero length.
 	segment_interpolation_ratio =
 			acos(dot(intersection_point, line_segment.start_point().position_vector())).dval() /
-				acos(line_segment.dot_of_endpoints()).dval();
+				line_segment.arc_length().dval();
 
 	return PointOnSphere(intersection_point);
 }

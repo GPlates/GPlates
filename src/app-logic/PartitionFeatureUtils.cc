@@ -607,7 +607,7 @@ namespace GPlatesAppLogic
 				GreatCircleArcForwardIteratorType gca_iter = gca_begin;
 				for ( ; gca_iter != gca_end; ++gca_iter)
 				{
-					distance += acos(gca_iter->dot_of_endpoints());
+					distance += gca_iter->arc_length();
 				}
 
 				return distance;

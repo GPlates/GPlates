@@ -255,7 +255,7 @@ GPlatesMaths::PolylineOnSphere::get_arc_length() const
 		{
 			const GreatCircleArc &gca = *gca_iter;
 
-			arc_length += acos(gca.dot_of_endpoints());
+			arc_length += gca.arc_length();
 		}
 
 		d_cached_calculations->arc_length = arc_length;

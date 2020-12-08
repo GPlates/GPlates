@@ -171,10 +171,17 @@ namespace GPlatesMaths
 		 * NOTE: It's possible for @a is_zero_length to return true but this method to return non-zero
 		 *       (if the arc length is below the numerical threshold used by @a is_zero_length).
 		 */
-		real_t
+		const real_t &
 		arc_length() const
 		{
-			return acos(dot_of_endpoints());
+			if (!d_arc_length)
+			{
+				// Note: We use GPlatesMaths::acos instead of std::acos since it's possible the
+				// dot product is just outside the range [-1,1] which would result in NaN.
+				d_arc_length = acos(dot_of_endpoints());
+			}
+
+			return d_arc_length.get();
 		}
 
 		/**
@@ -310,6 +317,13 @@ namespace GPlatesMaths
 		PointOnSphere d_start_point, d_end_point;
 
 		real_t d_dot_of_endpoints;
+
+		/**
+		 * The length of this arc (in radians).
+		 *
+		 * This is only calculated when needed to save CPU time when not needed.
+		 */
+		mutable boost::optional<real_t> d_arc_length;
 
 		/**
 		 * The rotation information.

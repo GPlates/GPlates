@@ -1230,7 +1230,7 @@ namespace GPlatesMaths
 				}
 
 				// Calculate angle of rotation about the great circle arc rotation axis (between the two points).
-				const real_t rotation_angle = acos(gca.dot_of_endpoints());
+				const real_t rotation_angle = gca.arc_length();
 
 				interpolate_point_rotations.push_back(
 						Rotation::create(gca.rotation_axis(), rotation_angle));
@@ -1294,7 +1294,7 @@ namespace GPlatesMaths
 				}
 
 				// Calculate angle of rotation about the great circle arc rotation axis (between the two points).
-				const real_t rotation_angle = acos(gca.dot_of_endpoints());
+				const real_t rotation_angle = gca.arc_length();
 
 				interpolate_point_rotations.push_back(
 						Rotation::create(gca.rotation_axis(), rotation_angle));

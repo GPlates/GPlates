@@ -482,7 +482,7 @@ GPlatesMaths::GreatCircleArc::point_on_arc(
 	}
 
 	// Rotation from start point to requested arc point.
-	const Real angle_from_start_to_end = acos(dot_of_endpoints());
+	const Real angle_from_start_to_end = arc_length();
 	const Rotation rotation = Rotation::create(
 			rotation_axis(),
 			normalised_distance_from_start_point * angle_from_start_to_end);
@@ -656,7 +656,7 @@ GPlatesMaths::tessellate(
 	}
 
 	// The angular extent of the great circle arc being subdivided.
-	const double gca_angular_extent = acos(great_circle_arc.dot_of_endpoints()).dval();
+	const double gca_angular_extent = great_circle_arc.arc_length().dval();
 
 	//
 	// Note: Using static_cast<int> instead of static_cast<unsigned int> since
