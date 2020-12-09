@@ -119,6 +119,12 @@ namespace GPlatesMaths
 				bool check_validity = true);
 
 
+		/**
+		 * Create a rotated version of @a arc.
+		 *
+		 * The rotated arc has the same arc length but it's end points (and rotation axis) are
+		 * rotated versions of those in @a arc.
+		 */
 		static
 		const GreatCircleArc
 		create_rotated_arc(
@@ -129,8 +135,8 @@ namespace GPlatesMaths
 		/**
 		 * Create the antipodal great circle arc of @a arc.
 		 *
-		 * The antipodal arc has the same rotation axis but it's end points are
-		 * antipodal versions of the end points of @a arc.
+		 * The antipodal arc has the same rotation axis (and arc length) but it's end points are
+		 * antipodal versions of those in @a arc.
 		 */
 		static
 		const GreatCircleArc
@@ -172,17 +178,7 @@ namespace GPlatesMaths
 		 *       (if the arc length is below the numerical threshold used by @a is_zero_length).
 		 */
 		const real_t &
-		arc_length() const
-		{
-			if (!d_arc_length)
-			{
-				// Note: We use GPlatesMaths::acos instead of std::acos since it's possible the
-				// dot product is just outside the range [-1,1] which would result in NaN.
-				d_arc_length = acos(dot_of_endpoints());
-			}
-
-			return d_arc_length.get();
-		}
+		arc_length() const;
 
 		/**
 		 * Return whether this great-circle arc is of zero length.
@@ -286,31 +282,92 @@ namespace GPlatesMaths
 
 	private:
 
-		struct RotationInfo
+		/**
+		 * Purpose of this structure is two-fold:
+		 * 
+		 * 1) To delay calculating some quantities until they are requested.
+		 *    This saves CPU since, in some cases, the quantities might never be queried.
+		 *    In particular, this saves a noticeable amount of CPU time when the rotation axis is not
+		 *    actually needed such as displaying reconstructed polylines while animating the reconstruction time.
+		 *    
+		 * 2) Pack the data more tightly to conserve memory (since GreatCircleArc is the main memory
+		 *    consumer for polylines and polygons). This uses less memory than having a separate
+		 *    boost::optional for each cached quantity since each boost::optional stores an extra boolean
+		 *    which actually consumes an extra 8 bytes per boost::optional in our case due to alignment
+		 *    restrictions (we're storing 'double' floating-point values which are aligned to 8 bytes).
+		 */
+		class CachedOnDemand
 		{
-			//! For creating a *zero* length GCA.
-			RotationInfo() :
-				d_rot_axis(UnitVector3D::zBasis()/*dummy vector - not used*/),
-				d_is_zero_length(true)
+		public:
+			CachedOnDemand() :
+				d_have_calculated_rotation_info(false),
+				d_have_calculated_arc_length(false),
+				d_is_zero_length(true),  // arbitrary value - we could instead just leave uninitialized/undefined
+				d_rotation_axis(UnitVector3D::zBasis())  // arbitrary value - there's no default constructor
 			{  }
 
-			//! For creating a *non-zero* length GCA.
-			explicit
-			RotationInfo(
-					const UnitVector3D &rot_axis_) :
-				d_rot_axis(rot_axis_),
-				d_is_zero_length(false)
-			{  }
 
 			/**
-			 * The rotation axis - only valid if @a d_is_zero_length is false.
+			 * Initialises @a d_is_zero_length and @a d_rotation_axis.
+			 *
+			 * Call this if @a d_have_calculated_rotation_info is false (after which it will be true).
+			 * Then you can access @a d_is_zero_length and @a d_rotation_axis.
 			 */
-			UnitVector3D d_rot_axis;
+			void
+			calculate_rotation_info(
+					const PointOnSphere &start_point,
+					const PointOnSphere &end_point);
+
+			/**
+			 * Initialises @a d_arc_length.
+			 *
+			 * Call this if @a d_have_calculated_arc_length is false (after which it will be true).
+			 * Then you can access @a d_arc_length.
+			 */
+			void
+			calculate_arc_length(
+					const real_t &dot_of_endpoints_)
+			{
+				// Note: We use GPlatesMaths::acos instead of std::acos since it's possible the
+				// dot product is just outside the range [-1,1] which would result in NaN.
+				d_arc_length = acos(dot_of_endpoints_);
+				d_have_calculated_arc_length = true;
+			}
+
+
+			//
+			// NOTE: Put all the booleans together so they pack more tightly in memory.
+			//       Otherwise if they are interspersed with the other 'double'-like quantities
+			//       then each 'bool' will consume 8 bytes.
+			//       Also, due to alignment with 8-byte 'double' quantities, we can have up to 8 booleans
+			//       here (assuming a bool takes up 1 byte) without changing the memory usage. Using fewer
+			//       than 8 booleans (as we do here) just means compiler inserts unused padding into this structure.
+			//
+
+			/**
+			 * Whether we've calculated @a d_is_zero_length and @a d_rotation_axis.
+			 */
+			bool d_have_calculated_rotation_info;
+
+			/**
+			 * Whether we've calculated @a d_arc_length.
+			 */
+			bool d_have_calculated_arc_length;
 
 			/**
 			 * Whether the arc is zero-length and hence has no valid rotation axis.
 			 */
 			bool d_is_zero_length;
+
+			/**
+			 * The rotation axis - only valid if @a is_zero_length is false.
+			 */
+			UnitVector3D d_rotation_axis;
+
+			/**
+			 * Length of the arc (in radians).
+			 */
+			real_t d_arc_length;
 		};
 
 
@@ -319,20 +376,14 @@ namespace GPlatesMaths
 		real_t d_dot_of_endpoints;
 
 		/**
-		 * The length of this arc (in radians).
+		 * Information that is only calculated when needed.
 		 *
-		 * This is only calculated when needed to save CPU time when not needed.
-		 */
-		mutable boost::optional<real_t> d_arc_length;
-
-		/**
-		 * The rotation information.
-		 *
-		 * This is only calculated when needed - if boost::none then means it hasn't been calculated yet.
 		 * This saves a noticeable amount of CPU time when the rotation axis is not actually needed
 		 * such as displaying reconstructed polylines while animating the reconstruction time.
+		 *
+		 * Also the @a CachedOnDemand structure is packed more tightly to reduce memory.
 		 */
-		mutable boost::optional<RotationInfo> d_rotation_info;
+		mutable CachedOnDemand d_cached_on_demand;
 
 
 		static
@@ -341,9 +392,6 @@ namespace GPlatesMaths
 				const UnitVector3D &p1,
 				const UnitVector3D &p2,
 				const real_t &dot_p1_p2);
-
-		void
-		calculate_rotation_info() const;
 
 	public:
 		/**
