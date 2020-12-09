@@ -57,12 +57,12 @@ namespace
 
 	QString
 	make_seed_string(
-		GPlatesAppLogic::ReconstructedFlowline::seed_point_geom_ptr_type seed_point)
+		const GPlatesAppLogic::ReconstructedFlowline::seed_point_type &seed_point)
 	{
 
 		QString output;
 
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*seed_point);		
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(seed_point);
 
 		output += "(";
 		output += QString::number(llp.latitude());
@@ -111,7 +111,7 @@ namespace
 		const referenced_files_collection_type &reconstruction_files,
 		const double &reconstruction_time,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &seed_point,
+		const GPlatesMaths::PointOnSphere &seed_point,
 		bool should_add_referenced_files = true)
 	{
 		using namespace GPlatesPropertyValues;

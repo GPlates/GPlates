@@ -3729,7 +3729,7 @@ GPlatesGui::TopologyTools::update_boundary_vertices()
 	else if (num_topology_points == 1) 
 	{
 		d_boundary_geometry_opt_ptr = 
-			GPlatesUtils::create_point_on_sphere(d_topology_vertices, validity);
+			GPlatesUtils::create_point_geometry_on_sphere(d_topology_vertices, validity);
 	} 
 	else if (num_topology_points == 2 ||
 		d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::LINE) 
@@ -3807,7 +3807,7 @@ GPlatesGui::TopologyTools::update_interior_vertices()
 		else if (num_points == 1) 
 		{
 			geometry_opt_ptr = 
-				GPlatesUtils::create_point_on_sphere(section_vertices, validity);
+				GPlatesUtils::create_point_geometry_on_sphere(section_vertices, validity);
 		} 
 		else if (num_points == 2) 
 		{

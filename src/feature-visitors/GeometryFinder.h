@@ -63,7 +63,7 @@ namespace GPlatesFeatureVisitors
 		typedef geometry_container_type::const_iterator geometry_container_const_iterator;
 
 		// Point Geoms
-		typedef GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_geometry_elem_type;
+		typedef GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_geometry_elem_type;
 		typedef std::vector<point_geometry_elem_type> point_geometry_container_type;
 		typedef point_geometry_container_type::const_iterator point_geometry_container_const_iterator;
 

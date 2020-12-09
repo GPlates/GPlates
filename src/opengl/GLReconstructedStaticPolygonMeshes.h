@@ -347,7 +347,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns those *active* polygon meshes that are reconstructed by this transform group *and*
 			 * are visible in the view frustum of the transform state of the renderer passed into
-			 * @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
+			 * @a GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_meshes.
 			 */
 			const PresentDayPolygonMeshMembership &
 			get_visible_present_day_polygon_meshes_for_active_reconstructions() const
@@ -358,7 +358,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns those *inactive* polygon meshes that are reconstructed by this transform group *and*
 			 * are visible in the view frustum of the transform state of the renderer passed into
-			 * @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
+			 * @a GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_meshes.
 			 *
 			 * NOTE: This is reconstructing features that are not active (or not defined)
 			 * for the current reconstruction time.
@@ -375,7 +375,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns those *active* and *inactive* polygon meshes that are reconstructed by this
 			 * transform group *and* are visible in the view frustum of the transform state of the
-			 * renderer passed into @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
+			 * renderer passed into @a GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_meshes.
 			 *
 			 * NOTE: This includes reconstructing features that are not active (or not defined)
 			 * for the current reconstruction time.
@@ -435,7 +435,7 @@ namespace GPlatesOpenGL
 			 * Returns the visible and *active* present-day polygon meshes for *all* transform groups.
 			 *
 			 * Visibility is defined by the view frustum of the transform state of the renderer passed
-			 * into @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
+			 * into @a GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_meshes.
 			 */
 			const PresentDayPolygonMeshMembership &
 			get_visible_present_day_polygon_meshes_for_active_reconstructions() const
@@ -447,7 +447,7 @@ namespace GPlatesOpenGL
 			 * Returns the visible and *inactive* present-day polygon meshes for *all* transform groups.
 			 *
 			 * Visibility is defined by the view frustum of the transform state of the renderer passed
-			 * into @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
+			 * into @a GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_meshes.
 			 *
 			 * NOTE: This is reconstructing features that are not active (or not defined)
 			 * for the current reconstruction time.
@@ -465,7 +465,7 @@ namespace GPlatesOpenGL
 			 * Returns the visible and *active* and *inactive* present-day polygon meshes for *all* transform groups.
 			 *
 			 * Visibility is defined by the view frustum of the transform state of the renderer passed
-			 * into @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
+			 * into @a GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_meshes.
 			 *
 			 * NOTE: This includes reconstructing features that are not active (or not defined)
 			 * for the current reconstruction time.

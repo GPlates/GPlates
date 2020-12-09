@@ -103,7 +103,7 @@ namespace
 		virtual
 		void
 		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
 			d_rotated_geometry = d_finite_rotation * point_on_sphere;
 		}
@@ -487,7 +487,7 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(PointOnSphere(r * iter->position_vector()));
 	}
 
-	return MultiPointOnSphere::create_on_heap(rotated_points);
+	return MultiPointOnSphere::create(rotated_points);
 }
 
 
@@ -509,7 +509,7 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(PointOnSphere(r * iter->position_vector()));
 	}
 
-	return PolylineOnSphere::create_on_heap(rotated_points);
+	return PolylineOnSphere::create(rotated_points);
 }
 
 
@@ -536,7 +536,7 @@ GPlatesMaths::operator*(
 	const unsigned int num_interior_rings = p->number_of_interior_rings();
 	if (num_interior_rings == 0)
 	{
-		return PolygonOnSphere::create_on_heap(rotated_exterior_ring);
+		return PolygonOnSphere::create(rotated_exterior_ring);
 	}
 
 	std::vector< std::vector<PointOnSphere> > rotated_interior_rings(num_interior_rings);
@@ -554,7 +554,7 @@ GPlatesMaths::operator*(
 		}
 	} // loop over interior rings
 
-	return PolygonOnSphere::create_on_heap(rotated_exterior_ring, rotated_interior_rings);
+	return PolygonOnSphere::create(rotated_exterior_ring, rotated_interior_rings);
 }
 
 

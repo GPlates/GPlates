@@ -308,7 +308,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
 	// "gml:posList" branch.
 
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*(gml_point.get_point()));
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(gml_point.get_point());
 	QLocale locale;
 
 	QString point_id(QObject::tr("#"));

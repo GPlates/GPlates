@@ -253,7 +253,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::get_boundary_polygon_with_rigid
 			}
 
 			d_network_boundary_polygon_with_rigid_block_holes =
-					GPlatesMaths::PolygonOnSphere::create_on_heap(
+					GPlatesMaths::PolygonOnSphere::create(
 							d_network_boundary_polygon->exterior_ring_vertex_begin(),
 							d_network_boundary_polygon->exterior_ring_vertex_end(),
 							rigid_block_interior_rings.begin(),

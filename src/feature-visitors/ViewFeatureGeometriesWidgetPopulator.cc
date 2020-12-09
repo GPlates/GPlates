@@ -231,7 +231,7 @@ namespace
 	populate_coordinates_from_point(
 			GPlatesGui::TreeWidgetBuilder &tree_widget_builder,
 			item_handle_seq_type &coordinate_widgets,
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
+			const GPlatesMaths::PointOnSphere &point_on_sphere,
 			CoordinatePeriods::CoordinatePeriod period)
 	{
 		static QLocale locale;
@@ -240,7 +240,7 @@ namespace
 				tree_widget_builder, coordinate_widgets, 1);
 		
 		// Then fill in the appropriate column.
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*point_on_sphere);
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point_on_sphere);
 		QString lat = locale.toString(llp.latitude());
 		QString lon = locale.toString(llp.longitude());
 		QString point;
@@ -566,10 +566,10 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 	// Now, prepare the coords in present-day and reconstructed time.
 	item_handle_seq_type coordinate_widgets;
 	// The present-day point.
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type present_day_point =
-			gml_point.get_point();
+	const GPlatesMaths::PointOnSphere &present_day_point = gml_point.get_point();
 	populate_coordinates_from_point(d_tree_widget_builder,
-			coordinate_widgets, present_day_point,
+			coordinate_widgets,
+			present_day_point,
 			CoordinatePeriods::PRESENT);
 
 	// The reconstructed point, which may not be available.
@@ -583,14 +583,12 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 		// should be using polymorphism -- specifically, the double-dispatch of the
 		// Visitor pattern -- rather than updating the "if ... else if ..." chain
 		// each time a new derivation is added.)
-		const GPlatesMaths::PointOnSphere *recon_point =
-				dynamic_cast<const GPlatesMaths::PointOnSphere *>(recon_geometry->get());
+		const GPlatesMaths::PointGeometryOnSphere *recon_point =
+				dynamic_cast<const GPlatesMaths::PointGeometryOnSphere *>(recon_geometry->get());
 		if (recon_point) {
 			populate_coordinates_from_point(d_tree_widget_builder,
 					coordinate_widgets,
-					GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type(
-							recon_point,
-							GPlatesUtils::NullIntrusivePointerHandler()),
+					recon_point->position(),
 					CoordinatePeriods::RECONSTRUCTED);
 		}
 	}

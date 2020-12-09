@@ -65,10 +65,10 @@ namespace GPlatesApi
 		{
 		case GPlatesMaths::GeometryType::POINT:
 			{
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point =
-						GPlatesUtils::dynamic_pointer_cast<const GPlatesMaths::PointOnSphere>(geometry);
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point =
+						GPlatesUtils::dynamic_pointer_cast<const GPlatesMaths::PointGeometryOnSphere>(geometry);
 
-				const GPlatesMaths::LatLonPoint lat_lon_point = date_line_wrapper.wrap_point(*point);
+				const GPlatesMaths::LatLonPoint lat_lon_point = date_line_wrapper.wrap_point(point->position());
 
 				return bp::object(lat_lon_point);
 			}

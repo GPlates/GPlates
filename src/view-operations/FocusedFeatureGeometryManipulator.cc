@@ -94,9 +94,9 @@ namespace GPlatesViewOperations
 			virtual
 			void
 			visit_point_on_sphere(
-					GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+					GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				const GPlatesMaths::PointOnSphere geom_point[1] = { *point_on_sphere };
+				const GPlatesMaths::PointOnSphere geom_point[1] = { point_on_sphere->position() };
 
 				d_undo_operation = d_geom_builder->set_geometry(
 						GPlatesMaths::GeometryType::POINT,

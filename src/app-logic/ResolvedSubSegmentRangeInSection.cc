@@ -252,11 +252,11 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::get_geometry() const
 	// We should at least have a point (if section geometry was a point).
 	if (sub_segment_points.size() == 1)
 	{
-		return sub_segment_points.front().get_non_null_pointer();
+		return sub_segment_points.front().get_geometry_on_sphere();
 	}
 
 	// We have enough points from section geometry and intersections to create a polyline (ie, at least two points).
-	return GPlatesMaths::PolylineOnSphere::create_on_heap(sub_segment_points);
+	return GPlatesMaths::PolylineOnSphere::create(sub_segment_points);
 }
 
 

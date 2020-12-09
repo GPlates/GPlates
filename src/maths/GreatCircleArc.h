@@ -255,7 +255,7 @@ namespace GPlatesMaths
 		/**
 		 * Finds the closest point on this arc to @a test_point.
 		 */
-		PointOnSphere::non_null_ptr_to_const_type
+		PointOnSphere
 		get_closest_point(
 				const PointOnSphere &test_point) const;
 

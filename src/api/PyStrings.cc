@@ -45,6 +45,26 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	//
+	// The following to/from Python conversions are handled:
+	//
+	// To Python                                  str
+	//     /\                                      /\
+	//     |                                       |
+	//     |                                       \/
+	//     |                                     QString
+	//     |                                       /\
+	//     |                                       |
+	//     |                                       \/
+	//     |                                   UnicodeString
+	//     |                                       /\
+	//     |                                       |
+	//     |                     ------------------+-----------------
+	//     |      		         |                 |                |
+	//     \/                    \/                \/               \/
+	// From Python        XmlAttributeValue EnumerationContent TextContent
+	//
+
 // For PyString_Check below.
 DISABLE_GCC_WARNING("-Wold-style-cast")
 

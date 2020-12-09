@@ -142,7 +142,7 @@ GPlatesApi::PointSequenceFunctionArgument::is_convertible(
 		bp::object python_function_argument)
 {
 	// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
-	if (bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> >(python_function_argument).check() ||
+	if (bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> >(python_function_argument).check() ||
 		bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere> >(python_function_argument).check() ||
 		bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> >(python_function_argument).check() ||
 		bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere> >(python_function_argument).check())
@@ -177,10 +177,10 @@ boost::shared_ptr<GPlatesApi::PointSequenceFunctionArgument::point_seq_type>
 GPlatesApi::PointSequenceFunctionArgument::initialise_points(
 		const function_argument_type &function_argument)
 {
-	if (const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> *point_function_argument =
-		boost::get< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> >(&function_argument))
+	if (const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> *point_function_argument =
+		boost::get< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> >(&function_argument))
 	{
-		return boost::shared_ptr<point_seq_type>(new point_seq_type(1, **point_function_argument));
+		return boost::shared_ptr<point_seq_type>(new point_seq_type(1, (*point_function_argument)->position()));
 	}
 	else if (const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere> *multi_point_function_argument =
 		boost::get< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere> >(&function_argument))
@@ -217,6 +217,20 @@ GPlatesApi::PointSequenceFunctionArgument::initialise_points(
 
 namespace GPlatesApi
 {
+	/**
+	 * Clone a geometry.
+	 * 
+	 * NOTE: This function is deprecated because a geometry is immutable and hence the Python user
+	 *       can just share the same geometry object. In fact this function now just returns the
+	 *       geometry object passed in without cloning it.
+	 */
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+	geometry_on_sphere_clone(
+			const GPlatesMaths::GeometryOnSphere &geometry)
+	{
+		return geometry.get_non_null_pointer();
+	}
+
 	/**
 	 * Calculate the (minimum) distance between two geometries.
 	 */
@@ -359,11 +373,14 @@ export_geometry_on_sphere()
 					"* :class:`PolygonOnSphere`\n",
 					bp::no_init)
 		.def("clone",
-				&GPlatesMaths::GeometryOnSphere::clone_as_geometry,
+				&GPlatesApi::geometry_on_sphere_clone,
 				"clone()\n"
 				"  Create a duplicate of this geometry (derived) instance.\n"
 				"\n"
-				"  :rtype: :class:`GeometryOnSphere`\n")
+				"  :rtype: :class:`GeometryOnSphere`\n"
+				"\n"
+				"  .. deprecated:: 30\n"
+				"     Geometry is immutable so there's no need to clone (instead you can just share the geometry).\n")
 		.def("distance",
 				&GPlatesApi::geometry_on_sphere_distance,
 				(bp::arg("geometry1"), bp::arg("geometry2"),
@@ -531,6 +548,91 @@ export_geometry_on_sphere()
 
 namespace GPlatesApi
 {
+	//
+	// The following to/from Python conversions are handled:
+	//
+	// To Python    GPlatesMaths::PointGeometryOnSphere  GPlatesMaths::LatLonPoint  XYZOrLatLonSequence
+	//     /\                      /\                               |                      |
+	//     |                       |                                |                      |
+	//     |                       ---------------------------------+-----------------------
+	//     |      		                                            |
+	//     \/                                                       \/
+	// From Python                                     GPlatesMaths::PointOnSphere
+	//
+
+	/**
+	 * Enables GPlatesMaths::PointOnSphere to be passed to and from python
+	 * (as GPlatesMaths::PointGeometryOnSphere which is the HeldType, of bp::class_, of Python PointOnSphere).
+	 *
+	 * For more information on boost python to/from conversions, see:
+	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
+	 */
+	struct ConversionPointOnSphereToFromPointGeometryOnSphere :
+			private boost::noncopyable
+	{
+		explicit
+		ConversionPointOnSphereToFromPointGeometryOnSphere()
+		{
+			// To python conversion.
+			bp::to_python_converter<GPlatesMaths::PointOnSphere, Conversion>();
+
+			// From python conversion.
+			bp::converter::registry::push_back(
+					&convertible,
+					&construct,
+					bp::type_id<GPlatesMaths::PointOnSphere>());
+		}
+
+		struct Conversion
+		{
+			static
+			PyObject *
+			convert(
+					const GPlatesMaths::PointOnSphere &point_on_sphere)
+			{
+				// 'GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>' is the
+				// HeldType of the 'bp::class_' wrapper of GPlatesMaths::PointGeometryOnSphere, so
+				// it will be used to complete the conversion to the final 'pygplates.PointOnSphere' object.
+				// This is why the 'const' cast is used. We don't actually need it though - we could
+				// return a *const* intrusive pointer because a to-python converter from 'const' to 'non-const'
+				// intrusive pointer is also registered. But by returning 'non-const' we require one less conversion
+				// so it's a little faster.
+				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> point_geometry_on_sphere =
+						GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+								point_on_sphere.get_point_geometry_on_sphere());
+
+				return bp::incref(bp::object(point_geometry_on_sphere).ptr());
+			};
+		};
+
+		static
+		void *
+		convertible(
+				PyObject *obj)
+		{
+			return bp::extract<const GPlatesMaths::PointGeometryOnSphere &>(obj).check() ? obj : NULL;
+		}
+
+		static
+		void
+		construct(
+				PyObject *obj,
+				boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			void *const storage = reinterpret_cast<
+					bp::converter::rvalue_from_python_storage<GPlatesMaths::Real> *>(
+							data)->storage.bytes;
+
+			const GPlatesMaths::PointGeometryOnSphere &point_geometry_on_sphere =
+					bp::extract<const GPlatesMaths::PointGeometryOnSphere &>(obj);
+
+			new (storage) GPlatesMaths::PointOnSphere(point_geometry_on_sphere.position());
+
+			data->convertible = storage;
+		}
+	};
+
+
 	/**
 	 * Enables LatLonPoint to be passed from python (to a PointOnSphere).
 	 *
@@ -673,8 +775,18 @@ namespace GPlatesApi
 
 
 	// North and south poles.
-	const GPlatesMaths::PointOnSphere point_on_sphere_north_pole(GPlatesMaths::UnitVector3D::zBasis());
-	const GPlatesMaths::PointOnSphere point_on_sphere_south_pole(-GPlatesMaths::UnitVector3D::zBasis());
+	const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> point_on_sphere_north_pole =
+			GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+					GPlatesMaths::PointGeometryOnSphere::create(
+							// Note that we can't use 'GPlatesMaths::PointOnSphere::north_pole' here because
+							// it might not yet be initialised when this static variable is initialised...
+							GPlatesMaths::PointOnSphere(GPlatesMaths::UnitVector3D::zBasis())));
+	const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> point_on_sphere_south_pole =
+			GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+					GPlatesMaths::PointGeometryOnSphere::create(
+							// Note that we can't use 'GPlatesMaths::PointOnSphere::south_pole' here because
+							// it might not yet be initialised when this static variable is initialised...
+							GPlatesMaths::PointOnSphere(-GPlatesMaths::UnitVector3D::zBasis())));
 
 
 	// Convenience constructor to create from (x,y,z).
@@ -684,39 +796,41 @@ namespace GPlatesApi
 	//
 	// With boost 1.42 we get the following compile error...
 	//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
-	// ...if we return 'GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type' and rely on
+	// ...if we return 'GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type' and rely on
 	// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
 	// to convert for us - despite the fact that this conversion works successfully for python bindings
 	// in other source files. It's possibly due to 'bp::make_constructor' which isn't used for
 	// MultiPointOnSphere which has no problem with 'const'.
 	//
 	// So we avoid it by using returning a pointer to 'non-const' PointOnSphere.
-	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>
 	point_on_sphere_create_xyz(
 			const GPlatesMaths::real_t &x,
 			const GPlatesMaths::real_t &y,
 			const GPlatesMaths::real_t &z,
 			bool normalise)
 	{
-		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
-				new GPlatesMaths::PointOnSphere(
-						normalise
-						? GPlatesMaths::Vector3D(x, y, z).get_normalisation()
-						: GPlatesMaths::UnitVector3D(x, y, z)));
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+				GPlatesMaths::PointGeometryOnSphere::create(
+						GPlatesMaths::PointOnSphere(
+								normalise
+								? GPlatesMaths::Vector3D(x, y, z).get_normalisation()
+								: GPlatesMaths::UnitVector3D(x, y, z))));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>
 	point_on_sphere_create_lat_lon(
 			const GPlatesMaths::real_t &latitude,
 			const GPlatesMaths::real_t &longitude)
 	{
-		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
-				new GPlatesMaths::PointOnSphere(
-						make_point_on_sphere(
-								GPlatesMaths::LatLonPoint(latitude.dval(), longitude.dval()))));
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+				GPlatesMaths::PointGeometryOnSphere::create(
+						GPlatesMaths::PointOnSphere(
+								make_point_on_sphere(
+										GPlatesMaths::LatLonPoint(latitude.dval(), longitude.dval())))));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>
 	point_on_sphere_create(
 			bp::object point_object)
 	{
@@ -725,8 +839,9 @@ namespace GPlatesApi
 		bp::extract<GPlatesMaths::PointOnSphere> extract_point_on_sphere(point_object);
 		if (extract_point_on_sphere.check())
 		{
-			return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
-					new GPlatesMaths::PointOnSphere(extract_point_on_sphere()));
+			return GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+					GPlatesMaths::PointGeometryOnSphere::create(
+								extract_point_on_sphere()));
 		}
 
 		PyErr_SetString(PyExc_TypeError, "Expected PointOnSphere or LatLonPoint or "
@@ -734,44 +849,51 @@ namespace GPlatesApi
 		bp::throw_error_already_set();
 
 		// Shouldn't be able to get here.
-		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(NULL);
+		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>(NULL);
 	}
 
 	GPlatesMaths::Real
 	point_on_sphere_get_x(
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
 	{
-		return point_on_sphere.position_vector().x();
+		return point_on_sphere.position().position_vector().x();
 	}
 
 	GPlatesMaths::Real
 	point_on_sphere_get_y(
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
 	{
-		return point_on_sphere.position_vector().y();
+		return point_on_sphere.position().position_vector().y();
 	}
 
 	GPlatesMaths::Real
 	point_on_sphere_get_z(
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
 	{
-		return point_on_sphere.position_vector().z();
+		return point_on_sphere.position().position_vector().z();
 	}
 
 	bp::tuple
 	point_on_sphere_to_xyz(
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
 	{
-		const GPlatesMaths::UnitVector3D &position_vector = point_on_sphere.position_vector();
+		const GPlatesMaths::UnitVector3D &position_vector = point_on_sphere.position().position_vector();
 
 		return bp::make_tuple(position_vector.x(), position_vector.y(), position_vector.z());
 	}
 
+	GPlatesMaths::LatLonPoint
+	point_on_sphere_to_lat_lon_point(
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
+	{
+		return GPlatesMaths::make_lat_lon_point(point_on_sphere.position());
+	}
+
 	bp::tuple
 	point_on_sphere_to_lat_lon(
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
 	{
-		const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(point_on_sphere);
+		const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(point_on_sphere.position());
 
 		return bp::make_tuple(lat_lon_point.latitude(), lat_lon_point.longitude());
 	}
@@ -784,7 +906,7 @@ export_point_on_sphere()
 	// PointOnSphere - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
-			GPlatesMaths::PointOnSphere,
+			GPlatesMaths::PointGeometryOnSphere,
 			// This wrapped type is immutable so it's desireable to wrap it as a *const* object.
 			// However boost-python currently does not compile when wrapping *const* objects
 			// (eg, 'GeometryOnSphere::non_null_ptr_to_const_type') - see:
@@ -793,22 +915,9 @@ export_point_on_sphere()
 			//
 			// ...so the current solution for that is to wrap *non-const* objects (to keep boost-python happy)
 			// and register python to/from converter that convert const to non-const and back again.
-			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>,
-			bp::bases<GPlatesMaths::GeometryOnSphere>
-			// NOTE: PointOnSphere is the only GeometryOnSphere type that is copyable.
-			// And it needs to be copyable (in our wrapper) so that, eg, MultiPointOnSphere's iterator
-			// can copy raw PointOnSphere elements (in its vector) into 'non_null_intrusive_ptr' versions
-			// of PointOnSphere as it iterates over its collection (this conversion is one of those
-			// cool things that boost-python takes care of automatically).
-			//
-			// Also note that PointOnSphere (like all GeometryOnSphere types) is immutable so the fact
-			// that it can be copied into a python object (unlike the other GeometryOnSphere types) does
-			// not mean we have to worry about a PointOnSphere modification from the C++ side not being
-			// visible on the python side, or vice versa (because cannot modify since immutable - or at least
-			// the python interface is immutable - the C++ has an assignment operator we should be careful of).
-#if 0
+			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>,
+			bp::bases<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable
-#endif
 			>(
 					"PointOnSphere",
 					"Represents a point on the surface of the unit length sphere in 3D cartesian coordinates.\n"
@@ -920,9 +1029,9 @@ export_point_on_sphere()
 				"    # If (x,y,z) might not be on the unit globe.\n"
 				"    point = pygplates.PointOnSphere(x, y, z, normalise=True)\n")
 		// Static property 'pygplates.PointOnSphere.north_pole'...
-		.def_readonly("north_pole", GPlatesApi::point_on_sphere_north_pole)
+		.def_readonly("north_pole", GPlatesApi::point_on_sphere_north_pole.get())
 		// Static property 'pygplates.PointOnSphere.south_pole'...
-		.def_readonly("south_pole", GPlatesApi::point_on_sphere_south_pole)
+		.def_readonly("south_pole", GPlatesApi::point_on_sphere_south_pole.get())
 		.def("get_x",
 				&GPlatesApi::point_on_sphere_get_x,
 				"get_x()\n"
@@ -958,7 +1067,7 @@ export_point_on_sphere()
 				"    dot_product = pygplates.Vector3D.dot(point1.to_xyz(), point2.to_xyz())\n"
 				"    cross_product = pygplates.Vector3D.cross(point1.to_xyz(), point2.to_xyz())\n")
 		.def("to_lat_lon_point",
-				&GPlatesMaths::make_lat_lon_point,
+				&GPlatesApi::point_on_sphere_to_lat_lon_point,
 				"to_lat_lon_point()\n"
 				"  Returns the (latitude,longitude) equivalent of this :class:`PointOnSphere`.\n"
 				"\n"
@@ -986,16 +1095,16 @@ export_point_on_sphere()
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
-	//
-	// PointOnSphere is a bit of an exception to the immutable rule since it can be allocated on
-	// the stack or heap (unlike the other geometry types) and it has an assignment operator.
-	// However we treat it the same as the other geometry types.
-	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>();
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>();
 
-	// Registers the from-python converter from GPlatesMaths::LatLonPoint.
+	// Registers a from-python converter from GPlatesMaths::PointGeometryOnSphere to GPlatesMaths::PointOnSphere and
+	// a to-python converter from GPlatesMaths::PointOnSphere to GPlatesMaths::PointGeometryOnSphere.
+	GPlatesApi::ConversionPointOnSphereToFromPointGeometryOnSphere();
+
+	// Registers the from-python converter from GPlatesMaths::LatLonPoint to GPlatesMaths::PointOnSphere.
 	GPlatesApi::ConversionPointOnSphereFromLatLonPoint();
 
-	// Registers the from-python converter from a (x,y,z) or (lat,lon) sequence.
+	// Registers the from-python converter from a (x,y,z) or (lat,lon) sequence to GPlatesMaths::PointOnSphere.
 	GPlatesApi::ConversionPointOnSphereFromXYZOrLatLonSequence();
 }
 
@@ -1008,7 +1117,7 @@ namespace GPlatesApi
 			bp::object points) // Any python sequence (eg, list, tuple).
 	{
 		// Copy into a vector.
-		// Note: We can't pass the iterators directly to 'MultiPointOnSphere::create_on_heap'
+		// Note: We can't pass the iterators directly to 'MultiPointOnSphere::create'
 		// because they are *input* iterators (ie, one pass only) and 'MultiPointOnSphere' expects
 		// forward iterators (it actually makes two passes over the points).
  		std::vector<GPlatesMaths::PointOnSphere> points_vector;
@@ -1023,7 +1132,7 @@ namespace GPlatesApi
 		//
 		// So we avoid it by using returning a pointer to 'non-const' MultiPointOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::MultiPointOnSphere>(
-				GPlatesMaths::MultiPointOnSphere::create_on_heap(
+				GPlatesMaths::MultiPointOnSphere::create(
 						points_vector.begin(),
 						points_vector.end()));
 	}
@@ -1309,8 +1418,8 @@ namespace GPlatesApi
 			bp::object points) // Any python sequence (eg, list, tuple).
 	{
 		// Copy into a vector.
-		// Note: We can't pass the iterators directly to 'PolylineOnSphere::create_on_heap' or
-		// 'PolygonOnSphere::create_on_heap' because they are *input* iterators (ie, one pass only)
+		// Note: We can't pass the iterators directly to 'PolylineOnSphere::create' or
+		// 'PolygonOnSphere::create' because they are *input* iterators (ie, one pass only)
 		// and 'PolylineOnSphere/PolygonOnSphere' expects forward iterators (they actually makes
 		// two passes over the points).
  		std::vector<GPlatesMaths::PointOnSphere> points_vector;
@@ -1325,7 +1434,7 @@ namespace GPlatesApi
 		//
 		// So we avoid it by using returning a pointer to 'non-const' PolyGeometryOnSphereType.
 		return GPlatesUtils::const_pointer_cast<PolyGeometryOnSphereType>(
-				PolyGeometryOnSphereType::create_on_heap(
+				PolyGeometryOnSphereType::create(
 						points_vector.begin(),
 						points_vector.end()));
 	}
@@ -1352,7 +1461,7 @@ namespace GPlatesApi
 					GPLATES_ASSERTION_SOURCE);
 
 			// Duplicate the point if caller allows one point, otherwise let
-			// 'PolylineOnSphere::create_on_heap()' throw InvalidPointsForPolylineConstructionError.
+			// 'PolylineOnSphere::create()' throw InvalidPointsForPolylineConstructionError.
 			if (allow_one_point)
 			{
 				geometry_points.push_back(geometry_points.back());
@@ -1360,7 +1469,7 @@ namespace GPlatesApi
 
 			// Note that this raises an exception (converted to Python) if 'allow_one_point'
 			// is false - because there is only one point.
-			polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(geometry_points);
+			polyline = GPlatesMaths::PolylineOnSphere::create(geometry_points);
 		}
 
 		// With boost 1.42 we get the following compile error...
@@ -2503,7 +2612,7 @@ namespace GPlatesApi
 					GPLATES_ASSERTION_SOURCE);
 
 			// Duplicate the last point until we have three points if caller allows one or two points,
-			// otherwise let 'PolygonOnSphere::create_on_heap()' throw InvalidPointsForPolygonConstructionError.
+			// otherwise let 'PolygonOnSphere::create()' throw InvalidPointsForPolygonConstructionError.
 			if (allow_one_or_two_points)
 			{
 				while (geometry_points.size() < 3)
@@ -2514,7 +2623,7 @@ namespace GPlatesApi
 
 			// Note that this raises an exception (converted to Python) if 'allow_one_or_two_points'
 			// is false - because there is only one or two points.
-			polygon = GPlatesMaths::PolygonOnSphere::create_on_heap(geometry_points);
+			polygon = GPlatesMaths::PolygonOnSphere::create(geometry_points);
 		}
 
 		// With boost 1.42 we get the following compile error...

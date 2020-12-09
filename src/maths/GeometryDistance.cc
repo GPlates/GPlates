@@ -69,7 +69,7 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type point_on_sphere1)
+					PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere1)
 			{
 				/**
 				 * Minimum distance between a PointOnSphere and a GeometryOnSphere.
@@ -102,17 +102,17 @@ namespace GPlatesMaths
 					virtual
 					void
 					visit_point_on_sphere(
-							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+							PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere2)
 					{
 						d_minimum_distance = minimum_distance(
 								d_point_on_sphere1,
-								*point_on_sphere2,
+								point_on_sphere2->position(),
 								d_minimum_distance_threshold);
 
 						if (d_closest_positions)
 						{
 							boost::get<0>(d_closest_positions.get()) = d_point_on_sphere1.position_vector();
-							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
 
 						if (d_closest_indices)
@@ -237,7 +237,7 @@ namespace GPlatesMaths
 				};
 
 				PointOnSphereVisitor visitor(
-						*point_on_sphere1,
+						point_on_sphere1->position(),
 						d_geometry2_interior_is_solid,
 						d_minimum_distance,
 						d_minimum_distance_threshold,
@@ -283,7 +283,7 @@ namespace GPlatesMaths
 					virtual
 					void
 					visit_point_on_sphere(
-							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+							PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere2)
 					{
 						boost::optional<UnitVector3D &> closest_position_in_multipoint1;
 						if (d_closest_positions)
@@ -298,14 +298,14 @@ namespace GPlatesMaths
 
 						d_minimum_distance = minimum_distance(
 								d_multi_point_on_sphere1,
-								*point_on_sphere2,
+								point_on_sphere2->position(),
 								d_minimum_distance_threshold,
 								closest_position_in_multipoint1,
 								closest_position_index_in_multipoint1);
 
 						if (d_closest_positions)
 						{
-							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
 						if (d_closest_indices)
 						{
@@ -416,7 +416,7 @@ namespace GPlatesMaths
 					virtual
 					void
 					visit_point_on_sphere(
-							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+							PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere2)
 					{
 						boost::optional<UnitVector3D &> closest_position_on_polygon1;
 						if (d_closest_positions)
@@ -431,7 +431,7 @@ namespace GPlatesMaths
 
 						d_minimum_distance = minimum_distance(
 								d_polygon_on_sphere1,
-								*point_on_sphere2,
+								point_on_sphere2->position(),
 								d_geometry1_interior_is_solid,
 								d_minimum_distance_threshold,
 								closest_position_on_polygon1,
@@ -439,7 +439,7 @@ namespace GPlatesMaths
 
 						if (d_closest_positions)
 						{
-							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
 						if (d_closest_indices)
 						{
@@ -553,7 +553,7 @@ namespace GPlatesMaths
 					virtual
 					void
 					visit_point_on_sphere(
-							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+							PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere2)
 					{
 						boost::optional<UnitVector3D &> closest_position_on_polyline1;
 						if (d_closest_positions)
@@ -568,14 +568,14 @@ namespace GPlatesMaths
 
 						d_minimum_distance = minimum_distance(
 								d_polyline_on_sphere1,
-								*point_on_sphere2,
+								point_on_sphere2->position(),
 								d_minimum_distance_threshold,
 								closest_position_on_polyline1,
 								closest_segment_index_in_polyline1);
 
 						if (d_closest_positions)
 						{
-							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
 						if (d_closest_indices)
 						{

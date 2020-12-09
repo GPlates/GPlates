@@ -77,7 +77,7 @@ namespace GPlatesMaths
 	 * @endcode
 	 *
 	 * You can create a polygon by invoking the static member function
-	 * @a PolygonOnSphere::create_on_heap, passing it a sequential STL
+	 * @a PolygonOnSphere::create, passing it a sequential STL
 	 * container (list, vector, ...) of PointOnSphere to define the
 	 * exterior vertices of the polygon (and similarly for interior vertices).
 	 * The sequence of points in any ring must contain at least three distinct elements,
@@ -86,7 +86,7 @@ namespace GPlatesMaths
 	 * comment for the static member function @a PolygonOnSphere::evaluate_construction_parameter_validity.
 	 *
 	 * Say you have a sequence of PointOnSphere [A, B, C, D] for an exterior ring and [E, F, G] for an interior ring.
-	 * If you pass these sequences to the @a PolygonOnSphere::create_on_heap function, it will create a polygon with
+	 * If you pass these sequences to the @a PolygonOnSphere::create function, it will create a polygon with
 	 * exterior ring composed of 4 segments A->B, B->C, C->D and D->A and interior ring composed of 3 segments
 	 * E->F, F->G, G->E.
 	 *
@@ -527,7 +527,7 @@ namespace GPlatesMaths
 		 * in the range @a exterior_begin / @a exterior_end.
 		 *
 		 * Say you have a sequence of PointOnSphere [A, B, C, D] for an exterior ring.
-		 * If you pass these sequences to @a create_on_heap it will create a polygon with exterior ring
+		 * If you pass these sequences to @a create it will create a polygon with exterior ring
 		 * composed of 4 segments A->B, B->C, C->D and D->A:
 		 *
 		 *  Ring segments:
@@ -570,7 +570,7 @@ namespace GPlatesMaths
 		template <typename PointForwardIter>
 		static
 		const non_null_ptr_to_const_type
-		create_on_heap(
+		create(
 				PointForwardIter exterior_begin,
 				PointForwardIter exterior_end,
 				bool check_distinct_points = false);
@@ -585,11 +585,11 @@ namespace GPlatesMaths
 		template <typename PointCollectionType>
 		static
 		const non_null_ptr_to_const_type
-		create_on_heap(
+		create(
 				const PointCollectionType &exterior_points,
 				bool check_distinct_points = false)
 		{
-			return create_on_heap(exterior_points.begin(), exterior_points.end(), check_distinct_points);
+			return create(exterior_points.begin(), exterior_points.end(), check_distinct_points);
 		}
 
 
@@ -602,7 +602,7 @@ namespace GPlatesMaths
 		 * a sequential STL container (list, vector, ...) of PointOnSphere.
 		 *
 		 * Say you have a sequence of PointOnSphere [A, B, C, D] for an exterior ring and [E, F, G] for an interior ring.
-		 * If you pass these sequences to @a create_on_heap it will create a polygon with exterior ring composed of 4 segments
+		 * If you pass these sequences to @a create it will create a polygon with exterior ring composed of 4 segments
 		 * A->B, B->C, C->D and D->A and interior ring composed of 3 segments E->F, F->G, G->E:
 		 *
 		 *  Ring segments:
@@ -652,7 +652,7 @@ namespace GPlatesMaths
 		template <typename PointForwardIter, typename PointCollectionForwardIter>
 		static
 		const non_null_ptr_to_const_type
-		create_on_heap(
+		create(
 				PointForwardIter exterior_begin,
 				PointForwardIter exterior_end,
 				PointCollectionForwardIter interior_rings_begin,
@@ -673,13 +673,13 @@ namespace GPlatesMaths
 		template <typename PointCollectionType, typename PointCollectionForwardIter>
 		static
 		const non_null_ptr_to_const_type
-		create_on_heap(
+		create(
 				const PointCollectionType &exterior_points,
 				PointCollectionForwardIter interior_rings_begin,
 				PointCollectionForwardIter interior_rings_end,
 				bool check_distinct_points = false)
 		{
-			return create_on_heap(
+			return create(
 					exterior_points.begin(), exterior_points.end(),
 					interior_rings_begin, interior_rings_end,
 					check_distinct_points);
@@ -699,12 +699,12 @@ namespace GPlatesMaths
 		template <typename PointCollectionType, typename RingCollectionType>
 		static
 		const non_null_ptr_to_const_type
-		create_on_heap(
+		create(
 				const PointCollectionType &exterior_points,
 				const RingCollectionType &interior_rings,
 				bool check_distinct_points = false)
 		{
-			return create_on_heap(
+			return create(
 					exterior_points.begin(), exterior_points.end(),
 					interior_rings.begin(), interior_rings.end(),
 					check_distinct_points);
@@ -713,49 +713,6 @@ namespace GPlatesMaths
 
 		virtual
 		~PolygonOnSphere();
-
-
-		/**
-		 * Clone this PolygonOnSphere instance, to create a duplicate instance on the heap.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 */
-		const GeometryOnSphere::non_null_ptr_to_const_type
-		clone_as_geometry() const
-		{
-			return GeometryOnSphere::non_null_ptr_to_const_type(new PolygonOnSphere(*this));
-		}
-
-
-		/**
-		 * Clone this PolygonOnSphere instance, to create a duplicate instance on the heap.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 */
-		const non_null_ptr_to_const_type
-		clone_as_polygon() const
-		{
-			return non_null_ptr_to_const_type(new PolygonOnSphere(*this));
-		}
-
-
-		/**
-		 * Get a non-null pointer to a const PolygonOnSphere which points to this instance
-		 * (or a clone of this instance).
-		 *
-		 * (Since geometries are treated as immutable literals in GPlates, a geometry can
-		 * never be modified through a pointer, so there is no reason why it would be
-		 * inappropriate to return a pointer to a clone of this instance rather than a
-		 * pointer to this instance.)
-		 *
-		 * This function will behave correctly regardless of whether this instance is on
-		 * the stack or the heap.
-		 */
-		const non_null_ptr_to_const_type
-		get_non_null_pointer() const
-		{
-			return GPlatesUtils::get_non_null_pointer(this);
-		}
 
 
 		virtual
@@ -780,6 +737,16 @@ namespace GPlatesMaths
 		void
 		accept_visitor(
 				ConstGeometryOnSphereVisitor &visitor) const;
+
+
+		/**
+		 * Return this instance as a non-null pointer.
+		 */
+		const non_null_ptr_to_const_type
+		get_non_null_pointer() const
+		{
+			return GPlatesUtils::get_non_null_pointer(this);
+		}
 
 
 		/**
@@ -1822,36 +1789,13 @@ namespace GPlatesMaths
 		 * instantiation of a polygon without any vertices.
 		 *
 		 * This constructor should never be invoked directly by client code; only through
-		 * the static 'create_on_heap' function.
+		 * the static 'create' function.
 		 *
 		 * This constructor should act exactly the same as the default (auto-generated)
 		 * default-constructor would, except that it should initialise the ref-count to
 		 * zero.
 		 */
 		PolygonOnSphere();
-
-
-		/**
-		 * Create a copy-constructed PolygonOnSphere instance.
-		 *
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 *
-		 * This constructor should never be invoked directly by client code; only through
-		 * the 'clone_as_geometry' or 'clone_as_polygon' function.
-		 *
-		 * This constructor should act exactly the same as the default (auto-generated)
-		 * copy-constructor would, except that it should initialise the ref-count to zero.
-		 */
-		PolygonOnSphere(
-				const PolygonOnSphere &other);
-
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		PolygonOnSphere &
-		operator=(
-				const PolygonOnSphere &other);
 
 
 		/**
@@ -1931,7 +1875,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * This is the minimum number of (distinct) ring points to be passed into the 'create_on_heap'
+		 * This is the minimum number of (distinct) ring points to be passed into the 'create'
 		 * function (for each ring) to enable creation of closed, well-defined polygon rings.
 		 */
 		static const unsigned s_min_num_ring_points;
@@ -2145,7 +2089,7 @@ namespace GPlatesMaths
 
 	template <typename PointForwardIter>
 	const PolygonOnSphere::non_null_ptr_to_const_type
-	PolygonOnSphere::create_on_heap(
+	PolygonOnSphere::create(
 			PointForwardIter exterior_begin,
 			PointForwardIter exterior_end,
 			bool check_distinct_points)
@@ -2158,7 +2102,7 @@ namespace GPlatesMaths
 
 	template <typename PointForwardIter, typename PointCollectionForwardIter>
 	const PolygonOnSphere::non_null_ptr_to_const_type
-	PolygonOnSphere::create_on_heap(
+	PolygonOnSphere::create(
 			PointForwardIter exterior_begin,
 			PointForwardIter exterior_end,
 			PointCollectionForwardIter interior_rings_begin,

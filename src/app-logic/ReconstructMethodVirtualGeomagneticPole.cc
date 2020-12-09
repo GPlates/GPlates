@@ -180,7 +180,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_point.get_point()));
+								gml_point.get_point().get_geometry_on_sphere()));
 			}
 
 			virtual
@@ -273,7 +273,7 @@ namespace GPlatesAppLogic
 									d_VGP_params,
 									d_reconstruction_tree,
 									d_reconstruction_tree_creator,
-									(*d_VGP_params.d_vgp_point),
+									d_VGP_params.d_vgp_point->get_geometry_on_sphere(),
 									*(*d_VGP_params.d_vgp_iterator).handle_weak_ref(),
 									(*d_VGP_params.d_vgp_iterator),
 									d_reconstruction_params.get_recon_plate_id(),
@@ -290,7 +290,7 @@ namespace GPlatesAppLogic
 									d_reconstruction_tree_creator,
 									*(*d_VGP_params.d_site_iterator).handle_weak_ref(),
 									(*d_VGP_params.d_site_iterator),
-									(*d_VGP_params.d_site_point),
+									d_VGP_params.d_site_point->get_geometry_on_sphere(),
 									ReconstructMethod::VIRTUAL_GEOMAGNETIC_POLE,
 									d_reconstruction_params.get_recon_plate_id(),
 									d_reconstruction_params.get_time_of_appearance(),
@@ -312,7 +312,7 @@ namespace GPlatesAppLogic
 
 				GPlatesModel::FeatureHandle::iterator property = *current_top_level_propiter();
 
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_point =
+				const GPlatesMaths::PointOnSphere reconstructed_point =
 						d_reconstruction_rotation.get()->get_finite_rotation() * gml_point.get_point();
 
 				if (current_top_level_propname() == site_name)

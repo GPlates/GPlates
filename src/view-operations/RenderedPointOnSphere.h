@@ -39,7 +39,7 @@ namespace GPlatesViewOperations
 	{
 	public:
 		RenderedPointOnSphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				const GPlatesGui::ColourProxy &colour,
 				float point_size_hint) :
 		d_point_on_sphere(point_on_sphere),
@@ -60,7 +60,7 @@ namespace GPlatesViewOperations
 		test_proximity(
 				const GPlatesMaths::ProximityCriteria &criteria) const
 		{
-			return d_point_on_sphere->test_proximity(criteria);
+			return d_point_on_sphere.test_proximity(criteria);
 		}
 		
 		virtual
@@ -68,17 +68,11 @@ namespace GPlatesViewOperations
 		test_vertex_proximity(
 				const GPlatesMaths::ProximityCriteria &criteria) const
 		{
-			return d_point_on_sphere->test_vertex_proximity(criteria);
+			return d_point_on_sphere.test_vertex_proximity(criteria);
 		}		
 
 		const GPlatesMaths::PointOnSphere &
 		get_point_on_sphere() const
-		{
-			return *d_point_on_sphere;
-		}
-
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
-		get_point_on_sphere_ptr() const
 		{
 			return d_point_on_sphere;
 		}
@@ -96,7 +90,7 @@ namespace GPlatesViewOperations
 		}
 
 	private:
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_point_on_sphere;
+		GPlatesMaths::PointOnSphere d_point_on_sphere;
 		GPlatesGui::ColourProxy d_colour;
 		float d_point_size_hint;
 	};

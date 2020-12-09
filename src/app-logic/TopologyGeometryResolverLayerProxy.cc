@@ -1439,7 +1439,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 		// geometry property iterator (referenced by the MultiPointVectorField) could be a
 		// non-multi-point geometry.
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type sub_segment_velocity_domain =
-				GPlatesMaths::MultiPointOnSphere::create_on_heap(
+				GPlatesMaths::MultiPointOnSphere::create(
 						sub_segment_geometry_points.begin(),
 						sub_segment_geometry_points.end());
 

@@ -845,7 +845,7 @@ namespace GPlatesMaths
 				location_type *location_added = NULL)
 		{
 			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
-			AddRegionOfInterestRotatedGeometryOnSphere add_geometry(*this, element, finite_rotation, region_of_interest, location_added);
+			AddRegionOfInterestRotatedGeometryOnSphere add_geometry(*this, element, region_of_interest, finite_rotation, location_added);
 			geometry.accept_visitor(add_geometry);
 		}
 
@@ -904,7 +904,7 @@ namespace GPlatesMaths
 				const FiniteRotation &finite_rotation,
 				location_type *location_added = NULL)
 		{
-			add(element, point_on_sphere.position_vector(), finite_rotation, region_of_interest, location_added);
+			add(element, point_on_sphere.position_vector(), region_of_interest, finite_rotation, location_added);
 		}
 
 
@@ -1318,9 +1318,9 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+					PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				d_spatial_partition.add(d_element, point_on_sphere->position_vector(), d_location_added);
+				d_spatial_partition.add(d_element, point_on_sphere->position(), d_location_added);
 			}
 
 			virtual
@@ -1374,9 +1374,9 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+					PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				d_spatial_partition.add(d_element, point_on_sphere->position_vector(), d_finite_rotation, d_location_added);
+				d_spatial_partition.add(d_element, point_on_sphere->position(), d_finite_rotation, d_location_added);
 			}
 
 			virtual
@@ -1430,9 +1430,9 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+					PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				d_spatial_partition.add(d_element, point_on_sphere->position_vector(), d_region_of_interest, d_location_added);
+				d_spatial_partition.add(d_element, point_on_sphere->position(), d_region_of_interest, d_location_added);
 			}
 
 			virtual
@@ -1468,13 +1468,13 @@ namespace GPlatesMaths
 			AddRegionOfInterestRotatedGeometryOnSphere(
 					CubeQuadTreePartition<ElementType> &spatial_partition,
 					const ElementType &element,
-					const FiniteRotation &finite_rotation,
 					const AngularExtent &region_of_interest,
+					const FiniteRotation &finite_rotation,
 					location_type *location_added) :
 				d_spatial_partition(spatial_partition),
 				d_element(element),
-				d_finite_rotation(finite_rotation),
 				d_region_of_interest(region_of_interest),
+				d_finite_rotation(finite_rotation),
 				d_location_added(location_added)
 			{  }
 
@@ -1489,9 +1489,9 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+					PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				d_spatial_partition.add(d_element, point_on_sphere->position_vector(), d_region_of_interest, d_finite_rotation, d_location_added);
+				d_spatial_partition.add(d_element, point_on_sphere->position(), d_region_of_interest, d_finite_rotation, d_location_added);
 			}
 
 			virtual
@@ -1512,8 +1512,8 @@ namespace GPlatesMaths
 
 			CubeQuadTreePartition<ElementType> &d_spatial_partition;
 			const ElementType &d_element;
-			const FiniteRotation &d_finite_rotation;
 			const AngularExtent &d_region_of_interest;
+			const FiniteRotation &d_finite_rotation;
 			location_type *d_location_added;
 		};
 

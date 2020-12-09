@@ -1415,7 +1415,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_polyline(
 					EXCEPTION_SOURCE);
 			break;
 	}
-	return polyline_type::create_on_heap(points);
+	return polyline_type::create(points);
 }
 
 

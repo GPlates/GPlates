@@ -729,7 +729,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_vgp_point =
 				create_rendered_reconstruction_geometry(
-						*rvgp->vgp_params().d_vgp_point,
+						rvgp->vgp_params().d_vgp_point->get_geometry_on_sphere(),
 						rvgp,
 						d_render_params,
 						rvgp_colour,
@@ -740,22 +740,22 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		render_reconstruction_geometry_on_sphere(rendered_vgp_point);
 	}
 
-	boost::optional<GPlatesMaths::PointOnSphere> pole_point = boost::none;
-	boost::optional<GPlatesMaths::PointOnSphere> site_point = boost::none;
+	boost::optional<GPlatesMaths::PointOnSphere> pole_point;
+	boost::optional<GPlatesMaths::PointOnSphere> site_point;
 	if(d_reconstruction_adjustment)
 	{
-		pole_point = (*d_reconstruction_adjustment) * (**rvgp->vgp_params().d_vgp_point);
+		pole_point = *d_reconstruction_adjustment * rvgp->vgp_params().d_vgp_point.get();
 		if(rvgp->vgp_params().d_site_point)
 		{
-			site_point = (*d_reconstruction_adjustment) * (**rvgp->vgp_params().d_site_point);
+			site_point = *d_reconstruction_adjustment * rvgp->vgp_params().d_site_point.get();
 		}
 	}
 	else
 	{
-		pole_point = (**rvgp->vgp_params().d_vgp_point);
+		pole_point = rvgp->vgp_params().d_vgp_point.get();
 		if(rvgp->vgp_params().d_site_point)
 		{
-			site_point = (**rvgp->vgp_params().d_site_point);
+			site_point = rvgp->vgp_params().d_site_point.get();
 		}
 	}
 	if (d_render_params.vgp_draw_circular_error &&
@@ -1145,7 +1145,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry rendered_geom =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
 			GPlatesMaths::SmallCircle::create_colatitude(
-				rsc->centre()->position_vector(),rsc->radius()),
+				rsc->centre().position_vector(), rsc->radius()),
 			get_colour(rsc, d_colour, d_style_adapter));
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =

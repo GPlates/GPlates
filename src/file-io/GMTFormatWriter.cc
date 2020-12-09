@@ -181,7 +181,7 @@ void
 GPlatesFileIO::GMTFormatWriter::visit_gml_point(
 	const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_feature_accumulator.add_geometry(gml_point.get_point());
+	d_feature_accumulator.add_geometry(gml_point.get_point().get_geometry_on_sphere());
 }
 
 

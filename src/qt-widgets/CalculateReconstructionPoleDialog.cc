@@ -206,11 +206,11 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::fill_found_fields_from_feat
 		return;
 	}
 
-	boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> pole_point = finder.get_vgp_point();
+	boost::optional<GPlatesMaths::PointOnSphere> pole_point = finder.get_vgp_point();
 
 	if (pole_point)
 	{
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(**pole_point);
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pole_point.get());
 		spinbox_vgp_lat->setValue(llp.latitude());
 		spinbox_vgp_lon->setValue(llp.longitude());
 	}

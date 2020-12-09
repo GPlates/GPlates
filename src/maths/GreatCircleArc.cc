@@ -570,7 +570,7 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 	return start_point();
 }
 
-GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PointOnSphere
 GPlatesMaths::GreatCircleArc::get_closest_point(
 		const PointOnSphere &test_point) const
 {
@@ -579,7 +579,7 @@ GPlatesMaths::GreatCircleArc::get_closest_point(
 	boost::optional<PointOnSphere> closest_point_on_great_circle_arc;
 	calculate_closest_feature(*this, test_point, closest_point_on_great_circle_arc, closeness);
 
-	return closest_point_on_great_circle_arc->get_non_null_pointer();
+	return closest_point_on_great_circle_arc.get();
 }
 
 GPlatesMaths::GreatCircleArc::ConstructionParameterValidity

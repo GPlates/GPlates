@@ -1344,7 +1344,7 @@ namespace GPlatesMaths
 				}
 
 				const PolylineOnSphere::non_null_ptr_to_const_type interpolated_polyline =
-						PolylineOnSphere::create_on_heap(
+						PolylineOnSphere::create(
 								interpolated_points.begin(),
 								interpolated_points.end());
 				interpolated_polylines.push_back(interpolated_polyline);

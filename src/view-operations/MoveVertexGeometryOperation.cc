@@ -426,7 +426,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::add_rendered_lines_for_polyl
 		d_geometry_builder.get_geometry_point_end(geom_index);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
-		GPlatesMaths::PolylineOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
+		GPlatesMaths::PolylineOnSphere::create(builder_geom_begin, builder_geom_end);
 
 	RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 				polyline_on_sphere,
@@ -448,7 +448,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::add_rendered_lines_for_polyg
 		d_geometry_builder.get_geometry_point_end(geom_index);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
-		GPlatesMaths::PolygonOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
+		GPlatesMaths::PolygonOnSphere::create(builder_geom_begin, builder_geom_end);
 
 	RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_polygon_on_sphere(
 				polygon_on_sphere,

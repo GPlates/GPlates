@@ -89,7 +89,7 @@ namespace GPlatesApi
 				// Duplicate the point.
 				geometry_points.push_back(geometry_points.back());
 
-				sub_segment_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(geometry_points);
+				sub_segment_polyline = GPlatesMaths::PolylineOnSphere::create(geometry_points);
 			}
 
 			return sub_segment_polyline.get();
@@ -672,7 +672,7 @@ namespace GPlatesApi
 	/**
 	 * Returns the reconstructed seed point.
 	 */
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	GPlatesMaths::PointOnSphere
 	reconstructed_motion_path_get_reconstructed_seed_point(
 			const GPlatesAppLogic::ReconstructedMotionPath &reconstructed_motion_path)
 	{
@@ -682,7 +682,7 @@ namespace GPlatesApi
 	/**
 	 * Returns the present day seed point.
 	 */
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	GPlatesMaths::PointOnSphere
 	reconstructed_motion_path_get_present_day_seed_point(
 			const GPlatesAppLogic::ReconstructedMotionPath &reconstructed_motion_path)
 	{
@@ -838,7 +838,7 @@ namespace GPlatesApi
 	/**
 	 * Returns the reconstructed seed point.
 	 */
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	GPlatesMaths::PointOnSphere
 	reconstructed_flowline_get_reconstructed_seed_point(
 			const GPlatesAppLogic::ReconstructedFlowline &reconstructed_flowline)
 	{
@@ -848,7 +848,7 @@ namespace GPlatesApi
 	/**
 	 * Returns the present day seed point.
 	 */
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	GPlatesMaths::PointOnSphere
 	reconstructed_flowline_get_present_day_seed_point(
 			const GPlatesAppLogic::ReconstructedFlowline &reconstructed_flowline)
 	{

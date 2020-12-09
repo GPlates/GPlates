@@ -96,7 +96,7 @@ namespace
 		virtual
 		void
 		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
 		{
 			d_number_of_points = 1;
 		}
@@ -290,7 +290,7 @@ void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_point(
 	const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_feature_accumulator.add_geometry(gml_point.get_point());
+	d_feature_accumulator.add_geometry(gml_point.get_point().get_geometry_on_sphere());
 }
 
 

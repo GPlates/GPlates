@@ -173,13 +173,13 @@ GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_multi_point_on_sphere(
 
 void
 GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_point_on_sphere(
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
 #if 0
 	qDebug(Q_FUNC_INFO);
 #endif
 	// Skip-to then draw-to the same location, producing a point.
-	print_plates_coordinate_line(*d_stream_ptr, *point_on_sphere, PenPositions::PEN_SKIP_TO_POINT,
+	print_plates_coordinate_line(*d_stream_ptr, point_on_sphere->position(), PenPositions::PEN_SKIP_TO_POINT,
 			d_reverse_coordinate_order);
 }
 

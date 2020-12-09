@@ -54,7 +54,7 @@ GPlatesPropertyValues::GmlPoint::get_point_in_lat_lon() const
 
 void
 GPlatesPropertyValues::GmlPoint::set_point(
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &p)
+		const GPlatesMaths::PointOnSphere &p)
 {
 	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
@@ -80,7 +80,7 @@ std::ostream &
 GPlatesPropertyValues::GmlPoint::print_to(
 		std::ostream &os) const
 {
-	return os << *get_point();
+	return os << get_point();
 }
 
 
@@ -96,7 +96,7 @@ GPlatesPropertyValues::GmlPoint::Revision::equality(
 }
 
 
-const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+const GPlatesMaths::PointOnSphere &
 GPlatesPropertyValues::GmlPoint::Revision::get_point() const
 {
 	if (!point_on_sphere)
@@ -112,7 +112,7 @@ GPlatesPropertyValues::GmlPoint::Revision::get_point() const
 				point_2d->first/*lat*/,
 				point_2d->second/*lon*/);
 
-		point_on_sphere = GPlatesMaths::make_point_on_sphere(lat_lon_point).clone_as_point();
+		point_on_sphere = GPlatesMaths::make_point_on_sphere(lat_lon_point);
 	}
 
 	return point_on_sphere.get();
@@ -129,7 +129,7 @@ GPlatesPropertyValues::GmlPoint::Revision::get_point_2d() const
 				point_on_sphere,
 				GPLATES_ASSERTION_SOURCE);
 
-		const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(*point_on_sphere.get());
+		const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(point_on_sphere.get());
 
 		// Note that the 2D point stores as (lat, lon) which is the order stored in GPML file.
 		point_2d = std::make_pair(lat_lon_point.latitude(), lat_lon_point.longitude());

@@ -299,6 +299,7 @@ namespace GPlatesApi
 	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
 	 * are not already smart pointers.
 	 */
+	inline
 	GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *
 	get_pointer(
 			const ResolvedTopologicalGeometrySubSegmentWrapper &wrapper)
@@ -583,6 +584,7 @@ namespace GPlatesApi
 	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
 	 * are not already smart pointers.
 	 */
+	inline
 	GPlatesAppLogic::ResolvedTopologicalSharedSubSegment *
 	get_pointer(
 			const ResolvedTopologicalSharedSubSegmentWrapper &wrapper)
@@ -659,6 +661,7 @@ namespace GPlatesApi
 	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
 	 * are not already smart pointers.
 	 */
+	inline
 	GPlatesAppLogic::ResolvedTopologicalSection *
 	get_pointer(
 			const ResolvedTopologicalSectionWrapper &wrapper)

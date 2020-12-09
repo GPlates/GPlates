@@ -1182,6 +1182,7 @@ export_gml_point()
 				"    point_property = pygplates.GmlPoint(point)\n")
 		.def("get_point",
 				&GPlatesPropertyValues::GmlPoint::get_point,
+				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_point()\n"
 				"  Returns the point geometry of this property value.\n"
 				"\n"

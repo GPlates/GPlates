@@ -43,32 +43,25 @@
 
 namespace
 {
-	using GPlatesMaths::PolygonPartitioner;
-	using GPlatesMaths::GeometryOnSphere;
-	using GPlatesMaths::MultiPointOnSphere;
-	using GPlatesMaths::PointOnSphere;
-	using GPlatesMaths::PolygonOnSphere;
-	using GPlatesMaths::PolylineOnSphere;
-
 	class GeometryPartitioner :
 			public GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
 	public:
 		GeometryPartitioner(
-				const PolygonPartitioner &polygon_partitioner,
-				boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_inside,
-				boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_outside) :
+				const GPlatesMaths::PolygonPartitioner &polygon_partitioner,
+				boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_inside,
+				boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_outside) :
 			d_polygon_partitioner(polygon_partitioner),
 			d_partitioned_geometries_inside(partitioned_geometries_inside),
 			d_partitioned_geometries_outside(partitioned_geometries_outside)
 		{  }
 
 
-		PolygonPartitioner::Result
+		GPlatesMaths::PolygonPartitioner::Result
 		partition_geometry(
-				const GeometryOnSphere::non_null_ptr_to_const_type &geometry_to_be_partitioned)
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry_to_be_partitioned)
 		{
-			d_result = PolygonPartitioner::GEOMETRY_OUTSIDE;
+			d_result = GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE;
 
 			geometry_to_be_partitioned->accept_visitor(*this);
 
@@ -79,7 +72,7 @@ namespace
 		virtual
 		void
 		visit_multi_point_on_sphere(
-				MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 		{
 			if (!d_partitioned_geometries_inside &&
 				!d_partitioned_geometries_outside)
@@ -88,8 +81,8 @@ namespace
 				return;
 			}
 
-			PolygonPartitioner::partitioned_point_seq_type partitioned_points_inside;
-			PolygonPartitioner::partitioned_point_seq_type partitioned_points_outside;
+			GPlatesMaths::PolygonPartitioner::partitioned_point_seq_type partitioned_points_inside;
+			GPlatesMaths::PolygonPartitioner::partitioned_point_seq_type partitioned_points_outside;
 			d_result = d_polygon_partitioner.partition_multipoint(
 					multi_point_on_sphere,
 					partitioned_points_inside,
@@ -99,7 +92,7 @@ namespace
 				!partitioned_points_inside.empty())
 			{
 				d_partitioned_geometries_inside->push_back(
-						MultiPointOnSphere::create_on_heap(
+						GPlatesMaths::MultiPointOnSphere::create(
 								partitioned_points_inside.begin(),
 								partitioned_points_inside.end()));
 			}
@@ -107,7 +100,7 @@ namespace
 				!partitioned_points_outside.empty())
 			{
 				d_partitioned_geometries_outside->push_back(
-						MultiPointOnSphere::create_on_heap(
+						GPlatesMaths::MultiPointOnSphere::create(
 								partitioned_points_outside.begin(),
 								partitioned_points_outside.end()));
 			}
@@ -116,11 +109,11 @@ namespace
 		virtual
 		void
 		visit_point_on_sphere(
-				PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
-			d_result = d_polygon_partitioner.partition_point(*point_on_sphere);
+			d_result = d_polygon_partitioner.partition_point(point_on_sphere->position());
 
-			if (d_result == PolygonPartitioner::GEOMETRY_OUTSIDE)
+			if (d_result == GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE)
 			{
 				if (d_partitioned_geometries_outside)
 				{
@@ -139,7 +132,7 @@ namespace
 		virtual
 		void
 		visit_polygon_on_sphere(
-				PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
 			if (!d_partitioned_geometries_inside &&
 				!d_partitioned_geometries_outside)
@@ -148,8 +141,8 @@ namespace
 				return;
 			}
 
-			PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_inside;
-			PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_outside;
+			GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_inside;
+			GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_outside;
 			d_result = d_polygon_partitioner.partition_polygon(
 					polygon_on_sphere,
 					partitioned_polylines_inside,
@@ -158,14 +151,14 @@ namespace
 			// NOTE: 'PolygonPartitioner::partition_polygon()' only returns partitioned *polylines*
 			// if there was an intersection, otherwise the inside/outside polylines are empty.
 			// Hence if there was no intersection then we add the inside or outside *polygon*.
-			if (d_result == PolygonPartitioner::GEOMETRY_INSIDE)
+			if (d_result == GPlatesMaths::PolygonPartitioner::GEOMETRY_INSIDE)
 			{
 				if (d_partitioned_geometries_inside)
 				{
 					d_partitioned_geometries_inside->push_back(polygon_on_sphere);
 				}
 			}
-			else if (d_result == PolygonPartitioner::GEOMETRY_OUTSIDE)
+			else if (d_result == GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE)
 			{
 				if (d_partitioned_geometries_outside)
 				{
@@ -190,7 +183,7 @@ namespace
 		virtual
 		void
 		visit_polyline_on_sphere(
-				PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 		{
 			if (!d_partitioned_geometries_inside &&
 				!d_partitioned_geometries_outside)
@@ -199,8 +192,8 @@ namespace
 				return;
 			}
 
-			PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_inside;
-			PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_outside;
+			GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_inside;
+			GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_outside;
 			d_result = d_polygon_partitioner.partition_polyline(
 					polyline_on_sphere,
 					partitioned_polylines_inside,
@@ -219,11 +212,11 @@ namespace
 		}
 
 	private:
-		const PolygonPartitioner &d_polygon_partitioner;
+		const GPlatesMaths::PolygonPartitioner &d_polygon_partitioner;
 
-		PolygonPartitioner::Result d_result;
-		boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> d_partitioned_geometries_inside;
-		boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> d_partitioned_geometries_outside;
+		GPlatesMaths::PolygonPartitioner::Result d_result;
+		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> d_partitioned_geometries_inside;
+		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> d_partitioned_geometries_outside;
 	};
 
 
@@ -302,7 +295,7 @@ namespace
 			}
 
 			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type merged_polyline =
-					GPlatesMaths::PolylineOnSphere::create_on_heap(
+					GPlatesMaths::PolylineOnSphere::create(
 							merged_polyline_points.begin(), merged_polyline_points.end());
 
 			// Add to the caller's inside polyline sequence.

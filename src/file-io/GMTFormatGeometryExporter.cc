@@ -157,9 +157,9 @@ GPlatesFileIO::GMTFormatGeometryExporter::visit_multi_point_on_sphere(
 
 void
 GPlatesFileIO::GMTFormatGeometryExporter::visit_point_on_sphere(
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
-	print_gmt_coordinate_line(*d_stream_ptr, *point_on_sphere, d_reverse_coordinate_order);
+	print_gmt_coordinate_line(*d_stream_ptr, point_on_sphere->position(), d_reverse_coordinate_order);
 
 	// Write the final terminating symbol.
 	print_gmt_feature_termination_line(*d_stream_ptr);

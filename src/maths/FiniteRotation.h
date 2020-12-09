@@ -395,12 +395,12 @@ namespace GPlatesMaths
 	 * This operation is not supposed to be symmetrical.
 	 */
 	inline
-	const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>
+	const GPlatesUtils::non_null_intrusive_ptr<const PointGeometryOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p)
+			const GPlatesUtils::non_null_intrusive_ptr<const PointGeometryOnSphere> &p)
 	{
-		return PointOnSphere::create_on_heap(r * p->position_vector());
+		return PointGeometryOnSphere::create(r * p->position());
 	}
 
 

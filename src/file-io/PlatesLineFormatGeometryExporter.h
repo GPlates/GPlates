@@ -117,7 +117,7 @@ namespace GPlatesFileIO
 		virtual
 		void
 		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere);
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere);
 
 		virtual
 		void

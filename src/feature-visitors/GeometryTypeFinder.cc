@@ -103,7 +103,7 @@ GPlatesFeatureVisitors::GeometryTypeFinder::visit_multipoint_on_sphere(
 
 void
 GPlatesFeatureVisitors::GeometryTypeFinder::visit_point_on_sphere(
-	const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+	const GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
 	++d_num_point_geometries_found;
 }

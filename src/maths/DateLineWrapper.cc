@@ -531,7 +531,7 @@ GPlatesMaths::DateLineWrapper::output_non_intersecting_polygon_rings(
 		for (unsigned int w = 0; w < wrapped_polygons.size(); ++w)
 		{
 			PolygonOnSphere::non_null_ptr_to_const_type polygon_exterior_ring =
-					PolygonOnSphere::create_on_heap(
+					PolygonOnSphere::create(
 							// We only need the untessellated ring points to create a polygon...
 							wrapped_polygons[w].d_exterior_ring_line_geometry->get_untessellated_points_on_sphere());
 
@@ -569,7 +569,7 @@ GPlatesMaths::DateLineWrapper::output_non_intersecting_polygon_rings(
 				// Create a PolygonOnSphere from the current ring so we can test for intersection
 				// with the polygon exterior rings output so far.
 				PolygonOnSphere::non_null_ptr_to_const_type ring_polygon =
-						PolygonOnSphere::create_on_heap(
+						PolygonOnSphere::create(
 								ring_line_geometry->get_untessellated_points_on_sphere());
 
 				// Test each polygon exterior ring output so far for intersection.

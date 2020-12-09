@@ -290,7 +290,7 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polyline_on_sp
 	if (num_points_in_geom > 1)
 	{
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
-				GPlatesMaths::PolylineOnSphere::create_on_heap(
+				GPlatesMaths::PolylineOnSphere::create(
 						d_geometry_builder.get_geometry_point_begin(geom_index),
 						d_geometry_builder.get_geometry_point_end(geom_index));
 

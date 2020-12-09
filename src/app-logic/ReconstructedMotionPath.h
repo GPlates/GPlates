@@ -69,9 +69,9 @@ namespace GPlatesAppLogic
 
 
 		/** 
-		 * A convenience typedef for a PointOnSphere::non_null_ptr_to_const type. 
+		 * A convenience typedef for a PointOnSphere. 
 		 */
-		typedef GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type seed_point_geom_ptr_type;
+		typedef GPlatesMaths::PointOnSphere seed_point_type;
 
 		/** 
 		 * A convenience typedef for a GeometryOnSphere::non_null_ptr_to_const type. 
@@ -93,8 +93,8 @@ namespace GPlatesAppLogic
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const seed_point_geom_ptr_type &present_day_seed_point_geometry_ptr,
-				const seed_point_geom_ptr_type &reconstructed_seed_point_geometry_ptr,
+				const seed_point_type &present_day_seed_point,
+				const seed_point_type &reconstructed_seed_point,
 				const motion_path_geom_ptr_type &motion_path_points,
 				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
 				GPlatesModel::FeatureHandle &feature_handle,
@@ -108,8 +108,8 @@ namespace GPlatesAppLogic
 					new ReconstructedMotionPath(
 							reconstruction_tree,
 							reconstruction_tree_creator,
-							present_day_seed_point_geometry_ptr,
-							reconstructed_seed_point_geometry_ptr,
+							present_day_seed_point,
+							reconstructed_seed_point,
 							motion_path_points,
 							reconstruction_plate_id,
 							feature_handle,
@@ -148,7 +148,7 @@ namespace GPlatesAppLogic
 			return d_motion_path_points;
 		}
 
-		seed_point_geom_ptr_type
+		const seed_point_type &
 		present_day_seed_point() const
 		{
 			return d_present_day_seed_point;
@@ -157,7 +157,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The reconstructed version of @a present_day_seed_point.
 		 */
-		seed_point_geom_ptr_type
+		const seed_point_type &
 		reconstructed_seed_point() const
 		{
 			return d_reconstructed_seed_point;
@@ -173,8 +173,8 @@ namespace GPlatesAppLogic
 		ReconstructedMotionPath(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const seed_point_geom_ptr_type &present_day_seed_point_geometry_ptr,
-				const seed_point_geom_ptr_type &reconstructed_seed_point_geometry_ptr,
+				const seed_point_type &present_day_seed_point,
+				const seed_point_type &reconstructed_seed_point,
 				const motion_path_geom_ptr_type &motion_path_points_,
 				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id_,
 				GPlatesModel::FeatureHandle &feature_handle,
@@ -189,13 +189,13 @@ namespace GPlatesAppLogic
 				ReconstructMethod::MOTION_PATH,
 				reconstruction_plate_id_,
 				boost::none),
-			d_present_day_seed_point(present_day_seed_point_geometry_ptr),
-			d_reconstructed_seed_point(reconstructed_seed_point_geometry_ptr),
+			d_present_day_seed_point(present_day_seed_point),
+			d_reconstructed_seed_point(reconstructed_seed_point),
 			d_motion_path_points(motion_path_points_)
 		{  }
 
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_present_day_seed_point;
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_reconstructed_seed_point;
+		GPlatesMaths::PointOnSphere d_present_day_seed_point;
+		GPlatesMaths::PointOnSphere d_reconstructed_seed_point;
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_motion_path_points;
 
 	};

@@ -396,7 +396,7 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_create()
 		}
 
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point =
-				GPlatesMaths::MultiPointOnSphere::create_on_heap(domain_points);
+				GPlatesMaths::MultiPointOnSphere::create(domain_points);
 
 		const double reconstruction_time = d_application_state.get_current_reconstruction_time();
 

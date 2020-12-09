@@ -77,7 +77,7 @@ namespace GPlatesMaths
 	 * @endcode
 	 *
 	 * You can create a polyline by invoking the static member function
-	 * @a PolylineOnSphere::create_on_heap, passing it a sequential STL
+	 * @a PolylineOnSphere::create, passing it a sequential STL
 	 * container (list, vector, ...) of PointOnSphere to define the
 	 * vertices of the polyline.  The sequence of points must contain at
 	 * least two distinct elements, enabling the creation of a polyline
@@ -87,7 +87,7 @@ namespace GPlatesMaths
 	 * @a PolylineOnSphere::evaluate_construction_parameter_validity.
 	 *
 	 * Say you have a sequence of PointOnSphere: [A, B, C, D].  If you pass
-	 * this sequence to the @a PolylineOnSphere::create_on_heap function, it
+	 * this sequence to the @a PolylineOnSphere::create function, it
 	 * will create a polyline composed of 3 segments: A->B, B->C, C->D.  If
 	 * you subsequently iterate through the vertices of this polyline, you
 	 * will get the same sequence of points back again: A, B, C, D.
@@ -515,7 +515,7 @@ namespace GPlatesMaths
 		template<typename PointForwardIter>
 		static
 		const non_null_ptr_to_const_type
-		create_on_heap(
+		create(
 				PointForwardIter begin,
 				PointForwardIter end,
 				bool check_distinct_points = false);
@@ -532,61 +532,16 @@ namespace GPlatesMaths
 		template<typename C>
 		static
 		const non_null_ptr_to_const_type
-		create_on_heap(
+		create(
 				const C &coll,
 				bool check_distinct_points = false)
 		{
-			return create_on_heap(coll.begin(), coll.end(), check_distinct_points);
+			return create(coll.begin(), coll.end(), check_distinct_points);
 		}
 
 
 		virtual
 		~PolylineOnSphere();
-
-
-		/**
-		 * Clone this PolylineOnSphere instance, to create a duplicate instance on the
-		 * heap.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 */
-		const GeometryOnSphere::non_null_ptr_to_const_type
-		clone_as_geometry() const
-		{
-			return GeometryOnSphere::non_null_ptr_to_const_type(new PolylineOnSphere(*this));
-		}
-
-
-		/**
-		 * Clone this PolylineOnSphere instance, to create a duplicate instance on the
-		 * heap.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 */
-		const non_null_ptr_to_const_type
-		clone_as_polyline() const
-		{
-			return non_null_ptr_to_const_type(new PolylineOnSphere(*this));
-		}
-
-
-		/**
-		 * Get a non-null pointer to a const PolylineOnSphere which points to this instance
-		 * (or a clone of this instance).
-		 *
-		 * (Since geometries are treated as immutable literals in GPlates, a geometry can
-		 * never be modified through a pointer, so there is no reason why it would be
-		 * inappropriate to return a pointer to a clone of this instance rather than a
-		 * pointer to this instance.)
-		 *
-		 * This function will behave correctly regardless of whether this instance is on
-		 * the stack or the heap.
-		 */
-		const non_null_ptr_to_const_type
-		get_non_null_pointer() const
-		{
-			return GPlatesUtils::get_non_null_pointer(this);
-		}
 
 
 		virtual
@@ -610,6 +565,16 @@ namespace GPlatesMaths
 		void
 		accept_visitor(
 				ConstGeometryOnSphereVisitor &visitor) const;
+
+
+		/**
+		 * Return this instance as a non-null pointer.
+		 */
+		const non_null_ptr_to_const_type
+		get_non_null_pointer() const
+		{
+			return GPlatesUtils::get_non_null_pointer(this);
+		}
 
 
 		/**
@@ -870,36 +835,13 @@ namespace GPlatesMaths
 		 * instantiation of a polyline without any vertices.
 		 *
 		 * This constructor should never be invoked directly by client code; only through
-		 * the static 'create_on_heap' function.
+		 * the static 'create' function.
 		 *
 		 * This constructor should act exactly the same as the default (auto-generated)
 		 * default-constructor would, except that it should initialise the ref-count to
 		 * zero.
 		 */
 		PolylineOnSphere();
-
-
-		/**
-		 * Create a copy-constructed PolylineOnSphere instance.
-		 *
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 *
-		 * This constructor should never be invoked directly by client code; only through
-		 * the 'clone_as_geometry' or 'clone_as_polyline' function.
-		 *
-		 * This constructor should act exactly the same as the default (auto-generated)
-		 * copy-constructor would, except that it should initialise the ref-count to zero.
-		 */
-		PolylineOnSphere(
-				const PolylineOnSphere &other);
-
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		PolylineOnSphere &
-		operator=(
-				const PolylineOnSphere &other);
 
 
 		/**
@@ -935,7 +877,7 @@ namespace GPlatesMaths
 
 		/**
 		 * This is the minimum number of (distinct) collection points to be passed into the
-		 * 'create_on_heap' function to enable creation of a closed, well-defined polyline.
+		 * 'create' function to enable creation of a closed, well-defined polyline.
 		 */
 		static const unsigned s_min_num_collection_points;
 
@@ -1073,7 +1015,7 @@ namespace GPlatesMaths
 
 	template<typename PointForwardIter>
 	const PolylineOnSphere::non_null_ptr_to_const_type
-	PolylineOnSphere::create_on_heap(
+	PolylineOnSphere::create(
 			PointForwardIter begin,
 			PointForwardIter end,
 			bool check_distinct_points)
@@ -1197,7 +1139,7 @@ namespace GPlatesMaths
 		}
 
 		// Create the final concatenated polyline.
-		return PolylineOnSphere::create_on_heap(all_points.begin(), all_points.end());
+		return PolylineOnSphere::create(all_points.begin(), all_points.end());
 	}
 }
 

@@ -228,20 +228,6 @@ GPlatesMaths::PolygonOnSphere::PolygonOnSphere() :
 }
 
 
-GPlatesMaths::PolygonOnSphere::PolygonOnSphere(
-		const PolygonOnSphere &other) :
-	GeometryOnSphere(),
-	d_exterior_ring(other.d_exterior_ring),
-	d_interior_rings(other.d_interior_rings),
-	// Since PolygonOnSphere is immutable we can just share the cached calculations.
-	d_cached_calculations(other.d_cached_calculations)
-{
-	// Constructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
-	// PolygonOnSphereImpl::CachedCalculations - because compiler must
-	// generate code that destroys already constructed members if constructor throws.
-}
-
-
 GPlatesMaths::PolygonOnSphere::ConstructionParameterValidity
 GPlatesMaths::PolygonOnSphere::evaluate_segment_endpoint_validity(
 		const PointOnSphere &p1,
@@ -1087,7 +1073,7 @@ GPlatesMaths::tessellate(
 
 	if (polygon.number_of_interior_rings() == 0)
 	{
-		return PolygonOnSphere::create_on_heap(tessellated_exterior_ring);
+		return PolygonOnSphere::create(tessellated_exterior_ring);
 	}
 
 	// Tessellate the interior rings.
@@ -1106,7 +1092,7 @@ GPlatesMaths::tessellate(
 				max_angular_extent);
 	}
 
-	return PolygonOnSphere::create_on_heap(
+	return PolygonOnSphere::create(
 			tessellated_exterior_ring,
 			tessellated_interior_rings.begin(),
 			tessellated_interior_rings.end());

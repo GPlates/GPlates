@@ -355,6 +355,16 @@ namespace GPlatesApi
 	}
 
 
+	//
+	// The following to/from Python conversions are handled:
+	//
+	// To Python               GPlatesApi::GeoTimeInstant     float
+	//     /\                             |                     /\
+	//     |                              |                     |
+	//     \/                             \/                    \/
+	// From Python                  GPlatesPropertyValues::GeoTimeInstant
+	//
+
 	/**
 	 * Enables passing GPlatesApi::GeoTimeInstant object (the python 'GeoTimeInstant') to
 	 * GPlatesPropertyValues::GeoTimeInstant (the C++ 'GeoTimeInstant').
@@ -505,6 +515,12 @@ export_geo_time_instant()
 	// The python 'GeoTimeInstant' is mainly provided as a convenience class for python users so they
 	// can test for distant past/future and perform epsilon equality comparison tests - to do this
 	// they simply create a python 'GeoTimeInstant' (from their python 'float') and then do tests on that.
+	//
+	// To Python               GPlatesApi::GeoTimeInstant     float
+	//     /\                             |                     /\
+	//     |                              |                     |
+	//     \/                             \/                    \/
+	// From Python                  GPlatesPropertyValues::GeoTimeInstant
 	//
 	// GeoTimeInstant is immutable (contains no mutable methods) hence we can copy it into python
 	// wrapper objects without worrying that modifications from the C++ will not be visible to the

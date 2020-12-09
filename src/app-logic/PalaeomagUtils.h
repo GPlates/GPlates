@@ -53,13 +53,13 @@ namespace GPlatesAppLogic
 				return d_plate_id;
 			}
 		
-			const boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
+			const boost::optional<GPlatesMaths::PointOnSphere> &
 			get_site_point()
 			{
 				return d_site_point;
 			}
 
-			const boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
+			const boost::optional<GPlatesMaths::PointOnSphere> &
 			get_vgp_point()
 			{
 				return d_vgp_point;
@@ -108,8 +108,8 @@ namespace GPlatesAppLogic
 			//ReconstructedVirtualGeomagneticPoleParams &d_vgp_params;
 
 			boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> d_site_point;
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> d_vgp_point;
+			boost::optional<GPlatesMaths::PointOnSphere> d_site_point;
+			boost::optional<GPlatesMaths::PointOnSphere> d_vgp_point;
 			boost::optional<double> d_age;
 
 			bool d_is_vgp_feature;

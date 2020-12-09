@@ -1717,7 +1717,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_geometry(
 
 		// Return as a PointOnSphere.
 		return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(
-				GPlatesMaths::PointOnSphere::create_on_heap(geometry_points.front()->position));
+				GPlatesMaths::PointGeometryOnSphere::create(
+						GPlatesMaths::PointOnSphere(geometry_points.front()->position)));
 	}
 	// ...else return geometry as a multipoint...
 
@@ -1741,7 +1742,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_geometry(
 
 	// Return as a MultiPointOnSphere.
 	return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(
-			GPlatesMaths::MultiPointOnSphere::create_on_heap(points));
+			GPlatesMaths::MultiPointOnSphere::create(points));
 }
 
 

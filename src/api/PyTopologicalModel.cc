@@ -129,10 +129,10 @@ namespace GPlatesApi
 			}
 
 			// See if it's a PointOnSphere.
-			bp::extract<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>> extract_point(geometry_object);
+			bp::extract<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>> extract_point(geometry_object);
 			if (extract_point.check())
 			{
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point = extract_point();
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point = extract_point();
 				return point;
 			}
 
@@ -141,7 +141,7 @@ namespace GPlatesApi
 			PythonExtractUtils::extract_iterable(points, geometry_object,
 					"Expected a point or a multipoint or a sequence of points");
 
-			return GPlatesMaths::MultiPointOnSphere::create_on_heap(points);
+			return GPlatesMaths::MultiPointOnSphere::create(points);
 		}
 
 		/**

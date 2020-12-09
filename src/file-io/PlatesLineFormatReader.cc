@@ -523,7 +523,7 @@ qDebug() << "use_tail_next = " << use_tail_next;
 			// ReadErrors.
 
 			PolylineOnSphere::non_null_ptr_to_const_type polyline =
-					PolylineOnSphere::create_on_heap(points);
+					PolylineOnSphere::create(points);
 			GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 					GPlatesPropertyValues::GmlLineString::create(polyline);
 

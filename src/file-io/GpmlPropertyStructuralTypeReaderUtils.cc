@@ -320,7 +320,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_multi_point(
 	}
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
-		multipoint = GPlatesMaths::MultiPointOnSphere::create_on_heap(points);
+		multipoint = GPlatesMaths::MultiPointOnSphere::create(points);
 
 	// FIXME: We need to give the srsName et al. attributes from the gml:Point
 	// (or the gml:FeatureCollection tag?) to the GmlMultiPoint (or the FeatureCollection)!
@@ -399,7 +399,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_polygon(
 
 	const std::vector<GPlatesMaths::PointOnSphere> &exterior = *exterior_ring;
 
-	// 'PolygonOnSphere::create_on_heap()' requires interior rings that are sequences (not intrusive_ptrs of sequence)
+	// 'PolygonOnSphere::create()' requires interior rings that are sequences (not intrusive_ptrs of sequence)
 	// so convert without copying all the interior points (instead swap them).
 	std::vector< std::vector<GPlatesMaths::PointOnSphere> > interiors(interior_rings.size());
 	for (unsigned int interior_index = 0; interior_index < interior_rings.size(); ++interior_index)
@@ -408,7 +408,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_polygon(
 	}
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon =
-			GPlatesMaths::PolygonOnSphere::create_on_heap(exterior, interiors);
+			GPlatesMaths::PolygonOnSphere::create(exterior, interiors);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!

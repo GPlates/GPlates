@@ -246,7 +246,7 @@ namespace GPlatesMaths
 			//   first point in the original geometry and the end intersection.
 			// - If we have no intersections (which shouldn't happen) then we use the original geometry
 			//   (which should have at least two points).
-			return PolylineOnSphere::create_on_heap(partitioned_polyline_points);
+			return PolylineOnSphere::create(partitioned_polyline_points);
 		}
 
 

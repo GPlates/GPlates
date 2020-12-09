@@ -534,7 +534,7 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::generate_lat_lon_domain()
 		}
 	}
 
-	return GPlatesMaths::MultiPointOnSphere::create_on_heap(points.begin(), points.end());
+	return GPlatesMaths::MultiPointOnSphere::create(points.begin(), points.end());
 }
 
 

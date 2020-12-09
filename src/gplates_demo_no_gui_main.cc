@@ -100,7 +100,7 @@ create_isochron(
 	std::list<GPlatesMaths::PointOnSphere> points;
 	GPlatesMaths::populate_point_on_sphere_sequence(points, coords_vector);
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
-			GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+			GPlatesMaths::PolylineOnSphere::create(points);
 	GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 			GPlatesPropertyValues::GmlLineString::create(polyline);
 	GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type gml_orientable_curve =

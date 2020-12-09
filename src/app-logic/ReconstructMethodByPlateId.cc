@@ -304,7 +304,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_point.get_point()));
+								gml_point.get_point().get_geometry_on_sphere()));
 			}
 			
 			virtual
@@ -534,7 +534,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_velocities(
 
 		// Create a multi-point-on-sphere with the domain points.
 		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type domain_multi_point_geometry =
-				GPlatesMaths::MultiPointOnSphere::create_on_heap(domain_points);
+				GPlatesMaths::MultiPointOnSphere::create(domain_points);
 
 		// Create an RFG purely for the purpose of representing this feature.
 		// This is only needed when/if a domain point is outside all resolved networks.

@@ -100,8 +100,8 @@ namespace GPlatesAppLogic
 
 		void
 		create_motion_path_geometry(
-			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point,
-			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry,
+			const GPlatesMaths::PointOnSphere &present_day_seed_point,
+			const GPlatesMaths::PointOnSphere &reconstructed_seed_point,
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_seed_geometry);
 
 
