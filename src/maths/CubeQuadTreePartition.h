@@ -93,7 +93,7 @@ namespace GPlatesMaths
 	 *
 	 * This makes insertions quite fast which is useful for inserting *reconstructed* geometries
 	 * at each reconstruction time. The spatial partition then tells us which *reconstructed*
-	 * geometries are near each other and also allows hierachical bounds testing.
+	 * geometries are near each other and also allows hierarchical bounds testing.
 	 * So this spatial partition is useful for:
 	 *  - View-frustum culling,
 	 *  - Nearest neighbour testing,
@@ -399,6 +399,24 @@ namespace GPlatesMaths
 				return NodeReference(d_node_impl->get_child_node(child_x_offset, child_y_offset));
 			}
 
+			friend
+			bool
+			operator==(
+					const NodeReference &lhs,
+					const NodeReference &rhs)
+			{
+				return lhs.d_node_impl == rhs.d_node_impl;
+			}
+
+			friend
+			bool
+			operator!=(
+					const NodeReference &lhs,
+					const NodeReference &rhs)
+			{
+				return lhs != rhs;
+			}
+
 		private:
 			NodeImplQualifiedType *d_node_impl;
 
@@ -506,10 +524,11 @@ namespace GPlatesMaths
 		 * @param maximum_quad_tree_depth is the deepest level that an element can be added to.
 		 *        The maximum amount of memory required for the nodes themselves (assuming all
 		 *        nodes of all levels of all quad trees contain elements) is
-		 *        '6 * pow(4, maximum_quad_tree_depth) * 1.3 * 20' bytes - the 6 is for the six cube faces,
+		 *        '6 * pow(4, maximum_quad_tree_depth) * 1.3 * 48' bytes - the 6 is for the six cube faces,
 		 *        the 1.3 is summation over the levels and the last number is the size of a
-		 *        quad tree node in bytes (on 32-bit systems).
-		 *        This does not include the memory used by the elements themselves.
+		 *        quad tree node in bytes (on 64-bit systems).
+		 *        This does not include the memory used by the elements themselves, which is
+		 *        'num_elements * (sizeof(ElementType) + 8)' where the '8' is for 64-bit linked list pointers.
 		 *
 		 * NOTE: @a maximum_quad_tree_depth only applies to those elements added with geometry
 		 * since the depth at which they are inserted depends on the spatial extent of the geometry.

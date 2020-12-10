@@ -451,8 +451,9 @@ namespace GPlatesOpenGL
 		typedef GLMultiResolutionCubeMesh::quad_tree_node_type mesh_quad_tree_node_type;
 
 		//! Typedef for a structure that determines which nodes of a spatial partition intersect a regular cube quad tree.
-		typedef GPlatesMaths::CubeQuadTreePartitionUtils::CubeQuadTreeIntersectingNodes<filled_drawable_type>
-				filled_drawables_intersecting_nodes_type;
+		typedef GPlatesMaths::CubeQuadTreePartitionUtils::CubeQuadTreeIntersectingNodes<
+				filled_drawable_type, const GPlatesMaths::CubeQuadTreePartition<filled_drawable_type> /*const*/>
+						filled_drawables_intersecting_nodes_type;
 
 		//! A linked list node that references a spatial partition node of filled drawables.
 		struct FilledDrawablesListNode :
