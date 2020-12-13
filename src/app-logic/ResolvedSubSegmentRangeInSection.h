@@ -426,14 +426,10 @@ namespace GPlatesAppLogic
 		/**
 		 * Return the (unreversed) sub-segment geometry.
 		 *
-		 * The returned data is non-null since T-junctions, V-junctions and cases like
-		 * adjacent sections intersecting this section at the same point will all return
-		 * a point geometry (intersection point).
-		 *
 		 * Note that we always include rubber band points (if any) in the returned geometry,
 		 * otherwise it would be possible to have no geometry points (see @a get_geometry_points).
 		 */
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 		get_geometry() const;
 
 
@@ -447,6 +443,8 @@ namespace GPlatesAppLogic
 		 * start or end rubber band region of the sub-sub-segment (and hence the sub-sub-segment geometry
 		 * is only made up of two rubber band points which, if excluded, would result in no points).
 		 * Note that this only applies when both rubber band points are on the same side of the section geometry.
+		 *
+		 * Conversely if @a include_rubber_band_points is true then there will be at least two points.
 		 */
 		void
 		get_geometry_points(
@@ -462,6 +460,7 @@ namespace GPlatesAppLogic
 		 * Does not clear @a geometry_points - just appends points.
 		 *
 		 * Note that it's possible to have no geometry points if @a include_rubber_band_points is false (see @a get_geometry_points).
+		 * And if rubber band points are included then there will be at least two points.
 		 */
 		void
 		get_reversed_geometry_points(
@@ -505,6 +504,7 @@ namespace GPlatesAppLogic
 		 * Return the number of points in the sub-segment (including optional intersection or rubber band points).
 		 *
 		 * Note that it's possible to return zero if @a include_rubber_band_points is false (see @a get_geometry_points).
+		 * Conversely if @a include_rubber_band_points is true then there will be at least two points.
 		 */
 		unsigned int
 		get_num_points(
