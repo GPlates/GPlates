@@ -28,9 +28,12 @@
 #define PYGPLATES_IMPORT_NUMPY_ARRAY_API
 #include "global/python.h"
 
+#include "PyGPlatesModule.h"
+
 #include "maths/MathsUtils.h"
 
-#include "PyGPlatesModule.h"
+#include "utils/Profile.h"
+
 
 // Exceptions
 void export_exceptions();
@@ -267,6 +270,20 @@ GPlatesApi::get_builtin_next()
 #	endif
 #endif
 
+namespace
+{
+	/**
+	 * Report profiling information to a file when Python exits normally.
+	 *
+	 * This is a no-op if a profile build has not been selected (see "Profile.h").
+	 */
+	void
+	pygplates_profile_report_to_file()
+	{
+		PROFILE_REPORT_TO_FILE("profile.txt");
+	}
+}
+
 
 BOOST_PYTHON_MODULE(pygplates)
 {
@@ -395,4 +412,13 @@ BOOST_PYTHON_MODULE(pygplates)
 	// We've already exported all the C++ python bindings - this is important because the pure python
 	// code injects methods into the python classes already defined by the C++ python bindings.
     export_pure_python_api();
+
+	// If pygplates is being built as a profile build (see "Profile.h") then register a function to
+	// report profiled information to a file when Python exits normally.
+	//
+	// Note that it's possible some boost python objects are still alive when atexit calls this function,
+	// but we're assuming that any profiled code has already run (and hence been profiled) before this happens.
+#if defined(PROFILE_GPLATES)
+	bp::import("atexit").attr("register")(bp::make_function(&pygplates_profile_report_to_file));
+#endif
 }
