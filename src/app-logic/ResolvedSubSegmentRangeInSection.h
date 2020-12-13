@@ -633,6 +633,9 @@ namespace GPlatesAppLogic
 
 		boost::optional<RubberBand> d_start_rubber_band;
 		boost::optional<RubberBand> d_end_rubber_band;
+
+		//! Cache our calculation of the sub-segment geometry (when it's requested).
+		mutable boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> d_sub_segment_geometry;
 	};
 }
 

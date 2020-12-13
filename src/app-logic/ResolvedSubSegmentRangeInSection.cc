@@ -274,25 +274,31 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::ResolvedSubSegmentRangeInSect
 GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 GPlatesAppLogic::ResolvedSubSegmentRangeInSection::get_geometry() const
 {
-	// The points that will form the sub-segment polyline.
-	std::vector<GPlatesMaths::PointOnSphere> sub_segment_points;
+	// Create and cache sub-segment geometry if we haven't already done so.
+	if (!d_sub_segment_geometry)
+	{
+		// The points that will form the sub-segment polyline.
+		std::vector<GPlatesMaths::PointOnSphere> sub_segment_points;
 
-	// Note that we always include rubber band points to avoid retrieving no points.
-	//
-	// This can happen when a sub-sub-segment of a resolved line sub-segment is entirely within the
-	// start or end rubber band region of the sub-sub-segment (and hence the sub-sub-segment geometry
-	// is only made up of two rubber band points which, if excluded, would result in no points).
-	// Note that this only applies when both rubber band points are on the same side of the section geometry.
-	get_geometry_points(sub_segment_points, true/*include_rubber_band_points*/);
+		// Note that we always include rubber band points to avoid retrieving no points.
+		//
+		// This can happen when a sub-sub-segment of a resolved line sub-segment is entirely within the
+		// start or end rubber band region of the sub-sub-segment (and hence the sub-sub-segment geometry
+		// is only made up of two rubber band points which, if excluded, would result in no points).
+		// Note that this only applies when both rubber band points are on the same side of the section geometry.
+		get_geometry_points(sub_segment_points, true/*include_rubber_band_points*/);
 
-	// We should have at least two points when rubber band points are included.
-	// This is because the constructor ensures this.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			sub_segment_points.size() >= 2,
-			GPLATES_ASSERTION_SOURCE);
+		// We should have at least two points when rubber band points are included.
+		// This is because the constructor ensures this.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				sub_segment_points.size() >= 2,
+				GPLATES_ASSERTION_SOURCE);
 
-	// We have enough points from section geometry and intersections to create a polyline (ie, at least two points).
-	return GPlatesMaths::PolylineOnSphere::create(sub_segment_points);
+		// We have enough points from section geometry and intersections to create a polyline (ie, at least two points).
+		d_sub_segment_geometry = GPlatesMaths::PolylineOnSphere::create(sub_segment_points);
+	}
+
+	return d_sub_segment_geometry.get();
 }
 
 
