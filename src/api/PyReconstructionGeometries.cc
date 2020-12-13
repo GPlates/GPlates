@@ -64,8 +64,7 @@ namespace GPlatesApi
 		/**
 		 * Convert a GeometryOnSphere to a PolylineOnSphere (even if they are just single points - just duplicate).
 		 *
-		 * This will make it easier for the user who will expect sub-segments to be polylines, or
-		 * RFG topological sections to be polylines (instead, eg, polygons).
+		 * This will make it easier for the user who will expect RFG topological sections to be polylines (instead, eg, polygons).
 		 */
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 		convert_geometry_to_polyline(
@@ -1756,8 +1755,7 @@ namespace GPlatesApi
 	resolved_topological_geometry_sub_segment_get_resolved_geometry(
 			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &resolved_topological_geometry_sub_segment)
 	{
-		return convert_geometry_to_polyline(
-				resolved_topological_geometry_sub_segment->get_sub_segment_geometry());
+		return resolved_topological_geometry_sub_segment->get_sub_segment_geometry();
 	}
 
 	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
@@ -2062,8 +2060,7 @@ namespace GPlatesApi
 	resolved_topological_shared_sub_segment_get_resolved_geometry(
 			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &resolved_topological_shared_sub_segment)
 	{
-		return convert_geometry_to_polyline(
-				resolved_topological_shared_sub_segment->get_shared_sub_segment_geometry());
+		return resolved_topological_shared_sub_segment->get_shared_sub_segment_geometry();
 	}
 
 	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.

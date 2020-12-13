@@ -198,7 +198,7 @@ namespace GPlatesAppLogic
 
 
 		//! Delegate to equivalent method in @a ResolvedSubSegmentRangeInSection.
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 		get_sub_segment_geometry() const
 		{
 			return get_sub_segment_range_in_section().get_geometry();
