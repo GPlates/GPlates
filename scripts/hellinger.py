@@ -132,7 +132,7 @@ class Hellinger():
         # "ndat" in the original fortran code is an integer storing the total number of 
         # points to be analysed. This is equivalent to the sum of the fortran variables num(1)
         # and num(2). The "ndat" variable here is equivalent to the  fortran array "num". 
-        self.ndat = zeros(2)
+        self.ndat = zeros(2, dtype=int)
         self.data = zeros((2,400,20))
         self.nstop = 0
         self.segmentNumbers = []
@@ -176,7 +176,7 @@ class Hellinger():
         self.readFile = self.inputFile.readlines()
         self.outputFileName = self.inputFileName +"_res"
         self.sigma = zeros((3,self.msect,3,3))
-        self.ndat = zeros(3)
+        self.ndat = zeros(3, dtype=int)
         self.data = zeros((3,400,20))        
         self.segmentNumbers= []
         for i in range(len(self.readFile)):
