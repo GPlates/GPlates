@@ -259,13 +259,6 @@ namespace GPlatesAppLogic
 			finalise_post_feature_properties(
 					GPlatesModel::FeatureHandle &feature_handle)
 			{
-				if (!d_reconstruct_params.should_draw_vgp(
-						d_reconstruction_tree->get_reconstruction_time(),
-						d_VGP_params.d_age))
-				{
-					return;
-				}
-
 				if (d_VGP_params.d_vgp_point)
 				{
 					ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
@@ -276,22 +269,6 @@ namespace GPlatesAppLogic
 									d_VGP_params.d_vgp_point->get_geometry_on_sphere(),
 									*(*d_VGP_params.d_vgp_iterator).handle_weak_ref(),
 									(*d_VGP_params.d_vgp_iterator),
-									d_reconstruction_params.get_recon_plate_id(),
-									d_reconstruction_params.get_time_of_appearance(),
-									d_reconstruct_handle);
-					d_reconstructed_feature_geometries.push_back(rfg_ptr);
-				}
-
-				if (d_VGP_params.d_site_point)
-				{
-					ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
-							ReconstructedFeatureGeometry::create(
-									d_reconstruction_tree,
-									d_reconstruction_tree_creator,
-									*(*d_VGP_params.d_site_iterator).handle_weak_ref(),
-									(*d_VGP_params.d_site_iterator),
-									d_VGP_params.d_site_point->get_geometry_on_sphere(),
-									ReconstructMethod::VIRTUAL_GEOMAGNETIC_POLE,
 									d_reconstruction_params.get_recon_plate_id(),
 									d_reconstruction_params.get_time_of_appearance(),
 									d_reconstruct_handle);
