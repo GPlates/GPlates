@@ -116,7 +116,7 @@ namespace GPlatesFeatureVisitors
 
 		void
 		visit_gpml_topological_network_interior(
-		 		const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_topological_network_interior);
+		 		const GPlatesPropertyValues::GpmlPropertyDelegate &gpml_topological_network_interior);
 
 		virtual
 		void

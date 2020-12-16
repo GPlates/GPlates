@@ -119,11 +119,94 @@ namespace GPlatesAppLogic
 			typedef std::vector<RigidBlock> rigid_block_seq_type;
 
 
-			//! Typedef for location of a point within network (either inside a delaunay face or a rigid block).
-			typedef boost::variant<
-					Delaunay_2::Face_handle,
-					boost::reference_wrapper<const RigidBlock> // behaves like 'const RigidBlock &'
-			> point_location_type;
+			/**
+			 * Location of a point within network (either inside a Delaunay face or a rigid block).
+			 */
+			class PointLocation
+			{
+			public:
+				//! Point located inside deforming region (in a Delaunay face).
+				explicit
+				PointLocation(
+						const Delaunay_2::Face_handle &delaunay_face) :
+					d_location(delaunay_face)
+				{  }
+
+				//! Point located inside a rigid block.
+				explicit
+				PointLocation(
+						const RigidBlock &rigid_block) :
+					d_location(boost::cref(rigid_block))
+				{  }
+
+				//! Returns deforming region (Delaunay face) that point is located in (otherwise returns none).
+				boost::optional<Delaunay_2::Face_handle>
+				located_in_deforming_region() const
+				{
+					return boost::apply_visitor(DelaunayFaceLocationVisitor(), d_location);
+				}
+
+				//! Returns rigid block that point is located in (otherwise returns none).
+				boost::optional<const RigidBlock &>
+				located_in_rigid_block() const
+				{
+					return boost::apply_visitor(RigidBlockLocationVisitor(), d_location);
+				}
+
+
+			public: // Used by TopologyPointLocation...
+				typedef boost::variant<
+						Delaunay_2::Face_handle,
+						boost::reference_wrapper<const RigidBlock> // behaves like 'const RigidBlock &'
+				> location_type;
+
+				const location_type &
+				get_location() const
+				{
+					return d_location;
+				}
+
+			private:
+				location_type d_location;
+
+				struct DelaunayFaceLocationVisitor :
+						public boost::static_visitor< boost::optional<Delaunay_2::Face_handle> >
+				{
+					boost::optional<Delaunay_2::Face_handle>
+					operator()(
+							const Delaunay_2::Face_handle &delaunay_face) const
+					{
+						return delaunay_face;
+					}
+
+					template <class LocationType>
+					boost::optional<Delaunay_2::Face_handle>
+					operator()(
+							const LocationType &) const
+					{
+						return boost::none;
+					}
+				};
+
+				struct RigidBlockLocationVisitor :
+						public boost::static_visitor< boost::optional<const RigidBlock &> >
+				{
+					boost::optional<const RigidBlock &>
+					operator()(
+							const RigidBlock &rigid_block) const
+					{
+						return rigid_block;
+					}
+
+					template <class LocationType>
+					boost::optional<const RigidBlock &>
+					operator()(
+							const LocationType &) const
+					{
+						return boost::none;
+					}
+				};
+			};
 
 
 			/**
@@ -314,13 +397,13 @@ namespace GPlatesAppLogic
 			 *
 			 * Return none if point is outside the network.
 			 */
-			boost::optional<point_location_type>
+			boost::optional<PointLocation>
 			get_point_location(
 					const GPlatesMaths::PointOnSphere &point) const;
 
 			//! Convenient overload for 2D projected point.
 			template <class Point2Type>
-			boost::optional<point_location_type>
+			boost::optional<PointLocation>
 			get_point_location(
 					const Point2Type &point_2) const
 			{
@@ -431,14 +514,14 @@ namespace GPlatesAppLogic
 			boost::optional<DeformationInfo>
 			calculate_deformation(
 					const GPlatesMaths::PointOnSphere &point,
-					boost::optional<point_location_type> point_location = boost::none) const;
+					boost::optional<PointLocation> point_location = boost::none) const;
 
 			//! Convenient overload for 2D projected point.
 			template <class Point2Type>
 			boost::optional<DeformationInfo>
 			calculate_deformation(
 					const Point2Type &point_2,
-					boost::optional<point_location_type> point_location = boost::none) const
+					boost::optional<PointLocation> point_location = boost::none) const
 			{
 				return calculate_deformation(
 						d_projection.unproject_to_point_on_sphere(point_2),
@@ -522,23 +605,23 @@ namespace GPlatesAppLogic
 			 *
 			 * Returns boost::none if the point is outside the network (if @a is_point_in_network returns false).
 			 */
-			boost::optional< std::pair<GPlatesMaths::PointOnSphere, point_location_type> >
+			boost::optional< std::pair<GPlatesMaths::PointOnSphere, PointLocation> >
 			calculate_deformed_point(
 					const GPlatesMaths::PointOnSphere &point,
 					const double &time_increment = 1.0,
 					bool reverse_deform = false,
 					bool use_natural_neighbour_interpolation = true,
-					boost::optional<point_location_type> point_location = boost::none) const;
+					boost::optional<PointLocation> point_location = boost::none) const;
 
 			//! Convenient overload for 2D projected point.
 			template <class Point2Type>
-			boost::optional< std::pair<GPlatesMaths::PointOnSphere, point_location_type> >
+			boost::optional< std::pair<GPlatesMaths::PointOnSphere, PointLocation> >
 			calculate_deformed_point(
 					const Point2Type &point_2,
 					const double &time_increment = 1.0,
 					bool reverse_deform = false,
 					bool use_natural_neighbour_interpolation = true,
-					boost::optional<point_location_type> point_location = boost::none) const
+					boost::optional<PointLocation> point_location = boost::none) const
 			{
 				return calculate_deformed_point(
 						d_projection.unproject_to_point_on_sphere(point_2),
@@ -579,21 +662,21 @@ namespace GPlatesAppLogic
 			 *
 			 * Returns boost::none if the point is outside the network (if @a is_point_in_network returns false).
 			 */
-			boost::optional< std::pair<GPlatesMaths::FiniteRotation, point_location_type> >
+			boost::optional< std::pair<GPlatesMaths::FiniteRotation, PointLocation> >
 			calculate_stage_rotation(
 					const GPlatesMaths::PointOnSphere &point,
 					const double &velocity_delta_time = 1.0,
 					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
-					boost::optional<point_location_type> point_location = boost::none) const;
+					boost::optional<PointLocation> point_location = boost::none) const;
 
 			//! Convenient overload for 2D projected point.
 			template <class Point2Type>
-			boost::optional< std::pair<GPlatesMaths::FiniteRotation, point_location_type> >
+			boost::optional< std::pair<GPlatesMaths::FiniteRotation, PointLocation> >
 			calculate_stage_rotation(
 					const Point2Type &point_2,
 					const double &velocity_delta_time = 1.0,
 					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
-					boost::optional<point_location_type> point_location = boost::none) const
+					boost::optional<PointLocation> point_location = boost::none) const
 			{
 				return calculate_stage_rotation(
 						d_projection.unproject_to_point_on_sphere(point_2),
@@ -616,21 +699,21 @@ namespace GPlatesAppLogic
 			 *
 			 * Returns boost::none if the point is outside the network (if @a is_point_in_network returns false).
 			 */
-			boost::optional< std::pair<GPlatesMaths::Vector3D, boost::optional<const RigidBlock &> > >
+			boost::optional< std::pair<GPlatesMaths::Vector3D, PointLocation> >
 			calculate_velocity(
 					const GPlatesMaths::PointOnSphere &point,
 					const double &velocity_delta_time = 1.0,
 					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
-					boost::optional<point_location_type> point_location = boost::none) const;
+					boost::optional<PointLocation> point_location = boost::none) const;
 
 			//! Convenient overload for 2D projected point.
 			template <class Point2Type>
-			boost::optional< std::pair<GPlatesMaths::Vector3D, boost::optional<const RigidBlock &> > >
+			boost::optional< std::pair<GPlatesMaths::Vector3D, PointLocation> >
 			calculate_velocity(
 					const Point2Type &point_2,
 					const double &velocity_delta_time = 1.0,
 					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
-					boost::optional<point_location_type> point_location = boost::none) const
+					boost::optional<PointLocation> point_location = boost::none) const
 			{
 				return calculate_velocity(
 						d_projection.unproject_to_point_on_sphere(point_2),

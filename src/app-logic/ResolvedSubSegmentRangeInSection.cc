@@ -31,6 +31,7 @@
 
 #include "GeometryUtils.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
@@ -154,10 +155,42 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::ResolvedSubSegmentRangeInSect
 		}
 		else
 		{
-			// There are no intersections (and if there is a start and end rubber band then they're on opposite
-			// ends of the section geometry) so just set the full section geometry as the sub-segment.
-			d_start_section_vertex_index = 0;
-			d_end_section_vertex_index = d_num_points_in_section_geometry;
+			// There are no intersections.
+			// And if there is a start and end rubber band then they're on opposite ends of the section geometry.
+
+			// However, if we have a point section geometry with no rubber bands (and no intersections) then
+			// create a start and an end intersection to ensure that this sub-segment will have two points
+			// (because we guarantee that a sub-segment geometry is a polyline, which requires two points,
+			// noting that the sub-segment geometry returned by 'get_geometry()' includes rubber band points).
+			//
+			// Note that this particular case should only occur during the building of a topology, such
+			// as adding the first point to a topology in the build tool (in which case the sole point will
+			// not yet have any neighbours to rubber band with). However once a topology is built, any point
+			// sections should have at least one rubber band (because they'll have at least one neighbour)
+			// which, along with the sole section point, will be two points for the section's sub-segment.
+			if (d_num_points_in_section_geometry == 1 &&
+				!d_start_rubber_band &&
+				!d_end_rubber_band)
+			{
+				d_start_intersection = Intersection::create_at_section_start_or_end(*section_geometry, true/*at_start*/);
+				d_end_intersection = Intersection::create_at_section_start_or_end(*section_geometry, false/*at_start*/);
+
+				// No section geometry vertices. Just the two new intersection points.
+				d_start_section_vertex_index = d_num_points_in_section_geometry;
+				d_end_section_vertex_index = d_num_points_in_section_geometry;
+
+				// Note that we could have instead created only a single intersection and included the one section point
+				// (to give us two sub-segment points), however it's a bit arbitrary whether to create intersection
+				// at start or end, so we just make it more symmetrical with two intersection points.
+			}
+			else
+			{
+				// If there is a start and end rubber band then they're on opposite ends of the section geometry,
+				// so just set the full section geometry as the sub-segment. And there will be enough sub-segment
+				// points in the sub-segment geometry (ie, at least two) to form a polyline.
+				d_start_section_vertex_index = 0;
+				d_end_section_vertex_index = d_num_points_in_section_geometry;
+			}
 		}
 	}
 	else if (d_start_intersection)
@@ -168,15 +201,24 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::ResolvedSubSegmentRangeInSect
 		// There's no end intersection so end at the end of the section.
 		d_end_section_vertex_index = num_vertices_in_section;
 
-		// If start intersection is *on* the last vertex of the section geometry then the intersection is a T-junction
-		// (if there's no end rubber band), so return sub-segment as a point geometry (the intersection point).
+		// If start intersection is *on* the last vertex of the section geometry then the intersection is a T-junction.
 		//
 		// Note that we are testing for the fictitious one-past-the-last segment which is equivalent
 		// to the last vertex of the section geometry (end point of last segment).
 		if (d_start_intersection->segment_index == num_segments_in_section &&
 			d_start_intersection->on_segment_start/*not really necessary for fictitious one-past-the-last segment*/)
 		{
-			// No section vertices contribute, only the single intersection point.
+			// We guarantee that a sub-segment geometry is a polyline, which requires two points.
+			// However if we don't have an end rubber band then we will only have one point
+			// (the start intersection right at the end of the section geometry). In this case we'll
+			// create an end intersection also right at the end of the section geometry.
+			if (!d_end_rubber_band)
+			{
+				d_end_intersection = Intersection::create_at_section_start_or_end(*section_geometry, false/*at_start*/);
+			}
+
+			// No section vertices contribute, only the original start intersection point and either
+			// the existing end rubber band point or our new end intersection point.
 			d_start_section_vertex_index = num_vertices_in_section;
 		}
 		else
@@ -191,12 +233,21 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::ResolvedSubSegmentRangeInSect
 		// There's no start intersection so start at the start of the section.
 		d_start_section_vertex_index = 0;
 
-		// If end intersection is *on* the first vertex of the section geometry then the intersection is a T-junction
-		// (if there's no start rubber band), so return sub-segment as a point geometry (the intersection point).
+		// If end intersection is *on* the first vertex of the section geometry then the intersection is a T-junction.
 		if (d_end_intersection->segment_index == 0 &&
 			d_end_intersection->on_segment_start)
 		{
-			// No section vertices contribute, only the single intersection point.
+			// We guarantee that a sub-segment geometry is a polyline, which requires two points.
+			// However if we don't have a start rubber band then we will only have one point
+			// (the end intersection right at the start of the section geometry). In this case we'll
+			// create a start intersection also right at the start of the section geometry.
+			if (!d_start_rubber_band)
+			{
+				d_start_intersection = Intersection::create_at_section_start_or_end(*section_geometry, true/*at_start*/);
+			}
+
+			// No section vertices contribute, only the original end intersection point and either
+			// the existing start rubber band point or our new start intersection point.
 			d_end_section_vertex_index = 0;
 		}
 		else
@@ -220,43 +271,34 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::ResolvedSubSegmentRangeInSect
 }
 
 
-GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 GPlatesAppLogic::ResolvedSubSegmentRangeInSection::get_geometry() const
 {
-	// If no intersections or rubber bands.
-	if (!d_start_intersection &&
-		!d_end_intersection &&
-		!d_start_rubber_band &&
-		!d_end_rubber_band)
+	// Create and cache sub-segment geometry if we haven't already done so.
+	if (!d_sub_segment_geometry)
 	{
-		// Just return the entire section geometry (which could be a single point, or a multi-point).
-		return d_section_geometry;
+		// The points that will form the sub-segment polyline.
+		std::vector<GPlatesMaths::PointOnSphere> sub_segment_points;
+
+		// Note that we always include rubber band points to avoid retrieving no points.
+		//
+		// This can happen when a sub-sub-segment of a resolved line sub-segment is entirely within the
+		// start or end rubber band region of the sub-sub-segment (and hence the sub-sub-segment geometry
+		// is only made up of two rubber band points which, if excluded, would result in no points).
+		// Note that this only applies when both rubber band points are on the same side of the section geometry.
+		get_geometry_points(sub_segment_points, true/*include_rubber_band_points*/);
+
+		// We should have at least two points when rubber band points are included.
+		// This is because the constructor ensures this.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				sub_segment_points.size() >= 2,
+				GPLATES_ASSERTION_SOURCE);
+
+		// We have enough points from section geometry and intersections to create a polyline (ie, at least two points).
+		d_sub_segment_geometry = GPlatesMaths::PolylineOnSphere::create(sub_segment_points);
 	}
 
-	//
-	// We have at least one intersection or rubber band point.
-	//
-
-	// The points that will form the sub-segment polyline.
-	std::vector<GPlatesMaths::PointOnSphere> sub_segment_points;
-
-	// Note that we always include rubber band points to avoid retrieving no points.
-	//
-	// This can happen when a sub-sub-segment of a resolved line sub-segment is entirely within the
-	// start or end rubber band region of the sub-sub-segment (and hence the sub-sub-segment geometry
-	// is only made up of two rubber band points which, if excluded, would result in no points).
-	// Note that this only applies when both rubber band points are on the same side of the section geometry.
-	get_geometry_points(sub_segment_points, true/*include_rubber_band_points*/);
-
-	// If we don't have enough points for a polyline then just return a point geometry.
-	// We should at least have a point (if section geometry was a point).
-	if (sub_segment_points.size() == 1)
-	{
-		return sub_segment_points.front().get_non_null_pointer();
-	}
-
-	// We have enough points from section geometry and intersections to create a polyline (ie, at least two points).
-	return GPlatesMaths::PolylineOnSphere::create_on_heap(sub_segment_points);
+	return d_sub_segment_geometry.get();
 }
 
 
@@ -715,7 +757,7 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::Intersection::get_interpolate
 					// distance between segment start and end points.
 					d_interpolate_ratio_in_segment =
 							acos(dot(position.position_vector(), segment->start_point().position_vector())).dval() /
-								acos(segment->dot_of_endpoints()).dval();
+								segment->arc_length().dval();
 				}
 			}
 			else // fictitious one-past-the-last segment ...
@@ -797,7 +839,7 @@ GPlatesAppLogic::ResolvedSubSegmentRangeInSection::RubberBand::create_from_inter
 	// divided by distance between rubber band segment's start and end points.
 	const double interpolate_ratio_in_rubber_segment =
 			acos(dot(intersection_position.position_vector(), rubber_band_segment.start_point().position_vector())).dval() /
-				acos(rubber_band_segment.dot_of_endpoints()).dval();
+				rubber_band_segment.arc_length().dval();
 
 	return RubberBand(
 			intersection_position,

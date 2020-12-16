@@ -34,6 +34,7 @@
 #include "ReconstructionGraphBuilder.h"
 #include "ReconstructionGraphPopulator.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/PreconditionViolationError.h"
 #include "global/GPlatesAssert.h"
 
@@ -81,6 +82,14 @@ namespace GPlatesAppLogic
 					const double &reconstruction_time)
 			{
 				return get_reconstruction_tree(reconstruction_time, d_default_anchor_plate_id);
+			}
+
+			//! Returns the default anchor plate ID;
+			virtual
+			GPlatesModel::integer_plate_id_type
+			get_default_anchor_plate_id() const
+			{
+				return d_default_anchor_plate_id;
 			}
 
 		private:
@@ -141,6 +150,13 @@ GPlatesAppLogic::ReconstructionTreeCreator::get_reconstruction_tree(
 }
 
 
+GPlatesModel::integer_plate_id_type
+GPlatesAppLogic::ReconstructionTreeCreator::get_default_anchor_plate_id() const
+{
+	return d_impl->get_default_anchor_plate_id();
+}
+
+
 GPlatesAppLogic::ReconstructionTreeCreator
 GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
@@ -162,7 +178,7 @@ GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 GPlatesAppLogic::ReconstructionTreeCreator
 GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
+		boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id,
 		unsigned int reconstruction_tree_cache_size)
 {
 	const ReconstructionTreeCreatorImpl::non_null_ptr_type impl =
@@ -197,7 +213,7 @@ GPlatesAppLogic::create_cached_reconstruction_tree_creator_impl(
 GPlatesUtils::non_null_intrusive_ptr<GPlatesAppLogic::CachedReconstructionTreeCreatorImpl>
 GPlatesAppLogic::create_cached_reconstruction_tree_adaptor_impl(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
+		boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id,
 		unsigned int reconstruction_tree_cache_size)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -232,7 +248,6 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::CachedReconstructionTreeCr
 		bool extend_total_reconstruction_poles_to_distant_past,
 		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
 		unsigned int reconstruction_tree_cache_size) :
-	d_default_anchor_plate_id(default_anchor_plate_id),
 	d_create_reconstruction_tree_function(
 			boost::bind(
 					&CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_graph,
@@ -242,6 +257,7 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::CachedReconstructionTreeCr
 					create_reconstruction_graph(
 							reconstruction_feature_collections,
 							extend_total_reconstruction_poles_to_distant_past))),
+	d_get_default_anchor_plate_id_function([=]() { return default_anchor_plate_id; }),
 	d_cache(d_create_reconstruction_tree_function, reconstruction_tree_cache_size)
 {
 }
@@ -249,15 +265,20 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::CachedReconstructionTreeCr
 
 GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::CachedReconstructionTreeCreatorImpl(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
+		boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id,
 		unsigned int reconstruction_tree_cache_size) :
-	d_default_anchor_plate_id(default_anchor_plate_id),
 	d_create_reconstruction_tree_function(
 			boost::bind(
 					&CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_tree_creator,
 					this,
 					_1,
 					reconstruction_tree_creator)),
+	d_get_default_anchor_plate_id_function([=]()
+		{
+			// Return the specified default anchor plate ID (if specified), otherwise ask the adapted reconstruction tree creator.
+			// Note we copied in [=] 'reconstruction_tree_creator' but it just contains a non-null pointer (so it's a cheap copy).
+			return default_anchor_plate_id ? default_anchor_plate_id.get() : reconstruction_tree_creator.get_default_anchor_plate_id();
+		}),
 	d_cache(d_create_reconstruction_tree_function, reconstruction_tree_cache_size)
 {
 }
@@ -276,7 +297,16 @@ GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
 GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::get_reconstruction_tree_default_anchored_plate_id(
 		const double &reconstruction_time)
 {
-	return get_reconstruction_tree(reconstruction_time, d_default_anchor_plate_id);
+	const GPlatesModel::integer_plate_id_type default_anchor_plate_id = d_get_default_anchor_plate_id_function();
+
+	return d_cache.get_value(cache_key_type(reconstruction_time, default_anchor_plate_id));
+}
+
+
+GPlatesModel::integer_plate_id_type
+GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::get_default_anchor_plate_id() const
+{
+	return d_get_default_anchor_plate_id_function();
 }
 
 
@@ -302,11 +332,11 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::create_reconstruction_tree
 {
 	//PROFILE_FUNC();
 
+	const GPlatesMaths::real_t &reconstruction_time = key.first;
+	const GPlatesModel::integer_plate_id_type anchor_plate_id = key.second;
+
 	// Create a reconstruction tree for the specified time/anchor.
-	return ReconstructionTree::create(
-			reconstruction_graph,
-			key.first.dval()/*reconstruction_time*/,
-			key.second/*anchor_plate_id*/);
+	return ReconstructionTree::create(reconstruction_graph, reconstruction_time.dval(), anchor_plate_id);
 }
 
 
@@ -317,8 +347,9 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::create_reconstruction_tree
 {
 	//PROFILE_FUNC();
 
-	// Create a reconstruction tree for the specified time/anchor.
-	return reconstruction_tree_creator.get_reconstruction_tree(
-			key.first.dval()/*reconstruction_time*/,
-			key.second/*anchor_plate_id*/);
+	const GPlatesMaths::real_t &reconstruction_time = key.first;
+	const GPlatesModel::integer_plate_id_type anchor_plate_id = key.second;
+
+	// Get the reconstruction tree for the specified time/anchor.
+	return reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time.dval(), anchor_plate_id);
 }

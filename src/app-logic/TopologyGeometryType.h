@@ -48,9 +48,7 @@ namespace GPlatesAppLogic
 			BOUNDARY,
 
 			// Resolves to form a triangulation within a polygon (and its optional interior constraints).
-			NETWORK,
-
-			UNKNOWN
+			NETWORK
 		};
 	}
 }

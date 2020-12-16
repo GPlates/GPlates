@@ -254,11 +254,11 @@ namespace
 			GPlatesQtWidgets::EditGeometryWidget &geometry_widget,
 			QTableWidget &table,
 			int offset,
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point)
+			const GPlatesMaths::PointOnSphere &point)
 	{
 		ensure_table_size(table, offset + 1);
 		
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*point);
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 		populate_table_row_from_lat_lon(geometry_widget, table, offset,
 				llp.latitude(), llp.longitude());
 	}
@@ -532,7 +532,7 @@ namespace
 			return geometry_opt_ptr_type(GPlatesUtils::create_multipoint_on_sphere(points, validity));
 
 		case GPlatesMaths::GeometryType::POINT:
-			return geometry_opt_ptr_type(GPlatesUtils::create_point_on_sphere(points, validity));
+			return geometry_opt_ptr_type(GPlatesUtils::create_point_geometry_on_sphere(points, validity));
 
 		case GPlatesMaths::GeometryType::POLYGON:
 			return geometry_opt_ptr_type(GPlatesUtils::create_polygon_on_sphere(points, validity));

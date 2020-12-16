@@ -65,34 +65,25 @@ namespace GPlatesAppLogic
 		{
 			PROFILE_FUNC();
 
-			// Iterate over the current feature collections.
-			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
-					feature_collections.begin();
-			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_end =
-					feature_collections.end();
-			for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
+			for (auto feature_collection : feature_collections)
 			{
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = *feature_collections_iter;
 				if (feature_collection.is_valid())
 				{
-					GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
-					GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection->end();
-					for ( ; features_iter != features_end; ++features_iter)
+					for (auto feature: *feature_collection)
 					{
-						const GPlatesModel::FeatureHandle::weak_ref feature = (*features_iter)->reference();
+						const GPlatesModel::FeatureHandle::weak_ref feature_ref = feature->reference();
 
-						if (!feature.is_valid())
-						{
-							continue;
-						}
+						// Determine the topology geometry type.
+						boost::optional<TopologyGeometry::Type> topology_geometry_type =
+								TopologyUtils::get_topological_geometry_type(feature_ref);
 
-						if (TopologyUtils::is_topological_line_feature(feature))
+						if (topology_geometry_type == TopologyGeometry::LINE)
 						{
-							topological_line_features.push_back(feature);
+							topological_line_features.push_back(feature_ref);
 						}
-						else if (TopologyUtils::is_topological_boundary_feature(feature))
+						else if (topology_geometry_type == TopologyGeometry::BOUNDARY)
 						{
-							topological_boundary_features.push_back(feature);
+							topological_boundary_features.push_back(feature_ref);
 						}
 					}
 				}
@@ -1448,7 +1439,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::create_resolved_topological
 		// geometry property iterator (referenced by the MultiPointVectorField) could be a
 		// non-multi-point geometry.
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type sub_segment_velocity_domain =
-				GPlatesMaths::MultiPointOnSphere::create_on_heap(
+				GPlatesMaths::MultiPointOnSphere::create(
 						sub_segment_geometry_points.begin(),
 						sub_segment_geometry_points.end());
 

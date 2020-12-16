@@ -49,12 +49,14 @@ GPlatesAppLogic::TopologyReconstructedFeatureGeometry::reconstructed_geometry() 
 void
 GPlatesAppLogic::TopologyReconstructedFeatureGeometry::get_geometry_data(
 		boost::optional<point_seq_type &> reconstructed_points,
+		boost::optional<point_location_seq_type&> reconstructed_point_locations,
 		boost::optional<point_deformation_strain_rate_seq_type &> strain_rates,
 		boost::optional<point_deformation_total_strain_seq_type &> strains) const
 {
 	const bool geometry_data_is_valid = d_topology_reconstruct_geometry_time_span->get_geometry_data(
 			get_reconstruction_time(),
 			reconstructed_points,
+			reconstructed_point_locations,
 			strain_rates,
 			strains);
 

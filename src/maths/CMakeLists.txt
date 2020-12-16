@@ -40,6 +40,8 @@ set(srcs
     GeneratePoints.cc
     GeneratePoints.h
     GenericVectorOps3D.h
+    GeometryCrossing.cc
+    GeometryCrossing.h
     GeometryDistance.cc
     GeometryDistance.h
     GeometryForwardDeclarations.h
@@ -84,14 +86,14 @@ set(srcs
     PointProximityHitDetail.h
     PolygonFan.cc
     PolygonFan.h
-    PolygonIntersections.cc
-    PolygonIntersections.h
     PolygonMesh.cc
     PolygonMesh.h
     PolygonOnSphere.cc
     PolygonOnSphere.h
     PolygonOrientation.cc
     PolygonOrientation.h
+    PolygonPartitioner.cc
+    PolygonPartitioner.h
     PolygonProximityHitDetail.h
     PolyGreatCircleArcBoundingTree.h
     PolylineEquivalencePredicates.h

@@ -141,12 +141,11 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_move_without_drag(
 					hit.d_rendered_geom_layer->get_rendered_geometry(
 						hit.d_rendered_geom_index);
 			rg.accept_visitor(finder);
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> pos =
-					finder.get_geometry();
+			const boost::optional<GPlatesMaths::PointOnSphere> &pos = finder.get_geometry();
 			if (pos)
 			{
 				qDebug() << "MWD: Found existing vertex";
-				d_hellinger_dialog_ptr->set_feature_highlight(**pos);
+				d_hellinger_dialog_ptr->set_feature_highlight(pos.get());
 			}
 		}
 		else
@@ -254,12 +253,11 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_shift_left_click(
 					hit.d_rendered_geom_layer->get_rendered_geometry(
 						hit.d_rendered_geom_index);
 			rg.accept_visitor(finder);
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> pos =
-					finder.get_geometry();
+			const boost::optional<GPlatesMaths::PointOnSphere> &pos = finder.get_geometry();
 			if (pos)
 			{
 				qDebug() << "SLC: Found vertex";
-				d_hellinger_dialog_ptr->update_edit_layer(**pos);
+				d_hellinger_dialog_ptr->update_edit_layer(pos.get());
 			}
 		}
 	}

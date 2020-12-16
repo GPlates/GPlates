@@ -1448,7 +1448,7 @@ namespace
 		{
 			// We have more than one point in the feature, so we should handle this as a multi-point.
 			ogr_writer->write_multi_point_feature(
-					GPlatesMaths::MultiPointOnSphere::create_on_heap(
+					GPlatesMaths::MultiPointOnSphere::create(
 							point_geometries.begin(),
 							point_geometries.end()),
 					field_names_key_value_dictionary,
@@ -1779,7 +1779,7 @@ void
 GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_point_geometries.push_back(*gml_point.point());
+	d_point_geometries.push_back(gml_point.point());
 }
 
 void

@@ -2598,6 +2598,7 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 	GPlatesFeatureVisitors::GeometrySetter geometry_setter(present_day_geometry);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_property_clone =
 			(*geometry_property_iterator)->deep_clone();
+			(*geometry_property_iterator)->clone();
 	geometry_setter.set_geometry(geometry_property_clone.get());
 	*geometry_property_iterator = geometry_property_clone;
 

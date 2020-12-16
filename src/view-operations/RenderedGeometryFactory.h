@@ -153,23 +153,9 @@ namespace GPlatesViewOperations
 		 */
 		RenderedGeometry
 		create_rendered_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type,
-				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
-				float point_size_hint = DEFAULT_POINT_SIZE_HINT);
-
-		/**
-		 * Creates a @a RenderedGeometry for a @a PointOnSphere.
-		 */
-		inline
-		RenderedGeometry
-		create_rendered_point_on_sphere(
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
-				float point_size_hint = DEFAULT_POINT_SIZE_HINT)
-		{
-			return create_rendered_point_on_sphere(
-					point_on_sphere.clone_as_point(), colour, point_size_hint);
-		}
+				float point_size_hint = DEFAULT_POINT_SIZE_HINT);
 
 		/**
 		 * Creates a @a RenderedGeometry for a @a MultiPointOnSphere.
@@ -403,31 +389,13 @@ namespace GPlatesViewOperations
 		 */
 		RenderedGeometry
 		create_rendered_string(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type,
-				const QString &,
-				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
-				const GPlatesGui::ColourProxy &shadow_colour = GPlatesGui::ColourProxy(boost::none),
-				int x_offset = 0,
-				int y_offset = 0,
-				const QFont &font = QFont());
-
-		/**
-		 * Creates a @a RenderedGeometry for text.
-		 */
-		inline
-		RenderedGeometry
-		create_rendered_string(
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				const QString &string,
 				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
 				const GPlatesGui::ColourProxy &shadow_colour = GPlatesGui::ColourProxy(boost::none),
 				int x_offset = 0,
 				int y_offset = 0,
-				const QFont &font = QFont())
-		{
-			return create_rendered_string(
-					point_on_sphere.clone_as_point(), string, colour, shadow_colour, x_offset, y_offset, font);
-		}
+				const QFont &font = QFont());
 
 		/**
 		 * Creates a @a RenderedGeometry for a @a SmallCircle.

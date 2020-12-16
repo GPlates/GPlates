@@ -35,7 +35,7 @@
 #include "maths/MathsUtils.h"
 
 
-const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+const GPlatesMaths::PointOnSphere &
 GPlatesPropertyValues::GmlPoint::point() const
 {
 	if (!d_point_on_sphere)
@@ -49,7 +49,7 @@ GPlatesPropertyValues::GmlPoint::point() const
 		// This will throw if the lat/lon is outside valid range.
 		const GPlatesMaths::LatLonPoint lat_lon_point(d_point_2d->first/*lat*/, d_point_2d->second/*lon*/);
 
-		d_point_on_sphere = GPlatesMaths::make_point_on_sphere(lat_lon_point).clone_as_point();
+		d_point_on_sphere = GPlatesMaths::make_point_on_sphere(lat_lon_point);
 	}
 
 	return d_point_on_sphere.get();
@@ -77,7 +77,7 @@ GPlatesPropertyValues::GmlPoint::point_2d() const
 				d_point_on_sphere,
 				GPLATES_ASSERTION_SOURCE);
 
-		const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(*d_point_on_sphere.get());
+		const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(d_point_on_sphere.get());
 
 		// Note that the 2D point stores as (lat, lon) which is the order stored in GPML file.
 		d_point_2d = std::make_pair(lat_lon_point.latitude(), lat_lon_point.longitude());
@@ -89,7 +89,7 @@ GPlatesPropertyValues::GmlPoint::point_2d() const
 
 void
 GPlatesPropertyValues::GmlPoint::set_point(
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &p)
+		const GPlatesMaths::PointOnSphere &p)
 {
 	d_point_on_sphere = p;
 
@@ -103,6 +103,6 @@ std::ostream &
 GPlatesPropertyValues::GmlPoint::print_to(
 		std::ostream &os) const
 {
-	return os << *point();
+	return os << point();
 }
 

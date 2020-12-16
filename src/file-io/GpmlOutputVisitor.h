@@ -349,10 +349,6 @@ namespace GPlatesFileIO
 		write_gpml_key_value_dictionary_element(
 				const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element);
 
-		void
-		write_gpml_topological_network_interior(
-				const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_topological_network_interior);
-
 		/**
 		 * Keeps track of the file currently being written to.
 		 *

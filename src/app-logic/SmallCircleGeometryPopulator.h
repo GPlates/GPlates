@@ -117,7 +117,7 @@ namespace GPlatesAppLogic
 
 		const GPlatesPropertyValues::GeoTimeInstant d_reconstruction_time;
 
-		boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> d_centre;
+		boost::optional<GPlatesMaths::PointOnSphere> d_centre;
 		boost::optional<double> d_radius_in_degrees;
 
 		// We need to provide an iterator-to-geometry-property to the various ReconstructedGeometry creation functions.

@@ -109,7 +109,7 @@ instead if one exists (ie, for GDAL, Qt and CMake).
   • Install GLEW with 'sudo port install glew' if you don't have GLEW.
   • Install Python with 'sudo port install python3[x]' where 'x' is the minor version (eg, 'sudo port install python36).
   • Install Boost with 'sudo port install boost +python3[x]' if you don't have Boost - note the additional "+python3[x]".
-    Where 'x' is the python minor version number - for example 'sudo port install boost+python36'.
+    Where 'x' is the python minor version number - for example 'sudo port install boost +python36'.
   • Install CGAL with 'sudo port install cgal' if you don't  have CGAL.
   • Install GDAL with 'sudo port install gdal +netcdf +proj4' if you don't have GDAL - note the additional "+netcdf" is required
     to enable GPlates to import/export NetCDF rasters. Also "+proj4" is required to avoid conflicts with proj5 (which is called "proj").

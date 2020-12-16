@@ -66,7 +66,7 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::deep_clone() const
 	const interior_geometries_const_iterator interior_geometries_iter_end = d_interior_geometries.end();
 	for ( ; interior_geometries_iter != interior_geometries_iter_end; ++interior_geometries_iter)
 	{
-		const Interior &cloned_interior_geometry = interior_geometries_iter->deep_clone();
+		const GpmlPropertyDelegate::non_null_ptr_type cloned_interior_geometry = (*interior_geometries_iter)->deep_clone();
 		dup->d_interior_geometries.push_back(cloned_interior_geometry);
 	}
 
@@ -138,35 +138,4 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::directly_modifiable_fields_equal(
 		// Should never get here, but doesn't hurt to check.
 		return false;
 	}
-}
-
-
-const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior
-GPlatesPropertyValues::GpmlTopologicalNetwork::Interior::deep_clone() const
-{
-	Interior dup(*this);
-
-	const GpmlPropertyDelegate::non_null_ptr_type cloned_source_geometry =
-			d_source_geometry->deep_clone();
-	dup.d_source_geometry = cloned_source_geometry;
-
-	return dup;
-}
-
-
-bool
-GPlatesPropertyValues::GpmlTopologicalNetwork::Interior::operator==(
-		const GpmlTopologicalNetwork::Interior &other) const
-{
-	return *d_source_geometry == *other.d_source_geometry;
-}
-
-
-
-std::ostream &
-GPlatesPropertyValues::operator<<(
-		std::ostream &os,
-		const GpmlTopologicalNetwork::Interior &topological_network_interior)
-{
-	return os << *topological_network_interior.get_source_geometry();
 }

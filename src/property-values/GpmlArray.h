@@ -65,12 +65,10 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-			const StructuralType &value_type_,		
-                        const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members)
+				const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members,
+				const StructuralType &value_type_)
 		{
-			return non_null_ptr_type(new GpmlArray(
-					value_type_,
-					members));
+			return non_null_ptr_type(new GpmlArray(members, value_type_));
 		}
 
 		const non_null_ptr_type
@@ -170,11 +168,11 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlArray(
-			const StructuralType &value_type_,
-			const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members_):
-				PropertyValue(),
-				d_type(value_type_),
-				d_members(members_)
+				const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members_,
+				const StructuralType &value_type_):
+			PropertyValue(),
+			d_members(members_),
+			d_type(value_type_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -185,16 +183,16 @@ namespace GPlatesPropertyValues
 		GpmlArray(
 			const GpmlArray &other) :
 				PropertyValue(other),
-				d_type(other.d_type),
-				d_members(other.d_members)
+				d_members(other.d_members),
+				d_type(other.d_type)
 		{  }
 
 
 	private:
 
-		StructuralType d_type;
-
 		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> d_members;
+
+		StructuralType d_type;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

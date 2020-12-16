@@ -667,7 +667,7 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 					// See if point is in network boundary and if so, return the stage rotation.
 					boost::optional< std::pair<
 							GPlatesMaths::FiniteRotation,
-							GPlatesAppLogic::ResolvedTriangulation::Network::point_location_type> > point_stage_rotation =
+							GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> > point_stage_rotation =
 									network_ptr->get_triangulation_network().calculate_stage_rotation(
 											pos,
 											t_older - t_younger/*velocity_delta_time*/,

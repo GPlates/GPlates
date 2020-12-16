@@ -333,7 +333,7 @@ namespace{
 
 		GPlatesViewOperations::RenderedGeometry pick_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					point.get_non_null_pointer(),
+					point.get_geometry_on_sphere(),
 					colour,
 					DEFAULT_POINT_SIZE, /* point size */
 					DEFAULT_LINE_THICKNESS, /* line thickness */
@@ -1260,7 +1260,7 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse(
 			ellipse_points.push_back(GPlatesMaths::make_point_on_sphere(llp));
 		}
 
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type ellipse_geometry_on_sphere = GPlatesMaths::PolylineOnSphere::create_on_heap(ellipse_points);
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type ellipse_geometry_on_sphere = GPlatesMaths::PolylineOnSphere::create(ellipse_points);
 		GPlatesViewOperations::RenderedGeometry ellipse_rg = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					ellipse_geometry_on_sphere,
 					HellingerConfigurationWidget::get_colour_from_hellinger_colour(
@@ -1338,7 +1338,7 @@ void GPlatesQtWidgets::HellingerDialog::set_feature_highlight(
 {
 	GPlatesViewOperations::RenderedGeometry highlight_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				point.get_non_null_pointer(),
+				point.get_geometry_on_sphere(),
 				GPlatesGui::Colour::get_yellow(),
 				ENLARGED_POINT_SIZE,
 				DEFAULT_LINE_THICKNESS,
@@ -1445,7 +1445,7 @@ GPlatesQtWidgets::HellingerDialog::draw_picks_of_plate_index(
 
 				GPlatesViewOperations::RenderedGeometry pick_geometry =
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-							point.get_non_null_pointer(),
+							point.get_geometry_on_sphere(),
 							get_segment_colour(num_colour),
 							2, /* point thickness */
 							2, /* line thickness */
@@ -1665,7 +1665,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 
 					GPlatesViewOperations::RenderedGeometry pick_geometry =
 							GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-								point.get_non_null_pointer(),
+								point.get_geometry_on_sphere(),
 								get_segment_colour(num_colour),
 								2, /* point thickness */
 								2, /* line thickness */

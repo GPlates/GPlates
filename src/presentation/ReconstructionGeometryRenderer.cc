@@ -541,6 +541,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		point_deformation_total_strain_seq_type point_deformation_total_strains;
 		trfg->get_geometry_data(
 				geometry_points,
+				boost::none/*geometry_point_locations*/,
 				boost::none/*strain_rates*/,
 				point_deformation_total_strains/*strains*/);
 
@@ -738,8 +739,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	if (rvgp->vgp_params().d_site_point)
 	{
 		site_point = d_reconstruction_adjustment
-				? d_reconstruction_adjustment.get() * *rvgp->vgp_params().d_site_point.get()
-				: *rvgp->vgp_params().d_site_point.get();
+				? d_reconstruction_adjustment.get() * rvgp->vgp_params().d_site_point.get()
+				: rvgp->vgp_params().d_site_point.get();
 
 		GPlatesViewOperations::RenderedGeometry rendered_site_point = 
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
@@ -761,7 +762,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_vgp_point =
 				create_rendered_reconstruction_geometry(
-						rvgp->vgp_params().d_vgp_point.get(),
+						rvgp->vgp_params().d_vgp_point->get_geometry_on_sphere(),
 						rvgp,
 						d_render_params,
 						rvgp_colour,
@@ -773,8 +774,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		render_reconstruction_geometry_on_sphere(rendered_vgp_point);
 
 		const GPlatesMaths::PointOnSphere pole_point = d_reconstruction_adjustment
-				? d_reconstruction_adjustment.get() * *rvgp->vgp_params().d_vgp_point.get()
-				: *rvgp->vgp_params().d_vgp_point.get();
+				? d_reconstruction_adjustment.get() * rvgp->vgp_params().d_vgp_point.get()
+				: rvgp->vgp_params().d_vgp_point.get();
 
 		if (d_render_params.vgp_draw_circular_error &&
 			rvgp->vgp_params().d_a95 )
@@ -1162,7 +1163,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry rendered_geom =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
 			GPlatesMaths::SmallCircle::create_colatitude(
-				rsc->centre()->position_vector(),rsc->radius()),
+				rsc->centre().position_vector(), rsc->radius()),
 			get_colour(rsc, d_colour, d_style_adapter));
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =

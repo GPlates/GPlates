@@ -167,10 +167,10 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 		const GeometryBuilder::PointIndex index_of_point_to_insert_before =
 			index_of_start_point + 1;
 		
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_to_insert =
+		const GPlatesMaths::PointOnSphere point_to_insert =
 				project_point_onto_line_segment(index_of_start_point, oriented_pos_on_sphere);
 
-		split_feature(index_of_point_to_insert_before, *point_to_insert);
+		split_feature(index_of_point_to_insert_before, point_to_insert);
 	}
 	else
 	{
@@ -180,7 +180,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 	}
 }
 
-GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PointOnSphere
 GPlatesViewOperations::SplitFeatureGeometryOperation::project_point_onto_line_segment(
 		const GeometryBuilder::PointIndex start_point_index,
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)

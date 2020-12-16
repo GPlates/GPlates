@@ -297,7 +297,7 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
+					PointGeometryOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
 			{
 				// Do nothing - can't create a polygon mesh from a single point.
 			}
@@ -1248,7 +1248,7 @@ GPlatesMaths::PolygonMesh::create(
 	}
 
 	PolygonOnSphere::non_null_ptr_to_const_type polygon =
-			PolygonOnSphere::create_on_heap(
+			PolygonOnSphere::create(
 					polyline->vertex_begin(),
 					polyline->vertex_end());
 
@@ -1276,7 +1276,7 @@ GPlatesMaths::PolygonMesh::create(
 	}
 
 	PolygonOnSphere::non_null_ptr_to_const_type polygon =
-			PolygonOnSphere::create_on_heap(
+			PolygonOnSphere::create(
 					multi_point->begin(),
 					multi_point->end());
 

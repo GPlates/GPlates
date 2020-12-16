@@ -310,7 +310,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_point.point()));
+								gml_point.point().get_geometry_on_sphere()));
 			}
 			
 			virtual
@@ -465,7 +465,7 @@ namespace GPlatesAppLogic
 								d_reconstruction_tree_creator,
 								*property.handle_weak_ref(),
 								property,
-								gml_point.point(),
+								gml_point.point().get_geometry_on_sphere(),
 								d_reconstruction_rotation.get(),
 								ReconstructMethod::HALF_STAGE_ROTATION,
 								d_reconstruction_params.get_recon_plate_id(),

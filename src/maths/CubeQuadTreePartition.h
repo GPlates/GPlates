@@ -93,7 +93,7 @@ namespace GPlatesMaths
 	 *
 	 * This makes insertions quite fast which is useful for inserting *reconstructed* geometries
 	 * at each reconstruction time. The spatial partition then tells us which *reconstructed*
-	 * geometries are near each other and also allows hierachical bounds testing.
+	 * geometries are near each other and also allows hierarchical bounds testing.
 	 * So this spatial partition is useful for:
 	 *  - View-frustum culling,
 	 *  - Nearest neighbour testing,
@@ -399,6 +399,24 @@ namespace GPlatesMaths
 				return NodeReference(d_node_impl->get_child_node(child_x_offset, child_y_offset));
 			}
 
+			friend
+			bool
+			operator==(
+					const NodeReference &lhs,
+					const NodeReference &rhs)
+			{
+				return lhs.d_node_impl == rhs.d_node_impl;
+			}
+
+			friend
+			bool
+			operator!=(
+					const NodeReference &lhs,
+					const NodeReference &rhs)
+			{
+				return lhs != rhs;
+			}
+
 		private:
 			NodeImplQualifiedType *d_node_impl;
 
@@ -506,10 +524,11 @@ namespace GPlatesMaths
 		 * @param maximum_quad_tree_depth is the deepest level that an element can be added to.
 		 *        The maximum amount of memory required for the nodes themselves (assuming all
 		 *        nodes of all levels of all quad trees contain elements) is
-		 *        '6 * pow(4, maximum_quad_tree_depth) * 1.3 * 20' bytes - the 6 is for the six cube faces,
+		 *        '6 * pow(4, maximum_quad_tree_depth) * 1.3 * 48' bytes - the 6 is for the six cube faces,
 		 *        the 1.3 is summation over the levels and the last number is the size of a
-		 *        quad tree node in bytes (on 32-bit systems).
-		 *        This does not include the memory used by the elements themselves.
+		 *        quad tree node in bytes (on 64-bit systems).
+		 *        This does not include the memory used by the elements themselves, which is
+		 *        'num_elements * (sizeof(ElementType) + 8)' where the '8' is for 64-bit linked list pointers.
 		 *
 		 * NOTE: @a maximum_quad_tree_depth only applies to those elements added with geometry
 		 * since the depth at which they are inserted depends on the spatial extent of the geometry.
@@ -845,7 +864,7 @@ namespace GPlatesMaths
 				location_type *location_added = NULL)
 		{
 			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
-			AddRegionOfInterestRotatedGeometryOnSphere add_geometry(*this, element, finite_rotation, region_of_interest, location_added);
+			AddRegionOfInterestRotatedGeometryOnSphere add_geometry(*this, element, region_of_interest, finite_rotation, location_added);
 			geometry.accept_visitor(add_geometry);
 		}
 
@@ -904,7 +923,7 @@ namespace GPlatesMaths
 				const FiniteRotation &finite_rotation,
 				location_type *location_added = NULL)
 		{
-			add(element, point_on_sphere.position_vector(), finite_rotation, region_of_interest, location_added);
+			add(element, point_on_sphere.position_vector(), region_of_interest, finite_rotation, location_added);
 		}
 
 
@@ -1318,9 +1337,9 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+					PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				d_spatial_partition.add(d_element, point_on_sphere->position_vector(), d_location_added);
+				d_spatial_partition.add(d_element, point_on_sphere->position(), d_location_added);
 			}
 
 			virtual
@@ -1374,9 +1393,9 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+					PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				d_spatial_partition.add(d_element, point_on_sphere->position_vector(), d_finite_rotation, d_location_added);
+				d_spatial_partition.add(d_element, point_on_sphere->position(), d_finite_rotation, d_location_added);
 			}
 
 			virtual
@@ -1430,9 +1449,9 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+					PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				d_spatial_partition.add(d_element, point_on_sphere->position_vector(), d_region_of_interest, d_location_added);
+				d_spatial_partition.add(d_element, point_on_sphere->position(), d_region_of_interest, d_location_added);
 			}
 
 			virtual
@@ -1468,13 +1487,13 @@ namespace GPlatesMaths
 			AddRegionOfInterestRotatedGeometryOnSphere(
 					CubeQuadTreePartition<ElementType> &spatial_partition,
 					const ElementType &element,
-					const FiniteRotation &finite_rotation,
 					const AngularExtent &region_of_interest,
+					const FiniteRotation &finite_rotation,
 					location_type *location_added) :
 				d_spatial_partition(spatial_partition),
 				d_element(element),
-				d_finite_rotation(finite_rotation),
 				d_region_of_interest(region_of_interest),
+				d_finite_rotation(finite_rotation),
 				d_location_added(location_added)
 			{  }
 
@@ -1489,9 +1508,9 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+					PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				d_spatial_partition.add(d_element, point_on_sphere->position_vector(), d_region_of_interest, d_finite_rotation, d_location_added);
+				d_spatial_partition.add(d_element, point_on_sphere->position(), d_region_of_interest, d_finite_rotation, d_location_added);
 			}
 
 			virtual
@@ -1512,8 +1531,8 @@ namespace GPlatesMaths
 
 			CubeQuadTreePartition<ElementType> &d_spatial_partition;
 			const ElementType &d_element;
-			const FiniteRotation &d_finite_rotation;
 			const AngularExtent &d_region_of_interest;
+			const FiniteRotation &d_finite_rotation;
 			location_type *d_location_added;
 		};
 

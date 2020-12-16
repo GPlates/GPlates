@@ -30,6 +30,7 @@
 #include <vector>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/optional.hpp>
 
 #include "ReconstructionGraph.h"
 #include "ReconstructionTree.h"
@@ -109,6 +110,13 @@ namespace GPlatesAppLogic
 		get_reconstruction_tree(
 				const double &reconstruction_time) const;
 
+
+		/**
+		 * Returns the default anchor plate ID;
+		 */
+		GPlatesModel::integer_plate_id_type
+		get_default_anchor_plate_id() const;
+
 	private:
 		GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeCreatorImpl> d_impl;
 	};
@@ -149,12 +157,15 @@ namespace GPlatesAppLogic
 	 * This is useful for re-using an existing reconstruction tree creator but extending the
 	 * cache size or specifying a desired cache size.
 	 *
+	 * If @a default_anchor_plate_id is not specified then the default anchor plate of
+	 * @a reconstruction_tree_creator is used.
+	 *
 	 * @throws @a PreconditionViolationError if @a reconstruction_tree_cache_size is zero.
 	 */
 	ReconstructionTreeCreator
 	create_cached_reconstruction_tree_adaptor(
 			const ReconstructionTreeCreator &reconstruction_tree_creator,
-			GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0,
+			boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id = boost::none,
 			unsigned int reconstruction_tree_cache_size = 1);
 
 
@@ -191,11 +202,14 @@ namespace GPlatesAppLogic
 	 *
 	 * The main use of this function is for the client to obtain direct access to the implementation
 	 * so they can change the default reconstruction time and anchor plate id and change the cache size.
+	 *
+	 * If @a default_anchor_plate_id is not specified then the default anchor plate of
+	 * @a reconstruction_tree_creator is used.
 	 */
 	GPlatesUtils::non_null_intrusive_ptr<CachedReconstructionTreeCreatorImpl>
 	create_cached_reconstruction_tree_adaptor_impl(
 			const ReconstructionTreeCreator &reconstruction_tree_creator,
-			GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0,
+			boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id = boost::none,
 			unsigned int reconstruction_tree_cache_size = 1);
 
 
@@ -257,6 +271,12 @@ namespace GPlatesAppLogic
 		ReconstructionTree::non_null_ptr_to_const_type
 		get_reconstruction_tree_default_anchored_plate_id(
 				const double &reconstruction_time) = 0;
+
+
+		//! Returns the default anchor plate ID;
+		virtual
+		GPlatesModel::integer_plate_id_type
+		get_default_anchor_plate_id() const = 0;
 	};
 
 
@@ -312,13 +332,16 @@ namespace GPlatesAppLogic
 		 * This is useful for re-using an existing reconstruction tree creator but extending the
 		 * cache size or specifying a desired cache size.
 		 *
+		 * If @a default_anchor_plate_id is not specified then the default anchor plate of
+		 * @a reconstruction_tree_creator is used.
+		 *
 		 * The maximum number of cached reconstruction trees is @a max_num_reconstruction_trees_in_cache.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				GPlatesModel::integer_plate_id_type default_anchor_plate_id,
+				boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id,
 				unsigned int reconstruction_tree_cache_size)
 		{
 			return non_null_ptr_type(
@@ -360,6 +383,11 @@ namespace GPlatesAppLogic
 		get_reconstruction_tree_default_anchored_plate_id(
 				const double &reconstruction_time);
 
+		//! Returns the default anchor plate ID;
+		virtual
+		GPlatesModel::integer_plate_id_type
+		get_default_anchor_plate_id() const;
+
 	private:
 		//! Typedef for the key in the reconstruction tree cache.
 		typedef std::pair<GPlatesMaths::real_t, GPlatesModel::integer_plate_id_type> cache_key_type;
@@ -374,10 +402,13 @@ namespace GPlatesAppLogic
 		typedef boost::function< cache_value_type (const cache_key_type &) >
 				create_reconstruction_tree_function_type;
 
+		//! Typedef for a function returning a default anchor plate ID.
+		typedef boost::function< GPlatesModel::integer_plate_id_type () >
+				get_default_anchor_plate_id_function_type;
 
-		GPlatesModel::integer_plate_id_type d_default_anchor_plate_id;
 
 		create_reconstruction_tree_function_type d_create_reconstruction_tree_function;
+		get_default_anchor_plate_id_function_type d_get_default_anchor_plate_id_function;
 		cache_type d_cache;
 
 
@@ -389,7 +420,7 @@ namespace GPlatesAppLogic
 
 		CachedReconstructionTreeCreatorImpl(
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				GPlatesModel::integer_plate_id_type default_anchor_plate_id,
+				boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id,
 				unsigned int reconstruction_tree_cache_size);
 
 

@@ -100,7 +100,40 @@
 #		define _DEBUG
 #	endif
 
+//
+// boost::python
+//
 #	include <boost/python.hpp>
+
+//
+// boost::python::numpy
+//
+// Only available for Boost >= 1.63, and if boost.python.numpy installed since it's currently optional
+// (because we don't actually use it yet).
+//
+#	ifdef GPLATES_HAVE_BOOST_PYTHON_NUMPY
+#		include <boost/python/numpy.hpp>
+#	endif // GPLATES_HAVE_BOOST_PYTHON_NUMPY
+//
+// This is required for any direct use of the numpy C-API (beyond what we might use boost::python::numpy for).
+//
+// All source files except one (PyGPlatesModule.cc) that access the numpy C-API do not need to
+// import it. So the default is to define NO_IMPORT_ARRAY. However if PYGPLATES_IMPORT_NUMPY_ARRAY_API
+// is defined then NO_IMPORT_ARRAY will not be defined and hence numpy's '_import_array()' will get
+// defined in file scope only (static) and can be called using the 'import_array()' macro
+// - note that only PyGPlatesModule.cc should do this.
+//
+#   ifdef GPLATES_HAVE_NUMPY_C_API
+#		ifndef PYGPLATES_IMPORT_NUMPY_ARRAY_API
+#			define NO_IMPORT_ARRAY
+#		endif // PYGPLATES_IMPORT_NUMPY_ARRAY_API
+//      This just needs to be something unique (that doesn't clash with boost::python::numpy for example).
+#		define PY_ARRAY_UNIQUE_SYMBOL PYGPLATES_NUMPY_ARRAY_API
+//      Avoid deprecation warnings.
+#		define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+//      Include the numpy C-API header.
+#		include <numpy/arrayobject.h>
+#	endif // GPLATES_HAVE_NUMPY_C_API
 
 #endif //Q_MOC_RUN
 

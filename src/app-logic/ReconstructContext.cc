@@ -78,6 +78,13 @@ namespace GPlatesAppLogic
 				return ReconstructionTree::create(d_empty_reconstruction_graph, 0, 0);
 			}
 
+			virtual
+			GPlatesModel::integer_plate_id_type
+			get_default_anchor_plate_id() const
+			{
+				return 0;
+			}
+
 		private:
 			/**
 			 * An empty ReconstructionGraph will create empty ReconstructionTree objects which
