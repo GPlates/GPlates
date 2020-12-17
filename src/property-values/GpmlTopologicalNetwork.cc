@@ -39,6 +39,14 @@ namespace
 	{
 		return *p1 == *p2;
 	}
+
+	bool
+	delegate_eq(
+			const GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type &d1,
+			const GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type &d2)
+	{
+		return *d1 == *d2;
+	}
 }
 
 
@@ -126,7 +134,8 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::directly_modifiable_fields_equal(
 					std::equal(
 							d_interior_geometries.begin(),
 							d_interior_geometries.end(),
-							other_casted.d_interior_geometries.begin());
+							other_casted.d_interior_geometries.begin(),
+							&delegate_eq);
 		}
 		else
 		{
