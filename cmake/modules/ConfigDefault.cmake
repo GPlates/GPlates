@@ -77,6 +77,19 @@ set(GPLATES_IGNORE_PYTHON_ENVIRONMENT false)
 # However developers can choose to compile with Python 2 instead.
 option(GPLATES_PYTHON_3 "Compile with Python 3 (not Python 2)." true)
 
+# Whether to enable GPlates custom CPU profiling functionality.
+#
+# Is false by default. However note that the custom build type 'ProfileGplates' effectively
+# overrides by adding 'GPLATES_PROFILE_CODE' directly as a compiler flag. Other build types
+# set it indirectly via '#cmakedefine GPLATES_PROFILE_CODE' in 'config.h.in' using the
+# same-named CMake variable (ie, the option below).
+#
+# Usually it's easiest to just select the 'ProfileGplates' build type (note that enabling/disabling
+# the option below then has no effect). However, being a custom build type, that sometimes creates problems
+# (eg, the CGAL dependency does not always play nicely with custom build types). In this case you can choose
+# the builtin 'Release' build type (for example) and enable this option to achieve the same affect.
+option(GPLATES_PROFILE_CODE "Enable GPlates custom CPU profiling functionality." false)
+
 # Pre-compiled headers are turned off by default.
 #
 # Developers may want to turn this on using the cmake command-line or cmake GUI.
