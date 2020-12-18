@@ -46,7 +46,7 @@ namespace GPlatesAppLogic
 	 * that is reconstructed using topologies, will store one of these for each time slot
 	 * (in time history of topology reconstructions).
 	 *
-	 * Size is reduced (for 32-bit builds) to 12 bytes, from 20 bytes for a:
+	 * Size is reduced (for 64-bit builds) to 24 bytes, from 40 bytes for a:
 	 *     boost::optional<
 	 *         boost::variant<
 	 *             // resolved boundary...
@@ -174,16 +174,16 @@ namespace GPlatesAppLogic
 
 			location_type
 			operator()(
-					const ResolvedTriangulation::Delaunay_2::Face_handle &delaunay_face) const
+					const ResolvedTriangulation::Network::PointLocation::DelaunayFaceLocation &delaunay_face_location) const
 			{
-				return location_type(NetworkDelaunayFaceLocation(d_network, delaunay_face));
+				return location_type(NetworkDelaunayFaceLocation(d_network, delaunay_face_location.delaunay_face));
 			}
 
 			location_type
 			operator()(
-					const ResolvedTriangulation::Network::RigidBlock &rigid_block) const
+					const ResolvedTriangulation::Network::PointLocation::RigidBlockLocation &rigid_block_location) const
 			{
-				return location_type(NetworkRigidBlockLocation(d_network, rigid_block));
+				return location_type(NetworkRigidBlockLocation(d_network, rigid_block_location.rigid_block));
 			}
 
 			ResolvedTopologicalNetwork::non_null_ptr_type d_network;
