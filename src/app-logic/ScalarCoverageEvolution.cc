@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <boost/bind.hpp>
 
 #include "ScalarCoverageEvolution.h"
@@ -39,143 +40,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Strain rates are in 1/sec (multiplying by this number converts to 1/My).
 		 */
-		const double seconds_in_a_million_years = 365.25 * 24 * 3600 * 1.0e6;
-
-
-		/**
-		 * Derivative function for crustal thinning.
-		 */
-		double 
-		crustal_thinning_derivative(
-				const double &time,
-				const double &crustal_thickness,
-				const double &dilitation)
-		{
-			return -crustal_thickness * dilitation;
-		}
-
-
-		/** 
-		 * Runge Kutta order 2 integration.
-		 */
-		template <typename DerivativeFunctionType>
-		void
-		runge_kutta_order_2(
-				boost::optional<double> *const values,
-				const unsigned int num_values,
-				const DerivativeFunctionType &derivative_function,
-				const double &derivative_sign,
-				const double &initial_time,
-				const double &time_increment,
-				const boost::optional<DeformationStrainRate> *const initial_deformation_strain_rates,
-				const boost::optional<DeformationStrainRate> *const final_deformation_strain_rates)
-		{
-			for (unsigned int n = 0; n < num_values; ++n)
-			{
-				// If initial scalar value is inactive then it remains inactive.
-				if (!values[n])
-				{
-					continue;
-				}
-
-				// If the initial strain rate is inactive then so should the final strain rate.
-				// Actually the active state of initial strain rate should match the initial scalar value.
-				// And if the final strain rate is inactive then the scalar value becomes inactive.
-				// However we test active state of both (initial and final) strain rates just in case.
-				if (!final_deformation_strain_rates[n] ||
-					!initial_deformation_strain_rates[n])
-				{
-					values[n] = boost::none;
-					continue;
-				}
-
-				const double initial_dilatation = initial_deformation_strain_rates[n]->get_strain_rate_dilatation();
-				const double final_dilatation = final_deformation_strain_rates[n]->get_strain_rate_dilatation();
-
-				const double K0 = time_increment * derivative_sign * derivative_function(
-						initial_time,
-						values[n].get(),
-						seconds_in_a_million_years * initial_dilatation);
-
-				const double average_time = initial_time + 0.5 * time_increment;
-
-				const double average_dilatation_per_my =
-						seconds_in_a_million_years * 0.5 * (initial_dilatation + final_dilatation);
-
-				const double K1 = time_increment * derivative_sign * derivative_function(
-						average_time,
-						values[n].get() + 0.5 * K0,
-						average_dilatation_per_my);
-   
-				values[n].get() += K1;
-			}
-		}
-
-
-		/** 
-		 * Runge Kutta order 4 integration.
-		 */
-		template <typename DerivativeFunctionType>
-		void
-		runge_kutta_order_4(
-				boost::optional<double> *const values,
-				const unsigned int num_values,
-				const DerivativeFunctionType &derivative_function,
-				const double &derivative_sign,
-				const double &initial_time,
-				const double &time_increment,
-				const boost::optional<DeformationStrainRate> *const initial_deformation_strain_rates,
-				const boost::optional<DeformationStrainRate> *const final_deformation_strain_rates)
-		{
-			for (unsigned int n = 0; n < num_values; ++n)
-			{
-				// If initial scalar value is inactive then it remains inactive.
-				if (!values[n])
-				{
-					continue;
-				}
-
-				// If the initial strain rate is inactive then so should the final strain rate.
-				// Actually the active state of initial strain rate should match the initial scalar value.
-				// And if the final strain rate is inactive then the scalar value becomes inactive.
-				// However we test active state of both (initial and final) strain rates just in case.
-				if (!final_deformation_strain_rates[n] ||
-					!initial_deformation_strain_rates[n])
-				{
-					values[n] = boost::none;
-					continue;
-				}
-
-				const double initial_dilatation = initial_deformation_strain_rates[n]->get_strain_rate_dilatation();
-				const double final_dilatation = final_deformation_strain_rates[n]->get_strain_rate_dilatation();
-
-				const double K0 = time_increment * derivative_sign * derivative_function(
-						initial_time,
-						values[n].get(),
-						seconds_in_a_million_years * initial_dilatation);
-
-				const double average_time = initial_time + 0.5 * time_increment;
-				const double average_dilatation_per_my =
-						seconds_in_a_million_years * 0.5 * (initial_dilatation + final_dilatation);
-
-				const double K1 = time_increment * derivative_sign * derivative_function(
-						average_time,
-						values[n].get() + 0.5 * K0,
-						average_dilatation_per_my);
-
-				const double K2 = time_increment * derivative_sign * derivative_function(
-						average_time,
-						values[n].get() + 0.5 * K1,
-						average_dilatation_per_my);
-
-				const double K3 = time_increment * derivative_sign * derivative_function(
-						initial_time + time_increment,
-						values[n].get() + K2,
-						seconds_in_a_million_years * final_dilatation);
-
-				values[n].get() += (K0 + 2.0 * K1 + 2.0 * K2 + K3) / 6.0;
-			}
-		}
+		const double SECONDS_IN_A_MILLION_YEARS = 365.25 * 24 * 3600 * 1.0e6;
 	}
 }
 
@@ -238,20 +103,21 @@ GPlatesAppLogic::ScalarCoverageEvolution::crustal_thinning(
 	}
 
 	double time_increment = final_time - initial_time;
-	double derivative_sign;
+	bool forward_in_time;
 	if (time_increment < 0)
 	{
 		// Time increment should always be positive.
 		time_increment = -time_increment;
 
-		// We're going forward in time (from old to young times) so use derivative unchanged.
-		derivative_sign = 1.0;
+		// We're going forward in time (from old to young times).
+		forward_in_time = true;
 	}
 	else
 	{
-		// We're going backward in time (from young to old times) so invert/negate the derivative.
-		derivative_sign = -1.0;
+		// We're going backward in time (from young to old times).
+		forward_in_time = false;
 	}
+	const bool time_increment_greater_than_one = time_increment > 1 + 1e-6;
 
 	const unsigned int num_crustal_thicknesses = input_output_crustal_thickness.size();
 
@@ -288,15 +154,144 @@ GPlatesAppLogic::ScalarCoverageEvolution::crustal_thinning(
 		break;
 	}
 
-	runge_kutta_order_2(
-			&input_output_crustal_thickness[0],
-			num_crustal_thicknesses,
-			&crustal_thinning_derivative,
-			derivative_sign,
-			initial_time,
-			time_increment,
-			&initial_deformation_strain_rates[0],
-			&final_deformation_strain_rates[0]);
+	for (unsigned int n = 0; n < num_crustal_thicknesses; ++n)
+	{
+		// If initial scalar value is inactive then it remains inactive.
+		if (!input_output_crustal_thickness[n])
+		{
+			continue;
+		}
+
+		// If the initial strain rate is inactive then so should the final strain rate.
+		// Actually the active state of initial strain rate should match the initial scalar value.
+		// And if the final strain rate is inactive then the scalar value becomes inactive.
+		// However we test active state of both (initial and final) strain rates just in case.
+		if (!final_deformation_strain_rates[n] ||
+			!initial_deformation_strain_rates[n])
+		{
+			input_output_crustal_thickness[n] = boost::none;
+			continue;
+		}
+
+		double initial_dilatation_per_my = SECONDS_IN_A_MILLION_YEARS *
+				initial_deformation_strain_rates[n]->get_strain_rate_dilatation();
+		double final_dilatation_per_my = SECONDS_IN_A_MILLION_YEARS *
+				final_deformation_strain_rates[n]->get_strain_rate_dilatation();
+
+		//
+		// The rate of change of crustal thickness is (going forward in time):
+		//
+		//   dH/dt = H' = -H * S
+		//
+		// ...where S is the strain rate dilatation.
+		//
+		// We use the central difference scheme to solve the above ordinary differential equation (ODE):
+		//
+		//   H(n+1) - H(n)
+		//   ------------- = (H'(n+1) + H'(n)) / 2
+		//         dt
+		//
+		//                 = (-H(n+1) * S(n+1) + -H(n) * S(n)) / 2
+		//
+		//   H(n+1) * (1 + S(n+1)*dt/2) = H(n) * (1 - S(n)*dt/2)
+		//
+		//   H(n+1) = H(n) * (1 - S(n)*dt/2) / (1 + S(n+1)*dt/2)
+		//
+		// However we make a slight variation where we replace both S(n) and S(n+1) by their average.
+		// This helps to smooth out fluctuations in the dilatation strain rate.
+		//
+		//   H(n+1) = H(n) * (1 - k) / (1 + k)
+		//
+		// ...with...
+		//
+		//        k = (S(n) + S(n+1))/2 * dt/2
+		//
+		// We also individually clamp S(n) and S(n+1) before taking the average.
+		// This is so that '1 - k' and '1 + k' don't become unstable in the above equation
+		// (in other words we want |k| < 1 so that '1 - k' and '1 + k' can't become negative, since
+		// a negative crustal thickness makes no sense).
+		//
+
+		// Clamp dilatation to 1.0 in units of 1/Myr, which is equivalent to 3.17e-14 in units of 1/second.
+		// This is about 6 times the default clamping (disabled by default) of 5e-15 1/second in a
+		// topological network visual layer, and so the user still has the option to clamp further than this.
+		//
+		// This clamping is equivalent to clamping 'k' to 0.5 (when dt=1My).
+
+		if (initial_dilatation_per_my > 1)
+		{
+			initial_dilatation_per_my = 1;
+		}
+		else if (initial_dilatation_per_my < -1)
+		{
+			initial_dilatation_per_my = -1;
+		}
+
+		if (final_dilatation_per_my > 1)
+		{
+			final_dilatation_per_my = 1;
+		}
+		else if (final_dilatation_per_my < -1)
+		{
+			final_dilatation_per_my = -1;
+		}
+
+		const double average_dilatation_per_my = 0.5 * (initial_dilatation_per_my + final_dilatation_per_my);
+
+		const double k = 0.5 * time_increment * average_dilatation_per_my;
+
+		double crustal_thickness_multiplier;
+		if (time_increment_greater_than_one)
+		{
+			// Time increment is > 1My, so there's still a chance of instability due to |k| >= 1
+			// (because our clamping assumed a time increment of 1My).
+			//
+			// But even if there's no instability we'll just proceed with a time increment of 1My
+			// because that gets us accuracy comparable to a time increment of 1My with little extra effort
+			// (although we're not getting dilatation strain rates every 1My, so it's not as accurate as
+			// a 1My time increment).
+			// To do this note that we can write:
+			//
+			//   H(n+1) = H(n) * [(1 - k/dt) / (1 + k/dt)] ^ dt
+			//
+			// ...noting that 'n+1' and 'n' are separated by one interval of 'dt' which can be *larger* than 1My,
+			// and 'k/dt' is essentially equivalent to the k value for a 1My time increment.
+			// So the above equation is basically calculating:
+			// 
+			//   H(t=t0+dt) = (1 - k/dt) / (1 + k/dt) * H(t=t0+dt-1)
+			//              = (1 - k/dt) / (1 + k/dt) * (1 - k/dt) / (1 + k/dt) * H(t=t0+dt-2)
+			//              = ... * H(t=t0)
+			//              = ([(1 - k/dt) / (1 + k/dt)] ^ dt) * H(t=t0)
+			// 
+			const double k_over_1my = k / time_increment;
+
+			crustal_thickness_multiplier = (1.0 - k_over_1my) / (1.0 + k_over_1my);
+
+			crustal_thickness_multiplier = std::pow(crustal_thickness_multiplier, time_increment);
+		}
+		else
+		{
+			// Time increment is <= 1My, so there's no chance of instability due to |k| >= 1.
+			crustal_thickness_multiplier = (1.0 - k) / (1.0 + k);
+		}
+
+		// The crustal thinning equation assumes we're going forward in time.
+		// So if we're going backward in time then we need to invert the multiplier.
+		//
+		//   H(n+1) = m * H(n)
+		//   H(n)   = H(n+1) / m
+		//
+		// Note that this also has the benefit of making crustal thinning reversible - in the sense
+		// that you could start at t0 and solve backward in time to tn and then solve forward in time
+		// to t0 and you'd end up with the same crustal thickness you started with.
+		// 
+		if (!forward_in_time)
+		{
+			crustal_thickness_multiplier = 1.0 / crustal_thickness_multiplier;
+		}
+
+		input_output_crustal_thickness[n].get() *= crustal_thickness_multiplier;
+	}
 
 	// Convert from crustal thickness back to crustal thickness related scalar (if necessary).
 	switch (crustal_thickness_type)
