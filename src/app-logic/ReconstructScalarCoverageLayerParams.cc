@@ -168,7 +168,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerParams::create_scalar_statistics(
 				// Look at scalar values throughout the history of reconstructed scalar values since
 				// topologically reconstructed (hence scalars potentially evolved due to deformation).
 				const TimeSpanUtils::TimeRange time_range =
-						scalar_coverage_time_span.get_scalar_coverage_time_span()->get_time_range();
+						scalar_coverage_time_span.get_geometry_time_span().get()->get_time_range();
 
 				// The number of *active* and *inactive* scalar points is always constant.
 				const unsigned int num_scalar_values =

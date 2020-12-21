@@ -26,6 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_SCALARCOVERAGEDEFORMATION_H
 #define GPLATES_APP_LOGIC_SCALARCOVERAGEDEFORMATION_H
 
+#include <map>
 #include <vector>
 #include <boost/optional.hpp>
 
@@ -56,32 +57,155 @@ namespace GPlatesAppLogic
 			typedef GPlatesUtils::non_null_intrusive_ptr<const ScalarCoverageTimeSpan> non_null_ptr_to_const_type;
 
 
+			//! Typedef for scalar type.
+			typedef GPlatesPropertyValues::ValueObjectType scalar_type_type;
+
 			/**
-			 * Creates an *empty* scalar coverage time span containing only the specified scalar values.
+			 * Typedef for the initial scalar values associated with scalar types.
+			 */
+			typedef std::map<scalar_type_type, std::vector<double>> initial_scalar_coverage_type;
+
+			/**
+			 * Typedef for a sequence of (per-point) scalar values.
 			 *
-			 * Subsequently calling @a get_scalar_values will always return the specified scalar values
+			 * Inactive points/scalars are none.
+			 */
+			typedef std::vector< boost::optional<double> > scalar_value_seq_type;
+
+
+			/**
+			 * Scalar values (associated with points in a geometry) for all scalar types in the
+			 * range associated with the domain geometry.
+			 *
+			 * Some scalar types evolve over time (due to deformation) and while other scalar types do not.
+			 * Furthermore, the scalar types that do *not* evolve can be deactivated over time if the geometry
+			 * is reconstructed using topologies (otherwise the scalar values do not change/deactivate over time).
+			 */
+			class ScalarCoverage
+			{
+			public:
+
+				/**
+				 * Returns the number of scalar values returned by @a get_all_scalar_values.
+				 *
+				 * Note that this can be different from the number of original scalar values passed into
+				 * @a ScalarCoverageTimeSpan::create if the associated topologically reconstructed geometry
+				 * was tessellated (thus introducing new points and hence new interpolated scalar values).
+				 */
+				unsigned int
+				get_num_all_scalar_values() const
+				{
+					return d_num_all_scalar_values;
+				}
+
+				/**
+				 * Returns all scalar types contained in this scalar coverage.
+				 */
+				std::vector<scalar_type_type>
+				get_scalar_types() const
+				{
+					std::vector<scalar_type_type> scalar_types;
+
+					for (const auto &item : d_scalar_values_map)
+					{
+						scalar_types.push_back(item.first);
+					}
+
+					return scalar_types;
+				}
+
+				/**
+				 * Returns the scalar values at the specified time.
+				 *
+				 * Note: Only scalar values at *active* points are returned (which means the size of
+				 * the returned scalar value sequence could be less than @a get_num_all_scalar_values).
+				 * And the order of scalar values matches the order of associated points
+				 * returned by 'TopologyReconstruct::GeometryTimeSpan::get_geometry_data()'.
+				 *
+				 * Returns none if @a scalar_type is not contained in this scalar coverage.
+				 */
+				boost::optional<std::vector<double>>
+				get_scalar_values(
+						const scalar_type_type &scalar_type) const;
+
+				boost::optional<std::vector<double>>
+				get_evolved_scalar_values(
+						ScalarCoverageEvolution::EvolvedScalarType evolved_scalar_type) const
+				{
+					return get_scalar_values(ScalarCoverageEvolution::get_scalar_type(evolved_scalar_type));
+				}
+
+				/**
+				 * Returns the scalar values at *all* points at the specified time (including inactive points).
+				 *
+				 * Note: Inactive points will store 'none' (such that the size of the returned
+				 * scalar value sequence will always be @a get_num_all_scalar_values).
+				 * And the order of scalar values matches the order of associated points
+				 * returned by 'TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data()'.
+				 *
+				 * Returns none if @a scalar_type is not contained in this scalar coverage.
+				 */
+				boost::optional<const scalar_value_seq_type &>
+				get_all_scalar_values(
+						const scalar_type_type &scalar_type) const;
+
+				boost::optional<const scalar_value_seq_type &>
+				get_all_evolved_scalar_values(
+						ScalarCoverageEvolution::EvolvedScalarType evolved_scalar_type) const
+				{
+					return get_all_scalar_values(ScalarCoverageEvolution::get_scalar_type(evolved_scalar_type));
+				}
+
+			private:
+
+				typedef std::map<scalar_type_type, scalar_value_seq_type> scalar_values_map_type;
+
+				/**
+				 * Subsequently calling @a get_scalar_values will always return the specified scalar values
+				 * regardless of reconstruction time specified.
+				 */
+				scalar_values_map_type d_scalar_values_map;
+
+				unsigned int d_num_all_scalar_values;
+
+
+				// Only class ScalarCoverageTimeSpan can instantiate us.
+				explicit
+				ScalarCoverage(
+						unsigned int num_all_scalar_values) :
+					d_num_all_scalar_values(num_all_scalar_values)
+				{  }
+				friend class ScalarCoverageTimeSpan;
+			};
+
+
+			/**
+			 * Creates an *empty* scalar coverage time span containing only the specified initial scalar coverage.
+			 *
+			 * Subsequently calling @a get_scalar_coverage will always return the specified scalar coverage
 			 * regardless of reconstruction time specified.
 			 */
 			static
 			non_null_ptr_type
 			create(
-					const std::vector<double> &scalar_values)
+					const initial_scalar_coverage_type &initial_scalar_coverage)
 			{
-				return non_null_ptr_type(new ScalarCoverageTimeSpan(scalar_values));
+				return non_null_ptr_type(new ScalarCoverageTimeSpan(initial_scalar_coverage));
 			}
 
 
 			/**
-			 * Creates a scalar coverage time span containing scalars.
+			 * Creates a scalar coverage time span containing the time progression of a scalar coverage.
 			 *
 			 * The time span of reconstructed/deformed feature geometries, @a geometry_time_span,
-			 * supply the domain points associated with the scalar values. It contains deformation info
+			 * supplies the domain points associated with the scalar values. It contains deformation info
 			 * such as strain rates that evolve our scalar values (eg, crustal thickness) and also
-			 * contains deactivated points (eg, subducted/consumed).
+			 * deactivation info (associated with subducted/consumed points).
 			 *
-			 * If @a scalar_evolution_function is specified then the scalar values are evolved over time
-			 * (provided the geometry time span contains non-zero strain rates - ie, passed through a
-			 * deforming network). Otherwise the geometry time span is only used to deactivate points
+			 * If the scalar coverage contains scalar types that evolve (due to deformation) those
+			 * scalar values are evolved over time (provided the geometry time span contains non-zero
+			 * strain rates - ie, passed through a deforming network). For scalar types that do not
+			 * evolve (due to deformation) the geometry time span is only used to deactivate points
 			 * (and their associated scalar values) over time.
 			 *
 			 * If @a scalar_values represent the scalar values at the geometry import time of the
@@ -96,15 +220,10 @@ namespace GPlatesAppLogic
 			static
 			non_null_ptr_type
 			create(
-					const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span,
-					const std::vector<double> &scalar_values,
-					boost::optional<scalar_evolution_function_type> scalar_evolution_function = boost::none)
+					const initial_scalar_coverage_type &initial_scalar_coverage,
+					TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span)
 			{
-				return non_null_ptr_type(
-						new ScalarCoverageTimeSpan(
-								geometry_time_span,
-								scalar_values,
-								scalar_evolution_function));
+				return non_null_ptr_type(new ScalarCoverageTimeSpan(initial_scalar_coverage, geometry_time_span));
 			}
 
 
@@ -122,6 +241,15 @@ namespace GPlatesAppLogic
 					const double &reconstruction_time) const;
 
 			/**
+			 * Returns the scalar coverage at the specified time.
+			 *
+			 * Returns none if @a is_valid returns false.
+			 */
+			boost::optional<ScalarCoverage>
+			get_scalar_coverage(
+					const double &reconstruction_time) const;
+
+			/**
 			 * Returns the scalar values at the specified time.
 			 *
 			 * Note: Only scalar values at *active* points are returned (which means the size of
@@ -133,6 +261,7 @@ namespace GPlatesAppLogic
 			 */
 			bool
 			get_scalar_values(
+					const scalar_type_type &scalar_type,
 					const double &reconstruction_time,
 					std::vector<double> &scalar_values) const;
 
@@ -144,10 +273,12 @@ namespace GPlatesAppLogic
 			 * And the order of scalar values matches the order of associated points
 			 * returned by 'TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data()'.
 			 *
-			 * Returns false if @a is_valid returns false (in which case @a scalar_values is unmodified).
+			 * Returns false if @a is_valid returns false or @a scalar_type is not in the scalar coverage
+			 * (in which case @a scalar_values is unmodified).
 			 */
 			bool
 			get_all_scalar_values(
+					const scalar_type_type &scalar_type,
 					const double &reconstruction_time,
 					std::vector< boost::optional<double> > &scalar_values) const;
 
@@ -161,25 +292,13 @@ namespace GPlatesAppLogic
 			unsigned int
 			get_num_all_scalar_values() const
 			{
-				return d_scalar_values_time_span->get_present_day_sample().size();
-			}
-
-			/**
-			 * The time range of this scalar coverage time span.
-			 *
-			 * This is the time range in which a history of scalar values are stored.
-			 * It's possible for scalar values to be valid outside this time range
-			 * (at these times the scalar values take on the values at the beginning or
-			 * ending of the time range depending on which side its on). See also @a is_valid.
-			 */
-			TimeSpanUtils::TimeRange
-			get_time_range() const
-			{
-				return d_scalar_values_time_span->get_time_range();
+				return d_num_all_scalar_values;
 			}
 
 			/**
 			 * The time that we started topology reconstruction of the initial scalar values from.
+			 *
+			 * Returns 0.0 if there was no topology reconstruction (see @a create without a geometry time span).
 			 */
 			const double &
 			get_scalar_import_time() const
@@ -206,19 +325,37 @@ namespace GPlatesAppLogic
 		private:
 
 			/**
-			 * Typedef for a sequence of (per-point) scalar values.
-			 *
-			 * Inactive points/scalars are none.
+			 * Typedef for the non-envolved scalar values associated with scalar types.
 			 */
-			typedef std::vector< boost::optional<double> > scalar_value_seq_type;
+			typedef std::map<scalar_type_type, std::vector<double>> non_evolved_scalar_coverage_type;
 
-			//! Typedef for a time span of scalar value sequences.
-			typedef TimeSpanUtils::TimeWindowSpan<scalar_value_seq_type> scalar_values_time_span_type;
+			//! Typedef for a time span of evolved scalar coverages.
+			typedef TimeSpanUtils::TimeWindowSpan<ScalarCoverageEvolution::EvolvedScalarCoverage> evolved_scalar_coverage_time_span_type;
+
 
 			//! Optional geometry time span if one was used to obtain deformation info to evolve scalar values.
 			boost::optional<TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type> d_geometry_time_span;
 
-			scalar_values_time_span_type::non_null_ptr_type d_scalar_values_time_span;
+			/**
+			 * Optional evolved scalar coverage time span.
+			 *
+			 * Only scalar types that evolve (due to deformation) are handled here.
+			 *
+			 * This is none if there's no deformed geometry time span or if none of the scalar types
+			 * correspond to evolved scalar types (affected by deformation).
+			 */
+			boost::optional<evolved_scalar_coverage_time_span_type::non_null_ptr_type> d_evolved_scalar_coverage_time_span;
+
+			/**
+			 * All scalar values corresponding to scalar types that do *not* evolve over time (due to deformation).
+			 *
+			 * These scalar values do not change over time and hence are not stored in the scalar coverage time span.
+			 */
+			non_evolved_scalar_coverage_type d_non_evolved_scalar_coverage;
+
+			//! The number of scalar values (active and inactive) per scalar type.
+			unsigned int d_num_all_scalar_values;
+
 			double d_scalar_import_time;
 
 			//! The first time slot that the geometry becomes active (if was even de-activated going backward in time).
@@ -227,48 +364,47 @@ namespace GPlatesAppLogic
 			boost::optional<unsigned int> d_time_slot_of_disappearance;
 
 
-			static
-			scalar_value_seq_type
-			create_import_sample(
-					const std::vector<double> &scalar_values,
-					boost::optional<TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type> geometry_time_span = boost::none);
-
 			explicit
 			ScalarCoverageTimeSpan(
-					const std::vector<double> &present_day_scalar_values);
+					const initial_scalar_coverage_type &initial_scalar_coverage);
 
-			explicit
 			ScalarCoverageTimeSpan(
-					const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span,
-					const std::vector<double> &scalar_values,
-					boost::optional<scalar_evolution_function_type> scalar_evolution_function);
+					const initial_scalar_coverage_type &initial_scalar_coverage,
+					TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span);
 
 			void
-			initialise_time_span(
+			initialise_evolved_time_span(
 					const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span,
-					const boost::optional<scalar_evolution_function_type> &scalar_evolution_function);
+					const evolved_scalar_coverage_time_span_type::non_null_ptr_type &evolved_scalar_coverage_time_span,
+					const ScalarCoverageEvolution &import_scalar_coverage_evolution);
 
 			bool
 			evolve_time_steps(
-					scalar_value_seq_type &current_scalar_values,
 					unsigned int start_time_slot,
 					unsigned int end_time_slot,
 					const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span,
-					const boost::optional<scalar_evolution_function_type> &scalar_evolution_function);
+					const evolved_scalar_coverage_time_span_type::non_null_ptr_type &evolved_scalar_coverage_time_span,
+					ScalarCoverageEvolution &scalar_coverage_evolution);
 
-			scalar_value_seq_type
-			create_rigid_scalar_values_sample(
+			static
+			std::vector<double>
+			create_import_scalar_values(
+					const std::vector<double> &scalar_values,
+					TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span);
+
+			ScalarCoverageEvolution::EvolvedScalarCoverage
+			create_evolved_rigid_sample(
 					const double &reconstruction_time,
 					const double &closest_younger_sample_time,
-					const scalar_value_seq_type &closest_younger_sample);
+					const ScalarCoverageEvolution::EvolvedScalarCoverage &closest_younger_sample);
 
-			scalar_value_seq_type
-			interpolate_scalar_values_sample(
+			ScalarCoverageEvolution::EvolvedScalarCoverage
+			interpolate_envolved_samples(
 					const double &interpolate_position,
 					const double &first_geometry_time,
 					const double &second_geometry_time,
-					const scalar_value_seq_type &first_sample,
-					const scalar_value_seq_type &second_sample);
+					const ScalarCoverageEvolution::EvolvedScalarCoverage &first_sample,
+					const ScalarCoverageEvolution::EvolvedScalarCoverage &second_sample);
 		};
 	}
 }

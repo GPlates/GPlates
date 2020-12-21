@@ -26,12 +26,15 @@
 #ifndef GPLATES_APP_LOGIC_SCALARCOVERAGEEVOLUTION_H
 #define GPLATES_APP_LOGIC_SCALARCOVERAGEEVOLUTION_H
 
+#include <map>
 #include <vector>
-#include <boost/function.hpp>
 #include <boost/optional.hpp>
 
 #include "DeformationStrainRate.h"
 #include "ReconstructScalarCoverageParams.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "property-values/ValueObjectType.h"
 
@@ -39,48 +42,16 @@
 namespace GPlatesAppLogic
 {
 	/**
-	 * Convenience typedef for a function that evolves a sequence of (per-point) scalar values from one time to another.
-	 *
-	 * Note that 'boost::optional' is used for each point's scalar, strain rate and strain.
-	 * This represents whether the associated point is active. Points can become inactive over time (active->inactive) but
-	 * do not get re-activated (inactive->active). So if the initial strain rate is inactive then so should the final strain rate.
-	 * Also the active state of the initial scalar value should match that of the initial deformation strain rate
-	 * (because they represent the same point). If the initial scalar value is inactive then it just remains inactive.
-	 * And if the initial scalar value is active then it becomes inactive if the final strain rate is inactive, otherwise
-	 * both (initial and final) strain rates are active and the scalar value is evolved from its initial value to its final value.
-	 * This ensures the active state of the final scalar values matches that of the final deformation strain rate
-	 * (which in turn comes from the active state of the associated domain geometry point).
-	 */
-	typedef boost::function<
-			void (
-					std::vector< boost::optional<double> > &,                      // initial->final per-point scalars
-					const std::vector< boost::optional<DeformationStrainRate> > &, // initial per-point input deformation strain rates
-					const std::vector< boost::optional<DeformationStrainRate> > &, // final per-point input deformation strain rates
-					const double &,                                                // initial time
-					const double &)>                                               // final time
-							scalar_evolution_function_type;
-
-
-	/**
-	 * Returns the function used to evolve scalars over time for the specified scalar type.
-	 *
-	 * Returns none if scalar values don't change over time (ie, if no evolution needed).
-	 */
-	boost::optional<scalar_evolution_function_type>
-	get_scalar_evolution_function(
-			const GPlatesPropertyValues::ValueObjectType &scalar_type,
-			const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params);
-
-
-	/**
 	 * This namespace contains functions that evolve the scalar values (in a scalar coverage) over a time interval.
 	 *
 	 * For example a scalar coverage containing crustal thickness scalars will get evolved using
 	 * the @a crustal_thinning function.
 	 */
-	namespace ScalarCoverageEvolution
+	class ScalarCoverageEvolution
 	{
-		enum CrustalThicknessType
+	public:
+
+		enum EvolvedScalarType
 		{
 			// This can be absolute thickness (eg, in kms), or
 			// a thickness ratio such as T/Ti (where T/Ti is current/initial thickness)...
@@ -88,28 +59,204 @@ namespace GPlatesAppLogic
 			// Stretching (beta) factor where 'beta = Ti/T' ...
 			CRUSTAL_STRETCHING_FACTOR,
 			// Thinning (gamma) factor where 'gamma = (1 - T/Ti)' ...
-			CRUSTAL_THINNING_FACTOR
+			CRUSTAL_THINNING_FACTOR,
+
+			NUM_EVOLVED_SCALAR_TYPES
 		};
 
+
+		//! Typedef for scalar type.
+		typedef GPlatesPropertyValues::ValueObjectType scalar_type_type;
+
 		/**
-		 * Evolves the crustal thickness values in @a input_output_crustal_thickness.
+		 * Typedef for a sequence of (per-point) scalar values.
 		 *
-		 * Each values in @a input_output_crustal_thickness is replaced with its updated value.
+		 * Inactive scalars are none.
+		 */
+		typedef std::vector< boost::optional<double> > scalar_value_seq_type;
+
+		/**
+		 * Initial scalar values (to be evolved).
+		 */
+		class InitialEvolvedScalarCoverage
+		{
+		public:
+
+			//! Typedef for a map of evolved scalar types to initial scalar values (to be evolved).
+			typedef std::map<EvolvedScalarType, std::vector<double>> initial_scalar_values_map_type;
+
+			void
+			add_scalar_values(
+					EvolvedScalarType evolved_scalar_type,
+					const std::vector<double> &initial_scalar_values);
+
+			bool
+			empty() const
+			{
+				return d_initial_evolved_scalar_values.empty();
+			}
+
+			const initial_scalar_values_map_type &
+			get_scalar_values() const
+			{
+				return d_initial_evolved_scalar_values;
+			}
+
+			/**
+			 * Returns number of scalar values (per scalar type).
+			 *
+			 * Throws exception if @a add_scalar_values has not yet been called at least once.
+			 */
+			unsigned int
+			get_num_scalar_values() const
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_num_scalar_values,
+						GPLATES_ASSERTION_SOURCE);
+
+				return d_num_scalar_values.get();
+			}
+
+		private:
+			//! The initial scalar values (to be evolved) associated with evolved scalar types.
+			std::map<EvolvedScalarType, std::vector<double>> d_initial_evolved_scalar_values;
+
+			//! Number of scalar values (per scalar type) - only initialised after first call to @a add_scalar_values.
+			boost::optional<unsigned int> d_num_scalar_values;
+		};
+
+
+		/**
+		 * Scalar values (associated with points in a geometry) for only those scalar types that
+		 * evolve over time (due to deformation).
+		 */
+		class EvolvedScalarCoverage
+		{
+		public:
+
+			/**
+			 * Returns the scalar values at *all* points at the specified time (including inactive points).
+			 *
+			 * Note: Inactive points will store 'none' (such that the size of the returned
+			 * scalar value sequence will always be @a get_num_all_scalar_values).
+			 * And the order of scalar values matches the order of associated points
+			 * returned by 'TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data()'.
+			 */
+			const scalar_value_seq_type &
+			get_evolved_scalar_values(
+					EvolvedScalarType evolved_scalar_type) const
+			{
+				return d_evolved_scalar_values[evolved_scalar_type];
+			}
+
+			/**
+			 * Returns number of scalar values (per scalar type).
+			 */
+			unsigned int
+			get_num_scalar_values() const
+			{
+				return d_evolved_scalar_values[0].size();
+			}
+
+		private:
+			scalar_value_seq_type d_evolved_scalar_values[NUM_EVOLVED_SCALAR_TYPES];
+
+			// Only class ScalarCoverageEvolution can instantiate us.
+			explicit
+			EvolvedScalarCoverage(
+					unsigned int num_scalar_values)
+			{
+				// Use default initial scalar values except for crustal thickness (leave as boost::none).
+				// Crustal stretching and thinning factors are ratios so we can assume initial values for those.
+				d_evolved_scalar_values[CRUSTAL_THICKNESS].resize(num_scalar_values);
+				d_evolved_scalar_values[CRUSTAL_STRETCHING_FACTOR].resize(num_scalar_values, 1.0);  // Ti/T
+				d_evolved_scalar_values[CRUSTAL_THINNING_FACTOR].resize(num_scalar_values, 0.0);  // (1 - T/Ti)
+			}
+			friend class ScalarCoverageEvolution;
+		};
+
+
+		/**
+		 * Returns the scalar type associated with the specified evolved scalar type enumeration.
+		 */
+		static
+		scalar_type_type
+		get_scalar_type(
+				EvolvedScalarType evolved_scalar_type);
+
+		/**
+		 * Returns the evolved scalar type enumeration associated with the specified scalar type,
+		 * otherwise returns none.
+		 */
+		static
+		boost::optional<EvolvedScalarType>
+		is_evolved_scalar_type(
+				const scalar_type_type &scalar_type);
+
+		
+		ScalarCoverageEvolution(
+				const InitialEvolvedScalarCoverage &initial_evolved_scalar_coverage,
+				const double &initial_time);
+
+
+		/**
+		 * Evolves the current scalar values from the current time to @a evolve_time.
 		 *
-		 * Other quantities besides crustal thickness (or thickness ratio) in @a input_output_crustal_thickness
-		 * that are related to crustal thickness can be specified with @a crustal_thickness_type.
+		 * Note that 'boost::optional' is used for each point's scalar values and strain rate.
+		 * This represents whether the associated point is active. Points can become inactive over time (active->inactive) but
+		 * do not get re-activated (inactive->active). So if the current strain rate is inactive then so should the evolve-to strain rate.
+		 * Also the active state of the current scalar value should match that of the current deformation strain rate
+		 * (because they represent the same point). If the current scalar value is inactive then it just remains inactive.
+		 * And if the current scalar value is active then it becomes inactive if the evolve-to strain rate is inactive, otherwise
+		 * both (current and evolve-to) strain rates are active and the scalar value is evolved from its current value to its evolve-to value.
+		 * This ensures the active state of the evolve-to scalar values match that of the evolve-to deformation strain rate
+		 * (which in turn comes from the active state of the associated domain geometry point).
 		 *
-		 * Throws exception if the sizes of the input arrays do not match.
+		 * Throws exception if the sizes of the strain rate arrays and the internal scalar values arrays do not match.
 		 */
 		void
-		crustal_thinning(
-				std::vector< boost::optional<double> > &input_output_crustal_thickness,
-				const std::vector< boost::optional<DeformationStrainRate> > &initial_deformation_strain_rates,
-				const std::vector< boost::optional<DeformationStrainRate> > &final_deformation_strain_rates,
-				const double &initial_time,
-				const double &final_time,
-				CrustalThicknessType crustal_thickness_type = CRUSTAL_THICKNESS);
-	}
+		evolve(
+				// Per-point deformation strain rates at the current time...
+				const std::vector< boost::optional<DeformationStrainRate> > &current_deformation_strain_rates,
+				// Per-point deformation strain rates at the evolve time...
+				const std::vector< boost::optional<DeformationStrainRate> > &evolve_deformation_strain_rates,
+				const double &evolve_time);
+
+		/**
+		 * Returns the current time.
+		 *
+		 * This is either 'evolve_time' in the last call to @a evolve or the initial time
+		 * (passed into constructor) if @a evolve has not yet been called.
+		 */
+		const double &
+		get_current_time() const
+		{
+			return d_current_time;
+		}
+
+		/**
+		 * Return the current evolution of the scalar coverage corresponding to the last call to
+		 * @a evolve (or the initial scalar coverage if has not yet been called).
+		 */
+		const EvolvedScalarCoverage &
+		get_current_evolved_scalar_coverage() const
+		{
+			return d_current_evolved_scalar_coverage;
+		}
+
+		/**
+		 * Returns number of scalar values (per scalar type).
+		 */
+		unsigned int
+		get_num_scalar_values() const
+		{
+			return get_current_evolved_scalar_coverage().get_num_scalar_values();
+		}
+
+	private:
+		double d_current_time;
+		EvolvedScalarCoverage d_current_evolved_scalar_coverage;
+	};
 }
 
 #endif // GPLATES_APP_LOGIC_SCALARCOVERAGEEVOLUTION_H
