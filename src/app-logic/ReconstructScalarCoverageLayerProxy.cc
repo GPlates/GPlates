@@ -47,63 +47,6 @@
 #include "property-values/GmlTimeInstant.h"
 
 
-namespace GPlatesAppLogic
-{
-	namespace
-	{
-		/**
-		 * Typedef for a scalar type within a coverage.
-		 *
-		 * The integer indexes into the scalar types in the coverage's range.
-		 */
-		typedef std::pair<
-						ScalarCoverageFeatureProperties::Coverage,
-						unsigned int/*scalar index in coverage's range*/> scalar_coverage_type;
-
-		/**
-		 * Appends to @a coverages those coverages in @a feature that match @a scalar_type.
-		 *
-		 * Each integer indexes into the scalar types in the coverage's range that match @a scalar_type.
-		 */
-		void
-		get_scalar_coverages_of_scalar_type_from_feature(
-				std::vector<scalar_coverage_type> &scalar_coverages,
-				const GPlatesPropertyValues::ValueObjectType &scalar_type,
-				const GPlatesModel::FeatureHandle::weak_ref &feature)
-		{
-			// Extract the coverages from the feature.
-			// Note: There can be multiple coverages in a single feature if it has multiple geometry
-			// properties that are each associated with a coverage property (scalar values).
-			std::vector<ScalarCoverageFeatureProperties::Coverage> coverages;
-			ScalarCoverageFeatureProperties::get_coverages(coverages, feature);
-
-			// Iterate over the coverages of the current feature.
-			std::vector<ScalarCoverageFeatureProperties::Coverage>::const_iterator
-					coverages_iter = coverages.begin();
-			std::vector<ScalarCoverageFeatureProperties::Coverage>::const_iterator
-					coverages_end = coverages.end();
-			for ( ; coverages_iter != coverages_end; ++coverages_iter)
-			{
-				const ScalarCoverageFeatureProperties::Coverage &coverage = *coverages_iter;
-
-				// See if any scalar types of the current coverage are what we're currently interested in.
-				const unsigned int num_scalar_types = coverage.range.size();
-				for (unsigned int scalar_type_index = 0; scalar_type_index < num_scalar_types; ++scalar_type_index)
-				{
-					if (coverage.range[scalar_type_index]->value_object_type() == scalar_type)
-					{
-						scalar_coverages.push_back(
-								scalar_coverage_type(coverage, scalar_type_index));
-
-						break;
-					}
-				}
-			}
-		}
-	}
-}
-
-
 GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::ReconstructScalarCoverageLayerProxy(
 		const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params,
 		unsigned int max_num_reconstructions_in_cache) :
@@ -134,21 +77,21 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_reconstructed_scalar_c
 		const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params,
 		const double &reconstruction_time)
 {
-	// Ensure that the scalar coverage "time spans" are cached for the specified scalar type and params.
+	// Ensure that the scalar coverage "time spans" are cached for the specified params.
 	// This will also clear any cached reconstructed scalar coverages if the time spans were out-of-date.
 	std::vector<ReconstructedScalarCoverageTimeSpan> reconstructed_scalar_coverage_time_spans;
 	get_reconstructed_scalar_coverage_time_spans(
 			reconstructed_scalar_coverage_time_spans,
-			scalar_type,
 			reconstruct_scalar_coverage_params);
 
-	// Lookup the cached ReconstructionInfo associated with the reconstruction time.
-	ReconstructionInfo &reconstruction_info = d_cached_reconstructions.get_value(reconstruction_time);
+	// Lookup the cached ReconstructionInfo associated with the reconstruction time and scalar type.
+	ReconstructionInfo &reconstruction_info = d_cached_reconstructions.get_value(
+			reconstruction_cache_key_type(reconstruction_time, scalar_type));
 
 	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
 	if (!reconstruction_info.cached_reconstructed_scalar_coverages)
 	{
-		cache_reconstructed_scalar_coverages(reconstruction_info, reconstruction_time);
+		cache_reconstructed_scalar_coverages(reconstruction_info, reconstruction_time, scalar_type);
 	}
 
 	// Append our cached reconstructed scalar coverages to the caller's sequence.
@@ -164,30 +107,27 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_reconstructed_scalar_c
 void
 GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_reconstructed_scalar_coverage_time_spans(
 		std::vector<ReconstructedScalarCoverageTimeSpan> &reconstructed_scalar_coverage_time_spans,
-		const GPlatesPropertyValues::ValueObjectType &scalar_type,
 		const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params)
 {
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
 
-	// See if the scalar type or reconstruct scalar coverage parameters have changed.
+	// See if the reconstruct scalar coverage parameters have changed.
 	if (!d_cached_scalar_coverage_time_span_info ||
-		d_cached_scalar_type != scalar_type ||
 		d_cached_reconstruct_scalar_coverage_params != reconstruct_scalar_coverage_params)
 	{
 		// Reset everything.
 		// All cached reconstruction times assume a specific reconstruct scalar coverage params.
 		reset_cache();
 
-		// Create a time-indexed lookup table of scalar values for each scalar coverage feature.
-		// The reconstruction-time cache will also use this when it caches reconstructed scalar
-		// coverages for specific reconstruction times.
-		cache_scalar_coverage_time_spans(scalar_type, reconstruct_scalar_coverage_params);
+		// Create a time-indexed lookup table of scalar values for each scalar type in each scalar coverage feature.
+		// The reconstruction-info cache will also use this when it caches reconstructed scalar
+		// coverages for specific reconstruction times and scalar types.
+		cache_scalar_coverage_time_spans(reconstruct_scalar_coverage_params);
 
 		// Note that observers don't need to be updated when the parameters change - if they
 		// have reconstructed scalar coverages for a different set of parameters they don't need
 		// to be updated just because some other client requested a set of parameters different from theirs.
-		d_cached_scalar_type = scalar_type;
 		d_cached_reconstruct_scalar_coverage_params = reconstruct_scalar_coverage_params;
 	}
 
@@ -333,8 +273,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::remove_reconstructed_domai
 void
 GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::reset_cache()
 {
-	// Clear the cached scalar type and reconstruct scalar coverage params.
-	d_cached_scalar_type = boost::none;
+	// Clear the cached reconstruct scalar coverage params.
 	d_cached_reconstruct_scalar_coverage_params = boost::none;
 
 	// Clear the cache scalar types (associated with the domain features).
@@ -347,7 +286,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::reset_cache()
 	// reconstruct scalar coverage params.
 	d_cached_scalar_coverage_time_span_info = boost::none;
 
-	// Clear any cached reconstruction info for any reconstruction times.
+	// Clear any cached reconstruction info for any reconstruction times and scalar types.
 	d_cached_reconstructions.clear();
 }
 
@@ -376,9 +315,7 @@ void
 GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::check_input_layer_proxies()
 {
 	// See if the reconstructed domain layer proxies have changed.
-	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_domain_layer_proxy,
-			d_current_reconstructed_domain_layer_proxies)
+	for (auto &reconstructed_domain_layer_proxy : d_current_reconstructed_domain_layer_proxies)
 	{
 		check_input_layer_proxy(reconstructed_domain_layer_proxy);
 	}
@@ -398,9 +335,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverages()
 	d_cached_scalar_coverages = std::vector<ScalarCoverageFeatureProperties::Coverage>();
 
 	// Iterate over the reconstructed domain layer proxies.
-	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_domain_layer_proxy,
-			d_current_reconstructed_domain_layer_proxies)
+	for (auto &reconstructed_domain_layer_proxy : d_current_reconstructed_domain_layer_proxies)
 	{
 		// Get the domain features.
 		//
@@ -466,7 +401,6 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_types()
 
 void
 GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverage_time_spans(
-		const GPlatesPropertyValues::ValueObjectType &scalar_type,
 		const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params)
 {
 	// If they're already cached then nothing to do.
@@ -476,14 +410,8 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverage_time
 	}
 	d_cached_scalar_coverage_time_span_info = ScalarCoverageTimeSpanInfo();
 
-	// Select function to evolve scalar values with (based on the scalar type).
-	boost::optional<scalar_evolution_function_type> scalar_evolution_function =
-			get_scalar_evolution_function(scalar_type, reconstruct_scalar_coverage_params);
-
 	// Iterate over the reconstructed domain layers.
-	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_domain_layer_proxy,
-			d_current_reconstructed_domain_layer_proxies)
+	for (auto &reconstructed_domain_layer_proxy : d_current_reconstructed_domain_layer_proxies)
 	{
 		if (reconstructed_domain_layer_proxy.get_input_layer_proxy()->using_topologies_to_reconstruct())
 		{
@@ -498,10 +426,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverage_time
 			reconstructed_domain_layer_proxy.get_input_layer_proxy()
 					->get_topology_reconstructed_feature_time_spans(topology_reconstructed_feature_time_spans);
 
-			cache_topology_reconstructed_scalar_coverage_time_spans(
-					scalar_type,
-					topology_reconstructed_feature_time_spans,
-					scalar_evolution_function);
+			cache_topology_reconstructed_scalar_coverage_time_spans(topology_reconstructed_feature_time_spans);
 		}
 		else
 		{
@@ -518,7 +443,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverage_time
 			std::vector<GPlatesModel::FeatureHandle::weak_ref> domain_features;
 			reconstructed_domain_layer_proxy.get_input_layer_proxy()->get_current_reconstructable_features(domain_features);
 
-			cache_non_topology_reconstructed_scalar_coverage_time_spans(scalar_type, domain_features);
+			cache_non_topology_reconstructed_scalar_coverage_time_spans(domain_features);
 		}
 	}
 }
@@ -526,31 +451,22 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverage_time
 
 void
 GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_topology_reconstructed_scalar_coverage_time_spans(
-		const GPlatesPropertyValues::ValueObjectType &scalar_type,
-		const std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan> &topology_reconstructed_feature_time_spans,
-		boost::optional<scalar_evolution_function_type> scalar_evolution_function)
+		const std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan> &topology_reconstructed_feature_time_spans)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_cached_scalar_coverage_time_span_info,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Iterate over the topology reconstructed features of the current domain layer.
-	std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan>::const_iterator
-			topology_reconstructed_feature_time_spans_iter = topology_reconstructed_feature_time_spans.begin();
-	std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan>::const_iterator
-			topology_reconstructed_feature_time_spans_end = topology_reconstructed_feature_time_spans.end();
-	for ( ;
-		topology_reconstructed_feature_time_spans_iter != topology_reconstructed_feature_time_spans_end;
-		++topology_reconstructed_feature_time_spans_iter)
+	for (const auto &topology_reconstructed_feature_time_span : topology_reconstructed_feature_time_spans)
 	{
-		const ReconstructContext::TopologyReconstructedFeatureTimeSpan &topology_reconstructed_feature_time_span =
-				*topology_reconstructed_feature_time_spans_iter;
-
 		const GPlatesModel::FeatureHandle::weak_ref domain_feature = topology_reconstructed_feature_time_span.get_feature();
 
-		// Find scalar coverages in the domain feature matching the requested scalar type.
-		std::vector<scalar_coverage_type> scalar_coverages;
-		get_scalar_coverages_of_scalar_type_from_feature(scalar_coverages, scalar_type, domain_feature);
+		// Find the scalar coverages in the domain feature.
+		// Note: There can be multiple coverages in a single feature if it has multiple geometry
+		// properties that are each associated with a coverage property (scalar values).
+		std::vector<ScalarCoverageFeatureProperties::Coverage> scalar_coverages;
+		ScalarCoverageFeatureProperties::get_coverages(scalar_coverages, domain_feature);
 
 		// Skip current domain feature if it contains no coverages of the specified scalar type.
 		if (scalar_coverages.empty())
@@ -558,38 +474,31 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_topology_reconstruct
 			continue;
 		}
 
-		// Will contain all scalar coverage time spans for the current feature and specified scalar type
-		ReconstructedScalarCoverageTimeSpan reconstructed_scalar_coverage_time_span(domain_feature, scalar_type);
+		// Will contain all scalar coverage time spans for the current feature.
+		ReconstructedScalarCoverageTimeSpan reconstructed_scalar_coverage_time_span(domain_feature);
 
 		// Iterate over the matching scalar coverages.
-		std::vector<scalar_coverage_type>::const_iterator scalar_coverages_iter = scalar_coverages.begin();
-		std::vector<scalar_coverage_type>::const_iterator scalar_coverages_end = scalar_coverages.end();
-		for ( ; scalar_coverages_iter != scalar_coverages_end; ++scalar_coverages_iter)
+		for (const ScalarCoverageFeatureProperties::Coverage &scalar_coverage : scalar_coverages)
 		{
-			const scalar_coverage_type &scalar_coverage = *scalar_coverages_iter;
-			const ScalarCoverageFeatureProperties::Coverage &coverage = scalar_coverage.first;
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type scalar_data =
-					coverage.range[scalar_coverage.second];
-
 			// Extract the scalar values from the current scalar coverage.
-			const std::vector<double> scalar_values(
-					scalar_data->coordinates_begin(),
-					scalar_data->coordinates_end());
+			ScalarCoverageDeformation::ScalarCoverageTimeSpan::initial_scalar_coverage_type initial_scalar_coverage;
+			for (const auto &scalar_data : scalar_coverage.range)
+			{
+				const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_data->value_object_type();
+
+				initial_scalar_coverage[scalar_type].assign(
+						scalar_data->coordinates_begin(),
+						scalar_data->coordinates_end());
+			}
 
 			// Find the geometry time span associated with the geometry property of the current coverage (if any).
-			std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan::GeometryTimeSpan>::const_iterator
-					topology_reconstructed_geometry_time_span_iter =
-							topology_reconstructed_feature_time_span.get_geometry_time_spans().begin();
-			std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan::GeometryTimeSpan>::const_iterator
-					topology_reconstructed_geometry_time_span_end =
-							topology_reconstructed_feature_time_span.get_geometry_time_spans().end();
-			for ( ;
-				topology_reconstructed_geometry_time_span_iter != topology_reconstructed_geometry_time_span_end;
-				++topology_reconstructed_geometry_time_span_iter)
+			boost::optional<TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type> geometry_time_span;
+			for (const auto &topology_reconstructed_geometry_time_span : topology_reconstructed_feature_time_span.get_geometry_time_spans())
 			{
-				if (topology_reconstructed_geometry_time_span_iter->get_geometry_property_iterator() ==
-					coverage.domain_property)
+				if (topology_reconstructed_geometry_time_span.get_geometry_property_iterator() ==
+					scalar_coverage.domain_property)
 				{
+					geometry_time_span = topology_reconstructed_geometry_time_span.get_geometry_time_span();
 					break;
 				}
 			}
@@ -598,27 +507,23 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_topology_reconstruct
 			//  1) using the topology-reconstructed geometry time span (and scalar values and evolution function), or
 			//  2) only the scalars (will return these same scalars for all reconstruction times).
 			//
-			ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span =
-					(topology_reconstructed_geometry_time_span_iter != topology_reconstructed_geometry_time_span_end)
-					? ScalarCoverageDeformation::ScalarCoverageTimeSpan::create(
-							topology_reconstructed_geometry_time_span_iter->get_geometry_time_span(),
-							scalar_values,
-							scalar_evolution_function)
-					: ScalarCoverageDeformation::ScalarCoverageTimeSpan::create(scalar_values);
+			ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span = geometry_time_span
+					? ScalarCoverageDeformation::ScalarCoverageTimeSpan::create(initial_scalar_coverage, geometry_time_span.get())
+					: ScalarCoverageDeformation::ScalarCoverageTimeSpan::create(initial_scalar_coverage);
 
 			reconstructed_scalar_coverage_time_span.d_scalar_coverage_time_spans.push_back(
 					ReconstructedScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
-							coverage.domain_property,
-							coverage.range_property,
+							scalar_coverage.domain_property,
+							scalar_coverage.range_property,
 							scalar_coverage_time_span));
 
 			// Associate the scalar coverage time span with the (domain) geometry property so we can
 			// find it later (via property look up) when generating reconstructed scalar coverages.
 			d_cached_scalar_coverage_time_span_info->cached_scalar_coverage_time_span_map.insert(
 					scalar_coverage_time_span_map_type::value_type(
-							coverage.domain_property,
+							scalar_coverage.domain_property,
 							scalar_coverage_time_span_mapped_type(
-									coverage.range_property,
+									scalar_coverage.range_property,
 									scalar_coverage_time_span)));
 		}
 
@@ -631,7 +536,6 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_topology_reconstruct
 
 void
 GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_non_topology_reconstructed_scalar_coverage_time_spans(
-		const GPlatesPropertyValues::ValueObjectType &scalar_type,
 		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &domain_features)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -639,62 +543,59 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_non_topology_reconst
 			GPLATES_ASSERTION_SOURCE);
 
 	// Iterate over the domain features.
-	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator domain_features_iter = domain_features.begin();
-	std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator domain_features_end = domain_features.end();
-	for ( ; domain_features_iter != domain_features_end; ++domain_features_iter)
+	for (const GPlatesModel::FeatureHandle::weak_ref &domain_feature : domain_features)
 	{
-		const GPlatesModel::FeatureHandle::weak_ref &domain_feature = *domain_features_iter;
+		// Find the scalar coverages in the domain feature.
+		// Note: There can be multiple coverages in a single feature if it has multiple geometry
+		// properties that are each associated with a coverage property (scalar values).
+		std::vector<ScalarCoverageFeatureProperties::Coverage> scalar_coverages;
+		ScalarCoverageFeatureProperties::get_coverages(scalar_coverages, domain_feature);
 
-		// Find scalar coverages in the domain feature matching the requested scalar type.
-		std::vector<scalar_coverage_type> scalar_coverages;
-		get_scalar_coverages_of_scalar_type_from_feature(scalar_coverages, scalar_type, domain_feature);
-
-		// Skip current domain feature if it contains no coverages of the specified scalar type.
+		// Skip current domain feature if it contains no coverages.
 		if (scalar_coverages.empty())
 		{
 			continue;
 		}
 
-		// Will contain all scalar coverage time spans for the current feature and specified scalar type
-		ReconstructedScalarCoverageTimeSpan reconstructed_scalar_coverage_time_span(domain_feature, scalar_type);
+		// Will contain all scalar coverage time spans for the current feature.
+		ReconstructedScalarCoverageTimeSpan reconstructed_scalar_coverage_time_span(domain_feature);
 
-		// Iterate over the matching scalar coverages.
-		std::vector<scalar_coverage_type>::const_iterator scalar_coverages_iter = scalar_coverages.begin();
-		std::vector<scalar_coverage_type>::const_iterator scalar_coverages_end = scalar_coverages.end();
-		for ( ; scalar_coverages_iter != scalar_coverages_end; ++scalar_coverages_iter)
+		// Iterate over the scalar coverages.
+		for (const ScalarCoverageFeatureProperties::Coverage &scalar_coverage : scalar_coverages)
 		{
-			const scalar_coverage_type &scalar_coverage = *scalar_coverages_iter;
-			const ScalarCoverageFeatureProperties::Coverage &coverage = scalar_coverage.first;
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type scalar_data =
-					coverage.range[scalar_coverage.second];
-
 			// Extract the scalar values from the current scalar coverage.
-			const std::vector<double> scalar_values(
-					scalar_data->coordinates_begin(),
-					scalar_data->coordinates_end());
+			ScalarCoverageDeformation::ScalarCoverageTimeSpan::initial_scalar_coverage_type initial_scalar_coverage;
+			for (const auto &scalar_data : scalar_coverage.range)
+			{
+				const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_data->value_object_type();
+
+				initial_scalar_coverage[scalar_type].assign(
+						scalar_data->coordinates_begin(),
+						scalar_data->coordinates_end());
+			}
 
 			// Create a time span of only the extracted scalar values (they're not evolved over time).
 			// The time span will return these scalar values for all reconstruction times.
 			ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span =
-					ScalarCoverageDeformation::ScalarCoverageTimeSpan::create(scalar_values);
+					ScalarCoverageDeformation::ScalarCoverageTimeSpan::create(initial_scalar_coverage);
 
 			reconstructed_scalar_coverage_time_span.d_scalar_coverage_time_spans.push_back(
 					ReconstructedScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
-							coverage.domain_property,
-							coverage.range_property,
+							scalar_coverage.domain_property,
+							scalar_coverage.range_property,
 							scalar_coverage_time_span));
 
 			// Associate the scalar coverage time span with the (domain) geometry property so we can
 			// find it later (via property look up) when generating reconstructed scalar coverages.
 			d_cached_scalar_coverage_time_span_info->cached_scalar_coverage_time_span_map.insert(
 					scalar_coverage_time_span_map_type::value_type(
-							coverage.domain_property,
+							scalar_coverage.domain_property,
 							scalar_coverage_time_span_mapped_type(
-									coverage.range_property,
+									scalar_coverage.range_property,
 									scalar_coverage_time_span)));
 		}
 
-		// Cache all scalar coverages (of specified scalar type) for the current feature.
+		// Cache all scalar coverages for the current feature.
 		d_cached_scalar_coverage_time_span_info->cached_reconstructed_scalar_coverage_time_spans.push_back(
 				reconstructed_scalar_coverage_time_span);
 	}
@@ -704,7 +605,8 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_non_topology_reconst
 std::vector<GPlatesAppLogic::ReconstructedScalarCoverage::non_null_ptr_type> &
 GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_reconstructed_scalar_coverages(
 		ReconstructionInfo &reconstruction_info,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const GPlatesPropertyValues::ValueObjectType &scalar_type)
 {
 	// If they're already cached then nothing to do.
 	if (reconstruction_info.cached_reconstructed_scalar_coverages)
@@ -714,34 +616,27 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_reconstructed_scalar
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_cached_scalar_coverage_time_span_info &&
-				d_cached_scalar_type &&
 				d_cached_reconstruct_scalar_coverage_params,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Get the next global reconstruct handle - it'll be stored in each RSC.
-	reconstruction_info.cached_reconstructed_scalar_coverages_handle =
-			ReconstructHandle::get_next_reconstruct_handle();
+	reconstruction_info.cached_reconstructed_scalar_coverages_handle = ReconstructHandle::get_next_reconstruct_handle();
 
 	// Create empty vector of reconstructed scalar coverages.
-	reconstruction_info.cached_reconstructed_scalar_coverages =
-			std::vector<ReconstructedScalarCoverage::non_null_ptr_type>();
+	reconstruction_info.cached_reconstructed_scalar_coverages = std::vector<ReconstructedScalarCoverage::non_null_ptr_type>();
 
 	// First get the domain RFGs for the reconstruction time.
 	// Note that some of those features will not generate RFGs for the reconstruction time if
 	// the feature does not exist at the reconstruction time.
 	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_domain_feature_geometries;
-	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_domain_layer_proxy,
-			d_current_reconstructed_domain_layer_proxies)
+	for (auto &reconstructed_domain_layer_proxy : d_current_reconstructed_domain_layer_proxies)
 	{
 		reconstructed_domain_layer_proxy.get_input_layer_proxy()
 				->get_reconstructed_feature_geometries(reconstructed_domain_feature_geometries, reconstruction_time);
 	}
 
 	// Then match each RFG to a scalar coverage time span and create a ReconstructedScalarCoverage.
-	BOOST_FOREACH(
-			const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_domain_feature_geometry,
-			reconstructed_domain_feature_geometries)
+	for (const auto &reconstructed_domain_feature_geometry : reconstructed_domain_feature_geometries)
 	{
 		scalar_coverage_time_span_map_type::const_iterator scalar_coverage_time_span_iter =
 				d_cached_scalar_coverage_time_span_info->cached_scalar_coverage_time_span_map.find(
@@ -769,7 +664,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_reconstructed_scalar
 					ReconstructedScalarCoverage::create(
 							reconstructed_domain_feature_geometry,
 							scalar_coverage_range_property,
-							d_cached_scalar_type.get(),
+							scalar_type,
 							scalar_coverage_time_span,
 							reconstruction_info.cached_reconstructed_scalar_coverages_handle.get()));
 		}
@@ -781,7 +676,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_reconstructed_scalar
 
 GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::ReconstructionInfo
 GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::create_empty_reconstruction_info(
-		const reconstruction_time_type &reconstruction_time)
+		const reconstruction_cache_key_type &reconstruction_cache_key)
 {
 	// Return empty structure.
 	// We'll fill-in/cache the parts of it that are needed - currently there's only

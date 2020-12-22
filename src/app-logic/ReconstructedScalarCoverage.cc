@@ -78,6 +78,7 @@ GPlatesAppLogic::ReconstructedScalarCoverage::get_reconstructed_point_scalar_val
 		point_scalar_value_seq_type &scalar_values) const
 {
 	const bool scalar_values_are_valid = d_scalar_coverage_time_span->get_scalar_values(
+			d_scalar_type,
 			get_reconstruction_time(),
 			scalar_values);
 

@@ -50,8 +50,8 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 
 	// Get the number of scalar values from the first scalar type.
 	// Next we'll ensure the number of scalar values in the other scalar types matches.
-	d_num_all_scalar_values = d_non_evolved_scalar_coverage.begin()->second.size();
-	for (const auto &scalar_coverage_item : d_non_evolved_scalar_coverage)
+	d_num_all_scalar_values = initial_scalar_coverage.begin()->second.size();
+	for (const auto &scalar_coverage_item : initial_scalar_coverage)
 	{
 		const std::vector<double> &scalar_values = scalar_coverage_item.second;
 
@@ -74,8 +74,8 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 
 	// Get the number of scalar values from the first scalar type.
 	// Next we'll ensure the number of scalar values in the other scalar types matches.
-	const unsigned int num_original_scalar_values = d_non_evolved_scalar_coverage.begin()->second.size();
-	for (const auto &scalar_coverage_item : d_non_evolved_scalar_coverage)
+	const unsigned int num_original_scalar_values = initial_scalar_coverage.begin()->second.size();
+	for (const auto &scalar_coverage_item : initial_scalar_coverage)
 	{
 		const std::vector<double> &scalar_values = scalar_coverage_item.second;
 

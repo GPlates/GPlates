@@ -139,29 +139,17 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerParams::create_scalar_statistics(
 	double total_scalar_sum = 0;
 	double total_scalar_sum_squares = 0;
 
-	// Get the time history of scalar values for the specified scalar type.
+	// Get the time history of scalar values.
 	// We don't want to calculate statistics just on the original scalar values because they might
 	// be constant (such as initial crustal thickness at geometry import time).
 	typedef ReconstructScalarCoverageLayerProxy::ReconstructedScalarCoverageTimeSpan time_span_type;
 	std::vector<time_span_type> time_spans;
-	d_layer_proxy->get_reconstructed_scalar_coverage_time_spans(time_spans, scalar_type);
+	d_layer_proxy->get_reconstructed_scalar_coverage_time_spans(time_spans);
 
-	std::vector<time_span_type>::const_iterator time_spans_iter = time_spans.begin();
-	std::vector<time_span_type>::const_iterator time_spans_end = time_spans.end();
-	for ( ; time_spans_iter != time_spans_end; ++time_spans_iter)
+	for (const time_span_type &time_span : time_spans)
 	{
-		const time_span_type &time_span = *time_spans_iter;
-
-		const time_span_type::scalar_coverage_time_span_seq_type &scalar_coverage_time_spans =
-				time_span.get_scalar_coverage_time_spans();
-		time_span_type::scalar_coverage_time_span_seq_type::const_iterator scalar_coverage_time_spans_iter =
-				scalar_coverage_time_spans.begin();
-		time_span_type::scalar_coverage_time_span_seq_type::const_iterator scalar_coverage_time_spans_end =
-				scalar_coverage_time_spans.end();
-		for ( ; scalar_coverage_time_spans_iter != scalar_coverage_time_spans_end; ++scalar_coverage_time_spans_iter)
+		for (const time_span_type::ScalarCoverageTimeSpan &scalar_coverage_time_span : time_span.get_scalar_coverage_time_spans())
 		{
-			const time_span_type::ScalarCoverageTimeSpan &scalar_coverage_time_span = *scalar_coverage_time_spans_iter;
-
 			// See if we need to look at a history of scalar values or just present day.
 			if (scalar_coverage_time_span.get_geometry_time_span())
 			{
@@ -186,8 +174,9 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerParams::create_scalar_statistics(
 					const double time = time_range.get_time(time_slot);
 
 					// Get *active* and *inactive* points/scalars.
+					// Note that scalar coverage time span can contain multiple scalar types, so we query the one we're interested in.
 					std::vector< boost::optional<double> > all_scalar_values;
-					if (scalar_coverage_time_span.get_scalar_coverage_time_span()->get_all_scalar_values(time, all_scalar_values))
+					if (scalar_coverage_time_span.get_scalar_coverage_time_span()->get_all_scalar_values(scalar_type, time, all_scalar_values))
 					{
 						for (unsigned int scalar_value_index = 0; scalar_value_index < num_scalar_values; ++scalar_value_index)
 						{
@@ -236,9 +225,10 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerParams::create_scalar_statistics(
 			{
 				// Just need to look at scalar values at present day.
 				// The scalar values don't change with time so it actually doesn't matter which time we choose.
+				// Note that scalar coverage time span can contain multiple scalar types, so we query the one we're interested in.
 				std::vector<double> scalar_values;
 				if (scalar_coverage_time_span.get_scalar_coverage_time_span()->
-						get_scalar_values(0.0/*reconstruction_time*/, scalar_values))
+						get_scalar_values(scalar_type, .0/*reconstruction_time*/, scalar_values))
 				{ // Should always return true since no point deactivation because not topological reconstructed.
 					total_num_scalars += scalar_values.size();
 
