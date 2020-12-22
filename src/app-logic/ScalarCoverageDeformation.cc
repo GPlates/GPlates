@@ -118,8 +118,8 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 	// Create and initialise a time span, for the evolved scalar coverage, if it has any evolved scalar types.
 	if (!initial_evolved_scalar_coverage.empty())
 	{
-		// Used to evolve scalar values from one time step to the next (starting with the initial scalar values).
-		const ScalarCoverageEvolution import_scalar_coverage_evolution(initial_evolved_scalar_coverage, d_scalar_import_time);
+		// The import scalar values (initial scalar values).
+		const ScalarCoverageEvolution::EvolvedScalarCoverage import_evolved_scalar_coverage(initial_evolved_scalar_coverage);
 
 		d_evolved_scalar_coverage_time_span = evolved_scalar_coverage_time_span_type::create(
 				geometry_time_span->get_time_range(),
@@ -133,15 +133,17 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 						&ScalarCoverageTimeSpan::interpolate_envolved_samples,
 						this,
 						_1, _2, _3, _4, _5),
+				// Present day sample...
+				//
 				// The initial scalar values (at 'd_scalar_import_time').
 				// Note that we'll need to modify this if 'd_scalar_import_time' is earlier
 				// than the end of the time range since might be affected by time range...
-				import_scalar_coverage_evolution.get_current_evolved_scalar_coverage());
+				import_evolved_scalar_coverage);
 
 		initialise_evolved_time_span(
 				geometry_time_span,
 				d_evolved_scalar_coverage_time_span.get(),
-				import_scalar_coverage_evolution);
+				import_evolved_scalar_coverage);
 	}
 }
 
@@ -150,15 +152,10 @@ void
 GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::initialise_evolved_time_span(
 		const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span,
 		const evolved_scalar_coverage_time_span_type::non_null_ptr_type &evolved_scalar_coverage_time_span,
-		const ScalarCoverageEvolution &import_scalar_coverage_evolution)
+		const ScalarCoverageEvolution::EvolvedScalarCoverage &import_evolved_scalar_coverage)
 {
 	const TimeSpanUtils::TimeRange time_range = evolved_scalar_coverage_time_span->get_time_range();
 	const unsigned int num_time_slots = time_range.get_num_time_slots();
-
-	// The initial scalar coverage representing the scalar values at the geometry import time of the geometry time span.
-	// Note that initially all the scalar values are active (because all initial geometry points should be active).
-	const ScalarCoverageEvolution::EvolvedScalarCoverage import_scalar_coverage =
-			import_scalar_coverage_evolution.get_current_evolved_scalar_coverage();
 
 	// Find the nearest time slot to the scalar import time (if it's inside the time range).
 	//
@@ -181,37 +178,26 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::initialise_e
 
 		// Store the imported scalar coverage in the import time slot.
 		evolved_scalar_coverage_time_span->set_sample_in_time_slot(
-				import_scalar_coverage_evolution.get_current_evolved_scalar_coverage(),
+				import_evolved_scalar_coverage,
 				scalar_import_time_slot.get()/*time_slot*/);
 
 		// Iterate over the time range going *backwards* in time from the scalar import time (most recent)
 		// to the beginning of the time range (least recent).
-		ScalarCoverageEvolution backward_scalar_coverage_evolution(import_scalar_coverage_evolution);
 		evolve_time_steps(
 				scalar_import_time_slot.get()/*start_time_slot*/,
 				0/*end_time_slot*/,
 				geometry_time_span,
 				evolved_scalar_coverage_time_span,
-				backward_scalar_coverage_evolution);
+				import_evolved_scalar_coverage);
 
 		// Iterate over the time range going *forward* in time from the scalar import time (least recent)
 		// to the end of the time range (most recent).
-		//
-		// If the end sample is active then use it to set the present day sample.
-		ScalarCoverageEvolution forward_scalar_coverage_evolution(import_scalar_coverage_evolution);
-		if (evolve_time_steps(
+		evolve_time_steps(
 				scalar_import_time_slot.get()/*start_time_slot*/,
 				num_time_slots - 1/*end_time_slot*/,
 				geometry_time_span,
 				evolved_scalar_coverage_time_span,
-				forward_scalar_coverage_evolution))
-		{
-			// Reset the present day scalar values.
-			// They might have been affected by any deformation within the time range.
-			evolved_scalar_coverage_time_span->get_present_day_sample() =
-					forward_scalar_coverage_evolution.get_current_evolved_scalar_coverage();
-		}
-		// else end sample is inactive and 'is_valid()' will return false between it and present day.
+				import_evolved_scalar_coverage);
 	}
 	else if (d_scalar_import_time > time_range.get_begin_time())
 	{
@@ -222,27 +208,17 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::initialise_e
 
 		// Store the imported scalar values in the beginning time slot.
 		evolved_scalar_coverage_time_span->set_sample_in_time_slot(
-				import_scalar_coverage,
+				import_evolved_scalar_coverage,
 				0/*time_slot*/);
 
 		// Iterate over the time range going *forward* in time from the beginning of the
 		// time range (least recent) to the end (most recent).
-		//
-		// If the end sample is active then use it to set the present day sample.
-		ScalarCoverageEvolution forward_scalar_coverage_evolution(import_scalar_coverage_evolution);
-		if (evolve_time_steps(
+		evolve_time_steps(
 				0/*start_time_slot*/,
 				num_time_slots - 1/*end_time_slot*/,
 				geometry_time_span,
 				evolved_scalar_coverage_time_span,
-				forward_scalar_coverage_evolution))
-		{
-			// Reset the present day scalar values.
-			// They might have been affected by any deformation within the time range.
-			evolved_scalar_coverage_time_span->get_present_day_sample() =
-					forward_scalar_coverage_evolution.get_current_evolved_scalar_coverage();
-		}
-		// else end sample is inactive and 'is_valid()' will return false between it and present day.
+				import_evolved_scalar_coverage);
 	}
 	else // d_scalar_import_time < time_range.get_end_time() ...
 	{
@@ -253,22 +229,17 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::initialise_e
 
 		// Store the imported scalar values in the end time slot.
 		evolved_scalar_coverage_time_span->set_sample_in_time_slot(
-				import_scalar_coverage,
+				import_evolved_scalar_coverage,
 				num_time_slots - 1/*time_slot*/);
 
 		// Iterate over the time range going *backwards* in time from the end of the
 		// time range (most recent) to the beginning (least recent).
-		ScalarCoverageEvolution backward_scalar_coverage_evolution(import_scalar_coverage_evolution);
 		evolve_time_steps(
 				num_time_slots - 1/*start_time_slot*/,
 				0/*end_time_slot*/,
 				geometry_time_span,
 				evolved_scalar_coverage_time_span,
-				backward_scalar_coverage_evolution);
-
-		// Note that we don't need to reset the present day scalar values since the scalar
-		// import time is after (younger than) the end of the time range and hence the
-		// present day scalar values are not affected by deformation in the time range.
+				import_evolved_scalar_coverage);
 	}
 }
 
@@ -279,16 +250,21 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::evolve_time_
 		unsigned int end_time_slot,
 		const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span,
 		const evolved_scalar_coverage_time_span_type::non_null_ptr_type &evolved_scalar_coverage_time_span,
-		ScalarCoverageEvolution &scalar_coverage_evolution)
+		const ScalarCoverageEvolution::EvolvedScalarCoverage &import_evolved_scalar_coverage)
 {
 	if (start_time_slot == end_time_slot)
 	{
 		return true;
 	}
 
-	const unsigned int num_scalars = scalar_coverage_evolution.get_num_scalar_values();
-
 	const TimeSpanUtils::TimeRange time_range = geometry_time_span->get_time_range();
+
+	// Used to evolve scalar values from one time step to the next (starting with the import scalar values).
+	ScalarCoverageEvolution scalar_coverage_evolution(
+			import_evolved_scalar_coverage,
+			time_range.get_time(start_time_slot));  // start time
+
+	const unsigned int num_scalars = scalar_coverage_evolution.get_num_scalar_values();
 
 	const bool reverse_reconstruct = end_time_slot > start_time_slot;
 	const int time_slot_direction = (end_time_slot > start_time_slot) ? 1 : -1;
@@ -328,6 +304,10 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::evolve_time_
 			if (reverse_reconstruct) // forward in time ...
 			{
 				d_time_slot_of_disappearance = current_time_slot;
+
+				// Note that the end sample is inactive and so 'is_valid()' will return false for times
+				// between the end of the time range and present day. And so we don't need to transfer
+				// the end sample to the present day sample.
 			}
 			else // backward in time ...
 			{
@@ -354,6 +334,14 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::evolve_time_
 		evolved_scalar_coverage_time_span->set_sample_in_time_slot(
 				scalar_coverage_evolution.get_current_evolved_scalar_coverage(),
 				next_time_slot);
+	}
+
+	if (reverse_reconstruct) // forward in time ...
+	{
+		// The end sample is active so use it to set the present day sample since the
+		// present day sample might have been affected by any deformation within the time range.
+		evolved_scalar_coverage_time_span->get_present_day_sample() =
+				scalar_coverage_evolution.get_current_evolved_scalar_coverage();
 	}
 
 	return true;

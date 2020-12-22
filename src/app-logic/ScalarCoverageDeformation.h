@@ -376,7 +376,7 @@ namespace GPlatesAppLogic
 			initialise_evolved_time_span(
 					const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span,
 					const evolved_scalar_coverage_time_span_type::non_null_ptr_type &evolved_scalar_coverage_time_span,
-					const ScalarCoverageEvolution &import_scalar_coverage_evolution);
+					const ScalarCoverageEvolution::EvolvedScalarCoverage &import_evolved_scalar_coverage);
 
 			bool
 			evolve_time_steps(
@@ -384,7 +384,7 @@ namespace GPlatesAppLogic
 					unsigned int end_time_slot,
 					const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span,
 					const evolved_scalar_coverage_time_span_type::non_null_ptr_type &evolved_scalar_coverage_time_span,
-					ScalarCoverageEvolution &scalar_coverage_evolution);
+					const ScalarCoverageEvolution::EvolvedScalarCoverage &import_evolved_scalar_coverage);
 
 			static
 			std::vector<double>
