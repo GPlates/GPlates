@@ -258,11 +258,10 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::evolve_time_
 	}
 
 	const TimeSpanUtils::TimeRange time_range = geometry_time_span->get_time_range();
+	const double start_time = time_range.get_time(start_time_slot);
 
 	// Used to evolve scalar values from one time step to the next (starting with the import scalar values).
-	ScalarCoverageEvolution scalar_coverage_evolution(
-			import_evolved_scalar_coverage,
-			time_range.get_time(start_time_slot));  // start time
+	ScalarCoverageEvolution scalar_coverage_evolution(import_evolved_scalar_coverage, start_time);
 
 	const unsigned int num_scalars = scalar_coverage_evolution.get_num_scalar_values();
 
@@ -276,9 +275,9 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::evolve_time_
 	// Note that initially all geometry points should be active (as are all our initial scalar values).
 	domain_strain_rate_seq_type current_domain_strain_rates;
 	geometry_time_span->get_all_geometry_data(
-			time_range.get_time(start_time_slot),
-			boost::none/*point_locations*/,
-			boost::none/*points*/,
+			start_time,
+			boost::none/*point*/,
+			boost::none/*points_locations*/,
 			current_domain_strain_rates/*strain rates*/);
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(

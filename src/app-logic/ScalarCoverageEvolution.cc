@@ -139,7 +139,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve(
 		// If the initial strain rate is inactive then so should the final strain rate.
 		// Actually the active state of initial strain rate should match the initial scalar value.
 		// And if the final strain rate is inactive then the scalar value becomes inactive.
-		if (!current_deformation_strain_rates[n])
+		if (!evolve_deformation_strain_rates[n])
 		{
 			for (unsigned int scalar_type = 0; scalar_type < NUM_EVOLVED_SCALAR_TYPES; ++scalar_type)
 			{
@@ -283,6 +283,9 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve(
 		double &crustal_thinning_factor = d_current_evolved_scalar_coverage.d_evolved_scalar_values[CRUSTAL_THINNING_FACTOR][n].get();
 		crustal_thinning_factor = 1 - crustal_thickness_multiplier * (1 - crustal_thinning_factor);
 	}
+
+	// Update the current time.
+	d_current_time = evolve_time;
 }
 
 
@@ -312,7 +315,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::EvolvedScalarCo
 {
 	// Use default initial scalar values except for crustal thickness (leave as boost::none).
 	// Crustal stretching and thinning factors are ratios so we can assume initial values for those.
-	d_evolved_scalar_values[CRUSTAL_THICKNESS].resize(num_scalar_values);
+	d_evolved_scalar_values[CRUSTAL_THICKNESS].resize(num_scalar_values, 1.0);
 	d_evolved_scalar_values[CRUSTAL_STRETCHING_FACTOR].resize(num_scalar_values, 1.0);  // Ti/T
 	d_evolved_scalar_values[CRUSTAL_THINNING_FACTOR].resize(num_scalar_values, 0.0);  // (1 - T/Ti)
 }
