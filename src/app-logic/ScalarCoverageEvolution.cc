@@ -32,23 +32,63 @@
 #include "global/PreconditionViolationError.h"
 
 
-GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
-		const InitialEvolvedScalarCoverage &initial_evolved_scalar_coverage,
-		const double &initial_time) :
-	d_current_time(initial_time),
-	d_current_evolved_scalar_coverage(initial_evolved_scalar_coverage.get_num_scalar_values())
+GPlatesAppLogic::ScalarCoverageEvolution::scalar_type_type
+GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_type(
+		EvolvedScalarType evolved_scalar_type)
 {
-	// For each evolved scalar type copy its initial scalar values into our current evolved scalar coverage.
-	for (const auto &scalar_coverage_item : initial_evolved_scalar_coverage.get_scalar_values())
-	{
-		const EvolvedScalarType evolved_scalar_type = scalar_coverage_item.first;
-		const std::vector<double> &initial_scalar_values = scalar_coverage_item.second;
+	static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THICKNESS =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThickness");
 
-		// Copy the 'double' scalar values into the 'boost::optional<double>' elements.
-		d_current_evolved_scalar_coverage.d_evolved_scalar_values[evolved_scalar_type].assign(
-				initial_scalar_values.begin(),
-				initial_scalar_values.end());
+	static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_STRETCHING_FACTOR =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalStretchingFactor");
+
+	static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THINNING_FACTOR =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
+
+	switch (evolved_scalar_type)
+	{
+	case CRUSTAL_THICKNESS:
+		return GPML_CRUSTAL_THICKNESS;
+
+	case CRUSTAL_STRETCHING_FACTOR:
+		return GPML_CRUSTAL_STRETCHING_FACTOR;
+
+	case CRUSTAL_THINNING_FACTOR:
+		return GPML_CRUSTAL_THINNING_FACTOR;
+
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 	}
+}
+
+
+boost::optional<GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarType>
+GPlatesAppLogic::ScalarCoverageEvolution::is_evolved_scalar_type(
+		const scalar_type_type &scalar_type)
+{
+	static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THICKNESS =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThickness");
+
+	static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_STRETCHING_FACTOR =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalStretchingFactor");
+
+	static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THINNING_FACTOR =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
+
+	if (scalar_type == GPML_CRUSTAL_THICKNESS)
+	{
+		return CRUSTAL_THICKNESS;
+	}
+	else if (scalar_type == GPML_CRUSTAL_STRETCHING_FACTOR)
+	{
+		return CRUSTAL_STRETCHING_FACTOR;
+	}
+	else if (scalar_type == GPML_CRUSTAL_THINNING_FACTOR)
+	{
+		return CRUSTAL_THINNING_FACTOR;
+	}
+
+	return boost::none;
 }
 
 
@@ -264,4 +304,34 @@ GPlatesAppLogic::ScalarCoverageEvolution::InitialEvolvedScalarCoverage::add_scal
 	}
 
 	d_initial_evolved_scalar_values[evolved_scalar_type] = initial_scalar_values;
+}
+
+
+GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::EvolvedScalarCoverage(
+		unsigned int num_scalar_values)
+{
+	// Use default initial scalar values except for crustal thickness (leave as boost::none).
+	// Crustal stretching and thinning factors are ratios so we can assume initial values for those.
+	d_evolved_scalar_values[CRUSTAL_THICKNESS].resize(num_scalar_values);
+	d_evolved_scalar_values[CRUSTAL_STRETCHING_FACTOR].resize(num_scalar_values, 1.0);  // Ti/T
+	d_evolved_scalar_values[CRUSTAL_THINNING_FACTOR].resize(num_scalar_values, 0.0);  // (1 - T/Ti)
+}
+
+
+GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::EvolvedScalarCoverage(
+		const InitialEvolvedScalarCoverage &initial_evolved_scalar_coverage) :
+	// Initialise with default values first (in case initial scalar values not provided for all evolved scalar types)...
+	EvolvedScalarCoverage(initial_evolved_scalar_coverage.get_num_scalar_values())
+{
+	// For each evolved scalar type copy its initial scalar values into our current evolved scalar coverage.
+	for (const auto &scalar_coverage_item : initial_evolved_scalar_coverage.get_scalar_values())
+	{
+		const EvolvedScalarType evolved_scalar_type = scalar_coverage_item.first;
+		const std::vector<double> &initial_scalar_values = scalar_coverage_item.second;
+
+		// Copy the 'double' scalar values into the 'boost::optional<double>' elements.
+		d_evolved_scalar_values[evolved_scalar_type].assign(
+				initial_scalar_values.begin(),
+				initial_scalar_values.end());
+	}
 }

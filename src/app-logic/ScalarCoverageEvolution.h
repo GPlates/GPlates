@@ -134,6 +134,10 @@ namespace GPlatesAppLogic
 		{
 		public:
 
+			explicit
+			EvolvedScalarCoverage(
+					const InitialEvolvedScalarCoverage &initial_evolved_scalar_coverage);
+
 			/**
 			 * Returns the scalar values at *all* points at the specified time (including inactive points).
 			 *
@@ -161,17 +165,10 @@ namespace GPlatesAppLogic
 		private:
 			scalar_value_seq_type d_evolved_scalar_values[NUM_EVOLVED_SCALAR_TYPES];
 
-			// Only class ScalarCoverageEvolution can instantiate us.
-			explicit
+			//! Scalar values are initialised with default values (except crustal thickness).
 			EvolvedScalarCoverage(
-					unsigned int num_scalar_values)
-			{
-				// Use default initial scalar values except for crustal thickness (leave as boost::none).
-				// Crustal stretching and thinning factors are ratios so we can assume initial values for those.
-				d_evolved_scalar_values[CRUSTAL_THICKNESS].resize(num_scalar_values);
-				d_evolved_scalar_values[CRUSTAL_STRETCHING_FACTOR].resize(num_scalar_values, 1.0);  // Ti/T
-				d_evolved_scalar_values[CRUSTAL_THINNING_FACTOR].resize(num_scalar_values, 0.0);  // (1 - T/Ti)
-			}
+					unsigned int num_scalar_values);
+
 			friend class ScalarCoverageEvolution;
 		};
 
@@ -195,8 +192,11 @@ namespace GPlatesAppLogic
 
 		
 		ScalarCoverageEvolution(
-				const InitialEvolvedScalarCoverage &initial_evolved_scalar_coverage,
-				const double &initial_time);
+				const EvolvedScalarCoverage &initial_evolved_scalar_coverage,
+				const double &initial_time) :
+			d_current_evolved_scalar_coverage(initial_evolved_scalar_coverage),
+			d_current_time(initial_time)
+		{  }
 
 
 		/**
@@ -254,8 +254,8 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-		double d_current_time;
 		EvolvedScalarCoverage d_current_evolved_scalar_coverage;
+		double d_current_time;
 	};
 }
 
