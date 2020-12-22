@@ -43,6 +43,7 @@ namespace GPlatesGlobal
 	 *
 	 * @param abort_location the caller's call stack location.
 	 */
+	[[ noreturn ]]
 	void
 	Abort(
 			const GPlatesUtils::CallStack::Trace &abort_location);
