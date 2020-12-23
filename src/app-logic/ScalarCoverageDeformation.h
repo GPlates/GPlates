@@ -329,9 +329,6 @@ namespace GPlatesAppLogic
 			 */
 			typedef std::map<scalar_type_type, std::vector<double>> non_evolved_scalar_coverage_type;
 
-			//! Typedef for a time span of evolved scalar coverages.
-			typedef TimeSpanUtils::TimeWindowSpan<ScalarCoverageEvolution::EvolvedScalarCoverage> evolved_scalar_coverage_time_span_type;
-
 
 			//! Optional geometry time span if one was used to obtain deformation info to evolve scalar values.
 			boost::optional<TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type> d_geometry_time_span;
@@ -344,7 +341,7 @@ namespace GPlatesAppLogic
 			 * This is none if there's no deformed geometry time span or if none of the scalar types
 			 * correspond to evolved scalar types (affected by deformation).
 			 */
-			boost::optional<evolved_scalar_coverage_time_span_type::non_null_ptr_type> d_evolved_scalar_coverage_time_span;
+			boost::optional<ScalarCoverageEvolution::time_span_type::non_null_ptr_type> d_evolved_scalar_coverage_time_span;
 
 			/**
 			 * All scalar values corresponding to scalar types that do *not* evolve over time (due to deformation).
@@ -358,11 +355,6 @@ namespace GPlatesAppLogic
 
 			double d_scalar_import_time;
 
-			//! The first time slot that the geometry becomes active (if was even de-activated going backward in time).
-			boost::optional<unsigned int> d_time_slot_of_appearance;
-			//! The last time slot that the geometry remains active (if was even de-activated going forward in time).
-			boost::optional<unsigned int> d_time_slot_of_disappearance;
-
 
 			explicit
 			ScalarCoverageTimeSpan(
@@ -372,39 +364,11 @@ namespace GPlatesAppLogic
 					const initial_scalar_coverage_type &initial_scalar_coverage,
 					TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span);
 
-			void
-			initialise_evolved_time_span(
-					const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span,
-					const evolved_scalar_coverage_time_span_type::non_null_ptr_type &evolved_scalar_coverage_time_span,
-					const ScalarCoverageEvolution::EvolvedScalarCoverage &import_evolved_scalar_coverage);
-
-			bool
-			evolve_time_steps(
-					unsigned int start_time_slot,
-					unsigned int end_time_slot,
-					const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type &geometry_time_span,
-					const evolved_scalar_coverage_time_span_type::non_null_ptr_type &evolved_scalar_coverage_time_span,
-					const ScalarCoverageEvolution::EvolvedScalarCoverage &import_evolved_scalar_coverage);
-
 			static
 			std::vector<double>
 			create_import_scalar_values(
 					const std::vector<double> &scalar_values,
 					TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span);
-
-			ScalarCoverageEvolution::EvolvedScalarCoverage
-			create_evolved_rigid_sample(
-					const double &reconstruction_time,
-					const double &closest_younger_sample_time,
-					const ScalarCoverageEvolution::EvolvedScalarCoverage &closest_younger_sample);
-
-			ScalarCoverageEvolution::EvolvedScalarCoverage
-			interpolate_envolved_samples(
-					const double &interpolate_position,
-					const double &first_geometry_time,
-					const double &second_geometry_time,
-					const ScalarCoverageEvolution::EvolvedScalarCoverage &first_sample,
-					const ScalarCoverageEvolution::EvolvedScalarCoverage &second_sample);
 		};
 	}
 }
