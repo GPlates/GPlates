@@ -164,18 +164,24 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_scalar_v
 		const double &reconstruction_time,
 		std::vector<double> &scalar_values) const
 {
-	std::vector< boost::optional<double> > all_scalar_values;
-	if (!get_all_scalar_values(scalar_type, reconstruction_time, all_scalar_values))
+	std::vector<double> all_scalar_values;
+	std::vector<bool> all_scalar_values_are_active;
+	if (!get_all_scalar_values(scalar_type, reconstruction_time, all_scalar_values, all_scalar_values_are_active))
 	{
 		return false;
 	}
 
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_num_all_scalar_values == scalar_values.size() &&
+				d_num_all_scalar_values == all_scalar_values_are_active.size(),
+			GPLATES_ASSERTION_SOURCE);
+
 	// Return active scalar values to the caller.
-	for (const boost::optional<double> &scalar_value : all_scalar_values)
+	for (unsigned int n = 0; n < d_num_all_scalar_values; ++n)
 	{
-		if (scalar_value)
+		if (all_scalar_values_are_active[n])
 		{
-			scalar_values.push_back(scalar_value.get());
+			scalar_values.push_back(all_scalar_values[n]);
 		}
 	}
 
@@ -187,7 +193,8 @@ bool
 GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_all_scalar_values(
 		const scalar_type_type &scalar_type,
 		const double &reconstruction_time,
-		std::vector< boost::optional<double> > &scalar_values) const
+		std::vector<double> &scalar_values,
+		std::vector<bool> &scalar_values_are_active) const
 {
 	if (!is_valid(reconstruction_time))
 	{
@@ -204,39 +211,24 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_all_scal
 	{
 		const std::vector<double> &non_evolved_scalar_values = non_evolved_iter->second;
 
+		// Copy the non-evolved scalar values.
+		scalar_values.assign(non_evolved_scalar_values.begin(), non_evolved_scalar_values.end());
+
 		// If we have a geometry time span then it means the geometry was reconstructed by topologies
 		// and hence the geometry points can be deactivated over time. So we also need to deactivate
 		// the associated scalar values.
 		if (d_geometry_time_span)
 		{
-			std::vector<bool> is_scalar_active;
-			if (!d_geometry_time_span.get()->get_is_active_data(reconstruction_time, is_scalar_active))
+			if (!d_geometry_time_span.get()->get_points_are_active(reconstruction_time, scalar_values_are_active))
 			{
 				// Shouldn't really get here since we've already passed 'is_valid()' above.
 				return false;
 			}
-
-			const unsigned int num_scalar_values = non_evolved_scalar_values.size();
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					num_scalar_values == is_scalar_active.size(),
-					GPLATES_ASSERTION_SOURCE);
-
-			scalar_values.reserve(num_scalar_values);
-			for (unsigned int n = 0; n < num_scalar_values; ++n)
-			{
-				if (is_scalar_active[n])
-				{
-					scalar_values.push_back(non_evolved_scalar_values[n]);
-				}
-				else
-				{
-					scalar_values.push_back(boost::none);
-				}
-			}
 		}
 		else
 		{
-			scalar_values.assign(non_evolved_scalar_values.begin(), non_evolved_scalar_values.end());
+			// All scalar values are active (because they can never get deactivated).
+			scalar_values_are_active.resize(d_num_all_scalar_values, true);
 		}
 
 		return true;
@@ -258,7 +250,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_all_scal
 			const ScalarCoverageEvolution::EvolvedScalarCoverage evolved_scalar_coverage =
 					d_evolved_scalar_coverage_time_span.get()->get_or_create_sample(reconstruction_time);
 
-			scalar_values = evolved_scalar_coverage.get_scalar_values(evolved_scalar_type.get());
+			evolved_scalar_coverage.get_scalar_values(evolved_scalar_type.get(), scalar_values, scalar_values_are_active);
 
 			return true;
 		}
@@ -266,6 +258,38 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_all_scal
 
 	// The specified scalar type is not contained in this scalar coverage.
 	return false;
+}
+
+
+bool
+GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_are_scalar_values_active(
+		const double &reconstruction_time,
+		std::vector<bool> &scalar_values_are_active) const
+{
+	if (!is_valid(reconstruction_time))
+	{
+		// The geometry/scalars is not valid/active at the reconstruction time.
+		return false;
+	}
+
+	// If we have a geometry time span then it means the geometry was reconstructed by topologies
+	// and hence the geometry points can be deactivated over time. So we also need to deactivate
+	// the associated scalar values.
+	if (d_geometry_time_span)
+	{
+		if (!d_geometry_time_span.get()->get_points_are_active(reconstruction_time, scalar_values_are_active))
+		{
+			// Shouldn't really get here since we've already passed 'is_valid()' above.
+			return false;
+		}
+	}
+	else
+	{
+		// All scalar values are active (because they can never get deactivated).
+		scalar_values_are_active.resize(get_num_all_scalar_values(), true);
+	}
+
+	return true;
 }
 
 
@@ -316,43 +340,4 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::create_impor
 	}
 
 	return interpolated_scalar_values;
-}
-
-
-boost::optional<std::vector<double>>
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCoverage::get_scalar_values(
-		const scalar_type_type &scalar_type) const
-{
-	boost::optional<const scalar_value_seq_type &> all_scalar_values = get_all_scalar_values(scalar_type);
-	if (!all_scalar_values)
-	{
-		return boost::none;
-	}
-
-	std::vector<double> active_scalar_values;
-
-	// Return active scalar values to the caller.
-	for (const auto &scalar_value : all_scalar_values.get())
-	{
-		if (scalar_value)
-		{
-			active_scalar_values.push_back(scalar_value.get());
-		}
-	}
-
-	return active_scalar_values;
-}
-
-
-boost::optional<const GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::scalar_value_seq_type &>
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCoverage::get_all_scalar_values(
-		const scalar_type_type &scalar_type) const
-{
-	auto iter = d_scalar_values_map.find(scalar_type);
-	if (iter == d_scalar_values_map.end())
-	{
-		return boost::none;
-	}
-
-	return iter->second;
 }

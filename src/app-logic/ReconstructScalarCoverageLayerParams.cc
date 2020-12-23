@@ -175,15 +175,16 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerParams::create_scalar_statistics(
 
 					// Get *active* and *inactive* points/scalars.
 					// Note that scalar coverage time span can contain multiple scalar types, so we query the one we're interested in.
-					std::vector< boost::optional<double> > all_scalar_values;
-					if (scalar_coverage_time_span.get_scalar_coverage_time_span()->get_all_scalar_values(scalar_type, time, all_scalar_values))
+					std::vector<double> scalar_values;
+					std::vector<bool> scalar_values_are_active;
+					if (scalar_coverage_time_span.get_scalar_coverage_time_span()->get_all_scalar_values(
+							scalar_type, time, scalar_values, scalar_values_are_active))
 					{
 						for (unsigned int scalar_value_index = 0; scalar_value_index < num_scalar_values; ++scalar_value_index)
 						{
-							const boost::optional<double> &scalar_opt = all_scalar_values[scalar_value_index];
-							if (scalar_opt)
+							if (scalar_values_are_active[scalar_value_index])
 							{
-								const double scalar = scalar_opt.get();
+								const double scalar = scalar_values[scalar_value_index];
 
 								scalar_sums[scalar_value_index] += scalar;
 								scalar_sum_squares[scalar_value_index] += scalar * scalar;

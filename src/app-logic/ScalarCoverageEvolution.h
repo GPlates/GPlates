@@ -68,13 +68,6 @@ namespace GPlatesAppLogic
 		typedef GPlatesPropertyValues::ValueObjectType scalar_type_type;
 
 		/**
-		 * Typedef for a sequence of (per-point) scalar values.
-		 *
-		 * Inactive scalars are none.
-		 */
-		typedef std::vector< boost::optional<double> > scalar_value_seq_type;
-
-		/**
 		 * Initial scalar values (to be evolved).
 		 */
 		class InitialEvolvedScalarCoverage
@@ -140,17 +133,16 @@ namespace GPlatesAppLogic
 			/**
 			 * Returns the scalar values at *all* points at the specified time (including inactive points).
 			 *
-			 * Note: Inactive points will store 'none' (such that the size of the returned
-			 * scalar value sequence will always be @a get_num_all_scalar_values).
+			 * Note: Inactive points will store 'false' at the equivalent index in @a scalar_values_are_active
+			 * (such that the size of @a scalar_values and @a scalar_values_are_active will always be @a get_num_scalar_values).
 			 * And the order of scalar values matches the order of associated points
 			 * returned by 'TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data()'.
 			 */
-			const scalar_value_seq_type &
+			void
 			get_scalar_values(
-					EvolvedScalarType evolved_scalar_type) const
-			{
-				return d_scalar_values[evolved_scalar_type];
-			}
+					EvolvedScalarType evolved_scalar_type,
+					std::vector<double> &scalar_values,
+					std::vector<bool> &scalar_values_are_active) const;
 
 			/**
 			 * Returns number of scalar values (per scalar type).
@@ -158,7 +150,7 @@ namespace GPlatesAppLogic
 			unsigned int
 			get_num_scalar_values() const
 			{
-				return d_scalar_values[0].size();
+				return d_num_scalar_values;
 			}
 
 			/**
@@ -184,7 +176,32 @@ namespace GPlatesAppLogic
 					const double &next_time);
 
 		private:
-			scalar_value_seq_type d_scalar_values[NUM_EVOLVED_SCALAR_TYPES];
+			unsigned int d_num_scalar_values;
+
+			/**
+			 * The scalar values for the evolved scalar types.
+			 *
+			 * This is none for those scalar types that did not provide initial values.
+			 * However, these scalar types can still be queried (with @a get_scalar_values), in
+			 * which case their values will be derived from @a d_crustal_thickness_factor (and the
+			 * default initial crustal thickness in the case of the CRUSTAL_THICKNESS scalar type).
+			 */
+			boost::optional<std::vector<double>> d_scalar_values[NUM_EVOLVED_SCALAR_TYPES];
+
+			/**
+			 * Whether each scalar value (in each scalar type) is active or not.
+			 * All scalar values are initially active and can become deactivated due to the
+			 * associated geometry time span.
+			 */
+			std::vector<bool> d_scalar_values_are_active;
+
+			/**
+			 * T(n)/T(0)
+			 *
+			 * This is the only crustal thickness-related quantity that is evolved.
+			 * Because all the crustal thickness-related scalar types are derived from this.
+			 */
+			std::vector<double> d_crustal_thickness_factor;
 
 			//! Scalar values are initialised with default values (except crustal thickness).
 			EvolvedScalarCoverage(
@@ -216,6 +233,10 @@ namespace GPlatesAppLogic
 				const scalar_type_type &scalar_type);
 
 
+		/**
+		 * Evolve scalar values over time (starting with the initial scalar values) and
+		 * store them in the returned scalar coverage time span.
+		*/
 		time_span_type::non_null_ptr_type
 		create_evolved_time_span(
 				const InitialEvolvedScalarCoverage &initial_scalar_coverage,

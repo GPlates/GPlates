@@ -65,13 +65,6 @@ namespace GPlatesAppLogic
 			 */
 			typedef std::map<scalar_type_type, std::vector<double>> initial_scalar_coverage_type;
 
-			/**
-			 * Typedef for a sequence of (per-point) scalar values.
-			 *
-			 * Inactive points/scalars are none.
-			 */
-			typedef std::vector< boost::optional<double> > scalar_value_seq_type;
-
 
 			/**
 			 * Scalar values (associated with points in a geometry) for all scalar types in the
@@ -114,51 +107,9 @@ namespace GPlatesAppLogic
 					return scalar_types;
 				}
 
-				/**
-				 * Returns the scalar values at the specified time.
-				 *
-				 * Note: Only scalar values at *active* points are returned (which means the size of
-				 * the returned scalar value sequence could be less than @a get_num_all_scalar_values).
-				 * And the order of scalar values matches the order of associated points
-				 * returned by 'TopologyReconstruct::GeometryTimeSpan::get_geometry_data()'.
-				 *
-				 * Returns none if @a scalar_type is not contained in this scalar coverage.
-				 */
-				boost::optional<std::vector<double>>
-				get_scalar_values(
-						const scalar_type_type &scalar_type) const;
-
-				boost::optional<std::vector<double>>
-				get_evolved_scalar_values(
-						ScalarCoverageEvolution::EvolvedScalarType evolved_scalar_type) const
-				{
-					return get_scalar_values(ScalarCoverageEvolution::get_scalar_type(evolved_scalar_type));
-				}
-
-				/**
-				 * Returns the scalar values at *all* points at the specified time (including inactive points).
-				 *
-				 * Note: Inactive points will store 'none' (such that the size of the returned
-				 * scalar value sequence will always be @a get_num_all_scalar_values).
-				 * And the order of scalar values matches the order of associated points
-				 * returned by 'TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data()'.
-				 *
-				 * Returns none if @a scalar_type is not contained in this scalar coverage.
-				 */
-				boost::optional<const scalar_value_seq_type &>
-				get_all_scalar_values(
-						const scalar_type_type &scalar_type) const;
-
-				boost::optional<const scalar_value_seq_type &>
-				get_all_evolved_scalar_values(
-						ScalarCoverageEvolution::EvolvedScalarType evolved_scalar_type) const
-				{
-					return get_all_scalar_values(ScalarCoverageEvolution::get_scalar_type(evolved_scalar_type));
-				}
-
 			private:
 
-				typedef std::map<scalar_type_type, scalar_value_seq_type> scalar_values_map_type;
+				typedef std::map<scalar_type_type, std::vector<double>> scalar_values_map_type;
 
 				/**
 				 * Subsequently calling @a get_scalar_values will always return the specified scalar values
@@ -268,8 +219,8 @@ namespace GPlatesAppLogic
 			/**
 			 * Returns the scalar values at *all* points at the specified time (including inactive points).
 			 *
-			 * Note: Inactive points will store 'none' (such that the size of @a scalar_values
-			 * will always be @a get_num_all_scalar_values).
+			 * Note: Inactive points will store 'false' at the equivalent index in @a scalar_values_are_active
+			 * (such that the size of @a scalar_values and @a scalar_values_are_active will always be @a get_num_all_scalar_values).
 			 * And the order of scalar values matches the order of associated points
 			 * returned by 'TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data()'.
 			 *
@@ -280,7 +231,23 @@ namespace GPlatesAppLogic
 			get_all_scalar_values(
 					const scalar_type_type &scalar_type,
 					const double &reconstruction_time,
-					std::vector< boost::optional<double> > &scalar_values) const;
+					std::vector<double> &scalar_values,
+					std::vector<bool> &scalar_values_are_active) const;
+
+			/**
+			 * Returns whether each scalar value, of *all* scalar values (regardless of scalar type)
+			 * at the specified time, is active or not. Note that the scalar type has no effect here.
+			 *
+			 * The same could be achieved by calling
+			 * 'get_all_scalar_values(scalar_type, reconstruction_time, scalar_values, scalar_values_are_active)'
+			 * and then testing 'scalar_values_are_active', but this method is easier.
+			 *
+			 * Returns false if @a is_valid returns false (in which case @a scalar_values_are_active is not modified).
+			 */
+			bool
+			get_are_scalar_values_active(
+					const double &reconstruction_time,
+					std::vector<bool> &scalar_values_are_active) const;
 
 			/**
 			 * Returns the number of scalar values returned by @a get_all_scalar_values.

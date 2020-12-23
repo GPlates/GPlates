@@ -409,6 +409,19 @@ namespace GPlatesAppLogic
 					boost::optional< std::vector< boost::optional<DeformationStrain> > &> strains = boost::none) const;
 
 			/**
+			 * Returns whether each point (of *all* points at the specified time) is active or not.
+			 *
+			 * The same could be achieved by calling 'get_all_geometry_data(reconstruction_time, points)' and
+			 * then testing the boost::optional of each point for its active status, but this method is easier.
+			 *
+			 * Returns false if @a is_valid returns false (in which case @a points_are_active is not modified).
+			 */
+			bool
+			get_points_are_active(
+					const double &reconstruction_time,
+					std::vector<bool> &points_are_active) const;
+
+			/**
 			 * Returns the number of points returned by @a get_all_geometry_data.
 			 *
 			 * Note that this can be different from the number of original geometry points passed
@@ -420,19 +433,6 @@ namespace GPlatesAppLogic
 			{
 				return d_time_window_span->get_present_day_sample()->get_num_geometry_points();
 			}
-
-			/**
-			 * Returns whether each point (of *all* points at the specified time) is active or not.
-			 *
-			 * The same could be achieved by calling 'get_all_geometry_data(reconstruction_time, points)' and
-			 * then testing the boost::optional of each point for its active status, but this method is easier.
-			 *
-			 * Returns false if @a is_valid returns false (in which case @a is_active is not modified).
-			 */
-			bool
-			get_is_active_data(
-					const double &reconstruction_time,
-					std::vector<bool> &is_active) const;
 
 
 			/**

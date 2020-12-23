@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cmath>
 #include <boost/bind.hpp>
+#include <boost/utility/in_place_factory.hpp>
 
 #include "ScalarCoverageEvolution.h"
 
@@ -405,13 +406,13 @@ GPlatesAppLogic::ScalarCoverageEvolution::InitialEvolvedScalarCoverage::add_scal
 
 
 GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::EvolvedScalarCoverage(
-		unsigned int num_scalar_values)
+		unsigned int num_scalar_values) :
+	d_num_scalar_values(num_scalar_values),
+	// Initially all scalar values are active...
+	d_scalar_values_are_active(num_scalar_values, true),
+	// Initially the crustal thickness divided by the initial crustal thickness is 1.0 ...
+	d_crustal_thickness_factor(num_scalar_values, 1.0)
 {
-	// Use default initial scalar values except for crustal thickness (leave as boost::none).
-	// Crustal stretching and thinning factors are ratios so we can assume initial values for those.
-	d_scalar_values[CRUSTAL_THICKNESS].resize(num_scalar_values, DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS);
-	d_scalar_values[CRUSTAL_STRETCHING_FACTOR].resize(num_scalar_values, 1.0);  // Ti/T
-	d_scalar_values[CRUSTAL_THINNING_FACTOR].resize(num_scalar_values, 0.0);  // (1 - T/Ti)
 }
 
 
@@ -420,16 +421,103 @@ GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::EvolvedScalarCo
 	// Initialise with default values first (in case initial scalar values not provided for all evolved scalar types)...
 	EvolvedScalarCoverage(initial_scalar_coverage.get_num_scalar_values())
 {
-	// For each evolved scalar type copy its initial scalar values into our current evolved scalar coverage.
+	// For each initial evolved scalar type copy its initial scalar values into our current evolved scalar coverage.
 	for (const auto &scalar_coverage_item : initial_scalar_coverage.get_scalar_values())
 	{
 		const EvolvedScalarType evolved_scalar_type = scalar_coverage_item.first;
 		const std::vector<double> &initial_scalar_values = scalar_coverage_item.second;
 
-		// Copy the 'double' scalar values into the 'boost::optional<double>' elements.
-		d_scalar_values[evolved_scalar_type].assign(
+		// Copy the 'double' scalar values directly into the 'boost::optional<std::vector<double>>'.
+		d_scalar_values[evolved_scalar_type] = boost::in_place(
 				initial_scalar_values.begin(),
 				initial_scalar_values.end());
+	}
+}
+
+
+void
+GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::get_scalar_values(
+		EvolvedScalarType evolved_scalar_type,
+		std::vector<double> &scalar_values,
+		std::vector<bool> &scalar_values_are_active) const
+{
+	// Copy the active status of each scalar value.
+	scalar_values_are_active = d_scalar_values_are_active;
+
+	switch (evolved_scalar_type)
+	{
+	case CRUSTAL_THICKNESS:
+	{
+		if (d_scalar_values[CRUSTAL_THICKNESS])
+		{
+			// Initial values were provided for crustal thickness - return values updated over time.
+			scalar_values = d_scalar_values[CRUSTAL_THICKNESS].get();
+		}
+		else
+		{
+			// No initial values were provided so just multiply the crustal thickness *factor* by the
+			// default initial crustal thickness.
+			// 
+			// T(n)    = [T(n)/T(0)] * T(0)
+			//         = crustal_thickness_factor * T(0)
+			scalar_values.reserve(d_num_scalar_values);
+			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+			{
+				scalar_values.push_back(d_crustal_thickness_factor[n] * DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS);
+			}
+		}
+	}
+	break;
+
+	case CRUSTAL_STRETCHING_FACTOR:
+	{
+		if (d_scalar_values[CRUSTAL_STRETCHING_FACTOR])
+		{
+			// Initial values were provided for crustal stretching factor - return values updated over time.
+			scalar_values = d_scalar_values[CRUSTAL_STRETCHING_FACTOR].get();
+		}
+		else
+		{
+			// No initial values were provided so just convert the crustal *thickness* factor to
+			// a crustal *stretching* factor.
+			// 
+			// beta(n) = T(0)/T(n)
+			//         = 1 / (T(n)/T(0))
+			//         = 1 / crustal_thickness_factor
+			scalar_values.reserve(d_num_scalar_values);
+			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+			{
+				scalar_values.push_back(1.0 / d_crustal_thickness_factor[n]);
+			}
+		}
+	}
+	break;
+
+	case CRUSTAL_THINNING_FACTOR:
+	{
+		if (d_scalar_values[CRUSTAL_THINNING_FACTOR])
+		{
+			// Initial values were provided for crustal thinning factor - return values updated over time.
+			scalar_values = d_scalar_values[CRUSTAL_THINNING_FACTOR].get();
+		}
+		else
+		{
+			// No initial values were provided so just convert the crustal *thickness* factor to
+			// a crustal *thinning* factor.
+			// 
+			// gamma(n) = 1 - T(n)/T(0)
+			//          = 1 - crustal_thickness_factor
+			scalar_values.reserve(d_num_scalar_values);
+			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+			{
+				scalar_values.push_back(1.0 - d_crustal_thickness_factor[n]);
+			}
+		}
+	}
+	break;
+
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 	}
 }
 
@@ -473,28 +561,34 @@ GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::evolve_time_ste
 
 	for (unsigned int n = 0; n < num_scalar_values; ++n)
 	{
-		// If initial scalar value is inactive then it remains inactive.
-		if (!d_scalar_values[CRUSTAL_THICKNESS][n])
+		// If current scalar value is inactive then it remains inactive.
+		if (!d_scalar_values_are_active[n])
 		{
+			// If the current scalar value is inactive then so must the current (and next) dilatation strain rates.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					!current_deformation_strain_rates[n] &&
+						!next_deformation_strain_rates[n],
+					GPLATES_ASSERTION_SOURCE);
 			continue;
 		}
 
-		// If the initial strain rate is inactive then so should the final strain rate.
-		// Actually the active state of initial strain rate should match the initial scalar value.
-		// And if the final strain rate is inactive then the scalar value becomes inactive.
+		// The current scalar value is active so the current dilatation strain rate must also be active.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				current_deformation_strain_rates[n],
+				GPLATES_ASSERTION_SOURCE);
+
+		// If the next strain rate is inactive then the scalar value becomes inactive (for the next time step).
 		if (!next_deformation_strain_rates[n])
 		{
-			for (unsigned int scalar_type = 0; scalar_type < NUM_EVOLVED_SCALAR_TYPES; ++scalar_type)
-			{
-				d_scalar_values[scalar_type][n] = boost::none;
-			}
+			// The current scalar value is no longer active (for the next time step).
+			d_scalar_values_are_active[n] = false;
 
 			continue;
 		}
 
-		double initial_dilatation_per_my = seconds_in_a_million_years *
+		double current_dilatation_per_my = seconds_in_a_million_years *
 				current_deformation_strain_rates[n]->get_strain_rate_dilatation();
-		double final_dilatation_per_my = seconds_in_a_million_years *
+		double next_dilatation_per_my = seconds_in_a_million_years *
 				next_deformation_strain_rates[n]->get_strain_rate_dilatation();
 
 		//
@@ -537,25 +631,25 @@ GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::evolve_time_ste
 		//
 		// This clamping is equivalent to clamping 'k' to 0.5 (when dt=1My).
 
-		if (initial_dilatation_per_my > 1)
+		if (current_dilatation_per_my > 1)
 		{
-			initial_dilatation_per_my = 1;
+			current_dilatation_per_my = 1;
 		}
-		else if (initial_dilatation_per_my < -1)
+		else if (current_dilatation_per_my < -1)
 		{
-			initial_dilatation_per_my = -1;
-		}
-
-		if (final_dilatation_per_my > 1)
-		{
-			final_dilatation_per_my = 1;
-		}
-		else if (final_dilatation_per_my < -1)
-		{
-			final_dilatation_per_my = -1;
+			current_dilatation_per_my = -1;
 		}
 
-		const double average_dilatation_per_my = 0.5 * (initial_dilatation_per_my + final_dilatation_per_my);
+		if (next_dilatation_per_my > 1)
+		{
+			next_dilatation_per_my = 1;
+		}
+		else if (next_dilatation_per_my < -1)
+		{
+			next_dilatation_per_my = -1;
+		}
+
+		const double average_dilatation_per_my = 0.5 * (current_dilatation_per_my + next_dilatation_per_my);
 
 		const double k = 0.5 * time_increment * average_dilatation_per_my;
 
@@ -609,21 +703,36 @@ GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::evolve_time_ste
 			crustal_thickness_multiplier = 1.0 / crustal_thickness_multiplier;
 		}
 
-		double &crustal_thickness = d_scalar_values[CRUSTAL_THICKNESS][n].get();
-		crustal_thickness *= crustal_thickness_multiplier;
+		// Update the crustal thickness factor (ratio of crustal thickness to initial crustal thickness).
+		d_crustal_thickness_factor[n] *= crustal_thickness_multiplier;
 
-		// beta(n+1) = T(0)/T(n+1)
-		//           = 1 / (T(n+1)/T(0))
-		//           = 1 / (m*T(n)/T(0))
-		//           = 1 / (m / beta(n))
-		//           = beta(n) / m
-		double &crustal_stretching_factor = d_scalar_values[CRUSTAL_STRETCHING_FACTOR][n].get();
-		crustal_stretching_factor /= crustal_thickness_multiplier;
+		// If initial values were provided for crustal thickness then update them.
+		if (d_scalar_values[CRUSTAL_THICKNESS])
+		{
+			double &crustal_thickness = d_scalar_values[CRUSTAL_THICKNESS].get()[n];
+			crustal_thickness *= crustal_thickness_multiplier;
+		}
 
-		// gamma(n+1) = 1 - T(n+1)/T(0)
-		//            = 1 - m*T(n)/T(0)
-		//            = 1 - m * (1 - gamma(n))
-		double &crustal_thinning_factor = d_scalar_values[CRUSTAL_THINNING_FACTOR][n].get();
-		crustal_thinning_factor = 1 - crustal_thickness_multiplier * (1 - crustal_thinning_factor);
+		// If initial values were provided for crustal stretching factor then update them.
+		if (d_scalar_values[CRUSTAL_STRETCHING_FACTOR])
+		{
+			// beta(n+1) = T(0)/T(n+1)
+			//           = 1 / (T(n+1)/T(0))
+			//           = 1 / (m*T(n)/T(0))
+			//           = 1 / (m / beta(n))
+			//           = beta(n) / m
+			double &crustal_stretching_factor = d_scalar_values[CRUSTAL_STRETCHING_FACTOR].get()[n];
+			crustal_stretching_factor /= crustal_thickness_multiplier;
+		}
+
+		// If initial values were provided for crustal thinnning factor then update them.
+		if (d_scalar_values[CRUSTAL_THINNING_FACTOR])
+		{
+			// gamma(n+1) = 1 - T(n+1)/T(0)
+			//            = 1 - m*T(n)/T(0)
+			//            = 1 - m * (1 - gamma(n))
+			double &crustal_thinning_factor = d_scalar_values[CRUSTAL_THINNING_FACTOR].get()[n];
+			crustal_thinning_factor = 1 - crustal_thickness_multiplier * (1 - crustal_thinning_factor);
+		}
 	}
 }
