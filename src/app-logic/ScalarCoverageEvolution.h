@@ -161,7 +161,29 @@ namespace GPlatesAppLogic
 				return d_scalar_values[0].size();
 			}
 
-		//private:
+			/**
+			 * Evolves the current scalar values from the current time to the next time.
+			 *
+			 * Note that 'boost::optional' is used for each point's scalar values and strain rate.
+			 * This represents whether the associated point is active. Points can become inactive over time (active->inactive) but
+			 * do not get re-activated (inactive->active). So if the current strain rate is inactive then so should the next strain rate.
+			 * Also the active state of the current scalar value should match that of the current deformation strain rate
+			 * (because they represent the same point). If the current scalar value is inactive then it just remains inactive.
+			 * And if the current scalar value is active then it becomes inactive if the next strain rate is inactive, otherwise
+			 * both (current and next) strain rates are active and the scalar value is evolved from its current value to its next value.
+			 * This ensures the active state of the next scalar values match that of the next deformation strain rate
+			 * (which in turn comes from the active state of the associated domain geometry point).
+			 *
+			 * Throws exception if the sizes of the strain rate arrays and the internal scalar values arrays do not match.
+			 */
+			void
+			evolve_time_step(
+					const std::vector< boost::optional<DeformationStrainRate> > &current_deformation_strain_rates,
+					const std::vector< boost::optional<DeformationStrainRate> > &next_deformation_strain_rates,
+					const double &current_time,
+					const double &next_time);
+
+		private:
 			scalar_value_seq_type d_scalar_values[NUM_EVOLVED_SCALAR_TYPES];
 
 			//! Scalar values are initialised with default values (except crustal thickness).
