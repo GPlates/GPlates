@@ -1903,7 +1903,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 	{
 		GeometryPoint *geometry_point = geometry_points[geometry_point_index];
 
-		if (geometry_point)
+		if (geometry_point) // active point...
 		{
 			if (points)
 			{
@@ -1966,6 +1966,35 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 				strains->push_back(boost::none);
 			}
 		}
+	}
+
+	return true;
+}
+
+
+bool
+GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_is_active_data(
+		const double &reconstruction_time,
+		std::vector<bool> &is_active) const
+{
+	boost::optional<GeometrySample::non_null_ptr_type> geometry_sample = get_geometry_sample(reconstruction_time);
+	if (!geometry_sample)
+	{
+		// The geometry is not valid/active at the reconstruction time.
+		return false;
+	}
+
+	const std::vector<GeometryPoint *> &geometry_points = geometry_sample.get()->get_geometry_points(d_accessing_strain_rates);
+	const unsigned int num_geometry_points = geometry_points.size();
+
+	is_active.reserve(num_geometry_points);
+
+	for (unsigned int geometry_point_index = 0; geometry_point_index < num_geometry_points; ++geometry_point_index)
+	{
+		GeometryPoint *geometry_point = geometry_points[geometry_point_index];
+
+		// Null pointer means point is inactive.
+		is_active.push_back(geometry_point != nullptr);
 	}
 
 	return true;

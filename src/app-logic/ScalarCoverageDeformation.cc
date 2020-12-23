@@ -469,7 +469,40 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_all_scal
 	{
 		const std::vector<double> &non_evolved_scalar_values = non_evolved_iter->second;
 
-		scalar_values.assign(non_evolved_scalar_values.begin(), non_evolved_scalar_values.end());
+		// If we have a geometry time span then it means the geometry was reconstructed by topologies
+		// and hence the geometry points can be deactivated over time. So we also need to deactivate
+		// the associated scalar values.
+		if (d_geometry_time_span)
+		{
+			std::vector<bool> is_scalar_active;
+			if (!d_geometry_time_span.get()->get_is_active_data(reconstruction_time, is_scalar_active))
+			{
+				// Shouldn't really get here since we've already passed 'is_valid()' above.
+				return false;
+			}
+
+			const unsigned int num_scalar_values = non_evolved_scalar_values.size();
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					num_scalar_values == is_scalar_active.size(),
+					GPLATES_ASSERTION_SOURCE);
+
+			scalar_values.reserve(num_scalar_values);
+			for (unsigned int n = 0; n < num_scalar_values; ++n)
+			{
+				if (is_scalar_active[n])
+				{
+					scalar_values.push_back(non_evolved_scalar_values[n]);
+				}
+				else
+				{
+					scalar_values.push_back(boost::none);
+				}
+			}
+		}
+		else
+		{
+			scalar_values.assign(non_evolved_scalar_values.begin(), non_evolved_scalar_values.end());
+		}
 
 		return true;
 	}
@@ -483,6 +516,10 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_all_scal
 		if (boost::optional<ScalarCoverageEvolution::EvolvedScalarType> evolved_scalar_type =
 			ScalarCoverageEvolution::is_evolved_scalar_type(scalar_type))
 		{
+			// Note that, unlike non-evolved scalar values, the effects of point deactivation from
+			// the associated geometry time span have already been taken into account here
+			// (because the geometry time span both evolved and deactivated scalar values before they
+			// got stored in the evolved scalar coverage time span).
 			const ScalarCoverageEvolution::EvolvedScalarCoverage evolved_scalar_coverage =
 					d_evolved_scalar_coverage_time_span.get()->get_or_create_sample(reconstruction_time);
 

@@ -174,6 +174,11 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * The default initial crustal thickness to use when no initial scalar values are provided for it.
+		 */
+		static constexpr double DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS = 40.0;
+
+		/**
 		 * Returns the scalar type associated with the specified evolved scalar type enumeration.
 		 */
 		static

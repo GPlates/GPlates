@@ -421,6 +421,19 @@ namespace GPlatesAppLogic
 				return d_time_window_span->get_present_day_sample()->get_num_geometry_points();
 			}
 
+			/**
+			 * Returns whether each point (of *all* points at the specified time) is active or not.
+			 *
+			 * The same could be achieved by calling 'get_all_geometry_data(reconstruction_time, points)' and
+			 * then testing the boost::optional of each point for its active status, but this method is easier.
+			 *
+			 * Returns false if @a is_valid returns false (in which case @a is_active is not modified).
+			 */
+			bool
+			get_is_active_data(
+					const double &reconstruction_time,
+					std::vector<bool> &is_active) const;
+
 
 			/**
 			 * Calculate velocities at the geometry (domain) points at the specified time.

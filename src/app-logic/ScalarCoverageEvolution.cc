@@ -315,7 +315,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::EvolvedScalarCo
 {
 	// Use default initial scalar values except for crustal thickness (leave as boost::none).
 	// Crustal stretching and thinning factors are ratios so we can assume initial values for those.
-	d_evolved_scalar_values[CRUSTAL_THICKNESS].resize(num_scalar_values, 1.0);
+	d_evolved_scalar_values[CRUSTAL_THICKNESS].resize(num_scalar_values, DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS);
 	d_evolved_scalar_values[CRUSTAL_STRETCHING_FACTOR].resize(num_scalar_values, 1.0);  // Ti/T
 	d_evolved_scalar_values[CRUSTAL_THINNING_FACTOR].resize(num_scalar_values, 0.0);  // (1 - T/Ti)
 }
