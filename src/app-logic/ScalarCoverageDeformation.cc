@@ -119,7 +119,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 	{
 		// Evolve scalar values over time (starting with the import scalar values) and
 		// store them in the returned scalar coverage time span.
-		d_evolved_scalar_coverage_time_span = ScalarCoverageEvolution::create_evolved_time_span(
+		d_evolved_scalar_coverage_time_span = ScalarCoverageEvolution::create(
 				initial_evolved_scalar_coverage,
 				d_scalar_import_time,
 				geometry_time_span);
@@ -153,8 +153,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_scalar_c
 		return boost::none;
 	}
 
-	// TODO: Implement.
-	return boost::none;
+	return ScalarCoverage(this);
 }
 
 
@@ -172,7 +171,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_scalar_v
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_num_all_scalar_values == scalar_values.size() &&
+			d_num_all_scalar_values == all_scalar_values.size() &&
 				d_num_all_scalar_values == all_scalar_values_are_active.size(),
 			GPLATES_ASSERTION_SOURCE);
 
@@ -247,10 +246,11 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_all_scal
 			// the associated geometry time span have already been taken into account here
 			// (because the geometry time span both evolved and deactivated scalar values before they
 			// got stored in the evolved scalar coverage time span).
-			const ScalarCoverageEvolution::EvolvedScalarCoverage evolved_scalar_coverage =
-					d_evolved_scalar_coverage_time_span.get()->get_or_create_sample(reconstruction_time);
-
-			evolved_scalar_coverage.get_scalar_values(evolved_scalar_type.get(), scalar_values, scalar_values_are_active);
+			d_evolved_scalar_coverage_time_span.get()->get_scalar_values(
+					evolved_scalar_type.get(),
+					reconstruction_time,
+					scalar_values,
+					scalar_values_are_active);
 
 			return true;
 		}

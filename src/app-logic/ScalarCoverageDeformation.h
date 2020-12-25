@@ -88,43 +88,17 @@ namespace GPlatesAppLogic
 				unsigned int
 				get_num_all_scalar_values() const
 				{
-					return d_num_all_scalar_values;
-				}
-
-				/**
-				 * Returns all scalar types contained in this scalar coverage.
-				 */
-				std::vector<scalar_type_type>
-				get_scalar_types() const
-				{
-					std::vector<scalar_type_type> scalar_types;
-
-					for (const auto &item : d_scalar_values_map)
-					{
-						scalar_types.push_back(item.first);
-					}
-
-					return scalar_types;
+					return d_time_span->get_num_all_scalar_values();
 				}
 
 			private:
-
-				typedef std::map<scalar_type_type, std::vector<double>> scalar_values_map_type;
-
-				/**
-				 * Subsequently calling @a get_scalar_values will always return the specified scalar values
-				 * regardless of reconstruction time specified.
-				 */
-				scalar_values_map_type d_scalar_values_map;
-
-				unsigned int d_num_all_scalar_values;
-
+				ScalarCoverageTimeSpan::non_null_ptr_to_const_type d_time_span;
 
 				// Only class ScalarCoverageTimeSpan can instantiate us.
 				explicit
 				ScalarCoverage(
-						unsigned int num_all_scalar_values) :
-					d_num_all_scalar_values(num_all_scalar_values)
+						ScalarCoverageTimeSpan::non_null_ptr_to_const_type time_span) :
+					d_time_span(time_span)
 				{  }
 				friend class ScalarCoverageTimeSpan;
 			};
@@ -208,7 +182,8 @@ namespace GPlatesAppLogic
 			 * And the order of scalar values matches the order of associated points
 			 * returned by 'TopologyReconstruct::GeometryTimeSpan::get_geometry_data()'.
 			 *
-			 * Returns false if @a is_valid returns false (in which case @a scalar_values is unmodified).
+			 * Returns false if @a is_valid returns false or @a scalar_type is not in the scalar coverage
+			 * (in which case @a scalar_values is unmodified).
 			 */
 			bool
 			get_scalar_values(
@@ -308,7 +283,7 @@ namespace GPlatesAppLogic
 			 * This is none if there's no deformed geometry time span or if none of the scalar types
 			 * correspond to evolved scalar types (affected by deformation).
 			 */
-			boost::optional<ScalarCoverageEvolution::time_span_type::non_null_ptr_type> d_evolved_scalar_coverage_time_span;
+			boost::optional<ScalarCoverageEvolution::non_null_ptr_type> d_evolved_scalar_coverage_time_span;
 
 			/**
 			 * All scalar values corresponding to scalar types that do *not* evolve over time (due to deformation).

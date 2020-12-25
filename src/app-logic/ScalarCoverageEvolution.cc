@@ -35,42 +35,6 @@
 #include "global/PreconditionViolationError.h"
 
 
-namespace GPlatesAppLogic
-{
-	namespace ScalarCoverageEvolution
-	{
-		void
-		evolve_time_steps(
-				unsigned int start_time_slot,
-				unsigned int end_time_slot,
-				time_span_type::non_null_ptr_type scalar_coverage_time_span,
-				const EvolvedScalarCoverage &initial_scalar_coverage,
-				TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span);
-
-		/**
-		 * The sample *creator* function for TimeSpanUtils::TimeWindowSpan<EvolvedScalarCoverage>.
-		 */
-		EvolvedScalarCoverage
-		create_time_span_rigid_sample(
-				const double &reconstruction_time,
-				const double &closest_younger_sample_time,
-				const EvolvedScalarCoverage &closest_younger_sample);
-
-		/**
-		 * The sample *interpolator* function for TimeSpanUtils::TimeWindowSpan<EvolvedScalarCoverage>.
-		 */
-		EvolvedScalarCoverage
-		interpolate_time_span_samples(
-				const double &interpolate_position,
-				const double &first_geometry_time,
-				const double &second_geometry_time,
-				const EvolvedScalarCoverage &first_sample,
-				const EvolvedScalarCoverage &second_sample,
-				const double &initial_time);
-	}
-}
-
-
 GPlatesAppLogic::ScalarCoverageEvolution::scalar_type_type
 GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_type(
 		EvolvedScalarType evolved_scalar_type)
@@ -84,6 +48,9 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_type(
 	static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THINNING_FACTOR =
 			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
 
+	static const GPlatesPropertyValues::ValueObjectType GPML_TECTONIC_SUBSIDENCE =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("TectonicSubsidence");
+
 	switch (evolved_scalar_type)
 	{
 	case CRUSTAL_THICKNESS:
@@ -94,6 +61,9 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_type(
 
 	case CRUSTAL_THINNING_FACTOR:
 		return GPML_CRUSTAL_THINNING_FACTOR;
+
+	case TECTONIC_SUBSIDENCE:
+		return GPML_TECTONIC_SUBSIDENCE;
 
 	default:
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -114,6 +84,9 @@ GPlatesAppLogic::ScalarCoverageEvolution::is_evolved_scalar_type(
 	static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THINNING_FACTOR =
 			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
 
+	static const GPlatesPropertyValues::ValueObjectType GPML_TECTONIC_SUBSIDENCE =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("TectonicSubsidence");
+
 	if (scalar_type == GPML_CRUSTAL_THICKNESS)
 	{
 		return CRUSTAL_THICKNESS;
@@ -126,37 +99,43 @@ GPlatesAppLogic::ScalarCoverageEvolution::is_evolved_scalar_type(
 	{
 		return CRUSTAL_THINNING_FACTOR;
 	}
+	else if (scalar_type == GPML_TECTONIC_SUBSIDENCE)
+	{
+		return TECTONIC_SUBSIDENCE;
+	}
 
 	return boost::none;
 }
 
 
-GPlatesAppLogic::ScalarCoverageEvolution::time_span_type::non_null_ptr_type
-GPlatesAppLogic::ScalarCoverageEvolution::create_evolved_time_span(
-		const InitialEvolvedScalarCoverage &initial_scalar_coverage_values,
+GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
+		const InitialEvolvedScalarCoverage &initial_scalar_coverage,
 		const double &initial_time,
-		TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span)
+		TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span) :
+	d_geometry_time_span(geometry_time_span),
+	d_scalar_coverage_time_span(
+			time_span_type::create(
+					geometry_time_span->get_time_range(),
+					// The function to create a scalar coverage sample in rigid (non-deforming) regions...
+					boost::bind(
+							&ScalarCoverageEvolution::create_time_span_rigid_sample,
+							this, _1, _2, _3),
+					// The function to interpolate evolved scalar coverage time samples...
+					boost::bind(
+							&ScalarCoverageEvolution::interpolate_time_span_samples,
+							this, _1, _2, _3, _4, _5),
+					// Present day sample...
+					//
+					// The initial scalar values (at initial time).
+					// Note that we'll need to modify this if the initial time is earlier
+					// than the end of the time range since might be affected by time range...
+					EvolvedScalarCoverage::create(initial_scalar_coverage))),
+	d_num_scalar_values(initial_scalar_coverage.get_num_scalar_values()),
+	d_initial_time(initial_time)
 {
-	EvolvedScalarCoverage initial_scalar_coverage(initial_scalar_coverage_values);
+	EvolvedScalarCoverage::non_null_ptr_type import_scalar_coverage = d_scalar_coverage_time_span->get_present_day_sample();
 
-	time_span_type::non_null_ptr_type scalar_coverage_time_span = time_span_type::create(
-			geometry_time_span->get_time_range(),
-			// The function to create a scalar coverage sample in rigid (non-deforming) regions...
-			boost::bind(
-					&create_time_span_rigid_sample,
-					_1, _2, _3),
-			// The function to interpolate evolved scalar coverage time samples...
-			boost::bind(
-					&interpolate_time_span_samples,
-					_1, _2, _3, _4, _5, initial_time),
-			// Present day sample...
-			//
-			// The initial scalar values (at initial time).
-			// Note that we'll need to modify this if the initial time is earlier
-			// than the end of the time range since might be affected by time range...
-			initial_scalar_coverage);
-
-	const TimeSpanUtils::TimeRange time_range = scalar_coverage_time_span->get_time_range();
+	const TimeSpanUtils::TimeRange time_range = d_scalar_coverage_time_span->get_time_range();
 	const unsigned int num_time_slots = time_range.get_num_time_slots();
 
 	// Find the nearest time slot to the initial time (if it's inside the time range).
@@ -179,8 +158,8 @@ GPlatesAppLogic::ScalarCoverageEvolution::create_evolved_time_span(
 		// resulting accuracy will suffer (and this is a part of that).
 
 		// Store the initial scalar coverage in the initial time slot.
-		scalar_coverage_time_span->set_sample_in_time_slot(
-				initial_scalar_coverage,
+		d_scalar_coverage_time_span->set_sample_in_time_slot(
+				import_scalar_coverage,
 				initial_time_slot.get()/*time_slot*/);
 
 		// Iterate over the time range going *backwards* in time from the initial time (most recent)
@@ -188,18 +167,14 @@ GPlatesAppLogic::ScalarCoverageEvolution::create_evolved_time_span(
 		evolve_time_steps(
 				initial_time_slot.get()/*start_time_slot*/,
 				0/*end_time_slot*/,
-				scalar_coverage_time_span,
-				initial_scalar_coverage,
-				geometry_time_span);
+				import_scalar_coverage);
 
 		// Iterate over the time range going *forward* in time from the initial time (least recent)
 		// to the end of the time range (most recent).
 		evolve_time_steps(
 				initial_time_slot.get()/*start_time_slot*/,
 				num_time_slots - 1/*end_time_slot*/,
-				scalar_coverage_time_span,
-				initial_scalar_coverage,
-				geometry_time_span);
+				import_scalar_coverage);
 	}
 	else if (initial_time > time_range.get_begin_time())
 	{
@@ -209,8 +184,8 @@ GPlatesAppLogic::ScalarCoverageEvolution::create_evolved_time_span(
 		// the same as those at the initial time.
 
 		// Store the initial scalar values in the beginning time slot.
-		scalar_coverage_time_span->set_sample_in_time_slot(
-				initial_scalar_coverage,
+		d_scalar_coverage_time_span->set_sample_in_time_slot(
+				import_scalar_coverage,
 				0/*time_slot*/);
 
 		// Iterate over the time range going *forward* in time from the beginning of the
@@ -218,9 +193,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::create_evolved_time_span(
 		evolve_time_steps(
 				0/*start_time_slot*/,
 				num_time_slots - 1/*end_time_slot*/,
-				scalar_coverage_time_span,
-				initial_scalar_coverage,
-				geometry_time_span);
+				import_scalar_coverage);
 	}
 	else // initial_time < time_range.get_end_time() ...
 	{
@@ -230,8 +203,8 @@ GPlatesAppLogic::ScalarCoverageEvolution::create_evolved_time_span(
 		// the same as those at the initial time.
 
 		// Store the initial scalar values in the end time slot.
-		scalar_coverage_time_span->set_sample_in_time_slot(
-				initial_scalar_coverage,
+		d_scalar_coverage_time_span->set_sample_in_time_slot(
+				import_scalar_coverage,
 				num_time_slots - 1/*time_slot*/);
 
 		// Iterate over the time range going *backwards* in time from the end of the
@@ -239,12 +212,8 @@ GPlatesAppLogic::ScalarCoverageEvolution::create_evolved_time_span(
 		evolve_time_steps(
 				num_time_slots - 1/*start_time_slot*/,
 				0/*end_time_slot*/,
-				scalar_coverage_time_span,
-				initial_scalar_coverage,
-				geometry_time_span);
+				import_scalar_coverage);
 	}
-
-	return scalar_coverage_time_span;
 }
 
 
@@ -252,16 +221,14 @@ void
 GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 		unsigned int start_time_slot,
 		unsigned int end_time_slot,
-		time_span_type::non_null_ptr_type scalar_coverage_time_span,
-		const EvolvedScalarCoverage &initial_scalar_coverage,
-		TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span)
+		EvolvedScalarCoverage::non_null_ptr_type import_scalar_coverage)
 {
 	if (start_time_slot == end_time_slot)
 	{
 		return;
 	}
 
-	const TimeSpanUtils::TimeRange time_range = geometry_time_span->get_time_range();
+	const TimeSpanUtils::TimeRange time_range = d_geometry_time_span->get_time_range();
 	const double start_time = time_range.get_time(start_time_slot);
 
 	const bool reverse_reconstruct = end_time_slot > start_time_slot;
@@ -273,17 +240,20 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 	// Get the domain strain rates (if any) for the first time slot in the loop.
 	// Note that initially all geometry points should be active (as are all our initial scalar values).
 	domain_strain_rate_seq_type current_domain_strain_rates;
-	geometry_time_span->get_all_geometry_data(
+	d_geometry_time_span->get_all_geometry_data(
 			start_time,
 			boost::none/*point*/,
 			boost::none/*points_locations*/,
 			current_domain_strain_rates/*strain rates*/);
 
 	// Evolve the scalar values over time (either forward or backward) starting with the initial scalar values.
-	EvolvedScalarCoverage current_scalar_coverage(initial_scalar_coverage);
+	// Make a copy of the state of the current scalar coverage which we'll evolve and copy into the next
+	// scalar coverage and so on.
+	EvolvedScalarCoverage::non_null_ptr_type current_scalar_coverage = import_scalar_coverage;
+	EvolvedScalarCoverage::State current_scalar_coverage_state(current_scalar_coverage->state);
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			current_domain_strain_rates.size() == current_scalar_coverage.get_num_scalar_values(),
+			current_domain_strain_rates.size() == d_num_scalar_values,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Iterate over the time slots either backward or forward in time (depending on 'time_slot_direction').
@@ -299,7 +269,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 		domain_strain_rate_seq_type next_domain_strain_rates;
 
 		const bool scalar_values_sample_active =
-				geometry_time_span->get_all_geometry_data(next_time, boost::none, boost::none, next_domain_strain_rates);
+				d_geometry_time_span->get_all_geometry_data(next_time, boost::none, boost::none, next_domain_strain_rates);
 		if (!scalar_values_sample_active)
 		{
 			// Return early - the next time slot is not active - so the last active time slot is the current time slot.
@@ -307,234 +277,54 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 		}
 
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				next_domain_strain_rates.size() == current_scalar_coverage.get_num_scalar_values(),
+				next_domain_strain_rates.size() == d_num_scalar_values,
 				GPLATES_ASSERTION_SOURCE);
 
 		// Evolve the current scalar values to the next time slot.
-		current_scalar_coverage.evolve_time_step(
+		//
+		// Note: This updates the *current* state so that it becomes the *next* state.
+		evolve_time_step(
+				current_scalar_coverage_state,
 				current_domain_strain_rates,
 				next_domain_strain_rates,
 				current_time,
 				next_time);
 
+		// Set the (evolved) scalar values for the next time slot.
+		EvolvedScalarCoverage::non_null_ptr_type next_scalar_coverage =
+				EvolvedScalarCoverage::create(current_scalar_coverage_state);
+		d_scalar_coverage_time_span->set_sample_in_time_slot(
+				next_scalar_coverage,
+				next_time_slot);
+
+		// Set the current scalar coverage for the next time step.
+		current_scalar_coverage = next_scalar_coverage;
+
 		// Set the current domain strain rates for the next time step.
 		current_domain_strain_rates.swap(next_domain_strain_rates);
-
-		// Set the (evolved) scalar values for the next time slot.
-		scalar_coverage_time_span->set_sample_in_time_slot(
-				current_scalar_coverage,
-				next_time_slot);
 	}
 
 	if (reverse_reconstruct) // forward in time ...
 	{
 		// The end sample is active so use it to set the present day sample since the
 		// present day sample might have been affected by any deformation within the time range.
-		scalar_coverage_time_span->get_present_day_sample() = current_scalar_coverage;
-	}
-}
-
-
-GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage
-GPlatesAppLogic::ScalarCoverageEvolution::create_time_span_rigid_sample(
-		const double &reconstruction_time,
-		const double &closest_younger_sample_time,
-		const EvolvedScalarCoverage &closest_younger_sample)
-{
-	// Simply return the closest younger sample.
-	// We are in a rigid region so the scalar values have not changed since deformation (closest younger sample).
-	return closest_younger_sample;
-}
-
-
-GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage
-GPlatesAppLogic::ScalarCoverageEvolution::interpolate_time_span_samples(
-		const double &interpolate_position,
-		const double &first_geometry_time,
-		const double &second_geometry_time,
-		const EvolvedScalarCoverage &first_sample,
-		const EvolvedScalarCoverage &second_sample,
-		const double &initial_time)
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			first_sample.get_num_scalar_values() == second_sample.get_num_scalar_values(),
-			GPLATES_ASSERTION_SOURCE);
-
-	const double reconstruction_time =
-			(1 - interpolate_position) * first_geometry_time +
-				interpolate_position * second_geometry_time;
-
-	// NOTE: Mirror what the domain geometry time span does so that we end up with the same number of
-	// *active* scalar values as *active* geometry points. If we don't get the same number then
-	// later on we'll get an assertion failure.
-	//
-	// Determine whether to reconstruct backward or forward in time when interpolating.
-	if (reconstruction_time > initial_time)
-	{
-		// Reconstruct backward in time away from the initial time.
-		// For now we'll just pick the nearest sample (to the initial time).
-		return second_sample;
-	}
-	else
-	{
-		// Reconstruct forward in time away from the initial time.
-		// For now we'll just pick the nearest sample (to the initial time).
-		return first_sample;
+		d_scalar_coverage_time_span->get_present_day_sample() = current_scalar_coverage;
 	}
 }
 
 
 void
-GPlatesAppLogic::ScalarCoverageEvolution::InitialEvolvedScalarCoverage::add_scalar_values(
-		EvolvedScalarType evolved_scalar_type,
-		const std::vector<double> &initial_scalar_values)
-{
-	// All scalar types should have the same number of scalar values.
-	if (d_num_scalar_values)
-	{
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				initial_scalar_values.size() == d_num_scalar_values.get(),
-				GPLATES_ASSERTION_SOURCE);
-	}
-	else
-	{
-		d_num_scalar_values = initial_scalar_values.size();
-	}
-
-	d_initial_scalar_values[evolved_scalar_type] = initial_scalar_values;
-}
-
-
-GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::EvolvedScalarCoverage(
-		unsigned int num_scalar_values) :
-	d_num_scalar_values(num_scalar_values),
-	// Initially all scalar values are active...
-	d_scalar_values_are_active(num_scalar_values, true),
-	// Initially the crustal thickness divided by the initial crustal thickness is 1.0 ...
-	d_crustal_thickness_factor(num_scalar_values, 1.0)
-{
-}
-
-
-GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::EvolvedScalarCoverage(
-		const InitialEvolvedScalarCoverage &initial_scalar_coverage) :
-	// Initialise with default values first (in case initial scalar values not provided for all evolved scalar types)...
-	EvolvedScalarCoverage(initial_scalar_coverage.get_num_scalar_values())
-{
-	// For each initial evolved scalar type copy its initial scalar values into our current evolved scalar coverage.
-	for (const auto &scalar_coverage_item : initial_scalar_coverage.get_scalar_values())
-	{
-		const EvolvedScalarType evolved_scalar_type = scalar_coverage_item.first;
-		const std::vector<double> &initial_scalar_values = scalar_coverage_item.second;
-
-		// Copy the 'double' scalar values directly into the 'boost::optional<std::vector<double>>'.
-		d_scalar_values[evolved_scalar_type] = boost::in_place(
-				initial_scalar_values.begin(),
-				initial_scalar_values.end());
-	}
-}
-
-
-void
-GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::get_scalar_values(
-		EvolvedScalarType evolved_scalar_type,
-		std::vector<double> &scalar_values,
-		std::vector<bool> &scalar_values_are_active) const
-{
-	// Copy the active status of each scalar value.
-	scalar_values_are_active = d_scalar_values_are_active;
-
-	switch (evolved_scalar_type)
-	{
-	case CRUSTAL_THICKNESS:
-	{
-		if (d_scalar_values[CRUSTAL_THICKNESS])
-		{
-			// Initial values were provided for crustal thickness - return values updated over time.
-			scalar_values = d_scalar_values[CRUSTAL_THICKNESS].get();
-		}
-		else
-		{
-			// No initial values were provided so just multiply the crustal thickness *factor* by the
-			// default initial crustal thickness.
-			// 
-			// T(n)    = [T(n)/T(0)] * T(0)
-			//         = crustal_thickness_factor * T(0)
-			scalar_values.reserve(d_num_scalar_values);
-			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
-			{
-				scalar_values.push_back(d_crustal_thickness_factor[n] * DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS);
-			}
-		}
-	}
-	break;
-
-	case CRUSTAL_STRETCHING_FACTOR:
-	{
-		if (d_scalar_values[CRUSTAL_STRETCHING_FACTOR])
-		{
-			// Initial values were provided for crustal stretching factor - return values updated over time.
-			scalar_values = d_scalar_values[CRUSTAL_STRETCHING_FACTOR].get();
-		}
-		else
-		{
-			// No initial values were provided so just convert the crustal *thickness* factor to
-			// a crustal *stretching* factor.
-			// 
-			// beta(n) = T(0)/T(n)
-			//         = 1 / (T(n)/T(0))
-			//         = 1 / crustal_thickness_factor
-			scalar_values.reserve(d_num_scalar_values);
-			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
-			{
-				scalar_values.push_back(1.0 / d_crustal_thickness_factor[n]);
-			}
-		}
-	}
-	break;
-
-	case CRUSTAL_THINNING_FACTOR:
-	{
-		if (d_scalar_values[CRUSTAL_THINNING_FACTOR])
-		{
-			// Initial values were provided for crustal thinning factor - return values updated over time.
-			scalar_values = d_scalar_values[CRUSTAL_THINNING_FACTOR].get();
-		}
-		else
-		{
-			// No initial values were provided so just convert the crustal *thickness* factor to
-			// a crustal *thinning* factor.
-			// 
-			// gamma(n) = 1 - T(n)/T(0)
-			//          = 1 - crustal_thickness_factor
-			scalar_values.reserve(d_num_scalar_values);
-			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
-			{
-				scalar_values.push_back(1.0 - d_crustal_thickness_factor[n]);
-			}
-		}
-	}
-	break;
-
-	default:
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-	}
-}
-
-
-void
-GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::evolve_time_step(
+GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_step(
+		EvolvedScalarCoverage::State &current_scalar_coverage_state,
 		const std::vector< boost::optional<DeformationStrainRate> > &current_deformation_strain_rates,
 		const std::vector< boost::optional<DeformationStrainRate> > &next_deformation_strain_rates,
 		const double &current_time,
 		const double &next_time)
 {
-	const unsigned int num_scalar_values = get_num_scalar_values();
-
 	// Input array sizes should match.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			num_scalar_values == current_deformation_strain_rates.size() &&
-				num_scalar_values == next_deformation_strain_rates.size(),
+			d_num_scalar_values == current_deformation_strain_rates.size() &&
+				d_num_scalar_values == next_deformation_strain_rates.size(),
 			GPLATES_ASSERTION_SOURCE);
 
 	double time_increment = next_time - current_time;
@@ -559,10 +349,10 @@ GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::evolve_time_ste
 	//
 	const double seconds_in_a_million_years = 365.25 * 24 * 3600 * 1.0e6;
 
-	for (unsigned int n = 0; n < num_scalar_values; ++n)
+	for (unsigned int n = 0; n < d_num_scalar_values; ++n)
 	{
 		// If current scalar value is inactive then it remains inactive.
-		if (!d_scalar_values_are_active[n])
+		if (!current_scalar_coverage_state.scalar_values_are_active[n])
 		{
 			// If the current scalar value is inactive then so must the current (and next) dilatation strain rates.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -581,7 +371,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::evolve_time_ste
 		if (!next_deformation_strain_rates[n])
 		{
 			// The current scalar value is no longer active (for the next time step).
-			d_scalar_values_are_active[n] = false;
+			current_scalar_coverage_state.scalar_values_are_active[n] = false;
 
 			continue;
 		}
@@ -704,35 +494,219 @@ GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::evolve_time_ste
 		}
 
 		// Update the crustal thickness factor (ratio of crustal thickness to initial crustal thickness).
-		d_crustal_thickness_factor[n] *= crustal_thickness_multiplier;
+		current_scalar_coverage_state.crustal_thickness_factor[n] *= crustal_thickness_multiplier;
 
 		// If initial values were provided for crustal thickness then update them.
-		if (d_scalar_values[CRUSTAL_THICKNESS])
+		if (current_scalar_coverage_state.scalar_values[CRUSTAL_THICKNESS])
 		{
-			double &crustal_thickness = d_scalar_values[CRUSTAL_THICKNESS].get()[n];
+			double &crustal_thickness = current_scalar_coverage_state.scalar_values[CRUSTAL_THICKNESS].get()[n];
 			crustal_thickness *= crustal_thickness_multiplier;
 		}
 
 		// If initial values were provided for crustal stretching factor then update them.
-		if (d_scalar_values[CRUSTAL_STRETCHING_FACTOR])
+		if (current_scalar_coverage_state.scalar_values[CRUSTAL_STRETCHING_FACTOR])
 		{
 			// beta(n+1) = T(0)/T(n+1)
 			//           = 1 / (T(n+1)/T(0))
 			//           = 1 / (m*T(n)/T(0))
 			//           = 1 / (m / beta(n))
 			//           = beta(n) / m
-			double &crustal_stretching_factor = d_scalar_values[CRUSTAL_STRETCHING_FACTOR].get()[n];
+			double &crustal_stretching_factor = current_scalar_coverage_state.scalar_values[CRUSTAL_STRETCHING_FACTOR].get()[n];
 			crustal_stretching_factor /= crustal_thickness_multiplier;
 		}
 
 		// If initial values were provided for crustal thinnning factor then update them.
-		if (d_scalar_values[CRUSTAL_THINNING_FACTOR])
+		if (current_scalar_coverage_state.scalar_values[CRUSTAL_THINNING_FACTOR])
 		{
 			// gamma(n+1) = 1 - T(n+1)/T(0)
 			//            = 1 - m*T(n)/T(0)
 			//            = 1 - m * (1 - gamma(n))
-			double &crustal_thinning_factor = d_scalar_values[CRUSTAL_THINNING_FACTOR].get()[n];
+			double &crustal_thinning_factor = current_scalar_coverage_state.scalar_values[CRUSTAL_THINNING_FACTOR].get()[n];
 			crustal_thinning_factor = 1 - crustal_thickness_multiplier * (1 - crustal_thinning_factor);
 		}
+	}
+}
+
+
+GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::non_null_ptr_type
+GPlatesAppLogic::ScalarCoverageEvolution::create_time_span_rigid_sample(
+		const double &reconstruction_time,
+		const double &closest_younger_sample_time,
+		const EvolvedScalarCoverage::non_null_ptr_type &closest_younger_sample)
+{
+	// Simply return the closest younger sample.
+	// We are in a rigid region so the scalar values have not changed since deformation (closest younger sample).
+	return closest_younger_sample;
+}
+
+
+GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::non_null_ptr_type
+GPlatesAppLogic::ScalarCoverageEvolution::interpolate_time_span_samples(
+		const double &interpolate_position,
+		const double &first_geometry_time,
+		const double &second_geometry_time,
+		const EvolvedScalarCoverage::non_null_ptr_type &first_sample,
+		const EvolvedScalarCoverage::non_null_ptr_type &second_sample)
+{
+	const double reconstruction_time =
+			(1 - interpolate_position) * first_geometry_time +
+				interpolate_position * second_geometry_time;
+
+	// NOTE: Mirror what the domain geometry time span does so that we end up with the same number of
+	// *active* scalar values as *active* geometry points. If we don't get the same number then
+	// later on we'll get an assertion failure.
+	//
+	// Determine whether to reconstruct backward or forward in time when interpolating.
+	if (reconstruction_time > d_initial_time)
+	{
+		// Reconstruct backward in time away from the initial time.
+		// For now we'll just pick the nearest sample (to the initial time).
+		return second_sample;
+	}
+	else
+	{
+		// Reconstruct forward in time away from the initial time.
+		// For now we'll just pick the nearest sample (to the initial time).
+		return first_sample;
+	}
+}
+
+
+void
+GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
+		EvolvedScalarType evolved_scalar_type,
+		const double &reconstruction_time,
+		std::vector<double> &scalar_values,
+		std::vector<bool> &scalar_values_are_active) const
+{
+	EvolvedScalarCoverage::non_null_ptr_type scalar_coverage =
+			d_scalar_coverage_time_span->get_or_create_sample(reconstruction_time);
+
+	EvolvedScalarCoverage::State &scalar_coverage_state = scalar_coverage->state;
+
+	// Copy the active status of each scalar value.
+	scalar_values_are_active = scalar_coverage_state.scalar_values_are_active;
+
+	switch (evolved_scalar_type)
+	{
+	case CRUSTAL_THICKNESS:
+	{
+		if (scalar_coverage_state.scalar_values[CRUSTAL_THICKNESS])
+		{
+			// Initial values were provided for crustal thickness - return values updated over time.
+			scalar_values = scalar_coverage_state.scalar_values[CRUSTAL_THICKNESS].get();
+		}
+		else
+		{
+			// No initial values were provided so just multiply the crustal thickness *factor* by the
+			// default initial crustal thickness.
+			// 
+			// T(n)    = [T(n)/T(0)] * T(0)
+			//         = crustal_thickness_factor * T(0)
+			scalar_values.reserve(d_num_scalar_values);
+			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+			{
+				scalar_values.push_back(scalar_coverage_state.crustal_thickness_factor[n] * DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS);
+			}
+		}
+	}
+	break;
+
+	case CRUSTAL_STRETCHING_FACTOR:
+	{
+		if (scalar_coverage_state.scalar_values[CRUSTAL_STRETCHING_FACTOR])
+		{
+			// Initial values were provided for crustal stretching factor - return values updated over time.
+			scalar_values = scalar_coverage_state.scalar_values[CRUSTAL_STRETCHING_FACTOR].get();
+		}
+		else
+		{
+			// No initial values were provided so just convert the crustal *thickness* factor to
+			// a crustal *stretching* factor.
+			// 
+			// beta(n) = T(0)/T(n)
+			//         = 1 / (T(n)/T(0))
+			//         = 1 / crustal_thickness_factor
+			scalar_values.reserve(d_num_scalar_values);
+			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+			{
+				scalar_values.push_back(1.0 / scalar_coverage_state.crustal_thickness_factor[n]);
+			}
+		}
+	}
+	break;
+
+	case CRUSTAL_THINNING_FACTOR:
+	{
+		if (scalar_coverage_state.scalar_values[CRUSTAL_THINNING_FACTOR])
+		{
+			// Initial values were provided for crustal thinning factor - return values updated over time.
+			scalar_values = scalar_coverage_state.scalar_values[CRUSTAL_THINNING_FACTOR].get();
+		}
+		else
+		{
+			// No initial values were provided so just convert the crustal *thickness* factor to
+			// a crustal *thinning* factor.
+			// 
+			// gamma(n) = 1 - T(n)/T(0)
+			//          = 1 - crustal_thickness_factor
+			scalar_values.reserve(d_num_scalar_values);
+			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+			{
+				scalar_values.push_back(1.0 - scalar_coverage_state.crustal_thickness_factor[n]);
+			}
+		}
+	}
+	break;
+
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+	}
+}
+
+
+void
+GPlatesAppLogic::ScalarCoverageEvolution::InitialEvolvedScalarCoverage::add_scalar_values(
+		EvolvedScalarType evolved_scalar_type,
+		const std::vector<double> &initial_scalar_values)
+{
+	// All scalar types should have the same number of scalar values.
+	if (d_num_scalar_values)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				initial_scalar_values.size() == d_num_scalar_values.get(),
+				GPLATES_ASSERTION_SOURCE);
+	}
+	else
+	{
+		d_num_scalar_values = initial_scalar_values.size();
+	}
+
+	d_initial_scalar_values[evolved_scalar_type] = initial_scalar_values;
+}
+
+
+GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::State::State(
+		const InitialEvolvedScalarCoverage &initial_scalar_coverage)
+{
+	const unsigned int num_scalar_values = initial_scalar_coverage.get_num_scalar_values();
+
+	// Initialise with default values first (in case initial scalar values not provided for all evolved scalar types).
+	//
+	// Initially all scalar values are active...
+	scalar_values_are_active.resize(num_scalar_values, true);
+	// Initially the crustal thickness divided by the initial crustal thickness is 1.0 ...
+	crustal_thickness_factor.resize(num_scalar_values, 1.0);
+
+	// For each initial evolved scalar type copy its initial scalar values into our current evolved scalar coverage.
+	for (const auto &scalar_coverage_item : initial_scalar_coverage.get_scalar_values())
+	{
+		const EvolvedScalarType evolved_scalar_type = scalar_coverage_item.first;
+		const std::vector<double> &initial_scalar_values = scalar_coverage_item.second;
+
+		// Copy the 'std::vector<double>' directly into the 'boost::optional<std::vector<double>>'.
+		scalar_values[evolved_scalar_type] = boost::in_place(
+				initial_scalar_values.begin(),
+				initial_scalar_values.end());
 	}
 }
