@@ -65,27 +65,32 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 		const initial_scalar_coverage_type &initial_scalar_coverage,
 		TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span) :
 	d_geometry_time_span(geometry_time_span),
-	d_scalar_import_time(geometry_time_span->get_geometry_import_time())
+	d_scalar_import_time(geometry_time_span->get_geometry_import_time()),
+	d_num_all_scalar_values(geometry_time_span->get_num_all_geometry_points())
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			!initial_scalar_coverage.empty(),
 			GPLATES_ASSERTION_SOURCE);
 
-	// Get the number of scalar values from the first scalar type.
-	// Next we'll ensure the number of scalar values in the other scalar types matches.
+	// Get the number of original scalar values from the first scalar type.
+	// Next we'll ensure the number of original scalar values in the other scalar types matches.
+	//
+	// Note: This might be less than the actual number of scalar values if the geometry in the
+	// time span was tessellated (the actual number is 'd_num_all_scalar_values'). If so then we'll
+	// generate the missing scalar values (below) by interpolating the original scalar values.
 	const unsigned int num_original_scalar_values = initial_scalar_coverage.begin()->second.size();
 	for (const auto &scalar_coverage_item : initial_scalar_coverage)
 	{
-		const std::vector<double> &scalar_values = scalar_coverage_item.second;
+		const std::vector<double> &original_scalar_values = scalar_coverage_item.second;
 
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				scalar_values.size() == num_original_scalar_values,
+				original_scalar_values.size() == num_original_scalar_values,
 				GPLATES_ASSERTION_SOURCE);
 	}
 
-	// Add the scalar values of each scalar type as either evolved or non-evolved
-	// (depending on whether the scalar type is an evolved type or not).
-	ScalarCoverageEvolution::InitialEvolvedScalarCoverage initial_evolved_scalar_coverage;
+	// Add the actual (ie, possibly tessellated) scalar values of each scalar type as either evolved or
+	// non-evolved (depending on whether the scalar type is an evolved type or not).
+	ScalarCoverageEvolution::InitialEvolvedScalarCoverage initial_evolved_scalar_coverage(d_num_all_scalar_values);
 	for (const auto &scalar_coverage_item : initial_scalar_coverage)
 	{
 		const scalar_type_type &scalar_type = scalar_coverage_item.first;
@@ -106,7 +111,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 		if (boost::optional<ScalarCoverageEvolution::EvolvedScalarType> evolved_scalar_type =
 			ScalarCoverageEvolution::is_evolved_scalar_type(scalar_type))
 		{
-			initial_evolved_scalar_coverage.add_scalar_values(evolved_scalar_type.get(), import_scalar_values);
+			initial_evolved_scalar_coverage.add_initial_scalar_values(evolved_scalar_type.get(), import_scalar_values);
 		}
 		else
 		{
@@ -114,16 +119,17 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 		}
 	}
 
-	// Create and initialise a time span, for the evolved scalar coverage, if it has any evolved scalar types.
-	if (!initial_evolved_scalar_coverage.empty())
-	{
-		// Evolve scalar values over time (starting with the import scalar values) and
-		// store them in the returned scalar coverage time span.
-		d_evolved_scalar_coverage_time_span = ScalarCoverageEvolution::create(
-				initial_evolved_scalar_coverage,
-				d_scalar_import_time,
-				geometry_time_span);
-	}
+	// Create and initialise a time span for the evolved scalar coverage.
+	//
+	// Note: We do this even if there are no initial scalar values corresponding to any *evolved* scalar types.
+	//       This is because we can still query evolved scalar types assuming default initial values.
+	//
+	// Evolve scalar values over time (starting with the import scalar values) and
+	// store them in the returned scalar coverage time span.
+	d_evolved_scalar_coverage_time_span = ScalarCoverageEvolution::create(
+			initial_evolved_scalar_coverage,
+			d_scalar_import_time,
+			geometry_time_span);
 }
 
 

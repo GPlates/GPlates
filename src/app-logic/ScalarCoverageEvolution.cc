@@ -113,6 +113,9 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 		const double &initial_time,
 		TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span) :
 	d_geometry_time_span(geometry_time_span),
+	d_num_scalar_values(initial_scalar_coverage.get_num_scalar_values()),
+	d_initial_scalar_coverage(initial_scalar_coverage),
+	d_initial_time(initial_time),
 	d_scalar_coverage_time_span(
 			time_span_type::create(
 					geometry_time_span->get_time_range(),
@@ -126,14 +129,13 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 							this, _1, _2, _3, _4, _5),
 					// Present day sample...
 					//
-					// The initial scalar values (at initial time).
-					// Note that we'll need to modify this if the initial time is earlier
-					// than the end of the time range since might be affected by time range...
-					EvolvedScalarCoverage::create(initial_scalar_coverage))),
-	d_num_scalar_values(initial_scalar_coverage.get_num_scalar_values()),
-	d_initial_time(initial_time)
+					// Note that we'll modify this if the initial time is earlier than (before) the end
+					// of the time range since deformation in time range can change present day scalar values...
+					EvolvedScalarCoverage::create(d_num_scalar_values)))
 {
-	EvolvedScalarCoverage::non_null_ptr_type import_scalar_coverage = d_scalar_coverage_time_span->get_present_day_sample();
+	// The scalar coverage at the import time was stored in the present day sample.
+	EvolvedScalarCoverage::non_null_ptr_type import_scalar_coverage =
+			d_scalar_coverage_time_span->get_present_day_sample();
 
 	const TimeSpanUtils::TimeRange time_range = d_scalar_coverage_time_span->get_time_range();
 	const unsigned int num_time_slots = time_range.get_num_time_slots();
@@ -495,35 +497,6 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_step(
 
 		// Update the crustal thickness factor (ratio of crustal thickness to initial crustal thickness).
 		current_scalar_coverage_state.crustal_thickness_factor[n] *= crustal_thickness_multiplier;
-
-		// If initial values were provided for crustal thickness then update them.
-		if (current_scalar_coverage_state.scalar_values[CRUSTAL_THICKNESS])
-		{
-			double &crustal_thickness = current_scalar_coverage_state.scalar_values[CRUSTAL_THICKNESS].get()[n];
-			crustal_thickness *= crustal_thickness_multiplier;
-		}
-
-		// If initial values were provided for crustal stretching factor then update them.
-		if (current_scalar_coverage_state.scalar_values[CRUSTAL_STRETCHING_FACTOR])
-		{
-			// beta(n+1) = T(0)/T(n+1)
-			//           = 1 / (T(n+1)/T(0))
-			//           = 1 / (m*T(n)/T(0))
-			//           = 1 / (m / beta(n))
-			//           = beta(n) / m
-			double &crustal_stretching_factor = current_scalar_coverage_state.scalar_values[CRUSTAL_STRETCHING_FACTOR].get()[n];
-			crustal_stretching_factor /= crustal_thickness_multiplier;
-		}
-
-		// If initial values were provided for crustal thinnning factor then update them.
-		if (current_scalar_coverage_state.scalar_values[CRUSTAL_THINNING_FACTOR])
-		{
-			// gamma(n+1) = 1 - T(n+1)/T(0)
-			//            = 1 - m*T(n)/T(0)
-			//            = 1 - m * (1 - gamma(n))
-			double &crustal_thinning_factor = current_scalar_coverage_state.scalar_values[CRUSTAL_THINNING_FACTOR].get()[n];
-			crustal_thinning_factor = 1 - crustal_thickness_multiplier * (1 - crustal_thinning_factor);
-		}
 	}
 }
 
@@ -591,22 +564,38 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
 	{
 	case CRUSTAL_THICKNESS:
 	{
-		if (scalar_coverage_state.scalar_values[CRUSTAL_THICKNESS])
+		// Crustal thickness depends on initial values T(i) (or default values if not provided) and
+		// the calculated crustal thickness *factor*:
+		// 
+		// T(n)    = [T(n)/T(i)] * T(i)
+		//         = crustal_thickness_factor * T(i)
+		//
+		// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
+		//
+		if (const boost::optional<std::vector<double>> &initial_crustal_thickness_opt =
+			d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THICKNESS))
 		{
-			// Initial values were provided for crustal thickness - return values updated over time.
-			scalar_values = scalar_coverage_state.scalar_values[CRUSTAL_THICKNESS].get();
-		}
-		else
-		{
-			// No initial values were provided so just multiply the crustal thickness *factor* by the
-			// default initial crustal thickness.
-			// 
-			// T(n)    = [T(n)/T(0)] * T(0)
-			//         = crustal_thickness_factor * T(0)
+			// Initial values were provided for crustal thickness.
+			const std::vector<double> &initial_crustal_thickness = initial_crustal_thickness_opt.get();
+
 			scalar_values.reserve(d_num_scalar_values);
 			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
 			{
-				scalar_values.push_back(scalar_coverage_state.crustal_thickness_factor[n] * DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS);
+				// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
+				scalar_values.push_back(
+						initial_crustal_thickness[n] * scalar_coverage_state.crustal_thickness_factor[n]);
+			}
+		}
+		else
+		{
+			// No initial values were provided so just T(i) = DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS.
+			scalar_values.reserve(d_num_scalar_values);
+			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+			{
+				// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
+				//                   = DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS * crustal_thickness_factor
+				scalar_values.push_back(
+						DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS * scalar_coverage_state.crustal_thickness_factor[n]);
 			}
 		}
 	}
@@ -614,23 +603,42 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
 
 	case CRUSTAL_STRETCHING_FACTOR:
 	{
-		if (scalar_coverage_state.scalar_values[CRUSTAL_STRETCHING_FACTOR])
+		// Crustal stretching factor depends on initial values (or default values if not provided) and
+		// the calculated crustal thickness *factor*:
+		// 
+		// beta(i,j) = T(j)/T(i)  // This is the stretching factor at initial time t=i relative to some other time t=j
+		// beta(n,j) = T(j)/T(n)  // This is the stretching factor at current time t=n relative to some other time t=j
+		//           = T(j)/T(i) * T(i)/T(n)
+		//           = beta(i,j) * T(i)/T(n)
+		//           = beta(i,j) * (1/crustal_thickness_factor)
+		//           = beta(i,j) / crustal_thickness_factor
+		//
+		// beta = initial_beta / crustal_thickness_factor
+		//
+		if (const boost::optional<std::vector<double>> &initial_crustal_stretching_factor_opt =
+			d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_STRETCHING_FACTOR))
 		{
-			// Initial values were provided for crustal stretching factor - return values updated over time.
-			scalar_values = scalar_coverage_state.scalar_values[CRUSTAL_STRETCHING_FACTOR].get();
-		}
-		else
-		{
-			// No initial values were provided so just convert the crustal *thickness* factor to
-			// a crustal *stretching* factor.
-			// 
-			// beta(n) = T(0)/T(n)
-			//         = 1 / (T(n)/T(0))
-			//         = 1 / crustal_thickness_factor
+			// Initial values were provided for crustal stretching factor.
+			const std::vector<double> &initial_crustal_stretching_factor = initial_crustal_stretching_factor_opt.get();
+
 			scalar_values.reserve(d_num_scalar_values);
 			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
 			{
-				scalar_values.push_back(1.0 / scalar_coverage_state.crustal_thickness_factor[n]);
+				// beta = initial_beta / crustal_thickness_factor
+				scalar_values.push_back(
+						initial_crustal_stretching_factor[n] / scalar_coverage_state.crustal_thickness_factor[n]);
+			}
+		}
+		else
+		{
+			// No initial values were provided so assume initial_beta = 1.0.
+			scalar_values.reserve(d_num_scalar_values);
+			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+			{
+				// beta = initial_beta / crustal_thickness_factor
+				//      = 1 / crustal_thickness_factor
+				scalar_values.push_back(
+						1.0 / scalar_coverage_state.crustal_thickness_factor[n]);
 			}
 		}
 	}
@@ -638,22 +646,43 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
 
 	case CRUSTAL_THINNING_FACTOR:
 	{
-		if (scalar_coverage_state.scalar_values[CRUSTAL_THINNING_FACTOR])
+		// Crustal thinning factor depends on initial values (or default values if not provided) and
+		// the calculated crustal thickness *factor*:
+		// 
+		// gamma(i,j) = 1 - T(i)/T(j)  // This is the thinning factor at initial time t=i relative to some other time t=j
+		// gamma(n,j) = 1 - T(n)/T(j)  // This is the thinning factor at current time t=n relative to some other time t=j
+		//            = 1 - T(n)/T(i) * T(i)/T(j)
+		//            = 1 - T(n)/T(i) * (1 - gamma(i,j))
+		//            = 1 - crustal_thickness_factor * (1 - gamma(i,j))
+		//            = 1 - crustal_thickness_factor * (1 - initial_gamma)
+		//
+		// gamma = 1 - (1 - initial_gamma) * crustal_thickness_factor
+		//
+		if (const boost::optional<std::vector<double>> &initial_crustal_thinning_factor_opt =
+			d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THINNING_FACTOR))
 		{
-			// Initial values were provided for crustal thinning factor - return values updated over time.
-			scalar_values = scalar_coverage_state.scalar_values[CRUSTAL_THINNING_FACTOR].get();
-		}
-		else
-		{
-			// No initial values were provided so just convert the crustal *thickness* factor to
-			// a crustal *thinning* factor.
-			// 
-			// gamma(n) = 1 - T(n)/T(0)
-			//          = 1 - crustal_thickness_factor
+			// Initial values were provided for crustal thinning factor.
+			const std::vector<double> &initial_crustal_thinning_factor = initial_crustal_thinning_factor_opt.get();
+
 			scalar_values.reserve(d_num_scalar_values);
 			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
 			{
-				scalar_values.push_back(1.0 - scalar_coverage_state.crustal_thickness_factor[n]);
+				// gamma = 1 - (1 - initial_gamma) * crustal_thickness_factor
+				scalar_values.push_back(
+						1.0 - (1.0 - initial_crustal_thinning_factor[n]) * scalar_coverage_state.crustal_thickness_factor[n]);
+			}
+		}
+		else
+		{
+			// No initial values were provided so assume initial_gamma = 0.0.
+			scalar_values.reserve(d_num_scalar_values);
+			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+			{
+				// gamma = 1 - (1 - initial_gamma) * crustal_thickness_factor
+				//       = 1 - (1 - 0) * crustal_thickness_factor
+				//       = 1 - crustal_thickness_factor
+				scalar_values.push_back(
+						1.0 - scalar_coverage_state.crustal_thickness_factor[n]);
 			}
 		}
 	}
@@ -666,47 +695,27 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
 
 
 void
-GPlatesAppLogic::ScalarCoverageEvolution::InitialEvolvedScalarCoverage::add_scalar_values(
+GPlatesAppLogic::ScalarCoverageEvolution::InitialEvolvedScalarCoverage::add_initial_scalar_values(
 		EvolvedScalarType evolved_scalar_type,
 		const std::vector<double> &initial_scalar_values)
 {
 	// All scalar types should have the same number of scalar values.
-	if (d_num_scalar_values)
-	{
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				initial_scalar_values.size() == d_num_scalar_values.get(),
-				GPLATES_ASSERTION_SOURCE);
-	}
-	else
-	{
-		d_num_scalar_values = initial_scalar_values.size();
-	}
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			initial_scalar_values.size() == d_num_scalar_values,
+			GPLATES_ASSERTION_SOURCE);
 
-	d_initial_scalar_values[evolved_scalar_type] = initial_scalar_values;
+	// Copy the 'std::vector<double>' directly into the 'boost::optional<std::vector<double>>'.
+	d_initial_scalar_values[evolved_scalar_type] = boost::in_place(
+			initial_scalar_values.begin(),
+			initial_scalar_values.end());
 }
 
 
 GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::State::State(
-		const InitialEvolvedScalarCoverage &initial_scalar_coverage)
-{
-	const unsigned int num_scalar_values = initial_scalar_coverage.get_num_scalar_values();
-
-	// Initialise with default values first (in case initial scalar values not provided for all evolved scalar types).
-	//
+		unsigned int num_scalar_values) :
 	// Initially all scalar values are active...
-	scalar_values_are_active.resize(num_scalar_values, true);
-	// Initially the crustal thickness divided by the initial crustal thickness is 1.0 ...
-	crustal_thickness_factor.resize(num_scalar_values, 1.0);
-
-	// For each initial evolved scalar type copy its initial scalar values into our current evolved scalar coverage.
-	for (const auto &scalar_coverage_item : initial_scalar_coverage.get_scalar_values())
-	{
-		const EvolvedScalarType evolved_scalar_type = scalar_coverage_item.first;
-		const std::vector<double> &initial_scalar_values = scalar_coverage_item.second;
-
-		// Copy the 'std::vector<double>' directly into the 'boost::optional<std::vector<double>>'.
-		scalar_values[evolved_scalar_type] = boost::in_place(
-				initial_scalar_values.begin(),
-				initial_scalar_values.end());
-	}
+	scalar_values_are_active(num_scalar_values, true),
+	// Initially the "crustal thickness divided by the initial crustal thickness" is 1.0...
+	crustal_thickness_factor(num_scalar_values, 1.0)
+{
 }

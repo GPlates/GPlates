@@ -26,7 +26,6 @@
 #ifndef GPLATES_APP_LOGIC_SCALARCOVERAGEEVOLUTION_H
 #define GPLATES_APP_LOGIC_SCALARCOVERAGEEVOLUTION_H
 
-#include <map>
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>
@@ -87,47 +86,55 @@ namespace GPlatesAppLogic
 		{
 		public:
 
-			//! Typedef for a map of evolved scalar types to initial scalar values (to be evolved).
-			typedef std::map<EvolvedScalarType, std::vector<double>> initial_scalar_values_map_type;
+			explicit
+			InitialEvolvedScalarCoverage(
+					unsigned int num_scalar_values) :
+				d_num_scalar_values(num_scalar_values)
+			{  }
 
+			/**
+			 * Add initial scalar values for the specified scalar type (if any).
+			 *
+			 * Note that you are not required to add any initial scalar values for any scalar type
+			 * since evolved scalar values can be generated from default initial scalar values.
+			 */
 			void
-			add_scalar_values(
+			add_initial_scalar_values(
 					EvolvedScalarType scalar_type,
 					const std::vector<double> &initial_scalar_values);
 
-			bool
-			empty() const
+			/**
+			 * Returns the initial scalar values for the specified scalar type (if any).
+			 */
+			const boost::optional<std::vector<double>> &
+			get_initial_scalar_values(
+					EvolvedScalarType scalar_type) const
 			{
-				return d_initial_scalar_values.empty();
-			}
-
-			const initial_scalar_values_map_type &
-			get_scalar_values() const
-			{
-				return d_initial_scalar_values;
+				return d_initial_scalar_values[scalar_type];
 			}
 
 			/**
 			 * Returns number of scalar values (per scalar type).
-			 *
-			 * Throws exception if @a add_scalar_values has not yet been called at least once.
 			 */
 			unsigned int
 			get_num_scalar_values() const
 			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_num_scalar_values,
-						GPLATES_ASSERTION_SOURCE);
-
-				return d_num_scalar_values.get();
+				return d_num_scalar_values;
 			}
 
 		private:
-			//! The initial scalar values (to be evolved) associated with evolved scalar types.
-			std::map<EvolvedScalarType, std::vector<double>> d_initial_scalar_values;
+			//! Number of scalar values (per scalar type).
+			unsigned int d_num_scalar_values;
 
-			//! Number of scalar values (per scalar type) - only initialised after first call to @a add_scalar_values.
-			boost::optional<unsigned int> d_num_scalar_values;
+			/**
+			 * The initial scalar values for the evolved scalar types (if any).
+			 *
+			 * This is none for those scalar types that did not provide initial values.
+			 * However, these scalar types can still later be queried, in which case their values
+			 * will be derived from the crustal thickness *factor* (and the default initial
+			 * crustal thickness in the case of the CRUSTAL_THICKNESS scalar type).
+			 */
+			boost::optional<std::vector<double>> d_initial_scalar_values[NUM_EVOLVED_SCALAR_TYPES];
 		};
 
 
@@ -216,20 +223,15 @@ namespace GPlatesAppLogic
 			typedef GPlatesUtils::non_null_intrusive_ptr<const EvolvedScalarCoverage> non_null_ptr_to_const_type;
 
 
+			/**
+			 * The evolved state of the scalar values that needs to be stored for each time step.
+			 */
 			struct State
 			{
+				//! Default initial state.
+				explicit
 				State(
-						const InitialEvolvedScalarCoverage &initial_scalar_coverage);
-
-				/**
-				 * The scalar values for the evolved scalar types.
-				 *
-				 * This is none for those scalar types that did not provide initial values.
-				 * However, these scalar types can still be queried (with @a get_scalar_values), in
-				 * which case their values will be derived from @a d_crustal_thickness_factor (and the
-				 * default initial crustal thickness in the case of the CRUSTAL_THICKNESS scalar type).
-				 */
-				boost::optional<std::vector<double>> scalar_values[NUM_EVOLVED_SCALAR_TYPES];
+						unsigned int num_scalar_values);
 
 				/**
 				 * Whether each scalar value (in each scalar type) is active or not.
@@ -248,20 +250,16 @@ namespace GPlatesAppLogic
 			};
 
 
-			/**
-			 * Create from initial scalar values.
-			 *
-			 * All scalar values are initially active.
-			 */
+			//! Create a new scalar coverage containing the default (initial) internal state.
 			static
 			non_null_ptr_type
 			create(
-					const InitialEvolvedScalarCoverage &initial_scalar_coverage)
+					unsigned int num_scalar_values)
 			{
-				return non_null_ptr_type(new EvolvedScalarCoverage(initial_scalar_coverage));
+				return non_null_ptr_type(new EvolvedScalarCoverage(num_scalar_values));
 			}
 
-			//! Create a new scalar coverage containing the specified internal stated.
+			//! Create a new scalar coverage containing the specified internal state.
 			static
 			non_null_ptr_type
 			create(
@@ -274,17 +272,18 @@ namespace GPlatesAppLogic
 			State state;
 
 		private:
+			//! Default constructor that initialises to default (initial) state.
+			explicit
+			EvolvedScalarCoverage(
+					unsigned int num_scalar_values) :
+				state(num_scalar_values)
+			{  }
+
 			//! Constructor that copies the specified state to our internal storage.
 			explicit
 			EvolvedScalarCoverage(
 					const State &state_) :
 				state(state_)
-			{  }
-
-			explicit
-			EvolvedScalarCoverage(
-					const InitialEvolvedScalarCoverage &initial_scalar_coverage) :
-				state(initial_scalar_coverage)
 			{  }
 		};
 
@@ -293,9 +292,10 @@ namespace GPlatesAppLogic
 
 
 		TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type d_geometry_time_span;
-		time_span_type::non_null_ptr_type d_scalar_coverage_time_span;
 		unsigned int d_num_scalar_values;
+		InitialEvolvedScalarCoverage d_initial_scalar_coverage;
 		double d_initial_time;
+		time_span_type::non_null_ptr_type d_scalar_coverage_time_span;
 
 
 		ScalarCoverageEvolution(

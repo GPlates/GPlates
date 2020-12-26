@@ -280,8 +280,10 @@ namespace GPlatesAppLogic
 			 *
 			 * Only scalar types that evolve (due to deformation) are handled here.
 			 *
-			 * This is none if there's no deformed geometry time span or if none of the scalar types
-			 * correspond to evolved scalar types (affected by deformation).
+			 * This is none if there's no deformed geometry time span.
+			 * If there is a deformed geometry time span then this is not none, even if no initial
+			 * scalar values were provided for any of the *evolved* scalar types (affected by deformation)
+			 * because evolved scalar types can use *default* initial values.
 			 */
 			boost::optional<ScalarCoverageEvolution::non_null_ptr_type> d_evolved_scalar_coverage_time_span;
 
@@ -292,10 +294,10 @@ namespace GPlatesAppLogic
 			 */
 			non_evolved_scalar_coverage_type d_non_evolved_scalar_coverage;
 
+			double d_scalar_import_time;
+
 			//! The number of scalar values (active and inactive) per scalar type.
 			unsigned int d_num_all_scalar_values;
-
-			double d_scalar_import_time;
 
 
 			explicit
