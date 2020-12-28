@@ -35,6 +35,7 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedScalarCoverage.h"
 #include "ReconstructionGeometryUtils.h"
+#include "ScalarCoverageEvolution.h"
 #include "TopologyReconstructedFeatureGeometry.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
@@ -345,14 +346,8 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverages()
 		reconstructed_domain_layer_proxy.get_input_layer_proxy()->get_current_reconstructable_features(domain_features);
 
 		// Iterate over the domain features.
-		std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator
-				domain_features_iter = domain_features.begin();
-		std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator
-				domain_features_end = domain_features.end();
-		for ( ; domain_features_iter != domain_features_end; ++domain_features_iter)
+		for (const GPlatesModel::FeatureHandle::weak_ref &domain_feature : domain_features)
 		{
-			const GPlatesModel::FeatureHandle::weak_ref &domain_feature = *domain_features_iter;
-
 			ScalarCoverageFeatureProperties::get_coverages(d_cached_scalar_coverages.get(), domain_feature);
 		}
 	}
@@ -371,24 +366,49 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_types()
 	// Create an empty vector.
 	d_cached_scalar_types = std::vector<GPlatesPropertyValues::ValueObjectType>();
 
-	std::vector<ScalarCoverageFeatureProperties::Coverage> scalar_coverages;
-	get_scalar_coverages(scalar_coverages);
-
-	// Iterate over the coverages to find the set of unique scalar types.
 	std::set<GPlatesPropertyValues::ValueObjectType> unique_scalar_types;
-	std::vector<ScalarCoverageFeatureProperties::Coverage>::const_iterator
-			coverages_iter = scalar_coverages.begin();
-	std::vector<ScalarCoverageFeatureProperties::Coverage>::const_iterator
-			coverages_end = scalar_coverages.end();
-	for ( ; coverages_iter != coverages_end; ++coverages_iter)
-	{
-		const ScalarCoverageFeatureProperties::Coverage &coverage = *coverages_iter;
 
-		const unsigned int num_scalar_types = coverage.range.size();
-		for (unsigned int scalar_type_index = 0; scalar_type_index < num_scalar_types; ++scalar_type_index)
+	// Iterate over the reconstructed domain layer proxies to find the set of unique scalar types.
+	for (auto &reconstructed_domain_layer_proxy : d_current_reconstructed_domain_layer_proxies)
+	{
+		// If the reconstructed domain layer is being reconstructed using topologies then it means
+		// we can have evolved scalar types (due to deformation).
+		if (reconstructed_domain_layer_proxy.get_input_layer_proxy()->using_topologies_to_reconstruct())
 		{
-			unique_scalar_types.insert(
-					coverage.range[scalar_type_index]->value_object_type());
+			// Add all evolved scalar types. They don't need initial values (in a feature's range)
+			// since they can evolve from default initial values.
+			for (unsigned int evolved_scalar_type_index = 0;
+				evolved_scalar_type_index < ScalarCoverageEvolution::NUM_EVOLVED_SCALAR_TYPES;
+				++evolved_scalar_type_index)
+			{
+				const ScalarCoverageEvolution::EvolvedScalarType evolved_scalar_type =
+						static_cast<ScalarCoverageEvolution::EvolvedScalarType>(evolved_scalar_type_index);
+
+				unique_scalar_types.insert(
+						ScalarCoverageEvolution::get_scalar_type(evolved_scalar_type));
+			}
+		}
+
+		// Get the domain features.
+		//
+		// Note that we only consider non-topological features since a feature collection may contain a mixture
+		// of topological and non-topological (thus creating reconstruct layer and topological layer).
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> domain_features;
+		reconstructed_domain_layer_proxy.get_input_layer_proxy()->get_current_reconstructable_features(domain_features);
+
+		// Iterate over the domain features.
+		for (const GPlatesModel::FeatureHandle::weak_ref &domain_feature : domain_features)
+		{
+			std::vector<ScalarCoverageFeatureProperties::Coverage> coverages;
+			ScalarCoverageFeatureProperties::get_coverages(coverages, domain_feature);
+
+			for (const ScalarCoverageFeatureProperties::Coverage &coverage : coverages)
+			{
+				for (const auto &scalar_data : coverage.range)
+				{
+					unique_scalar_types.insert(scalar_data->value_object_type());
+				}
+			}
 		}
 	}
 
