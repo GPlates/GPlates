@@ -1,10 +1,10 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file
  * $Revision$
  * $Date$
- * 
+ *
  * Copyright (C) 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -33,6 +33,28 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
+
+
+namespace GPlatesAppLogic
+{
+	// Thermal expansion coefficient [1/C].
+	constexpr double THERMAL_ALPHA = 3.28e-5;
+
+	// Asthenosphere temperature [C].
+	constexpr double TEMPERATURE_ASTHENOSPHERE = 1350;
+
+	// Sea water density [kg/m^3].
+	constexpr double DENSITY_WATER = 1.03e3;
+
+	// Mantle density at 0 degrees [kg/m^3].
+	constexpr double DENSITY_MANTLE = 3.33e3;
+
+	// Crust density [kg/m^3].
+	constexpr double DENSITY_CRUST = 2.8e3;
+
+	// Asthenosphere density [kg/m^3].
+	const double DENSITY_ASTHENOSPHERE = DENSITY_MANTLE * (1.0 - THERMAL_ALPHA * TEMPERATURE_ASTHENOSPHERE);
+}
 
 
 GPlatesAppLogic::ScalarCoverageEvolution::scalar_type_type
@@ -131,7 +153,8 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 					//
 					// Note that we'll modify this if the initial time is earlier than (before) the end
 					// of the time range since deformation in time range can change present day scalar values...
-					EvolvedScalarCoverage::create(d_num_scalar_values)))
+					EvolvedScalarCoverage::create(d_num_scalar_values))),
+	d_have_evolved_tectonic_subsidence(false)
 {
 	// The scalar coverage at the import time was stored in the present day sample.
 	EvolvedScalarCoverage::non_null_ptr_type import_scalar_coverage =
@@ -168,15 +191,13 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 		// to the beginning of the time range (least recent).
 		evolve_time_steps(
 				initial_time_slot.get()/*start_time_slot*/,
-				0/*end_time_slot*/,
-				import_scalar_coverage);
+				0/*end_time_slot*/);
 
 		// Iterate over the time range going *forward* in time from the initial time (least recent)
 		// to the end of the time range (most recent).
 		evolve_time_steps(
 				initial_time_slot.get()/*start_time_slot*/,
-				num_time_slots - 1/*end_time_slot*/,
-				import_scalar_coverage);
+				num_time_slots - 1/*end_time_slot*/);
 	}
 	else if (initial_time > time_range.get_begin_time())
 	{
@@ -194,8 +215,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 		// time range (least recent) to the end (most recent).
 		evolve_time_steps(
 				0/*start_time_slot*/,
-				num_time_slots - 1/*end_time_slot*/,
-				import_scalar_coverage);
+				num_time_slots - 1/*end_time_slot*/);
 	}
 	else // initial_time < time_range.get_end_time() ...
 	{
@@ -213,8 +233,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 		// time range (most recent) to the beginning (least recent).
 		evolve_time_steps(
 				num_time_slots - 1/*start_time_slot*/,
-				0/*end_time_slot*/,
-				import_scalar_coverage);
+				0/*end_time_slot*/);
 	}
 }
 
@@ -222,8 +241,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 void
 GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 		unsigned int start_time_slot,
-		unsigned int end_time_slot,
-		EvolvedScalarCoverage::non_null_ptr_type import_scalar_coverage)
+		unsigned int end_time_slot)
 {
 	if (start_time_slot == end_time_slot)
 	{
@@ -236,11 +254,9 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 	const bool reverse_reconstruct = end_time_slot > start_time_slot;
 	const int time_slot_direction = (end_time_slot > start_time_slot) ? 1 : -1;
 
-	typedef std::vector< boost::optional<GPlatesMaths::PointOnSphere> > domain_point_seq_type;
-	typedef std::vector< boost::optional<DeformationStrainRate> > domain_strain_rate_seq_type;
-
 	// Get the domain strain rates (if any) for the first time slot in the loop.
 	// Note that initially all geometry points should be active (as are all our initial scalar values).
+	typedef std::vector< boost::optional<DeformationStrainRate> > domain_strain_rate_seq_type;
 	domain_strain_rate_seq_type current_domain_strain_rates;
 	d_geometry_time_span->get_all_geometry_data(
 			start_time,
@@ -248,15 +264,14 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 			boost::none/*points_locations*/,
 			current_domain_strain_rates/*strain rates*/);
 
-	// Evolve the scalar values over time (either forward or backward) starting with the initial scalar values.
-	// Make a copy of the state of the current scalar coverage which we'll evolve and copy into the next
-	// scalar coverage and so on.
-	EvolvedScalarCoverage::non_null_ptr_type current_scalar_coverage = import_scalar_coverage;
-	EvolvedScalarCoverage::State current_scalar_coverage_state(current_scalar_coverage->state);
-
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			current_domain_strain_rates.size() == d_num_scalar_values,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Start with the default coverage state (crustal thickness *factor*) which we'll evolve and copy
+	// into the next scalar coverage and so on.
+	boost::optional<EvolvedScalarCoverage::non_null_ptr_type> current_scalar_coverage;
+	EvolvedScalarCoverage::State current_scalar_coverage_state(d_num_scalar_values);
 
 	// Iterate over the time slots either backward or forward in time (depending on 'time_slot_direction').
 	for (unsigned int time_slot = start_time_slot; time_slot != end_time_slot; time_slot += time_slot_direction)
@@ -299,7 +314,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 				next_scalar_coverage,
 				next_time_slot);
 
-		// Set the current scalar coverage for the next time step.
+		// Set the current scalar coverage.
 		current_scalar_coverage = next_scalar_coverage;
 
 		// Set the current domain strain rates for the next time step.
@@ -308,9 +323,15 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 
 	if (reverse_reconstruct) // forward in time ...
 	{
+		// We should only be able to get here if we have a current scalar coverage
+		// (ie, start_time_slot != end_time_slot).
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				current_scalar_coverage,
+				GPLATES_ASSERTION_SOURCE);
+
 		// The end sample is active so use it to set the present day sample since the
 		// present day sample might have been affected by any deformation within the time range.
-		d_scalar_coverage_time_span->get_present_day_sample() = current_scalar_coverage;
+		d_scalar_coverage_time_span->get_present_day_sample() = current_scalar_coverage.get();
 	}
 }
 
@@ -501,6 +522,193 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_step(
 }
 
 
+void
+GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence() const
+{
+	const TimeSpanUtils::TimeRange time_range = d_scalar_coverage_time_span->get_time_range();
+	const unsigned int num_time_slots = time_range.get_num_time_slots();
+
+	// Find the nearest time slot to the initial time (if it's inside the time range).
+	//
+	// NOTE: This mirrors what we already did for crustal thickness factor (see constructor).
+	boost::optional<unsigned int> initial_time_slot = time_range.get_nearest_time_slot(d_initial_time);
+	if (initial_time_slot)
+	{
+		// Iterate over the time range going *backwards* in time from the initial time (most recent)
+		// to the beginning of the time range (least recent).
+		evolve_tectonic_subsidence_time_steps(
+				initial_time_slot.get()/*start_time_slot*/,
+				0/*end_time_slot*/);
+
+		// Iterate over the time range going *forward* in time from the initial time (least recent)
+		// to the end of the time range (most recent).
+		evolve_tectonic_subsidence_time_steps(
+				initial_time_slot.get()/*start_time_slot*/,
+				num_time_slots - 1/*end_time_slot*/);
+	}
+	else if (d_initial_time > time_range.get_begin_time())
+	{
+		// The initial time is older than the beginning of the time range.
+		// Since there's no deformation (evolution) of scalar values from the initial time to the
+		// beginning of the time range, the scalars at the beginning of the time range are
+		// the same as those at the initial time.
+
+		// Iterate over the time range going *forward* in time from the beginning of the
+		// time range (least recent) to the end (most recent).
+		evolve_tectonic_subsidence_time_steps(
+				0/*start_time_slot*/,
+				num_time_slots - 1/*end_time_slot*/);
+	}
+	else // initial_time < time_range.get_end_time() ...
+	{
+		// The initial time is younger than the end of the time range.
+		// Since there's no deformation (evolution) of scalar values from the end of the time range
+		// to the initial time, the scalars at the end of the time range are
+		// the same as those at the initial time.
+
+		// Iterate over the time range going *backwards* in time from the end of the
+		// time range (most recent) to the beginning (least recent).
+		evolve_tectonic_subsidence_time_steps(
+				num_time_slots - 1/*start_time_slot*/,
+				0/*end_time_slot*/);
+	}
+}
+
+
+void
+GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_steps(
+		unsigned int start_time_slot,
+		unsigned int end_time_slot) const
+{
+	if (start_time_slot == end_time_slot)
+	{
+		return;
+	}
+
+	const int time_slot_direction = (end_time_slot > start_time_slot) ? 1 : -1;
+
+	// Get the initial scalar coverage in the initial time slot.
+	boost::optional<EvolvedScalarCoverage::non_null_ptr_type &> current_scalar_coverage_opt =
+			d_scalar_coverage_time_span->get_sample_in_time_slot(start_time_slot);
+	// We should have a scalar coverage in the initial time slot.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			current_scalar_coverage_opt,
+			GPLATES_ASSERTION_SOURCE);
+	EvolvedScalarCoverage::non_null_ptr_type current_scalar_coverage = current_scalar_coverage_opt.get();
+
+	// Set the initial tectonic subsidence scalar values (that we'll subsequently evolve).
+	if (const boost::optional<std::vector<double>> &initial_tectonic_subsidence =
+		d_initial_scalar_coverage.get_initial_scalar_values(TECTONIC_SUBSIDENCE))
+	{
+		// Copy the initial tectonic subsidence scalar values into our initial scalar coverage.
+		current_scalar_coverage->state.tectonic_subsidence = initial_tectonic_subsidence.get();
+	}
+	else // have no initial tectonic subsidence...
+	{
+		// Set all initial tectonic subsidence to zero (sea level).
+		//
+		// Initialise the 'std::vector<double>' directly into the 'boost::optional<std::vector<double>>'.
+		current_scalar_coverage->state.tectonic_subsidence = boost::in_place(d_num_scalar_values, 0.0);
+	}
+
+	// Iterate over the time slots either backward or forward in time (depending on 'time_slot_direction').
+	for (unsigned int time_slot = start_time_slot; time_slot != end_time_slot; time_slot += time_slot_direction)
+	{
+		const unsigned int current_time_slot = time_slot;
+		const unsigned int next_time_slot = current_time_slot + time_slot_direction;
+
+		// Get the next scalar coverage in the next time slot.
+		boost::optional<EvolvedScalarCoverage::non_null_ptr_type &> next_scalar_coverage_opt =
+				d_scalar_coverage_time_span->get_sample_in_time_slot(next_time_slot);
+		if (!next_scalar_coverage_opt)
+		{
+			// Return early - the next time slot is not active - so the last active time slot is the current time slot.
+			return;
+		}
+		EvolvedScalarCoverage::non_null_ptr_type next_scalar_coverage = next_scalar_coverage_opt.get();
+
+		// Evolve the current tectonic subsidence scalar values into the next time slot.
+		evolve_tectonic_subsidence_time_step(
+				current_scalar_coverage->state,
+				next_scalar_coverage->state);
+
+		// Set the current scalar coverage for the next time step.
+		current_scalar_coverage = next_scalar_coverage;
+	}
+}
+
+
+void
+GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_step(
+		const EvolvedScalarCoverage::State &current_scalar_coverage_state,
+		EvolvedScalarCoverage::State &next_scalar_coverage_state) const
+{
+	// Copy the current tectonic subsidence scalar values into the next scalar values.
+	//
+	// Then later below we'll just add in the difference in tectonic subsidence from current to next.
+	next_scalar_coverage_state.tectonic_subsidence = current_scalar_coverage_state.tectonic_subsidence.get();
+
+	for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+	{
+		// If next scalar value is inactive then we cannot evolve it.
+		if (!next_scalar_coverage_state.scalar_values_are_active[n])
+		{
+			continue;
+		}
+
+		// The next scalar value is active and so must the current scalar value.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				current_scalar_coverage_state.scalar_values_are_active[n],
+				GPLATES_ASSERTION_SOURCE);
+
+		// Crustal thickness depends on initial values T(i) (or default values if not provided) and
+		// the calculated crustal thickness *factor*:
+		// 
+		// T(n)    = [T(n)/T(i)] * T(i)
+		//         = crustal_thickness_factor * T(i)
+		//
+		// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
+		//
+		double current_crustal_thickness;
+		if (const boost::optional<std::vector<double>> &initial_crustal_thickness =
+			d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THICKNESS))
+		{
+			// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
+			current_crustal_thickness = initial_crustal_thickness.get()[n] *
+					current_scalar_coverage_state.crustal_thickness_factor[n];
+		}
+		else
+		{
+			// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
+			//                   = DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS * crustal_thickness_factor
+			current_crustal_thickness = DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS *
+					current_scalar_coverage_state.crustal_thickness_factor[n];
+		}
+
+		//
+		// Calculate the difference in tectonic subsidence from current time to next time.
+		//
+		const double crustal_thickness_factor_current_to_next =
+				next_scalar_coverage_state.crustal_thickness_factor[n] /
+				current_scalar_coverage_state.crustal_thickness_factor[n];
+		double delta_tectonic_subsidence = (DENSITY_MANTLE - DENSITY_CRUST) * current_crustal_thickness *
+				(1.0 - crustal_thickness_factor_current_to_next);
+		// If currently below sea level then factor in the density of water.
+		if (current_scalar_coverage_state.tectonic_subsidence.get()[n] >= 0)
+		{
+			delta_tectonic_subsidence /= DENSITY_ASTHENOSPHERE - DENSITY_WATER;
+		}
+		else
+		{
+			delta_tectonic_subsidence /= DENSITY_ASTHENOSPHERE;
+		}
+
+		// Update the tectonic subsidence.
+		next_scalar_coverage_state.tectonic_subsidence.get()[n] += delta_tectonic_subsidence;
+	}
+}
+
+
 GPlatesAppLogic::ScalarCoverageEvolution::EvolvedScalarCoverage::non_null_ptr_type
 GPlatesAppLogic::ScalarCoverageEvolution::create_time_span_rigid_sample(
 		const double &reconstruction_time,
@@ -552,10 +760,20 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
 		std::vector<double> &scalar_values,
 		std::vector<bool> &scalar_values_are_active) const
 {
+	// If the caller requested tectonic subsidence then evolve it (if haven't already).
+	if (evolved_scalar_type == TECTONIC_SUBSIDENCE)
+	{
+		if (!d_have_evolved_tectonic_subsidence)
+		{
+			evolve_tectonic_subsidence();
+			d_have_evolved_tectonic_subsidence = true;
+		}
+	}
+
+	// Get the scalar coverage at the requested reconstruction time.
 	EvolvedScalarCoverage::non_null_ptr_type scalar_coverage =
 			d_scalar_coverage_time_span->get_or_create_sample(reconstruction_time);
-
-	EvolvedScalarCoverage::State &scalar_coverage_state = scalar_coverage->state;
+	const EvolvedScalarCoverage::State &scalar_coverage_state = scalar_coverage->state;
 
 	// Copy the active status of each scalar value.
 	scalar_values_are_active = scalar_coverage_state.scalar_values_are_active;
@@ -685,6 +903,17 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
 						1.0 - scalar_coverage_state.crustal_thickness_factor[n]);
 			}
 		}
+	}
+	break;
+
+	case TECTONIC_SUBSIDENCE:
+	{
+		// Tectonic subsidence should be initialised.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				scalar_coverage_state.tectonic_subsidence,
+				GPLATES_ASSERTION_SOURCE);
+
+		scalar_values = scalar_coverage_state.tectonic_subsidence.get();
 	}
 	break;
 

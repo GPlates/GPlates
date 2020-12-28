@@ -247,6 +247,13 @@ namespace GPlatesAppLogic
 				 * Because all the crustal thickness-related scalar types are derived from this.
 				 */
 				std::vector<double> crustal_thickness_factor;
+
+				/**
+				 * Subsidence due to crustal stretching and lithospheric thermal cooling.
+				 *
+				 * This is calculated on demand (hence the boost::optional).
+				 */
+				boost::optional<std::vector<double>> tectonic_subsidence;
 			};
 
 
@@ -297,6 +304,9 @@ namespace GPlatesAppLogic
 		double d_initial_time;
 		time_span_type::non_null_ptr_type d_scalar_coverage_time_span;
 
+		//! Tectonic subsidence is evolved only when/if it is first requested since it's relatively expensive.
+		mutable bool d_have_evolved_tectonic_subsidence;
+
 
 		ScalarCoverageEvolution(
 				const InitialEvolvedScalarCoverage &initial_scalar_coverage,
@@ -306,8 +316,7 @@ namespace GPlatesAppLogic
 		void
 		evolve_time_steps(
 				unsigned int start_time_slot,
-				unsigned int end_time_slot,
-				EvolvedScalarCoverage::non_null_ptr_type import_scalar_coverage);
+				unsigned int end_time_slot);
 
 		/**
 		 * Evolves the current scalar values from the current time to the next time.
@@ -331,6 +340,22 @@ namespace GPlatesAppLogic
 				const std::vector< boost::optional<DeformationStrainRate> > &next_deformation_strain_rates,
 				const double &current_time,
 				const double &next_time);
+
+		/**
+		 * Evolve tectonic subsidence from crustal stretching and lithospheric thermal cooling.
+		 */
+		void
+		evolve_tectonic_subsidence() const;
+
+		void
+		evolve_tectonic_subsidence_time_steps(
+				unsigned int start_time_slot,
+				unsigned int end_time_slot) const;
+
+		void
+		evolve_tectonic_subsidence_time_step(
+				const EvolvedScalarCoverage::State &current_scalar_coverage_state,
+				EvolvedScalarCoverage::State &next_scalar_coverage_state) const;
 
 		/**
 		 * The sample *creator* function for TimeSpanUtils::TimeWindowSpan<EvolvedScalarCoverage>.
