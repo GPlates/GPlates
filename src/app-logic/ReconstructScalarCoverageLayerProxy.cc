@@ -635,7 +635,8 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_reconstructed_scalar
 				->get_reconstructed_feature_geometries(reconstructed_domain_feature_geometries, reconstruction_time);
 	}
 
-	// Then match each RFG to a scalar coverage time span and create a ReconstructedScalarCoverage.
+	// Then match each RFG to a scalar coverage time span and create a ReconstructedScalarCoverage if the
+	// time span contains the requested scalar type.
 	for (const auto &reconstructed_domain_feature_geometry : reconstructed_domain_feature_geometries)
 	{
 		scalar_coverage_time_span_map_type::const_iterator scalar_coverage_time_span_iter =
@@ -658,7 +659,9 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_reconstructed_scalar
 		//
 		// Actually shouldn't need to do this because if we have the domain RFG then its geometry time span already
 		// passed this test (both the scalar coverage time span and domain geometry time span are in sync).
-		if (scalar_coverage_time_span->is_valid(reconstruction_time))
+		if (scalar_coverage_time_span->is_valid(reconstruction_time) &&
+			// Also need to make sure the requested scalar type is contained in the scalar coverage time span...
+			scalar_coverage_time_span->contains_scalar_type(scalar_type))
 		{
 			reconstruction_info.cached_reconstructed_scalar_coverages->push_back(
 					ReconstructedScalarCoverage::create(

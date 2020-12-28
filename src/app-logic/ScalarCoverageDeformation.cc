@@ -164,6 +164,29 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_scalar_c
 
 
 bool
+GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::contains_scalar_type(
+		const scalar_type_type &scalar_type) const
+{
+	// First look in the *non-evolved* scalar coverage.
+	if (d_non_evolved_scalar_coverage.find(scalar_type) != d_non_evolved_scalar_coverage.end())
+	{
+		return true;
+	}
+
+	// Next look in the *evolved* scalar coverage.
+	if (d_evolved_scalar_coverage_time_span &&
+		// Note that all evolved scalar types are available
+		// (they use defaults if they don't have initial values)...
+		ScalarCoverageEvolution::is_evolved_scalar_type(scalar_type))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+
+bool
 GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_scalar_values(
 		const scalar_type_type &scalar_type,
 		const double &reconstruction_time,

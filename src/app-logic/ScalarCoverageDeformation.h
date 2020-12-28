@@ -175,6 +175,13 @@ namespace GPlatesAppLogic
 					const double &reconstruction_time) const;
 
 			/**
+			 * Returns true if this scalar coverage (time span) contains the specified scalar type.
+			 */
+			bool
+			contains_scalar_type(
+					const scalar_type_type &scalar_type) const;
+
+			/**
 			 * Returns the scalar values at the specified time.
 			 *
 			 * Note: Only scalar values at *active* points are returned (which means the size of
