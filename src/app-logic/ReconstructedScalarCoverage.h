@@ -30,7 +30,7 @@
 
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionGeometry.h"
-#include "ScalarCoverageDeformation.h"
+#include "ScalarCoverageTimeSpan.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -89,7 +89,7 @@ namespace GPlatesAppLogic
 				const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_domain_geometry,
 				GPlatesModel::FeatureHandle::iterator range_property_iterator,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
-				const ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span,
+				const ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
 		{
 			return non_null_ptr_type(
@@ -284,7 +284,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Used to obtain the per-geometry-point scalar values when requested.
 		 */
-		ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type d_scalar_coverage_time_span;
+		ScalarCoverageTimeSpan::non_null_ptr_type d_scalar_coverage_time_span;
 
 
 		/**
@@ -297,7 +297,7 @@ namespace GPlatesAppLogic
 				const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_domain_geometry,
 				GPlatesModel::FeatureHandle::iterator range_property_iterator,
 				const GPlatesPropertyValues::ValueObjectType &scalar_type,
-				const ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span,
+				const ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_);
 
 	};

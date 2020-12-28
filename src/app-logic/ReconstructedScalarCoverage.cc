@@ -37,7 +37,7 @@ GPlatesAppLogic::ReconstructedScalarCoverage::ReconstructedScalarCoverage(
 		const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_domain_geometry,
 		GPlatesModel::FeatureHandle::iterator range_property_iterator,
 		const GPlatesPropertyValues::ValueObjectType &scalar_type,
-		const ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span,
+		const ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span,
 		boost::optional<ReconstructHandle::type> reconstruct_handle_) :
 	ReconstructionGeometry(
 			reconstructed_domain_geometry->get_reconstruction_time(),

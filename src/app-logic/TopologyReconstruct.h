@@ -459,7 +459,7 @@ namespace GPlatesAppLogic
 
 
 			//
-			// Interface used by ScalarCoverageDeformation::ScalarCoverageTimeSpan...
+			// Interface used by ScalarCoverageTimeSpan...
 			//
 
 			/**

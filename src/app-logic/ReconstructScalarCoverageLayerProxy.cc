@@ -481,7 +481,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_topology_reconstruct
 		for (const ScalarCoverageFeatureProperties::Coverage &scalar_coverage : scalar_coverages)
 		{
 			// Extract the scalar values from the current scalar coverage.
-			ScalarCoverageDeformation::ScalarCoverageTimeSpan::initial_scalar_coverage_type initial_scalar_coverage;
+			ScalarCoverageTimeSpan::initial_scalar_coverage_type initial_scalar_coverage;
 			for (const auto &scalar_data : scalar_coverage.range)
 			{
 				const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_data->value_object_type();
@@ -507,9 +507,9 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_topology_reconstruct
 			//  1) using the topology-reconstructed geometry time span (and scalar values and evolution function), or
 			//  2) only the scalars (will return these same scalars for all reconstruction times).
 			//
-			ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span = geometry_time_span
-					? ScalarCoverageDeformation::ScalarCoverageTimeSpan::create(initial_scalar_coverage, geometry_time_span.get())
-					: ScalarCoverageDeformation::ScalarCoverageTimeSpan::create(initial_scalar_coverage);
+			ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span = geometry_time_span
+					? ScalarCoverageTimeSpan::create(initial_scalar_coverage, geometry_time_span.get())
+					: ScalarCoverageTimeSpan::create(initial_scalar_coverage);
 
 			reconstructed_scalar_coverage_time_span.d_scalar_coverage_time_spans.push_back(
 					ReconstructedScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
@@ -564,7 +564,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_non_topology_reconst
 		for (const ScalarCoverageFeatureProperties::Coverage &scalar_coverage : scalar_coverages)
 		{
 			// Extract the scalar values from the current scalar coverage.
-			ScalarCoverageDeformation::ScalarCoverageTimeSpan::initial_scalar_coverage_type initial_scalar_coverage;
+			ScalarCoverageTimeSpan::initial_scalar_coverage_type initial_scalar_coverage;
 			for (const auto &scalar_data : scalar_coverage.range)
 			{
 				const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_data->value_object_type();
@@ -576,8 +576,8 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_non_topology_reconst
 
 			// Create a time span of only the extracted scalar values (they're not evolved over time).
 			// The time span will return these scalar values for all reconstruction times.
-			ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span =
-					ScalarCoverageDeformation::ScalarCoverageTimeSpan::create(initial_scalar_coverage);
+			ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span =
+					ScalarCoverageTimeSpan::create(initial_scalar_coverage);
 
 			reconstructed_scalar_coverage_time_span.d_scalar_coverage_time_spans.push_back(
 					ReconstructedScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
@@ -651,7 +651,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_reconstructed_scalar
 
 		GPlatesModel::FeatureHandle::iterator scalar_coverage_range_property =
 				scalar_coverage_time_span_iter->second.first;
-		ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span =
+		ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span =
 				scalar_coverage_time_span_iter->second.second;
 
 		// If the geometry has not been subducted/consumed at the reconstruction time then

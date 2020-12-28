@@ -38,9 +38,9 @@
 #include "ReconstructHandle.h"
 #include "ReconstructLayerProxy.h"
 #include "ReconstructScalarCoverageParams.h"
-#include "ScalarCoverageDeformation.h"
 #include "ScalarCoverageEvolution.h"
 #include "ScalarCoverageFeatureProperties.h"
+#include "ScalarCoverageTimeSpan.h"
 
 #include "model/FeatureHandle.h"
 
@@ -251,7 +251,7 @@ namespace GPlatesAppLogic
 				ScalarCoverageTimeSpan(
 						GPlatesModel::FeatureHandle::iterator domain_property_iterator,
 						GPlatesModel::FeatureHandle::iterator range_property_iterator,
-						const ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span) :
+						const GPlatesAppLogic::ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span) :
 					d_domain_property_iterator(domain_property_iterator),
 					d_range_property_iterator(range_property_iterator),
 					d_scalar_coverage_time_span(scalar_coverage_time_span)
@@ -279,7 +279,7 @@ namespace GPlatesAppLogic
 				/**
 				 * The scalar coverage time span associated with this geometry property.
 				 */
-				ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type
+				GPlatesAppLogic::ScalarCoverageTimeSpan::non_null_ptr_type
 				get_scalar_coverage_time_span() const
 				{
 					return d_scalar_coverage_time_span;
@@ -301,7 +301,7 @@ namespace GPlatesAppLogic
 			private:
 				GPlatesModel::FeatureHandle::iterator d_domain_property_iterator;
 				GPlatesModel::FeatureHandle::iterator d_range_property_iterator;
-				ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type d_scalar_coverage_time_span;
+				GPlatesAppLogic::ScalarCoverageTimeSpan::non_null_ptr_type d_scalar_coverage_time_span;
 			};
 
 			//! Typedef for a sequence of @a ScalarCoverageTimeSpan objects.
@@ -501,7 +501,7 @@ namespace GPlatesAppLogic
 		 */
 		typedef std::pair<
 				GPlatesModel::FeatureHandle::iterator, /* range property iterator */
-				ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type>
+				ScalarCoverageTimeSpan::non_null_ptr_type>
 						scalar_coverage_time_span_mapped_type;
 
 		//! Typedef for mapping geometry properties to their scalar coverage lookup tables.

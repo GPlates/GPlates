@@ -25,7 +25,7 @@
 
 #include <boost/optional.hpp>
 
-#include "ScalarCoverageDeformation.h"
+#include "ScalarCoverageTimeSpan.h"
 
 #include "ReconstructionGeometryUtils.h"
 #include "TopologyReconstruct.h"
@@ -36,7 +36,7 @@
 #include "global/PreconditionViolationError.h"
 
 
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
+GPlatesAppLogic::ScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
 		const initial_scalar_coverage_type &initial_scalar_coverage) :
 	// We have no deformation (no geometry time span) and hence no scalars can be evolved,
 	// so they're all non-evolved...
@@ -61,7 +61,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 }
 
 
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
+GPlatesAppLogic::ScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
 		const initial_scalar_coverage_type &initial_scalar_coverage,
 		TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span) :
 	d_geometry_time_span(geometry_time_span),
@@ -134,7 +134,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCovera
 
 
 bool
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::is_valid(
+GPlatesAppLogic::ScalarCoverageTimeSpan::is_valid(
 		const double &reconstruction_time) const
 {
 	// If we have a geometry time span then just delegate to it since it determines whether all geometry
@@ -149,8 +149,8 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::is_valid(
 }
 
 
-boost::optional<GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::ScalarCoverage>
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_scalar_coverage(
+boost::optional<GPlatesAppLogic::ScalarCoverageTimeSpan::ScalarCoverage>
+GPlatesAppLogic::ScalarCoverageTimeSpan::get_scalar_coverage(
 		const double &reconstruction_time) const
 {
 	if (!is_valid(reconstruction_time))
@@ -164,7 +164,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_scalar_c
 
 
 bool
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::contains_scalar_type(
+GPlatesAppLogic::ScalarCoverageTimeSpan::contains_scalar_type(
 		const scalar_type_type &scalar_type) const
 {
 	// First look in the *non-evolved* scalar coverage.
@@ -187,7 +187,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::contains_sca
 
 
 bool
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_scalar_values(
+GPlatesAppLogic::ScalarCoverageTimeSpan::get_scalar_values(
 		const scalar_type_type &scalar_type,
 		const double &reconstruction_time,
 		std::vector<double> &scalar_values) const
@@ -218,7 +218,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_scalar_v
 
 
 bool
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_all_scalar_values(
+GPlatesAppLogic::ScalarCoverageTimeSpan::get_all_scalar_values(
 		const scalar_type_type &scalar_type,
 		const double &reconstruction_time,
 		std::vector<double> &scalar_values,
@@ -291,7 +291,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_all_scal
 
 
 bool
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_are_scalar_values_active(
+GPlatesAppLogic::ScalarCoverageTimeSpan::get_are_scalar_values_active(
 		const double &reconstruction_time,
 		std::vector<bool> &scalar_values_are_active) const
 {
@@ -323,7 +323,7 @@ GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::get_are_scal
 
 
 std::vector<double>
-GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::create_import_scalar_values(
+GPlatesAppLogic::ScalarCoverageTimeSpan::create_import_scalar_values(
 		const std::vector<double> &scalar_values,
 		TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span)
 {

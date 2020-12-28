@@ -212,12 +212,12 @@ set(srcs
     ResolvedVertexSourceInfo.h
     RotationUtils.cc
     RotationUtils.h
-    ScalarCoverageDeformation.cc
-    ScalarCoverageDeformation.h
     ScalarCoverageEvolution.cc
     ScalarCoverageEvolution.h
     ScalarCoverageFeatureProperties.cc
     ScalarCoverageFeatureProperties.h
+    ScalarCoverageTimeSpan.cc
+    ScalarCoverageTimeSpan.h
     ScalarField3DLayerParams.cc
     ScalarField3DLayerParams.h
     ScalarField3DLayerProxy.cc
