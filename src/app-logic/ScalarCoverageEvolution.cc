@@ -24,8 +24,10 @@
  */
 
 #include <algorithm>
+#include <utility>
 #include <cmath>
 #include <boost/bind.hpp>
+#include <boost/scoped_array.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include "ScalarCoverageEvolution.h"
@@ -33,6 +35,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
+
+#include "utils/Profile.h"
 
 
 namespace GPlatesAppLogic
@@ -54,6 +58,24 @@ namespace GPlatesAppLogic
 
 	// Asthenosphere density [kg/m^3].
 	const double DENSITY_ASTHENOSPHERE = DENSITY_MANTLE * (1.0 - THERMAL_ALPHA * TEMPERATURE_ASTHENOSPHERE);
+
+	// Thickness of lithosphere (in Kms).
+	constexpr double LITHOSPHERIC_THICKNESS_KMS = 125.0;
+
+	// Depth resolution to use when solving the 1D temperature advection-diffusion equation for each surface point.
+	constexpr unsigned int NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS = 25;
+	constexpr unsigned int NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES = NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS + 1;
+	const double INVERSE_NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS = 1.0 / NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS;
+
+	// The depth spacing between temperature diffusion depth samples (in Kms).
+	const double TEMPERATURE_DIFFISION_DEPTH_RESOLUTION_KMS =
+			LITHOSPHERIC_THICKNESS_KMS / NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS;
+
+	// Limit the number of surface points to solve temperature diffusion at the same time (in a group)
+	// in order to minimise memory usage for storing temperature depth profile and also, to a lesser extent,
+	// to minimise CPU cache misses (when subtracting temperature profile of previous time step from
+	// current time step - the previous time step will still be in the CPU cache).
+	constexpr unsigned int NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP = 1000;
 }
 
 
@@ -135,9 +157,9 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 		const double &initial_time,
 		TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span) :
 	d_geometry_time_span(geometry_time_span),
-	d_num_scalar_values(initial_scalar_coverage.get_num_scalar_values()),
 	d_initial_scalar_coverage(initial_scalar_coverage),
 	d_initial_time(initial_time),
+	d_num_scalar_values(initial_scalar_coverage.get_num_scalar_values()),
 	d_scalar_coverage_time_span(
 			time_span_type::create(
 					geometry_time_span->get_time_range(),
@@ -154,8 +176,17 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 					// Note that we'll modify this if the initial time is earlier than (before) the end
 					// of the time range since deformation in time range can change present day scalar values...
 					EvolvedScalarCoverage::create(d_num_scalar_values))),
-	d_have_evolved_tectonic_subsidence(false)
+	d_have_initialised_tectonic_subsidence(false)
 {
+	initialise();
+}
+
+
+void
+GPlatesAppLogic::ScalarCoverageEvolution::initialise()
+{
+	PROFILE_FUNC();
+
 	// The scalar coverage at the import time was stored in the present day sample.
 	EvolvedScalarCoverage::non_null_ptr_type import_scalar_coverage =
 			d_scalar_coverage_time_span->get_present_day_sample();
@@ -166,7 +197,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 	// Find the nearest time slot to the initial time (if it's inside the time range).
 	//
 	// NOTE: This mirrors what is done with the domain geometry associated with the scalar coverage.
-	boost::optional<unsigned int> initial_time_slot = time_range.get_nearest_time_slot(initial_time);
+	boost::optional<unsigned int> initial_time_slot = time_range.get_nearest_time_slot(d_initial_time);
 	if (initial_time_slot)
 	{
 		//
@@ -199,7 +230,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 				initial_time_slot.get()/*start_time_slot*/,
 				num_time_slots - 1/*end_time_slot*/);
 	}
-	else if (initial_time > time_range.get_begin_time())
+	else if (d_initial_time > time_range.get_begin_time())
 	{
 		// The initial time is older than the beginning of the time range.
 		// Since there's no deformation (evolution) of scalar values from the initial time to the
@@ -260,7 +291,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 	domain_strain_rate_seq_type current_domain_strain_rates;
 	d_geometry_time_span->get_all_geometry_data(
 			start_time,
-			boost::none/*point*/,
+			boost::none/*points*/,
 			boost::none/*points_locations*/,
 			current_domain_strain_rates/*strain rates*/);
 
@@ -285,9 +316,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_steps(
 		// Get the domain strain rates (if any) for the next time slot in the loop.
 		domain_strain_rate_seq_type next_domain_strain_rates;
 
-		const bool scalar_values_sample_active =
-				d_geometry_time_span->get_all_geometry_data(next_time, boost::none, boost::none, next_domain_strain_rates);
-		if (!scalar_values_sample_active)
+		if (!d_geometry_time_span->get_all_geometry_data(next_time, boost::none, boost::none, next_domain_strain_rates))
 		{
 			// Return early - the next time slot is not active - so the last active time slot is the current time slot.
 			return;
@@ -372,37 +401,37 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_step(
 	//
 	const double seconds_in_a_million_years = 365.25 * 24 * 3600 * 1.0e6;
 
-	for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+	for (unsigned int scalar_value_index = 0; scalar_value_index < d_num_scalar_values; ++scalar_value_index)
 	{
 		// If current scalar value is inactive then it remains inactive.
-		if (!current_scalar_coverage_state.scalar_values_are_active[n])
+		if (!current_scalar_coverage_state.scalar_values_are_active[scalar_value_index])
 		{
 			// If the current scalar value is inactive then so must the current (and next) dilatation strain rates.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					!current_deformation_strain_rates[n] &&
-						!next_deformation_strain_rates[n],
+					!current_deformation_strain_rates[scalar_value_index] &&
+						!next_deformation_strain_rates[scalar_value_index],
 					GPLATES_ASSERTION_SOURCE);
 			continue;
 		}
 
 		// The current scalar value is active so the current dilatation strain rate must also be active.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				current_deformation_strain_rates[n],
+				current_deformation_strain_rates[scalar_value_index],
 				GPLATES_ASSERTION_SOURCE);
 
 		// If the next strain rate is inactive then the scalar value becomes inactive (for the next time step).
-		if (!next_deformation_strain_rates[n])
+		if (!next_deformation_strain_rates[scalar_value_index])
 		{
 			// The current scalar value is no longer active (for the next time step).
-			current_scalar_coverage_state.scalar_values_are_active[n] = false;
+			current_scalar_coverage_state.scalar_values_are_active[scalar_value_index] = false;
 
 			continue;
 		}
 
 		double current_dilatation_per_my = seconds_in_a_million_years *
-				current_deformation_strain_rates[n]->get_strain_rate_dilatation();
+				current_deformation_strain_rates[scalar_value_index]->get_strain_rate_dilatation();
 		double next_dilatation_per_my = seconds_in_a_million_years *
-				next_deformation_strain_rates[n]->get_strain_rate_dilatation();
+				next_deformation_strain_rates[scalar_value_index]->get_strain_rate_dilatation();
 
 		//
 		// The rate of change of crustal thickness is (going forward in time):
@@ -517,13 +546,327 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_step(
 		}
 
 		// Update the crustal thickness factor (ratio of crustal thickness to initial crustal thickness).
-		current_scalar_coverage_state.crustal_thickness_factor[n] *= crustal_thickness_multiplier;
+		current_scalar_coverage_state.crustal_thickness_factor[scalar_value_index] *= crustal_thickness_multiplier;
 	}
 }
 
 
 void
-GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence() const
+GPlatesAppLogic::ScalarCoverageEvolution::initialise_tectonic_subsidence() const
+{
+	PROFILE_FUNC();
+
+	const TimeSpanUtils::TimeRange time_range = d_scalar_coverage_time_span->get_time_range();
+	const unsigned int num_time_slots = time_range.get_num_time_slots();
+	if (num_time_slots == 0)
+	{
+		return;
+	}
+
+	//
+	// Working space for lithospheric temperature calculations.
+	//
+	// Store temperature advection-diffusion depth samples for a group of surface points for two time steps.
+	// We'll ping-pong between these two time buffers as we evolve the temperature depth profile through time.
+	boost::scoped_array<double> temperature_depth_working_space_1(
+			new double[NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP * NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES]);
+	boost::scoped_array<double> temperature_depth_working_space_2(
+			new double[NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP * NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES]);
+	// Store a lithospheric temperature (integrated over depth) for each time slot for each point.
+	boost::scoped_array<double> lithospheric_temperature_integrated_over_depth_working_space(
+			new double[num_time_slots * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP]);
+
+	unsigned int num_temperature_diffusion_groups =
+			d_num_scalar_values / NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
+	// Might be a last group if there's a remainder.
+	if ((d_num_scalar_values % NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP) != 0)
+	{
+		++num_temperature_diffusion_groups;
+	}
+
+	// Iterate over the groups.
+	for (unsigned int group_index = 0; group_index < num_temperature_diffusion_groups; ++group_index)
+	{
+		// Start/end indices into scalar values of the current group.
+		const unsigned int scalar_values_start_index = group_index * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
+		unsigned int scalar_values_end_index = scalar_values_start_index + NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
+		if (scalar_values_end_index > d_num_scalar_values)
+		{
+			scalar_values_end_index = d_num_scalar_values;
+		}
+
+		// We haven't yet started evolving lithospheric temperature for any points in the current group.
+		// For each point, when it first becomes active, we'll initialise it with a linear temperature-depth profile.
+		std::vector<bool> have_started_evolving_lithospheric_temperature(
+				scalar_values_end_index - scalar_values_start_index,
+				false);
+
+		// Starting with a linear temperature gradient through the depth of the lithosphere
+		// calculate the 1D temperature (with depth) through time at each surface point location.
+		// Crustal stretching causes advection of hot asthenosphere (increasing temperature) while
+		// diffusion cools back towards the original linear temperature gradient.
+		evolve_lithospheric_temperature(
+				have_started_evolving_lithospheric_temperature,
+				lithospheric_temperature_integrated_over_depth_working_space.get(),
+				temperature_depth_working_space_1.get(),
+				temperature_depth_working_space_2.get(),
+				scalar_values_start_index,
+				scalar_values_end_index);
+
+		// The temperature changes in turn cause density changes that, along with density changes due to
+		// crustal stretching (since crustal and mantle densities differ), result in isostatic subsidence.
+		evolve_tectonic_subsidence(
+				lithospheric_temperature_integrated_over_depth_working_space.get(),
+				scalar_values_start_index,
+				scalar_values_end_index);
+	}
+}
+
+
+void
+GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature(
+		std::vector<bool> &have_started_evolving_lithospheric_temperature,
+		double *const lithospheric_temperature_integrated_over_depth,
+		double *current_temperature_depth,
+		double *next_temperature_depth,
+		unsigned int scalar_values_start_index,
+		unsigned int scalar_values_end_index) const
+{
+	PROFILE_FUNC();
+
+	const TimeSpanUtils::TimeRange time_range = d_scalar_coverage_time_span->get_time_range();
+	const unsigned int num_time_slots = time_range.get_num_time_slots();
+	if (num_time_slots == 0)
+	{
+		return;
+	}
+
+	boost::optional<EvolvedScalarCoverage::non_null_ptr_type &> current_scalar_coverage;
+
+	// Find the first active scalar coverage (going forward in time).
+	unsigned int time_slot;
+	for (time_slot = 0; time_slot < num_time_slots - 1 /*end time slot*/; ++time_slot)
+	{
+		current_scalar_coverage = d_scalar_coverage_time_span->get_sample_in_time_slot(time_slot);
+		if (current_scalar_coverage)
+		{
+			break;
+		}
+	}
+
+	if (!current_scalar_coverage)
+	{
+		// Shouldn't be able to get here since at least the initial/import time slot should be active,
+		// but if no scalar coverages time slots are active then nothing to do, so return early.
+		return;
+	}
+
+	// Get the domain strain rates for the current time slot.
+	typedef std::vector< boost::optional<DeformationStrainRate> > domain_strain_rate_seq_type;
+	domain_strain_rate_seq_type current_domain_strain_rates;
+	d_geometry_time_span->get_all_geometry_data(
+			time_range.get_time(time_slot),
+			boost::none/*points*/,
+			boost::none/*points_locations*/,
+			current_domain_strain_rates/*strain rates*/,
+			boost::none,/*strains*/
+			scalar_values_start_index,
+			scalar_values_end_index);
+	// We should have active strain rates since we have an active scalar coverage for the current time slot.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			current_domain_strain_rates.size() == scalar_values_end_index - scalar_values_start_index,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Iterate over the rest of the time range going *forward* in time until/if we find an inactive slot.
+	for ( ; time_slot < num_time_slots - 1 /*end time slot*/; ++time_slot)
+	{
+		const unsigned int current_time_slot = time_slot;
+		const unsigned int next_time_slot = current_time_slot + 1;
+
+		// Get the next scalar coverage in the next time slot.
+		boost::optional<EvolvedScalarCoverage::non_null_ptr_type &> next_scalar_coverage =
+				d_scalar_coverage_time_span->get_sample_in_time_slot(next_time_slot);
+		if (!next_scalar_coverage)
+		{
+			// Return early - the next time slot is not active - so the last active time slot is the current time slot.
+			return;
+		}
+
+		// Get the domain strain rates for the next time slot in the loop.
+		domain_strain_rate_seq_type next_domain_strain_rates;
+		d_geometry_time_span->get_all_geometry_data(
+				time_range.get_time(next_time_slot),
+				boost::none/*points*/,
+				boost::none/*points_locations*/,
+				next_domain_strain_rates,
+				boost::none,/*strains*/
+				scalar_values_start_index,
+				scalar_values_end_index);
+		// We should have active strain rates since we have an active scalar coverage for the next time slot.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				next_domain_strain_rates.size() == scalar_values_end_index - scalar_values_start_index,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Each lithospheric-temperature-integrated-over-depth array contains
+		// 'scalar_values_end_index - scalar_values_start_index' values, which is equal to
+		// NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP for all but the last group.
+		double *const current_lithospheric_temperature_integrated_over_depth =
+				lithospheric_temperature_integrated_over_depth + current_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
+		double *const next_lithospheric_temperature_integrated_over_depth =
+				lithospheric_temperature_integrated_over_depth + next_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
+
+		// Evolve the current lithospheric temperature depth profile into the next time slot.
+		evolve_lithospheric_temperature_time_step(
+				current_domain_strain_rates,
+				next_domain_strain_rates,
+				current_scalar_coverage.get()->state,
+				next_scalar_coverage.get()->state,
+				have_started_evolving_lithospheric_temperature,
+				current_lithospheric_temperature_integrated_over_depth,
+				next_lithospheric_temperature_integrated_over_depth,
+				current_temperature_depth,
+				next_temperature_depth,
+				scalar_values_start_index,
+				scalar_values_end_index);
+
+		// Swap the current and next temperature depth profiles.
+		//
+		// The next temperature depth profile in the current time step becomes the
+		// current temperature depth profile in the next time step.
+		//
+		// And the space occupied by the current temperature depth profile in the current time step
+		// will be used for the next temperature depth profile in the next time step.
+		std::swap(current_temperature_depth, next_temperature_depth);
+
+		// Set the current domain strain rates for the next time step.
+		current_domain_strain_rates.swap(next_domain_strain_rates);
+
+		// Set the current scalar coverage for the next time step.
+		current_scalar_coverage = next_scalar_coverage;
+	}
+}
+
+
+void
+GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_step(
+		const std::vector< boost::optional<DeformationStrainRate> > &current_deformation_strain_rates,
+		const std::vector< boost::optional<DeformationStrainRate> > &next_deformation_strain_rates,
+		const EvolvedScalarCoverage::State &current_scalar_coverage_state,
+		EvolvedScalarCoverage::State &next_scalar_coverage_state,
+		// Each of the following three arrays contains
+		// 'scalar_values_end_index - scalar_values_start_index' values...
+		std::vector<bool> &have_started_evolving_lithospheric_temperature,
+		double *const current_lithospheric_temperature_integrated_over_depth,
+		double *const next_lithospheric_temperature_integrated_over_depth,
+		// Each of the 'scalar_values_end_index - scalar_values_start_index' points (scalar values) in
+		// temperature-depth profile contains NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES depth samples...
+		double *const current_temperature_depth,
+		double *const next_temperature_depth,
+		unsigned int scalar_values_start_index,
+		unsigned int scalar_values_end_index) const
+{
+	// Input array sizes should match.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			scalar_values_end_index - scalar_values_start_index == current_deformation_strain_rates.size() &&
+				scalar_values_end_index - scalar_values_start_index == next_deformation_strain_rates.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	//
+	// Strain rates are in 1/sec (multiplying by this number converts to 1/My).
+	//
+	const double seconds_in_a_million_years = 365.25 * 24 * 3600 * 1.0e6;
+
+	for (unsigned int scalar_value_index = scalar_values_start_index;
+		scalar_value_index < scalar_values_end_index;
+		++scalar_value_index)
+	{
+		// If the current scalar value is not active then either we've not reached the active time span of the
+		// current point or we've already gone past it (forward in time). Either way there's nothing to do.
+		if (!current_scalar_coverage_state.scalar_values_are_active[scalar_value_index])
+		{
+			continue;
+		}
+
+		const unsigned int scalar_value_index_in_group = scalar_value_index - scalar_values_start_index;
+
+		// Pointers to the start of the temperature-depth profile of the current point (scalar value)
+		// for the current and next times.
+		double *const current_temperature_depth_of_current_point = current_temperature_depth +
+				scalar_value_index_in_group * NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES;
+		double *const next_temperature_depth_of_current_point = next_temperature_depth +
+				scalar_value_index_in_group * NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES;
+
+		// Initialise starting temperature profile (linear) if first time visiting the current point.
+		if (!have_started_evolving_lithospheric_temperature[scalar_value_index_in_group])
+		{
+			// Initial temperature profile is linear from 0C at surface to Asthenosphere temperature at bottom of lithosphere.
+			for (unsigned int d = 0; d < NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES; ++d)
+			{
+				current_temperature_depth_of_current_point[d] = double(d) *
+						INVERSE_NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS * TEMPERATURE_ASTHENOSPHERE;
+			}
+
+			// Integrate the temperature-depth profile over depth.
+			double current_lithospheric_temperature_trapezoidal_sum =
+					0.5 * current_temperature_depth_of_current_point[0] +
+					0.5 * current_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1];
+			for (unsigned int d = 1; d < NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1; ++d)
+			{
+				current_lithospheric_temperature_trapezoidal_sum += current_temperature_depth_of_current_point[d];
+			}
+			// Store integral in caller's array.
+			current_lithospheric_temperature_integrated_over_depth[scalar_value_index_in_group] =
+					current_lithospheric_temperature_trapezoidal_sum * TEMPERATURE_DIFFISION_DEPTH_RESOLUTION_KMS;
+
+			have_started_evolving_lithospheric_temperature[scalar_value_index_in_group] = true;
+		}
+
+		// If the next scalar value is not active then we cannot evolve temperature to the next time,
+		// in which case we've just reached the end of the active time span for the current point.
+		if (!next_scalar_coverage_state.scalar_values_are_active[scalar_value_index])
+		{
+			continue;
+		}
+
+		// The current and next scalar values are active so the current and next dilatation strain rates must also.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				current_deformation_strain_rates[scalar_value_index_in_group] &&
+					next_deformation_strain_rates[scalar_value_index_in_group],
+				GPLATES_ASSERTION_SOURCE);
+
+		double current_dilatation_per_my = seconds_in_a_million_years *
+				current_deformation_strain_rates[scalar_value_index_in_group]->get_strain_rate_dilatation();
+		double next_dilatation_per_my = seconds_in_a_million_years *
+				next_deformation_strain_rates[scalar_value_index_in_group]->get_strain_rate_dilatation();
+
+		// TODO: Solve temperature advection-diffusion equation from current time to next time.
+		//       In the meantime we'll just copy linear profile from current time to next time
+		//       (which means lithospheric temperature advection-diffusion will have no effect on subsidence).
+		for (unsigned int d = 0; d < NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES; ++d)
+		{
+			next_temperature_depth_of_current_point[d] = current_temperature_depth_of_current_point[d];
+		}
+
+		// Integrate the temperature-depth profile over depth.
+		double next_lithospheric_temperature_trapezoidal_sum =
+				0.5 * next_temperature_depth_of_current_point[0] +
+				0.5 * next_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1];
+		for (unsigned int d = 1; d < NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1; ++d)
+		{
+			next_lithospheric_temperature_trapezoidal_sum += next_temperature_depth_of_current_point[d];
+		}
+		// Store in caller's array.
+		next_lithospheric_temperature_integrated_over_depth[scalar_value_index_in_group] =
+				next_lithospheric_temperature_trapezoidal_sum * TEMPERATURE_DIFFISION_DEPTH_RESOLUTION_KMS;
+	}
+}
+
+
+void
+GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence(
+		const double *const lithospheric_temperature_integrated_over_depth,
+		unsigned int scalar_values_start_index,
+		unsigned int scalar_values_end_index) const
 {
 	const TimeSpanUtils::TimeRange time_range = d_scalar_coverage_time_span->get_time_range();
 	const unsigned int num_time_slots = time_range.get_num_time_slots();
@@ -537,14 +880,20 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence() const
 		// Iterate over the time range going *backwards* in time from the initial time (most recent)
 		// to the beginning of the time range (least recent).
 		evolve_tectonic_subsidence_time_steps(
+				lithospheric_temperature_integrated_over_depth,
 				initial_time_slot.get()/*start_time_slot*/,
-				0/*end_time_slot*/);
+				0/*end_time_slot*/,
+				scalar_values_start_index,
+				scalar_values_end_index);
 
 		// Iterate over the time range going *forward* in time from the initial time (least recent)
 		// to the end of the time range (most recent).
 		evolve_tectonic_subsidence_time_steps(
+				lithospheric_temperature_integrated_over_depth,
 				initial_time_slot.get()/*start_time_slot*/,
-				num_time_slots - 1/*end_time_slot*/);
+				num_time_slots - 1/*end_time_slot*/,
+				scalar_values_start_index,
+				scalar_values_end_index);
 	}
 	else if (d_initial_time > time_range.get_begin_time())
 	{
@@ -556,8 +905,11 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence() const
 		// Iterate over the time range going *forward* in time from the beginning of the
 		// time range (least recent) to the end (most recent).
 		evolve_tectonic_subsidence_time_steps(
+				lithospheric_temperature_integrated_over_depth,
 				0/*start_time_slot*/,
-				num_time_slots - 1/*end_time_slot*/);
+				num_time_slots - 1/*end_time_slot*/,
+				scalar_values_start_index,
+				scalar_values_end_index);
 	}
 	else // initial_time < time_range.get_end_time() ...
 	{
@@ -569,16 +921,22 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence() const
 		// Iterate over the time range going *backwards* in time from the end of the
 		// time range (most recent) to the beginning (least recent).
 		evolve_tectonic_subsidence_time_steps(
+				lithospheric_temperature_integrated_over_depth,
 				num_time_slots - 1/*start_time_slot*/,
-				0/*end_time_slot*/);
+				0/*end_time_slot*/,
+				scalar_values_start_index,
+				scalar_values_end_index);
 	}
 }
 
 
 void
 GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_steps(
+		const double *const lithospheric_temperature_integrated_over_depth,
 		unsigned int start_time_slot,
-		unsigned int end_time_slot) const
+		unsigned int end_time_slot,
+		unsigned int scalar_values_start_index,
+		unsigned int scalar_values_end_index) const
 {
 	if (start_time_slot == end_time_slot)
 	{
@@ -588,28 +946,34 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_steps(
 	const int time_slot_direction = (end_time_slot > start_time_slot) ? 1 : -1;
 
 	// Get the initial scalar coverage in the initial time slot.
-	boost::optional<EvolvedScalarCoverage::non_null_ptr_type &> current_scalar_coverage_opt =
+	boost::optional<EvolvedScalarCoverage::non_null_ptr_type &> initial_scalar_coverage =
 			d_scalar_coverage_time_span->get_sample_in_time_slot(start_time_slot);
 	// We should have a scalar coverage in the initial time slot.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			current_scalar_coverage_opt,
+			initial_scalar_coverage,
 			GPLATES_ASSERTION_SOURCE);
-	EvolvedScalarCoverage::non_null_ptr_type current_scalar_coverage = current_scalar_coverage_opt.get();
 
-	// Set the initial tectonic subsidence scalar values (that we'll subsequently evolve).
-	if (const boost::optional<std::vector<double>> &initial_tectonic_subsidence =
-		d_initial_scalar_coverage.get_initial_scalar_values(TECTONIC_SUBSIDENCE))
+	// Set the initial tectonic subsidence scalar values for *all* initial values (if haven't already), not
+	// just the initial values in the current group [scalar_values_start_index, scalar_values_end_index].
+	// This is only necessary when visiting the first group of scalar values (not the second, third, etc).
+	if (!initial_scalar_coverage.get()->state.tectonic_subsidence)
 	{
-		// Copy the initial tectonic subsidence scalar values into our initial scalar coverage.
-		current_scalar_coverage->state.tectonic_subsidence = initial_tectonic_subsidence.get();
+		if (const boost::optional<std::vector<double>> &initial_tectonic_subsidence =
+			d_initial_scalar_coverage.get_initial_scalar_values(TECTONIC_SUBSIDENCE))
+		{
+			// Copy the initial tectonic subsidence scalar values into our initial scalar coverage.
+			initial_scalar_coverage.get()->state.tectonic_subsidence = initial_tectonic_subsidence.get();
+		}
+		else // have no initial tectonic subsidence...
+		{
+			// Set all initial tectonic subsidence to zero (sea level).
+			//
+			// Initialise the 'std::vector<double>' directly into the 'boost::optional<std::vector<double>>'.
+			initial_scalar_coverage.get()->state.tectonic_subsidence = boost::in_place(d_num_scalar_values, 0.0);
+		}
 	}
-	else // have no initial tectonic subsidence...
-	{
-		// Set all initial tectonic subsidence to zero (sea level).
-		//
-		// Initialise the 'std::vector<double>' directly into the 'boost::optional<std::vector<double>>'.
-		current_scalar_coverage->state.tectonic_subsidence = boost::in_place(d_num_scalar_values, 0.0);
-	}
+
+	EvolvedScalarCoverage::non_null_ptr_type current_scalar_coverage = initial_scalar_coverage.get();
 
 	// Iterate over the time slots either backward or forward in time (depending on 'time_slot_direction').
 	for (unsigned int time_slot = start_time_slot; time_slot != end_time_slot; time_slot += time_slot_direction)
@@ -618,22 +982,41 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_steps(
 		const unsigned int next_time_slot = current_time_slot + time_slot_direction;
 
 		// Get the next scalar coverage in the next time slot.
-		boost::optional<EvolvedScalarCoverage::non_null_ptr_type &> next_scalar_coverage_opt =
+		boost::optional<EvolvedScalarCoverage::non_null_ptr_type &> next_scalar_coverage =
 				d_scalar_coverage_time_span->get_sample_in_time_slot(next_time_slot);
-		if (!next_scalar_coverage_opt)
+		if (!next_scalar_coverage)
 		{
 			// Return early - the next time slot is not active - so the last active time slot is the current time slot.
 			return;
 		}
-		EvolvedScalarCoverage::non_null_ptr_type next_scalar_coverage = next_scalar_coverage_opt.get();
+
+		// Allocate memory for *all* the next tectonic subsidence values (if haven't already), not just
+		// the values in the current group [scalar_values_start_index, scalar_values_end_index].
+		// This is only necessary when visiting the first group of scalar values (not the second, third, etc).
+		if (!next_scalar_coverage.get()->state.tectonic_subsidence)
+		{
+			next_scalar_coverage.get()->state.tectonic_subsidence = boost::in_place(d_num_scalar_values, 0.0/*arbitrary*/);
+		}
+
+		// Each lithospheric-temperature-integrated-over-depth array contains
+		// 'scalar_values_end_index - scalar_values_start_index' values, which is equal to
+		// NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP for all but the last group.
+		const double *const current_lithospheric_temperature_integrated_over_depth =
+				lithospheric_temperature_integrated_over_depth + current_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
+		const double *const next_lithospheric_temperature_integrated_over_depth =
+				lithospheric_temperature_integrated_over_depth + next_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
 
 		// Evolve the current tectonic subsidence scalar values into the next time slot.
 		evolve_tectonic_subsidence_time_step(
 				current_scalar_coverage->state,
-				next_scalar_coverage->state);
+				next_scalar_coverage.get()->state,
+				current_lithospheric_temperature_integrated_over_depth,
+				next_lithospheric_temperature_integrated_over_depth,
+				scalar_values_start_index,
+				scalar_values_end_index);
 
 		// Set the current scalar coverage for the next time step.
-		current_scalar_coverage = next_scalar_coverage;
+		current_scalar_coverage = next_scalar_coverage.get();
 	}
 }
 
@@ -641,25 +1024,38 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_steps(
 void
 GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_step(
 		const EvolvedScalarCoverage::State &current_scalar_coverage_state,
-		EvolvedScalarCoverage::State &next_scalar_coverage_state) const
+		EvolvedScalarCoverage::State &next_scalar_coverage_state,
+		// Each lithospheric-temperature-integrated-over-depth array contains
+		// 'scalar_values_end_index - scalar_values_start_index' values...
+		const double *const current_lithospheric_temperature_integrated_over_depth,
+		const double *const next_lithospheric_temperature_integrated_over_depth,
+		unsigned int scalar_values_start_index,
+		unsigned int scalar_values_end_index) const
 {
-	// Copy the current tectonic subsidence scalar values into the next scalar values.
-	//
-	// Then later below we'll just add in the difference in tectonic subsidence from current to next.
-	next_scalar_coverage_state.tectonic_subsidence = current_scalar_coverage_state.tectonic_subsidence.get();
+	// Initial crustal thickness values (or null if not provided).
+	const double *const initial_crustal_thickness = d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THICKNESS)
+			? d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THICKNESS)->data()
+			: nullptr;
 
-	for (unsigned int n = 0; n < d_num_scalar_values; ++n)
+	const double *const current_tectonic_subsidence = current_scalar_coverage_state.tectonic_subsidence->data();
+	double *const next_tectonic_subsidence = next_scalar_coverage_state.tectonic_subsidence->data();
+
+	for (unsigned int scalar_value_index = scalar_values_start_index;
+		scalar_value_index < scalar_values_end_index;
+		++scalar_value_index)
 	{
 		// If next scalar value is inactive then we cannot evolve it.
-		if (!next_scalar_coverage_state.scalar_values_are_active[n])
+		if (!next_scalar_coverage_state.scalar_values_are_active[scalar_value_index])
 		{
 			continue;
 		}
 
 		// The next scalar value is active and so must the current scalar value.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				current_scalar_coverage_state.scalar_values_are_active[n],
+				current_scalar_coverage_state.scalar_values_are_active[scalar_value_index],
 				GPLATES_ASSERTION_SOURCE);
+
+		const unsigned int scalar_value_index_in_group = scalar_value_index - scalar_values_start_index;
 
 		// Crustal thickness depends on initial values T(i) (or default values if not provided) and
 		// the calculated crustal thickness *factor*:
@@ -669,32 +1065,30 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_step(
 		//
 		// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
 		//
-		double current_crustal_thickness;
-		if (const boost::optional<std::vector<double>> &initial_crustal_thickness =
-			d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THICKNESS))
-		{
-			// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
-			current_crustal_thickness = initial_crustal_thickness.get()[n] *
-					current_scalar_coverage_state.crustal_thickness_factor[n];
-		}
-		else
-		{
-			// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
-			//                   = DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS * crustal_thickness_factor
-			current_crustal_thickness = DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS *
-					current_scalar_coverage_state.crustal_thickness_factor[n];
-		}
+		const double current_crustal_thickness = initial_crustal_thickness
+				? initial_crustal_thickness[scalar_value_index] *
+						current_scalar_coverage_state.crustal_thickness_factor[scalar_value_index]
+				: DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS *
+						current_scalar_coverage_state.crustal_thickness_factor[scalar_value_index];
 
 		//
 		// Calculate the difference in tectonic subsidence from current time to next time.
 		//
+
 		const double crustal_thickness_factor_current_to_next =
-				next_scalar_coverage_state.crustal_thickness_factor[n] /
-				current_scalar_coverage_state.crustal_thickness_factor[n];
+				next_scalar_coverage_state.crustal_thickness_factor[scalar_value_index] /
+				current_scalar_coverage_state.crustal_thickness_factor[scalar_value_index];
 		double delta_tectonic_subsidence = (DENSITY_MANTLE - DENSITY_CRUST) * current_crustal_thickness *
 				(1.0 - crustal_thickness_factor_current_to_next);
+
+		// Add in the subsidence contribution due to the change in lithospheric temperature
+		// (and hence density) from current time to next time.
+		delta_tectonic_subsidence += -THERMAL_ALPHA * DENSITY_MANTLE * (
+				next_lithospheric_temperature_integrated_over_depth[scalar_value_index_in_group] -
+				current_lithospheric_temperature_integrated_over_depth[scalar_value_index_in_group]);
+
 		// If currently below sea level then factor in the density of water.
-		if (current_scalar_coverage_state.tectonic_subsidence.get()[n] >= 0)
+		if (current_tectonic_subsidence[scalar_value_index] >= 0)
 		{
 			delta_tectonic_subsidence /= DENSITY_ASTHENOSPHERE - DENSITY_WATER;
 		}
@@ -704,7 +1098,8 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_step(
 		}
 
 		// Update the tectonic subsidence.
-		next_scalar_coverage_state.tectonic_subsidence.get()[n] += delta_tectonic_subsidence;
+		next_tectonic_subsidence[scalar_value_index] =
+				current_tectonic_subsidence[scalar_value_index] + delta_tectonic_subsidence;
 	}
 }
 
@@ -760,13 +1155,13 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
 		std::vector<double> &scalar_values,
 		std::vector<bool> &scalar_values_are_active) const
 {
-	// If the caller requested tectonic subsidence then evolve it (if haven't already).
+	// If the caller requested tectonic subsidence then initialise it (if haven't already).
 	if (evolved_scalar_type == TECTONIC_SUBSIDENCE)
 	{
-		if (!d_have_evolved_tectonic_subsidence)
+		if (!d_have_initialised_tectonic_subsidence)
 		{
-			evolve_tectonic_subsidence();
-			d_have_evolved_tectonic_subsidence = true;
+			initialise_tectonic_subsidence();
+			d_have_initialised_tectonic_subsidence = true;
 		}
 	}
 

@@ -396,8 +396,12 @@ namespace GPlatesAppLogic
 			 * Returns the requested geometry data at *all* points at the specified time (including inactive points).
 			 *
 			 * Inactive points will store 'none' (such that the size of the returned data
-			 * will always be @a get_num_all_geometry_points).
-			 *
+			 * will always be @a get_num_all_geometry_points, or 'end_point_index - start_point_index'
+			 * if they're using non-default values).
+			 * 
+			 * The range of points returned can be limited with non-default values for
+			 * @a start_point_index and @a end_point_index. By default all points are returned.
+			 * 
 			 * Returns false if @a is_valid returns false (in which case the data arrays are unmodified).
 			 */
 			bool
@@ -406,10 +410,15 @@ namespace GPlatesAppLogic
 					boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> points = boost::none,
 					boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> point_locations = boost::none,
 					boost::optional< std::vector< boost::optional<DeformationStrainRate> > &> strain_rates = boost::none,
-					boost::optional< std::vector< boost::optional<DeformationStrain> > &> strains = boost::none) const;
+					boost::optional< std::vector< boost::optional<DeformationStrain> > &> strains = boost::none,
+					int start_point_index = 0,
+					int end_point_index = -1) const;
 
 			/**
 			 * Returns whether each point (of *all* points at the specified time) is active or not.
+			 *
+			 * The range of points returned can be limited with non-default values for
+			 * @a start_point_index and @a end_point_index. By default all points are returned.
 			 *
 			 * The same could be achieved by calling 'get_all_geometry_data(reconstruction_time, points)' and
 			 * then testing the boost::optional of each point for its active status, but this method is easier.
@@ -419,7 +428,9 @@ namespace GPlatesAppLogic
 			bool
 			get_points_are_active(
 					const double &reconstruction_time,
-					std::vector<bool> &points_are_active) const;
+					std::vector<bool> &points_are_active,
+					int start_point_index = 0,
+					int end_point_index = -1) const;
 
 			/**
 			 * Returns the number of points returned by @a get_all_geometry_data.

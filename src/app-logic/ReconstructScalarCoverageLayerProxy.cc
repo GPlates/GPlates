@@ -167,9 +167,6 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::get_scalar_types(
 		std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types)
 {
 	// See if any input layer proxies have changed.
-	//
-	// Note: We actually only need to detect if the domain *features* have changed,
-	// but it's easier to just check for *any* changes (though means updating more than necessary).
 	check_input_layer_proxies();
 
 	if (!d_cached_scalar_types)

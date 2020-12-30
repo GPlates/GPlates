@@ -299,19 +299,22 @@ namespace GPlatesAppLogic
 
 
 		TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type d_geometry_time_span;
-		unsigned int d_num_scalar_values;
 		InitialEvolvedScalarCoverage d_initial_scalar_coverage;
 		double d_initial_time;
+		unsigned int d_num_scalar_values;
 		time_span_type::non_null_ptr_type d_scalar_coverage_time_span;
 
-		//! Tectonic subsidence is evolved only when/if it is first requested since it's relatively expensive.
-		mutable bool d_have_evolved_tectonic_subsidence;
+		//! Tectonic subsidence is initialised only when/if it is first requested since it's relatively expensive.
+		mutable bool d_have_initialised_tectonic_subsidence;
 
 
 		ScalarCoverageEvolution(
 				const InitialEvolvedScalarCoverage &initial_scalar_coverage,
 				const double &initial_time,
 				TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span);
+
+		void
+		initialise();
 
 		void
 		evolve_time_steps(
@@ -342,20 +345,62 @@ namespace GPlatesAppLogic
 				const double &next_time);
 
 		/**
-		 * Evolve tectonic subsidence from crustal stretching and lithospheric thermal cooling.
+		 * Initialise tectonic subsidence from crustal stretching and lithospheric thermal cooling.
 		 */
 		void
-		evolve_tectonic_subsidence() const;
+		initialise_tectonic_subsidence() const;
+
+		void
+		evolve_lithospheric_temperature(
+				std::vector<bool> &have_started_evolving_lithospheric_temperature,
+				double *const lithospheric_temperature_integrated_over_depth,
+				double *current_temperature_depth,
+				double *next_temperature_depth,
+				unsigned int scalar_values_start_index,
+				unsigned int scalar_values_end_index) const;
+
+		void
+		evolve_lithospheric_temperature_time_step(
+				const std::vector< boost::optional<DeformationStrainRate> > &current_deformation_strain_rates,
+				const std::vector< boost::optional<DeformationStrainRate> > &next_deformation_strain_rates,
+				const EvolvedScalarCoverage::State &current_scalar_coverage_state,
+				EvolvedScalarCoverage::State &next_scalar_coverage_state,
+				// Each of the following three arrays contains
+				// 'scalar_values_end_index - scalar_values_start_index' values...
+				std::vector<bool> &have_started_evolving_lithospheric_temperature,
+				double *const current_lithospheric_temperature_integrated_over_depth,
+				double *const next_lithospheric_temperature_integrated_over_depth,
+				double *const current_temperature_depth,
+				double *const next_temperature_depth,
+				unsigned int scalar_values_start_index,
+				unsigned int scalar_values_end_index) const;
+
+		void
+		evolve_tectonic_subsidence(
+				const double *const lithospheric_temperature_integrated_over_depth,
+				unsigned int scalar_values_start_index,
+				unsigned int scalar_values_end_index) const;
 
 		void
 		evolve_tectonic_subsidence_time_steps(
+				const double *const lithospheric_temperature_integrated_over_depth,
 				unsigned int start_time_slot,
-				unsigned int end_time_slot) const;
+				unsigned int end_time_slot,
+				unsigned int scalar_values_start_index,
+				unsigned int scalar_values_end_index) const;
 
+		/**
+		 * Each lithospheric-temperature-integrated-over-depth array contains
+		 * 'scalar_values_end_index - scalar_values_start_index' values...
+		 */
 		void
 		evolve_tectonic_subsidence_time_step(
 				const EvolvedScalarCoverage::State &current_scalar_coverage_state,
-				EvolvedScalarCoverage::State &next_scalar_coverage_state) const;
+				EvolvedScalarCoverage::State &next_scalar_coverage_state,
+				const double *const current_lithospheric_temperature_integrated_over_depth,
+				const double *const next_lithospheric_temperature_integrated_over_depth,
+				unsigned int scalar_values_start_index,
+				unsigned int scalar_values_end_index) const;
 
 		/**
 		 * The sample *creator* function for TimeSpanUtils::TimeWindowSpan<EvolvedScalarCoverage>.
