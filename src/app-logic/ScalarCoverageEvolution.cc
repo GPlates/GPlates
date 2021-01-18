@@ -59,15 +59,16 @@ namespace GPlatesAppLogic
 	// Asthenosphere density [kg/m^3].
 	const double DENSITY_ASTHENOSPHERE = DENSITY_MANTLE * (1.0 - THERMAL_ALPHA * TEMPERATURE_ASTHENOSPHERE);
 
-	// Thickness of lithosphere (in Kms).
+	// Thickness of lithosphere (in km).
 	constexpr double LITHOSPHERIC_THICKNESS_KMS = 125.0;
 
 	// Depth resolution to use when solving the 1D temperature advection-diffusion equation for each surface point.
+	// A value of 25 is equivalent to an interval of 5 km (when lithospheric thickness is 125 km).
 	constexpr unsigned int NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS = 25;
 	constexpr unsigned int NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES = NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS + 1;
 	const double INVERSE_NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS = 1.0 / NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS;
 
-	// The depth spacing between temperature diffusion depth samples (in Kms).
+	// The depth spacing between temperature diffusion depth samples (in km).
 	const double TEMPERATURE_DIFFISION_DEPTH_RESOLUTION_KMS =
 			LITHOSPHERIC_THICKNESS_KMS / NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS;
 
@@ -97,7 +98,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_type(
 
 	switch (evolved_scalar_type)
 	{
-	case CRUSTAL_THICKNESS:
+	case CRUSTAL_THICKNESS_KMS:
 		return GPML_CRUSTAL_THICKNESS;
 
 	case CRUSTAL_STRETCHING_FACTOR:
@@ -106,7 +107,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_type(
 	case CRUSTAL_THINNING_FACTOR:
 		return GPML_CRUSTAL_THINNING_FACTOR;
 
-	case TECTONIC_SUBSIDENCE:
+	case TECTONIC_SUBSIDENCE_KMS:
 		return GPML_TECTONIC_SUBSIDENCE;
 
 	default:
@@ -133,7 +134,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::is_evolved_scalar_type(
 
 	if (scalar_type == GPML_CRUSTAL_THICKNESS)
 	{
-		return CRUSTAL_THICKNESS;
+		return CRUSTAL_THICKNESS_KMS;
 	}
 	else if (scalar_type == GPML_CRUSTAL_STRETCHING_FACTOR)
 	{
@@ -145,7 +146,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::is_evolved_scalar_type(
 	}
 	else if (scalar_type == GPML_TECTONIC_SUBSIDENCE)
 	{
-		return TECTONIC_SUBSIDENCE;
+		return TECTONIC_SUBSIDENCE_KMS;
 	}
 
 	return boost::none;
@@ -401,6 +402,20 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_step(
 	//
 	const double seconds_in_a_million_years = 365.25 * 24 * 3600 * 1.0e6;
 
+	//
+	// Evolve the current scalar values from the current time to the next time.
+	//
+	// Note that 'boost::optional' is used for each point's strain rate (at current and next times).
+	// This represents whether the associated point is active. Points can become inactive over time (active->inactive) but
+	// do not get re-activated (inactive->active). So if the current strain rate is inactive then so should the next strain rate.
+	// Also the active state of the current scalar value should match that of the current deformation strain rate
+	// (because they represent the same point). If the current scalar value is inactive then it just remains inactive.
+	// And if the current scalar value is active then it becomes inactive if the next strain rate is inactive, otherwise
+	// both (current and next) strain rates are active and the scalar value is evolved from its current value to its next value.
+	// This ensures the active state of the next scalar values match that of the next deformation strain rate
+	// (which in turn comes from the active state of the associated domain geometry point).
+	//
+
 	for (unsigned int scalar_value_index = 0; scalar_value_index < d_num_scalar_values; ++scalar_value_index)
 	{
 		// If current scalar value is inactive then it remains inactive.
@@ -465,11 +480,14 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_step(
 		// This is so that '1 - k' and '1 + k' don't become unstable in the above equation
 		// (in other words we want |k| < 1 so that '1 - k' and '1 + k' can't become negative, since
 		// a negative crustal thickness makes no sense).
+		// Note that clamping the strain rate (S) is usually a good idea anyway since strain rates can
+		// get excessively large at times (in some parts of some topological networks).
 		//
 
 		// Clamp dilatation to 1.0 in units of 1/Myr, which is equivalent to 3.17e-14 in units of 1/second.
 		// This is about 6 times the default clamping (disabled by default) of 5e-15 1/second in a
-		// topological network visual layer, and so the user still has the option to clamp further than this.
+		// topological network visual layer, and so the user still has the option to clamp further than this
+		// (in other words we're not clamping too excessively here).
 		//
 		// This clamping is equivalent to clamping 'k' to 0.5 (when dt=1My).
 
@@ -533,8 +551,8 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_time_step(
 		// The crustal thinning equation assumes we're going forward in time.
 		// So if we're going backward in time then we need to invert the multiplier.
 		//
-		//   H(n+1) = m * H(n)
-		//   H(n)   = H(n+1) / m
+		//   H(n+1) = m(n+1) * H(n)
+		//   H(n)   = H(n+1) / m(n+1)
 		//
 		// Note that this also has the benefit of making crustal thinning reversible - in the sense
 		// that you could start at t0 and solve backward in time to tn and then solve forward in time
@@ -573,11 +591,10 @@ GPlatesAppLogic::ScalarCoverageEvolution::initialise_tectonic_subsidence() const
 	boost::scoped_array<double> temperature_depth_working_space_2(
 			new double[NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP * NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES]);
 	// Store a lithospheric temperature (integrated over depth) for each time slot for each point.
-	boost::scoped_array<double> lithospheric_temperature_integrated_over_depth_working_space(
+	boost::scoped_array<double> lithospheric_temperature_integrated_over_depth_kms_working_space(
 			new double[num_time_slots * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP]);
 
-	unsigned int num_temperature_diffusion_groups =
-			d_num_scalar_values / NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
+	unsigned int num_temperature_diffusion_groups = d_num_scalar_values / NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
 	// Might be a last group if there's a remainder.
 	if ((d_num_scalar_values % NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP) != 0)
 	{
@@ -598,7 +615,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::initialise_tectonic_subsidence() const
 		// We haven't yet started evolving lithospheric temperature for any points in the current group.
 		// For each point, when it first becomes active, we'll initialise it with a linear temperature-depth profile.
 		std::vector<bool> have_started_evolving_lithospheric_temperature(
-				scalar_values_end_index - scalar_values_start_index,
+				scalar_values_end_index - scalar_values_start_index,  // num scalar values in current group
 				false);
 
 		// Starting with a linear temperature gradient through the depth of the lithosphere
@@ -607,7 +624,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::initialise_tectonic_subsidence() const
 		// diffusion cools back towards the original linear temperature gradient.
 		evolve_lithospheric_temperature(
 				have_started_evolving_lithospheric_temperature,
-				lithospheric_temperature_integrated_over_depth_working_space.get(),
+				lithospheric_temperature_integrated_over_depth_kms_working_space.get(),
 				temperature_depth_working_space_1.get(),
 				temperature_depth_working_space_2.get(),
 				scalar_values_start_index,
@@ -616,7 +633,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::initialise_tectonic_subsidence() const
 		// The temperature changes in turn cause density changes that, along with density changes due to
 		// crustal stretching (since crustal and mantle densities differ), result in isostatic subsidence.
 		evolve_tectonic_subsidence(
-				lithospheric_temperature_integrated_over_depth_working_space.get(),
+				lithospheric_temperature_integrated_over_depth_kms_working_space.get(),
 				scalar_values_start_index,
 				scalar_values_end_index);
 	}
@@ -626,7 +643,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::initialise_tectonic_subsidence() const
 void
 GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature(
 		std::vector<bool> &have_started_evolving_lithospheric_temperature,
-		double *const lithospheric_temperature_integrated_over_depth,
+		double *const lithospheric_temperature_integrated_over_depth_kms,
 		double *current_temperature_depth,
 		double *next_temperature_depth,
 		unsigned int scalar_values_start_index,
@@ -710,10 +727,10 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature(
 		// Each lithospheric-temperature-integrated-over-depth array contains
 		// 'scalar_values_end_index - scalar_values_start_index' values, which is equal to
 		// NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP for all but the last group.
-		double *const current_lithospheric_temperature_integrated_over_depth =
-				lithospheric_temperature_integrated_over_depth + current_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
-		double *const next_lithospheric_temperature_integrated_over_depth =
-				lithospheric_temperature_integrated_over_depth + next_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
+		double *const current_lithospheric_temperature_integrated_over_depth_kms =
+				lithospheric_temperature_integrated_over_depth_kms + current_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
+		double *const next_lithospheric_temperature_integrated_over_depth_kms =
+				lithospheric_temperature_integrated_over_depth_kms + next_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
 
 		// Evolve the current lithospheric temperature depth profile into the next time slot.
 		evolve_lithospheric_temperature_time_step(
@@ -722,8 +739,8 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature(
 				current_scalar_coverage.get()->state,
 				next_scalar_coverage.get()->state,
 				have_started_evolving_lithospheric_temperature,
-				current_lithospheric_temperature_integrated_over_depth,
-				next_lithospheric_temperature_integrated_over_depth,
+				current_lithospheric_temperature_integrated_over_depth_kms,
+				next_lithospheric_temperature_integrated_over_depth_kms,
 				current_temperature_depth,
 				next_temperature_depth,
 				scalar_values_start_index,
@@ -756,8 +773,8 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 		// Each of the following three arrays contains
 		// 'scalar_values_end_index - scalar_values_start_index' values...
 		std::vector<bool> &have_started_evolving_lithospheric_temperature,
-		double *const current_lithospheric_temperature_integrated_over_depth,
-		double *const next_lithospheric_temperature_integrated_over_depth,
+		double *const current_lithospheric_temperature_integrated_over_depth_kms,
+		double *const next_lithospheric_temperature_integrated_over_depth_kms,
 		// Each of the 'scalar_values_end_index - scalar_values_start_index' points (scalar values) in
 		// temperature-depth profile contains NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES depth samples...
 		double *const current_temperature_depth,
@@ -799,7 +816,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 		// Initialise starting temperature profile (linear) if first time visiting the current point.
 		if (!have_started_evolving_lithospheric_temperature[scalar_value_index_in_group])
 		{
-			// Initial temperature profile is linear from 0C at surface to Asthenosphere temperature at bottom of lithosphere.
+			// Initial temperature profile is linear from 0 C at surface to Asthenosphere temperature at bottom of lithosphere.
 			for (unsigned int d = 0; d < NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES; ++d)
 			{
 				current_temperature_depth_of_current_point[d] = double(d) *
@@ -815,7 +832,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 				current_lithospheric_temperature_trapezoidal_sum += current_temperature_depth_of_current_point[d];
 			}
 			// Store integral in caller's array.
-			current_lithospheric_temperature_integrated_over_depth[scalar_value_index_in_group] =
+			current_lithospheric_temperature_integrated_over_depth_kms[scalar_value_index_in_group] =
 					current_lithospheric_temperature_trapezoidal_sum * TEMPERATURE_DIFFISION_DEPTH_RESOLUTION_KMS;
 
 			have_started_evolving_lithospheric_temperature[scalar_value_index_in_group] = true;
@@ -856,7 +873,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 			next_lithospheric_temperature_trapezoidal_sum += next_temperature_depth_of_current_point[d];
 		}
 		// Store in caller's array.
-		next_lithospheric_temperature_integrated_over_depth[scalar_value_index_in_group] =
+		next_lithospheric_temperature_integrated_over_depth_kms[scalar_value_index_in_group] =
 				next_lithospheric_temperature_trapezoidal_sum * TEMPERATURE_DIFFISION_DEPTH_RESOLUTION_KMS;
 	}
 }
@@ -864,7 +881,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 
 void
 GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence(
-		const double *const lithospheric_temperature_integrated_over_depth,
+		const double *const lithospheric_temperature_integrated_over_depth_kms,
 		unsigned int scalar_values_start_index,
 		unsigned int scalar_values_end_index) const
 {
@@ -880,7 +897,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence(
 		// Iterate over the time range going *backwards* in time from the initial time (most recent)
 		// to the beginning of the time range (least recent).
 		evolve_tectonic_subsidence_time_steps(
-				lithospheric_temperature_integrated_over_depth,
+				lithospheric_temperature_integrated_over_depth_kms,
 				initial_time_slot.get()/*start_time_slot*/,
 				0/*end_time_slot*/,
 				scalar_values_start_index,
@@ -889,7 +906,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence(
 		// Iterate over the time range going *forward* in time from the initial time (least recent)
 		// to the end of the time range (most recent).
 		evolve_tectonic_subsidence_time_steps(
-				lithospheric_temperature_integrated_over_depth,
+				lithospheric_temperature_integrated_over_depth_kms,
 				initial_time_slot.get()/*start_time_slot*/,
 				num_time_slots - 1/*end_time_slot*/,
 				scalar_values_start_index,
@@ -905,7 +922,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence(
 		// Iterate over the time range going *forward* in time from the beginning of the
 		// time range (least recent) to the end (most recent).
 		evolve_tectonic_subsidence_time_steps(
-				lithospheric_temperature_integrated_over_depth,
+				lithospheric_temperature_integrated_over_depth_kms,
 				0/*start_time_slot*/,
 				num_time_slots - 1/*end_time_slot*/,
 				scalar_values_start_index,
@@ -921,7 +938,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence(
 		// Iterate over the time range going *backwards* in time from the end of the
 		// time range (most recent) to the beginning (least recent).
 		evolve_tectonic_subsidence_time_steps(
-				lithospheric_temperature_integrated_over_depth,
+				lithospheric_temperature_integrated_over_depth_kms,
 				num_time_slots - 1/*start_time_slot*/,
 				0/*end_time_slot*/,
 				scalar_values_start_index,
@@ -932,7 +949,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence(
 
 void
 GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_steps(
-		const double *const lithospheric_temperature_integrated_over_depth,
+		const double *const lithospheric_temperature_integrated_over_depth_kms,
 		unsigned int start_time_slot,
 		unsigned int end_time_slot,
 		unsigned int scalar_values_start_index,
@@ -955,21 +972,21 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_steps(
 
 	// Set the initial tectonic subsidence scalar values for *all* initial values (if haven't already), not
 	// just the initial values in the current group [scalar_values_start_index, scalar_values_end_index].
-	// This is only necessary when visiting the first group of scalar values (not the second, third, etc).
-	if (!initial_scalar_coverage.get()->state.tectonic_subsidence)
+	// This is only necessary the first time a group of scalar values is visited (not the second, third, etc).
+	if (!initial_scalar_coverage.get()->state.tectonic_subsidence_kms)
 	{
-		if (const boost::optional<std::vector<double>> &initial_tectonic_subsidence =
-			d_initial_scalar_coverage.get_initial_scalar_values(TECTONIC_SUBSIDENCE))
+		if (const boost::optional<std::vector<double>> &initial_tectonic_subsidence_kms =
+			d_initial_scalar_coverage.get_initial_scalar_values(TECTONIC_SUBSIDENCE_KMS))
 		{
 			// Copy the initial tectonic subsidence scalar values into our initial scalar coverage.
-			initial_scalar_coverage.get()->state.tectonic_subsidence = initial_tectonic_subsidence.get();
+			initial_scalar_coverage.get()->state.tectonic_subsidence_kms = initial_tectonic_subsidence_kms.get();
 		}
 		else // have no initial tectonic subsidence...
 		{
 			// Set all initial tectonic subsidence to zero (sea level).
 			//
 			// Initialise the 'std::vector<double>' directly into the 'boost::optional<std::vector<double>>'.
-			initial_scalar_coverage.get()->state.tectonic_subsidence = boost::in_place(d_num_scalar_values, 0.0);
+			initial_scalar_coverage.get()->state.tectonic_subsidence_kms = boost::in_place(d_num_scalar_values, 0.0);
 		}
 	}
 
@@ -992,26 +1009,26 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_steps(
 
 		// Allocate memory for *all* the next tectonic subsidence values (if haven't already), not just
 		// the values in the current group [scalar_values_start_index, scalar_values_end_index].
-		// This is only necessary when visiting the first group of scalar values (not the second, third, etc).
-		if (!next_scalar_coverage.get()->state.tectonic_subsidence)
+		// This is only necessary the first time a group of scalar values is visited (not the second, third, etc).
+		if (!next_scalar_coverage.get()->state.tectonic_subsidence_kms)
 		{
-			next_scalar_coverage.get()->state.tectonic_subsidence = boost::in_place(d_num_scalar_values, 0.0/*arbitrary*/);
+			next_scalar_coverage.get()->state.tectonic_subsidence_kms = boost::in_place(d_num_scalar_values, 0.0/*arbitrary*/);
 		}
 
 		// Each lithospheric-temperature-integrated-over-depth array contains
 		// 'scalar_values_end_index - scalar_values_start_index' values, which is equal to
 		// NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP for all but the last group.
-		const double *const current_lithospheric_temperature_integrated_over_depth =
-				lithospheric_temperature_integrated_over_depth + current_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
-		const double *const next_lithospheric_temperature_integrated_over_depth =
-				lithospheric_temperature_integrated_over_depth + next_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
+		const double *const current_lithospheric_temperature_integrated_over_depth_kms =
+				lithospheric_temperature_integrated_over_depth_kms + current_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
+		const double *const next_lithospheric_temperature_integrated_over_depth_kms =
+				lithospheric_temperature_integrated_over_depth_kms + next_time_slot * NUM_POINTS_IN_TEMPERATURE_DIFFUSION_GROUP;
 
 		// Evolve the current tectonic subsidence scalar values into the next time slot.
 		evolve_tectonic_subsidence_time_step(
 				current_scalar_coverage->state,
 				next_scalar_coverage.get()->state,
-				current_lithospheric_temperature_integrated_over_depth,
-				next_lithospheric_temperature_integrated_over_depth,
+				current_lithospheric_temperature_integrated_over_depth_kms,
+				next_lithospheric_temperature_integrated_over_depth_kms,
 				scalar_values_start_index,
 				scalar_values_end_index);
 
@@ -1027,18 +1044,19 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_step(
 		EvolvedScalarCoverage::State &next_scalar_coverage_state,
 		// Each lithospheric-temperature-integrated-over-depth array contains
 		// 'scalar_values_end_index - scalar_values_start_index' values...
-		const double *const current_lithospheric_temperature_integrated_over_depth,
-		const double *const next_lithospheric_temperature_integrated_over_depth,
+		const double *const current_lithospheric_temperature_integrated_over_depth_kms,
+		const double *const next_lithospheric_temperature_integrated_over_depth_kms,
 		unsigned int scalar_values_start_index,
 		unsigned int scalar_values_end_index) const
 {
 	// Initial crustal thickness values (or null if not provided).
-	const double *const initial_crustal_thickness = d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THICKNESS)
-			? d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THICKNESS)->data()
+	const double *const initial_crustal_thickness_kms =
+			d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THICKNESS_KMS)
+			? d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THICKNESS_KMS)->data()
 			: nullptr;
 
-	const double *const current_tectonic_subsidence = current_scalar_coverage_state.tectonic_subsidence->data();
-	double *const next_tectonic_subsidence = next_scalar_coverage_state.tectonic_subsidence->data();
+	const double *const current_tectonic_subsidence_kms = current_scalar_coverage_state.tectonic_subsidence_kms->data();
+	double *const next_tectonic_subsidence_kms = next_scalar_coverage_state.tectonic_subsidence_kms->data();
 
 	for (unsigned int scalar_value_index = scalar_values_start_index;
 		scalar_value_index < scalar_values_end_index;
@@ -1065,8 +1083,8 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_step(
 		//
 		// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
 		//
-		const double current_crustal_thickness = initial_crustal_thickness
-				? initial_crustal_thickness[scalar_value_index] *
+		const double current_crustal_thickness_kms = initial_crustal_thickness_kms
+				? initial_crustal_thickness_kms[scalar_value_index] *
 						current_scalar_coverage_state.crustal_thickness_factor[scalar_value_index]
 				: DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS *
 						current_scalar_coverage_state.crustal_thickness_factor[scalar_value_index];
@@ -1078,28 +1096,28 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_step(
 		const double crustal_thickness_factor_current_to_next =
 				next_scalar_coverage_state.crustal_thickness_factor[scalar_value_index] /
 				current_scalar_coverage_state.crustal_thickness_factor[scalar_value_index];
-		double delta_tectonic_subsidence = (DENSITY_MANTLE - DENSITY_CRUST) * current_crustal_thickness *
+		double delta_tectonic_subsidence_kms = (DENSITY_MANTLE - DENSITY_CRUST) * current_crustal_thickness_kms *
 				(1.0 - crustal_thickness_factor_current_to_next);
 
 		// Add in the subsidence contribution due to the change in lithospheric temperature
 		// (and hence density) from current time to next time.
-		delta_tectonic_subsidence += -THERMAL_ALPHA * DENSITY_MANTLE * (
-				next_lithospheric_temperature_integrated_over_depth[scalar_value_index_in_group] -
-				current_lithospheric_temperature_integrated_over_depth[scalar_value_index_in_group]);
+		delta_tectonic_subsidence_kms += -THERMAL_ALPHA * DENSITY_MANTLE * (
+				next_lithospheric_temperature_integrated_over_depth_kms[scalar_value_index_in_group] -
+				current_lithospheric_temperature_integrated_over_depth_kms[scalar_value_index_in_group]);
 
 		// If currently below sea level then factor in the density of water.
-		if (current_tectonic_subsidence[scalar_value_index] >= 0)
+		if (current_tectonic_subsidence_kms[scalar_value_index] >= 0)
 		{
-			delta_tectonic_subsidence /= DENSITY_ASTHENOSPHERE - DENSITY_WATER;
+			delta_tectonic_subsidence_kms /= DENSITY_ASTHENOSPHERE - DENSITY_WATER;
 		}
 		else
 		{
-			delta_tectonic_subsidence /= DENSITY_ASTHENOSPHERE;
+			delta_tectonic_subsidence_kms /= DENSITY_ASTHENOSPHERE;
 		}
 
 		// Update the tectonic subsidence.
-		next_tectonic_subsidence[scalar_value_index] =
-				current_tectonic_subsidence[scalar_value_index] + delta_tectonic_subsidence;
+		next_tectonic_subsidence_kms[scalar_value_index] =
+				current_tectonic_subsidence_kms[scalar_value_index] + delta_tectonic_subsidence_kms;
 	}
 }
 
@@ -1156,7 +1174,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
 		std::vector<bool> &scalar_values_are_active) const
 {
 	// If the caller requested tectonic subsidence then initialise it (if haven't already).
-	if (evolved_scalar_type == TECTONIC_SUBSIDENCE)
+	if (evolved_scalar_type == TECTONIC_SUBSIDENCE_KMS)
 	{
 		if (!d_have_initialised_tectonic_subsidence)
 		{
@@ -1175,7 +1193,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
 
 	switch (evolved_scalar_type)
 	{
-	case CRUSTAL_THICKNESS:
+	case CRUSTAL_THICKNESS_KMS:
 	{
 		// Crustal thickness depends on initial values T(i) (or default values if not provided) and
 		// the calculated crustal thickness *factor*:
@@ -1185,18 +1203,18 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
 		//
 		// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
 		//
-		if (const boost::optional<std::vector<double>> &initial_crustal_thickness_opt =
-			d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THICKNESS))
+		if (const boost::optional<std::vector<double>> &initial_crustal_thickness_kms_opt =
+			d_initial_scalar_coverage.get_initial_scalar_values(CRUSTAL_THICKNESS_KMS))
 		{
 			// Initial values were provided for crustal thickness.
-			const std::vector<double> &initial_crustal_thickness = initial_crustal_thickness_opt.get();
+			const std::vector<double> &initial_crustal_thickness_kms = initial_crustal_thickness_kms_opt.get();
 
 			scalar_values.reserve(d_num_scalar_values);
 			for (unsigned int n = 0; n < d_num_scalar_values; ++n)
 			{
 				// crustal_thickness = initial_crustal_thickness * crustal_thickness_factor
 				scalar_values.push_back(
-						initial_crustal_thickness[n] * scalar_coverage_state.crustal_thickness_factor[n]);
+						initial_crustal_thickness_kms[n] * scalar_coverage_state.crustal_thickness_factor[n]);
 			}
 		}
 		else
@@ -1301,14 +1319,14 @@ GPlatesAppLogic::ScalarCoverageEvolution::get_scalar_values(
 	}
 	break;
 
-	case TECTONIC_SUBSIDENCE:
+	case TECTONIC_SUBSIDENCE_KMS:
 	{
 		// Tectonic subsidence should be initialised.
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				scalar_coverage_state.tectonic_subsidence,
+				scalar_coverage_state.tectonic_subsidence_kms,
 				GPLATES_ASSERTION_SOURCE);
 
-		scalar_values = scalar_coverage_state.tectonic_subsidence.get();
+		scalar_values = scalar_coverage_state.tectonic_subsidence_kms.get();
 	}
 	break;
 

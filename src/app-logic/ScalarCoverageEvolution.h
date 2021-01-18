@@ -61,16 +61,15 @@ namespace GPlatesAppLogic
 		//! Type of evolved scalar (note: not all scalar types are evolved scalar types affected by deformation).
 		enum EvolvedScalarType
 		{
-			// This can be absolute thickness (eg, in kms), or
-			// a thickness ratio such as T/Ti (where T/Ti is current/initial thickness)...
-			CRUSTAL_THICKNESS,
+			// Crustal thickness (in km)...
+			CRUSTAL_THICKNESS_KMS,
 			// Stretching (beta) factor where 'beta = Ti/T' ...
 			CRUSTAL_STRETCHING_FACTOR,
 			// Thinning (gamma) factor where 'gamma = (1 - T/Ti)' ...
 			CRUSTAL_THINNING_FACTOR,
 
-			// Subsidence of crustal lithosphere due to extension and thermal cooling (in kms).
-			TECTONIC_SUBSIDENCE,
+			// Subsidence (in km) of crustal lithosphere due to extension and thermal cooling...
+			TECTONIC_SUBSIDENCE_KMS,
 
 			NUM_EVOLVED_SCALAR_TYPES
 		};
@@ -132,14 +131,14 @@ namespace GPlatesAppLogic
 			 * This is none for those scalar types that did not provide initial values.
 			 * However, these scalar types can still later be queried, in which case their values
 			 * will be derived from the crustal thickness *factor* (and the default initial
-			 * crustal thickness in the case of the CRUSTAL_THICKNESS scalar type).
+			 * crustal thickness in the case of the CRUSTAL_THICKNESS_KMS scalar type).
 			 */
 			boost::optional<std::vector<double>> d_initial_scalar_values[NUM_EVOLVED_SCALAR_TYPES];
 		};
 
 
 		/**
-		 * The default initial crustal thickness to use when no initial scalar values are provided for it.
+		 * The default initial crustal thickness (in km) to use when no initial scalar values are provided for it.
 		 */
 		static constexpr double DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS = 40.0;
 
@@ -249,11 +248,11 @@ namespace GPlatesAppLogic
 				std::vector<double> crustal_thickness_factor;
 
 				/**
-				 * Subsidence due to crustal stretching and lithospheric thermal cooling.
+				 * Subsidence (in km) due to crustal stretching and lithospheric thermal cooling.
 				 *
 				 * This is calculated on demand (hence the boost::optional).
 				 */
-				boost::optional<std::vector<double>> tectonic_subsidence;
+				boost::optional<std::vector<double>> tectonic_subsidence_kms;
 			};
 
 
@@ -324,16 +323,6 @@ namespace GPlatesAppLogic
 		/**
 		 * Evolves the current scalar values from the current time to the next time.
 		 *
-		 * Note that 'boost::optional' is used for each point's scalar values and strain rate.
-		 * This represents whether the associated point is active. Points can become inactive over time (active->inactive) but
-		 * do not get re-activated (inactive->active). So if the current strain rate is inactive then so should the next strain rate.
-		 * Also the active state of the current scalar value should match that of the current deformation strain rate
-		 * (because they represent the same point). If the current scalar value is inactive then it just remains inactive.
-		 * And if the current scalar value is active then it becomes inactive if the next strain rate is inactive, otherwise
-		 * both (current and next) strain rates are active and the scalar value is evolved from its current value to its next value.
-		 * This ensures the active state of the next scalar values match that of the next deformation strain rate
-		 * (which in turn comes from the active state of the associated domain geometry point).
-		 *
 		 * Throws exception if the sizes of the strain rate arrays and the internal scalar values arrays do not match.
 		 */
 		void
@@ -353,7 +342,7 @@ namespace GPlatesAppLogic
 		void
 		evolve_lithospheric_temperature(
 				std::vector<bool> &have_started_evolving_lithospheric_temperature,
-				double *const lithospheric_temperature_integrated_over_depth,
+				double *const lithospheric_temperature_integrated_over_depth_kms,
 				double *current_temperature_depth,
 				double *next_temperature_depth,
 				unsigned int scalar_values_start_index,
@@ -368,8 +357,8 @@ namespace GPlatesAppLogic
 				// Each of the following three arrays contains
 				// 'scalar_values_end_index - scalar_values_start_index' values...
 				std::vector<bool> &have_started_evolving_lithospheric_temperature,
-				double *const current_lithospheric_temperature_integrated_over_depth,
-				double *const next_lithospheric_temperature_integrated_over_depth,
+				double *const current_lithospheric_temperature_integrated_over_depth_kms,
+				double *const next_lithospheric_temperature_integrated_over_depth_kms,
 				double *const current_temperature_depth,
 				double *const next_temperature_depth,
 				unsigned int scalar_values_start_index,
@@ -377,13 +366,13 @@ namespace GPlatesAppLogic
 
 		void
 		evolve_tectonic_subsidence(
-				const double *const lithospheric_temperature_integrated_over_depth,
+				const double *const lithospheric_temperature_integrated_over_depth_kms,
 				unsigned int scalar_values_start_index,
 				unsigned int scalar_values_end_index) const;
 
 		void
 		evolve_tectonic_subsidence_time_steps(
-				const double *const lithospheric_temperature_integrated_over_depth,
+				const double *const lithospheric_temperature_integrated_over_depth_kms,
 				unsigned int start_time_slot,
 				unsigned int end_time_slot,
 				unsigned int scalar_values_start_index,
@@ -397,8 +386,8 @@ namespace GPlatesAppLogic
 		evolve_tectonic_subsidence_time_step(
 				const EvolvedScalarCoverage::State &current_scalar_coverage_state,
 				EvolvedScalarCoverage::State &next_scalar_coverage_state,
-				const double *const current_lithospheric_temperature_integrated_over_depth,
-				const double *const next_lithospheric_temperature_integrated_over_depth,
+				const double *const current_lithospheric_temperature_integrated_over_depth_kms,
+				const double *const next_lithospheric_temperature_integrated_over_depth_kms,
 				unsigned int scalar_values_start_index,
 				unsigned int scalar_values_end_index) const;
 
