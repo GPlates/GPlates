@@ -44,6 +44,9 @@ namespace GPlatesAppLogic
 	// Thermal expansion coefficient [1/C].
 	constexpr double THERMAL_ALPHA = 3.28e-5;
 
+	// Thermal conductivity [W/C/m].
+	constexpr double THERMAL_CONDUCTIVITY = 3.1;
+
 	// Asthenosphere temperature [C].
 	constexpr double TEMPERATURE_ASTHENOSPHERE = 1350;
 
@@ -59,6 +62,12 @@ namespace GPlatesAppLogic
 	// Asthenosphere density [kg/m^3].
 	const double DENSITY_ASTHENOSPHERE = DENSITY_MANTLE * (1.0 - THERMAL_ALPHA * TEMPERATURE_ASTHENOSPHERE);
 
+	// Specific heat per unit mass [W.s/kg/C].
+	constexpr double SPECIFIC_HEAT = 1250.0;
+
+	// Thermal diffusivity [m^2/s].
+	const double THERMAL_DIFFUSIVITY = THERMAL_CONDUCTIVITY / DENSITY_MANTLE / SPECIFIC_HEAT;
+
 	// Thickness of lithosphere (in km).
 	constexpr double LITHOSPHERIC_THICKNESS_KMS = 125.0;
 
@@ -69,8 +78,9 @@ namespace GPlatesAppLogic
 	const double INVERSE_NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS = 1.0 / NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS;
 
 	// The depth spacing between temperature diffusion depth samples (in km).
-	const double TEMPERATURE_DIFFISION_DEPTH_RESOLUTION_KMS =
-			LITHOSPHERIC_THICKNESS_KMS / NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS;
+	const double TEMPERATURE_DIFFISION_DEPTH_RESOLUTION_KMS = LITHOSPHERIC_THICKNESS_KMS / NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS;
+	// ...and in metres.
+	const double TEMPERATURE_DIFFISION_DEPTH_RESOLUTION = 1000 * TEMPERATURE_DIFFISION_DEPTH_RESOLUTION_KMS;
 
 	// Limit the number of surface points to solve temperature diffusion at the same time (in a group)
 	// in order to minimise memory usage for storing temperature depth profile and also, to a lesser extent,
@@ -734,6 +744,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature(
 
 		// Evolve the current lithospheric temperature depth profile into the next time slot.
 		evolve_lithospheric_temperature_time_step(
+				time_range.get_time_increment(),
 				current_domain_strain_rates,
 				next_domain_strain_rates,
 				current_scalar_coverage.get()->state,
@@ -766,6 +777,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature(
 
 void
 GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_step(
+		const double &time_increment,
 		const std::vector< boost::optional<DeformationStrainRate> > &current_deformation_strain_rates,
 		const std::vector< boost::optional<DeformationStrainRate> > &next_deformation_strain_rates,
 		const EvolvedScalarCoverage::State &current_scalar_coverage_state,
@@ -789,9 +801,15 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 			GPLATES_ASSERTION_SOURCE);
 
 	//
-	// Strain rates are in 1/sec (multiplying by this number converts to 1/My).
+	// Convert time increment from Myr to seconds. Also strain rates are in 1/sec (not 1/Myr).
 	//
 	const double seconds_in_a_million_years = 365.25 * 24 * 3600 * 1.0e6;
+	const double inv_seconds_in_a_million_years = 1.0 / seconds_in_a_million_years;
+
+	// Some constants used when solving the thermal advection-diffusion equation (see below).
+	// Calculate them once (ie, outside the loop below).
+	const double r1 = seconds_in_a_million_years * time_increment / TEMPERATURE_DIFFISION_DEPTH_RESOLUTION;
+	const double r2 = r1 * THERMAL_DIFFUSIVITY / TEMPERATURE_DIFFISION_DEPTH_RESOLUTION;
 
 	for (unsigned int scalar_value_index = scalar_values_start_index;
 		scalar_value_index < scalar_values_end_index;
@@ -851,17 +869,78 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 					next_deformation_strain_rates[scalar_value_index_in_group],
 				GPLATES_ASSERTION_SOURCE);
 
-		double current_dilatation_per_my = seconds_in_a_million_years *
-				current_deformation_strain_rates[scalar_value_index_in_group]->get_strain_rate_dilatation();
-		double next_dilatation_per_my = seconds_in_a_million_years *
-				next_deformation_strain_rates[scalar_value_index_in_group]->get_strain_rate_dilatation();
+		double current_dilatation = current_deformation_strain_rates[scalar_value_index_in_group]->get_strain_rate_dilatation();
+		double next_dilatation = next_deformation_strain_rates[scalar_value_index_in_group]->get_strain_rate_dilatation();
 
-		// TODO: Solve temperature advection-diffusion equation from current time to next time.
-		//       In the meantime we'll just copy linear profile from current time to next time
-		//       (which means lithospheric temperature advection-diffusion will have no effect on subsidence).
-		for (unsigned int d = 0; d < NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES; ++d)
+		// Clamp dilatation to 1.0 in units of 1/Myr, which is equivalent to 3.17e-14 in units of 1/second.
+		// This is the same clamping we applied when evolving crustal thickness, so we'll do the same here.
+		//
+		// This is about 6 times the default clamping (disabled by default) of 5e-15 1/second in a
+		// topological network visual layer, and so the user still has the option to clamp further than this
+		// (in other words we're not clamping too excessively here).
+
+		if (current_dilatation > inv_seconds_in_a_million_years)
 		{
-			next_temperature_depth_of_current_point[d] = current_temperature_depth_of_current_point[d];
+			current_dilatation = inv_seconds_in_a_million_years;
+		}
+		else if (current_dilatation < -inv_seconds_in_a_million_years)
+		{
+			current_dilatation = -inv_seconds_in_a_million_years;
+		}
+
+		if (next_dilatation > inv_seconds_in_a_million_years)
+		{
+			next_dilatation = inv_seconds_in_a_million_years;
+		}
+		else if (next_dilatation < -inv_seconds_in_a_million_years)
+		{
+			next_dilatation = -inv_seconds_in_a_million_years;
+		}
+
+		// First copy across the constant temperature boundary conditions from the current time to the next time.
+		//
+		// These are 0 C at the lithosphere top surface and the asthenosphere temperature at the basal surface.
+		next_temperature_depth_of_current_point[0] =
+				current_temperature_depth_of_current_point[0];
+		next_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1] =
+				current_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1];
+
+		//
+		// Next solve the temperature advection-diffusion equation from current time to next time.
+		//
+		// This is for the non-boundary depths (between the boundary conditions).
+		//
+
+		// Here we store some temporary results when solving the tridiagonal system of equations using
+		// the Thomas algorithm.
+		// Note that we include space for the top surface boundary depth but not the basal surface.
+		double tridiag_c_prime[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1];
+		double tridiag_d_prime[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1];
+
+		tridiag_c_prime[0] = 0.0;
+		tridiag_d_prime[0] = 0.0;  // 0 C
+		for (unsigned int i = 1; i < NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1; ++i)
+		{
+			const double z = i * TEMPERATURE_DIFFISION_DEPTH_RESOLUTION;
+
+			const double tridiag_a = -0.5 * r2 + 0.25 * r1 * z * next_dilatation;
+			const double tridiag_b = 1.0 + r2;
+			const double tridiag_c = -0.5 * r2 - 0.25 * r1 * z * next_dilatation;
+			const double tridiag_d =
+					current_temperature_depth_of_current_point[i - 1] * (0.5 * r2 - 0.25 * r1 * z * current_dilatation) +
+					current_temperature_depth_of_current_point[i] * (1.0 - r2) + 
+					current_temperature_depth_of_current_point[i + 1] * (0.5 * r2 + 0.25 * r1 * z * current_dilatation);
+
+			const double inv_tridiag_c_factor = 1.0 / (tridiag_b - tridiag_a * tridiag_c_prime[i - 1]);
+
+			tridiag_c_prime[i] = tridiag_c * inv_tridiag_c_factor;
+			tridiag_d_prime[i] = (tridiag_d - tridiag_a * tridiag_d_prime[i - 1]) * inv_tridiag_c_factor;
+		}
+
+		for (unsigned int i = NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 2; i >= 1; --i)
+		{
+			next_temperature_depth_of_current_point[i] = tridiag_d_prime[i] -
+					tridiag_c_prime[i] * next_temperature_depth_of_current_point[i + 1];
 		}
 
 		// Integrate the temperature-depth profile over depth.

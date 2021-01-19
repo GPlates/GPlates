@@ -350,6 +350,7 @@ namespace GPlatesAppLogic
 
 		void
 		evolve_lithospheric_temperature_time_step(
+				const double &time_increment,
 				const std::vector< boost::optional<DeformationStrainRate> > &current_deformation_strain_rates,
 				const std::vector< boost::optional<DeformationStrainRate> > &next_deformation_strain_rates,
 				const EvolvedScalarCoverage::State &current_scalar_coverage_state,
