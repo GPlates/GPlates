@@ -1171,10 +1171,77 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_step(
 		//
 		// Calculate the difference in tectonic subsidence from current time to next time.
 		//
+		// If isostatic balance is achieved at the base of the lithosphere then a change in elevation
+		// (or change in subsidence, which is negative elevation) is due to a change in density in the
+		// lithosphere (and change in lithosphere thickness) due to stretching/compression and/or thermal cooling.
+		//
+		// Equating the integral of density over lithosphere thickness from the current time to the next time:
+		//
+		//   Integral[rho_c(z), z=0->Lc] + Integral[rho_m(z), z=Lc->L]
+		//     = Integral[rho_w, z=0->s] + Integral[rho_c(z), z=0->Lc/B] + Integral[rho_m(z), z=Lc/B->L/B] + Integral[rho_a, z=L/B->L-s]
+		//
+		// ...where rho_c(z) = rho_c * (1 - alpha * T(z)) and rho_c is crustal density at 0 C and T(z) is temperature,
+		//          rho_m(z) = rho_m * (1 - alpha * T(z)) and rho_m is mantle density at 0 C,
+		//          rho_a is asthenosphere density (mantle density at asthenosphere temperature),
+		//          Lc is crustal thickness at current time, L is constant lithosphere thickness (assuming cooled lithosphere),
+		//          B is stretching factor (beta), Lc/B is crustal thickness at next time,
+		//          L/B is the lithosphere thickness at next time (which eventually cools back to thickness L),
+		//          L-L/B-s is amount of hot asthenosphere upwelling (for extension, B>1, s>0) or downwelling (for compression, B<1, s<0),
+		//          s is change in tectonic subsidence from current time to next time
+		//          (assumed filled with water of density rho_w, when below sea level, otherwise air of density zero).
+		// 
+		// The left side of equation represents integral of density over crust and lithospheric mantle at current time.
+		// The right side of equation represents integral of density over change in subsidence (from current time to next time)
+		// and stretched/compressed crust and lithospheric mantle and upwelled/downwelled asthenosphere
+		// (noting that compressed crust displaces asthenosphere causing the last term on right side to be negative which can
+		// then be moved to the left side as positive to show that asthenosphere is present at the current time, which is left side,
+		// but displaced at the next time, which is right side).
+		//
+		// The left side of the equation is:
+		//
+		//   Integral[rho_c*(1-alpha*T(z)), z=0->Lc] + Integral[rho_m*(1-alpha*T(z)), z=Lc->L]
+		//     = rho_c*Lc + rho_m*(L-Lc) - alpha*Integral[rho_l(z)*T(z), z=0->L]
+		//     ~ rho_c*Lc + rho_m*(L-Lc) - alpha*rho_m*Integral[T(z), z=0->L]
+		//
+		// ...where rho_l(z) is rho_c for 0 < z < Lc (crust) and rho_m for Lc < z < L (mantle), however we just set it to
+		// rho_m for all z since most of the lithosphere consists of mantle (as opposed to crust).
+		//
+		// The right side of the equation is:
+		//
+		//   Integral[rho_w, z=0->s] + Integral[rho_c*(1-alpha*T'(z)), z=0->Lc/B] + Integral[rho_m*(1-alpha*T'(z)), z=Lc/B->L/B] + Integral[rho_a, z=L/B->L-s]
+		//     = rho_w*s + rho_c*Lc/B + rho_m*(L/B - Lc/B) - alpha*Integral[rho_l(z)*T'(z), z=0->L/B] + Integral[rho_a, z=L/B->L] - rho_a*s
+		//     ~ rho_w*s + rho_c*Lc/B + rho_m*(L/B - Lc/B) - alpha*Integral[rho_l(z)*T'(z), z=0->L/B] + Integral[rho_m*(1-alpha*T'(z)), z=L/B->L] - rho_a*s
+		//     = rho_w*s + rho_c*Lc/B + rho_m*(L/B - Lc/B) - alpha*Integral[rho_l(z)*T'(z), z=0->L/B] + rho_m*(L - L/B) - alpha*Integral[rho_m*T'(z), z=L/B->L] - rho_a*s
+		//     = (rho_w-rho_a)*s + rho_c*Lc/B + rho_m*(L - Lc/B) - alpha*Integral[rho_l(z)*T'(z), z=0->L/B] - alpha*Integral[rho_m*T'(z), z=L/B->L]
+		//     = (rho_w-rho_a)*s + rho_c*Lc/B + rho_m*(L - Lc/B) - alpha*Integral[rho_l(z)*T'(z), z=0->L]
+		//     ~ (rho_w-rho_a)*s + rho_c*Lc/B + rho_m*(L - Lc/B) - alpha*rho_m*Integral[T'(z), z=0->L]
+		//
+		// ...where rho_l(z) is rho_c for 0 < z < Lc/B (crust) and rho_m for Lc/B < z < L (mantle), however we just set it to
+		// rho_m for all z since most of the lithosphere consists of mantle (as opposed to crust).
+		// And T'(z) is the temperature at the next time (right side of equation) whereas T(z) is the temperature at the
+		// current time (left side of equation). We've also simplified 'Integral[rho_a, z=L/B->L-s]' as
+		// 'Integral[rho_m*(1-alpha*T'(z)), z=L/B->L] - rho_a*s' so that we can combine the integral with other integrals.
+		//
+		// Finally, equating the left and right sides of equation we have:
+		//
+		//   rho_c*Lc + rho_m*(L-Lc) - alpha*rho_m*Integral[T(z), z=0->L]
+		//     = (rho_w-rho_a)*s + rho_c*Lc/B + rho_m*(L - Lc/B) - alpha*rho_m*Integral[T'(z), z=0->L]
+		//
+		// ...which can be rearranged as:
+		//
+		//       (rho_m - rho_c) * (1 - 1/B) * Lc - alpha * rho_m * Integral[T'(z) - T(z), z=0->L]
+		//   s = ---------------------------------------------------------------------------------
+		//                                  rho_a - rho_w
+		//
+		// ...where s is the change in tectonic subsidence from the current time to the next time.
+		//
 
+		// This is 1/B (from above equation) which is inverse stretching factor from current time to next time.
 		const double crustal_thickness_factor_current_to_next =
 				next_scalar_coverage_state.crustal_thickness_factor[scalar_value_index] /
 				current_scalar_coverage_state.crustal_thickness_factor[scalar_value_index];
+		// Calculate the mechanical stretching contribution to the change in subsidence
+		// (excluding the 'rho_a-rho_w' denominator for now).
 		double delta_tectonic_subsidence_kms = (DENSITY_MANTLE - DENSITY_CRUST) * current_crustal_thickness_kms *
 				(1.0 - crustal_thickness_factor_current_to_next);
 
@@ -1184,17 +1251,18 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_tectonic_subsidence_time_step(
 				next_lithospheric_temperature_integrated_over_depth_kms[scalar_value_index_in_group] -
 				current_lithospheric_temperature_integrated_over_depth_kms[scalar_value_index_in_group]);
 
-		// If currently below sea level then factor in the density of water.
+		// If currently below sea level then factor in the density of water, otherwise the current subsidence
+		// is negative (above sea level) and the change in subsidence in in air (which has zero density).
 		if (current_tectonic_subsidence_kms[scalar_value_index] >= 0)
 		{
 			delta_tectonic_subsidence_kms /= DENSITY_ASTHENOSPHERE - DENSITY_WATER;
 		}
 		else
 		{
-			delta_tectonic_subsidence_kms /= DENSITY_ASTHENOSPHERE;
+			delta_tectonic_subsidence_kms /= DENSITY_ASTHENOSPHERE /* minus density of air (=zero) */;
 		}
 
-		// Update the tectonic subsidence.
+		// Update the tectonic subsidence from the current time to the next time.
 		next_tectonic_subsidence_kms[scalar_value_index] =
 				current_tectonic_subsidence_kms[scalar_value_index] + delta_tectonic_subsidence_kms;
 	}
