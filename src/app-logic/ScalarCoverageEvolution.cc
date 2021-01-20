@@ -807,7 +807,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 	const double inv_seconds_in_a_million_years = 1.0 / seconds_in_a_million_years;
 
 	// Some constants used when solving the thermal advection-diffusion equation (see below).
-	// Calculate them once (ie, outside the loop below).
+	// We calculate them once here (ie, outside the loop below).
 	const double r1 = seconds_in_a_million_years * time_increment / TEMPERATURE_DIFFISION_DEPTH_RESOLUTION;
 	const double r2 = r1 * THERMAL_DIFFUSIVITY / TEMPERATURE_DIFFISION_DEPTH_RESOLUTION;
 
@@ -869,6 +869,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 					next_deformation_strain_rates[scalar_value_index_in_group],
 				GPLATES_ASSERTION_SOURCE);
 
+		// Get the dilatation strain rates at the current time and next time (in units of 1/second).
 		double current_dilatation = current_deformation_strain_rates[scalar_value_index_in_group]->get_strain_rate_dilatation();
 		double next_dilatation = next_deformation_strain_rates[scalar_value_index_in_group]->get_strain_rate_dilatation();
 
@@ -897,29 +898,128 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 			next_dilatation = -inv_seconds_in_a_million_years;
 		}
 
-		// First copy across the constant temperature boundary conditions from the current time to the next time.
-		//
-		// These are 0 C at the lithosphere top surface and the asthenosphere temperature at the basal surface.
-		next_temperature_depth_of_current_point[0] =
-				current_temperature_depth_of_current_point[0];
-		next_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1] =
-				current_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1];
-
 		//
 		// Next solve the temperature advection-diffusion equation from current time to next time.
 		//
 		// This is for the non-boundary depths (between the boundary conditions).
 		//
 
-		// Here we store some temporary results when solving the tridiagonal system of equations using
-		// the Thomas algorithm.
-		// Note that we include space for the top surface boundary depth but not the basal surface.
+		//
+		// As noted in Jarvis and McKenzie "Sedimentary basin formation with finite extension rates" (1980) the
+		// vertical velocity, due to stretching, at the top surface (z=0) is zero and at the basal (bottom) surface
+		// (z=L) is -V0 with the velocity varying linearly with z as Vz=-V0*(z/L). Note that we set the top surface
+		// to z=0 and the z-axis points down (which is different than in Jarvis and McKenzie, which has z=0 at
+		// bottom surface and z-axis pointing up). The strain rate G is the magnitude of the vertical velocity gradient
+		// G=V0/L and so Vz=-G*z.
+		//
+		// The temperature advection-diffusion equation is:
+		//
+		//   dT/dt = kappa * d(dT/dz)/dz - Vz * dt/dz
+		//         = kappa * d(dT/dz)/dz + G * z * dt/dz
+		//
+		// We can solve this numerically using the Crank-Nicolson method, where the general partial differential equation is:
+		//
+		//   dT/dt = F(t, z, T, dT/dz, d(dT/dz)/dz)
+		//
+		// ...where we discretize t and z to become t=n*dt and z=i*dz (where dt and dz are the discrete time and depth increments).
+		// And the Crank-Nicolson method is a central difference:
+		//
+		//   T(n+1, i) - T(n, i)     F(n+1, i, T, dT/dz, d(dT/dz)/dz) + F(n, i, T, dT/dz, d(dT/dz)/dz)
+		//   -------------------  =  -----------------------------------------------------------------
+		//            dt                                           2
+		//
+		// ...where n is the current time sample, n+1 is the next time sample, i is a discrete depth sample (and i-1, i+1, etc).
+		//
+		// For our temperature advection-diffusion equation we have:
+		//
+		//   F(t, z, T, dT/dz, d(dT/dz)/dz) = kappa * d(dT/dz)/dz + G * z * dt/dz
+		//
+		// ...and so the Crank-Nicolson method becomes:
+		//
+		//   T(n+1, i) - T(n, i)     F(n+1, i, T, dT/dz, d(dT/dz)/dz) + F(n, i, T, dT/dz, d(dT/dz)/dz)
+		//   -------------------  =  -----------------------------------------------------------------
+		//            dt                                           2
+		//
+		//   (T(n+1,i) - T(n,i)) / dt =  (kappa/2) * [(T(n+1,i+1) - T(n+1,i)) / dz - (T(n+1,i) - T(n+1,i-1)) / dz] / dz +
+		//                               (kappa/2) * [(T(n  ,i+1) - T(n  ,i)) / dz - (T(n  ,i) - T(n  ,i-1)) / dz] / dz +
+		//                                   (1/2) * G(n+1) * z(i) * (T(n+1,i+1) - T(n+1,i-1)) / (2*dz) +
+		//                                   (1/2) * G(n)   * z(i) * (T(n  ,i+1) - T(n  ,i-1)) / (2*dz)
+		//
+		// ...which can be re-arranged as:
+		//
+		//   T(n+1,i-1) * (-r2/2 + r1*z(i)*G(n+1)/4) + T(n+1,  i) * (1 + r2) + T(n+1,i+1) * (-r2/2 - r1*z(i)*G(n+1)/4) =
+		//     T(n,i-1) * (r2/2 - r1*z(i)*G(n)/4) + T(n,  i) * (1 - r2) + T(n,i+1) * (r2/2 + r1*z(i)*G(n)/4)
+		//
+		// ...where r1=dt/dz and r2=kappa*dt/(dz*dz)=r1*kappa/dz.
+		//
+		// The right hand side is known since we know T(n,...) and z(i) and G(n).
+		// However the unknowns on left hand side are T(n+1,...), more specifically T(n+1,i-1), T(n+1,i) and T(n+1,i+1).
+		// So we can write this as:
+		// 
+		//   T(n+1,i-1) * a(i) + T(n+1,i) * b(i) + T(n+1,i-1) * c(i) = d(i)
+		//
+		// ...where a(i) = -r2/2 + r1*z(i)*G(n+1)/4, b(i) = 1 + r2, c(i) = -r2/2 - r1*z(i)*G(n+1)/4 and
+		//          d(i) = T(n,i-1) * (r2/2 - r1*z(i)*G(n)/4) + T(n,  i) * (1 - r2) + T(n,i+1) * (r2/2 + r1*z(i)*G(n)/4)
+		//
+		// Since these T(n+1,i) need to be simultaneously solved for all i=1,2,3,...,L-1.
+		// We can write this as the following tridiagonal matrix equation:
+		//
+		//   | 1  0  0  0  0  0 . 0      0      0      |   | T(n+1,0)   |   | d0=T(0,0)     |
+		//   | a1 b1 c1 0  0  0 . 0      0      0      |   | T(n+1,1)   |   | d1            |
+		//   | 0  a2 b2 c2 0  0 . 0      0      0      |   | T(n+1,2    |   | d2            |
+		//   | 0  0  a3 b3 c3 0 . 0      0      0      | * | T(n+1,3    | = | d3            |
+		//   | .  .  .  .  .  .   .      .      .      |   | .          |   | .             |
+		//   | 0  0  0  0  0  0 . a(L-1) b(L-1) c(L-1) |   | T(n+1,L-1) |   | d(L-1)        |
+		//   | 0  0  0  0  0  0 . 0      0      1      |   | T(n+1,L)   |   | d(L) = T(0,L) |
+		//
+		// ...where we've added two rows (the first and last rows, i=0 and i=L) to account for the boundary conditions which are simply:
+		//
+		//   T(n+1,0)=T(0,0)
+		//   T(n+1,L)=T(0,L)
+		//
+		// ...indicating the top and bottom lithosphere surface temperatures do not change (are constant).
+		// And note that we are only really solving for i=1,2,3,...,L-1 (ie, not solving at i=0 or i=L).
+		//
+		// To solve the above tridiagonal system of equations we use the Thomas algorithm.
+		// This first does a forward sweep through the rows to calculate new coefficients c'(i) and d'(i), and
+		// then uses them in a backward sweep to calculate T(n+1,i).
+		//
+		// The forward sweep calculates:
+		//
+		//   c'(0) = c0 / b0
+		//   c'(i) = c(i) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., L-1
+		//
+		//   d'(0) = d0 / b0
+		//   d'(i) = (d(i) - a(i) * d'(i-1)) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., L-1
+		//
+		// ...and the backward sweep calculates:
+		//
+		//   T(n+1,L) = T(0,L)                       ; i = L (boundary condition)
+		//   T(n+1,i) = d'(i) - c'(i) * T(n+1,i+1)   ; i = L-1, L-2, L-3, ..., 1
+		//   T(n+1,0) = T(0,0)                       ; i = 0 (boundary condition)
+		//
+
+		// Storage for c'(i) and d'(i) for i = 0, 1, 2, ..., L-1.
+		// Note that we include space for the top surface boundary depth but not the basal (bottom) surface.
 		double tridiag_c_prime[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1];
 		double tridiag_d_prime[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1];
 
+		//
+		// Note that if we explicitly label the coefficients in the first (trivial) row of the matrix we have:
+		//
+		//   | b0 c0 0  0  0  0 . |
+		//   | a1 b1 c1 0  0  0 . |
+		//   | 0  a2 b2 c2 0  0 . |
+		//   | 0  0  a3 b3 c3 0 . |
+		//   | .  .  .  .  .  .   |
+		//
+		// ...which means b0=1 and c0=0, and hence c'(0) = c0 / b0 = 0 and d'(0) = d0 / b0 = T(0,0) = 0.
+		//
 		tridiag_c_prime[0] = 0.0;
 		tridiag_d_prime[0] = 0.0;  // 0 C
-		for (unsigned int i = 1; i < NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1; ++i)
+
+		// Forward sweep to calculate c'(i) and d'(i) for i = 1, 2, 3, ..., L-1.
+		for (unsigned int i = 1; i < NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1 /*L*/; ++i)
 		{
 			const double z = i * TEMPERATURE_DIFFISION_DEPTH_RESOLUTION;
 
@@ -933,15 +1033,26 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 
 			const double inv_tridiag_c_factor = 1.0 / (tridiag_b - tridiag_a * tridiag_c_prime[i - 1]);
 
+			// c'(i) = c(i) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., L-1
 			tridiag_c_prime[i] = tridiag_c * inv_tridiag_c_factor;
+			// d'(i) = (d(i) - a(i) * d'(i-1)) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., L-1
 			tridiag_d_prime[i] = (tridiag_d - tridiag_a * tridiag_d_prime[i - 1]) * inv_tridiag_c_factor;
 		}
 
-		for (unsigned int i = NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 2; i >= 1; --i)
+		// T(n+1,L) = T(0,L)    ; i = L (boundary condition)
+		next_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1 /*L*/] =
+				current_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1 /*L*/];
+
+		// Backward sweep to calculate T(n+1,i) for i = L-1, L-2, L-3, ..., 1.
+		for (unsigned int i = NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 2 /*L-1*/; i >= 1; --i)
 		{
+			// T(n+1,i) = d'(i) - c'(i) * T(n+1,i+1).
 			next_temperature_depth_of_current_point[i] = tridiag_d_prime[i] -
 					tridiag_c_prime[i] * next_temperature_depth_of_current_point[i + 1];
 		}
+
+		// T(n+1,0) = T(0,0)    ; i = 0 (boundary condition)
+		next_temperature_depth_of_current_point[0] = current_temperature_depth_of_current_point[0];
 
 		// Integrate the temperature-depth profile over depth.
 		double next_lithospheric_temperature_trapezoidal_sum =
