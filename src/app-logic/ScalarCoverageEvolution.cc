@@ -69,11 +69,18 @@ namespace GPlatesAppLogic
 	const double THERMAL_DIFFUSIVITY = THERMAL_CONDUCTIVITY / DENSITY_MANTLE / SPECIFIC_HEAT;
 
 	// Thickness of lithosphere (in km).
+	//
+	// NOTE: Changing this value also changes the maximum clamped strain rate (see code below).
 	constexpr double LITHOSPHERIC_THICKNESS_KMS = 125.0;
+	// ...and in metres.
+	const double LITHOSPHERIC_THICKNESS = 1000.0 * LITHOSPHERIC_THICKNESS_KMS;
 
 	// Depth resolution to use when solving the 1D temperature advection-diffusion equation for each surface point.
-	// A value of 25 is equivalent to an interval of 5 km (when lithospheric thickness is 125 km).
-	constexpr unsigned int NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS = 25;
+	// A value of 50 is equivalent to an interval of 2.5 km (when lithospheric thickness is 125 km).
+	//
+	// NOTE: Changing this value also changes the maximum clamped strain rate (see code below).
+	//       We're currently choosing a value that gives a depth interval of 2.5 km (see the comments about numerical stability).
+	constexpr unsigned int NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS = 50;
 	constexpr unsigned int NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES = NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS + 1;
 	const double INVERSE_NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS = 1.0 / NUM_TEMPERATURE_DIFFUSION_DEPTH_INTERVALS;
 
@@ -804,12 +811,13 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 	// Convert time increment from Myr to seconds. Also strain rates are in 1/sec (not 1/Myr).
 	//
 	const double seconds_in_a_million_years = 365.25 * 24 * 3600 * 1.0e6;
-	const double inv_seconds_in_a_million_years = 1.0 / seconds_in_a_million_years;
 
 	// Some constants used when solving the thermal advection-diffusion equation (see below).
 	// We calculate them once here (ie, outside the loop below).
 	const double r1 = seconds_in_a_million_years * time_increment / TEMPERATURE_DIFFISION_DEPTH_RESOLUTION;
 	const double r2 = r1 * THERMAL_DIFFUSIVITY / TEMPERATURE_DIFFISION_DEPTH_RESOLUTION;
+	// |G| <= 2 * (1 + r2) / (r1 * L)   ; see numerical stability comment below for details.
+	const double max_abs_dilatation = 2 * (1 + r2) / (r1 * LITHOSPHERIC_THICKNESS);
 
 	for (unsigned int scalar_value_index = scalar_values_start_index;
 		scalar_value_index < scalar_values_end_index;
@@ -873,31 +881,6 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 		double current_dilatation = current_deformation_strain_rates[scalar_value_index_in_group]->get_strain_rate_dilatation();
 		double next_dilatation = next_deformation_strain_rates[scalar_value_index_in_group]->get_strain_rate_dilatation();
 
-		// Clamp dilatation to 1.0 in units of 1/Myr, which is equivalent to 3.17e-14 in units of 1/second.
-		// This is the same clamping we applied when evolving crustal thickness, so we'll do the same here.
-		//
-		// This is about 6 times the default clamping (disabled by default) of 5e-15 1/second in a
-		// topological network visual layer, and so the user still has the option to clamp further than this
-		// (in other words we're not clamping too excessively here).
-
-		if (current_dilatation > inv_seconds_in_a_million_years)
-		{
-			current_dilatation = inv_seconds_in_a_million_years;
-		}
-		else if (current_dilatation < -inv_seconds_in_a_million_years)
-		{
-			current_dilatation = -inv_seconds_in_a_million_years;
-		}
-
-		if (next_dilatation > inv_seconds_in_a_million_years)
-		{
-			next_dilatation = inv_seconds_in_a_million_years;
-		}
-		else if (next_dilatation < -inv_seconds_in_a_million_years)
-		{
-			next_dilatation = -inv_seconds_in_a_million_years;
-		}
-
 		//
 		// Next solve the temperature advection-diffusion equation from current time to next time.
 		//
@@ -921,7 +904,9 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 		//
 		//   dT/dt = F(t, z, T, dT/dz, d(dT/dz)/dz)
 		//
-		// ...where we discretize t and z to become t=n*dt and z=i*dz (where dt and dz are the discrete time and depth increments).
+		// ...where we discretize t and z to become t=n*dt and z=i*dz (where dt and dz are the discrete time and depth increments)
+		// and i = 0, 1, 2, ..., l-1, l (where the lithospheric thickness L is L=l*dz).
+		//
 		// And the Crank-Nicolson method is a central difference:
 		//
 		//   T(n+1, i) - T(n, i)     F(n+1, i, T, dT/dz, d(dT/dz)/dz) + F(n, i, T, dT/dz, d(dT/dz)/dz)
@@ -950,7 +935,11 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 		//   T(n+1,i-1) * (-r2/2 + r1*z(i)*G(n+1)/4) + T(n+1,  i) * (1 + r2) + T(n+1,i+1) * (-r2/2 - r1*z(i)*G(n+1)/4) =
 		//     T(n,i-1) * (r2/2 - r1*z(i)*G(n)/4) + T(n,  i) * (1 - r2) + T(n,i+1) * (r2/2 + r1*z(i)*G(n)/4)
 		//
-		// ...where r1=dt/dz and r2=kappa*dt/(dz*dz)=r1*kappa/dz.
+		// ...where...
+		//
+		//   r1 = dt / dz
+		//   r2 = kappa * dt / (dz * dz)
+		//      = r1 * kappa / dz
 		//
 		// The right hand side is known since we know T(n,...) and z(i) and G(n).
 		// However the unknowns on left hand side are T(n+1,...), more specifically T(n+1,i-1), T(n+1,i) and T(n+1,i+1).
@@ -961,7 +950,7 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 		// ...where a(i) = -r2/2 + r1*z(i)*G(n+1)/4, b(i) = 1 + r2, c(i) = -r2/2 - r1*z(i)*G(n+1)/4 and
 		//          d(i) = T(n,i-1) * (r2/2 - r1*z(i)*G(n)/4) + T(n,  i) * (1 - r2) + T(n,i+1) * (r2/2 + r1*z(i)*G(n)/4)
 		//
-		// Since these T(n+1,i) need to be simultaneously solved for all i=1,2,3,...,L-1.
+		// Since these T(n+1,i) need to be simultaneously solved for all i=1,2,3,...,l-1.
 		// We can write this as the following tridiagonal matrix equation:
 		//
 		//   | 1  0  0  0  0  0 . 0      0      0      |   | T(n+1,0)   |   | d0=T(0,0)     |
@@ -969,16 +958,16 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 		//   | 0  a2 b2 c2 0  0 . 0      0      0      |   | T(n+1,2    |   | d2            |
 		//   | 0  0  a3 b3 c3 0 . 0      0      0      | * | T(n+1,3    | = | d3            |
 		//   | .  .  .  .  .  .   .      .      .      |   | .          |   | .             |
-		//   | 0  0  0  0  0  0 . a(L-1) b(L-1) c(L-1) |   | T(n+1,L-1) |   | d(L-1)        |
-		//   | 0  0  0  0  0  0 . 0      0      1      |   | T(n+1,L)   |   | d(L) = T(0,L) |
+		//   | 0  0  0  0  0  0 . a(l-1) b(l-1) c(l-1) |   | T(n+1,l-1) |   | d(l-1)        |
+		//   | 0  0  0  0  0  0 . 0      0      1      |   | T(n+1,l)   |   | d(l) = T(0,l) |
 		//
-		// ...where we've added two rows (the first and last rows, i=0 and i=L) to account for the boundary conditions which are simply:
+		// ...where we've added two rows (the first and last rows, i=0 and i=l) to account for the boundary conditions which are simply:
 		//
 		//   T(n+1,0)=T(0,0)
-		//   T(n+1,L)=T(0,L)
+		//   T(n+1,l)=T(0,l)
 		//
 		// ...indicating the top and bottom lithosphere surface temperatures do not change (are constant).
-		// And note that we are only really solving for i=1,2,3,...,L-1 (ie, not solving at i=0 or i=L).
+		// And note that we are only really solving for i=1,2,3,...,l-1 (ie, not solving at i=0 or i=l).
 		//
 		// To solve the above tridiagonal system of equations we use the Thomas algorithm.
 		// This first does a forward sweep through the rows to calculate new coefficients c'(i) and d'(i), and
@@ -987,19 +976,114 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 		// The forward sweep calculates:
 		//
 		//   c'(0) = c0 / b0
-		//   c'(i) = c(i) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., L-1
+		//   c'(i) = c(i) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., l-1
 		//
 		//   d'(0) = d0 / b0
-		//   d'(i) = (d(i) - a(i) * d'(i-1)) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., L-1
+		//   d'(i) = (d(i) - a(i) * d'(i-1)) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., l-1
 		//
 		// ...and the backward sweep calculates:
 		//
-		//   T(n+1,L) = T(0,L)                       ; i = L (boundary condition)
-		//   T(n+1,i) = d'(i) - c'(i) * T(n+1,i+1)   ; i = L-1, L-2, L-3, ..., 1
+		//   T(n+1,l) = T(0,l)                       ; i = l (boundary condition)
+		//   T(n+1,i) = d'(i) - c'(i) * T(n+1,i+1)   ; i = l-1, l-2, l-3, ..., 1
 		//   T(n+1,0) = T(0,0)                       ; i = 0 (boundary condition)
 		//
 
-		// Storage for c'(i) and d'(i) for i = 0, 1, 2, ..., L-1.
+		//
+		// Thomas' algorithm, as a solution to the above tridiagonal system, is stable if the matrix is diagonally dominant:
+		//
+		//   |b(i)| >= |a(i)| + |c(i)|
+		//
+		// ...for all rows. Substituting a, b and c we have:
+		//
+		//   1 + r2 >= |-r2/2 + r1*z(i)*G(n+1)/4| + |-r2/2 - r1*z(i)*G(n+1)/4|
+		//
+		// ...which places an upper limit on the strain rate G (meaning we'll need to clamp G to guarantee stability).
+		// There are two cases to consider for the above inequality:
+		//
+		//   |r1*z(i)*G(n+1)/4| <= r2/2, and
+		//   |r1*z(i)*G(n+1)/4| >  r2/2
+		//
+		// When |r1*z(i)*G(n+1)/4| <= r2/2:
+		//
+		//   1 + r2 >=  |-r2/2 + r1*z(i)*G(n+1)/4| +  |-r2/2 - r1*z(i)*G(n+1)/4|
+		//          >= -(-r2/2 + r1*z(i)*G(n+1)/4) + -(-r2/2 - r1*z(i)*G(n+1)/4)
+		//          >= r2/2 - r1*z(i)*G(n+1)/4 + r2/2 + r1*z(i)*G(n+1)/4
+		//          >= r2
+		//
+		// ...which always holds true.
+		//
+		// When |r1*z(i)*G(n+1)/4| > r2/2:
+		//
+		//   1 + r2 >=  |-r2/2 + r1*z(i)*G(n+1)/4| +  |-r2/2 - r1*z(i)*G(n+1)/4|
+		//          >= +(-r2/2 + r1*z(i)*G(n+1)/4) + -(-r2/2 - r1*z(i)*G(n+1)/4)  ; if |G(n+1)| > 0
+		//          >= r1*z(i)*G(n+1)/2                                           ; if |G(n+1)| > 0
+		//          >= -(-r2/2 + r1*z(i)*G(n+1)/4) + +(-r2/2 - r1*z(i)*G(n+1)/4)  ; if |G(n+1)| < 0
+		//          >= -r1*z(i)*G(n+1)/2                                          ; if |G(n+1)| < 0
+		//          >= |r1*z(i)*G(n+1)/2|
+		//          >= r1*z(i)*|G(n+1)|/2
+		//
+		// ...and rearranging this gives us an upper limit for |G| for stability:
+		//
+		//   |G(n+1)| <= 2 * (1 + r2) / (r1 * z(i))
+		//
+		// ...and if we set z(i) to its maximum (which is the lithospheric thickness L) then we get:
+		//
+		//   |G| <= 2 * (1 + r2) / (r1 * L)
+		//   
+		//
+		// ...and the condition for when this inequality holds (noted above) is:
+		//
+		//   |r1 * L * G/4| > r2/2
+		//              |G| > 2 * r2 / (r1 * L)
+		//
+		// ...so when '|G| > 2 * r2 / (r1 * L)' we must limit G with '|G| <= 2 * (1 + r2) / (r1 * L)'
+		// which is equivalent to always limiting G with:
+		//
+		//   |G| <= 2 * (1 + r2) / (r1 * L)
+		//
+		// For typical values dt = 1Myr and dz = 5km, and therefore r1 ~ 6.3e+9 and r2 ~ 0.94, we have
+		// an upper limit for G of ~5e-15 (1/second) which actually turns out to be the default
+		// strain rate clamping (disabled by default) in each topological network visual layer,
+		// in other words our clamping value is reasonable (not too low), so that worked out well (luckily).
+		//
+		// Also if the time increment (dt) is much larger than 1Myr (noting that r1 and r2 increase proportionally to dt)
+		// then '1 + r2 ~ r2' (eg, for dt=5Myr, r2 ~ 4.7) and we can remove the time dependence completely:
+		//
+		//   |G| <= 2 * (1 + r2) / (r1 * L)
+		//       <~  2 * r2 / (r1 * L)
+		//       <=  2 * kappa / (L * dz)
+		//
+		// ...which is an even lower limit on |G| that should keeps things stable for any time increment.
+		// Picking a reasonable maximum |G| of 5e-15 (1/second) we can rearrange the inequality (just above)
+		// to find a suitable dz:
+		//
+		//   dz <= 2 * kappa / (L * max(|G|))
+		//
+		// ...which for L=125 km gives us a dz of approximately 2.5 km.
+		//
+		// So choosing a depth interval of 2.5 km and clamping absolute strain rate to '2 * (1 + r2) / (r1 * L)' ensures
+		// stability when solving the tridiagonal system of Crank-Nicolson discrete equations of the advection-diffusion equation.
+		//
+
+		if (current_dilatation > max_abs_dilatation)
+		{
+			current_dilatation = max_abs_dilatation;
+		}
+		else if (current_dilatation < -max_abs_dilatation)
+		{
+			current_dilatation = -max_abs_dilatation;
+		}
+
+		if (next_dilatation > max_abs_dilatation)
+		{
+			next_dilatation = max_abs_dilatation;
+		}
+		else if (next_dilatation < -max_abs_dilatation)
+		{
+			next_dilatation = -max_abs_dilatation;
+		}
+
+		// Storage for c'(i) and d'(i) for i = 0, 1, 2, ..., l-1.
 		// Note that we include space for the top surface boundary depth but not the basal (bottom) surface.
 		double tridiag_c_prime[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1];
 		double tridiag_d_prime[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1];
@@ -1018,8 +1102,8 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 		tridiag_c_prime[0] = 0.0;
 		tridiag_d_prime[0] = 0.0;  // 0 C
 
-		// Forward sweep to calculate c'(i) and d'(i) for i = 1, 2, 3, ..., L-1.
-		for (unsigned int i = 1; i < NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1 /*L*/; ++i)
+		// Forward sweep to calculate c'(i) and d'(i) for i = 1, 2, 3, ..., l-1.
+		for (unsigned int i = 1; i < NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1 /*l*/; ++i)
 		{
 			const double z = i * TEMPERATURE_DIFFISION_DEPTH_RESOLUTION;
 
@@ -1033,18 +1117,18 @@ GPlatesAppLogic::ScalarCoverageEvolution::evolve_lithospheric_temperature_time_s
 
 			const double inv_tridiag_c_factor = 1.0 / (tridiag_b - tridiag_a * tridiag_c_prime[i - 1]);
 
-			// c'(i) = c(i) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., L-1
+			// c'(i) = c(i) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., l-1
 			tridiag_c_prime[i] = tridiag_c * inv_tridiag_c_factor;
-			// d'(i) = (d(i) - a(i) * d'(i-1)) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., L-1
+			// d'(i) = (d(i) - a(i) * d'(i-1)) / (b(i) - a(i) * c'(i-1))  ; i = 1, 2, 3, ..., l-1
 			tridiag_d_prime[i] = (tridiag_d - tridiag_a * tridiag_d_prime[i - 1]) * inv_tridiag_c_factor;
 		}
 
-		// T(n+1,L) = T(0,L)    ; i = L (boundary condition)
-		next_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1 /*L*/] =
-				current_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1 /*L*/];
+		// T(n+1,l) = T(0,l)    ; i = l (boundary condition)
+		next_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1 /*l*/] =
+				current_temperature_depth_of_current_point[NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 1 /*l*/];
 
-		// Backward sweep to calculate T(n+1,i) for i = L-1, L-2, L-3, ..., 1.
-		for (unsigned int i = NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 2 /*L-1*/; i >= 1; --i)
+		// Backward sweep to calculate T(n+1,i) for i = l-1, l-2, l-3, ..., 1.
+		for (unsigned int i = NUM_TEMPERATURE_DIFFUSION_DEPTH_SAMPLES - 2 /*l-1*/; i >= 1; --i)
 		{
 			// T(n+1,i) = d'(i) - c'(i) * T(n+1,i+1).
 			next_temperature_depth_of_current_point[i] = tridiag_d_prime[i] -
