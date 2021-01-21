@@ -128,15 +128,15 @@ namespace GPlatesAppLogic
 				//! Point located inside deforming region (in a Delaunay face).
 				explicit
 				PointLocation(
-						const Delaunay_2::Face_handle &delaunay_face) :
-					d_location(delaunay_face)
+						const Delaunay_2::Face_handle &delaunay_face_) :
+					d_location(DelaunayFaceLocation(delaunay_face_))
 				{  }
 
 				//! Point located inside a rigid block.
 				explicit
 				PointLocation(
-						const RigidBlock &rigid_block) :
-					d_location(boost::cref(rigid_block))
+						const RigidBlock &rigid_block_) :
+					d_location(RigidBlockLocation(rigid_block_))
 				{  }
 
 				//! Returns deforming region (Delaunay face) that point is located in (otherwise returns none).
@@ -155,9 +155,32 @@ namespace GPlatesAppLogic
 
 
 			public: // Used by TopologyPointLocation...
+
+				struct DelaunayFaceLocation
+				{
+					explicit
+					DelaunayFaceLocation(
+							const ResolvedTriangulation::Delaunay_2::Face_handle &delaunay_face_) :
+						delaunay_face(delaunay_face_)
+					{  }
+
+					ResolvedTriangulation::Delaunay_2::Face_handle delaunay_face;
+				};
+
+				struct RigidBlockLocation
+				{
+					explicit
+					RigidBlockLocation(
+							const RigidBlock &rigid_block_) :
+						rigid_block(rigid_block_)
+					{  }
+
+					boost::reference_wrapper<const RigidBlock> rigid_block; // behaves like 'const RigidBlock &'
+				};
+
 				typedef boost::variant<
-						Delaunay_2::Face_handle,
-						boost::reference_wrapper<const RigidBlock> // behaves like 'const RigidBlock &'
+						DelaunayFaceLocation,
+						RigidBlockLocation
 				> location_type;
 
 				const location_type &
@@ -174,9 +197,9 @@ namespace GPlatesAppLogic
 				{
 					boost::optional<Delaunay_2::Face_handle>
 					operator()(
-							const Delaunay_2::Face_handle &delaunay_face) const
+							const DelaunayFaceLocation &delaunay_face_location) const
 					{
-						return delaunay_face;
+						return delaunay_face_location.delaunay_face;
 					}
 
 					template <class LocationType>
@@ -193,9 +216,9 @@ namespace GPlatesAppLogic
 				{
 					boost::optional<const RigidBlock &>
 					operator()(
-							const RigidBlock &rigid_block) const
+							const RigidBlockLocation &rigid_block_location) const
 					{
-						return rigid_block;
+						return static_cast<const RigidBlock &>(rigid_block_location.rigid_block);
 					}
 
 					template <class LocationType>
@@ -1179,7 +1202,7 @@ namespace GPlatesAppLogic
 			bool
 			is_point_in_rigid_block(
 					const GPlatesMaths::PointOnSphere &point,
-					const GPlatesAppLogic::ResolvedTriangulation::Network::RigidBlock &rigid_block) const;
+					const RigidBlock &rigid_block) const;
 
 			/**
 			 * Returns the stage rotation for the specified rigid block.

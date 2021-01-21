@@ -39,7 +39,7 @@
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalLine.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
-#include "app-logic/ScalarCoverageDeformation.h"
+#include "app-logic/ScalarCoverageTimeSpan.h"
 #include "app-logic/TimeSpanUtils.h"
 #include "app-logic/TopologyReconstruct.h"
 
@@ -71,11 +71,6 @@ namespace GPlatesApi
 		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructedGeometryTimeSpan> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const ReconstructedGeometryTimeSpan> non_null_ptr_to_const_type;
 
-		typedef std::map<
-				GPlatesPropertyValues::ValueObjectType/*scalar type*/,
-				GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type/*scalars*/>
-						scalar_type_to_time_span_map_type;
-
 
 		/**
 		 * Create a reconstructed geometry time span (with optional reconstructed scalars).
@@ -84,9 +79,9 @@ namespace GPlatesApi
 		non_null_ptr_type
 		create(
 				GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span,
-				const scalar_type_to_time_span_map_type &scalar_type_to_time_span_map)
+				GPlatesAppLogic::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span)
 		{
-			return non_null_ptr_type(new ReconstructedGeometryTimeSpan(geometry_time_span, scalar_type_to_time_span_map));
+			return non_null_ptr_type(new ReconstructedGeometryTimeSpan(geometry_time_span, scalar_coverage_time_span));
 		}
 
 
@@ -101,21 +96,21 @@ namespace GPlatesApi
 
 
 		/**
-		 * Return mapping of scalar types to sequences of reconstructed scalar values.
+		 * Return time span of reconstructed scalar values (and their associated scalar types).
 		 */
-		const scalar_type_to_time_span_map_type &
-		get_scalar_type_to_time_span_map() const
+		GPlatesAppLogic::ScalarCoverageTimeSpan::non_null_ptr_type
+		get_scalar_coverage_time_span() const
 		{
-			return d_scalar_type_to_time_span_map;
+			return d_scalar_coverage_time_span;
 		}
 
 	private:
 
 		ReconstructedGeometryTimeSpan(
 				GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span,
-				const scalar_type_to_time_span_map_type &scalar_type_to_time_span_map) :
+				GPlatesAppLogic::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span) :
 			d_geometry_time_span(geometry_time_span),
-			d_scalar_type_to_time_span_map(scalar_type_to_time_span_map)
+			d_scalar_coverage_time_span(scalar_coverage_time_span)
 		{  }
 
 
@@ -125,9 +120,9 @@ namespace GPlatesApi
 		GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type d_geometry_time_span;
 
 		/**
-		 * Mapping of scalar types to their reconstructed scalar time spans.
+		 * Time span of reconstructed scalar values (and their associated scalar types).
 		 */
-		scalar_type_to_time_span_map_type d_scalar_type_to_time_span_map;
+		GPlatesAppLogic::ScalarCoverageTimeSpan::non_null_ptr_type d_scalar_coverage_time_span;
 	};
 
 

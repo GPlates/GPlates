@@ -1448,6 +1448,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::rotate_geometry_sample(
 void
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::initialise_deformation_total_strains() const
 {
+	PROFILE_FUNC();
+
 	// We'll be accessing strain rates to accumulate total strains.
 	AccessingStrainRates accessing_strain_rates(*this);
 
@@ -1854,7 +1856,9 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 		boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> points,
 		boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> point_locations,
 		boost::optional< std::vector< boost::optional<DeformationStrainRate> > &> strain_rates,
-		boost::optional< std::vector< boost::optional<DeformationStrain> > &> strains) const
+		boost::optional< std::vector< boost::optional<DeformationStrain> > &> strains,
+		int start_point_index,
+		int end_point_index) const
 {
 	// If we'll be accessing strain rates.
 	boost::optional<AccessingStrainRates> accessing_strain_rates;
@@ -1878,32 +1882,43 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 	}
 
 	const std::vector<GeometryPoint *> &geometry_points = geometry_sample.get()->get_geometry_points(d_accessing_strain_rates);
-	const unsigned int num_geometry_points = geometry_points.size();
+	const int num_geometry_points = geometry_points.size();
+
+	// A value of -1 means until the end.
+	if (end_point_index < 0)
+	{
+		end_point_index = num_geometry_points;
+	}
+
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			end_point_index <= num_geometry_points &&
+				start_point_index >= 0 && start_point_index <= end_point_index,
+			GPLATES_ASSERTION_SOURCE);
 
 	if (points)
 	{
-		points->reserve(num_geometry_points);
+		points->reserve(end_point_index - start_point_index);
 	}
 	if (point_locations)
 	{
-		point_locations->reserve(num_geometry_points);
+		point_locations->reserve(end_point_index - start_point_index);
 	}
 	if (strain_rates)
 	{
-		strain_rates->reserve(num_geometry_points);
+		strain_rates->reserve(end_point_index - start_point_index);
 	}
 	if (strains)
 	{
-		strains->reserve(num_geometry_points);
+		strains->reserve(end_point_index - start_point_index);
 	}
 
 	// Get the active geometry points.
 	// Note that they should not all be inactive because otherwise the 'get_geometry_sample()' call above would have failed.
-	for (unsigned int geometry_point_index = 0; geometry_point_index < num_geometry_points; ++geometry_point_index)
+	for (int geometry_point_index = start_point_index; geometry_point_index < end_point_index; ++geometry_point_index)
 	{
 		GeometryPoint *geometry_point = geometry_points[geometry_point_index];
 
-		if (geometry_point)
+		if (geometry_point) // active point...
 		{
 			if (points)
 			{
@@ -1966,6 +1981,48 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data(
 				strains->push_back(boost::none);
 			}
 		}
+	}
+
+	return true;
+}
+
+
+bool
+GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_points_are_active(
+		const double &reconstruction_time,
+		std::vector<bool> &points_are_active,
+		int start_point_index,
+		int end_point_index) const
+{
+	boost::optional<GeometrySample::non_null_ptr_type> geometry_sample = get_geometry_sample(reconstruction_time);
+	if (!geometry_sample)
+	{
+		// The geometry is not valid/active at the reconstruction time.
+		return false;
+	}
+
+	const std::vector<GeometryPoint *> &geometry_points = geometry_sample.get()->get_geometry_points(d_accessing_strain_rates);
+	const int num_geometry_points = geometry_points.size();
+
+	// A value of -1 means until the end.
+	if (end_point_index < 0)
+	{
+		end_point_index = num_geometry_points;
+	}
+
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			end_point_index <= num_geometry_points &&
+				start_point_index >= 0 && start_point_index <= end_point_index,
+			GPLATES_ASSERTION_SOURCE);
+
+	points_are_active.reserve(end_point_index - start_point_index);
+
+	for (int geometry_point_index = start_point_index; geometry_point_index < end_point_index; ++geometry_point_index)
+	{
+		GeometryPoint *geometry_point = geometry_points[geometry_point_index];
+
+		// Null pointer means point is inactive.
+		points_are_active.push_back(geometry_point != nullptr);
 	}
 
 	return true;
@@ -2673,6 +2730,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::create_tessellated_poly_
 void
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::calc_deformation_strain_rates()
 {
+	PROFILE_FUNC();
+
 	const unsigned int num_points = d_geometry_points.size();
 
 	// Iterate over the network point locations and calculate instantaneous deformation information.

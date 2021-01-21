@@ -45,6 +45,7 @@
 #include "app-logic/ReconstructParams.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
+#include "app-logic/ScalarCoverageEvolution.h"
 #include "app-logic/ScalarCoverageFeatureProperties.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
@@ -578,7 +579,7 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::setup_pages()
 	crustal_thickness_spin_box->setMinimum(0.01);
 	crustal_thickness_spin_box->setMaximum(1000.0);
 	crustal_thickness_spin_box->setSingleStep(1.0);
-	crustal_thickness_spin_box->setValue(40.0); // default value (kms)
+	crustal_thickness_spin_box->setValue(GPlatesAppLogic::ScalarCoverageEvolution::DEFAULT_INITIAL_CRUSTAL_THICKNESS_KMS);
 
 	// The various Edit widgets need pass focus along the chain if Enter is pressed.
 	QObject::connect(

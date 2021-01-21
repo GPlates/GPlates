@@ -1844,7 +1844,7 @@ class TopologicalModelCase(unittest.TestCase):
                 oldest_time=30.0,
                 youngest_time=10.0,
                 reconstruction_plate_id=802,
-                scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
         # Create from a point.
         reconstructed_point_time_span = self.topological_model.reconstruct_geometry(
                 pygplates.PointOnSphere(0, 0),
@@ -1852,7 +1852,7 @@ class TopologicalModelCase(unittest.TestCase):
                 oldest_time=30.0,
                 youngest_time=10.0,
                 reconstruction_plate_id=802,
-                scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0]})
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0]})
         # Create from a sequence of points.
         reconstructed_points_time_span = self.topological_model.reconstruct_geometry(
                 [(0, 0), (5, 5)],
@@ -1860,7 +1860,7 @@ class TopologicalModelCase(unittest.TestCase):
                 oldest_time=30.0,
                 youngest_time=10.0,
                 reconstruction_plate_id=802,
-                scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
 
         # Number of scalars must match number of points.
         self.assertRaises(
@@ -1871,7 +1871,7 @@ class TopologicalModelCase(unittest.TestCase):
                 oldest_time=30.0,
                 youngest_time=10.0,
                 reconstruction_plate_id=802,
-                scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
         # 'oldest_time - youngest_time' not an integer multiple of time_increment
         self.assertRaises(
                 ValueError,
@@ -1953,7 +1953,7 @@ class TopologicalModelCase(unittest.TestCase):
                 initial_time=20.0,
                 oldest_time=30.0,
                 youngest_time=10.0,
-                scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0, 1.0]})
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0, 1.0]})
         
         # Points.
         reconstructed_points = reconstructed_multipoint_time_span.get_geometry_points(20)
@@ -1972,7 +1972,9 @@ class TopologicalModelCase(unittest.TestCase):
         
         # Scalars.
         scalars_dict = reconstructed_multipoint_time_span.get_scalar_values(20)
-        self.assertTrue(len(scalars_dict) == 2)
+        # Should be at least the 2 scalar types we supplied initial values for.
+        # There will be more since other *evolved* scalar types are reconstructed (such as crustal thinning factor) even if we did not provide initial values.
+        self.assertTrue(len(scalars_dict) >= 2)
         self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_thickness] == [10.0, 10.0, 10.0])
         self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_stretching_factor] == [1.0, 1.0, 1.0])
         self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_thickness) == [10.0, 10.0, 10.0])

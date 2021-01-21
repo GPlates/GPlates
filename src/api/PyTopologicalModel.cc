@@ -229,12 +229,13 @@ namespace GPlatesApi
 		}
 
 		/**
-		 * Extract reconstructed scalar values (at @a reconstruction_time) from a scalar coverage time span and
-		 * return as a Python list.
+		 * Extract reconstructed scalar values (at @a reconstruction_time and associated with @a scalar_type)
+		 * from a scalar coverage time span and return as a Python list.
 		 */
 		bp::list
 		add_scalar_values_to_list(
-				GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type scalars_time_span,
+				GPlatesAppLogic::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span,
+				const GPlatesPropertyValues::ValueObjectType &scalar_type,
 				const double &reconstruction_time,
 				bool return_inactive_points)
 		{
@@ -244,23 +245,34 @@ namespace GPlatesApi
 			// Get the scalar values at the reconstruction time.
 			if (return_inactive_points)
 			{
-				std::vector<boost::optional<double>> all_scalar_values;
-				scalars_time_span->get_all_scalar_values(reconstruction_time, all_scalar_values);
-
-				for (auto scalar_value : all_scalar_values)
+				std::vector<double> all_scalar_values;
+				std::vector<bool> all_scalar_values_are_active;
+				if (scalar_coverage_time_span->get_all_scalar_values(
+						scalar_type, reconstruction_time, all_scalar_values, all_scalar_values_are_active))
 				{
-					// Note that boost::none gets translated to Python 'None'.
-					scalar_values_list_object.append(scalar_value);
+					const unsigned int num_all_scalar_values = scalar_coverage_time_span->get_num_all_scalar_values();
+					for (unsigned int scalar_value_index = 0; scalar_value_index < num_all_scalar_values; ++scalar_value_index)
+					{
+						boost::optional<double> scalar_value;
+						if (all_scalar_values_are_active[scalar_value_index])
+						{
+							scalar_value = all_scalar_values[scalar_value_index];
+						}
+
+						// Note that boost::none gets translated to Python 'None'.
+						scalar_values_list_object.append(scalar_value);
+					}
 				}
 			}
 			else // only active points...
 			{
 				std::vector<double> scalar_values;
-				scalars_time_span->get_scalar_values(reconstruction_time, scalar_values);
-
-				for (auto scalar_value : scalar_values)
+				if (scalar_coverage_time_span->get_scalar_values(scalar_type, reconstruction_time, scalar_values))
 				{
-					scalar_values_list_object.append(scalar_value);
+					for (auto scalar_value : scalar_values)
+					{
+						scalar_values_list_object.append(scalar_value);
+					}
 				}
 			}
 
@@ -351,45 +363,42 @@ namespace GPlatesApi
 			return bp::object()/*Py_None*/;
 		}
 
-		const ReconstructedGeometryTimeSpan::scalar_type_to_time_span_map_type &scalar_type_to_time_span_map =
-				reconstructed_geometry_time_span->get_scalar_type_to_time_span_map();
-		if (scalar_type_to_time_span_map.empty())
-		{
-			return bp::object()/*Py_None*/;
-		}
+		GPlatesAppLogic::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span =
+				reconstructed_geometry_time_span->get_scalar_coverage_time_span();
 
 		if (scalar_type)
 		{
 			// Look up the scalar type.
-			auto scalar_type_to_time_span_iter = scalar_type_to_time_span_map.find(scalar_type.get());
-			if (scalar_type_to_time_span_iter == scalar_type_to_time_span_map.end())
+			if (!scalar_coverage_time_span->contains_scalar_type(scalar_type.get()))
 			{
 				// Not found.
 				return bp::object()/*Py_None*/;
 			}
 
-			GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type
-					scalars_time_span = scalar_type_to_time_span_iter->second;
-
-			return add_scalar_values_to_list(scalars_time_span, reconstruction_time.value(), return_inactive_points);
+			return add_scalar_values_to_list(
+					scalar_coverage_time_span,
+					scalar_type.get(),
+					reconstruction_time.value(),
+					return_inactive_points);
 		}
 
 		bp::dict scalar_values_dict;
 
-		// Iterate over scalar types.
-		for (auto scalar_type_to_time_span : scalar_type_to_time_span_map)
-		{
-			const GPlatesPropertyValues::ValueObjectType &curr_scalar_type = scalar_type_to_time_span.first;
-			GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type
-					curr_scalars_time_span = scalar_type_to_time_span.second;
+		// Find all available scalar types contained in the scalar coverage.
+		std::vector<GPlatesPropertyValues::ValueObjectType> available_scalar_types;
+		scalar_coverage_time_span->get_scalar_types(available_scalar_types);
 
+		// Iterate over scalar types.
+		for (const auto &available_scalar_type : available_scalar_types)
+		{
 			boost::python::list curr_scalar_values_list_object = add_scalar_values_to_list(
-					curr_scalars_time_span,
+					scalar_coverage_time_span,
+					available_scalar_type,
 					reconstruction_time.value(),
 					return_inactive_points);
 
 			// Map the current scalar type to its scalar values.
-			scalar_values_dict[curr_scalar_type] = curr_scalar_values_list_object;
+			scalar_values_dict[available_scalar_type] = curr_scalar_values_list_object;
 		}
 
 		return scalar_values_dict;
@@ -715,7 +724,7 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 		const GPlatesPropertyValues::GeoTimeInstant &youngest_time_arg,
 		const double &time_increment_arg,
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
-		bp::object scalar_type_to_values_mapping_object)
+		bp::object scalar_type_to_initial_scalar_values_mapping_object)
 {
 	// Initial reconstruction time must not be distant past/future.
 	if (!initial_time.is_real())
@@ -821,51 +830,33 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 					initial_time.value(),
 					deactivate_points);
 
-	// Extract the optional scalar values.
-	ReconstructedGeometryTimeSpan::scalar_type_to_time_span_map_type scalar_type_to_time_span_map;
-	if (scalar_type_to_values_mapping_object != bp::object()/*Py_None*/)
+	// Extract the optional initial scalar values.
+	GPlatesAppLogic::ScalarCoverageTimeSpan::initial_scalar_coverage_type initial_scalar_coverage;
+	if (scalar_type_to_initial_scalar_values_mapping_object != bp::object()/*Py_None*/)
 	{
 		// Extract the mapping of scalar types to scalar values.
-		const std::map<
-				GPlatesPropertyValues::ValueObjectType/*scalar type*/,
-				std::vector<double>/*scalars*/> scalar_type_to_values_map =
-						create_scalar_type_to_values_map(scalar_type_to_values_mapping_object);
+		initial_scalar_coverage = create_scalar_type_to_values_map(
+				scalar_type_to_initial_scalar_values_mapping_object);
 
 		// Number of points in domain must match number of scalar values in range.
 		const unsigned int num_domain_geometry_points =
 				GPlatesAppLogic::GeometryUtils::get_num_geometry_points(*geometry);
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				!scalar_type_to_values_map.empty(),
+				!initial_scalar_coverage.empty(),
 				GPLATES_ASSERTION_SOURCE);
 		// Just test the scalar values length for the first scalar type (all types should already have the same length).
-		if (num_domain_geometry_points != scalar_type_to_values_map.begin()->second.size())
+		if (num_domain_geometry_points != initial_scalar_coverage.begin()->second.size())
 		{
 			PyErr_SetString(PyExc_ValueError, "Number of scalar values must match number of points in geometry");
 			bp::throw_error_already_set();
 		}
-
-		// Create optional time spans of reconstructed scalars (one time span per scalar type).
-		for (auto scalar_type_to_values : scalar_type_to_values_map)
-		{
-			const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_type_to_values.first;
-			const std::vector<double> &scalar_values = scalar_type_to_values.second;
-
-			// Select function to evolve scalar values with (based on the scalar type).
-			boost::optional<GPlatesAppLogic::scalar_evolution_function_type> scalar_evolution_function =
-					get_scalar_evolution_function(scalar_type, GPlatesAppLogic::ReconstructScalarCoverageParams());
-
-			// Reconstruct scalar values over time span.
-			GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span =
-					GPlatesAppLogic::ScalarCoverageDeformation::ScalarCoverageTimeSpan::create(
-							geometry_time_span,
-							scalar_values,
-							scalar_evolution_function);
-
-			scalar_type_to_time_span_map.insert(std::make_pair(scalar_type, scalar_coverage_time_span));
-		}
 	}
 
-	return ReconstructedGeometryTimeSpan::create(geometry_time_span, scalar_type_to_time_span_map);
+	// Create the scalar coverage from the initial scalar values and the geometry time span.
+	GPlatesAppLogic::ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span =
+			GPlatesAppLogic::ScalarCoverageTimeSpan::create(initial_scalar_coverage, geometry_time_span);
+
+	return ReconstructedGeometryTimeSpan::create(geometry_time_span, scalar_coverage_time_span);
 }
 
 
@@ -1094,8 +1085,8 @@ export_topological_model()
 					bp::arg("youngest_time") = GPlatesPropertyValues::GeoTimeInstant(0),
 					bp::arg("time_increment") = GPlatesMaths::real_t(1),
 					bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
-					bp::arg("scalars") = bp::object()/*Py_None*/),
-				"reconstruct_geometry(geometry, initial_time, [oldest_time], [youngest_time=0], [time_increment=1], [reconstruction_plate_id], [scalars])\n"
+					bp::arg("initial_scalars") = bp::object()/*Py_None*/),
+				"reconstruct_geometry(geometry, initial_time, [oldest_time], [youngest_time=0], [time_increment=1], [reconstruction_plate_id], [initial_scalars])\n"
 				"  Reconstruct a geometry (and optional scalars) over a time span.\n"
 				"\n"
 				"  :param geometry: The geometry to reconstruct (using topologies). Currently limited to a "
@@ -1118,14 +1109,14 @@ export_topological_model()
 				"to its initial position at time *initial_time*. Defaults to the anchored plate "
 				"(specified in :meth:`constructor<__init__>`).\n"
 				"  :type reconstruction_plate_id: int\n"
-				"  :param scalars: optional mapping of scalar types to sequences of scalar values\n"
-				"  :type scalars: ``dict`` mapping each :class:`ScalarType` to a sequence "
+				"  :param initial_scalars: optional mapping of scalar types to sequences of initial scalar values\n"
+				"  :type initial_scalars: ``dict`` mapping each :class:`ScalarType` to a sequence "
 				"of float, or a sequence of (:class:`ScalarType`, sequence of float) tuples\n"
 				"  :rtype: :class:`ReconstructedGeometryTimeSpan`\n"
 				"  :raises: ValueError if *initial_time* is "
 				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
-				"  :raises: ValueError if *scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` "
+				"  :raises: ValueError if *initial_scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` "
 				"is not mapped to the same number of scalar values, or the number of scalars is not equal to the "
 				"number of points in *geometry*\n"
 				"  :raises: ValueError if oldest or youngest time is distant-past (``float('inf')``) or "
