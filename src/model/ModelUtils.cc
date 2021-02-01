@@ -1388,7 +1388,7 @@ GPlatesModel::ModelUtils::get_mprs_attributes(
 				if(p_inline && p_inline->size() >= 1)
 				{
 					const_dictionary = 
-						dynamic_cast<const GPlatesPropertyValues::GpmlKeyValueDictionary*>((*p_inline->begin()).get());
+						dynamic_cast<const GPlatesPropertyValues::GpmlKeyValueDictionary*>((*p_inline->begin()).get_element().get());
 				}
 			}
 		}

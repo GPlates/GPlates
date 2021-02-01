@@ -249,7 +249,7 @@ namespace GPlatesModel
 			 *
 			 * Note that a 'const const_element_type' is returned to ensure the returned temporary
 			 * (non_null_intrusive_ptr) is not modified since this is probably not the intention of the
-			 * client. Additionally it's naturally not possible to modify the pointed-to- revisionable element
+			 * client. Additionally it's naturally not possible to modify the pointed-to revisionable element
 			 * because 'const_element_type' is the same as 'RevisionableType::non_null_ptr_to_const_type'
 			 * and so the pointed-to revisionable object also cannot be modified.
 			 */
@@ -315,6 +315,7 @@ namespace GPlatesModel
 						// reference and std::advance cannot yet take advantage of the new style iterator concepts
 						// (see - http://www.boost.org/doc/libs/1_34_1/libs/iterator/doc/new-iter-concepts.html)...
 						std::random_access_iterator_tag,
+						// Reference type...
 						typename boost::mpl::if_<
 								boost::is_same<ElementQualifiedType, const_element_type>,
 										// Use a proxied reference for const elements...

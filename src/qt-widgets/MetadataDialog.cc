@@ -876,7 +876,7 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 	if(p_inline && p_inline->size() >= 1)
 	{
 		const GpmlKeyValueDictionary* const_dictionary = 
-			dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get());
+			dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get_element().get());
 		if(const_dictionary)
 		{
 			std::vector<boost::shared_ptr<Metadata> > data_ =
@@ -915,7 +915,7 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 			if(p_inline && p_inline->size() >= 1)
 			{
 				const GpmlKeyValueDictionary* const_dictionary = 
-					dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get());
+					dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get_element().get());
 				if(const_dictionary)
 				{
 					d_mprs_data = convert_mprs_metadata_to_vector(const_dictionary);
