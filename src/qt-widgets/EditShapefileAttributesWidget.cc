@@ -187,8 +187,8 @@ GPlatesQtWidgets::EditShapefileAttributesWidget::update_widget_from_key_value_di
 	for (int row = 0 ; it != end ; ++it, ++row)
 	{
 
-		QString key_string = GPlatesUtils::make_qstring_from_icu_string(it->get()->key()->get_value().get());
-		QVariant value_variant = GPlatesFileIO::OgrUtils::get_qvariant_from_kvd_element(*it->get());
+		QString key_string = GPlatesUtils::make_qstring_from_icu_string(it->key()->get_value().get());
+		QVariant value_variant = GPlatesFileIO::OgrUtils::get_qvariant_from_kvd_element(**it);
 
 		// Key field.
 		QTableWidgetItem *key_string_item = new QTableWidgetItem(key_string);

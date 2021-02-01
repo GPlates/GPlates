@@ -406,7 +406,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_key_value_dictionary(
 			end = elements.end();
 	for ( ; iter != end; ++iter)
 	{
-		write_gpml_key_value_dictionary_element(*iter->get());
+		write_gpml_key_value_dictionary_element(**iter);
 	}
 
 	end_header_line();
@@ -433,7 +433,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_piecewise_aggregation(
 	for ( ; iter != end; ++iter) 
 	{
 		d_line_stream << " <timeWindow>";
-		write_gpml_time_window(*iter->get());
+		write_gpml_time_window(**iter);
 		d_line_stream << "</timeWindow>";
 	}
 
@@ -555,7 +555,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_irregular_sampling(
 	for ( ; iter != end; ++iter) 
 	{
 		d_line_stream << " <timeSample>";
-		write_gpml_time_sample(*iter->get());
+		write_gpml_time_sample(**iter);
 		d_line_stream << "</timeSample>";
 	}
 

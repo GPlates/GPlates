@@ -494,7 +494,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
 		try
 		{
 			gml_time_period_ptr =
-					dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>(it->get().get());
+					dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>((*it).get_element().get());
 
 			GPlatesPropertyValues::GeoTimeInstant geo_time_instant =
 					gml_time_period_ptr->end()->get_time_position();

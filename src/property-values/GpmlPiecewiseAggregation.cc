@@ -54,7 +54,7 @@ GPlatesPropertyValues::GpmlPiecewiseAggregation::print_to(
 			windows.end();
 	for ( ; windows_iter != windows_end; ++windows_iter)
 	{
-		os << *windows_iter->get();
+		os << **windows_iter;
 	}
 
 	return os << " ]";

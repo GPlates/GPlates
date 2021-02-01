@@ -115,8 +115,8 @@ namespace
 
 			for (; iter != end; ++iter)
 			{
-				header_list << GPlatesUtils::make_qstring_from_icu_string(iter->get()->key()->get_value().get());
-				//std::cerr << GPlatesUtils::make_qstring_from_icu_string(iter->get()->key()->value().get()).toStdString().c_str() << std::endl;
+				header_list << GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get());
+				//std::cerr << GPlatesUtils::make_qstring_from_icu_string(iter->key()->value().get()).toStdString().c_str() << std::endl;
 			}
 			
 			table_widget->setColumnCount(header_list.size());
@@ -159,7 +159,7 @@ namespace
 			for (int column = 0; iter != end ; ++iter, ++ column)
 			{
 				GPlatesFeatureVisitors::ToQvariantConverter qvariant_finder;
-				iter->get()->value()->accept_visitor(qvariant_finder);
+				iter->value()->accept_visitor(qvariant_finder);
 				QString text = qvariant_finder.found_values_begin()->toString();
 				QTableWidgetItem *item = new QTableWidgetItem(text);
 

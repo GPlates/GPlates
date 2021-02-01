@@ -353,8 +353,8 @@ namespace
 		for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter)
 		{
 			coordinates_iterator_ranges.push_back(std::make_pair(
-						tuple_list_iter->get()->get_coordinates().begin(),
-						tuple_list_iter->get()->get_coordinates().end()));
+						tuple_list_iter->get_coordinates().begin(),
+						tuple_list_iter->get_coordinates().end()));
 		}
 	}
 
@@ -706,7 +706,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_data_block(
 					end = tuple_list.end();
 			for ( ; iter != end; ++iter)
 			{
-				write_gml_data_block_value_component_value_object_template(d_output, iter->get());
+				write_gml_data_block_value_component_value_object_template(d_output, *iter);
 			}
 
 			d_output.writeEndElement(); // </gml:CompositeValue>
@@ -1090,7 +1090,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_array(
 		for ( ; iter != end; ++iter) 
 		{
 			d_output.writeStartGpmlElement("member");
-				iter->get()->accept_visitor(*this);
+				iter->accept_visitor(*this);
 			d_output.writeEndElement();
 		}
 	d_output.writeEndElement();
@@ -1282,7 +1282,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_key_value_dictionary(
 					end = elements.end();
 			for ( ; iter != end; ++iter) {
 				d_output.writeStartGpmlElement("element");
-				write_gpml_key_value_dictionary_element(*iter->get());
+				write_gpml_key_value_dictionary_element(**iter);
 				d_output.writeEndElement();
 			}
 		//d_output.writeEndElement();
@@ -1305,7 +1305,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_piecewise_aggregation(
 		for ( ; iter != end; ++iter) 
 		{
 			d_output.writeStartGpmlElement("timeWindow");
-				write_gpml_time_window(*iter->get());
+				write_gpml_time_window(**iter);
 			d_output.writeEndElement();
 		}
 	d_output.writeEndElement();  // </gpml:IrregularSampling>
@@ -1326,7 +1326,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_network(
 				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator boundary_sections_end = boundary_sections.end();
 				for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
 				{
-					GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = boundary_sections_iter->get();
+					GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *boundary_sections_iter;
 
 					d_output.writeStartGpmlElement("section");
 					topological_section->accept_visitor(*this);
@@ -1341,7 +1341,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_network(
 		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>::const_iterator interior_geometries_end = interior_geometries.end();
 		for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter) 
 		{
-			GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type interior_geometry = interior_geometries_iter->get();
+			GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type interior_geometry = *interior_geometries_iter;
 
 			d_output.writeStartGpmlElement("interior");
 				d_output.writeStartGpmlElement("TopologicalNetworkInterior");
@@ -1370,7 +1370,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_polygon(
 				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator exterior_sections_end = exterior_sections.end();
 				for ( ; exterior_sections_iter != exterior_sections_end; ++exterior_sections_iter)
 				{
-					GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = exterior_sections_iter->get();
+					GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *exterior_sections_iter;
 
 					d_output.writeStartGpmlElement("section");
 					topological_section->accept_visitor(*this);
@@ -1396,7 +1396,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line(
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator sections_end = sections.end();
 	for ( ; sections_iter != sections_end; ++sections_iter)
 	{
-		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = sections_iter->get();
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *sections_iter;
 
 		d_output.writeStartGpmlElement("section");
 		topological_section->accept_visitor(*this);
@@ -1515,7 +1515,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_irregular_sampling(
 		for ( ; iter != end; ++iter) 
 		{
 			d_output.writeStartGpmlElement("timeSample");
-				write_gpml_time_sample(*iter->get());
+				write_gpml_time_sample(**iter);
 			d_output.writeEndElement();
 		}
 

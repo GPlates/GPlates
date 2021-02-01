@@ -53,7 +53,7 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 			GPlatesModel::RevisionedVector<GpmlTopologicalSection>::const_iterator boundary_sections_end = boundary_sections_.end();
 			for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
 			{
-				os << *boundary_sections_iter->get();
+				os << **boundary_sections_iter;
 			}
 
 		os << " }, ";
@@ -66,7 +66,7 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 			GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::const_iterator interior_geometries_end = interior_geometries_.end();
 			for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter)
 			{
-				os << *interior_geometries_iter->get();
+				os << **interior_geometries_iter;
 			}
 
 		os << " }";

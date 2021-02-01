@@ -54,7 +54,7 @@ GPlatesPropertyValues::GpmlTopologicalLine::print_to(
 	GPlatesModel::RevisionedVector<GpmlTopologicalSection>::const_iterator sections_end = sections_.end();
 	for ( ; sections_iter != sections_end; ++sections_iter)
 	{
-		os << *sections_iter->get();
+		os << **sections_iter;
 	}
 
 	return os << " ]";

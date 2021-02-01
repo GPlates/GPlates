@@ -949,7 +949,7 @@ namespace GPlatesApi
 					!coverage_range_property_value.get()->tuple_list().empty(),
 					GPLATES_ASSERTION_SOURCE);
 			// Just test the scalar values length for the first scalar type (all types should already have the same length).
-			if (num_domain_geometry_points != coverage_range_property_value.get()->tuple_list().front().get()->get_coordinates().size())
+			if (num_domain_geometry_points != coverage_range_property_value.get()->tuple_list().front()->get_coordinates().size())
 			{
 				PyErr_SetString(PyExc_ValueError, "Number of scalar values in coverage must match number of points in geometry");
 				bp::throw_error_already_set();
@@ -1124,7 +1124,7 @@ namespace GPlatesApi
 						!coverage_range_property_values.get()[c]->tuple_list().empty(),
 						GPLATES_ASSERTION_SOURCE);
 				// Just test the scalar values length for the first scalar type (all types should already have the same length).
-				if (num_domain_geometry_points != coverage_range_property_values.get()[c]->tuple_list().front().get()->get_coordinates().size())
+				if (num_domain_geometry_points != coverage_range_property_values.get()[c]->tuple_list().front()->get_coordinates().size())
 				{
 					PyErr_SetString(PyExc_ValueError, "Number of scalar values in coverage must match number of points in geometry");
 					bp::throw_error_already_set();

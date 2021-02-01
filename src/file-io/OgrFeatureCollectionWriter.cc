@@ -132,7 +132,7 @@ namespace
 
 		for (; it != end ; ++it)
 		{
-			QString key_string = GPlatesUtils::make_qstring_from_icu_string(it->get()->key()->get_value().get());
+			QString key_string = GPlatesUtils::make_qstring_from_icu_string(it->key()->get_value().get());
 			if (key == key_string)
 			{
 				break;

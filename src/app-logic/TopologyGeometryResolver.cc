@@ -173,7 +173,7 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_piecewise_aggregation(
 	// topologies from different time periods will get created instead of just one of them).
 	if (time_windows.size() == 1)
 	{
-		visit_gpml_time_window(*time_windows.front().get());
+		visit_gpml_time_window(*time_windows.front());
 		return;
 	}
 
@@ -181,7 +181,7 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_piecewise_aggregation(
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end = time_windows.end();
 	for ( ; iter != end; ++iter) 
 	{
-		GPlatesPropertyValues::GpmlTimeWindow &time_window = *iter->get();
+		GPlatesPropertyValues::GpmlTimeWindow &time_window = **iter;
 
 		// NOTE: We really should be checking the time period of each time window against the
 		// If the time window period contains the current reconstruction time then visit.
@@ -301,7 +301,7 @@ GPlatesAppLogic::TopologyGeometryResolver::record_topological_sections(
 		sections_iter != sections_end;
 		++sections_iter)
 	{
-		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section = sections_iter->get();
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section = *sections_iter;
 		topological_section->accept_visitor(*this);
 	}
 }

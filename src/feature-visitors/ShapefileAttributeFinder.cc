@@ -92,7 +92,7 @@ GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gpml_key_value_dictionar
 		 iter = elements.begin(),
 		 end = elements.end();
 	for ( ; iter != end; ++iter) {
-		find_shapefile_attribute_in_element(*iter->get());
+		find_shapefile_attribute_in_element(**iter);
 	}
 
 }

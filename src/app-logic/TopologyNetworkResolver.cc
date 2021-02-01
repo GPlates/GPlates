@@ -175,7 +175,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_piecewise_aggregation(
 	// networks from different time periods will get created instead of just one of them).
 	if (time_windows.size() == 1)
 	{
-		visit_gpml_time_window(*time_windows.front().get());
+		visit_gpml_time_window(*time_windows.front());
 		return;
 	}
 
@@ -183,7 +183,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_piecewise_aggregation(
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end = time_windows.end();
 	for ( ; iter != end; ++iter) 
 	{
-		GPlatesPropertyValues::GpmlTimeWindow &time_window = *iter->get();
+		GPlatesPropertyValues::GpmlTimeWindow &time_window = **iter;
 		// If the time window period contains the current reconstruction time then visit.
 		// The time periods should be mutually exclusive - if we happen to be in
 		// two time periods then we're probably right on the boundary between the two
@@ -239,7 +239,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_boundary_sections(
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::iterator boundary_sections_end = boundary_sections.end();
 	for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
 	{
-		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section = boundary_sections_iter->get();
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section = *boundary_sections_iter;
 
 		topological_section->accept_visitor(*this);
 	}
@@ -408,7 +408,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_interior_geometries
 	// Loop over the interior geometries.
 	for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter) 
 	{
-		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type interior_geometry = interior_geometries_iter->get();
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type interior_geometry = *interior_geometries_iter;
 
 		record_topological_interior_geometry(*interior_geometry);
 	}

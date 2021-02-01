@@ -903,9 +903,9 @@ GPlatesFileIO::OgrUtils::write_kvd(
 	for (; iter != end; ++iter)
 	{
 		qDebug() << "Key: " <<
-					GPlatesUtils::make_qstring_from_icu_string(iter->get()->key()->get_value().get()) <<
+					GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get()) <<
 					", Value: " <<
-					get_qvariant_from_kvd_element(*iter->get());
+					get_qvariant_from_kvd_element(**iter);
 	}
 }
 
@@ -925,9 +925,9 @@ GPlatesFileIO::OgrUtils::write_kvd(
 	for (; iter != end; ++iter)
 	{
 		qDebug() << "Key: " <<
-					GPlatesUtils::make_qstring_from_icu_string(iter->get()->key()->get_value().get()) <<
+					GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get()) <<
 					", Value: " <<
-					get_qvariant_from_kvd_element(*iter->get());
+					get_qvariant_from_kvd_element(**iter);
 	}
 }
 

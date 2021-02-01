@@ -477,7 +477,7 @@ namespace GPlatesApi
 				PyErr_SetString(PyExc_StopIteration, "No more data.");
 				bp::throw_error_already_set();
 			}
-			return d_coordinate_lists[d_index++].get()->get_value_object_type();
+			return d_coordinate_lists[d_index++]->get_value_object_type();
 		}
 
 	private:
@@ -502,7 +502,7 @@ namespace GPlatesApi
 		const unsigned int num_scalar_types = scalar_value_lists.size();
 		for (unsigned int n = 0; n < num_scalar_types; ++n)
 		{
-			gml_data_block_coordinate_lists.push_back(scalar_value_lists[n].get());
+			gml_data_block_coordinate_lists.push_back(scalar_value_lists[n]);
 		}
 
 		return create_dict_from_gml_data_block_coordinate_lists(
@@ -642,7 +642,7 @@ namespace GPlatesApi
 		// Search for the coordinate list associated with 'scalar_type'.
 		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
 		{
-			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = **coordinate_lists_iter;
 
 			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
 			if (scalar_type == coordinate_list_scalar_type)
@@ -672,7 +672,7 @@ namespace GPlatesApi
 		// Search for the coordinate list associated with 'scalar_type'.
 		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
 		{
-			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = **coordinate_lists_iter;
 
 			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
 			if (scalar_type == coordinate_list_scalar_type)
@@ -712,7 +712,7 @@ namespace GPlatesApi
 		// Search for the coordinate list associated with 'scalar_type'.
 		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
 		{
-			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = **coordinate_lists_iter;
 
 			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
 			if (scalar_type == coordinate_list_scalar_type)
@@ -728,7 +728,7 @@ namespace GPlatesApi
 
 		// Make sure has the same number of scalar values as existing scalar values.
 		if (!coordinate_lists.empty() &&
-			scalar_values.size() != coordinate_lists.front().get()->get_coordinates().size())
+			scalar_values.size() != coordinate_lists.front()->get_coordinates().size())
 		{
 			PyErr_SetString(PyExc_ValueError, "Each scalar type must have the same number of scalar values");
 			bp::throw_error_already_set();
@@ -764,7 +764,7 @@ namespace GPlatesApi
 		// Search for the coordinate list associated with 'scalar_type'.
 		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
 		{
-			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = **coordinate_lists_iter;
 
 			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
 			if (scalar_type == coordinate_list_scalar_type)
@@ -2438,7 +2438,7 @@ namespace GPlatesApi
 				PyErr_SetString(PyExc_StopIteration, "No more data.");
 				bp::throw_error_already_set();
 			}
-			return d_elements[d_index++].get()->key()->get_value();
+			return d_elements[d_index++]->key()->get_value();
 		}
 
 	private:
@@ -2556,7 +2556,7 @@ namespace GPlatesApi
 		// Search for the element associated with 'key'.
 		for ( ; elements_iter != elements_end ; ++elements_iter)
 		{
-			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = *elements_iter->get();
+			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = **elements_iter;
 
 			const GPlatesPropertyValues::TextContent &element_key = element.key()->get_value();
 			if (key == element_key)
@@ -2587,7 +2587,7 @@ namespace GPlatesApi
 		// Search for the element associated with 'key'.
 		for ( ; elements_iter != elements_end ; ++elements_iter)
 		{
-			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = *elements_iter->get();
+			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = **elements_iter;
 
 			const GPlatesPropertyValues::TextContent &element_key = element.key()->get_value();
 			if (key == element_key)
@@ -2626,7 +2626,7 @@ namespace GPlatesApi
 		// Search for the element associated with 'key'.
 		for ( ; elements_iter != elements_end ; ++elements_iter)
 		{
-			GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = *elements_iter->get();
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = **elements_iter;
 
 			const GPlatesPropertyValues::TextContent &element_key = element.key()->get_value();
 			if (key == element_key)
@@ -2676,7 +2676,7 @@ namespace GPlatesApi
 		// Search for the element associated with 'key'.
 		for ( ; elements_iter != elements_end ; ++elements_iter)
 		{
-			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = *elements_iter->get();
+			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = **elements_iter;
 
 			const GPlatesPropertyValues::TextContent &element_key = element.key()->get_value();
 			if (key == element_key)

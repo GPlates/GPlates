@@ -828,9 +828,11 @@ namespace GPlatesApi
 				iterator_type iter = slice_range->start;
 				for ( ; iter != slice_range->stop; std::advance(iter, slice_range->step))
 				{
-					slice_list.append(iter->get());
+					const element_type element = *iter;
+					slice_list.append(element);
 				}
-				slice_list.append(iter->get());
+				const element_type element = *iter;
+				slice_list.append(element);
 
 				return slice_list;
 			}
@@ -841,7 +843,7 @@ namespace GPlatesApi
 			{
 				long index = get_index(revisioned_vector, extract_index());
 
-				element_type element = (*revisioned_vector)[index].get();
+				element_type element = (*revisioned_vector)[index];
 				return bp::object(element);
 			}
 

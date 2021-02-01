@@ -56,10 +56,10 @@ namespace GPlatesModel
 	 * A vector of revisionable object that maintains revisions, where each vector revision is a
 	 * snapshot of the sequence of revisionable elements contained by the vector.
 	 *
-	 * Template parameter 'RevisionableType' is @a Revisionable or one of its derived types and
-	 * can be const or non-const (eg, 'GpmlPlateId' or 'const GpmlPlateId').
-	 * Although typically it should be the 'non-const' version (since the python bindings use
-	 * non-const for mutable types, since python has no real concept of const and non-const methods).
+	 * Template parameter 'RevisionableType' is @a Revisionable or one of its derived types.
+	 * It should be the 'non-const' version because we typedef both 'RevisionableType' and
+	 * 'const RevisionableType' (another reason is the python bindings use non-const for
+	 * mutable types, since python has no real concept of const and non-const methods).
 	 *
 	 * Note: Previously @a RevisionedVector accepted non-revisionable types also.
 	 * But this was removed since it became very difficult to bind this to python.
@@ -120,50 +120,6 @@ namespace GPlatesModel
 
 
 		/**
-		 * Reference (proxied) implementation for a reference to a 'const' element.
-		 */
-		class ConstReference
-		{
-		public:
-
-			explicit
-			ConstReference(
-					const RevisionedVector<RevisionableType> *revisioned_vector,
-					std::size_t index) :
-				d_revisioned_vector(revisioned_vector),
-				d_index(index)
-			{  }
-
-			/**
-			 * Access 'const' element.
-			 */
-			const_element_type
-			get() const
-			{
-				return d_revisioned_vector->get_element(d_index);
-			}
-
-			/**
-			 * Conversion to 'const' element.
-			 */
-			operator const_element_type() const
-			{
-				return d_revisioned_vector->get_element(d_index);
-			}
-
-		private:
-
-			const RevisionedVector<RevisionableType> *d_revisioned_vector;
-			std::size_t d_index;
-		};
-
-		/**
-		 * Const reference type - returns a 'const_element_type'.
-		 */
-		typedef ConstReference const_reference;
-
-
-		/**
 		 * Reference (proxied) implementation for a reference to a 'non-const' element.
 		 *
 		 * This is essentially the same as @a ConstReference but adds assignment operator so
@@ -220,7 +176,7 @@ namespace GPlatesModel
 			 * so the pointed-to revisionable object can be modified (as opposed to the non_null_intrusive_ptr).
 			 */
 			const element_type
-			get() const
+			get_element() const
 			{
 				return d_revisioned_vector->get_element(d_index);
 			}
@@ -230,7 +186,25 @@ namespace GPlatesModel
 			 */
 			operator element_type() const
 			{
-				return d_revisioned_vector->get_element(d_index);
+				return get_element();
+			}
+
+			/**
+			 * Dereference operator.
+			 */
+			RevisionableType *
+			operator->() const
+			{
+				return get_element().get();
+			}
+
+			/**
+			 * Dereference operator.
+			 */
+			RevisionableType &
+			operator*() const
+			{
+				return *get_element();
 			}
 
 		private:
@@ -243,6 +217,84 @@ namespace GPlatesModel
 		 * Non-const reference type - returns a 'element_type'.
 		 */
 		typedef Reference reference;
+
+
+		/**
+		 * Reference (proxied) implementation for a reference to a 'const' element.
+		 */
+		class ConstReference
+		{
+		public:
+
+			explicit
+			ConstReference(
+					const RevisionedVector<RevisionableType> *revisioned_vector,
+					std::size_t index) :
+				d_revisioned_vector(revisioned_vector),
+				d_index(index)
+			{  }
+
+			// Conversion constructor from 'reference' to 'const_reference'.
+			//
+			// Note that there's no equivalent conversion from 'const_reference' to 'reference' in class Reference.
+			// We only allow conversion from non-const to const.
+			ConstReference(
+					const Reference &other) :
+				d_revisioned_vector(other.d_revisioned_vector),
+				d_index(other.d_index)
+			{  }
+
+			/**
+			 * Access 'const' element.
+			 *
+			 * Note that a 'const const_element_type' is returned to ensure the returned temporary
+			 * (non_null_intrusive_ptr) is not modified since this is probably not the intention of the
+			 * client. Additionally it's naturally not possible to modify the pointed-to- revisionable element
+			 * because 'const_element_type' is the same as 'RevisionableType::non_null_ptr_to_const_type'
+			 * and so the pointed-to revisionable object also cannot be modified.
+			 */
+			const const_element_type
+			get_element() const
+			{
+				return d_revisioned_vector->get_element(d_index);
+			}
+
+			/**
+			 * Conversion to 'const' element.
+			 */
+			operator const_element_type() const
+			{
+				return get_element();
+			}
+
+			/**
+			 * Dereference operator.
+			 */
+			const RevisionableType *
+			operator->() const
+			{
+				return get_element().get();
+			}
+
+			/**
+			 * Dereference operator.
+			 */
+			const RevisionableType &
+			operator*() const
+			{
+				return *get_element();
+			}
+
+		private:
+
+			const RevisionedVector<RevisionableType> *d_revisioned_vector;
+			std::size_t d_index;
+		};
+
+		/**
+		 * Const reference type - returns a 'const_element_type'.
+		 */
+		typedef ConstReference const_reference;
 
 
 		/**
@@ -391,15 +443,19 @@ namespace GPlatesModel
 					reference(reference_)
 				{  }
 
-				ReferenceType *
-				operator->()
+				// Return a pointer to the (non-const or const) RevisionableType that is held by the
+				// GPlatesUtils::non_null_intrusive_ptr<(non-const or const) RevisionableType>.
+				// This way the user can dereference an iterator using operator-> and it will go straight to
+				// the revisionable object via this proxy class (bypassing 'reference', or 'const_reference').
+				typename ElementQualifiedType::element_type *
+				operator->() const
 				{
-					return &reference;
+					return reference.get_element().get();
 				}
 
-				operator ReferenceType *()
+				operator typename ElementQualifiedType::element_type *() const
 				{
-					return &reference;
+					return reference.get_element().get();
 				}
 
 				ReferenceType reference;

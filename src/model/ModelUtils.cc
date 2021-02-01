@@ -304,8 +304,7 @@ namespace
 
 			// Visit the first time window - doesn't matter which one since all time windows
 			// should have the same property value type.
-			gpml_piecewise_aggregation.time_windows().front().get()
-					->time_dependent_value()->accept_visitor(*this);
+			gpml_piecewise_aggregation.time_windows().front()->time_dependent_value()->accept_visitor(*this);
 		}
 
 		virtual
@@ -1150,13 +1149,13 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 
 			// If the there's a single time window that covers all time and it's a constant-value...
 			if (time_windows.size() == 1 &&
-				time_windows.front().get()->valid_time()->begin()->get_time_position().is_distant_past() &&
-				time_windows.front().get()->valid_time()->end()->get_time_position().is_distant_future() &&
-				time_windows.front().get()->time_dependent_value()->get_structural_type() == CONSTANT_VALUE_TYPE)
+				time_windows.front()->valid_time()->begin()->get_time_position().is_distant_past() &&
+				time_windows.front()->valid_time()->end()->get_time_position().is_distant_future() &&
+				time_windows.front()->time_dependent_value()->get_structural_type() == CONSTANT_VALUE_TYPE)
 			{
 				GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_to_const_type gpml_constant_value =
 						GPlatesUtils::dynamic_pointer_cast<const GPlatesPropertyValues::GpmlConstantValue>(
-								time_windows.front().get()->time_dependent_value());
+								time_windows.front()->time_dependent_value());
 
 				// Return the constant-value wrapped property value if the GPGIM allows this.
 				if (time_dependent_flags.test(GpgimProperty::CONSTANT_VALUE))

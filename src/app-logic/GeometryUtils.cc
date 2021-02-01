@@ -896,9 +896,9 @@ namespace
 			for ( ; iter != end; ++iter)
 			{
 				// If the time window covers our reconstruction time then visit.
-				if (iter->get()->valid_time()->contains(d_reconstruction_time.get()))
+				if (iter->valid_time()->contains(d_reconstruction_time.get()))
 				{
-					iter->get()->time_dependent_value()->accept_visitor(*this);
+					iter->time_dependent_value()->accept_visitor(*this);
 
 					// Break out of loop since time windows should be non-overlapping.
 					return;

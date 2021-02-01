@@ -51,7 +51,7 @@ GPlatesPropertyValues::GmlDataBlock::print_to(
 	GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::const_iterator tuple_list_end = tuple_list_.end();
 	for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter)
 	{
-		os << *tuple_list_iter->get();
+		os << **tuple_list_iter;
 	}
 
 	return os << " ]";

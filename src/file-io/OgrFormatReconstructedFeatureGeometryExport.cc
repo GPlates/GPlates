@@ -92,7 +92,7 @@ namespace
 				feature_kvd_end = feature_kvd_elements.end();
 		for (; feature_kvd_it != feature_kvd_end ; ++feature_kvd_it)
 		{
-			output_elements.push_back(feature_kvd_it->get()->clone());
+			output_elements.push_back(feature_kvd_it->clone());
 		}
 	}
 		

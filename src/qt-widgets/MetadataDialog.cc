@@ -1124,9 +1124,9 @@ GPlatesQtWidgets::MetadataDialog::get_gpml_total_reconstruction_pole(
 	GpmlFiniteRotation *trs = NULL;
 	for ( ; iter != end; ++iter) 
 	{
-		if(std::fabs(iter->get()->valid_time()->get_time_position().value() - time.toDouble()) < EPSILON)
+		if(std::fabs(iter->valid_time()->get_time_position().value() - time.toDouble()) < EPSILON)
 		{
-			trs = dynamic_cast<GpmlFiniteRotation *>(iter->get()->value().get());
+			trs = dynamic_cast<GpmlFiniteRotation *>(iter->value().get());
 			if(!trs)
 			{
 				qWarning() << "The time sample is not GpmlFiniteRotation type.";

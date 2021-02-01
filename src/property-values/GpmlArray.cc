@@ -48,7 +48,7 @@ GPlatesPropertyValues::GpmlArray::print_to(
 	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator members_end = members_.end();
 	for ( ; members_iter != members_end; ++members_iter)
 	{
-		os << *members_iter->get();
+		os << **members_iter;
 	}
 
 	return os << " ]";

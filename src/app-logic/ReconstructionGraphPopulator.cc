@@ -97,7 +97,7 @@ namespace
 					time_sample_end = time_samples.end();
 			for ( ; time_sample_iter != time_sample_end; ++time_sample_iter) 
 			{
-				time_sample_iter->get()->value()->accept_visitor(*this);
+				time_sample_iter->value()->accept_visitor(*this);
 			}
 		}
 
@@ -246,16 +246,16 @@ GPlatesAppLogic::ReconstructionGraphPopulator::visit_gpml_irregular_sampling(
 			time_sample_end = time_samples.end();
 	for ( ; time_sample_iter != time_sample_end; ++time_sample_iter) 
 	{
-		if (time_sample_iter->get()->is_disabled())
+		if (time_sample_iter->is_disabled())
 		{
 			// This time-sample is disabled.  Let's move to the next one.
 			continue;
 		}
 
 		// Let's visit the time sample, to collect (what we expect to be) the FiniteRotation inside it.
-		d_accumulator.d_finite_rotation_time_instant = time_sample_iter->get()->valid_time()->get_time_position();
+		d_accumulator.d_finite_rotation_time_instant = time_sample_iter->valid_time()->get_time_position();
 		d_accumulator.d_is_expecting_a_finite_rotation = true;
-		time_sample_iter->get()->value()->accept_visitor(*this);
+		time_sample_iter->value()->accept_visitor(*this);
 	}
 }
 

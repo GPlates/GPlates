@@ -143,7 +143,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_piecewise_aggregation
 		// the *un-adjusted* time window time period will be incorrect and hence we need to ignore it.
 		// By the way, the time window is a *sole* time window because the topology tools cannot yet
 		// create time-dependent topology (section) lists.
-		process_gpml_time_window(*iter->get());
+		process_gpml_time_window(**iter);
 	}
 }
 
@@ -170,7 +170,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line(
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator sections_end = sections.end();
 	for ( ; sections_iter != sections_end; ++sections_iter)
 	{
-		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = sections_iter->get();
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *sections_iter;
 
 		// visit the rest of the gpml 
 		topological_section->accept_visitor(*this);
@@ -190,7 +190,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network(
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator boundary_sections_end_ = boundary_sections.end();
 	for ( ; boundary_sections_iter != boundary_sections_end_; ++boundary_sections_iter)
 	{
-		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = boundary_sections_iter->get();
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *boundary_sections_iter;
 
 		topological_section->accept_visitor(*this);
 	}
@@ -204,7 +204,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network(
 	// Loop over the interior geometries.
 	for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter) 
 	{
-		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type interior_geometry = interior_geometries_iter->get();
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type interior_geometry = *interior_geometries_iter;
 
 		// Visit the current topological network interior.
 		visit_gpml_topological_network_interior(*interior_geometry);
@@ -248,7 +248,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_polygon(
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator exterior_sections_end = exterior_sections.end();
 	for ( ; exterior_sections_iter != exterior_sections_end; ++exterior_sections_iter)
 	{
-		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = exterior_sections_iter->get();
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = *exterior_sections_iter;
 
 		// visit the rest of the gpml 
 		topological_section->accept_visitor(*this);

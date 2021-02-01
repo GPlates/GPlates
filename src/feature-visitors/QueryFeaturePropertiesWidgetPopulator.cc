@@ -461,7 +461,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_key_va
 			iter = elements.begin(),
 			end = elements.end();
 	for ( ; iter != end; ++iter) {
-		add_gpml_key_value_dictionary_element(*iter->get());
+		add_gpml_key_value_dictionary_element(**iter);
 	}
 	d_tree_widget_builder.pop_current_item();
 }
@@ -727,7 +727,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_array(
 	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator end = members.end();
 	for ( ; iter != end; ++iter) 
 	{
-		iter->get()->accept_visitor(*this);
+		iter->accept_visitor(*this);
 	}
 	d_tree_widget_builder.pop_current_item();
 }

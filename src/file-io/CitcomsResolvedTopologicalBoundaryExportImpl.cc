@@ -157,9 +157,9 @@ namespace GPlatesFileIO
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->get()->valid_time()->get_time_position()))
+					if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position()))
 					{
-						iter->get()->value()->accept_visitor(*this);
+						iter->value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -178,9 +178,9 @@ namespace GPlatesFileIO
 				for ( ; iter != end; ++iter)
 				{
 					// If the time window covers our reconstruction time then visit.
-					if (iter->get()->valid_time()->contains(d_recon_time))
+					if (iter->valid_time()->contains(d_recon_time))
 					{
-						iter->get()->time_dependent_value()->accept_visitor(*this);
+						iter->time_dependent_value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -357,9 +357,9 @@ namespace GPlatesFileIO
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->get()->valid_time()->get_time_position()))
+					if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position()))
 					{
-						iter->get()->value()->accept_visitor(*this);
+						iter->value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -378,9 +378,9 @@ namespace GPlatesFileIO
 				for ( ; iter != end; ++iter)
 				{
 					// If the time window covers our reconstruction time then visit.
-					if (iter->get()->valid_time()->contains(d_recon_time))
+					if (iter->valid_time()->contains(d_recon_time))
 					{
-						iter->get()->time_dependent_value()->accept_visitor(*this);
+						iter->time_dependent_value()->accept_visitor(*this);
 					}
 				}
 			}

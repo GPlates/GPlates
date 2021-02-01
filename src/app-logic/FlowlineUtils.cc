@@ -72,7 +72,7 @@ GPlatesAppLogic::FlowlineUtils::get_times_from_time_period_array(
 		for (; iter != end ; ++iter)
 		{
 			gml_time_period_ptr =
-				dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>(iter->get().get());
+				dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>((*iter).get_element().get());
 
 			GPlatesPropertyValues::GeoTimeInstant geo_time_instant = 
 				gml_time_period_ptr->end()->get_time_position();

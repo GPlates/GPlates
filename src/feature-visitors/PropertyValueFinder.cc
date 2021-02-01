@@ -203,7 +203,7 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 	// Optimisation to avoid interpolating a property value when it's the
 	// wrong type and will just get discarded anyway.
 	{
-		const GPlatesModel::PropertyValue &first_time_sample_value = *time_samples.front().get()->value();
+		const GPlatesModel::PropertyValue &first_time_sample_value = *time_samples.front()->value();
 		if (typeid(first_time_sample_value) != property_value_type_info)
 		{
 			return;
@@ -282,9 +282,9 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_piecewise_aggregation_at_reco
 	for ( ; iter != end; ++iter)
 	{
 		// If the time window covers our reconstruction time then visit.
-		if (iter->get()->valid_time()->contains(reconstruction_time))
+		if (iter->valid_time()->contains(reconstruction_time))
 		{
-			iter->get()->time_dependent_value()->accept_visitor(property_value_finder_visitor);
+			iter->time_dependent_value()->accept_visitor(property_value_finder_visitor);
 
 			// Break out of loop since time windows should be non-overlapping.
 			// If we don't break out we might visit the property value twice if it
