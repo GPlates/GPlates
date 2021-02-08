@@ -54,10 +54,6 @@ if (SPHINX_FOUND)
 	FOREACH(IMAGE_FILE ${IMAGE_FILES})
 		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${IMAGE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${IMAGE_FILE} COPYONLY)
 	ENDFOREACH(IMAGE_FILE ${IMAGE_FILES})
-	
-	# It seems that 'sphinx-build' generates the following warning unless we create the specific directory in question...
-	# "WARNING: html_static_path entry '...doc-python-api/_build/_static' does not exist".
-	file(MAKE_DIRECTORY "${BINARY_BUILD_DIR}/_static")
 
 	# Configure the Sphinx configuration file using @VAR@ CMake variable substitutions.
 	configure_file(conf.py.in "${CMAKE_CURRENT_BINARY_DIR}/conf.py.intermediate" @ONLY)
