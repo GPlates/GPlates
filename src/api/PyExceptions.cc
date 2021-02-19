@@ -106,11 +106,16 @@ namespace GPlatesApi
 		 * Creates a new python exception that maps to C++ exception 'ExceptionType'.
 		 *
 		 * Instance can be passed to 'bp::register_exception_translator()'.
+		 *
+		 * If @a include_call_stack_trace is true then print out the call stack trace (see class CallStack)
+		 * when the Python exception is printed.
 		 */
 		explicit
 		PythonException(
 				const char *python_exception_name,
-				bp::object python_base_exception_type)
+				bp::object python_base_exception_type,
+				bool include_call_stack_trace) :
+			d_include_call_stack_trace(include_call_stack_trace)
 		{
 			std::string scope_name = bp::extract<std::string>(bp::scope().attr("__name__"));
 			std::string qualified_name = scope_name + "." + python_exception_name;
@@ -151,14 +156,10 @@ namespace GPlatesApi
 			std::ostringstream exc_message_stream;
 			exc.write(
 					exc_message_stream,
-					// We don't include the exception name since it's the name of the C++ exception,
-					// not the Python exception...
+					// We don't include the exception name since it's the name of the C++ exception, not the Python exception...
 					false/*include_exception_name*/,
-					// We don't include the call stack trace because that was only meant for
-					// uncaught exceptions in GPlates. Uncaught exceptions are much more common in
-					// Python because users who write their own scripts will typically not
-					// write exception-handling Python code...
-					false/*include_call_stack_trace*/);
+					// Only those exceptions indicating an internal error/bug should print out the call stack trace...
+					d_include_call_stack_trace);
 
 			PyErr_SetString(d_python_exception_type.ptr(), exc_message_stream.str().c_str());
 		}
@@ -169,6 +170,11 @@ namespace GPlatesApi
 		 * The type of exception on the python side (this maps to C++ exception 'ExceptionType').
 		 */
 		bp::object d_python_exception_type;
+
+		/**
+		 * Whether to print out the call stack trace when a Python exception is printed.
+		 */
+		bool d_include_call_stack_trace;
 	};
 
 
@@ -188,16 +194,29 @@ namespace GPlatesApi
 	 *   "Any subsequently-registered translators will be allowed to translate the exception earlier."
 	 * ...and this ensures that a (thrown) exception 'DerivedExceptionType' will be translated to
 	 * the python equivalent 'DerivedExceptionType' (instead of 'BaseExceptionType').
+	 *
+	 * If @a include_call_stack_trace is true then print out the call stack trace (see class CallStack)
+	 * when the Python exception is printed. It is false by default because it was only meant for
+	 * uncaught exceptions in GPlates. Uncaught exceptions are much more common in
+	 * Python because users who write their own scripts will typically not
+	 * write exception-handling Python code. However some C++ exceptions
+	 * (such as AssertionFailureException, AbortExeption and PreconditionViolationError) indicate
+	 * an internal problem and also do not have a message to print (hence confusing the Python user).
+	 * So for these exceptions it's useful to print out the call stack trace so that when
+	 * users encounter the associated Python exceptions they can contact a GPlates developer with
+	 * information on where the exception happened (inside pyGPlates) so they can fix it.
 	 */
 	template <class ExceptionType>
 	bp::object
 	export_exception(
 			const char *python_exception_name,
-			bp::object python_base_exception_type)
+			bp::object python_base_exception_type,
+			bool include_call_stack_trace = false)
 	{
 		PythonException<ExceptionType> python_exception(
 				python_exception_name,
-				python_base_exception_type);
+				python_base_exception_type,
+				include_call_stack_trace);
 
 		bp::register_exception_translator<ExceptionType>(python_exception);
 
@@ -260,11 +279,15 @@ export_exceptions()
 	GPlatesApi::AbortError =
 			export_exception<GPlatesGlobal::AbortException>(
 					"AbortError",
-					GPlatesApi::GPlatesError);
+					GPlatesApi::GPlatesError,
+					// Low-level unexpected internal errors should print out the call stack trace...
+					true/*include_call_stack_trace*/);
 	GPlatesApi::AssertionFailureError =
 			export_exception<GPlatesGlobal::AssertionFailureException>(
 					"AssertionFailureError",
-					GPlatesApi::GPlatesError);
+					GPlatesApi::GPlatesError,
+					// Low-level unexpected internal errors should print out the call stack trace...
+					true/*include_call_stack_trace*/);
 	GPlatesApi::FileFormatNotSupportedError =
 			export_exception<GPlatesFileIO::FileFormatNotSupportedException>(
 					"FileFormatNotSupportedError",
@@ -284,7 +307,16 @@ export_exceptions()
 	GPlatesApi::PreconditionViolationError =
 			export_exception<GPlatesGlobal::PreconditionViolationError>(
 					"PreconditionViolationError",
-					GPlatesApi::GPlatesError);
+					GPlatesApi::GPlatesError,
+					// Low-level unexpected internal errors should print out the call stack trace.
+					// Note that a precondition violation might not be representative of an internal error.
+					// It's possible the Python user has incorrectly used the pyGPlates API.
+					// However those errors are usually an exception class *derived* from PreconditionViolationError
+					// and those exception classes do *not* print out the call stack trace.
+					// But if the *base* class PreconditionViolationError is thrown then it's usually thrown
+					// by GPlates/pyGPlates when it violated a precondition itself (ie, not violated by the user)
+					// and so it should be reported to a GPlates developer (along with the call stack trace)...
+					true/*include_call_stack_trace*/);
 	GPlatesApi::AmbiguousGeometryCoverageError =
 			export_exception<GPlatesApi::AmbiguousGeometryCoverageException>(
 					"AmbiguousGeometryCoverageError",
