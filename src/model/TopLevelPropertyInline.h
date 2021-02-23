@@ -78,8 +78,14 @@ namespace GPlatesModel
 		 *
 		 * PropertyValueQualifiedType can be 'PropertyValue' or 'const PropertyValue'.
 		 *
-		 * This class has no element (property value pointer) assignment operator and hence clients
-		 * cannot use '*iter = new_ptr' to swap one property value pointer for another.
+		 * Note that this class has no *element* (property value pointer) assignment operator,
+		 * such as for non-const 'PropertyValue':
+		 *
+		 *   Reference<PropertyValue> &
+		 *   operator=(
+		 *           const PropertyValue::non_null_ptr_type &element);
+		 *
+		 * ...and hence clients cannot use '*iter = new_ptr' to swap one property value pointer for another.
 		 * This is intentional since this ability is not allowed.
 		 */
 		template <class PropertyValueQualifiedType>
@@ -100,6 +106,19 @@ namespace GPlatesModel
 				d_top_level_property_inline(top_level_property_inline),
 				d_index(index)
 			{  }
+
+			/**
+			 * No *copy* assignment operator, since we're not allowing assignment (through references).
+			 *
+			 * This prevents something like "*iter1 = *iter2".
+			 *
+			 * This is in addition to not defining an *element* assignment operator, which prevents
+			 * something like "*iter = property_value_ptr".
+			 */
+			template <class OtherPropertyValueQualifiedType>
+			Reference &
+			operator=(
+					const Reference<OtherPropertyValueQualifiedType> &other) = delete;
 
 			/**
 			 * Access property value pointer (element).

@@ -157,6 +157,9 @@ namespace GPlatesModel
 
 			/**
 			 * Copy assignment operator.
+			 *
+			 * This means something like "*iter1 = *iter2" will take the element referenced by "*iter2"
+			 * and store it in the vector element slot referenced by "*iter1".
 			 */
 			Reference &
 			operator=(
@@ -243,6 +246,15 @@ namespace GPlatesModel
 				d_revisioned_vector(other.d_revisioned_vector),
 				d_index(other.d_index)
 			{  }
+
+			/**
+			 * No copy assignment operator, since cannot assign through a const reference.
+			 *
+			 * This prevents something like "*iter1 = *iter2".
+			 */
+			ConstReference &
+			operator=(
+					const ConstReference &other) = delete;
 
 			/**
 			 * Access 'const' element.

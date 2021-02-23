@@ -63,7 +63,7 @@ if (SPHINX_FOUND)
 	# creates a separate file for each build configuration (eg, Debug/Release/etc), since the above generator expression is
 	# build-specific, and so we place each generated file in a build-specific directory (using $<CONFIG>) - which we specify
 	# to sphinx-build with the '-c "${BINARY_BUILD_DIR}/$<CONFIG>"' option.
-	# Note that this is all done at 'generate' time (not during 'configure).
+	# Note that this is all done at 'generate' time (not during 'configure').
 	file(GENERATE
 		OUTPUT "${BINARY_BUILD_DIR}/$<CONFIG>/conf.py"
 		INPUT "${CMAKE_CURRENT_BINARY_DIR}/conf.py.intermediate")
