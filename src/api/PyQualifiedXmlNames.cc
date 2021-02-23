@@ -727,6 +727,8 @@ namespace GPlatesApi
 			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalStretchingFactor");
 	const GPlatesPropertyValues::ValueObjectType gpml_crustal_thinning_factor =
 			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
+	const GPlatesPropertyValues::ValueObjectType gpml_tectonic_subsidence =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("TectonicSubsidence");
 }
 
 void
@@ -751,13 +753,15 @@ export_scalar_type()
 			"\n"
 			"* pygplates.ScalarType.gpml_crustal_thickness\n"
 			"* pygplates.ScalarType.gpml_crustal_stretching_factor\n"
-			"* pygplates.ScalarType.gpml_crustal_thinning_factor\n",
+			"* pygplates.ScalarType.gpml_crustal_thinning_factor\n"
+			"* pygplates.ScalarType.gpml_tectonic_subsidence\n",
 			bp::no_init/*force usage of create functions*/);
 
 	// Some common scalar types...
 	scalar_type_class.def_readonly("gpml_crustal_thickness", GPlatesApi::gpml_crustal_thickness);
 	scalar_type_class.def_readonly("gpml_crustal_stretching_factor", GPlatesApi::gpml_crustal_stretching_factor);
 	scalar_type_class.def_readonly("gpml_crustal_thinning_factor", GPlatesApi::gpml_crustal_thinning_factor);
+	scalar_type_class.def_readonly("gpml_tectonic_subsidence", GPlatesApi::gpml_tectonic_subsidence);
 
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	scalar_type_class.def("create_gpml",
