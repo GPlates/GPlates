@@ -32,7 +32,7 @@ set(GPLATES_VERSION_STRING "${GPLATES_PACKAGE_NAME} ${GPlates_VERSION}")
 # Also it does not need to be incremented at each public release - for example the revision number
 # just prior to the GPlates 1.5.0 release and just after might be the same (if API did not change
 # during that time).
-set(PYGPLATES_REVISION 29)
+set(PYGPLATES_REVISION 30)
 
 # The GPlates copyright - string version to be used in a source file.
 set(GPLATES_COPYRIGHT_STRING "")
