@@ -43,6 +43,8 @@ GPlatesAppLogic::ScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
 	d_non_evolved_scalar_coverage(initial_scalar_coverage),
 	d_scalar_import_time(0.0)
 {
+	// There must be initial scalar values for at least one scalar type since otherwise
+	// there would be no scalar types (and this time span would contain nothing).
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			!initial_scalar_coverage.empty(),
 			GPLATES_ASSERTION_SOURCE);
@@ -68,24 +70,25 @@ GPlatesAppLogic::ScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
 	d_scalar_import_time(geometry_time_span->get_geometry_import_time()),
 	d_num_all_scalar_values(geometry_time_span->get_num_all_geometry_points())
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			!initial_scalar_coverage.empty(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Get the number of original scalar values from the first scalar type.
-	// Next we'll ensure the number of original scalar values in the other scalar types matches.
-	//
-	// Note: This might be less than the actual number of scalar values if the geometry in the
-	// time span was tessellated (the actual number is 'd_num_all_scalar_values'). If so then we'll
-	// generate the missing scalar values (below) by interpolating the original scalar values.
-	const unsigned int num_original_scalar_values = initial_scalar_coverage.begin()->second.size();
-	for (const auto &scalar_coverage_item : initial_scalar_coverage)
+	// Note that it's OK to have no initial scalar coverages because we still have the *evolved*
+	// scalar types which do not require initial scalar values.
+	if (!initial_scalar_coverage.empty())
 	{
-		const std::vector<double> &original_scalar_values = scalar_coverage_item.second;
+		// Get the number of original scalar values from the first scalar type.
+		// Next we'll ensure the number of original scalar values in the other scalar types matches.
+		//
+		// Note: This might be less than the actual number of scalar values if the geometry in the
+		// time span was tessellated (the actual number is 'd_num_all_scalar_values'). If so then we'll
+		// generate the missing scalar values (below) by interpolating the original scalar values.
+		const unsigned int num_original_scalar_values = initial_scalar_coverage.begin()->second.size();
+		for (const auto &scalar_coverage_item : initial_scalar_coverage)
+		{
+			const std::vector<double> &original_scalar_values = scalar_coverage_item.second;
 
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				original_scalar_values.size() == num_original_scalar_values,
-				GPLATES_ASSERTION_SOURCE);
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					original_scalar_values.size() == num_original_scalar_values,
+					GPLATES_ASSERTION_SOURCE);
+		}
 	}
 
 	// Add the actual (ie, possibly tessellated) scalar values of each scalar type as either evolved or
