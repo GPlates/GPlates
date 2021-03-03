@@ -1655,7 +1655,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	// Look for a key value dictionary, and store it as the default.
 	//
 	// FIXME: It might be nicer to store a single kvd definition at the collection level - such
-	// as in the OgrConfiguration.  Here we are getting the kvd by grabbing the first one we come across
+	// as in the OgrConfiguration.  Here we are getting the kvd by merging the KVDs of each feature
 	// in the collection, and typically every feature in a collection would have the same kvd. (This is
 	// not necessarily the case - a user can delete the kvd property from a feature. A user cannot however
 	// add or remove fields from the kvd, so the form of the kvd - if it hasn't been deleted - should remain
@@ -1663,7 +1663,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	//
 	// The only other place in GPlates where a kvd could be modified is here in the ogr export workflow.
 	//
-	// So grabbing the first (existing) kvd from a collection should give us an appropriate kvd in any case.
+	// So grabbing a merged kvd from a collection should give us an appropriate kvd in any case.
 	boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> non_const_default_key_value_dictionary;
 	OgrUtils::create_default_kvd_from_collection(feature_collection_ref, non_const_default_key_value_dictionary);
 	if (non_const_default_key_value_dictionary)
