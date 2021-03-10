@@ -1101,6 +1101,9 @@ export_point_on_sphere()
 	// a to-python converter from GPlatesMaths::PointOnSphere to GPlatesMaths::PointGeometryOnSphere.
 	GPlatesApi::ConversionPointOnSphereToFromPointGeometryOnSphere();
 
+	// Enable boost::optional<GPlatesMaths::PointOnSphere> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PointOnSphere>();
+
 	// Registers the from-python converter from GPlatesMaths::LatLonPoint to GPlatesMaths::PointOnSphere.
 	GPlatesApi::ConversionPointOnSphereFromLatLonPoint();
 

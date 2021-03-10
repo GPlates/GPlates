@@ -1960,6 +1960,8 @@ class TopologicalModelCase(unittest.TestCase):
         self.assertTrue(len(reconstructed_points) == 3)
         # Reconstructed points same as initial points (since topologies are currently static and initial points not assigned a plate ID).
         self.assertTrue(reconstructed_points == list(multipoint))
+        reconstructed_points = reconstructed_multipoint_time_span.get_geometry_points(20, return_inactive_points=True)
+        self.assertTrue(len(reconstructed_points) == 3)
         
         # Topology point locations.
         topology_point_locations = reconstructed_multipoint_time_span.get_topology_point_locations(20)
@@ -1969,6 +1971,8 @@ class TopologicalModelCase(unittest.TestCase):
         self.assertTrue(topology_point_locations[2].located_in_resolved_network())
         self.assertTrue(topology_point_locations[2].located_in_resolved_network_deforming_region())
         self.assertFalse(topology_point_locations[2].located_in_resolved_network_rigid_block())
+        topology_point_locations = reconstructed_multipoint_time_span.get_topology_point_locations(20, return_inactive_points=True)
+        self.assertTrue(len(topology_point_locations) == 3)
         
         # Scalars.
         scalars_dict = reconstructed_multipoint_time_span.get_scalar_values(20)
@@ -1979,6 +1983,8 @@ class TopologicalModelCase(unittest.TestCase):
         self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_stretching_factor] == [1.0, 1.0, 1.0])
         self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_thickness) == [10.0, 10.0, 10.0])
         self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_stretching_factor) == [1.0, 1.0, 1.0])
+        scalars_dict = reconstructed_multipoint_time_span.get_scalar_values(20, return_inactive_points=True)
+        self.assertTrue(len(scalars_dict) >= 2)
 
 
 class TopologicalSnapshotCase(unittest.TestCase):
