@@ -31,8 +31,8 @@
 #include <boost/optional.hpp>
 
 #include "PyFeatureCollection.h"
-#include "PyResolveTopologies.h"
 #include "PyRotationModel.h"
+#include "PyTopologicalSnapshot.h"
 
 #include "app-logic/ReconstructContext.h"
 #include "app-logic/ReconstructMethodRegistry.h"

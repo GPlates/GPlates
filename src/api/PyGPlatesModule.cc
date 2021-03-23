@@ -79,6 +79,7 @@ void export_reconstruction_tree();
 void export_resolve_topologies();
 void export_rotation_model();
 void export_topological_model();
+void export_topological_snapshot();
 
 // api directory.
 void export_version();
@@ -187,6 +188,7 @@ export_cpp_python_api()
 	export_resolve_topologies();
 	export_rotation_model();
 	export_topological_model();
+	export_topological_snapshot();
 
 	//export_co_registration();
 	export_colour();

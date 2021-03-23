@@ -70,7 +70,6 @@ set(srcs
     PyReconstructionTree.cc
     PyReconstructionTree.h
     PyResolveTopologies.cc
-    PyResolveTopologies.h
     PyRevisionedVector.cc
     PyRevisionedVector.h
     PyRotationModel.cc
@@ -96,6 +95,8 @@ set(srcs
     PythonVariableFunctionArguments.h
     PyTopologicalModel.cc
     PyTopologicalModel.h
+    PyTopologicalSnapshot.cc
+    PyTopologicalSnapshot.h
     PyTopologyTools.cc
     PyVector3D.cc
     PyViewportWindow.cc
