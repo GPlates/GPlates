@@ -61,6 +61,7 @@ void export_feature_collection_file_format_registry();
 void export_feature();
 void export_feature_collection();
 void export_feature_collection_function_argument();
+void export_topological_feature_collection_function_argument();
 void export_geo_time_instant();
 void export_ids();
 void export_information_model();
@@ -175,6 +176,7 @@ export_cpp_python_api()
 	export_feature();
 	export_feature_collection();
 	export_feature_collection_function_argument();
+	export_topological_feature_collection_function_argument();
 	export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 	export_old_feature_collection();
 	export_property_values();

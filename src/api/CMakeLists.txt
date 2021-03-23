@@ -94,6 +94,8 @@ set(srcs
     PythonUtils.h
     PythonVariableFunctionArguments.cc
     PythonVariableFunctionArguments.h
+    PyTopologicalFeatureCollectionFunctionArgument.cc
+    PyTopologicalFeatureCollectionFunctionArgument.h
     PyTopologicalModel.cc
     PyTopologicalModel.h
     PyTopologicalSnapshot.cc

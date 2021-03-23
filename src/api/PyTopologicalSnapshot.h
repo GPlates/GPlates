@@ -32,8 +32,8 @@
 #include <boost/optional.hpp>
 #include <QString>
 
-#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyRotationModel.h"
+#include "PyTopologicalFeatureCollectionFunctionArgument.h"
 
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalLine.h"
@@ -107,7 +107,7 @@ namespace GPlatesApi
 		static
 		non_null_ptr_type
 		create(
-				const FeatureCollectionSequenceFunctionArgument &topological_features_argument,
+				const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features_argument,
 				const RotationModelFunctionArgument &rotation_model_argument,
 				const double &reconstruction_time,
 				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id);
@@ -274,7 +274,7 @@ namespace GPlatesApi
 
 
 		TopologicalSnapshot(
-				const FeatureCollectionSequenceFunctionArgument &topological_features_argument,
+				const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features_argument,
 				const RotationModel::non_null_ptr_type &rotation_model,
 				const double &reconstruction_time);
 

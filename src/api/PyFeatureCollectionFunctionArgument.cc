@@ -326,13 +326,6 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::FeatureCollectionSequence
 }
 
 
-GPlatesApi::FeatureCollectionSequenceFunctionArgument::FeatureCollectionSequenceFunctionArgument(
-		const std::vector<FeatureCollectionFunctionArgument> &feature_collections) :
-	d_feature_collections(feature_collections)
-{
-}
-
-
 void
 GPlatesApi::FeatureCollectionSequenceFunctionArgument::initialise_feature_collections(
 		std::vector<FeatureCollectionFunctionArgument> &feature_collections,

@@ -38,7 +38,7 @@
 #include "PyTopologicalModel.h"
 
 #include "PyFeature.h"
-#include "PyFeatureCollection.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyPropertyValues.h"
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
@@ -72,7 +72,7 @@ namespace GPlatesApi
 	 */
 	TopologicalModel::non_null_ptr_type
 	topological_model_create(
-			const FeatureCollectionSequenceFunctionArgument &topological_features,
+			const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 			const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
 			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
 	{
@@ -495,7 +495,7 @@ namespace GPlatesApi
 
 GPlatesApi::TopologicalModel::non_null_ptr_type
 GPlatesApi::TopologicalModel::create(
-		const FeatureCollectionSequenceFunctionArgument &topological_features,
+		const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 		// Note we're using 'RotationModelFunctionArgument::function_argument_type' instead of
 		// just 'RotationModelFunctionArgument' since we want to know if it's an existing RotationModel...
 		const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
@@ -539,7 +539,7 @@ GPlatesApi::TopologicalModel::create(
 
 
 GPlatesApi::TopologicalModel::TopologicalModel(
-		const FeatureCollectionSequenceFunctionArgument &topological_features,
+		const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 		const RotationModel::non_null_ptr_type &rotation_model) :
 	d_rotation_model(rotation_model),
 	d_topological_section_reconstruct_context(d_reconstruct_method_registry),
@@ -1140,7 +1140,7 @@ export_topological_model()
 				"  :rtype: :class:`RotationModel`\n"
 				"\n"
 				"  .. note:: The :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of the returned rotation model "
-				"may be different to the rotation model passed into the :meth:`constructor<__init__>` if an anchor plate ID was specified "
+				"may be different to that of the rotation model passed into the :meth:`constructor<__init__>` if an anchor plate ID was specified "
 				"in the :meth:`constructor<__init__>`.\n")
 		.def("get_anchor_plate_id",
 				&GPlatesApi::TopologicalModel::get_anchor_plate_id,

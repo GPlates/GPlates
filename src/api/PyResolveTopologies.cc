@@ -93,7 +93,7 @@ namespace GPlatesApi
 		get_resolve_topologies_args(
 				bp::tuple positional_args,
 				bp::dict keyword_args,
-				boost::optional<FeatureCollectionSequenceFunctionArgument> &topological_features,
+				boost::optional<TopologicalFeatureCollectionSequenceFunctionArgument> &topological_features,
 				boost::optional<RotationModelFunctionArgument> &rotation_model,
 				resolved_topologies_argument_type &resolved_topologies,
 				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
@@ -115,7 +115,7 @@ namespace GPlatesApi
 
 			// Define the explicit function argument types...
 			typedef boost::tuple<
-					FeatureCollectionSequenceFunctionArgument,
+					TopologicalFeatureCollectionSequenceFunctionArgument,
 					RotationModelFunctionArgument,
 					resolved_topologies_argument_type,
 					GPlatesPropertyValues::GeoTimeInstant,
@@ -211,7 +211,7 @@ namespace GPlatesApi
 		// Get the explicit function arguments from the variable argument list.
 		//
 
-		boost::optional<FeatureCollectionSequenceFunctionArgument> topological_features_argument;
+		boost::optional<TopologicalFeatureCollectionSequenceFunctionArgument> topological_features_argument;
 		boost::optional<RotationModelFunctionArgument> rotation_model_argument;
 		resolved_topologies_argument_type resolved_topologies_argument;
 		GPlatesPropertyValues::GeoTimeInstant reconstruction_time(0);

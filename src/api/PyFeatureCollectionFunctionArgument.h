@@ -155,10 +155,6 @@ namespace GPlatesApi
 		FeatureCollectionSequenceFunctionArgument(
 				const function_argument_type &function_argument);
 
-		explicit
-		FeatureCollectionSequenceFunctionArgument(
-				const std::vector<FeatureCollectionFunctionArgument> &feature_collections);
-
 		/**
 		 * Return the individual feature collection function arguments.
 		 */

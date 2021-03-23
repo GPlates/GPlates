@@ -86,7 +86,7 @@ namespace GPlatesApi
 	 */
 	TopologicalSnapshot::non_null_ptr_type
 	topological_snapshot_create(
-			const FeatureCollectionSequenceFunctionArgument &topological_features,
+			const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 			const RotationModelFunctionArgument &rotation_model_argument,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
@@ -219,7 +219,7 @@ namespace GPlatesApi
 
 	TopologicalSnapshot::non_null_ptr_type
 	TopologicalSnapshot::create(
-			const FeatureCollectionSequenceFunctionArgument &topological_features_argument,
+			const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features_argument,
 			const RotationModelFunctionArgument &rotation_model_argument,
 			const double &reconstruction_time,
 			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
@@ -237,7 +237,7 @@ namespace GPlatesApi
 	}
 
 	TopologicalSnapshot::TopologicalSnapshot(
-			const FeatureCollectionSequenceFunctionArgument &topological_features_argument,
+			const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features_argument,
 			const RotationModel::non_null_ptr_type &rotation_model,
 			const double &reconstruction_time) :
 		d_rotation_model(rotation_model),

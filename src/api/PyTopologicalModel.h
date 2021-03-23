@@ -30,8 +30,8 @@
 #include <map>
 #include <boost/optional.hpp>
 
-#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyRotationModel.h"
+#include "PyTopologicalFeatureCollectionFunctionArgument.h"
 #include "PyTopologicalSnapshot.h"
 
 #include "app-logic/ReconstructContext.h"
@@ -144,7 +144,7 @@ namespace GPlatesApi
 		static
 		non_null_ptr_type
 		create(
-				const FeatureCollectionSequenceFunctionArgument &topological_features,
+				const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 				// Note we're using 'RotationModelFunctionArgument::function_argument_type' instead of
 				// just 'RotationModelFunctionArgument' since we want to know if it's an existing RotationModel...
 				const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
@@ -273,7 +273,7 @@ namespace GPlatesApi
 
 
 		TopologicalModel(
-				const FeatureCollectionSequenceFunctionArgument &topological_features,
+				const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 				const RotationModel::non_null_ptr_type &rotation_model);
 
 		/**
