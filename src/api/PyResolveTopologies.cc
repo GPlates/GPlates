@@ -35,7 +35,7 @@
 #include <boost/variant.hpp>
 #include <QString>
 
-#include "PyFeatureCollection.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyRotationModel.h"
 #include "PyTopologicalSnapshot.h"
 #include "PythonConverterUtils.h"

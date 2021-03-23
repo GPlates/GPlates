@@ -36,7 +36,7 @@
 
 #include "PyRotationModel.h"
 
-#include "PyFeatureCollection.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyInterpolationException.h"
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"

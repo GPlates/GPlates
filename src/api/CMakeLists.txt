@@ -32,9 +32,10 @@ set(srcs
     PyFeature.cc
     PyFeature.h
     PyFeatureCollection.cc
-    PyFeatureCollection.h
     PyFeatureCollectionFileFormatRegistry.cc
     PyFeatureCollectionFileFormatRegistry.h
+    PyFeatureCollectionFunctionArgument.cc
+    PyFeatureCollectionFunctionArgument.h
     PyFiniteRotation.cc
     PyGeometriesOnSphere.cc
     PyGeometriesOnSphere.h

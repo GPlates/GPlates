@@ -30,7 +30,7 @@
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
-#include "PyFeatureCollection.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 
 #include "app-logic/ReconstructionTreeCreator.h"
 

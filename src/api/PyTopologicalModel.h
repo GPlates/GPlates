@@ -30,7 +30,7 @@
 #include <map>
 #include <boost/optional.hpp>
 
-#include "PyFeatureCollection.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyRotationModel.h"
 #include "PyTopologicalSnapshot.h"
 

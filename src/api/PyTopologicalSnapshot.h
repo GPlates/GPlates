@@ -32,7 +32,7 @@
 #include <boost/optional.hpp>
 #include <QString>
 
-#include "PyFeatureCollection.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyRotationModel.h"
 
 #include "app-logic/ResolvedTopologicalBoundary.h"

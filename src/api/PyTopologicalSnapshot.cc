@@ -38,7 +38,7 @@
 
 #include "PyTopologicalSnapshot.h"
 
-#include "PyFeatureCollection.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"

@@ -33,7 +33,7 @@
 
 #include "PyReconstructionTree.h"
 
-#include "PyFeatureCollection.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyGPlatesModule.h"
 #include "PyInterpolationException.h"
 #include "PythonConverterUtils.h"
