@@ -753,8 +753,12 @@ namespace GPlatesAppLogic
 					// The index of the GCA segment within the sub-sub-segment.
 					// Note: This is not the segment index within the *unclipped* section geometry (of the sub-sub-segment).
 					segment_index_in_sub_sub_segment_geometry =
-							// -1 to convert num vertices to num segments, and -1 to convert num segments to segment index...
-							sub_sub_segment_end_vertex_index - 2 - intersection.segment_index;
+							// -1 to convert num vertices to num segments...
+							sub_sub_segment_end_vertex_index - 1
+								// -1 to convert num segments to segment index (except if on segment start since
+								// that's really segment end, because reversed, which is start of next segment)...
+								- (intersection.on_segment_start ? 0 : 1)
+								- intersection.segment_index;
 				}
 				else // not reversed ...
 				{
