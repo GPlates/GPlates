@@ -94,7 +94,7 @@ Qt
      Note that you now need a Qt account to use the binary installer (it will ask you to sign in or create a new account).
      And after Qt 5.14 you will need to use the online installer (offline for commercial license only).
      Alternatively you can compile from source - see https://doc.qt.io/qt-5/windows-building.html
-  2. Select the pre-built components appropriate for you compiler.
+  2. Select the pre-built components appropriate for your compiler.
      For example, select "MSVC 2015 64-bit" when compiling 64-bit using Visual Studio 2015.
   3. Select the GPL license.
   4. Add the base of your selected pre-built components directory to the CMAKE_PREFIX_PATH environment variable.

@@ -33,31 +33,11 @@ include (ConfigDefault)
 include (CustomBuildConfigs)
 
 #
-# Recurse into source code directory.
+# Recurse into source code sub-directory.
 #
 add_subdirectory(src)
 
 #
-# Recurse into documentation directory.
+# Recurse into documentation sub-directory.
 #
 add_subdirectory(doc)
-
-
-if(EXISTS "${GPlates_SOURCE_DIR}/scripts/hellinger.py")
-    install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py")
-    install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${GPlates_SOURCE_DIR}/SampleData/")
-    install(DIRECTORY SampleData/ DESTINATION share/gplates/SampleData/)
-endif()
-
-if(EXISTS "${GPlates_SOURCE_DIR}/doc/gplates.1.gz")
-    install(FILES  "${GPlates_SOURCE_DIR}/doc/gplates.1.gz"
-        DESTINATION share/man/man1/)
-endif()

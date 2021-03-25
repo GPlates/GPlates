@@ -1680,9 +1680,7 @@ GPlatesQtWidgets::ViewportWindow::set_window_title(
 
 	QString subversion_branch_name = GPlatesGlobal::Version::get_working_copy_branch_name();
 
-	// If the subversion branch name is the empty string, that should mean that
-	// GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING is set in ConfigDefault.cmake,
-	// which should mean that this is a public release.
+	// If the subversion branch name is the empty string, that should mean that this is a public release.
 	if (!subversion_branch_name.isEmpty())
 	{
 		QString subversion_version_number = GPlatesGlobal::Version::get_working_copy_version_number();

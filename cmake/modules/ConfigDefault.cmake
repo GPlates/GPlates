@@ -9,7 +9,7 @@ set(GPLATES_PACKAGE_NAME "GPlates")
 set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
 
 # A short description of the GPlates project (only a few words).
-set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the interactive visualisation of plate-tectonics.")
+set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the interactive visualisation of plate tectonics.")
 
 # The current GPlates version.
 set(GPLATES_VERSION_STRING "${GPLATES_PACKAGE_NAME} ${GPlates_VERSION}")
@@ -63,6 +63,15 @@ option(GPLATES_INCLUDE_SAMPLE_DATA "Include sample data in the binary installer.
 # The sample data is only included in the binary installer if 'GPLATES_INCLUDE_SAMPLE_DATA' is true.
 # Paths must be full paths (eg, '~/sample-data' is ok but '../sample-data' is not).
 set(GPLATES_SAMPLE_DATA_DIR "" CACHE PATH "Location of sample data.")
+
+# The macOS code signing identity used to sign installed/packaged GPlates application bundle with a Developer ID certificate.
+#
+# NOTE: Leave it as the *empty* string here (so it doesn't get checked into source code control).
+#       User is responsible to setting it to their ID (eg, using 'cmake -D', or CMake GUI, or 'ccmake').
+#       It should typically be installed into the Keychain and look something like "Developer ID Application: <ID>".
+if (APPLE)
+	set(GPLATES_APPLE_CODE_SIGN_IDENTITY "" CACHE STRING "Apple code signing identity.")
+endif()
 
 # Set to 'true' to tell GPlates ignore environment variables, such as PYTHONHOME, PYTHONPATH, etc, 
 # when initializing embeded Python interpreter.
@@ -166,29 +175,3 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Order the include directories so that directories which are in the source or build tree always
 # come before directories outside the project.
 set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE true)
-
-# List the Qt plugins used by GPlates.
-# This is needed for packaging standalone versions of GPlates for a binary installer.
-# NOTE: each plugin listed should have its own double quotes as these are list variables.
-# The paths listed should be relative to the Qt 'plugins' directory which can be found
-# by typing 'qmake -query QT_INSTALL_PLUGINS' at the command/shell prompt.
-# Each platform has a different name for the library(s).
-# The binary packagers for Mac OS X and Windows will copy these plugins
-# into a standalone location to be included in the installer and, in the case of Mac OS X,
-# will fixup the references to point to libraries inside the app bundle.
-# Note: not really required for Linux since the binary installer will use the
-# Debian/RPM package manager to install Qt (and its plugins) on the target machine.
-set(GPLATES_QT_PLUGINS_MACOSX 
-	"imageformats/libqjpeg.dylib"
-	"imageformats/libqgif.dylib"
-	"imageformats/libqico.dylib"
-	"imageformats/libqmng.dylib"
-	"imageformats/libqsvg.dylib"
-	"imageformats/libqtiff.dylib"
-	)
-set(GPLATES_QT_PLUGINS_WIN32 
-	"imageformats/qjpeg4.dll"
-	)
-set(GPLATES_QT_PLUGINS_LINUX 
-	"imageformats/libqjpeg.so"
-	)
