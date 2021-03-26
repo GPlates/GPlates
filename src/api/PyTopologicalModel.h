@@ -30,6 +30,7 @@
 #include <map>
 #include <boost/optional.hpp>
 
+#include "PyResolveTopologyParameters.h"
 #include "PyRotationModel.h"
 #include "PyTopologicalFeatureCollectionFunctionArgument.h"
 #include "PyTopologicalSnapshot.h"
@@ -148,7 +149,8 @@ namespace GPlatesApi
 				// Note we're using 'RotationModelFunctionArgument::function_argument_type' instead of
 				// just 'RotationModelFunctionArgument' since we want to know if it's an existing RotationModel...
 				const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
-				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id);
+				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
+				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> resolve_topology_parameters);
 
 
 		/**
@@ -244,6 +246,11 @@ namespace GPlatesApi
 		RotationModel::non_null_ptr_type d_rotation_model;
 
 		/**
+		 * Parameters used when resolving topologies.
+		 */
+		ResolveTopologyParameters::non_null_ptr_to_const_type d_resolve_topology_parameters;
+
+		/**
 		 * Topological feature collections/files.
 		 */
 		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_topological_feature_collections;
@@ -274,7 +281,8 @@ namespace GPlatesApi
 
 		TopologicalModel(
 				const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
-				const RotationModel::non_null_ptr_type &rotation_model);
+				const RotationModel::non_null_ptr_type &rotation_model,
+				ResolveTopologyParameters::non_null_ptr_to_const_type resolve_topology_parameters);
 
 		/**
 		 * Resolves topologies for the specified time and returns them as a topological snapshot.

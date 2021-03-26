@@ -71,6 +71,8 @@ set(srcs
     PyReconstructionTree.cc
     PyReconstructionTree.h
     PyResolveTopologies.cc
+    PyResolveTopologyParameters.h
+    PyResolveTopologyParameters.cc
     PyRevisionedVector.cc
     PyRevisionedVector.h
     PyRotationModel.cc

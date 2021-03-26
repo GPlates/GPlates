@@ -74,12 +74,14 @@ namespace GPlatesApi
 	topological_model_create(
 			const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 			const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
-			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
+			boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> resolve_topology_parameters)
 	{
 		return TopologicalModel::create(
 				topological_features,
 				rotation_model_argument,
-				anchor_plate_id);
+				anchor_plate_id,
+				resolve_topology_parameters);
 	}
 
 	/**
@@ -499,7 +501,8 @@ GPlatesApi::TopologicalModel::create(
 		// Note we're using 'RotationModelFunctionArgument::function_argument_type' instead of
 		// just 'RotationModelFunctionArgument' since we want to know if it's an existing RotationModel...
 		const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
-		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
+		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
+		boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> resolve_topology_parameters)
 {
 	boost::optional<RotationModel::non_null_ptr_type> rotation_model;
 
@@ -533,15 +536,23 @@ GPlatesApi::TopologicalModel::create(
 				anchor_plate_id ? anchor_plate_id.get() : 0);
 	}
 
+	// If no resolve topology parameters specified then use default values.
+	if (!resolve_topology_parameters)
+	{
+		resolve_topology_parameters = ResolveTopologyParameters::create();
+	}
+
 	return non_null_ptr_type(
-			new TopologicalModel(topological_features, rotation_model.get()));
+			new TopologicalModel(topological_features, rotation_model.get(), resolve_topology_parameters.get()));
 }
 
 
 GPlatesApi::TopologicalModel::TopologicalModel(
 		const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
-		const RotationModel::non_null_ptr_type &rotation_model) :
+		const RotationModel::non_null_ptr_type &rotation_model,
+		ResolveTopologyParameters::non_null_ptr_to_const_type resolve_topology_parameters) :
 	d_rotation_model(rotation_model),
+	d_resolve_topology_parameters(resolve_topology_parameters),
 	d_topological_section_reconstruct_context(d_reconstruct_method_registry),
 	d_topological_section_reconstruct_context_state(
 			d_topological_section_reconstruct_context.create_context_state(
@@ -708,7 +719,8 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 			reconstruction_time,
 			d_topological_network_features,
 			// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
-			topological_sections_reconstruct_handles);
+			topological_sections_reconstruct_handles,
+			d_resolve_topology_parameters->get_topology_network_params());
 
 	return TopologicalSnapshot::create(
 			resolved_lines, resolved_boundaries, resolved_networks,
@@ -1032,8 +1044,10 @@ export_topological_model()
 						bp::default_call_policies(),
 						(bp::arg("topological_features"),
 							bp::arg("rotation_model"),
-							bp::arg("anchor_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>())),
-			"__init__(topological_features, rotation_model, [anchor_plate_id])\n"
+							bp::arg("anchor_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+							bp::arg("resolve_topology_parameters") =
+								boost::optional<GPlatesApi::ResolveTopologyParameters::non_null_ptr_to_const_type>())),
+			"__init__(topological_features, rotation_model, [anchor_plate_id], [resolve_topology_parameters])\n"
 			"  Create from topological features, a rotation model and a time span.\n"
 			"\n"
 			"  :param topological_features: the topological boundary and/or network features and the "
@@ -1050,6 +1064,9 @@ export_topological_model()
 			"(resolving topologies, and reconstructing regular features and :meth:`geometries<reconstruct_geometry>`). "
 			"Defaults to the default anchor plate of *rotation_model*.\n"
 			"  :type anchor_plate_id: int\n"
+			"  :param resolve_topology_parameters: Parameters used to resolve topologies. "
+			"Defaults to :meth:`default-constructed ResolveTopologyParameters<ResolveTopologyParameters.__init__>`).\n"
+			"  :type resolve_topology_parameters: :class:`ResolveTopologyParameters`\n"
 			"\n"
 			"  Load a topological model (and its associated rotation model):\n"
 			"  ::\n"
@@ -1066,7 +1083,10 @@ export_topological_model()
 			":meth:`geometries<reconstruct_geometry>`) use *anchor_plate_id*. So if you need to use a different "
 			"anchor plate ID then you'll need to create a new :class:`TopologicalModel<__init__>`. However this should "
 			"only be done if necessary since each :class:`TopologicalModel` created can consume a reasonable amount of "
-			"CPU and memory (since it caches resolved topologies and reconstructed geometries over geological time).\n")
+			"CPU and memory (since it caches resolved topologies and reconstructed geometries over geological time).\n"
+			"\n"
+			"  .. versionchanged:: 31\n"
+			"     Added *resolve_topology_parameters* argument.\n")
 		.def("topological_snapshot",
 				&GPlatesApi::topological_model_get_topological_snapshot,
 				(bp::arg("reconstruction_time")),

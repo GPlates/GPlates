@@ -915,7 +915,8 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             rotation_features,
             resolved_topologies,
             10,
-            resolved_topological_sections)
+            resolved_topological_sections,
+            resolve_topology_parameters=pygplates.ResolveTopologyParameters())
         
         self.assertTrue(len(resolved_topologies) == 7)
         for resolved_topology in resolved_topologies:
@@ -1815,10 +1816,14 @@ class TopologicalModelCase(unittest.TestCase):
                 pygplates.TopologicalModel,
                 'non_existant_topology_file.gpml', self.rotations)
 
+        self.assertTrue(self.topological_model.get_anchor_plate_id() == 0)
+
         topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, anchor_plate_id=1)
         self.assertTrue(topological_model.get_anchor_plate_id() == 1)
 
-        self.assertTrue(self.topological_model.get_anchor_plate_id() == 0)
+        # Make sure can pass in optional ResolveTopologyParameters.
+        topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+        self.assertTrue(topological_model.get_anchor_plate_id() == 0)
 
     def test_get_topological_snapshot(self):
         topological_snapshot = self.topological_model.topological_snapshot(10.0)
@@ -2016,6 +2021,13 @@ class TopologicalSnapshotCase(unittest.TestCase):
         snapshot.export_resolved_topological_sections(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
         self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topological_sections.gmt')))
         os.remove(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
+
+        # Make sure can pass in optional ResolveTopologyParameters.
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10),
+            resolve_topology_parameters=pygplates.ResolveTopologyParameters())
 
 
 def suite():

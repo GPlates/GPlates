@@ -987,7 +987,7 @@ export_reconstruct()
 	// so we set the docstring the old-fashioned way.
 	bp::scope().attr(reconstruct_function_name).attr("__doc__") =
 			"reconstruct(reconstructable_features, rotation_model, reconstructed_geometries, "
-			"reconstruction_time, [anchor_plate_id], [\\*\\*output_parameters])\n"
+			"reconstruction_time, [anchor_plate_id], [**output_parameters])\n"
 			"  Reconstruct regular geological features, motion paths or flowlines to a specific geological time.\n"
 			"\n"
 			"  :param reconstructable_features: the features to reconstruct as a feature collection, or filename, or "

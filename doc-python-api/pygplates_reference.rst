@@ -47,7 +47,7 @@ All three above reconstructed feature types inherit from:
 Topology
 --------
 
-Class to query the history of a topological model, and reconstruct regular features using it:
+Classes to query the history of a topological model, and reconstruct regular features using it:
 
 .. autosummary::
    :nosignatures:
@@ -57,6 +57,14 @@ Class to query the history of a topological model, and reconstruct regular featu
    pygplates.TopologicalSnapshot
    pygplates.ReconstructedGeometryTimeSpan
    pygplates.TopologyPointLocation
+
+Parameters to control how topologies are resolved:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.ResolveTopologyParameters
 
 Function to resolve topologies:
 
