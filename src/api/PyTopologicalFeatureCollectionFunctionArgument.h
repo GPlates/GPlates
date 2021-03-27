@@ -111,11 +111,11 @@ namespace GPlatesApi
 		}
 
 		/**
-		 * Return the resolved topology parameters to use for this feature collection.
+		 * Return the optional resolved topology parameters to use for this feature collection.
 		 *
-		 * If this feature collection was not associated with a @a ResolveTopologyParameters then default parameters are returned.
+		 * If this feature collection was not associated with a @a ResolveTopologyParameters then boost::none is returned.
 		 */
-		ResolveTopologyParameters::non_null_ptr_to_const_type
+		boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>
 		get_resolve_topology_parameters() const
 		{
 			return d_resolve_topology_parameters;
@@ -124,20 +124,22 @@ namespace GPlatesApi
 	private:
 
 		static
-		std::tuple<FeatureCollectionFunctionArgument, ResolveTopologyParameters::non_null_ptr_to_const_type>
+		std::tuple<
+				FeatureCollectionFunctionArgument,
+				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>>
 		create_feature_collection(
 				const function_argument_type &function_argument);
 
 
 		TopologicalFeatureCollectionFunctionArgument(
 				const FeatureCollectionFunctionArgument &feature_collection,
-				ResolveTopologyParameters::non_null_ptr_to_const_type resolve_topology_parameters) :
+				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> resolve_topology_parameters) :
 			d_feature_collection(feature_collection),
 			d_resolve_topology_parameters(resolve_topology_parameters)
 		{  }
 
 		FeatureCollectionFunctionArgument d_feature_collection;
-		ResolveTopologyParameters::non_null_ptr_to_const_type d_resolve_topology_parameters;
+		boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> d_resolve_topology_parameters;
 	};
 
 
@@ -220,13 +222,17 @@ namespace GPlatesApi
 				std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files) const;
 
 		/**
-		 * Return the function argument as a sequence of @a ResolveTopologyParameters appended to @a resolved_topology_parameters.
+		 * Return the function argument as a sequence of @a ResolveTopologyParameters appended to @a resolve_topology_parameters.
 		 *
-		 * Any feature collections that were not associated with a @a ResolveTopologyParameters will have default parameters.
+		 * Any feature collections that were not associated with a @a ResolveTopologyParameters will be boost::none.
+		 *
+		 * Returns true if any feature collections are associated with a @a ResolveTopologyParameters.
+		 *
+		 * Note: The returned size is equal to the size returned by @a get_feature_collections and @a get_files.
 		 */
-		void
-		get_resolved_topology_parameters(
-				std::vector<ResolveTopologyParameters::non_null_ptr_to_const_type> &resolved_topology_parameters) const;
+		bool
+		get_resolve_topology_parameters(
+				std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters) const;
 
 	private:
 

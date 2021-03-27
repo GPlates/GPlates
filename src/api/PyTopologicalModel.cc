@@ -75,13 +75,13 @@ namespace GPlatesApi
 			const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 			const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
 			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
-			boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> resolve_topology_parameters)
+			boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters)
 	{
 		return TopologicalModel::create(
 				topological_features,
 				rotation_model_argument,
 				anchor_plate_id,
-				resolve_topology_parameters);
+				default_resolve_topology_parameters);
 	}
 
 	/**
@@ -502,7 +502,7 @@ GPlatesApi::TopologicalModel::create(
 		// just 'RotationModelFunctionArgument' since we want to know if it's an existing RotationModel...
 		const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
 		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
-		boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> resolve_topology_parameters)
+		boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters)
 {
 	boost::optional<RotationModel::non_null_ptr_type> rotation_model;
 
@@ -537,22 +537,21 @@ GPlatesApi::TopologicalModel::create(
 	}
 
 	// If no resolve topology parameters specified then use default values.
-	if (!resolve_topology_parameters)
+	if (!default_resolve_topology_parameters)
 	{
-		resolve_topology_parameters = ResolveTopologyParameters::create();
+		default_resolve_topology_parameters = ResolveTopologyParameters::create();
 	}
 
 	return non_null_ptr_type(
-			new TopologicalModel(topological_features, rotation_model.get(), resolve_topology_parameters.get()));
+			new TopologicalModel(topological_features, rotation_model.get(), default_resolve_topology_parameters.get()));
 }
 
 
 GPlatesApi::TopologicalModel::TopologicalModel(
 		const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 		const RotationModel::non_null_ptr_type &rotation_model,
-		ResolveTopologyParameters::non_null_ptr_to_const_type resolve_topology_parameters) :
+		ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters) :
 	d_rotation_model(rotation_model),
-	d_resolve_topology_parameters(resolve_topology_parameters),
 	d_topological_section_reconstruct_context(d_reconstruct_method_registry),
 	d_topological_section_reconstruct_context_state(
 			d_topological_section_reconstruct_context.create_context_state(
@@ -563,12 +562,34 @@ GPlatesApi::TopologicalModel::TopologicalModel(
 	// Get the topological feature collections / files.
 	topological_features.get_feature_collections(d_topological_feature_collections);
 	topological_features.get_files(d_topological_files);
+	// Get the associated resolved topology parameters.
+	std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> resolve_topology_parameters_list;
+	topological_features.get_resolve_topology_parameters(resolve_topology_parameters_list);
+	// Each feature collection has an optional associated resolve topology parameters.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			resolve_topology_parameters_list.size() == d_topological_feature_collections.size(),
+			GPLATES_ASSERTION_SOURCE);
 
 	// Separate into regular features (used as topological sections for topological lines/boundaries/networks),
 	// topological lines (can also be used as topological sections for topological boundaries/networks),
 	// topological boundaries and topological networks.
-	for (auto feature_collection : d_topological_feature_collections)
+	//
+	// This makes it faster to resolve topologies since resolving topological lines/boundaries/networks visits
+	// only those topological features actually containing topological lines/boundaries/networks respectively
+	// (because visiting, eg, a network feature when resolving boundary features requires visiting all the feature
+	// properties of that network only to discard the network feature since it's not a topological boundary).
+	const unsigned int num_feature_collections = d_topological_feature_collections.size();
+	for (unsigned int feature_collection_index = 0; feature_collection_index < num_feature_collections; ++feature_collection_index)
 	{
+		auto feature_collection = d_topological_feature_collections[feature_collection_index];
+		auto resolve_topology_parameters = resolve_topology_parameters_list[feature_collection_index];
+
+		// If current feature collection did not specify resolve topology parameters then use the default parameters.
+		if (!resolve_topology_parameters)
+		{
+			resolve_topology_parameters = default_resolve_topology_parameters;
+		}
+
 		for (auto feature : *feature_collection)
 		{
 			const GPlatesModel::FeatureHandle::weak_ref feature_ref = feature->reference();
@@ -587,7 +608,13 @@ GPlatesApi::TopologicalModel::TopologicalModel(
 			}
 			else if (topology_geometry_type == GPlatesAppLogic::TopologyGeometry::NETWORK)
 			{
-				d_topological_network_features.push_back(feature_ref);
+				// Add the network feature to the group of network features associated with the
+				// topology network params belonging to the current feature collection.
+				//
+				// If multiple feature collections have the same network parameters then all their
+				// network features will end up in the same group.
+				const auto &topology_network_params = resolve_topology_parameters.get()->get_topology_network_params();
+				d_topological_network_features_map[topology_network_params].push_back(feature_ref);
 			}
 			else
 			{
@@ -663,11 +690,16 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 			d_topological_boundary_features,
 			GPlatesAppLogic::TopologyGeometry::BOUNDARY,
 			reconstruction_time);
-	GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
-			topological_sections_referenced,
-			d_topological_network_features,
-			GPlatesAppLogic::TopologyGeometry::NETWORK,
-			reconstruction_time);
+	for (const auto &topological_network_features_map_entry : d_topological_network_features_map)
+	{
+		const topological_features_seq_type &topological_network_features = topological_network_features_map_entry.second;
+
+		GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
+				topological_sections_referenced,
+				topological_network_features,
+				GPlatesAppLogic::TopologyGeometry::NETWORK,
+				reconstruction_time);
+	}
 
 	// Contains the topological section regular geometries referenced by topologies.
 	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
@@ -713,14 +745,22 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 			topological_sections_reconstruct_handles);
 
 	// Resolve topological networks.
+	//
+	// Different network features can have a different resolve topology parameters so resolve them separately.
 	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> resolved_networks;
-	GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
-			resolved_networks,
-			reconstruction_time,
-			d_topological_network_features,
-			// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
-			topological_sections_reconstruct_handles,
-			d_resolve_topology_parameters->get_topology_network_params());
+	for (const auto &topological_network_features_map_entry : d_topological_network_features_map)
+	{
+		const GPlatesAppLogic::TopologyNetworkParams &topology_network_params = topological_network_features_map_entry.first;
+		const topological_features_seq_type &topological_network_features = topological_network_features_map_entry.second;
+
+		GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
+				resolved_networks,
+				reconstruction_time,
+				topological_network_features,
+				// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
+				topological_sections_reconstruct_handles,
+				topology_network_params);
+	}
 
 	return TopologicalSnapshot::create(
 			resolved_lines, resolved_boundaries, resolved_networks,
@@ -1045,15 +1085,16 @@ export_topological_model()
 						(bp::arg("topological_features"),
 							bp::arg("rotation_model"),
 							bp::arg("anchor_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
-							bp::arg("resolve_topology_parameters") =
+							bp::arg("default_resolve_topology_parameters") =
 								boost::optional<GPlatesApi::ResolveTopologyParameters::non_null_ptr_to_const_type>())),
-			"__init__(topological_features, rotation_model, [anchor_plate_id], [resolve_topology_parameters])\n"
+			"__init__(topological_features, rotation_model, [anchor_plate_id], [default_resolve_topology_parameters])\n"
 			"  Create from topological features, a rotation model and a time span.\n"
 			"\n"
-			"  :param topological_features: the topological boundary and/or network features and the "
+			"  :param topological_features: The topological boundary and/or network features and the "
 			"topological section features they reference (regular and topological lines) as a feature collection, "
 			"or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) "
-			"of any combination of those four types\n"
+			"of any combination of those four types. Note: Each sequence entry can optionally be a 2-tuple "
+			"(entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.\n"
 			"  :type topological_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
@@ -1064,9 +1105,10 @@ export_topological_model()
 			"(resolving topologies, and reconstructing regular features and :meth:`geometries<reconstruct_geometry>`). "
 			"Defaults to the default anchor plate of *rotation_model*.\n"
 			"  :type anchor_plate_id: int\n"
-			"  :param resolve_topology_parameters: Parameters used to resolve topologies. "
+			"  :param default_resolve_topology_parameters: Default parameters used to resolve topologies. "
+			"Note that these can optionally be overridden in *topological_features*. "
 			"Defaults to :meth:`default-constructed ResolveTopologyParameters<ResolveTopologyParameters.__init__>`).\n"
-			"  :type resolve_topology_parameters: :class:`ResolveTopologyParameters`\n"
+			"  :type default_resolve_topology_parameters: :class:`ResolveTopologyParameters`\n"
 			"\n"
 			"  Load a topological model (and its associated rotation model):\n"
 			"  ::\n"
@@ -1086,7 +1128,7 @@ export_topological_model()
 			"CPU and memory (since it caches resolved topologies and reconstructed geometries over geological time).\n"
 			"\n"
 			"  .. versionchanged:: 31\n"
-			"     Added *resolve_topology_parameters* argument.\n")
+			"     Added *default_resolve_topology_parameters* argument.\n")
 		.def("topological_snapshot",
 				&GPlatesApi::topological_model_get_topological_snapshot,
 				(bp::arg("reconstruction_time")),

@@ -916,7 +916,34 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             resolved_topologies,
             10,
             resolved_topological_sections,
-            resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+            # Make sure can pass in optional ResolveTopologyParameters...
+            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+
+        # Make sure can specify ResolveTopologyParameters with the topological features.
+        resolved_topologies = []
+        resolved_topological_sections = []
+        pygplates.resolve_topologies(
+            (topological_features, pygplates.ResolveTopologyParameters()),
+            rotation_features,
+            resolved_topologies,
+            10,
+            resolved_topological_sections,
+            # Make sure can pass in optional ResolveTopologyParameters...
+            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+        topological_features = list(topological_features)
+        resolved_topologies = []
+        resolved_topological_sections = []
+        pygplates.resolve_topologies(
+            [
+                (topological_features[0], pygplates.ResolveTopologyParameters()),  # single feature with ResolveTopologyParameters
+                topological_features[1],  # single feature without ResolveTopologyParameters
+                (topological_features[2:4], pygplates.ResolveTopologyParameters()),  # multiple features with ResolveTopologyParameters
+                topological_features[4:],  # multiple features without ResolveTopologyParameters
+            ],
+            rotation_features,
+            resolved_topologies,
+            10,
+            resolved_topological_sections)
         
         self.assertTrue(len(resolved_topologies) == 7)
         for resolved_topology in resolved_topologies:
@@ -1822,8 +1849,22 @@ class TopologicalModelCase(unittest.TestCase):
         self.assertTrue(topological_model.get_anchor_plate_id() == 1)
 
         # Make sure can pass in optional ResolveTopologyParameters.
-        topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+        topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, default_resolve_topology_parameters=pygplates.ResolveTopologyParameters())
         self.assertTrue(topological_model.get_anchor_plate_id() == 0)
+        # Make sure can specify ResolveTopologyParameters with the topological features.
+        topological_model = pygplates.TopologicalModel(
+                (self.topologies, pygplates.ResolveTopologyParameters()),
+                self.rotation_model,
+                default_resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+        topologies_list = list(self.topologies)
+        topological_model = pygplates.TopologicalModel(
+                [
+                    (topologies_list[0], pygplates.ResolveTopologyParameters()),  # single feature with ResolveTopologyParameters
+                    topologies_list[1],  # single feature without ResolveTopologyParameters
+                    (topologies_list[2:4], pygplates.ResolveTopologyParameters()),  # multiple features with ResolveTopologyParameters
+                    topologies_list[4:],  # multiple features without ResolveTopologyParameters
+                ],
+                self.rotation_model)
 
     def test_get_topological_snapshot(self):
         topological_snapshot = self.topological_model.topological_snapshot(10.0)
@@ -2023,11 +2064,28 @@ class TopologicalSnapshotCase(unittest.TestCase):
         os.remove(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
 
         # Make sure can pass in optional ResolveTopologyParameters.
+        rotations = pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot'))
+        topologies = list(pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml')))
         snapshot = pygplates.TopologicalSnapshot(
-            os.path.join(FIXTURES, 'topologies.gpml'),
-            os.path.join(FIXTURES, 'rotations.rot'),
+            topologies,
+            rotations,
             pygplates.GeoTimeInstant(10),
-            resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+        # Make sure can specify ResolveTopologyParameters with the topological features.
+        snapshot = pygplates.TopologicalSnapshot(
+            (topologies, pygplates.ResolveTopologyParameters()),
+            rotations,
+            pygplates.GeoTimeInstant(10),
+            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+        snapshot = pygplates.TopologicalSnapshot(
+            [
+                (topologies[0], pygplates.ResolveTopologyParameters()),  # single feature with ResolveTopologyParameters
+                topologies[1],  # single feature without ResolveTopologyParameters
+                (topologies[2:4], pygplates.ResolveTopologyParameters()),  # multiple features with ResolveTopologyParameters
+                topologies[4:],  # multiple features without ResolveTopologyParameters
+            ],
+            rotations,
+            pygplates.GeoTimeInstant(10))
 
 
 def suite():

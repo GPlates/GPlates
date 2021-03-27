@@ -99,7 +99,7 @@ namespace GPlatesApi
 				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 				boost::optional<resolved_topological_sections_argument_type> &resolved_topological_sections,
 				boost::optional<GPlatesModel::integer_plate_id_type> &anchor_plate_id,
-				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> resolve_topology_parameters,
+				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters,
 				ResolveTopologyType::flags_type &resolve_topology_types,
 				ResolveTopologyType::flags_type &resolve_topological_section_types,
 				bool &export_wrap_to_dateline,
@@ -134,7 +134,7 @@ namespace GPlatesApi
 							"reconstruction_time",
 							"resolved_topological_sections",
 							"anchor_plate_id",
-							"resolve_topology_parameters");
+							"default_resolve_topology_parameters");
 
 			// Define the default function arguments...
 			typedef boost::tuple<
@@ -142,7 +142,7 @@ namespace GPlatesApi
 					boost::optional<GPlatesModel::integer_plate_id_type>,
 					boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>>
 							default_args_type;
-			default_args_type defaults_args(boost::none, boost::none/*anchor_plate_id*/, boost::none/*resolve_topology_parameters*/);
+			default_args_type defaults_args(boost::none, boost::none/*anchor_plate_id*/, boost::none/*default_resolve_topology_parameters*/);
 
 			const resolve_topologies_args_type resolve_topologies_args =
 					VariableArguments::get_explicit_args<resolve_topologies_args_type>(
@@ -159,7 +159,7 @@ namespace GPlatesApi
 			reconstruction_time = boost::get<3>(resolve_topologies_args);
 			resolved_topological_sections = boost::get<4>(resolve_topologies_args);
 			anchor_plate_id = boost::get<5>(resolve_topologies_args);
-			resolve_topology_parameters = boost::get<6>(resolve_topologies_args);
+			default_resolve_topology_parameters = boost::get<6>(resolve_topologies_args);
 
 			//
 			// Get the optional non-explicit output parameters from the variable argument list.
@@ -222,7 +222,7 @@ namespace GPlatesApi
 		GPlatesPropertyValues::GeoTimeInstant reconstruction_time(0);
 		boost::optional<resolved_topological_sections_argument_type> resolved_topological_sections_argument;
 		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id;
-		boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> resolve_topology_parameters;
+		boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters;
 		ResolveTopologyType::flags_type resolve_topology_types;
 		ResolveTopologyType::flags_type resolve_topological_section_types;
 		bool export_wrap_to_dateline;
@@ -237,7 +237,7 @@ namespace GPlatesApi
 				reconstruction_time,
 				resolved_topological_sections_argument,
 				anchor_plate_id,
-				resolve_topology_parameters,
+				default_resolve_topology_parameters,
 				resolve_topology_types,
 				resolve_topological_section_types,
 				export_wrap_to_dateline,
@@ -274,7 +274,7 @@ namespace GPlatesApi
 				rotation_model_argument.get(),
 				reconstruction_time.value(),
 				anchor_plate_id,
-				resolve_topology_parameters);
+				default_resolve_topology_parameters);
 
 		//
 		// Either export the resolved topologies to a file or append them to a python list.
@@ -363,13 +363,14 @@ export_resolve_topologies()
 	// so we set the docstring the old-fashioned way.
 	bp::scope().attr(resolve_topologies_function_name).attr("__doc__") =
 			"resolve_topologies(topological_features, rotation_model, resolved_topologies, "
-			"reconstruction_time, [resolved_topological_sections], [anchor_plate_id], [resolve_topology_parameters], [**output_parameters])\n"
+			"reconstruction_time, [resolved_topological_sections], [anchor_plate_id], [default_resolve_topology_parameters], [**output_parameters])\n"
 			"  Resolve topological features (lines, boundaries and networks) to a specific geological time.\n"
 			"\n"
-			"  :param topological_features: the topological boundary and network features and the "
+			"  :param topological_features: The topological boundary and network features and the "
 			"topological section features they reference (regular and topological lines) as a feature collection, "
 			"or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) "
-			"of any combination of those four types\n"
+			"of any combination of those four types. Note: Each sequence entry can optionally be a 2-tuple "
+			"(entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.\n"
 			"  :type topological_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
@@ -393,9 +394,10 @@ export_resolve_topologies()
 			"  :param anchor_plate_id: The anchored plate id used during reconstruction. "
 			"Defaults to the default anchor plate of *rotation_model*.\n"
 			"  :type anchor_plate_id: int\n"
-			"  :param resolve_topology_parameters: Parameters used to resolve topologies. "
+			"  :param default_resolve_topology_parameters: Default parameters used to resolve topologies. "
+			"Note that these can optionally be overridden in *topological_features*. "
 			"Defaults to :meth:`default-constructed ResolveTopologyParameters<ResolveTopologyParameters.__init__>`).\n"
-			"  :type resolve_topology_parameters: :class:`ResolveTopologyParameters`\n"
+			"  :type default_resolve_topology_parameters: :class:`ResolveTopologyParameters`\n"
 			"  :param output_parameters: Variable number of keyword arguments specifying output "
 			"parameters (see table below). Default is no keyword arguments.\n"
 			"  :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)\n"
@@ -581,7 +583,7 @@ export_resolve_topologies()
 			"Previously the order was only retained for *resolved_topologies*.\n"
 			"\n"
 			"  .. versionchanged:: 31\n"
-			"     Added *resolve_topology_parameters* argument.\n";
+			"     Added *default_resolve_topology_parameters* argument.\n";
 
 	// Register 'resolved topologies' variant.
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::resolved_topologies_argument_type>();

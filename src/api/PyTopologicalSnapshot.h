@@ -112,7 +112,7 @@ namespace GPlatesApi
 				const RotationModelFunctionArgument &rotation_model_argument,
 				const double &reconstruction_time,
 				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
-				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> resolve_topology_parameters);
+				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters);
 
 		/**
 		 * Create a topological snapshot, at specified reconstruction time, from the previously resolved topologies.
@@ -279,7 +279,7 @@ namespace GPlatesApi
 				const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features_argument,
 				const RotationModel::non_null_ptr_type &rotation_model,
 				const double &reconstruction_time,
-				ResolveTopologyParameters::non_null_ptr_to_const_type resolve_topology_parameters);
+				ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters);
 
 		TopologicalSnapshot(
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,

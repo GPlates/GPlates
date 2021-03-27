@@ -241,14 +241,19 @@ GPlatesApi::TopologicalFeatureCollectionFunctionArgument::create(
 }
 
 
-std::tuple<GPlatesApi::FeatureCollectionFunctionArgument, GPlatesApi::ResolveTopologyParameters::non_null_ptr_to_const_type>
+std::tuple<
+		GPlatesApi::FeatureCollectionFunctionArgument,
+		boost::optional<GPlatesApi::ResolveTopologyParameters::non_null_ptr_to_const_type>>
 GPlatesApi::TopologicalFeatureCollectionFunctionArgument::create_feature_collection(
 		const function_argument_type &function_argument)
 {
 	if (const FeatureCollectionFunctionArgument *feature_collection_function_argument =
 		boost::get<FeatureCollectionFunctionArgument>(&function_argument))
 	{
-		return std::make_tuple(*feature_collection_function_argument, ResolveTopologyParameters::create());
+		// Only return the feature collection (we don't have a ResolveTopologyParameters).
+		return std::make_tuple(
+				*feature_collection_function_argument,
+				boost::optional<GPlatesApi::ResolveTopologyParameters::non_null_ptr_to_const_type>());
 	}
 	else
 	{
@@ -269,7 +274,9 @@ GPlatesApi::TopologicalFeatureCollectionFunctionArgument::create_feature_collect
 		ResolveTopologyParameters::non_null_ptr_type resolve_topology_parameters =
 				bp::extract<ResolveTopologyParameters::non_null_ptr_type>(sequence_of_objects[1]);
 
-		return std::make_tuple(feature_collection, resolve_topology_parameters);
+		return std::make_tuple(
+				feature_collection,
+				boost::optional<GPlatesApi::ResolveTopologyParameters::non_null_ptr_to_const_type>(resolve_topology_parameters));
 	}
 }
 
@@ -357,14 +364,24 @@ GPlatesApi::TopologicalFeatureCollectionSequenceFunctionArgument::get_files(
 }
 
 
-void
-GPlatesApi::TopologicalFeatureCollectionSequenceFunctionArgument::get_resolved_topology_parameters(
-		std::vector<ResolveTopologyParameters::non_null_ptr_to_const_type> &resolved_topology_parameters) const
+bool
+GPlatesApi::TopologicalFeatureCollectionSequenceFunctionArgument::get_resolve_topology_parameters(
+		std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters_list) const
 {
+	bool any_feature_collections_associated_with_resolve_topology_parameters = false;
+
 	for (const TopologicalFeatureCollectionFunctionArgument &feature_collection : d_feature_collections)
 	{
-		resolved_topology_parameters.push_back(feature_collection.get_resolve_topology_parameters());
+		auto resolve_topology_parameters = feature_collection.get_resolve_topology_parameters();
+		if (resolve_topology_parameters)
+		{
+			any_feature_collections_associated_with_resolve_topology_parameters = true;
+		}
+
+		resolve_topology_parameters_list.push_back(resolve_topology_parameters);
 	}
+
+	return any_feature_collections_associated_with_resolve_topology_parameters;
 }
 
 

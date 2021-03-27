@@ -42,6 +42,7 @@
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/ScalarCoverageTimeSpan.h"
 #include "app-logic/TimeSpanUtils.h"
+#include "app-logic/TopologyNetworkParams.h"
 #include "app-logic/TopologyReconstruct.h"
 
 #include "file-io/File.h"
@@ -150,7 +151,7 @@ namespace GPlatesApi
 				// just 'RotationModelFunctionArgument' since we want to know if it's an existing RotationModel...
 				const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
 				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
-				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> resolve_topology_parameters);
+				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters);
 
 
 		/**
@@ -239,16 +240,21 @@ namespace GPlatesApi
 		//! Typedef for a mapping of (integral) times to topological snapshots (resolved topologies).
 		typedef std::map<GPlatesMaths::real_t/*time*/, TopologicalSnapshot::non_null_ptr_type> topological_snapshots_type;
 
+		//! Typedef for a sequence of topological features.
+		typedef std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_features_seq_type;
+
+		/**
+		 * Typedef for a mapping of topology network parameters to topological network features.
+		 *
+		 * Network features associated with different parameters need to be resolved separately.
+		 */
+		typedef std::map<GPlatesAppLogic::TopologyNetworkParams, topological_features_seq_type> topological_network_features_map_type;
+
 
 		/**
 		 * Rotation model associated with topological features.
 		 */
 		RotationModel::non_null_ptr_type d_rotation_model;
-
-		/**
-		 * Parameters used when resolving topologies.
-		 */
-		ResolveTopologyParameters::non_null_ptr_to_const_type d_resolve_topology_parameters;
 
 		/**
 		 * Topological feature collections/files.
@@ -259,10 +265,12 @@ namespace GPlatesApi
 		// Separate the topological features into regular features (used as topological sections for
 		// topological lines/boundaries/networks), topological lines (can also be used as topological
 		// sections for topological boundaries/networks), topological boundaries and topological networks.
-		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_topological_section_regular_features;
-		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_topological_line_features;
-		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_topological_boundary_features;
-		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_topological_network_features;
+		topological_features_seq_type d_topological_section_regular_features;
+		topological_features_seq_type d_topological_line_features;
+		topological_features_seq_type d_topological_boundary_features;
+		// Network features are a little different (they're grouped by their topology network parameters)
+		// because they need to be resolved separately.
+		topological_network_features_map_type d_topological_network_features_map;
 
 		GPlatesAppLogic::ReconstructMethodRegistry d_reconstruct_method_registry;
 
@@ -282,7 +290,7 @@ namespace GPlatesApi
 		TopologicalModel(
 				const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 				const RotationModel::non_null_ptr_type &rotation_model,
-				ResolveTopologyParameters::non_null_ptr_to_const_type resolve_topology_parameters);
+				ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters);
 
 		/**
 		 * Resolves topologies for the specified time and returns them as a topological snapshot.
