@@ -728,9 +728,14 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 					d_rotation_model->get_reconstruction_tree_creator(), 
 					reconstruction_time,
 					// Resolved topo lines use the reconstructed non-topo geometries...
-					topological_sections_reconstruct_handles,
+					topological_sections_reconstruct_handles
+	// NOTE: We need to generate all resolved topological lines, not just those referenced by resolved boundaries/networks,
+	//       because the user may later explicitly request the resolved topological lines (or explicitly export them)...
+#if 0
 					// Only those topo lines referenced by resolved boundaries/networks...
-					topological_sections_referenced);
+					, topological_sections_referenced
+#endif
+			);
 
 	topological_sections_reconstruct_handles.push_back(resolved_topological_lines_handle);
 

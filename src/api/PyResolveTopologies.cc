@@ -257,13 +257,6 @@ namespace GPlatesApi
 			PyErr_SetString(PyExc_ValueError, "Unknown bit flag specified in resolve topology types.");
 			bp::throw_error_already_set();
 		}
-		// Resolved topological section type flags must correspond to BOUNDARY and/or NETWORK.
-		if ((resolve_topological_section_types & ~ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES) != 0)
-		{
-			PyErr_SetString(PyExc_ValueError, "Bit flags specified in resolve topological section types must be "
-					"ResolveTopologyType.BOUNDARY and/or ResolveTopologyType.NETWORK.");
-			bp::throw_error_already_set();
-		}
 
 		//
 		// Resolve the topologies (as a topological snapshot).
@@ -428,9 +421,9 @@ export_resolve_topologies()
 			"  |                                   |      |                                                                 | Determines whether to output :class:`ResolvedTopologicalLine`,                   |\n"
 			"  |                                   |      |                                                                 | :class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.    |\n"
 			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
-			"  | resolve_topological_section_types | int  | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | A bitwise combination of any of the following:                                   |\n"
-			"  |                                   |      |                                                                 |                                                                                  |\n"
-			"  |                                   |      |                                                                 | - ``ResolveTopologyType.boundary``:                                              |\n"
+			"  | resolve_topological_section_types | int  | Same value as *resolve_topology_types* (if specified),          | A bitwise combination of any of the following:                                   |\n"
+			"  |                                   |      | otherwise its default value                                     |                                                                                  |\n"
+			"  |                                   |      | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | - ``ResolveTopologyType.boundary``:                                              |\n"
 			"  |                                   |      |                                                                 | - ``ResolveTopologyType.network``:                                               |\n"
 			"  |                                   |      |                                                                 |                                                                                  |\n"
 			"  |                                   |      |                                                                 | .. note:: ``ResolveTopologyType.line`` is excluded since only                    |\n"
