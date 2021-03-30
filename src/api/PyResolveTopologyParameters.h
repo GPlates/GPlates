@@ -45,11 +45,20 @@ namespace GPlatesApi
 		typedef GPlatesUtils::non_null_intrusive_ptr<const ResolveTopologyParameters> non_null_ptr_to_const_type;
 
 
+		//! Default topology network params (obtained from default constructor).
+		static const GPlatesAppLogic::TopologyNetworkParams DEFAULT_TOPOLOGY_NETWORK_PARAMS;
+
+
 		static
 		non_null_ptr_type
-		create()
+		create(
+				bool enable_strain_rate_clamping = DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().enable_clamping,
+				const double &max_total_strain_rate = DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().max_total_strain_rate)
 		{
-			return non_null_ptr_type(new ResolveTopologyParameters());
+			return non_null_ptr_type(
+					new ResolveTopologyParameters(
+							enable_strain_rate_clamping,
+							max_total_strain_rate));
 		}
 
 		/**
@@ -63,8 +72,9 @@ namespace GPlatesApi
 
 	private:
 
-		ResolveTopologyParameters()
-		{  }
+		ResolveTopologyParameters(
+				bool enable_strain_rate_clamping,
+				const double &max_total_strain_rate);
 
 		GPlatesAppLogic::TopologyNetworkParams d_topology_network_params;
 	};
