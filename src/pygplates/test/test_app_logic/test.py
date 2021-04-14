@@ -1994,6 +1994,36 @@ class TopologicalModelCase(unittest.TestCase):
 
     def test_get_reconstructed_data(self):
         multipoint =  pygplates.MultiPointOnSphere([(0,0), (0,-30), (0,-60)])
+        
+        # Try with default deactivate points.
+        self.topological_model.reconstruct_geometry(
+                multipoint,
+                initial_time=20.0,
+                oldest_time=30.0,
+                youngest_time=10.0,
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0, 1.0]},
+                deactivate_points=pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints())
+        
+        # Try with our own Python derived class that delegates to the default deactivate points.
+        class DelegateDeactivatePoints(pygplates.ReconstructedGeometryTimeSpan.DeactivatePoints):
+            def __init__(self):
+                super(DelegateDeactivatePoints, self).__init__()
+                self.default_deactivate_points = pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints()
+                self.was_deactivate_called = False
+            def deactivate(self, prev_point, prev_location, current_point, current_location, current_time, reverse_reconstruct):
+                self.was_deactivate_called = True
+                return self.default_deactivate_points.deactivate(prev_point, prev_location, current_point, current_location, current_time, reverse_reconstruct)
+        delegate_deactivate_points = DelegateDeactivatePoints()
+        self.assertFalse(delegate_deactivate_points.was_deactivate_called)
+        self.topological_model.reconstruct_geometry(
+                multipoint,
+                initial_time=20.0,
+                oldest_time=30.0,
+                youngest_time=10.0,
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0, 1.0]},
+                deactivate_points=delegate_deactivate_points)
+        self.assertTrue(delegate_deactivate_points.was_deactivate_called)
+        
         reconstructed_multipoint_time_span = self.topological_model.reconstruct_geometry(
                 multipoint,
                 initial_time=20.0,
