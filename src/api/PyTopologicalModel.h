@@ -106,6 +106,83 @@ namespace GPlatesApi
 			return d_scalar_coverage_time_span;
 		}
 
+
+		/**
+		 * The base class interface for deactivating geometry points as they are reconstructed forward and/or backward in time.
+		 *
+		 * This is a wrapper class (around 'GPlatesAppLogic::TopologyReconstruct::DeactivatePoint') so that it can be inherited
+		 * by a Python class (if user decides to implement their own derivation) and invoked from C++ (through base class pointer).
+		 *
+		 * Note that we didn't use the traditional documented method of inheriting from both Base and bp::wrapper<Base>.
+		 * This is because we are using smart pointers (GPlatesUtils::non_null_intrusive_ptr) and just cannot seem to get
+		 * it to work with bp::wrapper (probably because bp::wrapper not designed to be used as a smart pointer and trying to convert
+		 * a non-smart pointer HeldType to smart pointer using bp::register_ptr_to_python doesn't appear to work).
+		 *
+		 * Note that there's also a default C++ derived class (inheriting from 'GPlatesAppLogic::TopologyReconstruct::DeactivatePoint').
+		 * That's implemented on the C++ side (exposed to Python though).
+		 */
+		struct DeactivatePointWrapper :
+				public GPlatesAppLogic::TopologyReconstruct::DeactivatePoint
+		{
+			typedef GPlatesUtils::non_null_intrusive_ptr<DeactivatePointWrapper> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const DeactivatePointWrapper> non_null_ptr_to_const_type;
+
+			/**
+			 * Our class wrapper is:
+			 *
+			 *   bp::class_<
+			 *       GPlatesAppLogic::TopologyReconstruct::DeactivatePoint,
+			 *       GPlatesApi::ReconstructedGeometryTimeSpan::DeactivatePointWrapper::non_null_ptr_type,
+			 *       boost::noncopyable>
+			 *
+			 * The documentation for bp::class_ dictates that:
+			 * 
+			 *     when HeldType is a smart pointer to a class derived from T, the initial PyObject*
+			 *     argument must be supplied by all of HeldType's exposed constructors
+			 * 
+			 * ...and our HeldType is 'DeactivatePointWrapper::non_null_ptr_type' which is a smart pointer
+			 * to a class derived from 'GPlatesAppLogic::TopologyReconstruct::DeactivatePoint'.
+			 *
+			 * Note that we don't also need to provide a 'PyObject *' version of the copy constructor
+			 * (because of 'boost::noncopyable').
+			 *
+			 * In any case we need the Python object pointer so that we can later call "deactivate" on it
+			 * (again, because the traditional approach of inheriting bp::wrapper, which handles all that
+			 * for us, does not work in our smart pointer situation).
+			 */
+			explicit
+			DeactivatePointWrapper(
+					PyObject *self) :
+				d_self(self)
+			{  }
+
+			/**
+			 * Return true if the point should be deactivated.
+			 */
+			virtual
+			bool
+			deactivate(
+					const GPlatesMaths::PointOnSphere &prev_point,
+					const GPlatesAppLogic::TopologyPointLocation &prev_location,
+					const GPlatesMaths::PointOnSphere &current_point,
+					const GPlatesAppLogic::TopologyPointLocation &current_location,
+					const double &current_time,
+					bool reverse_reconstruct) const override
+			{
+				// Call the "deactivate" method on the derived Python object.
+				return boost::python::call_method<bool>(d_self, "deactivate",
+						prev_point,
+						prev_location,
+						current_point,
+						current_location,
+						current_time,
+						reverse_reconstruct);
+			}
+
+		private:
+			PyObject *d_self;
+		};
+
 	private:
 
 		ReconstructedGeometryTimeSpan(
@@ -192,7 +269,10 @@ namespace GPlatesApi
 				const GPlatesPropertyValues::GeoTimeInstant &youngest_time = GPlatesPropertyValues::GeoTimeInstant(0),
 				const double &time_increment = 1,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id = boost::none,
-				boost::python::object scalar_type_to_values_mapping_object = boost::python::object()/*Py_None*/);
+				boost::python::object scalar_type_to_values_mapping_object = boost::python::object()/*Py_None*/,
+				boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type> deactivate_points =
+						GPlatesUtils::static_pointer_cast<const GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>(
+								GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(1.0)));
 
 
 		/**

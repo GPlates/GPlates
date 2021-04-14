@@ -105,6 +105,16 @@ namespace GPlatesApi
 	}
 
 
+	/**
+	 * This is called directly from Python via 'ReconstructedGeometryTimeSpan.DefaultDeactivatePoints.__init__()'.
+	 */
+	GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::non_null_ptr_type
+	reconstructed_geometry_time_span_default_deactivate_points_create()
+	{
+		return GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(1.0);
+	}
+
+
 	namespace
 	{
 		/**
@@ -781,7 +791,8 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 		const GPlatesPropertyValues::GeoTimeInstant &youngest_time_arg,
 		const double &time_increment_arg,
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
-		bp::object scalar_type_to_initial_scalar_values_mapping_object)
+		bp::object scalar_type_to_initial_scalar_values_mapping_object,
+		boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type> deactivate_points)
 {
 	// Initial reconstruction time must not be distant past/future.
 	if (!initial_time.is_real())
@@ -871,10 +882,6 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 	// Extract the geometry.
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = get_geometry(geometry_object);
 
-	GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type deactivate_points =
-			GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(
-					time_range.get_time_increment());
-
 	// Create time span of reconstructed geometry.
 	GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span =
 			topology_reconstruct->create_geometry_time_span(
@@ -929,7 +936,6 @@ export_topological_model()
 					"\n"
 					"  .. versionadded:: 29\n",
 					// Don't allow creation from python side...
-					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
 		.def("not_located_in_resolved_topology",
 				&GPlatesApi::topology_point_not_located_in_resolved_topology,
@@ -982,91 +988,183 @@ export_topological_model()
 	// Enable boost::optional<TopologyPointLocation> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::TopologyPointLocation>();
 
-
-	//
-	// ReconstructedGeometryTimeSpan - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
-	//
-	bp::class_<
-			GPlatesApi::ReconstructedGeometryTimeSpan,
-			GPlatesApi::ReconstructedGeometryTimeSpan::non_null_ptr_type,
-			boost::noncopyable>(
-					"ReconstructedGeometryTimeSpan",
-					"A history of geometries reconstructed using topologies over geological time.\n"
+	{
+		//
+		// ReconstructedGeometryTimeSpan - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+		//
+		bp::scope reconstructed_geometry_time_span_class = bp::class_<
+				GPlatesApi::ReconstructedGeometryTimeSpan,
+				GPlatesApi::ReconstructedGeometryTimeSpan::non_null_ptr_type,
+				boost::noncopyable>(
+						"ReconstructedGeometryTimeSpan",
+						"A history of geometries reconstructed using topologies over geological time.\n"
+						"\n"
+						"  .. versionadded:: 29\n",
+						// Don't allow creation from python side...
+						// (Also there is no publicly-accessible default constructor).
+						bp::no_init)
+			.def("get_geometry_points",
+					&GPlatesApi::reconstructed_geometry_time_span_get_geometry_points,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_geometry_points(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns geometry points at a specific reconstruction time.\n"
 					"\n"
-					"  .. versionadded:: 29\n",
-					// Don't allow creation from python side...
-					// (Also there is no publicly-accessible default constructor).
-					bp::no_init)
-		.def("get_geometry_points",
-				&GPlatesApi::reconstructed_geometry_time_span_get_geometry_points,
-				(bp::arg("reconstruction_time"),
-					bp::arg("return_inactive_points") = false),
-				"get_geometry_points(reconstruction_time, [return_inactive_points=False])\n"
-				"  Returns geometry points at a specific reconstruction time.\n"
-				"\n"
-				"  :param reconstruction_time: Time to extract reconstructed geometry points. Can be any non-negative time.\n"
-				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-				"  :param return_inactive_points: Whether to return inactive geometry points. "
-				"If ``True`` then each inactive point stores ``None`` instead of a point and hence the size of each ``list`` "
-				"of points is equal to the number of points in the initial geometry (which are all initially active). "
-				"By default only active points are returned.\n"
-				"  :returns: list of :class:`PointOnSphere`, or ``None`` if no points are active at *reconstruction_time*\n"
-				"  :rtype: ``list`` or ``None``\n"
-				"  :raises: ValueError if *reconstruction_time* is "
-				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
-		.def("get_topology_point_locations",
-				&GPlatesApi::reconstructed_geometry_time_span_get_topology_point_locations,
-				(bp::arg("reconstruction_time"),
-					bp::arg("return_inactive_points") = false),
-				"get_topology_point_locations(reconstruction_time, [return_inactive_points=False])\n"
-				"  Returns the locations of geometry points in resolved topologies at a specific reconstruction time.\n"
-				"\n"
-				"  :param reconstruction_time: Time to extract topology point locations. Can be any non-negative time.\n"
-				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-				"  :param return_inactive_points: Whether to return topology locations associated with inactive points. "
-				"If ``True`` then each topology location corresponding to an inactive point stores ``None`` instead of a "
-				"topology location and hence the size of each ``list`` of topology locations is equal to the number of points "
-				"in the initial geometry (which are all initially active). "
-				"By default only topology locations for active points are returned.\n"
-				"  :returns: list of :class:`TopologyPointLocation`, or ``None`` if no points are active at *reconstruction_time*\n"
-				"  :rtype: ``list`` or ``None``\n"
-				"  :raises: ValueError if *reconstruction_time* is "
-				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
-		.def("get_scalar_values",
-				&GPlatesApi::reconstructed_geometry_time_span_get_scalar_values,
-				(bp::arg("reconstruction_time"),
-					bp::arg("scalar_type") = boost::optional<GPlatesPropertyValues::ValueObjectType>(),
-					bp::arg("return_inactive_points") = false),
-				"get_scalar_values(reconstruction_time, [scalar_type], [return_inactive_points=False])\n"
-				"  Returns scalar values at a specific reconstruction time either for a single scalar type (as a ``list``) or "
-				"for all scalar types (as a ``dict``).\n"
-				"\n"
-				"  :param reconstruction_time: Time to extract reconstructed scalar values. Can be any non-negative time.\n"
-				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-				"  :param scalar_type: Optional scalar type to retrieve scalar values for (returned as a ``list``). "
-				"If not specified then all scalar values for all scalar types are returned (returned as a ``dict``).\n"
-				"  :type scalar_type: :class:`ScalarType`\n"
-				"  :param return_inactive_points: Whether to return scalars associated with inactive points. "
-				"If ``True`` then each scalar corresponding to an inactive point stores ``None`` instead of a scalar and hence "
-				"the size of each ``list`` of scalars is equal to the number of points (and scalars) in the initial geometry "
-				"(which are all initially active). "
-				"By default only scalars for active points are returned.\n"
-				"  :returns: If *scalar_type* is specified then a ``list`` of scalar values associated with *scalar_type* "
-				"at *reconstruction_time* (or ``None`` if no matching scalar type), otherwise a ``dict`` mapping available "
-				"scalar types with their associated scalar values ``list`` at *reconstruction_time* (or ``None`` if no scalar types "
-				"are available). Returns ``None`` if no points are active at *reconstruction_time*.\n"
-				"  :rtype: ``list`` or ``dict`` or ``None``\n"
-				"  :raises: ValueError if *reconstruction_time* is "
-				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
-		// Make hash and comparisons based on C++ object identity (not python object identity)...
-		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
-	;
+					"  :param reconstruction_time: Time to extract reconstructed geometry points. Can be any non-negative time.\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return inactive geometry points. "
+					"If ``True`` then each inactive point stores ``None`` instead of a point and hence the size of each ``list`` "
+					"of points is equal to the number of points in the initial geometry (which are all initially active). "
+					"By default only active points are returned.\n"
+					"  :returns: list of :class:`PointOnSphere`, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
+			.def("get_topology_point_locations",
+					&GPlatesApi::reconstructed_geometry_time_span_get_topology_point_locations,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_topology_point_locations(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns the locations of geometry points in resolved topologies at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract topology point locations. Can be any non-negative time.\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return topology locations associated with inactive points. "
+					"If ``True`` then each topology location corresponding to an inactive point stores ``None`` instead of a "
+					"topology location and hence the size of each ``list`` of topology locations is equal to the number of points "
+					"in the initial geometry (which are all initially active). "
+					"By default only topology locations for active points are returned.\n"
+					"  :returns: list of :class:`TopologyPointLocation`, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
+			.def("get_scalar_values",
+					&GPlatesApi::reconstructed_geometry_time_span_get_scalar_values,
+					(bp::arg("reconstruction_time"),
+						bp::arg("scalar_type") = boost::optional<GPlatesPropertyValues::ValueObjectType>(),
+						bp::arg("return_inactive_points") = false),
+					"get_scalar_values(reconstruction_time, [scalar_type], [return_inactive_points=False])\n"
+					"  Returns scalar values at a specific reconstruction time either for a single scalar type (as a ``list``) or "
+					"for all scalar types (as a ``dict``).\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract reconstructed scalar values. Can be any non-negative time.\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param scalar_type: Optional scalar type to retrieve scalar values for (returned as a ``list``). "
+					"If not specified then all scalar values for all scalar types are returned (returned as a ``dict``).\n"
+					"  :type scalar_type: :class:`ScalarType`\n"
+					"  :param return_inactive_points: Whether to return scalars associated with inactive points. "
+					"If ``True`` then each scalar corresponding to an inactive point stores ``None`` instead of a scalar and hence "
+					"the size of each ``list`` of scalars is equal to the number of points (and scalars) in the initial geometry "
+					"(which are all initially active). "
+					"By default only scalars for active points are returned.\n"
+					"  :returns: If *scalar_type* is specified then a ``list`` of scalar values associated with *scalar_type* "
+					"at *reconstruction_time* (or ``None`` if no matching scalar type), otherwise a ``dict`` mapping available "
+					"scalar types with their associated scalar values ``list`` at *reconstruction_time* (or ``None`` if no scalar types "
+					"are available). Returns ``None`` if no points are active at *reconstruction_time*.\n"
+					"  :rtype: ``list`` or ``dict`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
+			// Make hash and comparisons based on C++ object identity (not python object identity)...
+			.def(GPlatesApi::ObjectIdentityHashDefVisitor())
+		;
 
-	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
-	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesApi::ReconstructedGeometryTimeSpan>();
+		// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+		GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesApi::ReconstructedGeometryTimeSpan>();
+
+
+		//
+		// ReconstructedGeometryTimeSpan.DeactivatePoints - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+		//
+		// A class nested within python class ReconstructedGeometryTimeSpan (due to above 'bp::scope').
+		bp::class_<
+				GPlatesAppLogic::TopologyReconstruct::DeactivatePoint,
+				GPlatesApi::ReconstructedGeometryTimeSpan::DeactivatePointWrapper::non_null_ptr_type,
+				boost::noncopyable>(
+						"DeactivatePoints",
+						"The base class interface for deactivating geometry points as they are reconstructed forward and/or backward in time.\n"
+						"\n"
+						".. warning:: You must call the base class *__init__* otherwise you will get a *Boost.Python.ArgumentError* exception.\n"
+						"\n"
+						"  .. versionadded:: 31\n",
+						// NOTE: Must not define 'bp::no_init' because this base class is meant to be inherited by a python class.
+						bp::init<>(
+								"__init__()\n"
+								"  Default constructor - must be explicitly called by derived class.\n"))
+			.def("deactivate",
+					bp::pure_virtual(&GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::deactivate),
+					(bp::arg("prev_point"),
+						bp::arg("prev_location"),
+						bp::arg("current_point"),
+						bp::arg("current_location"),
+						bp::arg("current_time"),
+						bp::arg("reverse_reconstruct")),
+					"deactivate(prev_point, prev_location, current_point, current_location, current_time, reverse_reconstruct)\n"
+					"  Return true if the point should be deactivated.\n"
+					"\n"
+					"  :param prev_point: the previous position of the point\n"
+					"  :type prev_point: :class:`PointOnSphere`\n"
+					"  :param prev_location: the previous location of the point in the topologies\n"
+					"  :type prev_location: :class:`TopologyPointLocation`\n"
+					"  :param current_point: the current position of the point\n"
+					"  :type current_point: :class:`PointOnSphere`\n"
+					"  :param current_location: the current location of the point in the topologies\n"
+					"  :type current_location: :class:`TopologyPointLocation`\n"
+					"  :param current_time: the time associated with the current position of the point\n"
+					"  :type current_time: float or :class:`GeoTimeInstant`\n"
+					"  :param forward_in_time: whether the point is being reconstructed forward in time (from older to younger times)\n"
+					"  :type forward_in_time: bool\n"
+					"  :rtype: bool\n")
+		;
+
+		// Enable GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_type to be stored in a Python object.
+		// Normally the HeldType GPlatesApi::ReconstructedGeometryTimeSpan::DeactivatePointWrapper::non_null_ptr_type is stored.
+		//
+		// For example, this enables:
+		//
+		//   bp::arg("deactivate_points") = boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type>()
+		//
+		// ...as a default argument in 'TopologicalModel.reconstruct_geometry()' because bp::arg stores its default value in a Python object.
+		//
+		// Without 'bp::register_ptr_to_python<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_type>()'
+		// (and also 'PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>()')
+		// the above bp::arg statement would fail.
+		// 
+		bp::register_ptr_to_python<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_type>();
+
+		GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<
+				GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>();
+
+
+		//
+		// ReconstructedGeometryTimeSpan.DeactivatePoints - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+		//
+		// A class nested within python class ReconstructedGeometryTimeSpan (due to above 'bp::scope').
+		bp::class_<
+				GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint,
+				GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::non_null_ptr_type,
+				bp::bases<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>,
+				boost::noncopyable>(
+						"DefaultDeactivatePoints",
+						"The default algorithm for deactivating geometry points as they are reconstructed forward and/or backward in time.\n"
+						"\n"
+						"  .. versionadded:: 31\n",
+						// There is no publicly-accessible default constructor...
+						bp::no_init)
+			.def("__init__",
+					bp::make_constructor(
+							&GPlatesApi::reconstructed_geometry_time_span_default_deactivate_points_create,
+							bp::default_call_policies()),
+					"__init__()\n"
+					"  Create default algorithm for deactivating points using the specified parameters.\n")
+		;
+
+		// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+		GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<
+				GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint>();
+	}
 
 
 	//
@@ -1152,8 +1250,12 @@ export_topological_model()
 					bp::arg("youngest_time") = GPlatesPropertyValues::GeoTimeInstant(0),
 					bp::arg("time_increment") = GPlatesMaths::real_t(1),
 					bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
-					bp::arg("initial_scalars") = bp::object()/*Py_None*/),
-				"reconstruct_geometry(geometry, initial_time, [oldest_time], [youngest_time=0], [time_increment=1], [reconstruction_plate_id], [initial_scalars])\n"
+					bp::arg("initial_scalars") = bp::object()/*Py_None*/,
+					bp::arg("deactivate_points") = boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type>(
+							GPlatesUtils::static_pointer_cast<const GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>(
+									GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(1.0)))),
+				"reconstruct_geometry(geometry, initial_time, [oldest_time], [youngest_time=0], [time_increment=1], "
+				"[reconstruction_plate_id], [initial_scalars], [deactivate_points])\n"
 				"  Reconstruct a geometry (and optional scalars) over a time span.\n"
 				"\n"
 				"  :param geometry: The geometry to reconstruct (using topologies). Currently limited to a "
@@ -1179,6 +1281,13 @@ export_topological_model()
 				"  :param initial_scalars: optional mapping of scalar types to sequences of initial scalar values\n"
 				"  :type initial_scalars: ``dict`` mapping each :class:`ScalarType` to a sequence "
 				"of float, or a sequence of (:class:`ScalarType`, sequence of float) tuples\n"
+				"  :param deactivate_points: Specify how points are deactivated when reconstructed forward and/or backward in time, or "
+				"specify ``None`` to disable deactivation of points (which is useful if you know your points are on continental crust where "
+				"they're typically always active, as opposed to oceanic crust that is produced at mid-ocean ridges and consumed at subduction zones). "
+				"Note that you can use your own class derived from :class:`ReconstructedGeometryTimeSpan.DeactivatePoints` or "
+				"use the provided class :class:`ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`. "
+				"Defaults to a default-constructed :class:`ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`.\n"
+				"  :type deactivate_points: :class:`ReconstructedGeometryTimeSpan.DeactivatePoints` or None\n"
 				"  :rtype: :class:`ReconstructedGeometryTimeSpan`\n"
 				"  :raises: ValueError if *initial_time* is "
 				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
