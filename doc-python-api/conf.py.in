@@ -115,6 +115,16 @@ pygments_style = 'sphinx'
 # Use the "Read the Docs" Sphinx Theme (requires installation via 'pip install sphinx_rtd_theme').
 html_theme = 'sphinx_rtd_theme'
 
+# Workaround for wide tables being too narrow in the "Read the Docs" Sphinx Theme.
+# We override some of the CSS style with our own 'theme_overrides.css' that is
+# placed in the directory '@SPHINX_STATIC_DIR@' (see 'html_static_path' below).
+#
+# See https://github.com/readthedocs/sphinx_rtd_theme/issues/117
+#
+# Note: 'app.add_css_file()' was renamed from 'app.add_stylesheet()' in version 1.8.
+def setup(app):
+    app.add_css_file('theme_overrides.css')
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -142,7 +152,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+html_static_path = ['@SPHINX_STATIC_DIR@']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
