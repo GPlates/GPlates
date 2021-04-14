@@ -281,7 +281,7 @@ namespace GPlatesApi
 		const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &
 		get_topological_feature_collections() const
 		{
-			d_topological_feature_collections;
+			return d_topological_feature_collections;
 		}
 
 
@@ -293,7 +293,7 @@ namespace GPlatesApi
 		const std::vector<GPlatesFileIO::File::non_null_ptr_type> &
 		get_files() const
 		{
-			d_topological_files;
+			return d_topological_files;
 		}
 
 
