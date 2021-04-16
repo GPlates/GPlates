@@ -608,6 +608,32 @@ class FeatureCollectionCase(unittest.TestCase):
     def test_len(self):
         self.assertEquals(len(self.feature_collection), self.feature_count)
 
+    def test_get_item(self):
+        for feature_index, feature in enumerate(self.feature_collection):
+            self.assertTrue(feature == self.feature_collection[feature_index])
+
+	# Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch because
+	# currently '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a non-null pointer).
+    if (False):
+        def test_set_item(self):
+            shallow_copy_feature_collection = pygplates.FeatureCollection(self.feature_collection)
+
+            self.assertTrue(len(shallow_copy_feature_collection) == len(self.feature_collection))
+            for feature_index in range(len(shallow_copy_feature_collection)):
+                shallow_copy_feature_collection[feature_index] = self.feature_collection[feature_index]
+            self.assertTrue(len(shallow_copy_feature_collection) == len(self.feature_collection))
+            for feature_index in range(len(shallow_copy_feature_collection)):
+                self.assertTrue(shallow_copy_feature_collection[feature_index] == self.feature_collection[feature_index])
+                self.assertTrue(shallow_copy_feature_collection[feature_index].get_feature_id() == self.feature_collection[feature_index].get_feature_id())
+
+            self.assertTrue(len(shallow_copy_feature_collection) == len(self.feature_collection))
+            for feature_index in range(len(shallow_copy_feature_collection)):
+                shallow_copy_feature_collection[feature_index] = self.feature_collection[feature_index].clone()  # Cloned feature
+            self.assertTrue(len(shallow_copy_feature_collection) == len(self.feature_collection))
+            for feature_index in range(len(shallow_copy_feature_collection)):
+                self.assertTrue(shallow_copy_feature_collection[feature_index] != self.feature_collection[feature_index])
+                self.assertTrue(shallow_copy_feature_collection[feature_index].get_feature_id() != self.feature_collection[feature_index].get_feature_id())
+
     def test_is_iterable(self):
         """
         Feature collections provide iteration over the features they contain.

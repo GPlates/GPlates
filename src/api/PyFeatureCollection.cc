@@ -181,6 +181,92 @@ namespace GPlatesApi
 		return cloned_feature_collection;
 	}
 
+	//
+	// Support for "__getitem__".
+	//
+	// But we only allowing indexing with an index. We don't allow slices because it makes less
+	// sense (since indexing features is really just an alternative to iterating in a 'for' loop).
+	//
+	bp::object
+	feature_collection_handle_get_item(
+			GPlatesModel::FeatureCollectionHandle &feature_collection_handle,
+			boost::python::object feature_index_object)
+	{
+		// The feature index should be an integer.
+		bp::extract<long> extract_feature_index(feature_index_object);
+		if (!extract_feature_index.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Invalid feature index type, must be an integer (slices not allowed)");
+			bp::throw_error_already_set();
+
+			return bp::object();  // Cannot get here.
+		}
+
+		long feature_index = extract_feature_index();
+		if (feature_index < 0)
+		{
+			feature_index += feature_collection_handle.size();
+		}
+
+		if (feature_index >= boost::numeric_cast<long>(feature_collection_handle.size()) ||
+			feature_index < 0)
+		{
+			PyErr_SetString(PyExc_IndexError, "Feature index out of range");
+			bp::throw_error_already_set();
+		}
+
+		GPlatesModel::FeatureCollectionHandle::iterator feature_iter = feature_collection_handle.begin();
+		// NOTE: 'feature_iter' is not random access, so must increment 'feature_index' times...
+		std::advance(feature_iter, feature_index);
+		GPlatesModel::FeatureHandle::non_null_ptr_type feature = *feature_iter;
+
+		return bp::object(feature);
+	}
+
+	// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch because
+	// currently '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a non-null pointer).
+#if 0
+	//
+	// Support for "__setitem__".
+	//
+	// But we only allowing indexing with an index. We don't allow slices because it makes less
+	// sense (since indexing features is really just an alternative to iterating in a 'for' loop
+	// to get a feature, modify it and then set it back in the feature collection at same index).
+	//
+	void
+	feature_collection_handle_set_item(
+			GPlatesModel::FeatureCollectionHandle &feature_collection_handle,
+			boost::python::object feature_index_object,
+			GPlatesModel::FeatureHandle::non_null_ptr_type feature)
+	{
+		// Feature index should be an integer.
+		bp::extract<long> extract_feature_index(feature_index_object);
+		if (!extract_feature_index.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Invalid feature index type, must be an integer (slices not allowed)");
+			bp::throw_error_already_set();
+		}
+
+		long feature_index = extract_feature_index();
+		if (feature_index < 0)
+		{
+			feature_index += feature_collection_handle.size();
+		}
+
+		if (feature_index >= boost::numeric_cast<long>(feature_collection_handle.size()) ||
+			feature_index < 0)
+		{
+			PyErr_SetString(PyExc_IndexError, "Feature index out of range");
+			bp::throw_error_already_set();
+		}
+
+		GPlatesModel::FeatureCollectionHandle::iterator feature_iter = feature_collection_handle.begin();
+		// NOTE: 'feature_iter' is not random access, so must increment 'index' times...
+		std::advance(feature_iter, feature_index);
+		*feature_iter = feature;
+	}
+#endif
+
 	void
 	feature_collection_handle_add(
 			GPlatesModel::FeatureCollectionHandle &feature_collection_handle,
@@ -713,6 +799,7 @@ export_feature_collection()
 					"=========================== ==========================================================\n"
 					"``len(fc)``                 number of features in feature collection *fc*\n"
 					"``for f in fc``             iterates over the features *f* in feature collection *fc*\n"
+					"``fc[i]``                   the feature of *fc* at index *i*\n"
 					"=========================== ==========================================================\n"
 					"\n"
 					"For example:\n"
@@ -722,9 +809,10 @@ export_feature_collection()
 					"  features_in_collection = [feature for feature in feature_collection]\n"
 					"  # assert(num_features == len(features_in_collection))\n"
 					"\n"
-					".. note:: A feature collection can be :meth:`read<read>` from a file and "
-					":meth:`written<write>` to a file.\n"
-					".. note:: A feature collection can be deep copied using :meth:`clone`.\n",
+					".. note:: A feature collection can be deep copied using :meth:`clone`.\n"
+					"\n"
+					".. versionchanged:: 31\n"
+					"   Can index a feature in feature collection *fc* with ``fc[i]``.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -835,6 +923,12 @@ export_feature_collection()
 				"created with a unique :class:`FeatureId`.\n")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureCollectionHandle>())
 		.def("__len__", &GPlatesModel::FeatureCollectionHandle::size)
+		.def("__getitem__", &GPlatesApi::feature_collection_handle_get_item)
+	// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch because
+	// currently '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a non-null pointer).
+#if 0
+		.def("__setitem__", &GPlatesApi::feature_collection_handle_set_item)
+#endif
 		.def("add",
 				&GPlatesApi::feature_collection_handle_add,
 				(bp::arg("feature")),
