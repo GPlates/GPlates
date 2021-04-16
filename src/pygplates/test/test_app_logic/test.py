@@ -2008,7 +2008,11 @@ class TopologicalModelCase(unittest.TestCase):
         class DelegateDeactivatePoints(pygplates.ReconstructedGeometryTimeSpan.DeactivatePoints):
             def __init__(self):
                 super(DelegateDeactivatePoints, self).__init__()
-                self.default_deactivate_points = pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints()
+                # Delegate to the default internal algorithm but changes some of its parameters.
+                self.default_deactivate_points = pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints(
+                        threshold_velocity_delta=0.9,
+                        threshold_distance_to_boundary= 15,
+                        deactivate_points_that_fall_outside_a_network=True)
                 self.was_deactivate_called = False
             def deactivate(self, prev_point, prev_location, current_point, current_location, current_time, reverse_reconstruct):
                 self.was_deactivate_called = True

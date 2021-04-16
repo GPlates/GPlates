@@ -109,9 +109,16 @@ namespace GPlatesApi
 	 * This is called directly from Python via 'ReconstructedGeometryTimeSpan.DefaultDeactivatePoints.__init__()'.
 	 */
 	GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::non_null_ptr_type
-	reconstructed_geometry_time_span_default_deactivate_points_create()
+	reconstructed_geometry_time_span_default_deactivate_points_create(
+			const double &threshold_velocity_delta,
+			const double &threshold_distance_to_boundary_in_kms_per_my,
+			bool deactivate_points_that_fall_outside_a_network)
 	{
-		return GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(1.0);
+		return GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(
+				1.0,
+				threshold_velocity_delta,
+				threshold_distance_to_boundary_in_kms_per_my,
+				deactivate_points_that_fall_outside_a_network);
 	}
 
 
@@ -1084,15 +1091,35 @@ export_topological_model()
 				GPlatesApi::ReconstructedGeometryTimeSpan::DeactivatePointWrapper::non_null_ptr_type,
 				boost::noncopyable>(
 						"DeactivatePoints",
+						// NOTE: It seems Sphinx does not document '__init__' for nested classes (tested with Sphinx 3.4.3).
+						//       Instead we'll document it in this *class* docstring.
 						"The base class interface for deactivating geometry points as they are reconstructed forward and/or backward in time.\n"
 						"\n"
-						".. warning:: You must call the base class *__init__* otherwise you will get a *Boost.Python.ArgumentError* exception.\n"
+						"To create your own class that inherits this base class and overrides its "
+						":meth:`deactivate method <ReconstructedGeometryTimeSpan.DeactivatePoints.deactivate>` and then use that "
+						"when :meth:`reconstructing a geometry using topologies <TopologicalModel.reconstruct_geometry>`:\n"
+						"::\n"
 						"\n"
-						"  .. versionadded:: 31\n",
+						"  class MyDeactivatePoints(pygplates.ReconstructedGeometryTimeSpan.DeactivatePoints):\n"
+						"      def __init__(self):\n"
+						"          super(MyDeactivatePoints, self).__init__()\n"
+						"          # Other initialisation you may want...\n"
+						"          ...\n"
+						"      def deactivate(self, prev_point, prev_location, current_point, current_location, current_time, reverse_reconstruct):\n"
+						"          # Implement your deactivation algorithm here...\n"
+						"          ...\n"
+						"          return ...\n"
+						"  \n"
+						"  # Reconstruct points in 'geometry' from 100Ma to present day using class MyDeactivatePoints to deactivate them (in this case subduct).\n"
+						"  topological_model.reconstruct_geometry(geometry, 100, deactivate_points=MyDeactivatePoints()\n"
+						"\n"
+						".. warning:: If you create your own Python class that inherits this class then you must call this *__init__* method "
+						"otherwise you will get a *Boost.Python.ArgumentError* exception.\n"
+						"\n"
+						"__init__()\n"
+						"  Default constructor - must be explicitly called by derived class.\n"
 						// NOTE: Must not define 'bp::no_init' because this base class is meant to be inherited by a python class.
-						bp::init<>(
-								"__init__()\n"
-								"  Default constructor - must be explicitly called by derived class.\n"))
+					)
 			.def("deactivate",
 					bp::pure_virtual(&GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::deactivate),
 					(bp::arg("prev_point"),
@@ -1101,22 +1128,30 @@ export_topological_model()
 						bp::arg("current_location"),
 						bp::arg("current_time"),
 						bp::arg("reverse_reconstruct")),
+					// NOTE: It seems Sphinx does properly document parameters of methods of nested classes (tested with Sphinx 3.4.3).
+					//       Instead we'll document the parameters using a list.
 					"deactivate(prev_point, prev_location, current_point, current_location, current_time, reverse_reconstruct)\n"
 					"  Return true if the point should be deactivated.\n"
 					"\n"
-					"  :param prev_point: the previous position of the point\n"
-					"  :type prev_point: :class:`PointOnSphere`\n"
-					"  :param prev_location: the previous location of the point in the topologies\n"
-					"  :type prev_location: :class:`TopologyPointLocation`\n"
-					"  :param current_point: the current position of the point\n"
-					"  :type current_point: :class:`PointOnSphere`\n"
-					"  :param current_location: the current location of the point in the topologies\n"
-					"  :type current_location: :class:`TopologyPointLocation`\n"
-					"  :param current_time: the time associated with the current position of the point\n"
-					"  :type current_time: float or :class:`GeoTimeInstant`\n"
-					"  :param forward_in_time: whether the point is being reconstructed forward in time (from older to younger times)\n"
-					"  :type forward_in_time: bool\n"
-					"  :rtype: bool\n")
+					"  * **prev_point** (:class:`PointOnSphere`): the previous position of the point\n"
+					"\n"
+					"  * **prev_location** (:class:`TopologyPointLocation`): the previous location of the point in the topologies\n"
+					"\n"
+					"  * **current_point** (:class:`PointOnSphere`): the current position of the point\n"
+					"\n"
+					"  * **current_location** (:class:`TopologyPointLocation`): the current location of the point in the topologies\n"
+					"\n"
+					"  * **current_time** (float or :class:`GeoTimeInstant`): the time associated with the current position of the point\n"
+					"\n"
+					"  * **forward_in_time** (bool): whether the point is being reconstructed forward in time (from older to younger times)\n"
+					"\n"
+					"  * **Return type**: bool\n"
+					"\n"
+					".. note:: This function is called for each point that is reconstructed using :meth:`TopologicalModel.reconstruct_geometry` "
+					"at each time step.\n"
+					"\n"
+					// For some reason Sphinx (tested version 3.4.3) seems to repeat this docstring twice (not sure why, so we'll let users know)...
+					".. note:: This function might be inadvertently documented twice.\n")
 		;
 
 		// Enable GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_type to be stored in a Python object.
@@ -1138,6 +1173,66 @@ export_topological_model()
 				GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>();
 
 
+		// Docstring for class pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints.
+		//
+		// NOTE: It seems Sphinx does not document '__init__' for nested classes (tested with Sphinx 3.4.3).
+		//       Instead we'll document it in this *class* docstring.
+		std::stringstream default_deactivate_points_class_docstring_stream;
+		default_deactivate_points_class_docstring_stream <<
+				"The default algorithm for deactivating geometry points as they are reconstructed forward and/or backward in time.\n"
+				"\n"
+				"__init__([threshold_velocity_delta="
+				<< GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_VELOCITY_DELTA
+				<< "], [threshold_distance_to_boundary="
+				<< GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_DISTANCE_TO_BOUNDARY_IN_KMS_PER_MY
+				<< "], [deactivate_points_that_fall_outside_a_network="
+				<< (GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK ? "True" : "False")
+				<< "])\n"
+				"  Create default algorithm for deactivating points using the specified parameters.\n"
+				"\n"
+				"  * **threshold_velocity_delta** (float): A point that transitions from one plate/network to another can "
+				"disappear if the change in velocity exceeds this threshold (in units of cms/yr). Defaults to ``"
+				<< GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_VELOCITY_DELTA
+				<< "`` cms/yr.\n"
+				"\n"
+				"  * **threshold_distance_to_boundary** (float): Only those transitioning points exceeding the "
+				"*threshold velocity delta* **and** that are close enough to a plate/network boundary can disappear. "
+				"The distance is proportional to the relative velocity (change in velocity), plus a constant offset based on the "
+				"*threshold distance to boundary* (in units of kms/myr) to account for plate boundaries that change shape significantly "
+				"from one time step to the next (note that some boundaries are meant to do this and others are a result of digitisation). "
+				"The actual distance threshold used is ``(threshold_distance_to_boundary + relative_velocity) * time_increment``. Defaults to ``"
+				<< GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_DISTANCE_TO_BOUNDARY_IN_KMS_PER_MY
+				<< "`` kms/myr.\n"
+				"\n"
+				"  * **deactivate_points_that_fall_outside_a_network** (bool): Whether to have points inside a deforming network "
+				"disappear as soon as they fall outside all deforming networks. This is useful for initial crustal thickness points that have "
+				"been generated inside a deforming network and where subsequently deformed points should be limited to the deformed network regions. "
+				"In this case sudden large changes to the deforming network boundary can progressively exclude points over time. "
+				"However in the case where the topologies (deforming networks and rigid plates) have global coverage this option should "
+				"generally be left disabled so that points falling outside deforming networks can then be reconstructed using rigid plates. "
+				"And these rigidly reconstructed points may even re-enter a subsequent deforming network. Defaults to ``"
+				<< (GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK ? "True" : "False")
+				<< "``.\n"
+				"\n"
+				".. note:: This is the default algorithm used internally.\n"
+				"\n"
+				"To use the default deactivation algorithm (this class) but with some non-default parameters, and then use that "
+				"when :meth:`reconstructing a geometry using topologies <TopologicalModel.reconstruct_geometry>`:\n"
+				"::\n"
+				"\n"
+				"  # Reconstruct points in 'geometry' from 100Ma to present day using this class to deactivate them (in this case subduct).\n"
+				"  topological_model.reconstruct_geometry(\n"
+				"      geometry,\n"
+				"      100,\n"
+				"      deactivate_points = pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints(\n"
+				"          # Choose our own parameters that are different than the defaults.\n"
+				"          threshold_velocity_delta = 0.9, # cms/yr\n"
+				"          threshold_distance_to_boundary = 15, # kms/myr\n"
+				"          deactivate_points_that_fall_outside_a_network = True)\n"
+				"\n"
+				".. versionadded:: 31\n"
+				;
+
 		//
 		// ReconstructedGeometryTimeSpan.DeactivatePoints - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 		//
@@ -1148,17 +1243,19 @@ export_topological_model()
 				bp::bases<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>,
 				boost::noncopyable>(
 						"DefaultDeactivatePoints",
-						"The default algorithm for deactivating geometry points as they are reconstructed forward and/or backward in time.\n"
-						"\n"
-						"  .. versionadded:: 31\n",
+						default_deactivate_points_class_docstring_stream.str().c_str(),
 						// There is no publicly-accessible default constructor...
 						bp::no_init)
 			.def("__init__",
 					bp::make_constructor(
 							&GPlatesApi::reconstructed_geometry_time_span_default_deactivate_points_create,
-							bp::default_call_policies()),
-					"__init__()\n"
-					"  Create default algorithm for deactivating points using the specified parameters.\n")
+							bp::default_call_policies(),
+							(bp::arg("threshold_velocity_delta") =
+									GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_VELOCITY_DELTA,
+								bp::arg("threshold_distance_to_boundary") =
+									GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_DISTANCE_TO_BOUNDARY_IN_KMS_PER_MY,
+								bp::arg("deactivate_points_that_fall_outside_a_network") =
+									GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK)))
 		;
 
 		// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
@@ -1255,7 +1352,7 @@ export_topological_model()
 							GPlatesUtils::static_pointer_cast<const GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>(
 									GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(1.0)))),
 				"reconstruct_geometry(geometry, initial_time, [oldest_time], [youngest_time=0], [time_increment=1], "
-				"[reconstruction_plate_id], [initial_scalars], [deactivate_points])\n"
+				"[reconstruction_plate_id], [initial_scalars], [deactivate_points=ReconstructedGeometryTimeSpan.DefaultDeactivatePoints()])\n"
 				"  Reconstruct a geometry (and optional scalars) over a time span.\n"
 				"\n"
 				"  :param geometry: The geometry to reconstruct (using topologies). Currently limited to a "
@@ -1307,7 +1404,18 @@ export_topological_model()
 				"In addition, the reconstruction plate ID is also used when incrementally reconstructing from the initial time "
 				"to other times for any geometry points that fail to intersect topologies (dynamic plates and deforming networks). "
 				"This can happen either due to small gaps/cracks in a global topological model or when using a topological model that "
-				"does not cover the entire globe.\n")
+				"does not cover the entire globe.\n"
+				"\n"
+				"  To reconstruct points in a geometry from 100Ma to present day in increments of 1 Myr using default deactivation "
+				"(in this case subduction of oceanic points):\n"
+				"  ::\n"
+				"\n"
+				"    topological_model.reconstruct_geometry(geometry, 100)\n"
+				"\n"
+				"  To do the same but with no deactivation (in this case continental points):\n"
+				"  ::\n"
+				"\n"
+				"    topological_model.reconstruct_geometry(geometry, 100, deactivate_points=None)\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalModel::get_rotation_model,
 				"get_rotation_model()\n"
