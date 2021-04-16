@@ -1,10 +1,13 @@
+################################################################################################
+#                                                                                              #
+# Package targets.                                                                             #
+#                                                                                              #
+# Package targets to run on *other* machines (rather than just the *build* machine).           #
+#                                                                                              #
+################################################################################################
+
 # Where all the distribution files are located.
 SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${GPlates_SOURCE_DIR}/cmake/distribution")
-SET(GPLATES_BINARY_DISTRIBUTION_DIR "${GPlates_BINARY_DIR}/cmake/distribution")
-
-# NOTE: Since the Mac OSX platform does *not* "include(CPack)"
-# we define a lot of the CPack variables. Normally the CPack
-# module would set reasonable defaults for the variables we don't set.
 
 #########################################################
 # CPack configuration variables common to all platforms #
@@ -15,8 +18,7 @@ SET(GPLATES_BINARY_DISTRIBUTION_DIR "${GPlates_BINARY_DIR}/cmake/distribution")
 #
 SET(CPACK_PACKAGE_NAME "${GPLATES_PACKAGE_NAME}")
 
-#   CPACK_PACKAGE_VENDOR - The name of the package vendor (e.g.,
-#   "Kitware").
+#   CPACK_PACKAGE_VENDOR - The name of the package vendor
 #
 SET(CPACK_PACKAGE_VENDOR "${GPLATES_PACKAGE_VENDOR}")
 
@@ -81,7 +83,7 @@ SET(CPACK_MONOLITHIC_INSTALL "TRUE")
 #   create a shortcut named "CMake" that will execute the installed
 #   executable ccmake.
 #
-SET(CPACK_PACKAGE_EXECUTABLES "${GPLATES_MAIN_TARGET}" "${GPLATES_PACKAGE_NAME}")
+SET(CPACK_PACKAGE_EXECUTABLES gplates "${GPLATES_PACKAGE_NAME}")
 
 #   CPACK_STRIP_FILES - List of files to be stripped. Starting with
 #   CMake 2.6.0 CPACK_STRIP_FILES will be a boolean variable which
@@ -115,12 +117,6 @@ SET(CPACK_SOURCE_STRIP_FILES "")
 #   that won't be packaged when building a source package. This is a
 #   list of patterns, e.g., /CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~;cscope.*
 #
-# The following variables are for advanced uses of CPack:
-#
-#   CPACK_CMAKE_GENERATOR - What CMake generator should be used if the
-#   project is CMake project. Defaults to the value of CMAKE_GENERATOR;
-#   few users will want to change this setting.
-SET(CPACK_CMAKE_GENERATOR "${CMAKE_GENERATOR}")
 
 #
 #   CPACK_INSTALL_CMAKE_PROJECTS - List of four values that specify
@@ -128,10 +124,6 @@ SET(CPACK_CMAKE_GENERATOR "${CMAKE_GENERATOR}")
 #   Project Name, Project Component, Directory. If omitted, CPack will
 #   build an installer that installers everything.
 #
-#   CPACK_SYSTEM_NAME - System name, defaults to the value of
-#   ${CMAKE_SYSTEM_NAME}.
-#
-SET(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}")
 
 #   CPACK_PACKAGE_VERSION - Package full version, used internally. By
 #   default, this is built from CPACK_PACKAGE_VERSION_MAJOR,
@@ -147,21 +139,17 @@ SET(CPACK_TOPLEVEL_TAG "")
 #
 SET(CPACK_INSTALL_COMMANDS "")
 
-#   CPACK_INSTALL_DIRECTORIES - Extra directories to install.
-#
-SET(CPACK_INSTALL_DIRECTORIES "")
-
 # This needs to be set otherwise Mac OSX "PackageMaker" generator complains
 # with error message "No package identifier specified".
 SET(CPACK_PACKAGE_RELOCATABLE "true")
+
+# Ensure contents written to cpack configuration file are properly escaped.
+set(CPACK_VERBATIM_VARIABLES TRUE)
 
 #####################################################
 
 
 IF (WIN32 AND NOT UNIX)
-    # Include the Visual Studio DLLs.
-    INCLUDE(InstallRequiredSystemLibraries)
-
     # There is a bug in NSI that does not handle full unix paths properly. Make
     # sure there is at least one set of four (4) backlasshes.
         
@@ -247,74 +235,39 @@ IF (WIN32 AND NOT UNIX)
     #   CPACK_NSIS_DELETE_ICONS_EXTRA -Additional NSIS commands to
     #   uninstall start menu shortcuts.
     #
-
-    # CPack will generate a target 'package' that when built will
-    # install the targets specified by any 'install' commands into
-    # a staging area and package with the NSIS installer.
-    INCLUDE(CPack)
 ENDIF (WIN32 AND NOT UNIX)
 
 IF (APPLE)
-	# On Mac OSX we don't "include(CPack)" because we want to create
-	# a standalone Mac OSX bundle (with library dependencies copied
-	# into the bundle) but CPack doesn't currently seem to do that
-	# without some coaxing. We need to use the "BundleUtilities.cmake"
-	# provided with CMake 2.6 to do this copying and fixups of
-	# internal references to libraries in the bundle executable
-	# using 'install_name_tool'.
-
-	# The area we copy the application bundle to.
-	# It is here that it is made standalone in preparation for packaging.
-	SET(STAGING_AREA_FOR_CPACK "${GPlates_BINARY_DIR}/CPackStagingAreaMacOSX")
-
-	#####################################################
-	# CPack configuration variables specific to Mac OSX #
-	#####################################################
+	###################################################
+	# CPack configuration variables specific to macOS #
+	###################################################
 
 	#   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate,
 	#   not including the extension. For example, cmake-2.6.1-Linux-i686.
 	#
-	# NOTE: This is the default package name for public releases and we will alter it in PackageOSX.cmake
-	# to add the SVN version number for non-public releases - has to be done in PackageOSX.cmake because
-	# that cmake file gets executed when we type 'make package' whereas here we might pick up an old
-	# SVN version number if the source code changed but none of the cmake scripts have changed (and hence
-	# cmake didn't run this script again).
-	SET(CPACK_PACKAGE_FILE_NAME "${GPLATES_PACKAGE_NAME}-${GPlates_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+	# If this is *not* a public release then append '_r<svn-version>' to the version part of the package name.
+	# Note: When GPLATES_PUBLIC_RELEASE is not defined (ie, not a public release) then GPlates_WC_LAST_CHANGED_REV should be defined.
+	if (GPlates_WC_LAST_CHANGED_REV)
+		SET(CPACK_PACKAGE_FILE_NAME "${GPLATES_PACKAGE_NAME}-${GPlates_VERSION}_r${GPlates_WC_LAST_CHANGED_REV}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+	else()
+		SET(CPACK_PACKAGE_FILE_NAME "${GPLATES_PACKAGE_NAME}-${GPlates_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+	endif()
 
 	#   CPACK_GENERATOR - List of CPack generators to use. If not
 	#   specified, CPack will create a set of options (e.g.,
 	#   CPACK_BINARY_NSIS) allowing the user to enable/disable individual
 	#   generators.
 	#
-	# Use the Mac OSX installer package maker.
-	# You'll need to install the XCode development tools first.
-	#  CMake 2.6.3 or better has the 'DragNDrop' generator which
-	# creates a ".dmg" with the GPlates app bundle and a sym link to /Applications in it.
-	# CMake 2.6.2 or less has the 'PackageMaker' generator which creates a step-by-step installer.
-	if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.6.2")
-		SET(CPACK_GENERATOR "DragNDrop")
-	else ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.6.2")
-		SET(CPACK_GENERATOR "PackageMaker")
-	endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.6.2")
-
-	# Package the bundle located in staging area.
-	# This bundle is standalone with library dependencies copied into bundle.
-	SET(CPACK_INSTALLED_DIRECTORIES "${STAGING_AREA_FOR_CPACK}" ".")
+	# Use the 'DragNDrop' generator which creates a ".dmg" with the GPlates app bundle and a sym link to /Applications in it.
+	SET(CPACK_GENERATOR DragNDrop)
 
 	#   CPACK_PACKAGE_INSTALL_DIRECTORY - Installation directory on the
 	#   target system, e.g., "CMake 2.5".
 	#
-	# If using CMake 2.6.3 or better then we're using the 'DragNDrop' generator so place bundle in
-	# root directory otherwise it place inside "Applications" directory in the ".dmg" file and
-	# obscure the "Applications" sym link to the '/Applications' directory on installed machine.
-	# If using CMake 2.6.2 or lower then we're using the 'PackageMaker' generator so put bundle in
-	# '/Applications' directory so it will install there by default on installed machine (note: user will
-	# be able to change this if they want to within the installer).
-	if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.6.2")
-		SET(CPACK_PACKAGE_INSTALL_DIRECTORY "/")
-	else ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.6.2")
-		SET(CPACK_PACKAGE_INSTALL_DIRECTORY "/Applications")
-	endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.6.2")
+	# We're using the 'DragNDrop' generator so place bundle in the root directory otherwise it places inside
+	# "Applications" directory in the ".dmg" file and obscures the "Applications" sym link to the '/Applications'
+	# directory on installed machine.
+	SET(CPACK_PACKAGE_INSTALL_DIRECTORY "/")
 
 	# Seems to be same as CPACK_PACKAGE_INSTALL_DIRECTORY but not sure
 	# which one is actually used by different versions of CMake.
@@ -329,107 +282,10 @@ IF (APPLE)
 	#   allowing users to select which packages will be generated.
 	#
 
-	# The following variable is specific to installers build on Mac OS X
-	# using PackageMaker:
-	#
-	#   CPACK_OSX_PACKAGE_VERSION - The version of Mac OS X that the
-	#   resulting PackageMaker archive should be compatible
-	#   with. Different versions of Mac OS X support different
-	#   features. For example, CPack can only build component-based
-	#   installers for Mac OS X 10.4 or newer, and can only build
-	#   installers that download component son-the-fly for Mac OS X 10.5
-	#   or newer. If left blank, this value will be set to the minimum
-	#   version of Mac OS X that supports the requested features. Set this
-	#   variable to some value (e.g., 10.4) only if you want to guarantee
-	#   that your installer will work on that version of Mac OS X, and
-	#   don't mind missing extra features available in the installer
-	#   shipping with later versions of Mac OS X.
-	#
-	SET(CPACK_OSX_PACKAGE_VERSION "10.4")
-
 	#####################################################
-
-	# If using CMake 2.6.3 or better then we're using the 'DragNDrop' generator so place a
-	# "INSTALL.txt" file in the ".dmg" file to explain how to copy the GPlates bundle and
-	# extras (such as sample data) onto the target machine (it may not be obvious to users
-	# new to the Mac).
-	if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.6.2")
-		if (NOT EXISTS "${GPLATES_BINARY_DISTRIBUTION_DIR}/INSTALL.txt")
-		    file(WRITE "${GPLATES_BINARY_DISTRIBUTION_DIR}/INSTALL.txt"
-			"To install drag the GPlates folder onto the 'Applications' shortcut"
-			" or copy it to another location on your hard drive.\n"
-			"The folder contains a 'GPlates' application bundle and some sample data.\n")
-		endif (NOT EXISTS "${GPLATES_BINARY_DISTRIBUTION_DIR}/INSTALL.txt")
-		# Add 'INSTALL.txt' to the list of extras to be copied to the CPACK staging area.
-		set(GPLATES_CPACK_STAGING_AREA_EXTRAS
-			"${GPLATES_CPACK_STAGING_AREA_EXTRAS} ${GPLATES_BINARY_DISTRIBUTION_DIR}/INSTALL.txt")
-	endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.6.2")
-
-	# Add the sample data directory to the list of binary install extras if requested.
-	set(GPLATES_BINARY_INSTALL_EXTRAS "")
-	if (GPLATES_INCLUDE_SAMPLE_DATA)
-		# Should already be full paths (eg, this can convert
-		# "~/sample-data" to "/Users/gplates/sample-data").
-		get_filename_component(extra "${GPLATES_INCLUDE_SAMPLE_DATA}" ABSOLUTE)
-		set(GPLATES_BINARY_INSTALL_EXTRAS "${GPLATES_BINARY_INSTALL_EXTRAS} ${extra}")
-	endif()
-
-	# Set some configure variables that will be used by the following "CONFIGURE_FILE()" commands.
-	SET(BUILT_BUNDLE "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${GPLATES_MAIN_TARGET}.app")
-	SET(PACKAGE_CPACK_CONFIG "${GPLATES_BINARY_DISTRIBUTION_DIR}/Package.cpack")
-	SET(OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_SHELL_SCRIPT
-		"${GPLATES_BINARY_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh")
-	SET(OSX_CREATE_INSTALLER_FROM_STANDALONE_BUNDLE_SHELL_SCRIPT
-		"${GPLATES_BINARY_DISTRIBUTION_DIR}/CreateInstallerFromStandaloneBundle.sh")
-	SET(OSX_PACKAGE_BUNDLE_CMAKE_SCRIPT
-		"${GPLATES_BINARY_DISTRIBUTION_DIR}/PackageOSX.cmake")
-	# Set some configure variables used to install and fixup Qt plugins.
-	SET(GPLATES_QT_PLUGINS_ABSOLUTE )
-	SET(GPLATES_QT_PLUGIN_PATHS_ABSOLUTE )
-	FOREACH (qtplugin ${GPLATES_QT_PLUGINS_MACOSX})
-		GET_FILENAME_COMPONENT(qtplugin_path "${qtplugin}" PATH)
-		# Note: these are list variables so double quotes are not used.
-		SET(GPLATES_QT_PLUGINS_ABSOLUTE
-			${GPLATES_QT_PLUGINS_ABSOLUTE} ${QT_PLUGINS_DIR}/${qtplugin})
-		SET(GPLATES_QT_PLUGIN_PATHS_ABSOLUTE
-			${GPLATES_QT_PLUGIN_PATHS_ABSOLUTE} ${QT_PLUGINS_DIR}/${qtplugin_path})
-	ENDFOREACH (qtplugin)
-
-	# Set executable permissions on template shell scripts.
-	# When these files are checked out from Subversion they should already have execute permission
-	# but sometimes they don't (eg, if source code was archived on a Windows machine and transferred to a Mac).
-	# When the shell scripts get created by configure_file it should copy the file permissions.
-	EXECUTE_PROCESS(
-			COMMAND chmod +x
-			"${GPLATES_SOURCE_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh.in"
-			"${GPLATES_SOURCE_DISTRIBUTION_DIR}/CreateInstallerFromStandaloneBundle.sh.in"
-			RESULT_VARIABLE EXECUTE_CHMOD_RESULT
-			)
-
-	IF (EXECUTE_CHMOD_RESULT)
-			MESSAGE("Unable to set execute permissions on "
-			"${OSX_GET_BUNDLE_STAGING_AREA_LOCATION_SHELL_SCRIPT} and "
-			"${OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_SHELL_SCRIPT} and "
-			"${OSX_CREATE_INSTALLER_FROM_STANDALONE_BUNDLE_SHELL_SCRIPT}.")
-			MESSAGE("You will need to set their execute permissions manually.")
-	ENDIF (EXECUTE_CHMOD_RESULT)
-
-	CONFIGURE_FILE("${GPLATES_SOURCE_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh.in"
-		"${GPLATES_BINARY_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh" @ONLY IMMEDIATE)
-
-	CONFIGURE_FILE("${GPLATES_SOURCE_DISTRIBUTION_DIR}/CreateInstallerFromStandaloneBundle.sh.in"
-		"${GPLATES_BINARY_DISTRIBUTION_DIR}/CreateInstallerFromStandaloneBundle.sh" @ONLY IMMEDIATE)
-
-	# Configure the cmake script.
-	CONFIGURE_FILE("${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageOSX.cmake.in"
-		"${GPLATES_BINARY_DISTRIBUTION_DIR}/PackageOSX.cmake" @ONLY IMMEDIATE)
-
-	# Create a custom target for making our built bundle standalone and
-	# packaging it up in an installer.
-	ADD_CUSTOM_TARGET(package
-		${CMAKE_COMMAND} -P "${OSX_PACKAGE_BUNDLE_CMAKE_SCRIPT}"
-		)
-
-	# Make sure the main GPlates target executable is built before we try to package it up.
-	ADD_DEPENDENCIES(package ${GPLATES_MAIN_TARGET})
 ENDIF (APPLE)
+
+# CPack will generate a target 'package' that, when built, will
+# install the targets specified by any 'install' commands into
+# a staging area and package them.
+INCLUDE(CPack)

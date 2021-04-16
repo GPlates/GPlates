@@ -53,11 +53,6 @@
 #include "utils/NetworkUtils.h"
 #include "utils/Environment.h"
 
-//initialise static class memebers
-bool GPlatesAppLogic::UserPreferences::s_is_defaults_initialised = false;
-QSettings GPlatesAppLogic::UserPreferences::s_defaults(
-		":/DefaultPreferences.conf", 
-		QSettings::IniFormat);
 
 namespace
 {
@@ -213,6 +208,8 @@ namespace
 }
 
 
+QPointer<QSettings> GPlatesAppLogic::UserPreferences::s_defaults;
+
 GPlatesAppLogic::UserPreferences::UserPreferences(
 		QObject *_parent):
 	GPlatesUtils::ConfigInterface(_parent)
@@ -227,12 +224,15 @@ GPlatesAppLogic::UserPreferences::UserPreferences(
 	initialise_versioning();
 	store_executable_path();
 	
-	// Set some default values that cannot be hard-coded, but are instead generated
-	// at runtime.
-	if( !s_is_defaults_initialised )//ensure the "s_defaults" will not be initialised more than once
+	// Set some default values that cannot be hard-coded, but are instead generated at runtime.
+	//
+	// NOTE: We only initialise 's_defaults' once.
+	//       And we delay its initialisation until first UserPreferences constructor call to ensure that
+	//       the application has started up sufficiently to be able to read ":/DefaultPreferences.conf".
+	if (s_defaults.isNull())  // ensure "s_defaults" is not initialised more than once
 	{
-		set_magic_defaults(s_defaults);
-		s_is_defaults_initialised = true;
+		s_defaults = new QSettings(":/DefaultPreferences.conf", QSettings::IniFormat);
+		set_magic_defaults(*s_defaults);
 	}
 }
 
@@ -284,7 +284,7 @@ GPlatesAppLogic::UserPreferences::get_default_value(
 		const QString &key) const
 {
 	if (default_exists(key)) {
-		return s_defaults.value(key);
+		return s_defaults->value(key);
 	} else {
 		return QVariant();
 	}
@@ -311,7 +311,7 @@ bool
 GPlatesAppLogic::UserPreferences::default_exists(
 		const QString &key) const
 {
-	return s_defaults.contains(key);
+	return s_defaults->contains(key);
 }
 
 
@@ -404,9 +404,9 @@ GPlatesAppLogic::UserPreferences::subkeys(
 	settings.endGroup();
 	
 	// and the compiled-in default keys,
-	s_defaults.beginGroup(prefix);
-	QSet<QString> keys_default = s_defaults.allKeys().toSet();
-	s_defaults.endGroup();
+	s_defaults->beginGroup(prefix);
+	QSet<QString> keys_default = s_defaults->allKeys().toSet();
+	s_defaults->endGroup();
 
 	// and merge them together to get the full list of possible keys.
 	keys.unite(keys_default);
@@ -512,7 +512,7 @@ GPlatesAppLogic::UserPreferences::debug_file_locations()
 	qDebug() << "User/Org:" << settings_user_org.fileName();
 	qDebug() << "System/App:" << settings_system_app.fileName();
 	qDebug() << "System/Org:" << settings_system_org.fileName();
-	qDebug() << "GPlates Defaults:" << s_defaults.fileName();
+	qDebug() << "GPlates Defaults:" << s_defaults->fileName();
 }
 
 void

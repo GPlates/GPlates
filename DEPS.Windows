@@ -94,7 +94,7 @@ Qt
      Note that you now need a Qt account to use the binary installer (it will ask you to sign in or create a new account).
      And after Qt 5.14 you will need to use the online installer (offline for commercial license only).
      Alternatively you can compile from source - see https://doc.qt.io/qt-5/windows-building.html
-  2. Select the pre-built components appropriate for you compiler.
+  2. Select the pre-built components appropriate for your compiler.
      For example, select "MSVC 2015 64-bit" when compiling 64-bit using Visual Studio 2015.
   3. Select the GPL license.
   4. Add the base of your selected pre-built components directory to the CMAKE_PREFIX_PATH environment variable.
@@ -109,16 +109,17 @@ Qwt
   2. Extract the files in the package to your preferred location (e.g. C:\SDK\qwt)
   3. Start a Visual Studio command prompt (see above for 32-bit versus 64-bit) and
      navigate to your qwt location (e.g. C:\SDK\qwt\qwt-6.1.4 )
-  4. At the command prompt, run:
+  4. Edit the QWT_INSTALL_PREFIX variable in "qwtconfig.pri" to refer to a qwt *install* location that
+     is different than the qwt location, such as a sub-directory (e.g. C:\SDK\qwt\qwt-6.1.4\msvc2015_64 ),
+     so that 'nmake install' below does not fail (trying to copy the same file on top of itself).
+     You should only need to change QWT_INSTALL_PREFIX inside the 'win32 { }' block.
+  5. At the command prompt, run:
        qmake qwt.pro
        nmake
-     You should now have a "lib" folder containing .dll and .lib files.
-  5. Edit the QWT_INSTALL_PREFIX variable in "qwtconfig.pri" to refer to your qwt location (e.g. C:\SDK\qwt\qwt-6.1.4 )
-     You should only need to change QWT_INSTALL_PREFIX inside the 'win32 { }' block.
   6. Then at the command prompt, run:
        nmake install
-  7. Add the Qwt root directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.4 ).
-  8. Add the Qwt library location to your PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.4\lib ).
+  7. Add the Qwt *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.4\msvc2015_64 ).
+  8. Add the Qwt library location (inside the *install* directory) to your PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.4\lib\msvc2015_64 ).
 
 GLEW
   1. Download and extract glew-2.1.0-win32.zip from: http://glew.sourceforge.net/
@@ -128,13 +129,13 @@ GLEW
 
 Python
   1. Download, and install, the latest Python 3 Windows MSI installer (eg, 'http://www.python.org/downloads/').
-     * Download the 32-bit installer for a 32-bit build (eg, 'python-3.7.7.exe'), or
-       download the 64-bit installer for a 64-bit build (eg, 'python-3.7.7.amd64.exe).
+     * Download the 32-bit installer for a 32-bit build (eg, 'python-3.7.9.exe'), or
+       download the 64-bit installer for a 64-bit build (eg, 'python-3.7.9.amd64.exe).
      * Note that GPlates (and pygplates) also support Python 2 (but it has reached end of life, so Python 3 is recommended).
   2. Add the root Python directory, and 'DLLs/' and 'Scripts/' sub-directories, to the PATH environment variable.
      * Note: Make sure you add these higher in the PATH than "%USERPROFILE%\AppData\Local\Microsoft\WindowsApps" because
              Windows 10 May 2019 update now places a redirect python.exe in there that takes you straight to the Microsoft Store.
-  3. Add the root Python directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\python\Python-3.7.7 )
+  3. Add the root Python directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\python\Python-3.7.9 )
      * CMAKE_PREFIX_PATH prevents GPlates finding a different Python installation (such as inside ArcGIS).
 
 Boost
@@ -147,12 +148,12 @@ Boost
      * Starting a Visual Studio command prompt (see above for 32-bit versus 64-bit).
      * Changing to the boost source code directory (eg, "cd C:\SDK\boost\boost_1_69_0").
      * Running '.\bootstrap.bat' (to create the BoostBuild tools).
-     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% toolset=msvc-14.0 address-model=32 architecture=x86 link=shared threading=multi runtime-link=shared install --prefix=%CD%'
-       where 'msvc-14.0' corresponds to Visual Studio 2015. Note, use 'address-model=64' for a 64-bit build.
+     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% toolset=msvc-14.0 address-model=64 architecture=x86 link=shared threading=multi runtime-link=shared install --prefix=%CD%'
+       where 'msvc-14.0' corresponds to Visual Studio 2015. Note that this is for a 64-bit build, for 32-bit use 'address-model=32' instead.
        This installs the headers and the 'shared' libraries (DLLs and their associated ".lib"s).
        These 'shared' libraries are used by GPlates.
-     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% toolset=msvc-14.0 address-model=32 architecture=x86 link=static threading=multi runtime-link=shared stage --stagedir=%CD%'
-       where 'msvc-14.0' corresponds to Visual Studio 2015. Note, use 'address-model=64' for a 64-bit build.
+     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% toolset=msvc-14.0 address-model=64 architecture=x86 link=static threading=multi runtime-link=shared stage --stagedir=%CD%'
+       where 'msvc-14.0' corresponds to Visual Studio 2015. Note that this is for a 64-bit build, for 32-bit use 'address-model=32' instead.
        This installs only the 'static' library versions (library files with the 'lib' prefix) - note the 'stage' target (instead of 'install').
        These 'static' libraries are used by CGAL.
   2. Add the boost root directory to the BOOST_ROOT environment variable (eg, C:\SDK\boost\boost_1_69).
@@ -165,11 +166,11 @@ Boost
      then, at runtime, the python DLL (version 3.7) should exist in the PATH.
      
      To get boost to find python at compile time you might also need to add something like...
-        using python : 3.7 : C:\\SDK\\python\\Python-3.7.7 ;
+        using python : 3.7 : C:\\SDK\\python\\Python-3.7.9 ;
      ...for example to "user-config.jam" in your home directory(see https://www.boost.org/doc/libs/1_69_0/libs/python/doc/html/building/configuring_boost_build.html )
      And if you're using both Python 2 and 3 (ie, compiling one GPlates/pyGPlates for Python 2 and one for Python 3) then you might have something like...
         using python : 2.7 : C:\\SDK\\python\\Python-2.7.18 ;
-        using python : 3.7 : C:\\SDK\\python\\Python-3.7.7 ;
+        using python : 3.7 : C:\\SDK\\python\\Python-3.7.9 ;
      ...and then add "python=2.7,3.7", for example, to your '.\b2 ...' command-line.
      
      You may get compile errors about '_snprintf' not being a member of 'std' when (later) compiling GPlates. This is typically due to some source code somewhere defining:
@@ -209,16 +210,18 @@ Proj6
        Then running the CMake GUI and setting source and binary directories (eg, "C:\SDK\proj\proj-6.1.1" and "C:\SDK\proj\proj-6.1.1\build").
        Then clicking 'Configure' once and selecting a Visual Studio generator
        (such as "Visual Studio 14 2015" for 32-bit or "Visual Studio 14 2015 Win64" for 64-bit).
-       Then changing the install location from "C:/OSGeo4W" to your Proj6 directory (eg, "C:/SDK/proj/proj-6.1.1"):
-         By changing the CMAKE_INSTALL_PREFIX variable (in the CMake GUI).
+       Then changing the install location from "C:/OSGeo4W" to a Proj6 *install* directory that is different
+       than the Proj6 location, such as a sub-directory (e.g. C:/SDK/proj/proj-6.1.1/msvc2015_64 ),
+       so that GPlates can find Proj6 without getting CMake errors due to mixing old and new Proj6 CMake config files:
+         Do this by changing the CMAKE_INSTALL_PREFIX variable (in the CMake GUI).
          NOTE: Make sure to use forward slashes '/' here (not backward slashes '\') to avoid errors when compiling proj.
        Then clicking 'Configure' once more, and then 'Generate' to create a Visual Studio solution.
      o If cmake cannot find the location of sqlite3 then you'll need to either set it manually in the CMake GUI (after the first 'Configure' stage), or
        specify it on the cmake command-line as covered in the Proj6 README (using "-DSQLITE3_INCLUDE_DIR" and "-DSQLITE3_LIBRARY").
      o Open the "PROJ4" Visual Studio solution , select "Release" build and then build the "INSTALL" project.
-  3. Add the Proj6 root directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\proj\proj-6.1.1 ).
-  4. Add the 'bin' directory to the PATH environment variable so the PROJ DLL, if there is one,
-     can be found at run-time (eg, "C:\SDK\proj\proj-6.1.1\bin").
+  3. Add the Proj6 *install* directory (see CMAKE_INSTALL_PREFIX above) to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\proj\proj-6.1.1\msvc2015_64 ).
+  4. Add the *install* 'bin' directory to the PATH environment variable so the PROJ DLL, if there is one,
+     can be found at run-time (eg, "C:\SDK\proj\proj-6.1.1\msvc2015_64\bin").
 
 NetCDF
 
@@ -276,16 +279,16 @@ GDAL
   
 CGAL
 
-  1. Get and install the latest CGAL (eg, 4.13.1) source code from http://www.cgal.org/
-     * Download and run 'CGAL-4.13.1-Setup.exe'.
+  1. Get and install the latest CGAL (eg, 4.13.2) source code from http://www.cgal.org/
+     * Download and run 'CGAL-4.13.2-Setup.exe'.
      * Under 'Choose Components' untick everything except:
          * 'GMP and MPFR precompiled libs' (note that 'Main CGAL' cannot be unticked).
      * Choose '32-bits' or '64-bits'.
-     * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-4.13.1'.
+     * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-4.13.2'.
          * In particular, do not install under Program Files on Windows Vista and
            above because you will likely run into permissions issues later.
      * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
-     * Tick 'Add CGAL/auxiliary/gmp/lib to PATH' (eg, D:\SDK\cgal\CGAL-4.13.1\auxiliary\gmp\lib).
+     * Tick 'Add CGAL/auxiliary/gmp/lib to PATH' (eg, D:\SDK\cgal\CGAL-4.13.2\auxiliary\gmp\lib).
   2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
      * NOTE: Make sure you run 'cmake-gui.exe' as administrator (right-click and select 'Run as administrator').
      * Specify the CGAL installation location as the source and build directories.
@@ -298,7 +301,7 @@ CGAL
          * WITH_CGAL_Core,
          * WITH_GMP and
          * WITH_MPFR.
-     * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-4.13.1').
+     * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-4.13.2').
        NOTE: Make sure to use forward slashes '/' here (not backward slashes '\') to avoid errors when compiling CGAL.
      * Click the 'Configure' button again.
      * Click the 'Generate' button.
@@ -309,7 +312,7 @@ CGAL
      * (GPlates developers will also want to build 'Debug', etc so that similar builds in
        GPlates can find the CGAL library of the correct build type).
      * Build the 'INSTALL' project.
-  4. Add the CGAL \bin directory to the PATH environment variable (eg, D:\SDK\cgal\CGAL-4.13.1\bin).
+  4. Add the CGAL \bin directory to the PATH environment variable (eg, D:\SDK\cgal\CGAL-4.13.2\bin).
   When GPlates is built it should find CGAL via the "CGAL_DIR" environment variable.
   You may get a compile error in 'include/CGAL/Dimension.h' when (later) compiling GPlates.
   You can workaround this by replacing:

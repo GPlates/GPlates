@@ -1,3 +1,10 @@
+########################################################################
+#                                                                      #
+# This file creates targets for building, installing and packaging.    #
+#                                                                      #
+########################################################################
+
+
 #####################
 # Find dependencies #
 #####################
@@ -362,13 +369,13 @@ target_sources_util(pygplates PRIVATE
 	${GPlates_BINARY_DIR}/src/global/config.h)
 
 
-###################
-# Sub-directories #
-###################
+##########################
+# Source sub-directories #
+##########################
 
 
 #
-# Recurse into subdirectories.
+# Recurse into source sub-directories.
 #
 
 # Specify source sub-directories.
@@ -714,6 +721,54 @@ if (APPLE)
 endif(APPLE)
 
 
+#
+# Application (bundle, resources, etc) target properties.
+#
+
+# Set the platform-dependent icon file.
+if (APPLE)
+	set(GPlates_ICON "${GPlates_SOURCE_DIR}/cmake/distribution/gplates_desktop_icon.icns")
+elseif (MSVC)
+	set(GPlates_ICON "${GPlates_SOURCE_DIR}/cmake/distribution/gplates_desktop_icon.rc")
+endif()
+if (GPlates_ICON)
+	target_sources_util(gplates PRIVATE ${GPlates_ICON})
+endif()
+
+if (APPLE)
+	# Copy icon file to 'Resources' directory inside application bundle.
+	set_source_files_properties(${GPlates_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+
+	set_target_properties(gplates PROPERTIES
+			# Tell cmake to build gplates as an application bundle.
+			MACOSX_BUNDLE TRUE
+
+			# Specify our own Info.plist template file.
+			# We add a couple of keys to ensure Qt includes support Mac Retina displays.
+			MACOSX_BUNDLE_INFO_PLIST "${GPlates_SOURCE_DIR}/cmake/distribution/MacOSXBundleInfo.plist.in"
+
+			MACOSX_BUNDLE_INFO_STRING "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}"
+			MACOSX_BUNDLE_ICON_FILE gplates_desktop_icon.icns
+			MACOSX_BUNDLE_GUI_IDENTIFIER "${GPLATES_VERSION_STRING}-${CMAKE_SYSTEM}"
+			MACOSX_BUNDLE_LONG_VERSION_STRING "${GPLATES_VERSION_STRING}"
+			MACOSX_BUNDLE_BUNDLE_NAME "${GPLATES_PACKAGE_NAME}"
+			MACOSX_BUNDLE_SHORT_VERSION_STRING "${GPlates_VERSION}"
+			MACOSX_BUNDLE_BUNDLE_VERSION "${GPlates_VERSION}"
+			MACOSX_BUNDLE_COPYRIGHT "${GPLATES_COPYRIGHT_STRING}")
+endif()
+
+if (WIN32)
+	# Don't make GPlates a GUI application on Windows (with a WinMain entry point).
+	#
+	# This way it retains the extra console window, otherwise we don't see errors
+	# reported by dependency libraries that output to stderr (the internal log window
+	# in GPlates only picks up qDebug(), qWarning(), etc).
+	if (FALSE)
+		set_target_properties(gplates PROPERTIES WIN32_EXECUTABLE TRUE)  # This also tells Qt5::Core to link in its WinMain.
+	endif()
+endif()
+
+
 ########################
 # Dependency libraries #
 ########################
@@ -873,106 +928,29 @@ endif()
 target_compile_definitions(gplates-lib PUBLIC GPLATES_PYTHON_EMBEDDING)
 
 
-###########
-# Install #
-###########
-
-
-#
-# Set the platform-dependent icon file.
-#
-if (APPLE)
-	set(GPlates_ICON "${GPlates_SOURCE_DIR}/cmake/distribution/gplates_desktop_icon.icns")
-elseif (MSVC)
-	set(GPlates_ICON "${GPlates_SOURCE_DIR}/cmake/distribution/gplates_desktop_icon.rc")
-endif()
-if (GPlates_ICON)
-	target_sources_util(gplates PRIVATE ${GPlates_ICON})
-endif()
-
-# NOTE: On MacOS X some libraries referenced by these executable targets do not have
-# their full path specified in the executables themselves. When this happens
-# the error "dyld: Library not loaded:" error is generated when trying to
-# run the executable. An example is CGAL installed via Macports.
-# GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET() creates a post-build command
-# that looks at a built executable target and does these fixups.
-GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates TRUE)
-GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-no-gui FALSE)
-if (TARGET gplates-unit-test)
-	GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-unit-test FALSE)
-endif()
-
-# Referenced in "Package.cmake" so it knows which executable to package up.
-set(GPLATES_MAIN_TARGET gplates)
-
-if (WIN32)
-	# Don't make GPlates a GUI application (on Windows). This way it retains the extra console window,
-	# otherwise we don't see errors reported by dependency libraries that output to stderr
-	# (the internal log window in GPlates only picks up qDebug(), qWarning(), etc).
-	if (FALSE)
-		# Tell cmake to build the main target with as a GUI application (with a WinMain entry point).
-		# This also tells Qt5::Core to link in its WinMain.
-		set_target_properties(${GPLATES_MAIN_TARGET} PROPERTIES WIN32_EXECUTABLE TRUE)
-	endif()
-endif()
-
-if (APPLE)
-	# Copy icon file to 'Resources' directory inside application bundle.
-	set_source_files_properties(${GPlates_ICON} PROPERTIES
-		MACOSX_PACKAGE_LOCATION Resources)
-
-	#
-	# Tell cmake to build the main target as an application bundle.
-	#
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE TRUE)
-	# Specify our own Info.plist template file.
-	# We add a couple of keys to ensure Qt includes support Mac Retina displays.
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${GPlates_SOURCE_DIR}/cmake/distribution/MacOSXBundleInfo.plist.in")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_INFO_STRING "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_ICON_FILE gplates_desktop_icon.icns)
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_GUI_IDENTIFIER "${GPLATES_VERSION_STRING}-${CMAKE_SYSTEM}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_LONG_VERSION_STRING "${GPLATES_VERSION_STRING}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "${GPLATES_PACKAGE_NAME}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${GPlates_VERSION}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_BUNDLE_VERSION "${GPlates_VERSION}")
-	set_target_properties(${GPLATES_MAIN_TARGET}
-		PROPERTIES MACOSX_BUNDLE_COPYRIGHT "${GPLATES_COPYRIGHT_STRING}")
-endif()
-
-
-include(GNUInstallDirs)
-if (FALSE)  # Temporarily disable gplates install until fully merged python-api branch to trunk.
-if (APPLE)
-	install(TARGETS gplates
-		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-		BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
-		CONFIGURATIONS release)
-else()
-	install(TARGETS gplates
-		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-		CONFIGURATIONS release)
-endif()
-endif()
-
-install(TARGETS pygplates
-	DESTINATION lib/pygplates/revision${PYGPLATES_REVISION}/
-	CONFIGURATIONS release)
-
-# Include the package module which adds a 'package' target that packages up
-# a standalone version of GPlates (with dependent libraries included) for distribution
-# to another computer.
-#
-include(Package)
-
 # Test whether Python embedding works.
 # This must be run after the include and library paths have all been set.
 include(TestPythonEmbedding)
+
+#
+# Include code to *install* the above targets.
+#
+# This is done in the same directory scope that the targets were created in since this is required by CMake <= 3.12
+# (once CMake 3.13 or above is our minimum requirement then this will no longer be necessary).
+# Note that, while 'include()' pulls in content from another directory, it pulls it into the *current* directory scope.
+#
+if (FALSE)  # Temporarily disable gplates install until fully merged python-api branch to trunk.
+	include(Install)
+else()
+	# TODO: Put this in 'Install.cmake' and use same procedure as target gplates to find and install dependencies.
+	install(TARGETS pygplates
+		DESTINATION lib/pygplates/revision${PYGPLATES_REVISION}/
+		CONFIGURATIONS release)
+endif()
+
+#
+# Include code to *package* the above targets.
+#
+# This should be included after code that installs the targets since packaging first installs to a staging area.
+#
+include(Package)

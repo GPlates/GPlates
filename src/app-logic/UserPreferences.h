@@ -28,6 +28,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <QObject>
+#include <QPointer>
 #include <QVariant>
 #include <QSettings>
 #include <QString>
@@ -383,21 +384,6 @@ namespace GPlatesAppLogic
 		 * Our default settings, loaded from a compiled-in resource file.
 		 * (and includes a few 'magic' values generated at runtime)
 		 *
-		 * Why mutable? Because QSettings::beginGroup() and friends aren't declared const,
-		 * but we want to use that in our subkeys() const method.
-		 *
-		 * Why bother with const correctness at all on UserPreferences, an app-logic object?
-		 * because we share an interface with ConfigBundle, which might have a legitimate
-		 * reason to want const methods.
-		 *
-		 * **************************AMENDMENT***********************************************
-		 *
-		 * 20190717: michael.chin@sydney.edu.au removed "mutable" keyword and replace it with a "static" keyword.
-		 * Non-const static members of the class can already be modified by any (const and non-const) 
-		 * methods of the class. There's no need and no point in declaring it with mutable. That would 
-		 * achieve absolutely nothing. And the "static mutable" or "mutable static" would not compile.
-		 * https://stackoverflow.com/questions/3951686/static-mutable-member-variables-in-c
-		 *
 		 * The variable name is also modified to indicate it is a static variable.
 		 *
 		 * Why do we need a static variable here? We don't want to initialise the variable multiple times
@@ -419,19 +405,18 @@ namespace GPlatesAppLogic
 		 * In order to provide better user experience, we decided to ensure the "s_defaults" variable is initialised
 		 * only once and hence the "s_defaults" variable must be made "static" to prevent it from being destroyed
 		 * while the UserPreferences object is reconstructed repeatedly.
+		 *
+		 * Why do we use 'static QPointer<QSettings>' instead of just 'static QSettings' ?
+		 * So we can delay initialisation until when the first UserPreferences object is constructed.
+		 * If we don't do that then it appears the "QSettings(":/DefaultPreferences.conf", QSettings::IniFormat)"
+		 * initialisation will fail on some systems and presumably the default values become all zeros instead of
+		 * being read from ":/DefaultPreferences.conf" (presumably because its initialisation happens before the
+		 * application has started up properly and hence cannot yet load the internal ":/DefaultPreferences.conf" file).
+		 * This manifested as a bug on Ubuntu where the setting "view/animation/default_time_increment" became zero
+		 * (instead of 1.0) and caused an exception to be thrown (happens when relying on default value because
+		 * non-default value not available, eg, one user had removed their "~/.config/GPlates/GPlates.conf" file).
 		 */
-		static QSettings s_defaults;
-
-
-		/**
-		 * A static flag to indicate if the "s_defaults" member variable has already been initialised. 
-		 * If the "s_defaults" has been initialised before, we don't initialise it again because 
-		 * it is unnecessary to initialise the "s_defaults" variable multiple times.
-		 * The reason that the "s_defaults" variable is initialised multiple times is that the 
-		 * UserPreferences object has been constructed multiple times and it is difficult to ensure
-		 * the UserPreferences object is constructed only once.
-		 */
-		static bool s_is_defaults_initialised;
+		static QPointer<QSettings> s_defaults;
 	};
 }
 

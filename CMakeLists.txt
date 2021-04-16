@@ -33,21 +33,20 @@ include (ConfigDefault)
 include (CustomBuildConfigs)
 
 #
-# Recurse into source code directory.
+# Recurse into source code sub-directory.
 #
 add_subdirectory(src)
 
 #
-# Recurse into C++ documentation directory.
+# Recurse into C++ documentation sub-directory.
 #
 add_subdirectory(doc-cpp)
 
 #
-# Recurse into python API documentation directory.
+# Recurse into python API documentation sub-directory.
 #
-# NOTE: We add this subdirectory after 'src' because the latter defines '${EXECUTABLE_OUTPUT_PATH}'
-# which we use to tell Sphinx (HTML document generator) where to find the 'pygplates' module
-# (because Sphinx imports 'pygplates' to search its docstrings).
-# Also we need to add a dependency to the 'pygplates' target so that it gets built first.
+# NOTE: We add this subdirectory after 'src' because it adds a custom target to build the
+#       Sphinx documentation and that target depends on the 'pygplates' target
+#       (to ensure pygplates gets built first since Sphinx imports pygplates to search its docstrings).
 #
 add_subdirectory(doc-python-api)
