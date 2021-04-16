@@ -696,6 +696,8 @@ export_feature_collection()
 					"PLATES4 rotation                '.rot'                  Yes            Yes\n"
 					"GPlates rotation                '.grot'                 Yes            Yes\n"
 					"ESRI Shapefile                  '.shp'                  Yes            Yes\n"
+					"GeoJSON                         '.geojson' or '.json'   Yes            Yes\n"
+					"GeoPackage                      '.gpkg'                 Yes            Yes\n"
 					"OGR GMT                         '.gmt'                  Yes            Yes\n"
 					"GMT xy                          '.xy'                   No             Yes\n"
 					"GMAP Virtual Geomagnetic Poles  '.vgp'                  Yes            No\n"

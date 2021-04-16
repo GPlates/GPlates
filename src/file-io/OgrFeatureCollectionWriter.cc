@@ -73,26 +73,6 @@
 
 namespace
 {
-
-
-	bool
-	is_shapefile_format(
-			const QFileInfo &qfileinfo)
-	{
-		QString suffix = qfileinfo.suffix();
-		suffix = suffix.toLower();
-		return (suffix == "shp");
-	}
-
-	bool
-	is_ogrgmt_format(
-			const QFileInfo &qfileinfo)
-	{
-		QString suffix = qfileinfo.suffix();
-		suffix = suffix.toLower();
-		return (suffix == "gmt");
-	}
-
 	/*!
 	 * \brief get_key_string - if a key for the model property given by @param property_enum exists
 	 * in @param model_to_shapefile_map, return the value for that key; otherwise return the default
