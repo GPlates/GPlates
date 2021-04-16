@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <sstream>
+
 #include "PyResolveTopologyParameters.h"
 
 #include "PythonConverterUtils.h"
@@ -71,6 +73,40 @@ GPlatesApi::ResolveTopologyParameters::ResolveTopologyParameters(
 void
 export_resolve_topology_parameters()
 {
+	// Docstring for constructor of pygplates.ResolveTopologyParameters.
+	std::stringstream resolve_topology_parameters_constructor_docstring_stream;
+	resolve_topology_parameters_constructor_docstring_stream <<
+			// Specific overload signature...
+			"__init__([enable_strain_rate_clamping="
+			<< (GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().enable_clamping ? "True" : "False")
+			<< "], [max_clamped_strain_rate="
+			<< GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().max_total_strain_rate
+			<< "])\n"
+			"  Create the parameters used to resolve topologies.\n"
+			"\n"
+			"  :param enable_strain_rate_clamping: Whether to enable clamping of strain rate. "
+			"This is useful to avoid excessive extension/compression in deforming networks "
+			"(depending on how the deforming networks were built). Defaults to ``"
+			<< (GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().enable_clamping ? "True" : "False")
+			<< "``.\n"
+			"  :type enable_strain_rate_clamping: bool\n"
+			"  :param max_clamped_strain_rate: Maximum total strain rate (in units of 1/second). "
+			"This is only used if *enable_strain_rate_clamping* is true. "
+			"Clamping strain rates also limits derived quantities such as crustal thinning and tectonic subsidence. "
+			"The *total* strain rate includes both the normal and shear components of deformation. Default value is ``"
+			<< GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().max_total_strain_rate
+			<< "`` 1/second.\n"
+			"  :type max_clamped_strain_rate: float\n"
+			"\n"
+			"  Enable strain rate clamping for a topological model to avoid excessive crustal stretching factors:\n"
+			"  ::\n"
+			"\n"
+			"    topological_model = pygplates.TopologicalModel(\n"
+			"        topology_filenames,\n"
+			"        rotation_filenames,\n"
+			"        default_resolve_topology_parameters = pygplates.ResolveTopologyParameters(enable_strain_rate_clamping = True))\n"
+			;
+
 	//
 	// ResolveTopologyParameters - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -93,29 +129,7 @@ export_resolve_topology_parameters()
 								GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().enable_clamping,
 							bp::arg("max_clamped_strain_rate") =
 								GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().max_total_strain_rate)),
-			// Specific overload signature...
-			"__init__([enable_strain_rate_clamping], [max_clamped_strain_rate])\n"
-			"  Create the parameters used to resolve topologies.\n"
-			"\n"
-			"  :param enable_strain_rate_clamping: Whether to enable clamping of strain rate. "
-			"This is useful to avoid excessive extension/compression in deforming networks "
-			"(depending on how the deforming networks were built). "
-			"This is disabled by default (ie, there is no clamping by default).\n"
-			"  :type enable_strain_rate_clamping: bool\n"
-			"  :param max_clamped_strain_rate: Maximum total strain rate (in units of 1/second). "
-			"This is only used if *enable_strain_rate_clamping* is true. "
-			"Clamping strain rates also limits derived quantities such as crustal thinning and tectonic subsidence. "
-			"The *total* strain rate includes both the normal and shear components of deformation. "
-			"Default value is 5e-15 1/second.\n"
-			"  :type max_clamped_strain_rate: float\n"
-			"\n"
-			"  Enable strain rate clamping for a topological model to avoid excessive crustal stretching factors:\n"
-			"  ::\n"
-			"\n"
-			"    topological_model = pygplates.TopologicalModel(\n"
-			"        topology_filenames,\n"
-			"        rotation_filenames,\n"
-			"        default_resolve_topology_parameters = pygplates.ResolveTopologyParameters(enable_strain_rate_clamping = True))\n")
+			resolve_topology_parameters_constructor_docstring_stream.str().c_str())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
