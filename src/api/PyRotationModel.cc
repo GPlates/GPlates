@@ -551,7 +551,7 @@ export_rotation_model()
 			"or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types.\n"
 			"\n"
 			"  If any rotation filenames are specified then this method uses "
-			":class:`FeatureCollectionFileFormatRegistry` internally to read the rotation files.\n"
+			":class:`FeatureCollection` internally to read the rotation files.\n"
 			"\n"
 			"  Load a rotation file and some rotation adjustments (as a collection of rotation features) "
 			"into a rotation model:\n"

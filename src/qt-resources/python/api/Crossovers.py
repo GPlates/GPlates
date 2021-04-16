@@ -261,8 +261,7 @@ def find_crossovers(
        in the rotation features. This is what happens if the returned crossovers are passed into :func:`synchronise_crossovers`.
        The modified rotation features can then be used to create a new :class:`RotationModel` with updated rotations.
     
-    If any rotation filenames are specified then this method uses
-    :class:`FeatureCollectionFileFormatRegistry` internally to read the rotation files.
+    If any rotation filenames are specified then this method uses :class:`FeatureCollection` internally to read the rotation files.
     
     *CrossoverType* supports the following enumeration values:
     
@@ -590,7 +589,7 @@ def synchronise_crossovers(
     The modified rotation features can then be used to create a new :class:`RotationModel` with updated rotations.
     If any filenames are specified in *rotation_features* then the modified feature collection(s) (containing synchronised crossovers)
     that are associated with those files are written back out to those same files.
-    :class:`FeatureCollectionFileFormatRegistry` is used internally to read/write feature collections from/to those files.
+    :class:`FeatureCollection` is used internally to read/write feature collections from/to those files.
     
     *crossover_filter* can optionally be used to limit (or specify) the crossovers to synchronise. It can either be a predicate function
     (accepting a single crossover argument) or a sequence of crossovers. If *crossover_filter* is not specified then all

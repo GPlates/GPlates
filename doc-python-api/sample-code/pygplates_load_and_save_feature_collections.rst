@@ -61,14 +61,7 @@ Alternatively we could have used the :meth:`pygplates.FeatureCollection.read` fu
 
     features = pygplates.FeatureCollection.read('coastlines.gpml')
 
-...or we could have used :class:`pygplates.FeatureCollectionFileFormatRegistry` as follows:
-
-::
-
-    registry = pygplates.FeatureCollectionFileFormatRegistry()
-    features = registry.read('coastlines.gpml')
-
-...however the last two examples are more complicated than necessary.
+...however that is more complicated than necessary.
 
 | Next we use a Python ``list`` to contain the subset of coastline features that are on plate 801.
 | It's easier to use a Python ``list`` to contain the subset of features we will write to the new file.

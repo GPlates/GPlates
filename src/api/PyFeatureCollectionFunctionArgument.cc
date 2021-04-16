@@ -566,7 +566,7 @@ export_feature_collection_function_argument()
 				"  The features are extracted from *function_argument*.\n"
 				"\n"
 				"  If any filenames are specified (in *function_argument*) then this method uses "
-				":class:`FeatureCollectionFileFormatRegistry` internally to read those files. "
+				":class:`FeatureCollection` internally to read those files. "
 				"Those files contain the subset of features returned by :meth:`get_files`.\n"
 				"\n"
 				"  To turn an argument of your function into a list of features:\n"

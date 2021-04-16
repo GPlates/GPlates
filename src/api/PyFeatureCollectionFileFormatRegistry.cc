@@ -156,99 +156,88 @@ export_feature_collection_file_format_registry()
 	//
 	// FeatureCollectionFileFormatRegistry - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
+	// NOTE: We don't document for now since we've hidden this class because it's a little confusing for the user
+	//       (better that they just use pygplates.FeatureCollection). We still enable this class in case some
+	//       Python users are still using this class in their scripts.
+	//
 	bp::class_<
 			GPlatesFileIO::FeatureCollectionFileFormat::Registry,
 			boost::shared_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry>,
 			boost::noncopyable>(
 					"FeatureCollectionFileFormatRegistry",
-					"Reads and writes *feature collections* from/to various *feature collection* file formats.\n"
-					"\n"
-					"The following default file formats are currently supported by GPlates:\n"
-					"\n"
-					"=============================== ======================= ============== =================\n"
-					"File Format                     Filename Extension      Supports Read  Supports Write\n"
-					"=============================== ======================= ============== =================\n"
-					"GPlates Markup Language         '.gpml'                 Yes            Yes\n"
-					"Compressed GPML                 '.gpmlz' or '.gpml.gz'  Yes            Yes\n"
-					"PLATES4 line                    '.dat' or '.pla'        Yes            Yes\n"
-					"PLATES4 rotation                '.rot'                  Yes            Yes\n"
-					"GPlates rotation                '.grot'                 Yes            Yes\n"
-					"ESRI Shapefile                  '.shp'                  Yes            Yes\n"
-					"OGR GMT                         '.gmt'                  Yes            Yes\n"
-					"GMT xy                          '.xy'                   No             Yes\n"
-					"GMAP Virtual Geomagnetic Poles  '.vgp'                  Yes            No\n"
-					"=============================== ======================= ============== =================\n"
-					"\n"
-					"In the future, support will be added to enable users to implement and register "
-					"readers/writers for other file formats (or their own non-standard file formats).\n",
-					// We need this (even though "__init__" is defined) since
-					// there is no publicly-accessible default constructor...
+					// We use our own "__init__" (defined below)...
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::feature_collection_file_format_registry_create),
-				"__init__()\n"
-				"  Create a new registry of feature collection readers/writers and registers the "
-				"default file formats supported by GPlates.\n"
-				"  ::\n"
-				"\n"
-				"    feature_collection_file_format_registry = pygplates.FeatureCollectionFileFormatRegistry()\n")
+						&GPlatesApi::feature_collection_file_format_registry_create)
+				// ,
+				// "__init__()\n"
+				// "  Create a new registry of feature collection readers/writers and registers the "
+				// "default file formats supported by GPlates.\n"
+				// "  ::\n"
+				// "\n"
+				// "    feature_collection_file_format_registry = pygplates.FeatureCollectionFileFormatRegistry()\n"
+		)
 		.def("read",
 				&GPlatesApi::feature_collection_file_format_registry_read,
-				(bp::arg("filename")),
-				"read(filename)\n"
-				"  Reads one or more feature collections (from one or more files).\n"
-				"\n"
-				"  :param filename: the name of the file (or files) to read\n"
-				"  :type filename: string, or sequence of strings\n"
-				"  :rtype: :class:`FeatureCollection`, list of :class:`FeatureCollection`\n"
-				"  :raises: OpenFileForReadingError if any file is not readable\n"
-				"  :raises: FileFormatNotSupportedError if any file format (identified by a filename "
-				"extension) does not support reading\n"
-				"\n"
-				"  For example:\n"
-				"  ::\n"
-				"\n"
-				"    try:\n"
-				"        feature_collection = feature_collection_file_format_registry.read(filename)\n"
-				"    except pygplates.OpenFileForReadingError:\n"
-				"        # Handle inability to read from file.\n"
-				"        ...\n"
-				"    except pygplates.FileFormatNotSupportedError:\n"
-				"        # Handle unsupported file format (for reading).\n"
-				"        ...\n"
-				"\n"
-				"  .. note:: The returned *feature collection* may contain fewer features than are "
-				"stored in the file if there were read errors. *TODO:* return read errors.\n"
-				"\n"
-				"  .. seealso:: :meth:`FeatureCollection.read`\n")
+				(bp::arg("filename"))
+				// ,
+				// "read(filename)\n"
+				// "  Reads one or more feature collections (from one or more files).\n"
+				// "\n"
+				// "  :param filename: the name of the file (or files) to read\n"
+				// "  :type filename: string, or sequence of strings\n"
+				// "  :rtype: :class:`FeatureCollection`, list of :class:`FeatureCollection`\n"
+				// "  :raises: OpenFileForReadingError if any file is not readable\n"
+				// "  :raises: FileFormatNotSupportedError if any file format (identified by a filename "
+				// "extension) does not support reading\n"
+				// "\n"
+				// "  For example:\n"
+				// "  ::\n"
+				// "\n"
+				// "    try:\n"
+				// "        feature_collection = feature_collection_file_format_registry.read(filename)\n"
+				// "    except pygplates.OpenFileForReadingError:\n"
+				// "        # Handle inability to read from file.\n"
+				// "        ...\n"
+				// "    except pygplates.FileFormatNotSupportedError:\n"
+				// "        # Handle unsupported file format (for reading).\n"
+				// "        ...\n"
+				// "\n"
+				// "  .. note:: The returned *feature collection* may contain fewer features than are "
+				// "stored in the file if there were read errors. *TODO:* return read errors.\n"
+				// "\n"
+				// "  .. seealso:: :meth:`FeatureCollection.read`\n"
+		)
 		.def("write",
 				&GPlatesApi::write_feature_collection,
-				(bp::arg("feature_collection"), bp::arg("filename")),
-				"write(feature_collection, filename)\n"
-				"  Writes a feature collection to the file with name *filename*.\n"
-				"\n"
-				"  :param feature_collection: the feature collection to write\n"
-				"  :type feature_collection: :class:`FeatureCollection`\n"
-				"  :param filename: the name of the file to write\n"
-				"  :type filename: string\n"
-				"  :raises: OpenFileForWritingError if the file is not writable\n"
-				"  :raises: FileFormatNotSupportedError if the file format (identified by the filename "
-				"extension) does not support writing\n"
-				"\n"
-				"  For example:\n"
-				"  ::\n"
-				"\n"
-				"    try:\n"
-				"        feature_collection_file_format_registry.write(feature_collection, filename)\n"
-				"    except pygplates.OpenFileForWritingError:\n"
-				"        # Handle inability to write to file.\n"
-				"        ...\n"
-				"    except pygplates.FileFormatNotSupportedError:\n"
-				"        # Handle unsupported file format (for writing).\n"
-				"        ...\n"
-				"\n"
-				"  .. seealso:: :meth:`FeatureCollection.write`\n")
+				(bp::arg("feature_collection"), bp::arg("filename"))
+				// ,
+				// "write(feature_collection, filename)\n"
+				// "  Writes a feature collection to the file with name *filename*.\n"
+				// "\n"
+				// "  :param feature_collection: the feature collection to write\n"
+				// "  :type feature_collection: :class:`FeatureCollection`\n"
+				// "  :param filename: the name of the file to write\n"
+				// "  :type filename: string\n"
+				// "  :raises: OpenFileForWritingError if the file is not writable\n"
+				// "  :raises: FileFormatNotSupportedError if the file format (identified by the filename "
+				// "extension) does not support writing\n"
+				// "\n"
+				// "  For example:\n"
+				// "  ::\n"
+				// "\n"
+				// "    try:\n"
+				// "        feature_collection_file_format_registry.write(feature_collection, filename)\n"
+				// "    except pygplates.OpenFileForWritingError:\n"
+				// "        # Handle inability to write to file.\n"
+				// "        ...\n"
+				// "    except pygplates.FileFormatNotSupportedError:\n"
+				// "        # Handle unsupported file format (for writing).\n"
+				// "        ...\n"
+				// "\n"
+				// "  .. seealso:: :meth:`FeatureCollection.write`\n"
+		)
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

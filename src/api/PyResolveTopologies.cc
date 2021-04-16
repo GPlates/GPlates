@@ -526,7 +526,7 @@ export_resolve_topologies()
 			"then a temporary one is created internally (and hence is less efficient if this "
 			"function is called multiple times with the same rotation data).\n"
 			"\n"
-			"  If any filenames are specified then :class:`FeatureCollectionFileFormatRegistry` is "
+			"  If any filenames are specified then :class:`FeatureCollection` is "
 			"used internally to read feature collections from those files.\n"
 			"\n"
 			"  Resolving a file containing dynamic plate polygons to a shapefile at 10Ma:\n"

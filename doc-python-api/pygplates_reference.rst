@@ -177,10 +177,6 @@ Classes that read/write data from/to files:
    :toctree: generated
 
    pygplates.FeatureCollection
-   pygplates.FeatureCollectionFileFormatRegistry
-
-.. note:: ``FeatureCollection`` is easier to use for
-   :meth:`reading<pygplates.FeatureCollection.read>` and :meth:`writing<pygplates.FeatureCollection.write>`.
 
 Feature
 -------
