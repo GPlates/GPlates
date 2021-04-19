@@ -115,7 +115,6 @@ namespace GPlatesApi
 			bool deactivate_points_that_fall_outside_a_network)
 	{
 		return GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(
-				1.0,
 				threshold_velocity_delta,
 				threshold_distance_to_boundary_in_kms_per_my,
 				deactivate_points_that_fall_outside_a_network);
@@ -1105,16 +1104,18 @@ export_topological_model()
 						"          super(MyDeactivatePoints, self).__init__()\n"
 						"          # Other initialisation you may want...\n"
 						"          ...\n"
-						"      def deactivate(self, prev_point, prev_location, current_point, current_location, current_time, reverse_reconstruct):\n"
+						"      def deactivate(self, prev_point, prev_location, prev_time, current_point, current_location, current_time):\n"
 						"          # Implement your deactivation algorithm here...\n"
 						"          ...\n"
 						"          return ...\n"
 						"  \n"
 						"  # Reconstruct points in 'geometry' from 100Ma to present day using class MyDeactivatePoints to deactivate them (in this case subduct).\n"
-						"  topological_model.reconstruct_geometry(geometry, 100, deactivate_points=MyDeactivatePoints()\n"
+						"  topological_model.reconstruct_geometry(geometry, 100, deactivate_points=MyDeactivatePoints())\n"
 						"\n"
-						".. warning:: If you create your own Python class that inherits this class then you must call this *__init__* method "
-						"otherwise you will get a *Boost.Python.ArgumentError* exception.\n"
+						".. warning:: If you create your own Python class that inherits this base class then you must call the base class *__init__* "
+						"method otherwise you will get a *Boost.Python.ArgumentError* exception. Note that if you do not define an *__init__* method "
+						"in your derived class then Python will call the base class *__init__* (so you don't have to do anything). "
+						"However if you do define *__init__* in your derived class then it must explicitly call the base class *__init__*.\n"
 						"\n"
 						"__init__()\n"
 						"  Default constructor - must be explicitly called by derived class.\n"
@@ -1124,10 +1125,10 @@ export_topological_model()
 					bp::pure_virtual(&GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::deactivate),
 					(bp::arg("prev_point"),
 						bp::arg("prev_location"),
+						bp::arg("prev_time"),
 						bp::arg("current_point"),
 						bp::arg("current_location"),
-						bp::arg("current_time"),
-						bp::arg("reverse_reconstruct")),
+						bp::arg("current_time")),
 					// NOTE: It seems Sphinx does properly document parameters of methods of nested classes (tested with Sphinx 3.4.3).
 					//       Instead we'll document the parameters using a list.
 					"deactivate(prev_point, prev_location, current_point, current_location, current_time, reverse_reconstruct)\n"
@@ -1137,15 +1138,24 @@ export_topological_model()
 					"\n"
 					"  * **prev_location** (:class:`TopologyPointLocation`): the previous location of the point in the topologies\n"
 					"\n"
+					"  * **prev_time** (float or :class:`GeoTimeInstant`): the time associated with the previous position of the point\n"
+					"\n"
 					"  * **current_point** (:class:`PointOnSphere`): the current position of the point\n"
 					"\n"
 					"  * **current_location** (:class:`TopologyPointLocation`): the current location of the point in the topologies\n"
 					"\n"
 					"  * **current_time** (float or :class:`GeoTimeInstant`): the time associated with the current position of the point\n"
 					"\n"
-					"  * **forward_in_time** (bool): whether the point is being reconstructed forward in time (from older to younger times)\n"
-					"\n"
 					"  * **Return type**: bool\n"
+					"\n"
+					"  The above parameters represent the previous and current position/location-in-topologies/time of a single point in the "
+					":meth:`geometry being reconstructed <TopologicalModel.reconstruct_geometry>`. If you return ``True`` then the point will be "
+					"deactivated and will not have a position at the *next* time (where ``next_time = current_time + (current_time - prev_time)``).\n"
+					"\n"
+					".. note:: If the current time is *younger* than the previous time (``current_time < prev_time``) then we are reconstructing "
+					"*forward* in time and the next time will be *younger* than the current time (``next_time < current_time``). Conversely, if "
+					"the current time is *older* than the previous time (``current_time > prev_time``) then we are reconstructing "
+					"*backward* in time and the next time will be *older* than the current time (``next_time > current_time``).\n"
 					"\n"
 					".. note:: This function is called for each point that is reconstructed using :meth:`TopologicalModel.reconstruct_geometry` "
 					"at each time step.\n"
@@ -1228,7 +1238,7 @@ export_topological_model()
 				"          # Choose our own parameters that are different than the defaults.\n"
 				"          threshold_velocity_delta = 0.9, # cms/yr\n"
 				"          threshold_distance_to_boundary = 15, # kms/myr\n"
-				"          deactivate_points_that_fall_outside_a_network = True)\n"
+				"          deactivate_points_that_fall_outside_a_network = True))\n"
 				"\n"
 				".. versionadded:: 31\n"
 				;
@@ -1350,7 +1360,7 @@ export_topological_model()
 					bp::arg("initial_scalars") = bp::object()/*Py_None*/,
 					bp::arg("deactivate_points") = boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type>(
 							GPlatesUtils::static_pointer_cast<const GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>(
-									GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(1.0)))),
+									GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create()))),
 				"reconstruct_geometry(geometry, initial_time, [oldest_time], [youngest_time=0], [time_increment=1], "
 				"[reconstruction_plate_id], [initial_scalars], [deactivate_points=ReconstructedGeometryTimeSpan.DefaultDeactivatePoints()])\n"
 				"  Reconstruct a geometry (and optional scalars) over a time span.\n"

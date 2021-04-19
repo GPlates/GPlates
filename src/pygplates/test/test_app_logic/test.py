@@ -2013,12 +2013,12 @@ class TopologicalModelCase(unittest.TestCase):
                         threshold_velocity_delta=0.9,
                         threshold_distance_to_boundary= 15,
                         deactivate_points_that_fall_outside_a_network=True)
-                self.was_deactivate_called = False
-            def deactivate(self, prev_point, prev_location, current_point, current_location, current_time, reverse_reconstruct):
-                self.was_deactivate_called = True
-                return self.default_deactivate_points.deactivate(prev_point, prev_location, current_point, current_location, current_time, reverse_reconstruct)
+                self.last_deactivate_args = None
+            def deactivate(self, prev_point, prev_location, prev_time, current_point, current_location, current_time):
+                self.last_deactivate_args = prev_point, prev_location, prev_time, current_point, current_location, current_time
+                return self.default_deactivate_points.deactivate(prev_point, prev_location, prev_time, current_point, current_location, current_time)
         delegate_deactivate_points = DelegateDeactivatePoints()
-        self.assertFalse(delegate_deactivate_points.was_deactivate_called)
+        self.assertFalse(delegate_deactivate_points.last_deactivate_args)
         self.topological_model.reconstruct_geometry(
                 multipoint,
                 initial_time=20.0,
@@ -2026,7 +2026,15 @@ class TopologicalModelCase(unittest.TestCase):
                 youngest_time=10.0,
                 initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0, 1.0]},
                 deactivate_points=delegate_deactivate_points)
-        self.assertTrue(delegate_deactivate_points.was_deactivate_called)
+        self.assertTrue(delegate_deactivate_points.last_deactivate_args)
+        # Test the arguments last passed to DelegateDeactivatePoints.deactivate() have the type we expect.
+        prev_point, prev_location, prev_time, current_point, current_location, current_time = delegate_deactivate_points.last_deactivate_args
+        self.assertTrue(isinstance(prev_point, pygplates.PointOnSphere))
+        self.assertTrue(isinstance(prev_location, pygplates.TopologyPointLocation))
+        self.assertTrue(isinstance(prev_time, float))
+        self.assertTrue(isinstance(current_point, pygplates.PointOnSphere))
+        self.assertTrue(isinstance(current_location, pygplates.TopologyPointLocation))
+        self.assertTrue(isinstance(current_time, float))
         
         reconstructed_multipoint_time_span = self.topological_model.reconstruct_geometry(
                 multipoint,

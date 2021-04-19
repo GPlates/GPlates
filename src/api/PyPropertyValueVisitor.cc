@@ -812,7 +812,10 @@ export_property_value_visitor()
 			"    if plate_id is not None:\n"
 			"        print 'plate id: %d' % plate_id\n"
 			"\n"
-			".. warning:: You must call the base class *__init__* otherwise you will get a *Boost.Python.ArgumentError* exception.\n",
+			".. warning:: You must call the base class *__init__* method otherwise you will get a *Boost.Python.ArgumentError* exception. "
+			"Note that if you do not define an *__init__* method in your derived class then Python will call the base class *__init__* "
+			"(so you don't have to do anything). However if you do define *__init__* in your derived class then it must explicitly call "
+			"the base class *__init__*.\n",
 			// NOTE: Must not define 'bp::no_init' because this base class is meant to be inherited by a python class.
 			bp::init<>(
 					"__init__()\n"

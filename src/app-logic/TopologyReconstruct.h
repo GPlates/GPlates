@@ -128,10 +128,10 @@ namespace GPlatesAppLogic
 			deactivate(
 					const GPlatesMaths::PointOnSphere &prev_point,
 					const TopologyPointLocation &prev_location,
+					const double &prev_time,
 					const GPlatesMaths::PointOnSphere &current_point,
 					const TopologyPointLocation &current_location,
-					const double &current_time,
-					bool reverse_reconstruct) const = 0;
+					const double &current_time) const = 0;
 		};
 
 		/**
@@ -156,7 +156,6 @@ namespace GPlatesAppLogic
 			static
 			non_null_ptr_type
 			create(
-					const double &time_increment,
 					const double &threshold_velocity_delta = DEFAULT_THRESHOLD_VELOCITY_DELTA,
 					const double &threshold_distance_to_boundary_in_kms_per_my = DEFAULT_THRESHOLD_DISTANCE_TO_BOUNDARY_IN_KMS_PER_MY,
 					bool deactivate_points_that_fall_outside_a_network = DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK);
@@ -169,19 +168,18 @@ namespace GPlatesAppLogic
 			deactivate(
 					const GPlatesMaths::PointOnSphere &prev_point,
 					const TopologyPointLocation &prev_location,
+					const double &prev_time,
 					const GPlatesMaths::PointOnSphere &current_point,
 					const TopologyPointLocation &current_location,
-					const double &current_time,
-					bool reverse_reconstruct) const;
+					const double &current_time) const;
 
 		private:
 			//! Typedef for map used to keep track of stage rotations by plate ID.
 			typedef std::map<GPlatesModel::integer_plate_id_type, GPlatesMaths::FiniteRotation> plate_id_to_stage_rotation_map_type;
 
 			// Threshold parameters used to determine when to deactivate geometry points in a geometry sample.
-			double d_time_increment;
 			double d_threshold_velocity_delta; // cms/yr
-			GPlatesMaths::AngularExtent d_min_distance_threshold_radians;
+			double d_threshold_distance_to_boundary_in_kms_per_my; // kms/myr
 			bool d_deactivate_points_that_fall_outside_a_network;
 
 			// Keep track of the stage rotations of resolved boundaries as we encounter them.
@@ -193,10 +191,13 @@ namespace GPlatesAppLogic
 			mutable GPlatesMaths::real_t d_velocity_stage_rotation_time;
 
 			DefaultDeactivatePoint(
-					const double &time_increment,
 					const double &threshold_velocity_delta,
 					const double &threshold_distance_to_boundary_in_kms_per_my,
-					bool deactivate_points_that_fall_outside_a_network);
+					bool deactivate_points_that_fall_outside_a_network) :
+				d_threshold_velocity_delta(threshold_velocity_delta),
+				d_threshold_distance_to_boundary_in_kms_per_my(threshold_distance_to_boundary_in_kms_per_my),
+				d_deactivate_points_that_fall_outside_a_network(deactivate_points_that_fall_outside_a_network)
+			{  }
 
 			/**
 			 * Returns true if the delta velocity of the previous point is large enough, or it is
@@ -206,7 +207,8 @@ namespace GPlatesAppLogic
 			is_delta_velocity_large_enough_or_point_close_to_boundary(
 					const GPlatesMaths::Vector3D &delta_velocity,
 					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &prev_topology_boundary,
-					const GPlatesMaths::PointOnSphere &prev_point) const;
+					const GPlatesMaths::PointOnSphere &prev_point,
+					const double &time_increment) const;
 
 			/**
 			 * Calculate a stage rotation for velocity calculations.
@@ -878,8 +880,8 @@ namespace GPlatesAppLogic
 			boost::optional<GeometrySample::non_null_ptr_type>
 			reconstruct_time_steps(
 					const GeometrySample::non_null_ptr_type &start_geometry_sample,
-					unsigned int start_time_slot,
-					unsigned int end_time_slot);
+					const unsigned int start_time_slot,
+					const unsigned int end_time_slot);
 
 			/**
 			 * Same as @a reconstruct_intermediate_time_step except does not test if current geometry sample
@@ -888,8 +890,8 @@ namespace GPlatesAppLogic
 			GeometrySample::non_null_ptr_type
 			reconstruct_first_time_step(
 					const GeometrySample::non_null_ptr_type &current_geometry_sample,
-					unsigned int current_time_slot,
-					unsigned int next_time_slot);
+					const unsigned int current_time_slot,
+					const unsigned int next_time_slot);
 
 			/**
 			 * Reconstructs @a current_geometry_sample by a single time step from @a current_time_slot to @a next_time_slot.
@@ -907,8 +909,9 @@ namespace GPlatesAppLogic
 			reconstruct_intermediate_time_step(
 					const GeometrySample::non_null_ptr_type &prev_geometry_sample,
 					const GeometrySample::non_null_ptr_type &current_geometry_sample,
-					unsigned int current_time_slot,
-					unsigned int next_time_slot);
+					const unsigned int prev_time_slot,
+					const unsigned int current_time_slot,
+					const unsigned int next_time_slot);
 
 			/**
 			 * Same as @a reconstruct_intermediate_time_step except does not advance the current geometry sample
@@ -921,9 +924,8 @@ namespace GPlatesAppLogic
 			reconstruct_last_time_step(
 					boost::optional<GeometrySample::non_null_ptr_type> prev_geometry_sample,
 					const GeometrySample::non_null_ptr_type &current_geometry_sample,
-					unsigned int current_time_slot,
-					const double &time_increment,
-					bool reverse_reconstruct);
+					unsigned int prev_time_slot,
+					const unsigned int current_time_slot);
 
 			/**
 			 * Deforms the specified point in the specified resolved networks.

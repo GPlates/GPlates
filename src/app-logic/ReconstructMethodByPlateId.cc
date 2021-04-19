@@ -740,7 +740,6 @@ GPlatesAppLogic::ReconstructMethodByPlateId::get_topology_reconstruction_info(
 		if (context.reconstruct_params.get_topology_reconstruction_enable_lifetime_detection())
 		{
 			deactivate_points = TopologyReconstruct::DefaultDeactivatePoint::create(
-					context.topology_reconstruct.get()->get_time_range().get_time_increment(),
 					context.reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_velocity_delta(),
 					context.reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary(),
 					context.reconstruct_params.get_topology_reconstruction_deactivate_points_that_fall_outside_a_network());

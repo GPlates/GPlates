@@ -164,19 +164,19 @@ namespace GPlatesApi
 			deactivate(
 					const GPlatesMaths::PointOnSphere &prev_point,
 					const GPlatesAppLogic::TopologyPointLocation &prev_location,
+					const double &prev_time,
 					const GPlatesMaths::PointOnSphere &current_point,
 					const GPlatesAppLogic::TopologyPointLocation &current_location,
-					const double &current_time,
-					bool reverse_reconstruct) const override
+					const double &current_time) const override
 			{
 				// Call the "deactivate" method on the derived Python object.
 				return boost::python::call_method<bool>(d_self, "deactivate",
 						prev_point,
 						prev_location,
+						prev_time,
 						current_point,
 						current_location,
-						current_time,
-						reverse_reconstruct);
+						current_time);
 			}
 
 		private:
@@ -272,7 +272,7 @@ namespace GPlatesApi
 				boost::python::object scalar_type_to_values_mapping_object = boost::python::object()/*Py_None*/,
 				boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type> deactivate_points =
 						GPlatesUtils::static_pointer_cast<const GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>(
-								GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(1.0)));
+								GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create()));
 
 
 		/**
