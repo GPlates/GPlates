@@ -22,14 +22,15 @@
 #   (e.g., CPACK_SOURCE_ZIP) allowing users to select which packages will be generated.
 #
 if (WIN32)
-    # For binary packages default to a ZIP archive and a NSIS installer (need to install version 3 prior to creating NSIS package).
-    SET(CPACK_GENERATOR ZIP NSIS)
+    # For binary packages default to a NSIS installer (need to install version 3 prior to creating NSIS package).
+    # Also create a ZIP (binary) archive by default so that users can install without admin privileges.
+    SET(CPACK_GENERATOR NSIS ZIP)
     # For source packages default to a ZIP archive.
     SET(CPACK_SOURCE_GENERATOR ZIP)
 elseif (APPLE)
-	# For binary packages default to a bzipped tarball (.tar.bz2) and a drag'n'drop disk image (which is a ".dmg" with the
-    # GPlates app bundle and a sym link to /Applications in it).
-	SET(CPACK_GENERATOR TBZ2 DragNDrop)
+	# For binary packages default to a drag'n'drop disk image
+    # (which is a ".dmg" with the GPlates app bundle and a sym link to /Applications in it).
+	SET(CPACK_GENERATOR DragNDrop)
     # For source packages default to a bzipped tarball (.tar.bz2).
     SET(CPACK_SOURCE_GENERATOR TBZ2)
 endif()
@@ -164,7 +165,10 @@ SET(CPACK_SOURCE_STRIP_FILES FALSE)
 #
 #   This is a list of patterns, e.g., /CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~;cscope.*
 #
-SET(CPACK_SOURCE_IGNORE_FILES "/\\.svn/" "/\\.vscode/")
+# Skip:
+# - directories starting with '.', and
+# - directories named '__pycache__'.
+SET(CPACK_SOURCE_IGNORE_FILES "/\\.[^/]+/" "/__pycache__/")
 
 #   CPACK_VERBATIM_VARIABLES - If set to TRUE, values of variables prefixed with CPACK_ will be escaped before being written
 #                              to the configuration files, so that the cpack program receives them exactly as they were specified.
