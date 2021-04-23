@@ -37,13 +37,13 @@ if (WIN32 OR APPLE)
     # For Windows this is because we'll copy the dependency DLLs into the same directory as gplates (so it can find them).
     # For macOS this is because we want the app bundle to be in the base directory so when it's packaged you immediately see the bundle.
     install(TARGETS gplates
+        CONFIGURATIONS release
         RUNTIME DESTINATION .  # Windows
-        BUNDLE DESTINATION .   # Apple
-        CONFIGURATIONS release)
+        BUNDLE DESTINATION .)  # Apple
 else() # Linux...
     install(TARGETS gplates
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}  # Linux
-        CONFIGURATIONS release)
+        CONFIGURATIONS release
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})  # Linux
 endif()
 
 
