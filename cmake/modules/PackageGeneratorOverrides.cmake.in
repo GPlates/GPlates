@@ -1,0 +1,54 @@
+#####################################################################################################################################
+#   CPACK_PROJECT_CONFIG_FILE - CPack-time project CPack configuration file.                                                        #
+#   This file is included at cpack time, once per generator after CPack has set CPACK_GENERATOR                                     #
+#   to the actual generator being used. It allows per-generator setting of CPACK_* variables at cpack time.                         #
+#                                                                                                                                   #
+# This is our own configuration file to handle generator-specific settings for CPACK variables that are used by multiple generators #
+# (eg, NSIS, DragNDrop). For example, CPACK_PACKAGE_ICON uses different icon formats for different generators.                      #
+# This is not needed for CPACK_<GENERATOR>_ variables (since they only apply to a specific generator).                              #
+#####################################################################################################################################
+
+#   CPACK_PACKAGE_ICON - A branding image that will be displayed inside the installer (used by GUI installers).
+#
+if (CPACK_GENERATOR MATCHES "^NSIS$")
+    # This can be used by NSIS, but we don't set this for now since apparently NSIS this needs to be 150x57 pixels.
+elseif (CPACK_GENERATOR MATCHES "^DragNDrop$")
+    # Apparently this icon is only used to represent the .dmg file when mounted, not for the .dmg file itself.
+    SET(CPACK_PACKAGE_ICON "@GPLATES_SOURCE_DISTRIBUTION_DIR@/gplates_desktop_icon.icns")
+endif()
+
+#   CPACK_PACKAGE_INSTALL_DIRECTORY - Installation directory on the target system.
+#
+#   This may be used by some CPack generators like NSIS to create an installation directory e.g.,
+#   "CMake 2.5" below the installation prefix. All installed elements will be put inside this directory..
+#
+if (CPACK_GENERATOR MATCHES "^NSIS$")
+    # We want, for example, "GPlates\GPlates 2.2.0\" (which ends up as "C:\Program Files\GPlates\GPlates 2.2.0\").
+    # This way multiple versions can be installed at the same time (in different sub-directories of "C:\Program Files\GPlates\").
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "@PROJECT_NAME@\\@PROJECT_NAME@ @GPLATES_PACKAGE_VERSION_STRING@")
+endif()
+
+#   CPACK_PACKAGE_INSTALL_REGISTRY_KEY - Registry key used when installing this project.
+#
+#   This is only used by installers for Windows. The default value is based on the installation directory.
+#
+if (CPACK_GENERATOR MATCHES "^NSIS$")
+    # We want, for example, "GPlates 2.2.0_r19869" for a *non*-public installation so that multiple installations
+    # with different revision numbers don't conflict with each other.
+    SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "@PROJECT_NAME@ @GPLATES_PACKAGE_VERSION_STRING@")
+endif()
+
+#    CPACK_PACKAGING_INSTALL_PREFIX - The prefix used in the built package.
+#
+#    Each CPack generator has a default value (like /usr). This default value may be overwritten from the CMakeLists.txt or
+#    the cpack(1) command line by setting an alternative value. Example:
+#
+#       set(CPACK_PACKAGING_INSTALL_PREFIX "/opt")
+#
+#    This is not the same purpose as CMAKE_INSTALL_PREFIX which is used when installing from the build tree without building a package.
+#
+if (CPACK_GENERATOR MATCHES "^DragNDrop$")
+    # Make sure we everything ends up in the specified directory (which the user can then drag'n'drop into "/Applications/").
+    # This way the GPlates app bundle and sample data stay together in the one directory.
+    SET(CPACK_PACKAGING_INSTALL_PREFIX "/@PROJECT_NAME@-@GPLATES_PACKAGE_VERSION_STRING@")
+endif()

@@ -6,8 +6,54 @@
 #                                                                                              #
 ################################################################################################
 
+######################################
+# Specify default package generators #
+######################################
+
+#   CPACK_GENERATOR - List of CPack generators to use.
+#
+#   If not specified, CPack will create a set of options following the naming pattern CPACK_BINARY_<GENNAME>
+#   (e.g., CPACK_BINARY_NSIS) allowing the user to enable/disable individual generators. If the -G option is
+#   given on the cpack command line, it will override this variable and any CPACK_BINARY_<GENNAME> options.
+#
+#   CPACK_SOURCE_GENERATOR - List of generators used for the source packages.
+#
+#   As with CPACK_GENERATOR, if this is not specified then CPack will create a set of options
+#   (e.g., CPACK_SOURCE_ZIP) allowing users to select which packages will be generated.
+#
+if (WIN32)
+    # For binary packages default to a ZIP archive and a NSIS installer (need to install version 3 prior to creating NSIS package).
+    SET(CPACK_GENERATOR ZIP NSIS)
+    # For source packages default to a ZIP archive.
+    SET(CPACK_SOURCE_GENERATOR ZIP)
+elseif (APPLE)
+	# For binary packages default to a bzipped tarball (.tar.bz2) and a drag'n'drop disk image (which is a ".dmg" with the
+    # GPlates app bundle and a sym link to /Applications in it).
+	SET(CPACK_GENERATOR TBZ2 DragNDrop)
+    # For source packages default to a bzipped tarball (.tar.bz2).
+    SET(CPACK_SOURCE_GENERATOR TBZ2)
+endif()
+
+
+############################
+# Some non-CPack variables #
+############################
+
 # Where all the distribution files are located.
 SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${GPlates_SOURCE_DIR}/cmake/distribution")
+
+# The package version string.
+#
+# For a public release this is just PROJECT_VERSION.
+# For a *non*-public release append '_r<svn-version>' to PROJECT_VERSION.
+#
+# Note: When GPLATES_PUBLIC_RELEASE is not defined (ie, not a public release) then GPlates_WC_LAST_CHANGED_REV should be defined.
+if (GPlates_WC_LAST_CHANGED_REV)
+    SET(GPLATES_PACKAGE_VERSION_STRING "${PROJECT_VERSION}_r${GPlates_WC_LAST_CHANGED_REV}")
+else()
+    SET(GPLATES_PACKAGE_VERSION_STRING "${PROJECT_VERSION}")
+endif()
+
 
 #########################################################
 # CPack configuration variables common to all platforms #
@@ -34,257 +80,192 @@ SET(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
 #
 SET(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 
-#   CPACK_PACKAGE_DESCRIPTION_FILE - A text file used to describe the
-#   project. Used, for example, the introduction screen of a
-#   CPack-generated Windows installer to describe the project.
+#   CPACK_PACKAGE_VERSION - Package full version, used internally.
+#
+#   By default, this is built from CPACK_PACKAGE_VERSION_MAJOR, CPACK_PACKAGE_VERSION_MINOR, and CPACK_PACKAGE_VERSION_PATCH.
+#
+# NOTE: Normally we can't read CPACK variables until after "include(CPack)". However these CPACK variables have been set above.
+SET(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+
+#   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate, not including the extension.
+#
+#   For example, cmake-2.6.1-Linux-i686.
+#
+if (WIN32)
+    # NOTE: We can't access CPACK variables here (ie, at CMake configure time) so we can't access CPACK_SYSTEM_NAME which is defined as:
+    #           "CPACK_SYSTEM_NAME defaults to the value of CMAKE_SYSTEM_NAME, except on Windows where it will be win32 or win64"
+    #       So instead we'll implement our own CPACK_SYSTEM_NAME.
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        SET(_CPACK_SYSTEM_NAME win64)
+    else()
+        SET(_CPACK_SYSTEM_NAME win32)
+    endif()
+    SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${GPLATES_PACKAGE_VERSION_STRING}-${_CPACK_SYSTEM_NAME}")
+else()
+    SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${GPLATES_PACKAGE_VERSION_STRING}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
+#   CPACK_PACKAGE_DESCRIPTION_FILE - A text file used to describe the project.
+#
+#   Used, for example, the introduction screen of a CPack-generated Windows installer to describe the project.
 #
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageDescription.txt")
 
-#   CPACK_PACKAGE_DESCRIPTION_SUMMARY - Short description of the
-#   project (only a few words).
+#   CPACK_PACKAGE_DESCRIPTION_SUMMARY - Short description of the project (only a few words).
 #
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 
-#   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate,
-#   not including the extension. For example, cmake-2.6.1-Linux-i686.
-#
-SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}")
-
-#   CPACK_RESOURCE_FILE_LICENSE - License file for the project, which
-#   will typically be displayed to the user (often with an explicit
-#   "Accept" button, for graphical installers) prior to installation.
+#   CPACK_RESOURCE_FILE_LICENSE - License file for the project, which will typically be displayed to the user
+#                                 (often with an explicit "Accept" button, for graphical installers) prior to installation.
 #
 SET(CPACK_RESOURCE_FILE_LICENSE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/LicenseFile.txt")
 
-#   CPACK_RESOURCE_FILE_README - ReadMe file for the project, which
-#   typically describes in some detail
+#   CPACK_RESOURCE_FILE_README - License to be embedded in the installer.
+#
+#   It will typically be displayed to the user by the produced installer (often with an explicit "Accept" button,
+#   for graphical installers) prior to installation. This license file is NOT added to the installed files but is
+#   used by some CPack generators like NSIS. If you want to install a license file (may be the same as this one)
+#   along with your project, you must add an appropriate CMake install() command in your CMakeLists.txt.
 #
 SET(CPACK_RESOURCE_FILE_README "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageReadMe.txt")
 
-#   CPACK_RESOURCE_FILE_WELCOME - Welcome file for the project, which
-#   welcomes users to this installer. Typically used in the graphical
-#   installers on Windows and Mac OS X.
+#   CPACK_RESOURCE_FILE_WELCOME - Welcome file to be embedded in the installer.
+#
+#   It welcomes users to this installer. Typically used in the graphical installers on Windows and Mac OS X.
 #
 SET(CPACK_RESOURCE_FILE_WELCOME "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageWelcome.txt")
 
-#   CPACK_MONOLITHIC_INSTALL - Disables the component-based 
-#   installation mechanism, so that all components are always installed.
+#   CPACK_PACKAGE_EXECUTABLES - Lists each of the executables and associated text label to be used to create Start Menu shortcuts.
 #
-SET(CPACK_MONOLITHIC_INSTALL "TRUE")
+#   For example, setting this to the list ccmake;CMake will create a shortcut named "CMake" that will execute the installed executable ccmake.
+#   Not all CPack generators use it (at least NSIS, WIX and OSXX11 do).
+#
+SET(CPACK_PACKAGE_EXECUTABLES "gplates;${PROJECT_NAME}")
 
-#   CPACK_OUTPUT_CONFIG_FILE - The name of the CPack configuration file
-#   for binary installers that will be generated by the CPack
-#   module. Defaults to CPackConfig.cmake.
+#   CPACK_STRIP_FILES - List of files to be stripped.
 #
-#   CPACK_PACKAGE_EXECUTABLES - Lists each of the executables along
-#   with a text label, to be used to create Start Menu shortcuts on
-#   Windows. For example, setting this to the list ccmake;CMake will
-#   create a shortcut named "CMake" that will execute the installed
-#   executable ccmake.
+#   Starting with CMake 2.6.0, CPACK_STRIP_FILES will be a boolean variable which enables stripping of all files
+#   (a list of files evaluates to TRUE in CMake, so this change is compatible).
 #
-SET(CPACK_PACKAGE_EXECUTABLES gplates "${PROJECT_NAME}")
+SET(CPACK_STRIP_FILES TRUE)
 
-#   CPACK_STRIP_FILES - List of files to be stripped. Starting with
-#   CMake 2.6.0 CPACK_STRIP_FILES will be a boolean variable which
-#   enables stripping of all files (a list of files evaluates to TRUE
-#   in CMake, so this change is compatible).
-#
-SET(CPACK_STRIP_FILES FALSE)
-
-# The following CPack variables are specific to source packages, and 
-# will not affect binary packages:
-#
 #   CPACK_SOURCE_PACKAGE_FILE_NAME - The name of the source package, e.g., cmake-2.6.1
 #
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-src")
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${GPLATES_PACKAGE_VERSION_STRING}-src")
 
+#   CPACK_SOURCE_STRIP_FILES - List of files in the source tree that will be stripped.
 #
-#   CPACK_SOURCE_STRIP_FILES - List of files in the source tree that
-#   will be stripped. Starting with CMake 2.6.0
-#   CPACK_SOURCE_STRIP_FILES will be a boolean variable which enables
-#   stripping of all files (a list of files evaluates to TRUE in CMake,
-#   so this change is compatible).
+#   Starting with CMake 2.6.0, CPACK_SOURCE_STRIP_FILES will be a boolean variable which enables stripping of all files
+#   (a list of files evaluates to TRUE in CMake, so this change is compatible).
 #
 SET(CPACK_SOURCE_STRIP_FILES FALSE)
 
-#   CPACK_SOURCE_OUTPUT_CONFIG_FILE - The name of the CPack
-#   configuration file for source installers that will be generated by
-#   the CPack module. Defaults to CPackSourceConfig.cmake.
+#   CPACK_SOURCE_IGNORE_FILES - Pattern of files in the source tree that won't be packaged when building a source package.
 #
-#   CPACK_SOURCE_IGNORE_FILES - Pattern of files in the source tree
-#   that won't be packaged when building a source package. This is a
-#   list of patterns, e.g., /CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~;cscope.*
+#   This is a list of patterns, e.g., /CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~;cscope.*
 #
+SET(CPACK_SOURCE_IGNORE_FILES "/\\.svn/" "/\\.vscode/")
 
+#   CPACK_VERBATIM_VARIABLES - If set to TRUE, values of variables prefixed with CPACK_ will be escaped before being written
+#                              to the configuration files, so that the cpack program receives them exactly as they were specified.
 #
-#   CPACK_INSTALL_CMAKE_PROJECTS - List of four values that specify
-#   what project to install. The four values are: Build directory,
-#   Project Name, Project Component, Directory. If omitted, CPack will
-#   build an installer that installers everything.
+#   If not, characters like quotes and backslashes can cause parsing errors or alter the value received by the cpack program.
+#   Defaults to FALSE for backwards compatibility.
 #
-
-#   CPACK_PACKAGE_VERSION - Package full version, used internally. By
-#   default, this is built from CPACK_PACKAGE_VERSION_MAJOR,
-#   CPACK_PACKAGE_VERSION_MINOR, and CPACK_PACKAGE_VERSION_PATCH.
-#
-SET(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-
-#   CPACK_TOPLEVEL_TAG - Directory for the installed files.
-#
-SET(CPACK_TOPLEVEL_TAG "")
-
-#   CPACK_INSTALL_COMMANDS - Extra commands to install components.
-#
-SET(CPACK_INSTALL_COMMANDS "")
-
-# This needs to be set otherwise Mac OSX "PackageMaker" generator complains
-# with error message "No package identifier specified".
-SET(CPACK_PACKAGE_RELOCATABLE "true")
-
-# If set to TRUE, values of variables prefixed with CPACK_ will be escaped
-# before being written to the configuration files, so that the cpack program
-# receives them exactly as they were specified. If not, characters like quotes
-# and backslashes can cause parsing errors or alter the value received by the
-# cpack program. Defaults to FALSE for backwards compatibility.
 set(CPACK_VERBATIM_VARIABLES TRUE)
 
-#####################################################
+#   CPACK_MONOLITHIC_INSTALL - Disables the component-based installation mechanism.
+#
+#   When set, the component specification is ignored and all installed items are put in a single "MONOLITHIC" package.
+#   Some CPack generators do monolithic packaging by default and may be asked to do component packaging by setting
+#   CPACK_<GENNAME>_COMPONENT_INSTALL to TRUE.
+#
+SET(CPACK_MONOLITHIC_INSTALL "TRUE")
 
 
-IF (WIN32 AND NOT UNIX)
-    # There is a bug in NSI that does not handle full unix paths properly. Make
-    # sure there is at least one set of four (4) backlasshes.
-        
-	#   CPACK_GENERATOR - List of CPack generators to use. If not specified,
-    #   CPack will create a set of options following the naming pattern CPACK_BINARY_<GENNAME>
-    #   (e.g., CPACK_BINARY_NSIS) allowing the user to enable/disable individual generators.
-    #   If the -G option is given on the cpack command line, it will override this variable
-    #   and any CPACK_BINARY_<GENNAME> options.
-	#
-	# Use the NSIS installer.
-	# You'll need to install NSIS version 3 first.
-	SET(CPACK_GENERATOR "NSIS")
+########
+# NSIS #
+########
 
-    #   CPACK_PACKAGE_INSTALL_DIRECTORY - Installation directory on the target system.
-    #   This may be used by some CPack generators like NSIS to create an installation directory e.g.,
-    #   "CMake 2.5" below the installation prefix. All installed elements will be put inside this directory..
-    #
-    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}\\${PROJECT_NAME} ${PROJECT_VERSION}")
 
-    #   CPACK_PACKAGE_INSTALL_REGISTRY_KEY - Registry key used when installing this project.
-    #   This is only used by installers for Windows. The default value is based on the installation directory.
-    #
-    #   CPACK_NSIS_MUI_ICON - An icon filename.
-    #   The name of a *.ico file used as the main icon for the generated install program.
-    #
-    SET(CPACK_NSIS_MUI_ICON "${GPLATES_SOURCE_DISTRIBUTION_DIR}\\gplates_desktop_icon.ico")
+#   CPACK_NSIS_PACKAGE_NAME - The title displayed at the top of the installer.
+#
+SET(CPACK_NSIS_PACKAGE_NAME "${PROJECT_NAME} ${GPLATES_PACKAGE_VERSION_STRING}")
 
-    #   CPACK_NSIS_MUI_UNIICON - An icon filename.
-    #   The name of a *.ico file used as the main icon for the generated uninstall program.
-    #
-    SET(CPACK_NSIS_MUI_UNIICON "${GPLATES_SOURCE_DISTRIBUTION_DIR}\\gplates_desktop_icon.ico")
+#   CPACK_NSIS_DISPLAY_NAME - The display name string that appears in the Windows Apps & features in Control Panel.
+#
+SET(CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME} ${GPLATES_PACKAGE_VERSION_STRING}")
 
-    #   CPACK_PACKAGE_ICON - A branding image that will be displayed inside the installer (used by GUI installers).
-    #
-    # Apparently this needs to be 150x57 pixels.
-    #SET(CPACK_PACKAGE_ICON "${GPLATES_SOURCE_DISTRIBUTION_DIR}\\headerimage.bmp")
-    
-    #   CPACK_NSIS_EXTRA_INSTALL_COMMANDS - Extra NSIS commands that will
-    #   be added to the install Section.
-    #
-    #   CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS - Extra NSIS commands that will
-    #   be added to the uninstall Section.
-    #
-    #   CPACK_NSIS_COMPRESSOR - The arguments that will be passed to the
-    #   NSIS SetCompressor command.
-    #
-    #   CPACK_NSIS_MODIFY_PATH - If this is set to "ON", then an extra page
-    #   will appear in the installer that will allow the user to choose
-    #   whether the program directory should be added to the system PATH
-    #   variable.
-    #
-    SET(CPACK_NSIS_MODIFY_PATH "ON")
-    
-    #   CPACK_NSIS_DISPLAY_NAME - The title displayed at the top of the
-    #   installer.
-    #
-    SET(CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME} ${PROJECT_VERSION}")
-    
-    #   CPACK_NSIS_INSTALLED_ICON_NAME - A path to the executable that
-    #   contains the installer icon.
-    #
-    SET(CPACK_NSIS_INSTALLED_ICON_NAME "${PROJECT_NAME}.exe")
-    
-    #   CPACK_NSIS_HELP_LINK - URL to a web site providing assistance in
-    #   installing your application.
-    #
-    SET(CPACK_NSIS_HELP_LINK "http://www.gplates.org")
-    
-    #   CPACK_NSIS_URL_INFO_ABOUT - URL to a web site providing more
-    #   information about your application.
-    #
-    SET(CPACK_NSIS_URL_INFO_ABOUT "http://www.gplates.org")
-    
-    #   CPACK_NSIS_CONTACT - Contact information for questions and comments
-    #   about the installation process.
-    #
-    #   CPACK_NSIS_CREATE_ICONS_EXTRA - Additional NSIS commands for
-    #   creating start menu shortcuts.
-    #
-    #   CPACK_NSIS_DELETE_ICONS_EXTRA -Additional NSIS commands to
-    #   uninstall start menu shortcuts.
-    #
-ENDIF (WIN32 AND NOT UNIX)
+#   CPACK_NSIS_MUI_ICON - An icon filename.
+#
+#   The name of a *.ico file used as the main icon for the generated install program.
+#
+SET(CPACK_NSIS_MUI_ICON "${GPLATES_SOURCE_DISTRIBUTION_DIR}\\gplates_desktop_icon.ico")
 
-IF (APPLE)
-	###################################################
-	# CPack configuration variables specific to macOS #
-	###################################################
+#   CPACK_NSIS_MUI_UNIICON - An icon filename.
+#
+#   The name of a *.ico file used as the main icon for the generated uninstall program.
+#
+SET(CPACK_NSIS_MUI_UNIICON "${GPLATES_SOURCE_DISTRIBUTION_DIR}\\gplates_desktop_icon.ico")
 
-	#   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate,
-	#   not including the extension. For example, cmake-2.6.1-Linux-i686.
-	#
-	# If this is *not* a public release then append '_r<svn-version>' to the version part of the package name.
-	# Note: When GPLATES_PUBLIC_RELEASE is not defined (ie, not a public release) then GPlates_WC_LAST_CHANGED_REV should be defined.
-	if (GPlates_WC_LAST_CHANGED_REV)
-		SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}_r${GPlates_WC_LAST_CHANGED_REV}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
-	else()
-		SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
-	endif()
+#   CPACK_NSIS_INSTALLED_ICON_NAME - A path to the executable that contains the installer icon.
+#
+SET(CPACK_NSIS_INSTALLED_ICON_NAME "${PROJECT_NAME}.exe")
 
-	#   CPACK_GENERATOR - List of CPack generators to use. If not specified,
-    #   CPack will create a set of options following the naming pattern CPACK_BINARY_<GENNAME>
-    #   (e.g., CPACK_BINARY_NSIS) allowing the user to enable/disable individual generators.
-    #   If the -G option is given on the cpack command line, it will override this variable
-    #   and any CPACK_BINARY_<GENNAME> options.
-	#
-	# Use the 'DragNDrop' generator which creates a ".dmg" with the GPlates app bundle and a sym link to /Applications in it.
-	SET(CPACK_GENERATOR DragNDrop)
+#   CPACK_NSIS_HELP_LINK - URL to a web site providing assistance in installing your application.
+#
+SET(CPACK_NSIS_HELP_LINK "http://www.gplates.org")
 
-    # The prefix used in the built package.
-    #
-    # Each CPack generator has a default value (like /usr). This default value may be overwritten from the CMakeLists.txt or
-    # the cpack(1) command line by setting an alternative value. Example:
-    #
-    #    set(CPACK_PACKAGING_INSTALL_PREFIX "/opt")
-    #
-    # This is not the same purpose as CMAKE_INSTALL_PREFIX which is used when installing from the build tree without building a package.
-	#
-	# We're using the 'DragNDrop' generator so place bundle in the root directory otherwise it places inside
-	# "Applications" directory in the ".dmg" file and obscures the "Applications" sym link to the '/Applications'
-	# directory on installed machine.
-	SET(CPACK_PACKAGING_INSTALL_PREFIX "/")
+#   CPACK_NSIS_URL_INFO_ABOUT - URL to a web site providing more information about your application.
+#
+SET(CPACK_NSIS_URL_INFO_ABOUT "http://www.gplates.org")
 
-	#   CPACK_SOURCE_GENERATOR - List of generators used for the source
-	#   packages. As with CPACK_GENERATOR, if this is not specified then
-	#   CPack will create a set of options (e.g., CPACK_SOURCE_ZIP)
-	#   allowing users to select which packages will be generated.
-	#
+#   CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL - Ask about uninstalling previous versions first.
+#
+#   If this is set to ON, then an installer will look for previous installed versions and if one is found,
+#   ask the user whether to uninstall it before proceeding with the install.
+#
+# We'll turn this off because the user might like to have several different versions installed at the same time.
+# And if the user wants to uninstall a previous version they can still do so.
+SET(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL OFF)
 
-	#####################################################
-ENDIF (APPLE)
+#   CPACK_NSIS_MODIFY_PATH - If this is set to "ON", then an extra page will appear in the installer that will allow the
+#                            user to choose whether the program directory should be added to the system PATH variable.
+#
+# GPlates can be used on the command-line so the user might choose to add it to PATH.
+SET(CPACK_NSIS_MODIFY_PATH ON)
 
-# CPack will generate a target 'package' that, when built, will
-# install the targets specified by any 'install' commands into
-# a staging area and package them.
+#   CPACK_NSIS_EXECUTABLES_DIRECTORY - Creating NSIS Start Menu links assumes that they are in bin unless this variable is set.
+#
+#   For example, you would set this to exec if your executables are in an exec directory.
+#
+# Our executable is in the root of the install directory.
+set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
+
+
+#############
+# DragNDrop #
+#############
+
+
+#########
+# CPack #
+#########
+
+#   CPACK_PROJECT_CONFIG_FILE - CPack-time project CPack configuration file.
+#
+#   This file is included at cpack time, once per generator after CPack has set CPACK_GENERATOR
+#   to the actual generator being used. It allows per-generator setting of CPACK_* variables at cpack time.
+#
+# Specify our own configuration file to handle generator-specific settings for CPACK variables that are used by multiple generators
+# (eg, NSIS, DragNDrop). For example, CPACK_PACKAGE_ICON uses different icon formats for different generators.
+# This is not needed for CPACK_<GENERATOR>_ variables (since they only apply to a specific generator).
+set(CPACK_PROJECT_CONFIG_FILE "${GPlates_BINARY_DIR}/cmake/modules/PackageGeneratorOverrides.cmake")
+#
+# The configuration file only has access to CPACK_ variables (since it's only loaded when cpack runs).
+# So we need to transfer any other variables across now (during CMake configuration).
+configure_file(${GPlates_SOURCE_DIR}/cmake/modules/PackageGeneratorOverrides.cmake.in ${CPACK_PROJECT_CONFIG_FILE} @ONLY)
+
+# CPack will generate a target 'package' that, when built, will install the targets specified
+# by any 'install' commands into a staging area and package them.
 INCLUDE(CPack)
