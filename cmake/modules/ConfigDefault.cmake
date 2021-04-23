@@ -2,17 +2,11 @@
 # Useful CMAKE variables.
 #
 
-# The GPlates package name.
-set(GPLATES_PACKAGE_NAME "GPlates")
-
 # The GPlates package vendor.
 set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
 
 # A short description of the GPlates project (only a few words).
 set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the interactive visualisation of plate tectonics.")
-
-# The current GPlates version.
-set(GPLATES_VERSION_STRING "${GPLATES_PACKAGE_NAME} ${GPlates_VERSION}")
 
 # The GPlates copyright - string version to be used in a source file.
 set(GPLATES_COPYRIGHT_STRING "")
