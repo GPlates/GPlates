@@ -53,8 +53,9 @@ SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${GPlates_SOURCE_DIR}/cmake/distribution")
 # CPack configuration variables common to all platforms #
 #########################################################
 
-#   CPACK_PACKAGE_NAME - The name of the package (or application). If
-#   not specified, defaults to the project name.
+#   CPACK_PACKAGE_NAME - The name of the package (or application).
+#
+#   If not specified, defaults to the project name.
 #
 SET(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
 
@@ -274,7 +275,7 @@ else()
     SET(_CPACK_DEB_ARCH i386)
 endif()
 STRING(TOLOWER "${PROJECT_NAME}" _CPACK_DEBIAN_PACKAGE_NAME_LOWER)
-SET(CPACK_PACKAGE_FILE_NAME "${_CPACK_DEBIAN_PACKAGE_NAME_LOWER}_${CPACK_PACKAGE_VERSION}_${_CPACK_DEB_ARCH}")
+SET(CPACK_DEBIAN_FILE_NAME "${_CPACK_DEBIAN_PACKAGE_NAME_LOWER}_${CPACK_PACKAGE_VERSION}_${_CPACK_DEB_ARCH}.deb")
 
 #   CPACK_DEBIAN_PACKAGE_HOMEPAGE - The URL of the web site for this package, preferably (when applicable) the site
 #                                   from which the original source can be obtained and any additional upstream documentation
