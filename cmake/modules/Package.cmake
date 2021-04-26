@@ -28,9 +28,14 @@ if (WIN32)
     # For source packages default to a ZIP archive.
     SET(CPACK_SOURCE_GENERATOR ZIP)
 elseif (APPLE)
-	# For binary packages default to a drag'n'drop disk image
+    # For binary packages default to a drag'n'drop disk image
     # (which is a ".dmg" with the GPlates app bundle and a sym link to /Applications in it).
-	SET(CPACK_GENERATOR DragNDrop)
+    SET(CPACK_GENERATOR DragNDrop)
+    # For source packages default to a bzipped tarball (.tar.bz2).
+    SET(CPACK_SOURCE_GENERATOR TBZ2)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # For binary packages default to a Debian package.
+    SET(CPACK_GENERATOR DEB)
     # For source packages default to a bzipped tarball (.tar.bz2).
     SET(CPACK_SOURCE_GENERATOR TBZ2)
 endif()
@@ -42,18 +47,6 @@ endif()
 
 # Where all the distribution files are located.
 SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${GPlates_SOURCE_DIR}/cmake/distribution")
-
-# The package version string.
-#
-# For a public release this is just PROJECT_VERSION.
-# For a *non*-public release append '_r<svn-version>' to PROJECT_VERSION.
-#
-# Note: When GPLATES_PUBLIC_RELEASE is not defined (ie, not a public release) then GPlates_WC_LAST_CHANGED_REV should be defined.
-if (GPlates_WC_LAST_CHANGED_REV)
-    SET(GPLATES_PACKAGE_VERSION_STRING "${PROJECT_VERSION}_r${GPlates_WC_LAST_CHANGED_REV}")
-else()
-    SET(GPLATES_PACKAGE_VERSION_STRING "${PROJECT_VERSION}")
-endif()
 
 
 #########################################################
@@ -86,7 +79,15 @@ SET(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 #   By default, this is built from CPACK_PACKAGE_VERSION_MAJOR, CPACK_PACKAGE_VERSION_MINOR, and CPACK_PACKAGE_VERSION_PATCH.
 #
 # NOTE: Normally we can't read CPACK variables until after "include(CPack)". However these CPACK variables have been set above.
+#
+# For a public release this is equivalent to PROJECT_VERSION (as set by project() command in top-level CMakeLists.txt).
 SET(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+#
+# For a *non*-public release build append '.<svn-version>'.
+# Note: GPlates_WC_LAST_CHANGED_REV is only defined when GPLATES_PUBLIC_RELEASE is not defined (ie, not a public release).
+if (GPlates_WC_LAST_CHANGED_REV)
+    SET(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}.${GPlates_WC_LAST_CHANGED_REV}")
+endif()
 
 #   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate, not including the extension.
 #
@@ -101,9 +102,9 @@ if (WIN32)
     else()
         SET(_CPACK_SYSTEM_NAME win32)
     endif()
-    SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${GPLATES_PACKAGE_VERSION_STRING}-${_CPACK_SYSTEM_NAME}")
+    SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-${_CPACK_SYSTEM_NAME}")
 else()
-    SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${GPLATES_PACKAGE_VERSION_STRING}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+    SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
 #   CPACK_PACKAGE_DESCRIPTION_FILE - A text file used to describe the project.
@@ -152,7 +153,7 @@ SET(CPACK_STRIP_FILES TRUE)
 
 #   CPACK_SOURCE_PACKAGE_FILE_NAME - The name of the source package, e.g., cmake-2.6.1
 #
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${GPLATES_PACKAGE_VERSION_STRING}-src")
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-src")
 
 #   CPACK_SOURCE_STRIP_FILES - List of files in the source tree that will be stripped.
 #
@@ -194,11 +195,11 @@ SET(CPACK_MONOLITHIC_INSTALL "TRUE")
 
 #   CPACK_NSIS_PACKAGE_NAME - The title displayed at the top of the installer.
 #
-SET(CPACK_NSIS_PACKAGE_NAME "${PROJECT_NAME} ${GPLATES_PACKAGE_VERSION_STRING}")
+SET(CPACK_NSIS_PACKAGE_NAME "${PROJECT_NAME} ${CPACK_PACKAGE_VERSION}")
 
 #   CPACK_NSIS_DISPLAY_NAME - The display name string that appears in the Windows Apps & features in Control Panel.
 #
-SET(CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME} ${GPLATES_PACKAGE_VERSION_STRING}")
+SET(CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME} ${CPACK_PACKAGE_VERSION}")
 
 #   CPACK_NSIS_MUI_ICON - An icon filename.
 #
@@ -250,6 +251,64 @@ set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 #############
 # DragNDrop #
 #############
+
+
+#######
+# DEB #
+#######
+
+#   CPACK_DEBIAN_FILE_NAME (CPACK_DEBIAN_<COMPONENT>_FILE_NAME) - Package file name.
+#
+#   Default : <CPACK_PACKAGE_FILE_NAME>[-<component>].deb
+#
+#   This may be set to DEB-DEFAULT to allow the CPack DEB generator to generate package file name by itself in deb format:
+#
+#       <PackageName>_<VersionNumber>-<DebianRevisionNumber>_<DebianArchitecture>.deb
+#
+#   Alternatively provided package file name must end with either .deb or .ipk suffix.
+#
+# NOTE: Instead of specifying DEB-DEFAULT we emulate it so that the SVN revision number gets included in the package filename.
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    SET(_CPACK_DEB_ARCH amd64)
+else()
+    SET(_CPACK_DEB_ARCH i386)
+endif()
+STRING(TOLOWER "${PROJECT_NAME}" _CPACK_DEBIAN_PACKAGE_NAME_LOWER)
+SET(CPACK_PACKAGE_FILE_NAME "${_CPACK_DEBIAN_PACKAGE_NAME_LOWER}_${CPACK_PACKAGE_VERSION}_${_CPACK_DEB_ARCH}")
+
+#   CPACK_DEBIAN_PACKAGE_HOMEPAGE - The URL of the web site for this package, preferably (when applicable) the site
+#                                   from which the original source can be obtained and any additional upstream documentation
+#                                   or information may be found.
+#
+SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://www.gplates.org")
+
+#   CPACK_DEBIAN_PACKAGE_MAINTAINER - The Debian package maintainer.
+#
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "https://www.gplates.org")
+
+#   CPACK_DEBIAN_PACKAGE_SECTION (CPACK_DEBIAN_<COMPONENT>_PACKAGE_SECTION) - Set Section control field e.g. admin, devel, doc, ...
+#
+SET(CPACK_DEBIAN_PACKAGE_SECTION science)
+
+#   CPACK_DEBIAN_PACKAGE_SHLIBDEPS (CPACK_DEBIAN_<COMPONENT>_PACKAGE_SHLIBDEPS) - May be set to ON in order to use dpkg-shlibdeps
+#                                                                                 to generate better package dependency list.
+#
+#   Default: CPACK_DEBIAN_PACKAGE_SHLIBDEPS if set or OFF.
+#
+#   Note: You may need set CMAKE_INSTALL_RPATH to an appropriate value if you use this feature, because if you don't
+#         dpkg-shlibdeps may fail to find your own shared libs.
+#         See https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/RPATH-handling
+#
+#   Note: You can also set CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS to an appropriate value if you use this feature, in order to
+#         please dpkg-shlibdeps. However, you should only do this for private shared libraries that could not get resolved otherwise.
+#
+SET(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+
+#   CPACK_DEB_COMPONENT_INSTALL - Enable component packaging for CPackDEB.
+#
+#   If enabled (ON) multiple packages are generated. By default a single package containing files of all components is generated.
+#
+SET(CPACK_DEB_COMPONENT_INSTALL OFF)
 
 
 #########

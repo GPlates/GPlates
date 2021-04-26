@@ -25,7 +25,7 @@ endif()
 if (CPACK_GENERATOR MATCHES "^NSIS$")
     # We want, for example, "GPlates\GPlates 2.2.0\" (which ends up as "C:\Program Files\GPlates\GPlates 2.2.0\").
     # This way multiple versions can be installed at the same time (in different sub-directories of "C:\Program Files\GPlates\").
-    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "@PROJECT_NAME@\\@PROJECT_NAME@ @GPLATES_PACKAGE_VERSION_STRING@")
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "@PROJECT_NAME@\\@PROJECT_NAME@ @CPACK_PACKAGE_VERSION@")
 endif()
 
 #   CPACK_PACKAGE_INSTALL_REGISTRY_KEY - Registry key used when installing this project.
@@ -35,7 +35,7 @@ endif()
 if (CPACK_GENERATOR MATCHES "^NSIS$")
     # We want, for example, "GPlates 2.2.0_r19869" for a *non*-public installation so that multiple installations
     # with different revision numbers don't conflict with each other.
-    SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "@PROJECT_NAME@ @GPLATES_PACKAGE_VERSION_STRING@")
+    SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "@PROJECT_NAME@ @CPACK_PACKAGE_VERSION@")
 endif()
 
 #    CPACK_PACKAGING_INSTALL_PREFIX - The prefix used in the built package.
@@ -50,5 +50,5 @@ endif()
 if (CPACK_GENERATOR MATCHES "^DragNDrop$")
     # Make sure we everything ends up in the specified directory (which the user can then drag'n'drop into "/Applications/").
     # This way the GPlates app bundle and sample data stay together in the one directory.
-    SET(CPACK_PACKAGING_INSTALL_PREFIX "/@PROJECT_NAME@-@GPLATES_PACKAGE_VERSION_STRING@")
+    SET(CPACK_PACKAGING_INSTALL_PREFIX "/@PROJECT_NAME@-@CPACK_PACKAGE_VERSION@")
 endif()
