@@ -884,13 +884,25 @@ class PolygonOnSphereCase(unittest.TestCase):
         area = self.polygon.get_area()
         signed_area = self.polygon.get_signed_area()
         # Polygon covers exactly a quarter of the unit sphere.
-        self.assertTrue(area > math.pi - 1e-6 and area < math.pi + 1e-6)
-        # Counter-clockwise polygon.
-        ccw_polygon = pygplates.PolygonOnSphere(reversed(self.polygon.get_points()))
-        ccw_area = ccw_polygon.get_area()
-        ccw_signed_area = ccw_polygon.get_signed_area()
-        self.assertTrue(area > ccw_area - 1e-6 and area < ccw_area + 1e-6)
-        self.assertTrue(signed_area > ccw_signed_area - 1e-6 and signed_area < -ccw_signed_area + 1e-6)
+        self.assertAlmostEqual(area, math.pi)
+        # Clockwise polygon.
+        cw_polygon = pygplates.PolygonOnSphere(reversed(self.polygon.get_points()))
+        cw_area = cw_polygon.get_area()
+        cw_signed_area = cw_polygon.get_signed_area()
+        self.assertAlmostEqual(area, cw_area)
+        self.assertAlmostEqual(signed_area, -cw_signed_area)
+
+        # Test some zero area dateline sliver polygons that previously gave incorrect areas (as multiples of PI).
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180)]).get_area())  # previously was 2*PI
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180), (-5, 180)]).get_area())  # previously was 4*PI
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180), (-5, 180), (-6, 180)]).get_area())  # previously was 2*PI
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180), (-5, 180), (-6, 180), (-5, 180)]).get_area())  # previously was 8*PI
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180), (-5, 180), (-6, 180), (-5, 180), (-3, 180)]).get_area())  # previously was 4*PI
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180), (-5, 180), (-6, 180), (-5, 180), (-3, 180), (-1, 180)]).get_area())  # previously was 2*PI
+
+        # Test the sign of the area of some almost zero area sliver polygons.
+        self.assertTrue(pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, -179.99)]).get_signed_area() > 0)  # Counter-clockwise
+        self.assertTrue(pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 179.99)]).get_signed_area() < 0)  # Clockwise
     
     def test_orientation(self):
         self.assertTrue(self.polygon.get_orientation() == pygplates.PolygonOnSphere.Orientation.counter_clockwise)

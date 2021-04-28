@@ -76,17 +76,17 @@ namespace GPlatesMaths
 			// (2) Flip the sign of the cross product magnitude if the cross product vector
 			//     is pointing in the opposite direction to the vector
 			//         from the origin (sphere centre) to
-			//         the point-on-sphere joining the two edges.
-			double angle =
+			//         the point-on-sphere joining the two edges (first edge end or second edge start).
+			//
+			// We do (1) because if both edges are parallel (pointing in same direction) then we
+			// want an angle of +/-PI (not zero) and anti-parallel edges (pointing in different directions)
+			// to have an angle of zero (not +/-PI).
+			// We do (2) so that clockwise turning (following from first edge to second edge) gives a
+			// negative angle (and counter-clockwise a positive angle).
+			const double angle =
 					(dot(cross_product_normals, second_edge.start_point().position_vector()).dval() < 0)
 					? std::atan2(-cross_product_magnitude,  -dot_product_normals)
 					: std::atan2(cross_product_magnitude,  -dot_product_normals);
-
-			// Convert range [-PI, PI] returned by atan2 to the range [0, 2PI].
-			if (angle < 0)
-			{
-				angle += 2 * PI;
-			}
 
 			return angle;
 		}
@@ -122,17 +122,11 @@ namespace GPlatesMaths
 					calculate_angle_between_adjacent_non_zero_length_edges(third_edge, first_edge);
 
 			// The area of a spherical triangle, on unit sphere, is:
-			//   Area = Sum(internal angles) - PI
-			double signed_area = sum_internal_angles - PI;
-
-			// If the area is greater than 2 * PI then the spherical triangle is clockwise when
-			// viewed from above the surface of the sphere.
-			// Calculate the complementary area *inside* the spherical triangle and
-			// make it negative to indicate orientation.
-			if (signed_area > 2 * PI)
-			{
-				signed_area = signed_area - 4*PI/*area of unit sphere*/;
-			}
+			//   Area = Sum(internal angles) - PI;  for counter-clockwise triangle (sum angles positive)
+			//   Area = Sum(internal angles) + PI;  for clockwise triangle (sum angles negative)
+			const double signed_area = (sum_internal_angles > 0)
+					? sum_internal_angles - PI
+					: sum_internal_angles + PI;
 
 			return signed_area;
 		}
