@@ -302,16 +302,20 @@ GPlatesMaths::SphericalArea::calculate_spherical_triangle_signed_area(
 
 		// Rotate the point slightly so that's it's no longer antipodal.
 		// This will introduce a small error to the spherical triangle area though.
-		// An angle of 1e-4 radians equates to a dot product (cosine) deviation of 5e-9 which is
-		// less than the 1e-12 epsilon used in dot product to determine if two points are antipodal.
+		// An angle of 1e-5 radians equates to a dot product (cosine) deviation of 5e-11 which is
+		// larger than the 1e-12 epsilon used in dot product to determine if two points are antipodal.
 		// So this should be enough to prevent the same thing happening again.
-		// Note that it's still possible that the *other* edge end point is now antipodal
-		// to the rotated point - to avoid this we rotate the point *away* from the
-		// antipodal edge such that it cannot lie on the antipodal arc.
 		const Rotation point_rotation =
 				Rotation::create(
-						edge.rotation_axis(),
-						(point_to_edge_start_validity == GreatCircleArc::VALID) ? 1e-4 : -1e-4);
+						// Note that instead of using the edge rotation axis to rotate in the plane of the edge,
+						// we rotate perpendicularly off the edge. This ensures that the rotated point
+						// does not now become antipodal to the other edge point. It also avoids a complicated
+						// situation where a polygon around the equator ends up with an area of zero instead of
+						// 2*PI (ie, half the globe) due to rotating in such a way that all the spherical triangles
+						// making up that equator polygon end up with zero area. Moving *off* the edge great circle
+						// avoids this issue.
+						cross(edge.rotation_axis(), point.position_vector()).get_normalisation(),
+						1e-5);
 		const PointOnSphere rotated_point(point_rotation * point);
 
 		const GreatCircleArc point_to_edge_start = GreatCircleArc::create(rotated_point, edge.start_point());

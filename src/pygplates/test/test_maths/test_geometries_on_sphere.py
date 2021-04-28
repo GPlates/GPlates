@@ -903,6 +903,14 @@ class PolygonOnSphereCase(unittest.TestCase):
         # Test the sign of the area of some almost zero area sliver polygons.
         self.assertTrue(pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, -179.99)]).get_signed_area() > 0)  # Counter-clockwise
         self.assertTrue(pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 179.99)]).get_signed_area() < 0)  # Clockwise
+
+        # Test some polygons that cover half the globe (largest polygon possible).
+        #
+        # Note: We use 'places=4' because even though polygon is exactly along the equator pygplates doesn't calculate exactly 2*PI.
+        #       This is because internally it encounters an arc with antipodal end points and has to adjust slightly to avoid this (thus introducing a small error).
+        self.assertAlmostEqual(2 * math.pi, pygplates.PolygonOnSphere([(0, 0), (0, 90), (0, 180), (0, -90)]).get_area(), places=4)  # Neither clockwise nor counter-clockwise (right on equator)
+        self.assertAlmostEqual(2 * math.pi, pygplates.PolygonOnSphere([(0, 0), (0, 90), (0, 180), (0.001, -90)]).get_signed_area(), places=3)  # Counter-clockwise (slightly above equator)
+        self.assertAlmostEqual(-2 * math.pi, pygplates.PolygonOnSphere([(0, 0), (0, 90), (0, 180), (-0.001, -90)]).get_signed_area(), places=3)  # Clockwise (slightly below equator)
     
     def test_orientation(self):
         self.assertTrue(self.polygon.get_orientation() == pygplates.PolygonOnSphere.Orientation.counter_clockwise)
