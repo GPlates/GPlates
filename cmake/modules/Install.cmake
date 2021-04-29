@@ -73,11 +73,36 @@ if(EXISTS "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py")
     endif()
 endif()
 
-if(EXISTS "${GPlates_SOURCE_DIR}/SampleData/")
+# Include sample data if requested.
+#
+# The variables GPLATES_INCLUDE_SAMPLE_DATA and GPLATES_SAMPLE_DATA_DIR are cache variables that the user can set to control this.
+#
+if (GPLATES_INCLUDE_SAMPLE_DATA)
+    # Remove the trailing '/', if there is one, so that we can then
+    # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
+    #
+    #   "The last component of each directory name is appended to the destination directory but
+    #    a trailing slash may be used to avoid this because it leaves the last component empty"
+    #
+    string(REGEX REPLACE "/+$" "" _SOURCE_SAMPLE_DATA_DIR "${GPLATES_SAMPLE_DATA_DIR}")
+
+    #
+    # Note: Depending on the installation location ${CMAKE_INSTALL_PREFIX} a path length limit might be
+    #       exceeded since some of the sample data paths can be quite long, and combined with ${CMAKE_INSTALL_PREFIX}
+    #       could, for example, exceed 260 characters (MAX_PATH) on Windows (eg, creating an NSIS package).
+    #       This can even happen on the latest Windows 10 with long paths opted in.
+    #       For example, when packaging with NSIS you can get a sample data file with a path like the following:
+    #           <build_dir>\_CPack_Packages\win64\NSIS\GPlates-2.2.0-win64\SampleData\<sample_data_file>
+    #       ...and currently <sample_data_file> can reach 160 chars, which when added to the middle part of ~60 chars
+    #       becomes ~220 chars leaving only 40 chars for <build_dir>.
+    #
+    #       Which means you'll need a build directory path that's under 40 characters long (which is pretty short).
+    #       Something like "C:\gplates\build\trunk-py37\" (which is already 28 characters).
+    #
     if (WIN32 OR APPLE)
-        install(DIRECTORY SampleData/ DESTINATION SampleData/)
+        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION SampleData)
     else()
-        install(DIRECTORY SampleData/ DESTINATION share/gplates/SampleData/)
+        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION share/gplates/SampleData)
     endif()
 endif()
 
