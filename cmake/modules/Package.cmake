@@ -303,6 +303,9 @@ SET(CPACK_DEBIAN_PACKAGE_SECTION science)
 #   Note: You can also set CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS to an appropriate value if you use this feature, in order to
 #         please dpkg-shlibdeps. However, you should only do this for private shared libraries that could not get resolved otherwise.
 #
+# NOTE: You'll need to install the 'dpkg-dev' package ('sudo apt install dpkg-dev') for 'dpkg-shlibdeps' to be available.
+#       Otherwise you'll get the following warning message and dependencies will not be listed in the generated package...
+#           "CPACK_DEBIAN_PACKAGE_DEPENDS not set, the package will have no dependencies"
 SET(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
 #   CPACK_DEB_COMPONENT_INSTALL - Enable component packaging for CPackDEB.
