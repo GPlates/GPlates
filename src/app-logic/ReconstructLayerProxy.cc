@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
@@ -102,7 +102,7 @@ GPlatesAppLogic::ReconstructLayerProxy::ReconstructLayerProxy(
 	d_current_reconstruction_time(0),
 	d_current_reconstruct_params(reconstruct_params),
 	d_cached_reconstructions(
-			boost::bind(&ReconstructLayerProxy::create_reconstruction_info, this, _1),
+			boost::bind(&ReconstructLayerProxy::create_reconstruction_info, this, boost::placeholders::_1),
 			max_num_reconstructions_in_cache),
 	d_cached_reconstructions_default_maximum_size(max_num_reconstructions_in_cache)
 {

@@ -27,7 +27,7 @@
 #include <cmath>
 #include <cstddef> // For std::size_t
 #include <boost/foreach.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/weak_ptr.hpp>
 #include <QDir>

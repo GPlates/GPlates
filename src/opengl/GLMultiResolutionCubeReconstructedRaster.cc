@@ -188,7 +188,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
 			tile_texture = tile.d_tile_texture->set_cached_object(
 					std::unique_ptr<TileTexture>(new TileTexture(renderer)),
 					// Called whenever tile texture is returned to the cache...
-					boost::bind(&TileTexture::returned_to_cache, _1));
+					boost::bind(&TileTexture::returned_to_cache, boost::placeholders::_1));
 
 			// The texture was just allocated so we need to create it in OpenGL.
 			create_tile_texture(renderer, tile_texture->texture);

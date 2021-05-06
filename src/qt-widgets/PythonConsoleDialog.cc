@@ -24,7 +24,7 @@
  */
 
 #include <cstdio>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QAction>
 #include <QBrush>

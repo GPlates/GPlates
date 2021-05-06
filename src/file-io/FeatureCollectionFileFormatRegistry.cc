@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QByteArray>
@@ -751,6 +751,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_file_format_info(
 void
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_formats()
 {
+	using namespace boost::placeholders;  // For _1, _2, etc
+
 	// Used to read structural types from a GPML file.
 	GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type
 			gpml_property_structural_type_reader =

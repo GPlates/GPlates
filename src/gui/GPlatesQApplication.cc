@@ -25,7 +25,7 @@
 
 #include <string>
 #include <sstream>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/function.hpp>
 #include <QDebug>
 #include <QMessageBox>

@@ -24,7 +24,7 @@
  */
 
 #include <algorithm>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/ref.hpp>
 
 #include "XmlNodeUtils.h"
@@ -68,7 +68,7 @@ GPlatesModel::XmlNodeUtils::get_text_without_trimming(
 
 	std::for_each(
 			elem->children_begin(), elem->children_end(),
-			boost::bind(&GPlatesModel::XmlNode::accept_visitor, _1, boost::ref(visitor)));
+			boost::bind(&GPlatesModel::XmlNode::accept_visitor, boost::placeholders::_1, boost::ref(visitor)));
 
 	if (visitor.encountered_subelement())
 	{

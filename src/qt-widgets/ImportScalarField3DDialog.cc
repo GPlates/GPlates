@@ -25,7 +25,7 @@
 
 #include <algorithm>
 #include <iterator>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QDebug>
 #include <QFile>
@@ -232,8 +232,8 @@ void
 GPlatesQtWidgets::ScalarField3DDepthLayersSequence::sort_by_depth()
 {
 	std::sort(d_sequence.begin(), d_sequence.end(),
-			boost::bind(&element_type::depth, _1) <
-			boost::bind(&element_type::depth, _2));
+			boost::bind(&element_type::depth, boost::placeholders::_1) <
+			boost::bind(&element_type::depth, boost::placeholders::_2));
 }
 
 
@@ -241,8 +241,8 @@ void
 GPlatesQtWidgets::ScalarField3DDepthLayersSequence::sort_by_file_name()
 {
 	std::sort(d_sequence.begin(), d_sequence.end(),
-			boost::bind(&element_type::file_name, _1) <
-			boost::bind(&element_type::file_name, _2));
+			boost::bind(&element_type::file_name, boost::placeholders::_1) <
+			boost::bind(&element_type::file_name, boost::placeholders::_2));
 }
 
 

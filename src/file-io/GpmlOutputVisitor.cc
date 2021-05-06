@@ -29,7 +29,7 @@
 
 #include <utility>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
@@ -1714,7 +1714,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_uninterpreted_property_value(
 		uninterpreted_prop_val.value();
 
 	std::for_each(elem->children_begin(), elem->children_end(),
-			boost::bind(&GPlatesModel::XmlNode::write_to, _1, 
+			boost::bind(&GPlatesModel::XmlNode::write_to, boost::placeholders::_1,
 				boost::ref(d_output.get_writer())));
 }
 

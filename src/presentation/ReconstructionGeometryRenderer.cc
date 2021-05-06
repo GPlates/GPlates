@@ -27,7 +27,7 @@
 #include <cmath>
 #include <cstddef> // For std::size_t
 #include <utility>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "ReconstructionGeometryRenderer.h"

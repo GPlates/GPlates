@@ -31,7 +31,7 @@
 #include <QXmlQuery>
 #include <QXmlResultItems>
 #include <QXmlSerializer>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "GeoscimlProfile.h"

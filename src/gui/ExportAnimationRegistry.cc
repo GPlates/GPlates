@@ -25,7 +25,7 @@
 
 #include <algorithm>
 #include <utility>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QString>
 
@@ -223,6 +223,8 @@ namespace GPlatesGui
 		register_default_export_reconstructed_geometry_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			const ExportOptionsUtils::ExportFileOptions default_reconstructed_geometry_file_export_options(
 					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
@@ -296,6 +298,8 @@ namespace GPlatesGui
 		register_default_export_projected_geometry_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			// By default output SVG images the same size as main viewport window (and don't constrain aspect ratio).
 			const ExportOptionsUtils::ExportImageResolutionOptions default_svg_image_resolution_export_options(
 					false/*constrain_aspect_ratio*/);
@@ -328,6 +332,8 @@ namespace GPlatesGui
 		register_default_export_deformation_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			const ExportOptionsUtils::ExportFileOptions default_deformation_file_export_options(
 					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
@@ -401,6 +407,8 @@ namespace GPlatesGui
 		register_default_export_scalar_coverage_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			const ExportOptionsUtils::ExportFileOptions default_scalar_coverage_file_export_options(
 					/*export_to_a_single_file_*/false,
 					/*export_to_multiple_files_*/true);
@@ -463,6 +471,8 @@ namespace GPlatesGui
 		register_default_export_velocity_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			// Default velocity calculation options for all velocity exports.
 			const ExportOptionsUtils::ExportVelocityCalculationOptions default_velocity_calculation_export_options(
 					/*delta_time_type*/GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
@@ -594,6 +604,8 @@ namespace GPlatesGui
 		register_default_export_resolved_topology_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			const ExportOptionsUtils::ExportFileOptions default_resolved_topology_file_export_options(
 					/*export_to_a_single_file_*/true,
 					/*export_to_multiple_files_*/false);
@@ -688,6 +700,8 @@ namespace GPlatesGui
 		register_default_export_citcoms_resolved_topology_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			// Set defaults 
 			const GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::OutputOptions
 					default_citcoms_resolved_topology_export_options(
@@ -799,6 +813,8 @@ namespace GPlatesGui
 		register_default_export_rotation_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			// By default write out identity rotations as "Indeterminate".
 			const ExportOptionsUtils::ExportRotationOptions default_rotation_export_options(
 					ExportOptionsUtils::ExportRotationOptions::WRITE_IDENTITY_AS_INDETERMINATE,
@@ -1104,6 +1120,8 @@ namespace GPlatesGui
 		register_default_export_net_rotation_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			ExportOptionsUtils::ExportNetRotationOptions default_net_rotation_options(
 						10. /* time interval, Ma */,
 						GPlatesQtWidgets::VelocityMethodWidget::T_TO_T_MINUS_DT /*velocity method */);
@@ -1174,6 +1192,8 @@ namespace GPlatesGui
 		register_default_export_image_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			// By default output image the same size as main viewport window (and don't constrain aspect ratio).
 			const ExportOptionsUtils::ExportImageResolutionOptions default_raster_image_resolution_export_options(
 					false/*constrain_aspect_ratio*/);
@@ -1229,6 +1249,8 @@ namespace GPlatesGui
 		register_default_export_colour_raster_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			// Default raster resolution (degrees) - corresponds to a 6 minute global grid.
 			const double default_raster_resolution_in_degrees = 0.1;
 			// Default raster lat/lon extents cover entire globe.
@@ -1331,6 +1353,8 @@ namespace GPlatesGui
 		register_default_export_numerical_raster_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			// Default raster resolution (degrees) - corresponds to a 6 minute global grid.
 			const double default_raster_resolution_in_degrees = 0.1;
 			// Default raster lat/lon extents cover entire globe.
@@ -1420,6 +1444,8 @@ namespace GPlatesGui
 		register_default_export_flowline_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			// By default only export to multiple files (one output file per input file) as this
 			// is the most requested output.
 			const ExportOptionsUtils::ExportFileOptions default_flowline_file_export_options(
@@ -1496,6 +1522,8 @@ namespace GPlatesGui
 		register_default_export_motion_path_animation_types(
 				ExportAnimationRegistry &registry)
 		{
+			using namespace boost::placeholders;  // For _1, _2, etc
+
 			// By default only export to multiple files (one output file per input file) as this
 			// is the most requested output.
 			const ExportOptionsUtils::ExportFileOptions default_motion_path_file_export_options(

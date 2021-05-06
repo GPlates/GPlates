@@ -27,7 +27,7 @@
 #include <map>
 #include <QDebug>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "ReconstructUtils.h"
