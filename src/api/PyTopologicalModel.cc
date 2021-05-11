@@ -1117,6 +1117,8 @@ export_topological_model()
 						"in your derived class then Python will call the base class *__init__* (so you don't have to do anything). "
 						"However if you do define *__init__* in your derived class then it must explicitly call the base class *__init__*.\n"
 						"\n"
+						".. versionadded:: 31\n"
+						"\n"
 						"__init__()\n"
 						"  Default constructor - must be explicitly called by derived class.\n"
 						// NOTE: Must not define 'bp::no_init' because this base class is meant to be inherited by a python class.
@@ -1191,6 +1193,8 @@ export_topological_model()
 		default_deactivate_points_class_docstring_stream <<
 				"The default algorithm for deactivating geometry points as they are reconstructed forward and/or backward in time.\n"
 				"\n"
+				".. versionadded:: 31\n"
+				"\n"
 				"__init__([threshold_velocity_delta="
 				<< GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_VELOCITY_DELTA
 				<< "], [threshold_distance_to_boundary="
@@ -1239,8 +1243,6 @@ export_topological_model()
 				"          threshold_velocity_delta = 0.9, # cms/yr\n"
 				"          threshold_distance_to_boundary = 15, # kms/myr\n"
 				"          deactivate_points_that_fall_outside_a_network = True))\n"
-				"\n"
-				".. versionadded:: 31\n"
 				;
 
 		//
@@ -1425,7 +1427,10 @@ export_topological_model()
 				"  To do the same but with no deactivation (in this case continental points):\n"
 				"  ::\n"
 				"\n"
-				"    topological_model.reconstruct_geometry(geometry, 100, deactivate_points=None)\n")
+				"    topological_model.reconstruct_geometry(geometry, 100, deactivate_points=None)\n"
+				"\n"
+				"  .. versionchanged:: 31\n"
+				"     Added *deactivate_points* argument.\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalModel::get_rotation_model,
 				"get_rotation_model()\n"
