@@ -1,34 +1,34 @@
-################################################################################################
-#                                                                                              #
-# Install targets.                                                                             #
-#                                                                                              #
-# This also enables targets to run on *other* machines (rather than just the *build* machine)  #
-# on Windows and macOS (by copying dependency artifacts into the install location).            #
-#                                                                                              #
-################################################################################################
+######################################################################################################
+#                                                                                                    #
+# Install targets.                                                                                   #
+#                                                                                                    #
+# This also enables targets to run on *other* machines (rather than just the *build* machine)        #
+# by copying dependency artifacts into the install location on Windows and macOS (this is not        #
+# typically required on Linux systems which have binary package managers that install dependencies). #
+#                                                                                                    #
+######################################################################################################
 
 #
 # Set the minimum CMake version required for installing targets.
 #
-if (WIN32 OR APPLE)
+if (GPLATES_INSTALL_STANDALONE)
+    # Install GPlates as a standalone bundle (by copying dependency libraries during installation).
+    #
     # Currently we're using file(GET_RUNTIME_DEPENDENCIES) which was added in CMake 3.16.
     # And we use FOLLOW_SYMLINK_CHAIN in file(INSTALL) which requires CMake 3.15.
     # And we also use generator expressions in install(CODE) which requires CMake 3.14.
-    set (CMAKE_VERSION_REQUIRED_FOR_INSTALLATION 3.16)
-else()
-    # No real requirement on Linux currently (just set to same value specified by cmake_minimum_required() in top level 'CMakeLists.txt').
-    set (CMAKE_VERSION_REQUIRED_FOR_INSTALLATION ${CMAKE_MINIMUM_REQUIRED_VERSION})
-endif()
+    set (CMAKE_VERSION_REQUIRED_FOR_INSTALLING_DEPENDENCIES 3.16)
 
-# Check the CMake minimum requirement at *install* time thus allowing users to build with a lower requirement
-# (if they just plan to run the build locally and don't plan to install/deploy).
-install(
-        CODE "
-            if (CMAKE_VERSION VERSION_LESS ${CMAKE_VERSION_REQUIRED_FOR_INSTALLATION})
-                message(FATAL_ERROR \"CMake ${CMAKE_VERSION_REQUIRED_FOR_INSTALLATION} is required when *installing* GPlates/pyGPlates\")
-            endif()
-        "
-)
+    # Check the CMake minimum requirement at *install* time thus allowing users to build with a lower requirement
+    # (if they just plan to run the build locally and don't plan to install/deploy).
+    install(
+            CODE "
+                if (CMAKE_VERSION VERSION_LESS ${CMAKE_VERSION_REQUIRED_FOR_INSTALLING_DEPENDENCIES})
+                    message(FATAL_ERROR \"CMake ${CMAKE_VERSION_REQUIRED_FOR_INSTALLING_DEPENDENCIES} is required when *installing* GPlates\")
+                endif()
+            "
+    )
+endif()
 
 
 include(GNUInstallDirs)
@@ -43,7 +43,7 @@ if (WIN32 OR APPLE)
         # CONFIGURATIONS Release RelWithDebInfo MinSizeRel Debug
         RUNTIME DESTINATION .  # Windows
         BUNDLE DESTINATION .)  # Apple
-else() # Linux...
+else() # Linux
     install(TARGETS gplates
         # Support all configurations (ie, no need for CONFIGURATIONS option).
         # Note that if we only supported Release then we'd have to specify 'CONFIGURATIONS Release' for every install() command (not just TARGETS)...
@@ -58,7 +58,7 @@ if(EXISTS "${GPlates_SOURCE_DIR}/scripts/hellinger.py")
         install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION scripts/)
     elseif (APPLE)
         install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION gplates.app/Contents/Resources/scripts/)
-    else()
+    else() # Linux
         install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION share/gplates/scripts/)
     endif()
 endif()
@@ -68,16 +68,16 @@ if(EXISTS "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py")
         install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION scripts/)
     elseif (APPLE)
         install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION gplates.app/Contents/Resources/scripts/)
-    else()
+    else() # Linux
         install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION share/gplates/scripts/)
     endif()
 endif()
 
-# Include sample data if requested.
+# Install sample data if requested.
 #
-# The variables GPLATES_INCLUDE_SAMPLE_DATA and GPLATES_SAMPLE_DATA_DIR are cache variables that the user can set to control this.
+# The variables GPLATES_INSTALL_SAMPLE_DATA and GPLATES_SAMPLE_DATA_DIR are cache variables that the user can set to control this.
 #
-if (GPLATES_INCLUDE_SAMPLE_DATA)
+if (GPLATES_INSTALL_SAMPLE_DATA)
     # Remove the trailing '/', if there is one, so that we can then
     # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
     #
@@ -89,24 +89,24 @@ if (GPLATES_INCLUDE_SAMPLE_DATA)
     #
     # Note: Depending on the installation location ${CMAKE_INSTALL_PREFIX} a path length limit might be
     #       exceeded since some of the sample data paths can be quite long, and combined with ${CMAKE_INSTALL_PREFIX}
-    #       could, for example, exceed 260 characters (MAX_PATH) on Windows (eg, creating an NSIS package).
+    #       could, for example, exceed 260 characters (MAX_PATH) on Windows (eg, when creating an NSIS package).
     #       This can even happen on the latest Windows 10 with long paths opted in.
     #       For example, when packaging with NSIS you can get a sample data file with a path like the following:
     #           <build_dir>\_CPack_Packages\win64\NSIS\GPlates-2.2.0-win64\SampleData\<sample_data_file>
-    #       ...and currently <sample_data_file> can reach 160 chars, which when added to the middle part of ~60 chars
-    #       becomes ~220 chars leaving only 40 chars for <build_dir>.
+    #       ...and currently <sample_data_file> can reach 160 chars, which when added to the middle part
+    #       '\_CPack_Packages\...' of ~60 chars becomes ~220 chars leaving only 40 chars for <build_dir>.
     #
     #       Which means you'll need a build directory path that's under 40 characters long (which is pretty short).
     #       Something like "C:\gplates\build\trunk-py37\" (which is already 28 characters).
     #
     if (WIN32 OR APPLE)
         install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION SampleData)
-    else()
+    else() # Linux
         install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION share/gplates/SampleData)
     endif()
 endif()
 
-if (NOT (WIN32 OR APPLE))
+if (NOT (WIN32 OR APPLE)) # Linux
     if(EXISTS "${GPlates_SOURCE_DIR}/doc/gplates.1.gz")
         install(FILES  "${GPlates_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION share/man/man1/)
     endif()
@@ -114,14 +114,20 @@ endif()
 
 
 #
-# On Windows and Apple we have a post-install script to fix up GPlates for deployment to another machine
+# Whether to install GPlates as a standalone bundle (by copying dependency libraries during installation).
+#
+# On Windows and Apple we have install code to fix up GPlates for deployment to another machine
 # (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
+# This is always enabled, so we don't provide an option to the user to disable it.
 #
-# We don't do this for Linux systems because there we rely on the Linux distribution to provide the dependency libraries.
+# On Linux systems we don't enable (by default) the copying of dependency libraries because there we rely on the
+# Linux binary package manager to install them (for example, we create a '.deb' package that only *lists* the dependencies,
+# which are then installed on the target system if not already there).
+# However we allow the user to enable this in case they want to create a standalone bundle for their own use case.
 #
-if (WIN32 OR APPLE)
+if (GPLATES_INSTALL_STANDALONE)
     #
-    # Configure a post-install script to fix up GPlates for deployment to another machine.
+    # Configure install code to fix up GPlates for deployment to another machine.
     #
     # Note that we don't get Qt to deploy its libraries/plugins to our install location (using windeployqt/macdeployqt).
     # Instead we find the Qt library dependencies ourself and we explicitly list the Qt plugins we expect to use.
@@ -148,7 +154,7 @@ if (WIN32 OR APPLE)
     # Note: When using CODE with double quotes, as with install(CODE "<code>"), variable subsitution is *enabled*.
     #       So we use this when transferring variables.
     #       However when using square brackets, as with install(CODE [[<code>]]), variable subitition is *disabled* (as is escaping).
-    #       So we use this for the bulk of code to avoid unwanted variable transfer (instead using variables defined in the install scope)
+    #       So we use this for the bulk of code to avoid unwanted variable transfer (instead using variables defined at *install* time)
     #       and to avoid having to escape characters (like double quotes).
     #       An example of this is ${CMAKE_INSTALL_PREFIX} where we use square brackets (CODE [[<code>]]) to ensure it is expanded only at
     #       install time (not at configure time). This is important because it can be different. For example, at configure time it might
@@ -183,12 +189,12 @@ if (WIN32 OR APPLE)
 
     # Install the "qt.conf" file.
     install(CODE "set(QT_CONF_FILE [[${QT_CONF_FILE}]])")
-    if (WIN32)
-        # On Windows install into the base install directory.
-        install(CODE [[file(INSTALL "${QT_CONF_FILE}" DESTINATION "${CMAKE_INSTALL_PREFIX}")]])
-    elseif (APPLE)
+    if (APPLE)
         # On macOS install into the bundle 'Resources' directory.
         install(CODE [[file(INSTALL "${QT_CONF_FILE}" DESTINATION "${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/Resources")]])
+    else() # Windows or Linux
+        # On Windows, install into the base install directory.
+        install(CODE [[file(INSTALL "${QT_CONF_FILE}" DESTINATION "${CMAKE_INSTALL_PREFIX}")]])
     endif()
 
     ######################
@@ -196,10 +202,10 @@ if (WIN32 OR APPLE)
     ######################
 
     # The 'plugins' directory relative to ${CMAKE_INSTALL_PREFIX}.
-    if (WIN32)
-        set(QT_PLUGINS_INSTALL_PREFIX "${QT_PLUGIN_DIR_BASENAME}")
-    elseif (APPLE)
+    if (APPLE)
         set(QT_PLUGINS_INSTALL_PREFIX "gplates.app/Contents/${QT_PLUGIN_DIR_BASENAME}")
+    else() # Windows or Linux
+        set(QT_PLUGINS_INSTALL_PREFIX "${QT_PLUGIN_DIR_BASENAME}")
     endif()
 
     # Function to install a Qt plugin target. Call as...
@@ -266,6 +272,8 @@ if (WIN32 OR APPLE)
         install_qt5_plugin(Qt5::QCocoaIntegrationPlugin QT_PLUGINS)
         install_qt5_plugin(Qt5::QMacStylePlugin QT_PLUGINS)
         install_qt5_plugin(Qt5::QMngPlugin QT_PLUGINS)
+    else() # Linux
+        install_qt5_plugin(Qt5::QXcbIntegrationPlugin QT_PLUGINS)
     endif()
 
     #######################################################
@@ -286,6 +294,7 @@ if (WIN32 OR APPLE)
         # On macOS exclude '/usr/lib' and '/System'.
         list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[/usr/lib.*]])
         list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[/System.*]])
+    else() # Linux
     endif()
 
     #
@@ -328,10 +337,11 @@ if (WIN32 OR APPLE)
     #
     # Install the dependency libraries.
     #
-    if (WIN32)
+    if (WIN32 OR
+        CMAKE_SYSTEM_NAME STREQUAL "Linux")  # Windows or Linux
 
-        # On Windows we simply copy the dependency DLLs to the install prefix location (where 'gplates.exe' is)
-        # where they will get found at runtime by virtue of being in the same directory as 'gplates.exe'.
+        # On Windows (and Linux, if standalone enabled) we simply copy the dependency shared libraries to the install prefix location
+        # (where the GPlates executable is) so that they will get found at runtime by virtue of being in the same directory.
         install(
                 CODE [[
                     # Install the dependency libraries in the *install* location.
