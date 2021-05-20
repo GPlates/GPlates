@@ -254,14 +254,17 @@ if (GPLATES_INSTALL_STANDALONE)
     install_qt5_plugin(Qt5::QGenericEnginePlugin QT_PLUGINS)
     install_qt5_plugin(Qt5::QSvgIconPlugin QT_PLUGINS)
     install_qt5_plugin(Qt5::QGifPlugin QT_PLUGINS)
-    install_qt5_plugin(Qt5::QICNSPlugin QT_PLUGINS)
     install_qt5_plugin(Qt5::QICOPlugin QT_PLUGINS)
     install_qt5_plugin(Qt5::QJpegPlugin QT_PLUGINS)
     install_qt5_plugin(Qt5::QSvgPlugin QT_PLUGINS)
-    install_qt5_plugin(Qt5::QTgaPlugin QT_PLUGINS)
-    install_qt5_plugin(Qt5::QTiffPlugin QT_PLUGINS)
-    install_qt5_plugin(Qt5::QWbmpPlugin QT_PLUGINS)
-    install_qt5_plugin(Qt5::QWebpPlugin QT_PLUGINS)
+    # These are common to Windows and macOS only...
+    if (WIN32 OR APPLE)
+        install_qt5_plugin(Qt5::QICNSPlugin QT_PLUGINS)
+        install_qt5_plugin(Qt5::QTgaPlugin QT_PLUGINS)
+        install_qt5_plugin(Qt5::QTiffPlugin QT_PLUGINS)
+        install_qt5_plugin(Qt5::QWbmpPlugin QT_PLUGINS)
+        install_qt5_plugin(Qt5::QWebpPlugin QT_PLUGINS)
+    endif()
 
     # Install platform *dependent* plugins (used by GPlates).
     # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
@@ -298,6 +301,8 @@ if (GPLATES_INSTALL_STANDALONE)
         list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[/usr/lib.*]])
         list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[/System.*]])
     else() # Linux
+        # On Linux exclude '/usr/lib'.
+        list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[/usr/lib.*]])
     endif()
 
     #
@@ -313,7 +318,7 @@ if (GPLATES_INSTALL_STANDALONE)
             CODE "set(QT_PLUGINS \"${QT_PLUGINS}\")"
             CODE [[
                 # Only specify arguments to file(GET_RUNTIME_DEPENDENCIES) if we have them.
-                # The arguments that can be empty are DIRECTORIES, PRE_EXCLUDE_REGEXES and POST_EXCLUDE_REGEXES.
+                # The arguments that might be empty are DIRECTORIES, PRE_EXCLUDE_REGEXES and POST_EXCLUDE_REGEXES.
                 unset(ARGUMENT_DIRECTORIES)
                 unset(ARGUMENT_PRE_EXCLUDE_REGEXES)
                 unset(ARGUMENT_POST_EXCLUDE_REGEXES)
@@ -353,16 +358,30 @@ if (GPLATES_INSTALL_STANDALONE)
     #
     # Install the dependency libraries.
     #
-    if (WIN32 OR
-        CMAKE_SYSTEM_NAME STREQUAL "Linux")  # Windows or Linux
+    if (WIN32)
 
-        # On Windows (and Linux, if standalone enabled) we simply copy the dependency shared libraries to the install prefix location
-        # (where the GPlates executable is) so that they will get found at runtime by virtue of being in the same directory.
+        # On Windows we simply copy the dependency DLLs to the install prefix location (where 'gplates.exe' is)
+        # so that they will get found at runtime by virtue of being in the same directory.
         install(
                 CODE [[
                     # Install the dependency libraries in the *install* location.
                     foreach(_resolved_dependency ${_resolved_dependencies})
                         file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}")
+                    endforeach()
+                ]]
+        )
+
+    elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")  # Linux
+
+        # On Linux (if standalone enabled) we simply copy the dependency shared libraries to the 'lib/' sub-directory of the
+        # install prefix location so that they will get found at runtime from an RPATH of '$ORIGIN/../lib' where $ORIGIN is
+        # the location of the gplates executable (in the 'bin/' sub-directory).
+        install(
+                CODE "set(CMAKE_INSTALL_LIBDIR [[${CMAKE_INSTALL_LIBDIR}]])"
+                CODE [[
+                    # Install the dependency libraries in the *install* location.
+                    foreach(_resolved_dependency ${_resolved_dependencies})
+                        file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" FOLLOW_SYMLINK_CHAIN)
                     endforeach()
                 ]]
         )
