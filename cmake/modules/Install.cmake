@@ -280,6 +280,9 @@ if (GPLATES_INSTALL_STANDALONE)
     # Install all dynamically linked dependency libraries #
     #######################################################
 
+    # List platform-specific parameters to pass to 'file(GET_RUNTIME_DEPENDENCIES ...)'.
+    #
+    # Examples include...
     # List of regular expressions to exclude when searching runtime dependencies.
     # List of directories when searching.
     if (WIN32)
@@ -309,6 +312,19 @@ if (GPLATES_INSTALL_STANDALONE)
             #       ${CMAKE_INSTALL_PREFIX} (inside QT_PLUGINS). And a side note, it does this at install time...
             CODE "set(QT_PLUGINS \"${QT_PLUGINS}\")"
             CODE [[
+                # Only specify arguments to file(GET_RUNTIME_DEPENDENCIES) if we have them.
+                # The arguments that can be empty are DIRECTORIES, PRE_EXCLUDE_REGEXES and POST_EXCLUDE_REGEXES.
+                unset(ARGUMENT_DIRECTORIES)
+                unset(ARGUMENT_PRE_EXCLUDE_REGEXES)
+                unset(ARGUMENT_POST_EXCLUDE_REGEXES)
+                if (GET_RUNTIME_DEPENDENCIES_DIRECTORIES)
+                    set(ARGUMENT_DIRECTORIES DIRECTORIES)
+                endif()
+                if (GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES)
+                    set(ARGUMENT_PRE_EXCLUDE_REGEXES PRE_EXCLUDE_REGEXES)
+                    set(ARGUMENT_POST_EXCLUDE_REGEXES POST_EXCLUDE_REGEXES)
+                endif()
+
                 file(GET_RUNTIME_DEPENDENCIES
                     # Search the *build* target, but we'll later install its dependencies into the *install* location.
                     EXECUTABLES "$<TARGET_FILE:gplates>"
@@ -316,20 +332,20 @@ if (GPLATES_INSTALL_STANDALONE)
                     MODULES ${QT_PLUGINS}
                     BUNDLE_EXECUTABLE "$<TARGET_FILE:gplates>"  # Ignored on non-Apple platforms
                     RESOLVED_DEPENDENCIES_VAR _resolved_dependencies
-                    UNRESOLVED_DEPENDENCIES_VAR _unresolved_dependencies,
-                    CONFLICTING_DEPENDENCIES_PREFIX _conflicting_dependencies,
-                    DIRECTORIES ${GET_RUNTIME_DEPENDENCIES_DIRECTORIES}
-                    PRE_EXCLUDE_REGEXES ${GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES}
-                    POST_EXCLUDE_REGEXES ${GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES})
+                    UNRESOLVED_DEPENDENCIES_VAR _unresolved_dependencies
+                    CONFLICTING_DEPENDENCIES_PREFIX _conflicting_dependencies
+                    ${ARGUMENT_DIRECTORIES} ${GET_RUNTIME_DEPENDENCIES_DIRECTORIES}  # Can evaluate to empty.
+                    ${ARGUMENT_PRE_EXCLUDE_REGEXES} ${GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES}  # Can evaluate to empty.
+                    ${ARGUMENT_POST_EXCLUDE_REGEXES} ${GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES})  # Can evaluate to empty.
 
                 # Fail if any unresolved/conflicting dependencies.
                 if (_unresolved_dependencies)
-                    message(FATAL_ERROR [=[There were unresolved dependencies of "$<TARGET_FILE:gplates>":
-                        ${_unresolved_dependencies}]=])
+                    message(FATAL_ERROR "There were unresolved dependencies of \"$<TARGET_FILE:gplates>\":
+                        ${_unresolved_dependencies}")
                 endif()
                 if (_conflicting_dependencies)
-                    message(FATAL_ERROR [=[There were conflicting dependencies of "$<TARGET_FILE:gplates>":
-                        ${_conflicting_dependencies}]=])
+                    message(FATAL_ERROR "There were conflicting dependencies of \"$<TARGET_FILE:gplates>\":
+                        ${_conflicting_dependencies}")
                 endif()
             ]]
     )
