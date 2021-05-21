@@ -31,11 +31,11 @@
 #include <algorithm>
 #include <functional>
 #include <utility>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/function.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 #include "RasterType.h"
 #include "RawRaster.h"
@@ -265,7 +265,7 @@ namespace GPlatesPropertyValues
 								boost::bind(
 									&RawRasterType::is_no_data_value,
 									boost::cref(raster),
-									_1)));
+									boost::placeholders::_1)));
 
 					return coverage;
 				}
@@ -439,7 +439,7 @@ namespace GPlatesPropertyValues
 							raster.data() + raster.width() * raster.height(),
 							boost::bind(
 								&GPlatesMaths::are_almost_exactly_equal<raster_element_type>,
-								_1,
+								boost::placeholders::_1,
 								no_data_value),
 							casted_nan_value);
 				}
@@ -558,7 +558,7 @@ namespace GPlatesPropertyValues
 				const RawRasterType &raster,
 				typename boost::enable_if_c<RawRasterType::has_no_data_value>::type *dummy = NULL)
 		{
-			return boost::bind(&RawRasterType::is_no_data_value, boost::cref(raster), _1);
+			return boost::bind(&RawRasterType::is_no_data_value, boost::cref(raster), boost::placeholders::_1);
 		}
 
 

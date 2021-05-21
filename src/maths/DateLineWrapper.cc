@@ -28,7 +28,7 @@
 #include <iterator>
 #include <utility>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include "DateLineWrapper.h"

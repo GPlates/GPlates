@@ -24,7 +24,7 @@
  */
 
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>
@@ -571,6 +571,8 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 		const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
 		const GPlatesModel::GpgimVersion &gpml_version)
 {
+	using namespace boost::placeholders;  // For _1, _2, etc
+
 	//
 	// Find the 'gpml:network' property name or whatever it currently is in the GPGIM.
 	//

@@ -26,7 +26,7 @@
 #include <set>
 #include <utility>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
@@ -55,7 +55,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::ReconstructScalarCoverageL
 	d_current_scalar_type(GPlatesPropertyValues::ValueObjectType::create_gpml("")),
 	d_current_reconstruct_scalar_coverage_params(reconstruct_scalar_coverage_params),
 	d_cached_reconstructions(
-			boost::bind(&ReconstructScalarCoverageLayerProxy::create_empty_reconstruction_info, this, _1),
+			boost::bind(&ReconstructScalarCoverageLayerProxy::create_empty_reconstruction_info, this, boost::placeholders::_1),
 			max_num_reconstructions_in_cache)
 {
 	// Defined in ".cc" file because...

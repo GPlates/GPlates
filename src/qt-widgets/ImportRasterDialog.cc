@@ -25,7 +25,7 @@
 
 #include <algorithm>
 #include <iterator>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QString>
 #include <QStringList>
@@ -153,8 +153,8 @@ void
 GPlatesQtWidgets::TimeDependentRasterSequence::sort_by_time()
 {
 	std::sort(d_sequence.begin(), d_sequence.end(),
-			boost::bind(&element_type::time, _1) <
-			boost::bind(&element_type::time, _2));
+			boost::bind(&element_type::time, boost::placeholders::_1) <
+			boost::bind(&element_type::time, boost::placeholders::_2));
 }
 
 
@@ -162,8 +162,8 @@ void
 GPlatesQtWidgets::TimeDependentRasterSequence::sort_by_file_name()
 {
 	std::sort(d_sequence.begin(), d_sequence.end(),
-			boost::bind(&element_type::file_name, _1) <
-			boost::bind(&element_type::file_name, _2));
+			boost::bind(&element_type::file_name, boost::placeholders::_1) <
+			boost::bind(&element_type::file_name, boost::placeholders::_2));
 }
 
 
@@ -199,7 +199,7 @@ GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 					boost::bind(
 						&ImportRasterDialog::set_number_of_bands,
 						boost::ref(*this),
-						_1),
+						boost::placeholders::_1),
 					this));
 	setPage(
 			RASTER_BAND_PAGE_ID,

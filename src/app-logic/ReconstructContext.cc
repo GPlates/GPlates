@@ -25,7 +25,7 @@
 
 #include <algorithm>
 #include <cstddef> // std::size_t
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "ReconstructContext.h"
@@ -831,7 +831,7 @@ GPlatesAppLogic::ReconstructContext::assign_geometry_property_handles()
 	context_state_weak_ref_seq_type::const_iterator context_state_iter = std::find_if(
 			d_context_states.begin(),
 			d_context_states.end(),
-					!boost::bind(&context_state_weak_reference_type::expired, _1));
+					!boost::bind(&context_state_weak_reference_type::expired, boost::placeholders::_1));
 
 	context_state_reference_type context_state;
 	if (context_state_iter == d_context_states.end())
@@ -901,7 +901,7 @@ GPlatesAppLogic::ReconstructContext::initialise_context_states()
 	// longer using) in order to compress the size of the array.
 	d_context_states.erase(
 			std::remove_if(d_context_states.begin(), d_context_states.end(),
-					boost::bind(&context_state_weak_reference_type::expired, _1)),
+					boost::bind(&context_state_weak_reference_type::expired, boost::placeholders::_1)),
 			d_context_states.end());
 
 	// Iterate over the existing context states and re-create their reconstruct methods also.

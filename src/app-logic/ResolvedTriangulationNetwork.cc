@@ -30,7 +30,7 @@
 #include <cstring> // for memset
 #include <exception>
 #include <limits>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/utility/in_place_factory.hpp>
 // Seems we need this to avoid compile problems on some CGAL versions
 // (eg, 4.0.2 on Mac 10.6) for subsequent <CGAL/number_utils.h> include...
@@ -513,7 +513,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformation_in_deform
 			// they are already cached inside the vertices...
 			UncachedDataAccess<DeformationInfo>(
 					get_delaunay_point_2_to_vertex_handle_map(),
-					boost::bind(&calc_delaunay_vertex_deformation, _1)));
+					boost::bind(&calc_delaunay_vertex_deformation, boost::placeholders::_1)));
 }
 
 
@@ -624,7 +624,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 						delaunay_vertex_handle_to_deformed_point_map,
 						get_delaunay_point_2_to_vertex_handle_map(),
 						boost::bind(&calc_delaunay_vertex_deformed_point,
-								_1,
+								boost::placeholders::_1,
 								time_increment,
 								reverse_deform,
 								velocity_delta_time_type,
@@ -924,7 +924,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 							delaunay_vertex_handle_to_velocity_map,
 							get_delaunay_point_2_to_vertex_handle_map(),
 							boost::bind(&calc_delaunay_vertex_velocity,
-									_1,
+									boost::placeholders::_1,
 									velocity_delta_time,
 									velocity_delta_time_type)));
 

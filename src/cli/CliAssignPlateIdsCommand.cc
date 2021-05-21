@@ -27,7 +27,7 @@
 #include <algorithm>
 #include <cstddef> // For std::size_t
 #include <string>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <QString>
 
@@ -385,7 +385,7 @@ GPlatesCli::AssignPlateIdsCommand::run(
 			boost::bind(
 					&GPlatesAppLogic::AssignPlateIds::assign_reconstruction_plate_ids,
 					boost::ref(plate_id_assigner),
-					_1,
+					boost::placeholders::_1,
 					boost::optional<const GPlatesAppLogic::ReconstructMethodInterface::Context &>()/*boost::none*/));
 
 	// Iterate through the feature collection files that had their plate ids (re)assigned and

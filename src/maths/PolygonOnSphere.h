@@ -33,7 +33,7 @@
 #include <algorithm> 
 #include <utility>  // std::pair
 #include <boost/function.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/iterator/iterator_facade.hpp>

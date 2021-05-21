@@ -26,7 +26,7 @@
 #include <algorithm>
 #include <utility>
 #include <cmath>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
@@ -184,11 +184,19 @@ GPlatesAppLogic::ScalarCoverageEvolution::ScalarCoverageEvolution(
 					// The function to create a scalar coverage sample in rigid (non-deforming) regions...
 					boost::bind(
 							&ScalarCoverageEvolution::create_time_span_rigid_sample,
-							this, _1, _2, _3),
+							this,
+							boost::placeholders::_1,
+							boost::placeholders::_2,
+							boost::placeholders::_3),
 					// The function to interpolate evolved scalar coverage time samples...
 					boost::bind(
 							&ScalarCoverageEvolution::interpolate_time_span_samples,
-							this, _1, _2, _3, _4, _5),
+							this,
+							boost::placeholders::_1,
+							boost::placeholders::_2,
+							boost::placeholders::_3,
+							boost::placeholders::_4,
+							boost::placeholders::_5),
 					// Present day sample...
 					//
 					// Note that we'll modify this if the initial time is earlier than (before) the end

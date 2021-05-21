@@ -103,7 +103,18 @@
 //
 // boost::python
 //
+// Note: Boost 1.73+ deprecated including <boost/bind.hpp> in favour of including <boost/bind/bind.hpp>
+//       in order to avoid importing the placeholders _1, _2, etc, into the global namespace.
+//       We've fixed this up in our code, but unfortunately Boost 1.74 still includes <boost/bind.hpp>
+//       in its Boost-Python code (see https://github.com/boostorg/python/issues/359) and so
+//       we still get the deprecation warning. So we're forced to silence the warning by defining
+//       BOOST_BIND_GLOBAL_PLACEHOLDERS here. We then undef it so that in the future, when Boost is fixed
+//       and no longer includes <boost/bind.hpp>, then we will get a warning if we ever inadvertently
+//       include <boost/bind.hpp>.
+//
+#	define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #	include <boost/python.hpp>
+#	undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
 //
 // boost::python::numpy

@@ -760,10 +760,10 @@ namespace GPlatesFileIO
 						reconstruction_time);
 					break;
 
-                // Both SHAPEFILE and OGRGMT formats use the same
-                // OgrFormat.... exporter.
+                // Both SHAPEFILE, OGRGMT and GEOJSON formats use the same OgrFormat exporter.
 				case SHAPEFILE:
                 case OGRGMT:
+				case GEOJSON:
 					OgrFormatResolvedTopologicalGeometryExport::export_citcoms_resolved_topological_boundaries(
 						resolved_topologies,
 						filename,
@@ -821,10 +821,10 @@ namespace GPlatesFileIO
 						reconstruction_time);
 					break;
 
-                // Both SHAPEFILE and OGRGMT formats use the same
-                // OgrFormat.... exporter.
+                // Both SHAPEFILE, OGRGMT and GEOJSON formats use the same OgrFormat exporter.
                 case SHAPEFILE:
                 case OGRGMT:
+				case GEOJSON:
 					OgrFormatResolvedTopologicalGeometryExport::export_citcoms_sub_segments(
 						sub_segment_groups,
 						filename,
@@ -1597,6 +1597,8 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::get_export_file_format(
 		return OGRGMT;
 	case FeatureCollectionFileFormat::SHAPEFILE:
 		return SHAPEFILE;
+	case FeatureCollectionFileFormat::GEOJSON:
+		return GEOJSON;
 	default:
 		break;
 	}

@@ -34,7 +34,7 @@
 #include <set>
 #include <utility>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/current_function.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>

@@ -2,17 +2,11 @@
 # Useful CMAKE variables.
 #
 
-# The GPlates package name.
-set(GPLATES_PACKAGE_NAME "GPlates")
-
 # The GPlates package vendor.
 set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
 
 # A short description of the GPlates project (only a few words).
 set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the interactive visualisation of plate tectonics.")
-
-# The current GPlates version.
-set(GPLATES_VERSION_STRING "${GPLATES_PACKAGE_NAME} ${GPlates_VERSION}")
 
 # The pygplates (GPlates Python API) revision.
 #
@@ -80,21 +74,38 @@ set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2007-
 # And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
 option(GPLATES_PUBLIC_RELEASE "Public release (to non-developers)." false)
 
-# Whether to include sample data in the binary installer or not.
+# Whether to install GPlates as a standalone bundle (by copying dependency libraries during installation).
+#
+# On Windows and Apple we have install code to fix up GPlates for deployment to another machine
+# (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
+# This is always enabled, so we don't provide an option to the user to disable it.
+#
+# On Linux systems we don't enable (by default) the copying of dependency libraries because there we rely on the
+# Linux binary package manager to install them (for example, we create a '.deb' package that only *lists* the dependencies,
+# which are then installed on the target system if not already there).
+# However we allow the user to enable this in case they want to create a standalone bundle for their own use case.
+#
+if (WIN32 OR APPLE)
+	set(GPLATES_INSTALL_STANDALONE true)
+else() # Linux
+	option(GPLATES_INSTALL_STANDALONE "Install GPlates as a standalone bundle (copy dependency libraries into GPlates install directory)." false)
+endif()
+
+# Whether to install sample data (eg, in the binary installer) or not.
 # By default this is false and only enabled when packaging a public release.
 #
 # Developers may want to turn this on, using the cmake command-line or cmake GUI, even when not releasing a public build.
-option(GPLATES_INCLUDE_SAMPLE_DATA "Include sample data in the binary installer." false)
+option(GPLATES_INSTALL_SAMPLE_DATA "Install sample data (eg, in the binary installer)." false)
 
 # The directory location of the sample data.
-# The sample data is only included in the binary installer if 'GPLATES_INCLUDE_SAMPLE_DATA' is true.
+# The sample data is only included in the binary installer if 'GPLATES_INSTALL_SAMPLE_DATA' is true.
 # Paths must be full paths (eg, '~/sample-data' is ok but '../sample-data' is not).
 set(GPLATES_SAMPLE_DATA_DIR "" CACHE PATH "Location of sample data.")
 
 # The macOS code signing identity used to sign installed/packaged GPlates application bundle with a Developer ID certificate.
 #
-# NOTE: Leave it as the *empty* string here (so it doesn't get checked into source code control).
-#       User is responsible to setting it to their ID (eg, using 'cmake -D', or CMake GUI, or 'ccmake').
+# NOTE: Leave it as the *empty* string here (so it doesn't get committed to source code control).
+#       User is responsible for setting it to their Developer ID (eg, using 'cmake -D', or CMake GUI, or 'ccmake').
 #       It should typically be installed into the Keychain and look something like "Developer ID Application: <ID>".
 if (APPLE)
 	set(GPLATES_APPLE_CODE_SIGN_IDENTITY "" CACHE STRING "Apple code signing identity.")

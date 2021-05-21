@@ -30,7 +30,7 @@
 #include <iterator>
 #include <map>
 #include <utility>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -235,18 +235,18 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometryTimeSpan(
 					boost::bind(
 							&GeometryTimeSpan::create_rigid_geometry_sample,
 							this,
-							_1,
-							_2,
-							_3),
+							boost::placeholders::_1,
+							boost::placeholders::_2,
+							boost::placeholders::_3),
 					// The function to interpolate geometry samples...
 					boost::bind(
 							&GeometryTimeSpan::interpolate_geometry_sample,
 							this,
-							_1,
-							_2,
-							_3,
-							_4,
-							_5),
+							boost::placeholders::_1,
+							boost::placeholders::_2,
+							boost::placeholders::_3,
+							boost::placeholders::_4,
+							boost::placeholders::_5),
 					// The present day geometry points.
 					// Note that we'll need to modify this if 'geometry_import_time' is earlier
 					// than the end of the time range since might be affected by time range...

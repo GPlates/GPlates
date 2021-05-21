@@ -75,19 +75,8 @@ namespace GPlatesFileIO
 				switch (export_format)
 				{
 				case SHAPEFILE:
-					OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
-						export_per_collection,
-						grouped_recon_geoms_seq,
-						filename,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						force_polygon_orientation,
-						wrap_to_dateline);
-					break;
-
 				case OGRGMT:
+				case GEOJSON:
 					OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
 						export_per_collection,
 						grouped_recon_geoms_seq,
@@ -133,18 +122,8 @@ namespace GPlatesFileIO
 				switch (export_format)
 				{
 				case SHAPEFILE:
-					OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_sections(
-						export_per_collection,
-						resolved_topological_sections,
-						filename,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						wrap_to_dateline);
-					break;
-
 				case OGRGMT:
+				case GEOJSON:
 					OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_sections(
 						export_per_collection,
 						resolved_topological_sections,
@@ -200,6 +179,8 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(
 		return SHAPEFILE;
 	case FeatureCollectionFileFormat::OGRGMT:
 		return OGRGMT;
+	case FeatureCollectionFileFormat::GEOJSON:
+		return GEOJSON;
 	default:
 		break;
 	}

@@ -252,7 +252,7 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::CachedReconstructionTreeCr
 			boost::bind(
 					&CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_graph,
 					this,
-					_1,
+					boost::placeholders::_1,
 					// Non-null intrusive pointer to reconstruction graph gets copied by boost-bind...
 					create_reconstruction_graph(
 							reconstruction_feature_collections,
@@ -271,7 +271,7 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::CachedReconstructionTreeCr
 			boost::bind(
 					&CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_tree_creator,
 					this,
-					_1,
+					boost::placeholders::_1,
 					reconstruction_tree_creator)),
 	d_get_default_anchor_plate_id_function([=]()
 		{

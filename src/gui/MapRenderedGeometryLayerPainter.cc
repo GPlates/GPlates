@@ -2043,7 +2043,10 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_geometries(
 	std::for_each(
 		d_rendered_geometry_layer.rendered_geometry_begin(),
 		d_rendered_geometry_layer.rendered_geometry_end(),
-		boost::bind(&GPlatesViewOperations::RenderedGeometry::accept_visitor, _1, boost::ref(*this)));
+		boost::bind(
+				&GPlatesViewOperations::RenderedGeometry::accept_visitor,
+				boost::placeholders::_1,
+				boost::ref(*this)));
 }
 
 

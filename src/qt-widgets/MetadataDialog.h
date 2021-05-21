@@ -25,6 +25,7 @@
 #ifndef METADATA_DIALOG_H
 #define METADATA_DIALOG_H
 
+#include <boost/bind/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <iostream>
 #include <QComboBox>
@@ -527,7 +528,7 @@ namespace GPlatesQtWidgets
 			std::remove_if(
 					d_fc_meta.get_dc_data().contributors.begin(),
 					d_fc_meta.get_dc_data().contributors.end(),
-					boost::bind(&MetadataDialog::is_the_contributor_name,this,_1,name));
+					boost::bind(&MetadataDialog::is_the_contributor_name, this, boost::placeholders::_1, name));
 			d_fc_meta.get_dc_data().contributors.pop_back();
 			save();
 			meta_tree->clear();
@@ -551,7 +552,7 @@ namespace GPlatesQtWidgets
 			std::remove_if(
 					d_fc_meta.get_geo_time_scales().begin(),
 					d_fc_meta.get_geo_time_scales().end(),
-					boost::bind(&MetadataDialog::is_the_gts_name,this,_1,name));
+					boost::bind(&MetadataDialog::is_the_gts_name, this, boost::placeholders::_1, name));
 			d_fc_meta.get_geo_time_scales().pop_back();
 			save();
 			meta_tree->clear();
@@ -574,7 +575,7 @@ namespace GPlatesQtWidgets
 			std::remove_if(
 					d_fc_meta.get_dc_data().creators.begin(),
 					d_fc_meta.get_dc_data().creators.end(),
-					boost::bind(&MetadataDialog::is_the_creator_name,this,_1,name));
+					boost::bind(&MetadataDialog::is_the_creator_name, this, boost::placeholders::_1, name));
 			d_fc_meta.get_dc_data().creators.pop_back();
 			save();
 			meta_tree->clear();

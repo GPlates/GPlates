@@ -24,7 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QDebug>
 
@@ -133,7 +133,9 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReader::get_structural_type_reader_func
 void
 GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_time_dependent_wrapper_structural_types()
 {
-	d_structural_type_reader_map[StructuralType::create_gpml("ConstantValue")] = 
+	using namespace boost::placeholders;  // For _1, _2, etc
+
+	d_structural_type_reader_map[StructuralType::create_gpml("ConstantValue")] =
 			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
 					&GpmlPropertyStructuralTypeReaderUtils::create_gpml_constant_value, _1, boost::cref(*this), _2, _3);
 
@@ -150,6 +152,8 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_time_dependent_wrapper_stru
 void
 GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_native_structural_types()
 {
+	using namespace boost::placeholders;  // For _1, _2, etc
+
 	//
 	// XSI namespace.
 	//
@@ -302,6 +306,8 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_native_structural_types()
 void
 GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_enumeration_structural_types()
 {
+	using namespace boost::placeholders;  // For _1, _2, etc
+
 	const GPlatesModel::Gpgim::property_enumeration_type_seq_type &gpgim_property_enumeration_types =
 			GPlatesModel::Gpgim::instance().get_property_enumeration_types();
 

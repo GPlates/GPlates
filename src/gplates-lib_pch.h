@@ -71,7 +71,7 @@
 #include <boost/lambda/lambda.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/operators.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/checked_delete.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
