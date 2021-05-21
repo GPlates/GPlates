@@ -37,19 +37,20 @@ if (WIN32 OR APPLE)
     # For Windows this is because we'll copy the dependency DLLs into the same directory as gplates (so it can find them).
     # For macOS this is because we want the app bundle to be in the base directory so when it's packaged you immediately see the bundle.
     install(TARGETS gplates
-        # Support all configurations (ie, no need for CONFIGURATIONS option).
+        # Support all configurations (ie, no need for CONFIGURATIONS option). This applies to all install(TARGETS), not just this one.
         # Note that if we only supported Release then we'd have to specify 'CONFIGURATIONS Release' for every install() command (not just TARGETS)...
         #
         # CONFIGURATIONS Release RelWithDebInfo MinSizeRel Debug
         RUNTIME DESTINATION .  # Windows
         BUNDLE DESTINATION .)  # Apple
 else() # Linux
-    install(TARGETS gplates
-        # Support all configurations (ie, no need for CONFIGURATIONS option).
-        # Note that if we only supported Release then we'd have to specify 'CONFIGURATIONS Release' for every install() command (not just TARGETS)...
-        #
-        # CONFIGURATIONS Release RelWithDebInfo MinSizeRel Debug
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})  # Linux
+    if (GPLATES_INSTALL_STANDALONE)
+        # For standalone we want to bundle everything together so it's relocatable, and it's easier to place the executable
+        # in the base install directory (along with 'qt.conf', which has to be in the same directory as the exectuable).
+        install(TARGETS gplates RUNTIME DESTINATION .)
+    else()
+        install(TARGETS gplates RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    endif()
 endif()
 
 
@@ -59,7 +60,12 @@ if(EXISTS "${GPlates_SOURCE_DIR}/scripts/hellinger.py")
     elseif (APPLE)
         install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION gplates.app/Contents/Resources/scripts/)
     else() # Linux
-        install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION share/gplates/scripts/)
+        if (GPLATES_INSTALL_STANDALONE)
+            # For standalone we want to bundle everything together so it's relocatable.
+            install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION scripts/)
+        else()
+            install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION share/gplates/scripts/)
+        endif()
     endif()
 endif()
 
@@ -69,7 +75,12 @@ if(EXISTS "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py")
     elseif (APPLE)
         install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION gplates.app/Contents/Resources/scripts/)
     else() # Linux
-        install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION share/gplates/scripts/)
+        if (GPLATES_INSTALL_STANDALONE)
+            # For standalone we want to bundle everything together so it's relocatable.
+            install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION scripts/)
+        else()
+            install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION share/gplates/scripts/)
+        endif()
     endif()
 endif()
 
@@ -100,15 +111,25 @@ if (GPLATES_INSTALL_SAMPLE_DATA)
     #       Something like "C:\gplates\build\trunk-py37\" (which is already 28 characters).
     #
     if (WIN32 OR APPLE)
-        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION SampleData)
+        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION SampleData/)
     else() # Linux
-        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION share/gplates/SampleData)
+        if (GPLATES_INSTALL_STANDALONE)
+            # For standalone we want to bundle everything together so it's relocatable.
+            install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION SampleData/)
+        else()
+            install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION share/gplates/SampleData/)
+        endif()
     endif()
 endif()
 
-if (NOT (WIN32 OR APPLE)) # Linux
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")  # Linux
     if(EXISTS "${GPlates_SOURCE_DIR}/doc/gplates.1.gz")
-        install(FILES  "${GPlates_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION share/man/man1/)
+        if (GPLATES_INSTALL_STANDALONE)
+            # For standalone we want to bundle everything together so it's relocatable.
+            install(FILES  "${GPlates_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION man1/)
+        else()
+            install(FILES  "${GPlates_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION share/man/man1/)
+        endif()
     endif()
 endif()
 
@@ -184,17 +205,17 @@ if (GPLATES_INSTALL_STANDALONE)
 
     # Create the "qt.conf" file.
     set(QT_CONF_FILE "${CMAKE_CURRENT_BINARY_DIR}/qt.conf")
+    # We'll place the Qt plugins in the 'plugins/' sub-directory of the directory containing 'qt.conf'.
     set(QT_PLUGIN_DIR_BASENAME "plugins")
     file(WRITE "${QT_CONF_FILE}" "[Paths]\nPlugins = ${QT_PLUGIN_DIR_BASENAME}\n")
 
     # Install the "qt.conf" file.
-    install(CODE "set(QT_CONF_FILE [[${QT_CONF_FILE}]])")
     if (APPLE)
         # On macOS install into the bundle 'Resources' directory.
-        install(CODE [[file(INSTALL "${QT_CONF_FILE}" DESTINATION "${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/Resources")]])
+        install(FILES "${QT_CONF_FILE}" DESTINATION gplates.app/Contents/Resources/)
     else() # Windows or Linux
-        # On Windows, install into the base install directory.
-        install(CODE [[file(INSTALL "${QT_CONF_FILE}" DESTINATION "${CMAKE_INSTALL_PREFIX}")]])
+        # On Windows, and standalone Linux, install into same directory as executable (the base install directory).
+        install(FILES "${QT_CONF_FILE}" DESTINATION .)
     endif()
 
     ######################
@@ -203,8 +224,11 @@ if (GPLATES_INSTALL_STANDALONE)
 
     # The 'plugins' directory relative to ${CMAKE_INSTALL_PREFIX}.
     if (APPLE)
+        # On macOS relative paths inside 'qt.conf' are relative to 'gplates.app/Contents/'.
         set(QT_PLUGINS_INSTALL_PREFIX "gplates.app/Contents/${QT_PLUGIN_DIR_BASENAME}")
     else() # Windows or Linux
+        # On Windows, and Linux, relative paths inside 'qt.conf' are relative to the
+        # directory containing the executable (which is in the base install directory).
         set(QT_PLUGINS_INSTALL_PREFIX "${QT_PLUGIN_DIR_BASENAME}")
     endif()
 
@@ -367,21 +391,6 @@ if (GPLATES_INSTALL_STANDALONE)
                     # Install the dependency libraries in the *install* location.
                     foreach(_resolved_dependency ${_resolved_dependencies})
                         file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}")
-                    endforeach()
-                ]]
-        )
-
-    elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")  # Linux
-
-        # On Linux (if standalone enabled) we simply copy the dependency shared libraries to the 'lib/' sub-directory of the
-        # install prefix location so that they will get found at runtime from an RPATH of '$ORIGIN/../lib' where $ORIGIN is
-        # the location of the gplates executable (in the 'bin/' sub-directory).
-        install(
-                CODE "set(CMAKE_INSTALL_LIBDIR [[${CMAKE_INSTALL_LIBDIR}]])"
-                CODE [[
-                    # Install the dependency libraries in the *install* location.
-                    foreach(_resolved_dependency ${_resolved_dependencies})
-                        file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" FOLLOW_SYMLINK_CHAIN)
                     endforeach()
                 ]]
         )
@@ -737,5 +746,21 @@ if (GPLATES_INSTALL_STANDALONE)
                     codesign(${CMAKE_INSTALL_PREFIX}/gplates.app)
                 ]]
         )
+
+    else()  # Linux
+
+        # On Linux (if standalone enabled) we simply copy the dependency shared libraries to the 'lib/' sub-directory of the
+        # install prefix location so that they will get found at runtime from an RPATH of '$ORIGIN/lib' where $ORIGIN is
+        # the location of the gplates executable (in the base install directory).
+        install(
+                CODE "set(CMAKE_INSTALL_LIBDIR [[${CMAKE_INSTALL_LIBDIR}]])"
+                CODE [[
+                    # Install the dependency libraries in the *install* location.
+                    foreach(_resolved_dependency ${_resolved_dependencies})
+                        file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" FOLLOW_SYMLINK_CHAIN)
+                    endforeach()
+                ]]
+        )
+    
     endif()
 endif()
