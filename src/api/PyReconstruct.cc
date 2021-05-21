@@ -288,76 +288,6 @@ namespace GPlatesApi
 		}
 
 
-		// Traits class to allow one 'get_format()' function to handle all three export namespaces
-		// 'ReconstructedFeatureGeometryExport', 'ReconstructedFlowlineExport' and 'ReconstructedMotionPathExport'.
-		template <class ReconstructionGeometryType>
-		struct FormatTraits
-		{  };
-
-		template <>
-		struct FormatTraits<GPlatesAppLogic::ReconstructedFeatureGeometry>
-		{
-			typedef GPlatesFileIO::ReconstructedFeatureGeometryExport::Format format_type;
-
-			static const format_type UNKNOWN = GPlatesFileIO::ReconstructedFeatureGeometryExport::UNKNOWN;
-			static const format_type GMT = GPlatesFileIO::ReconstructedFeatureGeometryExport::GMT;
-			static const format_type SHAPEFILE = GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE;
-			static const format_type OGRGMT = GPlatesFileIO::ReconstructedFeatureGeometryExport::OGRGMT;
-		};
-
-		template <>
-		struct FormatTraits<GPlatesAppLogic::ReconstructedMotionPath>
-		{
-			typedef GPlatesFileIO::ReconstructedMotionPathExport::Format format_type;
-
-			static const format_type UNKNOWN = GPlatesFileIO::ReconstructedMotionPathExport::UNKNOWN;
-			static const format_type GMT = GPlatesFileIO::ReconstructedMotionPathExport::GMT;
-			static const format_type SHAPEFILE = GPlatesFileIO::ReconstructedMotionPathExport::SHAPEFILE;
-			static const format_type OGRGMT = GPlatesFileIO::ReconstructedMotionPathExport::OGRGMT;
-		};
-
-		template <>
-		struct FormatTraits<GPlatesAppLogic::ReconstructedFlowline>
-		{
-			typedef GPlatesFileIO::ReconstructedFlowlineExport::Format format_type;
-
-			static const format_type UNKNOWN = GPlatesFileIO::ReconstructedFlowlineExport::UNKNOWN;
-			static const format_type GMT = GPlatesFileIO::ReconstructedFlowlineExport::GMT;
-			static const format_type SHAPEFILE = GPlatesFileIO::ReconstructedFlowlineExport::SHAPEFILE;
-			static const format_type OGRGMT = GPlatesFileIO::ReconstructedFlowlineExport::OGRGMT;
-		};
-
-
-		/**
-		 * Template function to handles format retrieval for all three export namespaces
-		 * 'ReconstructedFeatureGeometryExport', 'ReconstructedFlowlineExport' and 'ReconstructedMotionPathExport'.
-		 */
-		template <class ReconstructionGeometryType>
-		typename FormatTraits<ReconstructionGeometryType>::format_type
-		get_format(
-				QString file_name)
-		{
-			static const QString GMT_EXT = ".xy";
-			static const QString SHP_EXT = ".shp";
-			static const QString OGRGMT_EXT = ".gmt";
-
-			if (file_name.endsWith(GMT_EXT))
-			{
-				return FormatTraits<ReconstructionGeometryType>::GMT;
-			}
-			if (file_name.endsWith(SHP_EXT))
-			{
-				return FormatTraits<ReconstructionGeometryType>::SHAPEFILE;
-			}
-			if (file_name.endsWith(OGRGMT_EXT))
-			{
-				return FormatTraits<ReconstructionGeometryType>::OGRGMT;
-			}
-
-			return FormatTraits<ReconstructionGeometryType>::UNKNOWN;
-		}
-
-
 		void
 		export_reconstructed_feature_geometries(
 				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &rfgs,
@@ -378,8 +308,11 @@ namespace GPlatesApi
 				reconstructed_feature_geometries.push_back(rfg.get());
 			}
 
+			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 			const GPlatesFileIO::ReconstructedFeatureGeometryExport::Format format =
-					get_format<GPlatesAppLogic::ReconstructedFeatureGeometry>(export_file_name);
+					GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
+							export_file_name,
+							file_format_registry);
 
 			// The API docs state that dateline wrapping should be ignored except for Shapefile.
 			//
@@ -429,8 +362,11 @@ namespace GPlatesApi
 					rfgs.end(),
 					reconstructed_motion_paths);
 
+			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 			const GPlatesFileIO::ReconstructedMotionPathExport::Format format =
-					get_format<GPlatesAppLogic::ReconstructedMotionPath>(export_file_name);
+					GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(
+							export_file_name,
+							file_format_registry);
 
 			// The API docs state that dateline wrapping should be ignored except for Shapefile.
 			//
@@ -475,8 +411,11 @@ namespace GPlatesApi
 					rfgs.end(),
 					reconstructed_flowlines);
 
+			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 			const GPlatesFileIO::ReconstructedFlowlineExport::Format format =
-					get_format<GPlatesAppLogic::ReconstructedFlowline>(export_file_name);
+					GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(
+							export_file_name,
+							file_format_registry);
 
 			// The API docs state that dateline wrapping should be ignored except for Shapefile.
 			//
