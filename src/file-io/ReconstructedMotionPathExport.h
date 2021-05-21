@@ -56,10 +56,9 @@ namespace GPlatesFileIO
 			UNKNOWN,           //!< Format, or file extension, is unknown.
 
 			GMT,               //!< '.xy' extension.
-			
 			SHAPEFILE,         //!< '.shp' extension.
-
-			OGRGMT			   // OGRGMT format.
+			OGRGMT,            //!< '.gmt' extension.
+			GEOJSON            //!< '.geojson' or '.json' extension.
 		};
 
 

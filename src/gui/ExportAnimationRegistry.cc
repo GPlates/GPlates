@@ -288,6 +288,26 @@ namespace GPlatesGui
 							// The 'true' allows user to turn on/off dateline wrapping of geometries...
 							_1, _2, _3, true),
 					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+			registry.register_exporter(
+					ExportAnimationType::get_export_id(
+							ExportAnimationType::RECONSTRUCTED_GEOMETRIES,
+							ExportAnimationType::GEOJSON),
+					ExportReconstructedGeometryAnimationStrategy::const_configuration_ptr(
+						new ExportReconstructedGeometryAnimationStrategy::Configuration(
+								add_export_filename_extension("reconstructed_%0.2fMa", ExportAnimationType::GEOJSON),
+								ExportReconstructedGeometryAnimationStrategy::Configuration::GEOJSON,
+								default_reconstructed_geometry_file_export_options,
+								false/*wrap_to_dateline*/)),
+					&create_animation_strategy<ExportReconstructedGeometryAnimationStrategy>,
+					boost::bind(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportReconstructedGeometryOptionsWidget,
+									ExportReconstructedGeometryAnimationStrategy,
+									bool>,
+							// The 'true' allows user to turn on/off dateline wrapping of geometries...
+							_1, _2, _3, true),
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 		}
 
 
@@ -690,6 +710,31 @@ namespace GPlatesGui
 							// The 'true' allows the user to turn on/off dateline wrapping of geometries...
 							_1, _2, _3, true),
 					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+
+			registry.register_exporter(
+					ExportAnimationType::get_export_id(
+						ExportAnimationType::RESOLVED_TOPOLOGIES,
+							ExportAnimationType::GEOJSON),
+					ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
+							new ExportResolvedTopologyAnimationStrategy::Configuration(
+									add_export_filename_extension("topology%P_%0.2fMa", ExportAnimationType::GEOJSON),
+									ExportResolvedTopologyAnimationStrategy::Configuration::GEOJSON,
+									default_resolved_topology_file_export_options,
+									default_resolved_topology_export_lines,
+									default_resolved_topology_export_polygons,
+									default_resolved_topology_export_networks,
+									default_resolved_topology_export_sections,
+									default_resolved_topology_export_force_polygon_orientation,
+									false/*wrap_to_dateline*/)),
+					&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
+					boost::bind(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget,
+									ExportResolvedTopologyAnimationStrategy,
+									bool>,
+							// The 'true' allows the user to turn on/off dateline wrapping of geometries...
+							_1, _2, _3, true),
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 		}
 
 
@@ -703,7 +748,7 @@ namespace GPlatesGui
 			using namespace boost::placeholders;  // For _1, _2, etc
 
 			// Set defaults 
-			const GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::OutputOptions
+			GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::OutputOptions
 					default_citcoms_resolved_topology_export_options(
 							/*wrap_geometries_to_the_dateline*/true,
 
@@ -747,6 +792,7 @@ namespace GPlatesGui
 							/*export_slab_boundaries*/true
 						);
 
+			default_citcoms_resolved_topology_export_options.wrap_geometries_to_the_dateline = false;
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
 							ExportAnimationType::RESOLVED_TOPOLOGIES_CITCOMS,
@@ -766,6 +812,9 @@ namespace GPlatesGui
 							_1, _2, _3, false),
 					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
+			// Shapefile is only format that we enable dateline wrapping for.
+			// Others, like OGRGMT, do not need it since GMT software can plot fine without dateline wrapping.
+			default_citcoms_resolved_topology_export_options.wrap_geometries_to_the_dateline = true;
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
 							ExportAnimationType::RESOLVED_TOPOLOGIES_CITCOMS,
@@ -785,6 +834,7 @@ namespace GPlatesGui
 							_1, _2, _3, true),
 					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
+			default_citcoms_resolved_topology_export_options.wrap_geometries_to_the_dateline = false;
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
 						ExportAnimationType::RESOLVED_TOPOLOGIES_CITCOMS,
@@ -793,6 +843,26 @@ namespace GPlatesGui
 							new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
 									add_export_filename_extension("topology_%P_%0.2fMa", ExportAnimationType::OGRGMT),
 									ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
+									default_citcoms_resolved_topology_export_options)),
+					&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,
+					boost::bind(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget,
+									ExportCitcomsResolvedTopologyAnimationStrategy,
+									bool>,
+							// The 'false' prevents user from turning on/off dateline wrapping of geometries...
+							_1, _2, _3, false),
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+
+			default_citcoms_resolved_topology_export_options.wrap_geometries_to_the_dateline = false;
+			registry.register_exporter(
+					ExportAnimationType::get_export_id(
+						ExportAnimationType::RESOLVED_TOPOLOGIES_CITCOMS,
+							ExportAnimationType::GEOJSON),
+					ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
+							new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
+									add_export_filename_extension("topology_%P_%0.2fMa", ExportAnimationType::GEOJSON),
+									ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::GEOJSON,
 									default_citcoms_resolved_topology_export_options)),
 					&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,
 					boost::bind(
@@ -1492,7 +1562,6 @@ namespace GPlatesGui
 							_1, _2, _3, true),
 					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
-
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
 						ExportAnimationType::FLOWLINES,
@@ -1501,6 +1570,26 @@ namespace GPlatesGui
 					new ExportFlowlineAnimationStrategy::Configuration(
 							add_export_filename_extension("flowline_output_%0.2fMa", ExportAnimationType::OGRGMT),
 							ExportFlowlineAnimationStrategy::Configuration::OGRGMT,
+							default_flowline_file_export_options,
+							false/*wrap_to_dateline*/)),
+				&create_animation_strategy<ExportFlowlineAnimationStrategy>,
+					boost::bind(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportFlowlineOptionsWidget,
+									ExportFlowlineAnimationStrategy,
+									bool>,
+							// The 'true' allows user to turn on/off dateline wrapping of geometries...
+							_1, _2, _3, true),
+				&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+			registry.register_exporter(
+					ExportAnimationType::get_export_id(
+						ExportAnimationType::FLOWLINES,
+						ExportAnimationType::GEOJSON),
+				ExportFlowlineAnimationStrategy::const_configuration_ptr(
+					new ExportFlowlineAnimationStrategy::Configuration(
+							add_export_filename_extension("flowline_output_%0.2fMa", ExportAnimationType::GEOJSON),
+							ExportFlowlineAnimationStrategy::Configuration::GEOJSON,
 							default_flowline_file_export_options,
 							false/*wrap_to_dateline*/)),
 				&create_animation_strategy<ExportFlowlineAnimationStrategy>,
@@ -1570,7 +1659,6 @@ namespace GPlatesGui
 							_1, _2, _3, true),
 					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
-
 			registry.register_exporter(
 					ExportAnimationType::get_export_id(
 						ExportAnimationType::MOTION_PATHS,
@@ -1579,6 +1667,26 @@ namespace GPlatesGui
 						new ExportMotionPathAnimationStrategy::Configuration(
 							add_export_filename_extension("motion_path_output_%0.2fMa", ExportAnimationType::OGRGMT),
 							ExportMotionPathAnimationStrategy::Configuration::OGRGMT,
+							default_motion_path_file_export_options,
+							false/*wrap_to_dateline*/)),
+					&create_animation_strategy<ExportMotionPathAnimationStrategy>,
+					boost::bind(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportMotionPathOptionsWidget,
+									ExportMotionPathAnimationStrategy,
+									bool>,
+							// The 'true' allows user to turn on/off dateline wrapping of geometries...
+							_1, _2, _3, true),
+					&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+			registry.register_exporter(
+					ExportAnimationType::get_export_id(
+						ExportAnimationType::MOTION_PATHS,
+						ExportAnimationType::GEOJSON),
+					ExportMotionPathAnimationStrategy::const_configuration_ptr(
+						new ExportMotionPathAnimationStrategy::Configuration(
+							add_export_filename_extension("motion_path_output_%0.2fMa", ExportAnimationType::GEOJSON),
+							ExportMotionPathAnimationStrategy::Configuration::GEOJSON,
 							default_motion_path_file_export_options,
 							false/*wrap_to_dateline*/)),
 					&create_animation_strategy<ExportMotionPathAnimationStrategy>,
