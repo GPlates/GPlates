@@ -372,6 +372,48 @@ class ReconstructTestCase(unittest.TestCase):
             self.assertTrue(len(reconstructed_motion_path.get_motion_path()) == 4)
             # Last point in motion path is reconstructed seed point.
             self.assertTrue(reconstructed_motion_path.get_motion_path()[-1] == reconstructed_motion_path.get_reconstructed_seed_point())
+
+    def test_reconstruct_export_files(self):
+        reconstruct_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'volcanoes.gpml')) 
+        self.assertTrue(len(reconstruct_features) == 4)
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        
+        def _internal_test_export_files(test_case, reconstruct_features, rotation_model, tmp_export_filename):
+            tmp_export_filename = os.path.join(FIXTURES, tmp_export_filename)
+            
+            pygplates.reconstruct(
+                reconstruct_features,
+                rotation_model,
+                tmp_export_filename,
+                pygplates.GeoTimeInstant(10))
+            
+            test_case.assertTrue(os.path.isfile(tmp_export_filename))
+            
+            # Read back in the exported file to make sure correct number of features (except cannot read '.xy' files).
+            if not tmp_export_filename.endswith('.xy'):
+                reconstruct_features = pygplates.FeatureCollection(tmp_export_filename) 
+                test_case.assertTrue(len(reconstruct_features) == 4)
+            
+            os.remove(tmp_export_filename)
+
+            # In case an OGR format file (which also has shapefile mapping XML file).
+            if os.path.isfile(tmp_export_filename + '.gplates.xml'):
+                os.remove(tmp_export_filename + '.gplates.xml')
+            
+            # For Shapefile.
+            if tmp_export_filename.endswith('.shp'):
+                tmp_export_base_filename = tmp_export_filename[:-len('.shp')]
+                if os.path.isfile(tmp_export_base_filename + '.dbf'):
+                    os.remove(tmp_export_base_filename + '.dbf')
+                if os.path.isfile(tmp_export_base_filename + '.prj'):
+                    os.remove(tmp_export_base_filename + '.prj')
+                if os.path.isfile(tmp_export_base_filename + '.shx'):
+                    os.remove(tmp_export_base_filename + '.shx')
+        
+        # Test reconstruct export to different format (eg, GMT, OGRGMT, Shapefile, etc).
+        _internal_test_export_files(self, reconstruct_features, rotation_model, 'tmp.xy')  # GMT
+        _internal_test_export_files(self, reconstruct_features, rotation_model, 'tmp.shp')  # Shapefile
+        _internal_test_export_files(self, reconstruct_features, rotation_model, 'tmp.gmt')  # OGRGMT
         
     def test_deprecated_reconstruct(self):
         # We continue to support the deprecated version of 'reconstruct()' since
@@ -2128,6 +2170,82 @@ class TopologicalSnapshotCase(unittest.TestCase):
             ],
             rotations,
             pygplates.GeoTimeInstant(10))
+
+    def test_resolved_export_files(self):
+        resolve_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml')) 
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        snapshot = pygplates.TopologicalSnapshot(
+            resolve_features,
+            rotation_model,
+            pygplates.GeoTimeInstant(10))
+        
+        def _internal_test_export_files(
+                test_case,
+                snapshot,
+                tmp_export_resolved_topologies_filename,
+                tmp_export_resolved_topological_sections_filename):
+            
+            tmp_export_resolved_topologies_filename = os.path.join(FIXTURES, tmp_export_resolved_topologies_filename)
+            tmp_export_resolved_topological_sections_filename = os.path.join(FIXTURES, tmp_export_resolved_topological_sections_filename)
+            
+            snapshot.export_resolved_topologies(tmp_export_resolved_topologies_filename)
+            snapshot.export_resolved_topological_sections(tmp_export_resolved_topological_sections_filename)
+            
+            test_case.assertTrue(os.path.isfile(tmp_export_resolved_topologies_filename))
+            test_case.assertTrue(os.path.isfile(tmp_export_resolved_topological_sections_filename))
+            
+            # Read back in the exported file to make sure correct number of features (except cannot read '.xy' files).
+            if not tmp_export_resolved_topologies_filename.endswith('.xy'):
+                resolved_features = pygplates.FeatureCollection(tmp_export_resolved_topologies_filename) 
+                test_case.assertTrue(len(resolved_features) == len(snapshot.get_resolved_topologies()))
+            if not tmp_export_resolved_topological_sections_filename.endswith('.xy'):
+                # Sections are exported as the finest grain sub-segments, so find out how many were exported.
+                resolved_sub_segment_features = pygplates.FeatureCollection(tmp_export_resolved_topological_sections_filename)
+                num_exported_sub_segments = sum(len(feature.get_geometries()) for feature in resolved_sub_segment_features)
+                # Now find out how many sub-segments there actually are in the snapshot.
+                resolved_topological_sections = snapshot.get_resolved_topological_sections()
+                num_sub_segments = 0
+                for rts in resolved_topological_sections:
+                    for sss in rts.get_shared_sub_segments():
+                        sub_segments = sss.get_sub_segments()
+                        if sub_segments:  # resolved topological line (which has its own internal sub-segments)
+                            num_sub_segments += len(sub_segments)
+                        else:
+                            num_sub_segments += 1
+                # Make sure they match.
+                test_case.assertTrue(num_exported_sub_segments == num_sub_segments)
+            
+            os.remove(tmp_export_resolved_topologies_filename)
+            os.remove(tmp_export_resolved_topological_sections_filename)
+
+            # In case an OGR format file (which also has shapefile mapping XML file).
+            if os.path.isfile(tmp_export_resolved_topologies_filename + '.gplates.xml'):
+                os.remove(tmp_export_resolved_topologies_filename + '.gplates.xml')
+            if os.path.isfile(tmp_export_resolved_topological_sections_filename + '.gplates.xml'):
+                os.remove(tmp_export_resolved_topological_sections_filename + '.gplates.xml')
+            
+            # For Shapefile.
+            if tmp_export_resolved_topologies_filename.endswith('.shp'):
+                tmp_export_base_filename = tmp_export_resolved_topologies_filename[:-len('.shp')]
+                if os.path.isfile(tmp_export_base_filename + '.dbf'):
+                    os.remove(tmp_export_base_filename + '.dbf')
+                if os.path.isfile(tmp_export_base_filename + '.prj'):
+                    os.remove(tmp_export_base_filename + '.prj')
+                if os.path.isfile(tmp_export_base_filename + '.shx'):
+                    os.remove(tmp_export_base_filename + '.shx')
+            if tmp_export_resolved_topological_sections_filename.endswith('.shp'):
+                tmp_export_base_filename = tmp_export_resolved_topological_sections_filename[:-len('.shp')]
+                if os.path.isfile(tmp_export_base_filename + '.dbf'):
+                    os.remove(tmp_export_base_filename + '.dbf')
+                if os.path.isfile(tmp_export_base_filename + '.prj'):
+                    os.remove(tmp_export_base_filename + '.prj')
+                if os.path.isfile(tmp_export_base_filename + '.shx'):
+                    os.remove(tmp_export_base_filename + '.shx')
+        
+        # Test resolved export to different format (eg, GMT, OGRGMT, Shapefile, etc).
+        _internal_test_export_files(self, snapshot, 'tmp.xy', 'tmp_sections.xy')  # GMT
+        _internal_test_export_files(self, snapshot, 'tmp.shp', 'tmp_sections.shp')  # Shapefile
+        _internal_test_export_files(self, snapshot, 'tmp.gmt', 'tmp_sections.gmt')  # OGRGMT
 
 
 def suite():
