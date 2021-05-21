@@ -1047,6 +1047,7 @@ export_reconstruct()
 			"  Export File Format              Filename Extension     \n"
 			"  =============================== =======================\n"
 			"  ESRI Shapefile                  '.shp'                 \n"
+			"  GeoJSON                         '.geojson' or '.json'  \n"
 			"  OGR GMT                         '.gmt'                 \n"
 			"  GMT xy                          '.xy'                  \n"
 			"  =============================== =======================\n"

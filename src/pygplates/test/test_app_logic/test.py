@@ -414,6 +414,8 @@ class ReconstructTestCase(unittest.TestCase):
         _internal_test_export_files(self, reconstruct_features, rotation_model, 'tmp.xy')  # GMT
         _internal_test_export_files(self, reconstruct_features, rotation_model, 'tmp.shp')  # Shapefile
         _internal_test_export_files(self, reconstruct_features, rotation_model, 'tmp.gmt')  # OGRGMT
+        _internal_test_export_files(self, reconstruct_features, rotation_model, 'tmp.geojson')  # GeoJSON
+        _internal_test_export_files(self, reconstruct_features, rotation_model, 'tmp.json')  # GeoJSON
         
     def test_deprecated_reconstruct(self):
         # We continue to support the deprecated version of 'reconstruct()' since
@@ -2246,6 +2248,8 @@ class TopologicalSnapshotCase(unittest.TestCase):
         _internal_test_export_files(self, snapshot, 'tmp.xy', 'tmp_sections.xy')  # GMT
         _internal_test_export_files(self, snapshot, 'tmp.shp', 'tmp_sections.shp')  # Shapefile
         _internal_test_export_files(self, snapshot, 'tmp.gmt', 'tmp_sections.gmt')  # OGRGMT
+        _internal_test_export_files(self, snapshot, 'tmp.geojson', 'tmp_sections.geojson')  # GeoJSON
+        _internal_test_export_files(self, snapshot, 'tmp.json', 'tmp_sections.json')  # GeoJSON
 
 
 def suite():
