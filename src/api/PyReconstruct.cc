@@ -381,6 +381,15 @@ namespace GPlatesApi
 			const GPlatesFileIO::ReconstructedFeatureGeometryExport::Format format =
 					get_format<GPlatesAppLogic::ReconstructedFeatureGeometry>(export_file_name);
 
+			// The API docs state that dateline wrapping should be ignored except for Shapefile.
+			//
+			// For example, we don't want to pollute real-world data with dateline vertices when
+			// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
+			if (format != GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE)
+			{
+				export_wrap_to_dateline = false;
+			}
+
 			// Export the reconstructed feature geometries.
 			GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
 						export_file_name,
@@ -423,6 +432,15 @@ namespace GPlatesApi
 			const GPlatesFileIO::ReconstructedMotionPathExport::Format format =
 					get_format<GPlatesAppLogic::ReconstructedMotionPath>(export_file_name);
 
+			// The API docs state that dateline wrapping should be ignored except for Shapefile.
+			//
+			// For example, we don't want to pollute real-world data with dateline vertices when
+			// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
+			if (format != GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE)
+			{
+				export_wrap_to_dateline = false;
+			}
+
 			// Export the reconstructed motion paths.
 			GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 						export_file_name,
@@ -459,6 +477,15 @@ namespace GPlatesApi
 
 			const GPlatesFileIO::ReconstructedFlowlineExport::Format format =
 					get_format<GPlatesAppLogic::ReconstructedFlowline>(export_file_name);
+
+			// The API docs state that dateline wrapping should be ignored except for Shapefile.
+			//
+			// For example, we don't want to pollute real-world data with dateline vertices when
+			// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
+			if (format != GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE)
+			{
+				export_wrap_to_dateline = false;
+			}
 
 			// Export the reconstructed flowlines.
 			GPlatesFileIO::ReconstructedFlowlineExport::export_reconstructed_flowlines(
@@ -1018,8 +1045,8 @@ export_reconstruct()
 			"  :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)\n"
 			"  :raises: OpenFileForWritingError if *reconstructed_geometries* is a filename and it is not writeable\n"
 			"  :raises: FileFormatNotSupportedError if any input file format (identified by any "
-			"reconstructable and rotation filename extensions) does not support reading "
-			"(when filenames specified)\n"
+			"reconstructable and rotation filename extensions) does not support reading (when filenames specified), "
+			"or if *reconstructed_geometries* is a filename and it is not supported for writing\n"
 			"  :raises: ValueError if *reconstruction_time* is "
 			":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 			":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
@@ -1075,7 +1102,7 @@ export_reconstruct()
 			"is also retained). This happens regardless of whether *reconstructable_features* "
 			"and *reconstructed_geometries* include files or not.\n"
 			"\n"
-			"  The following *export* file formats are currently supported by GPlates:\n"
+			"  The following *export* file formats are currently supported:\n"
 			"\n"
 			"  =============================== =======================\n"
 			"  Export File Format              Filename Extension     \n"

@@ -472,6 +472,15 @@ namespace GPlatesApi
 						export_file_name,
 						file_format_registry);
 
+		// The API docs state that dateline wrapping should be ignored except for Shapefile.
+		//
+		// For example, we don't want to pollute real-world data with dateline vertices when
+		// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
+		if (format != GPlatesFileIO::ResolvedTopologicalGeometryExport::SHAPEFILE)
+		{
+			wrap_to_dateline = false;
+		}
+
 		// Export the resolved topologies.
 		GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
 					export_file_name,
@@ -582,6 +591,15 @@ namespace GPlatesApi
 				GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(
 						export_file_name,
 						file_format_registry);
+
+		// The API docs state that dateline wrapping should be ignored except for Shapefile.
+		//
+		// For example, we don't want to pollute real-world data with dateline vertices when
+		// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
+		if (format != GPlatesFileIO::ResolvedTopologicalGeometryExport::SHAPEFILE)
+		{
+			wrap_to_dateline = false;
+		}
 
 		// Export the resolved topological sections.
 		GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_sections(
@@ -928,6 +946,16 @@ export_topological_snapshot()
 				"is not one of ``pygplates.ResolveTopologyType.line``, ``pygplates.ResolveTopologyType.boundary`` or "
 				"``pygplates.ResolveTopologyType.network``\n"
 				"\n"
+				"  The following *export* file formats are currently supported:\n"
+				"\n"
+				"  =============================== =======================\n"
+				"  Export File Format              Filename Extension     \n"
+				"  =============================== =======================\n"
+				"  ESRI Shapefile                  '.shp'                 \n"
+				"  OGR GMT                         '.gmt'                 \n"
+				"  GMT xy                          '.xy'                  \n"
+				"  =============================== =======================\n"
+				"\n"
 				"  .. note:: Resolved topologies are exported in the same order as that of their "
 				"respective topological features (see :meth:`constructor<__init__>`) and the order across "
 				"topological feature collections (if any) is also retained.\n")
@@ -974,6 +1002,16 @@ export_topological_snapshot()
 				"  :type wrap_to_dateline: bool\n"
 				"  :raises: ValueError if *resolve_topological_section_types* (if specified) contains a flag that "
 				"is not one of ``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"\n"
+				"  The following *export* file formats are currently supported:\n"
+				"\n"
+				"  =============================== =======================\n"
+				"  Export File Format              Filename Extension     \n"
+				"  =============================== =======================\n"
+				"  ESRI Shapefile                  '.shp'                 \n"
+				"  OGR GMT                         '.gmt'                 \n"
+				"  GMT xy                          '.xy'                  \n"
+				"  =============================== =======================\n"
 				"\n"
 				"  .. note:: Resolved topological sections are exported in the same order as that of their "
 				"respective topological features (see :meth:`constructor<__init__>`) and the order across "
