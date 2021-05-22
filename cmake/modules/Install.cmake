@@ -303,6 +303,11 @@ if (GPLATES_INSTALL_STANDALONE)
         install_qt5_plugin(Qt5::QMngPlugin QT_PLUGINS)
     else() # Linux
         install_qt5_plugin(Qt5::QXcbIntegrationPlugin QT_PLUGINS)
+        # The following plugins are needed otherwise GPlates generates the following error and then seg. faults:
+        #  "QXcbIntegration: Cannot create platform OpenGL context, neither GLX nor EGL are enabled"
+        # Actually installing only the Glx plugin solved the issue (on Ubuntu 20.04), but we'll also install Egl in case.
+        install_qt5_plugin(Qt5::QXcbGlxIntegrationPlugin QT_PLUGINS)
+        install_qt5_plugin(Qt5::QXcbEglIntegrationPlugin QT_PLUGINS)
     endif()
 
     #######################################################
