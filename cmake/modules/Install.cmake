@@ -8,6 +8,9 @@
 #                                                                                                    #
 ######################################################################################################
 
+include(GNUInstallDirs)
+
+
 #
 # Set the minimum CMake version required for installing targets.
 #
@@ -31,7 +34,6 @@ if (GPLATES_INSTALL_STANDALONE)
 endif()
 
 
-include(GNUInstallDirs)
 if (WIN32 OR APPLE)
     # On Windows and macOS we install to the *base* install directory (not 'bin/' sub-directory).
     # For Windows this is because we'll copy the dependency DLLs into the same directory as gplates (so it can find them).
@@ -798,13 +800,30 @@ if (GPLATES_INSTALL_STANDALONE)
                 #
                 CODE [[
                     function(set_rpath installed_file)
+                        #
                         # Find the relative path from the directory of the installed file to the directory where all the dependency libraries are installed.
-                        get_filename_component(_installed_file_dir ${installed_file} DIRECTORY)
-                        file(RELATIVE_PATH _relative_path_to_libs "${_installed_file_dir}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+                        #
 
+                        get_filename_component(_installed_file_dir ${installed_file} DIRECTORY)
+
+                        # Need to optionally convert relative paths to absolute paths (required by file(RELATIVE_PATH)) because it's possible that
+                        # CMAKE_INSTALL_PREFIX is a relative path (eg, 'staging' if installing with 'cmake --install . --prefix staging').
+                        #
+                        # Note that both the installed file and installed libs will have paths starting with CMAKE_INSTALL_PREFIX so the
+                        # relative path will be unaffected by whatever absolute prefix we use, so we don't need to specify BASE_DIR
+                        # (it will default to 'CMAKE_CURRENT_SOURCE_DIR' which defaults to the current working directory when this
+                        # install code is finally run in cmake script mode '-P' but, as mentioned, it doesn't matter what this is).
+                        get_filename_component(_installed_file_dir ${_installed_file_dir} ABSOLUTE)
+                        get_filename_component(_installed_libs_dir "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" ABSOLUTE)
+
+                        # Get the relative path
+                        file(RELATIVE_PATH _relative_path_to_libs "${_installed_file_dir}" "${_installed_libs_dir}")
+
+                        #
                         # Run 'patchelf --set-rpath <rpath> <installed-file>' to set the required RPATH.
+                        #
                         execute_process(
-                            COMMAND ${PATCHELF} --set-rpath '$ORIGIN/${_relative_path_to_libs}' ${installed_file}
+                            COMMAND ${PATCHELF} --set-rpath $ORIGIN/${_relative_path_to_libs} ${installed_file}
                             RESULT_VARIABLE _patchelf_result
                             ERROR_VARIABLE _patchelf_error)
                         if (_patchelf_result)
