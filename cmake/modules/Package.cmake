@@ -252,7 +252,9 @@ set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 #############
 # DragNDrop #
 #############
-
+#
+# Currently no DragNDrop-specific variables need setting.
+# See "PackageGeneratorOverrides.cmake" for overrides of the general variables (non-generator specific).
 
 #######
 # DEB #

@@ -736,7 +736,7 @@ if (GPLATES_INSTALL_STANDALONE)
                         codesign(${_qt_plugin})
                     endforeach()
 
-                    # Fix the dependency install names in the gplates executable.
+                    # Fix the dependency install names in the installed gplates executable.
                     fix_dependency_install_names(${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/MacOS/gplates)
 
                     # And finally code sign the application bundle,
@@ -749,16 +749,91 @@ if (GPLATES_INSTALL_STANDALONE)
 
     else()  # Linux
 
-        # On Linux (if standalone enabled) we simply copy the dependency shared libraries to the 'lib/' sub-directory of the
-        # install prefix location so that they will get found at runtime from an RPATH of '$ORIGIN/lib' where $ORIGIN is
-        # the location of the gplates executable (in the base install directory).
+        #
+        # On standalone Linux we need to:
+        #   1 - copy each resolved direct and indirect dependency library (of GPlates and its Qt plugins) into the 'lib/' sub-directory of base install directory,
+        #   2 - specify an appropriate RPATH for GPlates, its Qt plugins and their resolved dependencies
+        #       (ie, each dependency will depend on other dependencies in turn and must point to their location, ie, in 'lib/').
+        #
+
         install(
+                #
+                # Copy each resolved dependency (of GPlates and its Qt plugins) into the 'lib/' sub-directory of base install directory.
+                #
+                # On standalone Linux we simply copy the dependency shared libraries to the 'lib/' sub-directory of the
+                # install prefix location so that they will get found at runtime from an RPATH of '$ORIGIN/lib' where $ORIGIN is
+                # the location of the gplates executable (in the base install directory).
+                #
                 CODE "set(CMAKE_INSTALL_LIBDIR [[${CMAKE_INSTALL_LIBDIR}]])"
                 CODE [[
-                    # Install the dependency libraries in the *install* location.
+                    set(_installed_dependencies)
                     foreach(_resolved_dependency ${_resolved_dependencies})
-                        file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" FOLLOW_SYMLINK_CHAIN)
+                        # Install into the 'lib/' sub-directory of base install directory.
+                        # Ensure we copy symlinks (using FOLLOW_SYMLINK_CHAIN). For example, with 'libCGAL.13.so -> libCGAL.13.0.3.so' both the symlink
+                        # 'libCGAL.13.so' and the dereferenced library 'libCGAL.13.0.3.so' are copied, otherwise just the symlink would be copied.
+                        file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/" FOLLOW_SYMLINK_CHAIN)
+
+                        # Get '${CMAKE_INSTALL_PREFIX}/lib/dependency.so' from resolved dependency.
+                        string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/\\1" _installed_dependency "${_resolved_dependency}")
+
+                        # Add installed dependency to the list.
+                        list(APPEND _installed_dependencies "${_installed_dependency}")
                     endforeach()
+                ]]
+        )
+
+        # Find the 'patchelf' command.
+        find_program(PATCHELF "patchelf")
+        if (NOT PATCHELF)
+            message(FATAL_ERROR "Unable to find 'patchelf' command - cannot set RPATH - please install 'patchelf', for example 'sudo apt install patchelf' on Ubuntu")
+        endif()
+
+        install(
+                CODE "set(PATCHELF [[${PATCHELF}]])"
+                CODE "set(CMAKE_INSTALL_LIBDIR [[${CMAKE_INSTALL_LIBDIR}]])"
+                #
+                # Function to set the RPATH of the specified installed file to '$ORIGIN/<relative-path-to-libs>' so that it can
+                # find its direct dependency libraries (in the 'lib/' sub-directory of the base install directory).
+                #
+                CODE [[
+                    function(set_rpath installed_file)
+                        # Find the relative path from the directory of the installed file to the directory where all the dependency libraries are installed.
+                        get_filename_component(_installed_file_dir ${installed_file} DIRECTORY)
+                        file(RELATIVE_PATH _relative_path_to_libs "${_installed_file_dir}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+
+                        # Run 'patchelf --set-rpath <rpath> <installed-file>' to set the required RPATH.
+                        execute_process(
+                            COMMAND ${PATCHELF} --set-rpath '$ORIGIN/${_relative_path_to_libs}' ${installed_file}
+                            RESULT_VARIABLE _patchelf_result
+                            ERROR_VARIABLE _patchelf_error)
+                        if (_patchelf_result)
+                            message(FATAL_ERROR "${PATCHELF} failed: ${_patchelf_error}")
+                        endif()
+                    endfunction()
+                ]]
+
+                # Note: Using \"${QT_PLUGINS}\"" instead of [[${QT_PLUGINS}]] because install code needs to evaluate
+                #       ${CMAKE_INSTALL_PREFIX} (inside QT_PLUGINS). And a side note, it does this at install time...
+                CODE "set(QT_PLUGINS \"${QT_PLUGINS}\")"
+                #
+                # Set the RPATH of GPlates, its Qt plugins and their installed dependencies so that they all can find their direct dependencies.
+                #
+                # For example, GPlates needs to find its *direct* dependency libraries in 'lib/' and those dependencies need to find their *direct*
+                # dependencies (also in 'lib/').
+                #
+                CODE [[
+                    # Set the RPATH in each installed dependency.
+                    foreach(_installed_dependency ${_installed_dependencies})
+                        set_rpath(${_installed_dependency})
+                    endforeach()
+
+                    # Set the RPATH in each installed Qt plugin.
+                    foreach(_qt_plugin ${QT_PLUGINS})
+                        set_rpath(${_qt_plugin})
+                    endforeach()
+
+                    # Set the RPATH in the installed gplates executable.
+                    set_rpath(${CMAKE_INSTALL_PREFIX}/gplates)
                 ]]
         )
     
