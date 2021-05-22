@@ -321,12 +321,13 @@ if (GPLATES_INSTALL_STANDALONE)
         # On Windows search for DLLs using the PATH environment variable.
         set(GET_RUNTIME_DEPENDENCIES_DIRECTORIES $ENV{PATH})
     elseif (APPLE)
-        # On macOS exclude '/usr/lib' and '/System'.
+        # On macOS exclude '/usr/lib' and '/System/Library'.
+        # These should only contain system libraries (ie, should not contain any of our dependency libraries).
         list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[/usr/lib.*]])
-        list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[/System.*]])
+        list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[/System/Library.*]])
     else() # Linux
-        # On Linux exclude '/usr/lib'.
-        list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[/usr/lib.*]])
+        # On (standalone) Linux don't exclude the standard library locations (eg, '/lib[64]' or '/usr/lib').
+        # Our dependency libraries get installed there (by the binary package manager).
     endif()
 
     #
