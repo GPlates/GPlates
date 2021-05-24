@@ -8,6 +8,34 @@
 # This is not needed for CPACK_<GENERATOR>_ variables (since they only apply to a specific generator).                              #
 #####################################################################################################################################
 
+# Make sure we don't enable the 'pygplates' component by default when using NSIS or DragNDrop generators
+# (because they should only be used for 'gplates').
+if (CPACK_GENERATOR MATCHES "^NSIS$" OR CPACK_GENERATOR MATCHES "^DragNDrop$")
+    set(CPACK_COMPONENTS_ALL gplates)
+endif()
+
+# For archive files make the top level of the extracted directory tree have the same name as the archive file
+# (actually it appears to use CPACK_PACKAGE_FILE_NAME regardless of the component being packaged).
+# This is the default for archive non-component installs, but not for component installs.
+if (CPACK_GENERATOR MATCHES "^(7Z|TBZ2|TGZ|TXZ|TZ|TZST|ZIP)$")
+    set(CPACK_COMPONENT_INCLUDE_TOPLEVEL_DIRECTORY ON)
+endif()
+
+#   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate, not including the extension.
+#
+#   For example, cmake-2.6.1-Linux-i686.
+#
+# For archives, we exclude the package version from the filename because CPACK_PACKAGE_FILE_NAME appears to be used by
+# our separate gplates and pygplates component packages as the top level directory (eg, in the archive generators) and
+# gplates and pygplates have different versions.
+if (CPACK_GENERATOR MATCHES "^(7Z|TBZ2|TGZ|TXZ|TZ|TZST|ZIP)$")
+    if (WIN32)
+        SET(CPACK_PACKAGE_FILE_NAME "@PROJECT_NAME@-@_CPACK_SYSTEM_NAME_WIN@")
+    else()
+        SET(CPACK_PACKAGE_FILE_NAME "@PROJECT_NAME@-@CMAKE_SYSTEM_NAME@-@CMAKE_SYSTEM_PROCESSOR@")
+    endif()
+endif()
+
 #   CPACK_PACKAGE_ICON - A branding image that will be displayed inside the installer (used by GUI installers).
 #
 if (CPACK_GENERATOR MATCHES "^NSIS$")
