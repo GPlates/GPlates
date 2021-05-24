@@ -34,8 +34,16 @@ elseif (APPLE)
     # For source packages default to a bzipped tarball (.tar.bz2).
     SET(CPACK_SOURCE_GENERATOR TBZ2)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    # For binary packages default to a Debian package.
-    SET(CPACK_GENERATOR DEB)
+    if (GPLATES_INSTALL_STANDALONE)
+        # For standalone binary packages default to a bzipped tarball.
+        # We've copied the dependencies into the staging install area and now just need to create an archive.
+        # The user will be able to extract the archive on target system without having to install anything.
+        SET(CPACK_GENERATOR TBZ2)
+    else()
+        # For non-standalone binary packages default to a Debian package.
+        # Dependencies are installed by the system binary package manager.
+        SET(CPACK_GENERATOR DEB)
+    endif()
     # For source packages default to a bzipped tarball (.tar.bz2).
     SET(CPACK_SOURCE_GENERATOR TBZ2)
 endif()
