@@ -25,6 +25,23 @@ if (CPACK_GENERATOR MATCHES "^(7Z|TBZ2|TGZ|TXZ|TZ|TZST|ZIP)$")
     # (since we used EXCLUDE_FROM_ALL in the 'install()' commands for the 'pygplates' component).
     SET(CPACK_MONOLITHIC_INSTALL OFF)
 
+    #    CPACK_COMPONENTS_ALL - The list of component to install.
+    #
+    #    The default value of this variable is computed by CPack and contains all components defined by the project.
+    #    The user may set it to only include the specified components.
+    #
+    # We only specify CPACK_COMPONENTS_ALL when CPACK_MONOLITHIC_INSTALL is disabled because they are conflicting
+    # (CPack will issue a warning and default to monolithic). See Package.cmake for reasons behind our choice of components.
+    #
+    # Note: It seems setting this variable on the command-line (eg, with 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=pygplates')
+    #       does not override the value set here (this doesn't appear to be a problem with the regular non-override Package.cmake).
+    #       So we'll only set it here if it hasn't already been defined (eg, via the command-line).
+    #       Also note that it is not defined in the regular non-override Package.cmake because that would conflict with our default
+    #       setting of ON for CPACK_MONOLITHIC_INSTALL. So the only place it should potentially be defined is the command-line.
+    if (NOT DEFINED CPACK_COMPONENTS_ALL)
+        set(CPACK_COMPONENTS_ALL gplates)
+    endif()
+
     # For archive files make the top level of the extracted directory tree have the same name as the archive file
     # (this is the default for archive non-component installs, but not for component installs).
     # The top-level directory name will be CPACK_PACKAGE_FILE_NAME regardless of the component being packaged

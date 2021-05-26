@@ -24,8 +24,9 @@ include(GNUInstallDirs)
 # (eg, 'cmake --install .') 'pygplates' would be excluded and only 'gplates' installed (due to the EXCLUDE_FROM_ALL flag).
 #
 # However in most cases you wouldn't typically install directly like this.
-# More likely you'd create a package using CPack which instead uses the CPACK_COMPONENTS_ALL variables to select components to package
-# (and that variable defaults to all components, regardless of the above EXCLUDE_FROM_ALL flag in the 'install()' commands).
+# More likely you'd create a package using CPack. For CPack generators we've configured as monolithic (eg, NSIS, DragNDrop and Debian)
+# the EXCLUDE_FROM_ALL flag will exclude the pygplates component. For CPack generators we've configured as component-based
+# (eg, archive generators like ZIP) CPack will instead use the CPACK_COMPONENTS_ALL variables to select components to package (see Package.cmake).
 #
 
 #

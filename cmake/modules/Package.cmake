@@ -65,16 +65,21 @@ endif()
 #
 # However, if you want to package both 'gplates' and 'pygplates' then run 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=gplates;pygplates'.
 # Note the use of '-G ZIP', for example on Windows, to override the CPACK_GENERATOR default above (NSIS;ZIP) since you would not
-# want to create an NSIS package for pygplates. In fact it's currently not possible to create an NSIS package for pygplates anyway because we
-# have CPACK_MONOLITHIC_INSTALL turned on (for NSIS) and we use EXCLUDE_FROM_ALL in the 'install()' commands for the 'pygplates' component, and
-# together these two settings appear to result in NSIS packaging up all components from a *default* installation (which includes only component 'gplates').
+# want to create an NSIS package for pygplates. In fact it's currently not possible to create an NSIS package for pygplates anyway because
+# we have CPACK_MONOLITHIC_INSTALL turned ON (for all generators, except archive generators like ZIP) and we use EXCLUDE_FROM_ALL in the
+# 'install()' commands for the 'pygplates' component, and together these two settings appear to result in NSIS packaging up all components
+# from a *default* installation (which includes only component 'gplates').
 # In any case, typically you would package 'gplates' and 'pygplates' in *separate* 'cpack' runs.
 # In this case you'd want to package 'gplates' with just 'cpack' (to create both an NSIS installer and a ZIP archive by default) and
 # package 'pygplates' with 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=pygplates' (but note that when extracting the resultant archive you
 # would have a top-level directory that looked something like 'GPlates-2.2.0-win64/', so you'd probably want to manually rename that).
 # Note the space in '-D CPACK_COMPONENTS_ALL' (without the space it won't override the default).
 #
-set(CPACK_COMPONENTS_ALL gplates)
+# NOTE: We only specify CPACK_COMPONENTS_ALL when CPACK_MONOLITHIC_INSTALL is disabled because they are conflicting
+#       (CPack will issue a warning and default to monolithic). We have CPACK_MONOLITHIC_INSTALL enabled by default and
+#       only disable it for the archive generators. As a result we don't set CPACK_COMPONENTS_ALL here, instead overriding it
+#       in PackageGeneratorOverrides.cmake for archive generators only.
+#set(CPACK_COMPONENTS_ALL gplates)
 
 
 ############################
