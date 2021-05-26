@@ -65,14 +65,14 @@ endif()
 #
 # However, if you want to package both 'gplates' and 'pygplates' then run 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=gplates;pygplates'.
 # Note the use of '-G ZIP', for example on Windows, to override the CPACK_GENERATOR default above (NSIS;ZIP) since you would not
-# want to create an NSIS package for pygplates. Typically you would package 'gplates' and 'pygplates' in separate 'cpack' runs.
+# want to create an NSIS package for pygplates. In fact it's currently not possible to create an NSIS package for pygplates anyway because we
+# have CPACK_MONOLITHIC_INSTALL turned on (for NSIS) and we use EXCLUDE_FROM_ALL in the 'install()' commands for the 'pygplates' component, and
+# together these two settings appear to result in NSIS packaging up all components from a *default* installation (which includes only component 'gplates').
+# In any case, typically you would package 'gplates' and 'pygplates' in *separate* 'cpack' runs.
 # In this case you'd want to package 'gplates' with just 'cpack' (to create both an NSIS installer and a ZIP archive by default) and
 # package 'pygplates' with 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=pygplates' (but note that when extracting the resultant archive you
-# would have a top-level directory that looked something like 'GPlates-2.3.0-win64/', so you'd probably want to manually rename that).
+# would have a top-level directory that looked something like 'GPlates-2.2.0-win64/', so you'd probably want to manually rename that).
 # Note the space in '-D CPACK_COMPONENTS_ALL' (without the space it won't override the default).
-#
-# Note that further below we enable component-based installs for those generators that don't have
-# it enabled by default (eg, Archive generators). This enables each component to end up in a separate package.
 #
 set(CPACK_COMPONENTS_ALL gplates)
 
@@ -224,13 +224,17 @@ set(CPACK_VERBATIM_VARIABLES TRUE)
 #   Some CPack generators do monolithic packaging by default and may be asked to do component packaging by setting
 #   CPACK_<GENNAME>_COMPONENT_INSTALL to TRUE.
 #
-# We want component-based installs (one package for gplates and optionally one package for pygplates).
-SET(CPACK_MONOLITHIC_INSTALL FALSE)
+# We only want component-based installs (for components gplates and pygplates) for archive generators.
+# NSIS, DragNDrop and Debian should be monolithic which, as mentioned near the top of this file, will only package the 'gplates' component
+# (since we used EXCLUDE_FROM_ALL in the 'install()' commands for the 'pygplates' component).
+SET(CPACK_MONOLITHIC_INSTALL ON)
 
 
 ###########
 # Archive #
 ###########
+#
+# The only generator used to package both our 'gplates' and 'pygplates' components (as separate archives).
 
 
 #   CPACK_<GENNAME>_COMPONENT_INSTALL - Enable/Disable component install for CPack generator <GENNAME>.
@@ -238,6 +242,8 @@ SET(CPACK_MONOLITHIC_INSTALL FALSE)
 #   Each CPack Generator (RPM, DEB, ARCHIVE, NSIS, DMG, etc...) has a legacy default behavior. e.g. RPM builds monolithic whereas NSIS builds component.
 #   One can change the default behavior by setting this variable to 0/1 or OFF/ON.
 #   
+# We want to create separate archives for our two components (gplates and pygplates).
+# We also override CPACK_MONOLITHIC_INSTALL (turn it off) in PackageGeneratorOverrides.cmake.
 set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 
 
@@ -248,6 +254,7 @@ set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 #
 #   New in version 3.9: Per-component CPACK_ARCHIVE_<component>_FILE_NAME variables.
 #
+# Each of our two components (gplates and pygplates) goes into a separate archive file.
 if (WIN32)
     SET(CPACK_ARCHIVE_GPLATES_FILE_NAME "gplates-${CPACK_PACKAGE_VERSION}-${_CPACK_SYSTEM_NAME_WIN}")
     SET(CPACK_ARCHIVE_PYGPLATES_FILE_NAME "pygplates-${CPACK_PACKAGE_VERSION}-${_CPACK_SYSTEM_NAME_WIN}")
@@ -331,6 +338,8 @@ set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 #######
 # DEB #
 #######
+#
+# Only used to package our 'gplates' component (not 'pygplates').
 
 #   CPACK_DEBIAN_FILE_NAME (CPACK_DEBIAN_<COMPONENT>_FILE_NAME) - Package file name.
 #

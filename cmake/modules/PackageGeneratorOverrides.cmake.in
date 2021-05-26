@@ -14,6 +14,17 @@
 ###########
 
 if (CPACK_GENERATOR MATCHES "^(7Z|TBZ2|TGZ|TXZ|TZ|TZST|ZIP)$")
+    #   CPACK_MONOLITHIC_INSTALL - Disables the component-based installation mechanism.
+    #
+    #   When set, the component specification is ignored and all installed items are put in a single "MONOLITHIC" package.
+    #   Some CPack generators do monolithic packaging by default and may be asked to do component packaging by setting
+    #   CPACK_<GENNAME>_COMPONENT_INSTALL to TRUE.
+    #
+    # We want component-based installs (for components gplates and pygplates) for archive generators.
+    # The other generators (eg, NSIS, DragNDrop and Debian) default to monolithic which only installs the 'gplates' component
+    # (since we used EXCLUDE_FROM_ALL in the 'install()' commands for the 'pygplates' component).
+    SET(CPACK_MONOLITHIC_INSTALL OFF)
+
     # For archive files make the top level of the extracted directory tree have the same name as the archive file
     # (this is the default for archive non-component installs, but not for component installs).
     # The top-level directory name will be CPACK_PACKAGE_FILE_NAME regardless of the component being packaged
@@ -21,19 +32,6 @@ if (CPACK_GENERATOR MATCHES "^(7Z|TBZ2|TGZ|TXZ|TZ|TZST|ZIP)$")
     # instead of 'gplates' and has the pygplates version instead of the gplates version; although pygplates should typically
     # be built for conda, not packaged up with cpack).
     set(CPACK_COMPONENT_INCLUDE_TOPLEVEL_DIRECTORY ON)
-
-    #   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate, not including the extension.
-    #
-    #   For example, cmake-2.6.1-Linux-i686.
-    #
-    # For archives, we exclude the package version from the filename because CPACK_PACKAGE_FILE_NAME appears to be used by
-    # our separate gplates and pygplates component packages as the top level directory (eg, in the archive generators) and
-    # gplates and pygplates have different versions.
-    if (WIN32)
-        SET(CPACK_PACKAGE_FILE_NAME "@PROJECT_NAME@-@_CPACK_SYSTEM_NAME_WIN@")
-    else()
-        SET(CPACK_PACKAGE_FILE_NAME "@PROJECT_NAME@-@CMAKE_SYSTEM_NAME@-@CMAKE_SYSTEM_PROCESSOR@")
-    endif()
 endif()
 
 
