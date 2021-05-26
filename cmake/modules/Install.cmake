@@ -25,7 +25,7 @@ include(GNUInstallDirs)
 #
 # However in most cases you wouldn't typically install directly like this.
 # More likely you'd create a package using CPack which instead uses the CPACK_COMPONENTS_ALL variables to select components to package
-# (and that variables defaults to all components, regardless of the above EXCLUDE_FROM_ALL flag in the 'install()' commands).
+# (and that variable defaults to all components, regardless of the above EXCLUDE_FROM_ALL flag in the 'install()' commands).
 #
 
 #

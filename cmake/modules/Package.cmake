@@ -36,12 +36,13 @@ elseif (APPLE)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     if (GPLATES_INSTALL_STANDALONE)
         # For standalone binary packages default to a bzipped tarball.
-        # We've copied the dependencies into the staging install area and now just need to create an archive.
+        # With standalone Linux, like Windows and macOS, the 'install' stage has copied the dependencies
+        # into the staging area for packaging and now just need to package that into an archive.
         # The user will be able to extract the archive on target system without having to install anything.
         SET(CPACK_GENERATOR TBZ2)
     else()
-        # For non-standalone binary packages default to a Debian package.
-        # Dependencies are installed by the system binary package manager.
+        # For non-standalone binary packages, default to a Debian package.
+        # Dependencies will then be installed on the target system by the system binary package manager.
         SET(CPACK_GENERATOR DEB)
     endif()
     # For source packages default to a bzipped tarball (.tar.bz2).
@@ -50,17 +51,28 @@ endif()
 
 # Specify which components to package by default.
 #
-# There are two components we can package:
+# There are two components available for packaging:
 # - gplates
 # - pygplates
 #
+# By default, we only package 'gplates'.
+#
+# This is because 'pygplates' will soon be installable via 'conda' (and maybe ultimately via 'pip', although pygplates
+# has many shared library dependencies and 'pip' is not really designed to handle that).
+# So typically only the 'install' process would be used for 'pygplates' (eg, 'cmake --install . --component pygplates --prefix staging),
+# but not the 'packaging' process (ie, turning a staged installation into a package). Instead the staged installation
+# (without subsequent packaging with cpack) could be used as part of the conda build process (currently investigating this).
+#
+# However, if you want to package both 'gplates' and 'pygplates' then run 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=gplates;pygplates'.
+# Note the use of '-G ZIP', for example on Windows, to override the CPACK_GENERATOR default above (NSIS;ZIP) since you would not
+# want to create an NSIS package for pygplates. Typically you would package 'gplates' and 'pygplates' in separate 'cpack' runs.
+# In this case you'd want to package 'gplates' with just 'cpack' (to create both an NSIS installer and a ZIP archive by default) and
+# package 'pygplates' with 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=pygplates' (but note that when extracting the resultant archive you
+# would have a top-level directory that looked something like 'GPlates-2.3.0-win64/', so you'd probably want to manually rename that).
+# Note the space in '-D CPACK_COMPONENTS_ALL' (without the space it won't override the default).
+#
 # Note that further below we enable component-based installs for those generators that don't have
 # it enabled by default (eg, Archive generators). This enables each component to end up in a separate package.
-#
-# Currently we only package 'gplates' by default.
-# If you want to package only 'pygplates' then run 'cpack -D CPACK_COMPONENTS_ALL=pygplates'.
-# If you want to package both 'gplates' and 'pygplates' then run 'cpack -D CPACK_COMPONENTS_ALL=gplates;pygplates'.
-# Note the space in '-D CPACK_COMPONENTS_ALL' (without the space it won't work).
 #
 set(CPACK_COMPONENTS_ALL gplates)
 
