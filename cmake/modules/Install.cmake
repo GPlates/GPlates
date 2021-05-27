@@ -777,34 +777,33 @@ if (GPLATES_INSTALL_STANDALONE)
         function(install_fix_dependencies install_component)
             install(
                     #
-                    # Function to find the relative path from the directory of the installed file to the directory where all the dependency libraries are installed.
+                    # Function to find the relative path from the directory of the installed file to the specified installed dependency library.
                     #
-                    # This is only needed for installing pyGPlates because it uses @loader_path which is different for pygplates library, its Qt plugins and dependency
-                    # frameworks and libraries (whereas GPlates uses @executable_path which is fixed to the location of the GPlates executable).
+                    # This is only needed for installing pyGPlates because it uses @loader_path which is different between the pygplates library,
+                    # its Qt plugins and dependency frameworks/libraries (whereas GPlates uses @executable_path which is fixed for all).
                     # The returned relative path can then be used as '@loader_path/<relative_path>'.
                     #
                     CODE [[
-                        function(get_relative_path_from_intalled_file_to_installed_dependency installed_file installed_dependency relative_path)
+                        function(get_relative_path_to_installed_dependency installed_file installed_dependency installed_dependency_relative_path)
 
                             get_filename_component(_installed_file_dir ${installed_file} DIRECTORY)
-                            get_filename_component(_installed_dependency_dir ${installed_dependency} DIRECTORY)
 
                             # Need to optionally convert relative paths to absolute paths (required by file(RELATIVE_PATH)) because it's possible that
                             # CMAKE_INSTALL_PREFIX (embedded in install paths) is a relative path (eg, 'staging' if installing with
                             # 'cmake --install . --prefix staging').
                             #
-                            # Note that both the installed file and installed libs will have paths starting with CMAKE_INSTALL_PREFIX so the
+                            # Note that both the installed file and installed dependency will have paths starting with CMAKE_INSTALL_PREFIX so the
                             # relative path will be unaffected by whatever absolute prefix we use, so we don't need to specify BASE_DIR
                             # (it will default to 'CMAKE_CURRENT_SOURCE_DIR' which defaults to the current working directory when this
                             # install code is finally run in cmake script mode '-P' but, as mentioned, it doesn't matter what this is).
                             get_filename_component(_installed_file_dir ${_installed_file_dir} ABSOLUTE)
-                            get_filename_component(_installed_dependency_dir ${_installed_dependency_dir} ABSOLUTE)
+                            get_filename_component(installed_dependency ${installed_dependency} ABSOLUTE)
 
                             # Get the relative path.
-                            file(RELATIVE_PATH _relative_path "${_installed_file_dir}" "${_installed_dependency_dir}")
+                            file(RELATIVE_PATH _installed_dependency_relative_path ${_installed_file_dir} ${installed_dependency})
 
                             # Set caller's relative path.
-                            set(${relative_path} ${_relative_path} PARENT_SCOPE)
+                            set(${installed_dependency_relative_path} ${_installed_dependency_relative_path} PARENT_SCOPE)
                         endfunction()
                     ]]
 
@@ -837,10 +836,15 @@ if (GPLATES_INSTALL_STANDALONE)
                             foreach(_otool_output_line ${_otool_output_lines})
                                 # Dependency lines follow the format " <install-name> (<versioning-info>)".
                                 # Extract the <install-name> part.
-                                string(REGEX REPLACE "^(.*)\\(.*\\).*$" "\\1" _dependency_file_install_name "${_otool_output_line}")
-                                string(STRIP ${_dependency_file_install_name} _dependency_file_install_name)
-                                if (_dependency_file_install_name)  # Might be that the last line is empty for some reason
-                                    list(APPEND _dependency_file_install_names "${_dependency_file_install_name}")
+                                # Lines containing dependencies look like:
+                                #   dependency.dylib (compatibility version 0.0.0, current version 0.0.0)
+                                # ...so we pattern match using the parentheses.
+                                if (_otool_output_line MATCHES ".*\\(.*\\)")
+                                    string(REGEX REPLACE "^(.*)\\(.*\\).*$" "\\1" _dependency_file_install_name "${_otool_output_line}")
+                                    string(STRIP ${_dependency_file_install_name} _dependency_file_install_name)
+                                    if (_dependency_file_install_name)  # Might be that the last line is empty for some reason
+                                        list(APPEND _dependency_file_install_names "${_dependency_file_install_name}")
+                                    endif()
                                 endif()
                             endforeach()
                         
@@ -864,13 +868,21 @@ if (GPLATES_INSTALL_STANDALONE)
                                         string(REGEX REPLACE "^.*/([^/]+\\.framework/.*)$" "@executable_path/../Frameworks/\\1"
                                                 _installed_dependency_file_install_name "${_dependency_file_install_name}")
                                     else() # pygplates
-                                        # For example, "Frameworks/Dependency.framework/Versions/2/Dependency".
-                                        string(REGEX REPLACE "^.*/([^/]+\\.framework/.*)$" "Frameworks/\\1"
+                                        # For example, "${CMAKE_INSTALL_PREFIX}/Frameworks/Dependency.framework/Versions/2/Dependency".
+                                        string(REGEX REPLACE "^.*/([^/]+\\.framework/.*)$" "${CMAKE_INSTALL_PREFIX}/Frameworks/\\1"
                                                 _installed_dependency_file_name "${_dependency_file_install_name}")
                                         # Get the relative path from the installed file to its installed dependency.
-                                        get_relative_path_from_intalled_file_to_installed_dependency(
-                                                ${installed_file} ${_installed_dependency_file_name} _relative_path_to_installed_dependency)
-                                        set(_installed_dependency_file_install_name "@loader_path/${_relative_path_to_installed_dependency}")
+                                        if (_installed_dependency_file_name STREQUAL _dependency_file_install_name)
+                                            # string(REGEX REPLACE) did not find a match.
+                                            # This can happen when the installed file references itself as a dependency.
+                                            # In this case just use "@loader_path".
+                                            set(_installed_dependency_file_install_name "@loader_path")
+                                        else()
+                                            # Get the path of installed dependency relative to the referencing installed file.
+                                            get_relative_path_to_installed_dependency(
+                                                    ${installed_file} ${_installed_dependency_file_name} _relative_path_to_installed_dependency)
+                                            set(_installed_dependency_file_install_name "@loader_path/${_relative_path_to_installed_dependency}")
+                                        endif()
                                     endif()
                                 else()  # it's a regular shared library...
                                     if (install_component STREQUAL "gplates")
@@ -880,13 +892,21 @@ if (GPLATES_INSTALL_STANDALONE)
                                                 _installed_dependency_file_install_name "${_dependency_file_install_name}")
                                     else() # pygplates
                                         # Non-framework librares are installed in 'lib/' sub-directory of directory containing pygplates library.
-                                        # For example, "lib/dependency.dylib".
-                                        string(REGEX REPLACE "^.*/([^/]+)$" "lib/\\1"
+                                        # For example, "${CMAKE_INSTALL_PREFIX}/lib/dependency.dylib".
+                                        string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/lib/\\1"
                                                 _installed_dependency_file_name "${_dependency_file_install_name}")
                                         # Get the relative path from the installed file to its installed dependency.
-                                        get_relative_path_from_intalled_file_to_installed_dependency(
-                                                ${installed_file} ${_installed_dependency_file_name} _relative_path_to_installed_dependency)
-                                        set(_installed_dependency_file_install_name "@loader_path/${_relative_path_to_installed_dependency}")
+                                        if (_installed_dependency_file_name STREQUAL _dependency_file_install_name)
+                                            # string(REGEX REPLACE) did not find a match.
+                                            # This can happen when the installed file references itself as a dependency.
+                                            # In this case just use "@loader_path".
+                                            set(_installed_dependency_file_install_name "@loader_path")
+                                        else()
+                                            # Get the path of installed dependency relative to the referencing installed file.
+                                            get_relative_path_to_installed_dependency(
+                                                    ${installed_file} ${_installed_dependency_file_name} _relative_path_to_installed_dependency)
+                                            set(_installed_dependency_file_install_name "@loader_path/${_relative_path_to_installed_dependency}")
+                                        endif()
                                     endif()
                                 endif()
 
