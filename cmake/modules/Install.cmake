@@ -408,7 +408,7 @@ if (GPLATES_INSTALL_STANDALONE)
         # The *build* target: executable (for gplates) or module library (for pygplates).
         if (install_component STREQUAL "gplates")
             install(CODE [[set(_target_file "$<TARGET_FILE:gplates>")]] COMPONENT gplates ${ARGN})
-        else()
+        else() # pygplates
             install(CODE [[set(_target_file "$<TARGET_FILE:pygplates>")]] COMPONENT pygplates ${ARGN})
         endif()
 
@@ -429,7 +429,7 @@ if (GPLATES_INSTALL_STANDALONE)
                         # Add gplates to the list of executables to search.
                         set(ARGUMENT_BUNDLE_EXECUTABLE BUNDLE_EXECUTABLE "${_target_file}")  # gplates
                         set(ARGUMENT_EXECUTABLES EXECUTABLES "${_target_file}")  # gplates
-                    else()
+                    else() # pygplates
                         # Add pygplates to the list of modules to search.
                         set(ARGUMENT_MODULES ${ARGUMENT_MODULES} "${_target_file}")  # pygplates
                     endif()
@@ -507,12 +507,27 @@ if (GPLATES_INSTALL_STANDALONE)
 
         #
         # On macOS we need to:
-        #   1 - copy each resolved direct and indirect dependency (of GPlates and its Qt plugins) into the appropriate location inside the
-        #       installed GPlates application bundle (depending of whether a regular '.dylib' or a framework),
-        #   2 - fix up the path to each *direct* dependency of GPlates, its Qt plugins and their resolved dependencies
-        #       (ie, each dependency will depend on other dependencies in turn and must point to their location within the installed bundle),
-        #   3 - code sign GPlates, its Qt plugins and their resolved dependencies with a valid Developer ID certificate and finally code sign the application bundle,
-        #   4 - notarize the application bundle (although this is done outside of CMake since it requires uploading to Apple and waiting for them to respond).
+        #   1 - Copy each resolved direct and indirect dependency (of GPlates/pyGPlates and its Qt plugins) into the appropriate location inside the
+        #       installed GPlates application bundle (or base install directory of pygplates) depending of whether a regular '.dylib' or a framework.
+        #   2 - Fix up the path to each *direct* dependency of GPlates/pyGPlates, its Qt plugins and their resolved dependencies
+        #       (ie, each dependency will depend on other dependencies in turn and must point to their location within the installation).
+        #   3 - Code sign GPlates/pyGPlates, its Qt plugins and their resolved dependencies with a valid Developer ID certificate.
+        #       For GPlates we also then code sign the entire application *bundle* (for pyGPlates, the 'pygplates.so' library has already been signed).
+        #   4 - Notarize the application bundle. Although this is not done here (during the installation phase) because we package it into a DMG during
+        #       the CPack packaging phase (see Package.cmake) and the DMG is what should be uploaded for notarization (after codesigning the DMG).
+        #       So the entire notarization process is currently done outside of CMake/CPack and should follow the procedure outlined here:
+        #           https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow
+        #       For GPlates this amounts to code signing the DMG file created by CPack, uploading to Apple for notarization, checking for successful
+        #       notarization and then stapling the notarization ticket to the DMG file. Once that is all done the DMG can be distributed to users.
+        #       For pyGPlates we currently get CPack to produce an archive (eg, ZIP) containing the code signed dependency libraries (and pygplates), then
+        #       upload the archive to Apple for notarization and check for successful notarization. However you cannot staple a notarization ticket
+        #       to a ZIP archive (you must instead staple each item in the archive and then create a new archive). If an item is not stapled then Gatekeeper
+        #       finds the ticket online (stapling is so the ticket can be found when the network is offline). So currently we don't staple the items.
+        #       Another potential issue is using 'zip' versus 'ditto', apparently the latter can stored extended attributes but the former is used by CPack.
+        #       This could be an issue if something is code signed that is not a Mach-O file (exe, library, etc) and hence the signature has to be stored
+        #       in an extended attribute.
+        #       Ultimately we will use Conda to build pyGPlates packages and no longer rely on CPack. Or Apple notarization for that matter because the
+        #       Conda package manager will then be responsible for installing pygplates on the user's computer, and so conda will then be responsible for quarantine.
         #
 
         # Find the 'codesign' command.
@@ -575,8 +590,8 @@ if (GPLATES_INSTALL_STANDALONE)
         install_codesign(gplates)
         install_codesign(pygplates EXCLUDE_FROM_ALL)
 
-        # Copy each resolved dependency (of GPlates and its Qt plugins) into the appropriate location inside the installed GPlates application bundle
-        # (depending of whether a regular '.dylib' or a framework).
+        # Copy each resolved dependency (of GPlates/pyGPlates and its Qt plugins) into the appropriate location inside the installed GPlates application bundle
+        # (or base install directory of pygplates) depending of whether a regular '.dylib' or a framework.
         #
         # Wrapping 'install' command in a function because each 'install' handles a single component and we have two components (gplates and pygplates).
         function(install_resolved_dependencies install_component)
@@ -695,39 +710,39 @@ if (GPLATES_INSTALL_STANDALONE)
                         endfunction()
                     ]]
                     #
-                    # Copy each resolved dependency (of GPlates and its Qt plugins) into the appropriate location inside the installed GPlates application bundle
-                    # (depending of whether a regular '.dylib' or a framework).
+                    # Copy each resolved dependency (of GPlates/pyGPlates and its Qt plugins) into the appropriate location inside the installed GPlates application bundle
+                    # (or base install directory of pygplates) depending of whether a regular '.dylib' or a framework.
                     #
                     CODE [[
                         set(_installed_dependencies)
                         foreach(_resolved_dependency ${_resolved_dependencies})
-                            # If the resolved dependency is inside a framework then copy the framework into the bundle
+                            # If the resolved dependency is inside a framework then copy the framework into the GPlates bundle or pyGPlates install location
                             # (but only copy the resolved dependency library and the framework 'Resources/' directory).
                             if (_resolved_dependency MATCHES "[^/]+\\.framework/")
                                 if (install_component STREQUAL "gplates")
                                     # Install in the 'Contents/Frameworks/' sub-directory of the 'gplates' app bundle.
                                     install_framework(${_resolved_dependency} "${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/Frameworks" _installed_dependency)
-                                else()
-                                    # Install in the base install directory of pygplates.
-                                    install_framework(${_resolved_dependency} "${CMAKE_INSTALL_PREFIX}" _installed_dependency)
+                                else() # pygplates
+                                    # Install in the 'Frameworks/' sub-directory of base install directory of pygplates.
+                                    install_framework(${_resolved_dependency} "${CMAKE_INSTALL_PREFIX}/Frameworks" _installed_dependency)
                                 endif()
-                            else()
+                            else()  # regular '.dylib' ...
                                 # Ensure we copy symlinks (using FOLLOW_SYMLINK_CHAIN). For example, with 'libCGAL.13.dylib -> libCGAL.13.0.3.dylib' both the symlink
                                 # 'libCGAL.13.dylib' and the dereferenced library 'libCGAL.13.0.3.dylib' are copied, otherwise just the symlink would be copied.
                                 if (install_component STREQUAL "gplates")
                                     # Install in the 'Contents/MacOS/' sub-directory of 'gplates' app bundle.
                                     file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/MacOS" FOLLOW_SYMLINK_CHAIN)
-                                else()
-                                    # Install in the base install directory of pygplates.
-                                    file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}" FOLLOW_SYMLINK_CHAIN)
+                                else() # pygplates
+                                    # Install in the 'lib/' sub-directory of base install directory of pygplates.
+                                    file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" FOLLOW_SYMLINK_CHAIN)
                                 endif()
 
                                 if (install_component STREQUAL "gplates")
                                     # Get '${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/MacOS/dependency.dylib' from resolved dependency.
                                     string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/MacOS/\\1" _installed_dependency "${_resolved_dependency}")
-                                else()
-                                    # Get '${CMAKE_INSTALL_PREFIX}/dependency.dylib' from resolved dependency.
-                                    string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/\\1" _installed_dependency "${_resolved_dependency}")
+                                else() # pygplates
+                                    # Get '${CMAKE_INSTALL_PREFIX}/lib/dependency.dylib' from resolved dependency.
+                                    string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/lib/\\1" _installed_dependency "${_resolved_dependency}")
                                 endif()
                             endif()
 
@@ -745,27 +760,59 @@ if (GPLATES_INSTALL_STANDALONE)
         # Find the 'otool' command.
         find_program(OTOOL "otool")
         if (NOT OTOOL)
-            message(FATAL_ERROR "Unable to find 'otool' command - cannot fix dependency paths to reference inside installed bundle")
+            message(FATAL_ERROR "Unable to find 'otool' command - cannot fix dependency paths to reference inside installation")
         endif()
 
         # Find the 'install_name_tool' command.
         find_program(INSTALL_NAME_TOOL "install_name_tool")
         if (NOT INSTALL_NAME_TOOL)
-            message(FATAL_ERROR "Unable to find 'install_name_tool' command - cannot fix dependency paths to reference inside installed bundle")
+            message(FATAL_ERROR "Unable to find 'install_name_tool' command - cannot fix dependency paths to reference inside installation")
         endif()
 
-        # Fix up the path to each *direct* dependency of GPlates, its Qt plugins and their installed dependencies.
-        # Each dependency will depend on other dependencies in turn and must point to their location within the installed bundle.
-        # At the same time code sign GPlates, its Qt plugins and their installed dependencies with a valid Developer ID certificate.
+        # Fix up the path to each *direct* dependency of GPlates/pyGPlates, its Qt plugins and their installed dependencies.
+        # Each dependency will depend on other dependencies in turn and must point to their location within the installation.
+        # At the same time code sign GPlates/pyGPlates, its Qt plugins and their installed dependencies with a valid Developer ID certificate.
         #
         # Wrapping 'install' command in a function because each 'install' handles a single component and we have two components (gplates and pygplates).
         function(install_fix_dependencies install_component)
             install(
+                    #
+                    # Function to find the relative path from the directory of the installed file to the directory where all the dependency libraries are installed.
+                    #
+                    # This is only needed for installing pyGPlates because it uses @loader_path which is different for pygplates library, its Qt plugins and dependency
+                    # frameworks and libraries (whereas GPlates uses @executable_path which is fixed to the location of the GPlates executable).
+                    # The returned relative path can then be used as '@loader_path/<relative_path>'.
+                    #
+                    CODE [[
+                        function(get_relative_path_from_intalled_file_to_installed_dependency installed_file installed_dependency relative_path)
+
+                            get_filename_component(_installed_file_dir ${installed_file} DIRECTORY)
+                            get_filename_component(_installed_dependency_dir ${installed_dependency} DIRECTORY)
+
+                            # Need to optionally convert relative paths to absolute paths (required by file(RELATIVE_PATH)) because it's possible that
+                            # CMAKE_INSTALL_PREFIX (embedded in install paths) is a relative path (eg, 'staging' if installing with
+                            # 'cmake --install . --prefix staging').
+                            #
+                            # Note that both the installed file and installed libs will have paths starting with CMAKE_INSTALL_PREFIX so the
+                            # relative path will be unaffected by whatever absolute prefix we use, so we don't need to specify BASE_DIR
+                            # (it will default to 'CMAKE_CURRENT_SOURCE_DIR' which defaults to the current working directory when this
+                            # install code is finally run in cmake script mode '-P' but, as mentioned, it doesn't matter what this is).
+                            get_filename_component(_installed_file_dir ${_installed_file_dir} ABSOLUTE)
+                            get_filename_component(_installed_dependency_dir ${_installed_dependency_dir} ABSOLUTE)
+
+                            # Get the relative path.
+                            file(RELATIVE_PATH _relative_path "${_installed_file_dir}" "${_installed_dependency_dir}")
+
+                            # Set caller's relative path.
+                            set(${relative_path} ${_relative_path} PARENT_SCOPE)
+                        endfunction()
+                    ]]
+
                     CODE "set(OTOOL [[${OTOOL}]])"
                     CODE "set(INSTALL_NAME_TOOL [[${INSTALL_NAME_TOOL}]])"
                     #
-                    # Function to change the dependency install names in the specified install file so that it
-                    # references the installed dependency file's location relative to the bundle's executable.
+                    # Function to change the dependency install names in the specified install file so that it references the
+                    # installed dependency file's location relative to the GPlates executable (or pyGPlates library).
                     #
                     CODE [[
                         function(fix_dependency_install_names installed_file)
@@ -812,14 +859,35 @@ if (GPLATES_INSTALL_STANDALONE)
                                 #
                                 # See if it's a framework.
                                 if (_dependency_file_install_name MATCHES "[^/]+\\.framework/")
-                                    # For example, "@executable_path/../Frameworks/Dependency.framework/Versions/2/Dependency".
-                                    string(REGEX REPLACE "^.*/([^/]+\\.framework/.*)$" "@executable_path/../Frameworks/\\1"
-                                            _installed_dependency_file_install_name "${_dependency_file_install_name}")
+                                    if (install_component STREQUAL "gplates")
+                                        # For example, "@executable_path/../Frameworks/Dependency.framework/Versions/2/Dependency".
+                                        string(REGEX REPLACE "^.*/([^/]+\\.framework/.*)$" "@executable_path/../Frameworks/\\1"
+                                                _installed_dependency_file_install_name "${_dependency_file_install_name}")
+                                    else() # pygplates
+                                        # For example, "Frameworks/Dependency.framework/Versions/2/Dependency".
+                                        string(REGEX REPLACE "^.*/([^/]+\\.framework/.*)$" "Frameworks/\\1"
+                                                _installed_dependency_file_name "${_dependency_file_install_name}")
+                                        # Get the relative path from the installed file to its installed dependency.
+                                        get_relative_path_from_intalled_file_to_installed_dependency(
+                                                ${installed_file} ${_installed_dependency_file_name} _relative_path_to_installed_dependency)
+                                        set(_installed_dependency_file_install_name "@loader_path/${_relative_path_to_installed_dependency}")
+                                    endif()
                                 else()  # it's a regular shared library...
-                                    # Non-framework librares are installed in same directory as executable.
-                                    # For example, "@executable_path/../MacOS/dependency.dylib".
-                                    string(REGEX REPLACE "^.*/([^/]+)$" "@executable_path/../MacOS/\\1"
-                                            _installed_dependency_file_install_name "${_dependency_file_install_name}")
+                                    if (install_component STREQUAL "gplates")
+                                        # Non-framework librares are installed in same directory as executable.
+                                        # For example, "@executable_path/../MacOS/dependency.dylib".
+                                        string(REGEX REPLACE "^.*/([^/]+)$" "@executable_path/../MacOS/\\1"
+                                                _installed_dependency_file_install_name "${_dependency_file_install_name}")
+                                    else() # pygplates
+                                        # Non-framework librares are installed in 'lib/' sub-directory of directory containing pygplates library.
+                                        # For example, "lib/dependency.dylib".
+                                        string(REGEX REPLACE "^.*/([^/]+)$" "lib/\\1"
+                                                _installed_dependency_file_name "${_dependency_file_install_name}")
+                                        # Get the relative path from the installed file to its installed dependency.
+                                        get_relative_path_from_intalled_file_to_installed_dependency(
+                                                ${installed_file} ${_installed_dependency_file_name} _relative_path_to_installed_dependency)
+                                        set(_installed_dependency_file_install_name "@loader_path/${_relative_path_to_installed_dependency}")
+                                    endif()
                                 endif()
 
                                 # Add '-change <old> <new>' to the list of 'install_name_tool' options.
@@ -858,9 +926,9 @@ if (GPLATES_INSTALL_STANDALONE)
                     #       ${CMAKE_INSTALL_PREFIX} (inside QT_PLUGINS_<comp>). And a side note, it does this at install time...
                     CODE "set(QT_PLUGINS \"${QT_PLUGINS_${install_component}}\")"
                     #
-                    # Fix up the path to each *direct* dependency of GPlates, its Qt plugins and their installed dependencies.
+                    # Fix up the path to each *direct* dependency of GPlates/pyGPlates, its Qt plugins and their installed dependencies.
                     #
-                    # At the same time code sign GPlates, its Qt plugins and their installed dependencies with a valid Developer ID certificate (if available).
+                    # At the same time code sign GPlates/pyGPlates, its Qt plugins and their installed dependencies with a valid Developer ID certificate (if available).
                     #
                     CODE [[
                         # Fix the dependency install names in each installed dependency.
@@ -877,20 +945,21 @@ if (GPLATES_INSTALL_STANDALONE)
                             codesign(${_qt_plugin})
                         endforeach()
 
+                        # And finally fix dependencies and code sign the GPlates application bundle (or the pyGPlates library).
+                        #
                         if (install_component STREQUAL "gplates")
                             # Fix the dependency install names in the installed gplates executable.
                             fix_dependency_install_names(${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/MacOS/gplates)
-                        else()
+                            # Sign *after* fixing dependencies (since we cannot modify after signing).
+                            #
+                            # NOTE: We sign the entire installed bundle (not just the 'gplates.app/Contents/MacOS/gplates' executable).
+                            #       And this must be done as the last step.
+                            codesign(${CMAKE_INSTALL_PREFIX}/gplates.app)
+                        else() # pygplates
                             # Fix the dependency install names in the installed pygplates library.
                             fix_dependency_install_names(${CMAKE_INSTALL_PREFIX}/$<TARGET_FILE_NAME:pygplates>)
-                        endif()
-
-                        if (install_component STREQUAL "gplates")
-                            # And finally code sign the application bundle (only applies to 'gplates').
-                            #
                             # Sign *after* fixing dependencies (since we cannot modify after signing).
-                            # Note that we sign the entire installed bundle last.
-                            codesign(${CMAKE_INSTALL_PREFIX}/gplates.app)
+                            codesign(${CMAKE_INSTALL_PREFIX}/$<TARGET_FILE_NAME:pygplates>)
                         endif()
                     ]]
 
@@ -1014,7 +1083,7 @@ if (GPLATES_INSTALL_STANDALONE)
                         # Set the RPATH in the installed gplates executable (or pygplates library).
                         if (install_component STREQUAL "gplates")
                             set_rpath(${CMAKE_INSTALL_PREFIX}/$<TARGET_FILE_NAME:gplates>)
-                        else()
+                        else() # pygplates
                             set_rpath(${CMAKE_INSTALL_PREFIX}/$<TARGET_FILE_NAME:pygplates>)
                         endif()
                     ]]

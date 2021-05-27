@@ -81,6 +81,17 @@ endif()
 #       in PackageGeneratorOverrides.cmake for archive generators only.
 #set(CPACK_COMPONENTS_ALL gplates)
 
+#   CPACK_MONOLITHIC_INSTALL - Disables the component-based installation mechanism.
+#
+#   When set, the component specification is ignored and all installed items are put in a single "MONOLITHIC" package.
+#   Some CPack generators do monolithic packaging by default and may be asked to do component packaging by setting
+#   CPACK_<GENNAME>_COMPONENT_INSTALL to TRUE.
+#
+# We only want component-based installs (for components gplates and pygplates) for archive generators.
+# NSIS, DragNDrop and Debian should be monolithic which, as mentioned near the top of this file, will only package the 'gplates' component
+# (since we used EXCLUDE_FROM_ALL in the 'install()' commands for the 'pygplates' component).
+SET(CPACK_MONOLITHIC_INSTALL ON)
+
 
 ############################
 # Some non-CPack variables #
@@ -222,17 +233,6 @@ SET(CPACK_SOURCE_IGNORE_FILES "/\\.[^/]+/" "/__pycache__/")
 #   Defaults to FALSE for backwards compatibility.
 #
 set(CPACK_VERBATIM_VARIABLES TRUE)
-
-#   CPACK_MONOLITHIC_INSTALL - Disables the component-based installation mechanism.
-#
-#   When set, the component specification is ignored and all installed items are put in a single "MONOLITHIC" package.
-#   Some CPack generators do monolithic packaging by default and may be asked to do component packaging by setting
-#   CPACK_<GENNAME>_COMPONENT_INSTALL to TRUE.
-#
-# We only want component-based installs (for components gplates and pygplates) for archive generators.
-# NSIS, DragNDrop and Debian should be monolithic which, as mentioned near the top of this file, will only package the 'gplates' component
-# (since we used EXCLUDE_FROM_ALL in the 'install()' commands for the 'pygplates' component).
-SET(CPACK_MONOLITHIC_INSTALL ON)
 
 
 ###########
