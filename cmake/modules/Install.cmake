@@ -28,6 +28,11 @@ include(GNUInstallDirs)
 # the EXCLUDE_FROM_ALL flag will exclude the pygplates component. For CPack generators we've configured as component-based
 # (eg, archive generators like ZIP) CPack will instead use the CPACK_COMPONENTS_ALL variables to select components to package (see Package.cmake).
 #
+# NOTE: THIS IS CURRENTLY THE PYGPLATES BRANCH.
+#       SHOULD ONLY BUILD 'pygplates'. SHOULDN'T BUILD 'gplates' UNTIL THIS BRANCH IS FULLY MERGED TO TRUNK
+#       (WHICH CAN ONLY HAPPEN ONCE WE'VE COMPLETELY UPDATED THE INTERNAL MODEL).
+#       TO BE SAFE 'install(TARGETS gplates)' HAS BEEN DISABLED BELOW.
+#
 
 #
 # Set the minimum CMake version required for installing targets.
@@ -59,6 +64,10 @@ endif()
 
 
 if (WIN32 OR APPLE)
+    # Temporarily disable gplates install until fully merged python-api branch to trunk.
+    # We only really need to disable installation of the GPlates executable to prevent this
+    # (everything else can be installed but it won't run without the executable).
+    if (FALSE)
     # On Windows and macOS we install to the *base* install directory (not 'bin/' sub-directory).
     # For Windows this is because we'll copy the dependency DLLs into the same directory as gplates (so it can find them).
     # For macOS this is because we want the app bundle to be in the base directory so when it's packaged you immediately see the bundle.
@@ -73,6 +82,7 @@ if (WIN32 OR APPLE)
         BUNDLE # Apple
             DESTINATION .
             COMPONENT gplates)
+    endif()
     
     # On Windows and macOS we install to the *base* install directory (not 'bin/' sub-directory).
     # For Windows this is because we'll copy the dependency DLLs into the same directory as pygplates (so it can find them).
@@ -86,10 +96,21 @@ else() # Linux
     if (GPLATES_INSTALL_STANDALONE)
         # For standalone we want to bundle everything together so it's relocatable, and it's easier to place gplates/pygplates
         # in the base install directory (along with 'qt.conf', which has to be in the same directory as the exectuable).
+
+        # Temporarily disable gplates install until fully merged python-api branch to trunk.
+        # We only really need to disable installation of the GPlates executable to prevent this
+        # (everything else can be installed but it won't run without the executable).
+        if (FALSE)
         install(TARGETS gplates RUNTIME DESTINATION . COMPONENT gplates)
+        endif()
         install(TARGETS pygplates LIBRARY DESTINATION . COMPONENT pygplates EXCLUDE_FROM_ALL)
     else()
+        # Temporarily disable gplates install until fully merged python-api branch to trunk.
+        # We only really need to disable installation of the GPlates executable to prevent this
+        # (everything else can be installed but it won't run without the executable).
+        if (FALSE)
         install(TARGETS gplates RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT gplates)
+        endif()
         install(TARGETS pygplates LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/pygplates/ COMPONENT pygplates EXCLUDE_FROM_ALL)
     endif()
 endif()

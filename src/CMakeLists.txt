@@ -939,14 +939,7 @@ include(TestPythonEmbedding)
 # (once CMake 3.13 or above is our minimum requirement then this will no longer be necessary).
 # Note that, while 'include()' pulls in content from another directory, it pulls it into the *current* directory scope.
 #
-if (FALSE)  # Temporarily disable gplates install until fully merged python-api branch to trunk.
-	include(Install)
-else()
-	# TODO: Put this in 'Install.cmake' and use same procedure as target gplates to find and install dependencies.
-	install(TARGETS pygplates
-		DESTINATION lib/pygplates/revision${PYGPLATES_REVISION}/
-		CONFIGURATIONS release)
-endif()
+include(Install)
 
 #
 # Include code to *package* the above targets.
