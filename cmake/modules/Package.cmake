@@ -34,11 +34,63 @@ elseif (APPLE)
     # For source packages default to a bzipped tarball (.tar.bz2).
     SET(CPACK_SOURCE_GENERATOR TBZ2)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    # For binary packages default to a Debian package.
-    SET(CPACK_GENERATOR DEB)
+    if (GPLATES_INSTALL_STANDALONE)
+        # For standalone binary packages default to a bzipped tarball.
+        # With standalone Linux, like Windows and macOS, the 'install' stage has copied the dependencies
+        # into the staging area for packaging and now just need to package that into an archive.
+        # The user will be able to extract the archive on target system without having to install anything.
+        SET(CPACK_GENERATOR TBZ2)
+    else()
+        # For non-standalone binary packages, default to a Debian package.
+        # Dependencies will then be installed on the target system by the system binary package manager.
+        SET(CPACK_GENERATOR DEB)
+    endif()
     # For source packages default to a bzipped tarball (.tar.bz2).
     SET(CPACK_SOURCE_GENERATOR TBZ2)
 endif()
+
+# Specify which components to package by default.
+#
+# There are two components available for packaging:
+# - gplates
+# - pygplates
+#
+# By default, we only package 'gplates'.
+#
+# This is because 'pygplates' will soon be installable via 'conda' (and maybe ultimately via 'pip', although pygplates
+# has many shared library dependencies and 'pip' is not really designed to handle that).
+# So typically only the 'install' process would be used for 'pygplates' (eg, 'cmake --install . --component pygplates --prefix staging),
+# but not the 'packaging' process (ie, turning a staged installation into a package). Instead the staged installation
+# (without subsequent packaging with cpack) could be used as part of the conda build process (currently investigating this).
+#
+# However, if you want to package both 'gplates' and 'pygplates' then run 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=gplates;pygplates'.
+# Note the use of '-G ZIP', for example on Windows, to override the CPACK_GENERATOR default above (NSIS;ZIP) since you would not
+# want to create an NSIS package for pygplates. In fact it's currently not possible to create an NSIS package for pygplates anyway because
+# we have CPACK_MONOLITHIC_INSTALL turned ON (for all generators, except archive generators like ZIP) and we use EXCLUDE_FROM_ALL in the
+# 'install()' commands for the 'pygplates' component, and together these two settings appear to result in NSIS packaging up all components
+# from a *default* installation (which includes only component 'gplates').
+# In any case, typically you would package 'gplates' and 'pygplates' in *separate* 'cpack' runs.
+# In this case you'd want to package 'gplates' with just 'cpack' (to create both an NSIS installer and a ZIP archive by default) and
+# package 'pygplates' with 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=pygplates' (but note that when extracting the resultant archive you
+# would have a top-level directory that looked something like 'GPlates-2.2.0-win64/', so you'd probably want to manually rename that).
+# Note the space in '-D CPACK_COMPONENTS_ALL' (without the space it won't override the default).
+#
+# NOTE: We only specify CPACK_COMPONENTS_ALL when CPACK_MONOLITHIC_INSTALL is disabled because they are conflicting
+#       (CPack will issue a warning and default to monolithic). We have CPACK_MONOLITHIC_INSTALL enabled by default and
+#       only disable it for the archive generators. As a result we don't set CPACK_COMPONENTS_ALL here, instead overriding it
+#       in PackageGeneratorOverrides.cmake for archive generators only.
+#set(CPACK_COMPONENTS_ALL gplates)
+
+#   CPACK_MONOLITHIC_INSTALL - Disables the component-based installation mechanism.
+#
+#   When set, the component specification is ignored and all installed items are put in a single "MONOLITHIC" package.
+#   Some CPack generators do monolithic packaging by default and may be asked to do component packaging by setting
+#   CPACK_<GENNAME>_COMPONENT_INSTALL to TRUE.
+#
+# We only want component-based installs (for components gplates and pygplates) for archive generators.
+# NSIS, DragNDrop and Debian should be monolithic which, as mentioned near the top of this file, will only package the 'gplates' component
+# (since we used EXCLUDE_FROM_ALL in the 'install()' commands for the 'pygplates' component).
+SET(CPACK_MONOLITHIC_INSTALL ON)
 
 
 ############################
@@ -94,16 +146,18 @@ endif()
 #
 #   For example, cmake-2.6.1-Linux-i686.
 #
+# We exclude the package version from the filename because CPACK_PACKAGE_FILE_NAME appears to be used by our separate gplates and pygplates
+# component packages as the top level directory (eg, in the archive generators).
 if (WIN32)
     # NOTE: We can't access CPACK variables here (ie, at CMake configure time) so we can't access CPACK_SYSTEM_NAME which is defined as:
     #           "CPACK_SYSTEM_NAME defaults to the value of CMAKE_SYSTEM_NAME, except on Windows where it will be win32 or win64"
     #       So instead we'll implement our own CPACK_SYSTEM_NAME.
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        SET(_CPACK_SYSTEM_NAME win64)
+        SET(_CPACK_SYSTEM_NAME_WIN win64)
     else()
-        SET(_CPACK_SYSTEM_NAME win32)
+        SET(_CPACK_SYSTEM_NAME_WIN win32)
     endif()
-    SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-${_CPACK_SYSTEM_NAME}")
+    SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-${_CPACK_SYSTEM_NAME_WIN}")
 else()
     SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 endif()
@@ -180,18 +234,46 @@ SET(CPACK_SOURCE_IGNORE_FILES "/\\.[^/]+/" "/__pycache__/")
 #
 set(CPACK_VERBATIM_VARIABLES TRUE)
 
-#   CPACK_MONOLITHIC_INSTALL - Disables the component-based installation mechanism.
+
+###########
+# Archive #
+###########
 #
-#   When set, the component specification is ignored and all installed items are put in a single "MONOLITHIC" package.
-#   Some CPack generators do monolithic packaging by default and may be asked to do component packaging by setting
-#   CPACK_<GENNAME>_COMPONENT_INSTALL to TRUE.
+# The only generator used to package both our 'gplates' and 'pygplates' components (as separate archives).
+
+
+#   CPACK_<GENNAME>_COMPONENT_INSTALL - Enable/Disable component install for CPack generator <GENNAME>.
+#   
+#   Each CPack Generator (RPM, DEB, ARCHIVE, NSIS, DMG, etc...) has a legacy default behavior. e.g. RPM builds monolithic whereas NSIS builds component.
+#   One can change the default behavior by setting this variable to 0/1 or OFF/ON.
+#   
+# We want to create separate archives for our two components (gplates and pygplates).
+# We also override CPACK_MONOLITHIC_INSTALL (turn it off) in PackageGeneratorOverrides.cmake.
+set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
+
+
+#   CPACK_ARCHIVE_<component>_FILE_NAME - Package file name without extension.
 #
-SET(CPACK_MONOLITHIC_INSTALL "TRUE")
+#   The extension is determined from the archive format and automatically appended to the file name.
+#   The default is <CPACK_PACKAGE_FILE_NAME>[-<component>], with spaces replaced by '-'.
+#
+#   New in version 3.9: Per-component CPACK_ARCHIVE_<component>_FILE_NAME variables.
+#
+# Each of our two components (gplates and pygplates) goes into a separate archive file.
+if (WIN32)
+    SET(CPACK_ARCHIVE_GPLATES_FILE_NAME "gplates-${CPACK_PACKAGE_VERSION}-${_CPACK_SYSTEM_NAME_WIN}")
+    SET(CPACK_ARCHIVE_PYGPLATES_FILE_NAME "pygplates-${CPACK_PACKAGE_VERSION}-${_CPACK_SYSTEM_NAME_WIN}")
+else()
+    SET(CPACK_ARCHIVE_GPLATES_FILE_NAME "gplates-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+    SET(CPACK_ARCHIVE_PYGPLATES_FILE_NAME "pygplates-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+endif()
 
 
 ########
 # NSIS #
 ########
+#
+# Only used to package our 'gplates' component (not 'pygplates').
 
 
 #   CPACK_NSIS_PACKAGE_NAME - The title displayed at the top of the installer.
@@ -252,11 +334,17 @@ set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 #############
 # DragNDrop #
 #############
-
+#
+# Only used to package our 'gplates' component (not 'pygplates').
+#
+# Currently no DragNDrop-specific variables need setting.
+# See "PackageGeneratorOverrides.cmake" for overrides of the general variables (non-generator specific).
 
 #######
 # DEB #
 #######
+#
+# Only used to package our 'gplates' component (not 'pygplates').
 
 #   CPACK_DEBIAN_FILE_NAME (CPACK_DEBIAN_<COMPONENT>_FILE_NAME) - Package file name.
 #
