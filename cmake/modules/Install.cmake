@@ -609,8 +609,10 @@ if (GPLATES_INSTALL_STANDALONE)
         #       dependency libraries (and pygplates), then upload the archive to Apple for notarization and check for successful notarization.
         #       However you cannot staple a notarization ticket to a ZIP archive (you must instead staple each item in the archive and then create a new archive).
         #       If an item is not stapled then Gatekeeper finds the ticket online (stapling is so the ticket can be found when the network is offline).
-        #       So currently we don't staple the items. Another potential issue is using 'zip' versus 'ditto', apparently the latter can stored extended attributes
-        #       but the former is used by CPack. This could be an issue if something is code signed that is not a Mach-O file (exe, library, etc) and hence the
+        #       So currently we don't staple the items. Another potential issue is using 'zip' versus 'ditto', apparently 'ditto' can stored extended attributes
+        #       and appears to be used by CPack. But if you're recreating archive (eg, after extracting archive produced by CPack, renaming root folder and re-zipping)
+        #       then be sure to use 'ditto' to avoid notarization errors (eg, Apple recommends 'ditto -c -k --keepParent <src> <dst>.zip', see above URL).
+        #       This could be an issue if something is code signed that is not a Mach-O file (exe, library, etc) and hence the
         #       signature has to be stored in an extended attribute. But currently we are not running into this issue.
         #       Note that soon we will use Conda to build pyGPlates packages and no longer rely on CPack. Or rely on Apple notarization for that matter because the
         #       Conda package manager will then be responsible for installing pygplates on the user's computer, and so conda will then be responsible for quarantine.
