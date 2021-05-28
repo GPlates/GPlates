@@ -26,7 +26,7 @@ set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the int
 # Also it does not need to be incremented at each public release - for example the revision number
 # just prior to the GPlates 1.5.0 release and just after might be the same (if API did not change
 # during that time).
-set(PYGPLATES_REVISION 31)
+set(PYGPLATES_REVISION 32)
 
 # The GPlates copyright - string version to be used in a source file.
 set(GPLATES_COPYRIGHT_STRING "")
