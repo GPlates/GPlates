@@ -480,6 +480,86 @@ if (GPLATES_INSTALL_STANDALONE)
     install_get_runtime_dependencies(pygplates EXCLUDE_FROM_ALL)
 
     #
+    # Function to install the Python standard library.
+    #
+    # This is used on Windows and Linux (standalone).
+    # On macOS we install the standard library when we install the Python framework
+    # (since the standard library is contained inside the framework).
+    #
+    # Note: The Python standard library is only installed for the 'gplates' component which has an embedded Python interpreter
+    #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
+    #
+    function(install_python_standard_library)
+        if (APPLE)
+            message(FATAL_ERROR "Function to install Python standard library only meant for use on Windows and Linux (macOS does this a different way)")
+        endif()
+
+        if (CMAKE_VERSION VERSION_LESS 3.12)
+            # CMake versions less than 3.12 do not support the Python2 and Python3 find modules, and hence do not have
+            # Python2_STDLIB and Python3_STDLIB variables. So we need to query the stand library location from Python.
+            #
+            # Get Python to import sysconfig and then print out the standard library directory.
+            set(_GPLATES_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE})
+            execute_process(COMMAND ${_GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sysconfig; print(sysconfig.get_path('stdlib'));"
+                RESULT_VARIABLE _PYTHON_STDLIB_RESULT
+                OUTPUT_VARIABLE _PYTHON_STDLIB_OUTPUT
+                ERROR_QUIET
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+            if (_PYTHON_STDLIB_RESULT)
+                message(FATAL_ERROR "Unable to find Python standard library location - cannot copy it into installation")
+            endif()
+            set(_GPLATES_PYTHON_STDLIB_DIR ${_PYTHON_STDLIB_OUTPUT})
+        else()  # CMake 3.12 and later...
+            # CMake 3.12 and later have find_package(Python2) and find_package(Python3), which have Python2_STDLIB and Python3_STDLIB variables.
+            if (GPLATES_PYTHON_3)
+                set(_GPLATES_PYTHON_STDLIB_DIR ${Python3_STDLIB})
+                set(_GPLATES_PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
+            else()
+                set(_GPLATES_PYTHON_STDLIB_DIR ${Python2_STDLIB})
+                set(_GPLATES_PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
+            endif()
+        endif()
+
+        # Get Python to import sys and then print out the prefix directory.
+        execute_process(COMMAND ${_GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sys; print(sys.prefix);"
+            RESULT_VARIABLE _PYTHON_PREFIX_RESULT
+            OUTPUT_VARIABLE _PYTHON_PREFIX_OUTPUT
+            ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if (_PYTHON_PREFIX_RESULT)
+            message(FATAL_ERROR "Unable to find Python prefix location")
+        endif()
+        set(_GPLATES_PYTHON_PREFIX_DIR ${_PYTHON_PREFIX_OUTPUT})
+
+        # Convert '\' to '/' in path.
+        file(TO_CMAKE_PATH ${_GPLATES_PYTHON_STDLIB_DIR} _GPLATES_PYTHON_STDLIB_DIR)
+        file(TO_CMAKE_PATH ${_GPLATES_PYTHON_PREFIX_DIR} _GPLATES_PYTHON_PREFIX_DIR)
+
+        # Find the relative path from the Python prefix directory to the standard library directory.
+        # We'll use this as the standard library install location relative to our install prefix.
+        file(RELATIVE_PATH _GPLATES_PYTHON_STDLIB_INSTALL_DIR ${_GPLATES_PYTHON_PREFIX_DIR} ${_GPLATES_PYTHON_STDLIB_DIR})
+
+        # Remove the trailing '/', if there is one, so that we can then
+        # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
+        #
+        #   "The last component of each directory name is appended to the destination directory but
+        #    a trailing slash may be used to avoid this because it leaves the last component empty"
+        #
+        string(REGEX REPLACE "/+$" "" _GPLATES_PYTHON_STDLIB_DIR "${_GPLATES_PYTHON_STDLIB_DIR}")
+        # Install the Python standard library.
+        install(DIRECTORY ${_GPLATES_PYTHON_STDLIB_DIR}/ DESTINATION ${_GPLATES_PYTHON_STDLIB_INSTALL_DIR} COMPONENT gplates)
+
+        # On Windows there's also a 'DLLs/' sibling directory of the 'Lib/' directory.
+        if (WIN32)
+            get_filename_component(_GPLATES_PYTHON_DLLS_DIR ${_GPLATES_PYTHON_STDLIB_DIR} DIRECTORY)
+            set(_GPLATES_PYTHON_DLLS_DIR "${_GPLATES_PYTHON_DLLS_DIR}/DLLs")
+            if (EXISTS "${_GPLATES_PYTHON_DLLS_DIR}")
+                install(DIRECTORY ${_GPLATES_PYTHON_DLLS_DIR}/ DESTINATION DLLs/ COMPONENT gplates)
+            endif()
+        endif()
+    endfunction()
+
+    #
     # Install the dependency libraries.
     #
     if (WIN32)
@@ -503,6 +583,12 @@ if (GPLATES_INSTALL_STANDALONE)
         install_resolved_dependencies(gplates)
         install_resolved_dependencies(pygplates EXCLUDE_FROM_ALL)
 
+        # Install the Python standard library.
+        #
+        # Note: The Python standard library is only installed for the 'gplates' component which has an embedded Python interpreter
+        #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
+        install_python_standard_library()
+
     elseif (APPLE)
 
         #
@@ -519,14 +605,14 @@ if (GPLATES_INSTALL_STANDALONE)
         #           https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow
         #       For GPlates this amounts to code signing the DMG file created by CPack, uploading to Apple for notarization, checking for successful
         #       notarization and then stapling the notarization ticket to the DMG file. Once that is all done the DMG can be distributed to users.
-        #       For pyGPlates we currently get CPack to produce an archive (eg, ZIP) containing the code signed dependency libraries (and pygplates), then
-        #       upload the archive to Apple for notarization and check for successful notarization. However you cannot staple a notarization ticket
-        #       to a ZIP archive (you must instead staple each item in the archive and then create a new archive). If an item is not stapled then Gatekeeper
-        #       finds the ticket online (stapling is so the ticket can be found when the network is offline). So currently we don't staple the items.
-        #       Another potential issue is using 'zip' versus 'ditto', apparently the latter can stored extended attributes but the former is used by CPack.
-        #       This could be an issue if something is code signed that is not a Mach-O file (exe, library, etc) and hence the signature has to be stored
-        #       in an extended attribute.
-        #       Ultimately we will use Conda to build pyGPlates packages and no longer rely on CPack. Or Apple notarization for that matter because the
+        #       For pyGPlates we currently get CPack to produce a ZIP archive (notarization does not support TBZ2 for example) containing the code signed
+        #       dependency libraries (and pygplates), then upload the archive to Apple for notarization and check for successful notarization.
+        #       However you cannot staple a notarization ticket to a ZIP archive (you must instead staple each item in the archive and then create a new archive).
+        #       If an item is not stapled then Gatekeeper finds the ticket online (stapling is so the ticket can be found when the network is offline).
+        #       So currently we don't staple the items. Another potential issue is using 'zip' versus 'ditto', apparently the latter can stored extended attributes
+        #       but the former is used by CPack. This could be an issue if something is code signed that is not a Mach-O file (exe, library, etc) and hence the
+        #       signature has to be stored in an extended attribute. But currently we are not running into this issue.
+        #       Note that soon we will use Conda to build pyGPlates packages and no longer rely on CPack. Or rely on Apple notarization for that matter because the
         #       Conda package manager will then be responsible for installing pygplates on the user's computer, and so conda will then be responsible for quarantine.
         #
 
@@ -993,8 +1079,8 @@ if (GPLATES_INSTALL_STANDALONE)
 
         #
         # On standalone Linux we need to:
-        #   1 - copy each resolved direct and indirect dependency library (of GPlates and its Qt plugins) into the 'lib/' sub-directory of base install directory,
-        #   2 - specify an appropriate RPATH for GPlates, its Qt plugins and their resolved dependencies
+        #   1 - copy each resolved direct and indirect dependency library (of GPlates/pyGPlates and its Qt plugins) into the 'lib/' sub-directory of base install directory,
+        #   2 - specify an appropriate RPATH for GPlates/pyGPlates, its Qt plugins and their resolved dependencies
         #       (ie, each dependency will depend on other dependencies in turn and must point to their location, ie, in 'lib/').
         #
 
@@ -1002,11 +1088,11 @@ if (GPLATES_INSTALL_STANDALONE)
         function(install_resolved_dependencies install_component)
             install(
                     #
-                    # Copy each resolved dependency (of GPlates and its Qt plugins) into the 'lib/' sub-directory of base install directory.
+                    # Copy each resolved dependency (of GPlates/pyGPlates and its Qt plugins) into the 'lib/' sub-directory of base install directory.
                     #
                     # On standalone Linux we simply copy the dependency shared libraries to the 'lib/' sub-directory of the
                     # install prefix location so that they will get found at runtime from an RPATH of '$ORIGIN/lib' where $ORIGIN is
-                    # the location of the gplates executable (in the base install directory).
+                    # the location of the gplates executable (or pyGPlates library) in the base install directory.
                     #
                     CODE "set(CMAKE_INSTALL_LIBDIR [[${CMAKE_INSTALL_LIBDIR}]])"
                     CODE [[
@@ -1031,6 +1117,12 @@ if (GPLATES_INSTALL_STANDALONE)
         install_resolved_dependencies(gplates)
         install_resolved_dependencies(pygplates EXCLUDE_FROM_ALL)
 
+        # Install the Python standard library.
+        #
+        # Note: The Python standard library is only installed for the 'gplates' component which has an embedded Python interpreter
+        #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
+        install_python_standard_library()
+
         # Find the 'patchelf' command.
         find_program(PATCHELF "patchelf")
         if (NOT PATCHELF)
@@ -1043,7 +1135,7 @@ if (GPLATES_INSTALL_STANDALONE)
                     CODE "set(PATCHELF [[${PATCHELF}]])"
                     CODE "set(CMAKE_INSTALL_LIBDIR [[${CMAKE_INSTALL_LIBDIR}]])"
                     #
-                    # Function to set the RPATH of the specified installed file to '$ORIGIN/<relative-path-to-libs>' so that it can
+                    # Function to set the RPATH of the specified installed file to '$ORIGIN/<relative-path-to-libs-dir>' so that it can
                     # find its direct dependency libraries (in the 'lib/' sub-directory of the base install directory).
                     #
                     CODE [[
@@ -1064,14 +1156,14 @@ if (GPLATES_INSTALL_STANDALONE)
                             get_filename_component(_installed_file_dir ${_installed_file_dir} ABSOLUTE)
                             get_filename_component(_installed_libs_dir "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" ABSOLUTE)
 
-                            # Get the relative path
-                            file(RELATIVE_PATH _relative_path_to_libs "${_installed_file_dir}" "${_installed_libs_dir}")
+                            # Get the relative path to the 'libs' sub-directory of base install directory.
+                            file(RELATIVE_PATH _relative_path_to_libs_dir "${_installed_file_dir}" "${_installed_libs_dir}")
 
                             #
                             # Run 'patchelf --set-rpath <rpath> <installed-file>' to set the required RPATH.
                             #
                             execute_process(
-                                COMMAND ${PATCHELF} --set-rpath $ORIGIN/${_relative_path_to_libs} ${installed_file}
+                                COMMAND ${PATCHELF} --set-rpath $ORIGIN/${_relative_path_to_libs_dir} ${installed_file}
                                 RESULT_VARIABLE _patchelf_result
                                 ERROR_VARIABLE _patchelf_error)
                             if (_patchelf_result)
