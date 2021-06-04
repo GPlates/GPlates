@@ -172,23 +172,6 @@ Boost
         using python : 2.7 : C:\\SDK\\python\\Python-2.7.18 ;
         using python : 3.7 : C:\\SDK\\python\\Python-3.7.9 ;
      ...and then add "python=2.7,3.7", for example, to your '.\b2 ...' command-line.
-     
-     You may get compile errors about '_snprintf' not being a member of 'std' when (later) compiling GPlates. This is typically due to some source code somewhere defining:
-       #if defined(_MSC_VER)
-           #define snprintf _snprintf
-       #endif
-     ...when it should be using "#if defined(_MSC_VER) && _MSC_VER < 1900" since Visual Studio 2015 now defines 'std::snprintf'.
-     It's hard to find where this is happening (among the dependency library headers) so one (hacky) option is to edit "boost/system/detail/system_category_win32.hpp" as
-       inline char const * unknown_message_win32( int ev, char * buffer, std::size_t len )
-       {
-           // Microsoft Visual Studio has std::snprint(), but some other code might have "#define snprintf _snprintf" for all _MSC_VER versions.
-       #if defined(_MSC_VER) && !defined(snprintf)
-           std::
-       #endif
-               snprintf( buffer, len, "Unknown error (%d)", ev );
-           return buffer;
-       }
-     ...since this is the only location it seems to be happening currently.
 
 SQLite3
 
@@ -314,12 +297,6 @@ CGAL
      * Build the 'INSTALL' project.
   4. Add the CGAL \bin directory to the PATH environment variable (eg, D:\SDK\cgal\CGAL-4.13.2\bin).
   When GPlates is built it should find CGAL via the "CGAL_DIR" environment variable.
-  You may get a compile error in 'include/CGAL/Dimension.h' when (later) compiling GPlates.
-  You can workaround this by replacing:
-    const int UNKNOWN_DIMENSION=std::numeric_limits<int>::max();
-  ...with...
-    const int UNKNOWN_DIMENSION=(std::numeric_limits<int>::max)();
-  ...in 'include/CGAL/Dimension.h'
     
     NOTE that CGAL 5 (and above) use C++14 features which requires Visual Studio 2015 (or above).
 
