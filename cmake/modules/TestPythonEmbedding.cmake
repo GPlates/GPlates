@@ -71,6 +71,22 @@ endif()
 # Projects built by try_compile() and try_run() are built synchronously during the CMake configuration step.
 # Therefore a specific build configuration must be chosen even if the generated build system supports multiple configurations.
 SET(CMAKE_TRY_COMPILE_CONFIGURATION Release)
+
+# Save the current PYTHONHOME environment variable, and then set it to the directory of the Python interpreter executable.
+# This is necessary with Anaconda to avoid the following error:
+#   Fatal Python error: initfsencoding: unable to load the file system codec
+#   ModuleNotFoundError: No module named 'encodings'
+# ...since otherwise it appears to set the sys.path relative to the current working directory (ie, starting with './').
+# A relative path prevents Python from finding its standard library (presumably because the current working directory is
+# not the Python prefix) and therefore cannot import a module from it.
+# Setting PYTHONHOME to the Python prefix is a workaround that seems to avoid relative paths. See the following forum post:
+#   https://github.com/ContinuumIO/anaconda-issues/issues/10660#issuecomment-479199400
+# An alternative could be to set the current working directory (of try_run) to the Python prefix (instead of setting PYTHONHOME).
+set(_CURRENT_PYTHONHOME $ENV{PYTHONHOME})
+get_filename_component(_NEW_PYTHONHOME ${GPLATES_PYTHON_EXECUTABLE} DIRECTORY)
+set(ENV{PYTHONHOME} ${_NEW_PYTHONHOME})
+#message(STATUS "New PYTHONHOME: $ENV{PYTHONHOME}")
+# Compile and run the test executable.
 TRY_RUN(PYTHON_EMBEDDING_RUNS PYTHON_EMBEDDING_COMPILES
 	${CMAKE_BINARY_DIR}
 	${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc
@@ -78,6 +94,9 @@ TRY_RUN(PYTHON_EMBEDDING_RUNS PYTHON_EMBEDDING_COMPILES
 	LINK_LIBRARIES ${python_embedding_LIBS}
 	COMPILE_OUTPUT_VARIABLE PYTHON_EMBEDDING_COMPILE_OUTPUT
 	RUN_OUTPUT_VARIABLE PYTHON_EMBEDDING_RUN_OUTPUT)
+# Restore the previous PYTHONHOME environment variable.
+set(ENV{PYTHONHOME} ${_CURRENT_PYTHONHOME})
+#message(STATUS "Old PYTHONHOME: $ENV{PYTHONHOME}")
 
 IF(NOT PYTHON_EMBEDDING_COMPILES)
 	MESSAGE(STATUS "Python embedding test program compile output:")
