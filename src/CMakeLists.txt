@@ -71,6 +71,8 @@ if (CMAKE_VERSION VERSION_LESS 3.12)
 	# (since we need to run the Python executable to print the numpy include path) but that's currently optional.
 	find_package(PythonInterp ${_GPLATES_PYTHON_MAJOR_VER} EXACT)
 	find_package(PythonLibs ${_GPLATES_PYTHON_MAJOR_VER} EXACT REQUIRED)
+	# Get the Python interpreter executable.
+	set(GPLATES_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE})
 	# Get the Python major/minor versions.
 	string(REGEX MATCHALL "[0-9]+" _GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR ${PYTHONLIBS_VERSION_STRING})
 	list(GET _GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR 0 GPLATES_PYTHON_VERSION_MAJOR)
@@ -85,34 +87,33 @@ else()  # CMake 3.12 and later...
 		# (however the NumPy component is only available in CMake 3.14 and later).
 		find_package(Python${_GPLATES_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter Development OPTIONAL_COMPONENTS NumPy)
 	endif()
+	# Get the Python interpreter executable.
+	set(GPLATES_PYTHON_EXECUTABLE ${Python${_GPLATES_PYTHON_MAJOR_VER}_EXECUTABLE})
+	# Get the Python major/minor versions.
 	set(GPLATES_PYTHON_VERSION_MAJOR ${Python${_GPLATES_PYTHON_MAJOR_VER}_VERSION_MAJOR})
 	set(GPLATES_PYTHON_VERSION_MINOR ${Python${_GPLATES_PYTHON_MAJOR_VER}_VERSION_MINOR})
 endif()
+# Check the Python interpreter exists (shouldn't need to do this but just to be sure).
+if (NOT EXISTS ${GPLATES_PYTHON_EXECUTABLE})
+	message(FATAL_ERROR "Python interpreter was not found")
+endif()
+
 #
 # Find the Python NumPy include directories (and store in GPLATES_Python_NumPy_INCLUDE_DIRS if found).
 unset(GPLATES_Python_NumPy_INCLUDE_DIRS)
 #
 # CMake versions older than 3.14 do not support the NumPy component (in 'find_package') - so we need to find it ourself.
 if (CMAKE_VERSION VERSION_LESS 3.14)
-	if (CMAKE_VERSION VERSION_LESS 3.12)
-		# From find_package(PythonInterp)...
-		set(_GPLATES_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE})
-	else()  # CMake 3.12 and later...
-		# From find_package(Python2) or find_package(Python3)...
-		set(_GPLATES_PYTHON_EXECUTABLE ${Python${_GPLATES_PYTHON_MAJOR_VER}_EXECUTABLE})
-	endif()
-	if (_GPLATES_PYTHON_EXECUTABLE)
-		# Get Python to import numpy and then print out the numpy include directory.
-		execute_process(COMMAND "${_GPLATES_PYTHON_EXECUTABLE}" "-c"
-			"from __future__ import print_function; import numpy as np; print(np.get_include());"
-			RESULT_VARIABLE _NUMPY_RESULT
-			OUTPUT_VARIABLE _NUMPY_OUTPUT
-			ERROR_QUIET
-			OUTPUT_STRIP_TRAILING_WHITESPACE)
-		if (NOT _NUMPY_RESULT)  # success
-			# Make sure all directory separators are '/'.
-			string(REGEX REPLACE "\\\\" "/" GPLATES_Python_NumPy_INCLUDE_DIRS ${_NUMPY_OUTPUT})
-		endif()
+	# Get Python to import numpy and then print out the numpy include directory.
+	execute_process(COMMAND "${GPLATES_PYTHON_EXECUTABLE}" "-c"
+		"from __future__ import print_function; import numpy as np; print(np.get_include());"
+		RESULT_VARIABLE _NUMPY_RESULT
+		OUTPUT_VARIABLE _NUMPY_OUTPUT
+		ERROR_QUIET
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if (NOT _NUMPY_RESULT)  # success
+		# Make sure all directory separators are '/'.
+		string(REGEX REPLACE "\\\\" "/" GPLATES_Python_NumPy_INCLUDE_DIRS ${_NUMPY_OUTPUT})
 	endif()
 else()  # CMake 3.14 and later...
 	# We called find_package(Python2) or find_package(Python3) with optional NumPy component.

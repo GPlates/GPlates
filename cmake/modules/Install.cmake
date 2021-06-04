@@ -255,7 +255,12 @@ if (GPLATES_INSTALL_STANDALONE)
     # For example, "MSVC 2015 64-bit" when compiling 64-bit using Visual Studio 2015.
     #
     if (MSVC)
-        set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)  # "install the Windows Universal CRT libraries for app-local deployment (e.g. to Windows XP)"
+        # CMake tells us for Visual Studio 2015 (and higher) this will: "install the Windows Universal CRT libraries for app-local deployment (e.g. to Windows XP)".
+        #
+        # I've verified that this copies all the DLLs in the "C:\Program Files (x86)\Windows Kits\10\Redist\ucrt" directory of the Windows SDK
+        # (see https://devblogs.microsoft.com/cppblog/introducing-the-universal-crt/).
+        set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
+
         set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
         include(InstallRequiredSystemLibraries)
         # Note that gplates.exe (and pygplates.pyd) is in the base install directory (see above install(TARGETS) call)
@@ -520,8 +525,7 @@ if (GPLATES_INSTALL_STANDALONE)
             # Python2_STDLIB and Python3_STDLIB variables. So we need to query the stand library location from Python.
             #
             # Get Python to import sysconfig and then print out the standard library directory.
-            set(_GPLATES_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE})
-            execute_process(COMMAND ${_GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sysconfig; print(sysconfig.get_path('stdlib'));"
+            execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sysconfig; print(sysconfig.get_path('stdlib'));"
                 RESULT_VARIABLE _PYTHON_STDLIB_RESULT
                 OUTPUT_VARIABLE _PYTHON_STDLIB_OUTPUT
                 ERROR_QUIET
@@ -534,15 +538,13 @@ if (GPLATES_INSTALL_STANDALONE)
             # CMake 3.12 and later have find_package(Python2) and find_package(Python3), which have Python2_STDLIB and Python3_STDLIB variables.
             if (GPLATES_PYTHON_3)
                 set(_GPLATES_PYTHON_STDLIB_DIR ${Python3_STDLIB})
-                set(_GPLATES_PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
             else()
                 set(_GPLATES_PYTHON_STDLIB_DIR ${Python2_STDLIB})
-                set(_GPLATES_PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
             endif()
         endif()
 
         # Get Python to import sys and then print out the prefix directory.
-        execute_process(COMMAND ${_GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sys; print(sys.prefix);"
+        execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sys; print(sys.prefix);"
             RESULT_VARIABLE _PYTHON_PREFIX_RESULT
             OUTPUT_VARIABLE _PYTHON_PREFIX_OUTPUT
             ERROR_QUIET
