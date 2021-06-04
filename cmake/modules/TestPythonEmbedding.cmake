@@ -83,8 +83,7 @@ SET(CMAKE_TRY_COMPILE_CONFIGURATION Release)
 #   https://github.com/ContinuumIO/anaconda-issues/issues/10660#issuecomment-479199400
 # An alternative could be to set the current working directory (of try_run) to the Python prefix (instead of setting PYTHONHOME).
 set(_CURRENT_PYTHONHOME $ENV{PYTHONHOME})
-get_filename_component(_NEW_PYTHONHOME ${GPLATES_PYTHON_EXECUTABLE} DIRECTORY)
-set(ENV{PYTHONHOME} ${_NEW_PYTHONHOME})
+set(ENV{PYTHONHOME} ${GPLATES_PYTHON_PREFIX_DIR})
 #message(STATUS "New PYTHONHOME: $ENV{PYTHONHOME}")
 # Compile and run the test executable.
 TRY_RUN(PYTHON_EMBEDDING_RUNS PYTHON_EMBEDDING_COMPILES
