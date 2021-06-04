@@ -52,8 +52,19 @@ extern "C" {
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
 #elif defined(Q_OS_WIN)
-/* Necessary to include windows.h before including gl.h */
+// Necessary to include windows.h before including gl.h.
+// Note: Prevent windows.h from defining min/max macros since these
+//       interfere with things like 'std::numeric_limits<int>::max()'.
+#ifndef NOMINMAX
+#	define NOMINMAX
+#	define NOMINMAX_DEFINED_FROM_GLOBAL_OPENGL_H
+#endif
 #include <windows.h>
+// If NOMINMAX was defined above then undo that now.
+#ifdef NOMINMAX_DEFINED_FROM_GLOBAL_OPENGL_H
+#	undef NOMINMAX_DEFINED_FROM_GLOBAL_OPENGL_H
+#	undef NOMINMAX
+#endif
 #define __CONVENTION__ WINAPI
 #include <GL/gl.h>
 #include <GL/glu.h>
