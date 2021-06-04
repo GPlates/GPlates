@@ -38,12 +38,31 @@ include(GNUInstallDirs)
 # Set the minimum CMake version required for installing targets.
 #
 if (GPLATES_INSTALL_STANDALONE)
-    # Install GPlates as a standalone bundle (by copying dependency libraries during installation).
     #
-    # Currently we're using file(GET_RUNTIME_DEPENDENCIES) which was added in CMake 3.16.
-    # And we use FOLLOW_SYMLINK_CHAIN in file(INSTALL) which requires CMake 3.15.
-    # And we also use generator expressions in install(CODE) which requires CMake 3.14.
-    set (CMAKE_VERSION_REQUIRED_FOR_INSTALLING_DEPENDENCIES 3.16)
+    # Install GPlates/pyGPlates as a standalone bundle (by copying dependency libraries during installation).
+    #
+
+    # Minimum CMake version required at *configure* time.
+    #
+    # This version of CMake is required to prevent errors at *configure* time.
+    #
+    # - Currently we're using Qt5 plugin targets which were added in CMake 3.12.
+    #   Note that we don't delay this error until install time because we need to access the target
+    #   to find its location (to set up the install command) and this needs to be done at configure time.
+    set (CMAKE_VERSION_REQUIRED_AT_CONFIGURE_TIME 3.12)
+
+    if (CMAKE_VERSION VERSION_LESS ${CMAKE_VERSION_REQUIRED_AT_CONFIGURE_TIME})
+        message(FATAL_ERROR "CMake version ${CMAKE_VERSION_REQUIRED_AT_CONFIGURE_TIME} or greater is needed when GPLATES_INSTALL_STANDALONE is ON")
+    endif()
+
+    # Minimum CMake version required at *install* time.
+    #
+    # This version of CMake is required to prevent errors at *install* time.
+    #
+    # - Currently we're using file(GET_RUNTIME_DEPENDENCIES) which was added in CMake 3.16.
+    # - And we use FOLLOW_SYMLINK_CHAIN in file(INSTALL) which requires CMake 3.15.
+    # - And we also use generator expressions in install(CODE) which requires CMake 3.14.
+    set (CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME 3.16)
 
     # Wrapping 'install' command in a function because each 'install' handles a single component and we have two components (gplates and pygplates).
     function(install_check_cmake_version install_component)
@@ -51,8 +70,8 @@ if (GPLATES_INSTALL_STANDALONE)
         # (if they just plan to run the build locally and don't plan to install/deploy).
         install(
                 CODE "
-                    if (CMAKE_VERSION VERSION_LESS ${CMAKE_VERSION_REQUIRED_FOR_INSTALLING_DEPENDENCIES})
-                        message(FATAL_ERROR \"CMake ${CMAKE_VERSION_REQUIRED_FOR_INSTALLING_DEPENDENCIES} is required when *installing* ${install_component}\")
+                    if (CMAKE_VERSION VERSION_LESS ${CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME})
+                        message(FATAL_ERROR \"CMake ${CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME} is required when *installing* ${install_component}\")
                     endif()
                 "
                 COMPONENT ${install_component} ${ARGN}
@@ -350,13 +369,6 @@ if (GPLATES_INSTALL_STANDALONE)
     # And each installed path has ${CMAKE_INSTALL_PREFIX} in it (to be evaluated at install time).
     # Later we will pass QT_PLUGINS_<comp> to file(GET_RUNTIME_DEPENDENCIES) to find its dependencies and install them also.
 
-    if (CMAKE_VERSION VERSION_LESS 3.12)
-        # CMake versions less than 3.12 do not support Qt5 plugin targets.
-        # Note that we don't delay this error until install time because we need to access the target
-        # to find its location (to set up the install command) and this needs to be done at configure time.
-        message(FATAL_ERROR "CMake version 3.12 or greater is needed to install Qt plugin targets")
-    endif()
-
     # Install common platform *independent* plugins (used by GPlates and pyGPlates).
     # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
     install_qt5_plugin(Qt5::QGenericEnginePlugin gplates)
@@ -527,47 +539,9 @@ if (GPLATES_INSTALL_STANDALONE)
             message(FATAL_ERROR "Function to install Python standard library only meant for use on Windows and Linux (macOS does this a different way)")
         endif()
 
-        if (CMAKE_VERSION VERSION_LESS 3.12)
-            # CMake versions less than 3.12 do not support the Python2 and Python3 find modules, and hence do not have
-            # Python2_STDLIB and Python3_STDLIB variables. So we need to query the stand library location from Python.
-            #
-            # Get Python to import sysconfig and then print out the standard library directory.
-            execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sysconfig; print(sysconfig.get_path('stdlib'));"
-                RESULT_VARIABLE _PYTHON_STDLIB_RESULT
-                OUTPUT_VARIABLE _PYTHON_STDLIB_OUTPUT
-                ERROR_QUIET
-                OUTPUT_STRIP_TRAILING_WHITESPACE)
-            if (_PYTHON_STDLIB_RESULT)
-                message(FATAL_ERROR "Unable to find Python standard library location - cannot copy it into installation")
-            endif()
-            set(_GPLATES_PYTHON_STDLIB_DIR ${_PYTHON_STDLIB_OUTPUT})
-        else()  # CMake 3.12 and later...
-            # CMake 3.12 and later have find_package(Python2) and find_package(Python3), which have Python2_STDLIB and Python3_STDLIB variables.
-            if (GPLATES_PYTHON_3)
-                set(_GPLATES_PYTHON_STDLIB_DIR ${Python3_STDLIB})
-            else()
-                set(_GPLATES_PYTHON_STDLIB_DIR ${Python2_STDLIB})
-            endif()
-        endif()
-
-        # Get Python to import sys and then print out the prefix directory.
-        execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sys; print(sys.prefix);"
-            RESULT_VARIABLE _PYTHON_PREFIX_RESULT
-            OUTPUT_VARIABLE _PYTHON_PREFIX_OUTPUT
-            ERROR_QUIET
-            OUTPUT_STRIP_TRAILING_WHITESPACE)
-        if (_PYTHON_PREFIX_RESULT)
-            message(FATAL_ERROR "Unable to find Python prefix location")
-        endif()
-        set(_GPLATES_PYTHON_PREFIX_DIR ${_PYTHON_PREFIX_OUTPUT})
-
-        # Convert '\' to '/' in path.
-        file(TO_CMAKE_PATH ${_GPLATES_PYTHON_STDLIB_DIR} _GPLATES_PYTHON_STDLIB_DIR)
-        file(TO_CMAKE_PATH ${_GPLATES_PYTHON_PREFIX_DIR} _GPLATES_PYTHON_PREFIX_DIR)
-
         # Find the relative path from the Python prefix directory to the standard library directory.
         # We'll use this as the standard library install location relative to our install prefix.
-        file(RELATIVE_PATH _GPLATES_PYTHON_STDLIB_INSTALL_DIR ${_GPLATES_PYTHON_PREFIX_DIR} ${_GPLATES_PYTHON_STDLIB_DIR})
+        file(RELATIVE_PATH _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
 
         # Remove the trailing '/', if there is one, so that we can then
         # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
@@ -575,16 +549,16 @@ if (GPLATES_INSTALL_STANDALONE)
         #   "The last component of each directory name is appended to the destination directory but
         #    a trailing slash may be used to avoid this because it leaves the last component empty"
         #
-        string(REGEX REPLACE "/+$" "" _GPLATES_PYTHON_STDLIB_DIR "${_GPLATES_PYTHON_STDLIB_DIR}")
+        string(REGEX REPLACE "/+$" "" _PYTHON_STDLIB_DIR "${GPLATES_PYTHON_STDLIB_DIR}")
         # Install the Python standard library.
-        install(DIRECTORY ${_GPLATES_PYTHON_STDLIB_DIR}/ DESTINATION ${_GPLATES_PYTHON_STDLIB_INSTALL_DIR} COMPONENT gplates)
+        install(DIRECTORY ${_PYTHON_STDLIB_DIR}/ DESTINATION ${_PYTHON_STDLIB_INSTALL_DIR} COMPONENT gplates)
 
         # On Windows there's also a 'DLLs/' sibling directory of the 'Lib/' directory.
         if (WIN32)
-            get_filename_component(_GPLATES_PYTHON_DLLS_DIR ${_GPLATES_PYTHON_STDLIB_DIR} DIRECTORY)
-            set(_GPLATES_PYTHON_DLLS_DIR "${_GPLATES_PYTHON_DLLS_DIR}/DLLs")
-            if (EXISTS "${_GPLATES_PYTHON_DLLS_DIR}")
-                install(DIRECTORY ${_GPLATES_PYTHON_DLLS_DIR}/ DESTINATION DLLs/ COMPONENT gplates)
+            get_filename_component(_PYTHON_DLLS_DIR ${_PYTHON_STDLIB_DIR} DIRECTORY)
+            set(_PYTHON_DLLS_DIR "${_PYTHON_DLLS_DIR}/DLLs")
+            if (EXISTS "${_PYTHON_DLLS_DIR}")
+                install(DIRECTORY ${_PYTHON_DLLS_DIR}/ DESTINATION DLLs/ COMPONENT gplates)
             endif()
         endif()
     endfunction()
