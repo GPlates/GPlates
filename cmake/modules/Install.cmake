@@ -350,6 +350,13 @@ if (GPLATES_INSTALL_STANDALONE)
     # And each installed path has ${CMAKE_INSTALL_PREFIX} in it (to be evaluated at install time).
     # Later we will pass QT_PLUGINS_<comp> to file(GET_RUNTIME_DEPENDENCIES) to find its dependencies and install them also.
 
+    if (CMAKE_VERSION VERSION_LESS 3.12)
+        # CMake versions less than 3.12 do not support Qt5 plugin targets.
+        # Note that we don't delay this error until install time because we need to access the target
+        # to find its location (to set up the install command) and this needs to be done at configure time.
+        message(FATAL_ERROR "CMake version 3.12 or greater is needed to install Qt plugin targets")
+    endif()
+
     # Install common platform *independent* plugins (used by GPlates and pyGPlates).
     # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
     install_qt5_plugin(Qt5::QGenericEnginePlugin gplates)
