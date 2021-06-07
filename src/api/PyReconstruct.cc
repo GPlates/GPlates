@@ -372,7 +372,7 @@ namespace GPlatesApi
 			//
 			// For example, we don't want to pollute real-world data with dateline vertices when
 			// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
-			if (format != GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE)
+			if (format != GPlatesFileIO::ReconstructedMotionPathExport::SHAPEFILE)
 			{
 				export_wrap_to_dateline = false;
 			}
@@ -421,7 +421,7 @@ namespace GPlatesApi
 			//
 			// For example, we don't want to pollute real-world data with dateline vertices when
 			// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
-			if (format != GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE)
+			if (format != GPlatesFileIO::ReconstructedFlowlineExport::SHAPEFILE)
 			{
 				export_wrap_to_dateline = false;
 			}
