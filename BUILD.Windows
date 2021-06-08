@@ -9,12 +9,12 @@ Table of Contents
      3. Note before starting
      4. Program and library dependencies
  3. Creating Visual Studio solution and project files with CMake
-     1. Building pyGPlates via the IDE
-     2. Building pyGPlates via the Command Line
+     1. Building GPlates via the IDE
+     2. Building GPlates via the Command Line
 
 Introduction
 
-This will be a guide to building pyGPlates with various Windows development
+This will be a guide to building GPlates with various Windows development
 environments. 
 
 Using Microsoft Visual C++
@@ -25,9 +25,9 @@ product page for Visual Studio.
 
 Version requirements
 
-PyGPlates can be built with version 14.0 (2015) of Microsoft Visual C++ (Visual Studio 2015).
-PyGPlates also builds under older versions, however Visual Studio 2015 is required to
-support the C++11 standard. Currently pyGPlates does not use C++11, however the
+GPlates can be built with version 14.0 (2015) of Microsoft Visual C++ (Visual Studio 2015).
+GPlates also builds under older versions, however Visual Studio 2015 is required to
+support the C++11 standard. Currently GPlates does not use C++11, however the
 dependency library GDAL does require it for versions 2.3 and above (see DEPS.Windows).
 As newer versions of Visual Studio are released, newer versions of the
 dependencies will likely be required; if in doubt, for each dependency, download
@@ -36,7 +36,7 @@ the latest version instead of the version stated in DEPS.Windows.
 Visual Studio Community
 
 The Community edition of Visual Studio is freely available.
-The steps for building pyGPlates with the Community edition are the
+The steps for building GPlates with the Community edition are the
 same as those for the other editions (such as Professional edition).
 
 Note before starting
@@ -45,7 +45,7 @@ For any activities requiring the command line, remember to use the
 "Developer Command Prompt for VS201X" shortcut available in the Windows "Start" menu.
 This starts a command prompt and sets up environment variables, allowing use of VC command line 
 applications (such as the compiler, linker, make and build tools).
-Note that this is 32-bit. For a 64-bit version of pyGPlates you'll need a command prompt with a
+Note that this is 32-bit. For a 64-bit version of GPlates you'll need a command prompt with a
 64-bit Visual Studio toolset enabled. To do this:
 * Start a standard command prompt, and run the following in it (keeping the double quotes intact):
   "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
@@ -76,22 +76,23 @@ Creating Visual Studio solution and project files with CMake
   10. The CMake GUI should then say 'Generating done' (or it might just close when finished).
   11. You should now have a 'GPlates.sln' file in your root GPlates directory.
 
-Building pyGPlates via the IDE
+Building GPlates via the IDE
 
   1. Open GPlates.sln with the Visual Studio IDE.
   2. Select 'Release' build from the "Build->Configuration Manager..." menu.
   3. Rebuild All from the Build menu.
-     Or right-click on the 'pygplates' project and select 'Rebuild' to only build the pyGPlates library.
+     Or right-click on the 'gplates' project and select 'Rebuild' to only build the GPlates executable.
 
-Building pyGPlates via the Command Line
+Building GPlates via the Command Line
 
   1. Run the Visual Studio 2015 Command Prompt.
      * This is "Developer Command Prompt for VS2015" for Visual Studio 2015.
-       Note that this is 32-bit. To build a 64-bit version of pyGPlates you'll need a
+       Note that this is 32-bit. To build a 64-bit version of GPlates you'll need a
        command prompt with a 64-bit Visual Studio toolset enabled. To do this:
        * Start a standard command prompt, and run the following in it (keeping the double quotes intact):
          "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
   2. Go to the root GPlates build directory. 
-  3. Type the following on the command-line to build a release version of pyGPlates:
-       msbuild gplates.sln /m /t:pygplates /p:Configuration=Release /v:quiet
-     ...where '/m' uses all CPUs, and '/t:pygplates' just builds the pyGPlates library.
+  3. Type the following on the command-line to build a release version of GPlates:
+       msbuild gplates.sln /m /t:gplates /p:Configuration=Release /v:quiet
+     ...where '/m' uses all CPUs, and '/t:gplates' just builds the GPlates executable
+     (you can exclude it to build all targets).
