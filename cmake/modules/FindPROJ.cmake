@@ -99,10 +99,27 @@ if (PROJ_VERBOSE)
 endif()
 
 # Find the PROJ header location.
-find_path(PROJ_INCLUDE_DIR NAMES proj.h proj_api.h)
+find_path(PROJ_INCLUDE_DIR
+  NAMES proj.h proj_api.h
+  PATHS
+    # Macports stores Proj in locations that are difficult for CMake to find without some help...
+    /opt/local/lib/proj8/include
+    /opt/local/lib/proj7/include
+    /opt/local/lib/proj6/include
+    /opt/local/lib/proj5/include
+    /opt/local/lib/proj49/include)
 
 # Find the PROJ library.
-find_library(PROJ_LIBRARY NAMES proj proj_i NAMES_PER_DIR)
+find_library(PROJ_LIBRARY
+  NAMES proj proj_i
+  NAMES_PER_DIR
+  PATHS
+    # Macports stores Proj in locations that are difficult for CMake to find without some help...
+    /opt/local/lib/proj8/lib
+    /opt/local/lib/proj7/lib
+    /opt/local/lib/proj6/lib
+    /opt/local/lib/proj5/lib
+    /opt/local/lib/proj49/lib)
 
 # Make sure we found the PROJ include header location and library.
 find_package_handle_standard_args(PROJ REQUIRED_VARS PROJ_LIBRARY PROJ_INCLUDE_DIR)
