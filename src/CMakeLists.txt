@@ -346,7 +346,7 @@ add_library(gplates-lib STATIC EXCLUDE_FROM_ALL
 #
 # Add 'gplates' executable target (linked to gplates-lib).
 #
-add_executable(gplates EXCLUDE_FROM_ALL gplates_main.cc ScribeExportGPlates.cc)
+add_executable(gplates gplates_main.cc ScribeExportGPlates.cc)
 target_link_libraries(gplates PRIVATE gplates-lib)
 
 #
@@ -377,13 +377,13 @@ endif()
 # Note this is the external Python library that is not embedded inside GPlates.
 if (TARGET Python3::Python)
 	# We used the Python3 find module.
-	Python3_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
+	Python3_add_library(pygplates MODULE EXCLUDE_FROM_ALL ScribeExportPyGPlates.cc)
 elseif (TARGET Python2::Python)
 	# We used the Python2 find module.
-	Python2_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
+	Python2_add_library(pygplates MODULE EXCLUDE_FROM_ALL ScribeExportPyGPlates.cc)
 else()
 	# We used the PythonLibs find module (which does not have a Python_add_library wrapper).
-	add_library(pygplates MODULE ScribeExportPyGPlates.cc)
+	add_library(pygplates MODULE EXCLUDE_FROM_ALL ScribeExportPyGPlates.cc)
 	# Emulate Python_add_library wrapper (which sets pygplates prefix/suffix).
 	set_target_properties(pygplates PROPERTIES PREFIX "")
 	if (WIN32)
