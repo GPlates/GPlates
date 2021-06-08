@@ -18,9 +18,10 @@ Build process
 
 Development environment
 
-Although it appears to be installed by default we recommend installing the XCode development tools
-if you haven't already done so. You can download them free of charge from http://developer.apple.com
-(a login is required). Also install the XCode command-line tools if they don't get installed.
+You'll need the command-line tools for XCode installed. If you have not already installed XCode then this can be
+accomplished by running the following in a terminal window (open Applications->Utilities->Terminal in Finder):
+
+    xcode-select --install
 
 Package dependencies
 
@@ -30,7 +31,7 @@ See "DEPS.OSX" for more information on installing dependencies.
 
 Commands to build pygplates
 
- 1. Open a terminal window by running Applications->Utilities->Terminal in Finder.
+ 1. Open a terminal window (Applications->Utilities->Terminal in Finder).
  2. Change your working directory (if not already) into the base directory of the pygplates source code.
  3. Build GPlates by typing:
 
