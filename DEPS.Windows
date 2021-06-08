@@ -182,27 +182,27 @@ SQLite3
     3. Compile the binary:
        o "cl shell.c sqlite3.c -Fesqlite3.exe"
     4. Add the directory to the PATH environment variable (eg, C:\SDK\sqlite3\sqlite-amalgamation-3290000).
-       o It appears the binary is required by the Proj6 cmake build stage (otherwise it'll produce a cmake error).
+       o It appears the binary is required by the Proj cmake build stage (otherwise it'll produce a cmake error).
 
-Proj6
+Proj
 
-  1. Get Proj6 source code from https://proj.org/
-  2. Read the README file and build Proj6.
+  1. Get Proj source code from https://proj.org/
+  2. Read the README file and build Proj.
      o This involves using cmake.
-       For example, creating a 'build/' sub-directory inside your extracted proj6 source directory.
+       For example, creating a 'build/' sub-directory inside your extracted proj source directory.
        Then running the CMake GUI and setting source and binary directories (eg, "C:\SDK\proj\proj-6.1.1" and "C:\SDK\proj\proj-6.1.1\build").
        Then clicking 'Configure' once and selecting a Visual Studio generator
        (such as "Visual Studio 14 2015" for 32-bit or "Visual Studio 14 2015 Win64" for 64-bit).
-       Then changing the install location from "C:/OSGeo4W" to a Proj6 *install* directory that is different
-       than the Proj6 location, such as a sub-directory (e.g. C:/SDK/proj/proj-6.1.1/msvc2015_64 ),
-       so that GPlates can find Proj6 without getting CMake errors due to mixing old and new Proj6 CMake config files:
+       Then changing the install location from "C:/OSGeo4W" to a Proj *install* directory that is different
+       than the Proj location, such as a sub-directory (e.g. C:/SDK/proj/proj-6.1.1/msvc2015_64 ),
+       so that GPlates can find Proj without getting CMake errors due to mixing old and new Proj CMake config files:
          Do this by changing the CMAKE_INSTALL_PREFIX variable (in the CMake GUI).
          NOTE: Make sure to use forward slashes '/' here (not backward slashes '\') to avoid errors when compiling proj.
        Then clicking 'Configure' once more, and then 'Generate' to create a Visual Studio solution.
      o If cmake cannot find the location of sqlite3 then you'll need to either set it manually in the CMake GUI (after the first 'Configure' stage), or
-       specify it on the cmake command-line as covered in the Proj6 README (using "-DSQLITE3_INCLUDE_DIR" and "-DSQLITE3_LIBRARY").
-     o Open the "PROJ4" Visual Studio solution , select "Release" build and then build the "INSTALL" project.
-  3. Add the Proj6 *install* directory (see CMAKE_INSTALL_PREFIX above) to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\proj\proj-6.1.1\msvc2015_64 ).
+       specify it on the cmake command-line as covered in the Proj README (using "-DSQLITE3_INCLUDE_DIR" and "-DSQLITE3_LIBRARY").
+     o Open the "PROJ" Visual Studio solution , select "Release" build and then build the "INSTALL" project.
+  3. Add the Proj *install* directory (see CMAKE_INSTALL_PREFIX above) to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\proj\proj-6.1.1\msvc2015_64 ).
   4. Add the *install* 'bin' directory to the PATH environment variable so the PROJ DLL, if there is one,
      can be found at run-time (eg, "C:\SDK\proj\proj-6.1.1\msvc2015_64\bin").
 
@@ -231,7 +231,7 @@ GDAL
        o For example, after editing, you should have:
          NETCDF_HAS_NC4 = yes
     5. Edit the "nmake.opt" file under the section labelled "# PROJ stuff (required dependency: PROJ >= 6)",
-       o Uncomment the following two lines and specify the location of the PROJ6 library (see PROJ6 above).
+       o Uncomment the following two lines and specify the location of the PROJ library (see PROJ above).
        o For example, after editing, you might have something like:
          PROJ_INCLUDE = -IC:\SDK\proj\proj-6.1.1\include
          PROJ_LIBRARY = C:\SDK\proj\proj-6.1.1\lib\proj_6_1.lib

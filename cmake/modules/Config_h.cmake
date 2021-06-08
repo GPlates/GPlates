@@ -29,8 +29,8 @@ IF(GDAL_INCLUDE_DIR)
   ENDIF()
 ENDIF()
 
-FOREACH(_PROJ_INCLUDE_DIR ${PROJ4_INCLUDE_DIRS})
-  # If have the Proj6 header ("proj.h").
+FOREACH(_PROJ_INCLUDE_DIR ${PROJ_INCLUDE_DIRS})
+  # If have the Proj5+ header ("proj.h").
   IF (EXISTS "${_PROJ_INCLUDE_DIR}/proj.h")
     set(GPLATES_HAVE_PROJ_H 1)
   ENDIF()

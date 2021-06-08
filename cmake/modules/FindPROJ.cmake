@@ -1,189 +1,128 @@
-#
-#
-# This file is based on the "FindGDAL.cmake" file from the GPlates source tree.
-#
-# Locate proj
-# This module defines
-# PROJ_LIBRARY
-# PROJ_FOUND, if false, do not try to link to gdal 
-# PROJ_INCLUDE_DIR, where to find the headers
-#
-# $PROJ_DIR is an environment variable that would
-# correspond to the ./configure --prefix=$PROJ_DIR
-# used in building gdal.
-#
-# Created by Eric Wing. I'm not a gdal user, but OpenSceneGraph uses it 
-# for osgTerrain so I whipped this module together for completeness.
-# I actually don't know the conventions or where files are typically
-# placed in distros.
-# Any real gdal users are encouraged to correct this (but please don't
-# break the OS X framework stuff when doing so which is what usually seems 
-# to happen).
+# FindPROJ
+# --------
+# 
+# Find the native PROJ includes and library.
+# 
+# Input Variables
+# ^^^^^^^^^^^^^^^
+# 
+# The following variables may be set to influence this module's behavior:
+# 
+# ``PROJ_VERBOSE``
+#   to output a log of this module.
+# 
+# Imported Targets
+# ^^^^^^^^^^^^^^^^
+# 
+# This module defines :prop_tgt:`IMPORTED` target ``PROJ::PROJ``, if PROJ has been found.
+# 
+# Result Variables
+# ^^^^^^^^^^^^^^^^
+# 
+# This module defines the following variables:
+# 
+# ::
+# 
+#   PROJ_INCLUDE_DIRS   - where to find proj.h, etc.
+#   PROJ_LIBRARIES      - List of libraries when using PROJ.
+#   PROJ_FOUND          - True if PROJ found.
 
+include(FindPackageHandleStandardArgs)
 
-
-
+# First look for the CONFIG package (provided with the installed Proj library).
 #
-# Try searching only CMake variable 'PROJ_DIR' and environment variable 'PROJ_DIR'.
+# NOTE: Starting with Proj7 there is also the PROJ name (not just PROJ4).
+#       And a future Proj release will deprecate the PROJ4 name
+#       (with the PROJ4::proj eventually being retired in preference to PROJ::proj).
+#       So first we'll try PROJ, then PROJ4 (but note that PROJ4 can mean any proj version, eg, 4,5,6,7).
+#       And if we only find PROJ4 we'll still create everything under the PROJ name (so that caller only see PROJ name).
 #
+# First try PROJ.
+find_package(PROJ CONFIG QUIET)
+if (PROJ_FOUND)
+  find_package_handle_standard_args(PROJ CONFIG_MODE)
 
-SET(PROJ_DIR_SEARCH "${PROJ_DIR}")
-IF(PROJ_DIR_SEARCH)
-    FILE(TO_CMAKE_PATH "${PROJ_DIR_SEARCH}" PROJ_DIR_SEARCH)
-    SET(PROJ_DIR_SEARCH ${PROJ_DIR_SEARCH})
-    
-    FIND_PATH(PROJ_INCLUDE_DIR proj_api.h
-      PATHS ${GDAL_DIR_SEARCH}
-      NO_DEFAULT_PATH
-      PATH_SUFFIXES include
-      DOC "Include directory for the PROJ library"
-    )
-ENDIF(PROJ_DIR_SEARCH)
+  if (PROJ_VERBOSE)
+    message(STATUS "FindPROJ: found PROJ CMake config file.")
+  endif()
 
-SET(PROJ_DIR_SEARCH "$ENV{PROJ_DIR}")
-IF(PROJ_DIR_SEARCH)
-    FILE(TO_CMAKE_PATH "${PROJ_DIR_SEARCH}" PROJ_DIR_SEARCH)
-    SET(PROJ_DIR_SEARCH ${PROJ_DIR_SEARCH})
-    
-    FIND_PATH(PROJ_INCLUDE_DIR proj_api.h
-      PATHS ${PROJ_DIR_SEARCH}
-      NO_DEFAULT_PATH
-      PATH_SUFFIXES include
-      DOC "Include directory for the PROJ library"
-    )
-ENDIF(PROJ_DIR_SEARCH)
-
+  return()
+endif()
 #
-# Try searching only environment variable 'INCLUDE'.
-#
+# Then try PROJ4.
+find_package(PROJ4 CONFIG QUIET)
+if (PROJ4_FOUND)
+  set(PROJ_FOUND TRUE)
 
-SET(PROJ_DIR_SEARCH "$ENV{INCLUDE}")
-IF(PROJ_DIR_SEARCH)
-    FILE(TO_CMAKE_PATH "${PROJ_DIR_SEARCH}" PROJ_DIR_SEARCH)
-    SET(PROJ_DIR_SEARCH ${PROJ_DIR_SEARCH})
-    
-    FIND_PATH(PROJ_INCLUDE_DIR proj_api.h
-      PATHS ${PROJ_DIR_SEARCH}
-      NO_DEFAULT_PATH
-      PATH_SUFFIXES include
-      DOC "Include directory for the PROJ library"
-    )
-ENDIF(PROJ_DIR_SEARCH)
+  if (PROJ_VERBOSE)
+    message(STATUS "FindPROJ: found PROJ4 CMake config file.")
+  endif()
 
-FIND_PATH(PROJ_INCLUDE_DIR proj_api.h
-    PATHS ${CMAKE_PREFIX_PATH} # Unofficial: We are proposing this.
-    NO_DEFAULT_PATH
-    PATH_SUFFIXES include
-    DOC "Include directory for the PROJ library"
-)
+  if (TARGET PROJ4::proj)
+    # There was a CONFIG package and it defined a PROJ4::proj target.
+    # But we need to return a PROJ::proj target, so create an alias.
+    add_library(PROJ::proj ALIAS PROJ4::proj)
+    if (PROJ_VERBOSE)
+      message(STATUS "FindPROJ: created alias PROJ::proj to target PROJ4::proj.")
+    endif()
+  else()
+    # There was a CONFIG package but it defined a 'proj' target instead of a 'PROJ4::proj' target.
+    # So make 'PROJ::proj' alias 'proj'.
+    # But before we can do this we first need to promote 'proj' to global visibility (requires CMake 3.11 or above).
+    set_target_properties(proj PROPERTIES IMPORTED_GLOBAL TRUE)
+    # Also it seems that, while the 'proj' target has set the library import location, it doesn't set the location of the include directories.
+    set_target_properties(proj PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${PROJ4_INCLUDE_DIRS}")
+    add_library(PROJ::proj ALIAS proj)
+    if (PROJ_VERBOSE)
+      message(STATUS "FindPROJ: created alias PROJ::proj to target proj.")
+    endif()
+  endif()
 
-#
-# Try searching default paths (plus the extras specified in 'PATHS' (which
-# looks like it catches alot of defaults anyway).
-#
+  # We now have a PROJ::proj target but we should also use the same variables as the *modern* CONFIG package.
+  set(PROJ_INCLUDE_DIRS ${PROJ4_INCLUDE_DIRS})
+  set(PROJ_LIBRARIES ${PROJ4_LIBRARIES})
+  if (PROJ_VERBOSE)
+    message(STATUS "FindPROJ: created variable PROJ_INCLUDE_DIRS: ${PROJ_INCLUDE_DIRS}")
+    message(STATUS "FindPROJ: created variable PROJ_LIBRARIES: ${PROJ_LIBRARIES}")
+  endif()
 
-FIND_PATH(PROJ_INCLUDE_DIR proj_api.h
-  PATHS
-  ~/Library/Frameworks/proj.framework/Headers
-  /Library/Frameworks/proj.framework/Headers
-  /usr/local/include/proj
-  /usr/local/include/PROJ
-  /usr/local/include
-  /usr/include/proj
-  /usr/include/PROj
-  /usr/include
-  /sw/include/proj
-  /sw/include/PROJ 
-  /sw/include # Fink
-  /opt/local/include/proj
-  /opt/local/include/PROJ
-  /opt/local/lib/proj49/include
-  /opt/local/lib/PROJ49/include
-  /opt/local/lib/proj6/include
-  /opt/local/include # DarwinPorts
-  /opt/csw/include/proj
-  /opt/csw/include/PROJ
-  /opt/csw/include # Blastwave
-  /opt/include/proj
-  /opt/include/PROJ
-  /opt/include
-  DOC "Include directory for the PROJ library"
-)
+  return()
+endif()
 
 #
-# Try only searching directories of CMake variable 'PROJ_DIR' and environment variable 'PROJ_DIR'.
+# Proj does not have a CONFIG package (at least not all platforms were installed as a CMake package) but more recent versions should.
+# Note that Proj 4.9 is still used by Ubuntu Bionic (18.04).
 #
 
-set(PROJ_DIR_SEARCH ${PROJ_DIR})
-IF(PROJ_DIR_SEARCH)
-    FILE(TO_CMAKE_PATH "${PROJ_DIR_SEARCH}" PROJ_DIR_SEARCH)
-    SET(PROJ_DIR_SEARCH ${PROJ_DIR_SEARCH})
-    
-    FIND_LIBRARY(PROJ_LIBRARY
-      NAMES proj proj_i proj_6_0 proj_6_0 proj_6_1 proj_6_2 proj_6_3
-      PATHS ${PROJ_DIR_SEARCH}
-      NO_DEFAULT_PATH
-      PATH_SUFFIXES lib64 lib
-      DOC "PROJ library"
-    )
-ENDIF(PROJ_DIR_SEARCH)
+if (PROJ_VERBOSE)
+  message(STATUS "FindPROJ: did not find PROJ CMake config file. Searching for libraries.")
+endif()
 
-set(PROJ_DIR_SEARCH $ENV{PROJ_DIR})
-IF(PROJ_DIR_SEARCH)
-    FILE(TO_CMAKE_PATH "${PROJ_DIR_SEARCH}" PROJ_DIR_SEARCH)
-    SET(PROJ_DIR_SEARCH ${PROJ_DIR_SEARCH})
-    
-    FIND_LIBRARY(PROJ_LIBRARY
-      NAMES proj proj_i proj_6_0 proj_6_0 proj_6_1 proj_6_2 proj_6_3
-      PATHS ${PROJ_DIR_SEARCH}
-      NO_DEFAULT_PATH
-      PATH_SUFFIXES lib64 lib
-      DOC "PROJ library"
-    )
-ENDIF(PROJ_DIR_SEARCH)
+# Find the PROJ header location.
+find_path(PROJ_INCLUDE_DIR NAMES proj.h proj_api.h)
 
-FIND_LIBRARY(PROJ_LIBRARY 
-  NAMES proj proj_i proj_6_0 proj_6_0 proj_6_1 proj_6_2 proj_6_3
-  PATHS ${CMAKE_PREFIX_PATH} # Unofficial: We are proposing this.
-    NO_DEFAULT_PATH
-    PATH_SUFFIXES lib64 lib
-    DOC "PROJ library"
-)
+# Find the PROJ library.
+find_library(PROJ_LIBRARY NAMES proj proj_i NAMES_PER_DIR)
 
-#
-# Try searching default paths (plus the extras specified in 'PATHS' (which
-# looks like it catches alot of defaults anyway).
-#
-
-FIND_LIBRARY(PROJ_LIBRARY 
-  NAMES proj proj_i proj_6_0 proj_6_0 proj_6_1 proj_6_2 proj_6_3
-  PATHS
-    "${PROJ_INCLUDE_DIR}/.." # this only really needed on windows platforms
-    ~/Library/Frameworks
-    /Library/Frameworks
-    /usr/local
-    /usr
-    /sw
-    /opt/local
-    /opt/local/lib/proj49/lib
-    /opt/local/lib/PROJ49/lib
-    /opt/local/lib/proj6/lib
-    /opt/csw
-    /opt
-    /usr/freeware
-    [HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session\ Manager\\Environment;PROJ4_ROOT]/lib
-  PATH_SUFFIXES lib64 lib
-  DOC "PROJ library"
-)
-
-
-include (FindPackageHandleStandardArgs)
+# Make sure we found the PROJ include header location and library.
 find_package_handle_standard_args(PROJ REQUIRED_VARS PROJ_LIBRARY PROJ_INCLUDE_DIR)
 
-if (PROJ_FOUND AND NOT TARGET PROJ4::proj)
-	add_library(PROJ4::proj IMPORTED INTERFACE)
-	set_target_properties(PROJ4::proj PROPERTIES INTERFACE_LINK_LIBRARIES "${PROJ_LIBRARY}")
-	set_target_properties(PROJ4::proj PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${PROJ_INCLUDE_DIR}")
-endif ()
+mark_as_advanced(PROJ_INCLUDE_DIR PROJ_LIBRARY)
 
-mark_as_advanced(PROJ_LIBRARY PROJ_INCLUDE_DIR)
+# Create the same variables as a PROJ CONFIG package.
+set(PROJ_INCLUDE_DIRS ${PROJ_INCLUDE_DIR})
+set(PROJ_LIBRARIES ${PROJ_LIBRARY})
+
+if (PROJ_VERBOSE)
+  message(STATUS "FindPROJ: located PROJ_INCLUDE_DIRS: ${PROJ_INCLUDE_DIRS}")
+  message(STATUS "FindPROJ: located PROJ_LIBRARIES: ${PROJ_LIBRARIES}")
+endif()
+
+# Create the PROJ::proj target.
+add_library(PROJ::proj IMPORTED INTERFACE)
+set_target_properties(PROJ::proj PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${PROJ_INCLUDE_DIRS}")
+set_target_properties(PROJ::proj PROPERTIES INTERFACE_LINK_LIBRARIES "${PROJ_LIBRARIES}")
+
+if (PROJ_VERBOSE)
+  message(STATUS "FindPROJ: created target PROJ::proj")
+endif()

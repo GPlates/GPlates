@@ -3,7 +3,7 @@
 # 
 # Find the native ZLIB includes and library.
 # 
-# IMPORTED Targets
+# Imported Targets
 # ^^^^^^^^^^^^^^^^
 # 
 # This module defines :prop_tgt:`IMPORTED` target ``ZLIB::ZLIB``, if ZLIB has been found.
