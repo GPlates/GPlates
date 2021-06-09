@@ -223,22 +223,23 @@ NetCDF
 
     1. Download the Windows NetCDF-4 library pre-compiled library/DLL (32-bit or 64-bit)
        from the 'download' link at "https://www.unidata.ucar.edu/software/netcdf/".
-       o Extract it to a location on your hard drive (eg, "C:\SDK\netcdf\netcdf-4.7.0").
+       o Extract it to a location on your hard drive (eg, "C:\SDK\netcdf\netcdf-4.7.4").
     2. Also add the NetCDF 'bin' directory to the PATH environment variable (so the NetCDF DLL can be found at run-time).
-       o Eg, Add "C:\SDK\netcdf\netcdf-4.7.0\bin" to the PATH environment variable.
+       o Eg, Add "C:\SDK\netcdf\netcdf-4.7.4\bin" to the PATH environment variable.
     3. This library will get compiled into GDAL (see GDAL below).
 
 GDAL
 
-    1. Get GDAL 3.x source code from http://trac.osgeo.org/gdal/wiki/DownloadSource
-    2. Extract to a location on your hard drive (eg, "C:\SDK\gdal\gdal-3.1.0").
+    1. Get GDAL 3.x source code from https://github.com/OSGeo/gdal/releases
+    2. Extract to a location on your hard drive (eg, "C:\SDK\gdal\gdal-3.3.0").
+       Note that the following build instructions are detailed at https://trac.osgeo.org/gdal/wiki/BuildingOnWindows
     3. Edit the "nmake.opt" file under the section labelled "# Uncomment the following to enable NetCDF format.",
        o Uncomment the following four lines and specify the location of the NetCDF library (see NetCDF above).
        o For example, after editing, you might have something like:
          NETCDF_PLUGIN = NO
          NETCDF_SETTING=yes
-         NETCDF_LIB=C:\SDK\netcdf\netcdf-4.7.0\lib\netcdf.lib
-         NETCDF_INC_DIR=C:\SDK\netcdf\netcdf-4.7.0\include
+         NETCDF_LIB=C:\SDK\netcdf\netcdf-4.7.4\lib\netcdf.lib
+         NETCDF_INC_DIR=C:\SDK\netcdf\netcdf-4.7.4\include
     4. Edit the "nmake.opt" by uncommenting '#NETCDF_HAS_NC4 = yes':
        o This enables NetCDF version 4 support (which uses HDF5).
        o For example, after editing, you should have:
@@ -248,28 +249,28 @@ GDAL
        o For example, after editing, you might have something like:
          PROJ_INCLUDE = -IC:\SDK\proj\proj-8.0.1\msvc2015_64\include
          PROJ_LIBRARY = C:\SDK\proj\proj-8.0.1\msvc2015_64\lib\proj.lib
-    5. Edit the "nmake.opt" file under the section labelled 
+    5. Edit the "nmake.opt" file under the section labelled "SQLite Libraries",
        o Uncomment the following two lines and specify the location of the SQLite3 library (see SQLite3 above).
        o For example, after editing, you might have something like:
          SQLITE_INC=-Ic:\SDK\sqlite3\sqlite-amalgamation-3290000
          SQLITE_LIB=c:\SDK\sqlite3\sqlite-amalgamation-3290000\sqlite3_i.lib
-    6. Uncomment "#WIN64=YES" in "nmake.opt" if compiling a 64-bit build.
-    7. Generate a new Visual Studio solution file by following instructions at https://trac.osgeo.org/gdal/wiki/GeneratingVisualStudioProject
-       o For example, run "generate_vcxproj.bat 14.0 32 gdal_vs2015" for 32-bit or
-         "generate_vcxproj.bat 14.0 64 gdal_vs2015" for 64-bit, if you are using Visual Studio 2015.
-    8. Use Visual Studio to build GDAL.
-       o For example, by opening the 'gdal_vs2015.vcxproj' project file with Visual Studio 2015.
-       o Selecting 'Release' as the build type, and building the project.
-       o NOTE: It seems that selecting 'Debug' as the build type does not generate a debug build.
-         Instead you'll need to build via the command-line (see below) using the 'DEBUG=1' option.
-    9. Alternatively, instead of building with a solution file, you can bring up a Visual Studio command prompt (32-bit or 64-bit) and type:
-         nmake /f makefile.vc MSVC_VER=1900
-       o If 'MSVC_VER' is not specified it appears (in "nmake.opt") to default to 1900 (Visual Studio 2015) for GDAL 2.3.
+         Note that we're not using the spatialite extension to SQLite which would require installing the spatialite amalgamation
+         (instead the SQLite3 amalgamation) and also specifying the '-DHAVE_SPATIALITE' and '-DSPATIALITE_AMALGAMATION' flags in 'SQLITE_INC'.
+    6. Start a Visual Studio command prompt (32-bit or 64-bit).
+       Run 'nmake /f makefile.vc' with options specifying compiler, 32 or 64 bit and install prefix.
+       For example, to compile using Visual Studio 2015 as 64-bit and install into the "msvc2015_64" sub-directory of source code root, type:
+         nmake /f makefile.vc MSVC_VER=1900 WIN64=1 GDAL_HOME=C:\SDK\gdal\gdal-3.3.0\msvc2015_64 devinstall
+       o If 'MSVC_VER' is not specified it appears (in "nmake.opt") to default to 1900 (Visual Studio 2015). At least for GDAL 2.3 (and still there for 3.3).
+       o 'WIN64=1' specifies a 64-bit build.
+       o 'GDAL_HOME' specifies the install location.
+         For example, "C:\SDK\gdal\gdal-3.3.0\msvc2015_64" specifies the "msvc2015_64" sub-directory of the source code root "C:\SDK\gdal\gdal-3.3.0".
        o If you want a debug build then add 'DEBUG=1'.
          NOTE: It appears both debug and release builds use the same filenames (so they just overwrite each other).
                Might need to pick one or the other.
-    10. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-3.1.0").
-    11. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
+       o The 'devinstall' target ensures the libraries and include files are installed (in addition to GDAL executables and data from 'install' target).
+    7. Set the 'GDAL_DIR' environment variable to the install path of GDAL (eg, "C:\SDK\gdal\gdal-3.3.0\msvc2015_64").
+       Or just add it to the CMAKE_PREFIX_PATH environment variable.
+    8. Also add the root source code path to the PATH environment variable (so the GDAL DLL can be found at run-time).
     
     NOTE that GDAL 2.3 (and above) use C++11 features which requires Visual Studio 2015 (or above).
   
