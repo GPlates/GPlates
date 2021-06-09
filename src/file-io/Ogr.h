@@ -30,14 +30,6 @@
 // just in case. That way including "Ogr.h" ensures access to the version macros.
 #include "global/GdalVersion.h"
 
-
-// On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
-// The "CMake" script should have determined which one to use.
-#include "global/config.h"
-#ifdef GPLATES_HAVE_GDAL_OGRSF_FRMTS_H
-#include <gdal/ogrsf_frmts.h>
-#else
 #include <ogrsf_frmts.h>
-#endif
 
 #endif // GPLATES_FILEIO_OGR_H

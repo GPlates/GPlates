@@ -29,19 +29,8 @@
 //
 // Include the GDAL version header so we can access its macros such as GDAL_VERSION_MAJOR and GDAL_RELEASE_DATE.
 //
-// Include config header so we know whether (and how) to include "gdal_version.h"
-// which contains the version of GDAL we're compiling against.
-#include "global/config.h"
 
-#ifdef GPLATES_HAVE_GDAL_VERSION_H
-	#if defined(GPLATES_HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX)
-		#include <GDAL/gdal_version.h>
-	#elif defined(GPLATES_HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX)
-		#include <gdal/gdal_version.h>
-	#else
-		#include <gdal_version.h>
-	#endif
-#endif
+#include <gdal_version.h>
 
 
 //
@@ -63,6 +52,8 @@
 
 #ifndef GPLATES_GDAL_VERSION_NUM
 // Same as defined in GDAL >= 1.10...
+//
+// Note: The version number macros existed earlier than GDAL 1.10 (ie, GDAL_VERSION_MAJOR, GDAL_VERSION_MINOR, GDAL_VERSION_REV and GDAL_VERSION_BUILD).
 #define GPLATES_GDAL_VERSION_NUM (GPLATES_GDAL_COMPUTE_VERSION(GDAL_VERSION_MAJOR,GDAL_VERSION_MINOR,GDAL_VERSION_REV)+GDAL_VERSION_BUILD)
 #endif
 
