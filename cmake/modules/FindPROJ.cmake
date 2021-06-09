@@ -102,7 +102,8 @@ endif()
 find_path(PROJ_INCLUDE_DIR
   NAMES proj.h proj_api.h
   PATHS
-    # Macports stores Proj in locations that are difficult for CMake to find without some help...
+    # Macports stores Proj in locations that are difficult for CMake to find without some help
+    # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH, or via the PATH environment variable)...
     /opt/local/lib/proj8/include
     /opt/local/lib/proj7/include
     /opt/local/lib/proj6/include
@@ -114,7 +115,8 @@ find_library(PROJ_LIBRARY
   NAMES proj proj_i
   NAMES_PER_DIR
   PATHS
-    # Macports stores Proj in locations that are difficult for CMake to find without some help...
+    # Macports stores Proj in locations that are difficult for CMake to find without some help
+    # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH, or via the PATH environment variable)...
     /opt/local/lib/proj8/lib
     /opt/local/lib/proj7/lib
     /opt/local/lib/proj6/lib

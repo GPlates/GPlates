@@ -57,7 +57,7 @@ Firstly, you should ensure that you have installed the dependencies as described
 Creating Visual Studio solution and project files with CMake
 
   1.  Install the library dependencies by following the instructions in "DEPS.Windows".
-      Note that the 'CMAKE_PREFIX_PATH' environment variable is used
+      Note that the 'CMAKE_PREFIX_PATH' and 'PATH' environment variables are used
       to help find some of these libraries (see "DEPS.Windows").
   2.  Run the CMake GUI program ('cmake-gui.exe').
   3.  Set the 'source' directory to the root GPlates source directory
