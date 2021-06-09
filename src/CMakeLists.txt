@@ -251,7 +251,14 @@ find_package(Qwt REQUIRED)
 # However we are still using our own custom "FindGDAL.cmake" (instead of using the one provided by CMake)
 # since it has trouble finding "GDAL.h". And our own module defines the GDAL::GDAL imported target.
 #
-find_package(GDAL REQUIRED)
+find_package(GDAL 1.3.2 REQUIRED)
+# Imported GDAL::GDAL target only defined for CMake version 3.14 and above. For lower versions we create the target.
+if (CMAKE_VERSION VERSION_LESS 3.14)
+	# Create the GDAL::GDAL target.
+	add_library(GDAL::GDAL IMPORTED INTERFACE)
+	set_target_properties(GDAL::GDAL PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${GDAL_INCLUDE_DIRS}")
+	set_target_properties(GDAL::GDAL PROPERTIES INTERFACE_LINK_LIBRARIES "${GDAL_LIBRARIES}")
+endif()
 
 #############
 # Find PROJ #
