@@ -389,7 +389,6 @@ if (GPLATES_INSTALL_STANDALONE)
     elseif (APPLE)
         install_qt5_plugin(Qt5::QCocoaIntegrationPlugin gplates)
         install_qt5_plugin(Qt5::QMacStylePlugin gplates)
-        install_qt5_plugin(Qt5::QMngPlugin gplates)
     else() # Linux
         install_qt5_plugin(Qt5::QXcbIntegrationPlugin gplates)
         # The following plugins are needed otherwise GPlates generates the following error and then seg. faults:
