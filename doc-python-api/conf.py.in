@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys, os, platform
 
 # Read the Docs Sphinx Theme.
 # Note: This needs to be installed with 'pip install sphinx_rtd_theme'.
@@ -21,6 +21,20 @@ import sphinx_rtd_theme
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, "$<TARGET_FILE_DIR:pygplates>")
+
+# If on Windows and Python >= 3.8 then we need to specify the paths to all dependency DLLs of the
+# pygplates '.pyd' since Python 3.8 no longer searches for these using the PATH environment variable.
+if platform.system() == 'Windows':
+    if sys.version_info[0] > 3 or (sys.version_info[0] == 3 and sys.version_info[1] >= 8):
+        # If we're in a conda environment then don't add the paths (conda already ensures dependencies are loaded correctly).
+        if not os.environ.get('CONDA_PREFIX'):
+            # Just add all the paths in the PATH environment variable.
+            path = os.environ.get('PATH')
+            if path:
+                for dll_path in os.environ['PATH'].split(os.pathsep):
+                    if dll_path and os.path.exists(dll_path):
+                        os.add_dll_directory(dll_path)
+
 
 # -- General configuration -----------------------------------------------------
 

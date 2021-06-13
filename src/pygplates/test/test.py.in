@@ -6,12 +6,27 @@ Unit tests for the pygplates native library.
 
 import os
 import sys
+import platform
 import types
 import unittest
 
 # Import the built pygplates library (not any other one installed on the system).
 PYGPLATES_PATH = "$<TARGET_FILE_DIR:pygplates>"  # CMake changes this to the actual path to the built version of pygplates.
 sys.path.insert(1, PYGPLATES_PATH)
+
+# If on Windows and Python >= 3.8 then we need to specify the paths to all dependency DLLs of the
+# pygplates '.pyd' since Python 3.8 no longer searches for these using the PATH environment variable.
+if platform.system() == 'Windows':
+    if sys.version_info[0] > 3 or (sys.version_info[0] == 3 and sys.version_info[1] >= 8):
+        # If we're in a conda environment then don't add the paths (conda already ensures dependencies are loaded correctly).
+        if not os.environ.get('CONDA_PREFIX'):
+            # Just add all the paths in the PATH environment variable.
+            path = os.environ.get('PATH')
+            if path:
+                for dll_path in os.environ['PATH'].split(os.pathsep):
+                    if dll_path and os.path.exists(dll_path):
+                        os.add_dll_directory(dll_path)
+
 import pygplates
 
 import test_app_logic.test

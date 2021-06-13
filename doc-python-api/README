@@ -16,6 +16,10 @@ Note: For Debian/Ubuntu you can run 'sudo apt-get install sphinx'.
       For Macports (on macOS systems) you can run 'sudo port install sphinx'.
       For Windows you can run 'python -m pip install sphinx'.
 
+Then install the Read the Doc Sphinx Theme (currently used as the HTML theme for GPlates Python API docs).
+For example:
+    python -m pip install sphinx_rtd_theme
+
 
 Building the HTML documentation
 ===============================
