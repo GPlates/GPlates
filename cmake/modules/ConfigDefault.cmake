@@ -74,22 +74,23 @@ set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2007-
 # And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
 option(GPLATES_PUBLIC_RELEASE "Public release (to non-developers)." false)
 
-# Whether to install GPlates as a standalone bundle (by copying dependency libraries during installation).
+# Whether to install GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
 #
-# On Windows and Apple we have install code to fix up GPlates for deployment to another machine
+# When this is true then we install code to fix up GPlates (or pyGPlates) for deployment to another machine
 # (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
-# This is always enabled, so we don't provide an option to the user to disable it.
-#
-# On Linux systems we don't enable (by default) the copying of dependency libraries because there we rely on the
-# Linux binary package manager to install them (for example, we create a '.deb' package that only *lists* the dependencies,
-# which are then installed on the target system if not already there).
-# However we allow the user to enable this in case they want to create a standalone bundle for their own use case.
-#
+# When this is false then we don't install dependencies, instead only installing the GPlates executable (or pyGPlates library) and a few non-dependency items.
 if (WIN32 OR APPLE)
-	set(GPLATES_INSTALL_STANDALONE true)
+	# On Windows and Apple this is *enabled* by default since we typically distribute a self-contained package to users on those systems.
+	# However this can be *disabled* for use cases such as creating a conda package (since conda manages dependency installation itself).
+	set(_INSTALL_STANDALONE true)
 else() # Linux
-	option(GPLATES_INSTALL_STANDALONE "Install GPlates as a standalone bundle (copy dependency libraries into GPlates install directory)." false)
+	# On Linux this is *disabled* by default since we rely on the Linux binary package manager to install dependencies on the user's system
+	# (for example, we create a '.deb' package that only *lists* the dependencies, which are then installed on the target system if not already there).
+	# However this can be *enabled* for use cases such as creating a standalone bundle for upload to a cloud service (where it is simply extracted).
+	set(_INSTALL_STANDALONE false)
 endif()
+option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle (copy dependency libraries into the installation)." ${_INSTALL_STANDALONE})
+unset(_INSTALL_STANDALONE)
 
 # Whether to install sample data (eg, in the binary installer) or not.
 # By default this is false and only enabled when packaging a public release.
