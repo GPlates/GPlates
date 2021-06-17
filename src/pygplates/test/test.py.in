@@ -21,9 +21,9 @@ if platform.system() == 'Windows':
         # If we're in a conda environment then don't add the paths (conda already ensures dependencies are loaded correctly).
         if not os.environ.get('CONDA_PREFIX'):
             # Just add all the paths in the PATH environment variable.
-            path = os.environ.get('PATH')
-            if path:
-                for dll_path in os.environ['PATH'].split(os.pathsep):
+            env_path = os.environ.get('PATH')
+            if env_path:
+                for dll_path in env_path.split(os.pathsep):
                     if dll_path and os.path.exists(dll_path):
                         os.add_dll_directory(dll_path)
 

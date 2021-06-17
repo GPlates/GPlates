@@ -627,7 +627,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	endif()
 endif()
 
-# Compile options common to GNU and Clang compilers.
+#
+# COMPILE_OPTIONS (target property) common to GNU and Clang compilers.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU OR
 	CMAKE_CXX_COMPILER_ID MATCHES Clang)
 	#
@@ -660,7 +662,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU OR
 	endif()
 endif()
 
-# Compile options for GNU compiler only.
+#
+# COMPILE_OPTIONS (target property) for GNU compiler only.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 	target_compile_options(gplates-lib PUBLIC -fno-strict-aliasing)
 	target_compile_options(pygplates PUBLIC -fno-strict-aliasing)
@@ -678,7 +682,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 	endif()
 endif()
 
-# Compile options for Clang compiler only.
+#
+# COMPILE_OPTIONS (target property) for Clang compiler only.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
 	#
 	# Warnings
