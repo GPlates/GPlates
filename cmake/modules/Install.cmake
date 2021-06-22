@@ -263,6 +263,117 @@ if (GPLATES_INSTALL_STANDALONE)
     #       default to "c:/Program Files/${PROJECT_NAME}", but when packaging, the install prefix will instead be the staging area.
     #
 
+
+    #
+    # Function to install the Python standard library.
+    #
+    # This is used on Windows and Linux.
+    # On macOS we install the standard library when we install the Python framework
+    # (since the standard library is contained inside the framework).
+    #
+    # Note: The Python standard library is only installed for the 'gplates' component which has an embedded Python interpreter
+    #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
+    #
+    function(install_python_standard_library)
+        if (APPLE)
+            message(FATAL_ERROR "Function to install Python standard library only meant for use on Windows and Linux (macOS does this a different way)")
+        endif()
+
+        # Find the relative path from the Python prefix directory to the standard library directory.
+        # We'll use this as the standard library install location relative to our install prefix.
+        file(RELATIVE_PATH _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
+
+        # Remove the trailing '/', if there is one, so that we can then
+        # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
+        #
+        #   "The last component of each directory name is appended to the destination directory but
+        #    a trailing slash may be used to avoid this because it leaves the last component empty"
+        #
+        string(REGEX REPLACE "/+$" "" _PYTHON_STDLIB_DIR "${GPLATES_PYTHON_STDLIB_DIR}")
+        # Install the Python standard library.
+        install(DIRECTORY "${_PYTHON_STDLIB_DIR}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/${_PYTHON_STDLIB_INSTALL_DIR} COMPONENT gplates)
+
+        # On Windows there's also a 'DLLs/' sibling directory of the 'Lib/' directory.
+        if (WIN32)
+            get_filename_component(_PYTHON_DLLS_DIR "${_PYTHON_STDLIB_DIR}" DIRECTORY)
+            set(_PYTHON_DLLS_DIR "${_PYTHON_DLLS_DIR}/DLLs")
+            if (EXISTS "${_PYTHON_DLLS_DIR}")
+                install(DIRECTORY "${_PYTHON_DLLS_DIR}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/DLLs COMPONENT gplates)
+            endif()
+        endif()
+    endfunction()
+
+    ########################################################################################################################
+    # Create and install an "__init__.py" file for pygplates in same directory as the pygplates library (on all platforms) #
+    ########################################################################################################################
+    #
+    # This is because we make pygplates a "Python package" where the pygplates module library is in the *base* 'pygplates/' directory
+    # as well as an '__init__.py' to find its runtime location (needed to locate the GDAL/PROJ data bundled with pygplates).
+    set(PYGPLATES_INIT_PY "${CMAKE_CURRENT_BINARY_DIR}/__init__.py")
+    # Note that we allow no indentation in the file content to avoid Python 'unexpected indent' errors.
+    file(WRITE "${PYGPLATES_INIT_PY}" [[
+# Import the pygplates shared library (C++).
+from .pygplates import *
+# Import any private symbols (with leading underscore).
+from .pygplates import __version__
+from .pygplates import __doc__
+
+# Let the pygplates shared library (C++) know of its imported location.
+import os.path
+pygplates._post_import(os.path.dirname(__file__))
+
+# Now that we've imported symbols from the pygplates shared library (C++) into
+# the namespace of this package (also called pygplates) we can remove it.
+# This is so we don't have pygplates.<symbol> and pygplates.pygplates.<symbol>.
+del pygplates
+]])
+    install(FILES "${PYGPLATES_INIT_PY}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates} COMPONENT pygplates EXCLUDE_FROM_ALL)
+
+    #############################################################################################
+    # Copy the Proj library data into standalone bundle (to avoid Proj error finding 'proj.db') #
+    #############################################################################################
+    #
+    # Find the 'projinfo' command.
+    find_program(PROJINFO "projinfo" PATHS ${PROJ_BINARY_DIRS})
+    if (PROJINFO)
+        # Run 'projinfo --searchpaths' to get a list of directories that Proj will look for resources in.
+        # Note that 'projinfo' is new in Proj version 6.0 and the '--searchpaths' option is new in version 7.0.
+        execute_process(COMMAND ${PROJINFO} --searchpaths
+            RESULT_VARIABLE _projinfo_result
+            OUTPUT_VARIABLE _projinfo_output
+            ERROR_VARIABLE  _projinfo_error)
+        if (NOT _projinfo_result)  # success
+            # Convert 'projinfo' output to a list of lines.
+            # We do this by converting newlines to the list separator character ';' but only after escaping any existing ';' characters in the output.
+            string(REPLACE ";" "\\;" _projinfo_search_paths "${_projinfo_output}")
+            string(REPLACE "\n" ";" _projinfo_search_paths "${_projinfo_search_paths}")
+            # Search each path for 'proj.db'.
+            set(_found_proj_db false)
+            foreach(_projinfo_search_path ${_projinfo_search_paths})
+                file(TO_CMAKE_PATH ${_projinfo_search_path} _projinfo_search_path)
+                if (EXISTS "${_projinfo_search_path}/proj.db")
+                    # Remove the trailing '/', if there is one, so that we can then append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
+                    #   "The last component of each directory name is appended to the destination directory but
+                    #    a trailing slash may be used to avoid this because it leaves the last component empty"
+                    string(REGEX REPLACE "/+$" "" _projinfo_search_path "${_projinfo_search_path}")
+                    install(DIRECTORY "${_projinfo_search_path}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/${GPLATES_STANDALONE_PROJ_DATA_DIR_REL_BASE} COMPONENT gplates)
+                    install(DIRECTORY "${_projinfo_search_path}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates}/${GPLATES_STANDALONE_PROJ_DATA_DIR_REL_BASE} COMPONENT pygplates EXCLUDE_FROM_ALL)
+                    message(STATUS "proj.db in ${_projinfo_search_path}")
+                    set(_found_proj_db true)
+                    break()
+                endif()
+            endforeach()
+            if (NOT _found_proj_db)
+                message(WARNING "Found proj resource dirs but did not find 'proj.db' - proj library data will not be included in standalone bundle.")
+            endif()
+        else()
+            message(WARNING "Unable to run 'projinfo --searchpaths': ${_projinfo_error} - likely using Proj version older than 7.0 - proj library data will not be included in standalone bundle.")
+        endif()
+    else()
+        message(WARNING "Unable to find 'projinfo' command - likely using Proj version older than 6.0 - proj library data will not be included in standalone bundle.")
+    endif()
+
+
     ###############################################
     # Install the Visual Studio runtime libraries #
     ###############################################
@@ -525,68 +636,6 @@ if (GPLATES_INSTALL_STANDALONE)
     install_get_runtime_dependencies(gplates)
     install_get_runtime_dependencies(pygplates EXCLUDE_FROM_ALL)
 
-    #
-    # Function to install the Python standard library.
-    #
-    # This is used on Windows and Linux.
-    # On macOS we install the standard library when we install the Python framework
-    # (since the standard library is contained inside the framework).
-    #
-    # Note: The Python standard library is only installed for the 'gplates' component which has an embedded Python interpreter
-    #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
-    #
-    function(install_python_standard_library)
-        if (APPLE)
-            message(FATAL_ERROR "Function to install Python standard library only meant for use on Windows and Linux (macOS does this a different way)")
-        endif()
-
-        # Find the relative path from the Python prefix directory to the standard library directory.
-        # We'll use this as the standard library install location relative to our install prefix.
-        file(RELATIVE_PATH _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
-
-        # Remove the trailing '/', if there is one, so that we can then
-        # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
-        #
-        #   "The last component of each directory name is appended to the destination directory but
-        #    a trailing slash may be used to avoid this because it leaves the last component empty"
-        #
-        string(REGEX REPLACE "/+$" "" _PYTHON_STDLIB_DIR "${GPLATES_PYTHON_STDLIB_DIR}")
-        # Install the Python standard library.
-        install(DIRECTORY "${_PYTHON_STDLIB_DIR}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/${_PYTHON_STDLIB_INSTALL_DIR} COMPONENT gplates)
-
-        # On Windows there's also a 'DLLs/' sibling directory of the 'Lib/' directory.
-        if (WIN32)
-            get_filename_component(_PYTHON_DLLS_DIR "${_PYTHON_STDLIB_DIR}" DIRECTORY)
-            set(_PYTHON_DLLS_DIR "${_PYTHON_DLLS_DIR}/DLLs")
-            if (EXISTS "${_PYTHON_DLLS_DIR}")
-                install(DIRECTORY "${_PYTHON_DLLS_DIR}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/DLLs COMPONENT gplates)
-            endif()
-        endif()
-    endfunction()
-
-    # Create and install an "__init__.py" file for pygplates in same directory as the pygplates library (on all platforms).
-    #
-    # This is because we make pygplates a "Python package" where the pygplates module library is in the *base* 'pygplates/' directory
-    # as well as an '__init__.py' to find its runtime location (needed to locate the GDAL/PROJ data bundled with pygplates).
-    set(PYGPLATES_INIT_PY "${CMAKE_CURRENT_BINARY_DIR}/__init__.py")
-    # Note that we allow no indentation in the file content to avoid Python 'unexpected indent' errors.
-    file(WRITE "${PYGPLATES_INIT_PY}" [[
-# Import the pygplates shared library (C++).
-from .pygplates import *
-# Import any private symbols (with leading underscore).
-from .pygplates import __version__
-from .pygplates import __doc__
-
-# Let the pygplates shared library (C++) know of its imported location.
-import os.path
-pygplates._post_import(os.path.dirname(__file__))
-
-# Now that we've imported symbols from the pygplates shared library (C++) into
-# the namespace of this package (also called pygplates) we can remove it.
-# This is so we don't have pygplates.<symbol> and pygplates.pygplates.<symbol>.
-del pygplates
-]])
-    install(FILES "${PYGPLATES_INIT_PY}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates} COMPONENT pygplates EXCLUDE_FROM_ALL)
 
     #
     # Install the dependency libraries.
