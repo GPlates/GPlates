@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QString>
+
 // We are going to import the numpy C-API in this file.
 // This tells 'global/python.h' not to define NO_IMPORT_ARRAY.
 #define PYGPLATES_IMPORT_NUMPY_ARRAY_API
@@ -292,6 +294,28 @@ namespace
 	}
 }
 
+#if !defined(GPLATES_PYTHON_EMBEDDING)
+	namespace
+	{
+		/**
+		 * When pygplates is imported into an *external* Python interpreter (ie, not the interpreter
+		 * *embedded* in GPlates) the '__init__.py' of the pygplates package will call us to let us
+		 * know the directory we're being imported from.
+		 *
+		 * In fact that was the whole reason for creating a "Python package" (with '__init__.py')
+		 * because we cannot easily find the runtime import directory from a C++ extension module.
+		 * In the package '__init__.py' file we have access to the '__file__' attribute which serves
+		 * this purpose. Note that PEP 489 ("Multi-phase extension module initialization":
+		 * https://www.python.org/dev/peps/pep-0489/) addresses this difference between pure Python
+		 * and C extensions, but it is not clear how to achieve this with boost-python.
+		 */
+		void
+		pygplates_post_import(
+				QString pygplates_import_directory)
+		{
+		}
+	}
+#endif
 
 BOOST_PYTHON_MODULE(pygplates)
 {
@@ -428,5 +452,16 @@ BOOST_PYTHON_MODULE(pygplates)
 	// but we're assuming that any profiled code has already run (and hence been profiled) before this happens.
 #if defined(PROFILE_GPLATES)
 	bp::import("atexit").attr("register")(bp::make_function(&pygplates_profile_report_to_file));
+#endif
+
+#if !defined(GPLATES_PYTHON_EMBEDDING)
+	// Wrap the 'pygplates_post_import()' function so it can be called by the pygplates "Python package" '__init__.py'
+	// just after it imports this pygplates shared library to let us know our runtime import location.
+	//
+	// Note that this only happens when pygplates is imported into an *external* Python interpreter
+	// (ie, not the interpreter *embedded* in GPlates).
+	bp::def("_post_import",
+			&pygplates_post_import,
+			(bp::arg("pygplates_import_directory")));
 #endif
 }
