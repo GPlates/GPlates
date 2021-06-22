@@ -48,6 +48,8 @@
 
 #include "cli/CliCommandDispatcher.h"
 
+#include "file-io/StandaloneBundle.h"
+
 #include "global/NotYetImplementedException.h"
 #include "global/python.h"
 #include "global/Version.h"
@@ -873,6 +875,11 @@ internal_main(int argc, char* argv[])
 
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
 	GPlatesGui::GPlatesQApplication qapplication(argc, argv);
+
+	// Initialise so that queries on the standalone bundle can be made.
+	// Note: This must be done *after* QApplication is initialised (via GPlatesQApplication above).
+	//       And we do it *before* Application is initialised below in case Application makes any bundle queries.
+	GPlatesFileIO::StandaloneBundle::initialise();
 
 	// GPlatesPresentation::Application is a singleton which is normally only accessed via 'Application::instance()'.
 	// However we also need to control its lifetime and ensure it gets destroyed before QApplication
