@@ -46,6 +46,11 @@ if (PROJ_FOUND)
 
   if (PROJ_VERBOSE)
     message(STATUS "FindPROJ: found PROJ CMake config file.")
+
+    message(STATUS "FindPROJ: located PROJ_INCLUDE_DIRS: ${PROJ_INCLUDE_DIRS}")
+    message(STATUS "FindPROJ: located PROJ_BINARY_DIRS: ${PROJ_BINARY_DIRS}")
+    message(STATUS "FindPROJ: located PROJ_LIBRARY_DIRS: ${PROJ_LIBRARY_DIRS}")
+    message(STATUS "FindPROJ: located PROJ_LIBRARIES: ${PROJ_LIBRARIES}")
   endif()
 
   return()
@@ -155,8 +160,11 @@ get_filename_component(PROJ_BINARY_DIRS ${PROJ_EXE} DIRECTORY)
 
 if (PROJ_VERBOSE)
   message(STATUS "FindPROJ: located PROJ_INCLUDE_DIRS: ${PROJ_INCLUDE_DIRS}")
+  message(STATUS "FindPROJ: located PROJ_BINARY_DIRS: ${PROJ_BINARY_DIRS}")
+  message(STATUS "FindPROJ: located PROJ_LIBRARY_DIRS: ${PROJ_LIBRARY_DIRS}")
   message(STATUS "FindPROJ: located PROJ_LIBRARIES: ${PROJ_LIBRARIES}")
 endif()
+
 
 # Create the PROJ::proj target.
 add_library(PROJ::proj IMPORTED INTERFACE)
