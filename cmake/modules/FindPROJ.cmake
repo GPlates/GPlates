@@ -24,6 +24,8 @@
 # ::
 # 
 #   PROJ_INCLUDE_DIRS   - where to find proj.h, etc.
+#   PROJ_BINARY_DIRS    - where to find projinfo, etc.
+#   PROJ_LIBRARY_DIRS   - where to find proj.lib, etc.
 #   PROJ_LIBRARIES      - List of libraries when using PROJ.
 #   PROJ_FOUND          - True if PROJ found.
 
@@ -80,9 +82,13 @@ if (PROJ4_FOUND)
 
   # We now have a PROJ::proj target but we should also use the same variables as the *modern* CONFIG package.
   set(PROJ_INCLUDE_DIRS ${PROJ4_INCLUDE_DIRS})
+  set(PROJ_BINARY_DIRS ${PROJ4_BINARY_DIRS})
+  set(PROJ_LIBRARY_DIRS ${PROJ4_LIBRARY_DIRS})
   set(PROJ_LIBRARIES ${PROJ4_LIBRARIES})
   if (PROJ_VERBOSE)
     message(STATUS "FindPROJ: created variable PROJ_INCLUDE_DIRS: ${PROJ_INCLUDE_DIRS}")
+    message(STATUS "FindPROJ: created variable PROJ_BINARY_DIRS: ${PROJ_BINARY_DIRS}")
+    message(STATUS "FindPROJ: created variable PROJ_LIBRARY_DIRS: ${PROJ_LIBRARY_DIRS}")
     message(STATUS "FindPROJ: created variable PROJ_LIBRARIES: ${PROJ_LIBRARIES}")
   endif()
 
@@ -103,7 +109,7 @@ find_path(PROJ_INCLUDE_DIR
   NAMES proj.h proj_api.h
   PATHS
     # Macports stores Proj in locations that are difficult for CMake to find without some help
-    # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH, or via the PATH environment variable)...
+    # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH or via the PATH environment variable)...
     /opt/local/lib/proj8/include
     /opt/local/lib/proj7/include
     /opt/local/lib/proj6/include
@@ -116,21 +122,36 @@ find_library(PROJ_LIBRARY
   NAMES_PER_DIR
   PATHS
     # Macports stores Proj in locations that are difficult for CMake to find without some help
-    # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH, or via the PATH environment variable)...
+    # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH or via the PATH environment variable)...
     /opt/local/lib/proj8/lib
     /opt/local/lib/proj7/lib
     /opt/local/lib/proj6/lib
     /opt/local/lib/proj5/lib
     /opt/local/lib/proj49/lib)
 
-# Make sure we found the PROJ include header location and library.
-find_package_handle_standard_args(PROJ REQUIRED_VARS PROJ_LIBRARY PROJ_INCLUDE_DIR)
+# Find the 'proj' executable.
+find_program(PROJ_EXE
+    NAMES proj
+    NAMES_PER_DIR
+    PATHS
+        # Macports stores Proj in locations that are difficult for CMake to find without some help
+        # (even when the /opt/local/ prefix is used, eg, via CMAKE_PREFIX_PATH or via the PATH environment variable)...
+        /opt/local/lib/proj8/bin
+        /opt/local/lib/proj7/bin
+        /opt/local/lib/proj6/bin
+        /opt/local/lib/proj5/bin
+        /opt/local/lib/proj49/bin)
 
-mark_as_advanced(PROJ_INCLUDE_DIR PROJ_LIBRARY)
+# Make sure we found the PROJ include header location and library.
+find_package_handle_standard_args(PROJ REQUIRED_VARS PROJ_LIBRARY PROJ_INCLUDE_DIR PROJ_EXE)
+
+mark_as_advanced(PROJ_INCLUDE_DIR PROJ_LIBRARY PROJ_EXE)
 
 # Create the same variables as a PROJ CONFIG package.
 set(PROJ_INCLUDE_DIRS ${PROJ_INCLUDE_DIR})
 set(PROJ_LIBRARIES ${PROJ_LIBRARY})
+get_filename_component(PROJ_LIBRARY_DIRS ${PROJ_LIBRARY} DIRECTORY)
+get_filename_component(PROJ_BINARY_DIRS ${PROJ_EXE} DIRECTORY)
 
 if (PROJ_VERBOSE)
   message(STATUS "FindPROJ: located PROJ_INCLUDE_DIRS: ${PROJ_INCLUDE_DIRS}")
