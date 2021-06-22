@@ -341,12 +341,10 @@ del pygplates
         execute_process(COMMAND ${PROJINFO} --searchpaths
             RESULT_VARIABLE _projinfo_result
             OUTPUT_VARIABLE _projinfo_output
-            ERROR_VARIABLE  _projinfo_error)
+            ERROR_QUIET)
         if (NOT _projinfo_result)  # success
-            # Convert 'projinfo' output to a list of lines.
-            # We do this by converting newlines to the list separator character ';' but only after escaping any existing ';' characters in the output.
-            string(REPLACE ";" "\\;" _projinfo_search_paths "${_projinfo_output}")
-            string(REPLACE "\n" ";" _projinfo_search_paths "${_projinfo_search_paths}")
+            # Convert 'projinfo' output to a list of lines - we do this by converting newlines to the list separator character ';'.
+            string(REPLACE "\n" ";" _projinfo_search_paths "${_projinfo_output}")
             # Search each path for 'proj.db'.
             set(_found_proj_db false)
             foreach(_projinfo_search_path ${_projinfo_search_paths})
@@ -356,9 +354,14 @@ del pygplates
                     #   "The last component of each directory name is appended to the destination directory but
                     #    a trailing slash may be used to avoid this because it leaves the last component empty"
                     string(REGEX REPLACE "/+$" "" _projinfo_search_path "${_projinfo_search_path}")
-                    install(DIRECTORY "${_projinfo_search_path}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/${GPLATES_STANDALONE_PROJ_DATA_DIR_REL_BASE} COMPONENT gplates)
-                    install(DIRECTORY "${_projinfo_search_path}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates}/${GPLATES_STANDALONE_PROJ_DATA_DIR_REL_BASE} COMPONENT pygplates EXCLUDE_FROM_ALL)
-                    message(STATUS "proj.db in ${_projinfo_search_path}")
+                    if (APPLE)
+                        set(_gplates_proj_data_rel_base gplates.app/Contents/Resources/${GPLATES_STANDALONE_PROJ_DATA_DIR})
+                    else()
+                        set(_gplates_proj_data_rel_base ${GPLATES_STANDALONE_PROJ_DATA_DIR})
+                    endif()
+                    set(_pygplates_proj_data_rel_base ${GPLATES_STANDALONE_PROJ_DATA_DIR})
+                    install(DIRECTORY "${_projinfo_search_path}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/${_gplates_proj_data_rel_base} COMPONENT gplates)
+                    install(DIRECTORY "${_projinfo_search_path}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates}/${_pygplates_proj_data_rel_base} COMPONENT pygplates EXCLUDE_FROM_ALL)
                     set(_found_proj_db true)
                     break()
                 endif()
@@ -367,7 +370,7 @@ del pygplates
                 message(WARNING "Found proj resource dirs but did not find 'proj.db' - proj library data will not be included in standalone bundle.")
             endif()
         else()
-            message(WARNING "Unable to run 'projinfo --searchpaths': ${_projinfo_error} - likely using Proj version older than 7.0 - proj library data will not be included in standalone bundle.")
+            message(WARNING "'projinfo' does not support '--searchpaths' option - likely using Proj version older than 7.0 - proj library data will not be included in standalone bundle.")
         endif()
     else()
         message(WARNING "Unable to find 'projinfo' command - likely using Proj version older than 6.0 - proj library data will not be included in standalone bundle.")
