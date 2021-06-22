@@ -150,24 +150,22 @@ endif()
 
 
 #
-# Install Hellinger Python scripts (but only for gplates target/component).
+# Install Python scripts (but only for gplates target/component).
 #
-if (EXISTS "${GPlates_SOURCE_DIR}/scripts/hellinger.py")
-    if (GPLATES_INSTALL_STANDALONE)
-        # For standalone we want to bundle everything together so it's relocatable.
-        install(FILES "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/scripts COMPONENT gplates)
-    else()
-        install(FILES "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION share/gplates/scripts COMPONENT gplates)
+foreach (_script hellinger.py hellinger_maths.py)
+    if (EXISTS "${GPlates_SOURCE_DIR}/scripts/${_script}")
+        if (GPLATES_INSTALL_STANDALONE)
+            # For standalone we want to bundle everything together so it's relocatable.
+            if (APPLE)
+                install(FILES "${GPlates_SOURCE_DIR}/scripts/${_script}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/gplates.app/Contents/Resources/scripts COMPONENT gplates)
+            else()
+                install(FILES "${GPlates_SOURCE_DIR}/scripts/${_script}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/scripts COMPONENT gplates)
+            endif()
+        else()
+            install(FILES "${GPlates_SOURCE_DIR}/scripts/${_script}" DESTINATION share/gplates/scripts COMPONENT gplates)
+        endif()
     endif()
-endif()
-if (EXISTS "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py")
-    if (GPLATES_INSTALL_STANDALONE)
-        # For standalone we want to bundle everything together so it's relocatable.
-        install(FILES "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/scripts COMPONENT gplates)
-    else()
-        install(FILES "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION share/gplates/scripts COMPONENT gplates)
-    endif()
-endif()
+endforeach()
 
 # Install sample data if requested (but only for gplates target/component).
 #
