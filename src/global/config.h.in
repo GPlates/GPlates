@@ -6,7 +6,11 @@
 //
 
 
+// Define if this is a public release.
 #cmakedefine GPLATES_PUBLIC_RELEASE
+
+// Define if installing GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
+#cmakedefine GPLATES_INSTALL_STANDALONE
 
 /*
  * Whether GPlates compiles in support for profiling CPU usage of source code.
@@ -23,21 +27,21 @@
  */
 #cmakedefine GPLATES_PROFILE_CODE
 
-/* Whether GPlates ignores environment variables when initilizing embeded Python interpreter */
+// Whether GPlates ignores environment variables when initilizing embeded Python interpreter.
 #cmakedefine GPLATES_IGNORE_PYTHON_ENVIRONMENT
 
-/* Define to 1 if you have the <proj.h> header file (Proj5+). */
+// Define if have the <proj.h> header file (Proj5+).
 #cmakedefine GPLATES_HAVE_PROJ_H
-/* Define to 1 if you have the <proj_api.h> header file (Proj4). */
+// Define if have the <proj_api.h> header file (Proj4).
 #cmakedefine GPLATES_HAVE_PROJ_API_H
 
-/* The full path to certain system header files */
+// The full path to certain system header files.
 #cmakedefine BOOST_CSTDINT_HPP_PATH "@BOOST_CSTDINT_HPP_PATH@"
 
-/* Define if have boost.python.numpy (NumPy extension package of Boost.Python). */
+// Define if have boost.python.numpy (NumPy extension package of Boost.Python).
 #cmakedefine GPLATES_HAVE_BOOST_PYTHON_NUMPY
 
-/* Define if have the numpy C-API headers (such as <numpy/arrayobject.h> located in Python's numpy package). */
+// Define if have the numpy C-API headers (such as <numpy/arrayobject.h> located in Python's numpy package).
 #cmakedefine GPLATES_HAVE_NUMPY_C_API
 
 #endif // GPLATES_GLOBAL_CONFIG_H

@@ -25,6 +25,8 @@
 
 #include <QString>
 
+#include "global/config.h"  // For GPLATES_INSTALL_STANDALONE
+
 // We are going to import the numpy C-API in this file.
 // This tells 'global/python.h' not to define NO_IMPORT_ARRAY.
 #define PYGPLATES_IMPORT_NUMPY_ARRAY_API
@@ -294,7 +296,7 @@ namespace
 	}
 }
 
-#if !defined(GPLATES_PYTHON_EMBEDDING)
+#if defined (GPLATES_INSTALL_STANDALONE) && !defined(GPLATES_PYTHON_EMBEDDING)
 	namespace
 	{
 		/**
@@ -454,7 +456,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	bp::import("atexit").attr("register")(bp::make_function(&pygplates_profile_report_to_file));
 #endif
 
-#if !defined(GPLATES_PYTHON_EMBEDDING)
+#if defined (GPLATES_INSTALL_STANDALONE) && !defined(GPLATES_PYTHON_EMBEDDING)
 	// Wrap the 'pygplates_post_import()' function so it can be called by the pygplates "Python package" '__init__.py'
 	// just after it imports this pygplates shared library to let us know our runtime import location.
 	//
