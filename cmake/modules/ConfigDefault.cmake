@@ -91,10 +91,11 @@ else() # Linux
 endif()
 option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle (copy dependency libraries into the installation)." ${_INSTALL_STANDALONE})
 unset(_INSTALL_STANDALONE)
-# The sub-directory of standalone base installation directory (or sub-dir of 'gplates.app/Contents/Resources/' dir of base installation for GPlates macOS app bundle)
-# to place data from the Proj library (this includes 'proj.db' required by Proj).
+# The sub-directories of standalone base installation directory (or sub-dirs of 'gplates.app/Contents/Resources/' dir of base installation for GPlates macOS app bundle)
+# to place data from the Proj (eg, 'proj.db') and GDAL libraries.
 # Only applies when GPLATES_INSTALL_STANDALONE is true.
 set(GPLATES_STANDALONE_PROJ_DATA_DIR proj_data)
+set(GPLATES_STANDALONE_GDAL_DATA_DIR gdal_data)
 
 # Whether to install sample data (eg, in the binary installer) or not.
 # By default this is false and only enabled when packaging a public release.

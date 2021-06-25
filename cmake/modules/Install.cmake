@@ -332,11 +332,11 @@ del pygplates
     #############################################################################################
     #
     # Find the 'projinfo' command.
-    find_program(PROJINFO "projinfo" PATHS ${PROJ_BINARY_DIRS})
-    if (PROJINFO)
+    find_program(PROJINFO_COMMAND "projinfo" PATHS ${PROJ_BINARY_DIRS})
+    if (PROJINFO_COMMAND)
         # Run 'projinfo --searchpaths' to get a list of directories that Proj will look for resources in.
         # Note that 'projinfo' is new in Proj version 6.0 and the '--searchpaths' option is new in version 7.0.
-        execute_process(COMMAND ${PROJINFO} --searchpaths
+        execute_process(COMMAND ${PROJINFO_COMMAND} --searchpaths
             RESULT_VARIABLE _projinfo_result
             OUTPUT_VARIABLE _projinfo_output
             ERROR_QUIET)
@@ -344,27 +344,14 @@ del pygplates
             # Convert 'projinfo' output to a list of lines - we do this by converting newlines to the list separator character ';'.
             string(REPLACE "\n" ";" _projinfo_search_paths "${_projinfo_output}")
             # Search each path for 'proj.db'.
-            set(_found_proj_db false)
             foreach(_projinfo_search_path ${_projinfo_search_paths})
                 file(TO_CMAKE_PATH ${_projinfo_search_path} _projinfo_search_path)
                 if (EXISTS "${_projinfo_search_path}/proj.db")
-                    # Remove the trailing '/', if there is one, so that we can then append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
-                    #   "The last component of each directory name is appended to the destination directory but
-                    #    a trailing slash may be used to avoid this because it leaves the last component empty"
-                    string(REGEX REPLACE "/+$" "" _projinfo_search_path "${_projinfo_search_path}")
-                    if (APPLE)
-                        set(_gplates_proj_data_rel_base gplates.app/Contents/Resources/${GPLATES_STANDALONE_PROJ_DATA_DIR})
-                    else()
-                        set(_gplates_proj_data_rel_base ${GPLATES_STANDALONE_PROJ_DATA_DIR})
-                    endif()
-                    set(_pygplates_proj_data_rel_base ${GPLATES_STANDALONE_PROJ_DATA_DIR})
-                    install(DIRECTORY "${_projinfo_search_path}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/${_gplates_proj_data_rel_base} COMPONENT gplates)
-                    install(DIRECTORY "${_projinfo_search_path}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates}/${_pygplates_proj_data_rel_base} COMPONENT pygplates EXCLUDE_FROM_ALL)
-                    set(_found_proj_db true)
+                    set(_proj_data_dir ${_projinfo_search_path})
                     break()
                 endif()
             endforeach()
-            if (NOT _found_proj_db)
+            if (NOT _proj_data_dir)
                 message(WARNING "Found proj resource dirs but did not find 'proj.db' - proj library data will not be included in standalone bundle.")
             endif()
         else()
@@ -372,6 +359,73 @@ del pygplates
         endif()
     else()
         message(WARNING "Unable to find 'projinfo' command - likely using Proj version older than 6.0 - proj library data will not be included in standalone bundle.")
+    endif()
+    #
+    # Install the Proj data.
+    if (_proj_data_dir)
+        # Remove the trailing '/', if there is one, so that we can then append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
+        #   "The last component of each directory name is appended to the destination directory but
+        #    a trailing slash may be used to avoid this because it leaves the last component empty"
+        string(REGEX REPLACE "/+$" "" _proj_data_dir "${_proj_data_dir}")
+        if (APPLE)
+            set(_gplates_proj_data_rel_base gplates.app/Contents/Resources/${GPLATES_STANDALONE_PROJ_DATA_DIR})
+        else()
+            set(_gplates_proj_data_rel_base ${GPLATES_STANDALONE_PROJ_DATA_DIR})
+        endif()
+        set(_pygplates_proj_data_rel_base ${GPLATES_STANDALONE_PROJ_DATA_DIR})
+        install(DIRECTORY "${_proj_data_dir}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/${_gplates_proj_data_rel_base} COMPONENT gplates)
+        install(DIRECTORY "${_proj_data_dir}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates}/${_pygplates_proj_data_rel_base} COMPONENT pygplates EXCLUDE_FROM_ALL)
+    endif()
+
+    #################################################################################################
+    # Copy the GDAL library data into standalone bundle to avoid GDAL error finding 'gcs.csv'       #
+    # (which was moved into 'proj.db' for GDAL >= 2.5, but there's other GDAL data files to bundle) #
+    #################################################################################################
+    #
+    if (WIN32)
+        # The 'gdal-config' command is not available on Windows. Instead we're expected to use the GDAL_DATA environment variable.
+        set(_gdal_data_dir $ENV{GDAL_DATA})
+        if (NOT _gdal_data_dir)
+            message(WARNING "GDAL_DATA environment variable not set - GDAL library data will not be included in standalone bundle.")
+        endif()
+    else() # Apple or Linux
+        # Find the 'gdal-config' command (should be able to find via PATH environment variable).
+        find_program(GDAL_CONFIG_COMMAND "gdal-config")
+        if (GDAL_CONFIG_COMMAND)
+            # Run 'gdal-config --datadir' to get directory that GDAL will look for resources in.
+            execute_process(COMMAND ${GDAL_CONFIG_COMMAND} --datadir
+                RESULT_VARIABLE _gdal_config_result
+                OUTPUT_VARIABLE _gdal_config_output
+                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+            if (NOT _gdal_config_result)  # success
+                set(_gdal_data_dir ${_gdal_config_output})
+            else()
+                message(WARNING "'gdal-config --datadir' failed - GDAL library data will not be included in standalone bundle.")
+            endif()
+        else()
+            message(WARNING "Unable to find 'gdal-config' command - GDAL library data will not be included in standalone bundle.")
+        endif()
+    endif()
+    #
+    # Install the GDAL data.
+    if (_gdal_data_dir)
+        file(TO_CMAKE_PATH ${_gdal_data_dir} _gdal_data_dir)
+        if (EXISTS "${_gdal_data_dir}")
+            # Remove the trailing '/', if there is one, so that we can then append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
+            #   "The last component of each directory name is appended to the destination directory but
+            #    a trailing slash may be used to avoid this because it leaves the last component empty"
+            string(REGEX REPLACE "/+$" "" _gdal_data_dir "${_gdal_data_dir}")
+            if (APPLE)
+                set(_gplates_gdal_data_rel_base gplates.app/Contents/Resources/${GPLATES_STANDALONE_GDAL_DATA_DIR})
+            else()
+                set(_gplates_gdal_data_rel_base ${GPLATES_STANDALONE_GDAL_DATA_DIR})
+            endif()
+            set(_pygplates_gdal_data_rel_base ${GPLATES_STANDALONE_GDAL_DATA_DIR})
+            install(DIRECTORY "${_gdal_data_dir}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/${_gplates_gdal_data_rel_base} COMPONENT gplates)
+            install(DIRECTORY "${_gdal_data_dir}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates}/${_pygplates_gdal_data_rel_base} COMPONENT pygplates EXCLUDE_FROM_ALL)
+        else()
+            message(WARNING "GDAL data directory \"${_gdal_data_dir}\" does not exist - GDAL library data will not be included in standalone bundle.")
+        endif()
     endif()
 
 
