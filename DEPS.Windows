@@ -215,6 +215,8 @@ Proj
      o Install Proj (into the CMAKE_INSTALL_PREFIX location specified above):
          cmake --build . --config Release --target install
   3. Add the *install* 'bin' directory to the PATH environment variable (eg, "C:\SDK\proj\proj-8.0.1\msvc2015_64\bin").
+     This is so the 'projinfo' executable can be found (currenlty only used when GPlates/pyGPlates installed/packaged as a standalone bundle).
+     Note that by default a static (instead of shared DLL) Proj library is built, so PATH is not actually needed to find a Proj DLL.
   4. Add the Proj *install* directory (see CMAKE_INSTALL_PREFIX above) to the CMAKE_PREFIX_PATH environment variable (eg, "C:\SDK\proj\proj-8.0.1\msvc2015_64").
      This enables CMake to find Proj when configuring GPlates (see BUILD.Windows).
      Note that this is not strictly necessary since CMake can find the Proj install prefix using the PATH environment variable (CMake strips off 'bin').
@@ -268,9 +270,11 @@ GDAL
          NOTE: It appears both debug and release builds use the same filenames (so they just overwrite each other).
                Might need to pick one or the other.
        o The 'devinstall' target ensures the libraries and include files are installed (in addition to GDAL executables and data from 'install' target).
-    7. Set the 'GDAL_DIR' environment variable to the install path of GDAL (eg, "C:\SDK\gdal\gdal-3.3.0\msvc2015_64").
-       Or just add it to the CMAKE_PREFIX_PATH environment variable.
-    8. Also add the root source code path to the PATH environment variable (so the GDAL DLL can be found at run-time).
+    7. Add the *install* 'bin' directory to the PATH environment variable (eg, "C:\SDK\gdal\gdal-3.3.0\msvc2015_64\bin").
+       This is so the GDAL DLL can be found at run-time.
+    8. Add the GDAL *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, "C:\SDK\gdal\gdal-3.3.0\msvc2015_64").
+       This enables CMake to find GDAL when configuring GPlates (see BUILD.Windows).
+       Note that this is not strictly necessary since CMake can find the GDAL install prefix using the PATH environment variable (CMake strips off 'bin').
     
     NOTE that GDAL 2.3 (and above) use C++11 features which requires Visual Studio 2015 (or above).
   
@@ -284,12 +288,13 @@ CGAL
      * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-4.13.2'.
          * In particular, do not install under Program Files on Windows Vista and
            above because you will likely run into permissions issues later.
-     * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
-     * Tick 'Add CGAL/auxiliary/gmp/lib to PATH' (eg, D:\SDK\cgal\CGAL-4.13.2\auxiliary\gmp\lib).
+     * Tick 'CGAL_DIR' environment variable - note: this helps GPlates find CGAL (although it can use the PATH for that - see below).
+     * Tick 'Add CGAL/auxiliary/gmp/lib to PATH' (eg, C:\SDK\cgal\CGAL-4.13.2\auxiliary\gmp\lib).
   2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
      * NOTE: Make sure you run 'cmake-gui.exe' as administrator (right-click and select 'Run as administrator').
-     * Specify the CGAL installation location as the source and build directories.
-     * Click 'Configure' once and select a Visual Studio generator
+     * Specify the root of the extracted CGAL source tree as the source directory.
+     * Specify a new sub-directory, such as 'build', as the build directory (eg, "C:/SDK/cgal/CGAL-4.13.2/build/").
+     * Click 'Configure' once (selecting OK to create the new 'build' directory) and select a Visual Studio generator
        (such as "Visual Studio 14 2015" for 32-bit or "Visual Studio 14 2015 Win64" for 64-bit).
         * If an error dialog pops up and there's red text that complains it cannot find the boost library
           boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library versions
@@ -298,19 +303,21 @@ CGAL
          * WITH_CGAL_Core,
          * WITH_GMP and
          * WITH_MPFR.
-     * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-4.13.2').
+     * Change 'CMAKE_INSTALL_PREFIX' to a directory that is different than the root of the extracted source tree  (eg, 'C:/SDK/cgal/CGAL-4.13.2/msvc2015_64').
+       This ensures GPlates will find the correct CGAL CMake config files (the ones created when installing CGAL).
        NOTE: Make sure to use forward slashes '/' here (not backward slashes '\') to avoid errors when compiling CGAL.
      * Click the 'Configure' button again.
      * Click the 'Generate' button.
      * If this is successful then a Visual Studio solution file 'CGAL.sln'.
   3. Build CGAL:
-     * Open the generated Visual Studio solution file 'CGAL.sln'.
+     * Open the generated Visual Studio solution file 'CGAL.sln' in the 'build' directory.
      * Select the 'Release' build type.
      * (GPlates developers will also want to build 'Debug', etc so that similar builds in
        GPlates can find the CGAL library of the correct build type).
      * Build the 'INSTALL' project.
-  4. Add the CGAL \bin directory to the PATH environment variable (eg, D:\SDK\cgal\CGAL-4.13.2\bin).
-  When GPlates is built it should find CGAL via the "CGAL_DIR" environment variable.
+  4. Add the CGAL 'bin' directory to the PATH environment variable (eg, C:\SDK\cgal\CGAL-4.13.2\msvc2015_64\bin).
+     Note that in addition to finding CGAL DLLs at runtime this also enables CMake to find CGAL when configuring GPlates (see BUILD.Windows)
+     since CMake strips off 'bin' to find the CGAL root installation (which means the above-mentioned CGAL_DIR is not required).
     
     NOTE that CGAL 5 (and above) use C++14 features which requires Visual Studio 2015 (or above).
 

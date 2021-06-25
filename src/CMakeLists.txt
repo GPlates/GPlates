@@ -913,6 +913,11 @@ endif()
 #
 target_link_libraries(gplates-lib PUBLIC CGAL::CGAL)
 target_link_libraries(pygplates PUBLIC CGAL::CGAL)
+# It appears "auxiliary/gmp/include" in base CGAL installation does not always get included by
+# CGALConfig.cmake (found using 'find_package(CGAL)' above). Noticed this with CMake 4.13.2 when
+# installing CGAL with a CMAKE_INSTALL_PREFIX different than base installation directory.
+target_include_directories(gplates-lib SYSTEM PUBLIC ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR})
+target_include_directories(pygplates SYSTEM PUBLIC ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR})
 
 #
 # GDAL dependency.
