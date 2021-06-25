@@ -74,6 +74,37 @@ namespace GPlatesFileIO
 			return boost::none;
 #endif
 		}
+
+
+		boost::optional<QString>
+		get_data_directory(
+				QString data_dir_relative_to_resources_dir)
+		{
+#if defined(GPLATES_INSTALL_STANDALONE)
+
+			// Get the bundle resources directory.
+			boost::optional<QString> bundle_resources_dir = get_bundle_resources_directory();
+			if (!bundle_resources_dir)
+			{
+				return boost::none;
+			}
+
+			// See if the data directory (in the resources directory) exists.
+			// If it does then it means the requested data was included in the standalone bundle.
+			QDir data_dir(bundle_resources_dir.get() + "/" + data_dir_relative_to_resources_dir);
+			if (!data_dir.exists())
+			{
+				return boost::none;
+			}
+
+			return data_dir.absolutePath();
+
+#else  // not a standalone bundle
+
+			return boost::none;
+
+#endif
+		}
 	}
 }
 
@@ -90,6 +121,7 @@ GPlatesFileIO::StandaloneBundle::initialise(
 #endif
 
 #if defined(GPLATES_INSTALL_STANDALONE)
+
 	//
 	// Let the PROJ and GDAL dependency libraries know where to find Proj resources files (eg, 'proj.db').
 	//
@@ -112,37 +144,34 @@ GPlatesFileIO::StandaloneBundle::initialise(
 		// GDAL also has its own PROJ context - tell it where to find 'proj.db' in standalone bundle.
 		OSRSetPROJSearchPaths(proj_search_paths);
 #	endif
+	}
+
+	//
+	// Let the GDAL dependency library know where to find its resources files (eg, 'gcs.csv' for GDAL < 2.5,
+	// which was moved into 'proj.db' for GDAL >= 2.5, but there are other GDAL data files to bundle).
+	//
+	boost::optional<QString> gdal_data_directory = get_gdal_data_directory();
+	if (gdal_data_directory &&
+		QDir(gdal_data_directory.get()).exists())
+	{
+		const std::string gdal_data_dir = gdal_data_directory->toStdString();
+
+		CPLSetConfigOption("GDAL_DATA", gdal_data_dir.c_str());
+	}
 
 #endif
-	}
 }
 
 
 boost::optional<QString>
 GPlatesFileIO::StandaloneBundle::get_proj_data_directory()
 {
-#if defined(GPLATES_INSTALL_STANDALONE)
+	return get_data_directory(GPLATES_STANDALONE_PROJ_DATA_DIR);
+}
 
-	// Get the bundle resources directory.
-	boost::optional<QString> bundle_resources_dir = get_bundle_resources_directory();
-	if (!bundle_resources_dir)
-	{
-		return boost::none;
-	}
 
-	// See if the proj data directory in the resources directory exists.
-	// If it does then it means the proj data was included in the standalone bundle.
-	QDir proj_data_dir(bundle_resources_dir.get() + "/" + GPLATES_STANDALONE_PROJ_DATA_DIR);
-	if (!proj_data_dir.exists())
-	{
-		return boost::none;
-	}
-
-	return proj_data_dir.absolutePath();
-
-#else  // not a standalone bundle
-
-	return boost::none;
-
-#endif
+boost::optional<QString>
+GPlatesFileIO::StandaloneBundle::get_gdal_data_directory()
+{
+	return get_data_directory(GPLATES_STANDALONE_GDAL_DATA_DIR);
 }

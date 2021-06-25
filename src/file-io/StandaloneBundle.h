@@ -65,17 +65,25 @@ namespace GPlatesFileIO
 #endif
 		);
 
+		//
+		// The following data directory queries return none if GPlates (or pyGPlates) was not compiled
+		// as standalone (ie, GPLATES_INSTALL_STANDALONE is not defined) or the standalone bundle has
+		// not yet been created (ie, if we've built GPlates with GPLATES_INSTALL_STANDALONE but not yet
+		// installed it, eg, with "cmake --install . --component gplates --prefix ~/gplates/", or not yet
+		// packaged it, eg, with "cpack -D CPACK_COMPONENTS_ALL=gplates").
+		//
+
 		/**
 		 * Return the location of the Proj data directory in the standalone bundle.
-		 *
-		 * Returns none if GPlates (or pyGPlates) was not compiled as standalone
-		 * (ie, GPLATES_INSTALL_STANDALONE is not defined) or the standalone bundle has not yet
-		 * been created (ie, if we've built GPlates with GPLATES_INSTALL_STANDALONE but not yet
-		 * installed it, eg, "cmake --install . --component gplates --prefix ~/gplates/", or not yet
-		 * packaged it, eg, "cpack -D CPACK_COMPONENTS_ALL=gplates").
 		 */
 		boost::optional<QString>
 		get_proj_data_directory();
+
+		/**
+		 * Return the location of the GDAL data directory in the standalone bundle.
+		 */
+		boost::optional<QString>
+		get_gdal_data_directory();
 	}
 }
 

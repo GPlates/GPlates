@@ -11,9 +11,10 @@
 
 // Define if installing GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
 #cmakedefine GPLATES_INSTALL_STANDALONE
-// The sub-directory of the standalone base installation directory containing Proj library (this includes 'proj.db' required by Proj).
+// The sub-directories of the standalone resource installation directory containing data for the Proj (eg, 'proj.db') and GDAL libraries.
 // Only used when GPLATES_INSTALL_STANDALONE is defined.
 #cmakedefine GPLATES_STANDALONE_PROJ_DATA_DIR "@GPLATES_STANDALONE_PROJ_DATA_DIR@"
+#cmakedefine GPLATES_STANDALONE_GDAL_DATA_DIR "@GPLATES_STANDALONE_GDAL_DATA_DIR@"
 
 /*
  * Whether GPlates compiles in support for profiling CPU usage of source code.
