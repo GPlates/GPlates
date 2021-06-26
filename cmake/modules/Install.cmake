@@ -34,7 +34,7 @@ include(GNUInstallDirs)
 #
 
 #
-# Set the minimum CMake version required for installing targets.
+# Check some requirments for installing targets (such as minimum CMake version required).
 #
 if (GPLATES_INSTALL_STANDALONE)
     #
@@ -78,6 +78,28 @@ if (GPLATES_INSTALL_STANDALONE)
     endfunction()
     install_check_cmake_version(gplates)
     install_check_cmake_version(pygplates EXCLUDE_FROM_ALL)
+
+    # On Apple, warn if a code signing identity has not been specified.
+    #
+    # This can avoid wasted time trying to notarize a package (created via cpack) only to fail because it was not code signed.
+    if (APPLE)
+        # Wrapping 'install' command in a function because each 'install' handles a single component and we have two components (gplates and pygplates).
+        function(install_check_code_signing_identity install_component)
+            # Check at *install* time thus allowing users to build without a code signing identity
+            # (if they just plan to run the build locally and don't plan to deploy to other machines).
+            install(
+                    CODE "
+                        set(CODE_SIGN_IDENTITY ${GPLATES_APPLE_CODE_SIGN_IDENTITY})
+                        if (NOT CODE_SIGN_IDENTITY)
+                            message(WARNING [[Code signing identity not specified - please set GPLATES_APPLE_CODE_SIGN_IDENTITY before distributing to other machines]])
+                        endif()
+                    "
+                    COMPONENT ${install_component} ${ARGN}
+            )
+        endfunction()
+        install_check_code_signing_identity(gplates)
+        install_check_code_signing_identity(pygplates EXCLUDE_FROM_ALL)
+    endif()
 endif()
 
 
