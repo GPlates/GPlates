@@ -265,21 +265,26 @@ if (GPLATES_INSTALL_STANDALONE)
     #
     # Function to install the Python standard library.
     #
-    # This is used on Windows and Linux.
-    # On macOS we install the standard library when we install the Python framework
-    # (since the standard library is contained inside the framework).
-    #
     # Note: The Python standard library is only installed for the 'gplates' component which has an embedded Python interpreter
     #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
     #
     function(install_python_standard_library)
         if (APPLE)
-            message(FATAL_ERROR "Function to install Python standard library only meant for use on Windows and Linux (macOS does this a different way)")
+            # On Apple we're expecting Python to be a framework. Ideally we should already have installed the Python framework
+            # (ie, this function should be called after the frameworks have been installed), but this is not absolutely necessary
+            # (since we could install the Python standard library first and then install the Python framework library/resources second).
+            if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python.framework/")
+                # Convert, for example, '/opt/local/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8' to
+                # 'gplates.app/Contents/Frameworks/Python.framework/Versions/3.8/lib/python3.8'.
+                string(REGEX REPLACE "^.*/Python.framework/(.*)$" "gplates.app/Contents/Frameworks/Python.framework/\\1" _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_STDLIB_DIR})
+            else()
+                message(FATAL_ERROR "Expected Python to be a framework")
+            endif()
+        else() # Windows or Linux
+            # Find the relative path from the Python prefix directory to the standard library directory.
+            # We'll use this as the standard library install location relative to our install prefix.
+            file(RELATIVE_PATH _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
         endif()
-
-        # Find the relative path from the Python prefix directory to the standard library directory.
-        # We'll use this as the standard library install location relative to our install prefix.
-        file(RELATIVE_PATH _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
 
         # Remove the trailing '/', if there is one, so that we can then
         # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
@@ -298,6 +303,17 @@ if (GPLATES_INSTALL_STANDALONE)
             if (EXISTS "${_PYTHON_DLLS_DIR}")
                 install(DIRECTORY "${_PYTHON_DLLS_DIR}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/DLLs COMPONENT gplates)
             endif()
+        endif()
+
+        # On Apple there are some shared '.so' libraries in Python framework that need code signing.
+        if (APPLE)
+            # There's a directory called, for example, 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that is in 'sys.path' and contains '.so' libraries.
+            # We need to codesign and secure timestamp these (otherwise Apple notarization fails).
+            # So we use our codesign() function - it is defined later but that's fine since we this function is not called until after codesign() has been defined.
+            file(GLOB _python_dynload_libs "${STANDALONE_BASE_INSTALL_DIR_gplates}/${_PYTHON_STDLIB_INSTALL_DIR}/lib-dynload/*.so")
+            foreach(_python_dynload_lib ${_python_dynload_libs})
+                codesign(${_python_dynload_lib})
+            endforeach()
         endif()
     endfunction()
 
@@ -862,29 +878,6 @@ del pygplates
                                         REGEX "[^/]+\\.app" EXCLUDE)
                             endif()
 
-                            # If the framework being installed is Python and there's a 'lib/' directory (in same directory as resolved dependency library) then
-                            # copy it to the equivalent directory in the installed framework. This contains the Python libraries (including 'site-packages').
-                            # For example, if there's a '/.../Dependency.framework/Versions/3.8/lib' directory.
-                            if (_resolved_dependency_dir MATCHES "/Python.framework/" AND EXISTS "${_resolved_dependency_dir}/lib")
-                                # For example, copy '/.../Python.framework/Versions/3.8/lib' to '${install_framework_prefix}/Python.framework/Versions/3.8'.
-                                #
-                                # Note: We don't use the FOLLOW_SYMLINK_CHAIN option since that copies, for example, 'Python.framework/Versions/3.8/Python'
-                                #       into 'Python.framework/Versions/3.8/lib/' (due to 'libpython3.8.dylib' symlink in there). But we just want to leave
-                                #       'libpython3.8.dylib' pointing to '../Python' which, in turn, we've just installed above (and will later codesign).
-                                #       Everything is relatively self-contained in 'Python.framework/Versions/3.8/lib/' so we should be fine without following symlinks.
-                                file(INSTALL "${_resolved_dependency_dir}/lib" DESTINATION "${_install_dependency_dir}")
-
-                                # Extract, for example, '3.8' from 'Python.framework/Versions/3.8'.
-                                string(REGEX REPLACE "^.*/([^/]+)$" "\\1" _python_version "${_install_dependency_dir}")
-
-                                # There's a directory called, for example, 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that is in 'sys.path' and contains '.so' libraries.
-                                # We need to codesign and secure timestamp these (otherwise Apple notarization fails), so use our codesign() function defined above.
-                                file(GLOB _python_dynload_libs "${_install_dependency_dir}/lib/python${_python_version}/lib-dynload/*.so")
-                                foreach(_python_dynload_lib ${_python_dynload_libs})
-                                    codesign(${_python_dynload_lib})
-                                endforeach()
-                            endif()
-
                             # See if there's a "Versions" directory in the framework.
                             # For example, convert '/.../Dependency.framework/Versions/2/Dependency' to 'Versions'.
                             string(REGEX REPLACE "^.*/([^/]+)/[^/]+/[^/]+$" "\\1" _versions_dir_basename "${resolved_dependency}")
@@ -977,6 +970,12 @@ del pygplates
         endfunction()
         install_resolved_dependencies(gplates)
         install_resolved_dependencies(pygplates EXCLUDE_FROM_ALL)
+
+        # Install the Python standard library.
+        #
+        # Note: The Python standard library is only installed for the 'gplates' component which has an embedded Python interpreter
+        #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
+        install_python_standard_library()
 
         # Find the 'otool' command.
         find_program(OTOOL "otool")
