@@ -111,8 +111,17 @@ set(GPLATES_SAMPLE_DATA_DIR "" CACHE PATH "Location of sample data.")
 # The macOS code signing identity used to sign installed/packaged GPlates application bundle with a Developer ID certificate.
 #
 # NOTE: Leave it as the *empty* string here (so it doesn't get committed to source code control).
-#       User is responsible for setting it to their Developer ID (eg, using 'cmake -D', or CMake GUI, or 'ccmake').
-#       It should typically be installed into the Keychain and look something like "Developer ID Application: <ID>".
+#       Also it is not needed for local builds (ie, when running GPlates/pyGPlates on build machine), it's only needed when deploying to other machines.
+#       When deploying, the developer is responsible for setting it to their Developer ID (eg, using 'cmake -D', or CMake GUI, or 'ccmake').
+#       To create a Developer ID certificate the developer first needs to create an Apple developer account and pay a yearly fee.
+#       This can be done as an individual or as a company (the latter requiring a company ID such as a company number).
+#       After that's all done and a Developer ID certificate has been created, it should typically be installed into the Keychain.
+#       It should have a name like "Developer ID Application: <ID>" thus allowing GPlates/pyGPlates to be configured with (for example):
+#
+#           cmake -D GPLATES_APPLE_CODE_SIGN_IDENTITY:STRING="Developer ID Application: <ID>" -S <source-dir> -B <build-dir>
+#
+#       Once a GPlates/pyGPlates package has been created for deployment (using 'cpack') the final step is to get Apple to notarize it (see 'Install.cmake' for details).
+#       Only then will Apple's security checks pass when users run/install the package on their machines.
 if (APPLE)
 	set(GPLATES_APPLE_CODE_SIGN_IDENTITY "" CACHE STRING "Apple code signing identity.")
 endif()

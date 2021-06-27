@@ -70,7 +70,7 @@ if (GPLATES_INSTALL_STANDALONE)
         install(
                 CODE "
                     if (CMAKE_VERSION VERSION_LESS ${CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME})
-                        message(FATAL_ERROR \"CMake ${CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME} is required when *installing* ${install_component}\")
+                        message(FATAL_ERROR \"CMake version ${CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME} or greater is required when *installing* ${install_component}\")
                     endif()
                 "
                 COMPONENT ${install_component} ${ARGN}
@@ -89,7 +89,7 @@ if (GPLATES_INSTALL_STANDALONE)
             # (if they just plan to run the build locally and don't plan to deploy to other machines).
             install(
                     CODE "
-                        set(CODE_SIGN_IDENTITY ${GPLATES_APPLE_CODE_SIGN_IDENTITY})
+                        set(CODE_SIGN_IDENTITY [[${GPLATES_APPLE_CODE_SIGN_IDENTITY}]])
                         if (NOT CODE_SIGN_IDENTITY)
                             message(WARNING [[Code signing identity not specified - please set GPLATES_APPLE_CODE_SIGN_IDENTITY before distributing to other machines]])
                         endif()
