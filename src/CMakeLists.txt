@@ -10,8 +10,8 @@
 #####################
 
 
-#
-# Find OpenGL.
+###############
+# Find OpenGL #
 #
 find_package(OpenGL REQUIRED)
 # CMake 3.8 introduced import targets for OpenGL. For prior versions we need to add the imported target ourself.
@@ -26,20 +26,20 @@ if (NOT TARGET OpenGL::GLU)
 	add_library(OpenGL::GLU IMPORTED INTERFACE)
 endif()
 
-#
-# Find GLEW.
+#############
+# Find GLEW #
 #
 # CMake 3.1 introduced import targets for GLEW. Our minimum CMake requirement is higher so we don't need to add the imported target ourself.
 find_package(GLEW REQUIRED)
 
-#
-# Find ZLIB.
+#############
+# Find ZLIB #
 #
 # We use our own "FindZLIB.cmake" module so we can find contrib-built zlibwapi on Windows, which also defines the ZLIB::ZLIB imported target.
 find_package(ZLIB REQUIRED)
 
-#
-# Find CGAL.
+#############
+# Find CGAL #
 #
 # According to this link, starting with CGAL 4.12 a call to 'find_package' is all that's needed
 # (along with "target_link_libraries(... CGAL::CGAL)"), and so we no longer need to "include(${CGAL_USE_FILE})":
@@ -52,16 +52,16 @@ find_package(ZLIB REQUIRED)
 #       Boost variables (like 'Boost_LIBRARIES') if we find CGAL after.
 find_package(CGAL REQUIRED)
 
-#
-# Find Python.
+###############
+# Find Python #
 #
 # And put the Python major/minor versions in variables GPLATES_PYTHON_VERSION_MAJOR/GPLATES_PYTHON_VERSION_MINOR
 # since needed by Boost Python.
 #
 if (GPLATES_PYTHON_3)
-	set(_GPLATES_PYTHON_MAJOR_VER 3)
+	set(_PYTHON_MAJOR_VER 3)
 else()
-	set(_GPLATES_PYTHON_MAJOR_VER 2)
+	set(_PYTHON_MAJOR_VER 2)
 endif()
 # CMake 3.12 and above support the Python2 and Python3 find modules, otherwise
 # we fall back on the PythonLibs find module.
@@ -69,56 +69,92 @@ if (CMAKE_VERSION VERSION_LESS 3.12)
 	# Note that we don't require 'PythonInterp' but we include it in case it makes 'PythonLibs' more robust
 	# (in which case it should be called first). However 'PythonInterp' is used to find the NumPy include directories
 	# (since we need to run the Python executable to print the numpy include path) but that's currently optional.
-	find_package(PythonInterp ${_GPLATES_PYTHON_MAJOR_VER} EXACT)
-	find_package(PythonLibs ${_GPLATES_PYTHON_MAJOR_VER} EXACT REQUIRED)
+	find_package(PythonInterp ${_PYTHON_MAJOR_VER} EXACT)
+	find_package(PythonLibs ${_PYTHON_MAJOR_VER} EXACT REQUIRED)
+
 	# Get the Python major/minor versions.
 	string(REGEX MATCHALL "[0-9]+" _GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR ${PYTHONLIBS_VERSION_STRING})
 	list(GET _GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR 0 GPLATES_PYTHON_VERSION_MAJOR)
 	list(GET _GPLATES_PYTHONLIBS_VERSION_MAJOR_MINOR 1 GPLATES_PYTHON_VERSION_MINOR)
+
+	# Get the Python interpreter executable.
+	set(GPLATES_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE})
+
+	# Get the Python standard library location (GPLATES_PYTHON_STDLIB_DIR).
+	#
+	# CMake versions less than 3.12 do not support the Python2 and Python3 find modules, and hence do not have
+	# Python2_STDLIB and Python3_STDLIB variables. So we need to query the stand library location from Python.
+	execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sysconfig; print(sysconfig.get_path('stdlib'));"
+		RESULT_VARIABLE _PYTHON_STDLIB_RESULT
+		OUTPUT_VARIABLE GPLATES_PYTHON_STDLIB_DIR
+		ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if (_PYTHON_STDLIB_RESULT)
+		message(FATAL_ERROR "Unable to find Python standard library location")
+	endif()
 else()  # CMake 3.12 and later...
 	# CMake 3.12 and later have find_package(Python2) and find_package(Python3).
 	# Note that we don't really need to specify the 'Interpreter' component but we do in case it makes 'Development' more robust.
 	if (CMAKE_VERSION VERSION_LESS 3.14)
-		find_package(Python${_GPLATES_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter Development)
+		find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter Development)
 	else()  # CMake 3.14 and later...
 		# We also specify the optional component NumPy to get access to the numpy C-API header include directories
 		# (however the NumPy component is only available in CMake 3.14 and later).
-		find_package(Python${_GPLATES_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter Development OPTIONAL_COMPONENTS NumPy)
+		find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter Development OPTIONAL_COMPONENTS NumPy)
 	endif()
-	set(GPLATES_PYTHON_VERSION_MAJOR ${Python${_GPLATES_PYTHON_MAJOR_VER}_VERSION_MAJOR})
-	set(GPLATES_PYTHON_VERSION_MINOR ${Python${_GPLATES_PYTHON_MAJOR_VER}_VERSION_MINOR})
+
+	# Get the Python major/minor versions.
+	set(GPLATES_PYTHON_VERSION_MAJOR ${Python${_PYTHON_MAJOR_VER}_VERSION_MAJOR})
+	set(GPLATES_PYTHON_VERSION_MINOR ${Python${_PYTHON_MAJOR_VER}_VERSION_MINOR})
+
+	# Get the Python interpreter executable.
+	set(GPLATES_PYTHON_EXECUTABLE ${Python${GPLATES_PYTHON_VERSION_MAJOR}_EXECUTABLE})
+
+	# Get the Python standard library location.
+	#
+	# CMake 3.12 and later have find_package(Python2) and find_package(Python3), which have Python2_STDLIB and Python3_STDLIB variables.
+	set(GPLATES_PYTHON_STDLIB_DIR ${Python${GPLATES_PYTHON_VERSION_MAJOR}_STDLIB})
 endif()
+
+# Make sure Python interpreter exists before we use it.
+if (NOT EXISTS ${GPLATES_PYTHON_EXECUTABLE})
+	message(FATAL_ERROR "Python interpreter was not found")
+endif()
+
+# Get the Python prefix directory (GPLATES_PYTHON_PREFIX_DIR).
+execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sys; print(sys.prefix);"
+	RESULT_VARIABLE _PYTHON_PREFIX_RESULT
+	OUTPUT_VARIABLE GPLATES_PYTHON_PREFIX_DIR
+	ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+if (_PYTHON_PREFIX_RESULT)
+	message(FATAL_ERROR "Unable to find Python prefix location")
+endif()
+
+# Convert '\' to '/' in paths.
+file(TO_CMAKE_PATH ${GPLATES_PYTHON_EXECUTABLE} GPLATES_PYTHON_EXECUTABLE)
+file(TO_CMAKE_PATH ${GPLATES_PYTHON_STDLIB_DIR} GPLATES_PYTHON_STDLIB_DIR)
+file(TO_CMAKE_PATH ${GPLATES_PYTHON_PREFIX_DIR} GPLATES_PYTHON_PREFIX_DIR)
+
 #
 # Find the Python NumPy include directories (and store in GPLATES_Python_NumPy_INCLUDE_DIRS if found).
 unset(GPLATES_Python_NumPy_INCLUDE_DIRS)
 #
 # CMake versions older than 3.14 do not support the NumPy component (in 'find_package') - so we need to find it ourself.
 if (CMAKE_VERSION VERSION_LESS 3.14)
-	if (CMAKE_VERSION VERSION_LESS 3.12)
-		# From find_package(PythonInterp)...
-		set(_GPLATES_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE})
-	else()  # CMake 3.12 and later...
-		# From find_package(Python2) or find_package(Python3)...
-		set(_GPLATES_PYTHON_EXECUTABLE ${Python${_GPLATES_PYTHON_MAJOR_VER}_EXECUTABLE})
-	endif()
-	if (_GPLATES_PYTHON_EXECUTABLE)
-		# Get Python to import numpy and then print out the numpy include directory.
-		execute_process(COMMAND "${_GPLATES_PYTHON_EXECUTABLE}" "-c"
-			"from __future__ import print_function; import numpy as np; print(np.get_include());"
-			RESULT_VARIABLE _NUMPY_RESULT
-			OUTPUT_VARIABLE _NUMPY_OUTPUT
-			ERROR_QUIET
-			OUTPUT_STRIP_TRAILING_WHITESPACE)
-		if (NOT _NUMPY_RESULT)  # success
-			# Make sure all directory separators are '/'.
-			string(REGEX REPLACE "\\\\" "/" GPLATES_Python_NumPy_INCLUDE_DIRS ${_NUMPY_OUTPUT})
-		endif()
+	# Get Python to import numpy and then print out the numpy include directory.
+	execute_process(COMMAND "${GPLATES_PYTHON_EXECUTABLE}" "-c" "from __future__ import print_function; import numpy as np; print(np.get_include());"
+		RESULT_VARIABLE _NUMPY_RESULT
+		OUTPUT_VARIABLE _NUMPY_OUTPUT
+		ERROR_QUIET
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if (NOT _NUMPY_RESULT)  # success
+		# Make sure all directory separators are '/'.
+		string(REGEX REPLACE "\\\\" "/" GPLATES_Python_NumPy_INCLUDE_DIRS ${_NUMPY_OUTPUT})
 	endif()
 else()  # CMake 3.14 and later...
 	# We called find_package(Python2) or find_package(Python3) with optional NumPy component.
 	# If NumPy not found then numpy hasn't been installed into Python.
-	if (Python${_GPLATES_PYTHON_MAJOR_VER}_NumPy_FOUND)
-		set(GPLATES_Python_NumPy_INCLUDE_DIRS ${Python${_GPLATES_PYTHON_MAJOR_VER}_NumPy_INCLUDE_DIRS})
+	if (Python${GPLATES_PYTHON_VERSION_MAJOR}_NumPy_FOUND)
+		set(GPLATES_Python_NumPy_INCLUDE_DIRS ${Python${GPLATES_PYTHON_VERSION_MAJOR}_NumPy_INCLUDE_DIRS})
 	endif()
 endif()
 # Warn if numpy not found.
@@ -129,8 +165,8 @@ if (NOT GPLATES_Python_NumPy_INCLUDE_DIRS)
 		To enable this functionality please install NumPy and then re-run CMake (to enable use of NumPy C-API).]])
 endif()
 
-#
-# Find Boost.
+##############
+# Find Boost #
 #
 # Use dynamic linking for all Boost libraries.
 # This includes the optional unit test framework, since it's error prone to switch static linking off and on, and
@@ -186,8 +222,8 @@ find_package(Boost 1.35 REQUIRED
 		COMPONENTS ${_GPLATES_BOOST_REQUIRED_COMPONENTS}
 		OPTIONAL_COMPONENTS ${_GPLATES_BOOST_OPTIONAL_COMPONENTS})
 
-#
-# Find Qt5.
+############
+# Find Qt5 #
 #
 # CMake automatically runs Qt's moc, uic and rcc code generation tools.
 # See https://doc.qt.io/qt-5/cmake-get-started.html
@@ -199,52 +235,35 @@ if(CMAKE_VERSION VERSION_LESS 3.7)
 endif()
 find_package(Qt5 5.5 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
 
-#
-# Find Qwt.
+############
+# Find Qwt #
 #
 # Note that we find this *after* finding Qt since we use the Qt include directory to help find Qwt.
 # And we use our own "FindQwt.cmake" module, which also defines the Qwt::Qwt imported target.
 #
 find_package(Qwt REQUIRED)
 
-#
-# Find GDAL.
+#############
+# Find GDAL #
 #
 # CMake 3.14 introduced import targets for GDAL. For prior versions we need to add the imported target ourself.
 #
 # However we are still using our own custom "FindGDAL.cmake" (instead of using the one provided by CMake)
 # since it has trouble finding "GDAL.h". And our own module defines the GDAL::GDAL imported target.
 #
-find_package(GDAL REQUIRED)
-
-#
-# Find PROJ.
-#
-# NOTE: Starting with Proj7 there is also the PROJ name (not just PROJ4).
-#       And a future Proj release will deprecate the PROJ4 name
-#       (with the PROJ4::proj eventually being retired in preference to PROJ::proj).
-#       For now we'll just use PROJ4, but note that this can mean any proj version (eg, 4,5,6,7).
-#
-# First look for the CONFIG package (provided with the installed Proj library, as opposed to CMake itself).
-find_package(PROJ4 CONFIG QUIET)
-# Proj version 4 does not have a CONFIG package (at least not all platforms were installed as a CMake package)
-# but more recent versions should.
-# Proj 4.9 is still used by Ubuntu Xenial (16.04).
-if (NOT PROJ4_FOUND)
-  # There was no CONFIG package so use our own "FindPROJ.cmake" (note that CMake does not provide one).
-  find_package(PROJ MODULE REQUIRED)  # Uses our own "FindPROJ.cmake".
-  # We now have a PROJ4::proj target but we should also use the same variables as the modern CONFIG package.
-  set(PROJ4_INCLUDE_DIRS ${PROJ_INCLUDE_DIR})
-  set(PROJ4_LIBRARIES ${PROJ_LIBRARY})
-elseif (NOT TARGET PROJ4::proj)
-  # There was a CONFIG package but it defined a 'proj' target instead of a 'PROJ4::proj' target.
-  # So make 'PROJ4::proj' alias 'proj'.
-  # But before we can do this we first need to promote 'proj' to global visibility (requires CMake 3.11 or above).
-  set_target_properties(proj PROPERTIES IMPORTED_GLOBAL TRUE)
-  # Also it seems that, while the 'proj' target has set the library import location, it doesn't set the location of the include directories.
-  set_target_properties(proj PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${PROJ4_INCLUDE_DIRS}")
-  add_library(PROJ4::proj ALIAS proj)
+find_package(GDAL 1.3.2 REQUIRED)
+# Imported GDAL::GDAL target only defined for CMake version 3.14 and above. For lower versions we create the target.
+if (CMAKE_VERSION VERSION_LESS 3.14)
+	# Create the GDAL::GDAL target.
+	add_library(GDAL::GDAL IMPORTED INTERFACE)
+	set_target_properties(GDAL::GDAL PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${GDAL_INCLUDE_DIRS}")
+	set_target_properties(GDAL::GDAL PROPERTIES INTERFACE_LINK_LIBRARIES "${GDAL_LIBRARIES}")
 endif()
+
+#############
+# Find PROJ #
+#
+find_package(PROJ REQUIRED)
 
 
 #################
@@ -604,7 +623,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	endif()
 endif()
 
-# Compile options common to GNU and Clang compilers.
+#
+# COMPILE_OPTIONS (target property) common to GNU and Clang compilers.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU OR
 	CMAKE_CXX_COMPILER_ID MATCHES Clang)
 	#
@@ -637,7 +658,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU OR
 	endif()
 endif()
 
-# Compile options for GNU compiler only.
+#
+# COMPILE_OPTIONS (target property) for GNU compiler only.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 	target_compile_options(gplates-lib PUBLIC -fno-strict-aliasing)
 	target_compile_options(pygplates PUBLIC -fno-strict-aliasing)
@@ -655,7 +678,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 	endif()
 endif()
 
-# Compile options for Clang compiler only.
+#
+# COMPILE_OPTIONS (target property) for Clang compiler only.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
 	#
 	# Warnings
@@ -884,6 +909,11 @@ endif()
 #
 target_link_libraries(gplates-lib PUBLIC CGAL::CGAL)
 target_link_libraries(pygplates PUBLIC CGAL::CGAL)
+# It appears "auxiliary/gmp/include" in base CGAL installation does not always get included by
+# CGALConfig.cmake (found using 'find_package(CGAL)' above). Noticed this with CMake 4.13.2 when
+# installing CGAL with a CMAKE_INSTALL_PREFIX different than base installation directory.
+target_include_directories(gplates-lib SYSTEM PUBLIC ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR})
+target_include_directories(pygplates SYSTEM PUBLIC ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR})
 
 #
 # GDAL dependency.
@@ -894,8 +924,8 @@ target_link_libraries(pygplates PUBLIC GDAL::GDAL)
 #
 # PROJ dependency.
 #
-target_link_libraries(gplates-lib PUBLIC PROJ4::proj)
-target_link_libraries(pygplates PUBLIC PROJ4::proj)
+target_link_libraries(gplates-lib PUBLIC PROJ::proj)
+target_link_libraries(pygplates PUBLIC PROJ::proj)
 
 #
 # Python dependency.

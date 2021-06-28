@@ -2,35 +2,15 @@
 # Set some variables needed when generating 'global/config.h' file from 'global/config.h.in'.
 #
 
-# For now only setting the variables currently used by GPlates:
-
-IF(GDAL_INCLUDE_DIR)
-  # Set GPLATES_HAVE_GDAL_OGRSF_FRMTS_H to 1 if the "ogrsf_frmts.h" file
-  # lives in a "gdal" directory.
-  # This is used in GPlates to determine which file to '#include'.
-  IF (EXISTS "${GDAL_INCLUDE_DIR}/gdal/ogrsf_frmts.h")
-    set(GPLATES_HAVE_GDAL_OGRSF_FRMTS_H 1)
-  ENDIF()
-  
-  # Set GPLATES_HAVE_GDAL_VERSION_H to 1 if the "gdal_version.h" file exists.
-  # If so then also set GPLATES_HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX
-  # or GPLATES_HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX to 1 if we need
-  # "#include <gdal/gdal_version.h>" in our C++ code instead of "#include <gdal_version.h>".
-  IF (EXISTS "${GDAL_INCLUDE_DIR}/gdal_version.h")
-    set(GPLATES_HAVE_GDAL_VERSION_H 1)
-  ENDIF()
-  IF (EXISTS "${GDAL_INCLUDE_DIR}/gdal/gdal_version.h")
-    set(GPLATES_HAVE_GDAL_VERSION_H 1)
-	set(GPLATES_HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX 1)
-  ENDIF()
-  IF (EXISTS "${GDAL_INCLUDE_DIR}/GDAL/gdal_version.h")
-    set(GPLATES_HAVE_GDAL_VERSION_H 1)
-	set(GPLATES_HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX 1)
-  ENDIF()
-ENDIF()
-
-FOREACH(_PROJ_INCLUDE_DIR ${PROJ4_INCLUDE_DIRS})
-  # If have the Proj6 header ("proj.h").
+# Determine which PROJ header to include.
+#
+# For Proj5+ we should include 'proj.h' (the modern API).
+# For Proj4 we can only include 'proj_api.h' (the old API).
+#
+# Note that Proj8 removed the Proj4 header ('proj_api.h') but both headers
+# exist in Proj versions 5, 6 and 7 (where we choose 'proj.h').
+FOREACH(_PROJ_INCLUDE_DIR ${PROJ_INCLUDE_DIRS})
+  # If have the Proj5+ header ("proj.h").
   IF (EXISTS "${_PROJ_INCLUDE_DIR}/proj.h")
     set(GPLATES_HAVE_PROJ_H 1)
   ENDIF()
@@ -69,4 +49,35 @@ if (GPLATES_Python_NumPy_INCLUDE_DIRS)
   if (EXISTS "${GPLATES_Python_NumPy_INCLUDE_DIRS}/numpy/arrayobject.h")
     set(GPLATES_HAVE_NUMPY_C_API 1)
   endif()
+endif()
+
+# The sub-directories of standalone base installation directory (or sub-dirs of
+# 'gplates.app/Contents/Resources/' dir of base installation for GPlates macOS app bundle)
+# to place data from the Proj (eg, 'proj.db') and GDAL libraries.
+#
+# Note: Only used when GPLATES_INSTALL_STANDALONE is true.
+set(GPLATES_STANDALONE_PROJ_DATA_DIR proj_data)
+set(GPLATES_STANDALONE_GDAL_DATA_DIR gdal_data)
+
+# GPLATES_STANDALONE_PYTHON_STDLIB_DIR
+#
+# The sub-directory of standalone base installation directory (or sub-dir of 'gplates.app/Contents/Frameworks/' dir
+# of base installation for GPlates macOS app bundle) to place the Python standard library.
+#
+# Note: Only used when GPLATES_INSTALL_STANDALONE is true.
+#       And only used for gplates (not pygplates since that's imported by an external
+#       non-embedded Python interpreter that has its own Python standard library).
+if (APPLE)
+  # On Apple we're expecting Python to be a framework.
+  if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python\\.framework/")
+      # Convert, for example, '/opt/local/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8' to
+      # 'Python.framework/Versions/3.8/lib/python3.8'.
+      string(REGEX REPLACE "^.*/(Python\\.framework/.*)$" "\\1" GPLATES_STANDALONE_PYTHON_STDLIB_DIR ${GPLATES_PYTHON_STDLIB_DIR})
+  else()
+      message(FATAL_ERROR "Expected Python to be a framework")
+  endif()
+else() # Windows or Linux
+  # Find the relative path from the Python prefix directory to the standard library directory.
+  # We'll use this as the standard library install location relative to the standalone base installation directory.
+  file(RELATIVE_PATH GPLATES_STANDALONE_PYTHON_STDLIB_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
 endif()

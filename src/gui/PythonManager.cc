@@ -45,8 +45,9 @@
 #include "app-logic/UserPreferences.h"
 
 #include "file-io/ErrorOpeningFileForReadingException.h"
+#include "file-io/StandaloneBundle.h"
 
-#include "global/config.h"  // GPLATES_IGNORE_PYTHON_ENVIRONMENT
+#include "global/config.h"
 #include "global/python.h"  // PY_MAJOR_VERSION
 
 #include "presentation/Application.h"
@@ -277,15 +278,11 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	interpreter. We force GPlates to use the directory which contains GPlates executable binary as the python home 
 	by setting Py_IgnoreEnvironmentFlag flag. On Mac OS, it is the python framework inside application bundle.
 	*/
-
-	/*
-	* Due to the CRT mismatch, putenv cannot set environment variables without restarting. Use this flag for now.
-	* The CRT mismatch problem maybe need to be addressed in the future, but not now.
-	*/
-	// The GPLATES_IGNORE_PYTHON_ENVIRONMENT is defined in 'ConfigDefault.cmake' and 'src/global/config.h.in'
-	#ifdef GPLATES_IGNORE_PYTHON_ENVIRONMENT
-	Py_IgnoreEnvironmentFlag = 1;
-	#endif
+	// If GPlates has bundled the Python standard library then ignore all PYTHON* environment variables (eg, PYTHONPATH and PYTHONHOME).
+	if (GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory())
+	{
+		Py_IgnoreEnvironmentFlag = 1;
+	}
 
 	/* 
 	Info from Python manual.

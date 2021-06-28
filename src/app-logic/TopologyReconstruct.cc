@@ -412,8 +412,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::initialise_time_windows(
 boost::optional<GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::non_null_ptr_type>
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_time_steps(
 		const GeometrySample::non_null_ptr_type &start_geometry_sample,
-		unsigned int start_time_slot,
-		unsigned int end_time_slot)
+		const unsigned int start_time_slot,
+		const unsigned int end_time_slot)
 {
 	if (start_time_slot == end_time_slot)
 	{
@@ -441,8 +441,9 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_time_steps(
 		time_slot != end_time_slot;
 		time_slot += time_slot_direction)
 	{
+		const unsigned int prev_time_slot = time_slot - time_slot_direction;
 		const unsigned int current_time_slot = time_slot;
-		const unsigned int next_time_slot = current_time_slot + time_slot_direction;
+		const unsigned int next_time_slot = time_slot + time_slot_direction;
 
 		// Reconstruct from the current time slot to the next time slot.
 		// This also determines whether the *current* time slot is active
@@ -452,6 +453,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_time_steps(
 				reconstruct_intermediate_time_step(
 						prev_geometry_sample,
 						current_geometry_sample,
+						prev_time_slot,
 						current_time_slot,
 						next_time_slot);
 		if (!next_geometry_sample)
@@ -490,11 +492,10 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_time_steps(
 	//
 
 	if (!reconstruct_last_time_step(
-			prev_geometry_sample,    // prior-to-end geometry sample
-			current_geometry_sample, // end geometry sample
-			end_time_slot,
-			d_time_range.get_time_increment()/*time_increment*/,
-			reverse_reconstruct))
+			prev_geometry_sample,                 // prior-to-end geometry sample
+			current_geometry_sample,              // end geometry sample
+			end_time_slot - time_slot_direction,  // prior-to-end time slot
+			end_time_slot))                       // end time slot
 	{
 		// End time slot is not active - so the last active time slot is the time slot prior to it.
 		if (reverse_reconstruct) // forward in time ...
@@ -519,9 +520,12 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_time_steps(
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::non_null_ptr_type
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_first_time_step(
 		const GeometrySample::non_null_ptr_type &current_geometry_sample,
-		unsigned int current_time_slot,
-		unsigned int next_time_slot)
+		const unsigned int current_time_slot,
+		const unsigned int next_time_slot)
 {
+	const double current_time = d_time_range.get_time(current_time_slot);
+	const double next_time = d_time_range.get_time(next_time_slot);
+
 	// Get the resolved boundaries/networks for the current time slot.
 	//
 	// As an optimisation, remove those boundaries/networks that the current geometry points do not intersect.
@@ -531,8 +535,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_first_time_s
 	{
 		return rigid_stage_reconstruct(
 				current_geometry_sample,
-				d_time_range.get_time(current_time_slot)/*initial_time*/,
-				d_time_range.get_time(next_time_slot)/*final_time*/);
+				current_time/*initial_time*/,
+				next_time/*final_time*/);
 	}
 	// We've excluded those resolved boundaries/networks that can't possibly intersect the current geometry points.
 	// This doesn't mean the remaining boundaries/networks will definitely intersect though - they might not.
@@ -541,15 +545,25 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_first_time_s
 	// Attempt to reconstruct using the topologies.
 	//
 
-	const double current_time = d_time_range.get_time(current_time_slot);
-	const double next_time = d_time_range.get_time(next_time_slot);
-
-	// Reverse reconstruction means forward in time (time slots increase going forward in time).
-	const bool reverse_reconstruct = next_time_slot > current_time_slot;
-	// The time increment should always be positive.
-	const double time_increment = reverse_reconstruct
-			? (current_time - next_time)
-			: (next_time - current_time);
+	bool reverse_reconstruct;
+	double time_increment;
+	if (next_time_slot > current_time_slot)
+	{
+		// Time slots increase going forward in time.
+		// So the next time is younger than the current time.
+		// So we are reverse reconstructing (going forward in time).
+		reverse_reconstruct = true;
+		// The time increment should always be positive.
+		time_increment = current_time - next_time;
+	}
+	else
+	{
+		// The next time is older than the current time.
+		// So we are reconstructing (going backward in time).
+		reverse_reconstruct = false;
+		// The time increment should always be positive.
+		time_increment = next_time - current_time;
+	}
 
 	std::vector<GeometryPoint *> &current_geometry_points =
 			current_geometry_sample->get_geometry_points(d_accessing_strain_rates);
@@ -624,8 +638,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_first_time_s
 	{
 		return rigid_stage_reconstruct(
 				current_geometry_sample,
-				d_time_range.get_time(current_time_slot)/*initial_time*/,
-				d_time_range.get_time(next_time_slot)/*final_time*/);
+				current_time/*initial_time*/,
+				next_time/*final_time*/);
 	}
 
 	// If we get here then at least one geometry point was reconstructed using resolved boundaries/networks.
@@ -672,9 +686,13 @@ boost::optional<GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::Geometry
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_intermediate_time_step(
 		const GeometrySample::non_null_ptr_type &prev_geometry_sample,
 		const GeometrySample::non_null_ptr_type &current_geometry_sample,
-		unsigned int current_time_slot,
-		unsigned int next_time_slot)
+		const unsigned int prev_time_slot,
+		const unsigned int current_time_slot,
+		const unsigned int next_time_slot)
 {
+	const double current_time = d_time_range.get_time(current_time_slot);
+	const double next_time = d_time_range.get_time(next_time_slot);
+
 	// Get the resolved boundaries/networks for the current time slot.
 	//
 	// As an optimisation, remove those boundaries/networks that the current geometry points do not intersect.
@@ -684,8 +702,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_intermediate
 	{
 		return rigid_stage_reconstruct(
 				current_geometry_sample,
-				d_time_range.get_time(current_time_slot)/*initial_time*/,
-				d_time_range.get_time(next_time_slot)/*final_time*/);
+				current_time/*initial_time*/,
+				next_time/*final_time*/);
 	}
 	// We've excluded those resolved boundaries/networks that can't possibly intersect the current geometry points.
 	// This doesn't mean the remaining boundaries/networks will definitely intersect though - they might not.
@@ -694,15 +712,25 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_intermediate
 	// Attempt to reconstruct using the topologies.
 	//
 
-	const double current_time = d_time_range.get_time(current_time_slot);
-	const double next_time = d_time_range.get_time(next_time_slot);
-
-	// Reverse reconstruction means forward in time (time slots increase going forward in time).
-	const bool reverse_reconstruct = next_time_slot > current_time_slot;
-	// The time increment should always be positive.
-	const double time_increment = reverse_reconstruct
-			? (current_time - next_time)
-			: (next_time - current_time);
+	bool reverse_reconstruct;
+	double time_increment;
+	if (next_time_slot > current_time_slot)
+	{
+		// Time slots increase going forward in time.
+		// So the next time is younger than the current time.
+		// So we are reverse reconstructing (going forward in time).
+		reverse_reconstruct = true;
+		// The time increment should always be positive.
+		time_increment = current_time - next_time;
+	}
+	else
+	{
+		// The next time is older than the current time.
+		// So we are reconstructing (going backward in time).
+		reverse_reconstruct = false;
+		// The time increment should always be positive.
+		time_increment = next_time - current_time;
+	}
 
 	std::vector<GeometryPoint *> &current_geometry_points =
 			current_geometry_sample->get_geometry_points(d_accessing_strain_rates);
@@ -779,14 +807,15 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_intermediate
 			//
 			// But we can only do this if we have a previous active geometry point.
 			GeometryPoint *prev_geometry_point = prev_geometry_points[geometry_point_index];
+			const double prev_time = d_time_range.get_time(prev_time_slot);
 			if (prev_geometry_point &&
 				d_deactivate_points.get()->deactivate(
 						GPlatesMaths::PointOnSphere(prev_geometry_point->position)/*prev_point*/,
 						prev_geometry_point->location/*prev_location*/,
+						prev_time,
 						current_point,
 						current_geometry_point->location/*current_location*/,
-						current_time,
-						reverse_reconstruct))
+						current_time))
 			{
 				// De-activate the current point.
 				current_geometry_points[geometry_point_index] = NULL;
@@ -821,8 +850,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_intermediate
 	{
 		return rigid_stage_reconstruct(
 				current_geometry_sample,
-				d_time_range.get_time(current_time_slot)/*initial_time*/,
-				d_time_range.get_time(next_time_slot)/*final_time*/);
+				current_time/*initial_time*/,
+				next_time/*final_time*/);
 	}
 
 	// If we get here then at least one geometry point was reconstructed using resolved boundaries/networks.
@@ -869,9 +898,8 @@ bool
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_last_time_step(
 		boost::optional<GeometrySample::non_null_ptr_type> prev_geometry_sample,
 		const GeometrySample::non_null_ptr_type &current_geometry_sample,
-		unsigned int current_time_slot,
-		const double &time_increment,
-		bool reverse_reconstruct)
+		unsigned int prev_time_slot,
+		unsigned int current_time_slot)
 {
 	// Get the resolved boundaries/networks for the current time slot.
 	//
@@ -947,19 +975,19 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::reconstruct_last_time_st
 			// by mid-ocean ridge backward in time).
 			//
 			// But we can only do this if we have a previous active geometry point.
-			GeometryPoint *prev_geometry_point = NULL;
 			if (prev_geometry_points)
 			{
-				prev_geometry_point = prev_geometry_points.get()[geometry_point_index];
+				GeometryPoint *prev_geometry_point = prev_geometry_points.get()[geometry_point_index];
+				const double prev_time = d_time_range.get_time(prev_time_slot);
 
 				if (prev_geometry_point &&
 					d_deactivate_points.get()->deactivate(
 							GPlatesMaths::PointOnSphere(prev_geometry_point->position)/*prev_point*/,
 							prev_geometry_point->location/*prev_location*/,
+							prev_time,
 							current_point,
 							current_geometry_point->location/*current_location*/,
-							current_time,
-							reverse_reconstruct))
+							current_time))
 				{
 					// De-activate the current point.
 					current_geometry_points[geometry_point_index] = NULL;
@@ -2781,33 +2809,15 @@ constexpr bool GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEF
 
 GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::non_null_ptr_type
 GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create(
-		const double &time_increment,
 		const double &threshold_velocity_delta,
 		const double &threshold_distance_to_boundary_in_kms_per_my,
 		bool deactivate_points_that_fall_outside_a_network)
 {
 	return non_null_ptr_type(
 			new DefaultDeactivatePoint(
-					time_increment,
 					threshold_velocity_delta,
 					threshold_distance_to_boundary_in_kms_per_my,
 					deactivate_points_that_fall_outside_a_network));
-}
-
-
-GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DefaultDeactivatePoint(
-		const double &time_increment,
-		const double &threshold_velocity_delta,
-		const double &threshold_distance_to_boundary_in_kms_per_my,
-		bool deactivate_points_that_fall_outside_a_network) :
-	d_time_increment(time_increment),
-	d_threshold_velocity_delta(threshold_velocity_delta),
-	d_min_distance_threshold_radians(
-			GPlatesMaths::AngularExtent::create_from_angle(
-					// Need to convert kms/my to kms using time increment...
-					threshold_distance_to_boundary_in_kms_per_my * time_increment * INVERSE_EARTH_EQUATORIAL_RADIUS_KMS)),
-	d_deactivate_points_that_fall_outside_a_network(deactivate_points_that_fall_outside_a_network)
-{
 }
 
 
@@ -2815,10 +2825,10 @@ bool
 GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 		const GPlatesMaths::PointOnSphere &prev_point,
 		const TopologyPointLocation &prev_location,
+		const double &prev_time,
 		const GPlatesMaths::PointOnSphere &current_point,
 		const TopologyPointLocation &current_location,
-		const double &current_time,
-		bool reverse_reconstruct) const
+		const double &current_time) const
 {
 	//
 	// First, if we're deactivating points that fall outside a network (from inside a network) then do so to any such points.
@@ -2861,6 +2871,25 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 	// ...note that items (i) and (ii) above apply both going forward and backward in time.
 	//
 
+	bool reverse_reconstruct;
+	double time_increment;
+	if (current_time > prev_time)
+	{
+		// The current time is older than the previous time.
+		// So we are reconstructing (going backward in time).
+		reverse_reconstruct = false;
+		// The time increment should always be positive.
+		time_increment = current_time - prev_time;
+	}
+	else
+	{
+		// The current time is younger than the previous time.
+		// So we are reverse reconstructing (going forward in time).
+		reverse_reconstruct = true;
+		// The time increment should always be positive.
+		time_increment = prev_time - current_time;
+	}
+
 	const boost::optional<TopologyPointLocation::network_location_type> current_network_location =
 			current_location.located_in_resolved_network();
 	if (current_network_location)
@@ -2887,7 +2916,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 						ResolvedTriangulation::Network::PointLocation> > velocity_curr_point_curr_location_prev_time_result =
 				current_resolved_network->get_triangulation_network().calculate_velocity(
 						current_point,
-						d_time_increment,
+						time_increment,
 						// Note the use of delta-time is the same as if we had calculated velocity normally at the current time...
 						reverse_reconstruct ? VelocityDeltaTime::T_PLUS_DELTA_T_TO_T : VelocityDeltaTime::T_TO_T_MINUS_DELTA_T,
 						current_network_location->second);
@@ -2914,13 +2943,13 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 							prev_boundary_plate_id.get(),
 							prev_boundary.get()->get_reconstruction_tree_creator(),
 							current_time,
-							d_time_increment,
+							time_increment,
 							// Note the use of delta-time is the same as if we had calculated velocity normally at the current time...
 							reverse_reconstruct ? VelocityDeltaTime::T_PLUS_DELTA_T_TO_T : VelocityDeltaTime::T_TO_T_MINUS_DELTA_T);
 			velocity_curr_point_prev_location_prev_time = GPlatesMaths::calculate_velocity_vector(
 					current_point,
 					resolved_boundary_stage_rotation,
-					d_time_increment);
+					time_increment);
 		}
 
 		const GPlatesMaths::Vector3D delta_velocity =
@@ -2930,7 +2959,8 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 				delta_velocity,
 				// The polygon used for distance query...
 				prev_boundary.get()->resolved_topology_boundary(),
-				prev_point);
+				prev_point,
+				time_increment);
 	}
 
 	//
@@ -2985,13 +3015,13 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 							current_boundary_plate_id.get(),
 							current_boundary.get()->get_reconstruction_tree_creator(),
 							current_time,
-							d_time_increment,
+							time_increment,
 							// Note the use of delta-time is the same as if we had calculated velocity normally at the current time...
 							reverse_reconstruct ? VelocityDeltaTime::T_PLUS_DELTA_T_TO_T : VelocityDeltaTime::T_TO_T_MINUS_DELTA_T);
 			velocity_curr_point_curr_location_prev_time = GPlatesMaths::calculate_velocity_vector(
 					current_point,
 					resolved_boundary_stage_rotation,
-					d_time_increment);
+					time_increment);
 		}
 
 		// Should have a plate ID.
@@ -3008,13 +3038,13 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 							prev_boundary_plate_id.get(),
 							prev_boundary.get()->get_reconstruction_tree_creator(),
 							current_time,
-							d_time_increment,
+							time_increment,
 							// Note the use of delta-time is the same as if we had calculated velocity normally at the current time...
 							reverse_reconstruct ? VelocityDeltaTime::T_PLUS_DELTA_T_TO_T : VelocityDeltaTime::T_TO_T_MINUS_DELTA_T);
 			velocity_curr_point_prev_location_prev_time = GPlatesMaths::calculate_velocity_vector(
 					current_point,
 					resolved_boundary_stage_rotation,
-					d_time_increment);
+					time_increment);
 		}
 
 		const GPlatesMaths::Vector3D delta_velocity =
@@ -3024,7 +3054,8 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 				delta_velocity,
 				// The polygon used for distance query...
 				prev_boundary.get()->resolved_topology_boundary(),
-				prev_point);
+				prev_point,
+				time_increment);
 	}
 
 	//
@@ -3057,7 +3088,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 						current_boundary_plate_id.get(),
 						current_boundary.get()->get_reconstruction_tree_creator(),
 						current_time,
-						d_time_increment,
+						time_increment,
 						// Note the use of delta-time is the same as if we had calculated velocity normally at the current time...
 						reverse_reconstruct ? VelocityDeltaTime::T_PLUS_DELTA_T_TO_T : VelocityDeltaTime::T_TO_T_MINUS_DELTA_T);
 		// Note that we test using the *previous* point (not the current point) because we need to compare
@@ -3066,7 +3097,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 		velocity_prev_point_curr_location_prev_time = GPlatesMaths::calculate_velocity_vector(
 				prev_point,
 				resolved_boundary_stage_rotation,
-				d_time_increment);
+				time_increment);
 	}
 
 	const ResolvedTopologicalNetwork::non_null_ptr_type &prev_resolved_network = prev_network_location->first;
@@ -3081,7 +3112,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 					ResolvedTriangulation::Network::PointLocation> > velocity_prev_point_prev_location_prev_time_result =
 			prev_resolved_network->get_triangulation_network().calculate_velocity(
 					prev_point,
-					d_time_increment,
+					time_increment,
 					// Note the normal use of delta-time (since network is already at the previous time)...
 					reverse_reconstruct ? VelocityDeltaTime::T_TO_T_MINUS_DELTA_T : VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 					prev_network_location->second);
@@ -3100,7 +3131,8 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 			delta_velocity_at_prev_time,
 			// The polygon used for distance query...
 			prev_resolved_network->boundary_polygon(),
-			prev_point);
+			prev_point,
+			time_increment);
 }
 
 
@@ -3108,7 +3140,8 @@ bool
 GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::is_delta_velocity_large_enough_or_point_close_to_boundary(
 		const GPlatesMaths::Vector3D &delta_velocity,
 		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &prev_topology_boundary,
-		const GPlatesMaths::PointOnSphere &prev_point) const
+		const GPlatesMaths::PointOnSphere &prev_point,
+		const double &time_increment) const
 {
 	// Optimisation: Avoid 'sqrt' unless needed.
 	const double delta_velocity_magnitude_squared = delta_velocity.magSqrd().dval();
@@ -3121,14 +3154,14 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::is_delta_velocity_
 	// Convert our delta velocity to relative distance traveled.
 	const double cms_yr_to_kms_my = 10;/*cms/yr -> kms/my*/
 	const double delta_velocity_kms_per_my = cms_yr_to_kms_my * std::sqrt(delta_velocity_magnitude_squared);
-	GPlatesMaths::Real delta_velocity_angle = delta_velocity_kms_per_my * d_time_increment * INVERSE_EARTH_EQUATORIAL_RADIUS_KMS;
-	// We shouldn't get anywhere near the maximum possible angle, but check just to be sure an exception is not thrown.
-	if (delta_velocity_angle >= GPlatesMaths::PI)
-	{
-		delta_velocity_angle = GPlatesMaths::PI;
-	}
-	const GPlatesMaths::AngularExtent delta_velocity_threshold =
-			GPlatesMaths::AngularExtent::create_from_angle(delta_velocity_angle);
+	const GPlatesMaths::Real delta_velocity_angle =
+			// Need to convert kms/my to kms using time increment and then to radians using inverse Earth radius (in kms)...
+			delta_velocity_kms_per_my * time_increment * INVERSE_EARTH_EQUATORIAL_RADIUS_KMS;
+
+	// Minimum distance threshold (in radians).
+	const GPlatesMaths::Real min_distance_angle =
+			// Need to convert kms/my to kms using time increment and then to radians using inverse Earth radius (in kms)...
+			d_threshold_distance_to_boundary_in_kms_per_my * time_increment * INVERSE_EARTH_EQUATORIAL_RADIUS_KMS;
 
 	// Add the minimum distance threshold to the delta velocity threshold.
 	// The delta velocity threshold only allows those points that are close enough to the boundary to reach
@@ -3136,7 +3169,16 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::is_delta_velocity_
 	// The minimum distance threshold accounts for sudden changes in the shape of a plate/network boundary
 	// which are not supposed to represent a new or shifted boundary but are just a result of the topology
 	// builder/user digitising a new boundary line that differs noticeably from that of the previous time period.
-	const GPlatesMaths::AngularExtent distance_threshold_radians = d_min_distance_threshold_radians + delta_velocity_threshold;
+	GPlatesMaths::Real distance_angle = min_distance_angle + delta_velocity_angle;
+	// We shouldn't get anywhere near the maximum possible angle, but check just to be sure an exception is not thrown.
+	if (distance_angle.is_precisely_greater_than(GPlatesMaths::PI))
+	{
+		// Clamp to PI.
+		distance_angle = GPlatesMaths::PI;
+	}
+
+	const GPlatesMaths::AngularExtent distance_threshold_radians =
+			GPlatesMaths::AngularExtent::create_from_angle(distance_angle);
 
 	// If the distance from the previous point to the previous polygon boundary exceeds the threshold
 	// then the current point remains active.

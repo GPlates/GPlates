@@ -45,6 +45,15 @@
 #		undef ssize_t
 #	endif
 
+// Microsoft Visual Studio 2015+ has std::snprint(), but 'pyerror.h' has "#define snprintf _snprintf"
+// (if HAVE_SNPRINTF is not defined) and it does this for all _MSC_VER versions.
+// So we prevent it doing this for MSVC 2015+.
+#	if defined(_MSC_VER) && _MSC_VER >= 1900
+#		if !defined(HAVE_SNPRINTF)
+#			define HAVE_SNPRINTF
+#		endif
+#	endif
+
 // Avoid linker error on Windows where cannot find the debug library "python27_d.lib" in Debug build.
 // This happens because the Windows Python installer only has a release build library and, furthermore,
 // "pyconfig.h" forces linking to "python27_d.lib" in Debug build (via #pragma comment())

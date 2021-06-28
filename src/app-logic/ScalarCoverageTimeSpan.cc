@@ -43,6 +43,8 @@ GPlatesAppLogic::ScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
 	d_non_evolved_scalar_coverage(initial_scalar_coverage),
 	d_scalar_import_time(0.0)
 {
+	// There must be initial scalar values for at least one scalar type since otherwise
+	// there would be no scalar types (and this time span would contain nothing).
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			!initial_scalar_coverage.empty(),
 			GPLATES_ASSERTION_SOURCE);
@@ -68,24 +70,25 @@ GPlatesAppLogic::ScalarCoverageTimeSpan::ScalarCoverageTimeSpan(
 	d_scalar_import_time(geometry_time_span->get_geometry_import_time()),
 	d_num_all_scalar_values(geometry_time_span->get_num_all_geometry_points())
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			!initial_scalar_coverage.empty(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Get the number of original scalar values from the first scalar type.
-	// Next we'll ensure the number of original scalar values in the other scalar types matches.
-	//
-	// Note: This might be less than the actual number of scalar values if the geometry in the
-	// time span was tessellated (the actual number is 'd_num_all_scalar_values'). If so then we'll
-	// generate the missing scalar values (below) by interpolating the original scalar values.
-	const unsigned int num_original_scalar_values = initial_scalar_coverage.begin()->second.size();
-	for (const auto &scalar_coverage_item : initial_scalar_coverage)
+	// Note that it's OK to have no initial scalar coverages because we still have the *evolved*
+	// scalar types which do not require initial scalar values.
+	if (!initial_scalar_coverage.empty())
 	{
-		const std::vector<double> &original_scalar_values = scalar_coverage_item.second;
+		// Get the number of original scalar values from the first scalar type.
+		// Next we'll ensure the number of original scalar values in the other scalar types matches.
+		//
+		// Note: This might be less than the actual number of scalar values if the geometry in the
+		// time span was tessellated (the actual number is 'd_num_all_scalar_values'). If so then we'll
+		// generate the missing scalar values (below) by interpolating the original scalar values.
+		const unsigned int num_original_scalar_values = initial_scalar_coverage.begin()->second.size();
+		for (const auto &scalar_coverage_item : initial_scalar_coverage)
+		{
+			const std::vector<double> &original_scalar_values = scalar_coverage_item.second;
 
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				original_scalar_values.size() == num_original_scalar_values,
-				GPLATES_ASSERTION_SOURCE);
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					original_scalar_values.size() == num_original_scalar_values,
+					GPLATES_ASSERTION_SOURCE);
+		}
 	}
 
 	// Add the actual (ie, possibly tessellated) scalar values of each scalar type as either evolved or
@@ -183,6 +186,37 @@ GPlatesAppLogic::ScalarCoverageTimeSpan::contains_scalar_type(
 	}
 
 	return false;
+}
+
+
+void
+GPlatesAppLogic::ScalarCoverageTimeSpan::get_scalar_types(
+		std::vector<scalar_type_type> &scalar_types) const
+{
+	// Include those non-evolved scalar types passed into constructor.
+	for (const auto &non_evolved_scalar_coverage_item : d_non_evolved_scalar_coverage)
+	{
+		const scalar_type_type &scalar_type = non_evolved_scalar_coverage_item.first;
+
+		scalar_types.push_back(scalar_type);
+	}
+
+	// Include *all* evolved scalar types if we were created with a geometry time span.
+	if (d_evolved_scalar_coverage_time_span)
+	{
+		// Add all evolved scalar types.
+		// They don't need initial values since they can evolve from default initial values.
+		for (unsigned int evolved_scalar_type_index = 0;
+			evolved_scalar_type_index < ScalarCoverageEvolution::NUM_EVOLVED_SCALAR_TYPES;
+			++evolved_scalar_type_index)
+		{
+			const ScalarCoverageEvolution::EvolvedScalarType evolved_scalar_type =
+					static_cast<ScalarCoverageEvolution::EvolvedScalarType>(evolved_scalar_type_index);
+
+			scalar_types.push_back(
+					ScalarCoverageEvolution::get_scalar_type(evolved_scalar_type));
+		}
+	}
 }
 
 

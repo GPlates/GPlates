@@ -230,6 +230,8 @@ set(srcs
     ShapefileXmlWriter.cc
     ShapefileXmlWriter.h
     SourceRasterFileCacheFormatReader.h
+    StandaloneBundle.cc
+    StandaloneBundle.h
     SymbolFileReader.cc
     SymbolFileReader.h
     TemporaryFileRegistry.cc

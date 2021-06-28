@@ -3,7 +3,7 @@
 # 
 # Find the native ZLIB includes and library.
 # 
-# IMPORTED Targets
+# Imported Targets
 # ^^^^^^^^^^^^^^^^
 # 
 # This module defines :prop_tgt:`IMPORTED` target ``ZLIB::ZLIB``, if ZLIB has been found.
@@ -53,9 +53,8 @@ list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_NORMAL)
 if (WIN32)
   # On Windows use the contrib-built zlibwapi library that uses the WINAPI (STDCALL) calling convention.
   set(ZLIB_NAMES zlibwapi)
-else()
-  set(ZLIB_NAMES z zlib zdll zlib1 zlibstatic)
 endif()
+list(APPEND ZLIB_NAMES z zlib zdll zlib1 zlibstatic)
 
 # Try each search configuration.
 foreach(search ${_ZLIB_SEARCHES})

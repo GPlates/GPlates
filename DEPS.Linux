@@ -112,8 +112,7 @@ If you have determined that libboost-dev is not installed on your system, you
 can install it by running the command:
 
 	sudo aptitude install libboost-dev
-		(assuming you have permission to run "sudo aptitude" on your
-		system).
+		(assuming you have permission to run "sudo aptitude" on your system).
 
 A note about the packages for GL and GLU
 
@@ -167,18 +166,18 @@ When running cmake (see BUILD.Linux) on Xenial 16.04, if you get the error...
 A note about GDAL
 
 If you decide to compile GDAL from source then ensure that GDAL links *statically*
-to PROJ4 if the PROJ4 library is in a non-standard location. This ensures GPlates
-does not generate a dynamic library loading error (for PROJ4) when a raster with an
+to PROJ if the PROJ library is in a non-standard location. This ensures GPlates
+does not generate a dynamic library loading error (for PROJ) when a raster with an
 inbuilt spatial reference system (eg, a projection) is loaded.
 You'll also need to ensure that the NetCDF library is installed and that GDAL is
 configured to use it - this is necessary for GPlates to be able to load gridded rasters.
 Here are the relevant options for the GDAL 2.x 'configure' script(assuming GDAL dependencies 
 have been installed in /opt/local/):
 
-   configure --with-netcdf=/path/to/netcdf --enable-netcdf4 --with-static-proj4=/path/to/proj4 --with-threads --disable-static --without-grass --with-libtiff=/opt/local --with-jpeg=/opt/local --with-gif=/opt/local --with-png=/opt/local --with-geotiff=/opt/local --with-sqlite3=/opt/local --with-expat=/opt/local
+   configure --with-netcdf=/path/to/netcdf --enable-netcdf4 --with-proj=/path/to/proj --with-threads --disable-static --without-grass --with-libtiff=/opt/local --with-jpeg=/opt/local --with-gif=/opt/local --with-png=/opt/local --with-geotiff=/opt/local --with-sqlite3=/opt/local --with-expat=/opt/local
 
-...where '--enable-netcdf4' enables NetCDF version 4 which may require HDF5 '--with-hdf5=/path/to/hdf5'
-according to https://trac.osgeo.org/gdal/wiki/NetCDF
+...where '--enable-netcdf4' enables NetCDF version 4 which may require HDF5 '--with-hdf5=/path/to/hdf5' according to https://trac.osgeo.org/gdal/wiki/NetCDF.
+And if using a version of GDAL older than 3.0 then replace '--with-proj=/path/to/proj' with '--with-static-proj4=/path/to/proj4'.
 
 For other Linux variants
 

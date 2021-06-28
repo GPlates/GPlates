@@ -42,27 +42,28 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates s
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}environment, the Inkscape vector graphics editor and the Tango icon library.\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html>\\n")
 
-# Set to 'true' if this is a public code release (to non-developers).
+# Set to 'true' if this is a public code release.
 # Currently disables all warnings.
 # And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
-option(GPLATES_PUBLIC_RELEASE "Public release (to non-developers)." false)
+option(GPLATES_PUBLIC_RELEASE "Public release." false)
 
-# Whether to install GPlates as a standalone bundle (by copying dependency libraries during installation).
+# Whether to install GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
 #
-# On Windows and Apple we have install code to fix up GPlates for deployment to another machine
+# When this is true then we install code to fix up GPlates (or pyGPlates) for deployment to another machine
 # (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
-# This is always enabled, so we don't provide an option to the user to disable it.
-#
-# On Linux systems we don't enable (by default) the copying of dependency libraries because there we rely on the
-# Linux binary package manager to install them (for example, we create a '.deb' package that only *lists* the dependencies,
-# which are then installed on the target system if not already there).
-# However we allow the user to enable this in case they want to create a standalone bundle for their own use case.
-#
+# When this is false then we don't install dependencies, instead only installing the GPlates executable (or pyGPlates library) and a few non-dependency items.
 if (WIN32 OR APPLE)
-	set(GPLATES_INSTALL_STANDALONE true)
+	# On Windows and Apple this is *enabled* by default since we typically distribute a self-contained package to users on those systems.
+	# However this can be *disabled* for use cases such as creating a conda package (since conda manages dependency installation itself).
+	set(_INSTALL_STANDALONE true)
 else() # Linux
-	option(GPLATES_INSTALL_STANDALONE "Install GPlates as a standalone bundle (copy dependency libraries into GPlates install directory)." false)
+	# On Linux this is *disabled* by default since we rely on the Linux binary package manager to install dependencies on the user's system
+	# (for example, we create a '.deb' package that only *lists* the dependencies, which are then installed on the target system if not already there).
+	# However this can be *enabled* for use cases such as creating a standalone bundle for upload to a cloud service (where it is simply extracted).
+	set(_INSTALL_STANDALONE false)
 endif()
+option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle (copy dependency libraries into the installation)." ${_INSTALL_STANDALONE})
+unset(_INSTALL_STANDALONE)
 
 # Whether to install sample data (eg, in the binary installer) or not.
 # By default this is false and only enabled when packaging a public release.
@@ -78,19 +79,20 @@ set(GPLATES_SAMPLE_DATA_DIR "" CACHE PATH "Location of sample data.")
 # The macOS code signing identity used to sign installed/packaged GPlates application bundle with a Developer ID certificate.
 #
 # NOTE: Leave it as the *empty* string here (so it doesn't get committed to source code control).
-#       User is responsible for setting it to their Developer ID (eg, using 'cmake -D', or CMake GUI, or 'ccmake').
-#       It should typically be installed into the Keychain and look something like "Developer ID Application: <ID>".
+#       Also it is not needed for local builds (ie, when running GPlates/pyGPlates on build machine), it's only needed when deploying to other machines.
+#       When deploying, the developer is responsible for setting it to their Developer ID (eg, using 'cmake -D', or CMake GUI, or 'ccmake').
+#       To create a Developer ID certificate the developer first needs to create an Apple developer account and pay a yearly fee.
+#       This can be done as an individual or as a company (the latter requiring a company ID such as a company number).
+#       After that's all done and a Developer ID certificate has been created, it should typically be installed into the Keychain.
+#       It should have a name like "Developer ID Application: <ID>" thus allowing GPlates/pyGPlates to be configured with (for example):
+#
+#           cmake -D GPLATES_APPLE_CODE_SIGN_IDENTITY:STRING="Developer ID Application: <ID>" -S <source-dir> -B <build-dir>
+#
+#       Once a GPlates/pyGPlates package has been created for deployment (using 'cpack') the final step is to get Apple to notarize it (see 'Install.cmake' for details).
+#       Only then will Apple's security checks pass when users run/install the package on their machines.
 if (APPLE)
 	set(GPLATES_APPLE_CODE_SIGN_IDENTITY "" CACHE STRING "Apple code signing identity.")
 endif()
-
-# Set to 'true' to tell GPlates ignore environment variables, such as PYTHONHOME, PYTHONPATH, etc, 
-# when initializing embeded Python interpreter.
-# Put this close to GPLATES_PUBLIC_RELEASE because we usually want to set this to "true" when compiling public release.
-#
-# TODO: Consider adding a "python37._pth", for example, alongside the GPlates installed executable to ignore paths listed
-# in the registry and environment variables (according to https://docs.python.org/3/using/windows.html#finding-modules).
-set(GPLATES_IGNORE_PYTHON_ENVIRONMENT false)
 
 # We compile with Python 3 (by default).
 #

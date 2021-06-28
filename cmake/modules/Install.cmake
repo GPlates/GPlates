@@ -28,17 +28,40 @@ include(GNUInstallDirs)
 # the EXCLUDE_FROM_ALL flag will exclude the pygplates component. For CPack generators we've configured as component-based
 # (eg, archive generators like ZIP) CPack will instead use the CPACK_COMPONENTS_ALL variables to select components to package (see Package.cmake).
 #
+# NOTE: THIS IS CURRENTLY THE PYGPLATES BRANCH.
+#       YOU SHOULD ONLY BUILD 'pygplates'. YOU SHOULDN'T BUILD 'gplates' UNTIL THIS BRANCH IS FULLY MERGED TO TRUNK
+#       (WHICH CAN ONLY HAPPEN ONCE WE'VE COMPLETELY UPDATED THE INTERNAL MODEL).
+#
 
 #
-# Set the minimum CMake version required for installing targets.
+# Check some requirments for installing targets (such as minimum CMake version required).
 #
 if (GPLATES_INSTALL_STANDALONE)
-    # Install GPlates as a standalone bundle (by copying dependency libraries during installation).
     #
-    # Currently we're using file(GET_RUNTIME_DEPENDENCIES) which was added in CMake 3.16.
-    # And we use FOLLOW_SYMLINK_CHAIN in file(INSTALL) which requires CMake 3.15.
-    # And we also use generator expressions in install(CODE) which requires CMake 3.14.
-    set (CMAKE_VERSION_REQUIRED_FOR_INSTALLING_DEPENDENCIES 3.16)
+    # Install GPlates/pyGPlates as a standalone bundle (by copying dependency libraries during installation).
+    #
+
+    # Minimum CMake version required at *configure* time.
+    #
+    # This version of CMake is required to prevent errors at *configure* time.
+    #
+    # - Currently we're using Qt5 plugin targets which were added in CMake 3.12.
+    #   Note that we don't delay this error until install time because we need to access the target
+    #   to find its location (to set up the install command) and this needs to be done at configure time.
+    set (CMAKE_VERSION_REQUIRED_AT_CONFIGURE_TIME 3.12)
+
+    if (CMAKE_VERSION VERSION_LESS ${CMAKE_VERSION_REQUIRED_AT_CONFIGURE_TIME})
+        message(FATAL_ERROR "CMake version ${CMAKE_VERSION_REQUIRED_AT_CONFIGURE_TIME} or greater is needed when GPLATES_INSTALL_STANDALONE is ON")
+    endif()
+
+    # Minimum CMake version required at *install* time.
+    #
+    # This version of CMake is required to prevent errors at *install* time.
+    #
+    # - Currently we're using file(GET_RUNTIME_DEPENDENCIES) which was added in CMake 3.16.
+    # - And we use FOLLOW_SYMLINK_CHAIN in file(INSTALL) which requires CMake 3.15.
+    # - And we also use generator expressions in install(CODE) which requires CMake 3.14.
+    set (CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME 3.16)
 
     # Wrapping 'install' command in a function because each 'install' handles a single component and we have two components (gplates and pygplates).
     function(install_check_cmake_version install_component)
@@ -46,8 +69,8 @@ if (GPLATES_INSTALL_STANDALONE)
         # (if they just plan to run the build locally and don't plan to install/deploy).
         install(
                 CODE "
-                    if (CMAKE_VERSION VERSION_LESS ${CMAKE_VERSION_REQUIRED_FOR_INSTALLING_DEPENDENCIES})
-                        message(FATAL_ERROR \"CMake ${CMAKE_VERSION_REQUIRED_FOR_INSTALLING_DEPENDENCIES} is required when *installing* ${install_component}\")
+                    if (CMAKE_VERSION VERSION_LESS ${CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME})
+                        message(FATAL_ERROR \"CMake version ${CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME} or greater is required when *installing* ${install_component}\")
                     endif()
                 "
                 COMPONENT ${install_component} ${ARGN}
@@ -55,77 +78,116 @@ if (GPLATES_INSTALL_STANDALONE)
     endfunction()
     install_check_cmake_version(gplates)
     install_check_cmake_version(pygplates EXCLUDE_FROM_ALL)
+
+    # On Apple, warn if a code signing identity has not been specified.
+    #
+    # This can avoid wasted time trying to notarize a package (created via cpack) only to fail because it was not code signed.
+    if (APPLE)
+        # Wrapping 'install' command in a function because each 'install' handles a single component and we have two components (gplates and pygplates).
+        function(install_check_code_signing_identity install_component)
+            # Check at *install* time thus allowing users to build without a code signing identity
+            # (if they just plan to run the build locally and don't plan to deploy to other machines).
+            install(
+                    CODE "
+                        set(CODE_SIGN_IDENTITY [[${GPLATES_APPLE_CODE_SIGN_IDENTITY}]])
+                        if (NOT CODE_SIGN_IDENTITY)
+                            message(WARNING [[Code signing identity not specified - please set GPLATES_APPLE_CODE_SIGN_IDENTITY before distributing to other machines]])
+                        endif()
+                    "
+                    COMPONENT ${install_component} ${ARGN}
+            )
+        endfunction()
+        install_check_code_signing_identity(gplates)
+        install_check_code_signing_identity(pygplates EXCLUDE_FROM_ALL)
+    endif()
 endif()
 
 
-if (WIN32 OR APPLE)
-    # On Windows and macOS we install to the *base* install directory (not 'bin/' sub-directory).
-    # For Windows this is because we'll copy the dependency DLLs into the same directory as gplates (so it can find them).
-    # For macOS this is because we want the app bundle to be in the base directory so when it's packaged you immediately see the bundle.
+#
+# Install gplates/pygplates targets.
+#
+# Support all target configurations. Ie, no need for the CONFIGURATIONS option in install(TARGETS ...), which is equivalent to...
+#
+#   install(TARGETS gplates
+#       CONFIGURATIONS Release RelWithDebInfo MinSizeRel Debug
+#       RUNTIME ...
+#       BUNDLE ...
+#       LIBRARY ...)
+#
+# This applies to all install(TARGETS), not just this one.
+# Note that if we only supported Release then we'd have to specify 'CONFIGURATIONS Release' for every install() command (not just TARGETS).
+#
+# Note: GPlates uses RUNTIME and BUNDLE entity types.
+#       PyGPlates is a module library which always uses the LIBRARY entity type (according to CMake: "Module libraries are always treated as LIBRARY targets").
+#
+if (GPLATES_INSTALL_STANDALONE)
+    #
+    # For standalone we want to bundle everything together so it's relocatable, and it's easier to place gplates/pygplates
+    # in the base install directory (along with 'qt.conf', which has to be in the same directory as the exectuable).
+    #
+    # For Windows this means 'gplates.exe' ultimately gets installed into, for example, "C:\Program Files\GPlates\GPlates 2.2.0"
+    # instead of "C:\Program Files\GPlates\GPlates 2.2.0\bin". And we copy the dependency DLLs into the same directory as gplates (so it can find them).
+    # For macOS this means you immediately see the app bundle in the base directory (rather than in a 'bin' sub-directory).
+    # For Linux the standalone version is typically packaged as an archive (not a '.deb') and the extracted gplates executable will be immediately visible (in base directory).
+    set(STANDALONE_BASE_INSTALL_DIR_gplates .)
+    #
+    # Similar logic applies to 'pygplates' except we install into a 'pygplates' directory since we make pygplates a "Python package" with the pygplates module library in the
+    # 'pygplates/' directory as well as an '__init__.py' to find its runtime location (needed to locate the GDAL/PROJ data bundled with pygplates).
+    #
+    # Note that we only do this for standalone installations because non-standalone installations have GDAL/PROJ installed in a standard location and so GDAL/PROJ are able to
+    # find their data directories, which means we don't need to bundle them up with pygplates and so we don't need to make pygplates a "Python package" (with an '__init__.py' file).
+    # In other words, we just leave it as a single pygplates shared library file (such as 'pygplates.so' or 'pygplates.pyd') and don't need a 'pygplates/' directory.
+    set(STANDALONE_BASE_INSTALL_DIR_pygplates pygplates)
+    
+    # Install the gplates/pygplates targets.
     install(TARGETS gplates
-        # Support all configurations (ie, no need for CONFIGURATIONS option). This applies to all install(TARGETS), not just this one.
-        # Note that if we only supported Release then we'd have to specify 'CONFIGURATIONS Release' for every install() command (not just TARGETS)...
-        #
-        # CONFIGURATIONS Release RelWithDebInfo MinSizeRel Debug
-        RUNTIME # Windows
-            DESTINATION .
+        RUNTIME # Windows and Linux
+            DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}
             COMPONENT gplates
         BUNDLE # Apple
-            DESTINATION .
+            DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}
             COMPONENT gplates)
-    
-    # On Windows and macOS we install to the *base* install directory (not 'bin/' sub-directory).
-    # For Windows this is because we'll copy the dependency DLLs into the same directory as pygplates (so it can find them).
-    # For macOS we want the pygplates library in the base directory so user can set PYTHONPATH to the base directory (rather than 'bin/' sub-directory).
     install(TARGETS pygplates
-        # PyGPlates is a module library and so always uses the LIBRARY entity type of install(TARGETS)...
+        LIBRARY # Windows, Apple and Linux
+            DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates}
+            COMPONENT pygplates
+            EXCLUDE_FROM_ALL)
+else() # not standalone
+    #
+    # When not a standalone installation just use the standard install locations ('bin' and 'lib').
+    #
+    install(TARGETS gplates
+        RUNTIME # Windows and Linux
+            DESTINATION ${CMAKE_INSTALL_BINDIR}
+            COMPONENT gplates
+        BUNDLE # Apple
+            DESTINATION ${CMAKE_INSTALL_BINDIR}
+            COMPONENT gplates)
+    install(TARGETS pygplates
         LIBRARY
-            DESTINATION .
-            COMPONENT pygplates EXCLUDE_FROM_ALL)
-else() # Linux
-    if (GPLATES_INSTALL_STANDALONE)
-        # For standalone we want to bundle everything together so it's relocatable, and it's easier to place gplates/pygplates
-        # in the base install directory (along with 'qt.conf', which has to be in the same directory as the exectuable).
-        install(TARGETS gplates RUNTIME DESTINATION . COMPONENT gplates)
-        install(TARGETS pygplates LIBRARY DESTINATION . COMPONENT pygplates EXCLUDE_FROM_ALL)
-    else()
-        install(TARGETS gplates RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT gplates)
-        install(TARGETS pygplates LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/pygplates/ COMPONENT pygplates EXCLUDE_FROM_ALL)
-    endif()
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            COMPONENT pygplates
+            EXCLUDE_FROM_ALL)
 endif()
 
 
 #
-# Install Hellinger Python scripts (but only for gplates target/component).
+# Install Python scripts (but only for gplates target/component).
 #
-if(EXISTS "${GPlates_SOURCE_DIR}/scripts/hellinger.py")
-    if (WIN32)
-        install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION scripts/ COMPONENT gplates)
-    elseif (APPLE)
-        install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION gplates.app/Contents/Resources/scripts/ COMPONENT gplates)
-    else() # Linux
+foreach (_script hellinger.py hellinger_maths.py)
+    if (EXISTS "${GPlates_SOURCE_DIR}/scripts/${_script}")
         if (GPLATES_INSTALL_STANDALONE)
             # For standalone we want to bundle everything together so it's relocatable.
-            install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION scripts/ COMPONENT gplates)
+            if (APPLE)
+                install(FILES "${GPlates_SOURCE_DIR}/scripts/${_script}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/gplates.app/Contents/Resources/scripts COMPONENT gplates)
+            else()
+                install(FILES "${GPlates_SOURCE_DIR}/scripts/${_script}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/scripts COMPONENT gplates)
+            endif()
         else()
-            install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger.py" DESTINATION share/gplates/scripts/ COMPONENT gplates)
+            install(FILES "${GPlates_SOURCE_DIR}/scripts/${_script}" DESTINATION share/gplates/scripts COMPONENT gplates)
         endif()
     endif()
-endif()
-if(EXISTS "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py")
-    if (WIN32)
-        install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION scripts/ COMPONENT gplates)
-    elseif (APPLE)
-        install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION gplates.app/Contents/Resources/scripts/ COMPONENT gplates)
-    else() # Linux
-        if (GPLATES_INSTALL_STANDALONE)
-            # For standalone we want to bundle everything together so it's relocatable.
-            install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION scripts/ COMPONENT gplates)
-        else()
-            install(FILES  "${GPlates_SOURCE_DIR}/scripts/hellinger_maths.py" DESTINATION share/gplates/scripts/ COMPONENT gplates)
-        endif()
-    endif()
-endif()
+endforeach()
 
 # Install sample data if requested (but only for gplates target/component).
 #
@@ -153,25 +215,21 @@ if (GPLATES_INSTALL_SAMPLE_DATA)
     #       Which means you'll need a build directory path that's under 40 characters long (which is pretty short).
     #       Something like "C:\gplates\build\trunk-py37\" (which is already 28 characters).
     #
-    if (WIN32 OR APPLE)
-        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION SampleData/ COMPONENT gplates)
-    else() # Linux
-        if (GPLATES_INSTALL_STANDALONE)
-            # For standalone we want to bundle everything together so it's relocatable.
-            install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION SampleData/ COMPONENT gplates)
-        else()
-            install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION share/gplates/SampleData/ COMPONENT gplates)
-        endif()
+    if (GPLATES_INSTALL_STANDALONE)
+        # For standalone we want to bundle everything together so it's relocatable.
+        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/SampleData COMPONENT gplates)
+    else()
+        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION share/gplates/SampleData COMPONENT gplates)
     endif()
 endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")  # Linux
-    if(EXISTS "${GPlates_SOURCE_DIR}/doc/gplates.1.gz")
+    if (EXISTS "${GPlates_SOURCE_DIR}/doc/gplates.1.gz")
         if (GPLATES_INSTALL_STANDALONE)
             # For standalone we want to bundle everything together so it's relocatable.
-            install(FILES  "${GPlates_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION man1/ COMPONENT gplates)
+            install(FILES  "${GPlates_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/man1 COMPONENT gplates)
         else()
-            install(FILES  "${GPlates_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION share/man/man1/ COMPONENT gplates)
+            install(FILES  "${GPlates_SOURCE_DIR}/doc/gplates.1.gz" DESTINATION share/man/man1 COMPONENT gplates)
         endif()
     endif()
 endif()
@@ -184,8 +242,8 @@ endif()
 # (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
 # This is always enabled, so we don't provide an option to the user to disable it.
 #
-# On Linux systems we don't enable (by default) the copying of dependency libraries because there we rely on the
-# Linux binary package manager to install them (for example, we create a '.deb' package that only *lists* the dependencies,
+# On Linux systems we don't enable by default (see ConfigDefault.cmake) the copying of dependency libraries because there we rely
+# on the Linux binary package manager to install them (for example, we create a '.deb' package that only *lists* the dependencies,
 # which are then installed on the target system if not already there).
 # However we allow the user to enable this in case they want to create a standalone bundle for their own use case.
 #
@@ -225,6 +283,190 @@ if (GPLATES_INSTALL_STANDALONE)
     #       default to "c:/Program Files/${PROJECT_NAME}", but when packaging, the install prefix will instead be the staging area.
     #
 
+
+    #
+    # Function to install the Python standard library.
+    #
+    # Note: The Python standard library is only installed for the 'gplates' component which has an embedded Python interpreter
+    #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
+    #
+    function(install_python_standard_library)
+        if (APPLE)
+            # On Apple we're expecting Python to be a framework. Ideally we should already have installed the Python framework
+            # (ie, this function should be called after the frameworks have been installed), but this is not absolutely necessary
+            # (since we could install the Python standard library first and then install the Python framework library/resources second).
+            if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python\\.framework/")
+                # Convert, for example, '/opt/local/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8' to
+                # 'gplates.app/Contents/Frameworks/Python.framework/Versions/3.8/lib/python3.8'.
+                string(REGEX REPLACE "^.*/(Python\\.framework/.*)$" "gplates.app/Contents/Frameworks/\\1" _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_STDLIB_DIR})
+            else()
+                message(FATAL_ERROR "Expected Python to be a framework")
+            endif()
+        else() # Windows or Linux
+            # Find the relative path from the Python prefix directory to the standard library directory.
+            # We'll use this as the standard library install location relative to our install prefix.
+            file(RELATIVE_PATH _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
+        endif()
+
+        # Remove the trailing '/', if there is one, so that we can then
+        # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
+        #
+        #   "The last component of each directory name is appended to the destination directory but
+        #    a trailing slash may be used to avoid this because it leaves the last component empty"
+        #
+        string(REGEX REPLACE "/+$" "" _PYTHON_STDLIB_DIR "${GPLATES_PYTHON_STDLIB_DIR}")
+        # Install the Python standard library.
+        install(DIRECTORY "${_PYTHON_STDLIB_DIR}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/${_PYTHON_STDLIB_INSTALL_DIR} COMPONENT gplates)
+
+        # On Windows there's also a 'DLLs/' sibling directory of the 'Lib/' directory.
+        if (WIN32)
+            get_filename_component(_PYTHON_DLLS_DIR "${_PYTHON_STDLIB_DIR}" DIRECTORY)
+            set(_PYTHON_DLLS_DIR "${_PYTHON_DLLS_DIR}/DLLs")
+            if (EXISTS "${_PYTHON_DLLS_DIR}")
+                install(DIRECTORY "${_PYTHON_DLLS_DIR}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/DLLs COMPONENT gplates)
+            endif()
+        endif()
+
+        # On Apple there are some shared '.so' libraries in Python framework that need code signing.
+        if (APPLE)
+            # There's a directory called, for example, 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that is in 'sys.path' and contains '.so' libraries.
+            # We need to codesign and secure timestamp these (otherwise Apple notarization fails).
+            # So we use our codesign() function - it is defined later but that's fine since we this function is not called until after codesign() has been defined.
+            file(GLOB _python_dynload_libs "${STANDALONE_BASE_INSTALL_DIR_gplates}/${_PYTHON_STDLIB_INSTALL_DIR}/lib-dynload/*.so")
+            foreach(_python_dynload_lib ${_python_dynload_libs})
+                codesign(${_python_dynload_lib})
+            endforeach()
+        endif()
+    endfunction()
+
+    ########################################################################################################################
+    # Create and install an "__init__.py" file for pygplates in same directory as the pygplates library (on all platforms) #
+    ########################################################################################################################
+    #
+    # This is because we make pygplates a "Python package" where the pygplates module library is in the *base* 'pygplates/' directory
+    # as well as an '__init__.py' to find its runtime location (needed to locate the GDAL/PROJ data bundled with pygplates).
+    set(PYGPLATES_INIT_PY "${CMAKE_CURRENT_BINARY_DIR}/__init__.py")
+    # Note that we allow no indentation in the file content to avoid Python 'unexpected indent' errors.
+    file(WRITE "${PYGPLATES_INIT_PY}" [[
+# Import the pygplates shared library (C++).
+from .pygplates import *
+# Import any private symbols (with leading underscore).
+from .pygplates import __version__
+from .pygplates import __doc__
+
+# Let the pygplates shared library (C++) know of its imported location.
+import os.path
+pygplates._post_import(os.path.dirname(__file__))
+
+# Now that we've imported symbols from the pygplates shared library (C++) into
+# the namespace of this package (also called pygplates) we can remove it.
+# This is so we don't have pygplates.<symbol> and pygplates.pygplates.<symbol>.
+del pygplates
+]])
+    install(FILES "${PYGPLATES_INIT_PY}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates} COMPONENT pygplates EXCLUDE_FROM_ALL)
+
+    #############################################################################################
+    # Copy the Proj library data into standalone bundle (to avoid Proj error finding 'proj.db') #
+    #############################################################################################
+    #
+    # Find the 'projinfo' command.
+    find_program(PROJINFO_COMMAND "projinfo" PATHS ${PROJ_BINARY_DIRS})
+    if (PROJINFO_COMMAND)
+        # Run 'projinfo --searchpaths' to get a list of directories that Proj will look for resources in.
+        # Note that 'projinfo' is new in Proj version 6.0 and the '--searchpaths' option is new in version 7.0.
+        execute_process(COMMAND ${PROJINFO_COMMAND} --searchpaths
+            RESULT_VARIABLE _projinfo_result
+            OUTPUT_VARIABLE _projinfo_output
+            ERROR_QUIET)
+        if (NOT _projinfo_result)  # success
+            # Convert 'projinfo' output to a list of lines - we do this by converting newlines to the list separator character ';'.
+            string(REPLACE "\n" ";" _projinfo_search_paths "${_projinfo_output}")
+            # Search each path for 'proj.db'.
+            foreach(_projinfo_search_path ${_projinfo_search_paths})
+                file(TO_CMAKE_PATH ${_projinfo_search_path} _projinfo_search_path)
+                if (EXISTS "${_projinfo_search_path}/proj.db")
+                    set(_proj_data_dir ${_projinfo_search_path})
+                    break()
+                endif()
+            endforeach()
+            if (NOT _proj_data_dir)
+                message(WARNING "Found proj resource dirs but did not find 'proj.db' - proj library data will not be included in standalone bundle.")
+            endif()
+        else()
+            message(WARNING "'projinfo' does not support '--searchpaths' option - likely using Proj version older than 7.0 - proj library data will not be included in standalone bundle.")
+        endif()
+    else()
+        message(WARNING "Unable to find 'projinfo' command - likely using Proj version older than 6.0 - proj library data will not be included in standalone bundle.")
+    endif()
+    #
+    # Install the Proj data.
+    if (_proj_data_dir)
+        # Remove the trailing '/', if there is one, so that we can then append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
+        #   "The last component of each directory name is appended to the destination directory but
+        #    a trailing slash may be used to avoid this because it leaves the last component empty"
+        string(REGEX REPLACE "/+$" "" _proj_data_dir "${_proj_data_dir}")
+        if (APPLE)
+            set(_gplates_proj_data_rel_base gplates.app/Contents/Resources/${GPLATES_STANDALONE_PROJ_DATA_DIR})
+        else()
+            set(_gplates_proj_data_rel_base ${GPLATES_STANDALONE_PROJ_DATA_DIR})
+        endif()
+        set(_pygplates_proj_data_rel_base ${GPLATES_STANDALONE_PROJ_DATA_DIR})
+        install(DIRECTORY "${_proj_data_dir}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/${_gplates_proj_data_rel_base} COMPONENT gplates)
+        install(DIRECTORY "${_proj_data_dir}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates}/${_pygplates_proj_data_rel_base} COMPONENT pygplates EXCLUDE_FROM_ALL)
+    endif()
+
+    #################################################################################################
+    # Copy the GDAL library data into standalone bundle to avoid GDAL error finding 'gcs.csv'       #
+    # (which was moved into 'proj.db' for GDAL >= 2.5, but there's other GDAL data files to bundle) #
+    #################################################################################################
+    #
+    if (WIN32)
+        # The 'gdal-config' command is not available on Windows. Instead we're expected to use the GDAL_DATA environment variable.
+        set(_gdal_data_dir $ENV{GDAL_DATA})
+        if (NOT _gdal_data_dir)
+            message(WARNING "GDAL_DATA environment variable not set - GDAL library data will not be included in standalone bundle.")
+        endif()
+    else() # Apple or Linux
+        # Find the 'gdal-config' command (should be able to find via PATH environment variable).
+        find_program(GDAL_CONFIG_COMMAND "gdal-config")
+        if (GDAL_CONFIG_COMMAND)
+            # Run 'gdal-config --datadir' to get directory that GDAL will look for resources in.
+            execute_process(COMMAND ${GDAL_CONFIG_COMMAND} --datadir
+                RESULT_VARIABLE _gdal_config_result
+                OUTPUT_VARIABLE _gdal_config_output
+                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+            if (NOT _gdal_config_result)  # success
+                set(_gdal_data_dir ${_gdal_config_output})
+            else()
+                message(WARNING "'gdal-config --datadir' failed - GDAL library data will not be included in standalone bundle.")
+            endif()
+        else()
+            message(WARNING "Unable to find 'gdal-config' command - GDAL library data will not be included in standalone bundle.")
+        endif()
+    endif()
+    #
+    # Install the GDAL data.
+    if (_gdal_data_dir)
+        file(TO_CMAKE_PATH ${_gdal_data_dir} _gdal_data_dir)
+        if (EXISTS "${_gdal_data_dir}")
+            # Remove the trailing '/', if there is one, so that we can then append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
+            #   "The last component of each directory name is appended to the destination directory but
+            #    a trailing slash may be used to avoid this because it leaves the last component empty"
+            string(REGEX REPLACE "/+$" "" _gdal_data_dir "${_gdal_data_dir}")
+            if (APPLE)
+                set(_gplates_gdal_data_rel_base gplates.app/Contents/Resources/${GPLATES_STANDALONE_GDAL_DATA_DIR})
+            else()
+                set(_gplates_gdal_data_rel_base ${GPLATES_STANDALONE_GDAL_DATA_DIR})
+            endif()
+            set(_pygplates_gdal_data_rel_base ${GPLATES_STANDALONE_GDAL_DATA_DIR})
+            install(DIRECTORY "${_gdal_data_dir}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/${_gplates_gdal_data_rel_base} COMPONENT gplates)
+            install(DIRECTORY "${_gdal_data_dir}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates}/${_pygplates_gdal_data_rel_base} COMPONENT pygplates EXCLUDE_FROM_ALL)
+        else()
+            message(WARNING "GDAL data directory \"${_gdal_data_dir}\" does not exist - GDAL library data will not be included in standalone bundle.")
+        endif()
+    endif()
+
+
     ###############################################
     # Install the Visual Studio runtime libraries #
     ###############################################
@@ -234,13 +476,17 @@ if (GPLATES_INSTALL_STANDALONE)
     # For example, "MSVC 2015 64-bit" when compiling 64-bit using Visual Studio 2015.
     #
     if (MSVC)
-        set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)  # "install the Windows Universal CRT libraries for app-local deployment (e.g. to Windows XP)"
+        # CMake tells us for Visual Studio 2015 (and higher) this will: "install the Windows Universal CRT libraries for app-local deployment (e.g. to Windows XP)".
+        #
+        # I've verified that this copies all the DLLs in the "C:\Program Files (x86)\Windows Kits\10\Redist\ucrt" directory of the Windows SDK
+        # (see https://devblogs.microsoft.com/cppblog/introducing-the-universal-crt/).
+        set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
+
         set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
         include(InstallRequiredSystemLibraries)
-        # Note that gplates.exe (and pygplates.pyd) is in the base install directory (see above install(TARGETS) call)
-        # so we install the runtime libraries there also so they can be found when executing gplates (or importing pygplates).
-        install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION . COMPONENT gplates)
-        install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION . COMPONENT pygplates EXCLUDE_FROM_ALL)
+        # Install the runtime libraries in same location as gplates.exe (and pygplates.pyd) so they can be found when executing gplates (or importing pygplates).
+        install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates} COMPONENT gplates)
+        install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates} COMPONENT pygplates EXCLUDE_FROM_ALL)
     endif()
 
     #####################
@@ -256,27 +502,26 @@ if (GPLATES_INSTALL_STANDALONE)
     # Install the "qt.conf" file for gplates.
     if (APPLE)
         # On macOS install into the bundle 'Resources' directory.
-        install(FILES "${QT_CONF_FILE}" DESTINATION gplates.app/Contents/Resources/ COMPONENT gplates)
+        install(FILES "${QT_CONF_FILE}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/gplates.app/Contents/Resources COMPONENT gplates)
     else() # Windows or Linux
-        # On Windows, and standalone Linux, install into same directory as executable (the base install directory).
-        install(FILES "${QT_CONF_FILE}" DESTINATION . COMPONENT gplates)
+        # On Windows and Linux install into same directory as executable.
+        install(FILES "${QT_CONF_FILE}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates} COMPONENT gplates)
     endif()
     # Install the "qt.conf" file for pygplates in same directory as pygplates library (on all platforms).
-    install(FILES "${QT_CONF_FILE}" DESTINATION . COMPONENT pygplates EXCLUDE_FROM_ALL)
+    install(FILES "${QT_CONF_FILE}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR_pygplates} COMPONENT pygplates EXCLUDE_FROM_ALL)
 
     ######################
     # Install Qt plugins #
     ######################
 
-    # The 'plugins' directory relative to ${CMAKE_INSTALL_PREFIX}.
+    # The 'plugins' directory (relative to base install location).
     #
     # For gplates...
     if (APPLE)
         # On macOS relative paths inside 'qt.conf' are relative to 'gplates.app/Contents/'.
         set(QT_PLUGINS_INSTALL_PREFIX_gplates "gplates.app/Contents/${QT_PLUGIN_DIR_BASENAME}")
     else() # Windows or Linux
-        # On Windows, and Linux, relative paths inside 'qt.conf' are relative to the
-        # directory containing the executable (which is in the base install directory).
+        # On Windows, and Linux, relative paths inside 'qt.conf' are relative to the directory containing the executable.
         set(QT_PLUGINS_INSTALL_PREFIX_gplates "${QT_PLUGIN_DIR_BASENAME}")
     endif()
     # For pygplates...
@@ -302,13 +547,19 @@ if (GPLATES_INSTALL_STANDALONE)
             get_filename_component(_qt_plugin_type "${_qt_plugin_type}" NAME)
 
             # The plugin install directory (relative to ${CMAKE_INSTALL_PREFIX}).
-            set(_install_qt_plugin_dest "${QT_PLUGINS_INSTALL_PREFIX_${install_component}}/${_qt_plugin_type}")
+            set(_install_qt_plugin_dir ${STANDALONE_BASE_INSTALL_DIR_${install_component}}/${QT_PLUGINS_INSTALL_PREFIX_${install_component}}/${_qt_plugin_type})
 
             # Install the Qt plugin.
-            install(FILES "${_qt_plugin_path}" DESTINATION "${_install_qt_plugin_dest}" COMPONENT ${install_component} ${ARGN})
+            install(FILES "${_qt_plugin_path}"
+                DESTINATION ${_install_qt_plugin_dir}
+                COMPONENT ${install_component}
+                ${ARGN})
 
             # Use square brackets to avoid evaluating ${CMAKE_INSTALL_PREFIX} at configure time (should be done at install time).
-            string(CONCAT _installed_qt_plugin [[${CMAKE_INSTALL_PREFIX}/]] "${_install_qt_plugin_dest}/${_qt_plugin_file}")
+            string(CONCAT _installed_qt_plugin
+                [[${CMAKE_INSTALL_PREFIX}/]]
+                ${_install_qt_plugin_dir}/
+                ${_qt_plugin_file})
 
             # Add full path to installed plugin file to the plugin list.
             set(_installed_qt_plugin_list ${QT_PLUGINS_${install_component}})
@@ -360,7 +611,6 @@ if (GPLATES_INSTALL_STANDALONE)
     elseif (APPLE)
         install_qt5_plugin(Qt5::QCocoaIntegrationPlugin gplates)
         install_qt5_plugin(Qt5::QMacStylePlugin gplates)
-        install_qt5_plugin(Qt5::QMngPlugin gplates)
     else() # Linux
         install_qt5_plugin(Qt5::QXcbIntegrationPlugin gplates)
         # The following plugins are needed otherwise GPlates generates the following error and then seg. faults:
@@ -393,7 +643,7 @@ if (GPLATES_INSTALL_STANDALONE)
         list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[/usr/lib.*]])
         list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[/System/Library.*]])
     else() # Linux
-        # On (standalone) Linux don't exclude the standard library locations (eg, '/lib[64]' or '/usr/lib').
+        # On Linux don't exclude the standard library locations (eg, '/lib[64]' or '/usr/lib').
         # Our dependency libraries get installed there (by the binary package manager).
     endif()
 
@@ -479,85 +729,6 @@ if (GPLATES_INSTALL_STANDALONE)
     install_get_runtime_dependencies(gplates)
     install_get_runtime_dependencies(pygplates EXCLUDE_FROM_ALL)
 
-    #
-    # Function to install the Python standard library.
-    #
-    # This is used on Windows and Linux (standalone).
-    # On macOS we install the standard library when we install the Python framework
-    # (since the standard library is contained inside the framework).
-    #
-    # Note: The Python standard library is only installed for the 'gplates' component which has an embedded Python interpreter
-    #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
-    #
-    function(install_python_standard_library)
-        if (APPLE)
-            message(FATAL_ERROR "Function to install Python standard library only meant for use on Windows and Linux (macOS does this a different way)")
-        endif()
-
-        if (CMAKE_VERSION VERSION_LESS 3.12)
-            # CMake versions less than 3.12 do not support the Python2 and Python3 find modules, and hence do not have
-            # Python2_STDLIB and Python3_STDLIB variables. So we need to query the stand library location from Python.
-            #
-            # Get Python to import sysconfig and then print out the standard library directory.
-            set(_GPLATES_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE})
-            execute_process(COMMAND ${_GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sysconfig; print(sysconfig.get_path('stdlib'));"
-                RESULT_VARIABLE _PYTHON_STDLIB_RESULT
-                OUTPUT_VARIABLE _PYTHON_STDLIB_OUTPUT
-                ERROR_QUIET
-                OUTPUT_STRIP_TRAILING_WHITESPACE)
-            if (_PYTHON_STDLIB_RESULT)
-                message(FATAL_ERROR "Unable to find Python standard library location - cannot copy it into installation")
-            endif()
-            set(_GPLATES_PYTHON_STDLIB_DIR ${_PYTHON_STDLIB_OUTPUT})
-        else()  # CMake 3.12 and later...
-            # CMake 3.12 and later have find_package(Python2) and find_package(Python3), which have Python2_STDLIB and Python3_STDLIB variables.
-            if (GPLATES_PYTHON_3)
-                set(_GPLATES_PYTHON_STDLIB_DIR ${Python3_STDLIB})
-                set(_GPLATES_PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
-            else()
-                set(_GPLATES_PYTHON_STDLIB_DIR ${Python2_STDLIB})
-                set(_GPLATES_PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
-            endif()
-        endif()
-
-        # Get Python to import sys and then print out the prefix directory.
-        execute_process(COMMAND ${_GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sys; print(sys.prefix);"
-            RESULT_VARIABLE _PYTHON_PREFIX_RESULT
-            OUTPUT_VARIABLE _PYTHON_PREFIX_OUTPUT
-            ERROR_QUIET
-            OUTPUT_STRIP_TRAILING_WHITESPACE)
-        if (_PYTHON_PREFIX_RESULT)
-            message(FATAL_ERROR "Unable to find Python prefix location")
-        endif()
-        set(_GPLATES_PYTHON_PREFIX_DIR ${_PYTHON_PREFIX_OUTPUT})
-
-        # Convert '\' to '/' in path.
-        file(TO_CMAKE_PATH ${_GPLATES_PYTHON_STDLIB_DIR} _GPLATES_PYTHON_STDLIB_DIR)
-        file(TO_CMAKE_PATH ${_GPLATES_PYTHON_PREFIX_DIR} _GPLATES_PYTHON_PREFIX_DIR)
-
-        # Find the relative path from the Python prefix directory to the standard library directory.
-        # We'll use this as the standard library install location relative to our install prefix.
-        file(RELATIVE_PATH _GPLATES_PYTHON_STDLIB_INSTALL_DIR ${_GPLATES_PYTHON_PREFIX_DIR} ${_GPLATES_PYTHON_STDLIB_DIR})
-
-        # Remove the trailing '/', if there is one, so that we can then
-        # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
-        #
-        #   "The last component of each directory name is appended to the destination directory but
-        #    a trailing slash may be used to avoid this because it leaves the last component empty"
-        #
-        string(REGEX REPLACE "/+$" "" _GPLATES_PYTHON_STDLIB_DIR "${_GPLATES_PYTHON_STDLIB_DIR}")
-        # Install the Python standard library.
-        install(DIRECTORY ${_GPLATES_PYTHON_STDLIB_DIR}/ DESTINATION ${_GPLATES_PYTHON_STDLIB_INSTALL_DIR} COMPONENT gplates)
-
-        # On Windows there's also a 'DLLs/' sibling directory of the 'Lib/' directory.
-        if (WIN32)
-            get_filename_component(_GPLATES_PYTHON_DLLS_DIR ${_GPLATES_PYTHON_STDLIB_DIR} DIRECTORY)
-            set(_GPLATES_PYTHON_DLLS_DIR "${_GPLATES_PYTHON_DLLS_DIR}/DLLs")
-            if (EXISTS "${_GPLATES_PYTHON_DLLS_DIR}")
-                install(DIRECTORY ${_GPLATES_PYTHON_DLLS_DIR}/ DESTINATION DLLs/ COMPONENT gplates)
-            endif()
-        endif()
-    endfunction()
 
     #
     # Install the dependency libraries.
@@ -570,10 +741,11 @@ if (GPLATES_INSTALL_STANDALONE)
         # Wrapping 'install' command in a function because each 'install' handles a single component and we have two components (gplates and pygplates).
         function(install_resolved_dependencies install_component)
             install(
+                    CODE "set(STANDALONE_BASE_INSTALL_DIR ${STANDALONE_BASE_INSTALL_DIR_${install_component}})"
                     CODE [[
                         # Install the dependency libraries in the *install* location.
                         foreach(_resolved_dependency ${_resolved_dependencies})
-                            file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}")
+                            file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}")
                         endforeach()
                     ]]
 
@@ -730,29 +902,6 @@ if (GPLATES_INSTALL_STANDALONE)
                                         REGEX "[^/]+\\.app" EXCLUDE)
                             endif()
 
-                            # If the framework being installed is Python and there's a 'lib/' directory (in same directory as resolved dependency library) then
-                            # copy it to the equivalent directory in the installed framework. This contains the Python libraries (including 'site-packages').
-                            # For example, if there's a '/.../Dependency.framework/Versions/3.8/lib' directory.
-                            if (_resolved_dependency_dir MATCHES "/Python.framework/" AND EXISTS "${_resolved_dependency_dir}/lib")
-                                # For example, copy '/.../Python.framework/Versions/3.8/lib' to '${install_framework_prefix}/Python.framework/Versions/3.8'.
-                                #
-                                # Note: We don't use the FOLLOW_SYMLINK_CHAIN option since that copies, for example, 'Python.framework/Versions/3.8/Python'
-                                #       into 'Python.framework/Versions/3.8/lib/' (due to 'libpython3.8.dylib' symlink in there). But we just want to leave
-                                #       'libpython3.8.dylib' pointing to '../Python' which, in turn, we've just installed above (and will later codesign).
-                                #       Everything is relatively self-contained in 'Python.framework/Versions/3.8/lib/' so we should be fine without following symlinks.
-                                file(INSTALL "${_resolved_dependency_dir}/lib" DESTINATION "${_install_dependency_dir}")
-
-                                # Extract, for example, '3.8' from 'Python.framework/Versions/3.8'.
-                                string(REGEX REPLACE "^.*/([^/]+)$" "\\1" _python_version "${_install_dependency_dir}")
-
-                                # There's a directory called, for example, 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that is in 'sys.path' and contains '.so' libraries.
-                                # We need to codesign and secure timestamp these (otherwise Apple notarization fails), so use our codesign() function defined above.
-                                file(GLOB _python_dynload_libs "${_install_dependency_dir}/lib/python${_python_version}/lib-dynload/*.so")
-                                foreach(_python_dynload_lib ${_python_dynload_libs})
-                                    codesign(${_python_dynload_lib})
-                                endforeach()
-                            endif()
-
                             # See if there's a "Versions" directory in the framework.
                             # For example, convert '/.../Dependency.framework/Versions/2/Dependency' to 'Versions'.
                             string(REGEX REPLACE "^.*/([^/]+)/[^/]+/[^/]+$" "\\1" _versions_dir_basename "${resolved_dependency}")
@@ -801,6 +950,7 @@ if (GPLATES_INSTALL_STANDALONE)
                     # Copy each resolved dependency (of GPlates/pyGPlates and its Qt plugins) into the appropriate location inside the installed GPlates application bundle
                     # (or base install directory of pygplates) depending of whether a regular '.dylib' or a framework.
                     #
+                    CODE "set(STANDALONE_BASE_INSTALL_DIR ${STANDALONE_BASE_INSTALL_DIR_${install_component}})"
                     CODE [[
                         set(_installed_dependencies)
                         foreach(_resolved_dependency ${_resolved_dependencies})
@@ -809,28 +959,28 @@ if (GPLATES_INSTALL_STANDALONE)
                             if (_resolved_dependency MATCHES "[^/]+\\.framework/")
                                 if (install_component STREQUAL "gplates")
                                     # Install in the 'Contents/Frameworks/' sub-directory of the 'gplates' app bundle.
-                                    install_framework(${_resolved_dependency} "${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/Frameworks" _installed_dependency)
+                                    install_framework(${_resolved_dependency} "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/gplates.app/Contents/Frameworks" _installed_dependency)
                                 else() # pygplates
                                     # Install in the 'Frameworks/' sub-directory of base install directory of pygplates.
-                                    install_framework(${_resolved_dependency} "${CMAKE_INSTALL_PREFIX}/Frameworks" _installed_dependency)
+                                    install_framework(${_resolved_dependency} "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/Frameworks" _installed_dependency)
                                 endif()
                             else()  # regular '.dylib' ...
                                 # Ensure we copy symlinks (using FOLLOW_SYMLINK_CHAIN). For example, with 'libCGAL.13.dylib -> libCGAL.13.0.3.dylib' both the symlink
                                 # 'libCGAL.13.dylib' and the dereferenced library 'libCGAL.13.0.3.dylib' are copied, otherwise just the symlink would be copied.
                                 if (install_component STREQUAL "gplates")
                                     # Install in the 'Contents/MacOS/' sub-directory of 'gplates' app bundle.
-                                    file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/MacOS" FOLLOW_SYMLINK_CHAIN)
+                                    file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/gplates.app/Contents/MacOS" FOLLOW_SYMLINK_CHAIN)
                                 else() # pygplates
                                     # Install in the 'lib/' sub-directory of base install directory of pygplates.
-                                    file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" FOLLOW_SYMLINK_CHAIN)
+                                    file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/lib" FOLLOW_SYMLINK_CHAIN)
                                 endif()
 
                                 if (install_component STREQUAL "gplates")
-                                    # Get '${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/MacOS/dependency.dylib' from resolved dependency.
-                                    string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/MacOS/\\1" _installed_dependency "${_resolved_dependency}")
+                                    # Get '${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/gplates.app/Contents/MacOS/dependency.dylib' from resolved dependency.
+                                    string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/gplates.app/Contents/MacOS/\\1" _installed_dependency "${_resolved_dependency}")
                                 else() # pygplates
-                                    # Get '${CMAKE_INSTALL_PREFIX}/lib/dependency.dylib' from resolved dependency.
-                                    string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/lib/\\1" _installed_dependency "${_resolved_dependency}")
+                                    # Get '${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/lib/dependency.dylib' from resolved dependency.
+                                    string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/lib/\\1" _installed_dependency "${_resolved_dependency}")
                                 endif()
                             endif()
 
@@ -844,6 +994,12 @@ if (GPLATES_INSTALL_STANDALONE)
         endfunction()
         install_resolved_dependencies(gplates)
         install_resolved_dependencies(pygplates EXCLUDE_FROM_ALL)
+
+        # Install the Python standard library.
+        #
+        # Note: The Python standard library is only installed for the 'gplates' component which has an embedded Python interpreter
+        #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
+        install_python_standard_library()
 
         # Find the 'otool' command.
         find_program(OTOOL "otool")
@@ -897,6 +1053,7 @@ if (GPLATES_INSTALL_STANDALONE)
 
                     CODE "set(OTOOL [[${OTOOL}]])"
                     CODE "set(INSTALL_NAME_TOOL [[${INSTALL_NAME_TOOL}]])"
+                    CODE "set(STANDALONE_BASE_INSTALL_DIR ${STANDALONE_BASE_INSTALL_DIR_${install_component}})"
                     #
                     # Function to change the dependency install names in the specified install file so that it references the
                     # installed dependency file's location relative to the GPlates executable (or pyGPlates library).
@@ -956,8 +1113,8 @@ if (GPLATES_INSTALL_STANDALONE)
                                         string(REGEX REPLACE "^.*/([^/]+\\.framework/.*)$" "@executable_path/../Frameworks/\\1"
                                                 _installed_dependency_file_install_name "${_dependency_file_install_name}")
                                     else() # pygplates
-                                        # For example, "${CMAKE_INSTALL_PREFIX}/Frameworks/Dependency.framework/Versions/2/Dependency".
-                                        string(REGEX REPLACE "^.*/([^/]+\\.framework/.*)$" "${CMAKE_INSTALL_PREFIX}/Frameworks/\\1"
+                                        # For example, "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/Frameworks/Dependency.framework/Versions/2/Dependency".
+                                        string(REGEX REPLACE "^.*/([^/]+\\.framework/.*)$" "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/Frameworks/\\1"
                                                 _installed_dependency_file_name "${_dependency_file_install_name}")
                                         # Get the relative path from the installed file to its installed dependency.
                                         if (_installed_dependency_file_name STREQUAL _dependency_file_install_name)
@@ -980,8 +1137,8 @@ if (GPLATES_INSTALL_STANDALONE)
                                                 _installed_dependency_file_install_name "${_dependency_file_install_name}")
                                     else() # pygplates
                                         # Non-framework librares are installed in 'lib/' sub-directory of directory containing pygplates library.
-                                        # For example, "${CMAKE_INSTALL_PREFIX}/lib/dependency.dylib".
-                                        string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/lib/\\1"
+                                        # For example, "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/lib/dependency.dylib".
+                                        string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/lib/\\1"
                                                 _installed_dependency_file_name "${_dependency_file_install_name}")
                                         # Get the relative path from the installed file to its installed dependency.
                                         if (_installed_dependency_file_name STREQUAL _dependency_file_install_name)
@@ -1019,7 +1176,7 @@ if (GPLATES_INSTALL_STANDALONE)
                             # Run 'install_name_tool -id <installed-file-install-name> <installed-file>'.
                             #
                             # Note: This does nothing for executables (eg, the 'gplates' executable).
-                            #       For example, 'install_name_tool -id gplates ${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/MacOS/gplates'.
+                            #       For example, 'install_name_tool -id gplates ${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/gplates.app/Contents/MacOS/gplates'.
                             execute_process(
                                 COMMAND ${INSTALL_NAME_TOOL} -id ${_installed_file_install_name} ${installed_file}
                                 RESULT_VARIABLE _install_name_tool_result
@@ -1057,17 +1214,17 @@ if (GPLATES_INSTALL_STANDALONE)
                         #
                         if (install_component STREQUAL "gplates")
                             # Fix the dependency install names in the installed gplates executable.
-                            fix_dependency_install_names(${CMAKE_INSTALL_PREFIX}/gplates.app/Contents/MacOS/gplates)
+                            fix_dependency_install_names(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/gplates.app/Contents/MacOS/gplates)
                             # Sign *after* fixing dependencies (since we cannot modify after signing).
                             #
                             # NOTE: We sign the entire installed bundle (not just the 'gplates.app/Contents/MacOS/gplates' executable).
                             #       And this must be done as the last step.
-                            codesign(${CMAKE_INSTALL_PREFIX}/gplates.app)
+                            codesign(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/gplates.app)
                         else() # pygplates
                             # Fix the dependency install names in the installed pygplates library.
-                            fix_dependency_install_names(${CMAKE_INSTALL_PREFIX}/$<TARGET_FILE_NAME:pygplates>)
+                            fix_dependency_install_names(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/$<TARGET_FILE_NAME:pygplates>)
                             # Sign *after* fixing dependencies (since we cannot modify after signing).
-                            codesign(${CMAKE_INSTALL_PREFIX}/$<TARGET_FILE_NAME:pygplates>)
+                            codesign(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/$<TARGET_FILE_NAME:pygplates>)
                         endif()
                     ]]
 
@@ -1080,7 +1237,7 @@ if (GPLATES_INSTALL_STANDALONE)
     else()  # Linux
 
         #
-        # On standalone Linux we need to:
+        # On Linux we need to:
         #   1 - copy each resolved direct and indirect dependency library (of GPlates/pyGPlates and its Qt plugins) into the 'lib/' sub-directory of base install directory,
         #   2 - specify an appropriate RPATH for GPlates/pyGPlates, its Qt plugins and their resolved dependencies
         #       (ie, each dependency will depend on other dependencies in turn and must point to their location, ie, in 'lib/').
@@ -1092,21 +1249,26 @@ if (GPLATES_INSTALL_STANDALONE)
                     #
                     # Copy each resolved dependency (of GPlates/pyGPlates and its Qt plugins) into the 'lib/' sub-directory of base install directory.
                     #
-                    # On standalone Linux we simply copy the dependency shared libraries to the 'lib/' sub-directory of the
+                    # On Linux we simply copy the dependency shared libraries to the 'lib/' sub-directory of the
                     # install prefix location so that they will get found at runtime from an RPATH of '$ORIGIN/lib' where $ORIGIN is
                     # the location of the gplates executable (or pyGPlates library) in the base install directory.
                     #
-                    CODE "set(CMAKE_INSTALL_LIBDIR [[${CMAKE_INSTALL_LIBDIR}]])"
+                    CODE "set(STANDALONE_BASE_INSTALL_DIR ${STANDALONE_BASE_INSTALL_DIR_${install_component}})"
+                    CODE "set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR})"
                     CODE [[
                         set(_installed_dependencies)
                         foreach(_resolved_dependency ${_resolved_dependencies})
                             # Install into the 'lib/' sub-directory of base install directory.
                             # Ensure we copy symlinks (using FOLLOW_SYMLINK_CHAIN). For example, with 'libCGAL.13.so -> libCGAL.13.0.3.so' both the symlink
                             # 'libCGAL.13.so' and the dereferenced library 'libCGAL.13.0.3.so' are copied, otherwise just the symlink would be copied.
-                            file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/" FOLLOW_SYMLINK_CHAIN)
+                            file(INSTALL "${_resolved_dependency}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/" FOLLOW_SYMLINK_CHAIN)
 
-                            # Get '${CMAKE_INSTALL_PREFIX}/lib/dependency.so' from resolved dependency.
-                            string(REGEX REPLACE "^.*/([^/]+)$" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/\\1" _installed_dependency "${_resolved_dependency}")
+                            # Get '${CMAKE_INSTALL_PREFIX}/<base-install-dir>/lib/dependency.so' from resolved dependency.
+                            string(REGEX REPLACE
+                                "^.*/([^/]+)$"
+                                "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/\\1"
+                                _installed_dependency
+                                "${_resolved_dependency}")
 
                             # Add installed dependency to the list.
                             list(APPEND _installed_dependencies "${_installed_dependency}")
@@ -1135,7 +1297,8 @@ if (GPLATES_INSTALL_STANDALONE)
         function(install_fix_dependencies install_component)
             install(
                     CODE "set(PATCHELF [[${PATCHELF}]])"
-                    CODE "set(CMAKE_INSTALL_LIBDIR [[${CMAKE_INSTALL_LIBDIR}]])"
+                    CODE "set(STANDALONE_BASE_INSTALL_DIR ${STANDALONE_BASE_INSTALL_DIR_${install_component}})"
+                    CODE "set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR})"
                     #
                     # Function to set the RPATH of the specified installed file to '$ORIGIN/<relative-path-to-libs-dir>' so that it can
                     # find its direct dependency libraries (in the 'lib/' sub-directory of the base install directory).
@@ -1151,12 +1314,12 @@ if (GPLATES_INSTALL_STANDALONE)
                             # Need to optionally convert relative paths to absolute paths (required by file(RELATIVE_PATH)) because it's possible that
                             # CMAKE_INSTALL_PREFIX is a relative path (eg, 'staging' if installing with 'cmake --install . --prefix staging').
                             #
-                            # Note that both the installed file and installed libs will have paths starting with CMAKE_INSTALL_PREFIX so the
-                            # relative path will be unaffected by whatever absolute prefix we use, so we don't need to specify BASE_DIR
+                            # Note that both the installed file and installed libs will have paths starting with "${CMAKE_INSTALL_PREFIX}/<base-install-dir>"
+                            # so the relative path will be unaffected by whatever absolute prefix we use, so we don't need to specify BASE_DIR
                             # (it will default to 'CMAKE_CURRENT_SOURCE_DIR' which defaults to the current working directory when this
                             # install code is finally run in cmake script mode '-P' but, as mentioned, it doesn't matter what this is).
                             get_filename_component(_installed_file_dir ${_installed_file_dir} ABSOLUTE)
-                            get_filename_component(_installed_libs_dir "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" ABSOLUTE)
+                            get_filename_component(_installed_libs_dir "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}" ABSOLUTE)
 
                             # Get the relative path to the 'libs' sub-directory of base install directory.
                             file(RELATIVE_PATH _relative_path_to_libs_dir "${_installed_file_dir}" "${_installed_libs_dir}")
@@ -1196,9 +1359,9 @@ if (GPLATES_INSTALL_STANDALONE)
 
                         # Set the RPATH in the installed gplates executable (or pygplates library).
                         if (install_component STREQUAL "gplates")
-                            set_rpath(${CMAKE_INSTALL_PREFIX}/$<TARGET_FILE_NAME:gplates>)
+                            set_rpath(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/$<TARGET_FILE_NAME:gplates>)
                         else() # pygplates
-                            set_rpath(${CMAKE_INSTALL_PREFIX}/$<TARGET_FILE_NAME:pygplates>)
+                            set_rpath(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/$<TARGET_FILE_NAME:pygplates>)
                         endif()
                     ]]
 

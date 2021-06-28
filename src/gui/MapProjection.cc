@@ -52,8 +52,8 @@ namespace
 	struct ProjectionParameters 
 	{
 		GPlatesGui::MapProjection::Type projection_name;
-		const char* proj4_name;
-		const char* proj4_ellipse;
+		const char* proj_name;
+		const char* proj_ellipse;
 		double scaling_factor;
 		bool inverse_defined;
 	};
@@ -171,8 +171,8 @@ GPlatesGui::MapProjection::set_projection_type(
 	char *projection_args[num_projection_args];
 	char *latlon_args[num_latlon_args];
 
-	projection_args[0] = strdup(projection_table[projection_type_].proj4_name);
-	projection_args[1] = strdup(projection_table[projection_type_].proj4_ellipse);
+	projection_args[0] = strdup(projection_table[projection_type_].proj_name);
+	projection_args[1] = strdup(projection_table[projection_type_].proj_ellipse);
 	projection_args[2] = strdup(lon_string.toStdString().c_str());
 
 	// Set up a zero central longitude string.
@@ -181,7 +181,7 @@ GPlatesGui::MapProjection::set_projection_type(
 	lon_string += QString("%1").arg(lon);
 
 	latlon_args[0] = strdup("proj=latlong");
-	latlon_args[1] = strdup(projection_table[projection_type_].proj4_ellipse);
+	latlon_args[1] = strdup(projection_table[projection_type_].proj_ellipse);
 	latlon_args[2] = strdup(lon_string.toStdString().c_str());
 
 #if defined(GPLATES_USING_PROJ4)
@@ -455,7 +455,7 @@ GPlatesGui::MapProjection::inverse_transform(
 		// mouse down event is issued for the MapView (even though it's covered up by the list),
 		// which in turn calls inverse_projection. There does not seem to be an easy way to stop the
 		// MapView from getting the mouse down event unfortunately, so let's suppress the error.
-		// qWarning("No inverse is defined for this projection in the proj4 library.");
+		// qWarning("No inverse is defined for this projection in the proj library.");
 		return boost::none;
 	}
 
