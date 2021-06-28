@@ -65,16 +65,16 @@ endif()
 option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle (copy dependency libraries into the installation)." ${_INSTALL_STANDALONE})
 unset(_INSTALL_STANDALONE)
 
-# Whether to install sample data (eg, in the binary installer) or not.
-# By default this is false and only enabled when packaging a public release.
+# Whether to install geodata (eg, in the binary installer) or not.
+# By default this is false but should be enabled when packaging a public release.
 #
 # Developers may want to turn this on, using the cmake command-line or cmake GUI, even when not releasing a public build.
-option(GPLATES_INSTALL_SAMPLE_DATA "Install sample data (eg, in the binary installer)." false)
+option(GPLATES_INSTALL_GEO_DATA "Install geodata (eg, in the binary installer)." false)
 
-# The directory location of the sample data.
-# The sample data is only included in the binary installer if 'GPLATES_INSTALL_SAMPLE_DATA' is true.
-# Paths must be full paths (eg, '~/sample-data' is ok but '../sample-data' is not).
-set(GPLATES_SAMPLE_DATA_DIR "" CACHE PATH "Location of sample data.")
+# The directory location of the geodata.
+# The geodata is only included in the binary installer if 'GPLATES_INSTALL_GEO_DATA' is true.
+# Paths must be full paths (eg, '~/geodata' is ok but '../geodata' is not).
+set(GPLATES_INSTALL_GEO_DATA_DIR "" CACHE PATH "Location of geodata (use absolute path).")
 
 # The macOS code signing identity used to sign installed/packaged GPlates application bundle with a Developer ID certificate.
 #

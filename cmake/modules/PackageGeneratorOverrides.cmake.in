@@ -98,6 +98,6 @@ if (CPACK_GENERATOR MATCHES "^DragNDrop$")
     #    This is not the same purpose as CMAKE_INSTALL_PREFIX which is used when installing from the build tree without building a package.
     #
     # Make sure we everything ends up in the specified directory (which the user can then drag'n'drop into "/Applications/").
-    # This way the GPlates app bundle and sample data stay together in the one directory.
+    # This way the GPlates app bundle and geodata stay together in the one directory.
     SET(CPACK_PACKAGING_INSTALL_PREFIX "/@PROJECT_NAME@-@CPACK_PACKAGE_VERSION@")
 endif()

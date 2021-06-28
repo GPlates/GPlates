@@ -189,27 +189,36 @@ foreach (_script hellinger.py hellinger_maths.py)
     endif()
 endforeach()
 
-# Install sample data if requested (but only for gplates target/component).
+# Install geodata if requested (but only for gplates target/component).
 #
-# The variables GPLATES_INSTALL_SAMPLE_DATA and GPLATES_SAMPLE_DATA_DIR are cache variables that the user can set to control this.
+# The variables GPLATES_INSTALL_GEO_DATA and GPLATES_INSTALL_GEO_DATA_DIR are cache variables that the user can set to control this.
 #
-if (GPLATES_INSTALL_SAMPLE_DATA)
+if (GPLATES_INSTALL_GEO_DATA)
+    # Make sure the source geodata directory has been specified and is an absolute path.
+    if (GPLATES_INSTALL_GEO_DATA_DIR)
+        if (NOT IS_ABSOLUTE "${GPLATES_INSTALL_GEO_DATA_DIR}")
+            message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR should be an absolute path (not a relative path)")
+        endif()
+    else()
+        message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_DIR when you enable GPLATES_INSTALL_GEO_DATA")
+    endif()
+
     # Remove the trailing '/', if there is one, so that we can then
     # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
     #
     #   "The last component of each directory name is appended to the destination directory but
     #    a trailing slash may be used to avoid this because it leaves the last component empty"
     #
-    string(REGEX REPLACE "/+$" "" _SOURCE_SAMPLE_DATA_DIR "${GPLATES_SAMPLE_DATA_DIR}")
+    string(REGEX REPLACE "/+$" "" _SOURCE_GEO_DATA_DIR "${GPLATES_INSTALL_GEO_DATA_DIR}")
 
     #
     # Note: Depending on the installation location ${CMAKE_INSTALL_PREFIX} a path length limit might be
-    #       exceeded since some of the sample data paths can be quite long, and combined with ${CMAKE_INSTALL_PREFIX}
+    #       exceeded since some of the geodata paths can be quite long, and combined with ${CMAKE_INSTALL_PREFIX}
     #       could, for example, exceed 260 characters (MAX_PATH) on Windows (eg, when creating an NSIS package).
     #       This can even happen on the latest Windows 10 with long paths opted in.
-    #       For example, when packaging with NSIS you can get a sample data file with a path like the following:
-    #           <build_dir>\_CPack_Packages\win64\NSIS\GPlates-2.2.0-win64\SampleData\<sample_data_file>
-    #       ...and currently <sample_data_file> can reach 160 chars, which when added to the middle part
+    #       For example, when packaging with NSIS you can get a geodata file with a path like the following:
+    #           <build_dir>\_CPack_Packages\win64\NSIS\GPlates-2.2.0-win64\GeoData\<geo_data_file>
+    #       ...and currently <geo_data_file> can reach 160 chars, which when added to the middle part
     #       '\_CPack_Packages\...' of ~60 chars becomes ~220 chars leaving only 40 chars for <build_dir>.
     #
     #       Which means you'll need a build directory path that's under 40 characters long (which is pretty short).
@@ -217,12 +226,13 @@ if (GPLATES_INSTALL_SAMPLE_DATA)
     #
     if (GPLATES_INSTALL_STANDALONE)
         # For standalone we want to bundle everything together so it's relocatable.
-        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/SampleData COMPONENT gplates)
+        install(DIRECTORY ${_SOURCE_GEO_DATA_DIR}/ DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/GeoData COMPONENT gplates)
     else()
-        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION share/gplates/SampleData COMPONENT gplates)
+        install(DIRECTORY ${_SOURCE_GEO_DATA_DIR}/ DESTINATION share/gplates/GeoData COMPONENT gplates)
     endif()
 endif()
 
+# Install Linux man page.
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")  # Linux
     if (EXISTS "${GPlates_SOURCE_DIR}/doc/gplates.1.gz")
         if (GPLATES_INSTALL_STANDALONE)
