@@ -74,16 +74,25 @@ namespace GPlatesFileIO
 		//
 
 		/**
-		 * Return the location of the Proj data directory in the standalone bundle.
+		 * Return the location of the Proj resource data in the standalone bundle.
 		 */
 		boost::optional<QString>
 		get_proj_data_directory();
 
 		/**
-		 * Return the location of the GDAL data directory in the standalone bundle.
+		 * Return the location of the GDAL resource data in the standalone bundle.
 		 */
 		boost::optional<QString>
 		get_gdal_data_directory();
+
+		/**
+		 * Return the location of the Python standard library in the standalone bundle.
+		 *
+		 * Note: This is only used for gplates (not pygplates since that's imported by an external
+		 * non-embedded Python interpreter that has its own Python standard library).
+		 */
+		boost::optional<QString>
+		get_python_standard_library_directory();
 	}
 }
 

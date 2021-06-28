@@ -69,10 +69,10 @@ set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2003-
 set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2004-2020 California Institute of Technology\\n")
 set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2007-2020 The Geological Survey of Norway\\n")
 
-# Set to 'true' if this is a public code release (to non-developers).
+# Set to 'true' if this is a public code release.
 # Currently disables all warnings.
 # And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
-option(GPLATES_PUBLIC_RELEASE "Public release (to non-developers)." false)
+option(GPLATES_PUBLIC_RELEASE "Public release." false)
 
 # Whether to install GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
 #
@@ -91,11 +91,6 @@ else() # Linux
 endif()
 option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle (copy dependency libraries into the installation)." ${_INSTALL_STANDALONE})
 unset(_INSTALL_STANDALONE)
-# The sub-directories of standalone base installation directory (or sub-dirs of 'gplates.app/Contents/Resources/' dir of base installation for GPlates macOS app bundle)
-# to place data from the Proj (eg, 'proj.db') and GDAL libraries.
-# Only applies when GPLATES_INSTALL_STANDALONE is true.
-set(GPLATES_STANDALONE_PROJ_DATA_DIR proj_data)
-set(GPLATES_STANDALONE_GDAL_DATA_DIR gdal_data)
 
 # Whether to install sample data (eg, in the binary installer) or not.
 # By default this is false and only enabled when packaging a public release.
@@ -125,14 +120,6 @@ set(GPLATES_SAMPLE_DATA_DIR "" CACHE PATH "Location of sample data.")
 if (APPLE)
 	set(GPLATES_APPLE_CODE_SIGN_IDENTITY "" CACHE STRING "Apple code signing identity.")
 endif()
-
-# Set to 'true' to tell GPlates ignore environment variables, such as PYTHONHOME, PYTHONPATH, etc, 
-# when initializing embeded Python interpreter.
-# Put this close to GPLATES_PUBLIC_RELEASE because we usually want to set this to "true" when compiling public release.
-#
-# TODO: Consider adding a "python37._pth", for example, alongside the GPlates installed executable to ignore paths listed
-# in the registry and environment variables (according to https://docs.python.org/3/using/windows.html#finding-modules).
-set(GPLATES_IGNORE_PYTHON_ENVIRONMENT false)
 
 # We compile with Python 3 (by default).
 #

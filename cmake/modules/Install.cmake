@@ -295,10 +295,10 @@ if (GPLATES_INSTALL_STANDALONE)
             # On Apple we're expecting Python to be a framework. Ideally we should already have installed the Python framework
             # (ie, this function should be called after the frameworks have been installed), but this is not absolutely necessary
             # (since we could install the Python standard library first and then install the Python framework library/resources second).
-            if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python.framework/")
+            if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python\\.framework/")
                 # Convert, for example, '/opt/local/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8' to
                 # 'gplates.app/Contents/Frameworks/Python.framework/Versions/3.8/lib/python3.8'.
-                string(REGEX REPLACE "^.*/Python.framework/(.*)$" "gplates.app/Contents/Frameworks/Python.framework/\\1" _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_STDLIB_DIR})
+                string(REGEX REPLACE "^.*/(Python\\.framework/.*)$" "gplates.app/Contents/Frameworks/\\1" _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_STDLIB_DIR})
             else()
                 message(FATAL_ERROR "Expected Python to be a framework")
             endif()
