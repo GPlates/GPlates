@@ -341,11 +341,19 @@ if (GPLATES_INSTALL_STANDALONE)
         if (APPLE)
             # There's a directory called, for example, 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that is in 'sys.path' and contains '.so' libraries.
             # We need to codesign and secure timestamp these (otherwise Apple notarization fails).
-            # So we use our codesign() function - it is defined later but that's fine since we this function is not called until after codesign() has been defined.
-            file(GLOB _python_dynload_libs "${STANDALONE_BASE_INSTALL_DIR_gplates}/${_PYTHON_STDLIB_INSTALL_DIR}/lib-dynload/*.so")
-            foreach(_python_dynload_lib ${_python_dynload_libs})
-                codesign(${_python_dynload_lib})
-            endforeach()
+            # So we use our codesign() function - it is defined later but that's fine since this code is not executed until after codesign() has been defined.
+            install(
+                CODE "set(STANDALONE_BASE_INSTALL_DIR [[${STANDALONE_BASE_INSTALL_DIR_gplates}]])"
+                CODE "set(_PYTHON_STDLIB_INSTALL_DIR [[${_PYTHON_STDLIB_INSTALL_DIR}]])"
+                CODE [[
+                    file(GLOB _python_dynload_libs "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${_PYTHON_STDLIB_INSTALL_DIR}/lib-dynload/*.so")
+                    foreach(_python_dynload_lib ${_python_dynload_libs})
+                        codesign(${_python_dynload_lib})
+                    endforeach()
+                ]]
+
+                COMPONENT gplates
+            )
         endif()
     endfunction()
 
