@@ -10,9 +10,9 @@ set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the int
 
 # The GPlates copyright - string version to be used in a source file.
 set(GPLATES_COPYRIGHT_STRING "")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2020 The University of Sydney, Australia\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2004-2020 California Institute of Technology\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2020 The Geological Survey of Norway\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2021 The University of Sydney, Australia\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2004-2021 California Institute of Technology\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2021 The Geological Survey of Norway\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}The GPlates source code also contains code derived from:\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * ReconTreeViewer (James Boyden)\\n")
@@ -26,9 +26,9 @@ set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}environment, the Inksca
 # The GPlates copyright for html.
 set(GPLATES_HTML_COPYRIGHT_STRING "")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<html><body>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2020 The University of Sydney, Australia<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2004-2020 California Institute of Technology<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2020 The Geological Survey of Norway<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2021 The University of Sydney, Australia<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2004-2021 California Institute of Technology<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2021 The Geological Survey of Norway<br />\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<br />\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates source code also contains code derived from: <ul>\\n")
