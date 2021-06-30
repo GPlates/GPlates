@@ -37,6 +37,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QStringList>
 #include <QTextStream>
 
@@ -865,11 +866,38 @@ internal_main(int argc, char* argv[])
 	// and set the image's device pixel ratio to 2).
 	QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 
-#if QT_VERSION >= QT_VERSION_CHECK(5,6,0)
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
 	// Enable high DPI scaling in Qt on supported platforms (X11 and Windows).
 	// Note that MacOS has its own native scaling (eg, for Retina), so this
 	// attribute does not affect MacOS.
+	//
+	// Note: This attribute was added in Qt 5.6 (which our minimum Qt requirement satisfies).
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+
+	// Decide how DPI non-integer scale factors (such as Windows 150%) are handled.
+	//
+	// Currently we are using the integer version of the various Qt devicePixelRatio() functions
+	// (eg, in QPaintDevice) which only handles scale factors 100%, 200%, etc. However it is not uncommon
+	// for Windows to be 150% (eg, a 1920x1080 14" laptop display). So currently we need to round to an
+	// integer scale factor by either rounding up or rounding down. In the case of the 1920x1080 14" laptop
+	// rounding 150% up to 200% doubled the size of GPlates such that it no longer fit on the screen
+	// (GPlates is currently almost 700 pixels high and twice this is 1400 which exceeds 1080).
+	// So we choose to round up only for scale factors 0.75 to 1.0 (with 0.0 to 1.74999 rounding down) which
+	// is achieved with Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor.
+	//
+	// TODO: Switch to using Qt::HighDpiScaleFactorRoundingPolicy::PassThrough which supports fractional scale factors.
+	//       This will also require switching to the qreal versions of the various Qt devicePixelRatio() functions.
+	//       And will likely require using Qt 5.15 (as it appears there were Qt 5.14 bugs related to fractional scale factors).
+	//
+	// Note: This function was added in Qt 5.14.
+	QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor);
+#else
+	// Disable high DPI scaling in Qt on supported platforms (X11 and Windows).
+	// Note that MacOS has its own native scaling (eg, for Retina), so this
+	// attribute does not affect MacOS.
+	//
+	// Note: This attribute was added in Qt 5.6 (which our minimum Qt requirement satisfies).
+	QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
 #endif
 
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.

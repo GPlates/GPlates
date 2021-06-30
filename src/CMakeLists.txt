@@ -233,7 +233,8 @@ set(CMAKE_AUTORCC ON)
 if(CMAKE_VERSION VERSION_LESS 3.7)
 	set(CMAKE_INCLUDE_CURRENT_DIR ON)
 endif()
-find_package(Qt5 5.5 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
+# Require Qt 5.6 for the Qt::AA_EnableHighDpiScaling attribute (Bionic, our minimum supported Ubuntu, uses Qt 5.9).
+find_package(Qt5 5.6 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
 
 ############
 # Find Qwt #
