@@ -591,8 +591,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	#
 	if (GPLATES_PUBLIC_RELEASE)
 		# Disable all warnings when releasing source code to non-developers.
-		target_compile_options(gplates-lib PUBLIC /w)
-		target_compile_options(pygplates PUBLIC /w)
+		target_compile_options(gplates-lib PUBLIC /W0)
+		target_compile_options(pygplates PUBLIC /W0)
 	else()
 		# Default warning level /W3 seems sufficient (/W4 generates informational warnings which are not necessary to write good code).
 		# But avoid /WX - we don't want to treat all warnings as errors.
