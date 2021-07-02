@@ -85,15 +85,16 @@ set(GPLATES_PACKAGE_VERSION_NAME ${PROJECT_VERSION})
 #
 # For a pre-release append the pre-release version (using a hyphen for pre-releases as dictated by Semantic Versioning).
 if (GPLATES_VERSION_PRERELEASE)
+    set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION}-${GPLATES_VERSION_PRERELEASE}")
 	# If a development release (ie, if pre-release version is just a number) then insert 'dev' into the version *name* to make it more obvious to users.
 	# Note: We don't insert 'dev' into the version itself because that would give it a higher version ordering precedence than 'alpha' and 'beta' (since a < b < d).
 	#       Keeping only the development number in the actual version works because digits have lower precedence than non-digits (according to Semantic and Debian versioning).
-    set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION}-${GPLATES_VERSION_PRERELEASE}")
 	if (GPLATES_VERSION_PRERELEASE MATCHES "^[0-9]+$")
-	    set(GPLATES_PACKAGE_VERSION_NAME "${GPLATES_PACKAGE_VERSION_NAME}-dev${GPLATES_VERSION_PRERELEASE}")
+		set(GPLATES_VERSION_PRERELEASE_NAME "dev${GPLATES_VERSION_PRERELEASE}")
 	else()
-	    set(GPLATES_PACKAGE_VERSION_NAME "${GPLATES_PACKAGE_VERSION_NAME}-${GPLATES_VERSION_PRERELEASE}")
+		set(GPLATES_VERSION_PRERELEASE_NAME "${GPLATES_VERSION_PRERELEASE}")
 	endif()
+	set(GPLATES_PACKAGE_VERSION_NAME "${GPLATES_PACKAGE_VERSION_NAME}-${GPLATES_VERSION_PRERELEASE_NAME}")
 endif()
 
 # GPLATES_PUBLIC_RELEASE - Official public release.

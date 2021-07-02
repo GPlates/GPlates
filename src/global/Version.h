@@ -26,6 +26,7 @@
 #ifndef GPLATES_GLOBAL_VERSION_H
 #define GPLATES_GLOBAL_VERSION_H
 
+#include <boost/optional.hpp>
 #include <QString>
 
 namespace GPlatesGlobal
@@ -33,9 +34,11 @@ namespace GPlatesGlobal
 	namespace Version
 	{
 		/**
-		 * The MAJOR.MINOR.PATCH version number of GPlates.
+		 * The MAJOR.MINOR.PATCH[-PRERELEASE] human-readable version of GPlates.
 		 *
-		 * For example "2.2.0".
+		 * Where '-PRERELEASE' is optional and not used for official public releases (GPLATES_PUBLIC_RELEASE is true).
+		 *
+		 * For example "2.3.0-dev1" for first development pre-release leading up to official "2.3.0".
 		 */
 		QString
 		get_GPlates_version();
@@ -57,12 +60,20 @@ namespace GPlatesGlobal
 		 */
 		unsigned int
 		get_GPlates_version_patch();
+
+		/**
+		 * The optional PRERELEASE human-readable version suffix of GPlates.
+		 *
+		 * Returns none if GPLATES_PUBLIC_RELEASE is true (official public release).
+		 */
+		boost::optional<QString>
+		get_GPlates_version_prerelease();
 		
 		
 		/**
 		* Returns the source code control revision number.
 		*
-		* Returns an empty string if either GPLATES_PUBLIC_RELEASE is true, or
+		* Returns an empty string if either GPLATES_PUBLIC_RELEASE is true (official public release), or
 		* there was an error retrieving the revision number.
 		*/
 		QString
@@ -71,7 +82,7 @@ namespace GPlatesGlobal
 		/**
 		* Returns the name of the branch from which this was compiled.
 		*
-		* Returns an empty string if either GPLATES_PUBLIC_RELEASE is true, or
+		* Returns an empty string if either GPLATES_PUBLIC_RELEASE is true (official public release), or
 		* there was an error retrieving the branch name.
 		*/
 		QString
