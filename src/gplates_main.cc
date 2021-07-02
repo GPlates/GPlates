@@ -883,7 +883,9 @@ internal_main(int argc, char* argv[])
 	// rounding 150% up to 200% doubled the size of GPlates such that it no longer fit on the screen
 	// (GPlates is currently almost 700 pixels high and twice this is 1400 which exceeds 1080).
 	// So we choose to round up only for scale factors 0.75 to 1.0 (with 0.0 to 1.74999 rounding down) which
-	// is achieved with Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor.
+	// is achieved with Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor. In other words, 150% rounds
+	// down to 100% and 175% rounds up to 200%. This means GPlates with 150% will look smaller than desired
+	// and with 175% GPlates will look slightly larger than desired.
 	//
 	// TODO: Switch to using Qt::HighDpiScaleFactorRoundingPolicy::PassThrough which supports fractional scale factors.
 	//       This will also require switching to the qreal versions of the various Qt devicePixelRatio() functions.

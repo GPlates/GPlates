@@ -57,12 +57,6 @@ namespace GPlatesGlobal
 		 */
 		unsigned int
 		get_GPlates_version_patch();
-
-		/**
-		 * The TWEAK version number of GPlates.
-		 */
-		unsigned int
-		get_GPlates_version_tweak();
 		
 		
 		/**

@@ -56,13 +56,6 @@ GPlatesGlobal::Version::get_GPlates_version_patch()
 			+0; // In case patch component not specified in CMake project() command.
 }
 
-unsigned int
-GPlatesGlobal::Version::get_GPlates_version_tweak()
-{
-	return @GPlates_VERSION_TWEAK@
-			+0; // In case tweak component not specified in CMake project() command.
-}
-
 QString
 GPlatesGlobal::Version::get_working_copy_version_number()
 {
