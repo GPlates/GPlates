@@ -26,6 +26,7 @@
 #include "AboutDialog.h"
 #include "LicenseDialog.h"
 
+#include "global/config.h"  // GPLATES_PUBLIC_RELEASE
 #include "global/License.h"  // the copyright string macro
 #include "global/Version.h"
 
@@ -52,7 +53,11 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 	QString version(QObject::tr(GPlatesGlobal::Version::get_GPlates_version().toLatin1().constData()));
 	label_GPlates->setText(version);
 
-	// Set Subversion info label text.
+#if defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
+	// Hide any subversion info for official public releases.
+	label_subversion_info->hide();
+#else
+		// Set Subversion info label text.
 	QString subversion_version_number = GPlatesGlobal::Version::get_working_copy_version_number();
 	QString subversion_branch_name = GPlatesGlobal::Version::get_working_copy_branch_name();
 	if (subversion_version_number.isEmpty())
@@ -82,6 +87,7 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 		}
 		label_subversion_info->setText(subversion_info);
 	}
+#endif
 
 	// Set the GPGIM version label.
 	const QString gpgim_version_string = GPlatesModel::Gpgim::instance().get_version().get_version_string();

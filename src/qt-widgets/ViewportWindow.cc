@@ -1678,25 +1678,12 @@ GPlatesQtWidgets::ViewportWindow::set_window_title(
 {
 	QString window_title("GPlates");
 
-	QString subversion_branch_name = GPlatesGlobal::Version::get_working_copy_branch_name();
-
-	// If the subversion branch name is the empty string, that should mean that this is a public release.
-	if (!subversion_branch_name.isEmpty())
-	{
-		QString subversion_version_number = GPlatesGlobal::Version::get_working_copy_version_number();
-
-		if (subversion_version_number.isEmpty())
-		{
-			static const QString FORMAT = " (%1)";
-			window_title.append(FORMAT.arg(subversion_branch_name));
-		}
-		else
-		{
-			static const QString FORMAT = " (%1, r%2)";
-
-			window_title.append(FORMAT.arg(subversion_branch_name, subversion_version_number));
-		}
-	}
+	// Append the GPlates version (including pre-release suffix, eg, 2.3.0-dev1) if not an official public release.
+	// Otherwise just leave as "GPlates" for official public releases.
+#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
+	const QString FORMAT = " (%1)";
+	window_title.append(FORMAT.arg(GPlatesGlobal::Version::get_GPlates_version()));
+#endif
 
 	// Add the project filename if there is one.
 	if (project_filename)

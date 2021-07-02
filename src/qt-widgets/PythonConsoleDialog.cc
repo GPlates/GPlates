@@ -315,14 +315,7 @@ GPlatesQtWidgets::PythonConsoleDialog::print_banner()
 {
 	QString banner_text;
 	banner_text += GPlatesGlobal::Version::get_GPlates_version();
-	banner_text += tr(" (r");
-	QString version_number = GPlatesGlobal::Version::get_working_copy_version_number();
-	if (version_number.isEmpty())
-	{
-		version_number = tr("<unknown>");
-	}
-	banner_text += version_number;
-	banner_text += tr(") with Python ");
+	banner_text += tr(" with Python ");
 	banner_text += Py_GetVersion();
 	banner_text += tr(" on ");
 	banner_text += Py_GetPlatform();

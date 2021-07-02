@@ -102,9 +102,13 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 	d_log_stream.reset(new QTextStream(&d_log_file));
 
 	// Print message with timestamp and version so we know what made this log.
-	*d_log_stream << "Log file created on " << QDateTime::currentDateTime().toString() << " by GPlates " 
-			<< GPlatesGlobal::Version::get_working_copy_branch_name() << " "
-			<< GPlatesGlobal::Version::get_working_copy_version_number() << endl;
+	*d_log_stream << "Log file created on " << QDateTime::currentDateTime().toString() << " by GPlates "
+			<< GPlatesGlobal::Version::get_GPlates_version()
+#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
+			<< " (build:" << GPlatesGlobal::Version::get_working_copy_version_number()
+			<< " " << GPlatesGlobal::Version::get_working_copy_branch_name() << ")"
+#endif
+			<< endl;
 }
 
 
@@ -120,9 +124,13 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 	
 	// Logging to stderr doesn't really need to care about what GPLATES_LOGLEVEL is set; that's really just for the log file.
 
-	*d_log_stream << "Logging to console started at " << QDateTime::currentDateTime().toString() << " by GPlates " 
-			<< GPlatesGlobal::Version::get_working_copy_branch_name() << " "
-			<< GPlatesGlobal::Version::get_working_copy_version_number() << endl;
+	*d_log_stream << "Logging to console started at " << QDateTime::currentDateTime().toString() << " by GPlates "
+			<< GPlatesGlobal::Version::get_GPlates_version()
+#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
+			<< " (build:" << GPlatesGlobal::Version::get_working_copy_version_number()
+			<< " " << GPlatesGlobal::Version::get_working_copy_branch_name() << ")"
+#endif
+			<< endl;
 }
 
 

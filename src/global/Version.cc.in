@@ -59,7 +59,13 @@ GPlatesGlobal::Version::get_GPlates_version_patch()
 boost::optional<QString>
 GPlatesGlobal::Version::get_GPlates_version_prerelease()
 {
-	return QString("@GPLATES_VERSION_PRERELEASE_NAME@");
+	const QString version_prerelease("@GPLATES_VERSION_PRERELEASE_NAME@");
+	if (version_prerelease.isEmpty())
+	{
+		return boost::none;
+	}
+
+	return version_prerelease;
 }
 
 QString

@@ -33,6 +33,7 @@
 
 #include "GPlatesQApplication.h"
 
+#include "global/config.h"  // GPLATES_PUBLIC_RELEASE
 #include "global/GPlatesException.h"
 #include "global/Version.h"
 
@@ -152,7 +153,12 @@ namespace
 			qWarning()
 					<< QString::fromStdString(call_stack_trace_std)
 					<< endl
-					<< GPlatesGlobal::Version::get_working_copy_version_number();
+					<< GPlatesGlobal::Version::get_GPlates_version()
+#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
+					<< "( build:" << GPlatesGlobal::Version::get_working_copy_version_number()
+					<< GPlatesGlobal::Version::get_working_copy_branch_name() << ")"
+#endif
+				;
 		}
 
 		// If we have an installed message handler then this will output to a log file.
