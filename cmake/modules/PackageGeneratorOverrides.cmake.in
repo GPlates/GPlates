@@ -62,17 +62,17 @@ if (CPACK_GENERATOR MATCHES "^NSIS$")
     #   This may be used by some CPack generators like NSIS to create an installation directory e.g.,
     #   "CMake 2.5" below the installation prefix. All installed elements will be put inside this directory..
     #
-    # We want, for example, "GPlates\GPlates 2.2.0\" (which ends up as "C:\Program Files\GPlates\GPlates 2.2.0\").
+    # We want, for example, "GPlates\GPlates 2.3.0\" (which ends up as "C:\Program Files\GPlates\GPlates 2.3.0\").
     # This way multiple versions can be installed at the same time (in different sub-directories of "C:\Program Files\GPlates\").
-    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "@PROJECT_NAME@\\@PROJECT_NAME@ @CPACK_PACKAGE_VERSION@")
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "@PROJECT_NAME@\\@PROJECT_NAME@ @GPLATES_PACKAGE_VERSION_NAME@")
 
     #   CPACK_PACKAGE_INSTALL_REGISTRY_KEY - Registry key used when installing this project.
     #
     #   This is only used by installers for Windows. The default value is based on the installation directory.
     #
-    # We want, for example, "GPlates 2.2.0_r19869" for a *non*-public installation so that multiple installations
-    # with different revision numbers don't conflict with each other.
-    SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "@PROJECT_NAME@ @CPACK_PACKAGE_VERSION@")
+    # We want, for example, "GPlates 2.3.0-dev1" for a development release so that multiple installations
+    # with different version numbers don't conflict with each other.
+    SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "@PROJECT_NAME@ @GPLATES_PACKAGE_VERSION_NAME@")
 
     # Note that CPACK_PACKAGE_ICON can be used by NSIS, but we don't set this for now since apparently NSIS needs this to be 150x57 pixels.
 endif()
@@ -97,7 +97,8 @@ if (CPACK_GENERATOR MATCHES "^DragNDrop$")
     #
     #    This is not the same purpose as CMAKE_INSTALL_PREFIX which is used when installing from the build tree without building a package.
     #
-    # Make sure we everything ends up in the specified directory (which the user can then drag'n'drop into "/Applications/").
+    # Make sure everything ends up in the specified directory (which the user can then drag'n'drop into "/Applications/").
     # This way the GPlates app bundle and geodata stay together in the one directory.
-    SET(CPACK_PACKAGING_INSTALL_PREFIX "/@PROJECT_NAME@-@CPACK_PACKAGE_VERSION@")
+    # And using the version in the directory name enables multiple versions to be installed (in different sub-directories of, eg, "/Applications").
+    SET(CPACK_PACKAGING_INSTALL_PREFIX "/@PROJECT_NAME@_@GPLATES_PACKAGE_VERSION_NAME@")
 endif()

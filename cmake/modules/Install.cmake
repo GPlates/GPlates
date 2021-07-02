@@ -125,8 +125,8 @@ if (GPLATES_INSTALL_STANDALONE)
     # For standalone we want to bundle everything together so it's relocatable, and it's easier to place gplates/pygplates
     # in the base install directory (along with 'qt.conf', which has to be in the same directory as the exectuable).
     #
-    # For Windows this means 'gplates.exe' ultimately gets installed into, for example, "C:\Program Files\GPlates\GPlates 2.2.0"
-    # instead of "C:\Program Files\GPlates\GPlates 2.2.0\bin". And we copy the dependency DLLs into the same directory as gplates (so it can find them).
+    # For Windows this means 'gplates.exe' ultimately gets installed into, for example, "C:\Program Files\GPlates\GPlates 2.3.0"
+    # instead of "C:\Program Files\GPlates\GPlates 2.3.0\bin". And we copy the dependency DLLs into the same directory as gplates (so it can find them).
     # For macOS this means you immediately see the app bundle in the base directory (rather than in a 'bin' sub-directory).
     # For Linux the standalone version is typically packaged as an archive (not a '.deb') and the extracted gplates executable will be immediately visible (in base directory).
     set(STANDALONE_BASE_INSTALL_DIR_gplates .)
@@ -194,15 +194,6 @@ endforeach()
 # The variables GPLATES_INSTALL_GEO_DATA and GPLATES_INSTALL_GEO_DATA_DIR are cache variables that the user can set to control this.
 #
 if (GPLATES_INSTALL_GEO_DATA)
-    # Make sure the source geodata directory has been specified and is an absolute path.
-    if (GPLATES_INSTALL_GEO_DATA_DIR)
-        if (NOT IS_ABSOLUTE "${GPLATES_INSTALL_GEO_DATA_DIR}")
-            message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR should be an absolute path (not a relative path)")
-        endif()
-    else()
-        message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_DIR when you enable GPLATES_INSTALL_GEO_DATA")
-    endif()
-
     # Remove the trailing '/', if there is one, so that we can then
     # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
     #
@@ -217,7 +208,7 @@ if (GPLATES_INSTALL_GEO_DATA)
     #       could, for example, exceed 260 characters (MAX_PATH) on Windows (eg, when creating an NSIS package).
     #       This can even happen on the latest Windows 10 with long paths opted in.
     #       For example, when packaging with NSIS you can get a geodata file with a path like the following:
-    #           <build_dir>\_CPack_Packages\win64\NSIS\GPlates-2.2.0-win64\GeoData\<geo_data_file>
+    #           <build_dir>\_CPack_Packages\win64\NSIS\gplates_2.3.0_win64\GeoData\<geo_data_file>
     #       ...and currently <geo_data_file> can reach 160 chars, which when added to the middle part
     #       '\_CPack_Packages\...' of ~60 chars becomes ~220 chars leaving only 40 chars for <build_dir>.
     #
