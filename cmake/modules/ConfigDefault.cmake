@@ -6,14 +6,21 @@
 #
 
 
-# The GPlates package vendor.
-set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
-
-
 # A short description of the GPlates project (only a few words).
 #
 # CMake (>= 3.16) uses this as the first line of Debian package description and Debian doesn't want first word to be same name as package name (eg, 'gplates').
 set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "Desktop software for the interactive visualisation of plate tectonics.")
+
+
+# The GPlates package vendor.
+set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
+
+
+# The GPlates package contact (Debian requires a name and email address - so use format 'FirstName LastName <EmailAddress>').
+#
+# NOTE: Leave it as the *empty* string here (so it doesn't get committed to source code control).
+#       It is currently only needed when creating Debian packages (using cpack) where the developer should set it using 'cmake -D', or CMake GUI, or 'ccmake'.
+set(GPLATES_PACKAGE_CONTACT "" CACHE STRING "Package contact/maintainer. Use format 'FirstName LastName <EmailAddress>'.")
 
 
 # The GPlates copyright - string version to be used in a source file.
@@ -87,7 +94,7 @@ set(GPLATES_PACKAGE_VERSION_NAME ${PROJECT_VERSION})
 #
 # For a pre-release append the pre-release version (using a hyphen for pre-releases as dictated by Semantic Versioning).
 if (GPLATES_VERSION_PRERELEASE)
-    set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION}-${GPLATES_VERSION_PRERELEASE}")
+	set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION}-${GPLATES_VERSION_PRERELEASE}")
 	# If a development release (ie, if pre-release version is just a number) then insert 'dev' into the version *name* to make it more obvious to users.
 	# Note: We don't insert 'dev' into the version itself because that would give it a higher version ordering precedence than 'alpha' and 'beta' (since a < b < d).
 	#       Keeping only the development number in the actual version works because digits have lower precedence than non-digits (according to Semantic and Debian versioning).
@@ -144,8 +151,8 @@ set(GPLATES_INSTALL_GEO_DATA_DIR "" CACHE PATH "Location of geodata (use absolut
 #
 # If we're installing geodata then make sure the source geodata directory has been specified, is an absolute path and exists.
 if (GPLATES_INSTALL_GEO_DATA)
-    if (NOT GPLATES_INSTALL_GEO_DATA_DIR)
-        message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_DIR when you enable GPLATES_INSTALL_GEO_DATA")
+	if (NOT GPLATES_INSTALL_GEO_DATA_DIR)
+		message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_DIR when you enable GPLATES_INSTALL_GEO_DATA")
 	endif()
 	if (NOT IS_ABSOLUTE "${GPLATES_INSTALL_GEO_DATA_DIR}")
 		message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR should be an absolute path (not a relative path)")

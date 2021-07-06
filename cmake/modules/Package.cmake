@@ -118,6 +118,10 @@ SET(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
 #
 SET(CPACK_PACKAGE_VENDOR "${GPLATES_PACKAGE_VENDOR}")
 
+#   CPACK_PACKAGE_CONTACT - Default contact for generators that require maintainer contact.
+#
+SET(CPACK_PACKAGE_CONTACT "${GPLATES_PACKAGE_CONTACT}")
+
 #   CPACK_PACKAGE_VERSION - Package full version, used internally.
 #
 #   By default, this is built from CPACK_PACKAGE_VERSION_MAJOR, CPACK_PACKAGE_VERSION_MINOR, and CPACK_PACKAGE_VERSION_PATCH.
@@ -367,10 +371,6 @@ SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_PACKAGE_VERSION_NAM
 #                                   or information may be found.
 #
 SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://www.gplates.org")
-
-#   CPACK_DEBIAN_PACKAGE_MAINTAINER - The Debian package maintainer.
-#
-SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "https://www.gplates.org")
 
 #   CPACK_DEBIAN_PACKAGE_SECTION (CPACK_DEBIAN_<COMPONENT>_PACKAGE_SECTION) - Set Section control field e.g. admin, devel, doc, ...
 #
