@@ -11,7 +11,9 @@ set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
 
 
 # A short description of the GPlates project (only a few words).
-set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the interactive visualisation of plate tectonics.")
+#
+# CMake (>= 3.16) uses this as the first line of Debian package description and Debian doesn't want first word to be same name as package name (eg, 'gplates').
+set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "Desktop software for the interactive visualisation of plate tectonics.")
 
 
 # The GPlates copyright - string version to be used in a source file.
