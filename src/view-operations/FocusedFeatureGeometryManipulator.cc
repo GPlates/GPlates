@@ -380,7 +380,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 		// Since we can have multiple geometry properties per feature we make sure we
 		// set the geometry that the user actually clicked on.
 		GPlatesModel::FeatureHandle::iterator iter = focused_rfg.get()->property();
-		GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->clone();
+		GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->deep_clone();
 		geometry_setter.set_geometry(geom_top_level_prop_clone.get());
 		*iter = geom_top_level_prop_clone;
 		
@@ -417,7 +417,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_secondary_geom
 	// Since we can have multiple geometry properties per feature we make sure we
 	// set the geometry that the user actually clicked on.
 	GPlatesModel::FeatureHandle::iterator iter = (*rfg)->property();
-	GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->clone();
+	GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->deep_clone();
 	geometry_setter.set_geometry(geom_top_level_prop_clone.get());
 	*iter = geom_top_level_prop_clone;
 }
