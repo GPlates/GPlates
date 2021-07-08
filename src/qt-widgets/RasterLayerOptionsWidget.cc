@@ -346,6 +346,11 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_builtin_colour_palette_select
 		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 				params->get_colour_palette_parameters();
 		colour_palette_parameters.load_builtin_colour_palette(builtin_colour_palette_type);
+		// If an age palette then don't map the range - the age palettes don't need remapping.
+		if (builtin_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE)
+		{
+			colour_palette_parameters.unmap_palette_range();
+		}
 		params->set_colour_palette_parameters(colour_palette_parameters);
 	}
 }
