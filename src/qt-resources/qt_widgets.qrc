@@ -138,7 +138,9 @@
         <file>unsaved_changes_red_disk_bang_22.png</file>
         <file>unsaved_changes_red_disk_question_22.png</file>
         <file>zoom_globe_35.png</file>
-        <file>age.cpt</file>
+        <file>age_legacy.cpt</file>
+        <file>age_traditional.cpt</file>
+        <file>age_modern.cpt</file>
         <file>gnome_zoom_fit_best_16.png</file>
         <file>gnome_zoom_fit_best_22.png</file>
         <file>gnome_object_flip_horizontal_purple_16.png</file>

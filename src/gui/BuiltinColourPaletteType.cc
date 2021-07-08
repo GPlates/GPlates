@@ -36,33 +36,37 @@ const GPlatesGui::BuiltinColourPaletteType::PaletteType
 GPlatesGui::BuiltinColourPaletteType::DEFAULT_PALETTE_TYPE =
 		GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE/*arbitrary*/;
 
-const GPlatesGui::BuiltinColourPalettes::ColorBrewerSequentialType
-GPlatesGui::BuiltinColourPaletteType::DEFAULT_COLORBREWER_SEQUENTIAL_TYPE =
-		GPlatesGui::BuiltinColourPalettes::OrRd/*arbitrary*/;
+// GPlates 2.3 made the existing age palette legacy and added two new palettes (traditional and modern).
+// The new default palette is traditional.
+const GPlatesGui::BuiltinColourPalettes::Age::Type
+GPlatesGui::BuiltinColourPaletteType::DEFAULT_AGE_TYPE =
+GPlatesGui::BuiltinColourPalettes::Age::Traditional;
 
-const GPlatesGui::BuiltinColourPalettes::ColorBrewerDivergingType
+const GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Type
+GPlatesGui::BuiltinColourPaletteType::DEFAULT_COLORBREWER_SEQUENTIAL_TYPE =
+		GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::OrRd/*arbitrary*/;
+
+const GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::Type
 GPlatesGui::BuiltinColourPaletteType::DEFAULT_COLORBREWER_DIVERGING_TYPE =
-		GPlatesGui::BuiltinColourPalettes::Spectral/*arbitrary*/;
+		GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::Spectral/*arbitrary*/;
 
 
 GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
-		PaletteType palette_type) :
-	d_palette_type(palette_type),
+		BuiltinColourPalettes::Age::Type age_type) :
+	d_palette_type(AGE_PALETTE),
+	d_age_type(age_type),
 	d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
 	d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_palette_type != COLORBREWER_SEQUENTIAL_PALETTE &&
-				d_palette_type != COLORBREWER_DIVERGING_PALETTE,
-			GPLATES_ASSERTION_SOURCE);
 }
 
 
 GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
-		BuiltinColourPalettes::ColorBrewerSequentialType colorbrewer_sequential_type,
+		BuiltinColourPalettes::ColorBrewer::Sequential::Type colorbrewer_sequential_type,
 		const Parameters &parameters) :
 	d_palette_type(COLORBREWER_SEQUENTIAL_PALETTE),
 	d_parameters(parameters),
+	d_age_type(DEFAULT_AGE_TYPE),
 	d_colorbrewer_sequential_type(colorbrewer_sequential_type),
 	d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
 {
@@ -70,10 +74,11 @@ GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
 
 
 GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
-		BuiltinColourPalettes::ColorBrewerDivergingType colorbrewer_diverging_type,
+		BuiltinColourPalettes::ColorBrewer::Diverging::Type colorbrewer_diverging_type,
 		const Parameters &parameters) :
 	d_palette_type(COLORBREWER_DIVERGING_PALETTE),
 	d_parameters(parameters),
+	d_age_type(DEFAULT_AGE_TYPE),
 	d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
 	d_colorbrewer_diverging_type(colorbrewer_diverging_type)
 {
@@ -87,11 +92,11 @@ GPlatesGui::BuiltinColourPaletteType::create_palette() const
 	{
 	case AGE_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
-				BuiltinColourPalettes::create_age_palette());
+				BuiltinColourPalettes::Age::create_palette(d_age_type));
 
 	case COLORBREWER_SEQUENTIAL_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
-				BuiltinColourPalettes::create_colorbrewer_sequential_palette(
+				BuiltinColourPalettes::ColorBrewer::Sequential::create_palette(
 						d_colorbrewer_sequential_type,
 						d_parameters.colorbrewer_sequential_classes,
 						d_parameters.colorbrewer_continuous,
@@ -99,7 +104,7 @@ GPlatesGui::BuiltinColourPaletteType::create_palette() const
 
 	case COLORBREWER_DIVERGING_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
-				BuiltinColourPalettes::create_colorbrewer_diverging_palette(
+				BuiltinColourPalettes::ColorBrewer::Diverging::create_palette(
 						d_colorbrewer_diverging_type,
 						d_parameters.colorbrewer_diverging_classes,
 						d_parameters.colorbrewer_continuous,
@@ -111,7 +116,6 @@ GPlatesGui::BuiltinColourPaletteType::create_palette() const
 
 	// Shouldn't be able to get here.
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-	return RasterColourPalette::create();
 }
 
 
@@ -121,13 +125,13 @@ GPlatesGui::BuiltinColourPaletteType::get_palette_name() const
 	switch (d_palette_type)
 	{
 	case AGE_PALETTE:
-		return QString("Age");
+		return BuiltinColourPalettes::Age::get_palette_name(d_age_type);
 
 	case COLORBREWER_SEQUENTIAL_PALETTE:
-		return BuiltinColourPalettes::get_colorbrewer_sequential_palette_name(d_colorbrewer_sequential_type);
+		return BuiltinColourPalettes::ColorBrewer::Sequential::get_palette_name(d_colorbrewer_sequential_type);
 
 	case COLORBREWER_DIVERGING_PALETTE:
-		return BuiltinColourPalettes::get_colorbrewer_diverging_palette_name(d_colorbrewer_diverging_type);
+		return BuiltinColourPalettes::ColorBrewer::Diverging::get_palette_name(d_colorbrewer_diverging_type);
 
 	default:
 		break;
@@ -135,7 +139,6 @@ GPlatesGui::BuiltinColourPaletteType::get_palette_name() const
 
 	// Shouldn't be able to get here.
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-	return QString();
 }
 
 
@@ -150,6 +153,14 @@ GPlatesGui::BuiltinColourPaletteType::transcribe(
 	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_palette_type, "palette_type"))
 	{
 		d_palette_type = DEFAULT_PALETTE_TYPE;
+	}
+
+	// This is a new field added in GPlates 2.3.
+	// If the field doesn't exist then we're loading a project created by GPlates 2.2 or earlier,
+	// in which case we'll use the legacy age palette (used by GPlates 2.2 and earlier).
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_age_type, "age_type"))
+	{
+		d_age_type = BuiltinColourPalettes::Age::Legacy;
 	}
 
 	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_colorbrewer_sequential_type, "colorbrewer_sequential_type"))

@@ -52,6 +52,7 @@ namespace GPlatesGui
 		 */
 		enum PaletteType
 		{
+			// This is a small group of age palettes...
 			AGE_PALETTE,
 
 			// This is a group of sequential ColorBrewer palettes...
@@ -71,10 +72,10 @@ namespace GPlatesGui
 		struct Parameters
 		{
 			Parameters(
-					BuiltinColourPalettes::ColorBrewerSequentialClasses colorbrewer_sequential_classes_ =
-							BuiltinColourPalettes::NineSequentialClasses,
-					BuiltinColourPalettes::ColorBrewerDivergingClasses colorbrewer_diverging_classes_ =
-							BuiltinColourPalettes::ElevenDivergingClasses,
+					BuiltinColourPalettes::ColorBrewer::Sequential::Classes colorbrewer_sequential_classes_ =
+							BuiltinColourPalettes::ColorBrewer::Sequential::Classes::Nine,
+					BuiltinColourPalettes::ColorBrewer::Diverging::Classes colorbrewer_diverging_classes_ =
+							BuiltinColourPalettes::ColorBrewer::Diverging::Classes::Eleven,
 					bool colorbrewer_continuous_ = true,
 					bool colorbrewer_inverted_ = false) :
 				colorbrewer_sequential_classes(colorbrewer_sequential_classes_),
@@ -84,8 +85,8 @@ namespace GPlatesGui
 			{  }
 
 			// ColorBrewer parameters.
-			BuiltinColourPalettes::ColorBrewerSequentialClasses colorbrewer_sequential_classes;
-			BuiltinColourPalettes::ColorBrewerDivergingClasses colorbrewer_diverging_classes;
+			BuiltinColourPalettes::ColorBrewer::Sequential::Classes colorbrewer_sequential_classes;
+			BuiltinColourPalettes::ColorBrewer::Diverging::Classes colorbrewer_diverging_classes;
 			bool colorbrewer_continuous;
 			bool colorbrewer_inverted;
 
@@ -101,26 +102,24 @@ namespace GPlatesGui
 
 
 		/**
-		 * Construct a palette type that does not require @a Parameters.
-		 *
-		 * Throws exception if @a palette_type is a type that requires @a Parameters (eg, ColorBrewer types).
+		 * Construct an age type.
 		 */
 		explicit
 		BuiltinColourPaletteType(
-				PaletteType palette_type);
+				BuiltinColourPalettes::Age::Type age_type);
 
 		/**
 		 * Construct a ColorBrewer sequential palette type.
 		 */
 		BuiltinColourPaletteType(
-				BuiltinColourPalettes::ColorBrewerSequentialType colorbrewer_sequential_type,
+				BuiltinColourPalettes::ColorBrewer::Sequential::Type colorbrewer_sequential_type,
 				const Parameters &parameters);
 
 		/**
 		 * Construct a ColorBrewer diverging palette type.
 		 */
 		BuiltinColourPaletteType(
-				BuiltinColourPalettes::ColorBrewerDivergingType colorbrewer_diverging_type,
+				BuiltinColourPalettes::ColorBrewer::Diverging::Type colorbrewer_diverging_type,
 				const Parameters &parameters);
 
 
@@ -161,9 +160,18 @@ namespace GPlatesGui
 
 
 		/**
+		 * Return the age palette type (if @a get_palette_type returns @a AGE_PALETTE).
+		 */
+		BuiltinColourPalettes::Age::Type
+		get_age_type() const
+		{
+			return d_age_type;
+		}
+
+		/**
 		 * Return the ColorBrewer sequential palette type (if @a get_palette_type returns @a COLORBREWER_SEQUENTIAL_PALETTE).
 		 */
-		BuiltinColourPalettes::ColorBrewerSequentialType
+		BuiltinColourPalettes::ColorBrewer::Sequential::Type
 		get_colorbrewer_sequential_type() const
 		{
 			return d_colorbrewer_sequential_type;
@@ -172,7 +180,7 @@ namespace GPlatesGui
 		/**
 		 * Return the ColorBrewer diverging palette type (if @a get_palette_type returns @a COLORBREWER_DIVERGING_PALETTE).
 		 */
-		BuiltinColourPalettes::ColorBrewerDivergingType
+		BuiltinColourPalettes::ColorBrewer::Diverging::Type
 		get_colorbrewer_diverging_type() const
 		{
 			return d_colorbrewer_diverging_type;
@@ -182,14 +190,17 @@ namespace GPlatesGui
 		PaletteType d_palette_type;
 		Parameters d_parameters;
 
+		// This is onlky used if @a d_palette_type is @a AGE_PALETTE.
+		BuiltinColourPalettes::Age::Type d_age_type;
 		// These are only used if @a d_palette_type is @a COLORBREWER_SEQUENTIAL_PALETTE or @a COLORBREWER_DIVERGING_PALETTE.
-		BuiltinColourPalettes::ColorBrewerSequentialType d_colorbrewer_sequential_type;
-		BuiltinColourPalettes::ColorBrewerDivergingType d_colorbrewer_diverging_type;
+		BuiltinColourPalettes::ColorBrewer::Sequential::Type d_colorbrewer_sequential_type;
+		BuiltinColourPalettes::ColorBrewer::Diverging::Type d_colorbrewer_diverging_type;
 
 		
 		static const PaletteType DEFAULT_PALETTE_TYPE;
-		static const BuiltinColourPalettes::ColorBrewerSequentialType DEFAULT_COLORBREWER_SEQUENTIAL_TYPE;
-		static const BuiltinColourPalettes::ColorBrewerDivergingType DEFAULT_COLORBREWER_DIVERGING_TYPE;
+		static const BuiltinColourPalettes::Age::Type DEFAULT_AGE_TYPE;
+		static const BuiltinColourPalettes::ColorBrewer::Sequential::Type DEFAULT_COLORBREWER_SEQUENTIAL_TYPE;
+		static const BuiltinColourPalettes::ColorBrewer::Diverging::Type DEFAULT_COLORBREWER_DIVERGING_TYPE;
 
 	private: // Transcribe for sessions/projects...
 
@@ -198,6 +209,7 @@ namespace GPlatesGui
 		// Default constructor makes transcribing easier.
 		BuiltinColourPaletteType() :
 				d_palette_type(DEFAULT_PALETTE_TYPE),
+				d_age_type(DEFAULT_AGE_TYPE),
 				d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
 				d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
 		{  }

@@ -49,8 +49,7 @@
 GPlatesQtWidgets::RemappedColourPaletteWidget::RemappedColourPaletteWidget(
 		GPlatesPresentation::ViewState &view_state,
 		ViewportWindow *viewport_window,
-		QWidget *parent_,
-		QWidget *extra_widget) :
+		QWidget *parent_) :
 	QWidget(parent_),
 	d_viewport_window(viewport_window),
 	d_palette_name_lineedit(
@@ -78,16 +77,6 @@ GPlatesQtWidgets::RemappedColourPaletteWidget::RemappedColourPaletteWidget(
 			SIGNAL(link_activated()),
 			this,
 			SLOT(open_choose_builtin_palette_dialog()));
-
-	if (extra_widget)
-	{
-		QtWidgetUtils::add_widget_to_placeholder(extra_widget, extra_placeholder_widget);
-	}
-	else
-	{
-		// Remove the extra placeholder - it's only used if clients add extra widgets to us.
-		extra_placeholder_widget->setVisible(false);
-	}
 
 
 	select_palette_filename_button->setCursor(QCursor(Qt::ArrowCursor));
