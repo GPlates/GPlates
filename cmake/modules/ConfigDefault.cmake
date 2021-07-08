@@ -73,7 +73,7 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # For example:
 # For Semantic Versioning: 2.3.0-1 < 2.3.0-alpha1 < 2.3.0-beta1 < 2.3.0-rc1 < 2.3.0.
 # For Debian versioning:   2.3.0~1 < 2.3.0~alpha1 < 2.3.0~beta1 < 2.3.0~rc1 < 2.3.0.
-set(GPLATES_VERSION_PRERELEASE "beta1" CACHE STRING "Pre-release version suffix (eg, '1', 'alpha1', 'beta1', 'rc1'). Empty means official public release.")
+set(GPLATES_VERSION_PRERELEASE "beta2" CACHE STRING "Pre-release version suffix (eg, '1', 'alpha1', 'beta1', 'rc1'). Empty means official public release.")
 #
 # Make sure pre-release contains only alphanumeric characters.
 if (GPLATES_VERSION_PRERELEASE)
