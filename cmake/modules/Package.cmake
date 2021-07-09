@@ -338,7 +338,7 @@ set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 # For a pre-release append the pre-release version, using a '~' character which is the common Debian method
 # of handling pre-releases (see https://www.debian.org/doc/debian-policy/ch-controlfields.html#version).
 if (GPLATES_VERSION_PRERELEASE)
-    # For example, the first development release before 2.3.0 would be 2.3.0~1, and the first release candidate would be 2.3.0~rc1.
+    # For example, the first development release before 2.3.0 would be 2.3.0~1, and the first release candidate would be 2.3.0~rc.1.
     SET(CPACK_DEBIAN_PACKAGE_VERSION "${PROJECT_VERSION}~${GPLATES_VERSION_PRERELEASE}")
 else()
     SET(CPACK_DEBIAN_PACKAGE_VERSION "${PROJECT_VERSION}")

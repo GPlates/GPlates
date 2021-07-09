@@ -1678,7 +1678,7 @@ GPlatesQtWidgets::ViewportWindow::set_window_title(
 {
 	QString window_title("GPlates");
 
-	// Append the GPlates version (including pre-release suffix, eg, 2.3.0-dev1) if not an official public release.
+	// Append the GPlates version (including pre-release suffix, eg, 2.3.0-dev.1) if not an official public release.
 	// Otherwise just leave as "GPlates" for official public releases.
 #if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
 	const QString FORMAT = " (%1)";

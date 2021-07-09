@@ -63,22 +63,36 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # This should be:
 # - empty for official public releases,
 # - a number for development releases (eg, 1, 2, etc),
-# - 'alpha' followed by a number for alpha releases (eg, alpha1, alpha2, etc),
-# - 'beta' followed by a number for beta releases (eg, beta1, beta2, etc),
-# - 'rc' followed by a number for release candidates (eg, rc1, rc2, etc).
+# - 'alpha' followed by '.' followed by a number for alpha releases (eg, alpha.1, alpha.2, etc),
+# - 'beta' followed by '.' followed by a number for beta releases (eg, beta.1, beta.2, etc),
+# - 'rc' followed by '.' followed by a number for release candidates (eg, rc.1, rc.2, etc).
 #
 # The reason for the above rules is they support the correct version ordering precedence for both Semantic Versioning and Debian versioning
 # (even though Semantic and Debian versioning have slightly different precedence rules).
 #
-# For example:
-# For Semantic Versioning: 2.3.0-1 < 2.3.0-alpha1 < 2.3.0-beta1 < 2.3.0-rc1 < 2.3.0.
-# For Debian versioning:   2.3.0~1 < 2.3.0~alpha1 < 2.3.0~beta1 < 2.3.0~rc1 < 2.3.0.
-set(GPLATES_VERSION_PRERELEASE "beta2" CACHE STRING "Pre-release version suffix (eg, '1', 'alpha1', 'beta1', 'rc1'). Empty means official public release.")
+# Semantic version precedence separates identifiers between dots and compares them each identifier.
+# According to https://semver.org/spec/v2.0.0.html ...
+# - digit-only identifiers are compared numerically,
+# - identifiers with letters are compared lexically in ASCII order,
+# - numeric identifiers have lower precedence than non-numeric identifiers.
+# ...and so '1' < 'beta.1' because '1' < 'beta', and 'beta.1' < 'beta.2' because 'beta' == 'beta' but '1' < '2'.
 #
-# Make sure pre-release contains only alphanumeric characters.
+# Debian version precedence separates identifiers into alternating non-digit and digit identifiers.
+# According to https://www.debian.org/doc/debian-policy/ch-controlfields.html#version ...
+# - find initial part consisting only of non-digits and compare lexically in ASCII order (modified so letters sort earlier than non-letters, and '~' earliest of all),
+# - find next part consisting only of digits and compare numerically,
+# - repeat the above two steps until a difference is found.
+# ...and so '1' < 'beta.1' because '' < 'beta.', and 'beta.1' < 'beta.2' because 'beta.' == 'beta.' but '1' < '2'.
+#
+# For example:
+# For Semantic Versioning: 2.3.0-1 < 2.3.0-alpha.1 < 2.3.0-beta.1 < 2.3.0-rc.1 < 2.3.0.
+# For Debian versioning:   2.3.0~1 < 2.3.0~alpha.1 < 2.3.0~beta.1 < 2.3.0~rc.1 < 2.3.0.
+set(GPLATES_VERSION_PRERELEASE "beta.2" CACHE STRING "Pre-release version suffix (eg, '1', 'alpha.1', 'beta.1', 'rc.1'). Empty means official public release.")
+#
+# Make sure pre-release contains only dot-separated alphanumeric identifiers.
 if (GPLATES_VERSION_PRERELEASE)
-	if (NOT GPLATES_VERSION_PRERELEASE MATCHES "^[a-zA-Z0-9]+$")
-		message(FATAL_ERROR "GPLATES_VERSION_PRERELEASE should only contain alphanumeric characters")
+	if (NOT GPLATES_VERSION_PRERELEASE MATCHES [[^[a-zA-Z0-9\.]+$]])
+		message(FATAL_ERROR "GPLATES_VERSION_PRERELEASE should only contain dot-separated alphanumeric identifiers")
 	endif()
 endif()
 
@@ -86,7 +100,7 @@ endif()
 # GPLATES_PACKAGE_VERSION_NAME - Full package version name for use in package filenames (or any string the user might see).
 #
 # Currently the only difference is GPLATES_PACKAGE_VERSION_NAME inserts 'dev' for development releases
-# (but GPLATES_PACKAGE_VERSION does not, in order to maintain the correct version precendence, eg, '1' < 'alpha1' as desired but 'dev1' > 'alpha1').
+# (but GPLATES_PACKAGE_VERSION does not, in order to maintain the correct version precendence, eg, '1' < 'alpha.1' as desired but 'dev.1' > 'alpha.1').
 #
 # For a public release both variables are equivalent to PROJECT_VERSION (as set by project() command in top-level CMakeLists.txt).
 set(GPLATES_PACKAGE_VERSION ${PROJECT_VERSION})
