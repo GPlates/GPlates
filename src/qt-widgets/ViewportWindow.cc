@@ -1905,7 +1905,7 @@ void
 GPlatesQtWidgets::ViewportWindow::open_dataset_webpage()
 {
 	QDesktopServices::openUrl(
-			QUrl("http://www.earthbyte.org/gplates-2-2-software-and-data-sets"));
+			QUrl("http://www.earthbyte.org/gplates-2-3-software-and-data-sets"));
 }
 
 
