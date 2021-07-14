@@ -400,19 +400,33 @@ GPlatesAppLogic::UserPreferences::subkeys(
 
 	// Take the explicitly-set (or visible from the OS) keys,
 	settings.beginGroup(prefix);
-	QSet<QString> keys = settings.allKeys().toSet();
+	const QStringList all_settings_keys = settings.allKeys();
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	QSet<QString> keys(all_settings_keys.cbegin(), all_settings_keys.cend());
+#else
+	QSet<QString> keys = all_settings_keys.toSet();
+#endif
 	settings.endGroup();
 	
 	// and the compiled-in default keys,
 	s_defaults->beginGroup(prefix);
-	QSet<QString> keys_default = s_defaults->allKeys().toSet();
+	const QStringList all_defaults_keys = s_defaults->allKeys();
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	QSet<QString> keys_default(all_defaults_keys.cbegin(), all_defaults_keys.cend());
+#else
+	QSet<QString> keys_default = all_defaults_keys.toSet();
+#endif
 	s_defaults->endGroup();
 
 	// and merge them together to get the full list of possible keys.
 	keys.unite(keys_default);
 
 	// And for presentation purposes it would be nice to get that sorted.
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	QStringList list(keys.cbegin(), keys.cend());
+#else
 	QStringList list = keys.toList();
+#endif
 	std::sort(list.begin(), list.end());
 	return list;
 }
@@ -429,7 +443,12 @@ GPlatesAppLogic::UserPreferences::root_entries(
 	GPlatesUtils::strip_all_except_root(keys);
 	
 	// Push them through a QSet to get rid of duplicates.
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	const QSet<QString> non_duplicate_keys(keys.cbegin(), keys.cend());
+	keys = QStringList(non_duplicate_keys.cbegin(), non_duplicate_keys.cend());
+#else
 	keys = keys.toSet().toList();
+#endif
 
 	return keys;
 }

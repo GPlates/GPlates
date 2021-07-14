@@ -170,7 +170,13 @@ namespace
 	int
 	get_tab_stop_width()
 	{
-		static const int TAB_STOP_WIDTH = QFontMetrics(get_fixed_width_font()).width("    ");
+		static const int TAB_STOP_WIDTH = QFontMetrics(get_fixed_width_font())
+#if QT_VERSION >= QT_VERSION_CHECK(5,11,0)
+			.horizontalAdvance
+#else
+			.width
+#endif
+			("    ");
 		return TAB_STOP_WIDTH;
 	}
 
@@ -647,7 +653,11 @@ GPlatesQtWidgets::ConsoleInputTextEdit::ConsoleInputTextEdit(
 	document()->setUndoRedoEnabled(false);
 
 	setFrameStyle(0);
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+	setTabStopDistance(get_tab_stop_width());
+#else
 	setTabStopWidth(get_tab_stop_width());
+#endif
 	setWordWrapMode(QTextOption::NoWrap);
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -942,7 +952,11 @@ GPlatesQtWidgets::ConsoleTextEdit::ConsoleTextEdit(
 {
 	setReadOnly(true);
 	setFrameStyle(0);
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+	setTabStopDistance(get_tab_stop_width());
+#else
 	setTabStopWidth(get_tab_stop_width());
+#endif
 	setFont(get_fixed_width_font());
 	setWordWrapMode(QTextOption::WrapAnywhere);
 

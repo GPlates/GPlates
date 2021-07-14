@@ -26,6 +26,7 @@
 
 #include <QFontMetrics>
 #include <QLocale>
+#include <QtGlobal>
 
 #include "TextOverlay.h"
 
@@ -74,7 +75,11 @@ GPlatesGui::TextOverlay::paint(
 	}
 	else // TOP_RIGHT, BOTTOM_RIGHT
 	{
+#if QT_VERSION >= QT_VERSION_CHECK(5,11,0)
+		float text_width = fm.horizontalAdvance(substituted) * scale;
+#else
 		float text_width = fm.width(substituted) * scale;
+#endif
 		x = paint_device.width() - x_offset - text_width;
 	}
 

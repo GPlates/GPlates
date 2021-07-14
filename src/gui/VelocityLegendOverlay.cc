@@ -28,6 +28,7 @@
 #include <QLocale>
 #include <QPainter>
 #include <QPainterPath>
+#include <QtGlobal>
 
 #include "VelocityLegendOverlay.h"
 
@@ -437,7 +438,11 @@ GPlatesGui::VelocityLegendOverlay::paint(
 	QString text = QString("%1 cm/yr").arg(velocity_scale);
 	QFontMetrics fm(settings.get_scale_text_font());
 
+#if QT_VERSION >= QT_VERSION_CHECK(5,11,0)
+	int text_width = fm.horizontalAdvance(text);
+#else
 	int text_width = fm.width(text);
+#endif
 	int text_height = fm.height()*scale;
 
 	double height = arrow_box_height + text_height + margin;

@@ -27,6 +27,7 @@
 #include <QFileInfo>
 #include <QList>
 #include <QStringList>
+#include <QtGlobal>
 #include <QVariant>
 
 #include "Session.h"
@@ -73,12 +74,17 @@ namespace
 	/**
 	 * Removes any "" entries from a QStringList, to avoid potential bugs with incorrectly saved Sessions.
 	 */
-	QStringList
+	QSet<QString>
 	strip_empty_entries(
 			QStringList list)
 	{
 		list.removeAll("");
-		return list;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+		return QSet<QString>(list.cbegin(), list.cend());
+#else
+		return QSet<QString>::fromList(list);
+#endif
 	}
 }
 
@@ -87,7 +93,7 @@ GPlatesPresentation::Session::Session(
 		const QDateTime &time_,
 		const QStringList &files_):
 	d_time(time_),
-	d_loaded_files(QSet<QString>::fromList(strip_empty_entries(files_)))
+	d_loaded_files(strip_empty_entries(files_))
 {  }
 
 
@@ -129,7 +135,11 @@ GPlatesPresentation::Session::get_time() const
 QList<QString>
 GPlatesPresentation::Session::get_loaded_files() const
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	return QList<QString>(d_loaded_files.cbegin(), d_loaded_files.cend());
+#else
 	return QStringList::fromSet(d_loaded_files);
+#endif
 }
 
 
