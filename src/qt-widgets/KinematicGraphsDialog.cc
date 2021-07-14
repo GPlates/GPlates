@@ -27,6 +27,35 @@
 #include <QStandardItemModel>
 #include <QVector>
 
+// Workaround MSVC compile warnings of math.h macro redefinitions (such as "M_PI").
+//
+// This is caused by the following:
+//
+// - Qwt includes <qwt_math.h> which includes <QtCore/qglobal.h> which seems to eventually indirectly
+//   include <cmath> but _USE_MATH_DEFINES is not yet defined and hence "M_PI", etc, are not defined,
+// - <qwt_math.h> later defines _USE_MATH_DEFINES and then includes <qmath.h>,
+// - <qmath.h> includes <cmath> but, since <cmath> has already been included, its include guards prevent
+//   it from including <math.h> and so "M_PI", etc, do *not* get defined (which <qmath.h> is relying on),
+// - <qmath.h> then defines "M_PI", etc, because they have not yet been defined,
+// - some subsequent header must then be (indirectly) including <math.h> (not <cmath>) which attempts
+//   to define "M_PI", etc, because that part of <math.h> is outside its own include guards
+//   (so it doesn't matter that <math.h> has already been included) and <math.h> does not check to see
+//   if "M_PI", etc, are already defined and this results in the macro redefinition warning.
+//
+// Although the problem lies in <qmath.h> (eg, it could fix itself by including <math.h> instead of <cmath>)
+// <qwt_math.h> defines _USE_MATH_DEFINES but does not undefine it.
+// So the workaround is to include <qwt_math.h> and then undefine _USE_MATH_DEFINES ourself
+// (and hope that no one else defines it) thus preventing <math.h> from attemping to redefine "M_PI", etc,
+// that <qmath.h> has already defined. And since <qwt_math.h> has now been included it won't get
+// included/processed again and hence cannot define _USE_MATH_DEFINES again (to resurrect the problem).
+//   
+#if defined(_MSC_VER)
+#	include "qwt_math.h"
+#	ifdef _USE_MATH_DEFINES
+#	undef _USE_MATH_DEFINES
+#	endif
+#endif
+
 #include "qwt_scale_engine.h"
 #include "qwt_plot.h"
 #include "qwt_plot_canvas.h"
