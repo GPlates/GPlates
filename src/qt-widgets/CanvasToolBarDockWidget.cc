@@ -30,8 +30,8 @@
 #include <QIcon>
 #include <QKeySequence>
 #include <QList>
-#include <QMatrix>
 #include <QPixmap>
+#include <QTransform>
 #include <QVariant>
 #include <QVector>
 
@@ -488,7 +488,7 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_workflow_tab_icons()
 		// We need to do this because the tab widget is vertical instead of horizontal and so placing
 		// icons on the tabs has the effect of rotating them 90 degrees counter-clockwise.
 		// So we need to undo that effect.
-		QMatrix rotate_90_degree_clockwise;
+		QTransform rotate_90_degree_clockwise;
 		rotate_90_degree_clockwise.rotate(90);
 		const QPixmap rotated_icon_pixmap = un_rotated_icon_pixmap.transformed(rotate_90_degree_clockwise);
 
