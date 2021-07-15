@@ -42,8 +42,6 @@ set(srcs
     ExportTemplateFilenameSequenceFormats.h
     ExportTemplateFilenameSequenceImpl.cc
     ExportTemplateFilenameSequenceImpl.h
-    ExternalProgram.cc
-    ExternalProgram.h
     FeatureCollectionFileFormat.h
     FeatureCollectionFileFormatClassify.cc
     FeatureCollectionFileFormatClassify.h
