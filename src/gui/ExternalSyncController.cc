@@ -509,10 +509,10 @@ GPlatesGui::ExternalSyncController::start_external_process(
 {
     if(!(d_process->state() & QProcess::Running))
     {
-		d_process->start(QString("\"%1\" --enable-gplates-commands").arg(process_string),
-			QIODevice::ReadWrite |
-			QIODevice::Text |
-			QIODevice::Unbuffered);
+		d_process->start(
+				QString("\"%1\"").arg(process_string),
+				QStringList() << "--enable-gplates-commands",
+				(QIODevice::ReadWrite | QIODevice::Text | QIODevice::Unbuffered));
 #ifdef SYNCDEBUG
 		std::cout << "Starting process: " << process_string.toStdString() << " from GPlates" << std::endl;
 #endif

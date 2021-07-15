@@ -460,7 +460,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::wheelEvent(
 {
 	if (d_zoom_enabled)
 	{
-		int delta = wheel_event->delta();
+		int delta = wheel_event->angleDelta().y();
 		if (delta == 0)
 		{
 			return;

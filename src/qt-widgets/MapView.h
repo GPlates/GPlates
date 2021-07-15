@@ -35,7 +35,6 @@
 #include <QGraphicsView>
 #include <QGLWidget>
 #include <QMouseEvent>
-#include <QtGlobal>
 
 #include "gui/ColourScheme.h"
 
@@ -388,12 +387,7 @@ namespace GPlatesQtWidgets
 					const QGLFormat &format_,
 					QWidget *parent_ = 0,
 					const QGLWidget *shareWidget_ = 0,
-#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
-					Qt::WindowFlags flags_ = Qt::WindowFlags()
-#else
-					Qt::WindowFlags flags_ = 0
-#endif
-			);
+					Qt::WindowFlags flags_ = Qt::WindowFlags());
 
 			void
 			swap_buffers_if_necessary();
