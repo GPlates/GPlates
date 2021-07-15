@@ -30,6 +30,7 @@
 #include <QDebug>
 #include <QMessageBox>
 #include <QStringList>
+#include <QtGlobal>
 
 #include "GPlatesQApplication.h"
 
@@ -152,7 +153,11 @@ namespace
 			// at when users send us back a log file.
 			qWarning()
 					<< QString::fromStdString(call_stack_trace_std)
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+					<< Qt::endl
+#else
 					<< endl
+#endif
 					<< GPlatesGlobal::Version::get_GPlates_version()
 #if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
 					<< "( build:" << GPlatesGlobal::Version::get_working_copy_version_number()

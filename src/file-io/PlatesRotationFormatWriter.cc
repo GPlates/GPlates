@@ -31,6 +31,7 @@
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <QtGlobal>
 
 #include "global/unicode.h"
 
@@ -75,7 +76,12 @@ namespace
 			os << "999 0.0 0.0 0.0 0.0 999 !";
 		}
 
-		os << line << endl;
+		os << line
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 	}
 
 
@@ -313,7 +319,12 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 	}
 
 
-	os << endl;
+	os
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
+		<< endl;
+#endif
 }
 
 

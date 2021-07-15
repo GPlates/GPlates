@@ -23,9 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QString>
-#include <QFileInfo>
 #include <QDateTime>
+#include <QFileInfo>
+#include <QString>
+#include <QtGlobal>
 
 #include "LogToFileHandler.h"
 
@@ -108,7 +109,11 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 			<< " (build:" << GPlatesGlobal::Version::get_working_copy_version_number()
 			<< " " << GPlatesGlobal::Version::get_working_copy_branch_name() << ")"
 #endif
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
 			<< endl;
+#endif
 }
 
 
@@ -130,7 +135,11 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 			<< " (build:" << GPlatesGlobal::Version::get_working_copy_version_number()
 			<< " " << GPlatesGlobal::Version::get_working_copy_branch_name() << ")"
 #endif
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
 			<< endl;
+#endif
 }
 
 
@@ -153,20 +162,40 @@ GPlatesFileIO::LogToFileHandler::handle_qt_message(
 	switch (msg_type)
 	{
 	case QtDebugMsg:
-		*d_log_stream << "[Debug] " << msg << endl;
+		*d_log_stream << "[Debug] " << msg
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 		break;
 
 	case QtWarningMsg:
-		*d_log_stream << "[Warning] " << msg << endl;
+		*d_log_stream << "[Warning] " << msg
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 		break;
 
 	case QtCriticalMsg:
 		// Note: system and critical messages have the same enumeration value.
-		*d_log_stream << "[Critical] " << msg << endl;
+		*d_log_stream << "[Critical] " << msg
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 		break;
 
 	case QtFatalMsg:
-		*d_log_stream << "[Fatal] " << msg << endl;
+		*d_log_stream << "[Fatal] " << msg
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 		break;
 
 	default:

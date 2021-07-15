@@ -76,11 +76,21 @@ namespace
 		if (reverse_coordinate_order) {
 			// For whatever perverse reason, the user wants to write in (lat,lon) order.
 			stream << "  " << lat_str.c_str()
-				<< "      " << lon_str.c_str() << endl;
+				<< "      " << lon_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		} else {
 			// Normal GMT (lon,lat) order should be used.
 			stream << "  " << lon_str.c_str()
-				<< "      " << lat_str.c_str() << endl;
+				<< "      " << lat_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		}
 	}
 

@@ -29,6 +29,7 @@
 #include <QStringList>
 #include <QString>
 #include <QTextStream>
+#include <QtGlobal>
 
 #include "GMTFormatMultiPointVectorFieldExport.h"
 
@@ -249,7 +250,12 @@ namespace GPlatesFileIO
 				//
 
 				const std::string gmt_line_string = gmt_line.str();
-				output_stream << gmt_line_string.c_str() << endl;
+				output_stream << gmt_line_string.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+					<< Qt::endl;
+#else
+					<< endl;
+#endif
 			}
 
 
