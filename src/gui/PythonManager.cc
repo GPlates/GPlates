@@ -297,9 +297,12 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	*/
 	Py_Initialize();
 		
-	// Initialise Python threading support; this grabs the Global Interpreter Lock
-	// for this thread.
+	// Initialise Python threading support; this grabs the Global Interpreter Lock for this thread.
+	//
+	// Note: For Python >= 3.9 this no longer does anything (and is deprecated).
+#if (PY_MAJOR_VERSION < 3) || ((PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9))
 	PyEval_InitThreads();
+#endif
 
 	// But then we give up the GIL, so that PythonInterpreterLocker may now be used.
 	PyEval_SaveThread();
