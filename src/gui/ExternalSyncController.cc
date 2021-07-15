@@ -27,6 +27,8 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QStringList>
+#include <Qt>
+#include <QtGlobal>
 
 #include "ExternalSyncController.h"
 
@@ -295,7 +297,13 @@ GPlatesGui::ExternalSyncController::process_external_command(
 	static const QString OPEN_FILE_COMMAND_STRING = "OPENSHAPEFILE";
 
 
-	QStringList command_string_parts = command_string.split(" ",QString::SkipEmptyParts);
+	QStringList command_string_parts = command_string.split(" ",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		Qt::SkipEmptyParts
+#else
+		QString::SkipEmptyParts
+#endif
+	);
 
 	if (command_string_parts.isEmpty())
 	{
@@ -748,7 +756,13 @@ GPlatesGui::ExternalSyncController::read_process_output()
 	}
 	
 	QString messages = QString(d_process->readAllStandardOutput()).trimmed();
-	QStringList message_list = messages.split("\n",QString::SkipEmptyParts);
+	QStringList message_list = messages.split("\n",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		Qt::SkipEmptyParts
+#else
+		QString::SkipEmptyParts
+#endif
+	);
 
 	QStringList::const_iterator 
 		iter = message_list.begin(),

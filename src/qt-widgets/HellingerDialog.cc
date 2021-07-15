@@ -39,6 +39,8 @@
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QStandardPaths>
+#include <Qt>
+#include <QtGlobal>
 
 
 #include "api/PythonInterpreterLocker.h"
@@ -763,7 +765,13 @@ GPlatesQtWidgets::HellingerDialog::handle_import_hellinger_file()
 	}
 	QFile file(file_path);
 	QFileInfo file_info(file.fileName());
-	QStringList file_name = file_info.fileName().split(".", QString::SkipEmptyParts);
+	QStringList file_name = file_info.fileName().split(".",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		Qt::SkipEmptyParts
+#else
+		QString::SkipEmptyParts
+#endif
+	);
 	QString type_file = file_name.last();
 
 	QString path = file_info.path();

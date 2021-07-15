@@ -27,9 +27,11 @@
 #include <iterator>
 #include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
+#include <QMessageBox>
 #include <QString>
 #include <QStringList>
-#include <QMessageBox>
+#include <Qt>
+#include <QtGlobal>
 
 #include "ImportRasterDialog.h"
 
@@ -776,7 +778,13 @@ GPlatesQtWidgets::ImportRasterDialog::create_gpml_file_path(
 	if (time_dependent_raster)
 	{
 		// Strip off the time from the file name if it is there.
-		QStringList tokens = base_name.split(QRegExp("[_-]"), QString::SkipEmptyParts);
+		QStringList tokens = base_name.split(QRegExp("[_-]"),
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
 
 		if (tokens.count() >= 2)
 		{

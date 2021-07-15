@@ -27,6 +27,7 @@
 #include <QFileInfo>
 #include <QList>
 #include <QStringList>
+#include <Qt>
 #include <QtGlobal>
 #include <QVariant>
 
@@ -40,8 +41,22 @@ namespace
 			const QString &a,
 			const QString &b)
 	{
-		QStringList alist = a.split('/', QString::SkipEmptyParts);
-		QStringList blist = b.split('/', QString::SkipEmptyParts);
+		QStringList alist = a.split('/',
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
+
+		QStringList blist = b.split('/',
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
+
 		QStringList rlist;
 		for (int i = 0; i < alist.size() && i < blist.size(); ++i) {
 			if (alist.at(i) != blist.at(i)) {

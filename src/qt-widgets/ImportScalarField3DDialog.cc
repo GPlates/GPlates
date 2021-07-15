@@ -33,6 +33,8 @@
 #include <QString>
 #include <QStringList>
 #include <QTextStream>
+#include <Qt>
+#include <QtGlobal>
 
 #include "ImportScalarField3DDialog.h"
 
@@ -658,7 +660,13 @@ GPlatesQtWidgets::ImportScalarField3DDialog::create_file_basename_with_path() co
 	QString fixed_file_basename;
 
 	// Strip off the depth from the file name if it is there.
-	QStringList tokens = base_name.split(QRegExp("[_-]"), QString::SkipEmptyParts);
+	QStringList tokens = base_name.split(QRegExp("[_-]"),
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		Qt::SkipEmptyParts
+#else
+		QString::SkipEmptyParts
+#endif
+	);
 
 	if (tokens.count() >= 2)
 	{
