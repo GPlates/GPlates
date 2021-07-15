@@ -27,6 +27,7 @@
 #include <QVBoxLayout>
 #include <QVariant>
 #include <QLabel>
+#include <QtGlobal>
 
 #include "TopologySectionsTableColumns.h"
 
@@ -381,7 +382,11 @@ namespace
 			104,
 			QHeaderView::Fixed,	// FIXME: make this dynamic based on what the buttons need.
 			Qt::AlignCenter,
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			QFlags<Qt::ItemFlag>(),
+#else
 			0,
+#endif
 			null_data_accessor,
 			null_data_mutator,
 			null_install_edit_cell_widget_query,

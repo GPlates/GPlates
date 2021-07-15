@@ -27,6 +27,8 @@
 #include <QDebug>
 #include <QStringList>
 #include <QTextStream>
+#include <Qt>
+#include <QtGlobal>
 
 #include "GpgimVersion.h"
 
@@ -39,7 +41,14 @@ boost::optional<GPlatesModel::GpgimVersion>
 GPlatesModel::GpgimVersion::create(
 		const QString &version)
 {
-	const QStringList version_fields = version.split('.', QString::KeepEmptyParts);
+	const QStringList version_fields = version.split('.',
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::KeepEmptyParts
+#else
+			QString::KeepEmptyParts
+#endif
+	);
+
 	// The number of fields should be 3 (or can be 2 if "major.minor" is "1.6").
 	if (version_fields.count() < 2 ||
 		version_fields.count() > 3)
