@@ -40,7 +40,6 @@
 #include "opengl/GLProjectionUtils.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLViewport.h"
-#include "opengl/GLText.h"
 #include "opengl/OpenGLException.h"
 
 #include "presentation/VelocityFieldCalculatorVisualLayerParams.h"
@@ -196,24 +195,24 @@ namespace
 		switch(anchor)
 		{
 		case GPlatesGui::VelocityLegendOverlaySettings::TOP_LEFT:
-			x = settings.get_x_offset();
-			y = settings.get_y_offset();
+			x = settings.get_x_offset() * scale;
+			y = settings.get_y_offset() * scale;
 			break;
 		case GPlatesGui::VelocityLegendOverlaySettings::TOP_RIGHT:
-			x = device_width - settings.get_x_offset() - width*scale;
+			x = device_width - settings.get_x_offset() * scale - width * scale;
 			y = settings.get_y_offset();
 			break;
 		case GPlatesGui::VelocityLegendOverlaySettings::BOTTOM_LEFT:
-			x = settings.get_x_offset();
-			y = device_height - settings.get_y_offset() - height*scale;
+			x = settings.get_x_offset() * scale;
+			y = device_height - settings.get_y_offset() * scale - height * scale;
 			break;
 		case GPlatesGui::VelocityLegendOverlaySettings::BOTTOM_RIGHT:
-			x = device_width - settings.get_x_offset() - width*scale;
-			y = device_height - settings.get_y_offset() - height*scale;
+			x = device_width - settings.get_x_offset() * scale - width * scale;
+			y = device_height - settings.get_y_offset() * scale - height * scale;
 			break;
 		default:
-			x = settings.get_x_offset();
-			y = settings.get_y_offset();
+			x = settings.get_x_offset() * scale;
+			y = settings.get_y_offset() * scale;
 			break;
 		}
 
@@ -307,10 +306,6 @@ GPlatesGui::VelocityLegendOverlay::paint(
 		return;
 	}
 
-	// Scale the x and y offsets.
-	float x_offset = settings.get_x_offset() * scale;
-	float y_offset = settings.get_y_offset() * scale;
-
 	using namespace GPlatesOpenGL;
 
 	// Before we suspend GLRenderer (and resume QPainter) we'll get the scissor rectangle
@@ -335,7 +330,7 @@ GPlatesGui::VelocityLegendOverlay::paint(
 	GPlatesGlobal::Assert<OpenGLException>(
 				qpainter,
 				GPLATES_ASSERTION_SOURCE,
-				"GLText: attempted to render text using a GLRenderer that does not have a QPainter attached.");
+				"VelocityLegendOverlay: attempted to render text using a GLRenderer that does not have a QPainter attached.");
 
 	// The QPainter's paint device.
 	const QPaintDevice *qpaint_device = qpainter->device();
@@ -405,6 +400,8 @@ GPlatesGui::VelocityLegendOverlay::paint(
 		break;
 	}
 
+	arrow_length *= scale;
+
 	double arrow_height = arrow_length*std::abs(std::sin(angle_rad));
 	double arrow_width = arrow_length*std::abs(std::cos(angle_rad));
 
@@ -417,11 +414,11 @@ GPlatesGui::VelocityLegendOverlay::paint(
 	QFontMetrics fm(settings.get_scale_text_font());
 
 #if QT_VERSION >= QT_VERSION_CHECK(5,11,0)
-	int text_width = fm.horizontalAdvance(text);
+	int text_width = fm.horizontalAdvance(text) * scale;
 #else
-	int text_width = fm.width(text);
+	int text_width = fm.width(text) * scale;
 #endif
-	int text_height = fm.height()*scale;
+	int text_height = fm.height() * scale;
 
 	double height = arrow_box_height + text_height + margin;
 	double width = (std::max)(arrow_box_width,(text_width + 2*margin));
