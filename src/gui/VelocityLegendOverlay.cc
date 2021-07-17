@@ -81,28 +81,6 @@ namespace
 		return ret;
 	}
 
-	void
-	set_glu_projection(
-			GPlatesOpenGL::GLRenderer &renderer,
-			const int &world_x,
-			const int &world_y,
-			const int &world_z,
-			GLdouble &win_x,
-			GLdouble &win_y,
-			GLdouble &win_z)
-	{
-		using namespace GPlatesOpenGL;
-		const GLViewport &viewport = renderer.gl_get_viewport();
-		const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
-		const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
-
-		GLProjectionUtils::glu_project(
-					viewport, model_view_transform, projection_transform,
-					world_x, world_y, world_z,
-					&win_x, &win_y, &win_z);
-
-	}
-
 	/**
 	 * @brief get_scale_from_uppermost_velocity_layer
 	 * @param view_state
@@ -333,14 +311,6 @@ GPlatesGui::VelocityLegendOverlay::paint(
 	float x_offset = settings.get_x_offset() * scale;
 	float y_offset = settings.get_y_offset() * scale;
 
-	GLdouble win_x, win_y, win_z;
-	set_glu_projection(renderer,x_offset,y_offset,0,win_x,win_y,win_z);
-
-	if (win_z < 0 || win_z > 1)
-	{
-		return;
-	}
-
 	using namespace GPlatesOpenGL;
 
 	// Before we suspend GLRenderer (and resume QPainter) we'll get the scissor rectangle
@@ -373,6 +343,8 @@ GPlatesGui::VelocityLegendOverlay::paint(
 				qpaint_device,
 				GPLATES_ASSERTION_SOURCE);
 
+	const int qpaint_device_pixel_ratio = qpaint_device->devicePixelRatio();
+
 	// Set the identity world transform since our input position is specified in *window* coordinates
 	// and we don't want it transformed by the current world transform.
 	qpainter->setWorldTransform(QTransform()/*identity*/);
@@ -380,12 +352,18 @@ GPlatesGui::VelocityLegendOverlay::paint(
 	// Set the clip rectangle if the GLRenderer has scissor testing enabled.
 	if (scissor_rect)
 	{
+		// Note that the scissor rectangle is in OpenGL device pixel coordinates, but parameters to QPainter
+		// should be in device *independent* coordinates (hence the divide by device pixel ratio).
+		//
+		// Note: Using floating-point QRectF to avoid rounding to nearest 'qpaint_device_pixel_ratio' device pixel
+		//       if scissor rect has, for example, odd coordinates (and device pixel ratio is the integer 2).
 		qpainter->setClipRect(
-					scissor_rect->x(),
-					// Also need to convert scissor rectangle from OpenGL to Qt (ie, invert y-axis)...
-					qpaint_device->height() - scissor_rect->y() - scissor_rect->height(),
-					scissor_rect->width(),
-					scissor_rect->height());
+				QRectF(
+						scissor_rect->x() / qreal(qpaint_device_pixel_ratio),
+						// Also need to convert scissor rectangle from OpenGL to Qt (ie, invert y-axis)...
+						qpaint_device->height() - (scissor_rect->y() + scissor_rect->height()) / qreal(qpaint_device_pixel_ratio),
+						scissor_rect->width() / qreal(qpaint_device_pixel_ratio),
+						scissor_rect->height() / qreal(qpaint_device_pixel_ratio)));
 	}
 
 	// Here onwards we should be able to draw as desired with the QPainter.
