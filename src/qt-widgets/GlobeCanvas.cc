@@ -202,8 +202,8 @@ namespace
 	 */
 	void
 	calc_scene_projection_transforms(
-			int scene_view_width_in_device_pixels,
-			int scene_view_height_in_device_pixels,
+			int scene_view_width_in_device_independent_pixels,
+			int scene_view_height_in_device_independent_pixels,
 			const double &zoom_factor,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
 			GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
@@ -238,15 +238,15 @@ namespace
 		// The smaller/larger of the dimensions (width/height) of the screen.
 		double smaller_dim;
 		double larger_dim;
-		if (scene_view_width_in_device_pixels <= scene_view_height_in_device_pixels)
+		if (scene_view_width_in_device_independent_pixels <= scene_view_height_in_device_independent_pixels)
 		{
-			smaller_dim = static_cast<GLdouble>(scene_view_width_in_device_pixels);
-			larger_dim = static_cast<GLdouble>(scene_view_height_in_device_pixels);
+			smaller_dim = static_cast<GLdouble>(scene_view_width_in_device_independent_pixels);
+			larger_dim = static_cast<GLdouble>(scene_view_height_in_device_independent_pixels);
 		}
 		else
 		{
-			smaller_dim = static_cast<GLdouble>(scene_view_height_in_device_pixels);
-			larger_dim = static_cast<GLdouble>(scene_view_width_in_device_pixels);
+			smaller_dim = static_cast<GLdouble>(scene_view_height_in_device_independent_pixels);
+			larger_dim = static_cast<GLdouble>(scene_view_width_in_device_independent_pixels);
 		}
 		
 		// This is used for the coordinates of the symmetrical clipping planes which bound the
@@ -259,7 +259,7 @@ namespace
 		GLdouble larger_dim_clipping = smaller_dim_clipping * dim_ratio;
 
 		GLdouble ortho_left, ortho_right, ortho_bottom, ortho_top;
-		if (scene_view_width_in_device_pixels <= scene_view_height_in_device_pixels)
+		if (scene_view_width_in_device_independent_pixels <= scene_view_height_in_device_independent_pixels)
 		{
 			ortho_left = -smaller_dim_clipping;
 			ortho_right = smaller_dim_clipping;
@@ -301,8 +301,8 @@ namespace
 		// The text overlay coordinates are specified in window coordinates.
 		// The near and far values only need to include z=0 so [-1,1] will do fine.
 		projection_transform_text_overlay.gl_ortho(
-				0, scene_view_width_in_device_pixels,
-				0, scene_view_height_in_device_pixels,
+				0, scene_view_width_in_device_independent_pixels,
+				0, scene_view_height_in_device_independent_pixels,
 				-1,
 				1);
 	}
@@ -987,9 +987,9 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 	GPlatesOpenGL::GLMatrix projection_transform_include_stars;
 	GPlatesOpenGL::GLMatrix projection_transform_text_overlay;
 	calc_scene_projection_transforms(
-			// Convert from widget size to device pixels (used by OpenGL)...
-			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio(),
-			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio(),
+			// Using device-independent pixels (eg, widget dimensions)...
+			feedback_paint_device.width(),
+			feedback_paint_device.height(),
 			d_view_state.get_viewport_zoom().zoom_factor(),
 			projection_transform_include_front_half_globe,
 			projection_transform_include_rear_half_globe,
@@ -1066,6 +1066,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 
 	// The text overlay is rendered in screen window coordinates (ie, no model-view transform needed).
 	renderer.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);
+	// The text overlay projection transform is in device-independent pixels (suitable for QPainter).
 	renderer.gl_load_matrix(GL_PROJECTION, projection_transform_text_overlay);
 
 	// Paint the text overlay.
@@ -1074,7 +1075,9 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	d_text_overlay->paint(
 			renderer,
 			d_view_state.get_text_overlay_settings(),
-			paint_device,
+			// These are widget dimensions (not device pixels)...
+			paint_device.width(),
+			paint_device.height(),
 			scale);
 
 	// Paint the velocity legend overlay
@@ -1312,9 +1315,9 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	d_gl_projection_transform_include_stars.gl_load_identity();
 	d_gl_projection_transform_text_overlay.gl_load_identity();
 	calc_scene_projection_transforms(
-			// Convert from widget size to device pixels (used by OpenGL)...
-			width() * devicePixelRatio(),
-			height() * devicePixelRatio(),
+			// Using device-independent pixels (eg, widget dimensions)...
+			width(),
+			height(),
 			d_view_state.get_viewport_zoom().zoom_factor(),
 			d_gl_projection_transform_include_front_half_globe,
 			d_gl_projection_transform_include_rear_half_globe,

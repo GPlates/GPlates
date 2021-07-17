@@ -75,97 +75,8 @@ namespace GPlatesOpenGL
 				const QFont &font,
 				float scale)
 		{
-			// Before we suspend GLRenderer (and resume QPainter) we'll get the scissor rectangle
-			// if scissoring is enabled and use that as a clip rectangle.
-			boost::optional<GLViewport> scissor_rect;
-			if (renderer.gl_get_enable(GL_SCISSOR_TEST))
-			{
-				scissor_rect = renderer.gl_get_scissor();
-			}
-
-			// Suspend rendering with 'GLRenderer' so we can resume painting with 'QPainter'.
-			// At scope exit we can resume rendering with 'GLRenderer'.
-			//
-			// We do this because the QPainter's paint engine might be OpenGL and we need to make sure
-			// it's OpenGL state does not interfere with the OpenGL state of 'GLRenderer' and vice versa.
-			// This also provides a means to retrieve the QPainter for rendering text.
-			GPlatesOpenGL::GLRenderer::QPainterBlockScope qpainter_block_scope(renderer);
-
-			boost::optional<QPainter &> qpainter = qpainter_block_scope.get_qpainter();
-
-			// We need a QPainter - one should have been specified to 'GLRenderer::begin_render'.
-			GPlatesGlobal::Assert<OpenGLException>(
-					qpainter,
-					GPLATES_ASSERTION_SOURCE,
-					"GLText: attempted to render text using a GLRenderer that does not have a QPainter attached.");
-
-			// The QPainter's paint device.
-			const QPaintDevice *qpaint_device = qpainter->device();
-			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					qpaint_device,
-					GPLATES_ASSERTION_SOURCE);
-
-			const int qpaint_device_pixel_ratio = qpaint_device->devicePixelRatio();
-
-			// Set the identity world transform since our input position is specified in *window* coordinates
-			// and we don't want it transformed by the current world transform.
-			qpainter->setWorldTransform(QTransform()/*identity*/);
-
-			// Set the clip rectangle if the GLRenderer has scissor testing enabled.
-			if (scissor_rect)
-			{
-				// Note that the scissor rectangle is in OpenGL device pixel coordinates, but parameters to QPainter
-				// should be in device *independent* coordinates (hence the divide by device pixel ratio).
-				//
-				// Note: Using floating-point QRectF to avoid rounding to nearest 'qpaint_device_pixel_ratio' device pixel
-				//       if scissor rect has, for example, odd coordinates (and device pixel ratio is the integer 2).
-				qpainter->setClipRect(
-						QRectF(
-								scissor_rect->x() / qreal(qpaint_device_pixel_ratio),
-								// Also need to convert scissor rectangle from OpenGL to Qt (ie, invert y-axis)...
-								qpaint_device->height() - (scissor_rect->y() + scissor_rect->height()) / qreal(qpaint_device_pixel_ratio),
-								scissor_rect->width() / qreal(qpaint_device_pixel_ratio),
-								scissor_rect->height() / qreal(qpaint_device_pixel_ratio)));
-			}
-
-			// Set the font and colour.
-			qpainter->setPen(colour);
-			qpainter->setFont(scale_font(font, scale));
-
-			// Get the Qt window coordinates at which to render text.
-			//
-			// Note that x and y are in OpenGL device pixel coordinates, but parameters to QPainter
-			// should be in device *independent* coordinates (hence the divide by device pixel ratio).
-			const float qt_win_x = x / qpaint_device_pixel_ratio;
-			// Also note that OpenGL and Qt y-axes are the reverse of each other.
-			const float qt_win_y = qpaint_device->height() - y / qpaint_device_pixel_ratio;
-
-			qpainter->drawText(QPointF(qt_win_x, qt_win_y), string);
-
-			// Turn off clipping if it was turned on.
-			if (scissor_rect)
-			{
-				qpainter->setClipRect(QRect(), Qt::NoClip);
-			}
-
-			// At scope exit we can resume rendering with 'GLRenderer'...
 		}
 	}
-}
-
-void
-GPlatesOpenGL::GLText::render_text_2D(
-		GLRenderer &renderer,
-		const double &world_x,
-		const double &world_y,
-		const QString &string,
-		const GPlatesGui::Colour &colour,
-		int x_offset,
-		int y_offset,
-		const QFont &font,
-		float scale)
-{
-	render_text_3D(renderer, world_x, world_y, 0.0, string, colour, x_offset, y_offset, font, scale);
 }
 
 
@@ -182,10 +93,71 @@ GPlatesOpenGL::GLText::render_text_3D(
 		const QFont &font,
 		float scale)
 {
-	const GLViewport &viewport = renderer.gl_get_viewport();
-	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
-	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+	// Before we suspend GLRenderer (and resume QPainter) we'll get the scissor rectangle
+	// if scissoring is enabled and use that as a clip rectangle.
+	boost::optional<GLViewport> scissor_rect;
+	if (renderer.gl_get_enable(GL_SCISSOR_TEST))
+	{
+		scissor_rect = renderer.gl_get_scissor();
+	}
 
+	// And before we suspend GLRenderer (and resume QPainter) we'll get the viewport,
+	// model-view transform and projection transform.
+	const GLViewport viewport = renderer.gl_get_viewport();
+	const GLMatrix model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
+	const GLMatrix projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+
+	// Suspend rendering with 'GLRenderer' so we can resume painting with 'QPainter'.
+	// At scope exit we can resume rendering with 'GLRenderer'.
+	//
+	// We do this because the QPainter's paint engine might be OpenGL and we need to make sure
+	// it's OpenGL state does not interfere with the OpenGL state of 'GLRenderer' and vice versa.
+	// This also provides a means to retrieve the QPainter for rendering text.
+	GPlatesOpenGL::GLRenderer::QPainterBlockScope qpainter_block_scope(renderer);
+
+	boost::optional<QPainter &> qpainter = qpainter_block_scope.get_qpainter();
+
+	// We need a QPainter - one should have been specified to 'GLRenderer::begin_render'.
+	GPlatesGlobal::Assert<OpenGLException>(
+			qpainter,
+			GPLATES_ASSERTION_SOURCE,
+			"GLText: attempted to render text using a GLRenderer that does not have a QPainter attached.");
+
+	// The QPainter's paint device.
+	const QPaintDevice *qpaint_device = qpainter->device();
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			qpaint_device,
+			GPLATES_ASSERTION_SOURCE);
+
+	const int qpaint_device_pixel_ratio = qpaint_device->devicePixelRatio();
+
+	// Set the identity world transform since our input position is specified in *window* coordinates
+	// and we don't want it transformed by the current world transform.
+	qpainter->setWorldTransform(QTransform()/*identity*/);
+
+	// Set the clip rectangle if the GLRenderer has scissor testing enabled.
+	if (scissor_rect)
+	{
+		// Note that the scissor rectangle is in OpenGL device pixel coordinates, but parameters to QPainter
+		// should be in device *independent* coordinates (hence the divide by device pixel ratio).
+		//
+		// Note: Using floating-point QRectF to avoid rounding to nearest 'qpaint_device_pixel_ratio' device pixel
+		//       if scissor rect has, for example, odd coordinates (and device pixel ratio is the integer 2).
+		qpainter->setClipRect(
+				QRectF(
+						scissor_rect->x() / qreal(qpaint_device_pixel_ratio),
+						// Also need to convert scissor rectangle from OpenGL to Qt (ie, invert y-axis)...
+						qpaint_device->height() - (scissor_rect->y() + scissor_rect->height()) / qreal(qpaint_device_pixel_ratio),
+						scissor_rect->width() / qreal(qpaint_device_pixel_ratio),
+						scissor_rect->height() / qreal(qpaint_device_pixel_ratio)));
+	}
+
+	// Pass our world coordinates through the model-view-projection transform and viewport
+	// to get our new viewport coordinates.
+	//
+	// Note: Since OpenGL viewports are in device pixels the output window coordinates are also in device pixels.
+	//       If the input world coordinates are in device-independent pixels (eg, 2D text rendering) then the
+	//       projection transform would have been specified using the device-independent paint device dimensions.
 	GLdouble win_x, win_y, win_z;
 	GLProjectionUtils::glu_project(
 			viewport, model_view_transform, projection_transform,
@@ -202,6 +174,27 @@ GPlatesOpenGL::GLText::render_text_3D(
 		return;
 	}
 
-	// Delegate to Qt to do the actual rendering of text.
-	render_text(renderer, win_x + x_offset, win_y + y_offset, string, colour, font, scale);
+	// Set the font and colour.
+	qpainter->setPen(colour);
+	qpainter->setFont(scale_font(font, scale));
+
+	// Get the Qt window coordinates at which to render text.
+	//
+	// Note that 'win_x' and 'win_y' are in OpenGL device pixel coordinates, but parameters to QPainter
+	// should be in device *independent* coordinates (hence the divide by device pixel ratio).
+	// Also note that 'x_offset' and 'y_offset' are in device-independent coordinates (hence no divide).
+	const float qt_win_x = (win_x / qpaint_device_pixel_ratio) + x_offset;
+	// Also note that OpenGL and Qt y-axes are the reverse of each other.
+	// This applies to both 'win_y' and 'y_offset'.
+	const float qt_win_y = qpaint_device->height() - (win_y / qpaint_device_pixel_ratio) - y_offset;
+
+	qpainter->drawText(QPointF(qt_win_x, qt_win_y), string);
+
+	// Turn off clipping if it was turned on.
+	if (scissor_rect)
+	{
+		qpainter->setClipRect(QRect(), Qt::NoClip);
+	}
+
+	// At scope exit we can resume rendering with 'GLRenderer'...
 }

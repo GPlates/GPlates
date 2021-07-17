@@ -235,7 +235,9 @@ GPlatesQtWidgets::MapCanvas::render_scene(
 	d_text_overlay->paint(
 			renderer,
 			d_view_state.get_text_overlay_settings(),
-			paint_device,
+			// These are widget dimensions (not device pixels)...
+			paint_device.width(),
+			paint_device.height(),
 			scale);
 
 	d_velocity_legend_overlay->paint(

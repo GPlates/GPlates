@@ -47,7 +47,8 @@ void
 GPlatesGui::TextOverlay::paint(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const TextOverlaySettings &settings,
-		const QPaintDevice &paint_device,
+		int paint_device_width,
+		int paint_device_height,
 		float scale)
 {
 	if (!settings.is_enabled())
@@ -66,6 +67,8 @@ GPlatesGui::TextOverlay::paint(
 	float y_offset = settings.get_y_offset() * scale;
 
 	// Work out position of text.
+	//
+	// Note: We're using OpenGL co-ordinates where OpenGL and Qt y-axes are the reverse of each other.
 	QFontMetrics fm(settings.get_font());
 	float x;
 	if (settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_LEFT ||
@@ -80,7 +83,7 @@ GPlatesGui::TextOverlay::paint(
 #else
 		float text_width = fm.width(substituted) * scale;
 #endif
-		x = paint_device.width() - x_offset - text_width;
+		x = paint_device_width - x_offset - text_width;
 	}
 
 	float y;
@@ -88,14 +91,12 @@ GPlatesGui::TextOverlay::paint(
 		settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_RIGHT)
 	{
 		float text_height = fm.height() * scale;
-		y = paint_device.height() - y_offset - text_height;
+		y = paint_device_height - y_offset - text_height;
 	}
 	else // BOTTOM_LEFT, BOTTOM_RIGHT
 	{
 		y = y_offset;
 	}
-
-	const int paint_device_pixel_ratio = paint_device.devicePixelRatio();
 
 	if (settings.has_shadow())
 	{
@@ -105,27 +106,25 @@ GPlatesGui::TextOverlay::paint(
 
 		GPlatesOpenGL::GLText::render_text_2D(
 				renderer,
-				// Convert from device size to device pixels (used by OpenGL)...
-				x * paint_device_pixel_ratio,
-				y * paint_device_pixel_ratio,
+				x,
+				y,
 				substituted,
 				shadow_colour,
-				1 * paint_device_pixel_ratio,
+				1,
 				// OpenGL viewport 'y' coord goes from bottom to top...
-				-1 * paint_device_pixel_ratio, // down 1px
+				-1, // down 1px
 				settings.get_font(),
 				scale);
 	}
 
 	GPlatesOpenGL::GLText::render_text_2D(
 			renderer,
-			// Convert from device size to device pixels (used by OpenGL)...
-			x * paint_device_pixel_ratio,
-			y * paint_device_pixel_ratio,
+			x,
+			y,
 			substituted,
 			settings.get_colour(),
-			0 * paint_device_pixel_ratio,
-			0 * paint_device_pixel_ratio,
+			0,
+			0,
 			settings.get_font(),
 			scale);
 }

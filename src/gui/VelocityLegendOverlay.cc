@@ -300,11 +300,14 @@ namespace
 
 		// Pass our (x, y) window position through the model-view-projection transform and viewport
 		// to get our new viewport coordinates.
+		//
+		// Note: Since OpenGL viewports are in device pixels the output window coordinates are also in device pixels.
+		//       If the input world coordinates are in device-independent pixels (eg, 2D text rendering) then the
+		//       projection transform would have been specified using the device-independent paint device dimensions.
 		GLdouble win_x, win_y, win_z;
 		GLProjectionUtils::glu_project(
 				viewport, model_view_transform, projection_transform,
-				// Convert from device-independent pixels to device pixels (used by OpenGL)...
-				x * qpaint_device_pixel_ratio, y * qpaint_device_pixel_ratio, 0.0/*world_z*/,
+				x, y, 0.0/*world_z*/,
 				&win_x, &win_y, &win_z);
 
 		// Get the Qt window coordinates.
