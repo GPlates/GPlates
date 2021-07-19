@@ -89,19 +89,32 @@ CMake
 
 Qt
 
-  1. Download the latest Qt5 opensource installer exe from: https://download.qt.io/archive/qt/
-     For example, for Qt 5.14.2 this is https://download.qt.io/archive/qt/5.14/5.14.2/qt-opensource-windows-x86-5.14.2.exe
-     Note that you now need a Qt account to use the binary installer (it will ask you to sign in or create a new account).
-     And after Qt 5.14 you will need to use the online installer (offline for commercial license only).
-     Alternatively you can compile from source - see https://doc.qt.io/qt-5/windows-building.html
-  2. Select the pre-built components appropriate for your compiler.
-     For example, select "MSVC 2015 64-bit" when compiling 64-bit using Visual Studio 2015.
-  3. Select the GPL license.
-  4. Add the base of your selected pre-built components directory to the CMAKE_PREFIX_PATH environment variable.
-     For example, "C:\SDK\qt\qt-5.14.2\5.14.2\msvc2015_64".
+  1. Download the latest Qt opensource online installer from: https://www.qt.io/download-open-source
+     Run the online installer exe:
+     - It will ask for the username and password of your Qt account (it will ask you to sign in or create a new account).
+     - Accept the obligations of using Qt Open Source (and specify whether you are an individual or a company).
+     - Select 'Custom' installation (we want Qt5, not Qt6 since we don't yet support it).
+     - Under 'Qt 5.15.2' select the compiler you are using.
+       For example, select "MSVC 2015 64-bit" when compiling 64-bit using Visual Studio 2015.
+     - Accept the license.
+     - Select your Start Menu shortcut.
+     - Finish the installation of the pre-built components.
+  2. Alternatively you can download the latest Qt5 opensource *offline* installer from: https://download.qt.io/archive/qt/
+     However, the latest will be Qt 5.14 (not Qt 5.15) since offline installers are no longer supported by Qt (for non-commercial).
+     This is https://download.qt.io/archive/qt/5.14/5.14.2/qt-opensource-windows-x86-5.14.2.exe
+     Note that you now need a Qt account to use the installer (it will ask you to sign in or create a new account).
+     Run the offline installer exe:
+     - Select the pre-built components appropriate for your compiler.
+       For example, select "MSVC 2015 64-bit" when compiling 64-bit using Visual Studio 2015.
+     - Select the GPL license.
+     - Finish the installation of the pre-built components.
+  3. Alternatively you can compile from source - see https://doc.qt.io/qt-5/windows-building.html
+  4. Add the base of your selected pre-built components directory (assuming you chose step 1 or 2) to the CMAKE_PREFIX_PATH environment variable.
+     For example, "C:\SDK\qt\qt-5.15.2\5.15.2\msvc2015_64".
   5. Add the Qt \bin directory (associated with your selected pre-built components) to the PATH environment variable.
-     For example, "C:\SDK\qt\qt-5.14.2\5.14.2\msvc2015_64\bin".
-     Note you may need to insert near front of PATH to prioritise over other installed software containing Qt5 DLLs.
+     For example, "C:\SDK\qt\qt-5.15.2\5.15.2\msvc2015_64\bin".
+     Note you may need to insert near front of PATH to prioritise over other installed software containing Qt5 DLLs
+     otherwise GPlates might not start complaining that some symbol in one of the Qt5 DLLs cannot be found.
 
 Qwt
 
@@ -113,6 +126,7 @@ Qwt
      is different than the qwt location, such as a sub-directory (e.g. C:\SDK\qwt\qwt-6.1.4\msvc2015_64 ),
      so that 'nmake install' below does not fail (trying to copy the same file on top of itself).
      You should only need to change QWT_INSTALL_PREFIX inside the 'win32 { }' block.
+     Note: Qwt should find the Qt installation that was installed in the above step (using qmake found via PATH).
   5. At the command prompt, run:
        qmake qwt.pro
        nmake
