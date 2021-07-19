@@ -238,7 +238,7 @@ if (MSVC)
 	if (GPLATES_MSVC_SHOW_INCLUDES)
 		# Note: This sets the non-cache variable ('option' above sets the cache variable of same name).
 		#       The non-cache variable will get precedence when subsequently accessed.
-		#       It's also important to set this *after* 'option' since whenever a cache variable is added
+		#       It's also important to set this *after* 'option' since, prior to CMake 3.21, whenever a cache variable is added
 		#       (eg, on the first run if not yet present in "CMakeCache.txt") the normal variable is removed.
 		if (DEFINED GPLATES_USE_PRECOMPILED_HEADERS)
 			set(GPLATES_USE_PRECOMPILED_HEADERS false)

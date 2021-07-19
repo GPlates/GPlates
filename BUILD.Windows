@@ -73,6 +73,7 @@ Creating Visual Studio solution and project files with CMake
   8.  Even if no popup messages occurred, the 'Generate' will still be greyed out so you'll need
       to click 'Configure' once more.
   9.  Click 'Generate'.
+      Note that, in CMake 3.21, the 'generate' phase can take a long time.
   10. The CMake GUI should then say 'Generating done' (or it might just close when finished).
   11. You should now have a 'GPlates.sln' file in your root GPlates directory.
 
