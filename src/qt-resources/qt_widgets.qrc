@@ -32,6 +32,7 @@
         <file>africa_vertices_35.png</file>
         <file>blank_16.png</file>
         <file>change_lighting_35.png</file>
+        <file>change_lighting_35@2x.png</file>
         <file>click_geometry_35.png</file>
         <file>clone_geometry_22.png</file>
         <file>clone_feature_22.png</file>
@@ -41,10 +42,12 @@
         <file>disable_22.png</file>
         <file>discard_changes_22.png</file>
         <file>drag_globe_35.png</file>
+        <file>drag_globe_35@2x.png</file>
         <file>drag_plate_35.png</file>
         <file>edit_feature_35.png</file>
         <file>enable_22.png</file>
         <file>focus_feature_35.png</file>
+        <file>focus_feature_35@2x.png</file>
         <file>globe_reconstruction_22.png</file>
         <file>globe_reconstructable_22.png</file>
         <file>gnome_applets_screenshooter_16.png</file>
@@ -107,12 +110,15 @@
         <file>insertion_point_cancel_22.png</file>
         <file>leave_fullscreen_monitor_32.png</file>
         <file>measure_distance_35.png</file>
+        <file>measure_distance_35@2x.png</file>
         <file>move_geometry_35.png</file>
         <file>move_vertex_35.png</file>
         <file>delete_vertex_35.png</file>
         <file>insert_vertex_35.png</file>
         <file>plate_pole_modification_35.png</file>
+        <file>plate_pole_modification_35@2x.png</file>
         <file>plate_move_pole_35.png</file>
+        <file>plate_move_pole_35@2x.png</file>
         <file>preview_not_available.png</file>
         <file>query_feature_35.png</file>
         <file>reorient_poles_16.png</file>
@@ -122,6 +128,7 @@
         <file>seek_end_22.png</file>
         <file>select_plate_35.png</file>
         <file>small_circle_35.png</file>
+        <file>small_circle_35@2x.png</file>
         <file>spin_globe_35.png</file>
         <file>split_geometry_35.png</file>
         <file>tango_document_save_22.png</file>
@@ -132,12 +139,17 @@
         <file>tango_process_stop_22.png</file>
         <file>topology_blank_35.png</file>
         <file>topology_build_boundary_35.png</file>
+        <file>topology_build_boundary_35@2x.png</file>
         <file>topology_build_line_35.png</file>
+        <file>topology_build_line_35@2x.png</file>
         <file>topology_build_network_35.png</file>
+        <file>topology_build_network_35@2x.png</file>
         <file>topology_edit_35.png</file>
+        <file>topology_edit_35@2x.png</file>
         <file>unsaved_changes_red_disk_bang_22.png</file>
         <file>unsaved_changes_red_disk_question_22.png</file>
         <file>zoom_globe_35.png</file>
+        <file>zoom_globe_35@2x.png</file>
         <file>age_legacy.cpt</file>
         <file>age_traditional.cpt</file>
         <file>age_modern.cpt</file>
