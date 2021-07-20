@@ -92,19 +92,19 @@ namespace GPlatesQtWidgets
 		get_ortho_projection_matrices_from_dimensions(
 				GPlatesOpenGL::GLMatrix &projection_matrix_scene,
 				GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
-				int width_in_device_pixels,
-				int height_in_device_pixels)
+				int canvas_width,
+				int canvas_height)
 		{
 			projection_matrix_scene.gl_load_identity();
 			projection_matrix_text_overlay.gl_load_identity();
 
 			// NOTE: Use bottom=height instead of top=height inverts the y-axis which
 			// converts from Qt coordinate system to OpenGL coordinate system.
-			projection_matrix_scene.gl_ortho(0, width_in_device_pixels, height_in_device_pixels, 0, -999999, 999999);
+			projection_matrix_scene.gl_ortho(0, canvas_width, canvas_height, 0, -999999, 999999);
 
 			// However the text overlay doesn't need this y-inversion.
 			// TODO: Sort out the need for a y-inversion above by fixing the world transform in MapView.
-			projection_matrix_text_overlay.gl_ortho(0, width_in_device_pixels, 0, height_in_device_pixels, -999999, 999999);
+			projection_matrix_text_overlay.gl_ortho(0, canvas_width, 0, canvas_height, -999999, 999999);
 		}
 	}
 }
@@ -274,14 +274,9 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
 	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, *painter);
 
-	// Get the model-view matrix from the QPainter's 2D world transform.
+	// Get the model-view matrix.
 	GPlatesOpenGL::GLMatrix model_view_matrix;
-	get_model_view_matrix_from_2D_world_transform(
-			model_view_matrix,
-			// Note that we *don't* use the QPainter's world transform to set our OpenGL
-			// model-view and projection matrices because it uses device *independent* pixels and
-			// OpenGL uses device pixels (which is different for high DPI displays like Apple Retina)...
-			d_viewport_transform_for_device_pixels);
+	get_model_view_matrix_from_2D_world_transform(model_view_matrix, d_viewport_transform);
 
 	// Set the model-view matrix on the renderer.
 	renderer->gl_load_matrix(GL_MODELVIEW, model_view_matrix);
@@ -298,9 +293,9 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 	get_ortho_projection_matrices_from_dimensions(
 			projection_matrix_scene,
 			projection_matrix_text_overlay,
-			// Convert from widget size to device pixels (used by OpenGL)...
-			qpaint_device->width() * qpaint_device->devicePixelRatio(),
-			qpaint_device->height() * qpaint_device->devicePixelRatio());
+			// Using device-independent pixels (eg, widget dimensions)...
+			qpaint_device->width(),
+			qpaint_device->height());
 
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = render_scene(
@@ -321,10 +316,10 @@ GPlatesQtWidgets::MapCanvas::update_canvas()
 }
 
 void
-GPlatesQtWidgets::MapCanvas::set_viewport_transform_for_device_pixels(
+GPlatesQtWidgets::MapCanvas::set_viewport_transform(
 		const QTransform &viewport_transform)
 {
-	d_viewport_transform_for_device_pixels = viewport_transform;
+	d_viewport_transform = viewport_transform;
 }
 
 QImage
@@ -581,9 +576,9 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 	get_ortho_projection_matrices_from_dimensions(
 			projection_matrix_scene,
 			projection_matrix_text_overlay,
-			// Convert from widget size to device pixels (used by OpenGL)...
-			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio(),
-			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio());
+			// Using device-independent pixels (eg, widget dimensions)...
+			feedback_paint_device.width(),
+			feedback_paint_device.height());
 
 	// Render the scene to the feedback paint device.
 	// This will use the main framebuffer for intermediate rendering in some cases.

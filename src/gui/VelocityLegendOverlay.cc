@@ -462,10 +462,7 @@ GPlatesGui::VelocityLegendOverlay::paint(
 	const float x_offset = settings.get_x_offset() * scale;
 	const float y_offset = settings.get_y_offset() * scale;
 
-	// Work out position of text.
-	//
-	// Note: We're using OpenGL co-ordinates where OpenGL and Qt y-axes are the reverse of each other.
-	//       We're using OpenGL because we then pass these coordinates through the OpenGL model-view-projection transform.
+	// Find left of legend bounding box.
 	float x;
 	if (settings.get_anchor() == GPlatesGui::VelocityLegendOverlaySettings::TOP_LEFT ||
 		settings.get_anchor() == GPlatesGui::VelocityLegendOverlaySettings::BOTTOM_LEFT)
@@ -477,6 +474,10 @@ GPlatesGui::VelocityLegendOverlay::paint(
 		x = paint_device_width - x_offset - legend_width;
 	}
 
+	// Find top of legend bounding box.
+	//
+	// Note: We're using OpenGL co-ordinates where OpenGL and Qt y-axes are the reverse of each other.
+	//       We're using OpenGL because we then pass these coordinates through the OpenGL model-view-projection transform.
 	float y;
 	if (settings.get_anchor() == GPlatesGui::VelocityLegendOverlaySettings::TOP_LEFT ||
 		settings.get_anchor() == GPlatesGui::VelocityLegendOverlaySettings::TOP_RIGHT)

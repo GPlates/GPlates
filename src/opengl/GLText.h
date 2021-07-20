@@ -47,6 +47,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Creates text @a string at position (@a x , @a y , @a z) in world coordinates
 		 * using a particular @a colour and @a font.
+		 * Note that @a y is the baseline of the text (ie, text is drawn just above the y-coordinate).
 		 *
 		 * The current model-view and projection matrices of @a renderer, along with the current
 		 * viewport, are used to project from 3D world position into 2D viewport coordinates.

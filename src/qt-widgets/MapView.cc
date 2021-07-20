@@ -80,6 +80,7 @@ namespace
 			 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X) / FRAMING_RATIO;
 
 		QTransform m;
+		// Invert 'y' coordinate to transform from OpenGL frame to Qt frame.
 		m.scale(scale_factor, -scale_factor);
 		m.rotate(map_transform.get_rotation());
 
@@ -191,21 +192,19 @@ GPlatesQtWidgets::MapView::handle_transform_changed(
 {
 	setTransformationAnchor(QGraphicsView::NoAnchor);
 
-	// Calculate world transforms.
+	// Calculate world transform.
 	//
-	// Note that Qt uses device *independent* coordinates (eg, in the QGraphicsView/QGraphicsScene/QPainter).
-	// Whereas OpenGL uses device pixels (affected by device pixel ratio on high DPI displays like Apple Retina).
-	const QTransform qpainter_world_transform = calc_world_transform(
+	// Note that even though Qt uses device *independent* coordinates (eg, in the QGraphicsView/QGraphicsScene/QPainter)
+	// and OpenGL uses device pixels (affected by device pixel ratio on high DPI displays like Apple Retina)
+	// we use device *independent* coordinates for our transforms (including orthographic projections).
+	// It's really only the OpenGL viewport that needs to know about device pixels.
+	const QTransform world_transform = calc_world_transform(
 			map_transform,
 			width(),
 			height());
-	const QTransform opengl_world_transform = calc_world_transform(
-			map_transform,
-			devicePixelRatio() * width(),
-			devicePixelRatio() * height());
 
-	setTransform(qpainter_world_transform);
-	map_canvas().set_viewport_transform_for_device_pixels(opengl_world_transform);
+	setTransform(world_transform);
+	map_canvas().set_viewport_transform(world_transform);
 
 	// Even though the scroll bars are hidden, the QGraphicsView is still
 	// scrollable, and it has a habit of scrolling around if you have panned to the
@@ -520,12 +519,9 @@ GPlatesQtWidgets::MapView::render_opengl_feedback_to_paint_device(
 	// of the feedback paint device.
 	const QTransform world_matrix = calc_world_transform(
 			d_map_transform,
-			// Use device pixels (instead of device *independent* pixels) since this transform is used for OpenGL rendering.
-			//
-			// Note that Qt uses device *independent* coordinates (eg, in the QGraphicsView/QGraphicsScene/QPainter).
-			// Whereas OpenGL uses device pixels (affected by device pixel ratio on high DPI displays like Apple Retina).
-			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio(),
-			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio());
+			// Using device-independent pixels (eg, widget dimensions)...
+			feedback_paint_device.width(),
+			feedback_paint_device.height());
 
 	map_canvas().render_opengl_feedback_to_paint_device(
 			*d_gl_widget_ptr,

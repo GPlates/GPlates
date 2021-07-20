@@ -110,13 +110,9 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Sets the viewport transform used for rendering this canvas using OpenGL.
-		 *
-		 * It is based on the viewport dimensions in device pixels (not device *independent* pixels).
-		 * Note that Qt uses device *independent* coordinates (eg, in the QGraphicsView/QGraphicsScene/QPainter).
-		 * Whereas OpenGL uses device pixels (affected by device pixel ratio on high DPI displays like Apple Retina).
 		 */
 		void
-		set_viewport_transform_for_device_pixels(
+		set_viewport_transform(
 				const QTransform &viewport_transform);
 
 		/**
@@ -192,8 +188,8 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState &d_view_state;
 		MapView *d_map_view_ptr;
 
-		//! Viewport transform used for rendering this canvas using OpenGL (in device pixels).
-		QTransform d_viewport_transform_for_device_pixels;
+		//! Viewport transform used for rendering this canvas.
+		QTransform d_viewport_transform;
 
 		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;

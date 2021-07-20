@@ -62,14 +62,13 @@ GPlatesGui::TextOverlay::paint(
 	QString substituted = settings.get_text();
 	substituted.replace("%f", time);
 
+	QFontMetrics fm(settings.get_font());
+
 	// Scale the x and y offsets.
 	float x_offset = settings.get_x_offset() * scale;
 	float y_offset = settings.get_y_offset() * scale;
 
-	// Work out position of text.
-	//
-	// Note: We're using OpenGL co-ordinates where OpenGL and Qt y-axes are the reverse of each other.
-	QFontMetrics fm(settings.get_font());
+	// Find left of text.
 	float x;
 	if (settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_LEFT ||
 		settings.get_anchor() == GPlatesGui::TextOverlaySettings::BOTTOM_LEFT)
@@ -86,6 +85,9 @@ GPlatesGui::TextOverlay::paint(
 		x = paint_device_width - x_offset - text_width;
 	}
 
+	// Find bottom of text (ie, baseline of the font).
+	//
+	// Note: We're using OpenGL co-ordinates where OpenGL and Qt y-axes are the reverse of each other.
 	float y;
 	if (settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_LEFT ||
 		settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_RIGHT)
