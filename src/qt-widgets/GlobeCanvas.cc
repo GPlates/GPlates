@@ -731,7 +731,9 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 			d_gl_projection_transform_include_full_globe,
 			d_gl_projection_transform_include_stars,
 			d_gl_projection_transform_text_overlay,
-			*this);
+			// Using device-independent pixels (eg, widget dimensions)...
+			width(),
+			height());
 }
 
 
@@ -929,7 +931,10 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 			tile_projection_transform_include_full_globe,
 			tile_projection_transform_include_stars,
 			tile_projection_transform_text_overlay,
-			image);
+			// Since QImage is just raw pixels its dimensions are in device pixels, but
+			// we need device-independent pixels here (eg, widget dimensions)...
+			image.width() / image.devicePixelRatio(),
+			image.height() / image.devicePixelRatio());
 
 	//
 	// Copy the rendered tile into the appropriate sub-rect of the image.
@@ -1031,7 +1036,9 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 			projection_transform_include_full_globe,
 			projection_transform_include_stars,
 			projection_transform_text_overlay,
-			feedback_paint_device);
+			// Using device-independent pixels (eg, widget dimensions)...
+			feedback_paint_device.width(),
+			feedback_paint_device.height());
 }
 
 
@@ -1043,7 +1050,8 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
 		const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
-		const QPaintDevice &paint_device)
+		int paint_device_width_in_device_independent_pixels,
+		int paint_device_height_in_device_independent_pixels)
 {
 	PROFILE_FUNC();
 
@@ -1068,7 +1076,10 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	renderer.gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
 
 	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-	const float scale = calculate_scale(paint_device);
+	const float scale = calculate_scale(
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels);
+
 	//
 	// Paint the globe and its contents.
 	//
@@ -1100,8 +1111,8 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 			renderer,
 			d_view_state.get_text_overlay_settings(),
 			// These are widget dimensions (not device pixels)...
-			paint_device.width(),
-			paint_device.height(),
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels,
 			scale);
 
 	// Paint the velocity legend overlay
@@ -1109,8 +1120,8 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 			renderer,
 			d_view_state.get_velocity_legend_overlay_settings(),
 			// These are widget dimensions (not device pixels)...
-			paint_device.width(),
-			paint_device.height(),
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels,
 			scale);
 
 	return frame_cache_handle;
@@ -1548,12 +1559,15 @@ GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
 
 float
 GPlatesQtWidgets::GlobeCanvas::calculate_scale(
-		const QPaintDevice &paint_device)
+		int paint_device_width_in_device_independent_pixels,
+		int paint_device_height_in_device_independent_pixels)
 {
 	// Note that we use regular device *independent* sizes not high-DPI device pixels
 	// (ie, not using device pixel ratio) to calculate scale because font sizes, etc, are
 	// based on these coordinates (it's only OpenGL, really, that deals with device pixels).
-	const int paint_device_dimension = (std::min)(paint_device.width(), paint_device.height());
+	const int paint_device_dimension = (std::min)(
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels);
 	const int min_viewport_dimension = (std::min)(width(), height());
 
 	// If paint device is larger than the viewport then don't scale - this avoids having

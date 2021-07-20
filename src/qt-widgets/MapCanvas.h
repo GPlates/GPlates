@@ -252,14 +252,18 @@ namespace GPlatesQtWidgets
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
 				const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
-				const QPaintDevice &paint_device,
-				const QPaintDevice &map_canvas_paint_device);
+				int paint_device_width_in_device_independent_pixels,
+				int paint_device_height_in_device_independent_pixels,
+				int map_canvas_paint_device_width_in_device_independent_pixels,
+				int map_canvas_paint_device_height_in_device_independent_pixels);
 
 		//! Calculate scaling for lines, points and text based on size of view
 		float
 		calculate_scale(
-				const QPaintDevice &paint_device,
-				const QPaintDevice &map_canvas_paint_device);
+				int paint_device_width_in_device_independent_pixels,
+				int paint_device_height_in_device_independent_pixels,
+				int map_canvas_paint_device_width_in_device_independent_pixels,
+				int map_canvas_paint_device_height_in_device_independent_pixels);
 
 	};
 }

@@ -697,7 +697,8 @@ namespace GPlatesQtWidgets
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
 				const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
-				const QPaintDevice &paint_device);
+				int paint_device_width_in_device_independent_pixels,
+				int paint_device_height_in_device_independent_pixels);
 
 		void
 		update_mouse_pointer_pos(
@@ -757,7 +758,8 @@ namespace GPlatesQtWidgets
 		//! Calculates scaling for lines, points and text based on size of the paint device.
 		float
 		calculate_scale(
-				const QPaintDevice &paint_device);
+				int paint_device_width_in_device_independent_pixels,
+				int paint_device_height_in_device_independent_pixels);
 
 	};
 
