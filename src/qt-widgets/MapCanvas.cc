@@ -92,19 +92,19 @@ namespace GPlatesQtWidgets
 		get_ortho_projection_matrices_from_dimensions(
 				GPlatesOpenGL::GLMatrix &projection_matrix_scene,
 				GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
-				int canvas_width,
-				int canvas_height)
+				int scene_width,
+				int scene_height)
 		{
 			projection_matrix_scene.gl_load_identity();
 			projection_matrix_text_overlay.gl_load_identity();
 
 			// NOTE: Use bottom=height instead of top=height inverts the y-axis which
 			// converts from Qt coordinate system to OpenGL coordinate system.
-			projection_matrix_scene.gl_ortho(0, canvas_width, canvas_height, 0, -999999, 999999);
+			projection_matrix_scene.gl_ortho(0, scene_width, scene_height, 0, -999999, 999999);
 
 			// However the text overlay doesn't need this y-inversion.
 			// TODO: Sort out the need for a y-inversion above by fixing the world transform in MapView.
-			projection_matrix_text_overlay.gl_ortho(0, canvas_width, 0, canvas_height, -999999, 999999);
+			projection_matrix_text_overlay.gl_ortho(0, scene_width, 0, scene_height, -999999, 999999);
 		}
 	}
 }
@@ -326,7 +326,7 @@ QImage
 GPlatesQtWidgets::MapCanvas::render_to_qimage(
 		QPaintDevice &map_canvas_paint_device,
 		const QTransform &viewport_transform,
-		const QSize &image_size)
+		const QSize &image_size_in_device_independent_pixels)
 {
 	// Set up a QPainter to help us with OpenGL text rendering.
 	QPainter painter(&map_canvas_paint_device);
@@ -355,8 +355,21 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 
 	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = off_screen_render_scope.get_renderer();
 
-	// The image to render the scene into.
-	QImage image(image_size, QImage::Format_ARGB32);
+
+	// The image to render/copy the scene into.
+	//
+	// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
+	// The image will still be it's original size in device *independent* pixels.
+	//
+	// TODO: We're using the device pixel ratio of current canvas since we're rendering into that and
+	// then copying into image. This might not be ideal if this canvas is displayed on one monitor and
+	// the QImage (eg, Colouring previews) will be displayed on another with a different device pixel ratio.
+	const QSize image_size_in_device_pixels(
+			image_size_in_device_independent_pixels.width() * map_canvas_paint_device.devicePixelRatio(),
+			image_size_in_device_independent_pixels.height() * map_canvas_paint_device.devicePixelRatio());
+	QImage image(image_size_in_device_pixels, QImage::Format_ARGB32);
+	image.setDevicePixelRatio(map_canvas_paint_device.devicePixelRatio());
+
 	if (image.isNull())
 	{
 		// Most likely a memory allocation failure - return the null image.
@@ -382,8 +395,9 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 			GPlatesOpenGL::GLViewport(
 					0,
 					0,
-					image_size.width(),
-					image_size.height())/*destination_viewport*/,
+					// Use image size in device pixels (used by OpenGL)...
+					image_size_in_device_pixels.width(),
+					image_size_in_device_pixels.height())/*destination_viewport*/,
 			tile_border);
 
 	// Get the model-view matrix from the 2D world transform.
@@ -402,8 +416,9 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 	get_ortho_projection_matrices_from_dimensions(
 			projection_matrix_scene,
 			projection_matrix_text_overlay,
-			image_size.width(),
-			image_size.height());
+			// Using device-independent pixels (eg, widget dimensions)...
+			image_size_in_device_independent_pixels.width(),
+			image_size_in_device_independent_pixels.height());
 
 	// Keep track of the cache handles of all rendered tiles.
 	boost::shared_ptr< std::vector<cache_handle_type> > frame_cache_handle(
@@ -472,13 +487,14 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 
 	const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection_transform =
 			tile_render.get_tile_projection_transform();
+	const GPlatesOpenGL::GLMatrix &tile_projection_matrix = tile_projection_transform->get_matrix();
 
 	// The scene projection matrix adjusted for the current tile.
-	GPlatesOpenGL::GLMatrix tile_projection_matrix_scene(tile_projection_transform->get_matrix());
+	GPlatesOpenGL::GLMatrix tile_projection_matrix_scene(tile_projection_matrix);
 	tile_projection_matrix_scene.gl_mult_matrix(projection_matrix_scene);
 
 	// The text overlay projection matrix adjusted for the current tile.
-	GPlatesOpenGL::GLMatrix tile_projection_matrix_text_overlay(tile_projection_transform->get_matrix());
+	GPlatesOpenGL::GLMatrix tile_projection_matrix_text_overlay(tile_projection_matrix);
 	tile_projection_matrix_text_overlay.gl_mult_matrix(projection_matrix_text_overlay);
 
 	//

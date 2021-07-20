@@ -120,9 +120,9 @@ namespace GPlatesQtWidgets
 		 *
 		 * The paint device is the QGLWidget set as the viewport on MapView (on QGraphicsView).
 		 *
-		 * @a image_size is in pixels (not widget size). If the caller is rendering a high-DPI image
-		 * they should multiply their widget size by the appropriate device pixel ratio and then call
-		 * QImage::setDevicePixelRatio on the returned image.
+		 * The specified image size should be in device *independent* pixels (eg, widget dimensions).
+		 * The returned image will be a high-DPI image if this canvas has a device pixel ratio greater than 1.0
+		 * (in which case the returned QImage will have the same device pixel ratio).
 		 *
 		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
@@ -130,7 +130,7 @@ namespace GPlatesQtWidgets
 		render_to_qimage(
 				QPaintDevice &map_canvas_paint_device,
 				const QTransform &viewport_transform,
-				const QSize &image_size);
+				const QSize &image_size_in_device_independent_pixels);
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the

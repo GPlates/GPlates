@@ -392,18 +392,11 @@ GPlatesQtWidgets::GlobeAndMapWidget::get_viewport_size() const
 }
 
 
-QSize
-GPlatesQtWidgets::GlobeAndMapWidget::get_viewport_size_in_device_pixels() const
-{
-	return d_active_view_ptr->get_viewport_size_in_device_pixels();
-}
-
-
 QImage
 GPlatesQtWidgets::GlobeAndMapWidget::render_to_qimage(
-		const QSize &image_size)
+		const QSize &image_size_in_device_independent_pixels)
 {
-	return d_active_view_ptr->render_to_qimage(image_size);
+	return d_active_view_ptr->render_to_qimage(image_size_in_device_independent_pixels);
 }
 
 

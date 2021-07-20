@@ -742,18 +742,9 @@ GPlatesQtWidgets::GlobeCanvas::get_viewport_size() const
 }
 
 
-QSize
-GPlatesQtWidgets::GlobeCanvas::get_viewport_size_in_device_pixels() const
-{
-	// QWidget::width() and QWidget::height() are in device independent pixels.
-	// Convert from widget size to device pixels (OpenGL).
-	return devicePixelRatio() * get_viewport_size();
-}
-
-
 QImage
 GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
-		const QSize &image_size)
+		const QSize &image_size_in_device_independent_pixels)
 {
 	// Initialise OpenGL if we haven't already.
 	initializeGL_if_necessary();
@@ -785,13 +776,20 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 
 	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = off_screen_render_scope.get_renderer();
 
-	// The image to render the scene into.
-	QImage image(image_size, QImage::Format_ARGB32);
-	if (image.isNull())
-	{
-		// Most likely a memory allocation failure - return the null image.
-		return QImage();
-	}
+
+	// The image to render/copy the scene into.
+	//
+	// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
+	// The image will still be it's original size in device *independent* pixels.
+	//
+	// TODO: We're using the device pixel ratio of current canvas since we're rendering into that and
+	// then copying into image. This might not be ideal if this canvas is displayed on one monitor and
+	// the QImage (eg, Colouring previews) will be displayed on another with a different device pixel ratio.
+	const QSize image_size_in_device_pixels(
+			image_size_in_device_independent_pixels.width() * devicePixelRatio(),
+			image_size_in_device_independent_pixels.height() * devicePixelRatio());
+	QImage image(image_size_in_device_pixels, QImage::Format_ARGB32);
+	image.setDevicePixelRatio(devicePixelRatio());
 
 	// Fill the image with transparent black in case there's an exception during rendering
 	// of one of the tiles and the image is incomplete.
@@ -812,9 +810,27 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 			GPlatesOpenGL::GLViewport(
 					0,
 					0,
-					image_size.width(),
-					image_size.height())/*destination_viewport*/,
+					// Use image size in device pixels (used by OpenGL)...
+					image_size_in_device_pixels.width(),
+					image_size_in_device_pixels.height())/*destination_viewport*/,
 			tile_border);
+
+	// Calculate the projection matrices associated with the image dimensions.
+	GPlatesOpenGL::GLMatrix projection_transform_include_front_half_globe;
+	GPlatesOpenGL::GLMatrix projection_transform_include_rear_half_globe;
+	GPlatesOpenGL::GLMatrix projection_transform_include_full_globe;
+	GPlatesOpenGL::GLMatrix projection_transform_include_stars;
+	GPlatesOpenGL::GLMatrix projection_transform_text_overlay;
+	calc_scene_projection_transforms(
+			// Using device-independent pixels (eg, widget dimensions)...
+			image_size_in_device_independent_pixels.width(),
+			image_size_in_device_independent_pixels.height(),
+			d_view_state.get_viewport_zoom().zoom_factor(),
+			projection_transform_include_front_half_globe,
+			projection_transform_include_rear_half_globe,
+			projection_transform_include_full_globe,
+			projection_transform_include_stars,
+			projection_transform_text_overlay);
 
 	// Keep track of the cache handles of all rendered tiles.
 	boost::shared_ptr< std::vector<cache_handle_type> > frame_cache_handle(
@@ -826,8 +842,15 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 		// Render the scene to the feedback paint device.
 		// This will use the main framebuffer for intermediate rendering in some cases.
 		// Hold onto the previous frame's cached resources *while* generating the current frame.
-		const cache_handle_type tile_cache_handle =	
-				render_scene_tile_into_image(*renderer, tile_render, image);
+		const cache_handle_type tile_cache_handle =	 render_scene_tile_into_image(
+				*renderer,
+				tile_render,
+				projection_transform_include_front_half_globe,
+				projection_transform_include_rear_half_globe,
+				projection_transform_include_full_globe,
+				projection_transform_include_stars,
+				projection_transform_text_overlay,
+				image);
 		frame_cache_handle->push_back(tile_cache_handle);
 	}
 
@@ -842,6 +865,11 @@ GPlatesQtWidgets::GlobeCanvas::cache_handle_type
 GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesOpenGL::GLTileRender &tile_render,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
+		const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
 		QImage &image)
 {
 	// Make sure we leave the OpenGL state the way it was.
@@ -879,21 +907,17 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 			tile_render.get_tile_projection_transform();
 	const GPlatesOpenGL::GLMatrix &projection_matrix_tile = projection_transform_tile->get_matrix();
 
-	// Calculate the projection matrices associated with the current image dimensions.
 	GPlatesOpenGL::GLMatrix tile_projection_transform_include_front_half_globe(projection_matrix_tile);
 	GPlatesOpenGL::GLMatrix tile_projection_transform_include_rear_half_globe(projection_matrix_tile);
 	GPlatesOpenGL::GLMatrix tile_projection_transform_include_full_globe(projection_matrix_tile);
 	GPlatesOpenGL::GLMatrix tile_projection_transform_include_stars(projection_matrix_tile);
 	GPlatesOpenGL::GLMatrix tile_projection_transform_text_overlay(projection_matrix_tile);
-	calc_scene_projection_transforms(
-			image.width(),
-			image.height(),
-			d_view_state.get_viewport_zoom().zoom_factor(),
-			tile_projection_transform_include_front_half_globe,
-			tile_projection_transform_include_rear_half_globe,
-			tile_projection_transform_include_full_globe,
-			tile_projection_transform_include_stars,
-			tile_projection_transform_text_overlay);
+
+	tile_projection_transform_include_front_half_globe.gl_mult_matrix(projection_transform_include_front_half_globe);
+	tile_projection_transform_include_rear_half_globe.gl_mult_matrix(projection_transform_include_rear_half_globe);
+	tile_projection_transform_include_full_globe.gl_mult_matrix(projection_transform_include_full_globe);
+	tile_projection_transform_include_stars.gl_mult_matrix(projection_transform_include_stars);
+	tile_projection_transform_text_overlay.gl_mult_matrix(projection_transform_text_overlay);
 
 	//
 	// Render the scene.

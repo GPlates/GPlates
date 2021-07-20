@@ -733,12 +733,13 @@ void
 GPlatesQtWidgets::ColouringDialog::handle_repaint(
 		bool mouse_down)
 {
-	// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
-	// The image will still be the size of the globe/map widget in device-independent pixels.
-	const int device_pixel_ratio = devicePixelRatio();
+	// Render the preview image.
+	//
+	// Note: The returned image could be high DPI (pixel device ratio greater than 1.0).
+	//       In which case the actual pixel dimensions of the image will be larger than requested
+	//       (by the pixel device ratio) but it should still occupy the requested *icon* dimensions.
 	QImage icon_image = d_globe_and_map_widget_ptr->render_to_qimage(
-			device_pixel_ratio * d_globe_and_map_widget_ptr->get_viewport_size());
-	icon_image.setDevicePixelRatio(device_pixel_ratio);
+			d_globe_and_map_widget_ptr->get_viewport_size());
 
 	colour_schemes_list->item(d_next_icon_to_render)->setIcon(
 			QIcon(QPixmap::fromImage(icon_image)));

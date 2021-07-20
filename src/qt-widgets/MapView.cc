@@ -200,6 +200,7 @@ GPlatesQtWidgets::MapView::handle_transform_changed(
 	// It's really only the OpenGL viewport that needs to know about device pixels.
 	const QTransform world_transform = calc_world_transform(
 			map_transform,
+			// Using device-independent pixels (eg, widget dimensions)...
 			width(),
 			height());
 
@@ -491,23 +492,20 @@ GPlatesQtWidgets::MapView::get_viewport_size() const
 }
 
 
-QSize
-GPlatesQtWidgets::MapView::get_viewport_size_in_device_pixels() const
-{
-	// QWidget::width() and QWidget::height() are in device independent pixels.
-	// Convert from widget size to device pixels (OpenGL).
-	return devicePixelRatio() * get_viewport_size();
-}
-
-
 QImage
 GPlatesQtWidgets::MapView::render_to_qimage(
-		const QSize &image_size)
+		const QSize &image_size_in_device_independent_pixels)
 {
 	// Calculate the world matrix to position the scene appropriately according to the image dimensions.
-	const QTransform world_matrix = calc_world_transform(d_map_transform, image_size.width(), image_size.height());
+	//
+	// Note that the image dimensions are in device *independent* pixels (eg, widget dimensions).
+	const QTransform world_matrix = calc_world_transform(
+			d_map_transform,
+			// Using device-independent pixels (eg, widget dimensions)...
+			image_size_in_device_independent_pixels.width(),
+			image_size_in_device_independent_pixels.height());
 
-	return map_canvas().render_to_qimage(*d_gl_widget_ptr, world_matrix, image_size);
+	return map_canvas().render_to_qimage(*d_gl_widget_ptr, world_matrix, image_size_in_device_independent_pixels);
 }
 
 
