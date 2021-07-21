@@ -213,6 +213,9 @@ namespace GPlatesGui
 		 */
 		GlobeRenderedGeometryCollectionPainter d_rendered_geom_collection_painter;
 
+		//! Multiplier for point sizes and line widths (due to a device *independent* pixel containing multiple device pixels).
+		int d_device_pixel_ratio;
+
 
 		/**
 		 * Calculate tranform to ransform the view according to the current globe orientation.

@@ -74,7 +74,8 @@ GPlatesGui::Globe::Globe(
 			visual_layers,
 			visibility_tester,
 			colour_scheme,
-			device_pixel_ratio)
+			device_pixel_ratio),
+	d_device_pixel_ratio(device_pixel_ratio)
 {  }
 
 
@@ -96,7 +97,8 @@ GPlatesGui::Globe::Globe(
 			d_visual_layers,
 			visibility_tester,
 			colour_scheme,
-			device_pixel_ratio)
+			device_pixel_ratio),
+	d_device_pixel_ratio(device_pixel_ratio)
 {  }
 
 
@@ -137,7 +139,7 @@ GPlatesGui::Globe::initialiseGL(
 	//
 
 	// Create these objects in place (some as non-copy-constructable).
-	d_stars = boost::in_place(boost::ref(renderer), boost::ref(d_view_state), STARS_COLOUR);
+	d_stars = boost::in_place(boost::ref(renderer), boost::ref(d_view_state), STARS_COLOUR, d_device_pixel_ratio);
 	d_sphere = boost::in_place(boost::ref(renderer), boost::ref(d_view_state));
 	d_grid = boost::in_place(boost::ref(renderer), d_view_state.get_graticule_settings());
 

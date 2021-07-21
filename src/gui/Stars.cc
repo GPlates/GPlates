@@ -124,7 +124,8 @@ namespace
 			GPlatesOpenGL::GLVertexArray &vertex_array,
 			unsigned int &num_points,
 			boost::function< double () > &rand,
-			const GPlatesGui::rgba8_t &colour)
+			const GPlatesGui::rgba8_t &colour,
+			int device_pixel_ratio)
 	{
 		stream_primitives_type stream;
 
@@ -228,7 +229,11 @@ namespace
 		vertex_array.gl_bind(renderer);
 
 		// Small stars size.
-		renderer.gl_point_size(SMALL_STARS_SIZE);
+		//
+		// Note: Multiply point sizes to account for ratio of device pixels to device *independent* pixels.
+		//       On high-DPI displays there are more pixels in the same physical area on screen and so
+		//       without increasing the point size the points would look too small.
+		renderer.gl_point_size(SMALL_STARS_SIZE * device_pixel_ratio);
 
 		// Draw the small stars.
 		vertex_array.gl_draw_range_elements(
@@ -241,7 +246,11 @@ namespace
 				0/*indices_offset*/);
 
 		// Large stars size.
-		renderer.gl_point_size(LARGE_STARS_SIZE);
+		//
+		// Note: Multiply point sizes to account for ratio of device pixels to device *independent* pixels.
+		//       On high-DPI displays there are more pixels in the same physical area on screen and so
+		//       without increasing the point size the points would look too small.
+		renderer.gl_point_size(LARGE_STARS_SIZE * device_pixel_ratio);
 
 		// Draw the large stars.
 		// They come after the small stars in the vertex array.
@@ -262,7 +271,8 @@ namespace
 GPlatesGui::Stars::Stars(
 		GPlatesOpenGL::GLRenderer &renderer,
 		GPlatesPresentation::ViewState &view_state,
-		const GPlatesGui::Colour &colour) :
+		const GPlatesGui::Colour &colour,
+		int device_pixel_ratio) :
 	d_view_state(view_state),
 	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
 	d_num_points(0)
@@ -279,7 +289,13 @@ GPlatesGui::Stars::Stars(
 
 	rgba8_t rgba8_colour = Colour::to_rgba8(colour);
 
-	d_compiled_draw_state = compile_stars_draw_state(renderer, *d_vertex_array, d_num_points, rand, rgba8_colour);
+	d_compiled_draw_state = compile_stars_draw_state(
+			renderer,
+			*d_vertex_array,
+			d_num_points,
+			rand,
+			rgba8_colour,
+			device_pixel_ratio);
 }
 
 
