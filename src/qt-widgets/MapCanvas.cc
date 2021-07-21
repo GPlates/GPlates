@@ -126,15 +126,15 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 	d_gl_context(gl_context),
 	d_make_context_current(*d_gl_context),
 	d_text_overlay(new GPlatesGui::TextOverlay(view_state.get_application_state())),
-	d_velocity_legend_overlay(
-		new GPlatesGui::VelocityLegendOverlay()),
+	d_velocity_legend_overlay(new GPlatesGui::VelocityLegendOverlay()),
 	d_map(
 			view_state,
 			gl_visual_layers,
 			rendered_geometry_collection,
 			view_state.get_visual_layers(),
 			viewport_zoom,
-			colour_scheme),
+			colour_scheme,
+			gl_widget->devicePixelRatio()),
 	d_rendered_geometry_collection(&rendered_geometry_collection)
 {
 	// Do some OpenGL initialisation.

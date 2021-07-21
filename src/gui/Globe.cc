@@ -60,7 +60,8 @@ GPlatesGui::Globe::Globe(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		const GlobeVisibilityTester &visibility_tester,
-		ColourScheme::non_null_ptr_type colour_scheme) :
+		ColourScheme::non_null_ptr_type colour_scheme,
+		int device_pixel_ratio) :
 	d_view_state(view_state),
 	d_gl_visual_layers(gl_visual_layers),
 	d_rendered_geom_collection(rendered_geom_collection),
@@ -72,7 +73,8 @@ GPlatesGui::Globe::Globe(
 			gl_visual_layers,
 			visual_layers,
 			visibility_tester,
-			colour_scheme)
+			colour_scheme,
+			device_pixel_ratio)
 {  }
 
 
@@ -80,7 +82,8 @@ GPlatesGui::Globe::Globe(
 		Globe &existing_globe,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const GlobeVisibilityTester &visibility_tester,
-		ColourScheme::non_null_ptr_type colour_scheme) :
+		ColourScheme::non_null_ptr_type colour_scheme,
+		int device_pixel_ratio) :
 	d_view_state(existing_globe.d_view_state),
 	d_gl_visual_layers(gl_visual_layers),
 	d_rendered_geom_collection(existing_globe.d_rendered_geom_collection),
@@ -92,7 +95,8 @@ GPlatesGui::Globe::Globe(
 			gl_visual_layers,
 			d_visual_layers,
 			visibility_tester,
-			colour_scheme)
+			colour_scheme,
+			device_pixel_ratio)
 {  }
 
 

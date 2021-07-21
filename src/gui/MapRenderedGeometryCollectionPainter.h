@@ -77,7 +77,8 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				ColourScheme::non_null_ptr_type colour_scheme);
+				ColourScheme::non_null_ptr_type colour_scheme,
+				int device_pixel_ratio);
 
 		/**
 		 * Initialise objects requiring @a GLRenderer.

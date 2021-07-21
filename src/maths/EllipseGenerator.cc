@@ -33,18 +33,6 @@
  
 namespace
 {
- #if 0
-	void
-	draw_point(
-		const GPlatesMaths::PointOnSphere &point)
-	{
-		glBegin(GL_POINTS);
-		glVertex3d(point.position_vector().x().dval(),
-					point.position_vector().y().dval(),
-					point.position_vector().z().dval());
-		glEnd();
-	}
-#endif
 	GPlatesMaths::Real
 	get_rotation_angle(
 		const GPlatesMaths::PointOnSphere &u1,

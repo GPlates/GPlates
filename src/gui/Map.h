@@ -72,7 +72,8 @@ namespace GPlatesGui
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				ViewportZoom &viewport_zoom,
-				const ColourScheme::non_null_ptr_type &colour_scheme);
+				const ColourScheme::non_null_ptr_type &colour_scheme,
+				int device_pixel_ratio);
 
 		/**
 		 * Initialise any OpenGL state.
