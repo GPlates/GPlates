@@ -189,7 +189,7 @@ GPlatesQtWidgets::KinematicGraphPicker::trackerTextF(
 	case GPlatesQtWidgets::KinematicGraphsDialog::LATITUDE_GRAPH_TYPE:
 	case GPlatesQtWidgets::KinematicGraphsDialog::LONGITUDE_GRAPH_TYPE:
 	case GPlatesQtWidgets::KinematicGraphsDialog::VELOCITY_AZIMUTH_GRAPH_TYPE:
-		unit_text = QObject::tr("\260");
+		unit_text = QObject::tr("\302\260"); // \302\260 is UTF8 for degree sign
 		break;
 	case GPlatesQtWidgets::KinematicGraphsDialog::VELOCITY_MAG_GRAPH_TYPE:
 	case GPlatesQtWidgets::KinematicGraphsDialog::VELOCITY_COLAT_GRAPH_TYPE:
@@ -198,7 +198,7 @@ GPlatesQtWidgets::KinematicGraphPicker::trackerTextF(
 		break;
 	case GPlatesQtWidgets::KinematicGraphsDialog::ANGULAR_VELOCITY_GRAPH_TYPE:
 	case GPlatesQtWidgets::KinematicGraphsDialog::ROTATION_RATE_GRAPH_TYPE:
-		unit_text = QObject::tr(" \260/Ma");
+		unit_text = QObject::tr(" \302\260/Ma"); // \302\260 is UTF8 for degree sign
 		break;
 	default:
         break;

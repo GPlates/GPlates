@@ -871,12 +871,8 @@ void
 GPlatesQtWidgets::KinematicGraphsDialog::initialise_widgets()
 {
 
-	//	  Qt documentation says (http://qt-project.org/doc/qt-4.8/qobject.html):
-	//		"For portability reasons, we recommend that you use escape sequences for
-	//		specifying non-ASCII characters in string literals to trUtf8(). For example:
-	//			label->setText(tr("F\374r \310lise"));  "
-	//
-	//		So we use \260 for the degree symbol.
+	// QObject::tr() accepts a string literal in UTF8 format.
+	// So we use \302\260 as the UTF8 encoding of the degree symbol.
 
 
 
@@ -895,20 +891,20 @@ GPlatesQtWidgets::KinematicGraphsDialog::initialise_widgets()
 	d_model->setHorizontalHeaderItem(LAT_COLUMN,new QStandardItem(QObject::tr("Lat")));
 	d_model->setHorizontalHeaderItem(LON_COLUMN,new QStandardItem(QObject::tr("Lon")));
 	d_model->setHorizontalHeaderItem(VELOCITY_MAG_COLUMN,new QStandardItem(QObject::tr("V mag (cm/yr)")));
-	d_model->setHorizontalHeaderItem(VELOCITY_AZIMUTH_COLUMN,new QStandardItem(QObject::tr("V azimuth (\260)")));
+	d_model->setHorizontalHeaderItem(VELOCITY_AZIMUTH_COLUMN,new QStandardItem(QObject::tr("V azimuth (\302\260)")));
 	d_model->setHorizontalHeaderItem(VELOCITY_COLAT_COLUMN,new QStandardItem(QObject::tr("V colat (cm/yr)")));
 	d_model->setHorizontalHeaderItem(VELOCITY_LON_COLUMN,new QStandardItem(QObject::tr("V lon (cm/yr)")));
-	d_model->setHorizontalHeaderItem(ANGULAR_VELOCITY_COLUMN,new QStandardItem(QObject::tr("Ang V (\260/Ma)")));
+	d_model->setHorizontalHeaderItem(ANGULAR_VELOCITY_COLUMN,new QStandardItem(QObject::tr("Ang V (\302\260/Ma)")));
 
 
 	d_model->horizontalHeaderItem(TIME_COLUMN)->setToolTip(QObject::tr("Time (Ma)"));
 	d_model->horizontalHeaderItem(LAT_COLUMN)->setToolTip(QObject::tr("Latitude"));
 	d_model->horizontalHeaderItem(LON_COLUMN)->setToolTip(QObject::tr("Longitude"));
 	d_model->horizontalHeaderItem(VELOCITY_MAG_COLUMN)->setToolTip(QObject::tr("Magnitude of velocity (cm/yr)"));
-	d_model->horizontalHeaderItem(VELOCITY_AZIMUTH_COLUMN)->setToolTip(QObject::tr("Azimuth of velocity (\260)"));
+	d_model->horizontalHeaderItem(VELOCITY_AZIMUTH_COLUMN)->setToolTip(QObject::tr("Azimuth of velocity (\302\260)"));
 	d_model->horizontalHeaderItem(VELOCITY_COLAT_COLUMN)->setToolTip(QObject::tr("Colatitude component of velocity (cm/yr)"));
 	d_model->horizontalHeaderItem(VELOCITY_LON_COLUMN)->setToolTip(QObject::tr("Longitude component of velocity (cm/yr)"));
-	d_model->horizontalHeaderItem(ANGULAR_VELOCITY_COLUMN)->setToolTip(QObject::tr("Angular velocity (\260/Ma)"));
+	d_model->horizontalHeaderItem(ANGULAR_VELOCITY_COLUMN)->setToolTip(QObject::tr("Angular velocity (\302\260/Ma)"));
 
 
 	table_results->setModel(d_model);
@@ -928,7 +924,7 @@ GPlatesQtWidgets::KinematicGraphsDialog::initialise_widgets()
 	table_results->setAlternatingRowColors(true);
 #if 0
 	// Temp addition to table
-	d_model->setHorizontalHeaderItem(ROTATION_RATE_COLUMN,new QStandardItem(QObject::tr("Rot rate (\260/Ma)")));
+	d_model->setHorizontalHeaderItem(ROTATION_RATE_COLUMN,new QStandardItem(QObject::tr("Rot rate (\302\260/Ma)")));
 	d_model->horizontalHeaderItem(ROTATION_RATE_COLUMN)->setToolTip(QObject::tr("Rate of change of velocity azimuth"));
 	table_results->horizontalHeader()->resizeSection(ROTATION_RATE_COLUMN,100);
 #endif
@@ -991,7 +987,7 @@ GPlatesQtWidgets::KinematicGraphsDialog::set_graph_axes_and_titles()
 		graph_title = QObject::tr("Velocity magnitude vs time");
 		break;
 	case VELOCITY_AZIMUTH_GRAPH_TYPE:
-		axis_title = QObject::tr("Azimuth (\260)");
+		axis_title = QObject::tr("Azimuth (\302\260)"); // \302\260 is UTF8 for degree sign
 		graph_title = QObject::tr("Velocity azimuth vs time");
 		break;
 	case VELOCITY_COLAT_GRAPH_TYPE:
@@ -1003,11 +999,11 @@ GPlatesQtWidgets::KinematicGraphsDialog::set_graph_axes_and_titles()
 		graph_title = QObject::tr("Velocity longitude component vs time");
 		break;
 	case ANGULAR_VELOCITY_GRAPH_TYPE:
-		axis_title = QObject::tr("Angular velocity (\260/Ma)");
+		axis_title = QObject::tr("Angular velocity (\302\260/Ma)"); // \302\260 is UTF8 for degree sign
 		graph_title = QObject::tr("Angular velocity vs time");
 		break;
 	case ROTATION_RATE_GRAPH_TYPE:
-		axis_title = QObject::tr("Rotation rate (\260/Ma)");
+		axis_title = QObject::tr("Rotation rate (\302\260/Ma)"); // \302\260 is UTF8 for degree sign
 		graph_title = QObject::tr("Rotation rate vs time");
 		break;
 	default:
