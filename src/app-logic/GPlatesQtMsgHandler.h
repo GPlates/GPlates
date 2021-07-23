@@ -72,14 +72,17 @@ namespace GPlatesAppLogic
 		};
 
 		/**
-		 * Uses @a qInstallMessageHandler to @a install_qt_message_handler as the sole Qt message handler.
-		 * NOTE: only installs handler if any of the following conditions are satisfied:
-		 *   1) GPLATES_PUBLIC_RELEASE is defined in 'global/config.h' (automatically handled by CMake build system), or
-		 *   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
-		 *      "true", "1", "yes" or "on".
-		 * If handler is not installed then default Qt handler applies.
-		 * This handler is uninstalled when its singleton instance is destroyed
-		 * at application exit (and the previous handler is reinstalled).
+		 * Uses @a qInstallMessageHandler to install the GPlates Qt message handler.
+		 *
+		 * NOTE: Does not install handler if GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable
+		 *       is set to case-insensitive "0", "false", "off", "disabled", or "no".
+		 *
+		 * If handler is successfully installed then it handles message first followed by the
+		 * previously installed Qt message handler (which we call directly, Qt doesn't call it).
+		 * And when this singleton instance is destroyed at application exit the handler is uninstalled
+		 * and the previously installed Qt message handler is reinstalled.
+		 *
+		 * If handler is not installed then only the previously installed Qt message handler is used.
 		 *
 		 * @param log_filename - an optional override to the default LogToFileHandler's filename.
 		 */

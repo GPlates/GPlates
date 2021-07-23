@@ -214,13 +214,6 @@ GPlatesAppLogic::UserPreferences::UserPreferences(
 		QObject *_parent):
 	GPlatesUtils::ConfigInterface(_parent)
 {
-	// Initialise names used to identify our settings and paths in the OS.
-	// DO NOT CHANGE THESE VALUES without due consideration to the breaking of previously used
-	// QStandardPaths paths and preference settings.
-	QCoreApplication::setOrganizationName("GPlates");
-	QCoreApplication::setOrganizationDomain("gplates.org");
-	QCoreApplication::setApplicationName("GPlates");
-	
 	initialise_versioning();
 	store_executable_path();
 	

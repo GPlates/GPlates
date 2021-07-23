@@ -27,6 +27,7 @@
 #include <sstream>
 #include <boost/bind/bind.hpp>
 #include <boost/function.hpp>
+#include <QCoreApplication>
 #include <QDebug>
 #include <QMessageBox>
 #include <QStringList>
@@ -188,6 +189,24 @@ namespace
 	{
 		return qapplication->QApplication::notify(qreceiver, qevent);
 	}
+}
+
+
+GPlatesGui::GPlatesQApplication::GPlatesQApplication(
+		int &_argc,
+		char **_argv):
+	QApplication(_argc, _argv)
+{
+	// Initialise names used to identify GPlates. For example, in our preference settings and
+	// paths in the OS (via QStandardPaths).
+	// DO NOT CHANGE THESE VALUES without due consideration to the breaking of previously used
+	// QStandardPaths paths and preference settings.
+	//
+	// Note: This used to be in UserPreferences but has been moved here so that QStandardPaths
+	// returns the correct paths even earlier in the GPlates start-up sequence.
+	QCoreApplication::setOrganizationName("GPlates");
+	QCoreApplication::setOrganizationDomain("gplates.org");
+	QCoreApplication::setApplicationName("GPlates");
 }
 
 
