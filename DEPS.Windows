@@ -304,36 +304,16 @@ CGAL
      * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-4.13.2'.
          * In particular, do not install under Program Files on Windows Vista and
            above because you will likely run into permissions issues later.
-     * Tick 'CGAL_DIR' environment variable - note: this helps GPlates find CGAL (although it can use the PATH for that - see below).
+     * Tick 'CGAL_DIR' environment variable - note: this helps GPlates find CGAL.
      * Tick 'Add CGAL/auxiliary/gmp/lib to PATH' (eg, C:\SDK\cgal\CGAL-4.13.2\auxiliary\gmp\lib).
-  2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
-     * NOTE: Make sure you run 'cmake-gui.exe' as administrator (right-click and select 'Run as administrator').
-     * Specify the root of the extracted CGAL source tree as the source directory.
-     * Specify a new sub-directory, such as 'build', as the build directory (eg, "C:/SDK/cgal/CGAL-4.13.2/build/").
-     * Click 'Configure' once (selecting OK to create the new 'build' directory) and select a Visual Studio generator
-       (such as "Visual Studio 14 2015" for 32-bit or "Visual Studio 14 2015 Win64" for 64-bit).
-        * If an error dialog pops up and there's red text that complains it cannot find the boost library
-          boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library versions
-          of the boost libraries (the ones with the 'lib' prefix in the library filenames - see Boost above).
-     * Untick all 'WITH_*' options except:
-         * WITH_CGAL_Core,
-         * WITH_GMP and
-         * WITH_MPFR.
-     * Change 'CMAKE_INSTALL_PREFIX' to a directory that is different than the root of the extracted source tree  (eg, 'C:/SDK/cgal/CGAL-4.13.2/msvc2015_64').
-       This ensures GPlates will find the correct CGAL CMake config files (the ones created when installing CGAL).
-       NOTE: Make sure to use forward slashes '/' here (not backward slashes '\') to avoid errors when compiling CGAL.
-     * Click the 'Configure' button again.
-     * Click the 'Generate' button.
-     * If this is successful then a Visual Studio solution file 'CGAL.sln'.
-  3. Build CGAL:
-     * Open the generated Visual Studio solution file 'CGAL.sln' in the 'build' directory.
-     * Select the 'Release' build type.
-     * (GPlates developers will also want to build 'Debug', etc so that similar builds in
-       GPlates can find the CGAL library of the correct build type).
-     * Build the 'INSTALL' project.
-  4. Add the CGAL 'bin' directory to the PATH environment variable (eg, C:\SDK\cgal\CGAL-4.13.2\msvc2015_64\bin).
-     Note that in addition to finding CGAL DLLs at runtime this also enables CMake to find CGAL when configuring GPlates (see BUILD.Windows)
-     since CMake strips off 'bin' to find the CGAL root installation (which means the above-mentioned CGAL_DIR is not required).
+  2. Note that we use CGAL as a header-only library (for CGAL >= 4.9) and don't need to build it.
+     And for CGAL >= 4.12, we also don't need to configure CGAL (using CMake).
+     So we're finished with installing CGAL (since we're using CGAL >= 4.12).
+     Note: This solves issues with CGAL auto-linking whereby, for example, previously you might have compiled
+           CGAL with Visual Studio 2015 and then when compiling GPlates with Visual Studio 2019 the auto-linking
+           would look for a CGAL library with 'vc142' in its name (because using the 2019 compiler)
+           and hence not find the CGAL library with 'vc140' in its name (built with the 2015 compiler).
+           However CGAL still auto-links to GMP and MPFR libraries (included in its installation) for us.
     
     NOTE that CGAL 5 (and above) use C++14 features which requires Visual Studio 2015 (or above).
 
