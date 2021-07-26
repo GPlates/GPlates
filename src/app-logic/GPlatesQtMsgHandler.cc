@@ -38,49 +38,27 @@
 
 #include "utils/Environment.h"
 
+
 QtMessageHandler GPlatesAppLogic::GPlatesQtMsgHandler::s_prev_msg_handler = NULL;
 
 
 GPlatesAppLogic::GPlatesQtMsgHandler::GPlatesQtMsgHandler()
-{  }
+{
+	// Determine if we should even install the message handler.
+	if (!should_install_message_handler())
+	{
+		return;
+	}
+
+	// Install our message handler and keep track of the previous message handler.
+	s_prev_msg_handler = qInstallMessageHandler(qt_message_handler);
+}
 
 	
 GPlatesAppLogic::GPlatesQtMsgHandler::~GPlatesQtMsgHandler()
 {
 	// Reinstall the previous message handler.
 	qInstallMessageHandler(s_prev_msg_handler);
-}
-
-
-void
-GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler(
-		const QString &log_filename)
-{
-	// Determine if we should even install the message handler.
-	if ( ! should_install_message_handler())
-	{
-		return;
-	}
-
-	// Create the singleton instance now so that the log file gets cleared.
-	// This needs to be done in case no Qt messages are output and hence no
-	// log file is created - leaving the old log file in place.
-	try
-	{
-		// Set up a LogToFile handler for our log file.
-		instance().add_handler(boost::shared_ptr<MessageHandler>(
-				new GPlatesFileIO::LogToFileHandler(log_filename)));
-	}
-	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
-	{
-		// Even though we couldn't open the log file for writing will still install the main handler,
-		// rather than return early, so that other clients can still add handlers (via 'add_handler()'
-		// such as the LogModel) and have them function.
-		qWarning() << "Failed to install message handler because" << e.filename() << "cannot be opened for writing.";
-	}
-
-	// Install our message handler and keep track of the previous message handler.
-	s_prev_msg_handler = qInstallMessageHandler(qt_message_handler);
 }
 
 
@@ -103,18 +81,21 @@ GPlatesAppLogic::GPlatesQtMsgHandler::should_install_message_handler()
 
 
 void
-GPlatesAppLogic::GPlatesQtMsgHandler::qt_message_handler(
-		QtMsgType msg_type,
-		const QMessageLogContext &context,
-		const QString &msg)
+GPlatesAppLogic::GPlatesQtMsgHandler::add_log_file_handler(
+		const QString &log_filename)
 {
-	// Delegate message handling to our MessageHandlers.
-	instance().handle_qt_message(msg_type, context, msg);
-
-	// Call the original Qt message handler if there is one.
-	if (s_prev_msg_handler)
+	try
 	{
-		s_prev_msg_handler(msg_type, context, msg);
+		// Set up a LogToFile handler for our log file.
+		add_handler(boost::shared_ptr<MessageHandler>(
+				new GPlatesFileIO::LogToFileHandler(log_filename)));
+	}
+	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &e)
+	{
+		// We couldn't open a log file for writing (not even in the local writable app data location).
+		// Emit a warning rather than aborting so that other clients can still add handlers
+		// (via 'add_handler()' such as the LogModel) and have them function.
+		qWarning() << "Failed to install message handler because" << e.filename() << "cannot be opened for writing.";
 	}
 }
 
@@ -148,6 +129,23 @@ GPlatesAppLogic::GPlatesQtMsgHandler::remove_handler(
 
 	message_handle_list_type::iterator handler_iter = d_message_handler_iterators[handler_id];
 	d_message_handler_list.erase(handler_iter);
+}
+
+
+void
+GPlatesAppLogic::GPlatesQtMsgHandler::qt_message_handler(
+		QtMsgType msg_type,
+		const QMessageLogContext &context,
+		const QString &msg)
+{
+	// Delegate message handling to our MessageHandlers.
+	instance().handle_qt_message(msg_type, context, msg);
+
+	// Call the original Qt message handler if there is one.
+	if (s_prev_msg_handler)
+	{
+		s_prev_msg_handler(msg_type, context, msg);
+	}
 }
 
 

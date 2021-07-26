@@ -903,17 +903,25 @@ internal_main(int argc, char* argv[])
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
 	GPlatesGui::GPlatesQApplication qapplication(argc, argv);
 
-	// Install the GPlates Qt message handler.
+	// Install the general GPlates Qt message handler.
 	//
 	// Unless the GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
 	// "0", "false", "off", "disabled", or "no".
 	//
-	// We do this after QApplication is initialised (via GPlatesQApplication above) since installing
-	// this Qt message handler adds LogToFileHandler which uses QStandardPaths::DataLocation
-	// (when GPlates is installed into a non-writeable directory) and QStandardPaths::DataLocation
-	// does not include the "GPlates/GPlates/" suffix until after QApplication is created
-	// (and the GPlates organization and application names have been set via QCoreApplication).
-	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler();
+	// We do this before Application is initialised below so that its qDebug(), qWarning(), etc,
+	// messages are captured by our handler. We also instantiate this singleton on the stack so that
+	// we can control when it gets destroyed (which is just after Application gets destroyed and hence
+	// we capture any messages output during its destruction phase).
+	GPlatesAppLogic::GPlatesQtMsgHandler qt_message_handler;
+	//
+	// Add the default log file to the Qt message handler.
+	//
+	// We do this after QApplication is initialised (via GPlatesQApplication above) since this adds
+	// LogToFileHandler which uses QStandardPaths::DataLocation (when GPlates is installed into a
+	// non-writeable directory) and QStandardPaths::DataLocation does not include the "GPlates/GPlates/"
+	// suffix until after QApplication is created (and hence the GPlates organization and application
+	// names have been set via QCoreApplication).
+	qt_message_handler.add_log_file_handler();
 
 	// Initialise so that queries on the standalone bundle can be made.
 	// Note: This must be done *after* QApplication is initialised (via GPlatesQApplication above) since

@@ -105,9 +105,9 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 		// Instead we'll attempt to write to the local writable app data location.
 		// For example:
 		//
-		// Windows - "C:/Users/<USER>/AppData/Local/GPlates/"
-		// macOS   - "~/Library/Application Support/GPlates/"
-		// Linux   - "~/.local/share/GPlates/".
+		// Windows - "C:/Users/<USER>/AppData/Local/GPlates/GPlates/"
+		// macOS   - "~/Library/Application Support/GPlates/GPlates/"
+		// Linux   - "~/.local/share/GPlates/GPlates/".
 		//
 		const QDir app_data_dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
 		const QString log_basename = QFileInfo(d_log_file.fileName()).fileName();
