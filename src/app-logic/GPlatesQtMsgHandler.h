@@ -26,13 +26,16 @@
 #ifndef GPLATES_APP_LOGIC_GPLATESQTMSGHANDLER_H
 #define GPLATES_APP_LOGIC_GPLATESQTMSGHANDLER_H
 
-#include "utils/Singleton.h"
-
 #include <list>
 #include <vector>
 #include <boost/shared_ptr.hpp>
+#include <QObject>
 #include <QString>
+#include <QStringList>
 #include <QtGlobal>
+#include <QThread>
+
+#include "utils/Singleton.h"
 
 
 namespace GPlatesAppLogic
@@ -44,17 +47,19 @@ namespace GPlatesAppLogic
 	 * NOTE: Does not install if GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable
 	 *       is set to case-insensitive "0", "false", "off", "disabled", or "no".
 	 *
-	 * If successfully installed then our Qt message handler processes message first (delegating to any handlers added)
-	 * followed by the previously installed Qt message handler (which we call directly, Qt doesn't call it).
-	 * And when this singleton instance is destroyed, our Qt message handler is uninstalled
+	 * If successfully installed then our Qt message handler processes messages (delegating to any handlers added to it)
+	 * and the previously installed Qt message handler is no longer called.
+	 * When this singleton instance is destroyed, our Qt message handler is then uninstalled
 	 * and the previously installed Qt message handler is reinstalled.
 	 *
-	 * Internally it uses @a qInstallMessageHandler to install our GPlates Qt message handler.
-	 * If handler is not installed then only the previously installed Qt message handler is used.
+	 * Internally @a qInstallMessageHandler is used to install our GPlates Qt message handler.
 	 */
 	class GPlatesQtMsgHandler :
+			public QObject,
 			public GPlatesUtils::Singleton<GPlatesQtMsgHandler>
 	{
+		Q_OBJECT
+
 		// Note the use of 'PUBLIC' in the macro - this so a single 'GPlatesQtMsgHandler' instance can be
 		// created on the C runtime stack as a means of lifetime control of the singleton -
 		// to make sure it gets destroyed when exiting the scope in which the instance lives.
@@ -82,7 +87,6 @@ namespace GPlatesAppLogic
 			void
 			handle_qt_message(
 					QtMsgType msg_type,
-					const QMessageLogContext &context,
 					const QString &msg) = 0;
 		};
 
@@ -109,7 +113,6 @@ namespace GPlatesAppLogic
 		void
 		remove_handler(
 				message_handler_id_type handler_id);
-
 
 	private:
 		//
@@ -150,6 +153,9 @@ namespace GPlatesAppLogic
 		 */
 		std::vector<message_handle_list_type::iterator> d_message_handler_iterators;
 
+		QThread d_stdout_capture_thread;
+		QThread d_stderr_capture_thread;
+
 		//
 		// Instance methods
 		//
@@ -160,7 +166,6 @@ namespace GPlatesAppLogic
 		void
 		handle_qt_message(
 				QtMsgType msg_type,
-				const QMessageLogContext &context,
 				const QString &msg);
 
 		/**
@@ -169,6 +174,44 @@ namespace GPlatesAppLogic
 		static
 		bool
 		should_install_message_handler();
+
+		/**
+		 * Capture low-level stdout and stderr (eg, from our dependency libraries) and log those messages too.
+		 */
+		void
+		start_capturing_stdout_and_stderr();
+
+		void
+		stop_capturing_stdout_and_stderr();
+
+
+	private Q_SLOTS:
+		void
+		handle_stdout_messages(
+				QStringList);
+
+		void
+		handle_stderr_messages(
+				QStringList);
+
+		void
+		handle_stdout_error();
+
+		void
+		handle_stderr_error();
+
+	Q_SIGNALS:
+		void
+		capture_stdout_messages();
+		
+		void
+		capture_stderr_messages();
+
+		void
+		stop_capturing_stdout();
+		
+		void
+		stop_capturing_stderr();
 	};
 }
 

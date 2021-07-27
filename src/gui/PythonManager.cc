@@ -152,7 +152,8 @@ GPlatesGui::PythonManager::check_python_capability()
 			"print(\'Prefix: \' +sys.prefix);" +
 			"print(\'Exec Prefix: \'+sys.exec_prefix);" +
 			"print(\'python system test passed.\');" +
-			"print(\'******End of testing python capability******\');";
+			"print(\'******End of testing python capability******\');"
+			"sys.stdout.flush();";
 
 	bool result = true;
 	GPlatesApi::PythonInterpreterLocker l;

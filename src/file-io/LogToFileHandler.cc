@@ -173,7 +173,6 @@ GPlatesFileIO::LogToFileHandler::~LogToFileHandler()
 void
 GPlatesFileIO::LogToFileHandler::handle_qt_message(
 		QtMsgType msg_type,
-		const QMessageLogContext &context,
 		const QString &msg)
 {
 	// Only output log messages of the configured severity and up.

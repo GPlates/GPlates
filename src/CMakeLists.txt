@@ -780,11 +780,13 @@ if (APPLE)
 endif()
 
 if (WIN32)
-	# Don't make GPlates a GUI application on Windows (with a WinMain entry point).
+	# UPDATE: Don't build GPlates as a GUI application on Windows (with a WinMain entry point).
 	#
-	# This way it retains the extra console window, otherwise we don't see errors
-	# reported by dependency libraries that output to stderr (the internal log window
-	# in GPlates only picks up qDebug(), qWarning(), etc).
+	# If GPlates is built as a GUI application (on Windows) then it detaches from the parent console and
+	# all output to stdout and stderr are lost. We actually capture the stdout/stderr output in GPlates
+	# (eg, generated from dependency libraries) and output them to the GPlates log window and log file,
+	# but there's nothing to capture unless GPlates is built as a console application. In fact a simple
+	# 'print()' statement in the embedded Python interpreter would have triggered an error.
 	if (FALSE)
 		set_target_properties(gplates PROPERTIES WIN32_EXECUTABLE TRUE)  # This also tells Qt5::Core to link in its WinMain.
 	endif()

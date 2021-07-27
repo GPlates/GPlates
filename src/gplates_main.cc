@@ -908,10 +908,10 @@ internal_main(int argc, char* argv[])
 	// Unless the GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
 	// "0", "false", "off", "disabled", or "no".
 	//
-	// We do this before Application is initialised below so that its qDebug(), qWarning(), etc,
+	// We do this before Application object is initialised below so that its qDebug(), qWarning(), etc,
 	// messages are captured by our handler. We also instantiate this singleton on the stack so that
-	// we can control when it gets destroyed (which is just after Application gets destroyed and hence
-	// we capture any messages output during its destruction phase).
+	// we can control when it gets destroyed (which is just after Application object gets destroyed and
+	// hence we capture any messages output during its destruction phase).
 	GPlatesAppLogic::GPlatesQtMsgHandler qt_message_handler;
 	//
 	// Add the default log file to the Qt message handler.
