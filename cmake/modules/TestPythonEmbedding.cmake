@@ -51,6 +51,11 @@ FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embe
 SET(python_embedding_LIBS ${Boost_LIBRARIES})
 SET(python_embedding_LIB_DIRS ${Boost_LIBRARY_DIRS})
 SET(python_embedding_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
+# Disable Boost auto-linking.
+# This solves the issue whereby, for example, Boost is compiled with Visual Studio 2015 but we're compiling GPlates/pyGPlates
+# with Visual Studio 2019 (which causes auto-linking to look for Boost libs with 'vc142' in their name) and hence cannot find
+# the Boost libs with 'vc140' in their name (built with the 2015 compiler).
+list(APPEND python_embedding_LIBS Boost::disable_autolinking)
 if (TARGET Python3::Python)
 	# We used the Python3 find module.
 	list(APPEND python_embedding_LIBS ${Python3_LIBRARIES})

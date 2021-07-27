@@ -831,6 +831,12 @@ target_link_libraries(pygplates PUBLIC ZLIB::ZLIB)
 # Add required Boost components.
 target_link_libraries(gplates-lib PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
 target_link_libraries(pygplates PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
+# Disable Boost auto-linking.
+# This solves the issue whereby, for example, Boost is compiled with Visual Studio 2015 but we're compiling GPlates/pyGPlates
+# with Visual Studio 2019 (which causes auto-linking to look for Boost libs with 'vc142' in their name) and hence cannot find
+# the Boost libs with 'vc140' in their name (built with the 2015 compiler).
+target_link_libraries(gplates-lib PUBLIC Boost::disable_autolinking)
+target_link_libraries(pygplates PUBLIC Boost::disable_autolinking)
 # Add optional Boost.Python.Numpy component (if found).
 if (TARGET Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
 	target_link_libraries(gplates-lib PUBLIC Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
