@@ -23,11 +23,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-// C headers for low-level functions (setvbuf, _pipe, _fileno, _dup2, _read).
-#include <io.h>
+#include <QtGlobal>  // For Q_OS_WIN, etc.
+
+// C headers for low-level functions (setvbuf, pipe, fileno, dup2, read).
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
+#if defined(Q_OS_WIN)
+#	include <io.h>
+#else
+#	include <unistd.h>
+#endif
 
 #include <memory>
 #include <string>
@@ -35,11 +41,11 @@
 #include <ostream>
 #include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 #include <QDateTime>
 #include <QDebug>
 #include <QObject>
 #include <Qt>
-#include <QtGlobal>
 
 #include "GPlatesQtMsgHandler.h"
 
@@ -99,36 +105,48 @@ namespace GPlatesAppLogic
 
 			// Create a pipe so we can duplicate the output stream onto its write end.
 			// Use text mode to convert \r\n to \n on Windows.
-			if (0 != _pipe(d_pipe_read_write_descriptors, 4096, O_TEXT))
+			if (0 !=
+#if defined(Q_OS_WIN)
+                _pipe(d_pipe_read_write_descriptors, 16*1024, O_TEXT)
+#else
+                pipe(d_pipe_read_write_descriptors)
+#endif
+                )
 			{
 				return false;
 			}
 
-			d_stream_file_descriptor = _fileno(stream);
+			d_stream_file_descriptor = fileno(stream);
 			if (d_stream_file_descriptor < 0)
 			{
 				// This includes the case of a Windows application without a console window
 				// (which returns -2 to indicate stdout/stderr not associated without a stream).
-				_close(d_pipe_read_write_descriptors[0]);
-				_close(d_pipe_read_write_descriptors[1]);
+				close(d_pipe_read_write_descriptors[0]);
+				close(d_pipe_read_write_descriptors[1]);
 				return false;
 			}
 
 			// Keep a copy so we can restore later.
-			d_original_stream_file_descriptor = _dup(d_stream_file_descriptor);
+			d_original_stream_file_descriptor = dup(d_stream_file_descriptor);
 			if (d_original_stream_file_descriptor < 0)
 			{
-				_close(d_pipe_read_write_descriptors[0]);
-				_close(d_pipe_read_write_descriptors[1]);
+				close(d_pipe_read_write_descriptors[0]);
+				close(d_pipe_read_write_descriptors[1]);
 				return false;
 			}
 
 			// Make the stdout/stderr output stream refer to the write end of the pipe.
-			if (0 != _dup2(d_pipe_read_write_descriptors[1], d_stream_file_descriptor))
+			//
+			// Note: Unix platforms (macOS/Linux) return the second file descriptor on success.
+			//       However the Windows version of 'dup' (renamed to '_dup') returns zero on success.
+			//       So we cannot compare with zero for success (instead checking for non-negative).
+			if (dup2(d_pipe_read_write_descriptors[1], d_stream_file_descriptor) < 0)
 			{
-				_close(d_pipe_read_write_descriptors[0]);
-				_close(d_pipe_read_write_descriptors[1]);
-				_close(d_original_stream_file_descriptor);
+				close(d_pipe_read_write_descriptors[0]);
+				close(d_pipe_read_write_descriptors[1]);
+				// Restore original stream.
+				dup2(d_original_stream_file_descriptor, d_stream_file_descriptor);
+				close(d_original_stream_file_descriptor);
 				return false;
 			}
 
@@ -143,8 +161,8 @@ namespace GPlatesAppLogic
 		capture_messages()
 		{
 			// Read from the read end of the pipe.
-			const int bytes_read = _read(d_pipe_read_write_descriptors[0], d_pipe_buffer, sizeof(d_pipe_buffer) - 1);
-			if (bytes_read < 0 || bytes_read >= sizeof(d_pipe_buffer))
+			const int bytes_read = read(d_pipe_read_write_descriptors[0], d_pipe_buffer, sizeof(d_pipe_buffer) - 1);
+			if (bytes_read < 0 || bytes_read >= boost::numeric_cast<int>(sizeof(d_pipe_buffer)))
 			{
 				// Emit error and return early to event loop.
 				// The calling thread will then ask us to stop capturing
@@ -178,11 +196,11 @@ namespace GPlatesAppLogic
 		void
 		stop_capturing()
 		{
-			_close(d_pipe_read_write_descriptors[0]);
-			_close(d_pipe_read_write_descriptors[1]);
+			close(d_pipe_read_write_descriptors[0]);
+			close(d_pipe_read_write_descriptors[1]);
 			// Restore original stream.
-			_dup2(d_original_stream_file_descriptor, d_stream_file_descriptor);
-			_close(d_original_stream_file_descriptor);
+			dup2(d_original_stream_file_descriptor, d_stream_file_descriptor);
+			close(d_original_stream_file_descriptor);
 
 			d_is_capturing = false;
 		}
@@ -202,7 +220,7 @@ namespace GPlatesAppLogic
 		int d_stream_file_descriptor;
 		int d_original_stream_file_descriptor;
 		int d_pipe_read_write_descriptors[2];
-		char d_pipe_buffer[4096];
+		char d_pipe_buffer[16*1024];
 	};
 }
 // CMake documentation on Qt5 AUTOMOC states that if Q_OBJECT is found in an implementation file (ie, not a header)
@@ -359,10 +377,21 @@ GPlatesAppLogic::GPlatesQtMsgHandler::start_capturing_stdout_and_stderr()
 	std::unique_ptr<StdOutErrCapture> stdout_capture(new StdOutErrCapture());
 	std::unique_ptr<StdOutErrCapture> stderr_capture(new StdOutErrCapture());
 
-	if (!stdout_capture->start_capturing(stdout) ||
-		!stderr_capture->start_capturing(stderr))
+	if (!stdout_capture->start_capturing(stdout))
 	{
-		// Failed to redirect stdout/stderr so return without starting thread to capture stdout/stderr.
+		// Failed to redirect stdout so return without starting thread to capture stdout/stderr.
+		// Use sterr (instead of qWarning()) since we've not added any Qt message handlers yet (eg, log window/file).
+		std::cerr << "Unable to redirect stdout/stderr from console to log window/file." << std::endl;
+		return;
+	}
+	if (!stderr_capture->start_capturing(stderr))
+	{
+		// Failed to redirect stderr so return without starting thread to capture stdout/stderr.
+		// Use sterr (instead of qWarning()) since we've not added any Qt message handlers yet (eg, log window/file).
+		std::cerr << "Unable to redirect stdout/stderr from console to log window/file." << std::endl;
+		// Also stop capturing stdout (which successfully started capturing for some reason).
+		// This leaves both stdout and stderr going to console.
+		stdout_capture->stop_capturing();
 		return;
 	}
 

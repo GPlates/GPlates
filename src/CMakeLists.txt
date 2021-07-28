@@ -555,17 +555,26 @@ target_compile_definitions(pygplates PUBLIC BOOST_VARIANT_USE_RELAXED_GET_BY_DEF
 target_compile_definitions(gplates-lib PUBLIC BOOST_ALLOW_DEPRECATED_HEADERS)
 target_compile_definitions(pygplates PUBLIC BOOST_ALLOW_DEPRECATED_HEADERS)
 
+#
+# COMPILE_DEFINITIONS (target property) for MSVC compiler only.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	# Disable Visual Studio deprecation warnings like:
 	# "warning C4996: '_strcpy': This function or variable may be unsafe. Consider using _strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. ".
 	target_compile_definitions(gplates-lib PUBLIC _CRT_SECURE_NO_DEPRECATE)
 	target_compile_definitions(pygplates PUBLIC _CRT_SECURE_NO_DEPRECATE)
+	# Disable deprecation warnings about renamed POSIX functions (eg, 'dup' renamed to '_dup' but we want to use 'dup' across all platforms).
+	target_compile_definitions(gplates-lib PUBLIC _CRT_NONSTDC_NO_WARNINGS)
+	target_compile_definitions(pygplates PUBLIC _CRT_NONSTDC_NO_WARNINGS)
 endif()
 
 #
 # General COMPILE_OPTIONS (target property).
 #
 
+#
+# COMPILE_OPTIONS (target property) for MSVC compiler only.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	# If we've been asked to do parallel builds in Visual Studio within a project.
 	if (GPLATES_MSVC_PARALLEL_BUILD)
@@ -707,11 +716,13 @@ endif()
 #
 # General LINK_OPTIONS (target_property).
 #
-
 # Note: CMake 3.13 introduced the 'target_link_options()' command and the LINK_OPTIONS target property.
 #       For earlier CMake versions we'll use the less useful LINK_FLAGS target property (which must be
 #       a single string instead of a list, has no INTERFACE_LINK_OPTIONS, doesn't support generator expressions, etc).
 
+#
+# LINK_OPTIONS (target_property) for MSVC compiler only.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	# Enable 4Gb of virtual address space instead of 2Gb (default for Windows).
 	# This doubles addressable memory if GPlates is compiled as 32-bit but run on a 64-bit Windows OS.
@@ -728,6 +739,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	endif()
 endif()
 
+#
+# LINK_OPTIONS (target_property) for Apple compilers only.
+#
 if (APPLE)
 	# 'bind_at_load' causes undefined symbols to be referenced at load/launch.
 	if (CMAKE_VERSION VERSION_LESS 3.13)
