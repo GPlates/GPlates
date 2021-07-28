@@ -254,7 +254,7 @@ GPlatesAppLogic::GPlatesQtMsgHandler::GPlatesQtMsgHandler()
 			.arg(GPlatesGlobal::Version::get_working_copy_version_number())
 			.arg(GPlatesGlobal::Version::get_working_copy_branch_name());
 #endif
-	qDebug() << console_message;
+	std::cout << console_message.toStdString() << std::endl;
 
 	// Install our message handler and keep track of the previous message handler.
 	s_prev_msg_handler = qInstallMessageHandler(qt_message_handler);

@@ -52,15 +52,6 @@ namespace
 	adjust_default_log_level(
 			int log_level = QtDebugMsg)
 	{
-		// Exclude "Debug" messages for official public releases (only log warnings and above).
-#if defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
-		if (log_level < QtWarningMsg)
-		{
-			log_level = QtWarningMsg;
-		}
-		// Note this can still be overridden if a release build sees the GPLATES_LOGLEVEL env var below.
-#endif
-		
 		// User can tweak log level via an environment variable, GPLATES_LOGLEVEL.
 		QString log_level_qstr = GPlatesUtils::getenv("GPLATES_LOGLEVEL").toLower();
 		if (log_level_qstr == "debug")	// All messages, including Debug messages, will be output.
