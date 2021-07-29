@@ -795,6 +795,12 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 	QImage image(image_size_in_device_pixels, QImage::Format_ARGB32);
 	image.setDevicePixelRatio(devicePixelRatio());
 
+	if (image.isNull())
+	{
+		// Most likely a memory allocation failure - return the null image.
+		return QImage();
+	}
+
 	// Fill the image with transparent black in case there's an exception during rendering
 	// of one of the tiles and the image is incomplete.
 	image.fill(QColor(0,0,0,0).rgba());
