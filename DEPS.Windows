@@ -296,16 +296,16 @@ GDAL
   
 CGAL
 
-  1. Get and install the latest CGAL (eg, 4.13.2) source code from http://www.cgal.org/
-     * Download and run 'CGAL-4.13.2-Setup.exe'.
+  1. Get and install the latest CGAL version 4 (eg, 4.14.3) source code from http://www.cgal.org/
+     * Download and run 'CGAL-4.14.3-Setup.exe'.
      * Under 'Choose Components' untick everything except:
          * 'GMP and MPFR precompiled libs' (note that 'Main CGAL' cannot be unticked).
      * Choose '32-bits' or '64-bits'.
-     * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-4.13.2'.
+     * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-4.14.3'.
          * In particular, do not install under Program Files on Windows Vista and
            above because you will likely run into permissions issues later.
      * Tick 'CGAL_DIR' environment variable - note: this helps GPlates find CGAL.
-     * Tick 'Add CGAL/auxiliary/gmp/lib to PATH' (eg, C:\SDK\cgal\CGAL-4.13.2\auxiliary\gmp\lib).
+     * Tick 'Add CGAL/auxiliary/gmp/lib to PATH' (eg, C:\SDK\cgal\CGAL-4.14.3\auxiliary\gmp\lib).
   2. Note that we use CGAL as a header-only library (for CGAL >= 4.9) and don't need to build it.
      And for CGAL >= 4.12, we also don't need to configure CGAL (using CMake).
      So we're finished with installing CGAL (since we're using CGAL >= 4.12).
@@ -315,7 +315,11 @@ CGAL
            and hence not find the CGAL library with 'vc140' in its name (built with the 2015 compiler).
            However CGAL still auto-links to GMP and MPFR libraries (included in its installation) for us.
     
-    NOTE that CGAL 5 (and above) use C++14 features which requires Visual Studio 2015 (or above).
+    NOTE: CGAL 5 (and above) use C++14 features which requires Visual Studio 2015 (or above).
+    NOTE: CGAL 4 appears to require Visual Studio 2017 (or above), which introduced __has_include,
+          when compiling GPlates/pyGPlates (even though CGAL docs say VS2015 is fine). So while using VS2015
+          should be fine for compiling the other dependencies, you might need VS2017+ to compile GPlates/pyGPlates.
+          
 
 zlib
 
