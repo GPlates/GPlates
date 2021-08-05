@@ -90,7 +90,7 @@ namespace
 		font.setStyleHint(QFont::Courier);
 
 
-// #if defined(Q_OS_MAC)
+// #if defined(Q_OS_MACOS)
 // 		font.setPointSize(14);
 // #else
 // 		//font.setPointSize(9);
@@ -761,7 +761,7 @@ GPlatesQtWidgets::ConsoleInputTextEdit::keyPressEvent(
 	}
 	else if (QtWidgetUtils::is_control_c(ev))
 	{
-#if !defined(Q_OS_MAC)
+#if !defined(Q_OS_MACOS)
 		// If there is a selection, interpret the Ctrl+C as usual.
 		if (textCursor().hasSelection())
 		{
@@ -771,7 +771,7 @@ GPlatesQtWidgets::ConsoleInputTextEdit::keyPressEvent(
 #endif
 		Q_EMIT control_c_pressed(get_text());
 	}
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 	else if (ev->key() == Qt::Key_Backspace && ev->modifiers() == Qt::ControlModifier)
 	{
 		// Delete to front of line.

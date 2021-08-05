@@ -25,6 +25,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QtGlobal>
 
 #include "StandaloneBundle.h"
 
@@ -55,7 +56,7 @@ namespace GPlatesFileIO
 
 #	if defined(GPLATES_PYTHON_EMBEDDING)  // gplates
 
-#		if defined(Q_OS_MAC)
+#		if defined(Q_OS_MACOS)
 			// On macOS the gplates executable is in 'gplates.app/Contents/MacOS'.
 			// But the root directory contains 'gplates.app'.
 			return QCoreApplication::applicationDirPath() + "/../../../";
@@ -88,7 +89,7 @@ namespace GPlatesFileIO
 			QString bundle_resources_dir = bundle_root_dir.get();
 
 			// With GPlates on macOS the resources directory is 'gplates.app/Contents/Resources'.
-#if defined(GPLATES_PYTHON_EMBEDDING)/*gplates*/ && defined(Q_OS_MAC)
+#if defined(GPLATES_PYTHON_EMBEDDING)/*gplates*/ && defined(Q_OS_MACOS)
 			bundle_resources_dir += "/gplates.app/Contents/Resources";
 #endif
 
@@ -203,7 +204,7 @@ GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory()
 	QString bundle_python_stdlib_dir = bundle_root_dir.get();
 
 	// On macOS the bundle Python standard library is relative to the frameworks directory.
-#	if defined(Q_OS_MAC)
+#	if defined(Q_OS_MACOS)
 	bundle_python_stdlib_dir += "/gplates.app/Contents/Frameworks";
 #	endif
 

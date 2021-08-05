@@ -44,7 +44,7 @@
 
 
 // We only enable the pinch zoom gesture on the Mac.
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 #	define GPLATES_PINCH_ZOOM_ENABLED
 #endif
 

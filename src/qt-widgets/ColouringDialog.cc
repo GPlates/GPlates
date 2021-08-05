@@ -39,6 +39,7 @@
 #include <QPixmap>
 #include <QUrl>
 #include <QDir>
+#include <QtGlobal>
 
 #include "ColouringDialog.h"
 #include "GlobeAndMapWidget.h"
@@ -254,7 +255,7 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 	// Set up our GlobeAndMapWidget that we use for rendering.
 	d_globe_and_map_widget_ptr->resize(ICON_SIZE, ICON_SIZE);
 
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 	d_globe_and_map_widget_ptr->move(
 			colour_schemes_list->spacing()+4, 
 			colour_schemes_list->spacing()+3); 
