@@ -27,6 +27,7 @@
 #include <utility>
 #include <boost/foreach.hpp>
 #include <Qt>
+#include <QtGlobal>
 #include <QIcon>
 #include <QKeySequence>
 #include <QList>
@@ -87,6 +88,119 @@ namespace GPlatesQtWidgets
 		{
 			return get_workflow_tool_from_action(tool_action) == std::make_pair(workflow, tool);
 		}
+
+
+		/*
+		 * For macOS only, we'll style our tab widget tool palette using a stylesheet.
+		 *
+		 * The native look of our vertical QTabWidget on macOS is very different than Linux and Windows.
+		 * The native macOS look wasn't particularly good for a tool palette when using Qt4, and now it looks
+		 * even worse with Qt5. So we use a stylesheet to rectify that (for macOS only).
+		 */
+#if defined(Q_OS_MACOS)
+		const QString MACOS_STYLESHEET = QString(
+			R"(
+				/* The entire background. */
+				QWidget#dock_canvas_tools_contents
+				{
+					background: %1; border: none;
+				}
+
+				/* Just the area where the QToolBars will go (not the tab bar). */
+				QTabWidget::pane
+				{
+					background: %2;
+
+					/* Prevent drawing of a native border - we want entire pane to be a single colour. */
+					border: none;
+				}
+
+				QTabWidget::pane QToolBar
+				{
+					background: %2; border: none;
+				}
+
+				/* Tool buttons in the QToolBars. */
+				QTabWidget::pane QToolButton
+				{
+					background: %2;
+
+					/*
+					 * Qt docs state that this is required for QToolButton when only specifying background colour:
+					 * "This is because, by default, the QToolButton draws a native border which completely overlaps the background-color".
+					 * ...and we also do it for other widgets with no border (just in case; eg, seems QToolBar also needs it).
+					 */
+					border: none;
+
+					/* Sum of 'checked' margin/border/padding so that contents (icon) remains same size whether selected or not. */
+					margin: 3px;
+				}
+
+				/* Use a different colour when selected and put a border around button. */
+				QTabWidget::pane QToolButton:checked
+				{
+					background: %3;
+					border: 1px solid %4;
+					border-radius: 4px;
+					padding: 1px;
+					margin: 1px;
+				}
+
+				/* Position the main tab bar. */
+				QTabWidget::tab-bar
+				{ 
+					/* Ensure tab bar is at the top (ie, not centered vertically). */
+					top: 0px; 
+				}
+
+				/* Each tab in the tab bar. */
+				QTabBar::tab
+				{
+					/* A little clearance around the content (icon). */
+					padding: 1px;
+
+					/* Seems the content (icon) is aligned with bottom of tab, so move it upwards to be more centered in the tab. */
+					padding-top: -7px;
+					padding-bottom: 7px;
+
+					/* Give it a curved look on the left side. */
+					border-top-left-radius: 4px;
+					border-bottom-left-radius: 4px;
+				}
+
+				QTabBar::tab:selected
+				{
+					/* Give selected tab same colour as QToolBar's. */
+					background: %2;
+				}
+
+				QTabBar::tab:!selected
+				{
+					/* Give unselected tabs same colour as selected tool in QToolBar. */
+					background: %3;
+
+					/* Make non-selected tabs look smaller. */
+					margin-left: 2px;
+					margin-top: 1px;
+					margin-bottom: 1px;
+				}
+			)")
+
+		// Colour of dock widget contents background...
+		.arg("rgb(220, 220, 222)")
+
+		// Colour of selected tab in tab bar (ie, currently selected group of tools) and
+		// background of entire tool bar (ie, all tools in currently selected group) and
+		// unselected buttons in that tool bar...
+		.arg("rgb(240, 240, 242)")
+
+		// Colour of unselected tabs in tab bar (ie, unselected groups of tools) and
+		// selected button in tool bar (ie, currently selected tool)...
+		.arg("rgb(190, 190, 190)")
+
+		// Border colour of selected button in tool bar (ie, currently selected tool)...
+		.arg("rgb(150, 150, 150)");
+#endif
 	}
 }
 
@@ -102,6 +216,15 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::CanvasToolBarDockWidget(
 	d_tool_icon_regular_size(tool_icon_size)
 {
 	setupUi(this);
+
+	// The native look of our vertical QTabWidget on macOS is very different than Linux and Windows.
+	// The native macOS look wasn't particularly good for a tool palette when using Qt4, and now it looks
+	// even worse with Qt5. So, for macOS only, we'll style it ourselves using a stylesheet. However we'll
+	// retain the native look for Linux and Windows (as before) since they look similar to each other and also
+	// look good, and this means all widgets across GPlates have a the unified (native) look (for Linux and Windows).
+#if defined(Q_OS_MACOS)
+	setStyleSheet(MACOS_STYLESHEET);
+#endif
 
 	// Create a tool bar for each canvas tools workflow and populate the tool actions.
 	set_up_workflows();
