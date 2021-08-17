@@ -612,7 +612,7 @@ GPlatesGui::Dialogs::license_dialog()
 
 	if (d_dialogs[dialog_type].isNull())
 	{
-		d_dialogs[dialog_type] = new dialog_typename(&viewport_window());
+		d_dialogs[dialog_type] = new dialog_typename(&about_dialog());
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
