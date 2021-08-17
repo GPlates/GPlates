@@ -825,7 +825,7 @@ target_link_libraries(pygplates PUBLIC OpenGL::GL OpenGL::GLU GLEW::GLEW)
 #
 # Note: Prior to CMake 3.11 none of the 'target_*()' commands could set INTERFACE_ properties on imported targets.
 if (CMAKE_VERSION VERSION_LESS 3.11)
-	# Using 'set_propery' since 'set_target_property' cannot append.
+	# Using 'set_property' since 'set_target_property' cannot append.
 	set_property(TARGET OpenGL::GL APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS GL_SILENCE_DEPRECATION)
 else()
 	target_compile_definitions(OpenGL::GL INTERFACE GL_SILENCE_DEPRECATION)
@@ -898,7 +898,7 @@ target_include_directories(pygplates PUBLIC
 #
 # Note: Prior to CMake 3.11 none of the 'target_*()' commands could set INTERFACE_ properties on imported targets.
 if (CMAKE_VERSION VERSION_LESS 3.11)
-	# Using 'set_propery' since 'set_target_property' cannot append.
+	# Using 'set_property' since 'set_target_property' cannot append.
 	set_property(TARGET Qt5::Core APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
 else()
 	target_compile_definitions(Qt5::Core INTERFACE QT_NO_KEYWORDS)
@@ -915,7 +915,7 @@ target_link_libraries(pygplates PUBLIC Qwt::Qwt)
 #
 # Note: Prior to CMake 3.11 none of the 'target_*()' commands could set INTERFACE_ properties on imported targets.
 if (CMAKE_VERSION VERSION_LESS 3.11)
-	# Using 'set_propery' since 'set_target_property' cannot append.
+	# Using 'set_property' since 'set_target_property' cannot append.
 	set_property(TARGET Qwt::Qwt APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS
 		QWT_MAJOR_VERSION=${QWT_MAJOR_VERSION}
 		QWT_MINOR_VERSION=${QWT_MINOR_VERSION}
