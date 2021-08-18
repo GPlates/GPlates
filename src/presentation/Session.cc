@@ -26,6 +26,7 @@
 #include <boost/foreach.hpp>
 #include <QFileInfo>
 #include <QList>
+#include <QLocale>
 #include <QStringList>
 #include <Qt>
 #include <QtGlobal>
@@ -126,7 +127,7 @@ GPlatesPresentation::Session::get_description() const
 		desc = tr("%1 %2 on %3")
 				.arg(d_loaded_files.size())
 				.arg(files_str)
-				.arg(d_time.toString(Qt::SystemLocaleLongDate));
+				.arg(QLocale::system().toString(d_time, QLocale::LongFormat));
 	}
 	else
 	{
@@ -134,7 +135,7 @@ GPlatesPresentation::Session::get_description() const
 				.arg(d_loaded_files.size())
 				.arg(files_str)
 				.arg(location)
-				.arg(d_time.toString(Qt::SystemLocaleLongDate));
+				.arg(QLocale::system().toString(d_time, QLocale::LongFormat));
 	}
 
 	return desc;
