@@ -42,12 +42,12 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 	GPlatesDialog(
 			parent_,
 			Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
-	d_license_dialog_ptr(NULL)
+	d_license_dialog_ptr(new LicenseDialog(this))
 {
 	setupUi(this);
 
 	QObject::connect(button_License, SIGNAL(clicked()),
-			&dialogs, SLOT(pop_up_license_dialog()));
+			d_license_dialog_ptr, SLOT(show()));
 
 	// Set GPlates version label text.
 	QString version(QObject::tr(GPlatesGlobal::Version::get_GPlates_version().toLatin1().constData()));
