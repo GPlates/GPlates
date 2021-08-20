@@ -70,7 +70,7 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # The reason for the above rules is they support the correct version ordering precedence for both Semantic Versioning and Debian versioning
 # (even though Semantic and Debian versioning have slightly different precedence rules).
 #
-# Semantic version precedence separates identifiers between dots and compares them each identifier.
+# Semantic version precedence separates identifiers between dots and compares each identifier.
 # According to https://semver.org/spec/v2.0.0.html ...
 # - digit-only identifiers are compared numerically,
 # - identifiers with letters are compared lexically in ASCII order,
@@ -87,7 +87,7 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # For example:
 # For Semantic Versioning: 2.3.0-1 < 2.3.0-alpha.1 < 2.3.0-beta.1 < 2.3.0-rc.1 < 2.3.0.
 # For Debian versioning:   2.3.0~1 < 2.3.0~alpha.1 < 2.3.0~beta.1 < 2.3.0~rc.1 < 2.3.0.
-set(GPLATES_VERSION_PRERELEASE "beta.3" CACHE STRING "Pre-release version suffix (eg, '1', 'alpha.1', 'beta.1', 'rc.1'). Empty means official public release.")
+set(GPLATES_VERSION_PRERELEASE "beta.3.1" CACHE STRING "Pre-release version suffix (eg, '1', 'alpha.1', 'beta.1', 'rc.1'). Empty means official public release.")
 #
 # Make sure pre-release contains only dot-separated alphanumeric identifiers.
 if (GPLATES_VERSION_PRERELEASE)
