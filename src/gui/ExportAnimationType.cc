@@ -47,7 +47,7 @@ namespace GPlatesGui
 				std::map<Type, QString> export_type_name_map;
 
 				export_type_name_map[RECONSTRUCTED_GEOMETRIES]    =QObject::tr("Reconstructed Geometries");
-				export_type_name_map[PROJECTED_GEOMETRIES]        =QObject::tr("Projected Geometries (and Rasters)");
+				export_type_name_map[PROJECTED_GEOMETRIES]        =QObject::tr("Projected Geometries (and Rasters, 3D Scalar Fields)");
 				export_type_name_map[IMAGE]                       =QObject::tr("Image (screenshot)");
 				export_type_name_map[COLOUR_RASTER]               =QObject::tr("Colour Raster");
 				export_type_name_map[NUMERICAL_RASTER]            =QObject::tr("Numerical Raster");
@@ -82,7 +82,7 @@ namespace GPlatesGui
 				export_type_description_map[PROJECTED_GEOMETRIES] =
 						QObject::tr(
 							"<html><body>"
-							"<p>Export projected geometries (and projected raster) data.</p>"
+							"<p>Export projected geometries (and projected raster, 3D scalar field) data.</p>"
 							"</body></html>");
 				export_type_description_map[IMAGE] =
 						QObject::tr(
