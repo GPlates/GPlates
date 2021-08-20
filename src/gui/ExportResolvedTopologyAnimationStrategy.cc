@@ -141,6 +141,7 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 			d_configuration->export_topological_polygons,
 			d_configuration->export_topological_networks,
 			d_configuration->export_topological_sections,
+			d_configuration->export_topological_line_sub_segments,
 			d_configuration->force_polygon_orientation,
 			d_configuration->wrap_to_dateline);
 
