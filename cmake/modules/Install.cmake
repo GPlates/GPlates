@@ -781,22 +781,28 @@ del pygplates
         #   3 - Code sign GPlates/pyGPlates, its Qt plugins and their resolved dependencies with a valid Developer ID certificate.
         #       For GPlates we also then code sign the entire application *bundle* (for pyGPlates, the 'pygplates.so' library has already been signed).
         #   4 - Notarize the application bundle. Although this is not done here (during the installation phase) because we package it into a DMG during
-        #       the CPack packaging phase (see Package.cmake) and the DMG is what should be uploaded for notarization (after codesigning the DMG).
+        #       the CPack packaging phase (see Package.cmake) and the DMG is what should be uploaded for notarization.
         #       So the entire notarization process is currently done outside of CMake/CPack and should follow the procedure outlined here:
         #           https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow
-        #       For GPlates this amounts to code signing the DMG file created by CPack, uploading to Apple for notarization, checking for successful
-        #       notarization and then stapling the notarization ticket to the DMG file. Once that is all done the DMG can be distributed to users.
-        #       For pyGPlates we currently get CPack to produce a ZIP archive (notarization does not support TBZ2 for example) containing the code signed
-        #       dependency libraries (and pygplates), then upload the archive to Apple for notarization and check for successful notarization.
+        #
+        #       For GPlates this amounts to uploading DMG to Apple for notarization, checking for successful notarization and then stapling the notarization ticket to the
+        #       DMG file. Once that is all done the DMG can be distributed to users. Note however that, if you're only using CMake < 3.19, then you also need to manually
+        #       code sign the DMG file prior to notarization upload (for CMake >= 3.19 we handle it during the packaging phase using CPACK_POST_BUILD_SCRIPTS).
+        #
+        #       For pyGPlates you can get CPack to produce a ZIP archive (notarization does not support TBZ2 for example) containing the code signed
+        #       dependency libraries (and pygplates). However it's better to use only the 'install' phase (ie, not use CPack) with something like
+        #         'cmake --install . --component pygplates --prefix pygplates_macOS)'
+        #       and then manually archive it into a zip file using 'ditto' (which can stored extended attributes; and actually appears to be used by CPack)
+        #         'ditto -c -k --keepParent pygplates_macOS pygplates_macOS.zip'
+        #       The reason this is preferred over CPack is, with CPack, the top-level directory name will have 'gplates' in it instead of 'pygplates'
+        #       (because we don't have control over the top-level directory name in the zip file), and so you'd then have to manually extract the zip file
+        #       created by CPack, rename the top-level directory and then re-zip using 'ditto'.
+        #       The next step is to upload the zip archive to Apple for notarization and check for successful notarization.
         #       However you cannot staple a notarization ticket to a ZIP archive (you must instead staple each item in the archive and then create a new archive).
         #       If an item is not stapled then Gatekeeper finds the ticket online (stapling is so the ticket can be found when the network is offline).
-        #       So currently we don't staple the items. Another potential issue is using 'zip' versus 'ditto', apparently 'ditto' can stored extended attributes
-        #       and appears to be used by CPack. But if you're recreating archive (eg, after extracting archive produced by CPack, renaming root folder and re-zipping)
-        #       then be sure to use 'ditto' to avoid notarization errors (eg, Apple recommends 'ditto -c -k --keepParent <src> <dst>.zip', see above URL).
-        #       This could be an issue if something is code signed that is not a Mach-O file (exe, library, etc) and hence the
-        #       signature has to be stored in an extended attribute. But currently we are not running into this issue.
-        #       Note that soon we will use Conda to build pyGPlates packages and no longer rely on CPack. Or rely on Apple notarization for that matter because the
-        #       Conda package manager will then be responsible for installing pygplates on the user's computer, and so conda will then be responsible for quarantine.
+        #       So currently we don't staple the items.
+        #       Note that soon we will use Conda to build pyGPlates packages and no longer rely on Apple notarization because the Conda package manager will then
+        #       be responsible for installing pygplates on the user's computer, and so conda will then be responsible for quarantine.
         #
 
         # Find the 'codesign' command.
