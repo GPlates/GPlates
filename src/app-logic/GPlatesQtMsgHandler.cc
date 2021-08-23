@@ -60,6 +60,25 @@
 #include "utils/Environment.h"
 
 
+// Whether to capture stdout/stderr and redirect to log window/file.
+//
+// This is useful for capturing the output of dependency libraries that would otherwise only
+// end up in the console window (outside of GPlates GUI) and not the GPlates log window/file.
+//
+// UPDATE: Avoid until find out why this is messing up signal/slot calls in the main GUI thread.
+//
+// TODO: Find out why this is messing up signal/slot calls in the main GUI thread.
+//       It seems blocking on the pipe read is fine as long as there is output on stdout
+//       (which presumably causes the read to return fairly quickly) but when the read blocks
+//       for long enough it somehow creates problems for signal/slots that are entirely on the
+//       main GUI thread (ie, the current thread) even though the new stdout/stderr capturing
+//       is entirely on the new threads (and only communicates with main GUI thread via queued
+//       signal/slot events). The blocking read does return later when printing to stdout, and
+//       gets captured/redirected correctly, but somehow appears to interact with main GUI event loop.
+//
+//#define GPLATES_REDIRECT_STDOUT_STDERR_TO_LOG_WINDOW_AND_FILE
+
+
 namespace GPlatesAppLogic
 {
 	/**
@@ -259,18 +278,7 @@ GPlatesAppLogic::GPlatesQtMsgHandler::GPlatesQtMsgHandler()
 	// Install our message handler and keep track of the previous message handler.
 	s_prev_msg_handler = qInstallMessageHandler(qt_message_handler);
 
-	// Avoid capturing stdout/stderr and redirecting to log window/file until find out
-	// why this is messing up signal/slot calls in the main GUI thread.
-	//
-	// TODO: Find out why this is messing up signal/slot calls in the main GUI thread.
-	//       It seems blocking on the pipe read is fine as long as there is output on stdout
-	//       (which presumably causes the read to return fairly quickly) but when the read blocks
-	//       for long enough it somehow creates problems for signal/slots that are entirely on the
-	//       main GUI thread (ie, the current thread) even though the new stdout/stderr capturing
-	//       is entirely on the new threads (and only communicates with main GUI thread via queued
-	//       signal/slot events). The blocking read does return later when printing to stdout, and
-	//       gets captured/redirected correctly, but somehow appears to interact with main GUI event loop.
-#if 0
+#if GPLATES_REDIRECT_STDOUT_STDERR_TO_LOG_WINDOW_AND_FILE
 	// Capture low-level stdout and stderr (eg, from our dependency libraries)
 	// and log those messages too.
 	start_capturing_stdout_and_stderr();
@@ -280,9 +288,7 @@ GPlatesAppLogic::GPlatesQtMsgHandler::GPlatesQtMsgHandler()
 
 GPlatesAppLogic::GPlatesQtMsgHandler::~GPlatesQtMsgHandler()
 {
-	// Avoid capturing stdout/stderr and redirecting to log window/file until find out
-	// why this is messing up signal/slot calls in the main GUI thread.
-#if 0
+#if GPLATES_REDIRECT_STDOUT_STDERR_TO_LOG_WINDOW_AND_FILE
 	stop_capturing_stdout_and_stderr();
 #endif
 
@@ -351,6 +357,17 @@ GPlatesAppLogic::GPlatesQtMsgHandler::qt_message_handler(
 {
 	// Delegate message handling to our MessageHandlers.
 	instance().handle_qt_message(msg_type, msg);
+
+	// Call the original Qt message handler if there is one.
+	//
+	// Note: Only do this if *not* capturing/redirecting stdout/stderr, otherwise we'll get into an
+	//       infinite loop (eg, outputting to stdout, then capturing that and outputting again, etc).
+#if !defined(GPLATES_REDIRECT_STDOUT_STDERR_TO_LOG_WINDOW_AND_FILE)
+	if (s_prev_msg_handler)
+	{
+		s_prev_msg_handler(msg_type, context, msg);
+	}
+#endif
 }
 
 
