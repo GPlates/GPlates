@@ -11,7 +11,7 @@ Windows ("gplates_desktop_icon.ico"):
      (otherwise it still displays as the old icon, even though it's clearly the new one if you open it in an image editor).
  * The "gplates_desktop_icon.rc" (which references the above '.ico' file and is added to CMake as a source file) takes care of embedding the icon into  the GPlates executable.
 
-Mac OSX ("gplates_desktop_icon.icns"):
+macOS ("gplates_desktop_icon.icns"):
  * The following instructions can also be found at:
     https://developer.apple.com/library/archive/documentation/GraphicsAnimation/Conceptual/HighResolutionOSX/Optimizing/Optimizing.html
  * Create a sub-directory called "gplates_desktop_icon.iconset".

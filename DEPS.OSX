@@ -1,4 +1,4 @@
-Dependencies For Mac OS X
+Dependencies For macOS
 
 Table of Contents
 
@@ -13,7 +13,7 @@ Table of Contents
 Introduction
 
 This page lists the package dependencies which need to be satisfied to be able
-to build GPlates from source on Mac OS X.
+to build GPlates from source on macOS.
 
 Program and library dependencies
 

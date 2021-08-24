@@ -18,7 +18,7 @@
 # Attempts to compile and run a simple C++ program that embeds the Python
 # interpreter. This example code is known to fail if the Python library that we
 # link against is different to the Python library used to build Boost.Python.
-# This problem manifests itself especially on Mac OS X, where there is the
+# This problem manifests itself especially on macOS, where there is the
 # system version of Python and the version of Python installed by Macports, if
 # Boost is installed via Macports.
 
@@ -116,7 +116,7 @@ IF(PYTHON_EMBEDDING_RUNS EQUAL 1 # Program above returns 1 if exception thrown.
 		"Check that the Python and Boost.Python libraries are in your system path."
 		"If you have multiple Python installations, make sure that the version of "
 		"Python that GPlates is being linked against is the same version of Python "
-		"that Boost.Python was built against. In particular, on Mac OS X, if "
+		"that Boost.Python was built against. In particular, on macOS, if "
 		"Boost.Python was installed using MacPorts, provide the following CMake flag: "
 		"-DCMAKE_FRAMEWORK_PATH=/opt/local/Library/Frameworks")
 ENDIF(PYTHON_EMBEDDING_RUNS EQUAL 1 OR PYTHON_EMBEDDING_RUNS STREQUAL FAILED_TO_RUN)

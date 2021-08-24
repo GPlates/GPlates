@@ -157,17 +157,19 @@ SET(CPACK_PACKAGE_DESCRIPTION_FILE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageDe
 #
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 
-#   CPACK_RESOURCE_FILE_LICENSE - License file for the project, which will typically be displayed to the user
-#                                 (often with an explicit "Accept" button, for graphical installers) prior to installation.
-#
-SET(CPACK_RESOURCE_FILE_LICENSE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/LicenseFile.txt")
-
-#   CPACK_RESOURCE_FILE_README - License to be embedded in the installer.
+#   CPACK_RESOURCE_FILE_LICENSE - License to be embedded in the installer.
 #
 #   It will typically be displayed to the user by the produced installer (often with an explicit "Accept" button,
 #   for graphical installers) prior to installation. This license file is NOT added to the installed files but is
 #   used by some CPack generators like NSIS. If you want to install a license file (may be the same as this one)
 #   along with your project, you must add an appropriate CMake install() command in your CMakeLists.txt.
+#
+SET(CPACK_RESOURCE_FILE_LICENSE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/LicenseFile.txt")
+
+#   CPACK_RESOURCE_FILE_README - ReadMe file to be embedded in the installer.
+#
+#    It typically describes in some detail the purpose of the project during the installation.
+#    Not all CPack generators use this file.
 #
 SET(CPACK_RESOURCE_FILE_README "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageReadMe.txt")
 
