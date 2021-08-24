@@ -365,7 +365,13 @@ GPlatesAppLogic::GPlatesQtMsgHandler::qt_message_handler(
 #if !defined(GPLATES_REDIRECT_STDOUT_STDERR_TO_LOG_WINDOW_AND_FILE)
 	if (s_prev_msg_handler)
 	{
-		s_prev_msg_handler(msg_type, context, msg);
+		// Only output to console those messages with a warning severity level or higher.
+		// This avoids polluting the console too much. If user needs to see debug output they can
+		// look at the log window (in GPlates) or the log file.
+		if (msg_type > QtDebugMsg)
+		{
+			s_prev_msg_handler(msg_type, context, msg);
+		}
 	}
 #endif
 }
