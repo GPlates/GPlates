@@ -38,7 +38,7 @@ namespace GPlatesGlobal
 		 *
 		 * Where '-PRERELEASE' is optional and not used for official public releases (GPLATES_PUBLIC_RELEASE is true).
 		 *
-		 * For example "2.3.0-dev.1" for first development pre-release leading up to official "2.3.0".
+		 * For example "2.3.0-dev1" for first development pre-release leading up to official "2.3.0".
 		 */
 		QString
 		get_GPlates_version();

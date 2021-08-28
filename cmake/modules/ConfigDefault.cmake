@@ -87,7 +87,7 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # For example:
 # For Semantic Versioning: 2.3.0-1 < 2.3.0-alpha.1 < 2.3.0-beta.1 < 2.3.0-rc.1 < 2.3.0.
 # For Debian versioning:   2.3.0~1 < 2.3.0~alpha.1 < 2.3.0~beta.1 < 2.3.0~rc.1 < 2.3.0.
-set(GPLATES_VERSION_PRERELEASE "rc.1" CACHE STRING "Pre-release version suffix (eg, '1', 'alpha.1', 'beta.1', 'rc.1'). Empty means official public release.")
+set(GPLATES_VERSION_PRERELEASE "" CACHE STRING "Pre-release version suffix (eg, '1', 'alpha.1', 'beta.1', 'rc.1'). Empty means official public release.")
 #
 # Make sure pre-release contains only dot-separated alphanumeric identifiers.
 if (GPLATES_VERSION_PRERELEASE)
@@ -109,6 +109,8 @@ set(GPLATES_PACKAGE_VERSION_NAME ${PROJECT_VERSION})
 # For a pre-release append the pre-release version (using a hyphen for pre-releases as dictated by Semantic Versioning).
 if (GPLATES_VERSION_PRERELEASE)
 	set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION}-${GPLATES_VERSION_PRERELEASE}")
+	# A human-readable pre-release version name (unset/empty for official public releases).
+	#
 	# If a development release (ie, if pre-release version is just a number) then insert 'dev' into the version *name* to make it more obvious to users.
 	# Note: We don't insert 'dev' into the version itself because that would give it a higher version ordering precedence than 'alpha' and 'beta' (since a < b < d).
 	#       Keeping only the development number in the actual version works because digits have lower precedence than non-digits (according to Semantic and Debian versioning).
