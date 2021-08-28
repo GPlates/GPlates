@@ -30,8 +30,9 @@
 #include <queue>
 #include <vector>
 #include <boost/cast.hpp>
-#include <boost/pool/object_pool.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 #include <boost/optional.hpp>
+#include <boost/pool/object_pool.hpp>
 #include <CGAL/Cartesian.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Constrained_triangulation_face_base_2.h>
@@ -398,7 +399,7 @@ namespace GPlatesMaths
 								ring_vert_2_iter->y()));
 				if (cdt_unique_vertex_handles_map.insert(
 						std::map<polygon_mesh_constrained_triangulation_type::Vertex_handle, unsigned int>::value_type(
-								vertex_handle, cdt_unique_vertex_handles.size())).second)
+							vertex_handle, boost::numeric_cast<unsigned int>(cdt_unique_vertex_handles.size()))).second)
 				{
 					cdt_unique_vertex_handles.push_back(vertex_handle);
 
