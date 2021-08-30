@@ -615,6 +615,7 @@ namespace GPlatesApi
 					true/*export_single_output_file*/,
 					false/*export_per_input_file*/, // We only generate a single output file.
 					false/*export_output_directory_per_input_file*/, // We only generate a single output file.
+					true/*export_topological_line_sub_segments*/,
 					wrap_to_dateline);
 	}
 
