@@ -459,7 +459,7 @@ namespace
 					GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION,
 					Qt::CaseInsensitive))
 			{
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 				// Mac OS X sometimes (when invoking from Finder or 'open' command) adds the
 				// '-psn...' command-line argument to the applications argument list
 				// (for example '-psn_0_548998').
@@ -854,14 +854,6 @@ internal_main(int argc, char* argv[])
 			GPlatesUtils::ComponentManager::Component::hellinger_three_plate());
 	}
 
-	// This will only install handler if any of the following conditions are satisfied:
-	//   1) GPLATES_PUBLIC_RELEASE is defined in 'global/config.h' (automatically handled by CMake build system), or
-	//   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
-	//      "true", "1", "yes" or "on".
-	// Note: Installing handler overrides default Qt message handler.
-	//       And does not log messages to the console.
-	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler();
-
 	// Enable high DPI pixmaps (for high DPI displays like Apple Retina).
 	//
 	// For example this enables a QImage with a device pixel ratio of 2
@@ -911,8 +903,29 @@ internal_main(int argc, char* argv[])
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
 	GPlatesGui::GPlatesQApplication qapplication(argc, argv);
 
+	// Install the general GPlates Qt message handler.
+	//
+	// Unless the GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
+	// "0", "false", "off", "disabled", or "no".
+	//
+	// We do this before Application object is initialised below so that its qDebug(), qWarning(), etc,
+	// messages are captured by our handler. We also instantiate this singleton on the stack so that
+	// we can control when it gets destroyed (which is just after Application object gets destroyed and
+	// hence we capture any messages output during its destruction phase).
+	GPlatesAppLogic::GPlatesQtMsgHandler qt_message_handler;
+	//
+	// Add the default log file to the Qt message handler.
+	//
+	// We do this after QApplication is initialised (via GPlatesQApplication above) since this adds
+	// LogToFileHandler which uses QStandardPaths::DataLocation (when GPlates is installed into a
+	// non-writeable directory) and QStandardPaths::DataLocation does not include the "GPlates/GPlates/"
+	// suffix until after QApplication is created (and hence the GPlates organization and application
+	// names have been set via QCoreApplication).
+	qt_message_handler.add_log_file_handler();
+
 	// Initialise so that queries on the standalone bundle can be made.
-	// Note: This must be done *after* QApplication is initialised (via GPlatesQApplication above).
+	// Note: This must be done *after* QApplication is initialised (via GPlatesQApplication above) since
+	// 	     it uses QCoreApplication::applicationDirPath().
 	//       And we do it *before* Application is initialised below in case Application makes any bundle queries.
 	GPlatesFileIO::StandaloneBundle::initialise();
 

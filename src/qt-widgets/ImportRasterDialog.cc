@@ -27,9 +27,11 @@
 #include <iterator>
 #include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
+#include <QMessageBox>
 #include <QString>
 #include <QStringList>
-#include <QMessageBox>
+#include <Qt>
+#include <QtGlobal>
 
 #include "ImportRasterDialog.h"
 
@@ -219,7 +221,17 @@ GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 					d_save_after_finish,
 					this));
 
-	setOptions(options() | QWizard::NoDefaultButton /* by default, the dialog eats Enter keys */);
+	// Get the default wizard options (varies by platform).
+	auto wizard_options = options();
+	// Keep the cancel button (macOS defaults to removing it).
+	// Without the cancel button the user might get stuck when the back and next buttons
+	// are disabled (such as when time-dependent rasters are not same size). They could
+	// still quit the wizard using ESC key (or clear the offending rasters from the list)
+	// but a cancel button is easier and more obvious.
+	wizard_options.setFlag(QWizard::NoCancelButton, false);
+	// By default, the dialog eats Enter keys...
+	wizard_options.setFlag(QWizard::NoDefaultButton, true);
+	setOptions(wizard_options);
 
 	// Note: I would've preferred to use resize() instead, but at least on
 	// Windows Vista with Qt 4.4, the dialog doesn't respect the call to resize().
@@ -776,7 +788,13 @@ GPlatesQtWidgets::ImportRasterDialog::create_gpml_file_path(
 	if (time_dependent_raster)
 	{
 		// Strip off the time from the file name if it is there.
-		QStringList tokens = base_name.split(QRegExp("[_-]"), QString::SkipEmptyParts);
+		QStringList tokens = base_name.split(QRegExp("[_-]"),
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
 
 		if (tokens.count() >= 2)
 		{

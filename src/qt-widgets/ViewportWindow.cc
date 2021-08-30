@@ -1678,7 +1678,7 @@ GPlatesQtWidgets::ViewportWindow::set_window_title(
 {
 	QString window_title("GPlates");
 
-	// Append the GPlates version (including pre-release suffix, eg, 2.3.0-dev1) if not an official public release.
+	// Append the GPlates version (including pre-release suffix, eg, 2.3.0-dev.1) if not an official public release.
 	// Otherwise just leave as "GPlates" for official public releases.
 #if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
 	const QString FORMAT = " (%1)";
@@ -1737,7 +1737,7 @@ GPlatesQtWidgets::ViewportWindow::status_message(
 		const QString &message,
 		int timeout)
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 	static const QString CLOVERLEAF(QChar(0x2318));
 	QString fixed_message = message;
 	fixed_message.replace(QString("ctrl"), CLOVERLEAF, Qt::CaseInsensitive);
@@ -1905,7 +1905,7 @@ void
 GPlatesQtWidgets::ViewportWindow::open_dataset_webpage()
 {
 	QDesktopServices::openUrl(
-			QUrl("http://www.earthbyte.org/gplates-2-2-software-and-data-sets"));
+			QUrl("http://www.earthbyte.org/gplates-2-3-software-and-data-sets"));
 }
 
 

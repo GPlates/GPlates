@@ -45,12 +45,13 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::MapRenderedGeometryCollectionP
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const GPlatesPresentation::VisualLayers &visual_layers,
-		ColourScheme::non_null_ptr_type colour_scheme) :
+		ColourScheme::non_null_ptr_type colour_scheme,
+		int device_pixel_ratio) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_gl_visual_layers(gl_visual_layers),
 	d_visual_layers(visual_layers),
-	d_layer_painter(gl_visual_layers, map_projection),
+	d_layer_painter(gl_visual_layers, device_pixel_ratio, map_projection),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f)
 {  }

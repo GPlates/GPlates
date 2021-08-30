@@ -84,7 +84,7 @@ namespace
 #if defined(Q_OS_LINUX)
 		defaults.setValue("paths/python_system_script_dir", "/usr/share/gplates/scripts");
 
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_MACOS)
 		// While in theory the place for this would be in "/Library/Application Data" somewhere, we don't use
 		// a .pkg and don't want to "install" stuff - OSX users much prefer drag-n-drop .app bundles. So,
 		// the sample scripts resource would probably best be added to the bundle.
@@ -139,7 +139,7 @@ namespace
 		// GPlates will use information from Qt where it can (OSX Frameworks and Win32 DLLs)
 		QUrl gplates_url("http://www.gplates.org");
 
-		// The following code enclosed in the "#if defined(Q_OS_MAC)" preprocessor directive provides 
+		// The following code enclosed in the "#if defined(Q_OS_MACOS)" preprocessor directive provides 
 		// a workaround for a bug on MacOS. The bug causes GPlates fails to launch under certain circumstance. 
 		// On MacOS, when the network interface appears active but in fact
 		// the computer does not have a valid network connection, the QNetworkProxyFactory::systemProxyForQuery() 
@@ -160,7 +160,7 @@ namespace
 		// Although the startup will be slower than normal, GPlates will launch successfully eventually.
 		// Note: The finished() signal will be emitted immediately if the network interface is not active.
 		// GPlates will wait the "network timeout" only when the network seems active but in fact not really working.  
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 		QNetworkAccessManager nam;
 		QNetworkRequest req(gplates_url);
 		QNetworkReply* reply = nam.get(req);
@@ -178,7 +178,7 @@ namespace
 					defaults.setValue("net/proxy/url", system_proxy_url);
 				}
 			}
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 		}else{//network no good, skip network proxy query and print a warning message.
 			qWarning() << "No available network has been detected! Will not query network proxy.";
 		}
@@ -214,13 +214,6 @@ GPlatesAppLogic::UserPreferences::UserPreferences(
 		QObject *_parent):
 	GPlatesUtils::ConfigInterface(_parent)
 {
-	// Initialise names used to identify our settings and paths in the OS.
-	// DO NOT CHANGE THESE VALUES without due consideration to the breaking of previously used
-	// QStandardPaths paths and preference settings.
-	QCoreApplication::setOrganizationName("GPlates");
-	QCoreApplication::setOrganizationDomain("gplates.org");
-	QCoreApplication::setApplicationName("GPlates");
-	
 	initialise_versioning();
 	store_executable_path();
 	
@@ -400,19 +393,33 @@ GPlatesAppLogic::UserPreferences::subkeys(
 
 	// Take the explicitly-set (or visible from the OS) keys,
 	settings.beginGroup(prefix);
-	QSet<QString> keys = settings.allKeys().toSet();
+	const QStringList all_settings_keys = settings.allKeys();
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	QSet<QString> keys(all_settings_keys.cbegin(), all_settings_keys.cend());
+#else
+	QSet<QString> keys = all_settings_keys.toSet();
+#endif
 	settings.endGroup();
 	
 	// and the compiled-in default keys,
 	s_defaults->beginGroup(prefix);
-	QSet<QString> keys_default = s_defaults->allKeys().toSet();
+	const QStringList all_defaults_keys = s_defaults->allKeys();
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	QSet<QString> keys_default(all_defaults_keys.cbegin(), all_defaults_keys.cend());
+#else
+	QSet<QString> keys_default = all_defaults_keys.toSet();
+#endif
 	s_defaults->endGroup();
 
 	// and merge them together to get the full list of possible keys.
 	keys.unite(keys_default);
 
 	// And for presentation purposes it would be nice to get that sorted.
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	QStringList list(keys.cbegin(), keys.cend());
+#else
 	QStringList list = keys.toList();
+#endif
 	std::sort(list.begin(), list.end());
 	return list;
 }
@@ -429,7 +436,12 @@ GPlatesAppLogic::UserPreferences::root_entries(
 	GPlatesUtils::strip_all_except_root(keys);
 	
 	// Push them through a QSet to get rid of duplicates.
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	const QSet<QString> non_duplicate_keys(keys.cbegin(), keys.cend());
+	keys = QStringList(non_duplicate_keys.cbegin(), non_duplicate_keys.cend());
+#else
 	keys = keys.toSet().toList();
+#endif
 
 	return keys;
 }

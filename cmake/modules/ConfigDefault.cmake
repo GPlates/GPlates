@@ -6,12 +6,21 @@
 #
 
 
+# A short description of the GPlates project (only a few words).
+#
+# CMake (>= 3.16) uses this as the first line of Debian package description and Debian doesn't want first word to be same name as package name (eg, 'gplates').
+set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "Desktop software for the interactive visualisation of plate tectonics.")
+
+
 # The GPlates package vendor.
 set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
 
 
-# A short description of the GPlates project (only a few words).
-set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the interactive visualisation of plate tectonics.")
+# The GPlates package contact (Debian requires a name and email address - so use format 'FirstName LastName <EmailAddress>').
+#
+# NOTE: Leave it as the *empty* string here (so it doesn't get committed to source code control).
+#       It is currently only needed when creating Debian packages (using cpack) where the developer should set it using 'cmake -D', or CMake GUI, or 'ccmake'.
+set(GPLATES_PACKAGE_CONTACT "" CACHE STRING "Package contact/maintainer. Use format 'FirstName LastName <EmailAddress>'.")
 
 
 # The GPlates copyright - string version to be used in a source file.
@@ -54,22 +63,36 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # This should be:
 # - empty for official public releases,
 # - a number for development releases (eg, 1, 2, etc),
-# - 'alpha' followed by a number for alpha releases (eg, alpha1, alpha2, etc),
-# - 'beta' followed by a number for beta releases (eg, beta1, beta2, etc),
-# - 'rc' followed by a number for release candidates (eg, rc1, rc2, etc).
+# - 'alpha' followed by '.' followed by a number for alpha releases (eg, alpha.1, alpha.2, etc),
+# - 'beta' followed by '.' followed by a number for beta releases (eg, beta.1, beta.2, etc),
+# - 'rc' followed by '.' followed by a number for release candidates (eg, rc.1, rc.2, etc).
 #
 # The reason for the above rules is they support the correct version ordering precedence for both Semantic Versioning and Debian versioning
 # (even though Semantic and Debian versioning have slightly different precedence rules).
 #
-# For example:
-# For Semantic Versioning: 2.3.0-1 < 2.3.0-alpha1 < 2.3.0-beta1 < 2.3.0-rc1 < 2.3.0.
-# For Debian versioning:   2.3.0~1 < 2.3.0~alpha1 < 2.3.0~beta1 < 2.3.0~rc1 < 2.3.0.
-set(GPLATES_VERSION_PRERELEASE "1" CACHE STRING "Pre-release version suffix (eg, '1', 'alpha1', 'beta1', 'rc1'). Empty means official public release.")
+# Semantic version precedence separates identifiers between dots and compares each identifier.
+# According to https://semver.org/spec/v2.0.0.html ...
+# - digit-only identifiers are compared numerically,
+# - identifiers with letters are compared lexically in ASCII order,
+# - numeric identifiers have lower precedence than non-numeric identifiers.
+# ...and so '1' < 'beta.1' because '1' < 'beta', and 'beta.1' < 'beta.2' because 'beta' == 'beta' but '1' < '2'.
 #
-# Make sure pre-release contains only alphanumeric characters.
+# Debian version precedence separates identifiers into alternating non-digit and digit identifiers.
+# According to https://www.debian.org/doc/debian-policy/ch-controlfields.html#version ...
+# - find initial part consisting only of non-digits and compare lexically in ASCII order (modified so letters sort earlier than non-letters, and '~' earliest of all),
+# - find next part consisting only of digits and compare numerically,
+# - repeat the above two steps until a difference is found.
+# ...and so '1' < 'beta.1' because '' < 'beta.', and 'beta.1' < 'beta.2' because 'beta.' == 'beta.' but '1' < '2'.
+#
+# For example:
+# For Semantic Versioning: 2.3.0-1 < 2.3.0-alpha.1 < 2.3.0-beta.1 < 2.3.0-rc.1 < 2.3.0.
+# For Debian versioning:   2.3.0~1 < 2.3.0~alpha.1 < 2.3.0~beta.1 < 2.3.0~rc.1 < 2.3.0.
+set(GPLATES_VERSION_PRERELEASE "" CACHE STRING "Pre-release version suffix (eg, '1', 'alpha.1', 'beta.1', 'rc.1'). Empty means official public release.")
+#
+# Make sure pre-release contains only dot-separated alphanumeric identifiers.
 if (GPLATES_VERSION_PRERELEASE)
-	if (NOT GPLATES_VERSION_PRERELEASE MATCHES "^[a-zA-Z0-9]+$")
-		message(FATAL_ERROR "GPLATES_VERSION_PRERELEASE should only contain alphanumeric characters")
+	if (NOT GPLATES_VERSION_PRERELEASE MATCHES [[^[a-zA-Z0-9\.]+$]])
+		message(FATAL_ERROR "GPLATES_VERSION_PRERELEASE should only contain dot-separated alphanumeric identifiers")
 	endif()
 endif()
 
@@ -77,7 +100,7 @@ endif()
 # GPLATES_PACKAGE_VERSION_NAME - Full package version name for use in package filenames (or any string the user might see).
 #
 # Currently the only difference is GPLATES_PACKAGE_VERSION_NAME inserts 'dev' for development releases
-# (but GPLATES_PACKAGE_VERSION does not, in order to maintain the correct version precendence, eg, '1' < 'alpha1' as desired but 'dev1' > 'alpha1').
+# (but GPLATES_PACKAGE_VERSION does not, in order to maintain the correct version precendence, eg, '1' < 'alpha.1' as desired but 'dev.1' > 'alpha.1').
 #
 # For a public release both variables are equivalent to PROJECT_VERSION (as set by project() command in top-level CMakeLists.txt).
 set(GPLATES_PACKAGE_VERSION ${PROJECT_VERSION})
@@ -85,7 +108,9 @@ set(GPLATES_PACKAGE_VERSION_NAME ${PROJECT_VERSION})
 #
 # For a pre-release append the pre-release version (using a hyphen for pre-releases as dictated by Semantic Versioning).
 if (GPLATES_VERSION_PRERELEASE)
-    set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION}-${GPLATES_VERSION_PRERELEASE}")
+	set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION}-${GPLATES_VERSION_PRERELEASE}")
+	# A human-readable pre-release version name (unset/empty for official public releases).
+	#
 	# If a development release (ie, if pre-release version is just a number) then insert 'dev' into the version *name* to make it more obvious to users.
 	# Note: We don't insert 'dev' into the version itself because that would give it a higher version ordering precedence than 'alpha' and 'beta' (since a < b < d).
 	#       Keeping only the development number in the actual version works because digits have lower precedence than non-digits (according to Semantic and Debian versioning).
@@ -142,8 +167,8 @@ set(GPLATES_INSTALL_GEO_DATA_DIR "" CACHE PATH "Location of geodata (use absolut
 #
 # If we're installing geodata then make sure the source geodata directory has been specified, is an absolute path and exists.
 if (GPLATES_INSTALL_GEO_DATA)
-    if (NOT GPLATES_INSTALL_GEO_DATA_DIR)
-        message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_DIR when you enable GPLATES_INSTALL_GEO_DATA")
+	if (NOT GPLATES_INSTALL_GEO_DATA_DIR)
+		message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_DIR when you enable GPLATES_INSTALL_GEO_DATA")
 	endif()
 	if (NOT IS_ABSOLUTE "${GPLATES_INSTALL_GEO_DATA_DIR}")
 		message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR should be an absolute path (not a relative path)")
@@ -151,6 +176,7 @@ if (GPLATES_INSTALL_GEO_DATA)
 	if (NOT EXISTS "${GPLATES_INSTALL_GEO_DATA_DIR}")
 		message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR does not exist: ${GPLATES_INSTALL_GEO_DATA_DIR}")
 	endif()
+	file(TO_CMAKE_PATH ${GPLATES_INSTALL_GEO_DATA_DIR} GPLATES_INSTALL_GEO_DATA_DIR) # Convert '\' to '/' in paths.
 endif()
 
 
@@ -214,7 +240,7 @@ if (MSVC)
 	if (GPLATES_MSVC_SHOW_INCLUDES)
 		# Note: This sets the non-cache variable ('option' above sets the cache variable of same name).
 		#       The non-cache variable will get precedence when subsequently accessed.
-		#       It's also important to set this *after* 'option' since whenever a cache variable is added
+		#       It's also important to set this *after* 'option' since, prior to CMake 3.21, whenever a cache variable is added
 		#       (eg, on the first run if not yet present in "CMakeCache.txt") the normal variable is removed.
 		if (DEFINED GPLATES_USE_PRECOMPILED_HEADERS)
 			set(GPLATES_USE_PRECOMPILED_HEADERS false)

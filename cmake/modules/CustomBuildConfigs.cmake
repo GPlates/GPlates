@@ -84,7 +84,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 			
         # We have an extra build configuration.
         list(APPEND _CONFIGURATION_TYPES ProfileGprof)
-    endif (NOT GPLATES_PUBLIC_RELEASE)
+    endif ()
 endif()
 
 #

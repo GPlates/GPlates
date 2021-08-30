@@ -118,6 +118,10 @@ SET(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
 #
 SET(CPACK_PACKAGE_VENDOR "${GPLATES_PACKAGE_VENDOR}")
 
+#   CPACK_PACKAGE_CONTACT - Default contact for generators that require maintainer contact.
+#
+SET(CPACK_PACKAGE_CONTACT "${GPLATES_PACKAGE_CONTACT}")
+
 #   CPACK_PACKAGE_VERSION - Package full version, used internally.
 #
 #   By default, this is built from CPACK_PACKAGE_VERSION_MAJOR, CPACK_PACKAGE_VERSION_MINOR, and CPACK_PACKAGE_VERSION_PATCH.
@@ -153,17 +157,19 @@ SET(CPACK_PACKAGE_DESCRIPTION_FILE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageDe
 #
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 
-#   CPACK_RESOURCE_FILE_LICENSE - License file for the project, which will typically be displayed to the user
-#                                 (often with an explicit "Accept" button, for graphical installers) prior to installation.
-#
-SET(CPACK_RESOURCE_FILE_LICENSE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/LicenseFile.txt")
-
-#   CPACK_RESOURCE_FILE_README - License to be embedded in the installer.
+#   CPACK_RESOURCE_FILE_LICENSE - License to be embedded in the installer.
 #
 #   It will typically be displayed to the user by the produced installer (often with an explicit "Accept" button,
 #   for graphical installers) prior to installation. This license file is NOT added to the installed files but is
 #   used by some CPack generators like NSIS. If you want to install a license file (may be the same as this one)
 #   along with your project, you must add an appropriate CMake install() command in your CMakeLists.txt.
+#
+SET(CPACK_RESOURCE_FILE_LICENSE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/LicenseFile.txt")
+
+#   CPACK_RESOURCE_FILE_README - ReadMe file to be embedded in the installer.
+#
+#    It typically describes in some detail the purpose of the project during the installation.
+#    Not all CPack generators use this file.
 #
 SET(CPACK_RESOURCE_FILE_README "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageReadMe.txt")
 
@@ -321,6 +327,65 @@ set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 # Currently no DragNDrop-specific variables need setting.
 # See "PackageGeneratorOverrides.cmake" for overrides of the general variables (non-generator specific).
 
+#
+# Code sign the DragNDrop package itself (requires CMake 3.19 or above).
+#
+# This uses the signing identity the user specified with GPLATES_APPLE_CODE_SIGN_IDENTITY.
+#
+# CMake 3.19 introduced the ability to run CMake scripts after a package is built and before it is
+# copied back to the build direcctory.
+# This is done by specifying scripts to the list variable CPACK_POST_BUILD_SCRIPTS.
+#
+if (APPLE)
+    if (NOT CMAKE_VERSION VERSION_LESS 3.19)
+        function(create_post_build_script post_build_script)
+            # Return early if no code signing identity.
+            if (NOT GPLATES_APPLE_CODE_SIGN_IDENTITY)
+                file(WRITE "${post_build_script}" [[
+                    message(WARNING "Code signing identity not specified - please set GPLATES_APPLE_CODE_SIGN_IDENTITY before distributing to other machines")
+                ]])
+                return()
+            endif()
+
+            # Find the 'codesign' command.
+            find_program(CODESIGN "codesign")
+            if (NOT CODESIGN)
+                file(WRITE "${post_build_script}" [[
+                    message(FATAL_ERROR "Unable to find 'codesign' command - cannot sign DragNDrop package with Developer ID cerficate")
+                ]])
+                return()
+            endif()
+
+            # Write CMake post build script that code signs DragNDrop package.
+            #
+            # Careful use of the escape charactor '\' allows us to prevent expansion of some variables
+            # until the script is executed. The only variables we want to expand when writing the script
+            # are CODESIGN and GPLATES_APPLE_CODE_SIGN_IDENTITY.
+            #
+            file(WRITE "${post_build_script}" "
+                foreach(_package_file \${CPACK_PACKAGE_FILES})
+                    # Run 'codesign' to sign with a Developer ID certificate.
+                    execute_process(
+                        COMMAND ${CODESIGN} --timestamp --sign \"${GPLATES_APPLE_CODE_SIGN_IDENTITY}\" \${_package_file}
+                        RESULT_VARIABLE _codesign_result
+                        OUTPUT_VARIABLE _codesign_output
+                        ERROR_VARIABLE _codesign_error)
+                    if (_codesign_result)
+                        message(FATAL_ERROR \"${CODESIGN} failed: \${_codesign_error}\")
+                    endif()
+                endforeach()
+            ")
+        endfunction()
+
+        set(_post_build_script "${CMAKE_CURRENT_BINARY_DIR}/codesign_dragndrop_package.cmake")
+
+        create_post_build_script(${_post_build_script})
+
+        # List of CMake scripts to execute after package built and before copying back to build directory.
+        set(CPACK_POST_BUILD_SCRIPTS "${_post_build_script}")
+    endif()
+endif()
+
 #######
 # DEB #
 #######
@@ -334,7 +399,7 @@ set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 # For a pre-release append the pre-release version, using a '~' character which is the common Debian method
 # of handling pre-releases (see https://www.debian.org/doc/debian-policy/ch-controlfields.html#version).
 if (GPLATES_VERSION_PRERELEASE)
-    # For example, the first development release before 2.3.0 would be 2.3.0~1, and the first release candidate would be 2.3.0~rc1.
+    # For example, the first development release before 2.3.0 would be 2.3.0~1, and the first release candidate would be 2.3.0~rc.1.
     SET(CPACK_DEBIAN_PACKAGE_VERSION "${PROJECT_VERSION}~${GPLATES_VERSION_PRERELEASE}")
 else()
     SET(CPACK_DEBIAN_PACKAGE_VERSION "${PROJECT_VERSION}")
@@ -367,10 +432,6 @@ SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_PACKAGE_VERSION_NAM
 #                                   or information may be found.
 #
 SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://www.gplates.org")
-
-#   CPACK_DEBIAN_PACKAGE_MAINTAINER - The Debian package maintainer.
-#
-SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "https://www.gplates.org")
 
 #   CPACK_DEBIAN_PACKAGE_SECTION (CPACK_DEBIAN_<COMPONENT>_PACKAGE_SECTION) - Set Section control field e.g. admin, devel, doc, ...
 #

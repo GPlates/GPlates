@@ -25,10 +25,8 @@ product page for Visual Studio.
 
 Version requirements
 
-GPlates can be built with version 14.0 (2015) of Microsoft Visual C++ (Visual Studio 2015).
-GPlates also builds under older versions, however Visual Studio 2015 is required to
-support the C++11 standard. Currently GPlates does not use C++11, however the
-dependency library GDAL does require it for versions 2.3 and above (see DEPS.Windows).
+GPlates can be built with version 14.0 (2015) of Microsoft Visual C++ (Visual Studio 2015),
+although Visual Studio 2017 (or above) is preferred.
 As newer versions of Visual Studio are released, newer versions of the
 dependencies will likely be required; if in doubt, for each dependency, download
 the latest version instead of the version stated in DEPS.Windows.
@@ -73,6 +71,7 @@ Creating Visual Studio solution and project files with CMake
   8.  Even if no popup messages occurred, the 'Generate' will still be greyed out so you'll need
       to click 'Configure' once more.
   9.  Click 'Generate'.
+      Note that, in CMake 3.21, the 'generate' phase can take a long time.
   10. The CMake GUI should then say 'Generating done' (or it might just close when finished).
   11. You should now have a 'GPlates.sln' file in your root GPlates directory.
 

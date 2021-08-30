@@ -1705,6 +1705,11 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_builtin_scalar_colour_
 			GPlatesPresentation::RemappedColourPaletteParameters scalar_colour_palette_parameters =
 					params->get_scalar_colour_palette_parameters();
 			scalar_colour_palette_parameters.load_builtin_colour_palette(builtin_scalar_colour_palette_type);
+			// If an age palette then don't map the range - the age palettes don't need remapping.
+			if (builtin_scalar_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE)
+			{
+				scalar_colour_palette_parameters.unmap_palette_range();
+			}
 			params->set_scalar_colour_palette_parameters(scalar_colour_palette_parameters);
 		}
 	}
@@ -1984,6 +1989,11 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_builtin_gradient_colou
 			GPlatesPresentation::RemappedColourPaletteParameters gradient_colour_palette_parameters =
 					params->get_gradient_colour_palette_parameters();
 			gradient_colour_palette_parameters.load_builtin_colour_palette(builtin_gradient_colour_palette_type);
+			// If an age palette then don't map the range - the age palettes don't need remapping.
+			if (builtin_gradient_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE)
+			{
+				gradient_colour_palette_parameters.unmap_palette_range();
+			}
 			params->set_gradient_colour_palette_parameters(gradient_colour_palette_parameters);
 		}
 	}
@@ -2941,7 +2951,7 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_surface_polygons_mask_
 
 				QMessageBox::warning(this, tr("Cannot enable surface polygons mask"),
 						tr("Graphics hardware lacks support, or a problem was encountered."
-#ifndef Q_OS_MAC // Cannot actually update graphics driver explicitly on Mac OS X systems...
+#ifndef Q_OS_MACOS // Cannot actually update graphics driver explicitly on Mac OS X systems...
 							"\nMake sure you have the latest graphics hardware driver installed."
 #endif
 							"\nAlso try switching to the dedicated GPU if using a dual-GPU system."

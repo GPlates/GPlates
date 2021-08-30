@@ -135,24 +135,31 @@ GPlatesGui::PythonManager::check_python_capability()
 	bp::import("sys");
 #endif
 
+	// TODO: Uncomment the 'print()' statements once stdout/stderr capture and redirection to
+	//       log window/file is properly working (in 'GPlatesQtMsgHandler').
+	//       For now, we're keeping the console just for non-GPlates output (eg, dependency libraries).
+	//       Also now that we bundle the Python standard library with GPlates (and consequently disable
+	//       PYTHONHOME and PYTHONPATH) it's not so bad if we don't print the Python prefix.
 	QString test_code = QString() +
 			"from __future__ import print_function;" +
-			"print(\'******Start testing python capability******\');" +
+			//"print(\'******Start testing python capability******\');" +
 			"import sys;" +
 			"import code;"  +
 			"import math;"  +
 			"import platform;" +
 			"import pygplates;" +
-			"print(\'python import test passed.\');" +
+			//"print(\'python import test passed.\');" +
 			"math.log(12);" +
-			"print(\'python math test passed.\');" +
-			"print(\'Version: \'); print(sys.version_info);" +
+			//"print(\'python math test passed.\');" +
+			//"print(\'Version: \'); print(sys.version_info);" +
 			"sys.platform;" +
-			"platform.uname();" +
-			"print(\'Prefix: \' +sys.prefix);" +
-			"print(\'Exec Prefix: \'+sys.exec_prefix);" +
-			"print(\'python system test passed.\');" +
-			"print(\'******End of testing python capability******\');";
+			"platform.uname();"
+			//"print(\'Prefix: \' +sys.prefix);" +
+			//"print(\'Exec Prefix: \'+sys.exec_prefix);" +
+			//"print(\'python system test passed.\');" +
+			//"print(\'******End of testing python capability******\');"
+			//"sys.stdout.flush();"
+		;
 
 	bool result = true;
 	GPlatesApi::PythonInterpreterLocker l;
@@ -297,9 +304,12 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	*/
 	Py_Initialize();
 		
-	// Initialise Python threading support; this grabs the Global Interpreter Lock
-	// for this thread.
+	// Initialise Python threading support; this grabs the Global Interpreter Lock for this thread.
+	//
+	// Note: For Python >= 3.9 this no longer does anything (and is deprecated).
+#if (PY_MAJOR_VERSION < 3) || ((PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9))
 	PyEval_InitThreads();
+#endif
 
 	// But then we give up the GIL, so that PythonInterpreterLocker may now be used.
 	PyEval_SaveThread();

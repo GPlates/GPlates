@@ -79,7 +79,8 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				const GlobeVisibilityTester &visibility_tester,
-				ColourScheme::non_null_ptr_type colour_scheme);
+				ColourScheme::non_null_ptr_type colour_scheme,
+				int d_device_pixel_ratio);
 
 		/**
 		 * Initialise objects requiring @a GLRenderer.

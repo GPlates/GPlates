@@ -43,6 +43,8 @@
 #include <QString>
 #include <QStringList>
 #include <QTableWidgetItem>
+#include <Qt>
+#include <QtGlobal>
 #include <QUrl>
 
 #include "TimeDependentRasterPage.h"
@@ -918,7 +920,13 @@ GPlatesQtWidgets::TimeDependentRasterPage::deduce_times(
 	for (file_index = 0; file_index < num_files; ++file_index)
 	{
 		const QString base_name = file_infos[file_index].completeBaseName();
-		QStringList tokens = base_name.split(QRegExp("[_-]"), QString::SkipEmptyParts);
+		QStringList tokens = base_name.split(QRegExp("[_-]"),
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
 
 		if (tokens.count() < 2)
 		{

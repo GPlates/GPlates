@@ -29,7 +29,6 @@
 #include <vector>
 #include <QByteArray>
 #include <QDateTime>
-#include <QLinkedList>
 #include <QList>
 #include <QMap>
 #include <QMultiMap>
@@ -129,14 +128,6 @@ namespace GPlatesScribe
 	// See http://doc.qt.digia.com/4.4/shared.html#implicitly-shared
 	//
 
-
-	//! Transcribe QLinkedList.
-	template <typename T>
-	TranscribeResult
-	transcribe(
-			Scribe &scribe,
-			QLinkedList<T> &linked_list_object,
-			bool transcribed_construct_data);
 
 	//! Transcribe QList.
 	template <typename T>
@@ -359,17 +350,6 @@ namespace GPlatesScribe
 			public TranscribeMap< QMap<Key, T> > // ...and uses QMap::insertMulti().
 	{
 	};
-
-
-	template <typename T>
-	TranscribeResult
-	transcribe(
-			Scribe &scribe,
-			QLinkedList<T> &linked_list_object,
-			bool transcribed_construct_data)
-	{
-		return transcribe_sequence_protocol(TRANSCRIBE_SOURCE, scribe, linked_list_object);
-	}
 
 
 	template <typename T>

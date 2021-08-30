@@ -70,7 +70,7 @@ if (CPACK_GENERATOR MATCHES "^NSIS$")
     #
     #   This is only used by installers for Windows. The default value is based on the installation directory.
     #
-    # We want, for example, "GPlates 2.3.0-dev1" for a development release so that multiple installations
+    # We want, for example, "GPlates 2.3.0-dev.1" for a development release so that multiple installations
     # with different version numbers don't conflict with each other.
     SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "@PROJECT_NAME@ @GPLATES_PACKAGE_VERSION_NAME@")
 

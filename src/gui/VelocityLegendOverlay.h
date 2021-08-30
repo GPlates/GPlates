@@ -53,8 +53,9 @@ namespace GPlatesGui
 		VelocityLegendOverlay();
 
 		void
-		paint(GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesGui::VelocityLegendOverlaySettings &settings,
+		paint(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const VelocityLegendOverlaySettings &settings,
 				int paint_device_width,
 				int paint_device_height,
 				float scale);

@@ -25,9 +25,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QtGlobal>
-#include <QTextStream>
 #include <string>
+#include <QTextStream>
+#include <QtGlobal>
+
 #include "PlatesLineFormatGeometryExporter.h"
 
 #include "maths/PointOnSphere.h"
@@ -95,10 +96,20 @@ namespace
 
 		if (reverse_coordinate_order) {
 			// For whatever perverse reason, the user wants to write in (lon,lat) order.
-			stream << lon_str.c_str() << " " << lat_str.c_str() << " " << pen_str.c_str() << endl;
+			stream << lon_str.c_str() << " " << lat_str.c_str() << " " << pen_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		} else {
 			// Normal PLATES4 (lat,lon) order should be used.
-			stream << lat_str.c_str() << " " << lon_str.c_str() << " " << pen_str.c_str() << endl;
+			stream << lat_str.c_str() << " " << lon_str.c_str() << " " << pen_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		}
 	}
 

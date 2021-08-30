@@ -633,6 +633,7 @@ namespace GPlatesGui
 			const bool default_resolved_topology_export_polygons = true;
 			const bool default_resolved_topology_export_networks = true;
 			const bool default_resolved_topology_export_sections = true;
+			const bool default_resolved_topology_export_topological_line_sub_segments = true;
 			const boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
 					default_resolved_topology_export_force_polygon_orientation = boost::none;
 
@@ -649,6 +650,7 @@ namespace GPlatesGui
 									default_resolved_topology_export_polygons,
 									default_resolved_topology_export_networks,
 									default_resolved_topology_export_sections,
+									default_resolved_topology_export_topological_line_sub_segments,
 									default_resolved_topology_export_force_polygon_orientation,
 									false/*wrap_to_dateline*/)),
 					&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
@@ -674,6 +676,7 @@ namespace GPlatesGui
 									default_resolved_topology_export_polygons,
 									default_resolved_topology_export_networks,
 									default_resolved_topology_export_sections,
+									default_resolved_topology_export_topological_line_sub_segments,
 									default_resolved_topology_export_force_polygon_orientation,
 									true/*wrap_to_dateline*/)),
 					&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
@@ -699,6 +702,7 @@ namespace GPlatesGui
 									default_resolved_topology_export_polygons,
 									default_resolved_topology_export_networks,
 									default_resolved_topology_export_sections,
+									default_resolved_topology_export_topological_line_sub_segments,
 									default_resolved_topology_export_force_polygon_orientation,
 									false/*wrap_to_dateline*/)),
 					&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
@@ -724,6 +728,7 @@ namespace GPlatesGui
 									default_resolved_topology_export_polygons,
 									default_resolved_topology_export_networks,
 									default_resolved_topology_export_sections,
+									default_resolved_topology_export_topological_line_sub_segments,
 									default_resolved_topology_export_force_polygon_orientation,
 									false/*wrap_to_dateline*/)),
 					&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,

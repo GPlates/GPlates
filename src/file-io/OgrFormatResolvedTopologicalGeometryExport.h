@@ -101,6 +101,9 @@ namespace GPlatesFileIO
 		 * features came from multiple input files (which might have different attribute field names making it
 		 * difficult to merge into a single output).
 		 *
+		 * If @a export_topological_line_sub_segments is true then export the individual sub-segments of each boundary
+		 * segment that came from a resolved topological line, otherwise export a single geometry per boundary segment.
+		 *
 		 * If @a wrap_to_dateline is true then exported polyline geometries are wrapped/clipped to the dateline.
 		 */
 		void
@@ -112,6 +115,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
+				bool export_topological_line_sub_segments,
 				bool wrap_to_dateline);
 
 

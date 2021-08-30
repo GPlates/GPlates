@@ -7,7 +7,7 @@
 #       but are safe to use with policies (see 'cmake_policy' command) up to the maximum version.
 #       Specifying a maximum version means we don't need 'cmake_policy' calls for running CMake versions
 #       in that [min, max] range. Note that CMake version prior to 3.12 apparently ignore the "...<max>" part.
-cmake_minimum_required(VERSION 3.5...3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5...3.21 FATAL_ERROR)
 
 # Set the minimum macOS version we support.
 # We select 10.13 because Qt5 currently supports 10.13+.

@@ -797,12 +797,10 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icons()
 
 			// Render the preview icon image.
 			//
-			// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
-			// The image will still be ICON_SIZE in device-independent pixels.
-			const int device_pixel_ratio = devicePixelRatio();
-			QImage image = d_globe_and_map_widget_ptr->render_to_qimage(
-					QSize(device_pixel_ratio * ICON_SIZE, device_pixel_ratio * ICON_SIZE));
-			image.setDevicePixelRatio(device_pixel_ratio);
+			// Note: The returned image could be high DPI (pixel device ratio greater than 1.0).
+			//       In which case the actual pixel dimensions of the image will be larger than requested
+			//       (by the pixel device ratio) but it should still occupy the requested *icon* dimensions.
+			QImage image = d_globe_and_map_widget_ptr->render_to_qimage(QSize(ICON_SIZE, ICON_SIZE));
 
 			current_item->setIcon(QIcon(to_QPixmap(image)));
 		}
@@ -826,12 +824,10 @@ GPlatesQtWidgets::DrawStyleDialog::refresh_current_icon()
 
 		// Render the preview icon image.
 		//
-		// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
-		// The image will still be ICON_SIZE in device-independent pixels.
-		const int device_pixel_ratio = devicePixelRatio();
-		QImage image = d_globe_and_map_widget_ptr->render_to_qimage(
-				QSize(device_pixel_ratio * ICON_SIZE, device_pixel_ratio * ICON_SIZE));
-		image.setDevicePixelRatio(device_pixel_ratio);
+		// Note: The returned image could be high DPI (pixel device ratio greater than 1.0).
+		//       In which case the actual pixel dimensions of the image will be larger than requested
+		//       (by the pixel device ratio) but it should still occupy the requested *icon* dimensions.
+		QImage image = d_globe_and_map_widget_ptr->render_to_qimage(QSize(ICON_SIZE, ICON_SIZE));
 
 		current_item->setIcon(QIcon(to_QPixmap(image)));
 	}

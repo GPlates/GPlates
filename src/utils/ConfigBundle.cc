@@ -26,6 +26,7 @@
 #include <QDebug>
 #include <QRegExp>
 #include <QSet>
+#include <QtGlobal>
 
 #include "ConfigBundle.h"
 
@@ -145,16 +146,30 @@ GPlatesUtils::ConfigBundle::subkeys(
 		const QString &prefix) const
 {
 	// Take the explicitly-set keys (which match the prefix),
-	QSet<QString> keys = GPlatesUtils::match_prefix(d_map.keys(), prefix).toSet();
+	const QStringList matched_keys = GPlatesUtils::match_prefix(d_map.keys(), prefix);
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	QSet<QString> keys(matched_keys.cbegin(), matched_keys.cend());
+#else
+	QSet<QString> keys = matched_keys.toSet();
+#endif
 	
 	// and the compiled-in default keys,
-	QSet<QString> keys_default = GPlatesUtils::match_prefix(d_defaults.keys(), prefix).toSet();
+	const QStringList matched_keys_default = GPlatesUtils::match_prefix(d_defaults.keys(), prefix);
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	QSet<QString> keys_default(matched_keys_default.cbegin(), matched_keys_default.cend());
+#else
+	QSet<QString> keys_default = matched_keys_default.toSet();
+#endif
 
 	// and merge them together to get the full list of possible keys.
 	keys.unite(keys_default);
 
 	// If a prefix was requested, the resulting key names should have it removed.
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	QStringList list(keys.cbegin(), keys.cend());
+#else
 	QStringList list = keys.toList();
+#endif
 	GPlatesUtils::strip_prefix(list, prefix);
 	return list;
 }
@@ -171,7 +186,12 @@ GPlatesUtils::ConfigBundle::root_entries(
 	GPlatesUtils::strip_all_except_root(keys);
 	
 	// Push them through a QSet to get rid of duplicates.
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	const QSet<QString> unique_keys(keys.cbegin(), keys.cend());
+	keys = QStringList(unique_keys.cbegin(), unique_keys.cend());
+#else
 	keys = keys.toSet().toList();
+#endif
 
 	return keys;
 }

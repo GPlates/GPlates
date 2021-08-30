@@ -117,6 +117,7 @@ namespace GPlatesFileIO
 					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
+					bool export_topological_line_sub_segments,
 					bool wrap_to_dateline)
 			{
 				switch (export_format)
@@ -132,6 +133,7 @@ namespace GPlatesFileIO
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
+						export_topological_line_sub_segments,
 						wrap_to_dateline);
 					break;
 
@@ -142,7 +144,8 @@ namespace GPlatesFileIO
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						export_topological_line_sub_segments);
 					break;
 
 				default:
@@ -292,6 +295,7 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_se
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file,
+		bool export_topological_line_sub_segments,
 		bool wrap_to_dateline)
 {
 	// We need to determine which resolved topological sections belong to which feature group
@@ -386,6 +390,7 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_se
 				active_reconstruction_files,
 				reconstruction_anchor_plate_id,
 				reconstruction_time,
+				export_topological_line_sub_segments,
 				wrap_to_dateline);
 	}
 
@@ -433,6 +438,7 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_se
 					active_reconstruction_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
+					export_topological_line_sub_segments,
 					wrap_to_dateline);
 		}
 	}

@@ -32,6 +32,7 @@
 #include <GL/glew.h>
 #include <opengl/OpenGL.h>
 #include <QDebug>
+#include <QtGlobal>
 
 #include "GLShaderObject.h"
 
@@ -275,7 +276,18 @@ GPlatesOpenGL::GLShaderObject::output_info_log()
 	glGetInfoLogARB(shader_resource_handle, info_log_length, NULL, info_log.get());
 	// ...the returned string is null-terminated.
 
-	qDebug() << endl << info_log.get() << endl;
+	qDebug()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl
+#else
+		<< endl
+#endif
+		<< info_log.get()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
+		<< endl;
+#endif
 }
 
 
