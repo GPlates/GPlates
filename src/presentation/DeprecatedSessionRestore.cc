@@ -31,6 +31,7 @@
 #include <QFileInfo>
 #include <QMap>
 #include <QString>
+#include <QtGlobal>
 
 #include "DeprecatedSessionRestore.h"
 
@@ -510,30 +511,36 @@ namespace
 	 * will currently fail part-way through with an exception, we apply this function to remove any
 	 * such problematic files from a Session's file-list prior to asking FeatureCollectionFileIO to load
 	 * them.
-	 *
-	 * FIXME:
-	 * Ideally, this modification of the file list would not be done, and the file-io layer would have
-	 * a nice means of triggering a GUI action to open a dialog listing the problem files and ask the
-	 * user if they would like to:-
-	 *    a) Skip over the problem files, load the others
-	 *    b) Try again, I've fixed it now
-	 *    c) Abort the entire file-loading endeavour
-	 * Of course, this requires quite a bit of structural enhancements to the code to allow file-io to
-	 * signal the gui level (and go back again) cleanly. So as a cheaper bugfix, I'm just stripping out
-	 * the bad filenames. The only problem is, the Layers state will still get loaded as though such
-	 * a file exists and I'm not entirely sure if that'll work.
 	 */
-	QSet<QString>
+	QStringList
 	strip_bad_filenames(
-			QSet<QString> filenames)
+			QStringList filenames,
+			QStringList &bad_filenames)
 	{
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+		QSet<QString> unique_filenames(filenames.cbegin(), filenames.cend());
+#else
+		QSet<QString> unique_filenames = filenames.toSet();
+#endif
+
 		QSet<QString> good_filenames;
-		Q_FOREACH(QString filename, filenames) {
-			if (QFile::exists(filename)) {
+		Q_FOREACH(QString filename, unique_filenames)
+		{
+			if (QFile::exists(filename))
+			{
 				good_filenames.insert(filename);
 			}
+			else
+			{
+				bad_filenames.append(filename);
+			}
 		}
-		return good_filenames;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+		return QStringList(good_filenames.cbegin(), good_filenames.cend());
+#else
+		return QStringList::fromSet(good_filenames);
+#endif
 	}
 }
 
@@ -548,6 +555,9 @@ GPlatesPresentation::DeprecatedSessionRestore::restore_session(
 	GPlatesAppLogic::ApplicationState &app_state = GPlatesPresentation::Application::instance().get_application_state();
 	GPlatesAppLogic::FeatureCollectionFileIO &file_io = app_state.get_feature_collection_file_io();
 
+	QStringList bad_loaded_files;
+	const QStringList good_loaded_files = strip_bad_filenames(loaded_files, bad_loaded_files);
+
 	// Loading session depends on the version...
 	switch (version)
 	{
@@ -555,10 +565,7 @@ GPlatesPresentation::DeprecatedSessionRestore::restore_session(
 		// Layers state not saved in this version so allow application state to auto-create layers.
 		// The layers won't be connected though, but when the session is saved they will be because
 		// the session will be saved with the latest version.
-		file_io.load_files(
-				QStringList::fromSet(
-						strip_bad_filenames(
-								QSet<QString>::fromList(loaded_files))));
+		file_io.load_files(good_loaded_files);
 		break;
 
 	case 1:
@@ -571,10 +578,7 @@ GPlatesPresentation::DeprecatedSessionRestore::restore_session(
 			// soon as you take your eyes off it.
 			SuppressAutoLayerCreationRAII raii(app_state);
 
-			file_io.load_files(
-					QStringList::fromSet(
-							strip_bad_filenames(
-									QSet<QString>::fromList(loaded_files))));
+			file_io.load_files(good_loaded_files);
 
 			// New in version 1 is save/restore of layer type and connections.
 			QDomDocument layers_state_dom;
@@ -594,19 +598,15 @@ GPlatesPresentation::DeprecatedSessionRestore::restore_session(
 	// Report the files that were *not* loaded to the read errors dialog.
 	//
 
-	const QStringList files_not_loaded = QStringList::fromSet(
-			// Remove items from 'loaded_files' that are also in 'strip_bad_filenames(...)'.
-			QSet<QString>::fromList(loaded_files).subtract(
-					strip_bad_filenames(QSet<QString>::fromList(loaded_files))));
-	if (files_not_loaded.size() > 0)
+	if (bad_loaded_files.size() > 0)
 	{
 		GPlatesFileIO::ReadErrorAccumulation read_errors;
 
-		for (int n = 0; n < files_not_loaded.size(); ++n)
+		for (int n = 0; n < bad_loaded_files.size(); ++n)
 		{
 			boost::shared_ptr<GPlatesFileIO::DataSource> source(
 					new GPlatesFileIO::LocalFileDataSource(
-							files_not_loaded[n],
+							bad_loaded_files[n],
 							GPlatesFileIO::DataFormats::Unspecified));
 			boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
 					new GPlatesFileIO::LineNumber(0));

@@ -1617,8 +1617,16 @@ GPlatesMaths::minimum_distance(
 {
 	// Since we're swapping the order of the geometries we also need to swap the closest position
 	// references and the closest index references.
-	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polyline*/> >
-			closest_positions_reversed;
+	//
+	// Need a workaround for g++-11 since it thinks boost tuple is used uninitialized [-Werror=uninitialized].
+#if defined(__GNUC__) &&  (__GNUC__ == 11)
+	static UnitVector3D unused(1, 0, 0);
+	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polyline*/> > closest_positions_reversed =
+		boost::make_optional(false, boost::make_tuple(boost::ref(unused), boost::ref(unused)));
+#else
+	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polyline*/> > closest_positions_reversed;
+#endif
+
 	if (closest_positions)
 	{
 		closest_positions_reversed = boost::make_tuple(
@@ -1824,8 +1832,16 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<unsigned int &/*polygon*/, unsigned int &/*multipoint*/> > closest_indices)
 {
 	// Since we're swapping the order of the geometries we also need to swap the closest position references.
-	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polygon*/> >
-			closest_positions_reversed;
+	//
+	// Need a workaround for g++-11 since it thinks boost tuple is used uninitialized [-Werror=uninitialized].
+#if defined(__GNUC__) &&  (__GNUC__ == 11)
+	static UnitVector3D unused(1, 0, 0);
+	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polygon*/> > closest_positions_reversed =
+		boost::make_optional(false, boost::make_tuple(boost::ref(unused), boost::ref(unused)));
+#else
+	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polygon*/> > closest_positions_reversed;
+#endif
+
 	if (closest_positions)
 	{
 		closest_positions_reversed = boost::make_tuple(
@@ -1861,8 +1877,16 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<unsigned int &/*polygon*/, unsigned int &/*polyline*/> > closest_segment_indices)
 {
 	// Since we're swapping the order of the geometries we also need to swap the closest position references.
-	boost::optional< boost::tuple<UnitVector3D &/*polyline*/, UnitVector3D &/*polygon*/> >
-			closest_positions_reversed;
+	//
+	// Need a workaround for g++-11 since it thinks boost tuple is used uninitialized [-Werror=uninitialized].
+#if defined(__GNUC__) &&  (__GNUC__ == 11)
+	static UnitVector3D unused(1, 0, 0);
+	boost::optional< boost::tuple<UnitVector3D &/*polyline*/, UnitVector3D &/*polygon*/> > closest_positions_reversed =
+		boost::make_optional(false, boost::make_tuple(boost::ref(unused), boost::ref(unused)));
+#else
+	boost::optional< boost::tuple<UnitVector3D &/*polyline*/, UnitVector3D &/*polygon*/> > closest_positions_reversed;
+#endif
+
 	if (closest_positions)
 	{
 		closest_positions_reversed = boost::make_tuple(

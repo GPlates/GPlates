@@ -32,6 +32,7 @@
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #include <QDebug>
+#include <QtGlobal>
 
 #include "PlatesLineFormatWriter.h"
 #include "PlatesLineFormatHeaderVisitor.h"
@@ -215,7 +216,11 @@ GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 		<< formatted_int_to_string(old_plates_header.string_number, 4).c_str()
 		<< " "
 		<< GPlatesUtils::make_qstring_from_icu_string(old_plates_header.geographic_description)
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
 		<< endl;
+#endif
 
 	// If the plate id or conjugate plate id have more than 4 digits then we cannot write them
 	// to the fixed-columns PLATES line format.
@@ -258,7 +263,11 @@ GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 		<< formatted_int_to_string(old_plates_header.colour_code, 3).c_str()
 		<< " "
 		<< formatted_int_to_string(old_plates_header.number_of_points, 5).c_str()
-		<< endl;		
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
+		<< endl;
+#endif
 }
 
 

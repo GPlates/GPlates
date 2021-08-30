@@ -89,19 +89,32 @@ CMake
 
 Qt
 
-  1. Download the latest Qt5 opensource installer exe from: https://download.qt.io/archive/qt/
-     For example, for Qt 5.14.2 this is https://download.qt.io/archive/qt/5.14/5.14.2/qt-opensource-windows-x86-5.14.2.exe
-     Note that you now need a Qt account to use the binary installer (it will ask you to sign in or create a new account).
-     And after Qt 5.14 you will need to use the online installer (offline for commercial license only).
-     Alternatively you can compile from source - see https://doc.qt.io/qt-5/windows-building.html
-  2. Select the pre-built components appropriate for your compiler.
-     For example, select "MSVC 2015 64-bit" when compiling 64-bit using Visual Studio 2015.
-  3. Select the GPL license.
-  4. Add the base of your selected pre-built components directory to the CMAKE_PREFIX_PATH environment variable.
-     For example, "C:\SDK\qt\qt-5.14.2\5.14.2\msvc2015_64".
+  1. Download the latest Qt opensource online installer from: https://www.qt.io/download-open-source
+     Run the online installer exe:
+     - It will ask for the username and password of your Qt account (it will ask you to sign in or create a new account).
+     - Accept the obligations of using Qt Open Source (and specify whether you are an individual or a company).
+     - Select 'Custom' installation (we want Qt5, not Qt6 since we don't yet support it).
+     - Under 'Qt 5.15.2' select the compiler you are using.
+       For example, select "MSVC 2015 64-bit" when compiling 64-bit using Visual Studio 2015.
+     - Accept the license.
+     - Select your Start Menu shortcut.
+     - Finish the installation of the pre-built components.
+  2. Alternatively you can download the latest Qt5 opensource *offline* installer from: https://download.qt.io/archive/qt/
+     However, the latest will be Qt 5.14 (not Qt 5.15) since offline installers are no longer supported by Qt (for non-commercial).
+     This is https://download.qt.io/archive/qt/5.14/5.14.2/qt-opensource-windows-x86-5.14.2.exe
+     Note that you now need a Qt account to use the installer (it will ask you to sign in or create a new account).
+     Run the offline installer exe:
+     - Select the pre-built components appropriate for your compiler.
+       For example, select "MSVC 2015 64-bit" when compiling 64-bit using Visual Studio 2015.
+     - Select the GPL license.
+     - Finish the installation of the pre-built components.
+  3. Alternatively you can compile from source - see https://doc.qt.io/qt-5/windows-building.html
+  4. Add the base of your selected pre-built components directory (assuming you chose step 1 or 2) to the CMAKE_PREFIX_PATH environment variable.
+     For example, "C:\SDK\qt\qt-5.15.2\5.15.2\msvc2015_64".
   5. Add the Qt \bin directory (associated with your selected pre-built components) to the PATH environment variable.
-     For example, "C:\SDK\qt\qt-5.14.2\5.14.2\msvc2015_64\bin".
-     Note you may need to insert near front of PATH to prioritise over other installed software containing Qt5 DLLs.
+     For example, "C:\SDK\qt\qt-5.15.2\5.15.2\msvc2015_64\bin".
+     Note you may need to insert near front of PATH to prioritise over other installed software containing Qt5 DLLs
+     otherwise GPlates might not start complaining that some symbol in one of the Qt5 DLLs cannot be found.
 
 Qwt
 
@@ -113,6 +126,7 @@ Qwt
      is different than the qwt location, such as a sub-directory (e.g. C:\SDK\qwt\qwt-6.1.4\msvc2015_64 ),
      so that 'nmake install' below does not fail (trying to copy the same file on top of itself).
      You should only need to change QWT_INSTALL_PREFIX inside the 'win32 { }' block.
+     Note: Qwt should find the Qt installation that was installed in the above step (using qmake found via PATH).
   5. At the command prompt, run:
        qmake qwt.pro
        nmake
@@ -282,46 +296,30 @@ GDAL
   
 CGAL
 
-  1. Get and install the latest CGAL (eg, 4.13.2) source code from http://www.cgal.org/
-     * Download and run 'CGAL-4.13.2-Setup.exe'.
+  1. Get and install the latest CGAL version 4 (eg, 4.14.3) source code from http://www.cgal.org/
+     * Download and run 'CGAL-4.14.3-Setup.exe'.
      * Under 'Choose Components' untick everything except:
          * 'GMP and MPFR precompiled libs' (note that 'Main CGAL' cannot be unticked).
      * Choose '32-bits' or '64-bits'.
-     * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-4.13.2'.
+     * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-4.14.3'.
          * In particular, do not install under Program Files on Windows Vista and
            above because you will likely run into permissions issues later.
-     * Tick 'CGAL_DIR' environment variable - note: this helps GPlates find CGAL (although it can use the PATH for that - see below).
-     * Tick 'Add CGAL/auxiliary/gmp/lib to PATH' (eg, C:\SDK\cgal\CGAL-4.13.2\auxiliary\gmp\lib).
-  2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
-     * NOTE: Make sure you run 'cmake-gui.exe' as administrator (right-click and select 'Run as administrator').
-     * Specify the root of the extracted CGAL source tree as the source directory.
-     * Specify a new sub-directory, such as 'build', as the build directory (eg, "C:/SDK/cgal/CGAL-4.13.2/build/").
-     * Click 'Configure' once (selecting OK to create the new 'build' directory) and select a Visual Studio generator
-       (such as "Visual Studio 14 2015" for 32-bit or "Visual Studio 14 2015 Win64" for 64-bit).
-        * If an error dialog pops up and there's red text that complains it cannot find the boost library
-          boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library versions
-          of the boost libraries (the ones with the 'lib' prefix in the library filenames - see Boost above).
-     * Untick all 'WITH_*' options except:
-         * WITH_CGAL_Core,
-         * WITH_GMP and
-         * WITH_MPFR.
-     * Change 'CMAKE_INSTALL_PREFIX' to a directory that is different than the root of the extracted source tree  (eg, 'C:/SDK/cgal/CGAL-4.13.2/msvc2015_64').
-       This ensures GPlates will find the correct CGAL CMake config files (the ones created when installing CGAL).
-       NOTE: Make sure to use forward slashes '/' here (not backward slashes '\') to avoid errors when compiling CGAL.
-     * Click the 'Configure' button again.
-     * Click the 'Generate' button.
-     * If this is successful then a Visual Studio solution file 'CGAL.sln'.
-  3. Build CGAL:
-     * Open the generated Visual Studio solution file 'CGAL.sln' in the 'build' directory.
-     * Select the 'Release' build type.
-     * (GPlates developers will also want to build 'Debug', etc so that similar builds in
-       GPlates can find the CGAL library of the correct build type).
-     * Build the 'INSTALL' project.
-  4. Add the CGAL 'bin' directory to the PATH environment variable (eg, C:\SDK\cgal\CGAL-4.13.2\msvc2015_64\bin).
-     Note that in addition to finding CGAL DLLs at runtime this also enables CMake to find CGAL when configuring GPlates (see BUILD.Windows)
-     since CMake strips off 'bin' to find the CGAL root installation (which means the above-mentioned CGAL_DIR is not required).
+     * Tick 'CGAL_DIR' environment variable - note: this helps GPlates find CGAL.
+     * Tick 'Add CGAL/auxiliary/gmp/lib to PATH' (eg, C:\SDK\cgal\CGAL-4.14.3\auxiliary\gmp\lib).
+  2. Note that we use CGAL as a header-only library (for CGAL >= 4.9) and don't need to build it.
+     And for CGAL >= 4.12, we also don't need to configure CGAL (using CMake).
+     So we're finished with installing CGAL (since we're using CGAL >= 4.12).
+     Note: This solves issues with CGAL auto-linking whereby, for example, previously you might have compiled
+           CGAL with Visual Studio 2015 and then when compiling GPlates with Visual Studio 2019 the auto-linking
+           would look for a CGAL library with 'vc142' in its name (because using the 2019 compiler)
+           and hence not find the CGAL library with 'vc140' in its name (built with the 2015 compiler).
+           However CGAL still auto-links to GMP and MPFR libraries (included in its installation) for us.
     
-    NOTE that CGAL 5 (and above) use C++14 features which requires Visual Studio 2015 (or above).
+    NOTE: CGAL 5 (and above) use C++14 features which requires Visual Studio 2015 (or above).
+    NOTE: CGAL 4 appears to require Visual Studio 2017 (or above), which introduced __has_include,
+          when compiling GPlates/pyGPlates (even though CGAL docs say VS2015 is fine). So while using VS2015
+          should be fine for compiling the other dependencies, you might need VS2017+ to compile GPlates/pyGPlates.
+          
 
 zlib
 

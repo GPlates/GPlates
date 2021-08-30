@@ -26,7 +26,10 @@
 #include <boost/foreach.hpp>
 #include <QFileInfo>
 #include <QList>
+#include <QLocale>
 #include <QStringList>
+#include <Qt>
+#include <QtGlobal>
 #include <QVariant>
 
 #include "Session.h"
@@ -39,8 +42,22 @@ namespace
 			const QString &a,
 			const QString &b)
 	{
-		QStringList alist = a.split('/', QString::SkipEmptyParts);
-		QStringList blist = b.split('/', QString::SkipEmptyParts);
+		QStringList alist = a.split('/',
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
+
+		QStringList blist = b.split('/',
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
+
 		QStringList rlist;
 		for (int i = 0; i < alist.size() && i < blist.size(); ++i) {
 			if (alist.at(i) != blist.at(i)) {
@@ -73,12 +90,17 @@ namespace
 	/**
 	 * Removes any "" entries from a QStringList, to avoid potential bugs with incorrectly saved Sessions.
 	 */
-	QStringList
+	QSet<QString>
 	strip_empty_entries(
 			QStringList list)
 	{
 		list.removeAll("");
-		return list;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+		return QSet<QString>(list.cbegin(), list.cend());
+#else
+		return QSet<QString>::fromList(list);
+#endif
 	}
 }
 
@@ -87,7 +109,7 @@ GPlatesPresentation::Session::Session(
 		const QDateTime &time_,
 		const QStringList &files_):
 	d_time(time_),
-	d_loaded_files(QSet<QString>::fromList(strip_empty_entries(files_)))
+	d_loaded_files(strip_empty_entries(files_))
 {  }
 
 
@@ -105,7 +127,7 @@ GPlatesPresentation::Session::get_description() const
 		desc = tr("%1 %2 on %3")
 				.arg(d_loaded_files.size())
 				.arg(files_str)
-				.arg(d_time.toString(Qt::SystemLocaleLongDate));
+				.arg(QLocale::system().toString(d_time, QLocale::LongFormat));
 	}
 	else
 	{
@@ -113,7 +135,7 @@ GPlatesPresentation::Session::get_description() const
 				.arg(d_loaded_files.size())
 				.arg(files_str)
 				.arg(location)
-				.arg(d_time.toString(Qt::SystemLocaleLongDate));
+				.arg(QLocale::system().toString(d_time, QLocale::LongFormat));
 	}
 
 	return desc;
@@ -129,7 +151,11 @@ GPlatesPresentation::Session::get_time() const
 QList<QString>
 GPlatesPresentation::Session::get_loaded_files() const
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	return QList<QString>(d_loaded_files.cbegin(), d_loaded_files.cend());
+#else
 	return QStringList::fromSet(d_loaded_files);
+#endif
 }
 
 

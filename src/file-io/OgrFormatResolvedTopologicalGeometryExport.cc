@@ -268,6 +268,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
+		bool export_topological_line_sub_segments,
 		bool wrap_to_dateline)
 {
 	// Set up the appropriate form of OgrGeometryExporter.
@@ -292,47 +293,50 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 		// Iterate through the shared sub-segments of the current section feature and collect their geometries.
 		for (const auto &shared_sub_segment : section->get_shared_sub_segments())
 		{
-			// If the shared sub-segment has any of its own child sub-segments in turn
-			// (because it's from a resolved topological line) then process those instead.
-			// This essentially is the same as simply using the parent sub-segment except that the plate IDs will
-			// come from the child sub-segment features (which is more representative of the reconstructed geometry.
-			const boost::optional<GPlatesAppLogic::sub_segment_seq_type> &sub_sub_segments = shared_sub_segment->get_sub_sub_segments();
-			if (sub_sub_segments)
+			if (export_topological_line_sub_segments)
 			{
-				// Visit each sub-sub-segment geometry.
-				for (const auto &sub_sub_segment : sub_sub_segments.get())
+				// If the shared sub-segment has any of its own child sub-segments in turn
+				// (because it's from a resolved topological line) then process those instead.
+				// This essentially is the same as simply using the parent sub-segment except that the plate IDs will
+				// come from the child sub-segment features (which is more representative of the reconstructed geometry.
+				const boost::optional<GPlatesAppLogic::sub_segment_seq_type> &sub_sub_segments = shared_sub_segment->get_sub_sub_segments();
+				if (sub_sub_segments)
 				{
-					const GPlatesModel::FeatureHandle::const_weak_ref &sub_sub_segment_feature_ref = sub_sub_segment->get_feature_ref();
-					if (!sub_sub_segment_feature_ref.is_valid())
+					// Visit each sub-sub-segment geometry.
+					for (const auto &sub_sub_segment : sub_sub_segments.get())
 					{
-						continue;
+						const GPlatesModel::FeatureHandle::const_weak_ref &sub_sub_segment_feature_ref = sub_sub_segment->get_feature_ref();
+						if (!sub_sub_segment_feature_ref.is_valid())
+						{
+							continue;
+						}
+
+						//
+						// Each (child) sub-sub-segment potentially belongs to a different feature
+						// (unlike the parent sub-segments) and hence needs its own KVD.
+						//
+
+						GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type sub_sub_segment_kvd_for_export =
+								get_kvd_for_export(
+										sub_sub_segment_feature_ref,
+										referenced_files,
+										active_reconstruction_files,
+										reconstruction_anchor_plate_id,
+										reconstruction_time,
+										export_per_collection);
+
+						// Write (child) sub-sub-segment geometries out immediately (since each has its own KVD).
+						geom_exporter.export_geometry(
+								sub_sub_segment->get_sub_segment_geometry(),
+								GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type(sub_sub_segment_kvd_for_export));
 					}
 
-					//
-					// Each (child) sub-sub-segment potentially belongs to a different feature
-					// (unlike the parent sub-segments) and hence needs its own KVD.
-					//
-
-					GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type sub_sub_segment_kvd_for_export =
-							get_kvd_for_export(
-									sub_sub_segment_feature_ref,
-									referenced_files,
-									active_reconstruction_files,
-									reconstruction_anchor_plate_id,
-									reconstruction_time,
-									export_per_collection);
-
-					// Write (child) sub-sub-segment geometries out immediately (since each has its own KVD).
-					geom_exporter.export_geometry(
-							sub_sub_segment->get_sub_segment_geometry(),
-							GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type(sub_sub_segment_kvd_for_export));
+					continue;
 				}
 			}
-			else
-			{
-				// Wait and write all shared (parent) sub-segment geometries together as a single feature (with same KVD).
-				shared_sub_segment_geometries.push_back(shared_sub_segment->get_shared_sub_segment_geometry());
-			}
+
+			// Wait and write all shared (parent) sub-segment geometries together as a single feature (with same KVD).
+			shared_sub_segment_geometries.push_back(shared_sub_segment->get_shared_sub_segment_geometry());
 		}
 
 		// Write the shared sub-segment geometries as a single feature since these shared (parent) sub-segments

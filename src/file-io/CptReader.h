@@ -40,6 +40,8 @@
 #include <QString>
 #include <QStringList>
 #include <QTextStream>
+#include <Qt>
+#include <QtGlobal>
 
 #include "ReadErrorAccumulation.h"
 #include "ReadErrorOccurrence.h"
@@ -700,7 +702,13 @@ namespace GPlatesFileIO
 			{
 				// Remove the # and see if the resulting comment is a colour model statement.
 				QString comment = line.right(line.length() - 1);
-				QStringList tokens = comment.split(QRegExp("[=\\s+]"), QString::SkipEmptyParts);
+				QStringList tokens = comment.split(QRegExp("[=\\s+]"),
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+					Qt::SkipEmptyParts
+#else
+					QString::SkipEmptyParts
+#endif
+				);
 				if (tokens.count() == 2 && tokens.at(0) == "COLOR_MODEL")
 				{
 					if (rgb_regex.exactMatch(tokens.at(1)))
@@ -1212,7 +1220,13 @@ namespace GPlatesFileIO
 				}
 
 				// Split the string by whitespace.
-				QStringList tokens = line.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+				QStringList tokens = line.split(QRegExp("\\s+"),
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+					Qt::SkipEmptyParts
+#else
+					QString::SkipEmptyParts
+#endif
+				);
 
 				// Note the use of the short-circuiting mechanism.
 				TryProcessTokensImpl<CptFileFormat> try_process_tokens_impl;

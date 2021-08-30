@@ -130,7 +130,7 @@ GPlatesQtWidgets::QtWidgetUtils::is_control_c(
 		QKeyEvent *key_event)
 {
 	return key_event->key() == Qt::Key_C &&
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 		key_event->modifiers() == Qt::MetaModifier;
 #else
 		key_event->modifiers() == Qt::ControlModifier;

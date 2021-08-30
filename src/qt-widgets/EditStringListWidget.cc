@@ -114,7 +114,7 @@ namespace
 		// Add the "Action" cell.
 		// We need to set this as uneditable.
 		QTableWidgetItem *action_item = new QTableWidgetItem;
-		action_item->setFlags(0);
+		action_item->setFlags(Qt::ItemFlags());
 		table.setItem(which_row, COLUMN_ACTION, action_item);
 
 		// Set the "current cell" (ie, the cell which has the focus) to be a cell from the
@@ -145,7 +145,7 @@ namespace
 		// Add the "Action" cell.
 		// We need to set this as uneditable.
 		QTableWidgetItem *action_item = new QTableWidgetItem;
-		action_item->setFlags(0);
+		action_item->setFlags(Qt::ItemFlags());
 		table.setItem(which_row, COLUMN_ACTION, action_item);
 
 		// FIXME: What do these next lines mean?

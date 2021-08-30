@@ -190,36 +190,26 @@ namespace GPlatesQtWidgets
 		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
 		 *
 		 * Device-independent pixels (widget size) differ from device pixels (OpenGL size).
-		 * Widget dimensions are device independent, whereas OpenGL uses device pixels.
+		 * Widget dimensions are device independent whereas OpenGL uses device pixels
+		 * (differing by the device pixel ratio).
 		 */
 		virtual
 		QSize
 		get_viewport_size() const;
 
 		/**
-		 * Returns the dimensions of the viewport in device pixels (not widget size).
-		 *
-		 * Device pixels (OpenGL size) differ from device-independent pixels (widget size).
-		 * For high DPI displays (eg, Apple Retina), device pixels is typically twice device-independent pixels.
-		 * OpenGL uses device pixels, whereas widget dimensions are device independent.
-		 */
-		virtual
-		QSize
-		get_viewport_size_in_device_pixels() const;
-
-		/**
 		 * Renders the scene to a QImage of the dimensions specified by @a image_size.
 		 *
-		 * @a image_size is in pixels (not widget size). If the caller is rendering a high-DPI image
-		 * they should multiply their widget size by the appropriate device pixel ratio and then call
-		 * QImage::setDevicePixelRatio on the returned image.
+		 * The specified image size should be in device *independent* pixels (eg, widget dimensions).
+		 * The returned image will be a high-DPI image if this canvas has a device pixel ratio greater than 1.0
+		 * (in which case the returned QImage will have the same device pixel ratio).
 		 *
 		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
 		virtual
 		QImage
 		render_to_qimage(
-				const QSize &image_size);
+				const QSize &image_size_in_device_independent_pixels);
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
@@ -387,7 +377,7 @@ namespace GPlatesQtWidgets
 					const QGLFormat &format_,
 					QWidget *parent_ = 0,
 					const QGLWidget *shareWidget_ = 0,
-					Qt::WindowFlags flags_ = 0);
+					Qt::WindowFlags flags_ = Qt::WindowFlags());
 
 			void
 			swap_buffers_if_necessary();

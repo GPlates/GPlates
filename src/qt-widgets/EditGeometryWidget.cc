@@ -140,7 +140,7 @@ namespace
 		table.setItem(row, COLUMN_LON, new QTableWidgetItem(locale.toString(lon)));
 		// Add the "Action" cell - we need to set this as uneditable.
 		QTableWidgetItem *action_item = new QTableWidgetItem();
-		action_item->setFlags(0);
+		action_item->setFlags(Qt::ItemFlags());
 		table.setItem(row, COLUMN_ACTION, action_item);
 
 
@@ -175,7 +175,7 @@ namespace
 		table.setItem(row, COLUMN_LON, new QTableWidgetItem());
 		// Add the "Action" cell - we need to set this as uneditable.
 		QTableWidgetItem *action_item = new QTableWidgetItem();
-		action_item->setFlags(0);
+		action_item->setFlags(Qt::ItemFlags());
 		table.setItem(row, COLUMN_ACTION, action_item);
 		// Creating the action_widget is not a memory leak - Qt will take ownership of
 		// the action_widget memory, and clean it up when the table row is deleted.

@@ -37,6 +37,7 @@
 #include <opengl/OpenGL.h>
 #include <QDebug>
 #include <QString>
+#include <QtGlobal>
 
 #include "GLProgramObject.h"
 
@@ -1600,5 +1601,16 @@ GPlatesOpenGL::GLProgramObject::output_info_log()
 		qDebug() << " (all compiled OpenGL shader source code consisted of string literals)";
 	}
 
-	qDebug() << endl << info_log.get() << endl;
+	qDebug()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl
+#else
+		<< endl
+#endif
+		<< info_log.get()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
+		<< endl;
+#endif
 }

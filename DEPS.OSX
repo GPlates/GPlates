@@ -1,4 +1,4 @@
-Dependencies For Mac OS X
+Dependencies For macOS
 
 Table of Contents
 
@@ -13,7 +13,7 @@ Table of Contents
 Introduction
 
 This page lists the package dependencies which need to be satisfied to be able
-to build GPlates from source on Mac OS X.
+to build GPlates from source on macOS.
 
 Program and library dependencies
 
@@ -26,13 +26,13 @@ installed:
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
   • GLEW library (the OpenGL Extension Wrangler Library)
-  * Python (version 2 or 3, preferably 3)
+  * Python (version 2.7 or 3; preferably 3.5 or newer)
   • Boost library headers (version 1.35 or newer)
-  • Qt library (version 5.0 or newer)
-  • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer, preferably 2.x)
-  • Computational Geometry Algorithms Library (CGAL) (4.7 or newer; preferably 4.12 or newer for improved CMake support)
-  • PROJ (4.6.0 or newer)
-  • Qwt 6.0.1 (6.1.x is recommended)
+  • Qt library (version 5.6 or newer)
+  • GDAL (Geospatial Data Abstraction Library) (1.3.2 or newer; preferably 2 or newer)
+  • CGAL (Computational Geometry Algorithms Library) (4.7 or newer; preferably 4.12 or newer for improved CMake support)
+  • PROJ (4.6.0 or newer; preferably 6 or newer)
+  • Qwt (6.0.1 or newer; preferably 6.1 or newer)
   • zlib
 
 Corresponding package dependencies

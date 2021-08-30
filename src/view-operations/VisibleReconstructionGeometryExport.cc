@@ -144,6 +144,7 @@ namespace GPlatesViewOperations
 					bool export_single_output_file,
 					bool export_per_input_file,
 					bool export_separate_output_directory_per_input_file,
+					bool export_topological_line_sub_segments,
 					bool wrap_to_dateline)
 			{
 				// Filter out the resolved topological sections we want to export and convert them to raw pointers.
@@ -236,6 +237,7 @@ namespace GPlatesViewOperations
 						export_single_output_file,
 						export_per_input_file,
 						export_separate_output_directory_per_input_file,
+						export_topological_line_sub_segments,
 						wrap_to_dateline);
 			}
 		}
@@ -403,6 +405,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 		bool export_topological_polygons,
 		bool export_topological_networks,
 		bool export_topological_sections,
+		bool export_topological_line_sub_segments,
 		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 		bool wrap_to_dateline)
 {
@@ -517,6 +520,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 				export_single_output_file,
 				export_per_input_file,
 				export_separate_output_directory_per_input_file,
+				export_topological_line_sub_segments,
 				wrap_to_dateline);
 
 		// Subduction sections.
@@ -535,6 +539,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 				export_single_output_file,
 				export_per_input_file,
 				export_separate_output_directory_per_input_file,
+				export_topological_line_sub_segments,
 				wrap_to_dateline);
 
 		// Left subduction sections.
@@ -553,6 +558,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 				export_single_output_file,
 				export_per_input_file,
 				export_separate_output_directory_per_input_file,
+				export_topological_line_sub_segments,
 				wrap_to_dateline);
 
 		// Right subduction sections.
@@ -571,6 +577,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 				export_single_output_file,
 				export_per_input_file,
 				export_separate_output_directory_per_input_file,
+				export_topological_line_sub_segments,
 				wrap_to_dateline);
 
 		// Ridge/transform sections.
@@ -589,6 +596,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 				export_single_output_file,
 				export_per_input_file,
 				export_separate_output_directory_per_input_file,
+				export_topological_line_sub_segments,
 				wrap_to_dateline);
 	}
 }

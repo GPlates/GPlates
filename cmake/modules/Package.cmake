@@ -72,7 +72,7 @@ endif()
 # In any case, typically you would package 'gplates' and 'pygplates' in *separate* 'cpack' runs.
 # In this case you'd want to package 'gplates' with just 'cpack' (to create both an NSIS installer and a ZIP archive by default) and
 # package 'pygplates' with 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=pygplates' (but note that when extracting the resultant archive you
-# would have a top-level directory that looked something like 'GPlates-2.2.0-win64/', so you'd probably want to manually rename that).
+# would have a top-level directory that looked something like 'gplates_2.3.0_win64/', so you'd probably want to manually rename that).
 # Note the space in '-D CPACK_COMPONENTS_ALL' (without the space it won't override the default).
 #
 # NOTE: We only specify CPACK_COMPONENTS_ALL when CPACK_MONOLITHIC_INSTALL is disabled because they are conflicting
@@ -100,6 +100,9 @@ SET(CPACK_MONOLITHIC_INSTALL ON)
 # Where all the distribution files are located.
 SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${GPlates_SOURCE_DIR}/cmake/distribution")
 
+# Lower case PROJECT_NAME.
+STRING(TOLOWER "${PROJECT_NAME}" _PROJECT_NAME_LOWER)
+
 
 #########################################################
 # CPack configuration variables common to all platforms #
@@ -115,39 +118,21 @@ SET(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
 #
 SET(CPACK_PACKAGE_VENDOR "${GPLATES_PACKAGE_VENDOR}")
 
-#   CPACK_PACKAGE_VERSION_MAJOR - Package major Version
+#   CPACK_PACKAGE_CONTACT - Default contact for generators that require maintainer contact.
 #
-SET(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
-
-#   CPACK_PACKAGE_VERSION_MINOR - Package minor Version
-#
-SET(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
-
-#   CPACK_PACKAGE_VERSION_PATCH - Package patch Version
-#
-SET(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
+SET(CPACK_PACKAGE_CONTACT "${GPLATES_PACKAGE_CONTACT}")
 
 #   CPACK_PACKAGE_VERSION - Package full version, used internally.
 #
 #   By default, this is built from CPACK_PACKAGE_VERSION_MAJOR, CPACK_PACKAGE_VERSION_MINOR, and CPACK_PACKAGE_VERSION_PATCH.
 #
-# NOTE: Normally we can't read CPACK variables until after "include(CPack)". However these CPACK variables have been set above.
-#
-# For a public release this is equivalent to PROJECT_VERSION (as set by project() command in top-level CMakeLists.txt).
-SET(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-#
-# For a *non*-public release build append '.<svn-version>'.
-# Note: GPlates_WC_LAST_CHANGED_REV is only defined when GPLATES_PUBLIC_RELEASE is not defined (ie, not a public release).
-if (GPlates_WC_LAST_CHANGED_REV)
-    SET(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}.${GPlates_WC_LAST_CHANGED_REV}")
-endif()
+SET(CPACK_PACKAGE_VERSION ${GPLATES_PACKAGE_VERSION})
 
 #   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate, not including the extension.
 #
 #   For example, cmake-2.6.1-Linux-i686.
 #
-# We exclude the package version from the filename because CPACK_PACKAGE_FILE_NAME appears to be used by our separate gplates and pygplates
-# component packages as the top level directory (eg, in the archive generators).
+# Note: We use '_' instead of '-' to separate package name, version and architecture (eg, 'cmake_2.6.1_Linux-i686').
 if (WIN32)
     # NOTE: We can't access CPACK variables here (ie, at CMake configure time) so we can't access CPACK_SYSTEM_NAME which is defined as:
     #           "CPACK_SYSTEM_NAME defaults to the value of CMAKE_SYSTEM_NAME, except on Windows where it will be win32 or win64"
@@ -157,9 +142,9 @@ if (WIN32)
     else()
         SET(_CPACK_SYSTEM_NAME_WIN win32)
     endif()
-    SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-${_CPACK_SYSTEM_NAME_WIN}")
+    SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_PACKAGE_VERSION_NAME}_${_CPACK_SYSTEM_NAME_WIN}")
 else()
-    SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+    SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_PACKAGE_VERSION_NAME}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
 #   CPACK_PACKAGE_DESCRIPTION_FILE - A text file used to describe the project.
@@ -172,17 +157,19 @@ SET(CPACK_PACKAGE_DESCRIPTION_FILE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageDe
 #
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 
-#   CPACK_RESOURCE_FILE_LICENSE - License file for the project, which will typically be displayed to the user
-#                                 (often with an explicit "Accept" button, for graphical installers) prior to installation.
-#
-SET(CPACK_RESOURCE_FILE_LICENSE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/LicenseFile.txt")
-
-#   CPACK_RESOURCE_FILE_README - License to be embedded in the installer.
+#   CPACK_RESOURCE_FILE_LICENSE - License to be embedded in the installer.
 #
 #   It will typically be displayed to the user by the produced installer (often with an explicit "Accept" button,
 #   for graphical installers) prior to installation. This license file is NOT added to the installed files but is
 #   used by some CPack generators like NSIS. If you want to install a license file (may be the same as this one)
 #   along with your project, you must add an appropriate CMake install() command in your CMakeLists.txt.
+#
+SET(CPACK_RESOURCE_FILE_LICENSE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/LicenseFile.txt")
+
+#   CPACK_RESOURCE_FILE_README - ReadMe file to be embedded in the installer.
+#
+#    It typically describes in some detail the purpose of the project during the installation.
+#    Not all CPack generators use this file.
 #
 SET(CPACK_RESOURCE_FILE_README "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageReadMe.txt")
 
@@ -208,7 +195,7 @@ SET(CPACK_STRIP_FILES TRUE)
 
 #   CPACK_SOURCE_PACKAGE_FILE_NAME - The name of the source package, e.g., cmake-2.6.1
 #
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-src")
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_PACKAGE_VERSION_NAME}_src")
 
 #   CPACK_SOURCE_STRIP_FILES - List of files in the source tree that will be stripped.
 #
@@ -261,11 +248,11 @@ set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 #
 # Each of our two components (gplates and pygplates) goes into a separate archive file.
 if (WIN32)
-    SET(CPACK_ARCHIVE_GPLATES_FILE_NAME "gplates-${CPACK_PACKAGE_VERSION}-${_CPACK_SYSTEM_NAME_WIN}")
-    SET(CPACK_ARCHIVE_PYGPLATES_FILE_NAME "pygplates-${CPACK_PACKAGE_VERSION}-${_CPACK_SYSTEM_NAME_WIN}")
+    SET(CPACK_ARCHIVE_GPLATES_FILE_NAME "gplates_${GPLATES_PACKAGE_VERSION_NAME}_${_CPACK_SYSTEM_NAME_WIN}")
+    SET(CPACK_ARCHIVE_PYGPLATES_FILE_NAME "pygplates_${GPLATES_PACKAGE_VERSION_NAME}_${_CPACK_SYSTEM_NAME_WIN}")
 else()
-    SET(CPACK_ARCHIVE_GPLATES_FILE_NAME "gplates-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
-    SET(CPACK_ARCHIVE_PYGPLATES_FILE_NAME "pygplates-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+    SET(CPACK_ARCHIVE_GPLATES_FILE_NAME "gplates_${GPLATES_PACKAGE_VERSION_NAME}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+    SET(CPACK_ARCHIVE_PYGPLATES_FILE_NAME "pygplates_${GPLATES_PACKAGE_VERSION_NAME}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
 
@@ -278,11 +265,11 @@ endif()
 
 #   CPACK_NSIS_PACKAGE_NAME - The title displayed at the top of the installer.
 #
-SET(CPACK_NSIS_PACKAGE_NAME "${PROJECT_NAME} ${CPACK_PACKAGE_VERSION}")
+SET(CPACK_NSIS_PACKAGE_NAME "${PROJECT_NAME} ${GPLATES_PACKAGE_VERSION_NAME}")
 
 #   CPACK_NSIS_DISPLAY_NAME - The display name string that appears in the Windows Apps & features in Control Panel.
 #
-SET(CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME} ${CPACK_PACKAGE_VERSION}")
+SET(CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME} ${GPLATES_PACKAGE_VERSION_NAME}")
 
 #   CPACK_NSIS_MUI_ICON - An icon filename.
 #
@@ -340,11 +327,83 @@ set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 # Currently no DragNDrop-specific variables need setting.
 # See "PackageGeneratorOverrides.cmake" for overrides of the general variables (non-generator specific).
 
+#
+# Code sign the DragNDrop package itself (requires CMake 3.19 or above).
+#
+# This uses the signing identity the user specified with GPLATES_APPLE_CODE_SIGN_IDENTITY.
+#
+# CMake 3.19 introduced the ability to run CMake scripts after a package is built and before it is
+# copied back to the build direcctory.
+# This is done by specifying scripts to the list variable CPACK_POST_BUILD_SCRIPTS.
+#
+if (APPLE)
+    if (NOT CMAKE_VERSION VERSION_LESS 3.19)
+        function(create_post_build_script post_build_script)
+            # Return early if no code signing identity.
+            if (NOT GPLATES_APPLE_CODE_SIGN_IDENTITY)
+                file(WRITE "${post_build_script}" [[
+                    message(WARNING "Code signing identity not specified - please set GPLATES_APPLE_CODE_SIGN_IDENTITY before distributing to other machines")
+                ]])
+                return()
+            endif()
+
+            # Find the 'codesign' command.
+            find_program(CODESIGN "codesign")
+            if (NOT CODESIGN)
+                file(WRITE "${post_build_script}" [[
+                    message(FATAL_ERROR "Unable to find 'codesign' command - cannot sign DragNDrop package with Developer ID cerficate")
+                ]])
+                return()
+            endif()
+
+            # Write CMake post build script that code signs DragNDrop package.
+            #
+            # Careful use of the escape charactor '\' allows us to prevent expansion of some variables
+            # until the script is executed. The only variables we want to expand when writing the script
+            # are CODESIGN and GPLATES_APPLE_CODE_SIGN_IDENTITY.
+            #
+            file(WRITE "${post_build_script}" "
+                foreach(_package_file \${CPACK_PACKAGE_FILES})
+                    # Run 'codesign' to sign with a Developer ID certificate.
+                    execute_process(
+                        COMMAND ${CODESIGN} --timestamp --sign \"${GPLATES_APPLE_CODE_SIGN_IDENTITY}\" \${_package_file}
+                        RESULT_VARIABLE _codesign_result
+                        OUTPUT_VARIABLE _codesign_output
+                        ERROR_VARIABLE _codesign_error)
+                    if (_codesign_result)
+                        message(FATAL_ERROR \"${CODESIGN} failed: \${_codesign_error}\")
+                    endif()
+                endforeach()
+            ")
+        endfunction()
+
+        set(_post_build_script "${CMAKE_CURRENT_BINARY_DIR}/codesign_dragndrop_package.cmake")
+
+        create_post_build_script(${_post_build_script})
+
+        # List of CMake scripts to execute after package built and before copying back to build directory.
+        set(CPACK_POST_BUILD_SCRIPTS "${_post_build_script}")
+    endif()
+endif()
+
 #######
 # DEB #
 #######
 #
 # Only used to package our 'gplates' component (not 'pygplates').
+
+#   CPACK_DEBIAN_PACKAGE_VERSION - The Debian package version.
+#
+#   Default : CPACK_PACKAGE_VERSION
+#
+# For a pre-release append the pre-release version, using a '~' character which is the common Debian method
+# of handling pre-releases (see https://www.debian.org/doc/debian-policy/ch-controlfields.html#version).
+if (GPLATES_VERSION_PRERELEASE)
+    # For example, the first development release before 2.3.0 would be 2.3.0~1, and the first release candidate would be 2.3.0~rc.1.
+    SET(CPACK_DEBIAN_PACKAGE_VERSION "${PROJECT_VERSION}~${GPLATES_VERSION_PRERELEASE}")
+else()
+    SET(CPACK_DEBIAN_PACKAGE_VERSION "${PROJECT_VERSION}")
+endif()
 
 #   CPACK_DEBIAN_FILE_NAME (CPACK_DEBIAN_<COMPONENT>_FILE_NAME) - Package file name.
 #
@@ -356,24 +415,23 @@ set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 #
 #   Alternatively provided package file name must end with either .deb or .ipk suffix.
 #
-# NOTE: Instead of specifying DEB-DEFAULT we emulate it so that the SVN revision number gets included in the package filename.
+# Note: Instead of specifying DEB-DEFAULT we emulate it so that the pre-release suffix gets included in the package filename.
+#       And we don't use <DebianRevisionNumber> which is set with CPACK_DEBIAN_PACKAGE_RELEASE since that's for downstream packaging/versioning.
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(_CPACK_DEB_ARCH amd64)
+    SET(_DEBIAN_ARCH amd64)
 else()
-    SET(_CPACK_DEB_ARCH i386)
+    SET(_DEBIAN_ARCH i386)
 endif()
-STRING(TOLOWER "${PROJECT_NAME}" _CPACK_DEBIAN_PACKAGE_NAME_LOWER)
-SET(CPACK_DEBIAN_FILE_NAME "${_CPACK_DEBIAN_PACKAGE_NAME_LOWER}_${CPACK_PACKAGE_VERSION}_${_CPACK_DEB_ARCH}.deb")
+# Note: GPLATES_PACKAGE_VERSION_NAME is the version that includes the pre-release version suffix in a form that is suitable
+#       for use in package filenames (unlike GPLATES_PACKAGE_VERSION). For example, for development 2.3 pre-releases this looks like
+#       gplates_2.3.0-dev1_amd64.deb (when the actual version is 2.3.0~1 - see CPACK_DEBIAN_PACKAGE_VERSION).
+SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_PACKAGE_VERSION_NAME}_${_DEBIAN_ARCH}.deb")
 
 #   CPACK_DEBIAN_PACKAGE_HOMEPAGE - The URL of the web site for this package, preferably (when applicable) the site
 #                                   from which the original source can be obtained and any additional upstream documentation
 #                                   or information may be found.
 #
 SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://www.gplates.org")
-
-#   CPACK_DEBIAN_PACKAGE_MAINTAINER - The Debian package maintainer.
-#
-SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "https://www.gplates.org")
 
 #   CPACK_DEBIAN_PACKAGE_SECTION (CPACK_DEBIAN_<COMPONENT>_PACKAGE_SECTION) - Set Section control field e.g. admin, devel, doc, ...
 #

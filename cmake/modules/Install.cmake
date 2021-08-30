@@ -125,8 +125,8 @@ if (GPLATES_INSTALL_STANDALONE)
     # For standalone we want to bundle everything together so it's relocatable, and it's easier to place gplates/pygplates
     # in the base install directory (along with 'qt.conf', which has to be in the same directory as the exectuable).
     #
-    # For Windows this means 'gplates.exe' ultimately gets installed into, for example, "C:\Program Files\GPlates\GPlates 2.2.0"
-    # instead of "C:\Program Files\GPlates\GPlates 2.2.0\bin". And we copy the dependency DLLs into the same directory as gplates (so it can find them).
+    # For Windows this means 'gplates.exe' ultimately gets installed into, for example, "C:\Program Files\GPlates\GPlates 2.3.0"
+    # instead of "C:\Program Files\GPlates\GPlates 2.3.0\bin". And we copy the dependency DLLs into the same directory as gplates (so it can find them).
     # For macOS this means you immediately see the app bundle in the base directory (rather than in a 'bin' sub-directory).
     # For Linux the standalone version is typically packaged as an archive (not a '.deb') and the extracted gplates executable will be immediately visible (in base directory).
     set(STANDALONE_BASE_INSTALL_DIR_gplates .)
@@ -189,27 +189,27 @@ foreach (_script hellinger.py hellinger_maths.py)
     endif()
 endforeach()
 
-# Install sample data if requested (but only for gplates target/component).
+# Install geodata if requested (but only for gplates target/component).
 #
-# The variables GPLATES_INSTALL_SAMPLE_DATA and GPLATES_SAMPLE_DATA_DIR are cache variables that the user can set to control this.
+# The variables GPLATES_INSTALL_GEO_DATA and GPLATES_INSTALL_GEO_DATA_DIR are cache variables that the user can set to control this.
 #
-if (GPLATES_INSTALL_SAMPLE_DATA)
+if (GPLATES_INSTALL_GEO_DATA)
     # Remove the trailing '/', if there is one, so that we can then
     # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
     #
     #   "The last component of each directory name is appended to the destination directory but
     #    a trailing slash may be used to avoid this because it leaves the last component empty"
     #
-    string(REGEX REPLACE "/+$" "" _SOURCE_SAMPLE_DATA_DIR "${GPLATES_SAMPLE_DATA_DIR}")
+    string(REGEX REPLACE "/+$" "" _SOURCE_GEO_DATA_DIR "${GPLATES_INSTALL_GEO_DATA_DIR}")
 
     #
     # Note: Depending on the installation location ${CMAKE_INSTALL_PREFIX} a path length limit might be
-    #       exceeded since some of the sample data paths can be quite long, and combined with ${CMAKE_INSTALL_PREFIX}
+    #       exceeded since some of the geodata paths can be quite long, and combined with ${CMAKE_INSTALL_PREFIX}
     #       could, for example, exceed 260 characters (MAX_PATH) on Windows (eg, when creating an NSIS package).
     #       This can even happen on the latest Windows 10 with long paths opted in.
-    #       For example, when packaging with NSIS you can get a sample data file with a path like the following:
-    #           <build_dir>\_CPack_Packages\win64\NSIS\GPlates-2.2.0-win64\SampleData\<sample_data_file>
-    #       ...and currently <sample_data_file> can reach 160 chars, which when added to the middle part
+    #       For example, when packaging with NSIS you can get a geodata file with a path like the following:
+    #           <build_dir>\_CPack_Packages\win64\NSIS\gplates_2.3.0_win64\GeoData\<geo_data_file>
+    #       ...and currently <geo_data_file> can reach 160 chars, which when added to the middle part
     #       '\_CPack_Packages\...' of ~60 chars becomes ~220 chars leaving only 40 chars for <build_dir>.
     #
     #       Which means you'll need a build directory path that's under 40 characters long (which is pretty short).
@@ -217,12 +217,13 @@ if (GPLATES_INSTALL_SAMPLE_DATA)
     #
     if (GPLATES_INSTALL_STANDALONE)
         # For standalone we want to bundle everything together so it's relocatable.
-        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/SampleData COMPONENT gplates)
+        install(DIRECTORY ${_SOURCE_GEO_DATA_DIR}/ DESTINATION ${STANDALONE_BASE_INSTALL_DIR_gplates}/GeoData COMPONENT gplates)
     else()
-        install(DIRECTORY ${_SOURCE_SAMPLE_DATA_DIR}/ DESTINATION share/gplates/SampleData COMPONENT gplates)
+        install(DIRECTORY ${_SOURCE_GEO_DATA_DIR}/ DESTINATION share/gplates/GeoData COMPONENT gplates)
     endif()
 endif()
 
+# Install Linux man page.
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")  # Linux
     if (EXISTS "${GPlates_SOURCE_DIR}/doc/gplates.1.gz")
         if (GPLATES_INSTALL_STANDALONE)
@@ -331,11 +332,19 @@ if (GPLATES_INSTALL_STANDALONE)
         if (APPLE)
             # There's a directory called, for example, 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that is in 'sys.path' and contains '.so' libraries.
             # We need to codesign and secure timestamp these (otherwise Apple notarization fails).
-            # So we use our codesign() function - it is defined later but that's fine since we this function is not called until after codesign() has been defined.
-            file(GLOB _python_dynload_libs "${STANDALONE_BASE_INSTALL_DIR_gplates}/${_PYTHON_STDLIB_INSTALL_DIR}/lib-dynload/*.so")
-            foreach(_python_dynload_lib ${_python_dynload_libs})
-                codesign(${_python_dynload_lib})
-            endforeach()
+            # So we use our codesign() function - it is defined later but that's fine since this code is not executed until after codesign() has been defined.
+            install(
+                CODE "set(STANDALONE_BASE_INSTALL_DIR [[${STANDALONE_BASE_INSTALL_DIR_gplates}]])"
+                CODE "set(_PYTHON_STDLIB_INSTALL_DIR [[${_PYTHON_STDLIB_INSTALL_DIR}]])"
+                CODE [[
+                    file(GLOB _python_dynload_libs "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${_PYTHON_STDLIB_INSTALL_DIR}/lib-dynload/*.so")
+                    foreach(_python_dynload_lib ${_python_dynload_libs})
+                        codesign(${_python_dynload_lib})
+                    endforeach()
+                ]]
+
+                COMPONENT gplates
+            )
         endif()
     endfunction()
 
@@ -772,22 +781,28 @@ del pygplates
         #   3 - Code sign GPlates/pyGPlates, its Qt plugins and their resolved dependencies with a valid Developer ID certificate.
         #       For GPlates we also then code sign the entire application *bundle* (for pyGPlates, the 'pygplates.so' library has already been signed).
         #   4 - Notarize the application bundle. Although this is not done here (during the installation phase) because we package it into a DMG during
-        #       the CPack packaging phase (see Package.cmake) and the DMG is what should be uploaded for notarization (after codesigning the DMG).
+        #       the CPack packaging phase (see Package.cmake) and the DMG is what should be uploaded for notarization.
         #       So the entire notarization process is currently done outside of CMake/CPack and should follow the procedure outlined here:
         #           https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow
-        #       For GPlates this amounts to code signing the DMG file created by CPack, uploading to Apple for notarization, checking for successful
-        #       notarization and then stapling the notarization ticket to the DMG file. Once that is all done the DMG can be distributed to users.
-        #       For pyGPlates we currently get CPack to produce a ZIP archive (notarization does not support TBZ2 for example) containing the code signed
-        #       dependency libraries (and pygplates), then upload the archive to Apple for notarization and check for successful notarization.
+        #
+        #       For GPlates this amounts to uploading DMG to Apple for notarization, checking for successful notarization and then stapling the notarization ticket to the
+        #       DMG file. Once that is all done the DMG can be distributed to users. Note however that, if you're only using CMake < 3.19, then you also need to manually
+        #       code sign the DMG file prior to notarization upload (for CMake >= 3.19 we handle it during the packaging phase using CPACK_POST_BUILD_SCRIPTS).
+        #
+        #       For pyGPlates you can get CPack to produce a ZIP archive (notarization does not support TBZ2 for example) containing the code signed
+        #       dependency libraries (and pygplates). However it's better to use only the 'install' phase (ie, not use CPack) with something like
+        #         'cmake --install . --component pygplates --prefix pygplates_macOS)'
+        #       and then manually archive it into a zip file using 'ditto' (which can stored extended attributes; and actually appears to be used by CPack)
+        #         'ditto -c -k --keepParent pygplates_macOS pygplates_macOS.zip'
+        #       The reason this is preferred over CPack is, with CPack, the top-level directory name will have 'gplates' in it instead of 'pygplates'
+        #       (because we don't have control over the top-level directory name in the zip file), and so you'd then have to manually extract the zip file
+        #       created by CPack, rename the top-level directory and then re-zip using 'ditto'.
+        #       The next step is to upload the zip archive to Apple for notarization and check for successful notarization.
         #       However you cannot staple a notarization ticket to a ZIP archive (you must instead staple each item in the archive and then create a new archive).
         #       If an item is not stapled then Gatekeeper finds the ticket online (stapling is so the ticket can be found when the network is offline).
-        #       So currently we don't staple the items. Another potential issue is using 'zip' versus 'ditto', apparently 'ditto' can stored extended attributes
-        #       and appears to be used by CPack. But if you're recreating archive (eg, after extracting archive produced by CPack, renaming root folder and re-zipping)
-        #       then be sure to use 'ditto' to avoid notarization errors (eg, Apple recommends 'ditto -c -k --keepParent <src> <dst>.zip', see above URL).
-        #       This could be an issue if something is code signed that is not a Mach-O file (exe, library, etc) and hence the
-        #       signature has to be stored in an extended attribute. But currently we are not running into this issue.
-        #       Note that soon we will use Conda to build pyGPlates packages and no longer rely on CPack. Or rely on Apple notarization for that matter because the
-        #       Conda package manager will then be responsible for installing pygplates on the user's computer, and so conda will then be responsible for quarantine.
+        #       So currently we don't staple the items.
+        #       Note that soon we will use Conda to build pyGPlates packages and no longer rely on Apple notarization because the Conda package manager will then
+        #       be responsible for installing pygplates on the user's computer, and so conda will then be responsible for quarantine.
         #
 
         # Find the 'codesign' command.

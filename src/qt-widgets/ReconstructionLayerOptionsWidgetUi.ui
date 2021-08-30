@@ -57,7 +57,7 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset>
          <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
        </property>
       </widget>
@@ -70,19 +70,6 @@
       <string>Keep as default tree upon file open</string>
      </property>
     </widget>
-   </item>
-   <item>
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>0</width>
-       <height>0</height>
-      </size>
-     </property>
-    </spacer>
    </item>
   </layout>
  </widget>

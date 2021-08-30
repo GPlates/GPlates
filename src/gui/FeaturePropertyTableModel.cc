@@ -159,10 +159,10 @@ GPlatesGui::FeaturePropertyTableModel::flags(
 		const QModelIndex &idx) const
 {
 	if (!idx.isValid()) {
-		return 0;
+		return Qt::ItemFlags();
 	}
 	if (idx.row() < 0 || idx.row() >= rowCount()) {
-		return 0;
+		return Qt::ItemFlags();
 	}
 
 	if (idx.column() == 0) {

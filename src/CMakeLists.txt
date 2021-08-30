@@ -233,7 +233,8 @@ set(CMAKE_AUTORCC ON)
 if(CMAKE_VERSION VERSION_LESS 3.7)
 	set(CMAKE_INCLUDE_CURRENT_DIR ON)
 endif()
-find_package(Qt5 5.5 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
+# Require Qt 5.6 for the Qt::AA_EnableHighDpiScaling attribute (Bionic, our minimum supported Ubuntu, uses Qt 5.9).
+find_package(Qt5 5.6 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
 
 ############
 # Find Qwt #
@@ -558,17 +559,26 @@ target_compile_definitions(pygplates PUBLIC BOOST_VARIANT_USE_RELAXED_GET_BY_DEF
 target_compile_definitions(gplates-lib PUBLIC BOOST_ALLOW_DEPRECATED_HEADERS)
 target_compile_definitions(pygplates PUBLIC BOOST_ALLOW_DEPRECATED_HEADERS)
 
+#
+# COMPILE_DEFINITIONS (target property) for MSVC compiler only.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	# Disable Visual Studio deprecation warnings like:
 	# "warning C4996: '_strcpy': This function or variable may be unsafe. Consider using _strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. ".
 	target_compile_definitions(gplates-lib PUBLIC _CRT_SECURE_NO_DEPRECATE)
 	target_compile_definitions(pygplates PUBLIC _CRT_SECURE_NO_DEPRECATE)
+	# Disable deprecation warnings about renamed POSIX functions (eg, 'dup' renamed to '_dup' but we want to use 'dup' across all platforms).
+	target_compile_definitions(gplates-lib PUBLIC _CRT_NONSTDC_NO_WARNINGS)
+	target_compile_definitions(pygplates PUBLIC _CRT_NONSTDC_NO_WARNINGS)
 endif()
 
 #
 # General COMPILE_OPTIONS (target property).
 #
 
+#
+# COMPILE_OPTIONS (target property) for MSVC compiler only.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	# If we've been asked to do parallel builds in Visual Studio within a project.
 	if (GPLATES_MSVC_PARALLEL_BUILD)
@@ -594,8 +604,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	#
 	if (GPLATES_PUBLIC_RELEASE)
 		# Disable all warnings when releasing source code to non-developers.
-		target_compile_options(gplates-lib PUBLIC /w)
-		target_compile_options(pygplates PUBLIC /w)
+		target_compile_options(gplates-lib PUBLIC /W0)
+		target_compile_options(pygplates PUBLIC /W0)
 	else()
 		# Default warning level /W3 seems sufficient (/W4 generates informational warnings which are not necessary to write good code).
 		# But avoid /WX - we don't want to treat all warnings as errors.
@@ -710,11 +720,13 @@ endif()
 #
 # General LINK_OPTIONS (target_property).
 #
-
 # Note: CMake 3.13 introduced the 'target_link_options()' command and the LINK_OPTIONS target property.
 #       For earlier CMake versions we'll use the less useful LINK_FLAGS target property (which must be
 #       a single string instead of a list, has no INTERFACE_LINK_OPTIONS, doesn't support generator expressions, etc).
 
+#
+# LINK_OPTIONS (target_property) for MSVC compiler only.
+#
 if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	# Enable 4Gb of virtual address space instead of 2Gb (default for Windows).
 	# This doubles addressable memory if GPlates is compiled as 32-bit but run on a 64-bit Windows OS.
@@ -731,6 +743,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	endif()
 endif()
 
+#
+# LINK_OPTIONS (target_property) for Apple compilers only.
+#
 if (APPLE)
 	# 'bind_at_load' causes undefined symbols to be referenced at load/launch.
 	if (CMAKE_VERSION VERSION_LESS 3.13)
@@ -783,11 +798,13 @@ if (APPLE)
 endif()
 
 if (WIN32)
-	# Don't make GPlates a GUI application on Windows (with a WinMain entry point).
+	# UPDATE: Don't build GPlates as a GUI application on Windows (with a WinMain entry point).
 	#
-	# This way it retains the extra console window, otherwise we don't see errors
-	# reported by dependency libraries that output to stderr (the internal log window
-	# in GPlates only picks up qDebug(), qWarning(), etc).
+	# If GPlates is built as a GUI application (on Windows) then it detaches from the parent console and
+	# all output to stdout and stderr are lost. We actually capture the stdout/stderr output in GPlates
+	# (eg, generated from dependency libraries) and output them to the GPlates log window and log file,
+	# but there's nothing to capture unless GPlates is built as a console application. In fact a simple
+	# 'print()' statement in the embedded Python interpreter would have triggered an error.
 	if (FALSE)
 		set_target_properties(gplates PROPERTIES WIN32_EXECUTABLE TRUE)  # This also tells Qt5::Core to link in its WinMain.
 	endif()
@@ -812,7 +829,7 @@ target_link_libraries(pygplates PUBLIC OpenGL::GL OpenGL::GLU GLEW::GLEW)
 #
 # Note: Prior to CMake 3.11 none of the 'target_*()' commands could set INTERFACE_ properties on imported targets.
 if (CMAKE_VERSION VERSION_LESS 3.11)
-	# Using 'set_propery' since 'set_target_property' cannot append.
+	# Using 'set_property' since 'set_target_property' cannot append.
 	set_property(TARGET OpenGL::GL APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS GL_SILENCE_DEPRECATION)
 else()
 	target_compile_definitions(OpenGL::GL INTERFACE GL_SILENCE_DEPRECATION)
@@ -832,6 +849,12 @@ target_link_libraries(pygplates PUBLIC ZLIB::ZLIB)
 # Add required Boost components.
 target_link_libraries(gplates-lib PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
 target_link_libraries(pygplates PUBLIC Boost::boost Boost::program_options Boost::thread Boost::system Boost::${GPLATES_BOOST_PYTHON_COMPONENT_NAME})
+# Disable Boost auto-linking.
+# This solves the issue whereby, for example, Boost is compiled with Visual Studio 2015 but we're compiling GPlates/pyGPlates
+# with Visual Studio 2019 (which causes auto-linking to look for Boost libs with 'vc142' in their name) and hence cannot find
+# the Boost libs with 'vc140' in their name (built with the 2015 compiler).
+target_link_libraries(gplates-lib PUBLIC Boost::disable_autolinking)
+target_link_libraries(pygplates PUBLIC Boost::disable_autolinking)
 # Add optional Boost.Python.Numpy component (if found).
 if (TARGET Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
 	target_link_libraries(gplates-lib PUBLIC Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
@@ -879,7 +902,7 @@ target_include_directories(pygplates PUBLIC
 #
 # Note: Prior to CMake 3.11 none of the 'target_*()' commands could set INTERFACE_ properties on imported targets.
 if (CMAKE_VERSION VERSION_LESS 3.11)
-	# Using 'set_propery' since 'set_target_property' cannot append.
+	# Using 'set_property' since 'set_target_property' cannot append.
 	set_property(TARGET Qt5::Core APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
 else()
 	target_compile_definitions(Qt5::Core INTERFACE QT_NO_KEYWORDS)
@@ -896,7 +919,7 @@ target_link_libraries(pygplates PUBLIC Qwt::Qwt)
 #
 # Note: Prior to CMake 3.11 none of the 'target_*()' commands could set INTERFACE_ properties on imported targets.
 if (CMAKE_VERSION VERSION_LESS 3.11)
-	# Using 'set_propery' since 'set_target_property' cannot append.
+	# Using 'set_property' since 'set_target_property' cannot append.
 	set_property(TARGET Qwt::Qwt APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS
 		QWT_MAJOR_VERSION=${QWT_MAJOR_VERSION}
 		QWT_MINOR_VERSION=${QWT_MINOR_VERSION}

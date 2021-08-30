@@ -33,7 +33,8 @@ GPlatesQtWidgets::AnimateControlWidget::create_as_qdockwidget(
 		GPlatesGui::AnimationController &animation_controller)
 {
 	QDockWidget *dock = new QDockWidget(tr("Animation Controls"));
-	dock->setFeatures(QDockWidget::AllDockWidgetFeatures);
+	dock->setFeatures(
+			QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
 	
 	AnimateControlWidget *controls = new AnimateControlWidget(
 			animation_controller, dock);

@@ -29,7 +29,6 @@
 #include <utility>
 #include <vector>
 #include <QString>
-#include <QToolButton>
 
 #include "ui_RasterLayerOptionsWidgetUi.h"
 
@@ -103,9 +102,6 @@ namespace GPlatesQtWidgets
 		handle_use_default_palette_button_clicked();
 
 		void
-		handle_use_age_palette_button_clicked();
-
-		void
 		handle_builtin_colour_palette_selected(
 				const GPlatesGui::BuiltinColourPaletteType &builtin_colour_palette_type);
 
@@ -170,7 +166,6 @@ namespace GPlatesQtWidgets
 		ViewportWindow *d_viewport_window;
 
 		OpenFileDialog d_open_file_dialog;
-		QToolButton *d_use_age_palette_button;
 		RemappedColourPaletteWidget *d_colour_palette_widget;
 
 		/**

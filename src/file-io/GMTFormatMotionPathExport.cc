@@ -28,6 +28,7 @@
 #include <QDebug>
 #include <QStringList>
 #include <QTextStream>
+#include <QtGlobal>
 
 #include "GMTFormatMotionPathExport.h"
 
@@ -105,12 +106,22 @@ namespace
 			// For whatever perverse reason, the user wants to write in (lat,lon) order.
 			stream << "  " << lat_str.c_str()
 				<< "      " << lon_str.c_str()
-				<< "      " << time_str.c_str() << endl;
+				<< "      " << time_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		} else {
 			// Normal GMT (lon,lat) order should be used.
 			stream << "  " << lon_str.c_str()
 				<< "      " << lat_str.c_str() 
-				<< "      " << time_str.c_str() << endl;
+				<< "      " << time_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		}
 	}
 
@@ -130,7 +141,12 @@ namespace
 		text_stream << llp.latitude();
 		text_stream << ", Lon: ";
 		text_stream << llp.longitude();
-		text_stream << endl;
+		text_stream
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 	}
 
 	void
@@ -152,7 +168,12 @@ namespace
 			time_end = times.rend(); 
 
 
-		text_stream << "> Motion path" << endl;
+		text_stream << "> Motion path"
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 		for (; (line_it != line_end) && (time_it != time_end) ; ++line_it, ++time_it)
 		{
 			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*line_it);

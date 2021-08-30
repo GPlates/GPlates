@@ -127,6 +127,9 @@ namespace GPlatesFileIO
 		 * @param export_separate_output_directory_per_input_file
 		 *        Save each exported file to a different directory based on the file basename.
 		 *        Only applies if @a export_per_input_file is 'true'.
+		 * @param export_topological_line_sub_segments Export the individual sub-segments of each boundary segment
+		 *                                             that came from a resolved topological line.
+		 *                                             If false then a single geometry per boundary segment is exported.
 		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to
 		 *        the dateline (currently ignored by GMT '.xy' format).
 		 *
@@ -148,6 +151,7 @@ namespace GPlatesFileIO
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file,
+				bool export_topological_line_sub_segments,
 				bool wrap_to_dateline);
 	}
 }
