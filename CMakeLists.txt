@@ -20,7 +20,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET 10.13 CACHE STRING "Minimum macOS deployment ver
 # NOTE: Always use MAJOR.MINOR.PATCH (to be compatible with Semantic Versioning 2.0 - https://semver.org/spec/v2.0.0.html)
 #       CMake always allows an extra TWEAK component but we don't use it.
 #       We do however support pre-releases (see GPLATES_VERSION_PRERELEASE in 'ConfigDefault.cmake').
-project(GPlates VERSION 2.3.0 LANGUAGES C CXX)
+project(GPlates VERSION 2.4.0 LANGUAGES C CXX)
 
 # Where to find our CMake modules.
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
