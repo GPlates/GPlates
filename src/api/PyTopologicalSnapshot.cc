@@ -205,6 +205,7 @@ namespace GPlatesApi
 			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
 			const QString &export_file_name,
 			ResolveTopologyType::flags_type resolve_topological_section_types,
+			bool export_topological_line_sub_segments,
 			bool wrap_to_dateline)
 	{
 		// Resolved topology type flags must correspond to existing flags.
@@ -218,6 +219,7 @@ namespace GPlatesApi
 		topological_snapshot->export_resolved_topological_sections(
 				export_file_name,
 				resolve_topological_section_types,
+				export_topological_line_sub_segments,
 				wrap_to_dateline);
 	}
 
@@ -551,6 +553,7 @@ namespace GPlatesApi
 	TopologicalSnapshot::export_resolved_topological_sections(
 			const QString &export_file_name,
 			ResolveTopologyType::flags_type resolve_topological_section_types,
+			bool export_topological_line_sub_segments,
 			bool wrap_to_dateline) const
 	{
 		// Get the resolved topological sections.
@@ -615,7 +618,7 @@ namespace GPlatesApi
 					true/*export_single_output_file*/,
 					false/*export_per_input_file*/, // We only generate a single output file.
 					false/*export_output_directory_per_input_file*/, // We only generate a single output file.
-					true/*export_topological_line_sub_segments*/,
+					export_topological_line_sub_segments,
 					wrap_to_dateline);
 	}
 
@@ -986,8 +989,10 @@ export_topological_snapshot()
 				&GPlatesApi::topological_snapshot_export_resolved_topological_sections,
 				(bp::arg("export_filename"),
 					bp::arg("resolve_topological_section_types") = GPlatesApi::ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
+					bp::arg("export_topological_line_sub_segments") = true,
 					bp::arg("wrap_to_dateline") = true),
-				"export_resolved_topological_sections(export_filename, [resolve_topological_section_types], [wrap_to_dateline=True])\n"
+				"export_resolved_topological_sections(export_filename, [resolve_topological_section_types], "
+				"[export_topological_line_sub_segments=True], [wrap_to_dateline=True])\n"
 				"  Exports the resolved topological sections to a file.\n"
 				"\n"
 				"  :param export_filename: the name of the export file\n"
@@ -999,6 +1004,10 @@ export_topological_snapshot()
 				":class:`resolved topological networks<ResolvedTopologicalNetwork>`.\n"
 				"  :type resolve_topological_section_types: a bitwise combination of any of "
 				"``pygplates.ResolveTopologyType.boundary`` or ``pygplates.ResolveTopologyType.network``\n"
+				"  :param export_topological_line_sub_segments: Whether to export the individual sub-segments of each "
+				"boundary segment that came from a resolved topological line (``True``) or export a single geometry "
+				"per boundary segment (``False``). Defaults to ``True``.\n"
+				"  :type export_topological_line_sub_segments: bool\n"
 				"  :param wrap_to_dateline: Whether to wrap/clip resolved topological sections to the dateline "
 				"(currently ignored unless exporting to an ESRI Shapefile format *file*). Defaults to ``True``.\n"
 				"  :type wrap_to_dateline: bool\n"
@@ -1016,9 +1025,18 @@ export_topological_snapshot()
 				"  GMT xy                          '.xy'                  \n"
 				"  =============================== =======================\n"
 				"\n"
+				"  The argument *export_topological_line_sub_segments* only applies to topological lines. "
+				"It determines whether to export the section of the resolved topological line (contributing to boundaries) "
+				"or its :meth:`sub-segments<ResolvedTopologicalSharedSubSegment.get_sub_segments>`. "
+				"Note that this also determines whether the feature properties (such as plate ID and feature type) "
+				"of the topological line feature or its individual sub-segment features are exported.\n"
+				"\n"
 				"  .. note:: Resolved topological sections are exported in the same order as that of their "
 				"respective topological features (see :meth:`constructor<__init__>`) and the order across "
-				"topological feature collections (if any) is also retained.\n")
+				"topological feature collections (if any) is also retained.\n"
+				"\n"
+				"  .. versionchanged:: 33\n"
+				"     Added *export_topological_line_sub_segments* argument.\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalSnapshot::get_rotation_model,
 				"get_rotation_model()\n"

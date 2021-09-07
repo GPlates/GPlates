@@ -217,12 +217,16 @@ namespace GPlatesApi
 		 * If @a wrap_to_dateline is true then wrap/clip resolved topological sections to the dateline
 		 * (currently ignored unless exporting to an ESRI Shapefile format file). Defaults to true.
 		 *
+		 * If @a export_topological_line_sub_segments is true then export the individual sub-segments of each boundary segment
+		 * that came from a resolved topological line (the default), otherwise export a single geometry per boundary segment.
+		 *
 		 * By default exports resolved boundaries and networks.
 		 */
 		void
 		export_resolved_topological_sections(
 				const QString &export_file_name,
 				ResolveTopologyType::flags_type resolve_topological_section_types = ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGICAL_SECTION_TYPES,
+				bool export_topological_line_sub_segments = true,
 				bool wrap_to_dateline = true) const;
 
 

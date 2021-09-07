@@ -102,6 +102,7 @@ namespace GPlatesApi
 				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters,
 				ResolveTopologyType::flags_type &resolve_topology_types,
 				ResolveTopologyType::flags_type &resolve_topological_section_types,
+				bool &export_topological_line_sub_segments,
 				bool &export_wrap_to_dateline,
 				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> &export_force_boundary_orientation)
 		{
@@ -178,6 +179,12 @@ namespace GPlatesApi
 							// Defaults to the value of 'resolve_topology_types'...
 							resolve_topology_types);
 
+			export_topological_line_sub_segments =
+					VariableArguments::extract_and_remove_or_default<bool>(
+							unused_keyword_args,
+							"export_topological_line_sub_segments",
+							true);
+
 			export_wrap_to_dateline =
 					VariableArguments::extract_and_remove_or_default<bool>(
 							unused_keyword_args,
@@ -225,6 +232,7 @@ namespace GPlatesApi
 		boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters;
 		ResolveTopologyType::flags_type resolve_topology_types;
 		ResolveTopologyType::flags_type resolve_topological_section_types;
+		bool export_topological_line_sub_segments;
 		bool export_wrap_to_dateline;
 		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> export_force_boundary_orientation;
 
@@ -240,6 +248,7 @@ namespace GPlatesApi
 				default_resolve_topology_parameters,
 				resolve_topology_types,
 				resolve_topological_section_types,
+				export_topological_line_sub_segments,
 				export_wrap_to_dateline,
 				export_force_boundary_orientation);
 
@@ -316,6 +325,7 @@ namespace GPlatesApi
 				topological_snapshot->export_resolved_topological_sections(
 						*resolved_topological_sections_export_file_name,
 						resolve_topological_section_types,
+						export_topological_line_sub_segments,
 						export_wrap_to_dateline);
 			}
 			else // list of resolved topologies...
@@ -409,47 +419,55 @@ export_resolve_topologies()
 			"\n"
 			"  The following optional keyword arguments are supported by *output_parameters*:\n"
 			"\n"
-			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
-			"  | Name                              | Type | Default                                                         | Description                                                                      |\n"
-			"  +===================================+======+=================================================================+==================================================================================+\n"
-			"  | resolve_topology_types            | int  | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | A bitwise combination of any of the following:                                   |\n"
-			"  |                                   |      |                                                                 |                                                                                  |\n"
-			"  |                                   |      |                                                                 | - ``ResolveTopologyType.line``:                                                  |\n"
-			"  |                                   |      |                                                                 | - ``ResolveTopologyType.boundary``:                                              |\n"
-			"  |                                   |      |                                                                 | - ``ResolveTopologyType.network``:                                               |\n"
-			"  |                                   |      |                                                                 |                                                                                  |\n"
-			"  |                                   |      |                                                                 | Determines whether to output :class:`ResolvedTopologicalLine`,                   |\n"
-			"  |                                   |      |                                                                 | :class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.    |\n"
-			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
-			"  | resolve_topological_section_types | int  | Same value as *resolve_topology_types* (if specified),          | A bitwise combination of any of the following:                                   |\n"
-			"  |                                   |      | otherwise its default value                                     |                                                                                  |\n"
-			"  |                                   |      | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | - ``ResolveTopologyType.boundary``:                                              |\n"
-			"  |                                   |      |                                                                 | - ``ResolveTopologyType.network``:                                               |\n"
-			"  |                                   |      |                                                                 |                                                                                  |\n"
-			"  |                                   |      |                                                                 | .. note:: ``ResolveTopologyType.line`` is excluded since only                    |\n"
-			"  |                                   |      |                                                                 |    topologies with boundaries are considered.                                    |\n"
-			"  |                                   |      |                                                                 |                                                                                  |\n"
-			"  |                                   |      |                                                                 | Determines whether :class:`ResolvedTopologicalBoundary` or                       |\n"
-			"  |                                   |      |                                                                 | :class:`ResolvedTopologicalNetwork` (or both types) are referenced in the        |\n"
-			"  |                                   |      |                                                                 | :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>`     |\n"
-			"  |                                   |      |                                                                 | of *resolved_topological_sections*.                                              |\n"
-			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
-			"  | export_wrap_to_dateline           | bool | True                                                            | | Wrap/clip resolved topologies to the dateline (currently                       |\n"
-			"  |                                   |      |                                                                 |   ignored unless exporting to an ESRI Shapefile format *file*).                  |\n"
-			"  |                                   |      |                                                                 |                                                                                  |\n"
-			"  |                                   |      |                                                                 | .. note:: Only applies when exporting to a file (ESRI Shapefile).                |\n"
-			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
-			"  | export_force_boundary_orientation | int  | ``None`` (don't force)                                          | Optionally force boundary orientation (clockwise or counter-clockwise):          |\n"
-			"  |                                   |      |                                                                 |                                                                                  |\n"
-			"  |                                   |      |                                                                 | - ``PolygonOnSphere.Orientation.clockwise``                                      |\n"
-			"  |                                   |      |                                                                 | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |\n"
-			"  |                                   |      |                                                                 |                                                                                  |\n"
-			"  |                                   |      |                                                                 | .. note:: Only applies to resolved topological *boundaries* and *networks*.      |\n"
-			"  |                                   |      |                                                                 |                                                                                  |\n"
-			"  |                                   |      |                                                                 | .. note:: ESRI Shapefiles always use *clockwise* orientation.                    |\n"
-			"  |                                   |      |                                                                 |                                                                                  |\n"
-			"  |                                   |      |                                                                 | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |\n"
-			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
+			"  +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | Name                                 | Type | Default                                                         | Description                                                                      |\n"
+			"  +======================================+======+=================================================================+==================================================================================+\n"
+			"  | resolve_topology_types               | int  | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | A bitwise combination of any of the following:                                   |\n"
+			"  |                                      |      |                                                                 |                                                                                  |\n"
+			"  |                                      |      |                                                                 | - ``ResolveTopologyType.line``:                                                  |\n"
+			"  |                                      |      |                                                                 | - ``ResolveTopologyType.boundary``:                                              |\n"
+			"  |                                      |      |                                                                 | - ``ResolveTopologyType.network``:                                               |\n"
+			"  |                                      |      |                                                                 |                                                                                  |\n"
+			"  |                                      |      |                                                                 | Determines whether to output :class:`ResolvedTopologicalLine`,                   |\n"
+			"  |                                      |      |                                                                 | :class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.    |\n"
+			"  +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | resolve_topological_section_types    | int  | Same value as *resolve_topology_types* (if specified),          | A bitwise combination of any of the following:                                   |\n"
+			"  |                                      |      | otherwise its default value                                     |                                                                                  |\n"
+			"  |                                      |      | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | - ``ResolveTopologyType.boundary``:                                              |\n"
+			"  |                                      |      |                                                                 | - ``ResolveTopologyType.network``:                                               |\n"
+			"  |                                      |      |                                                                 |                                                                                  |\n"
+			"  |                                      |      |                                                                 | .. note:: ``ResolveTopologyType.line`` is excluded since only                    |\n"
+			"  |                                      |      |                                                                 |    topologies with boundaries are considered.                                    |\n"
+			"  |                                      |      |                                                                 |                                                                                  |\n"
+			"  |                                      |      |                                                                 | Determines whether :class:`ResolvedTopologicalBoundary` or                       |\n"
+			"  |                                      |      |                                                                 | :class:`ResolvedTopologicalNetwork` (or both types) are referenced in the        |\n"
+			"  |                                      |      |                                                                 | :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>`     |\n"
+			"  |                                      |      |                                                                 | of *resolved_topological_sections*.                                              |\n"
+			"  +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | export_topological_line_sub_segments | bool | True                                                            | | Export the individual sub-segments of each boundary segment that came from a   |\n"
+			"  |                                      |      |                                                                 |   resolved topological line (instead of exporting a single geometry per          |\n"
+			"  |                                      |      |                                                                 |   boundary segment).                                                             |\n"
+			"  |                                      |      |                                                                 |                                                                                  |\n"
+			"  |                                      |      |                                                                 | .. note:: Only applies when exporting to a file specified with                   |\n"
+			"  |                                      |      |                                                                 |    *resolved_topological_sections*.                                              |\n"
+			"  |                                      |      |                                                                 | .. seealso:: :meth:`TopologicalSnapshot.export_resolved_topological_sections`    |\n"
+			"  +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | export_wrap_to_dateline              | bool | True                                                            | | Wrap/clip resolved topologies to the dateline (currently                       |\n"
+			"  |                                      |      |                                                                 |   ignored unless exporting to an ESRI Shapefile format *file*).                  |\n"
+			"  |                                      |      |                                                                 |                                                                                  |\n"
+			"  |                                      |      |                                                                 | .. note:: Only applies when exporting to a file (ESRI Shapefile).                |\n"
+			"  +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | export_force_boundary_orientation    | int  | ``None`` (don't force)                                          | Optionally force boundary orientation (clockwise or counter-clockwise):          |\n"
+			"  |                                      |      |                                                                 |                                                                                  |\n"
+			"  |                                      |      |                                                                 | - ``PolygonOnSphere.Orientation.clockwise``                                      |\n"
+			"  |                                      |      |                                                                 | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |\n"
+			"  |                                      |      |                                                                 |                                                                                  |\n"
+			"  |                                      |      |                                                                 | .. note:: Only applies to resolved topological *boundaries* and *networks*.      |\n"
+			"  |                                      |      |                                                                 |                                                                                  |\n"
+			"  |                                      |      |                                                                 | .. note:: ESRI Shapefiles always use *clockwise* orientation.                    |\n"
+			"  |                                      |      |                                                                 |                                                                                  |\n"
+			"  |                                      |      |                                                                 | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |\n"
+			"  +--------------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
 			"\n"
 			"  | The argument *topological_features* consists of the *topological* :class:`features<Feature>` "
 			"as well as the topological sections (also :class:`features<Feature>`) that are referenced by the "
@@ -577,7 +595,10 @@ export_resolve_topologies()
 			"Previously the order was only retained for *resolved_topologies*.\n"
 			"\n"
 			"  .. versionchanged:: 31\n"
-			"     Added *default_resolve_topology_parameters* argument.\n";
+			"     Added *default_resolve_topology_parameters* argument.\n"
+			"\n"
+			"  .. versionchanged:: 33\n"
+			"     Added *export_topological_line_sub_segments* argument.\n";
 
 	// Register 'resolved topologies' variant.
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::resolved_topologies_argument_type>();

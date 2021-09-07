@@ -41,7 +41,7 @@ set(GPLATES_PACKAGE_CONTACT "" CACHE STRING "Package contact/maintainer. Use for
 # Also it does not need to be incremented at each public release - for example the revision number
 # just prior to the GPlates 1.5.0 release and just after might be the same (if API did not change
 # during that time).
-set(PYGPLATES_REVISION 32)
+set(PYGPLATES_REVISION 33)
 
 # The GPlates copyright - string version to be used in a source file.
 set(GPLATES_COPYRIGHT_STRING "")
