@@ -65,7 +65,7 @@ Microsoft Visual Studio
        Some of these are likely to have been compiled with different (older) compilers (such as NetCDF).
        This is probably OK since these libraries use the "C" language (or have a "C" interface) which tends to
        have better ABI compatibility support (than C++). Ideally these libraries should also be compiled from source.
-     * Note that it is OK to build all dependency libraries with VS2015 and then compile/link GPlates with VS2017.
+     * Note that it is OK to build all dependency libraries with VS2015 and then compile/link GPlates with VS2017 or VS2019.
        See https://docs.microsoft.com/en-us/cpp/porting/binary-compat-2015-2017?view=vs-2017
      * For developers, a good article on ABI compatibility can be found here:
        https://community.kde.org/Policies/Binary_Compatibility_Issues_With_C%2B%2B
@@ -78,7 +78,21 @@ Microsoft Visual Studio
      * Start a standard command prompt, and run the following in it (keeping the double quotes intact):
        "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
        Then you can compile the libraries dependencies from within this command prompt.
-  4. Once all library dependencies have been built, be sure to build GPlates as 64-bit (see BUILD.Windows).
+  4. Typically each dependency library has its own build instructions (covered in the rest of this document below).
+     However an interesting alternative, that hasn't been tested with GPlates, is to use the Vcpkg ( https://vcpkg.readthedocs.io ) package manager by Microsoft.
+     Here you can specify a particular MSVC compiler to use by adding a triplet file.
+     For example, you could add a file named "x64-windows-v140.cmake" to the "<base-vcpkg-dir>/triplets/community" directory for
+     Visual Studio 2015 (ie, version 14.0) 64-bit containing the following:
+         set(VCPKG_TARGET_ARCHITECTURE x64)
+         set(VCPKG_CRT_LINKAGE dynamic)
+         set(VCPKG_LIBRARY_LINKAGE dynamic)
+         set(VCPKG_PLATFORM_TOOLSET v140)
+     ...and then install tiff (for example, if you're enabling TIFF support in Proj) by typing (in a command prompt with 64-bit Visual Studio toolset enabled)...
+         vcpkg install tiff:x64-windows-v140
+     ...which downloads, builds and installs to "vcpkg/installed/x64-windows-v140", and so you can then set these Proj variables so that tiff can be found:
+         TIFF_INCLUDE_DIR="<base-vcpkg-dir>/installed/x64-windows-v140/include"
+         TIFF_LIBRARY="<base-vcpkg-dir>/installed/x64-windows-v140/lib/tiff.lib"
+  5. Once all library dependencies have been built, be sure to build GPlates as 64-bit (see BUILD.Windows).
      To do this:
      * In the CMake GUI select a 64-bit version of a Visual Studio generator such as "Visual Studio 14 2015 Win64".
        Alternatively, when using the cmake command-line, use the "-A" option such as "cmake -G "Visual Studio 14 2015" -A x64".

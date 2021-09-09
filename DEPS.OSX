@@ -66,6 +66,10 @@ Here we briefly describe how to install dependencies using Macports (http://www.
   • Install CMake with 'sudo port install cmake' (or download an installer from http://www.cmake.org ).
   • Install GLEW with 'sudo port install glew'.
   • Install Python with 'sudo port install python3[x]' where 'x' is the minor version (eg, 'sudo port install python38).
+    Note that, when compiling GPlates, you may need to set the Python3_ROOT_DIR environment variable to point to the Macports installation
+    to avoid finding the Python framework bundled inside the XCode app (which likely has a different Python minor version than the Python
+    you've compiled/activated Boost for, causing CMake to be unable to find boost_python3[x]). For example:
+        export Python3_ROOT_DIR=/opt/local/Library/Frameworks/Python.framework/Versions/3.8
   • Install Boost with 'sudo port install boost +python3[x]'.
     Note the additional '+python3[x]' where 'x' is the python minor version number (eg, 'sudo port install boost +python38').
   • Install Qt with 'sudo port install qt5'.
