@@ -548,11 +548,20 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_file_io(view_state_.get_application_state().get_feature_collection_file_io()),
 	d_application_state_ptr(&view_state_.get_application_state()),
 	d_viewport_window_ptr(&viewport_window_),
+	d_listwidget_geometry_destinations(
+			new ChoosePropertyWidget(
+				SelectionWidget::Q_LIST_WIDGET,
+				this)),
+	d_recon_method_widget(new QWidget(this)),
+	d_recon_method_combobox(new QComboBox(this)),
 	d_plate_id_widget(new EditPlateIdWidget(this)),
 	d_conjugate_plate_id_widget(new EditPlateIdWidget(this)),
 	d_relative_plate_id_widget(new EditPlateIdWidget(this)),
+	d_left_plate_id(new EditPlateIdWidget(this)),
+	d_right_plate_id(new EditPlateIdWidget(this)),
 	d_time_period_widget(new EditTimePeriodWidget(this)),
 	d_name_widget(new EditStringWidget(this)),
+	d_create_conjugate_feature_checkbox(new QCheckBox(this)),
 	d_choose_feature_type_widget(
 			new ChooseFeatureTypeWidget(
 				SelectionWidget::Q_LIST_WIDGET,
@@ -568,10 +577,6 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 				d_file_state,
 				d_file_io,
 				this)),
-	d_recon_method_widget(new QWidget(this)),
-	d_recon_method_combobox(new QComboBox(this)),
-	d_right_plate_id(new EditPlateIdWidget(this)),
-	d_left_plate_id(new EditPlateIdWidget(this)),
 	d_create_feature_properties_page(
 			new CreateFeaturePropertiesPage(
 				view_state_,
@@ -580,12 +585,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 			new CreateFeaturePropertiesPage(
 				view_state_,
 				this)),
-	d_listwidget_geometry_destinations(
-			new ChoosePropertyWidget(
-				SelectionWidget::Q_LIST_WIDGET,
-				this)),
 	d_recon_method(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID),
-	d_create_conjugate_feature_checkbox(new QCheckBox(this)),
 	d_current_page(FEATURE_TYPE_PAGE)
 {
 	setupUi(this);
@@ -1130,83 +1130,23 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 	//
 
 	// Disconnect signals first so we don't end up with duplicate connections.
-	QObject::disconnect(
-			d_left_plate_id, SIGNAL(enter_pressed()),
-			d_right_plate_id, SLOT(setFocus()));
-	QObject::disconnect(
-			d_right_plate_id, SIGNAL(enter_pressed()),
-			d_time_period_widget, SLOT(setFocus()));
-	QObject::disconnect(
-			d_plate_id_widget, SIGNAL(enter_pressed()),
-			d_conjugate_plate_id_widget, SLOT(setFocus()));
-	QObject::disconnect(
-			d_plate_id_widget, SIGNAL(enter_pressed()),
-			d_relative_plate_id_widget, SLOT(setFocus()));
-	QObject::disconnect(
-			d_plate_id_widget, SIGNAL(enter_pressed()),
-			d_time_period_widget, SLOT(setFocus()));
-	QObject::disconnect(
-			d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
-			d_relative_plate_id_widget, SLOT(setFocus()));
-	QObject::disconnect(
-			d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
-			d_time_period_widget, SLOT(setFocus()));
-	QObject::disconnect(
-			d_relative_plate_id_widget, SIGNAL(enter_pressed()),
-			d_time_period_widget, SLOT(setFocus()));
+	d_left_plate_id->disconnect(SIGNAL(enter_pressed()));
+	d_right_plate_id->disconnect(SIGNAL(enter_pressed()));
+	d_plate_id_widget->disconnect(SIGNAL(enter_pressed()));
+	d_plate_id_widget->disconnect(SIGNAL(enter_pressed()));
+	d_plate_id_widget->disconnect(SIGNAL(enter_pressed()));
+	d_conjugate_plate_id_widget->disconnect(SIGNAL(enter_pressed()));
+	d_conjugate_plate_id_widget->disconnect(SIGNAL(enter_pressed()));
+	d_relative_plate_id_widget->disconnect(SIGNAL(enter_pressed()));
 
 	// Connect the signals.
-	if (d_recon_method == GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION)
+	// The various Edit widgets need pass focus along the chain if Enter is pressed.
+	if (should_offer_reconstruction_plate_id_prop(d_feature_type, d_geometry_property_type))
 	{
-		d_left_plate_id->setFocus();
-
-		// The various Edit widgets need pass focus along the chain if Enter is pressed.
-		QObject::connect(d_left_plate_id, SIGNAL(enter_pressed()),
-				d_right_plate_id, SLOT(setFocus()));
-		QObject::connect(d_right_plate_id, SIGNAL(enter_pressed()),
-				d_time_period_widget, SLOT(setFocus()));
-	}
-	else // GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID...
-	{
-		// The various Edit widgets need pass focus along the chain if Enter is pressed.
-		if (should_offer_reconstruction_plate_id_prop(d_feature_type, d_geometry_property_type))
+		if (should_offer_conjugate_plate_id_prop(d_feature_type, d_geometry_property_type))
 		{
-			d_plate_id_widget->setFocus();
-
-			if (should_offer_conjugate_plate_id_prop(d_feature_type, d_geometry_property_type))
-			{
-				QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
-						d_conjugate_plate_id_widget, SLOT(setFocus()));
-
-				if (should_offer_relative_plate_id_prop(d_feature_type))
-				{
-					QObject::connect(d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
-							d_relative_plate_id_widget, SLOT(setFocus()));
-					QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
-							d_time_period_widget, SLOT(setFocus()));
-				}
-				else
-				{
-					QObject::connect(d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
-							d_time_period_widget, SLOT(setFocus()));
-				}
-			}
-			else if (should_offer_relative_plate_id_prop(d_feature_type))
-			{
-				QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
-						d_relative_plate_id_widget, SLOT(setFocus()));
-				QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
-						d_time_period_widget, SLOT(setFocus()));
-			}
-			else
-			{
-				QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
-						d_time_period_widget, SLOT(setFocus()));
-			}
-		}
-		else if (should_offer_conjugate_plate_id_prop(d_feature_type, d_geometry_property_type))
-		{
-			d_conjugate_plate_id_widget->setFocus();
+			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+					d_conjugate_plate_id_widget, SLOT(setFocus()));
 
 			if (should_offer_relative_plate_id_prop(d_feature_type))
 			{
@@ -1223,10 +1163,64 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 		}
 		else if (should_offer_relative_plate_id_prop(d_feature_type))
 		{
-			d_relative_plate_id_widget->setFocus();
-
+			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+					d_relative_plate_id_widget, SLOT(setFocus()));
 			QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
 					d_time_period_widget, SLOT(setFocus()));
+		}
+		else
+		{
+			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+					d_time_period_widget, SLOT(setFocus()));
+		}
+	}
+	else if (should_offer_conjugate_plate_id_prop(d_feature_type, d_geometry_property_type))
+	{
+		if (should_offer_relative_plate_id_prop(d_feature_type))
+		{
+			QObject::connect(d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+					d_relative_plate_id_widget, SLOT(setFocus()));
+			QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
+					d_time_period_widget, SLOT(setFocus()));
+		}
+		else
+		{
+			QObject::connect(d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+					d_time_period_widget, SLOT(setFocus()));
+		}
+	}
+	else if (should_offer_relative_plate_id_prop(d_feature_type))
+	{
+		QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
+				d_time_period_widget, SLOT(setFocus()));
+	}
+	// Note that we set up the left/right plate IDs even if not currently visible since the
+	// user might later change the reconstruction method (and they would then be visible).
+	QObject::connect(d_left_plate_id, SIGNAL(enter_pressed()),
+			d_right_plate_id, SLOT(setFocus()));
+	QObject::connect(d_right_plate_id, SIGNAL(enter_pressed()),
+			d_time_period_widget, SLOT(setFocus()));
+
+	//
+	// Set focus.
+	//
+	if (d_recon_method == GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION)
+	{
+		d_left_plate_id->setFocus();
+	}
+	else // GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID...
+	{
+		if (should_offer_reconstruction_plate_id_prop(d_feature_type, d_geometry_property_type))
+		{
+			d_plate_id_widget->setFocus();
+		}
+		else if (should_offer_conjugate_plate_id_prop(d_feature_type, d_geometry_property_type))
+		{
+			d_conjugate_plate_id_widget->setFocus();
+		}
+		else if (should_offer_relative_plate_id_prop(d_feature_type))
+		{
+			d_relative_plate_id_widget->setFocus();
 		}
 		else
 		{
