@@ -360,7 +360,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 
 void
 GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_resolved_topological_boundaries(
-		const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type &resolved_topological_geometries,
+		const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type &resolved_topologies,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const referenced_files_collection_type &active_reconstruction_files,
@@ -374,12 +374,9 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_resolv
 	GPlatesFileIO::OgrGeometryExporter geom_exporter(file_path, false/*multiple_geometries*/, wrap_to_dateline);
 
 	// Iterate through the resolved topological geometries and write to output.
-	CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type::const_iterator resolved_geom_iter;
-	for (resolved_geom_iter = resolved_topological_geometries.begin();
-		resolved_geom_iter != resolved_topological_geometries.end();
-		++resolved_geom_iter)
+	for (const CitcomsResolvedTopologicalBoundaryExportImpl::ResolvedTopology &resolved_topology : resolved_topologies)
 	{
-		const GPlatesAppLogic::ReconstructionGeometry *resolved_geom = *resolved_geom_iter;
+		const GPlatesAppLogic::ReconstructionGeometry *resolved_geom = resolved_topology.resolved_geom;
 
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_polygon(resolved_geom);
@@ -447,11 +444,11 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_sub_se
 #endif
 
 		// Iterate through the subsegment geometries of the current resolved topological boundary.
-		CitcomsResolvedTopologicalBoundaryExportImpl::sub_segment_ptr_seq_type::const_iterator sub_segment_iter;
-		for (const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *sub_segment : sub_segment_group.sub_segments)
+		for (const CitcomsResolvedTopologicalBoundaryExportImpl::SubSegment &sub_segment : sub_segment_group.sub_segments)
 		{
 			// The subsegment feature.
-			const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_ref = sub_segment->get_feature_ref();
+			const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_ref =
+					sub_segment.sub_segment->get_feature_ref();
 			if (!subsegment_feature_ref.is_valid())
 			{
 				continue;
@@ -480,7 +477,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_sub_se
 
 
 			// Write the subsegment.
-			geom_exporter.export_geometry(sub_segment->get_sub_segment_geometry(), kvd_for_export); 
+			geom_exporter.export_geometry(sub_segment.sub_segment->get_sub_segment_geometry(), kvd_for_export); 
 		}
 	}
 }
