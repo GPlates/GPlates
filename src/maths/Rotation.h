@@ -40,7 +40,6 @@ namespace GPlatesMaths
 
 	// Forward declarations for the non-member function 'operator*'.
 	class MultiPointOnSphere;
-	class PointOnSphere;
 	class PolylineOnSphere;
 	class PolygonOnSphere;
 	class GeometryOnSphere;
@@ -258,10 +257,14 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
+	inline
 	const PointOnSphere
 	operator*(
 			const Rotation &r,
-			const PointOnSphere &p);
+			const PointOnSphere &p)
+	{
+		return PointOnSphere(r * p.position_vector());
+	}
 
 
 	/**
@@ -269,10 +272,14 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>
+	inline
+	const GPlatesUtils::non_null_intrusive_ptr<const PointGeometryOnSphere>
 	operator*(
 			const Rotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p);
+			const GPlatesUtils::non_null_intrusive_ptr<const PointGeometryOnSphere> &p)
+	{
+		return PointGeometryOnSphere::create(r * p->position());
+	}
 
 
 	/**

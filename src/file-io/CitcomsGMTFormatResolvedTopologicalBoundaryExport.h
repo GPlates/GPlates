@@ -50,7 +50,7 @@ namespace GPlatesFileIO
 		/**
 		 * Typedef for a feature geometry group of resolved topological geometries.
 		 */
-		typedef CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type resolved_geom_seq_type;
+		typedef CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type resolved_topologies_seq_type;
 
 		/**
 		 * Typedef for a sequence of @a SubSegmentGroup objects.
@@ -63,13 +63,11 @@ namespace GPlatesFileIO
 		 */
 		void
 		export_resolved_topological_boundaries(
-				const resolved_geom_seq_type &resolved_topological_geometries,
-				CitcomsResolvedTopologicalBoundaryExportImpl::ResolvedTopologicalBoundaryExportType export_type,
+				const resolved_topologies_seq_type &resolved_topologies,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const referenced_files_collection_type &active_reconstruction_files,
-				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id);
 
 
 		/**
@@ -78,12 +76,10 @@ namespace GPlatesFileIO
 		void
 		export_sub_segments(
 				const sub_segment_group_seq_type &sub_segments,
-				CitcomsResolvedTopologicalBoundaryExportImpl::SubSegmentExportType export_type,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const referenced_files_collection_type &active_reconstruction_files,
-				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id);
 	}
 }
 

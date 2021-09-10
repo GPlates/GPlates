@@ -571,7 +571,7 @@ namespace GPlatesOpenGL
 			virtual
 			void
 			visit_point_on_sphere(
-					GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
+					GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
 			{
 				d_geometry_lists.points_list.push_front(&d_seed_co_registration);
 			}

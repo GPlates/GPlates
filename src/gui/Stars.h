@@ -67,7 +67,8 @@ namespace GPlatesGui
 		void
 		paint(
 				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLViewProjection &view_projection);
+				const GPlatesOpenGL::GLViewProjection &view_projection,
+				int device_pixel_ratio);
 
 	private:
 		GPlatesPresentation::ViewState &d_view_state;

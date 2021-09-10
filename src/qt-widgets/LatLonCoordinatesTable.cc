@@ -27,7 +27,7 @@
  */
 #include "utils/Profile.h"
 #include <memory>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/cast.hpp>
 #include <QColor>
 
@@ -91,11 +91,11 @@ namespace
 		// QTreeWidget.
 		// Call function later when QTreeWidgetItem is connected to QTreeWidget.
 		tree_widget_builder.add_function(geom_item_handle,
-			boost::bind(&QTreeWidgetItem::setFirstColumnSpanned, _1, true));
+			boost::bind(&QTreeWidgetItem::setFirstColumnSpanned, boost::placeholders::_1, true));
 
 		// Call function later when QTreeWidgetItem is connected to QTreeWidget.
 		tree_widget_builder.add_function(geom_item_handle,
-			boost::bind(&QTreeWidgetItem::setExpanded, _1, true));
+			boost::bind(&QTreeWidgetItem::setExpanded, boost::placeholders::_1, true));
 
 		return geom_item_handle;
 	}
@@ -680,8 +680,8 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_point_into_geometry(
 	// Call function later when QTreeWidgetItem is connected to QTreeWidget.
 	d_tree_widget_builder.add_function(coord_item_handle,
 			boost::bind(&QTreeWidget::scrollToItem,
-					_2, // The QTreeWidget - in this case 'd_coordinates_table'
-					_1, // The QTreeWidgetItem - in this case 'coord_item'
+					boost::placeholders::_2, // The QTreeWidget - in this case 'd_coordinates_table'
+					boost::placeholders::_1, // The QTreeWidgetItem - in this case 'coord_item'
 					QAbstractItemView::EnsureVisible));
 }
 

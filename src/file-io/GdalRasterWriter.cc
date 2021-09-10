@@ -32,6 +32,7 @@
 #include <QDebug>
 #include <QString>
 #include <QStringList>
+#include <Qt>
 #include <QtGlobal>
 #include <ogr_spatialref.h>
 
@@ -167,8 +168,13 @@ namespace
 		}
 
 		// Extract the space-separated data types from the string.
-		const QStringList creation_data_types_list = QString(creation_data_types)
-				.split(' ', QString::SkipEmptyParts, Qt::CaseInsensitive);
+		const QStringList creation_data_types_list = QString(creation_data_types).split(' ',
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+					Qt::SkipEmptyParts,
+#else
+					QString::SkipEmptyParts,
+#endif
+					Qt::CaseInsensitive);
 
 		// Convert each data type to a band type.
 		for (int n = 0; n < creation_data_types_list.size(); ++n)

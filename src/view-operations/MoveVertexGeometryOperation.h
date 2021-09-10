@@ -133,10 +133,10 @@ namespace GPlatesViewOperations
 			
 			void
 			visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
 				RenderedGeometry rendered_geometry = RenderedGeometryFactory::create_rendered_point_on_sphere(
-												point_on_sphere,
+												point_on_sphere->position(),
 												GeometryOperationParameters::NOT_IN_FOCUS_COLOUR);
 				d_points_layer->add_rendered_geometry(rendered_geometry);
 			}

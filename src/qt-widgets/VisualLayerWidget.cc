@@ -24,10 +24,11 @@
  */
 
 #include <algorithm>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QtGlobal>
 #include <QByteArray>
 #include <QDataStream>
 #include <QDebug>
@@ -115,6 +116,20 @@ namespace
 		static const QPixmap IS_DEFAULT_ICON(":/gnome_emblem_default_yellow_16.png");
 		return IS_DEFAULT_ICON;
 	}
+
+	// macOS has transient native scrollbars that appear on top of the layers content
+	// when the user scrolls and should disappear once the user stops scrolling.
+	// However after a short period of working properly (Qt 5.15.2) the scrollbars fail to hide.
+	// When this happens the user cannot click on the '-' icon to remove an input connection.
+	// To workaround this issue we provide an extra margin on the right side of the layers content.
+#if defined(Q_OS_MACOS)
+	// This is the track thickness for scroll bars (regular size).
+	const int SCROLL_BAR_ADJUSTMENT = 15;
+#else
+	// Have a non-zero adjustment for Windows/Linux to prevent layer controls butting
+	// right up against the scroll bar (which is always visible on Windows/Linux).
+	const int SCROLL_BAR_ADJUSTMENT = 4;
+#endif
 }
 
 
@@ -266,7 +281,12 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 
 	// Give the input_channels_widget a layout.
 	d_input_channels_widget_layout = new QVBoxLayout(input_channels_widget);
-	d_input_channels_widget_layout->setContentsMargins(26, 4, 0, 4);
+	// Since input channels contain control widgets, we don't want the scroll bar to obscure them.
+	// This can happen on macOS with its transient native scrollbars if they fail to disappear once
+	// user stops scrolling (happens with Qt 5.15.2 after a short period of working properly).
+	//
+	// Without this the user cannot click on the '-' icon to remove an input connection.
+	d_input_channels_widget_layout->setContentsMargins(26, 4, SCROLL_BAR_ADJUSTMENT, 4);
 	d_input_channels_widget_layout->setSpacing(4);
 
 	// Install labels for the layer name and type.
@@ -314,7 +334,10 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 
 	// Give the layer_options_widget a layout.
 	d_layer_options_widget_layout = new QVBoxLayout(layer_options_widget);
-	d_layer_options_widget_layout->setContentsMargins(26, 0, 0, 0);
+	// Since layer options contain control widgets, we don't want the scroll bar to obscure them.
+	// This can happen on macOS with its transient native scrollbars if they fail to disappear once
+	// user stops scrolling (happens with Qt 5.15.2 after a short period of working properly).
+	d_layer_options_widget_layout->setContentsMargins(26, 0, SCROLL_BAR_ADJUSTMENT, 0);
 
 	// Install the links.
 	QtWidgetUtils::add_widget_to_placeholder(
@@ -471,9 +494,7 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 					this);
 			if (d_current_layer_options_widget)
 			{
-				int right;
-				d_current_layer_options_widget->layout()->getContentsMargins(NULL, NULL, &right, NULL);
-				d_current_layer_options_widget->layout()->setContentsMargins(0, 4, right, 4);
+				d_current_layer_options_widget->layout()->setContentsMargins(0, 4, 0, 4);
 
 				d_layer_options_widget_layout->addWidget(d_current_layer_options_widget);
 				layer_options_header_label->setText(d_current_layer_options_widget->get_title());

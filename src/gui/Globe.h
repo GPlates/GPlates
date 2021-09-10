@@ -88,7 +88,8 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				const GlobeVisibilityTester &visibility_tester);
+				const GlobeVisibilityTester &visibility_tester,
+				int device_pixel_ratio);
 
 
 		/**
@@ -160,6 +161,9 @@ namespace GPlatesGui
 		 * Painter used to draw @a RenderedGeometry objects on the globe.
 		 */
 		GlobeRenderedGeometryCollectionPainter d_rendered_geom_collection_painter;
+
+		//! Multiplier for point sizes and line widths (due to a device *independent* pixel containing multiple device pixels).
+		int d_device_pixel_ratio;
 
 
 		/**

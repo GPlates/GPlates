@@ -76,11 +76,21 @@ namespace
 		if (reverse_coordinate_order) {
 			// For whatever perverse reason, the user wants to write in (lat,lon) order.
 			stream << "  " << lat_str.c_str()
-				<< "      " << lon_str.c_str() << endl;
+				<< "      " << lon_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		} else {
 			// Normal GMT (lon,lat) order should be used.
 			stream << "  " << lon_str.c_str()
-				<< "      " << lat_str.c_str() << endl;
+				<< "      " << lat_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		}
 	}
 
@@ -157,9 +167,9 @@ GPlatesFileIO::GMTFormatGeometryExporter::visit_multi_point_on_sphere(
 
 void
 GPlatesFileIO::GMTFormatGeometryExporter::visit_point_on_sphere(
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
-	print_gmt_coordinate_line(*d_stream_ptr, *point_on_sphere, d_reverse_coordinate_order);
+	print_gmt_coordinate_line(*d_stream_ptr, point_on_sphere->position(), d_reverse_coordinate_order);
 
 	// Write the final terminating symbol.
 	print_gmt_feature_termination_line(*d_stream_ptr);

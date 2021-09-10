@@ -489,7 +489,7 @@ namespace
 			d_visited_topological_line(false)
 		{  }
 
-		boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior>
+		boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 		create_gpml_topological_network_interior(
 				const GPlatesModel::FeatureHandle::iterator &geometry_property)
 		{
@@ -513,7 +513,7 @@ namespace
 	private:
 		GPlatesModel::FeatureHandle::iterator d_geometry_property;
 
-		boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> d_topological_interior;
+		boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> d_topological_interior;
 
 		//! If GpmlTopologicalLine is in a piecewise aggregration then we only need to visit one time window.
 		bool d_visited_topological_line;
@@ -628,8 +628,7 @@ namespace
 			}
 
 			// Create a GpmlTopologicalNetwork::Interior from the delegate.
-			d_topological_interior =
-					GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(*geom_delegate);
+			d_topological_interior = geom_delegate.get();
 		}
 	};
 
@@ -751,11 +750,10 @@ namespace
 					gpml_topological_network.interior_geometries_end();
 			for ( ; interior_iter != interior_end; ++interior_iter)
 			{
-				const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &interior = *interior_iter;
+				const GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type interior = *interior_iter;
 
 				// Add the feature ID of the interior geometry.
-				d_topological_sections_referenced.insert(
-						interior.get_source_geometry()->feature_id());
+				d_topological_sections_referenced.insert(interior->feature_id());
 			}
 		}
 
@@ -979,6 +977,24 @@ GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value(
 }
 
 
+boost::optional<GPlatesAppLogic::TopologyInternalUtils::topological_geometry_property_value_type>
+GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value(
+		const GPlatesModel::FeatureHandle::iterator &property,
+		const double &reconstruction_time)
+{
+	if (!property.is_still_valid())
+	{
+		return boost::none;
+	}
+
+	// Need to clone (for now) since feature iterator is non-const.
+	GPlatesModel::TopLevelProperty::non_null_ptr_type cloned_property = (*property)->clone();
+
+	// Extract PropertyValue our of the cloned TopLevelProperty.
+	return get_topology_geometry_property_value(*cloned_property);
+}
+
+
 boost::optional<GPlatesPropertyValues::StructuralType>
 GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value_type(
 	const GPlatesModel::TopLevelProperty &property)
@@ -1017,7 +1033,7 @@ GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_section(
 }
 
 
-boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior>
+boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_network_interior(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property)
 {

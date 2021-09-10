@@ -3418,9 +3418,9 @@ GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::visit_mul
 
 void
 GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::visit_point_on_sphere(
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
-	render_cross_section_1d(point_on_sphere->position_vector());
+	render_cross_section_1d(point_on_sphere->position().position_vector());
 }
 
 

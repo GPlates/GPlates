@@ -34,7 +34,7 @@ installed:
   • GLEW library (the OpenGL Extension Wrangler Library)
   • Python library (version 2 or 3, preferably 3)
   • Boost library headers (version 1.35 or newer; the highest version number which has been tested so far is 1.65.)
-  • Qt library (version 5.0 or newer)
+  • Qt library (version 5.6 or newer)
   • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer; GDAL 2 is highly recommended.)
   • Computational Geometry Algorithms Library (CGAL) (4.7 or newer; preferably 4.12 or newer for improved CMake support)
   • PROJ.4 (4.6.0 or newer)
@@ -66,10 +66,10 @@ g++             g++
 GL              See note below.
 GLU             See note below.
 GLEW            libglew-dev 
-Python          python3-dev
+Python          python3-dev python3-numpy
 Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev 
-                libboost-test-dev libboost-system-dev (See note below regarding Xenial 16.04)
-Qt              qt5-default libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev
+                libboost-test-dev libboost-system-dev (See note below regarding Xenial 16.04 and libboost-python-dev)
+Qt              qt5-default libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev (starting with Hirsute 21.04 you should exclude qt5-default).
 GDAL            libgdal-dev (or libgdal1-dev for GDAL1 on older systems)
 CGAL            libcgal-dev (may also need libcgal-qt5-dev on Xenial 16.04 due to bug in CGAL cmake)
 PROJ.4          libproj-dev
@@ -79,9 +79,9 @@ zlib            zlib1g-dev
 Extras          libxrender-dev libice-dev libsm-dev libfreetype6-dev libfontconfig1-dev  (Ubuntu 14.04 Trusty Tahr and above)
 
 
-The command to install the dependencies on Ubuntu is:
+The command to install the dependencies on Ubuntu is (NOTE: starting with Hirsute 21.04 you should exclude qt5-default from the list below):
 
-sudo apt-get update; sudo apt-get install cmake libglew-dev python3-dev libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev qt5-default libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
+sudo apt-get update; sudo apt-get install cmake libglew-dev python3-dev python3-numpy libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev qt5-default libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
 (For Ubuntu releases before 14.04 Trusty Tahr, the libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev are not required.)
 
 How to install via a GUI (recommended)
@@ -112,8 +112,7 @@ If you have determined that libboost-dev is not installed on your system, you
 can install it by running the command:
 
 	sudo aptitude install libboost-dev
-		(assuming you have permission to run "sudo aptitude" on your
-		system).
+		(assuming you have permission to run "sudo aptitude" on your system).
 
 A note about the packages for GL and GLU
 
@@ -167,18 +166,18 @@ When running cmake (see BUILD.Linux) on Xenial 16.04, if you get the error...
 A note about GDAL
 
 If you decide to compile GDAL from source then ensure that GDAL links *statically*
-to PROJ4 if the PROJ4 library is in a non-standard location. This ensures GPlates
-does not generate a dynamic library loading error (for PROJ4) when a raster with an
+to PROJ if the PROJ library is in a non-standard location. This ensures GPlates
+does not generate a dynamic library loading error (for PROJ) when a raster with an
 inbuilt spatial reference system (eg, a projection) is loaded.
 You'll also need to ensure that the NetCDF library is installed and that GDAL is
 configured to use it - this is necessary for GPlates to be able to load gridded rasters.
 Here are the relevant options for the GDAL 2.x 'configure' script(assuming GDAL dependencies 
 have been installed in /opt/local/):
 
-   configure --with-netcdf=/path/to/netcdf --enable-netcdf4 --with-static-proj4=/path/to/proj4 --with-threads --disable-static --without-grass --with-libtiff=/opt/local --with-jpeg=/opt/local --with-gif=/opt/local --with-png=/opt/local --with-geotiff=/opt/local --with-sqlite3=/opt/local --with-expat=/opt/local
+   configure --with-netcdf=/path/to/netcdf --enable-netcdf4 --with-proj=/path/to/proj --with-threads --disable-static --without-grass --with-libtiff=/opt/local --with-jpeg=/opt/local --with-gif=/opt/local --with-png=/opt/local --with-geotiff=/opt/local --with-sqlite3=/opt/local --with-expat=/opt/local
 
-...where '--enable-netcdf4' enables NetCDF version 4 which may require HDF5 '--with-hdf5=/path/to/hdf5'
-according to https://trac.osgeo.org/gdal/wiki/NetCDF
+...where '--enable-netcdf4' enables NetCDF version 4 which may require HDF5 '--with-hdf5=/path/to/hdf5' according to https://trac.osgeo.org/gdal/wiki/NetCDF.
+And if using a version of GDAL older than 3.0 then replace '--with-proj=/path/to/proj' with '--with-static-proj4=/path/to/proj4'.
 
 For other Linux variants
 

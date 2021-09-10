@@ -36,7 +36,8 @@ GPlatesQtWidgets::TimeControlWidget::create_as_qdockwidget(
 		GPlatesGui::AnimationController &animation_controller)
 {
 	QDockWidget *dock = new QDockWidget(tr("Time Controls"));
-	dock->setFeatures(QDockWidget::AllDockWidgetFeatures);
+	dock->setFeatures(
+			QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
 	
 	TimeControlWidget *controls = new TimeControlWidget(
 			animation_controller, dock);

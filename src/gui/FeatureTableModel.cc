@@ -322,10 +322,10 @@ namespace
 
 	const QString
 	format_geometry_point(
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point)
+			GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point)
 	{
 		return QObject::tr("point: %1")
-				.arg(format_point_or_vertex(*point));
+				.arg(format_point_or_vertex(point->position()));
 	}
 
 
@@ -430,7 +430,7 @@ namespace
 		virtual
 		void
 		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
 			d_string = format_geometry_point(point_on_sphere);
 		}

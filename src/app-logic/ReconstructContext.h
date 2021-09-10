@@ -520,9 +520,8 @@ namespace GPlatesAppLogic
 
 #if 0
 		/**
-		 * Returns the resolved geometries for the geometry properties of the features specified
-		 * in the constructor, or the most recent call to @a set_features,
-		 * at the specified reconstruction time.
+		 * Returns the resolved geometries for the geometry properties of the features, specified
+		 * in the most recent call to @a set_features, at the specified reconstruction time.
 		 *
 		 * The returned sequence can be indexed using @a geometry_property_handle_type.
 		 *
@@ -536,9 +535,8 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Reconstructs the features specified in the constructor, or the most recent call
-		 * to @a set_features, to the specified reconstruction time
-		 * using the specified reconstruct context state.
+		 * Reconstructs the features, specified in the most recent call to @a set_features, to the
+		 * specified reconstruction time using the specified reconstruct context state.
 		 *
 		 * This method will get the next (incremented) global reconstruct handle and store it
 		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
@@ -551,9 +549,8 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Reconstructs the features specified in the constructor, or the most recent call
-		 * to @a set_features, to the specified reconstruction time
-		 * using the specified reconstruct context state.
+		 * Reconstructs the features, specified in the most recent call to @a set_features, to the
+		 * specified reconstruction time using the specified reconstruct context state.
 		 *
 		 * This method will get the next (incremented) global reconstruct handle and store it
 		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
@@ -570,9 +567,8 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Reconstructs the features specified in the constructor, or the most recent call
-		 * to @a set_features, to the specified reconstruction time
-		 * using the specified reconstruct context state.
+		 * Reconstructs the features, specified in the most recent call to @a set_features, to the
+		 * specified reconstruction time using the specified reconstruct context state.
 		 *
 		 * This method will get the next (incremented) global reconstruct handle and store it
 		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
@@ -626,9 +622,9 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Reconstructs the features specified in the constructor, or the most recent call
-		 * to @a set_features, to the specified reconstruction time using the specified
-		 * reconstruct context state and limited to features matching the specified feature IDs.
+		 * Reconstructs the features, specified in the most recent call to @a set_features, to the
+		 * specified reconstruction time using the specified reconstruct context state and limited
+		 * to features matching the specified feature IDs.
 		 *
 		 * This method is similar to @a get_reconstructed_feature_geometries, except it limits
 		 * features to those matching the specified feature IDs.
@@ -647,9 +643,9 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Calculate velocities at the geometry reconstruction positions of the features specified
-		 * in the constructor, or the most recent call to @a set_features, at the specified
-		 * reconstruction time using the specified reconstruct context state.
+		 * Calculate velocities at the geometry reconstruction positions of the features, specified
+		 * in the most recent call to @a set_features, at the specified reconstruction time using
+		 * the specified reconstruct context state.
 		 *
 		 * This method will get the next (incremented) global reconstruct handle and store it
 		 * in the @a MultiPointVectorField velocity objects.

@@ -34,6 +34,7 @@
 
 #include "AngularDistance.h"
 #include "AngularExtent.h"
+#include "GreatCircleArc.h"
 #include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
@@ -201,13 +202,13 @@ namespace GPlatesMaths
 		 * Creates a bounding small circle extended by the specified angle.
 		 *
 		 * Returns a small circle with radius PI (ie, covering entire globe) if the sum of
-		 * the angle of 'this' bounding small circle and @a angular_extension exceeds PI.
+		 * the angle of 'this' bounding small circle and @a angular_expansion exceeds PI.
 		 */
 		BoundingSmallCircle
-		extend(
-				const AngularExtent &angular_extension) const
+		expand(
+				const AngularExtent &angular_expansion) const
 		{
-			return BoundingSmallCircle(get_centre(), d_angular_extent + angular_extension);
+			return BoundingSmallCircle(get_centre(), d_angular_extent + angular_expansion);
 		}
 
 
@@ -586,25 +587,45 @@ namespace GPlatesMaths
 		/**
 		 * Returns the bounding small circle of all primitives added so far.
 		 *
-		 * @a expand_bound_delta_dot_product is used to expand the bound to
-		 * account for numerical precision (a negative value can be used to contract instead).
-		 * NOTE: We don't use @a AngularDistance here because the expansion is to the cosine
-		 * (or dot product) and not the angle.
+		 * @a angular_expansion is used to expand the bound to account for numerical precision.
 		 *
-		 * This means tests for intersection/inclusion can return false positives but in most
-		 * situations this is desirable because then a more accurate test will reveal there's
+		 * The default expansion matches the closeness threshold for intersection detection
+		 * (used when determining if one geometry is close enough to be *touching* another geometry).
+		 * This ensures that the bounding small circle expands to include the *touching* region around
+		 * the geometries contained within the bounding small circle.
+		 *
+		 * A non-zero angular expansion means tests for intersection/inclusion can return false positives
+		 * but in most situations this is desirable because then a more accurate test will reveal there's
 		 * no intersection/inclusion - whereas the other way around can give the wrong result.
 		 *
-		 * A value of 1e-6 means a bounding small circle of zero radius will be expanded to ~9km
-		 * (on earth's surface) and much less at a radius of PI/2 giving an upper limit at zero radius.
+		 * Note that if the sum of the angle of bounding small circle and @a angular_expansion exceeds
+		 * PI then a small circle with radius PI (ie, covering entire globe) is returned.
 		 */
 		BoundingSmallCircle
 		get_bounding_small_circle(
-				const double &expand_bound_delta_dot_product = 1e-6) const;
+				const AngularExtent &angular_expansion = get_default_angular_expansion()) const
+		{
+			return BoundingSmallCircle(
+					d_small_circle_centre,
+					AngularExtent(d_maximum_distance) + angular_expansion);
+		}
 
 	private:
 		UnitVector3D d_small_circle_centre;
 		AngularDistance d_maximum_distance;
+
+	public:
+		/**
+		 * Default angular expansion used to expand returned bounding small circles.
+		 *
+		 * The default expansion matches the closeness threshold for intersection detection
+		 * (used when determining if one geometry is close enough to be *touching* another geometry).
+		 * This ensures that the bounding small circle expands to include the *touching* region around
+		 * the geometries contained within the bounding small circle.
+		 */
+		static
+		const AngularExtent &
+		get_default_angular_expansion();
 	};
 
 
@@ -1328,31 +1349,52 @@ namespace GPlatesMaths
 		/**
 		 * Returns the inner outer bounding small circle of all primitives added so far.
 		 *
-		 * @a contract_inner_bound_delta_dot_product is used to contract the *inner* bound to
-		 * account for numerical precision (a negative value can be used to expand instead).
+		 * @a inner_bound_angular_contraction is used to contract the *inner* bound to
+		 * account for numerical precision.
 		 * @a expand_outer_bound_delta_dot_product is used to expand the *outer* bound to
-		 * account for numerical precision (a negative value can be used to contract instead).
-		 * NOTE: We don't use @a AngularDistance here because the expansion is to the cosine
-		 * (or dot product) and not the angle.
+		 * account for numerical precision.
 		 *
-		 * This means tests for intersection/inclusion can return false positives but in most
-		 * situations this is desirable because then a more accurate test will reveal there's
-		 * no intersection/inclusion - whereas the other way around can give the wrong result.
+		 * The default contraction/expansion matches the closeness threshold for intersection detection
+		 * (used when determining if one geometry is close enough to be *touching* another geometry).
+		 * This ensures that the inner/outer bounding small circle contracts/expands to include the
+		 * *touching* region around the geometries contained within the bounded region.
 		 *
-		 * A value of 1e-6 means a bounding small circle of zero radius will be expanded to ~9km
-		 * (on earth's surface) and much less at a radius of PI/2 giving an upper limit at zero radius.
+		 * A non-zero angular contraction/expansion means tests for intersection/inclusion can return
+		 * false positives but in most situations this is desirable because then a more accurate test
+		 * will reveal there's no intersection/inclusion - whereas the other way around can give the wrong result.
 		 *
-		 * @throws @a PreconditionViolationError if no @a add overloads have been called so far.
+		 * Note that if the sum of the angle of outer bounding small circle and @a outer_bound_angular_expansion
+		 * exceeds PI then an outer small circle with radius PI (ie, covering entire globe) is returned.
+		 * And if @a inner_bound_angular_contraction is greater than the angle of inner bounding small circle
+		 * then an inner small circle with radius zero is returned.
+		 *
+		 * Logs a warning and return inner/outer bounds of zero if no @a add overloads have been called so far.
 		 */
 		InnerOuterBoundingSmallCircle
 		get_inner_outer_bounding_small_circle(
-				const double &contract_inner_bound_delta_dot_product = 1e-6,
-				const double &expand_outer_bound_delta_dot_product = 1e-6) const;
+				const AngularExtent &inner_bound_angular_contraction = get_default_angular_expansion_contraction(),
+				const AngularExtent &outer_bound_angular_expansion = get_default_angular_expansion_contraction()) const;
 
 	private:
 		UnitVector3D d_small_circle_centre;
 		AngularDistance d_minimum_distance;
 		AngularDistance d_maximum_distance;
+
+	public:
+		/**
+		 * Default angular expansion/contraction used to expand outer and contract inner returned bounding small circles.
+		 *
+		 * The default contraction/expansion matches the closeness threshold for intersection detection
+		 * (used when determining if one geometry is close enough to be *touching* another geometry).
+		 * This ensures that the inner/outer bounding small circle contracts/expands to include the
+		 * *touching* region around the geometries contained within the bounded region.
+		 */
+		static
+		const AngularExtent &
+		get_default_angular_expansion_contraction()
+		{
+			return BoundingSmallCircleBuilder::get_default_angular_expansion();
+		}
 	};
 
 

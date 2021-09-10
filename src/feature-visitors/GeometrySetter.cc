@@ -112,12 +112,11 @@ GPlatesFeatureVisitors::GeometrySetter::visit_gml_point(
 	// derivation. Despite the fact that we could be given ANY PropertyValue
 	// and ANY GeometryOnSphere, there are only a few combinations that
 	// make any sense, and to hell with the rest of them.
-	const GPlatesMaths::PointOnSphere *point_on_sphere =
-			dynamic_cast<const GPlatesMaths::PointOnSphere *>(d_geometry_to_set.get());
-	if (point_on_sphere != NULL)
+	const GPlatesMaths::PointGeometryOnSphere *point_geometry_on_sphere =
+			dynamic_cast<const GPlatesMaths::PointGeometryOnSphere *>(d_geometry_to_set.get());
+	if (point_geometry_on_sphere != NULL)
 	{
-		gml_point.set_point(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type(point_on_sphere));
+		gml_point.set_point(point_geometry_on_sphere->position());
 	}
 }
 

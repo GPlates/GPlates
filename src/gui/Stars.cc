@@ -173,7 +173,8 @@ namespace
 			unsigned int &num_large_star_vertices,
 			unsigned int &num_large_star_vertex_indices,
 			boost::function< double () > &rand,
-			const GPlatesGui::rgba8_t &colour)
+			const GPlatesGui::rgba8_t &colour,
+			int device_pixel_ratio)
 	{
 		stream_primitives_type stream;
 
@@ -291,10 +292,15 @@ namespace
 			unsigned int num_small_star_vertices,
 			unsigned int num_small_star_vertex_indices,
 			unsigned int num_large_star_vertices,
-			unsigned int num_large_star_vertex_indices)
+			unsigned int num_large_star_vertex_indices,
+			int device_pixel_ratio)
 	{
 		// Small stars size.
-		gl.PointSize(SMALL_STARS_SIZE);
+		//
+		// Note: Multiply point sizes to account for ratio of device pixels to device *independent* pixels.
+		//       On high-DPI displays there are more pixels in the same physical area on screen and so
+		//       without increasing the point size the points would look too small.
+		gl.PointSize(SMALL_STARS_SIZE * device_pixel_ratio);
 
 		// Draw the small stars.
 		glDrawRangeElements(
@@ -306,7 +312,11 @@ namespace
 				nullptr/*indices_offset*/);
 
 		// Large stars size.
-		gl.PointSize(LARGE_STARS_SIZE);
+		//
+		// Note: Multiply point sizes to account for ratio of device pixels to device *independent* pixels.
+		//       On high-DPI displays there are more pixels in the same physical area on screen and so
+		//       without increasing the point size the points would look too small.
+		gl.PointSize(LARGE_STARS_SIZE * device_pixel_ratio);
 
 		// Draw the large stars.
 		// They come after the small stars in the vertex array.
@@ -369,7 +379,8 @@ GPlatesGui::Stars::Stars(
 void
 GPlatesGui::Stars::paint(
 		GPlatesOpenGL::GL &gl,
-		const GPlatesOpenGL::GLViewProjection &view_projection)
+		const GPlatesOpenGL::GLViewProjection &view_projection,
+		int device_pixel_ratio)
 {
 	if (!d_view_state.get_show_stars())
 	{
@@ -429,7 +440,8 @@ GPlatesGui::Stars::paint(
 			d_num_small_star_vertices,
 			d_num_small_star_vertex_indices,
 			d_num_large_star_vertices,
-			d_num_large_star_vertex_indices);
+			d_num_large_star_vertex_indices,
+			device_pixel_ratio);
 #else
 	// Either render directly to the framebuffer, or use OpenGL feedback to render to the
 	// QPainter's paint device.

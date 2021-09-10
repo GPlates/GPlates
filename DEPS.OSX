@@ -1,4 +1,4 @@
-Dependencies For Mac OS X
+Dependencies For macOS
 
 Table of Contents
 
@@ -13,138 +13,94 @@ Table of Contents
 Introduction
 
 This page lists the package dependencies which need to be satisfied to be able
-to build GPlates from source on Mac OS X.
+to build GPlates from source on macOS.
 
 Program and library dependencies
 
 To compile GPlates, you will need the following programs and libraries
 installed:
 
-  • cmake (3.5 or newer)
   • XCode (see "BUILD.OSX" for instructions on how to install)
+  • cmake (3.5 or newer)
   • make
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
   • GLEW library (the OpenGL Extension Wrangler Library)
-  * Python (version 2 or 3, preferably 3)
+  * Python (version 2.7 or 3; preferably 3.5 or newer)
   • Boost library headers (version 1.35 or newer)
-  • Qt library (version 5.0 or newer)
-  • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer, preferably 2.x)
-  • Computational Geometry Algorithms Library (CGAL) (4.7 or newer; preferably 4.12 or newer for improved CMake support)
-  • PROJ.4 (4.6.0 or newer)
-  • Qwt 6.0.1 (6.1.x is recommended)
+  • Qt library (version 5.6 or newer)
+  • GDAL (Geospatial Data Abstraction Library) (1.3.2 or newer; preferably 2 or newer)
+  • CGAL (Computational Geometry Algorithms Library) (4.7 or newer; preferably 4.12 or newer for improved CMake support)
+  • PROJ (4.6.0 or newer; preferably 6 or newer)
+  • Qwt (6.0.1 or newer; preferably 6.1 or newer)
   • zlib
 
 Corresponding package dependencies
 
-This subsection provides more specific information on resolving the program and
-library dependencies on Mac OS X 10.4 and 10.5 systems.
-
 Program/library Corresponding Macports packages
 cmake           cmake
+GLEW            glew
 Python          python
 Boost           boost
 Qt              qt5
-GDAL            gdal
-CGAL            cgal
-PROJ.4          proj
 Qwt             qwt61
+GDAL            gdal
+PROJ            proj
+CGAL            cgal
 zlib            zlib
-
-Installing OpenGL
-
-The OpenGL libraries (GL and GLU) should already exist on your machine.
-However in some cases this is not so. If they don't exist you'll get error messages
-about missing "gl.h" or "glu.h" header files when compiling GPlates.
-To ensure that they do exist you'll need to obtain a copy of the install disc used to
-install Mac OS X on your computer. If you don't have this then you can download the
-XCode development tools free of charge from http://developer.apple.com/technology/tools.html
-(a login is required). Once you have the XCode disc image locate the OpenGLDSK.pkg (it should
-be located in the "Packages" directory) and install it.
-Note that a Mac OS X 10.5 install disc will not work on a computer with a 10.4 version of Mac OS X.
-You should only need to install "OpenGLSDK.pkg" if you get compile errors abouting missing
-"gl.h" or "glu.h" headers when compiling GPlates.
 
 Overview of different ways to install non-system dependencies
 
 There are multiple ways to install the remaining dependencies.
-You can use Fink (http://www.finkproject.org/) or Macports (http://www.macports.org).
+You can use Macports (http://www.macports.org) or Homebrew (https://brew.sh/) or Fink (http://www.finkproject.org/).
 Or you can compile the dependent packages directly from source code.
 Or you can install the dependent packages using precompiled installer packages where available.
-
-In fact Christian Heine has written a great document titled
-"Building GPlates from source on Mac OS X without package managers" dated 26th February 2009.
-A link to that document is available at http://www.gplates.org/docs.html.
-It is recommended that you use the installer packages over Macports or Fink where possible.
 
 Installing non-system dependencies using Macports
 
 Here we briefly describe how to install dependencies using Macports (http://www.macports.org).
-For each dependency mentioned below it is recommended to use an installer package listed above
-instead if one exists (ie, for GDAL, Qt and CMake).
   • Install Macports (http://www.macports.org) if it's not already installed.
   • Start a new terminal window (by running Applications->Utilities->Terminal in Finder).
   • You may need to set the path to Macports with "export PATH=/opt/local/bin:/opt/local/sbin:$PATH".
-  • If you are behind a proxy server you may need to set the "http_proxy" and "FTP_PROXY" shell variables.
-    For example, "export http_proxy=http://www-cache.usyd.edu.au:8080".
   • Update Macports with 'sudo port -d selfupdate'.
-    It is important to do this every time you build a new version of GPlates (eg, GPlates 0.9.8
-    introduced a new dependency CGAL which was only recently added to Macports).
-    If this doesn't work then you'll need to download the 'ports.tar.gz' tarball by following the
-    instructions in http://trac.macports.org/wiki/howto/PortTreeTarball.
-    Thanks to Jo Whittaker for pointing this out.
-  • In the following steps, if 'sudo port install ...' appears to hang then try one of the following:
-    • Use 'sudo env http_proxy="$http_proxy" port install ...' instead of 'sudo port install' ...,
-    • Or try manually downloading the port tarball from http://distfiles.macports.org/<portname>/ and copy it to
-      ${prefix}/var/macports/distfiles/<portname>/ where 'prefix' is most likely '/opt/local'.
-      More details can be found in the "Fetch failures" section at http://trac.macports.org/wiki/ProblemHotlist.
-      You may have to do the same for any dependencies that failed to fetch.  Oh the joy !
-  • Install CMake with 'sudo port install cmake' if you don't have CMake.
-    Note that the installers at "http://www.cmake.org/files/" are easier than using Macports.
-  • Install Qt5 with 'sudo port install qt5' if you don't have Qt5.
-    You'll also need to add the location of the qt5 'bin' to the PATH environment variable so that 'qmake' can be found
-    (even if the Qt installation is cmake-based instead of qmake-based, in which case it will then use parent directory of 'bin' PATH to locate Qt, instead of qmake).
-    For example, 'export PATH=/opt/local/libexec/qt5/bin:$PATH'. To locate where qt5 is installed you can type 'port contents qt5-qtbase | grep bin/qmake'.
-    Note that a Qt installer ( https://www.qt.io/download ) can be easier than using Macports due to the large number of software dependencies required by Qt.
-  • Install GLEW with 'sudo port install glew' if you don't have GLEW.
-  • Install Python with 'sudo port install python3[x]' where 'x' is the minor version (eg, 'sudo port install python36).
+  • Install CMake with 'sudo port install cmake' (or download an installer from http://www.cmake.org ).
+  • Install GLEW with 'sudo port install glew'.
+  • Install Python with 'sudo port install python3[x]' where 'x' is the minor version (eg, 'sudo port install python38).
     Note that you may need to set the Python3_ROOT_DIR environment variable to point to the Macports installation to avoid finding
-	the Python framework bundled inside the XCode app (which likely has a different Python minor version than the Python you've
-	compiled/activated Boost for, causing CMake to be unable to find boost_python3[x]). For example:
-	    export Python3_ROOT_DIR=/opt/local/Library/Frameworks/Python.framework/Versions/3.8
-  • Install Boost with 'sudo port install boost +python3[x]' if you don't have Boost - note the additional "+python3[x]".
-    Where 'x' is the python minor version number - for example 'sudo port install boost+python36'.
-  • Install CGAL with 'sudo port install cgal' if you don't  have CGAL.
-  • Install GDAL with 'sudo port install gdal +netcdf +proj4' if you don't have GDAL - note the additional "+netcdf" is required
-    to enable GPlates to import/export NetCDF rasters. Also "+proj4" is required to avoid conflicts with proj5 (which is called "proj").
-  • Make sure you don't have multiple installations of the same library.
-    For example, /opt/local/include/gdal* and /Library/Frameworks/GDAL.framework.
+    the Python framework bundled inside the XCode app (which likely has a different Python minor version than the Python you've
+    compiled/activated Boost for, causing CMake to be unable to find boost_python3[x]). For example:
+        export Python3_ROOT_DIR=/opt/local/Library/Frameworks/Python.framework/Versions/3.8
+  • Install Boost with 'sudo port install boost +python3[x]'.
+    Note the additional '+python3[x]' where 'x' is the python minor version number (eg, 'sudo port install boost +python38').
+  • Install Qt with 'sudo port install qt5'.
+  • Instal Qwt with 'sudo port install qwt61 +qt5'.
+    This appears to install qwt inside qt5, and so it should get found once qt5 is found.
+  • Install GDAL with 'sudo port install gdal +netcdf'.
+    Note the additional "+netcdf" is required to enable GPlates to import/export NetCDF rasters.
+  • Install PROJ with 'sudo port install proj'.
+    Note that this will likely already be installed since it's a dependency of gdal (installed above).
+  • Install CGAL with 'sudo port install cgal'.
+  • Install zlib with 'sudo port install zlib'.
+
+A note about Python
+
+You may need to explicitly specify the location of the Macports Python otherwise the system Python will instead be found by CMake.
+For example, if you installed Python 3.8 via Macports (and are running CMake 3.12 or greater) then build GPlates by typing (see BUILD.OSX):
+
+    cmake -D Python3_ROOT=/opt/local/Library/Frameworks/Python.framework/Python.framework/Versions/3.8 .
+    make
 
 A note about GDAL
 
 If you decide to compile GDAL from source (instead of using Macports) then ensure that GDAL links *statically*
-to PROJ4 if the PROJ4 library is in a non-standard location. This ensures GPlates does not generate a dynamic
-library loading error (for PROJ4) when a raster with an inbuilt spatial reference system (eg, a projection) is loaded.
-This does not appear to be necessary when using GDAL installed via Macports (since it statically links PROJ4 to GDAL).
+to PROJ if the PROJ library is in a non-standard location. This ensures GPlates does not generate a dynamic
+library loading error (for PROJ) when a raster with an inbuilt spatial reference system (eg, a projection) is loaded.
+This does not appear to be necessary when using GDAL installed via Macports (since it statically links PROJ to GDAL).
 You'll also need to ensure that the NetCDF library is installed and that GDAL is configured to use it - this is
 necessary for GPlates to be able to load gridded rasters.
 Here are the relevant options for the GDAL 2.x 'configure' script (assuming GDAL dependencies have been installed with Macports /opt/local/):
 
-    configure --with-netcdf=/opt/local --with-static-proj4=/opt/local --with-threads --disable-static --without-grass --with-libtiff=/opt/local --with-jpeg=/opt/local --with-gif=/opt/local --with-png=/opt/local --with-geotiff=/opt/local --with-sqlite3=/opt/local --with-expat=/opt/local
+    configure --with-netcdf=/opt/local  --enable-netcdf4 --with-proj=/opt/local --with-threads --disable-static --without-grass --with-libtiff=/opt/local --with-jpeg=/opt/local --with-gif=/opt/local --with-png=/opt/local --with-geotiff=/opt/local --with-sqlite3=/opt/local --with-expat=/opt/local
 
-Installing qwt (Macports)
-  • sudo port install qwt61 +qt5
-  • This appears to install qwt inside qt5, and so it should get found once qt5 is found
-
-Installing qwt
-  • Download the qwt source package from http://sourceforge.net/projects/qwt/files/qwt/6.0.1/
-  • Extract the files to your preferred location
-  • Open a terminal and navigate to the qwt source location
-  • Run the following commands at the terminal:
-    qmake -spec macx-clang
-    make
-    make install
-  • create a soft link from the install location to /usr/local/lib by running
-    sudo ln -s /usr/local/qwt-6.0.1/lib/qwt.framework/qwt 
-  • Add the Qwt root directory to the CMAKE_PREFIX_PATH environment variable (eg, /usr/local/qwt-6.0.1)
-
+...where '--enable-netcdf4' enables NetCDF version 4 which may require HDF5 '--with-hdf5=/path/to/hdf5' according to https://trac.osgeo.org/gdal/wiki/NetCDF.
+And if using a version of GDAL older than 3.0 then replace '--with-proj=/opt/local ' with '--with-static-proj4=/opt/local'.

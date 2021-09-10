@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
@@ -39,6 +39,7 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/NotYetImplementedException.h"
 
 #include "maths/CubeQuadTreePartitionUtils.h"
 #include "maths/MathsUtils.h"
@@ -101,7 +102,7 @@ GPlatesAppLogic::ReconstructLayerProxy::ReconstructLayerProxy(
 	d_current_reconstruction_time(0),
 	d_current_reconstruct_params(reconstruct_params),
 	d_cached_reconstructions(
-			boost::bind(&ReconstructLayerProxy::create_reconstruction_info, this, _1),
+			boost::bind(&ReconstructLayerProxy::create_reconstruction_info, this, boost::placeholders::_1),
 			max_num_reconstructions_in_cache),
 	d_cached_reconstructions_default_maximum_size(max_num_reconstructions_in_cache)
 {
@@ -355,6 +356,12 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_time_spans(
 	// in a ReconstructionInfo at an arbitrary reconstruction time (present day) so that it can get
 	// re-used (rather than just having it get destroyed as soon as we leave the current function.
 	//
+	// This caching works even if the cache size is only 1 (eg, when reconstructing using topologies)
+	// because if a different reconstruction time is later requested with the same ReconstructParams
+	// (both of which form the cache key) then even though the only one reconstruction time can be cached
+	// at a time the context state is re-used since we use a map of ReconstructParams to context states
+	// in 'get_or_create_reconstruct_context()'.
+	//
 	// Note that 'get_value()' calls 'create_reconstruction_info()' which calls 'get_or_create_reconstruct_context()'.
 	const ReconstructContext::context_state_reference_type context_state_ref =
 			d_cached_reconstructions.get_value(
@@ -387,6 +394,12 @@ GPlatesAppLogic::ReconstructLayerProxy::get_topology_reconstructed_feature_time_
 	// Similar to calling 'get_or_create_reconstruct_context()' but also caches the context state
 	// in a ReconstructionInfo at an arbitrary reconstruction time (present day) so that it can get
 	// re-used (rather than just having it get destroyed as soon as we leave the current function.
+	//
+	// This caching works even if the cache size is only 1 (eg, when reconstructing using topologies)
+	// because if a different reconstruction time is later requested with the same ReconstructParams
+	// (both of which form the cache key) then even though the only one reconstruction time can be cached
+	// at a time the context state is re-used since we use a map of ReconstructParams to context states
+	// in 'get_or_create_reconstruct_context()'.
 	//
 	// Note that 'get_value()' calls 'create_reconstruction_info()' which calls 'get_or_create_reconstruct_context()'.
 	const ReconstructContext::context_state_reference_type context_state_ref =
@@ -635,8 +648,8 @@ GPlatesAppLogic::ReconstructMethodInterface::Context
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstruct_method_context(
 		const ReconstructParams &reconstruct_params) const
 {
-	// If we're not reconstructing using topologies.
-	if (!using_topologies_to_reconstruct())
+	// If the ReconstructParams says not to reconstruct using topologies.
+	if (!reconstruct_params.get_reconstruct_using_topologies())
 	{
 		return ReconstructMethodInterface::Context(
 				reconstruct_params,
@@ -1366,6 +1379,29 @@ GPlatesAppLogic::ReconstructLayerProxy::ReconstructionInfo
 GPlatesAppLogic::ReconstructLayerProxy::create_reconstruction_info(
 		const reconstruction_cache_key_type &reconstruction_cache_key)
 {
+	const ReconstructParams &reconstruct_params = reconstruction_cache_key.second;
+
+	//
+	// Make sure the *specified* ReconstructParams matches the *current* ReconstructParams in regard to
+	// whether it's reconstructing using topologies or not.
+	//
+	// This is because if we're *currently* using topologies then topology layers will not attempt to use us
+	// (this layer) to find its topological sections, and we'll be potentially using topology layers to
+	// help us reconstruct/deform features. That logic also helps avoid infinite cycles where a topology
+	// layer checks it's up-to-date wrt to us which causes us to check them, and so on.
+	// If we allow the caller to then reconstruct *without* using topologies (ie, by specifying a
+	// ReconstructParams with a different 'get_reconstruct_using_topologies()' than our current ReconstructParams)
+	// then that logic gets quite tricky. Currently we don't need it, so we won't implement it.
+	//
+	// However, if this assertion gets triggered then we will need to think about implementing it.
+	//
+	// Note: we test here since all ReconstructParams go through this function as part of caching reconstructions.
+	//
+	GPlatesGlobal::Assert<GPlatesGlobal::NotYetImplementedException>(
+			reconstruct_params.get_reconstruct_using_topologies() ==
+				d_current_reconstruct_params.get_reconstruct_using_topologies(),
+			GPLATES_EXCEPTION_SOURCE);
+
 	// See if we've already got a reconstruct context state for the specified reconstruct params
 	// part of the key, ignoring the reconstruction time part.
 	//
@@ -1373,7 +1409,6 @@ GPlatesAppLogic::ReconstructLayerProxy::create_reconstruction_info(
 	// reconstruction time (when the reconstruct parameters haven't changed) since, when geometries
 	// are reconstructed using topologies, this results in excessive generation of expensive
 	// reconstruction lookup tables in the reconstruct methods (inside the reconstruct context).
-	const ReconstructParams &reconstruct_params = reconstruction_cache_key.second;
 	const ReconstructContext::context_state_reference_type context_state_ref =
 			get_or_create_reconstruct_context(reconstruct_params);
 

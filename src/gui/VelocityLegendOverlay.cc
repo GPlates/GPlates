@@ -27,6 +27,8 @@
 #include <QFontMetrics>
 #include <QLocale>
 #include <QPainter>
+#include <QPainterPath>
+#include <QtGlobal>
 
 #include "VelocityLegendOverlay.h"
 
@@ -39,7 +41,6 @@
 #include "opengl/GLRenderer.h"
 #include "opengl/GLViewport.h"
 #include "opengl/GLViewProjection.h"
-#include "opengl/GLText.h"
 #include "opengl/OpenGLException.h"
 
 #include "presentation/VelocityFieldCalculatorVisualLayerParams.h"
@@ -76,27 +77,6 @@ namespace
 		ret.setPointSizeF((std::max)(min_point_size, point_size * scale));
 
 		return ret;
-	}
-
-	bool
-	set_glu_projection(
-			GPlatesOpenGL::GLRenderer &renderer,
-			const int &world_x,
-			const int &world_y,
-			const int &world_z,
-			GLdouble &win_x,
-			GLdouble &win_y,
-			GLdouble &win_z)
-	{
-		using namespace GPlatesOpenGL;
-		const GLViewport &viewport = renderer.gl_get_viewport();
-		const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
-		const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
-
-		GLViewProjection view_projection(viewport, model_view_transform, projection_transform);
-		return view_projection.glu_project(
-					world_x, world_y, world_z,
-					&win_x, &win_y, &win_z);
 	}
 
 	/**
@@ -193,56 +173,6 @@ namespace
 	}
 
 	/**
-	 * @brief get_background_qrect
-	 * On return @param rect contains the QRect representing the background rectangle, given the
-	 * desired parameters provided by the user via @param settings: anchor position, horizontal and vertical offsets,
-	 * and width and height.
-	 */
-	void
-	get_background_qrect(
-			QRect &rect,
-			const int &device_width,
-			const int &device_height,
-			const double &scale,
-			const GPlatesGui::VelocityLegendOverlaySettings &settings,
-			const double &width,
-			const double &height)
-	{
-		GPlatesGui::VelocityLegendOverlaySettings::Anchor anchor =
-				settings.get_anchor();
-		double x,y;
-		switch(anchor)
-		{
-		case GPlatesGui::VelocityLegendOverlaySettings::TOP_LEFT:
-			x = settings.get_x_offset();
-			y = settings.get_y_offset();
-			break;
-		case GPlatesGui::VelocityLegendOverlaySettings::TOP_RIGHT:
-			x = device_width - settings.get_x_offset() - width*scale;
-			y = settings.get_y_offset();
-			break;
-		case GPlatesGui::VelocityLegendOverlaySettings::BOTTOM_LEFT:
-			x = settings.get_x_offset();
-			y = device_height - settings.get_y_offset() - height*scale;
-			break;
-		case GPlatesGui::VelocityLegendOverlaySettings::BOTTOM_RIGHT:
-			x = device_width - settings.get_x_offset() - width*scale;
-			y = device_height - settings.get_y_offset() - height*scale;
-			break;
-		default:
-			x = settings.get_x_offset();
-			y = settings.get_y_offset();
-			break;
-		}
-
-		int width_ = width*scale;
-		int height_ = height*scale;
-		rect.setRect(x,y,width_,height_);
-
-
-	}
-
-	/**
 	 * @brief reduce_to_fit
 	 * @param length and @param scale are reduced successively by factors 2, 2 and 2.5
 	 * until @param length is less than or equal to @param max_width.
@@ -290,8 +220,149 @@ namespace
 		reduce_to_fit(length,scale,max_width);
 	}
 
+	void
+	render(
+			GPlatesOpenGL::GLRenderer &renderer,
+			const GPlatesGui::VelocityLegendOverlaySettings &settings,
+			float x,
+			float y,
+			double legend_width,
+			double legend_height,
+			int legend_margin,
+			const QString &text,
+			int text_width,
+			double arrow_length,
+			double arrow_height,
+			double arrow_angle,
+			float scale)
+	{
+		using namespace GPlatesOpenGL;
+
+		// Before we suspend GLRenderer (and resume QPainter) we'll get the scissor rectangle
+		// if scissoring is enabled and use that as a clip rectangle.
+		boost::optional<GLViewport> scissor_rect;
+		if (renderer.gl_get_enable(GL_SCISSOR_TEST))
+		{
+			scissor_rect = renderer.gl_get_scissor();
+		}
+
+		// And before we suspend GLRenderer (and resume QPainter) we'll get the viewport,
+		// model-view transform and projection transform.
+		const GLViewport viewport = renderer.gl_get_viewport();
+		const GLMatrix model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
+		const GLMatrix projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+
+		// Suspend rendering with 'GLRenderer' so we can resume painting with 'QPainter'.
+		// At scope exit we can resume rendering with 'GLRenderer'.
+		//
+		// We do this because the QPainter's paint engine might be OpenGL and we need to make sure
+		// it's OpenGL state does not interfere with the OpenGL state of 'GLRenderer' and vice versa.
+		// This also provides a means to retrieve the QPainter for rendering text.
+		GLRenderer::QPainterBlockScope qpainter_block_scope(renderer);
+
+		boost::optional<QPainter &> qpainter = qpainter_block_scope.get_qpainter();
+
+		// We need a QPainter - one should have been specified to 'GLRenderer::begin_render'.
+		GPlatesGlobal::Assert<OpenGLException>(
+					qpainter,
+					GPLATES_ASSERTION_SOURCE,
+					"VelocityLegendOverlay: attempted to render text using a GLRenderer that does not have a QPainter attached.");
+
+		// The QPainter's paint device.
+		const QPaintDevice *qpaint_device = qpainter->device();
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					qpaint_device,
+					GPLATES_ASSERTION_SOURCE);
+
+		const int qpaint_device_pixel_ratio = qpaint_device->devicePixelRatio();
+
+		// Set the identity world transform since our input position is specified in *window* coordinates
+		// and we don't want it transformed by the current world transform.
+		qpainter->setWorldTransform(QTransform()/*identity*/);
+
+		// Set the clip rectangle if the GLRenderer has scissor testing enabled.
+		if (scissor_rect)
+		{
+			// Note that the scissor rectangle is in OpenGL device pixel coordinates, but parameters to QPainter
+			// should be in device *independent* coordinates (hence the divide by device pixel ratio).
+			//
+			// Note: Using floating-point QRectF to avoid rounding to nearest 'qpaint_device_pixel_ratio' device pixel
+			//       if scissor rect has, for example, odd coordinates (and device pixel ratio is the integer 2).
+			qpainter->setClipRect(
+					QRectF(
+							scissor_rect->x() / qreal(qpaint_device_pixel_ratio),
+							// Also need to convert scissor rectangle from OpenGL to Qt (ie, invert y-axis)...
+							qpaint_device->height() - (scissor_rect->y() + scissor_rect->height()) / qreal(qpaint_device_pixel_ratio),
+							scissor_rect->width() / qreal(qpaint_device_pixel_ratio),
+							scissor_rect->height() / qreal(qpaint_device_pixel_ratio)));
+		}
+
+		// Pass our (x, y) window position through the model-view-projection transform and viewport
+		// to get our new viewport coordinates.
+		//
+		// Note: Since OpenGL viewports are in device pixels the output window coordinates are also in device pixels.
+		//       If the input world coordinates are in device-independent pixels (eg, 2D text rendering) then the
+		//       projection transform would have been specified using the device-independent paint device dimensions.
+		GLdouble win_x, win_y, win_z;
+		GLProjection projection(viewport, model_view_transform, projection_transform);
+		projection.glu_project(
+				x, y, 0.0/*world_z*/,
+				&win_x, &win_y, &win_z);
+
+		// Get the Qt window coordinates.
+		//
+		// Note that win_x and win_y are in OpenGL device pixel coordinates, but parameters to QPainter
+		// should be in device *independent* coordinates (hence the divide by device pixel ratio).
+		const float qt_win_x = win_x / qpaint_device_pixel_ratio;
+		// Also note that OpenGL and Qt y-axes are the reverse of each other.
+		const float qt_win_y = qpaint_device->height() - win_y / qpaint_device_pixel_ratio;
+
+		// Determine the bounding box rectangle. We also use this to position the arrow and text, whether or
+		// not we draw the bounding box.
+		const QRectF background_box(qt_win_x, qt_win_y, legend_width, legend_height);
+
+		// Draw background box
+		if (settings.background_enabled())
+		{
+			qpainter->setBrush(QBrush(settings.get_background_colour()));
+			qpainter->setPen(settings.get_background_colour());
+			qpainter->drawRect(background_box);
+		}
 
 
+		// Draw legend text
+		qpainter->setPen(settings.get_scale_text_colour());
+		qpainter->setFont(scale_font(settings.get_scale_text_font(), scale));
+		qpainter->drawText(background_box.center().x() - text_width / 2, background_box.bottom() - legend_margin, text);
+
+		qpainter->setPen(settings.get_arrow_colour());
+		qpainter->setBrush(QBrush(settings.get_arrow_colour()));
+		double arrow_head_size = 5.0 * scale;
+
+		QTransform transform;
+		transform.translate(
+				background_box.center().x(),
+				background_box.top() + (arrow_height + 2 * legend_margin) / 2);
+		transform.rotate(arrow_angle);
+
+		QPainterPath arrow_painter_path;
+		arrow_painter_path.moveTo(-arrow_length / 2, 0);
+		arrow_painter_path.lineTo(arrow_length / 2, 0);
+
+		arrow_painter_path.lineTo(arrow_length / 2 - arrow_head_size, -arrow_head_size);
+		arrow_painter_path.lineTo(arrow_length / 2 - arrow_head_size, arrow_head_size);
+		arrow_painter_path.lineTo(arrow_length / 2, 0);
+
+		qpainter->setTransform(transform);
+
+		qpainter->drawPath(arrow_painter_path);
+
+		// Turn off clipping if it was turned on.
+		if (scissor_rect)
+		{
+			qpainter->setClipRect(QRect(), Qt::NoClip);
+		}
+	}
 }
 
 
@@ -307,9 +378,6 @@ GPlatesGui::VelocityLegendOverlay::paint(
 		int paint_device_height,
 		float scale)
 {
-
-	// We set up openGL and a QPainter as per the TextOverlay class.
-
 	if (!settings.is_enabled())
 	{
 		return;
@@ -325,80 +393,17 @@ GPlatesGui::VelocityLegendOverlay::paint(
 		return;
 	}
 
-	// Scale the x and y offsets.
-	float x_offset = settings.get_x_offset() * scale;
-	float y_offset = settings.get_y_offset() * scale;
-
-	GLdouble win_x, win_y, win_z;
-	if (!set_glu_projection(renderer, x_offset, y_offset, 0, win_x, win_y, win_z))
-	{
-		return;
-	}
-
-	if (win_z < 0 || win_z > 1)
-	{
-		return;
-	}
-
-	using namespace GPlatesOpenGL;
-
-	// Before we suspend GLRenderer (and resume QPainter) we'll get the scissor rectangle
-	// if scissoring is enabled and use that as a clip rectangle.
-	boost::optional<GLViewport> scissor_rect;
-	if (renderer.gl_get_enable(GL_SCISSOR_TEST))
-	{
-		scissor_rect = renderer.gl_get_scissor();
-	}
-
-	// Suspend rendering with 'GLRenderer' so we can resume painting with 'QPainter'.
-	// At scope exit we can resume rendering with 'GLRenderer'.
-	//
-	// We do this because the QPainter's paint engine might be OpenGL and we need to make sure
-	// it's OpenGL state does not interfere with the OpenGL state of 'GLRenderer' and vice versa.
-	// This also provides a means to retrieve the QPainter for rendering text.
-	GLRenderer::QPainterBlockScope qpainter_block_scope(renderer);
-
-	boost::optional<QPainter &> qpainter = qpainter_block_scope.get_qpainter();
-
-	// We need a QPainter - one should have been specified to 'GLRenderer::begin_render'.
-	GPlatesGlobal::Assert<OpenGLException>(
-				qpainter,
-				GPLATES_ASSERTION_SOURCE,
-				"GLText: attempted to render text using a GLRenderer that does not have a QPainter attached.");
-
-	// The QPainter's paint device.
-	const QPaintDevice *qpaint_device = qpainter->device();
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				qpaint_device,
-				GPLATES_ASSERTION_SOURCE);
-
-	// Set the identity world transform since our input position is specified in *window* coordinates
-	// and we don't want it transformed by the current world transform.
-	qpainter->setWorldTransform(QTransform()/*identity*/);
-
-	// Set the clip rectangle if the GLRenderer has scissor testing enabled.
-	if (scissor_rect)
-	{
-		qpainter->setClipRect(
-					scissor_rect->x(),
-					// Also need to convert scissor rectangle from OpenGL to Qt (ie, invert y-axis)...
-					qpaint_device->height() - scissor_rect->y() - scissor_rect->height(),
-					scissor_rect->width(),
-					scissor_rect->height());
-	}
-
 	// Here onwards we should be able to draw as desired with the QPainter.
 
 
-
-	const double angle = settings.get_arrow_angle();
+	const double arrow_angle = settings.get_arrow_angle();
 	const double max_arrow_length = settings.get_arrow_length();
-	const double angle_rad = GPlatesMaths::convert_deg_to_rad(angle);
+	const double angle_rad = GPlatesMaths::convert_deg_to_rad(arrow_angle);
 
 
 	// The length of an arrow representing 2 cm per year. See comments in the GlobeCamera class for
 	// information about the FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT.
-	double two_cm_per_year = *layer_scale * (std::min)(paint_device_width, paint_device_height) /
+	double two_cm_per_year = layer_scale.get() * (std::min)(paint_device_width, paint_device_height) /
 			GlobeCamera::FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT;
 
 	double arrow_length, velocity_scale;
@@ -428,71 +433,69 @@ GPlatesGui::VelocityLegendOverlay::paint(
 		break;
 	}
 
+	arrow_length *= scale;
+
 	double arrow_height = arrow_length*std::abs(std::sin(angle_rad));
 	double arrow_width = arrow_length*std::abs(std::cos(angle_rad));
 
-	int margin = BOX_MARGIN * (std::min)(paint_device_width, paint_device_height);;
-	margin = (std::max)(margin,MIN_MARGIN);
-	int arrow_box_width = arrow_width + 2*margin;
-	int arrow_box_height = arrow_height + 2*margin;
+	int legend_margin = BOX_MARGIN * (std::min)(paint_device_width, paint_device_height);
+	legend_margin = (std::max)(legend_margin,MIN_MARGIN);
+	legend_margin *= scale;
+
+	int arrow_box_width = arrow_width + 2*legend_margin;
+	int arrow_box_height = arrow_height + 2*legend_margin;
 
 	QString text = QString("%1 cm/yr").arg(velocity_scale);
 	QFontMetrics fm(settings.get_scale_text_font());
 
-	int text_width = fm.width(text);
-	int text_height = fm.height()*scale;
+#if QT_VERSION >= QT_VERSION_CHECK(5,11,0)
+	int text_width = fm.horizontalAdvance(text) * scale;
+#else
+	int text_width = fm.width(text) * scale;
+#endif
+	int text_height = fm.height() * scale;
 
-	double height = arrow_box_height + text_height + margin;
-	double width = (std::max)(arrow_box_width,(text_width + 2*margin));
+	const double legend_height = arrow_box_height + text_height + legend_margin;
+	const double legend_width = (std::max)(arrow_box_width,(text_width + 2*legend_margin));
 
-	// Determine the bounding box rectangle. We also use this to position the arrow and text, whether or
-	// not we draw the bounding box.
-	QRect background_box;
-	get_background_qrect(background_box,paint_device_width,paint_device_height,scale,settings,width,height);
+	// Scale the x and y offsets.
+	const float x_offset = settings.get_x_offset() * scale;
+	const float y_offset = settings.get_y_offset() * scale;
 
-	// Draw background box
-	if (settings.background_enabled())
+	// Find left of legend bounding box.
+	float x;
+	if (settings.get_anchor() == GPlatesGui::VelocityLegendOverlaySettings::TOP_LEFT ||
+		settings.get_anchor() == GPlatesGui::VelocityLegendOverlaySettings::BOTTOM_LEFT)
 	{
-		qpainter->setBrush(QBrush(settings.get_background_colour()));
-		qpainter->setPen(settings.get_background_colour());
-		qpainter->drawRect(background_box);
+		x = x_offset;
+	}
+	else // TOP_RIGHT, BOTTOM_RIGHT
+	{
+		x = paint_device_width - x_offset - legend_width;
 	}
 
-
-	// Draw legend text
-	qpainter->setPen(settings.get_scale_text_colour());
-	qpainter->setFont(scale_font(settings.get_scale_text_font(), scale));
-	qpainter->drawText(background_box.center().x()-text_width/2, background_box.bottom()-margin,text);
-
-	qpainter->setPen(settings.get_arrow_colour());
-	qpainter->setBrush(QBrush(settings.get_arrow_colour()));
-	double arrow_head_size = 5.;
-
-	QTransform transform;
-	transform.translate(background_box.center().x(),
-						background_box.top()+(arrow_height+2*margin)/2);
-	transform.rotate(angle);
-
-	QPainterPath arrow_painter_path;
-	arrow_painter_path.moveTo(-arrow_length/2,0);
-	arrow_painter_path.lineTo(arrow_length/2,0);
-
-	arrow_painter_path.lineTo(arrow_length/2 - arrow_head_size, - arrow_head_size);
-	arrow_painter_path.lineTo(arrow_length/2 - arrow_head_size,arrow_head_size);
-	arrow_painter_path.lineTo(arrow_length/2,0);
-
-	qpainter->setTransform(transform);
-
-	qpainter->drawPath(arrow_painter_path);
-
-	// Turn off clipping if it was turned on.
-	if (scissor_rect)
+	// Find top of legend bounding box.
+	//
+	// Note: We're using OpenGL co-ordinates where OpenGL and Qt y-axes are the reverse of each other.
+	//       We're using OpenGL because we then pass these coordinates through the OpenGL model-view-projection transform.
+	float y;
+	if (settings.get_anchor() == GPlatesGui::VelocityLegendOverlaySettings::TOP_LEFT ||
+		settings.get_anchor() == GPlatesGui::VelocityLegendOverlaySettings::TOP_RIGHT)
 	{
-		qpainter->setClipRect(QRect(), Qt::NoClip);
+		y = paint_device_height - y_offset;
+	}
+	else // BOTTOM_LEFT, BOTTOM_RIGHT
+	{
+		y = y_offset + legend_height;
 	}
 
+	// Render the velocity legend.
+	render(
+			renderer,
+			settings,
+			x, y,
+			legend_width, legend_height, legend_margin,
+			text, text_width,
+			arrow_length, arrow_height, arrow_angle,
+			scale);
 }
-
-
-
-

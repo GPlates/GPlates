@@ -33,6 +33,7 @@
 #include <QStringList>
 #include <QString>
 #include <QTextStream>
+#include <QtGlobal>
 
 #include "CitcomsFormatVelocityVectorFieldExport.h"
 
@@ -94,7 +95,11 @@ namespace GPlatesFileIO
 						<< velocity_colat_str.c_str()
 						<< "  "
 						<< velocity_lon_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+						<< Qt::endl;
+#else
 						<< endl;
+#endif
 			}
 
 
@@ -157,7 +162,11 @@ namespace GPlatesFileIO
 						<< velocity_azimuth_str.c_str()
 						<< "  "
 						<< velocity_magnitude_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+						<< Qt::endl;
+#else
 						<< endl;
+#endif
 			}
 
 

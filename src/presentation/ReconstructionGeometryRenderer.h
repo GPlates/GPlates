@@ -31,7 +31,8 @@
 #include <set>
 #include <utility>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
+#include <boost/function.hpp>
 #include <boost/optional.hpp>
 
 #include "SymbolVisitor.h"
@@ -157,6 +158,8 @@ namespace GPlatesPresentation
 			//
 			// VGP-specific parameters.
 			//
+			// Function returns bool to show VGP given the current time and VGP's optional age.
+			boost::function<bool (double/*time*/, boost::optional<double>/*age*/)> show_vgp;
 			bool vgp_draw_circular_error;
 
 			//

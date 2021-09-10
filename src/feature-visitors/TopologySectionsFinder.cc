@@ -206,23 +206,21 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network(
 	for ( ; interior_geometries_iter != interior_geometries_iter_end; ++interior_geometries_iter) 
 	{
 		// Visit the current topological network interior.
-		visit_gpml_topological_network_interior(*interior_geometries_iter);
+		visit_gpml_topological_network_interior(**interior_geometries_iter);
 	}
 }
 
 void
 GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network_interior(
-		const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_topological_network_interior)
+		const GPlatesPropertyValues::GpmlPropertyDelegate &gpml_topological_network_interior)
 {
 	// source geom.'s value is a delegate 
 	// DO NOT visit the delegate with:
 	// ( gpml_topological_line_section.get_source_geometry() )->accept_visitor(*this); 
 
 	// Rather, access directly
-	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type property_delegate_ptr =
-			gpml_topological_network_interior.get_source_geometry();
-	const GPlatesModel::FeatureId &src_geom_id = property_delegate_ptr->feature_id();
-	const GPlatesModel::PropertyName &src_prop_name = property_delegate_ptr->target_property();
+	const GPlatesModel::FeatureId &src_geom_id = gpml_topological_network_interior.feature_id();
+	const GPlatesModel::PropertyName &src_prop_name = gpml_topological_network_interior.target_property();
 
 	// NOTE: A topological interior is *not* a topological section.
 	// But for the meantime we treat it like one because the topology tools currently access

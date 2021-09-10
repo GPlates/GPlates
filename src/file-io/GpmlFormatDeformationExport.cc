@@ -102,6 +102,7 @@ namespace
 		// Get the current (per-point) geometry data.
 		deformed_feature_geometry->get_geometry_data(
 				boost::none/*points*/,
+				boost::none/*point_locations*/,
 				deformation_strain_rates_option,
 				deformation_strains_option);
 

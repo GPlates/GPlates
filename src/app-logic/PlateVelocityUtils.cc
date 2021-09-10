@@ -1196,7 +1196,7 @@ GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworksVelocities::calculate_ve
 		boost::optional<
 				std::pair<
 						GPlatesMaths::Vector3D,
-						boost::optional<const ResolvedTriangulation::Network::RigidBlock &> > >
+						ResolvedTriangulation::Network::PointLocation> >
 				velocity = network->get_triangulation_network().calculate_velocity(
 						point,
 						velocity_delta_time,
@@ -1206,11 +1206,12 @@ GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworksVelocities::calculate_ve
 			const GPlatesMaths::Vector3D &velocity_vector = velocity->first;
 
 			// If the point was in one of the network's rigid blocks.
-			if (velocity->second)
+			const ResolvedTriangulation::Network::PointLocation &point_location = velocity->second;
+			if (boost::optional<const ResolvedTriangulation::Network::RigidBlock &> rigid_block =
+				point_location.located_in_rigid_block())
 			{
-				const ResolvedTriangulation::Network::RigidBlock &rigid_block = velocity->second.get();
 				const ReconstructionGeometry *velocity_recon_geom =
-						rigid_block.get_reconstructed_feature_geometry().get();
+						rigid_block->get_reconstructed_feature_geometry().get();
 
 				return std::make_pair(velocity_recon_geom, velocity_vector);
 			}

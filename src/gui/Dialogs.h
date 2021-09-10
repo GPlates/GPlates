@@ -74,7 +74,6 @@ namespace GPlatesQtWidgets
 	class GenerateVelocityDomainTerraDialog;
 	class HellingerDialog;
 	class KinematicGraphsDialog;
-	class LicenseDialog;
 	class LogDialog;
 	class ManageFeatureCollectionsDialog;
 	class PreferencesDialog;
@@ -190,9 +189,6 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::KinematicGraphsDialog &
 		kinematics_tool_dialog();
-
-		GPlatesQtWidgets::LicenseDialog &
-		license_dialog();
 
 		GPlatesQtWidgets::LogDialog &
 		log_dialog();
@@ -320,9 +316,6 @@ namespace GPlatesGui
 		pop_up_kinematics_tool_dialog();
 
 		void
-		pop_up_license_dialog();
-
-		void
 		pop_up_log_dialog();
 
 		void
@@ -407,7 +400,6 @@ namespace GPlatesGui
 			DIALOG_GENERATE_DEFORMING_MESH_POINTS,
 			DIALOG_HELLINGER,
 			DIALOG_KINEMATICS_TOOL,
-			DIALOG_LICENSE,
 			DIALOG_LOG,
 			DIALOG_MANAGE_FEATURE_COLLECTIONS,
 			DIALOG_PREFERENCES,

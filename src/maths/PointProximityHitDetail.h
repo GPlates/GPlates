@@ -45,7 +45,7 @@ namespace GPlatesMaths
 		static
 		const ProximityHitDetail::non_null_ptr_type
 		create(
-				PointOnSphere::non_null_ptr_to_const_type point_,
+				const PointOnSphere &point_,
 				const double &closeness_,
 				const boost::optional<unsigned int> &index_ = boost::none)
 		{
@@ -68,12 +68,12 @@ namespace GPlatesMaths
 		}
 
 	private:
-		PointOnSphere::non_null_ptr_to_const_type d_point;
+		PointOnSphere d_point;
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		PointProximityHitDetail(
-				PointOnSphere::non_null_ptr_to_const_type point_,
+				const PointOnSphere &point_,
 				const double &closeness_,
 				const boost::optional<unsigned int> &index_ = boost::none):
 			ProximityHitDetail(closeness_,index_),

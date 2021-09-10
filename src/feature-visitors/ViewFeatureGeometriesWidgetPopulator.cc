@@ -30,7 +30,7 @@
 #include <QList>
 #include <utility>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/none.hpp>
 
@@ -231,7 +231,7 @@ namespace
 	populate_coordinates_from_point(
 			GPlatesGui::TreeWidgetBuilder &tree_widget_builder,
 			item_handle_seq_type &coordinate_widgets,
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
+			const GPlatesMaths::PointOnSphere &point_on_sphere,
 			CoordinatePeriods::CoordinatePeriod period)
 	{
 		static QLocale locale;
@@ -240,7 +240,7 @@ namespace
 				tree_widget_builder, coordinate_widgets, 1);
 		
 		// Then fill in the appropriate column.
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*point_on_sphere);
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point_on_sphere);
 		QString lat = locale.toString(llp.latitude());
 		QString lon = locale.toString(llp.longitude());
 		QString point;
@@ -341,8 +341,8 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::initialise_pre_pro
 				info.item_handle,
 				boost::bind(
 						&QTreeWidget::scrollToItem,
-						_2, // will be the QTreeWidget that the tree widget builder uses
-						_1, // will be the QTreeWidgetItem we're attaching this function to
+						boost::placeholders::_2, // will be the QTreeWidget that the tree widget builder uses
+						boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 						QAbstractItemView::EnsureVisible));
 	}
 
@@ -379,7 +379,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_line_str
 		add_function_to_current_item(d_tree_widget_builder,
 				boost::bind(
 						&QTreeWidgetItem::setExpanded,
-						_1, // will be the QTreeWidgetItem we're attaching this function to
+						boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 						true));
 	}
 
@@ -397,7 +397,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_line_str
 			item_handle,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	// Now, prepare the coords in present-day and reconstructed time.
@@ -448,7 +448,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_multi_po
 	add_function_to_current_item(d_tree_widget_builder,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	// Mark that the property tree widget item we are in the middle of constructing is a
@@ -465,7 +465,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_multi_po
 			item_handle,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	// Now, prepare the coords in present-day and reconstructed time.
@@ -521,7 +521,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_orientab
 		add_function_to_current_item(d_tree_widget_builder,
 				boost::bind(
 						&QTreeWidgetItem::setExpanded,
-						_1, // will be the QTreeWidgetItem we're attaching this function to
+						boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 						true));
 	}
 
@@ -543,7 +543,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 	add_function_to_current_item(d_tree_widget_builder,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	// Mark that the property tree widget item we are in the middle of constructing is a
@@ -560,16 +560,16 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 			item_handle,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	// Now, prepare the coords in present-day and reconstructed time.
 	item_handle_seq_type coordinate_widgets;
 	// The present-day point.
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type present_day_point =
-			gml_point.point();
+	const GPlatesMaths::PointOnSphere &present_day_point = gml_point.point();
 	populate_coordinates_from_point(d_tree_widget_builder,
-			coordinate_widgets, present_day_point,
+			coordinate_widgets,
+			present_day_point,
 			CoordinatePeriods::PRESENT);
 
 	// The reconstructed point, which may not be available.
@@ -583,14 +583,12 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 		// should be using polymorphism -- specifically, the double-dispatch of the
 		// Visitor pattern -- rather than updating the "if ... else if ..." chain
 		// each time a new derivation is added.)
-		const GPlatesMaths::PointOnSphere *recon_point =
-				dynamic_cast<const GPlatesMaths::PointOnSphere *>(recon_geometry->get());
+		const GPlatesMaths::PointGeometryOnSphere *recon_point =
+				dynamic_cast<const GPlatesMaths::PointGeometryOnSphere *>(recon_geometry->get());
 		if (recon_point) {
 			populate_coordinates_from_point(d_tree_widget_builder,
 					coordinate_widgets,
-					GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type(
-							recon_point,
-							GPlatesUtils::NullIntrusivePointerHandler()),
+					recon_point->position(),
 					CoordinatePeriods::RECONSTRUCTED);
 		}
 	}
@@ -611,7 +609,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_polygon(
 	add_function_to_current_item(d_tree_widget_builder,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	// Mark that the property tree widget item we are in the middle of constructing is a
@@ -628,7 +626,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_polygon(
 			item_handle,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	d_tree_widget_builder.push_current_item(item_handle);

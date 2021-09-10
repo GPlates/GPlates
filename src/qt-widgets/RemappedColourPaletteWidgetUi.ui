@@ -90,9 +90,6 @@
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QWidget" name="extra_placeholder_widget" native="true"/>
-      </item>
      </layout>
     </widget>
    </item>

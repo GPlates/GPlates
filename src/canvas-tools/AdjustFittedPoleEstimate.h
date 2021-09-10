@@ -105,7 +105,7 @@ namespace GPlatesCanvasTools
 				const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 			{
 				d_geometry.reset(
-					rendered_point_on_sphere.get_point_on_sphere().get_non_null_pointer());
+						rendered_point_on_sphere.get_point_on_sphere().get_geometry_on_sphere());
 			}
 
 
@@ -125,7 +125,7 @@ namespace GPlatesCanvasTools
 						it = rendered_multi_point_on_sphere.get_multi_point_on_sphere()->begin();
 					std::advance(it,*d_vertex_index);
 
-					d_geometry.reset(it->get_non_null_pointer());
+					d_geometry.reset(it->get_geometry_on_sphere());
 				}
 			}
 
@@ -134,7 +134,7 @@ namespace GPlatesCanvasTools
 			visit_rendered_circle_symbol(const GPlatesViewOperations::RenderedCircleSymbol &rendered_circle_symbol)
 			{
 				d_geometry.reset(
-							rendered_circle_symbol.get_centre().get_non_null_pointer());
+							rendered_circle_symbol.get_centre().get_geometry_on_sphere());
 			}
 
 			virtual
@@ -143,7 +143,7 @@ namespace GPlatesCanvasTools
 					const GPlatesViewOperations::RenderedCrossSymbol &rendered_cross_symbol)
 			{
 				d_geometry.reset(
-							rendered_cross_symbol.get_centre().get_non_null_pointer());
+							rendered_cross_symbol.get_centre().get_geometry_on_sphere());
 			}
 
 			virtual
@@ -152,7 +152,7 @@ namespace GPlatesCanvasTools
 					const GPlatesViewOperations::RenderedSquareSymbol &rendered_square_symbol)
 			{
 				d_geometry.reset(
-							rendered_square_symbol.get_centre().get_non_null_pointer());
+							rendered_square_symbol.get_centre().get_geometry_on_sphere());
 			}
 
 			virtual
@@ -161,7 +161,7 @@ namespace GPlatesCanvasTools
 					const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol)
 			{
 				d_geometry.reset(
-							rendered_triangle_symbol.get_centre().get_non_null_pointer());
+							rendered_triangle_symbol.get_centre().get_geometry_on_sphere());
 			}
 
 			virtual
@@ -178,8 +178,8 @@ namespace GPlatesCanvasTools
 			visit_rendered_radial_arrow(
 					const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow)
 			{
-				d_geometry.reset
-						(rendered_radial_arrow.get_position().get_non_null_pointer());
+				d_geometry.reset(
+						rendered_radial_arrow.get_position().get_geometry_on_sphere());
 			}
 
 			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
@@ -322,14 +322,14 @@ namespace GPlatesCanvasTools
 
 		void
 		update_pole_estimate_and_arc_highlight(
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &pole,
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reference_arc_end_point,
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &relative_arc_end_point);
+				const GPlatesMaths::PointOnSphere &pole,
+				const GPlatesMaths::PointOnSphere &reference_arc_end_point,
+				const GPlatesMaths::PointOnSphere &relative_arc_end_point);
 
 		void
 		update_arc_and_end_point_highlight(
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &end_point,
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &pole);
+				const GPlatesMaths::PointOnSphere &end_point,
+				const GPlatesMaths::PointOnSphere &pole);
 
 		void
 		update_angle();

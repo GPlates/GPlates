@@ -67,7 +67,7 @@ GPlatesMaths::SmallCircleCoverageMeshBuilder::visit(
 
 		// Create a polygon from the triangle vertices.
 		const PolygonOnSphere::non_null_ptr_to_const_type triangle_poly =
-				PolygonOnSphere::create_on_heap(triangle_vertices, triangle_vertices + 3);
+				PolygonOnSphere::create(triangle_vertices, triangle_vertices + 3);
 
 		// Test the triangle against the small circle bounds.
 		// We test as a filled polygon in case the triangle completely surrounds the

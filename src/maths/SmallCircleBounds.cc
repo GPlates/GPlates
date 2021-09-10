@@ -27,8 +27,8 @@
 
 #include "SmallCircleBounds.h"
 
+#include "GeometryIntersect.h"
 #include "GreatCircleArc.h"
-
 #include "FiniteRotation.h"
 #include "Rotation.h"
 #include "types.h"
@@ -432,22 +432,17 @@ GPlatesMaths::BoundingSmallCircleBuilder::add(
 }
 
 
-GPlatesMaths::BoundingSmallCircle
-GPlatesMaths::BoundingSmallCircleBuilder::get_bounding_small_circle(
-		const double &expand_bound_delta_dot_product) const
+const GPlatesMaths::AngularExtent &
+GPlatesMaths::BoundingSmallCircleBuilder::get_default_angular_expansion()
 {
-	// The epsilon expands the dot product range covered
-	// as a protection against numerical precision.
-	// This epsilon should be larger than used in class Real (which is about 1e-12).
-	double expanded_min_dot_product = d_maximum_distance.get_cosine().dval() - expand_bound_delta_dot_product;
-	if (expanded_min_dot_product < -1)
-	{
-		expanded_min_dot_product = -1;
-	}
+	// Set our default expansion of bounding small circle to match the closeness threshold for intersection
+	// detection (used when determining if one geometry is close enough to be *touching* another geometry).
+	// This ensures that the bounding small circle expands to include the *touching* region around
+	// the geometries contained within the bounding small circle.
+	static const AngularExtent DEFAULT_ANGULAR_EXPANSION = AngularExtent::create_from_cosine(
+			GeometryIntersect::Intersection::get_on_segment_start_threshold_cosine());
 
-	return BoundingSmallCircle(
-			d_small_circle_centre,
-			AngularExtent::create_from_cosine(expanded_min_dot_product));
+	return DEFAULT_ANGULAR_EXPANSION;
 }
 
 
@@ -1026,8 +1021,8 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 
 GPlatesMaths::InnerOuterBoundingSmallCircle
 GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::get_inner_outer_bounding_small_circle(
-		const double &contract_inner_bound_delta_dot_product,
-		const double &expand_outer_bound_delta_dot_product) const
+		const AngularExtent &inner_bound_angular_contraction,
+		const AngularExtent &outer_bound_angular_expansion) const
 {
 	// If no primitives have been added then return an inner-outer bounding small circle
 	// that has zero radius for both inner and outer small circles.
@@ -1039,22 +1034,8 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::get_inner_outer_bounding_sma
 		return InnerOuterBoundingSmallCircle(d_small_circle_centre, AngularExtent::ZERO, AngularExtent::ZERO);
 	}
 
-	// The epsilon expands the dot product range covered
-	// as a protection against numerical precision.
-	// This epsilon should be larger than used in class Real (which is about 1e-12).
-	double expanded_min_dot_product = d_maximum_distance.get_cosine().dval() - expand_outer_bound_delta_dot_product;
-	if (expanded_min_dot_product < -1)
-	{
-		expanded_min_dot_product = -1;
-	}
-	double expanded_max_dot_product = d_minimum_distance.get_cosine().dval() + contract_inner_bound_delta_dot_product;
-	if (expanded_max_dot_product > 1)
-	{
-		expanded_max_dot_product = 1;
-	}
-
 	return InnerOuterBoundingSmallCircle(
 			d_small_circle_centre,
-			AngularExtent::create_from_cosine(expanded_min_dot_product),
-			AngularExtent::create_from_cosine(expanded_max_dot_product));
+			AngularExtent(d_maximum_distance) + outer_bound_angular_expansion,
+			AngularExtent(d_minimum_distance) - inner_bound_angular_contraction);
 }

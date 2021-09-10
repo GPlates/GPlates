@@ -204,7 +204,7 @@ namespace GPlatesViewOperations
 		 * line segment's end points - this ensures we can successfully
 		 * perform the projection.
 		 */
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		GPlatesMaths::PointOnSphere
 		project_point_onto_line_segment(
 				const unsigned int line_segment_index,
 				const GPlatesMaths::PointOnSphere &pos_on_sphere);

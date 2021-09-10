@@ -180,7 +180,8 @@ GPlatesFileIO::GMTFormatResolvedTopologicalGeometryExport::export_resolved_topol
 		const referenced_files_collection_type &referenced_files,
 		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		bool export_topological_line_sub_segments)
 {
 	// Open the file.
 	QFile output_file(file_info.filePath());
@@ -235,50 +236,53 @@ GPlatesFileIO::GMTFormatResolvedTopologicalGeometryExport::export_resolved_topol
 			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &
 					shared_sub_segment = *shared_sub_segments_iter;
 
-			// If the shared sub-segment has any of its own child sub-segments in turn
-			// (because it's from a resolved topological line) then process those instead.
-			// This essentially is the same as simply using the parent sub-segment except that the plate IDs will
-			// come from the child sub-segment features (which is more representative of the reconstructed geometry.
-			const boost::optional<GPlatesAppLogic::sub_segment_seq_type> &sub_sub_segments =
-					shared_sub_segment->get_sub_sub_segments();
-			if (sub_sub_segments)
+			if (export_topological_line_sub_segments)
 			{
-				// Visit each sub-sub-segment geometry.
-				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_sub_segments_iter = sub_sub_segments->begin();
-				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_sub_segments_end = sub_sub_segments->end();
-				for (; sub_sub_segments_iter != sub_sub_segments_end; ++sub_sub_segments_iter)
+				// If the shared sub-segment has any of its own child sub-segments in turn
+				// (because it's from a resolved topological line) then process those instead.
+				// This essentially is the same as simply using the parent sub-segment except that the plate IDs will
+				// come from the child sub-segment features (which is more representative of the reconstructed geometry.
+				const boost::optional<GPlatesAppLogic::sub_segment_seq_type> &sub_sub_segments =
+						shared_sub_segment->get_sub_sub_segments();
+				if (sub_sub_segments)
 				{
-					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &
-							sub_sub_segment = *sub_sub_segments_iter;
-
-					const GPlatesModel::FeatureHandle::const_weak_ref &sub_sub_segment_feature_ref =
-							sub_sub_segment->get_feature_ref();
-					if (!sub_sub_segment_feature_ref.is_valid())
+					// Visit each sub-sub-segment geometry.
+					GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_sub_segments_iter = sub_sub_segments->begin();
+					GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_sub_segments_end = sub_sub_segments->end();
+					for (; sub_sub_segments_iter != sub_sub_segments_end; ++sub_sub_segments_iter)
 					{
-						continue;
+						const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &
+								sub_sub_segment = *sub_sub_segments_iter;
+
+						const GPlatesModel::FeatureHandle::const_weak_ref &sub_sub_segment_feature_ref =
+								sub_sub_segment->get_feature_ref();
+						if (!sub_sub_segment_feature_ref.is_valid())
+						{
+							continue;
+						}
+
+						//
+						// Each (child) sub-sub-segment potentially belongs to a different feature
+						// (unlike the parent sub-segments) and hence needs its own header.
+						//
+
+						// Get the header lines.
+						std::vector<QString> header_lines;
+						gmt_header.get_feature_header_lines(sub_sub_segment_feature_ref, header_lines);
+
+						// Print the header lines.
+						gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
+
+						// Write (child) sub-sub-segment geometries out immediately (since each has its own header).
+						geom_exporter.export_geometry(sub_sub_segment->get_sub_segment_geometry());
 					}
 
-					//
-					// Each (child) sub-sub-segment potentially belongs to a different feature
-					// (unlike the parent sub-segments) and hence needs its own header.
-					//
-
-					// Get the header lines.
-					std::vector<QString> header_lines;
-					gmt_header.get_feature_header_lines(sub_sub_segment_feature_ref, header_lines);
-
-					// Print the header lines.
-					gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
-
-					// Write (child) sub-sub-segment geometries out immediately (since each has its own header).
-					geom_exporter.export_geometry(sub_sub_segment->get_sub_segment_geometry());
+					continue;
 				}
 			}
-			else
-			{
-				// Wait and write all shared (parent) sub-segment geometries together as a single feature (with same header).
-				shared_sub_segment_geometries.push_back(shared_sub_segment->get_shared_sub_segment_geometry());
-			}
+
+			// Wait and write all shared (parent) sub-segment geometries together as a single feature (with same header).
+			shared_sub_segment_geometries.push_back(shared_sub_segment->get_shared_sub_segment_geometry());
 		}
 
 		// Write the shared sub-segment geometries as a single feature since these shared (parent) sub-segments

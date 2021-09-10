@@ -24,7 +24,7 @@
  */
 
 #include <iostream>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QCoreApplication>
 #include <QDebug>

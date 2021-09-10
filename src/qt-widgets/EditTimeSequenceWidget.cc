@@ -138,7 +138,7 @@ namespace
 		
 		// Add the "Action" cell - we need to set this as uneditable.
 		QTableWidgetItem *action_item = new QTableWidgetItem();
-		action_item->setFlags(0);
+		action_item->setFlags(Qt::ItemFlags());
 		table.setItem(row, COLUMN_ACTION, action_item);
 				
 		// Set the current cell to be a cell from the new row, so that an action widget is added to it. 
@@ -169,7 +169,7 @@ namespace
 		table.setItem(row, COLUMN_TIME, item);
 		// Add the "Action" cell - we need to set this as uneditable.
 		QTableWidgetItem *action_item = new QTableWidgetItem();
-		action_item->setFlags(0);
+		action_item->setFlags(Qt::ItemFlags());
 		table.setItem(row, COLUMN_ACTION, action_item);
 		// Creating the action_widget is not a memory leak - Qt will take ownership of
 		// the action_widget memory, and clean it up when the table row is deleted.
@@ -428,7 +428,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() co
 				tr("The time sequence should contain at least two time samples."));
 	}
 
-	return GPlatesPropertyValues::GpmlArray::create(gml_time_period_type, time_periods);
+	return GPlatesPropertyValues::GpmlArray::create(time_periods, gml_time_period_type);
 }
 
 bool

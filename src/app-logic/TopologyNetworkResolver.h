@@ -91,17 +91,13 @@ namespace GPlatesAppLogic
 		 *        resolving the topological networks.
 		 *        This is useful to avoid outdated RFGs and RTGS still in existence (among other scenarios).
 		 * @param topology_network_params parameters used when creating the resolved networks.
-		 * @param topological_sections_referenced returns the topological section features referenced
-		 *        when visiting network features (note the referenced feature IDs are returned even
-		 *        if no features were found with those feature IDs).
 		 */
 		TopologyNetworkResolver(
 				std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 				const double &reconstruction_time,
 				ReconstructHandle::type reconstruct_handle,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
-				const TopologyNetworkParams &topology_network_params = TopologyNetworkParams(),
-				boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced = boost::none);
+				const TopologyNetworkParams &topology_network_params = TopologyNetworkParams());
 
 		virtual
 		~TopologyNetworkResolver() 
@@ -312,11 +308,6 @@ namespace GPlatesAppLogic
 		 */
 		TopologyNetworkParams d_topology_network_params;
 
-		/**
-		 * Used to return the topological section features referenced when visiting network features.
-		 */
-		boost::optional<std::set<GPlatesModel::FeatureId> &> d_topological_sections_referenced;
-
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;
 
@@ -344,7 +335,7 @@ namespace GPlatesAppLogic
 
 		void
 		record_topological_interior_geometry(
-				const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_topological_interior);
+				const GPlatesPropertyValues::GpmlPropertyDelegate &gpml_topological_interior);
 
 		boost::optional<ResolvedNetwork::InteriorGeometry>
 		record_topological_interior_reconstructed_geometry(

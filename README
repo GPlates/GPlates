@@ -25,14 +25,14 @@ More information can be found in the files "DEPS.Linux" and "BUILD.Linux" in
 this directory.
 
 
-Compiling GPlates on Mac OS X
------------------------------
+Compiling GPlates on macOS
+--------------------------
 
-To compile GPlates on Mac OS X, you will need the programs and libraries as
+To compile GPlates on macOS, you will need the programs and libraries as
 documented in the "Program and library dependencies" section in the "DEPS.OSX"
 file in this directory.
 
-After installing those dependencies, to compile on Mac OS X, execute:
+After installing those dependencies, to compile on macOS, execute:
     cmake .
     make
 and then optionally:

@@ -145,7 +145,6 @@ GPlatesQtWidgets::ConfigureVelocityLegendOverlayDialog::ConfigureVelocityLegendO
 	QtWidgetUtils::resize_based_on_size_hint(this);
 
 	radio_button_arrow_length->setChecked(true);
-	spinbox_angle->setSuffix("\260");
 
 }
 

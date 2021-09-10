@@ -307,7 +307,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			d_gl_visual_layers,
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
-			GPlatesGui::GlobeVisibilityTester(*this)),
+			GPlatesGui::GlobeVisibilityTester(*this),
+			devicePixelRatio()),
 	d_globe_camera(view_state.get_globe_camera()),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
@@ -572,8 +573,12 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = render_scene(*gl, d_view_projection, *this/*paint_device*/);
-}
+	d_gl_frame_cache_handle = render_scene(
+			*gl,
+			d_view_projection,
+			// Using device-independent pixels (eg, widget dimensions)...
+			width(),
+			height());}
 
 
 QSize
@@ -583,18 +588,9 @@ GPlatesQtWidgets::GlobeCanvas::get_viewport_size() const
 }
 
 
-QSize
-GPlatesQtWidgets::GlobeCanvas::get_viewport_size_in_device_pixels() const
-{
-	// QWidget::width() and QWidget::height() are in device independent pixels.
-	// Convert from widget size to device pixels (OpenGL).
-	return devicePixelRatio() * get_viewport_size();
-}
-
-
 QImage
 GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
-		const QSize &image_size)
+		const QSize &image_size_in_device_independent_pixels)
 {
 	// Initialise OpenGL if we haven't already.
 	initializeGL_if_necessary();
@@ -608,8 +604,21 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
 	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
-	// The image to render the scene into.
-	QImage image(image_size, QImage::Format_ARGB32);
+
+	// The image to render/copy the scene into.
+	//
+	// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
+	// The image will still be it's original size in device *independent* pixels.
+	//
+	// TODO: We're using the device pixel ratio of current canvas since we're rendering into that and
+	// then copying into image. This might not be ideal if this canvas is displayed on one monitor and
+	// the QImage (eg, Colouring previews) will be displayed on another with a different device pixel ratio.
+	const QSize image_size_in_device_pixels(
+			image_size_in_device_independent_pixels.width() * devicePixelRatio(),
+			image_size_in_device_independent_pixels.height() * devicePixelRatio());
+	QImage image(image_size_in_device_pixels, QImage::Format_ARGB32);
+	image.setDevicePixelRatio(devicePixelRatio());
+
 	if (image.isNull())
 	{
 		// Most likely a memory allocation failure - return the null image.
@@ -622,8 +631,11 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 
 	const GPlatesOpenGL::GLViewport image_viewport(
 			0, 0,
-			image_size.width(), image_size.height());
-	const double image_aspect_ratio = double(image_size.width()) / image_size.height();
+			// Use image size in device pixels (used by OpenGL)...
+			image_size_in_device_pixels.width(),
+			image_size_in_device_pixels.height())/*destination_viewport*/);
+	const double image_aspect_ratio = double(image_size_in_device_independent_pixels.width()) /
+			image_size_in_device_independent_pixels.height();
 
 	// Get the view-projection transform for the image.
 	const std::pair<GPlatesOpenGL::GLMatrix/*view*/, GPlatesOpenGL::GLMatrix/*projection*/>
@@ -719,7 +731,13 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 	//
 	// Render the scene.
 	//
-	const cache_handle_type tile_cache_handle = render_scene(gl, image_tile_view_projection, image);
+	const cache_handle_type tile_cache_handle = render_scene(
+			gl,
+			image_tile_view_projection,
+			// Since QImage is just raw pixels its dimensions are in device pixels, but
+			// we need device-independent pixels here (eg, widget dimensions)...
+			image.width() / image.devicePixelRatio(),
+			image.height() / image.devicePixelRatio());
 
 	//
 	// Copy the rendered tile into the appropriate sub-rect of the image.
@@ -793,7 +811,12 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 
 	// Render the scene to the feedback paint device.
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = render_scene(*gl, feedback_paint_device_view_projection, feedback_paint_device);
+	d_gl_frame_cache_handle = render_scene(
+			*gl,
+			feedback_paint_device_view_projection,
+			// Using device-independent pixels (eg, widget dimensions)...
+			feedback_paint_device.width(),
+			feedback_paint_device.height());
 }
 
 
@@ -801,7 +824,8 @@ GPlatesQtWidgets::GlobeCanvas::cache_handle_type
 GPlatesQtWidgets::GlobeCanvas::render_scene(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
-		const QPaintDevice &paint_device)
+		int paint_device_width_in_device_independent_pixels,
+		int paint_device_height_in_device_independent_pixels)
 {
 	PROFILE_FUNC();
 
@@ -827,7 +851,10 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-	const float scale = calculate_scale(paint_device);
+	const float scale = calculate_scale(
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels);
+
 	//
 	// Paint the globe and its contents.
 	//
@@ -845,13 +872,17 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 			viewport_zoom_factor,
 			scale);
 
+	// Noet that The overlays are rendered in screen window coordinates, so no view transform is needed.
+
 	// Paint the text overlay.
 	// We use the paint device dimensions (and not the canvas dimensions) in case the paint device
 	// is not the canvas (eg, when rendering to a larger dimension SVG paint device).
 	d_text_overlay->paint(
 			gl,
 			d_view_state.get_text_overlay_settings(),
-			paint_device,
+			// These are widget dimensions (not device pixels)...
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels,
 			scale);
 
 	// Paint the velocity legend overlay
@@ -859,8 +890,8 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 			gl,
 			d_view_state.get_velocity_legend_overlay_settings(),
 			// These are widget dimensions (not device pixels)...
-			paint_device.width(),
-			paint_device.height(),
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels,
 			scale);
 
 	return frame_cache_handle;
@@ -1318,12 +1349,15 @@ GPlatesQtWidgets::GlobeCanvas::calc_globe_position(
 
 float
 GPlatesQtWidgets::GlobeCanvas::calculate_scale(
-		const QPaintDevice &paint_device) const
+		int paint_device_width_in_device_independent_pixels,
+		int paint_device_height_in_device_independent_pixels) const
 {
 	// Note that we use regular device *independent* sizes not high-DPI device pixels
 	// (ie, not using device pixel ratio) to calculate scale because font sizes, etc, are
 	// based on these coordinates (it's only OpenGL, really, that deals with device pixels).
-	const int paint_device_dimension = (std::min)(paint_device.width(), paint_device.height());
+	const int paint_device_dimension = (std::min)(
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels);
 	const int min_viewport_dimension = (std::min)(width(), height());
 
 	// If paint device is larger than the viewport then don't scale - this avoids having

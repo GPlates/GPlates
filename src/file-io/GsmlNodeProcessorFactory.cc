@@ -23,7 +23,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "GsmlNodeProcessor.h"
@@ -100,7 +100,7 @@ GPlatesFileIO::GsmlNodeProcessorFactory::create_property_processors(
 						boost::bind(                                   
 							feature->properties[j]->handler, 
 							d_property_handler,      
-							_1)
+							boost::placeholders::_1)
 					)
 				)
 			);

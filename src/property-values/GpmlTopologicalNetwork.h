@@ -70,42 +70,8 @@ namespace GPlatesPropertyValues
 		typedef boundary_sections_seq_type::const_iterator boundary_sections_const_iterator;
 
 
-		/**
-		 * Topological reference to an interior geometry of the network.
-		 */
-		class Interior :
-				// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
-				public GPlatesUtils::QtStreamable<Interior>
-		{
-		public:
-
-			explicit
-			Interior(
-					const GpmlPropertyDelegate::non_null_ptr_type &source_geometry) :
-				d_source_geometry(source_geometry)
-			{  }
-
-			//! Returns the source geometry.
-			const GpmlPropertyDelegate::non_null_ptr_type &
-			get_source_geometry() const
-			{
-				return d_source_geometry;
-			}
-
-			const Interior
-			deep_clone() const;
-
-			bool
-			operator==(
-					const Interior &other) const;
-
-		private:
-
-			GpmlPropertyDelegate::non_null_ptr_type d_source_geometry;
-		};
-
 		//! Typedef for a sequence of interior geometries.
-		typedef std::vector<Interior> interior_geometry_seq_type;
+		typedef std::vector<GpmlPropertyDelegate::non_null_ptr_type> interior_geometry_seq_type;
 
 		//! Typedef for a const iterator over the interior geometries.
 		typedef interior_geometry_seq_type::const_iterator interior_geometries_const_iterator;
@@ -307,13 +273,6 @@ namespace GPlatesPropertyValues
 				const GpmlTopologicalNetwork &);
 
 	};
-
-
-	// operator<< for GpmlTopologicalNetwork::Interior.
-	std::ostream &
-	operator<<(
-			std::ostream &os,
-			const GpmlTopologicalNetwork::Interior &topological_network_interior);
 }
 
 #endif // GPLATES_PROPERTY_VALUES_GPMLTOPOLOGICALNETWORK_H

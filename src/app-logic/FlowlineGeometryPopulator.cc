@@ -270,8 +270,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_multi_point(
 			++seed_multipoint_iter, ++reconstructed_seed_multipoint_iter)
 		{
 			create_flowline_geometry(
-					seed_multipoint_iter->get_non_null_pointer(),
-					reconstructed_seed_multipoint_iter->get_non_null_pointer(),
+					*seed_multipoint_iter,
+					*reconstructed_seed_multipoint_iter,
 					reconstructed_seed_geometry);	
 		}
 	}
@@ -304,26 +304,27 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_point(
 	if (d_flowline_property_finder->can_process_flowline())
 	{
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
-			FlowlineUtils::reconstruct_flowline_seed_points(gml_point.point(),
-			d_recon_time.value(),
-			d_reconstruction_tree_creator,
-			(current_top_level_propiter()->handle_weak_ref()));
+			FlowlineUtils::reconstruct_flowline_seed_points(
+				gml_point.point().get_geometry_on_sphere(),
+				d_recon_time.value(),
+				d_reconstruction_tree_creator,
+				(current_top_level_propiter()->handle_weak_ref()));
 
-		boost::optional<const GPlatesMaths::PointOnSphere &> reconstructed_seed_point_geometry =
+		boost::optional<const GPlatesMaths::PointOnSphere &> reconstructed_seed_point =
 				GPlatesAppLogic::GeometryUtils::get_point_on_sphere(*reconstructed_seed_geometry);
 		// It should be a point geometry.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				reconstructed_seed_point_geometry,
+				reconstructed_seed_point,
 				GPLATES_ASSERTION_SOURCE);
 
 		create_flowline_geometry(
 				gml_point.point(),
-				reconstructed_seed_point_geometry->get_non_null_pointer(),
+				reconstructed_seed_point.get(),
 				reconstructed_seed_geometry);	
 	}
 	else
 	{
-		reconstruct_seed_geometry_with_recon_plate_id(gml_point.point());
+		reconstruct_seed_geometry_with_recon_plate_id(gml_point.point().get_geometry_on_sphere());
 	}
 		 
 }
@@ -392,22 +393,19 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon
 
 void
 GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point_geometry,
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reconstructed_seed_point_geometry,
+		const GPlatesMaths::PointOnSphere &present_day_seed_point,
+		const GPlatesMaths::PointOnSphere &reconstructed_seed_point,
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_seed_geometry)
 {
 
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom = present_day_seed_point_geometry;
-
-
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_left_seed_point =
+		const GPlatesMaths::PointOnSphere reconstructed_left_seed_point =
 			FlowlineUtils::reconstruct_seed_point(
-			present_day_seed_point_geometry,
+			present_day_seed_point,
 			d_left_seed_point_rotations);
 
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_right_seed_point =
+		const GPlatesMaths::PointOnSphere reconstructed_right_seed_point =
 			FlowlineUtils::reconstruct_seed_point(
-			present_day_seed_point_geometry,
+			present_day_seed_point,
 			d_right_seed_point_rotations);
 
 
@@ -448,12 +446,12 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 		try{
 
 			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type left_flowline_points =
-				GPlatesMaths::PolylineOnSphere::create_on_heap(left_flowline.begin(),left_flowline.end());
+				GPlatesMaths::PolylineOnSphere::create(left_flowline.begin(),left_flowline.end());
 
 			left_flowline_points = left_correction * left_flowline_points;
 
 			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type right_flowline_points =
-				GPlatesMaths::PolylineOnSphere::create_on_heap(right_flowline.begin(),right_flowline.end());
+				GPlatesMaths::PolylineOnSphere::create(right_flowline.begin(),right_flowline.end());
 
 			right_flowline_points = right_correction * right_flowline_points;
 
@@ -461,8 +459,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 				ReconstructedFlowline::create(
 				reconstruction_tree,
 				d_reconstruction_tree_creator,
-				present_day_seed_point_geometry,
-				reconstructed_seed_point_geometry,
+				present_day_seed_point,
+				reconstructed_seed_point,
 				left_flowline_points,
 				right_flowline_points,
 				*d_flowline_property_finder->get_left_plate(),

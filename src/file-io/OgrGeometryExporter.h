@@ -108,23 +108,23 @@ namespace GPlatesFileIO
 		// Please keep these geometries ordered alphabetically.
 
 		virtual
-			void
-			visit_multi_point_on_sphere(
+		void
+		visit_multi_point_on_sphere(
 			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere);
 
 		virtual
-			void
-			visit_point_on_sphere(
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere);
+		void
+		visit_point_on_sphere(
+			GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere);
 
 		virtual
-			void
-			visit_polygon_on_sphere(
+		void
+		visit_polygon_on_sphere(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere);
 
 		virtual
-			void
-			visit_polyline_on_sphere(
+		void
+		visit_polyline_on_sphere(
 			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
 
 

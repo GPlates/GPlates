@@ -64,7 +64,7 @@ namespace GPlatesAppLogic
 				// In other words, we iterate over one extra vertex compared to the usual polygon
 				// ring vertex iterator so that the last vertex is the end point of the last ring segment
 				// (which is also the first vertex of ring).
-				return GPlatesMaths::PolylineOnSphere::create_on_heap(
+				return GPlatesMaths::PolylineOnSphere::create(
 						section_polygon->exterior_polyline_vertex_begin(),
 						section_polygon->exterior_polyline_vertex_end());
 			}

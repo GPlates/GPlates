@@ -28,7 +28,7 @@
 #include <algorithm>  // std::fill_n
 #include <cmath>
 #include <utility>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
 #include <QDebug>
@@ -114,8 +114,8 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::create(
 
 	// Sort the depth layers from low to high radius.
 	std::sort(proxied_depth_layers.begin(), proxied_depth_layers.end(),
-			boost::bind(&ProxiedDepthLayer::depth_radius, _1) <
-			boost::bind(&ProxiedDepthLayer::depth_radius, _2));
+			boost::bind(&ProxiedDepthLayer::depth_radius, boost::placeholders::_1) <
+			boost::bind(&ProxiedDepthLayer::depth_radius, boost::placeholders::_2));
 
 	// Make sure our tile size does not exceed the maximum texture size...
 	if (tile_texel_dimension > gl.get_capabilities().gl_max_texture_size)

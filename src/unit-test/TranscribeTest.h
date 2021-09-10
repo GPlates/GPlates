@@ -42,7 +42,6 @@
 #include <boost/variant.hpp>
 #include <boost/weak_ptr.hpp>
 #include <QDataStream>
-#include <QLinkedList>
 #include <QList>
 #include <QMap>
 #include <QSet>
@@ -254,7 +253,6 @@ namespace GPlatesUnitTest
 			std::set<std::string> str_set;
 			std::vector< std::map<int, std::string> > int_str_map_vec;
 			QVector< QMap<int, QString> > int_qstr_qmap_qvec;
-			QLinkedList<int> qill;
 			QSet<QString> qstr_set;
 			QStringList qstr_list;
 			boost::optional<int> bin;

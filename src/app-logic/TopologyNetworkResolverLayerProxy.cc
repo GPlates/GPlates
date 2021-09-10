@@ -24,7 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
@@ -978,7 +978,7 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 		// geometry property iterator (referenced by the MultiPointVectorField) could be a
 		// non-multi-point geometry.
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type sub_segment_velocity_domain =
-				GPlatesMaths::MultiPointOnSphere::create_on_heap(
+				GPlatesMaths::MultiPointOnSphere::create(
 						sub_segment_geometry_points.begin(),
 						sub_segment_geometry_points.end());
 

@@ -28,7 +28,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QDataStream>
 #include <QDebug>
@@ -287,8 +287,8 @@ GPlatesOpenGL::GLScalarField3DGenerator::GLScalarField3DGenerator(
 	//
 	// NOTE: GLScalarField assumes that the depth layer radii increase in radius through the depth layer sequence.
 	std::sort(d_depth_layers.begin(), d_depth_layers.end(),
-			boost::bind(&DepthLayer::depth_radius, _1) <
-			boost::bind(&DepthLayer::depth_radius, _2));
+			boost::bind(&DepthLayer::depth_radius, boost::placeholders::_1) <
+			boost::bind(&DepthLayer::depth_radius, boost::placeholders::_2));
 
 	// Create a single multi-resolution raster that will be used to render all depth layers
 	// into the cube map.

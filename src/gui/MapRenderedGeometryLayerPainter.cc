@@ -682,7 +682,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surfac
 				mesh_vertices[mesh_edge.vertex_indices[1]]
 			};
 			const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type edge_polyline =
-					GPlatesMaths::PolylineOnSphere::create_on_heap(
+					GPlatesMaths::PolylineOnSphere::create(
 							edge_points,
 							edge_points + 2);
 
@@ -775,7 +775,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surfac
 				mesh_vertices[mesh_edge.vertex_indices[1]]
 			};
 			const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type edge_polyline =
-					GPlatesMaths::PolylineOnSphere::create_on_heap(
+					GPlatesMaths::PolylineOnSphere::create(
 							edge_points,
 							edge_points + 2);
 
@@ -889,7 +889,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 				mesh_vertices[mesh_triangle.vertex_indices[2]]
 			};
 			const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type triangle_polygon =
-					GPlatesMaths::PolygonOnSphere::create_on_heap(
+					GPlatesMaths::PolygonOnSphere::create(
 							triangle_vertex_points,
 							triangle_vertex_points + 3);
 
@@ -1228,7 +1228,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 				mesh_vertices[mesh_triangle.vertex_indices[2]]
 			};
 			const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type triangle_polygon =
-					GPlatesMaths::PolygonOnSphere::create_on_heap(
+					GPlatesMaths::PolygonOnSphere::create(
 							triangle_points,
 							triangle_points + 3);
 
@@ -1364,7 +1364,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_small_circle(
 	// NOTE: We don't create a polygon because if a polygon crosses the central meridian it gets
 	// rendered as multiple polygons and for a small circle this could look confusing.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type small_circle_arc_polyline =
-			GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+			GPlatesMaths::PolylineOnSphere::create(points);
 
 	const float line_width = rendered_small_circle.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
@@ -1390,7 +1390,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_small_circle_arc(
 
 	// Create a polyline from the tessellated points.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type small_circle_arc_polyline =
-			GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+			GPlatesMaths::PolylineOnSphere::create(points);
 
 	const float line_width = rendered_small_circle_arc.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
@@ -1440,7 +1440,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_ellipse(
 	// NOTE: We don't create a polygon because if a polygon crosses the central meridian it gets
 	// rendered as multiple polygons and for an ellipse this could look confusing.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type ellipse_polyline =
-			GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+			GPlatesMaths::PolylineOnSphere::create(points);
 
 	const float line_width = rendered_ellipse.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
@@ -1625,7 +1625,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
 		GPlatesMaths::PointOnSphere(end.get_normalisation())
 	};
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type arrow =
-			GPlatesMaths::PolylineOnSphere::create_on_heap(arrow_end_points, arrow_end_points + 2);
+			GPlatesMaths::PolylineOnSphere::create(arrow_end_points, arrow_end_points + 2);
 
 	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(arrow, rgba8_color, line_stream, arrowhead_size);
 }
@@ -1941,7 +1941,10 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_geometries(
 	std::for_each(
 		d_rendered_geometry_layer.rendered_geometry_begin(),
 		d_rendered_geometry_layer.rendered_geometry_end(),
-		boost::bind(&GPlatesViewOperations::RenderedGeometry::accept_visitor, _1, boost::ref(*this)));
+		boost::bind(
+				&GPlatesViewOperations::RenderedGeometry::accept_visitor,
+				boost::placeholders::_1,
+				boost::ref(*this)));
 }
 
 

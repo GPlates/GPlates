@@ -42,8 +42,6 @@ set(srcs
     ExportTemplateFilenameSequenceFormats.h
     ExportTemplateFilenameSequenceImpl.cc
     ExportTemplateFilenameSequenceImpl.h
-    ExternalProgram.cc
-    ExternalProgram.h
     FeatureCollectionFileFormat.h
     FeatureCollectionFileFormatClassify.cc
     FeatureCollectionFileFormatClassify.h
@@ -230,6 +228,8 @@ set(srcs
     ShapefileXmlWriter.cc
     ShapefileXmlWriter.h
     SourceRasterFileCacheFormatReader.h
+    StandaloneBundle.cc
+    StandaloneBundle.h
     SymbolFileReader.cc
     SymbolFileReader.h
     TemporaryFileRegistry.cc

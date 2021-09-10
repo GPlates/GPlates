@@ -25,14 +25,17 @@
 
 #include <string>
 #include <sstream>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/function.hpp>
+#include <QCoreApplication>
 #include <QDebug>
 #include <QMessageBox>
 #include <QStringList>
+#include <QtGlobal>
 
 #include "GPlatesQApplication.h"
 
+#include "global/config.h"  // GPLATES_PUBLIC_RELEASE
 #include "global/GPlatesException.h"
 #include "global/Version.h"
 
@@ -151,8 +154,17 @@ namespace
 			// at when users send us back a log file.
 			qWarning()
 					<< QString::fromStdString(call_stack_trace_std)
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+					<< Qt::endl
+#else
 					<< endl
-					<< GPlatesGlobal::Version::get_working_copy_version_number();
+#endif
+					<< GPlatesGlobal::Version::get_GPlates_version()
+#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
+					<< "( build:" << GPlatesGlobal::Version::get_working_copy_version_number()
+					<< GPlatesGlobal::Version::get_working_copy_branch_name() << ")"
+#endif
+				;
 		}
 
 		// If we have an installed message handler then this will output to a log file.
@@ -177,6 +189,24 @@ namespace
 	{
 		return qapplication->QApplication::notify(qreceiver, qevent);
 	}
+}
+
+
+GPlatesGui::GPlatesQApplication::GPlatesQApplication(
+		int &_argc,
+		char **_argv):
+	QApplication(_argc, _argv)
+{
+	// Initialise names used to identify GPlates. For example, in our preference settings and
+	// paths in the OS (via QStandardPaths).
+	// DO NOT CHANGE THESE VALUES without due consideration to the breaking of previously used
+	// QStandardPaths paths and preference settings.
+	//
+	// Note: This used to be in UserPreferences but has been moved here so that QStandardPaths
+	// returns the correct paths even earlier in the GPlates start-up sequence.
+	QCoreApplication::setOrganizationName("GPlates");
+	QCoreApplication::setOrganizationDomain("gplates.org");
+	QCoreApplication::setApplicationName("GPlates");
 }
 
 

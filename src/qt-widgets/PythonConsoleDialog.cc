@@ -24,7 +24,7 @@
  */
 
 #include <cstdio>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QAction>
 #include <QBrush>
@@ -170,7 +170,13 @@ namespace
 	int
 	get_tab_stop_width()
 	{
-		static const int TAB_STOP_WIDTH = QFontMetrics(get_fixed_width_font()).width("    ");
+		static const int TAB_STOP_WIDTH = QFontMetrics(get_fixed_width_font())
+#if QT_VERSION >= QT_VERSION_CHECK(5,11,0)
+			.horizontalAdvance
+#else
+			.width
+#endif
+			("    ");
 		return TAB_STOP_WIDTH;
 	}
 
@@ -315,14 +321,7 @@ GPlatesQtWidgets::PythonConsoleDialog::print_banner()
 {
 	QString banner_text;
 	banner_text += GPlatesGlobal::Version::get_GPlates_version();
-	banner_text += tr(" (r");
-	QString version_number = GPlatesGlobal::Version::get_working_copy_version_number();
-	if (version_number.isEmpty())
-	{
-		version_number = tr("<unknown>");
-	}
-	banner_text += version_number;
-	banner_text += tr(") with Python ");
+	banner_text += tr(" with Python ");
 	banner_text += Py_GetVersion();
 	banner_text += tr(" on ");
 	banner_text += Py_GetPlatform();
@@ -654,7 +653,11 @@ GPlatesQtWidgets::ConsoleInputTextEdit::ConsoleInputTextEdit(
 	document()->setUndoRedoEnabled(false);
 
 	setFrameStyle(0);
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+	setTabStopDistance(get_tab_stop_width());
+#else
 	setTabStopWidth(get_tab_stop_width());
+#endif
 	setWordWrapMode(QTextOption::NoWrap);
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -949,7 +952,11 @@ GPlatesQtWidgets::ConsoleTextEdit::ConsoleTextEdit(
 {
 	setReadOnly(true);
 	setFrameStyle(0);
+#if QT_VERSION >= QT_VERSION_CHECK(5,10,0)
+	setTabStopDistance(get_tab_stop_width());
+#else
 	setTabStopWidth(get_tab_stop_width());
+#endif
 	setFont(get_fixed_width_font());
 	setWordWrapMode(QTextOption::WrapAnywhere);
 

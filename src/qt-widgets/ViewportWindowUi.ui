@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -1000,6 +1000,9 @@
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
    </property>
+   <property name="menuRole">
+    <enum>QAction::PreferencesRole</enum>
+   </property>
   </action>
   <action name="action_Show_Stars">
    <property name="checkable">
@@ -1153,6 +1156,9 @@
    <property name="text">
     <string>Configure Geometry Rendering...</string>
    </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
   </action>
   <action name="action_Open_Project">
    <property name="text">
@@ -1225,6 +1231,9 @@
   <action name="action_Configure_Velocity_Legend">
    <property name="text">
     <string>Configure Velocity Le&amp;gend...</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
    </property>
   </action>
   <action name="action_Show_Topological_Sections">

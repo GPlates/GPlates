@@ -70,7 +70,8 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				ViewportZoom &viewport_zoom);
+				ViewportZoom &viewport_zoom,
+				int device_pixel_ratio);
 
 		/**
 		 * Initialise any OpenGL state.

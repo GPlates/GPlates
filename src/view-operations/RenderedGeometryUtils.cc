@@ -26,7 +26,7 @@
 
 #include <algorithm>
 #include <set>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -317,7 +317,7 @@ GPlatesViewOperations::RenderedGeometryUtils::activate_rendered_geometry_layers(
 		bool only_if_main_layer_active)
 {
 	VisitFunctionOnRenderedGeometryLayers activate(
-			boost::bind(&RenderedGeometryLayer::set_active, _1, true),
+			boost::bind(&RenderedGeometryLayer::set_active, boost::placeholders::_1, true),
 			main_layers,
 			only_if_main_layer_active);
 
@@ -344,7 +344,7 @@ GPlatesViewOperations::RenderedGeometryUtils::deactivate_rendered_geometry_layer
 		bool only_if_main_layer_active)
 {
 	VisitFunctionOnRenderedGeometryLayers deactivate(
-			boost::bind(&RenderedGeometryLayer::set_active, _1, false),
+			boost::bind(&RenderedGeometryLayer::set_active, boost::placeholders::_1, false),
 			main_layers,
 			only_if_main_layer_active);
 

@@ -171,7 +171,7 @@ namespace GPlatesMaths
 			{
 				const GreatCircleArc &gca = *ring_iter;
 
-				ring_arc_length += acos(gca.dot_of_endpoints());
+				ring_arc_length += gca.arc_length();
 			}
 
 			return ring_arc_length;
@@ -209,7 +209,7 @@ namespace GPlatesMaths
 
 
 const unsigned
-GPlatesMaths::PolygonOnSphere::s_min_num_collection_points = 3;
+GPlatesMaths::PolygonOnSphere::s_min_num_ring_points = 3;
 
 
 GPlatesMaths::PolygonOnSphere::~PolygonOnSphere()
@@ -221,20 +221,6 @@ GPlatesMaths::PolygonOnSphere::~PolygonOnSphere()
 
 GPlatesMaths::PolygonOnSphere::PolygonOnSphere() :
 	GeometryOnSphere()
-{
-	// Constructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
-	// PolygonOnSphereImpl::CachedCalculations - because compiler must
-	// generate code that destroys already constructed members if constructor throws.
-}
-
-
-GPlatesMaths::PolygonOnSphere::PolygonOnSphere(
-		const PolygonOnSphere &other) :
-	GeometryOnSphere(),
-	d_exterior_ring(other.d_exterior_ring),
-	d_interior_rings(other.d_interior_rings),
-	// Since PolygonOnSphere is immutable we can just share the cached calculations.
-	d_cached_calculations(other.d_cached_calculations)
 {
 	// Constructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
 	// PolygonOnSphereImpl::CachedCalculations - because compiler must
@@ -1087,7 +1073,7 @@ GPlatesMaths::tessellate(
 
 	if (polygon.number_of_interior_rings() == 0)
 	{
-		return PolygonOnSphere::create_on_heap(tessellated_exterior_ring);
+		return PolygonOnSphere::create(tessellated_exterior_ring);
 	}
 
 	// Tessellate the interior rings.
@@ -1106,7 +1092,7 @@ GPlatesMaths::tessellate(
 				max_angular_extent);
 	}
 
-	return PolygonOnSphere::create_on_heap(
+	return PolygonOnSphere::create(
 			tessellated_exterior_ring,
 			tessellated_interior_rings.begin(),
 			tessellated_interior_rings.end());

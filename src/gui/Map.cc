@@ -52,7 +52,8 @@ GPlatesGui::Map::Map(
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
-		ViewportZoom &viewport_zoom) :
+		ViewportZoom &viewport_zoom,
+		int device_pixel_ratio) :
 	d_map_projection(MapProjection::create()),
 	d_view_state(view_state),
 	d_gl_visual_layers(gl_visual_layers),
@@ -63,7 +64,8 @@ GPlatesGui::Map::Map(
 			d_map_projection,
 			rendered_geometry_collection,
 			gl_visual_layers,
-			visual_layers)
+			visual_layers,
+			device_pixel_ratio)
 {  }
 
 

@@ -152,7 +152,7 @@ GPlatesOpenGL::GLCubeSubdivision::create_bounding_polygon(
 	//
 	// It is counter-clockwise when viewed the sphere centre which means it's
 	// clockwise when viewed from above the surface of the sphere.
-	return GPlatesMaths::PolygonOnSphere::create_on_heap(corner_points, corner_points + 4);
+	return GPlatesMaths::PolygonOnSphere::create(corner_points, corner_points + 4);
 }
 
 

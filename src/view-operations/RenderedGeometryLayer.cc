@@ -26,7 +26,7 @@
 
 #include <algorithm>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/none.hpp>
 #include <boost/optional.hpp>
 
@@ -855,7 +855,7 @@ GPlatesViewOperations::RenderedGeometryLayer::accept_visitor(
 		std::for_each(
 			rendered_geometry_begin(),
 			rendered_geometry_end(),
-			boost::bind(&RenderedGeometry::accept_visitor, _1, boost::ref(visitor)));
+			boost::bind(&RenderedGeometry::accept_visitor, boost::placeholders::_1, boost::ref(visitor)));
 	}
 }
 
@@ -872,7 +872,7 @@ GPlatesViewOperations::RenderedGeometryLayer::accept_visitor(
 		std::for_each(
 			rendered_geometry_begin(),
 			rendered_geometry_end(),
-			boost::bind(&RenderedGeometry::accept_visitor, _1, boost::ref(visitor)));
+			boost::bind(&RenderedGeometry::accept_visitor, boost::placeholders::_1, boost::ref(visitor)));
 	}
 }
 

@@ -120,15 +120,15 @@ namespace GPlatesViewOperations
 				virtual
 				void
 				visit_point_on_sphere(
-						GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+						GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 				{
 					if (d_symbol)
 					{
-						d_rendered_geom = create_rendered_symbol(*point_on_sphere, d_symbol.get(), d_colour, d_line_width_hint);
+						d_rendered_geom = create_rendered_symbol(point_on_sphere->position(), d_symbol.get(), d_colour, d_line_width_hint);
 					}
 					else
 					{
-						d_rendered_geom = create_rendered_point_on_sphere(*point_on_sphere, d_colour, d_point_size_hint);
+						d_rendered_geom = create_rendered_point_on_sphere(point_on_sphere->position(), d_colour, d_point_size_hint);
 					}
 				}
 
@@ -218,7 +218,7 @@ namespace GPlatesViewOperations
 				virtual
 				void
 				visit_point_on_sphere(
-						GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+						GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 				{
 					// There should be exactly one colour (for one point).
 					GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -228,12 +228,12 @@ namespace GPlatesViewOperations
 					if (d_symbol)
 					{
 						d_rendered_geom = create_rendered_symbol(
-								*point_on_sphere, d_symbol.get(), d_point_colours.front(), d_line_width_hint);
+								point_on_sphere->position(), d_symbol.get(), d_point_colours.front(), d_line_width_hint);
 					}
 					else
 					{
 						d_rendered_geom = create_rendered_point_on_sphere(
-								*point_on_sphere, d_point_colours.front(), d_point_size_hint);
+								point_on_sphere->position(), d_point_colours.front(), d_point_size_hint);
 					}
 				}
 
@@ -299,7 +299,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphe
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
 		const GPlatesGui::Colour &colour,
 		float point_size_hint)
 {
@@ -606,7 +606,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_ellipse(
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_string(
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
 		const QString &string,
 		const GPlatesGui::Colour &colour,
 		boost::optional<GPlatesGui::Colour> shadow_colour,

@@ -35,6 +35,7 @@ set (QWT_INCLUDE_DIRS ${QWT_INCLUDE_DIR})
 find_library(QWT_LIBRARY
   # The '-qt5' versions searched first (in case 'qwt' is a qt4 version)...
   NAMES qwt-qt5 qwt6-qt5 qwt qwt6
+  NAMES_PER_DIR
   PATHS
     /usr/lib
     /usr/local/lib

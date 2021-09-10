@@ -474,7 +474,6 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::initialise()
 	int_qstr_qmap_qvec[0].insert(4, "4");
 	int_qstr_qmap_qvec[1].insert(5, "5");
 	pqs = &int_qstr_qmap_qvec[0][4];
-	qill.push_back(8); qill.push_back(9);
 	qstr_set.insert("one"); qstr_set.insert("two"); qstr_set.insert("three");
 	qstr_list.push_back("one"); qstr_list.push_back("two"); qstr_list.push_back("three");
 	pqs2 = &const_cast<QString &>(*qstr_list.begin());
@@ -545,7 +544,6 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::transcribe(
 		!scribe.transcribe(TRANSCRIBE_SOURCE, str_set, "str_set", GPlatesScribe::TRACK) ||
 		!scribe.transcribe(TRANSCRIBE_SOURCE, int_str_map_vec, "int_str_map_vec", GPlatesScribe::TRACK) ||
 		!scribe.transcribe(TRANSCRIBE_SOURCE, int_qstr_qmap_qvec, "int_qstr_qmap_qvec", GPlatesScribe::TRACK) ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, qill, "qill", GPlatesScribe::TRACK) ||
 		!scribe.transcribe(TRANSCRIBE_SOURCE, qstr_set, "qstr_set", GPlatesScribe::TRACK) ||
 		!scribe.transcribe(TRANSCRIBE_SOURCE, qstr_list, "qstr_list", GPlatesScribe::TRACK) ||
 		!scribe.transcribe(TRANSCRIBE_SOURCE, bin, "bin", GPlatesScribe::TRACK) ||
@@ -914,7 +912,6 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::check_equality(
 	BOOST_CHECK(str_set == other.str_set);
 	BOOST_CHECK(int_str_map_vec == other.int_str_map_vec);
 	BOOST_CHECK(int_qstr_qmap_qvec == other.int_qstr_qmap_qvec);
-	BOOST_CHECK(qill == other.qill);
 	BOOST_CHECK(qstr_set == other.qstr_set);
 	BOOST_CHECK(qstr_list == other.qstr_list);
 	BOOST_CHECK(bin == other.bin && bin == boost::none);

@@ -178,6 +178,7 @@ namespace
 				// Get the current (per-point) geometry data.
 				dfg.get()->get_geometry_data(
 						boost::none/*points*/,
+						boost::none/*point_locations*/,
 						deformation_strain_rates,
 						deformation_strains);
 			}

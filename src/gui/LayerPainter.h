@@ -151,6 +151,12 @@ namespace GPlatesGui
 		class PointLinePolygonDrawables
 		{
 		public:
+			explicit
+			PointLinePolygonDrawables(
+					int device_pixel_ratio) :
+				d_device_pixel_ratio(device_pixel_ratio)
+			{  }
+
 			/**
 			 * Prepares for streaming vertices.
 			 */
@@ -339,6 +345,9 @@ namespace GPlatesGui
 			//! For collecting filled polygons during a render call to render to a 2D map view.
 			GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type d_filled_polygons_map_view;
 
+			//! Multiplier for point sizes and line widths (due to a device *independent* pixel containing multiple device pixels).
+			int d_device_pixel_ratio;
+
 
 			void
 			paint_filled_polygons(
@@ -489,12 +498,17 @@ namespace GPlatesGui
 		/**
 		 * Constructor.
 		 *
+		 * @a device_pixel_ratio is a multiplier for point sizes and line widths.
+		 * On high-DPI displays there are more pixels in the same physical area on screen and so
+		 * without increasing the point sizes and line widths they would look too small.
+		 *
 		 * @a map_projection is used for painting in a map view (and is none for the 3D globe view).
 		 * And currently the 3D globe view uses the depth buffer but the 2D map views don't.
 		 */
 		explicit
 		LayerPainter(
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
+				int device_pixel_ratio,
 				boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
 
 		/**

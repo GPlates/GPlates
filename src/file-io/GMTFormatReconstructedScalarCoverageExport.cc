@@ -30,6 +30,7 @@
 #include <QStringList>
 #include <QString>
 #include <QTextStream>
+#include <QtGlobal>
 
 #include "GMTFormatReconstructedScalarCoverageExport.h"
 
@@ -170,7 +171,12 @@ namespace GPlatesFileIO
 				//
 
 				const std::string gmt_line_string = gmt_line.str();
-				output_stream << gmt_line_string.c_str() << endl;
+				output_stream << gmt_line_string.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+					<< Qt::endl;
+#else
+					<< endl;
+#endif
 			}
 
 
@@ -344,6 +350,7 @@ namespace GPlatesFileIO
 						point_deformation_total_strain_seq_type deformation_strains;
 						dfg.get()->get_geometry_data(
 								boost::none/*points*/,
+								boost::none/*point_locations*/,
 								deformation_strain_rates,
 								deformation_strains);
 						// The number of strain rates should match the number of scalars.

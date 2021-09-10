@@ -104,24 +104,127 @@ namespace GPlatesAppLogic
 		typedef TimeSpanUtils::TimeSampleSpan<rtn_seq_type> resolved_network_time_span_type;
 
 
-		//! Threshold parameters used to determine when to deactivate geometry points in a geometry sample.
-		struct ActivePointParameters
+		/**
+		 * Interface for deactivating geometry points as a geometry is reconstructed forward and backward
+		 * from its geometry import time.
+		 */
+		class DeactivatePoint :
+				public GPlatesUtils::ReferenceCount<DeactivatePoint>
 		{
-			ActivePointParameters(
-					const double &threshold_velocity_delta_,
-					const double &threshold_distance_to_boundary_in_kms_per_my_,
-					bool deactivate_points_that_fall_outside_a_network_) :
-				threshold_velocity_delta(threshold_velocity_delta_),
-				threshold_distance_to_boundary_in_kms_per_my(threshold_distance_to_boundary_in_kms_per_my_),
-				deactivate_points_that_fall_outside_a_network(deactivate_points_that_fall_outside_a_network_)
+		public:
+
+			typedef GPlatesUtils::non_null_intrusive_ptr<DeactivatePoint> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const DeactivatePoint> non_null_ptr_to_const_type;
+
+			virtual
+			~DeactivatePoint()
 			{  }
 
-			double threshold_velocity_delta; // cms/yr
-			double threshold_distance_to_boundary_in_kms_per_my; // kms/my
-			bool deactivate_points_that_fall_outside_a_network;
+			/**
+			 * Return true if the current point should be deactivated.
+			 */
+			virtual
+			bool
+			deactivate(
+					const GPlatesMaths::PointOnSphere &prev_point,
+					const TopologyPointLocation &prev_location,
+					const double &prev_time,
+					const GPlatesMaths::PointOnSphere &current_point,
+					const TopologyPointLocation &current_location,
+					const double &current_time) const = 0;
 		};
 
-		static const ActivePointParameters DEFAULT_ACTIVE_POINT_PARAMETERS;
+		/**
+		 * Default implementation for deactivating geometry points.
+		 */
+		class DefaultDeactivatePoint :
+				public DeactivatePoint
+		{
+		public:
+
+			typedef GPlatesUtils::non_null_intrusive_ptr<DefaultDeactivatePoint> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const DefaultDeactivatePoint> non_null_ptr_to_const_type;
+
+			// Default parameters.
+			static constexpr double DEFAULT_THRESHOLD_VELOCITY_DELTA = 0.7;
+			static constexpr double DEFAULT_THRESHOLD_DISTANCE_TO_BOUNDARY_IN_KMS_PER_MY = 10.0;
+			static constexpr bool DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK = false;
+
+			/**
+			 * NOTE: Ensure that @a time_increment matches that in the time range of @a TopologyReconstruct::create.
+			 */
+			static
+			non_null_ptr_type
+			create(
+					const double &threshold_velocity_delta = DEFAULT_THRESHOLD_VELOCITY_DELTA,
+					const double &threshold_distance_to_boundary_in_kms_per_my = DEFAULT_THRESHOLD_DISTANCE_TO_BOUNDARY_IN_KMS_PER_MY,
+					bool deactivate_points_that_fall_outside_a_network = DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK);
+
+			/**
+			 * Return true if the current point should be deactivated.
+			 */
+			virtual
+			bool
+			deactivate(
+					const GPlatesMaths::PointOnSphere &prev_point,
+					const TopologyPointLocation &prev_location,
+					const double &prev_time,
+					const GPlatesMaths::PointOnSphere &current_point,
+					const TopologyPointLocation &current_location,
+					const double &current_time) const;
+
+		private:
+			//! Typedef for map used to keep track of stage rotations by plate ID.
+			typedef std::map<GPlatesModel::integer_plate_id_type, GPlatesMaths::FiniteRotation> plate_id_to_stage_rotation_map_type;
+
+			// Threshold parameters used to determine when to deactivate geometry points in a geometry sample.
+			double d_threshold_velocity_delta; // cms/yr
+			double d_threshold_distance_to_boundary_in_kms_per_my; // kms/myr
+			bool d_deactivate_points_that_fall_outside_a_network;
+
+			// Keep track of the stage rotations of resolved boundaries as we encounter them.
+			// This is an optimisation that saves a few seconds (for a large number of points in geometry)
+			// since many points will be inside the same resolved boundary.
+			mutable plate_id_to_stage_rotation_map_type d_velocity_stage_rotation_map;
+			// Only cache stage rotations for a specific reconstruction time.
+			// We clear it when we move onto a different reconstruction time.
+			mutable GPlatesMaths::real_t d_velocity_stage_rotation_time;
+
+			DefaultDeactivatePoint(
+					const double &threshold_velocity_delta,
+					const double &threshold_distance_to_boundary_in_kms_per_my,
+					bool deactivate_points_that_fall_outside_a_network) :
+				d_threshold_velocity_delta(threshold_velocity_delta),
+				d_threshold_distance_to_boundary_in_kms_per_my(threshold_distance_to_boundary_in_kms_per_my),
+				d_deactivate_points_that_fall_outside_a_network(deactivate_points_that_fall_outside_a_network)
+			{  }
+
+			/**
+			 * Returns true if the delta velocity of the previous point is large enough, or it is
+			 * close enough to the previous boundary to reach it (at its previous relative velocity).
+			 */
+			bool
+			is_delta_velocity_large_enough_or_point_close_to_boundary(
+					const GPlatesMaths::Vector3D &delta_velocity,
+					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &prev_topology_boundary,
+					const GPlatesMaths::PointOnSphere &prev_point,
+					const double &time_increment) const;
+
+			/**
+			 * Calculate a stage rotation for velocity calculations.
+			 *
+			 * Note that the stage rotation is going forward in time (old to young).
+			 *
+			 * This avoids re-calculating the stage rotation for the same plate ID.
+			 */
+			const GPlatesMaths::FiniteRotation &
+			get_or_create_velocity_stage_rotation(
+					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
+					const ReconstructionTreeCreator &reconstruction_tree_creator,
+					const double &reconstruction_time,
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type) const;
+		};
 
 
 		/**
@@ -143,6 +246,47 @@ namespace GPlatesAppLogic
 							reconstruction_tree_creator));
 		}
 
+		/**
+		 * Returns the time range over which to reconstruct using the resolved boundaries/networks.
+		 *
+		 * This is the time range of all geometry time spans created by us.
+		 */
+		const TimeSpanUtils::TimeRange &
+		get_time_range() const
+		{
+			return d_time_range;
+		}
+
+		/**
+		 * Returns the time span of resolved topological boundaries.
+		 */
+		const resolved_boundary_time_span_type::non_null_ptr_to_const_type &
+		get_resolved_boundary_time_span() const
+		{
+			return d_resolved_boundary_time_span;
+		}
+
+		/**
+		 * Returns the time span of resolved topological networks.
+		 */
+		const resolved_network_time_span_type::non_null_ptr_to_const_type &
+		get_resolved_network_time_span() const
+		{
+			return d_resolved_network_time_span;
+		}
+
+		/**
+		 * Returns the reconstruction tree creator.
+		 *
+		 * This is only used when a geometry point is not inside a resolved boundary/network,
+		 * otherwise the reconstruction tree creator of the resolved boundary/network is used.
+		 */
+		const ReconstructionTreeCreator &
+		get_reconstruction_tree_creator() const
+		{
+			return d_reconstruction_tree_creator;
+		}
+
 
 		/**
 		 * Creates a time span for the specified present day geometry.
@@ -153,10 +297,13 @@ namespace GPlatesAppLogic
 		 * reconstructed if it does not intersect any resolved boundaries/networks at specific times.
 		 *
 		 * If @a geometry_import_time is specified then the present day geometry is rigidly reconstructed
-		 * (using @a feature_reconstruction_plate_id) to the geometry import time. That geometry is then
+		 * (using @a reconstruction_plate_id) to the geometry import time. That geometry is then
 		 * reconstructed forward and/or backward in time as necessary to fill the time range.
 		 * This enables paleo-geometries to be used (eg, fracture zones prior to subduction) and masked by topologies
 		 * through time (ie, masked by mid-ocean ridges going backward in time and subduction zones going forward in time).
+		 *
+		 * If @a deactivate_points is specified then geometry points can be deactivated as reconstruction progresses
+		 * forward and backward in time beginning at the geometry import time, otherwise geometry points always active.
 		 *
 		 * If @a max_poly_segment_angular_extent_radians is specified and @a geometry is a polyline or polygon,
 		 * then the geometry is tessellated such that the subdivided arcs have a maximum angular extent of
@@ -179,10 +326,10 @@ namespace GPlatesAppLogic
 		/*GeometryTimeSpan::non_null_ptr_type*/GPlatesUtils::non_null_intrusive_ptr<GeometryTimeSpan>
 		create_geometry_time_span(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				GPlatesModel::integer_plate_id_type feature_reconstruction_plate_id,
+				GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 				const double &geometry_import_time = 0.0,
+				boost::optional<DeactivatePoint::non_null_ptr_to_const_type> deactivate_points = boost::none,
 				boost::optional<double> max_poly_segment_angular_extent_radians = boost::none,
-				boost::optional<ActivePointParameters> active_point_parameters = DEFAULT_ACTIVE_POINT_PARAMETERS,
 				bool deformation_uses_natural_neighbour_interpolation = true) const;
 
 
@@ -243,6 +390,7 @@ namespace GPlatesAppLogic
 			get_geometry_data(
 					const double &reconstruction_time,
 					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> points = boost::none,
+					boost::optional< std::vector<TopologyPointLocation> &> point_locations = boost::none,
 					boost::optional< std::vector<DeformationStrainRate> &> strain_rates = boost::none,
 					boost::optional< std::vector<DeformationStrain> &> strains = boost::none) const;
 
@@ -250,16 +398,41 @@ namespace GPlatesAppLogic
 			 * Returns the requested geometry data at *all* points at the specified time (including inactive points).
 			 *
 			 * Inactive points will store 'none' (such that the size of the returned data
-			 * will always be @a get_num_all_geometry_points).
-			 *
+			 * will always be @a get_num_all_geometry_points, or 'end_point_index - start_point_index'
+			 * if they're using non-default values).
+			 * 
+			 * The range of points returned can be limited with non-default values for
+			 * @a start_point_index and @a end_point_index. By default all points are returned.
+			 * 
 			 * Returns false if @a is_valid returns false (in which case the data arrays are unmodified).
 			 */
 			bool
 			get_all_geometry_data(
 					const double &reconstruction_time,
 					boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> points = boost::none,
+					boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> point_locations = boost::none,
 					boost::optional< std::vector< boost::optional<DeformationStrainRate> > &> strain_rates = boost::none,
-					boost::optional< std::vector< boost::optional<DeformationStrain> > &> strains = boost::none) const;
+					boost::optional< std::vector< boost::optional<DeformationStrain> > &> strains = boost::none,
+					int start_point_index = 0,
+					int end_point_index = -1) const;
+
+			/**
+			 * Returns whether each point (of *all* points at the specified time) is active or not.
+			 *
+			 * The range of points returned can be limited with non-default values for
+			 * @a start_point_index and @a end_point_index. By default all points are returned.
+			 *
+			 * The same could be achieved by calling 'get_all_geometry_data(reconstruction_time, points)' and
+			 * then testing the boost::optional of each point for its active status, but this method is easier.
+			 *
+			 * Returns false if @a is_valid returns false (in which case @a points_are_active is not modified).
+			 */
+			bool
+			get_points_are_active(
+					const double &reconstruction_time,
+					std::vector<bool> &points_are_active,
+					int start_point_index = 0,
+					int end_point_index = -1) const;
 
 			/**
 			 * Returns the number of points returned by @a get_all_geometry_data.
@@ -278,26 +451,28 @@ namespace GPlatesAppLogic
 			/**
 			 * Calculate velocities at the geometry (domain) points at the specified time.
 			 *
-			 * @a surfaces returns the resolved network (or network interior rigid block) or resolved plate boundary
+			 * Optional @a domain_points returns the domain points (at the reconstruction time).
+			 *
+			 * Optional @a domain_point_locations returns the resolved network (or network interior rigid block) or resolved plate boundary
 			 * that each domain point intersects (if any).
 			 *
-			 * The sizes of @a domain_points, @a velocities and @a surfaces are the same and match the number
+			 * The sizes of @a velocities, @a domain_points and @a domain_point_locations are the same and match the number
 			 * of original geometry points that have not been subducted/consumed at the reconstruction time.
 			 *
 			 * Returns false if @a is_valid returns false.
 			 */
 			bool
 			get_velocities(
-					std::vector<GPlatesMaths::PointOnSphere> &domain_points,
 					std::vector<GPlatesMaths::Vector3D> &velocities,
-					std::vector< boost::optional<const ReconstructionGeometry *> > &surfaces,
 					const double &reconstruction_time,
 					const double &velocity_delta_time,
-					VelocityDeltaTime::Type velocity_delta_time_type) const;
+					VelocityDeltaTime::Type velocity_delta_time_type,
+					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points = boost::none,
+					boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations = boost::none) const;
 
 
 			//
-			// Interface used by ScalarCoverageDeformation::ScalarCoverageTimeSpan...
+			// Interface used by ScalarCoverageTimeSpan...
 			//
 
 			/**
@@ -308,7 +483,7 @@ namespace GPlatesAppLogic
 			 * (at these times the geometry is rigidly rotated from the beginning or
 			 * ending of the time range depending on which side its on). See also @a is_valid.
 			 */
-			TimeSpanUtils::TimeRange
+			const TimeSpanUtils::TimeRange &
 			get_time_range() const
 			{
 				return d_time_range;
@@ -630,11 +805,11 @@ namespace GPlatesAppLogic
 			boost::optional<unsigned int> d_time_slot_of_disappearance;
 
 			/**
-			 * Threshold parameters used to determine when to deactivate geometry points.
+			 * Used to determine when to deactivate geometry points.
 			 *
 			 * If none then points are never deactivated.
 			 */
-			boost::optional<ActivePointParameters> d_active_point_parameters;
+			boost::optional<DeactivatePoint::non_null_ptr_to_const_type> d_deactivate_points;
 
 			/**
 			 * Are we currently accessing strain rates (ie, is non-zero integer) ?
@@ -683,10 +858,10 @@ namespace GPlatesAppLogic
 			GeometryTimeSpan(
 					TopologyReconstruct::non_null_ptr_to_const_type topology_reconstruct,
 					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-					GPlatesModel::integer_plate_id_type feature_reconstruction_plate_id,
+					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 					const double &geometry_import_time,
+					boost::optional<DeactivatePoint::non_null_ptr_to_const_type> deactivate_points,
 					boost::optional<double> max_poly_segment_angular_extent_radians,
-					boost::optional<ActivePointParameters> active_point_parameters,
 					bool deformation_uses_natural_neighbour_interpolation);
 
 			/**
@@ -705,8 +880,8 @@ namespace GPlatesAppLogic
 			boost::optional<GeometrySample::non_null_ptr_type>
 			reconstruct_time_steps(
 					const GeometrySample::non_null_ptr_type &start_geometry_sample,
-					unsigned int start_time_slot,
-					unsigned int end_time_slot);
+					const unsigned int start_time_slot,
+					const unsigned int end_time_slot);
 
 			/**
 			 * Same as @a reconstruct_intermediate_time_step except does not test if current geometry sample
@@ -715,8 +890,8 @@ namespace GPlatesAppLogic
 			GeometrySample::non_null_ptr_type
 			reconstruct_first_time_step(
 					const GeometrySample::non_null_ptr_type &current_geometry_sample,
-					unsigned int current_time_slot,
-					unsigned int next_time_slot);
+					const unsigned int current_time_slot,
+					const unsigned int next_time_slot);
 
 			/**
 			 * Reconstructs @a current_geometry_sample by a single time step from @a current_time_slot to @a next_time_slot.
@@ -734,8 +909,9 @@ namespace GPlatesAppLogic
 			reconstruct_intermediate_time_step(
 					const GeometrySample::non_null_ptr_type &prev_geometry_sample,
 					const GeometrySample::non_null_ptr_type &current_geometry_sample,
-					unsigned int current_time_slot,
-					unsigned int next_time_slot);
+					const unsigned int prev_time_slot,
+					const unsigned int current_time_slot,
+					const unsigned int next_time_slot);
 
 			/**
 			 * Same as @a reconstruct_intermediate_time_step except does not advance the current geometry sample
@@ -748,9 +924,8 @@ namespace GPlatesAppLogic
 			reconstruct_last_time_step(
 					boost::optional<GeometrySample::non_null_ptr_type> prev_geometry_sample,
 					const GeometrySample::non_null_ptr_type &current_geometry_sample,
-					unsigned int current_time_slot,
-					const double &time_increment,
-					bool reverse_reconstruct);
+					unsigned int prev_time_slot,
+					const unsigned int current_time_slot);
 
 			/**
 			 * Deforms the specified point in the specified resolved networks.
@@ -808,34 +983,6 @@ namespace GPlatesAppLogic
 					const GPlatesMaths::PointOnSphere &point,
 					TopologyPointLocation &location,
 					rtb_seq_type &resolved_boundaries);
-
-			/**
-			 * Returns true if the current point is still active.
-			 */
-			bool
-			is_point_active(
-					const GPlatesMaths::PointOnSphere &prev_point,
-					const TopologyPointLocation &prev_location,
-					const GPlatesMaths::PointOnSphere &current_point,
-					const TopologyPointLocation &current_location,
-					const double &current_time,
-					const double &time_increment,
-					bool reverse_reconstruct,
-					const GPlatesMaths::AngularExtent &min_distance_threshold_radians,
-					bool deactivate_points_that_fall_outside_a_network,
-					plate_id_to_stage_rotation_map_type &resolved_boundary_stage_rotation_map) const;
-
-			/**
-			 * Returns true if the delta velocity of the previous point is small enough, or it is
-			 * too far away from the previous boundary to reach it (at its previous relative velocity).
-			 */
-			bool
-			is_delta_velocity_small_enough_or_point_far_from_boundary(
-					const GPlatesMaths::Vector3D &delta_velocity,
-					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &prev_topology_boundary,
-					const GPlatesMaths::PointOnSphere &prev_point,
-					const double &time_increment,
-					const GPlatesMaths::AngularExtent &min_distance_threshold_radians) const;
 
 			/**
 			 * Return the resolved boundaries/networks in the specified time slot.
@@ -932,12 +1079,12 @@ namespace GPlatesAppLogic
 			void
 			calc_velocities(
 					const GeometrySample::non_null_ptr_type &domain_geometry_sample,
-					std::vector<GPlatesMaths::PointOnSphere> &domain_points,
 					std::vector<GPlatesMaths::Vector3D> &velocities,
-					std::vector< boost::optional<const ReconstructionGeometry *> > &surfaces,
 					const double &reconstruction_time,
 					const double &velocity_delta_time,
-					VelocityDeltaTime::Type velocity_delta_time_type) const;
+					VelocityDeltaTime::Type velocity_delta_time_type,
+					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points,
+					boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations) const;
 
 			/**
 			 * Returns the geometry sample at the specified time (which can be any time).
@@ -974,49 +1121,6 @@ namespace GPlatesAppLogic
 		};
 
 	private:
-
-		/**
-		 * Returns the time range over which to reconstruct using the resolved boundaries/networks.
-		 *
-		 * Outside this time range @a get_reconstruction_tree_creator should be used to rotate using
-		 * the reconstruction plate ID of the geometry's feature.
-		 */
-		const TimeSpanUtils::TimeRange &
-		get_time_range() const
-		{
-			return d_time_range;
-		}
-
-		/**
-		 * Returns the time span of resolved topological boundaries.
-		 */
-		const resolved_boundary_time_span_type::non_null_ptr_to_const_type &
-		get_resolved_boundary_time_span() const
-		{
-			return d_resolved_boundary_time_span;
-		}
-
-		/**
-		 * Returns the time span of resolved topological networks.
-		 */
-		const resolved_network_time_span_type::non_null_ptr_to_const_type &
-		get_resolved_network_time_span() const
-		{
-			return d_resolved_network_time_span;
-		}
-
-		/**
-		 * Returns the reconstruction tree creator.
-		 *
-		 * NOTE: Should only be used when point is not inside a resolved boundary/network,
-		 * otherwise should use the reconstruction tree creator of the resolved boundary/network.
-		 */
-		const ReconstructionTreeCreator &
-		get_reconstruction_tree_creator() const
-		{
-			return d_reconstruction_tree_creator;
-		}
-
 
 		TimeSpanUtils::TimeRange d_time_range;
 		resolved_boundary_time_span_type::non_null_ptr_to_const_type d_resolved_boundary_time_span;

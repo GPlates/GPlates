@@ -27,11 +27,8 @@
 #define GPLATES_APP_LOGIC_RECONSTRUCTPARAMS_H
 
 #include <boost/operators.hpp>
-#include <boost/optional.hpp>
 
 #include "maths/types.h"
-
-#include "property-values/GeoTimeInstant.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"
@@ -48,15 +45,6 @@ namespace GPlatesAppLogic
 			public boost::equality_comparable<ReconstructParams>
 	{
 	public:
-
-		enum VGPVisibilitySetting
-		{
-			ALWAYS_VISIBLE, /**< all vgps are displayed at all times */
-			TIME_WINDOW, /**< all vgps are displayed between a specified time interval */
-			DELTA_T_AROUND_AGE /**< vgps are displayed if the reconstruction time is within a time window around the VGP's age */
-
-			// NOTE: Any new values should also be added to @a transcribe.
-		};
 
 		ReconstructParams();
 
@@ -92,63 +80,6 @@ namespace GPlatesAppLogic
 		{
 			return d_reconstruct_by_plate_id_outside_active_time_period;
 		}
-
-		VGPVisibilitySetting
-		get_vgp_visibility_setting() const
-		{
-			return d_vgp_visibility_setting;
-		}
-
-		void
-		set_vgp_visibility_setting(
-				VGPVisibilitySetting setting)
-		{
-			d_vgp_visibility_setting = setting;
-		}
-
-		const GPlatesPropertyValues::GeoTimeInstant &
-		get_vgp_earliest_time() const
-		{
-			return d_vgp_earliest_time;	
-		};
-
-		void
-		set_vgp_earliest_time(
-				const GPlatesPropertyValues::GeoTimeInstant &earliest_time)
-		{	
-			d_vgp_earliest_time = earliest_time;
-		}
-
-		const GPlatesPropertyValues::GeoTimeInstant &
-		get_vgp_latest_time() const
-		{
-			return d_vgp_latest_time;	
-		};
-
-		void
-		set_vgp_latest_time(
-				const GPlatesPropertyValues::GeoTimeInstant &latest_time)
-		{	
-			d_vgp_latest_time = latest_time;
-		};
-
-		double
-		get_vgp_delta_t() const
-		{
-			return d_vgp_delta_t.dval();
-		}
-
-		void
-		set_vgp_delta_t(
-				double vgp_delta_t)
-		{	
-			d_vgp_delta_t = vgp_delta_t;
-		}
-
-		bool
-		should_draw_vgp(
-				double current_time,
-				const boost::optional<double> &age) const;
 
 
 		bool
@@ -335,37 +266,15 @@ namespace GPlatesAppLogic
 
 	private:
 
-		static const double INITIAL_VGP_DELTA_T;
 		static const double INITIAL_TIME_RANGE_END;
 		static const double INITIAL_TIME_RANGE_BEGIN;
 		static const double INITIAL_TIME_RANGE_INCREMENT;
 		static const double INITIAL_LINE_TESSELLATION_DEGREES;
 
-
 		/**
 		 * Do we reconstruct by-plate-id outside the feature's active time period.
 		 */
 		bool d_reconstruct_by_plate_id_outside_active_time_period;
-
-		/**
-		 * Enum indicating what sort of VGP visibility we have.                                                                
-		 */
-		VGPVisibilitySetting d_vgp_visibility_setting;
-
-		/**
-		 * Begin time used when the TIME_WINDOW VGPVisibilitySetting is selected.                                                                    
-		 */
-		GPlatesPropertyValues::GeoTimeInstant d_vgp_earliest_time;
-
-		/**
-		 * End time used when the TIME_WINDOW VGPVisibilitySetting is selected.                                                                    
-		 */
-		GPlatesPropertyValues::GeoTimeInstant d_vgp_latest_time;
-
-		/**
-		 * Delta used for time window around VGP age.                                                                     
-		 */
-		GPlatesMaths::real_t d_vgp_delta_t;
 
 		/**
 		 * Whether to reconstruct using topologies.
@@ -400,16 +309,6 @@ namespace GPlatesAppLogic
 				GPlatesScribe::Scribe &scribe,
 				bool transcribed_construct_data);
 	};
-
-
-	/**
-	 * Transcribe for sessions/projects.
-	 */
-	GPlatesScribe::TranscribeResult
-	transcribe(
-			GPlatesScribe::Scribe &scribe,
-			ReconstructParams::VGPVisibilitySetting &vgp_visibility_setting,
-			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCTPARAMS_H

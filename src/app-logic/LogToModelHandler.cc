@@ -44,7 +44,6 @@ GPlatesAppLogic::LogToModelHandler::~LogToModelHandler()
 void
 GPlatesAppLogic::LogToModelHandler::handle_qt_message(
 		QtMsgType msg_type,
-		const QMessageLogContext &context,
 		const QString &msg)
 {
 	d_log_model_ptr->append(LogModel::LogEntry(msg, LogModel::LogEntry::Severity(msg_type)));

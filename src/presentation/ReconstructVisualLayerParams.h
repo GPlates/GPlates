@@ -26,11 +26,19 @@
 #ifndef GPLATES_PRESENTATION_RECONSTRUCTVISUALLAYERPARAMS_H
 #define GPLATES_PRESENTATION_RECONSTRUCTVISUALLAYERPARAMS_H
 
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "VisualLayerParams.h"
 
 #include "gui/Colour.h"
+
+#include "maths/types.h"
+
+#include "property-values/GeoTimeInstant.h"
+
+ // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 
 namespace GPlatesPresentation
@@ -45,6 +53,17 @@ namespace GPlatesPresentation
 		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructVisualLayerParams> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const ReconstructVisualLayerParams> non_null_ptr_to_const_type;
 
+
+		enum VGPVisibilitySetting
+		{
+			ALWAYS_VISIBLE, /**< all vgps are displayed at all times */
+			TIME_WINDOW, /**< all vgps are displayed between a specified time interval */
+			DELTA_T_AROUND_AGE /**< vgps are displayed if the reconstruction time is within a time window around the VGP's age */
+
+							   // NOTE: Any new values should also be added to @a transcribe.
+		};
+
+
 		static
 		non_null_ptr_type
 		create(
@@ -55,13 +74,45 @@ namespace GPlatesPresentation
 		}
 
 
+		VGPVisibilitySetting
+		get_vgp_visibility_setting() const;
+
+		void
+		set_vgp_visibility_setting(
+				VGPVisibilitySetting setting);
+
+		const GPlatesPropertyValues::GeoTimeInstant &
+		get_vgp_earliest_time() const;
+
+		void
+		set_vgp_earliest_time(
+				const GPlatesPropertyValues::GeoTimeInstant &earliest_time);
+
+		const GPlatesPropertyValues::GeoTimeInstant &
+		get_vgp_latest_time() const;
+
+		void
+		set_vgp_latest_time(
+				const GPlatesPropertyValues::GeoTimeInstant &latest_time);
+
+		double
+		get_vgp_delta_t() const;
+
+		void
+		set_vgp_delta_t(
+				double vgp_delta_t);
+
 		bool
 		get_vgp_draw_circular_error() const;
 
 		void
 		set_vgp_draw_circular_error(
-				
-		bool draw);
+				bool draw);
+
+		bool
+		show_vgp(
+				double current_time,
+				const boost::optional<double> &age) const;
 
 		void
 		set_fill_polygons(
@@ -179,7 +230,30 @@ namespace GPlatesPresentation
 
 	private:
 
+		static const double INITIAL_VGP_DELTA_T;
+
+		/**
+		 * Enum indicating what sort of VGP visibility we have.                                                                
+		 */
+		VGPVisibilitySetting d_vgp_visibility_setting;
+
+		/**
+		 * Begin time used when the TIME_WINDOW VGPVisibilitySetting is selected.                                                                    
+		 */
+		GPlatesPropertyValues::GeoTimeInstant d_vgp_earliest_time;
+
+		/**
+		 * End time used when the TIME_WINDOW VGPVisibilitySetting is selected.                                                                    
+		 */
+		GPlatesPropertyValues::GeoTimeInstant d_vgp_latest_time;
+
+		/**
+		 * Delta used for time window around VGP age.                                                                     
+		 */
+		GPlatesMaths::real_t d_vgp_delta_t;
+
 		bool d_vgp_draw_circular_error;
+
 		bool d_fill_polygons;
 		bool d_fill_polylines;
 
@@ -192,6 +266,16 @@ namespace GPlatesPresentation
 		bool d_show_show_strain_accumulation;
 		double d_strain_accumulation_scale;
 	};
+
+
+	/**
+	 * Transcribe for sessions/projects.
+	 */
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			ReconstructVisualLayerParams::VGPVisibilitySetting &vgp_visibility_setting,
+			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_PRESENTATION_RASTERVISUALLAYERPARAMS_H

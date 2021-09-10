@@ -28,7 +28,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/utility/in_place_factory.hpp>

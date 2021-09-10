@@ -663,14 +663,6 @@ namespace GPlatesModel
 
 	private:
 
-		void
-		log_invalid_weak_ref(
-				const feature_weak_ref_type &feature_weak_ref);
-
-		void
-		log_invalid_iterator(
-				const feature_collection_iterator_type &iterator);
-
 		/**
 		 * Tracks the iterator of the most-recently read top-level property.
 		 */
@@ -702,16 +694,14 @@ namespace GPlatesModel
 	FeatureVisitorBase<FeatureHandleType>::visit_feature(
 			const feature_weak_ref_type &feature_weak_ref)
 	{
-		if (feature_weak_ref.is_valid())
+		if (!feature_weak_ref.is_valid())
 		{
-			visit_feature_handle(*feature_weak_ref);
-			return true;
-		}
-		else
-		{
-			log_invalid_weak_ref(feature_weak_ref);
 			return false;
 		}
+
+		visit_feature_handle(*feature_weak_ref);
+
+		return true;
 	}
 
 
@@ -720,16 +710,14 @@ namespace GPlatesModel
 	FeatureVisitorBase<FeatureHandleType>::visit_feature(
 			const feature_collection_iterator_type &iterator)
 	{
-		if (iterator.is_still_valid())
+		if (!iterator.is_still_valid())
 		{
-			visit_feature_handle(**iterator);
-			return true;
-		}
-		else
-		{
-			log_invalid_iterator(iterator);
 			return false;
 		}
+
+		visit_feature_handle(**iterator);
+		
+		return true;
 	}
 
 
@@ -864,26 +852,6 @@ namespace GPlatesModel
 		{
 			(*iter)->accept_visitor(*this);
 		}
-	}
-
-
-	// Private methods ///////////////////////////////////////////////////////////
-	
-	template<class FeatureHandleType>
-	void
-	FeatureVisitorBase<FeatureHandleType>::log_invalid_weak_ref(
-			const feature_weak_ref_type &feature_weak_ref)
-	{
-		qWarning() << "Invalid weak-ref not dereferenced.";
-	}
-
-
-	template<class FeatureHandleType>
-	void
-	FeatureVisitorBase<FeatureHandleType>::log_invalid_iterator(
-			const feature_collection_iterator_type &iterator)
-	{
-		qWarning() << "Invalid iterator not dereferenced.";
 	}
 
 

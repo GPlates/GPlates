@@ -128,7 +128,7 @@ bool init_unit_test()
 	// This should pass on all systems that we support.
 	GPlatesMaths::assert_has_infinity_and_nan();
 
-	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler("GPlates_unit_test_QT.log");
+	GPlatesAppLogic::GPlatesQtMsgHandler::instance().add_log_file_handler("GPlates_unit_test_QT.log");
 
 	BOOST_GLOBAL_FIXTURE( GPlatesGlobalFixture );
 	boost::unit_test::framework::master_test_suite().p_name.value =

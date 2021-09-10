@@ -54,13 +54,13 @@ namespace GPlatesMaths
 	 * geometries that are inside or outside or both (they are clipped if they cross
 	 * the polygon boundary).
 	 */
-	class PolygonIntersections
+	class PolygonPartitioner
 	{
 	public:
 		/**
-		 * Typedef for a shared pointer to @a PolygonIntersections.
+		 * Typedef for a shared pointer to @a PolygonPartitioner.
 		 */
-		typedef boost::shared_ptr<PolygonIntersections> non_null_ptr_type;
+		typedef boost::shared_ptr<PolygonPartitioner> non_null_ptr_type;
 
 
 		/**
@@ -75,7 +75,7 @@ namespace GPlatesMaths
 				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
 				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = PolygonOnSphere::ADAPTIVE)
 		{
-			return non_null_ptr_type(new PolygonIntersections(partitioning_polygon, partition_point_speed_and_memory));
+			return non_null_ptr_type(new PolygonPartitioner(partitioning_polygon, partition_point_speed_and_memory));
 		}
 
 
@@ -183,7 +183,7 @@ namespace GPlatesMaths
 		 * Example usage:
 		 *   partitioned_point_seq_type partitioned_points_inside;
 		 *   partitioned_point_seq_type partitioned_points_outside;
-		 *   PolygonIntersections::Result result = polygon_intersections.partition_multipoint(
+		 *   PolygonPartitioner::Result result = polygon_partitioner.partition_multipoint(
 		 *	      multipoint,
 		 *	      partitioned_points_inside,
 		 *	      partitioned_points_outside);
@@ -211,7 +211,7 @@ namespace GPlatesMaths
 		/**
 		 * Construct with the polygon that will do the partitioning.
 		 */
-		PolygonIntersections(
+		PolygonPartitioner(
 				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
 				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory);
 

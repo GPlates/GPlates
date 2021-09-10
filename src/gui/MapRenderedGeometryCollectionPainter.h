@@ -75,7 +75,8 @@ namespace GPlatesGui
 				const MapProjection::non_null_ptr_to_const_type &map_projection,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
-				const GPlatesPresentation::VisualLayers &visual_layers);
+				const GPlatesPresentation::VisualLayers &visual_layers,
+				int device_pixel_ratio);
 
 		/**
 		 * Initialise objects requiring @a GLRenderer.

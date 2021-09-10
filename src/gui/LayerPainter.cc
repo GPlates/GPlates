@@ -76,7 +76,10 @@ namespace GPlatesGui
 
 GPlatesGui::LayerPainter::LayerPainter(
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
+		int device_pixel_ratio,
 		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection) :
+	drawables_off_the_sphere(device_pixel_ratio),
+	drawables_on_the_sphere(device_pixel_ratio),
 	d_gl_visual_layers(gl_visual_layers),
 	d_map_projection(map_projection)
 {
@@ -894,7 +897,11 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 		Drawables<coloured_vertex_type> &lines_drawable = line_width_entry.second;
 
 		// Set the line width for the current group of lines.
-		renderer.gl_line_width(line_width);
+		//
+		// Note: Multiply line widths to account for ratio of device pixels to device *independent* pixels.
+		//       On high-DPI displays there are more pixels in the same physical area on screen and so
+		//       without increasing the line width the lines would look too thin.
+		renderer.gl_line_width(line_width * d_device_pixel_ratio);
 
 		lines_drawable.end_painting(
 				renderer,
@@ -918,7 +925,11 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 		Drawables<coloured_vertex_type> &points_drawable = point_size_entry.second;
 
 		// Set the point size for the current group of points.
-		renderer.gl_point_size(point_size);
+		//
+		// Note: Multiply point sizes to account for ratio of device pixels to device *independent* pixels.
+		//       On high-DPI displays there are more pixels in the same physical area on screen and so
+		//       without increasing the point size the points would look too small.
+		renderer.gl_point_size(point_size * d_device_pixel_ratio);
 
 		points_drawable.end_painting(
 				renderer,

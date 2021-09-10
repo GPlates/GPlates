@@ -26,7 +26,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/cast.hpp>
 #include <boost/none.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <iterator>
 
 #include "GeometryBuilder.h"
@@ -270,7 +270,7 @@ namespace GPlatesViewOperations
 						boost::bind(
 								&GeometryBuilder::undo,
 								geometry_builder,
-								_1)
+								boost::placeholders::_1)
 						);
 			}
 

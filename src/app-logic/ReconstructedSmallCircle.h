@@ -60,9 +60,9 @@ namespace GPlatesAppLogic
 		typedef boost::intrusive_ptr<const ReconstructedSmallCircle> maybe_null_ptr_to_const_type;
 
 		/** 
-		 * A convenience typedef for a PointOnSphere::non_null_ptr_to_const type. 
+		 * A convenience typedef for a PointOnSphere type. 
 		 */
-		typedef GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type small_circle_centre_type;
+		typedef GPlatesMaths::PointOnSphere small_circle_centre_type;
 
 		/**
 		 * Create a ReconstructedSmallCircle instance with an optional reconstruction
@@ -117,7 +117,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor);
 
 
-		small_circle_centre_type 
+		const small_circle_centre_type &
 		centre() const
 		{
 			return d_centre;
@@ -149,7 +149,7 @@ namespace GPlatesAppLogic
 					reconstruction_tree_creator,
 					feature_handle,
 					property_iterator,
-					centre_,
+					centre_.get_geometry_on_sphere(),
 					ReconstructMethod::SMALL_CIRCLE,
 					reconstruction_plate_id_),
             d_centre(centre_),

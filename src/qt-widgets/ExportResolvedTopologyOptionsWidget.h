@@ -37,6 +37,8 @@ namespace GPlatesQtWidgets
 {
 	class DatelineWrapOptionsWidget;
 	class ExportFileOptionsWidget;
+	class InformationDialog;
+
 
 	/**
 	 * General (non-CitcomS-specific) resolved topology export options.
@@ -104,6 +106,8 @@ namespace GPlatesQtWidgets
 
 		DatelineWrapOptionsWidget *d_dateline_wrap_options_widget;
 		ExportFileOptionsWidget *d_export_file_options_widget;
+
+		InformationDialog* d_help_export_topological_line_sub_segments_dialog;
 	};
 }
 

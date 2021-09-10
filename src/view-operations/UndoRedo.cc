@@ -27,7 +27,7 @@
 #include <vector>
 #include <boost/cast.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/noncopyable.hpp>
 
 #include "UndoRedo.h"
@@ -188,7 +188,7 @@ namespace GPlatesViewOperations
 				std::for_each(
 					d_command_seq.begin(),
 					d_command_seq.end(),
-					boost::bind(&QUndoCommand::redo, _1));
+					boost::bind(&QUndoCommand::redo, boost::placeholders::_1));
 			}
 
 			virtual
@@ -203,7 +203,7 @@ namespace GPlatesViewOperations
 				std::for_each(
 					d_command_seq.rbegin(),
 					d_command_seq.rend(),
-					boost::bind(&QUndoCommand::undo, _1));
+					boost::bind(&QUndoCommand::undo, boost::placeholders::_1));
 			}
 
 			virtual

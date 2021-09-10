@@ -67,17 +67,8 @@ namespace GPlatesFileIO
 				switch (export_format)
 				{
 				case SHAPEFILE:
-					OgrFormatReconstructedFeatureGeometryExport::export_geometries(
-						grouped_recon_geoms_seq,
-						filename,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						wrap_to_dateline);
-					break;
-
 				case OGRGMT:
+				case GEOJSON:
 					OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 						grouped_recon_geoms_seq,
 						filename,
@@ -118,16 +109,8 @@ namespace GPlatesFileIO
 				switch(export_format)
 				{
 				case SHAPEFILE:
-					OgrFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
-						grouped_recon_geoms_seq,
-						filename,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						wrap_to_dateline);
-					break;
 				case OGRGMT:
+				case GEOJSON:
 					OgrFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
 						grouped_recon_geoms_seq,
 						filename,
@@ -183,6 +166,8 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
 		return SHAPEFILE;
 	case FeatureCollectionFileFormat::OGRGMT:
 		return OGRGMT;
+	case FeatureCollectionFileFormat::GEOJSON:
+		return GEOJSON;
 	default:
 		break;
 	}

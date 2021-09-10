@@ -35,9 +35,9 @@ namespace GPlatesAppLogic
 	struct ReconstructedVirtualGeomagneticPoleParams
 	{
 	
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> d_site_point;
+			boost::optional<GPlatesMaths::PointOnSphere> d_site_point;
 			boost::optional<GPlatesModel::FeatureHandle::iterator> d_site_iterator;
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> d_vgp_point;
+			boost::optional<GPlatesMaths::PointOnSphere> d_vgp_point;
 			boost::optional<GPlatesModel::FeatureHandle::iterator> d_vgp_iterator;
 			boost::optional<double> d_a95;
 			boost::optional<double> d_dm;

@@ -87,7 +87,7 @@ namespace
 	{
 		double x, y, z;
 		convert_coord(theta,fi,x,y,z);
-		return *GPlatesMaths::PointOnSphere::create_on_heap(GPlatesMaths::UnitVector3D(x,y,z));
+		return GPlatesMaths::PointOnSphere(GPlatesMaths::UnitVector3D(x,y,z));
 	}
 
 	class Mesh
@@ -266,9 +266,9 @@ namespace
 					points_pair_2.push_back(d_points_on_edge_4_1[d_points_on_edge_2_3.size()-j-1]);
 
 					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type line_1 =
-							GPlatesMaths::PolylineOnSphere::create_on_heap(points_pair_1);
+							GPlatesMaths::PolylineOnSphere::create(points_pair_1);
 					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type line_2 =
-							GPlatesMaths::PolylineOnSphere::create_on_heap(points_pair_2);
+							GPlatesMaths::PolylineOnSphere::create(points_pair_2);
 
 					GPlatesMaths::PolylineIntersections::Graph intersection_graph;
 					if (GPlatesMaths::PolylineIntersections::partition(intersection_graph, *line_1, *line_2))
@@ -394,7 +394,7 @@ GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_velocity_domain(
 	//Mesh mesh2(mesh);
 	
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type geo_ptr = 
-		GPlatesMaths::MultiPointOnSphere::create_on_heap(
+		GPlatesMaths::MultiPointOnSphere::create(
 				points.begin(), 
 				points.end());
 

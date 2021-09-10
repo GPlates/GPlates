@@ -91,7 +91,7 @@ namespace
 		virtual
 		void
 		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
 			d_rotated_geometry = d_rotation * point_on_sphere;
 		}
@@ -281,26 +281,6 @@ GPlatesMaths::operator*(
 }
 
 
-const GPlatesMaths::PointOnSphere
-GPlatesMaths::operator*(
-		const Rotation &r,
-		const PointOnSphere &p) {
-
-	UnitVector3D rotated_position_vector = r * p.position_vector();
-	return PointOnSphere(rotated_position_vector);
-}
-
-
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
-GPlatesMaths::operator*(
-		const Rotation &r,
-		const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p)
-{
-	UnitVector3D rotated_position_vector = r * p->position_vector();
-	return PointOnSphere::create_on_heap(rotated_position_vector);
-}
-
-
 const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere>
 GPlatesMaths::operator*(
 		const Rotation &r,
@@ -315,7 +295,7 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(r * (*iter));
 	}
 
-	return MultiPointOnSphere::create_on_heap(rotated_points);
+	return MultiPointOnSphere::create(rotated_points);
 }
 
 
@@ -333,7 +313,7 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(r * (*iter));
 	}
 
-	return PolylineOnSphere::create_on_heap(rotated_points);
+	return PolylineOnSphere::create(rotated_points);
 }
 
 
@@ -356,7 +336,7 @@ GPlatesMaths::operator*(
 	const unsigned int num_interior_rings = p->number_of_interior_rings();
 	if (num_interior_rings == 0)
 	{
-		return PolygonOnSphere::create_on_heap(rotated_exterior_ring);
+		return PolygonOnSphere::create(rotated_exterior_ring);
 	}
 
 	std::vector< std::vector<PointOnSphere> > rotated_interior_rings(num_interior_rings);
@@ -374,7 +354,7 @@ GPlatesMaths::operator*(
 		}
 	} // loop over interior rings
 
-	return PolygonOnSphere::create_on_heap(rotated_exterior_ring, rotated_interior_rings);
+	return PolygonOnSphere::create(rotated_exterior_ring, rotated_interior_rings);
 }
 
 

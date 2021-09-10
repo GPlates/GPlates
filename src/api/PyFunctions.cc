@@ -74,6 +74,8 @@ namespace
 			return GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE;
 		if(f_type.contains("gmt"))
 			return GPlatesFileIO::ReconstructedFeatureGeometryExport::OGRGMT;
+		if (f_type.contains("json"))
+			return GPlatesFileIO::ReconstructedFeatureGeometryExport::GEOJSON;
 		else
 			return  GPlatesFileIO::ReconstructedFeatureGeometryExport::UNKNOWN;
 	}

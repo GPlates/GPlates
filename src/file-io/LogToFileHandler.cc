@@ -23,9 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QString>
-#include <QFileInfo>
 #include <QDateTime>
+#include <QDir>
+#include <QFileInfo>
+#include <QStandardPaths>
+#include <QString>
+#include <QtGlobal>
 
 #include "LogToFileHandler.h"
 
@@ -49,14 +52,6 @@ namespace
 	adjust_default_log_level(
 			int log_level = QtDebugMsg)
 	{
-		// Compiled-in default will always exclude "Debug" messages if we are on a release build.
-#if defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
-		if (log_level < QtWarningMsg) {
-			log_level = QtWarningMsg;
-		}
-		// Note this can still be overriden if a release build sees the GPLATES_LOGLEVEL env var below.
-#endif
-		
 		// User can tweak log level via an environment variable, GPLATES_LOGLEVEL.
 		QString log_level_qstr = GPlatesUtils::getenv("GPLATES_LOGLEVEL").toLower();
 		if (log_level_qstr == "debug")	// All messages, including Debug messages, will be output.
@@ -79,7 +74,7 @@ namespace
 
 
 GPlatesFileIO::LogToFileHandler::LogToFileHandler(
-		const QString &log_filename):
+		const QString &log_filename) :
 	d_log_file(log_filename),
 	// For File logs, default to "Warning or above", no Debug messages.
 	// Rationale: File-IO for lots of debug messages may suck.
@@ -89,22 +84,49 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 	d_log_level(adjust_default_log_level(QtDebugMsg))
 {
 	// Open the QFile QIODevice that we'll use to write to a file on disk.
-	if (log_filename.isEmpty()) {
+	if (d_log_file.fileName().isEmpty())
+	{
 		d_log_file.setFileName(DEFAULT_LOG_FILENAME);
 	}
 	if ( ! d_log_file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate) )
 	{
-		throw GPlatesFileIO::ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
-				QFileInfo(d_log_file).absoluteFilePath());
+		//
+		// We couldn't open the log file for writing. This can happen on Windows when GPlates has
+		// been installed to "C:\Program Files" and hence cannot write to that location.
+		// Instead we'll attempt to write to the local writable app data location.
+		// For example:
+		//
+		// Windows - "C:/Users/<USER>/AppData/Local/GPlates/GPlates/"
+		// macOS   - "~/Library/Application Support/GPlates/GPlates/"
+		// Linux   - "~/.local/share/GPlates/GPlates/".
+		//
+		const QDir app_data_dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+		const QString log_basename = QFileInfo(d_log_file.fileName()).fileName();
+		const QString app_data_log_filename = app_data_dir.absolutePath() + "/" + log_basename;
+
+		d_log_file.setFileName(app_data_log_filename);
+		if ( ! d_log_file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate) )
+		{
+			throw GPlatesFileIO::ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
+					QFileInfo(d_log_file).absoluteFilePath());
+		}
 	}
 
 	// Wrap that up in a QTextStream to make writing to it nicer.
 	d_log_stream.reset(new QTextStream(&d_log_file));
 
 	// Print message with timestamp and version so we know what made this log.
-	*d_log_stream << "Log file created on " << QDateTime::currentDateTime().toString() << " by GPlates " 
-			<< GPlatesGlobal::Version::get_working_copy_branch_name() << " "
-			<< GPlatesGlobal::Version::get_working_copy_version_number() << endl;
+	*d_log_stream << "Log file created on " << QDateTime::currentDateTime().toString() << " by GPlates "
+			<< GPlatesGlobal::Version::get_GPlates_version()
+#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
+			<< " (build:" << GPlatesGlobal::Version::get_working_copy_version_number()
+			<< " " << GPlatesGlobal::Version::get_working_copy_branch_name() << ")"
+#endif
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 }
 
 
@@ -120,9 +142,17 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 	
 	// Logging to stderr doesn't really need to care about what GPLATES_LOGLEVEL is set; that's really just for the log file.
 
-	*d_log_stream << "Logging to console started at " << QDateTime::currentDateTime().toString() << " by GPlates " 
-			<< GPlatesGlobal::Version::get_working_copy_branch_name() << " "
-			<< GPlatesGlobal::Version::get_working_copy_version_number() << endl;
+	*d_log_stream << "Logging to console started at " << QDateTime::currentDateTime().toString() << " by GPlates "
+			<< GPlatesGlobal::Version::get_GPlates_version()
+#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
+			<< " (build:" << GPlatesGlobal::Version::get_working_copy_version_number()
+			<< " " << GPlatesGlobal::Version::get_working_copy_branch_name() << ")"
+#endif
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 }
 
 
@@ -134,7 +164,6 @@ GPlatesFileIO::LogToFileHandler::~LogToFileHandler()
 void
 GPlatesFileIO::LogToFileHandler::handle_qt_message(
 		QtMsgType msg_type,
-		const QMessageLogContext &context,
 		const QString &msg)
 {
 	// Only output log messages of the configured severity and up.
@@ -145,20 +174,40 @@ GPlatesFileIO::LogToFileHandler::handle_qt_message(
 	switch (msg_type)
 	{
 	case QtDebugMsg:
-		*d_log_stream << "[Debug] " << msg << endl;
+		*d_log_stream << "[Debug] " << msg
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 		break;
 
 	case QtWarningMsg:
-		*d_log_stream << "[Warning] " << msg << endl;
+		*d_log_stream << "[Warning] " << msg
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 		break;
 
 	case QtCriticalMsg:
 		// Note: system and critical messages have the same enumeration value.
-		*d_log_stream << "[Critical] " << msg << endl;
+		*d_log_stream << "[Critical] " << msg
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 		break;
 
 	case QtFatalMsg:
-		*d_log_stream << "[Fatal] " << msg << endl;
+		*d_log_stream << "[Fatal] " << msg
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 		break;
 
 	default:

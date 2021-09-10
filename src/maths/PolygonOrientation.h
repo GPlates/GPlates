@@ -29,7 +29,6 @@
 
 namespace GPlatesMaths
 {
-	class PointOnSphere;
 	class PolygonOnSphere;
 
 	namespace PolygonOrientation

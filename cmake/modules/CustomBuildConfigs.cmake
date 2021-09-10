@@ -59,10 +59,11 @@ endif()
 #
 # Add a ProfileGprof (gprof) build config, but only when using a GNU compiler (and not releasing to the public).
 #
-# Use '-DCMAKE_BUILD_TYPE:STRING=ProfileGprof'.
+# Select 'ProfileGprof' in multi-configuration generators (eg, Visual Studio) or
+# use '-DCMAKE_BUILD_TYPE:STRING=ProfileGprof' in single configuration generators (eg, make).
 #
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU") 
-    # Disable profiling when releasing to the public.
+    # Don't enable profiling when releasing to the public.
     if (NOT GPLATES_PUBLIC_RELEASE)
         # Create our own build type for profiling since there are no defaults that suit it.
         # Activate CMAKE_<tool>_FLAGS_PROFILEGPROF (note: 'CMAKE_<tool>_FLAGS' will get used too).
@@ -83,20 +84,21 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 			
         # We have an extra build configuration.
         list(APPEND _CONFIGURATION_TYPES ProfileGprof)
-    endif (NOT GPLATES_PUBLIC_RELEASE)
+    endif ()
 endif()
 
 #
 # Add a ProfileGplates build config for profiling with GPlates inbuilt profiler (but not when releasing to the public).
 #
-# Use '-DCMAKE_BUILD_TYPE:STRING=ProfileGplates'.
+# Select 'ProfileGplates' in multi-configuration generators (eg, Visual Studio) or
+# use '-DCMAKE_BUILD_TYPE:STRING=ProfileGplates' in single configuration generators (eg, make).
 #
-# Disable profiling when releasing to the public.
+# Don't enable profiling when releasing to the public.
 if (NOT GPLATES_PUBLIC_RELEASE)
 	# Activate CMAKE_<tool>_FLAGS_PROFILEGPLATES (note: 'CMAKE_<tool>_FLAGS' will get used too).
-	set(CMAKE_CXX_FLAGS_PROFILEGPLATES "-DPROFILE_GPLATES ${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "")
+	set(CMAKE_CXX_FLAGS_PROFILEGPLATES "-DGPLATES_PROFILE_CODE ${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "")
 	# CMake gives error if we don't set these too...
-	set(CMAKE_C_FLAGS_PROFILEGPLATES "-DPROFILE_GPLATES ${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "")
+	set(CMAKE_C_FLAGS_PROFILEGPLATES "-DGPLATES_PROFILE_CODE ${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "")
 	set(CMAKE_EXE_LINKER_FLAGS_PROFILEGPLATES "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" CACHE STRING "")
 	set(CMAKE_SHARED_LINKER_FLAGS_PROFILEGPLATES "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}" CACHE STRING "")
 	set(CMAKE_STATIC_LINKER_FLAGS_PROFILEGPLATES "${CMAKE_STATIC_LINKER_FLAGS_RELEASE}" CACHE STRING "")

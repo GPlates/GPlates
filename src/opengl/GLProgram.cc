@@ -32,6 +32,7 @@
 #include <boost/scoped_array.hpp>
 #include <QDebug>
 #include <QString>
+#include <QtGlobal>
 
 #include "GLProgram.h"
 
@@ -222,7 +223,18 @@ GPlatesOpenGL::GLProgram::output_info_log()
 		qDebug() << " (all source segments consisted of string literals)";
 	}
 
-	qDebug() << endl << info_log.get() << endl;
+	qDebug()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl
+#else
+		<< endl
+#endif
+		<< info_log.get()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
+		<< endl;
+#endif
 }
 
 

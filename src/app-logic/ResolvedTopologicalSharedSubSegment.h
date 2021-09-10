@@ -35,6 +35,7 @@
 #include "ResolvedVertexSourceInfo.h"
 
 #include "maths/GeometryOnSphere.h"
+#include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureHandle.h"
 
@@ -169,7 +170,7 @@ namespace GPlatesAppLogic
 		 * topological geometries along with other sub-segments) depends on the specific sharing resolved
 		 * topology (different topologies will have different reverse flags - see @a ResolvedTopologyInfo).
 		 */
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 		get_shared_sub_segment_geometry() const
 		{
 			return d_shared_sub_segment.get_geometry();

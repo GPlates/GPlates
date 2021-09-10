@@ -81,6 +81,7 @@ namespace GPlatesGui
 			GMT,
 			SHAPEFILE,
 			OGRGMT,
+			GEOJSON,
 			SVG,
 			GPML,
 			CSV_COMMA,

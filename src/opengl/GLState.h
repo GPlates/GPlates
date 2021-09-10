@@ -30,7 +30,7 @@
 #include <memory> // For std::unique_ptr
 #include <stack>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>

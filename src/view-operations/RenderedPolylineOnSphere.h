@@ -85,7 +85,7 @@ namespace GPlatesViewOperations
 			{
 				// Create a temporary polygon from the polyline and test the point against it.
 				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type filled_polyline =
-						GPlatesMaths::PolygonOnSphere::create_on_heap(
+						GPlatesMaths::PolygonOnSphere::create(
 								d_polyline_on_sphere->vertex_begin(),
 								d_polyline_on_sphere->vertex_end());
 

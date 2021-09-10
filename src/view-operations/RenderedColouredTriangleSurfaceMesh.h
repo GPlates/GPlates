@@ -183,7 +183,7 @@ namespace GPlatesViewOperations
 					d_mesh_vertices[triangle.vertex_indices[2]]
 				};
 				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type triangle_polygon =
-						GPlatesMaths::PolygonOnSphere::create_on_heap(
+						GPlatesMaths::PolygonOnSphere::create(
 								triangle_points,
 								triangle_points + 3);
 
