@@ -5229,7 +5229,7 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_float_texture(
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 	{
-		texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
@@ -5277,7 +5277,7 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_fixed_texture(
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 	{
-		texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -

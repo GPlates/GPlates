@@ -629,8 +629,6 @@ namespace GPlatesOpenGL
 		
 		/**
 		 * Tracks the current OpenGL global state.
-		 *
-		 * NOTE: This must be declared after @a d_state_set_store.
 		 */
 		GLState::non_null_ptr_type d_current_state;
 

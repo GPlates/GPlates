@@ -68,10 +68,10 @@ bilinearly_interpolate(
 
 	// The first texture access starts a new indirection phase since it accesses a temporary
 	// written in the current phase (see issue 24 in GL_ARB_fragment_program spec).
-	tex11 = texture2D(tex_sampler, st.xy);
-	tex21 = texture2D(tex_sampler, st.zy);
-	tex12 = texture2D(tex_sampler, st.xw);
-	tex22 = texture2D(tex_sampler, st.zw);
+	tex11 = texture(tex_sampler, st.xy);
+	tex21 = texture(tex_sampler, st.zy);
+	tex12 = texture(tex_sampler, st.xw);
+	tex22 = texture(tex_sampler, st.zw);
 }
 
 vec4
@@ -106,7 +106,7 @@ bilinearly_interpolate(
  * This RG format is used for floating-point rasters in GPlates.
  */
 vec4
-bilinearly_interpolate_data_coverge_RG(
+bilinearly_interpolate_data_coverage_RG(
 		sampler2D tex_sampler,
 		vec2 tex_coords,
 		vec4 tex_dimensions)

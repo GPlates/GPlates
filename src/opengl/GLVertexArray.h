@@ -342,7 +342,7 @@ namespace GPlatesOpenGL
 		get_object_state_for_current_context(
 				GL &gl) const;
 
-		ObjectState::AttributeArray &
+		ObjectState::AttributeArray
 		get_attribute_array(
 				GLuint index);
 

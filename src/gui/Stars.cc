@@ -173,8 +173,7 @@ namespace
 			unsigned int &num_large_star_vertices,
 			unsigned int &num_large_star_vertex_indices,
 			boost::function< double () > &rand,
-			const GPlatesGui::rgba8_t &colour,
-			int device_pixel_ratio)
+			const GPlatesGui::rgba8_t &colour)
 	{
 		stream_primitives_type stream;
 

@@ -567,7 +567,7 @@ GPlatesOpenGL::GLScalarField3D::acquire_surface_fill_mask_texture(
 	// Besides, it anisotropic filtering needs explicit gradients in GLSL code for texture accesses in non-uniform flow.
 	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 	{
-		surface_fill_mask_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+		glTexParameterf(GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
 	}
 
 

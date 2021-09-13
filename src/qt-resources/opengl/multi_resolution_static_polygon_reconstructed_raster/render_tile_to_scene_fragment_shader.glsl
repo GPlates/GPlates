@@ -137,7 +137,7 @@ void main (void)
 	vec2 source_texture_coords = source_raster_texture_coordinate.st / source_raster_texture_coordinate.q;
 	// Bilinearly filter the tile texture (data/coverage is in red/green channel).
 	// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
-	vec4 tile_colour = bilinearly_interpolate_data_coverge_RG(
+	vec4 tile_colour = bilinearly_interpolate_data_coverage_RG(
 		 source_texture_sampler, source_texture_coords, source_texture_dimensions);
 #else
 	// Use hardware bilinear interpolation of fixed-point texture.

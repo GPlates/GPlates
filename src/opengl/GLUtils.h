@@ -73,8 +73,8 @@ namespace GPlatesOpenGL
 		 *   gl.BindVertexArray(vertex_array);
 		 *   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		 *
-		 * Note: This also creates a new vertex buffer and vertex element buffer (that are kept alive
-		 *       by the returned vertex array).
+		 * Note: This also creates a new vertex buffer (but no vertex element buffer) that is
+		 *       kept alive by the returned vertex array.
 		 */
 		GLVertexArray::shared_ptr_type
 		create_full_screen_quad(

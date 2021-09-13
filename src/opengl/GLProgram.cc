@@ -174,19 +174,14 @@ GPlatesOpenGL::GLProgram::output_info_log()
 	std::set<QString> shader_filenames;
 
 	// Get a list of unique shader code segments filenames for all shader objects linked.
-	shader_seq_type::const_iterator shaders_iter = d_shaders.begin();
-	shader_seq_type::const_iterator shaders_end = d_shaders.end();
-	for ( ; shaders_iter != shaders_end; ++shaders_iter)
+	for (auto shader_ptr : d_shaders)
 	{
-		const GLShader &shader = **shaders_iter;
+		const GLShader &shader = *shader_ptr;
 
-		// Get the file source code segments of the current shader.
-		const std::vector<GLShader::FileCodeSegment> file_code_segments =
-				shader.get_file_code_segments();
-
-		for (unsigned int n = 0; n < file_code_segments.size(); ++n)
+		// Insert the filenames of the file source code segments of the current shader.
+		for (const GLShader::FileCodeSegment &file_code_segment : shader.get_file_code_segments())
 		{
-			shader_filenames.insert(file_code_segments[n].filename);
+			shader_filenames.insert(file_code_segment.filename);
 		}
 	}
 
@@ -209,12 +204,8 @@ GPlatesOpenGL::GLProgram::output_info_log()
 	{
 		qDebug() << " Some (or all) source segments came from files: ";
 
-		std::set<QString>::const_iterator shader_filenames_iter = shader_filenames.begin();
-		std::set<QString>::const_iterator shader_filenames_end = shader_filenames.end();
-		for ( ; shader_filenames_iter != shader_filenames_end; ++shader_filenames_iter)
+		for (QString shader_filename : shader_filenames)
 		{
-			const QString shader_filename = *shader_filenames_iter;
-
 			qDebug() << "  '" << shader_filename << "'";
 		}
 	}

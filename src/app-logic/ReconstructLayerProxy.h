@@ -576,7 +576,7 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 		get_reconstructed_static_polygon_meshes(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				bool reconstructing_with_age_grid,
 				const double &reconstruction_time);
 
@@ -585,7 +585,7 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 		get_reconstructed_static_polygon_meshes(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				bool reconstructing_with_age_grid)
 		{
 			return get_reconstructed_static_polygon_meshes(

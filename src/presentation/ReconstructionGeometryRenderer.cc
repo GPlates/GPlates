@@ -149,12 +149,12 @@ namespace
 		}
 
 		boost::optional<GPlatesGui::Colour> colour = colour_palette.get_colour(value);
-		if (!colour)
+		if (colour)
 		{
-			return TRANSPARENT_COLOUR;
+			return colour.get();
 		}
 
-		return colour.get();
+		return TRANSPARENT_COLOUR;
 	}
 
 

@@ -236,7 +236,7 @@ GPlatesOpenGL::GLVertexArray::enable_vertex_attrib_array(
 	glEnableVertexAttribArray(index);
 
 	// Record the new vertex array internal state, and the state associated with the current context.
-	ObjectState::AttributeArray &attribute_array = get_attribute_array(index);
+	ObjectState::AttributeArray attribute_array = get_attribute_array(index);
 	attribute_array.enabled = GL_TRUE;
 	update_attribute_array(gl, index, attribute_array);
 }
@@ -250,7 +250,7 @@ GPlatesOpenGL::GLVertexArray::disable_vertex_attrib_array(
 	glDisableVertexAttribArray(index);
 
 	// Record the new vertex array internal state, and the state associated with the current context.
-	ObjectState::AttributeArray &attribute_array = get_attribute_array(index);
+	ObjectState::AttributeArray attribute_array = get_attribute_array(index);
 	attribute_array.enabled = GL_FALSE;
 	update_attribute_array(gl, index, attribute_array);
 }
@@ -265,7 +265,7 @@ GPlatesOpenGL::GLVertexArray::vertex_attrib_divisor(
 	glVertexAttribDivisor(index, divisor);
 
 	// Record the new vertex array internal state, and the state associated with the current context.
-	ObjectState::AttributeArray &attribute_array = get_attribute_array(index);
+	ObjectState::AttributeArray attribute_array = get_attribute_array(index);
 	attribute_array.divisor = divisor;
 	update_attribute_array(gl, index, attribute_array);
 }
@@ -285,7 +285,7 @@ GPlatesOpenGL::GLVertexArray::vertex_attrib_pointer(
 	glVertexAttribPointer(index, size, type, normalized, stride, pointer);
 
 	// Record the new vertex array internal state, and the state associated with the current context.
-	ObjectState::AttributeArray &attribute_array = get_attribute_array(index);
+	ObjectState::AttributeArray attribute_array = get_attribute_array(index);
 	attribute_array.size = size;
 	attribute_array.type = type;
 	attribute_array.normalized = normalized;
@@ -311,7 +311,7 @@ GPlatesOpenGL::GLVertexArray::vertex_attrib_i_pointer(
 	glVertexAttribIPointer(index, size, type, stride, pointer);
 
 	// Record the new vertex array internal state, and the state associated with the current context.
-	ObjectState::AttributeArray &attribute_array = get_attribute_array(index);
+	ObjectState::AttributeArray attribute_array = get_attribute_array(index);
 	attribute_array.size = size;
 	attribute_array.type = type;
 	attribute_array.normalized = GL_FALSE;
@@ -330,13 +330,11 @@ GPlatesOpenGL::GLVertexArray::get_object_state_for_current_context(
 {
 	const GLContext &current_context = gl.get_context();
 
-	context_object_state_seq_type::iterator context_object_state_iter = d_context_object_states.begin();
-	context_object_state_seq_type::iterator context_object_state_end = d_context_object_states.end();
-	for ( ; context_object_state_iter != context_object_state_end; ++context_object_state_iter)
+	for (ContextObjectState &context_object_state : d_context_object_states)
 	{
-		if (context_object_state_iter->context == &current_context)
+		if (context_object_state.context == &current_context)
 		{
-			return *context_object_state_iter;
+			return context_object_state;
 		}
 	}
 
@@ -347,7 +345,7 @@ GPlatesOpenGL::GLVertexArray::get_object_state_for_current_context(
 }
 
 
-GPlatesOpenGL::GLVertexArray::ObjectState::AttributeArray &
+GPlatesOpenGL::GLVertexArray::ObjectState::AttributeArray
 GPlatesOpenGL::GLVertexArray::get_attribute_array(
 		GLuint index)
 {

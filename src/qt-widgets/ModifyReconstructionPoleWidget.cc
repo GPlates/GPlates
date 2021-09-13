@@ -970,13 +970,9 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_geometries(
 {
 	// Iterate over the visual layers.
 	// Each one is associated with a visual layer that has its own symboliser.
-	visual_layer_reconstructed_feature_geometry_collection_map_type::const_iterator visual_layer_iter =
-		d_visual_layer_reconstructed_feature_geometries.begin();
-	visual_layer_reconstructed_feature_geometry_collection_map_type::const_iterator visual_layer_end =
-		d_visual_layer_reconstructed_feature_geometries.end();
-	for (; visual_layer_iter != visual_layer_end; ++visual_layer_iter)
+	for (const auto &visual_layer_map_entry : d_visual_layer_reconstructed_feature_geometries)
 	{
-		boost::shared_ptr<const GPlatesPresentation::VisualLayer> visual_layer = visual_layer_iter->first.lock();
+		boost::shared_ptr<const GPlatesPresentation::VisualLayer> visual_layer = visual_layer_map_entry.first.lock();
 		if (!visual_layer)
 		{
 			// Visual layer no longer exists for some reason, so ignore it.
@@ -1013,16 +1009,10 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_geometries(
 
 		reconstruction_geometry_renderer.begin_render(rendered_geometry_layer);
 
-		const reconstructed_feature_geometry_collection_type &reconstructed_feature_geometries =
-				visual_layer_iter->second;
-		reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
-				reconstructed_feature_geometries.begin();
-		reconstructed_feature_geometry_collection_type::const_iterator rfg_end =
-				reconstructed_feature_geometries.end();
-		for ( ; rfg_iter != rfg_end; ++rfg_iter)
+		for (auto rfg : visual_layer_map_entry.second)
 		{
 			// Visit the RFG with the renderer.
-			(*rfg_iter)->accept_visitor(reconstruction_geometry_renderer);
+			rfg->accept_visitor(reconstruction_geometry_renderer);
 		}
 
 		reconstruction_geometry_renderer.end_render();
