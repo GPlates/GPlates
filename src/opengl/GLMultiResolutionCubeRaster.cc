@@ -31,78 +31,48 @@
 
 #include "GLMultiResolutionCubeRaster.h"
 
+#include "GL.h"
 #include "GLContext.h"
-#include "GLRenderer.h"
 #include "GLTexture.h"
 #include "GLUtils.h"
 #include "GLViewport.h"
+#include "OpenGLException.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "utils/Base2Utils.h"
 #include "utils/Profile.h"
 
 
-bool
-GPlatesOpenGL::GLMultiResolutionCubeRaster::supports_floating_point_source_raster(
-		GLRenderer &renderer)
-{
-	static bool supported = false;
-
-	// Only test for support the first time we're called.
-	static bool tested_for_support = false;
-	if (!tested_for_support)
-	{
-		tested_for_support = true;
-
-		// We use GLRenderer to render to render targets so it must support rendering to
-		// floating-point render targets.
-		supported =
-				renderer.supports_floating_point_render_target_2D() &&
-					// Don't really need to check for this but will anyway in case caller expects us to...
-					renderer.get_capabilities().texture.gl_ARB_texture_float;
-	}
-
-	return supported;
-}
-
-
 GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLMultiResolutionRaster::non_null_ptr_type &multi_resolution_raster,
 		unsigned int tile_texel_dimension,
 		bool adapt_tile_dimension_to_source_resolution,
-		FixedPointTextureFilterType fixed_point_texture_filter,
 		CacheTileTexturesType cache_tile_textures) :
 	d_multi_resolution_raster(multi_resolution_raster),
 	d_tile_texel_dimension(tile_texel_dimension),
-	d_fixed_point_texture_filter(fixed_point_texture_filter),
 	// Start with small size cache and just let the cache grow in size as needed (if caching enabled)...
 	d_texture_cache(tile_texture_cache_type::create(2/* GPU pipeline breathing room in case caching disabled*/)),
 	d_cache_tile_textures(cache_tile_textures),
+	d_tile_framebuffer(GLFramebuffer::create(gl)),
+	d_have_checked_tile_framebuffer_completeness(false),
 	d_cube_quad_tree(cube_quad_tree_type::create()),
 	d_num_source_levels_of_detail_used(1)
 {
-	const GLCapabilities &capabilities = renderer.get_capabilities();
+	const GLCapabilities &capabilities = gl.get_capabilities();
 
 	// Adjust the tile dimension to the source raster resolution if non-power-of-two textures are supported.
 	// The number of levels of detail returned might not be all levels of the source raster -
 	// just the ones used by this cube map raster (the lowest resolutions might get left off).
 	adjust_tile_texel_dimension(adapt_tile_dimension_to_source_resolution, capabilities);
 
-	// The, possibly adapted, tile dimension should be a power-of-two *if*
-	// 'GL_ARB_texture_non_power_of_two' is *not* supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			capabilities.texture.gl_ARB_texture_non_power_of_two ||
-				GPlatesUtils::Base2::is_power_of_two(d_tile_texel_dimension),
-			GPLATES_ASSERTION_SOURCE);
 	// Make sure the, possibly adapted, tile dimension does not exceed the maximum texture size...
-	if (d_tile_texel_dimension > capabilities.texture.gl_max_texture_size)
+	if (d_tile_texel_dimension > capabilities.gl_max_texture_size)
 	{
-		d_tile_texel_dimension = capabilities.texture.gl_max_texture_size;
+		d_tile_texel_dimension = capabilities.gl_max_texture_size;
 	}
 
 	initialise_cube_quad_trees();
@@ -140,13 +110,16 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 			cube_subdivision->get_view_transform(
 					GPlatesMaths::CubeCoordinateFrame::POSITIVE_X);
 
+	const GLViewProjection view_projection(
+			// Start off with a tile-sized viewport - we'll adjust its width and height shortly...
+			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension),
+			view_transform->get_matrix(),
+			projection_transform->get_matrix());
+
 	// Determine the scale factor for our viewport dimensions required to capture the resolution
 	// of the highest level of detail (level 0) of the source raster into an entire cube face.
 	double viewport_dimension_scale = d_multi_resolution_raster->get_viewport_dimension_scale(
-			view_transform->get_matrix(),
-			projection_transform->get_matrix(),
-			// Start off with a tile-sized viewport - we'll adjust its width and height shortly...
-			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension),
+			view_projection,
 			0/*level_of_detail*/);
 
 	// The source raster level-of-detail (and hence viewport dimension scale) is determined such
@@ -181,43 +154,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 	// *non-integer* power-of-two scale factor - next we'll adjust this so it becomes an *integer*
 	// power-of-two (by adjusting the tile texel dimension to be a non-power-of-two).
 	double log2_viewport_dimension_scale = std::log(viewport_dimension_scale) / std::log(2.0);
-
-	// If we can only have power-of-two dimensions then we will need to adapt the tile texel dimension
-	// to the next power-of-two if it isn't already a power-of-two.
-	//
-	// NOTE: We do this even if the client did *not* request the tile texel dimension be adapted.
-	if (!capabilities.texture.gl_ARB_texture_non_power_of_two)
-	{
-		// Round up to the next power-of-two.
-		// If it's already a power-of-two then it won't change.
-		const unsigned int new_tile_texel_dimension = GPlatesUtils::Base2::next_power_of_two(d_tile_texel_dimension);
-
-		// If the tile texel dimension changed then it affects the viewport dimension scale.
-		if (new_tile_texel_dimension != d_tile_texel_dimension)
-		{
-			// Adjust the viewport dimension scale since it determines the number of levels of detail.
-			viewport_dimension_scale *= double(d_tile_texel_dimension) / new_tile_texel_dimension;
-			log2_viewport_dimension_scale = std::log(viewport_dimension_scale) / std::log(2.0);
-
-			d_tile_texel_dimension = new_tile_texel_dimension;
-		}
-
-		// If the new viewport dimension is less than the original tile dimension then there will only
-		// be one level (the root) in the cube quad tree.
-		if (log2_viewport_dimension_scale < 0)
-		{
-			// Only one level of detail needed.
-			d_num_source_levels_of_detail_used = 1;
-			return;
-		}
-
-		// Return number of levels of detail used.
-		// The first '+1' rounds up to the next integer level-of-detail.
-		// The second '+1' converts from integer level-of-detail to number of levels of detail.
-		d_num_source_levels_of_detail_used = static_cast<int>(log2_viewport_dimension_scale + 1) + 1;
-
-		return;
-	}
 
 	// We can have non-power-of-two texture dimensions but we've been asked not to adapt the tile dimension.
 	if (!adapt_tile_dimension_to_source_resolution)
@@ -369,15 +305,17 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 			cube_subdivision_cache.get_projection_transform(
 					cube_subdivision_cache_node);
 
+	const GLViewProjection view_projection(
+			viewport,
+			world_model_view_transform_matrix,
+			half_texel_expanded_projection_transform->get_matrix());
+
 	// Determine the source raster level-of-detail from the current viewport and view/projection matrices.
 	// Only to see if we can use a lower resolution than pre-calculated.
 	// Level-of-detail will get clamped such that it's ">= 0" (and hence can be represented as unsigned).
 	unsigned int tile_level_of_detail = boost::numeric_cast<unsigned int>(
 			d_multi_resolution_raster->clamp_level_of_detail(
-					d_multi_resolution_raster->get_level_of_detail(
-							world_model_view_transform_matrix,
-							half_texel_expanded_projection_transform->get_matrix(),
-							viewport)));
+					d_multi_resolution_raster->get_level_of_detail(view_projection)));
 	// If we can use a lower-resolution level-of-detail just for this tile then might as well
 	// otherwise just use the pre-calculated level-of-detail.
 	// If the tile texel dimension has been adjusted to the optimal non-power-of-two value
@@ -402,8 +340,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 	std::vector<GLMultiResolutionRaster::tile_handle_type> source_raster_tile_handles;
 	d_multi_resolution_raster->get_visible_tiles(
 			source_raster_tile_handles,
-			world_model_view_transform_matrix,
-			half_texel_expanded_projection_transform->get_matrix(),
+			view_projection.get_view_projection_transform(),
 			tile_level_of_detail);
 
 	// If there are no tiles it means the source raster does not have global extents
@@ -530,7 +467,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_subject_token() const
 
 GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
 GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
-		GLRenderer &renderer,
+		GL &gl,
 		const CubeQuadTreeNode &tile,
 		cache_handle_type &cache_handle)
 {
@@ -548,27 +485,22 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
 		{
 			// Create a new tile texture.
 			tile_texture = tile.d_tile_texture->set_cached_object(
-					std::unique_ptr<TileTexture>(new TileTexture(renderer)),
+					std::unique_ptr<TileTexture>(new TileTexture(gl)),
 					// Called whenever tile texture is returned to the cache...
 					boost::bind(&TileTexture::returned_to_cache, boost::placeholders::_1));
 
 			// The texture was just allocated so we need to create it in OpenGL.
-			create_tile_texture(renderer, tile_texture->texture, tile);
+			create_tile_texture(gl, tile_texture->texture, tile);
 
 			//qDebug() << "GLMultiResolutionCubeRaster: " << d_texture_cache->get_current_num_objects_in_use();
 		}
-		else
-		{
-			// The filtering depends on whether the current tile is a leaf node or not.
-			// So update the texture's filtering options.
-			update_tile_texture(renderer, tile_texture->texture, tile);
-		}
+
+		// The filtering depends on whether the current tile is a leaf node or not.
+		// So set the texture's filtering options.
+		set_tile_texture_filtering(gl, tile_texture->texture, tile);
 
 		// Render the source raster into our tile texture.
-		render_raster_data_into_tile_texture(
-				renderer,
-				tile,
-				*tile_texture);
+		render_raster_data_into_tile_texture(gl, tile, *tile_texture);
 	}
 	// Our texture wasn't recycled but see if it's still valid in case the source
 	// raster changed the data underneath us.
@@ -576,10 +508,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
 				tile.d_source_texture_observer_token))
 	{
 		// Render the source raster into our tile texture.
-		render_raster_data_into_tile_texture(
-				renderer,
-				tile,
-				*tile_texture);
+		render_raster_data_into_tile_texture(gl, tile, *tile_texture);
 	}
 
 	// The caller will cache this tile to keep it from being prematurely recycled by our caches.
@@ -595,7 +524,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
 
 void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture(
-		GLRenderer &renderer,
+		GL &gl,
 		const CubeQuadTreeNode &tile,
 		TileTexture &tile_texture)
 {
@@ -605,83 +534,77 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 	boost::shared_ptr<std::vector<GLMultiResolutionRaster::cache_handle_type> > tile_cache_handle(
 			new std::vector<GLMultiResolutionRaster::cache_handle_type>());
 
-	// Begin rendering to a 2D render target texture.
-	GLRenderer::RenderTarget2DScope render_target_scope(
-			renderer,
-			tile_texture.texture,
-			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
+	// Make sure we leave the OpenGL state the way it was.
+	GL::StateScope save_restore_state(
+			gl,
+			// We're rendering to a render target so reset to the default OpenGL state...
+			true/*reset_to_default_state*/);
 
-	// The render target tiling loop...
-	do
+	// Bind our framebuffer object for rendering to tile textures.
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_tile_framebuffer);
+
+	// Begin rendering to the 2D target tile texture.
+	gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tile_texture.texture, 0/*level*/);
+
+	// Check our framebuffer object for completeness (now that a tile texture is attached to it).
+	// We only need to do this once because, while the tile texture changes, the framebuffer configuration
+	// does not (ie, same texture internal format, dimensions, etc).
+	if (!d_have_checked_tile_framebuffer_completeness)
 	{
-		// Begin the current render target tile - this also sets the viewport.
-		GLTransform::non_null_ptr_to_const_type render_target_tile_projection = render_target_scope.begin_tile();
+		// Throw OpenGLException if not complete.
+		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		GPlatesGlobal::Assert<OpenGLException>(
+				completeness == GL_FRAMEBUFFER_COMPLETE,
+				GPLATES_ASSERTION_SOURCE,
+				"Framebuffer not complete for rendering multi-resolution cube raster tiles.");
 
-		// Set up the projection transform adjustment for the current render target tile.
-		renderer.gl_load_matrix(GL_PROJECTION, render_target_tile_projection->get_matrix());
-		// Multiply in the projection matrix.
-		renderer.gl_mult_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
+		d_have_checked_tile_framebuffer_completeness = true;
+	}
 
-		// The world model-view matrix (with world transform multiplied in).
-		renderer.gl_load_matrix(GL_MODELVIEW, tile.d_world_model_view_transform->get_matrix());
+	// Specify a viewport that matches the tile dimensions.
+	gl.Viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
 
-		// Clear the framebuffer as appropriate for the source raster type.
-		//
-		// For example, for a *regional* normal map raster the normals outside the region must be
-		// normal to the globe's surface - so the framebuffer pixels must represent this.
-		//
-		// Other raster types simply clear the colour buffer to a constant colour - usually RGBA(0,0,0,0).
-		d_multi_resolution_raster->clear_framebuffer(renderer);
+	// The view projection of the current tile.
+	const GLViewProjection tile_view_projection(
+			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension),
+			tile.d_world_model_view_transform->get_matrix(),
+			tile.d_projection_transform->get_matrix());
 
-		// If the render target is floating-point...
-		if (tile_texture.texture->is_floating_point())
-		{
-			// A lot of graphics hardware does not support blending to floating-point targets so we don't enable it.
-			// And a floating-point render target is used for data rasters (ie, not coloured as fixed-point
-			// for visual display) - where the coverage (or alpha) is in the green channel instead of the alpha channel.
-		}
-		else // an RGBA render target...
-		{
-#if 0 // We don't really need alpha blending since the source raster tiles don't overlap...
-			// Set up alpha blending for pre-multiplied alpha.
-			// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
-			// This is where the RGB channels have already been multiplied by the alpha channel.
-			renderer.gl_enable(GL_BLEND);
-			renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-#endif
+	// Clear the framebuffer as appropriate for the source raster type.
+	//
+	// For example, for a *regional* normal map raster the normals outside the region must be
+	// normal to the globe's surface - so the framebuffer pixels must represent this.
+	//
+	// Other raster types simply clear the colour buffer to a constant colour - usually RGBA(0,0,0,0).
+	d_multi_resolution_raster->clear_framebuffer(gl, tile_view_projection.get_view_projection_transform());
 
-			// Enable alpha testing as an optimisation for culling transparent raster pixels.
-			renderer.gl_enable(GL_ALPHA_TEST);
-			renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
-		}
-
-		// Get the source raster to render into the render target using the view frustum
-		// we have provided. We have already pre-calculated the list of visible source raster tiles
-		// that need to be rendered into our frustum to save it a bit of culling work.
-		// And that's why we also don't need to test the return value to see if anything was rendered.
-		GLMultiResolutionRaster::cache_handle_type source_cache_handle;
-		d_multi_resolution_raster->render(
-				renderer,
-				tile.d_src_raster_tiles,
-				source_cache_handle);
-		tile_cache_handle->push_back(source_cache_handle);
+	// Get the source raster to render into the render target using the view frustum
+	// we have provided. We have already pre-calculated the list of visible source raster tiles
+	// that need to be rendered into our frustum to save it a bit of culling work.
+	// And that's why we also don't need to test the return value to see if anything was rendered.
+	GLMultiResolutionRaster::cache_handle_type source_cache_handle;
+	d_multi_resolution_raster->render(
+			gl,
+			tile_view_projection.get_view_projection_transform(),
+			tile.d_src_raster_tiles,
+			source_cache_handle);
+	tile_cache_handle->push_back(source_cache_handle);
 
 #if 0	// Debug the tiles by writing them out to file...
-		QImage image(QSize(d_tile_texel_dimension, d_tile_texel_dimension), QImage::Format_ARGB32);
-		image.fill(QColor(0,0,0,0).rgba());
+	QImage image(QSize(d_tile_texel_dimension, d_tile_texel_dimension), QImage::Format_ARGB32);
+	image.fill(QColor(0,0,0,0).rgba());
 
-		GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
-				renderer,
-				image,
-				GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension),
-				GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
+	GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
+			gl,
+			image,
+			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension),
+			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
 
-		static int count = 0;
-		++count;
-		image.save(QString("tile_image_") + QString::number(count) + ".png");
+	static int count = 0;
+	++count;
+	image.save(QString("tile_image_") + QString::number(count) + ".png");
 #endif
-	}
-	while (render_target_scope.end_tile());
 
 	tile_texture.source_cache_handle = tile_cache_handle;
 
@@ -733,77 +656,27 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_child_node(
 
 void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLTexture::shared_ptr_type &tile_texture,
 		const CubeQuadTreeNode &tile)
 {
-	//PROFILE_FUNC();
-
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	// Use the same texture format as the source raster.
-	const GLint internal_format = d_multi_resolution_raster->get_target_texture_internal_format();
-
-	//
-	// No mipmaps needed so we specify no mipmap filtering.
-	// We're not using mipmaps because our cube mapping does not have much distortion
-	// unlike global rectangular lat/lon rasters that squash near the poles.
-	//
-	// We do enable bilinear filtering if the texture is a fixed-point format.
-	// The client needs to emulate bilinear filtering in a fragment shader if the format is floating-point.
-	if (GLTexture::is_format_floating_point(internal_format))
-	{
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	}
-	else // fixed-point...
-	{
-		// Use nearest filtering for the 'min' filter since it displays a visually crisper image.
-		// This is for fixed-point data (used for visual display) - for floating-point data clients
-		// will still use bilinear filtering (in their shader program).
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-		// Set the magnification filter.
-		update_fixed_point_tile_texture_mag_filter(renderer, tile_texture, tile);
-
-		// Specify anisotropic filtering if it's supported since we are not using mipmaps
-		// and any textures rendered near the edge of the globe will get squashed a bit due to
-		// the angle we are looking at them and anisotropic filtering will help here.
-		//
-		// NOTE: We don't enable anisotropic filtering for floating-point textures since earlier
-		// hardware (that supports floating-point textures) only supports nearest filtering.
-		if (capabilities.texture.gl_EXT_texture_filter_anisotropic &&
-			(d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST_ANISOTROPIC ||
-				d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_MAG_LINEAR_ANISOTROPIC))
-		{
-			const GLfloat anisotropy = capabilities.texture.gl_texture_max_anisotropy;
-			tile_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
-		}
-	}
+	// Bind the texture.
+	gl.BindTexture(GL_TEXTURE_2D, tile_texture);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
-		capabilities.texture.gl_SGIS_texture_edge_clamp)
-	{
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-	else
-	{
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
 	//
 	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
 	// just use values that are compatible with all internal formats to avoid a possible error.
-	tile_texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0,
-			internal_format,
+	glTexImage2D(GL_TEXTURE_2D, 0,
+			d_multi_resolution_raster->get_tile_texture_internal_format(),
 			d_tile_texel_dimension, d_tile_texel_dimension,
-			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+			0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
@@ -811,59 +684,71 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 
 
 void
-GPlatesOpenGL::GLMultiResolutionCubeRaster::update_tile_texture(
-		GLRenderer &renderer,
+GPlatesOpenGL::GLMultiResolutionCubeRaster::set_tile_texture_filtering(
+		GL &gl,
 		const GLTexture::shared_ptr_type &tile_texture,
 		const CubeQuadTreeNode &tile)
 {
-	// Use the same texture format as the source raster.
-	const boost::optional<GLint> internal_format = tile_texture->get_internal_format();
-	// The texture should have been initialised.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			internal_format,
-			GPLATES_ASSERTION_SOURCE);
+	const GLCapabilities& capabilities = gl.get_capabilities();
 
-	// Nothing to do if it's a floating-point texture (only supports nearest filtering)...
-	if (GLTexture::is_format_floating_point(internal_format.get()))
+	// Bind the texture.
+	gl.BindTexture(GL_TEXTURE_2D, tile_texture);
+
+	//
+	// No mipmaps needed so we specify no mipmap filtering.
+	// We're not using mipmaps because our cube mapping does not have much distortion
+	// unlike global rectangular lat/lon rasters that squash near the poles.
+	//
+
+	if (tile_texture_is_visual())
 	{
-		return;
-	}
+		// Use nearest filtering for the 'min' filter since it displays a visually crisper image.
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-	update_fixed_point_tile_texture_mag_filter(renderer, tile_texture, tile);
-}
-
-
-void
-GPlatesOpenGL::GLMultiResolutionCubeRaster::update_fixed_point_tile_texture_mag_filter(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &tile_texture,
-		const CubeQuadTreeNode &tile)
-{
-	// Set the magnification filter.
-	switch (d_fixed_point_texture_filter)
-	{
-	case FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST:
-	case FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST_ANISOTROPIC:
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		break;
-
-	case FIXED_POINT_TEXTURE_FILTER_MAG_LINEAR:
-	case FIXED_POINT_TEXTURE_FILTER_MAG_LINEAR_ANISOTROPIC:
-		// Only if it's a leaf node do we specify bilinear filtering since only then
-		// will the texture start to magnify (the bilinear makes it smooth instead of pixelated).
+		// For the 'mag' filter, only if it's a leaf node do we specify bilinear filtering - since only
+		// then will the texture start to magnify (the bilinear makes it smooth instead of pixellated).
 		if (tile.d_is_leaf_node)
 		{
-			tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		}
 		else
 		{
-			tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
-		break;
 
-	default:
-		// Unsupported texture filter type.
-		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
-		break;
+		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
+		// subsequently sampled non-isotropically.
+		//
+		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
+		if (capabilities.gl_EXT_texture_filter_anisotropic)
+		{
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
+		}
+	}
+	else if (tile_texture_has_coverage())
+	{
+		// Texture has data (red component) and coverage (green component), and so needs filtering
+		// to be implemented in shader program. Use 'nearest' filtering, and no anisotropic filtering.
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		if (capabilities.gl_EXT_texture_filter_anisotropic)
+		{
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1/*isotropic*/);
+		}
+	}
+	else // a data texture with no coverage ...
+	{
+		// Texture just has data (no coverage) and hence filtering can be done in hardware.
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
+		// subsequently sampled non-isotropically.
+		//
+		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
+		if (capabilities.gl_EXT_texture_filter_anisotropic)
+		{
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
+		}
 	}
 }
