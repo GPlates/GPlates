@@ -110,7 +110,7 @@ GPlatesOpenGL::GLDataRasterSource::GLDataRasterSource(
 	d_proxied_raster_resolver(proxy_raster_resolver),
 	d_raster_width(raster_width),
 	d_raster_height(raster_height),
-	d_tile_texture_internal_format(GL_RG32F),  // OpenGL 3.3 is required to support this format
+	d_tile_texture_internal_format(GL_RG32F),  // Our requirement of OpenGL 3.3 supports this format
 	d_tile_texel_dimension(tile_texel_dimension),
 	d_tile_pack_working_space(new float[2/*RG format*/ * tile_texel_dimension * tile_texel_dimension]),
 	d_tile_edge_working_space(new float[2/*RG format*/ * tile_texel_dimension]),
@@ -159,7 +159,7 @@ GPlatesOpenGL::GLDataRasterSource::change_raster(
 
 
 GLint
-GPlatesOpenGL::GLDataRasterSource::get_target_texture_internal_format() const
+GPlatesOpenGL::GLDataRasterSource::get_tile_texture_internal_format() const
 {
 	return d_tile_texture_internal_format;
 }

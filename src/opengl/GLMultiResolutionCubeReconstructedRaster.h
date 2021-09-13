@@ -134,9 +134,8 @@ namespace GPlatesOpenGL
 		/**
 		 * Gets the transform that is applied to raster/geometries when rendering into the cube map.
 		 */
-		virtual
 		const GLMatrix &
-		get_world_transform() const
+		get_world_transform() const override
 		{
 			return d_world_transform;
 		}
@@ -145,19 +144,17 @@ namespace GPlatesOpenGL
 		/**
 		 * Sets the transform to apply to raster/geometries when rendering into the cube map.
 		 */
-		virtual
 		void
 		set_world_transform(
-				const GLMatrix &world_transform);
+				const GLMatrix &world_transform) override;
 
 
 		/**
 		 * Returns a subject token that clients can observe to see if they need to update themselves
 		 * (such as any cached data we render for them) by getting us to re-render.
 		 */
-		virtual
 		const GPlatesUtils::SubjectToken &
-		get_subject_token() const;
+		get_subject_token() const override;
 
 
 		/**
@@ -165,10 +162,9 @@ namespace GPlatesOpenGL
 		 *
 		 * Returns boost::none if the source raster does not overlap the specified cube face.
 		 */
-		virtual
 		boost::optional<quad_tree_node_type>
 		get_quad_tree_root_node(
-				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face);
+				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face) override;
 
 
 		/**
@@ -176,20 +172,18 @@ namespace GPlatesOpenGL
 		 *
 		 * Returns boost::none if the source raster does not overlap the specified child node.
 		 */
-		virtual
 		boost::optional<quad_tree_node_type>
 		get_child_node(
 				const quad_tree_node_type &parent_node,
 				unsigned int child_x_offset,
-				unsigned int child_y_offset);
+				unsigned int child_y_offset) override;
 
 
 		/**
 		 * Returns the tile texel dimension.
 		 */
-		virtual
 		unsigned int
-		get_tile_texel_dimension() const
+		get_tile_texel_dimension() const override
 		{
 			return d_tile_texel_dimension;
 		}
@@ -198,15 +192,39 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the texture internal format that can be used if rendering to a texture as
 		 * opposed to the main framebuffer.
-		 *
-		 * This is the internal format of the texture returned by @a get_tile_texture.
 		 */
-		virtual
 		GLint
-		get_tile_texture_internal_format() const
+		get_tile_texture_internal_format() const override
 		{
 			// It's the same as our source raster input.
-			return d_reconstructed_raster->get_target_texture_internal_format();
+			return d_reconstructed_raster->get_tile_texture_internal_format();
+		}
+
+
+		/**
+		 * Returns true if the raster is displayed visually (as opposed to a data raster used
+		 * for numerical calculations).
+		 *
+		 * This is used to determine texture filtering for optimal display.
+		 */
+		bool
+		tile_texture_is_visual() const override
+		{
+			return d_reconstructed_raster->tile_texture_is_visual();
+		}
+
+
+		/**
+		 * Returns true if the raster is a data raster that has coverage.
+		 *
+		 * This is used to determine if texture filtering needs to be implemented in the shader program
+		 * (due to the data value being in the red component and coverage being in the green component).
+		 */
+		virtual
+		bool
+		tile_texture_has_coverage() const override
+		{
+			return d_reconstructed_raster->tile_texture_has_coverage();
 		}
 
 	private:
@@ -300,9 +318,8 @@ namespace GPlatesOpenGL
 			 * Also the raster might be reconstructed with a higher resolution age grid and hence we
 			 * couldn't rely solely on the source raster resolution anyway.
 			 */
-			virtual
 			bool
-			is_leaf_node() const
+			is_leaf_node() const override
 			{
 				return false;
 			}
@@ -310,11 +327,10 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns texture of tile.
 			 */
-			virtual
 			boost::optional<GLTexture::shared_ptr_to_const_type>
 			get_tile_texture(
 					GLRenderer &renderer,
-					cache_handle_type &cache_handle) const
+					cache_handle_type &cache_handle) const override
 			{
 				return multi_resolution_cube_raster.get_tile_texture(
 						renderer,

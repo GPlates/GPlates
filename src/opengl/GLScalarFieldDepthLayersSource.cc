@@ -248,7 +248,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::set_depth_layer(
 
 
 GLint
-GPlatesOpenGL::GLScalarFieldDepthLayersSource::get_target_texture_internal_format() const
+GPlatesOpenGL::GLScalarFieldDepthLayersSource::get_tile_texture_internal_format() const
 {
 	return GL_RGBA32F;
 }

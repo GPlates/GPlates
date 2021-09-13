@@ -103,24 +103,6 @@ namespace GPlatesOpenGL
 		typedef GLMultiResolutionRasterInterface::cache_handle_type cache_handle_type;
 
 		/**
-		 * The texture filter types.
-		 *
-		 * NOTE: Currently all filtering is 'nearest' instead of 'bilinear' but this will probably change.
-		 * 
-		 * If anisotropic filtering is specified it will be ignored if the 'GL_EXT_texture_filter_anisotropic'
-		 * extension is not supported (it an ubiquitous extension that didn't become core until OpenGL 4.6).
-		 */
-		enum TextureFilterType
-		{
-			// Nearest neighbour filtering...
-			TEXTURE_FILTER_NO_ANISOTROPIC,
-			// Nearest neighbour (with anisotropic) filtering...
-			TEXTURE_FILTER_ANISOTROPIC,
-
-			NUM_TEXTURE_FILTER_TYPES // Must be the last enum.
-		};
-
-		/**
 		 * The order of scanlines or rows of data in the raster as visualised in the image.
 		 */
 		enum RasterScanlineOrderType
@@ -128,13 +110,6 @@ namespace GPlatesOpenGL
 			TOP_TO_BOTTOM, // the first row of data in the raster is for the *top* of the image
 			BOTTOM_TO_TOP  // the first row of data in the raster is for the *bottom* of the image
 		};
-
-
-		/**
-		 * The default texture filtering mode for the textures returned by @a get_tile_texture
-		 * is bilinear (with anisotropic) filtering.
-		 */
-		static const TextureFilterType DEFAULT_TEXTURE_FILTER = TEXTURE_FILTER_ANISOTROPIC;
 
 
 		/**
@@ -162,9 +137,6 @@ namespace GPlatesOpenGL
 		 * *projection* spatial reference).
 		 * @a raster_source is the source of raster data.
 		 *
-		 * Default texture filtering mode for the internal textures rendered during @a render is
-		 * nearest neighbour (with anisotropic) filtering.
-		 *
 		 * If @a cache_tile_textures is 'CACHE_TILE_TEXTURES_ENTIRE_LEVEL_OF_DETAIL_PYRAMID' then the
 		 * internal texture/vertex cache is allowed to grow to encompass all tiles in all levels of detail.
 		 * WARNING: This should normally be turned off (especially for visualisation of rasters where
@@ -187,7 +159,6 @@ namespace GPlatesOpenGL
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
-				TextureFilterType texture_filter = DEFAULT_TEXTURE_FILTER,
 				CacheTileTexturesType cache_tile_textures = DEFAULT_CACHE_TILE_TEXTURES,
 				RasterScanlineOrderType raster_scanline_order = TOP_TO_BOTTOM);
 
@@ -196,9 +167,8 @@ namespace GPlatesOpenGL
 		 * Returns a subject token that clients can observe to see if they need to update themselves
 		 * (such as any cached data we render for them) by getting us to re-render.
 		 */
-		virtual
 		const GPlatesUtils::SubjectToken &
-		get_subject_token() const
+		get_subject_token() const override
 		{
 			// We'll just use the valid token of the raster source - if they don't change then neither do we.
 			// If we had two input sources then we'd have to have our own valid token.
@@ -211,9 +181,8 @@ namespace GPlatesOpenGL
 		 *
 		 * See base class for more details.
 		 */
-		virtual
 		unsigned int
-		get_num_levels_of_detail() const
+		get_num_levels_of_detail() const override
 		{
 			return d_level_of_detail_pyramid.size();
 		}
@@ -226,11 +195,10 @@ namespace GPlatesOpenGL
 		 *
 		 * See base class for more details.
 		 */
-		virtual
 		float
 		get_level_of_detail(
 				const GLViewProjection &view_projection,
-				float level_of_detail_bias = 0.0f) const;
+				float level_of_detail_bias = 0.0f) const override;
 
 
 		/**
@@ -239,10 +207,9 @@ namespace GPlatesOpenGL
 		 *
 		 * See base class for more details.
 		 */
-		virtual
 		float
 		clamp_level_of_detail(
-				float level_of_detail) const;
+				float level_of_detail) const override;
 
 
 		using GLMultiResolutionRasterInterface::render;
@@ -257,13 +224,12 @@ namespace GPlatesOpenGL
 		 *
 		 * See base class for more details.
 		 */
-		virtual
 		bool
 		render(
 				GL &gl,
 				const GLMatrix &view_projection_transform,
 				float level_of_detail,
-				cache_handle_type &cache_handle);
+				cache_handle_type &cache_handle) override;
 
 
 		/**
@@ -332,7 +298,7 @@ namespace GPlatesOpenGL
 		 * of the raster source.
 		 */
 		unsigned int
-		get_tile_texel_dimension() const
+		get_tile_texel_dimension() const override
 		{
 			return d_tile_texel_dimension;
 		}
@@ -343,15 +309,39 @@ namespace GPlatesOpenGL
 		 * calling @a render, as opposed to the main framebuffer.
 		 *
 		 * This is the 'internalformat' parameter of glTexImage2D for example.
-		 *
-		 * NOTE: The filtering mode is expected to be set to 'nearest' in all cases.
-		 * Currently 'nearest' fits best with the georeferencing information of rasters.
 		 */
 		GLint
-		get_target_texture_internal_format() const
+		get_tile_texture_internal_format() const override
 		{
 			// Delegate to our source raster input.
-			return d_raster_source->get_target_texture_internal_format();
+			return d_raster_source->get_tile_texture_internal_format();
+		}
+
+
+		/**
+		 * Returns true if the raster is displayed visually (as opposed to a data raster used
+		 * for numerical calculations).
+		 *
+		 * This is used to determine texture filtering for optimal display.
+		 */
+		bool
+		tile_texture_is_visual() const override
+		{
+			return d_raster_source->tile_texture_is_visual();
+		}
+
+
+		/**
+		 * Returns true if the raster is a data raster that has coverage.
+		 *
+		 * This is used to determine if texture filtering needs to be implemented in the shader program
+		 * (due to the data value being in the red component and coverage being in the green component).
+		 */
+		virtual
+		bool
+		tile_texture_has_coverage() const override
+		{
+			return d_raster_source->tile_texture_has_coverage();
 		}
 
 
@@ -361,10 +351,14 @@ namespace GPlatesOpenGL
 		 * This is useful when rendering *regional* (non-global) normal maps to a target texture
 		 * because @a render only renders within the regional raster and the normals outside the
 		 * region must be normal to the globe's surface.
+		 *
+		 * Note that @a view_projection_transform is only used when the raster source is a normal map,
+		 * in which case 
 		 */
 		void
 		clear_framebuffer(
-				GL &gl);
+				GL &gl,
+				const GLMatrix &view_projection_transform);
 
 	private:
 		/**
@@ -821,7 +815,8 @@ namespace GPlatesOpenGL
 
 			void
 			render(
-					GL &gl);
+					GL &gl,
+					const GLMatrix &view_projection_transform);
 
 		private:
 			typedef GLushort vertex_element_type;
@@ -861,11 +856,6 @@ namespace GPlatesOpenGL
 		 * The scanline order of the raster (whether first row of data is at top or bottom of image).
 		 */
 		RasterScanlineOrderType d_raster_scanline_order;
-
-		/**
-		 * The texture filtering mode for textures rendered during @a render.
-		 */
-		TextureFilterType d_texture_filter;
 
 
 		/**
@@ -984,7 +974,6 @@ namespace GPlatesOpenGL
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
-				TextureFilterType texture_filter,
 				CacheTileTexturesType cache_tile_textures,
 				RasterScanlineOrderType raster_scanline_order);
 

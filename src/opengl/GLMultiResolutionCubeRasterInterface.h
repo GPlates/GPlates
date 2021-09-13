@@ -42,7 +42,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * Interface for any raster data in a multi-resolution cube map.
@@ -107,20 +107,16 @@ namespace GPlatesOpenGL
 			 * a valid tile texture since there will be no quad tree nodes over regions where there
 			 * is not raster coverage.
 			 *
-			 * NOTE: The returned texture has nearest neighbour filtering if it's a floating-point
-			 * texture so you should emulate bilinear filtering in a fragment shader.
-			 * This is because earlier hardware (supporting floating-point textures) only supports nearest filtering.
-			 *
-			 * @a renderer is used if the tile's texture is not currently cached and needs to be re-rendered.
+			 * @a gl is used if the tile's texture is not currently cached and needs to be re-rendered.
 			 *
 			 * @a cache_handle is to be stored by the client to keep textures (and vertices) cached.
 			 */
 			boost::optional<GLTexture::shared_ptr_to_const_type>
 			get_tile_texture(
-					GLRenderer &renderer,
+					GL &gl,
 					cache_handle_type &cache_handle) const
 			{
-				return d_impl->get_tile_texture(renderer, cache_handle);
+				return d_impl->get_tile_texture(gl, cache_handle);
 			}
 
 		private:
@@ -144,7 +140,7 @@ namespace GPlatesOpenGL
 				virtual
 				boost::optional<GLTexture::shared_ptr_to_const_type>
 				get_tile_texture(
-						GLRenderer &renderer,
+						GL &gl,
 						cache_handle_type &cache_handle) const = 0;
 			};
 
@@ -231,7 +227,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the tile texel dimension passed into constructor.
+		 * Returns the tile texel dimension.
 		 */
 		virtual
 		unsigned int
@@ -241,12 +237,32 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the texture internal format that can be used if rendering to a texture as
 		 * opposed to the main framebuffer.
-		 *
-		 * This is the internal format of the texture returned by @a get_tile_texture.
 		 */
 		virtual
 		GLint
 		get_tile_texture_internal_format() const = 0;
+
+
+		/**
+		 * Returns true if the raster is displayed visually (as opposed to a data raster used
+		 * for numerical calculations).
+		 *
+		 * This is used to determine texture filtering for optimal display.
+		 */
+		virtual
+		bool
+		tile_texture_is_visual() const = 0;
+
+
+		/**
+		 * Returns true if the raster is a data raster that has coverage.
+		 *
+		 * This is used to determine if texture filtering needs to be implemented in the shader program
+		 * (due to the data value being in the red component and coverage being in the green component).
+		 */
+		virtual
+		bool
+		tile_texture_has_coverage() const = 0;
 	};
 }
 

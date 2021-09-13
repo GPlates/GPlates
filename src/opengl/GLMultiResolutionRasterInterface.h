@@ -216,6 +216,45 @@ namespace GPlatesOpenGL
 				const GLMatrix &view_projection_transform,
 				float level_of_detail,
 				cache_handle_type &cache_handle) = 0;
+
+
+		/**
+		 * Returns the tile texel dimension.
+		 */
+		virtual
+		unsigned int
+		get_tile_texel_dimension() const = 0;
+
+
+		/**
+		 * Returns the texture internal format that can be used if rendering to a texture as
+		 * opposed to the main framebuffer.
+		 */
+		virtual
+		GLint
+		get_tile_texture_internal_format() const = 0;
+
+
+		/**
+		 * Returns true if the raster is displayed visually (as opposed to a data raster used
+		 * for numerical calculations).
+		 *
+		 * This is used to determine texture filtering for optimal display.
+		 */
+		virtual
+		bool
+		tile_texture_is_visual() const = 0;
+
+
+		/**
+		 * Returns true if the raster is a data raster that has coverage.
+		 *
+		 * This is used to determine if texture filtering needs to be implemented in the shader program
+		 * (due to the data value being in the red component and coverage being in the green component).
+		 */
+		virtual
+		bool
+		tile_texture_has_coverage() const = 0;
 	};
 }
 

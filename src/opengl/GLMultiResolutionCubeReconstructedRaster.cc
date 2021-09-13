@@ -464,7 +464,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 {
 	const GLCapabilities &capabilities = renderer.get_capabilities();
 
-	const GLint internal_format = d_reconstructed_raster->get_target_texture_internal_format();
+	const GLint internal_format = d_reconstructed_raster->get_tile_texture_internal_format();
 	//
 	// No mipmaps needed so we specify no mipmap filtering.
 	// We're not using mipmaps because our cube mapping does not have much distortion
@@ -483,16 +483,12 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-		// Specify anisotropic filtering if it's supported since we are not using mipmaps
-		// and any textures rendered near the edge of the globe will get squashed a bit due to
-		// the angle we are looking at them and anisotropic filtering will help here.
-		//
-		// NOTE: We don't enable anisotropic filtering for floating-point textures since earlier
-		// hardware (that supports floating-point textures) only supports nearest filtering.
-		if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
+		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
+		// subsequently sampled non-isotropically.
+		if (capabilities.gl_EXT_texture_filter_anisotropic)
 		{
 			const GLfloat anisotropy = capabilities.texture.gl_texture_max_anisotropy;
-			tile_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 		}
 	}
 

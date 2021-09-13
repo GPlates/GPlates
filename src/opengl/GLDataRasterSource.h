@@ -111,36 +111,45 @@ namespace GPlatesOpenGL
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &data_raster);
 
 
-		virtual
 		unsigned int
-		get_raster_width() const
+		get_raster_width() const override
 		{
 			return d_raster_width;
 		}
 
 
-		virtual
 		unsigned int
-		get_raster_height() const
+		get_raster_height() const override
 		{
 			return d_raster_height;
 		}
 
 
-		virtual
 		unsigned int
-		get_tile_texel_dimension() const
+		get_tile_texel_dimension() const override
 		{
 			return d_tile_texel_dimension;
 		}
 
 
-		virtual
 		GLint
-		get_target_texture_internal_format() const;
+		get_tile_texture_internal_format() const override;
 
 
-		virtual
+		bool
+		tile_texture_is_visual() const override
+		{
+			return false;
+		}
+
+
+		bool
+		tile_texture_has_coverage() const override
+		{
+			return true;
+		}
+
+
 		cache_handle_type
 		load_tile(
 				unsigned int level,
@@ -149,7 +158,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GL &gl);
+				GL &gl) override;
 
 	private:
 		/**

@@ -1072,13 +1072,12 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_tile_texture(
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	// Specify anisotropic filtering if it's supported since we are not using mipmaps
-	// and any textures rendered near the edge of the globe will get squashed a bit due to
-	// the angle we are looking at them and anisotropic filtering will help here.
+	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
+	// subsequently sampled non-isotropically (such as viewing at an angle near edge of the globe).
 	if (gl.get_capabilities().gl_EXT_texture_filter_anisotropic)
 	{
 		const GLfloat anisotropy = gl.get_capabilities().gl_texture_max_anisotropy;
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -

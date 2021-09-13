@@ -99,8 +99,6 @@ namespace GPlatesOpenGL
 		 * The requests to @a load_tile *must* have texel offsets that are integer
 		 * multiples of this tile dimension. This enables derived classes to
 		 * use textures of the tile dimension and satisfy load requests using these textures.
-		 *
-		 * NOTE: Since textures can be used for tiles the tile dimension should be a power-of-two.
 		 */
 		virtual
 		unsigned int
@@ -150,13 +148,32 @@ namespace GPlatesOpenGL
 		 *
 		 * Class @a GLMultiResolutionRaster (the client of this interface) uses this texture format
 		 * for rendering to a render-target (after loading data into it with @a load_tile).
-		 *
-		 * NOTE: The filtering mode is expected to be set to 'nearest' in all cases.
-		 * Currently 'nearest' fits best with the georeferencing information of rasters.
 		 */
 		virtual
 		GLint
-		get_target_texture_internal_format() const = 0;
+		get_tile_texture_internal_format() const = 0;
+
+
+		/**
+		 * Returns true if the raster is displayed visually (as opposed to a data raster used
+		 * for numerical calculations).
+		 *
+		 * This is used to determine texture filtering for optimal display.
+		 */
+		virtual
+		bool
+		tile_texture_is_visual() const = 0;
+
+
+		/**
+		 * Returns true if the raster is a data raster that has coverage.
+		 *
+		 * This is used to determine if texture filtering needs to be implemented in the shader program
+		 * (due to the data value being in the red component and coverage being in the green component).
+		 */
+		virtual
+		bool
+		tile_texture_has_coverage() const = 0;
 
 
 		/**
@@ -165,7 +182,7 @@ namespace GPlatesOpenGL
 		 * The caller must ensure that @a target_texture has had its image allocated in OpenGL
 		 * (eg, using glTexImage2D with a NULL data pointer).
 		 *
-		 * @a renderer is provided in case the data needs to be rendered into the texture.
+		 * @a gl is provided in case the data needs to be rendered into the texture.
 		 *
 		 * @a texel_x_offset and @a texel_y_offset are guaranteed to be a multiple of
 		 * the tile texel dimension.

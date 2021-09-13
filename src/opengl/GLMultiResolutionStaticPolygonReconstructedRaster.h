@@ -215,9 +215,8 @@ namespace GPlatesOpenGL
 		 * Returns a subject token that clients can observe to see if they need to update themselves
 		 * (such as any cached data we render for them) by getting us to re-render.
 		 */
-		virtual
 		const GPlatesUtils::SubjectToken &
-		get_subject_token() const;
+		get_subject_token() const override;
 
 
 		/**
@@ -225,9 +224,8 @@ namespace GPlatesOpenGL
 		 *
 		 * See base class for more details.
 		 */
-		virtual
 		unsigned int
-		get_num_levels_of_detail() const
+		get_num_levels_of_detail() const override
 		{
 			return d_source_raster->get_num_levels_of_detail();
 		}
@@ -240,13 +238,12 @@ namespace GPlatesOpenGL
 		 *
 		 * See base class for more details.
 		 */
-		virtual
 		float
 		get_level_of_detail(
 				const GLMatrix &model_view_transform,
 				const GLMatrix &projection_transform,
 				const GLViewport &viewport,
-				float level_of_detail_bias = 0.0f) const;
+				float level_of_detail_bias = 0.0f) const override;
 
 
 		/**
@@ -259,10 +256,9 @@ namespace GPlatesOpenGL
 		 *
 		 * See base class for more details.
 		 */
-		virtual
 		float
 		clamp_level_of_detail(
-				float level_of_detail) const;
+				float level_of_detail) const override;
 
 
 		using GLMultiResolutionRasterInterface::render;
@@ -277,12 +273,11 @@ namespace GPlatesOpenGL
 		 *
 		 * See base class for more details.
 		 */
-		virtual
 		bool
 		render(
 				GLRenderer &renderer,
 				float level_of_detail,
-				cache_handle_type &cache_handle);
+				cache_handle_type &cache_handle) override;
 
 
 		/**
@@ -290,7 +285,7 @@ namespace GPlatesOpenGL
 		 * of the source cube raster.
 		 */
 		unsigned int
-		get_tile_texel_dimension() const
+		get_tile_texel_dimension() const override
 		{
 			return d_source_raster_tile_texel_dimension;
 		}
@@ -301,16 +296,39 @@ namespace GPlatesOpenGL
 		 * calling @a render, as opposed to the main framebuffer.
 		 *
 		 * This is the 'internalformat' parameter of GLTexture::gl_tex_image_2D for example.
-		 *
-		 * NOTE: The filtering mode is expected to be set to 'linear' in all cases except floating-point rasters.
-		 * Because earlier hardware, that supports floating-point textures, does not implement
-		 * bilinear filtering (any linear filtering will need to be emulated in a pixel shader).
 		 */
 		GLint
-		get_target_texture_internal_format() const
+		get_tile_texture_internal_format() const override
 		{
 			// Delegate to our source raster input.
 			return d_source_raster->get_tile_texture_internal_format();
+		}
+
+
+		/**
+		 * Returns true if the raster is displayed visually (as opposed to a data raster used
+		 * for numerical calculations).
+		 *
+		 * This is used to determine texture filtering for optimal display.
+		 */
+		bool
+		tile_texture_is_visual() const override
+		{
+			return d_source_raster->tile_texture_is_visual();
+		}
+
+
+		/**
+		 * Returns true if the raster is a data raster that has coverage.
+		 *
+		 * This is used to determine if texture filtering needs to be implemented in the shader program
+		 * (due to the data value being in the red component and coverage being in the green component).
+		 */
+		virtual
+		bool
+		tile_texture_has_coverage() const override
+		{
+			return d_source_raster->tile_texture_has_coverage();
 		}
 
 	private:

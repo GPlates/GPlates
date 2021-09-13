@@ -286,13 +286,15 @@ namespace GPlatesOpenGL
 		 */
 		const char *RENDER_SPHERE_NORMALS_VERTEX_SHADER_SOURCE =
 			R"(
+				uniform mat4 view_projection;
+			
 				layout(location = 0) in vec4 position;
 
 				out vec3 cube_position;
 			
 				void main (void)
 				{
-					gl_Position = position;
+					gl_Position = view_projection * position;
 				
 					cube_position = position.xyz;
 				}
@@ -330,7 +332,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::create(
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
-		TextureFilterType fixed_point_texture_filter,
 		CacheTileTexturesType cache_tile_textures,
 		RasterScanlineOrderType raster_scanline_order)
 {
@@ -340,7 +341,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::create(
 					georeferencing,
 					coordinate_transformation,
 					raster_source,
-					fixed_point_texture_filter,
 					cache_tile_textures,
 					raster_scanline_order));
 }
@@ -351,7 +351,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
-		TextureFilterType fixed_point_texture_filter,
 		CacheTileTexturesType cache_tile_textures,
 		RasterScanlineOrderType raster_scanline_order) :
 	d_georeferencing(georeferencing),
@@ -361,7 +360,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	d_raster_width(raster_source->get_raster_width()),
 	d_raster_height(raster_source->get_raster_height()),
 	d_raster_scanline_order(raster_scanline_order),
-	d_texture_filter(fixed_point_texture_filter),
 	d_tile_texel_dimension(raster_source->get_tile_texel_dimension()),
 	d_inverse_tile_texel_dimension(1.0f / raster_source->get_tile_texel_dimension()),
 	d_num_texels_per_vertex(/*default*/MAX_NUM_TEXELS_PER_VERTEX << 16), // ...a 16:16 fixed-point type.
@@ -559,7 +557,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 
 void
 GPlatesOpenGL::GLMultiResolutionRaster::clear_framebuffer(
-		GL &gl)
+		GL &gl,
+		const GLMatrix &view_projection_transform)
 {
 	// If not a normal map then just clear the colour buffer.
 	if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()) == NULL)
@@ -581,7 +580,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::clear_framebuffer(
 	}
 
 	// Render the sphere normals.
-	d_render_sphere_normals->render(gl);
+	d_render_sphere_normals->render(gl, view_projection_transform);
 }
 
 
@@ -825,53 +824,52 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// Instead it is a texture that's been rendered to by the GPU (via a render target).
 	// In this case the auto generation of mipmaps is probably a little less clear since it
 	// interacts with other specifications on mipmap rendering such as the framebuffer object
-	// extension (used by GPlates where possible for render targets) which has its own
-	// mipmap support.
+	// extension (used by GPlates for render targets) which has its own mipmap support.
 	// Best to avoid auto generation of mipmaps - we don't really need it anyway since
 	// our texture already matches pretty closely texel-to-pixel (texture -> viewport) since
 	// we have our own mipmapped raster tiles via proxied rasters. Also we turn on anisotropic
 	// filtering which will reduce any aliasing near the horizon of the globe.
 	// Turning off auto-mipmap-generation will also give us a small speed boost.
-#if 0
-	if (capabilities.texture.gl_SGIS_generate_mipmap)
-	{
-		// Mipmaps will be generated automatically when the level 0 image is modified.
-		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-	}
-	else
-	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	}
-#else
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-#endif
+	//
 
-	// No mipmap filter for the GL_TEXTURE_MAG_FILTER filter regardless.
+	// Note: Currently all filtering is 'nearest' instead of 'bilinear'.
+	//       This is because the tiles do not overlap by border by half a texel (to avoid bilinear
+	//       seams between tiles). But this may change (though it would require significant changes).
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	// Specify anisotropic filtering if it's supported since rasters near the north or
-	// south pole will exhibit squashing along the longitude, but not the latitude, direction.
-	// Regular isotropic filtering will just reduce texel resolution equally along both
-	// directions and reduce the visual sharpness that we want to retain in the latitude direction.
-	//
-	// NOTE: We don't enable anisotropic filtering for floating-point textures since earlier
-	// hardware (that supports floating-point textures) only supports nearest filtering.
-	if (d_texture_filter == TEXTURE_FILTER_ANISOTROPIC &&
-		gl.get_capabilities().gl_EXT_texture_filter_anisotropic &&
-		// Note: We don't use anisotropic filtering for data textures (like we do for colour textures)
-		// since we want to explicitly multiply each texel's data value with its coverage value *before*
-		// filtering (we do this in the shader program)...
-		dynamic_cast<GLDataRasterSource *>(d_raster_source.get()) == nullptr &&
-		// Note: We don't use anisotropic filtering for scalar/gradient textures (like we do for colour textures)...
-		// TODO: Re-consider whether to use anisotropic since scalar/gradient tile texture has already been
-		// explicitly calculated from data/coverage scalar field and so does not have the same restriction
-		// as GLDataRasterSource (which must handle the coverage part explicitly in the shader and thus needs
-		// to bypass any hardwired filtering).
-		dynamic_cast<GLScalarFieldDepthLayersSource *>(d_raster_source.get()) == nullptr)
+	if (tile_texture_is_visual())
 	{
-		const GLfloat anisotropy = gl.get_capabilities().gl_texture_max_anisotropy;
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
+		// subsequently sampled non-isotropically.
+		//
+		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
+		if (capabilities.gl_EXT_texture_filter_anisotropic)
+		{
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
+		}
+	}
+	else if (tile_texture_has_coverage())
+	{
+		// Texture has data (red component) and coverage (green component), and so needs filtering
+		// to be implemented in shader program. So don't use anisotropic filtering.
+		if (capabilities.gl_EXT_texture_filter_anisotropic)
+		{
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1/*isotropic*/);
+		}
+	}
+	else // a data texture with no coverage ...
+	{
+		// Texture just has data (no coverage) and hence filtering can be done in hardware.
+		//
+		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
+		// subsequently sampled non-isotropically.
+		//
+		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
+		if (capabilities.gl_EXT_texture_filter_anisotropic)
+		{
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
+		}
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
@@ -886,7 +884,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// just use values that are compatible with all internal formats to avoid a possible error.
 	glTexImage2D(
 			GL_TEXTURE_2D, 0/*level*/,
-			d_raster_source->get_target_texture_internal_format(),
+			d_raster_source->get_tile_texture_internal_format(),
 			d_tile_texel_dimension, d_tile_texel_dimension,
 			0/*border*/, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
@@ -2822,13 +2820,21 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 
 void
 GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::render(
-		GL &gl)
+		GL &gl,
+		const GLMatrix &view_projection_transform)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GL::StateScope save_restore_state(gl);
 
 	// Bind the shader program.
 	gl.UseProgram(d_program);
+
+	// Set view projection matrix in the currently bound program.
+	GLfloat view_projection_float_matrix[16];
+	view_projection_transform.get_float_matrix(view_projection_float_matrix);
+	glUniformMatrix4fv(
+			d_program->get_uniform_location("view_projection"),
+			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Bind vertex array object.
 	gl.BindVertexArray(d_vertex_array);

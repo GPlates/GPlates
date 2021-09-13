@@ -259,7 +259,6 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 						d_current_georeferencing.get(),
 						d_current_coordinate_transformation,
 						d_cached_multi_resolution_data_raster.cached_data_raster_source.get(),
-						GPlatesOpenGL::GLMultiResolutionRaster::DEFAULT_TEXTURE_FILTER,
 						GPlatesOpenGL::GLMultiResolutionRaster::CACHE_TILE_TEXTURES_ENTIRE_LEVEL_OF_DETAIL_PYRAMID);
 
 		d_cached_multi_resolution_data_raster.cached_data_raster = multi_resolution_raster;
@@ -540,9 +539,6 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_age_grid_mask(
 						d_current_georeferencing.get(),
 						d_current_coordinate_transformation,
 						d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source.get(),
-						// Avoids blending seams due to anisotropic filtering which gives age grid
-						// coverage alpha values that are not either 0.0 or 1.0...
-						GPlatesOpenGL::GLMultiResolutionRaster::TEXTURE_FILTER_NO_ANISOTROPIC,
 						GPlatesOpenGL::GLMultiResolutionRaster::CACHE_TILE_TEXTURES_ENTIRE_LEVEL_OF_DETAIL_PYRAMID);
 
 		d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_raster = age_grid_mask_raster;
@@ -558,11 +554,7 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_age_grid_mask(
 				GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
 						renderer,
 						d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_raster.get(),
-						GPlatesOpenGL::GLMultiResolutionCubeRaster::DEFAULT_TILE_TEXEL_DIMENSION,
-						true/*adapt_tile_dimension_to_source_resolution*/,
-						// Avoids blending seams due to bilinear and/or anisotropic filtering which
-						// gives age grid mask alpha values that are not either 0.0 or 1.0.
-						GPlatesOpenGL::GLMultiResolutionCubeRaster::FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST);
+						GPlatesOpenGL::GLMultiResolutionCubeRaster::DEFAULT_TILE_TEXEL_DIMENSION);
 
 		d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_cube_raster = age_grid_mask_cube_raster;
 	}
