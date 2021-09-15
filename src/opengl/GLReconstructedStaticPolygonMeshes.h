@@ -34,9 +34,9 @@
 #include <boost/ref.hpp>
 #include <boost/variant.hpp>
 
-#include "GLCompiledDrawState.h"
+#include "GLBuffer.h"
 #include "GLCubeSubdivisionCache.h"
-#include "GLTransform.h"
+#include "GLMatrix.h"
 #include "GLVertexArray.h"
 
 #include "app-logic/ReconstructContext.h"
@@ -59,7 +59,7 @@ namespace GPlatesMaths
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * Reconstructed static polygons used to reconstruct a raster.
@@ -78,8 +78,7 @@ namespace GPlatesOpenGL
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLReconstructedStaticPolygonMeshes> non_null_ptr_to_const_type;
 
 		//! Typedef for a sequence of @a PolygonMesh objects.
-		typedef std::vector<boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> >
-				polygon_mesh_seq_type;
+		typedef std::vector<boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> > polygon_mesh_seq_type;
 
 		//! Typedef for a sequence of geometries.
 		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries_seq_type;
@@ -100,17 +99,23 @@ namespace GPlatesOpenGL
 		{
 			PolygonMeshDrawable(
 					const GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type &polygon_mesh_,
-					GLCompiledDrawState::non_null_ptr_to_const_type drawable_) :
+					const GLVertexArray::shared_ptr_type &vertex_array_,
+					GLuint drawable_start_,
+					GLuint drawable_end_,
+					GLsizei drawable_count_,
+					GLint drawable_indices_offset_) :
 				mesh(polygon_mesh_),
-				drawable(drawable_)
+				d_vertex_array(vertex_array_),
+				d_drawable_start(drawable_start_),
+				d_drawable_end(drawable_end_),
+				d_drawable_count(drawable_count_),
+				d_drawable_indices_offset(drawable_indices_offset_)
 			{  }
 
-			PolygonMeshDrawable(
-					const GPlatesMaths::PolygonFan::non_null_ptr_to_const_type &polygon_fan_,
-					GLCompiledDrawState::non_null_ptr_to_const_type drawable_) :
-				mesh(polygon_fan_),
-				drawable(drawable_)
-			{  }
+			//! Render this polygon mesh drawable.
+			void
+			render(
+					GL &gl);
 
 			/**
 			 * The polygon mesh.
@@ -124,8 +129,15 @@ namespace GPlatesOpenGL
 					GPlatesMaths::PolygonFan::non_null_ptr_to_const_type>
 							mesh;
 
-			//! The OpenGL polygon mesh.
-			GLCompiledDrawState::non_null_ptr_to_const_type drawable;
+		private:
+			//! Vertex array containing polygon mesh drawable (note that all drawables share a single vertex array).
+			GLVertexArray::shared_ptr_type d_vertex_array;
+
+			// Parameters for glDrawRangeElements.
+			GLuint d_drawable_start;
+			GLuint d_drawable_end;
+			GLsizei d_drawable_count;
+			GLint d_drawable_indices_offset;
 		};
 
 		/**
@@ -540,7 +552,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const polygon_mesh_seq_type &polygon_meshes,
 				const geometries_seq_type &present_day_geometries,
 				const double &reconstruction_time,
@@ -548,7 +560,7 @@ namespace GPlatesOpenGL
 		{
 			return non_null_ptr_type(
 					new GLReconstructedStaticPolygonMeshes(
-							renderer,
+							gl,
 							polygon_meshes,
 							present_day_geometries,
 							reconstruction_time,
@@ -630,12 +642,12 @@ namespace GPlatesOpenGL
 		 * Returns the reconstructed feature geometries grouped by finite rotation transforms
 		 * along with the present day OpenGL polygon meshes.
 		 *
-		 * The visibility is determined by the view frustum that is in turn determined by the
-		 * transform state of the specified renderer.
+		 * The visibility is determined by the view frustum of the specified view projection transform.
 		 */
 		ReconstructedPolygonMeshTransformsGroups::non_null_ptr_to_const_type
 		get_reconstructed_polygon_meshes(
-				GLRenderer &renderer);
+				GL &gl,
+				const GLMatrix &view_projection_transform);
 
 	private:
 		/**
@@ -692,9 +704,11 @@ namespace GPlatesOpenGL
 						reconstructed_polygon_mesh_transform_group_builder_map_type;
 
 
-		/**
-		 * All polygon mesh drawables share a single vertex array.
-		 */
+		//! All polygon mesh drawables share a single vertex buffer.
+		GLBuffer::shared_ptr_type d_polygon_meshes_vertex_buffer;
+		//! All polygon mesh drawables share a single vertex element buffer.
+		GLBuffer::shared_ptr_type d_polygon_meshes_vertex_element_buffer;
+		//! All polygon mesh drawables share a single vertex array.
 		GLVertexArray::shared_ptr_type d_polygon_meshes_vertex_array;
 
 		/**
@@ -736,7 +750,7 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLReconstructedStaticPolygonMeshes(
-				GLRenderer &renderer,
+				GL &gl,
 				const polygon_mesh_seq_type &polygon_meshes,
 				const geometries_seq_type &present_day_geometries,
 				const double &reconstruction_time,
@@ -777,7 +791,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		create_polygon_mesh_drawables(
-				GLRenderer &renderer,
+				GL &gl,
 				const geometries_seq_type &present_day_geometries,
 				const polygon_mesh_seq_type &polygon_meshes);
 

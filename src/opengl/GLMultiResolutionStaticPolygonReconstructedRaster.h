@@ -276,6 +276,7 @@ namespace GPlatesOpenGL
 		bool
 		render(
 				GLRenderer &renderer,
+				const GLMatrix &view_projection_transform,
 				float level_of_detail,
 				cache_handle_type &cache_handle) override;
 

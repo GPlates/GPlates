@@ -26,13 +26,12 @@
 #include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
 
 #include <vector>
-#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include "GLReconstructedStaticPolygonMeshes.h"
 
+#include "GL.h"
 #include "GLIntersect.h"
-#include "GLRenderer.h"
 #include "GLVertexUtils.h"
 
 #include "app-logic/GeometryUtils.h"
@@ -48,7 +47,7 @@
 #include "utils/Profile.h"
 
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::GLReconstructedStaticPolygonMeshes(
-		GLRenderer &renderer,
+		GL &gl,
 		const polygon_mesh_seq_type &polygon_meshes,
 		const geometries_seq_type &present_day_geometries,
 		const double &reconstruction_time,
@@ -59,7 +58,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::GLReconstructedStaticPolygonM
 {
 	//PROFILE_FUNC();
 
-	create_polygon_mesh_drawables(renderer, present_day_geometries, polygon_meshes);
+	create_polygon_mesh_drawables(gl, present_day_geometries, polygon_meshes);
 
 	find_present_day_polygon_mesh_node_intersections(present_day_geometries);
 }
@@ -83,7 +82,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::update(
 
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::ReconstructedPolygonMeshTransformsGroups::non_null_ptr_to_const_type
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_meshes(
-		GLRenderer &renderer)
+		GL &gl,
+		const GLMatrix &view_projection_transform)
 {
 	PROFILE_FUNC();
 
@@ -104,7 +104,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 	cube_subdivision_cache_type::non_null_ptr_type
 			cube_subdivision_cache =
 					cube_subdivision_cache_type::create(
-							GPlatesOpenGL::GLCubeSubdivision::create());
+							GLCubeSubdivision::create());
 
 	// Add any reconstructed polygons that exist in the root of the reconstructions cube quad tree.
 	// These are the ones that were too big to fit into any loose cube face.
@@ -126,11 +126,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 				false/*active_reconstructions_only*/);
 	}
 
-	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
-	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
-
 	// First get the view frustum planes.
-	const GLFrustum frustum_planes(model_view_transform, projection_transform);
+	const GLFrustum frustum_planes(view_projection_transform);
 
 	// Traverse reconstructed feature geometries of the quad trees of the cube faces.
 	for (unsigned int face = 0; face < 6; ++face)
@@ -184,8 +181,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 	// users can get a consistent ordering when the reconstructed polygons overlap.
 	reconstructed_polygon_mesh_transform_group_seq_type sorted_reconstructed_polygon_mesh_transform_groups;
 	sorted_reconstructed_polygon_mesh_transform_groups.reserve(reconstructed_polygon_mesh_transform_groups.size());
-	BOOST_FOREACH(
-			const reconstructed_polygon_mesh_transform_group_builder_map_type::value_type &transform_group_value,
+	for(
+			const reconstructed_polygon_mesh_transform_group_builder_map_type::value_type &transform_group_value :
 			reconstructed_polygon_mesh_transform_group_map)
 	{
 		const reconstructed_polygon_mesh_transform_group_builder_seq_type::size_type transform_group_index =
@@ -427,28 +424,11 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_mes
 
 void
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables(
-		GLRenderer &renderer,
+		GL &gl,
 		const geometries_seq_type &present_day_geometries,
 		const polygon_mesh_seq_type &polygon_meshes)
 {
 	PROFILE_FUNC();
-
-	// Create a single OpenGL vertex array to contain the vertices of *all* polygon meshes.
-	d_polygon_meshes_vertex_array = GLVertexArray::create(renderer);
-	// Set up the vertex element buffer - we'll fill it with data later.
-	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
-	// Attach vertex element buffer to the vertex array.
-	d_polygon_meshes_vertex_array->set_vertex_element_buffer(
-			renderer,
-			GLVertexElementBuffer::create(renderer, vertex_element_buffer_data));
-	// Set up the vertex buffer - we'll fill it with data later.
-	GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
-	// Attach vertex buffer to the vertex array.
-	bind_vertex_buffer_to_vertex_array<GLVertexUtils::Vertex>(
-			renderer,
-			*d_polygon_meshes_vertex_array,
-			GLVertexBuffer::create(renderer, vertex_buffer_data));
-
 
 	// The number of polygon meshes (optional) should equal the number of geometries.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -459,6 +439,11 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 
 	// The polygon mesh drawables must map to the input polygon meshes.
 	d_present_day_polygon_mesh_drawables.reserve(polygon_meshes.size());
+
+	// Create a single OpenGL vertex array (and its buffers) to contain the vertices of *all* polygon meshes.
+	d_polygon_meshes_vertex_array = GLVertexArray::create(gl);
+	d_polygon_meshes_vertex_buffer = GLBuffer::create(gl);
+	d_polygon_meshes_vertex_element_buffer = GLBuffer::create(gl);
 
 	// The OpenGL vertices and vertex elements (indices) of all polygon meshes are
 	// placed in a single vertex array (and vertex element array).
@@ -495,24 +480,14 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 			const GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type &polygon_mesh = polygon_mesh_opt.get();
 
 			// Add the vertices.
-			typedef std::vector<GPlatesMaths::PolygonMesh::Vertex> vertex_seq_type;
-			const vertex_seq_type &vertices = polygon_mesh->get_vertices();
-			for (vertex_seq_type::const_iterator vertices_iter = vertices.begin();
-				vertices_iter != vertices.end();
-				++vertices_iter)
+			for (const GPlatesMaths::PolygonMesh::Vertex &vertex : polygon_mesh->get_vertices())
 			{
-				all_polygon_meshes_vertices.push_back(GLVertexUtils::Vertex(vertices_iter->get_vertex()));
+				all_polygon_meshes_vertices.push_back(GLVertexUtils::Vertex(vertex.get_vertex()));
 			}
 
 			// Add the indices.
-			typedef std::vector<GPlatesMaths::PolygonMesh::Triangle> triangle_seq_type;
-			const triangle_seq_type &triangles = polygon_mesh->get_triangles();
-			for (triangle_seq_type::const_iterator triangles_iter = triangles.begin();
-				triangles_iter != triangles.end();
-				++triangles_iter)
+			for (const GPlatesMaths::PolygonMesh::Triangle &triangle : polygon_mesh->get_triangles())
 			{
-				const GPlatesMaths::PolygonMesh::Triangle &triangle = *triangles_iter;
-
 				// Iterate over the triangle vertices.
 				for (unsigned int tri_vertex_index = 0; tri_vertex_index < 3; ++tri_vertex_index)
 				{
@@ -524,20 +499,16 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 			// Specify what to draw for the current polygon mesh.
 			num_vertices_in_polygon_mesh = polygon_mesh->get_vertices().size();
 			num_triangles_in_polygon_mesh = polygon_mesh->get_triangles().size();
-			const GLCompiledDrawState::non_null_ptr_to_const_type drawable =
-					compile_vertex_array_draw_state(
-							renderer,
-							*d_polygon_meshes_vertex_array,
-							GL_TRIANGLES,
-							polygon_mesh_base_vertex_index/*start*/,
-							polygon_mesh_base_vertex_index + num_vertices_in_polygon_mesh - 1/*end*/,
-							3 * num_triangles_in_polygon_mesh/*count*/,
-							GL_UNSIGNED_INT,
-							sizeof(GLuint) * 3 * polygon_mesh_base_triangle_index/*indices_offset*/);
 
 			// Pass PolygonMeshDrawable constructor parameters to construct a new object directly in-place.
 			// Note that the triangle fan mesh *is* contained entirely inside the polygon.
-			polygon_mesh_drawable = boost::in_place(polygon_mesh, drawable);
+			polygon_mesh_drawable = boost::in_place(
+					polygon_mesh,
+					d_polygon_meshes_vertex_array,
+					polygon_mesh_base_vertex_index/*start*/,
+					polygon_mesh_base_vertex_index + num_vertices_in_polygon_mesh - 1/*end*/,
+					3 * num_triangles_in_polygon_mesh/*count*/,
+					sizeof(GLuint) * 3 * polygon_mesh_base_triangle_index/*indices_offset*/);
 		}
 #if 0 // Temporarily comment polygon fan's until we getting it all working...
 		else // we don't have a polygon mesh so generate a polygon fan instead...
@@ -621,22 +592,43 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 		d_present_day_polygon_mesh_drawables.push_back(polygon_mesh_drawable);
 	}
 
-	// Store the vertices/indices in the vertex buffer and vertex element buffer bound to the vertex array.
-	// If we don't have any polygon meshes for some reason then just don't store them in the vertex array.
-	if (!all_polygon_meshes_vertices.empty() && !all_polygon_meshes_indices.empty())
-	{
-		vertex_element_buffer_data->gl_buffer_data(
-				renderer,
-				GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
-				all_polygon_meshes_indices,
-				GLBuffer::USAGE_STATIC_DRAW);
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
 
-		vertex_buffer_data->gl_buffer_data(
-				renderer,
-				GLBuffer::TARGET_ARRAY_BUFFER,
-				all_polygon_meshes_vertices,
-				GLBuffer::USAGE_STATIC_DRAW);
+	// Bind vertex array object.
+	gl.BindVertexArray(d_polygon_meshes_vertex_array);
+
+	// Bind vertex element buffer object to currently bound vertex array object.
+	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_polygon_meshes_vertex_element_buffer);
+
+	// Transfer vertex element data to currently bound vertex element buffer object.
+	if (!all_polygon_meshes_indices.empty())
+	{
+		glBufferData(
+				GL_ELEMENT_ARRAY_BUFFER,
+				all_polygon_meshes_indices.size() * sizeof(all_polygon_meshes_indices[0]),
+				all_polygon_meshes_indices.data(),
+				GL_STATIC_DRAW);
 	}
+
+	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
+	gl.BindBuffer(GL_ARRAY_BUFFER, d_polygon_meshes_vertex_buffer);
+
+	// Transfer vertex data to currently bound vertex buffer object.
+	if (!all_polygon_meshes_vertices.empty())
+	{
+		glBufferData(
+				GL_ARRAY_BUFFER,
+				all_polygon_meshes_vertices.size() * sizeof(all_polygon_meshes_vertices[0]),
+				all_polygon_meshes_vertices.data(),
+				GL_STATIC_DRAW);
+	}
+
+	// Specify vertex attributes (position) in currently bound vertex buffer object.
+	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
+	// to currently bound vertex array object.
+	gl.EnableVertexAttribArray(0);
+	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::Vertex), BUFFER_OFFSET(GLVertexUtils::Vertex, x));
 }
 
 
@@ -655,7 +647,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 	cube_subdivision_cache_type::non_null_ptr_type
 			cube_subdivision_cache =
 					cube_subdivision_cache_type::create(
-							GPlatesOpenGL::GLCubeSubdivision::create(),
+							GLCubeSubdivision::create(),
 							1024/*max_num_cached_elements*/);
 
 	// Iterate over the present day polygon meshes.
@@ -1031,6 +1023,24 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 }
 
 
+void
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::PolygonMeshDrawable::render(
+		GL& gl)
+{
+	// Bind vertex array object.
+	gl.BindVertexArray(d_vertex_array);
+
+	// Draw drawable.
+	glDrawRangeElements(
+			GL_TRIANGLES,
+			d_drawable_start,
+			d_drawable_end,
+			d_drawable_count,
+			GLVertexUtils::ElementTraits<GLuint>::type,
+			GLVertexUtils::buffer_offset(d_drawable_indices_offset));
+}
+
+
 const GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::PresentDayPolygonMeshesNodeIntersections::intersection_partition_type::node_type *
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::PresentDayPolygonMeshesNodeIntersections::get_child_node(
 		const intersection_partition_type::node_type &parent_node,
@@ -1140,7 +1150,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::ReconstructedPolygonMeshTrans
 	boost::dynamic_bitset<> polygon_mesh_membership(num_polygon_meshes);
 
 	// Combine the flags of all transform groups.
-	BOOST_FOREACH(const ReconstructedPolygonMeshTransformGroup &transform_group, transform_groups)
+	for (const ReconstructedPolygonMeshTransformGroup &transform_group : transform_groups)
 	{
 		polygon_mesh_membership |=
 				transform_group.get_visible_present_day_polygon_meshes_for_active_reconstructions()
@@ -1162,7 +1172,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::ReconstructedPolygonMeshTrans
 	boost::dynamic_bitset<> polygon_mesh_membership(num_polygon_meshes);
 
 	// Combine the flags of all transform groups.
-	BOOST_FOREACH(const ReconstructedPolygonMeshTransformGroup &transform_group, transform_groups)
+	for (const ReconstructedPolygonMeshTransformGroup &transform_group : transform_groups)
 	{
 		polygon_mesh_membership |=
 				transform_group.get_visible_present_day_polygon_meshes_for_inactive_reconstructions()
@@ -1184,7 +1194,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::ReconstructedPolygonMeshTrans
 	boost::dynamic_bitset<> polygon_mesh_membership(num_polygon_meshes);
 
 	// Combine the flags of all transform groups.
-	BOOST_FOREACH(const ReconstructedPolygonMeshTransformGroup &transform_group, transform_groups)
+	for (const ReconstructedPolygonMeshTransformGroup &transform_group : transform_groups)
 	{
 		polygon_mesh_membership |=
 				transform_group.get_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions()

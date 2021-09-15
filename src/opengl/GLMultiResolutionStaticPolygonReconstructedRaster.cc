@@ -456,6 +456,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::clamp_level_of
 bool
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 		GLRenderer &renderer,
+		const GLMatrix &view_projection_transform,
 		float level_of_detail,
 		cache_handle_type &cache_handle)
 {
@@ -626,7 +627,9 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 			// Get the transform groups of reconstructed polygon meshes that are visible in the view frustum.
 			reconstructed_polygon_mesh_transform_groups_type::non_null_ptr_to_const_type
 					reconstructed_polygon_mesh_transform_groups =
-							reconstructed_static_polygon_meshes->get_reconstructed_polygon_meshes(renderer);
+							reconstructed_static_polygon_meshes->get_reconstructed_polygon_meshes(
+									gl,
+									view_projection_transform);
 
 			// The polygon mesh drawables and polygon mesh cube quad tree node intersections.
 			const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables =
@@ -2219,7 +2222,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_po
 
 		if (polygon_mesh_drawable)
 		{
-			renderer.apply_compiled_draw_state(*polygon_mesh_drawable->drawable);
+			polygon_mesh_drawable->render(renderer);
 		}
 	}
 }
