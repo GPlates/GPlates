@@ -57,21 +57,16 @@
 
 namespace
 {
-	// Vertex and fragment shader source code to render render stars (points) in the 3D globe views (perspective and orthographic).
+	// Vertex and fragment shader source code to render stars (points) in the 3D globe views (perspective and orthographic).
 	const char *VERTEX_SHADER_SOURCE =
 		R"(
 			uniform mat4 view_projection;
 			
 			layout(location = 0) in vec4 position;
-			layout(location = 1) in vec4 colour;
-
-			out vec4 star_colour;
 			
 			void main (void)
 			{
 				gl_Position = view_projection * position;
-				
-				star_colour = colour;
 				
 				// We enabled GL_DEPTH_CLAMP to disable the far clipping plane, but it also disables
 				// near plane (which we still want), so we'll handle that ourself.
@@ -86,7 +81,7 @@ namespace
 		)";
 	const char *FRAGMENT_SHADER_SOURCE =
 		R"(
-			in vec4 star_colour;
+			uniform vec4 star_colour;
 			
 			layout(location = 0) out vec4 colour;
 
@@ -107,7 +102,7 @@ namespace
 	// that, because we use an orthographic projection for the globe...
 	const GLfloat RADIUS = 7.0f;
 
-	typedef GPlatesOpenGL::GLVertexUtils::ColourVertex vertex_type;
+	typedef GPlatesOpenGL::GLVertexUtils::Vertex vertex_type;
 	typedef GLushort vertex_element_type;
 	typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
 
@@ -116,8 +111,7 @@ namespace
 	stream_stars(
 			stream_primitives_type &stream,
 			boost::function< double () > &rand,
-			unsigned int num_stars,
-			const GPlatesGui::rgba8_t &colour)
+			unsigned int num_stars)
 	{
 		bool ok = true;
 
@@ -149,7 +143,7 @@ namespace
 			// Randomising the distance to the stars gives a nicer 3D effect.
 			double radius = RADIUS + rand();
 
-			vertex_type vertex(x * radius, y * radius, z * radius, colour);
+			vertex_type vertex(x * radius, y * radius, z * radius);
 			ok = ok && stream_points.add_vertex(vertex);
 
 			++points_generated;
@@ -172,8 +166,7 @@ namespace
 			unsigned int &num_small_star_vertex_indices,
 			unsigned int &num_large_star_vertices,
 			unsigned int &num_large_star_vertex_indices,
-			boost::function< double () > &rand,
-			const GPlatesGui::rgba8_t &colour)
+			boost::function< double () > &rand)
 	{
 		stream_primitives_type stream;
 
@@ -184,7 +177,7 @@ namespace
 				boost::in_place(boost::ref(vertex_elements)));
 
 		// Stream the small stars.
-		stream_stars(stream, rand, NUM_SMALL_STARS, colour);
+		stream_stars(stream, rand, NUM_SMALL_STARS);
 
 		num_small_star_vertices = stream_target.get_num_streamed_vertices();
 		num_small_star_vertex_indices = stream_target.get_num_streamed_vertex_elements();
@@ -198,7 +191,7 @@ namespace
 				boost::in_place(boost::ref(vertex_elements)));
 
 		// Stream the large stars.
-		stream_stars(stream, rand, NUM_LARGE_STARS, colour);
+		stream_stars(stream, rand, NUM_LARGE_STARS);
 
 		num_large_star_vertices = stream_target.get_num_streamed_vertices();
 		num_large_star_vertex_indices = stream_target.get_num_streamed_vertex_elements();
@@ -245,20 +238,19 @@ namespace
 				vertices.data(),
 				GL_STATIC_DRAW);
 
-		// Specify vertex attributes (position and colour) in currently bound vertex buffer object.
+		// Specify vertex attributes (position) in currently bound vertex buffer object.
 		// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
 		// to currently bound vertex array object.
 		gl.EnableVertexAttribArray(0);
 		gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_type), BUFFER_OFFSET(vertex_type, x));
-		gl.EnableVertexAttribArray(1);
-		gl.VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertex_type), BUFFER_OFFSET(vertex_type, colour));
 	}
 
 
 	void
 	compile_link_program(
 			GPlatesOpenGL::GL &gl,
-			GPlatesOpenGL::GLProgram::shared_ptr_type program)
+			GPlatesOpenGL::GLProgram::shared_ptr_type program,
+			const GPlatesGui::Colour &colour)
 	{
 		// Vertex shader source.
 		GPlatesOpenGL::GLShaderSource vertex_shader_source;
@@ -282,6 +274,13 @@ namespace
 		program->attach_shader(vertex_shader);
 		program->attach_shader(fragment_shader);
 		program->link_program();
+
+		gl.UseProgram(program);
+
+		// Set the star colour (it never changes).
+		glUniform4f(
+				program->get_uniform_location("star_colour"),
+				colour.red(), colour.green(), colour.blue(), colour.alpha());
 	}
 
 
@@ -347,7 +346,7 @@ GPlatesGui::Stars::Stars(
 	// Make sure we leave the OpenGL global state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
-	compile_link_program(gl, d_program);
+	compile_link_program(gl, d_program, colour);
 
 	// Set up the random number generator.
 	// It generates doubles uniformly from -1.0 to 1.0 inclusive.
@@ -359,8 +358,6 @@ GPlatesGui::Stars::Stars(
 	boost::function< double () > rand(
 			boost::variate_generator<boost::mt19937&, boost::uniform_real<> >(gen, dist));
 
-	rgba8_t rgba8_colour = Colour::to_rgba8(colour);
-
 	std::vector<vertex_type> vertices;
 	std::vector<vertex_element_type> vertex_elements;
 	create_stars(
@@ -368,8 +365,7 @@ GPlatesGui::Stars::Stars(
 			vertex_elements,
 			d_num_small_star_vertices, d_num_small_star_vertex_indices,
 			d_num_large_star_vertices, d_num_large_star_vertex_indices,
-			rand,
-			rgba8_colour);
+			rand);
 
 	load_stars(gl, d_vertex_array, d_vertex_buffer, d_vertex_element_buffer, vertices, vertex_elements);
 }

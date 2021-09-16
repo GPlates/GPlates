@@ -29,15 +29,18 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
+#include "Colour.h"
 #include "MapProjection.h"
 
-#include "opengl/GLCompiledDrawState.h"
+#include "opengl/GLBuffer.h"
+#include "opengl/GLProgram.h"
 #include "opengl/GLVertexArray.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
+	class GLViewProjection;
 }
 
 namespace GPlatesPresentation
@@ -56,11 +59,11 @@ namespace GPlatesGui
 	public:
 
 		/**
-		 * Constructs a background with a fixed @a colour.
+		 * Constructs a background with a constant @a colour.
 		 */
 		explicit
 		MapBackground(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const MapProjection &map_projection,
 				const Colour &colour);
 
@@ -70,7 +73,7 @@ namespace GPlatesGui
 		 */
 		explicit
 		MapBackground(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const MapProjection &map_projection,
 				const GPlatesPresentation::ViewState &view_state);
 
@@ -79,19 +82,30 @@ namespace GPlatesGui
 		 */
 		void
 		paint(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection);
 
 	private:
 
-		const GPlatesPresentation::ViewState *d_view_state;
-		const MapProjection &d_map_projection;
+		const MapProjection& d_map_projection;
 
-		Colour d_colour;
-	
+		//! The background colour obtained from view state if we were constructed to use it.
+		const GPlatesPresentation::ViewState *d_view_state;
+
+		//! The background colour if we were constructed to use a constant colour.
+		boost::optional<Colour> d_constant_colour;
+
+		boost::optional<Colour> d_last_seen_colour;
 		boost::optional<MapProjectionSettings> d_last_seen_map_projection_settings;
 
+		//! Shader program to render grid lines.
+		GPlatesOpenGL::GLProgram::shared_ptr_type d_program;
+
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
-		GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type d_compiled_draw_state;
+		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_buffer;
+		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_element_buffer;
+
+		unsigned int d_num_vertex_indices;
 	};
 }
 

@@ -42,19 +42,44 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "opengl/GL.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLStreamPrimitives.h"
-#include "opengl/GLRenderer.h"
 #include "opengl/GLVertexArray.h"
 #include "opengl/GLVertexUtils.h"
+#include "opengl/GLViewProjection.h"
 
 #include "presentation/ViewState.h"
 
 
 namespace
 {
+	// Vertex and fragment shader source code to render map background.
+	const char *VERTEX_SHADER_SOURCE =
+		R"(
+			uniform mat4 view_projection;
+			
+			layout(location = 0) in vec4 position;
+			
+			void main (void)
+			{
+				gl_Position = view_projection * position;
+			}
+		)";
+	const char *FRAGMENT_SHADER_SOURCE =
+		R"(
+			uniform vec4 background_colour;
+			
+			layout(location = 0) out vec4 colour;
+
+			void main (void)
+			{
+				colour = background_colour;
+			}
+		)";
+
 	// Vertex stream.
-	typedef GPlatesOpenGL::GLVertexUtils::ColourVertex vertex_type;
+	typedef GPlatesOpenGL::GLVertexUtils::Vertex vertex_type;
 	typedef GLuint vertex_element_type;
 	typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
 
@@ -99,8 +124,7 @@ namespace
 	void
 	stream_background(
 			stream_primitives_type &stream,
-			const GPlatesGui::MapProjection &projection,
-			const GPlatesGui::rgba8_t &colour)
+			const GPlatesGui::MapProjection &projection)
 	{
 		stream_primitives_type::Primitives triangle_mesh(stream);
 
@@ -138,7 +162,7 @@ namespace
 
 					const projection_coord_type projected_coord =
 							project_lat_lon(lat.dval(), lon.dval(), projection);
-					const vertex_type vertex(projected_coord.first, projected_coord.second, 0/*z*/, colour);
+					const vertex_type vertex(projected_coord.first, projected_coord.second, 0/*z*/);
 
 					triangle_mesh.add_vertex(vertex);
 				}
@@ -171,132 +195,229 @@ namespace
 	}
 
 
-	GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
-	compile_background_draw_state(
-			GPlatesOpenGL::GLRenderer &renderer,
-			GPlatesOpenGL::GLVertexArray &vertex_array,
-			const GPlatesGui::MapProjection &map_projection,
-			const GPlatesGui::rgba8_t &colour)
+	void
+	create_background(
+			std::vector<vertex_type> &vertices,
+			std::vector<vertex_element_type> &vertex_elements,
+			const GPlatesGui::MapProjection &map_projection)
 	{
 		stream_primitives_type stream;
 
-		std::vector<vertex_type> vertices;
-		std::vector<vertex_element_type> vertex_elements;
 		stream_primitives_type::StreamTarget stream_target(stream);
 		stream_target.start_streaming(
 				boost::in_place(boost::ref(vertices)),
 				boost::in_place(boost::ref(vertex_elements)));
 
-		stream_background(stream, map_projection, colour);
+		stream_background(stream, map_projection);
 
 		stream_target.stop_streaming();
+	}
 
-#if 0 // Update: using 32-bit indices now...
-		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
-		// Shouldn't get close really but check to be sure.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				vertices.size() - 1 <= GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
-				GPLATES_ASSERTION_SOURCE);
-#endif
 
-		// Streamed triangle strips end up as indexed triangles.
-		const GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type draw_vertex_array =
-				compile_vertex_array_draw_state(
-						renderer, vertex_array, vertices, vertex_elements, GL_TRIANGLES);
+	void
+	load_background(
+			GPlatesOpenGL::GL &gl,
+			GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array,
+			GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_buffer,
+			GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_element_buffer,
+			const std::vector<vertex_type> &vertices,
+			const std::vector<vertex_element_type> &vertex_elements)
+	{
+		// Bind vertex array object.
+		gl.BindVertexArray(vertex_array);
 
-		// Start compiling draw state that includes alpha blend state and the vertex array draw command.
-		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
+		// Bind vertex element buffer object to currently bound vertex array object.
+		gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
 
-		renderer.apply_compiled_draw_state(*draw_vertex_array);
+		// Transfer vertex element data to currently bound vertex element buffer object.
+		glBufferData(
+				GL_ELEMENT_ARRAY_BUFFER,
+				vertex_elements.size() * sizeof(vertex_elements[0]),
+				vertex_elements.data(),
+				GL_STATIC_DRAW);
 
-		return compile_draw_state_scope.get_compiled_draw_state();
+		// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
+		gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+
+		// Transfer vertex data to currently bound vertex buffer object.
+		glBufferData(
+				GL_ARRAY_BUFFER,
+				vertices.size() * sizeof(vertices[0]),
+				vertices.data(),
+				GL_STATIC_DRAW);
+
+		// Specify vertex attributes (position) in currently bound vertex buffer object.
+		// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
+		// to currently bound vertex array object.
+		gl.EnableVertexAttribArray(0);
+		gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_type), BUFFER_OFFSET(vertex_type, x));
+	}
+
+
+	void
+	compile_link_program(
+			GPlatesOpenGL::GL &gl,
+			GPlatesOpenGL::GLProgram::shared_ptr_type program)
+	{
+		// Vertex shader source.
+		GPlatesOpenGL::GLShaderSource vertex_shader_source;
+		vertex_shader_source.add_code_segment(VERTEX_SHADER_SOURCE);
+
+		// Vertex shader.
+		GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
+		vertex_shader->shader_source(vertex_shader_source);
+		vertex_shader->compile_shader();
+
+		// Fragment shader source.
+		GPlatesOpenGL::GLShaderSource fragment_shader_source;
+		fragment_shader_source.add_code_segment(FRAGMENT_SHADER_SOURCE);
+
+		// Fragment shader.
+		GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
+		fragment_shader->shader_source(fragment_shader_source);
+		fragment_shader->compile_shader();
+
+		// Vertex-fragment program.
+		program->attach_shader(vertex_shader);
+		program->attach_shader(fragment_shader);
+		program->link_program();
 	}
 }
 
 
 GPlatesGui::MapBackground::MapBackground(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const MapProjection &map_projection,
 		const Colour &colour) :
-	d_view_state(NULL),
 	d_map_projection(map_projection),
-	d_colour(colour),
-	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
-	d_compiled_draw_state(
-			compile_background_draw_state(
-					renderer,
-					*d_vertex_array,
-					map_projection,
-					Colour::to_rgba8(d_colour)))
-{  }
+	d_view_state(nullptr),
+	d_constant_colour(colour),
+	d_program(GPlatesOpenGL::GLProgram::create(gl)),
+	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(gl)),
+	d_vertex_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
+	d_vertex_element_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
+	d_num_vertex_indices(0)
+{
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+	compile_link_program(gl, d_program);
+}
 
 
 GPlatesGui::MapBackground::MapBackground(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const MapProjection &map_projection,
 		const GPlatesPresentation::ViewState &view_state) :
-	d_view_state(&view_state),
 	d_map_projection(map_projection),
-	d_colour(view_state.get_background_colour()),
-	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
-	d_compiled_draw_state(
-			compile_background_draw_state(
-					renderer,
-					*d_vertex_array,
-					map_projection,
-					Colour::to_rgba8(d_colour)))
-{  }
+	d_view_state(&view_state),
+	d_program(GPlatesOpenGL::GLProgram::create(gl)),
+	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(gl)),
+	d_vertex_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
+	d_vertex_element_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
+	d_num_vertex_indices(0)
+{
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+	compile_link_program(gl, d_program);
+}
 
 
 void
 GPlatesGui::MapBackground::paint(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection)
 {
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
-	// Check whether we need to compile a new draw state.
-	bool recompile_draw_state = false;
-
+	// Check whether we need to (re)generate the background due to changed map projection.
+	//
+	// Note: This will always happen on the first paint.
 	const MapProjectionSettings map_projection_settings = d_map_projection.get_projection_settings();
-	if (!d_last_seen_map_projection_settings ||
-		d_last_seen_map_projection_settings.get() != map_projection_settings)
+	if (d_last_seen_map_projection_settings != map_projection_settings)
 	{
 		d_last_seen_map_projection_settings = map_projection_settings;
-		recompile_draw_state = true;
+
+		std::vector<vertex_type> vertices;
+		std::vector<vertex_element_type> vertex_elements;
+		create_background(vertices, vertex_elements, d_map_projection);
+		d_num_vertex_indices = vertex_elements.size();
+
+		load_background(gl, d_vertex_array, d_vertex_buffer, d_vertex_element_buffer, vertices, vertex_elements);
 	}
 
-	// Check whether the view state's background colour has changed (if we're tracking it).
-	if (d_view_state &&
-		d_view_state->get_background_colour() != d_colour)
+	gl.UseProgram(d_program);
+
+	// Check whether we need to (re)set the background colour.
+	//
+	// Note: This will always happen on the first paint.
+	if (d_view_state) // Check whether the view state's background colour has changed (if we're tracking it).
 	{
-		d_colour = d_view_state->get_background_colour();
-		recompile_draw_state = true;
-	}
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!d_constant_colour,
+				GPLATES_ASSERTION_SOURCE);
 
-	if (recompile_draw_state)
+		if (d_last_seen_colour != d_view_state->get_background_colour())
+		{
+			d_last_seen_colour = d_view_state->get_background_colour();
+
+			// Set the background colour on currently bound program.
+			glUniform4f(
+					d_program->get_uniform_location("background_colour"),
+					d_last_seen_colour->red(), d_last_seen_colour->green(), d_last_seen_colour->blue(), d_last_seen_colour->alpha());
+		}
+	}
+	else // the colour is constant (but still need to set it on first paint)...
 	{
-		d_compiled_draw_state = compile_background_draw_state(
-				renderer,
-				*d_vertex_array,
-				d_map_projection,
-				Colour::to_rgba8(d_colour));
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_constant_colour,
+				GPLATES_ASSERTION_SOURCE);
+
+		if (d_last_seen_colour != d_constant_colour)
+		{
+			d_last_seen_colour = d_constant_colour;
+
+			// Set the background colour on currently bound program.
+			glUniform4f(
+					d_program->get_uniform_location("background_colour"),
+					d_last_seen_colour->red(), d_last_seen_colour->green(), d_last_seen_colour->blue(), d_last_seen_colour->alpha());
+		}
 	}
 
+	// Set view projection matrix in the currently bound program.
+	GLfloat view_projection_float_matrix[16];
+	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
+	glUniformMatrix4fv(
+			d_program->get_uniform_location("view_projection"),
+			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
+
+	// Bind the vertex array.
+	gl.BindVertexArray(d_vertex_array);
+
+	// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
+#if 1
+	glDrawElements(
+			GL_TRIANGLES,
+			d_num_vertex_indices/*count*/,
+			GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
+			nullptr/*indices_offset*/);
+#else
 	// Either render directly to the framebuffer, or render to a QImage and draw that to the
 	// feedback paint device using a QPainter.
 	//
 	// NOTE: For feedback to a QPainter we render to an image instead of rendering vector geometries.
 	// This is because, for SVG output, we don't want a large number of vector geometries due to this
 	// map background - we really only want actual geological data and grid lines as SVG vector data.
-	if (renderer.rendering_to_context_framebuffer())
+	if (gl.rendering_to_context_framebuffer())
 	{
-		renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
+		gl.apply_compiled_draw_state(*d_compiled_draw_state.get());
 	}
 	else
 	{
 		FeedbackOpenGLToQPainter feedback_opengl;
-		FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, renderer);
+		FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, gl);
 
 		// The feedback image tiling loop...
 		do
@@ -306,23 +427,24 @@ GPlatesGui::MapBackground::paint(
 
 			// Adjust the current projection transform - it'll get restored before the next tile though.
 			GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
-			projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
-			renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
+			projection_matrix.gl_mult_matrix(gl.gl_get_matrix(GL_PROJECTION));
+			gl.gl_load_matrix(GL_PROJECTION, projection_matrix);
 
 			// Clear the main framebuffer (colour and depth) before rendering the image.
 			// We also clear the stencil buffer in case it is used - also it's usually interleaved
 			// with depth so it's more efficient to clear both depth and stencil.
-			renderer.gl_clear_color();  // Clear to transparent (alpha=0) so regions outside map background are transparent.
-			renderer.gl_clear_depth();
-			renderer.gl_clear_stencil();
-			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			gl.gl_clear_color();  // Clear to transparent (alpha=0) so regions outside map background are transparent.
+			gl.gl_clear_depth();
+			gl.gl_clear_stencil();
+			gl.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			// Render the actual map background.
-			renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
+			gl.apply_compiled_draw_state(*d_compiled_draw_state.get());
 		}
 		while (image_scope.end_render_tile());
 
 		// Draw final raster QImage to feedback QPainter.
 		image_scope.end_render();
 	}
+#endif
 }

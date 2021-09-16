@@ -64,6 +64,12 @@ namespace GPlatesGui
 				GPlatesPresentation::ViewState &view_state,
 				const GPlatesGui::Colour &colour);
 
+		/**
+		 * Paint the stars.
+		 *
+		 * Note: @a device_pixel_ratio is used on high-DPI displays where there are more pixels in the
+		 *       same physical area on screen and so the point size of the stars is increased to compensate.
+		 */
 		void
 		paint(
 				GPlatesOpenGL::GL &gl,

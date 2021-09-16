@@ -74,6 +74,10 @@ namespace GPlatesGui
 		 * @param globe_horizon_plane Plane that separates visible front half of globe from rear
 		 *        (from the camera's point of view). This plane determines whether front or rear
 		 *        of globe is rendered. Only the part of globe in positive half space is rendered.
+		 *
+		 * Note: We don't increase the grid line width to compensate for high-DPI displays.
+		 *       This means the grid lines are not as wide as on regular displays.
+		 *       But this is desired - keeps the grid lines minimally intrusive wrt regular line geometries.
 		 */
 		void
 		paint(

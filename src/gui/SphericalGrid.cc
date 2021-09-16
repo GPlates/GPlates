@@ -350,6 +350,7 @@ GPlatesGui::SphericalGrid::paint(
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
 	// Check whether we need to (re)generate the grid lines.
+	//
 	// Note: This will always happen on the first paint.
 	if (d_last_seen_graticule_settings != d_graticule_settings)
 	{
