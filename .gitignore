@@ -17,8 +17,13 @@ RelWithDebInfo
 *.user
 *.dir
 *.a
-GPlates_log.txt
+*.exe
+*.deb
+*.dmg
+*.zip
+*.bz2
 *.cmake
+GPlates_log.txt
 
 #
 # /
@@ -27,6 +32,7 @@ GPlates_log.txt
 /gmon.out
 /_CPack_Packages/
 /bin/
+/install_manifest*.txt
 /.vs/
 
 #
@@ -50,7 +56,11 @@ GPlates_log.txt
 # /src/
 #
 /src/gplates*/
+/src/pygplates*/
 # CMake generated...
+/src/__init__.py
+/src/gplates.entitlements
+/src/qt.conf
 /src/global/License.cc
 /src/global/Version.cc
 /src/global/config.h
