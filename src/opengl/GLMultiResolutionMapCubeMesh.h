@@ -30,6 +30,7 @@
 #include <boost/optional.hpp>
 #include <opengl/OpenGL1.h>
 
+#include "GLBuffer.h"
 #include "GLIntersectPrimitives.h"
 #include "GLMapCubeMeshGenerator.h"
 #include "GLMatrix.h"
@@ -54,7 +55,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * A mesh, projected on a 2D map, that is gridded along the cube subdivision tiles.
@@ -87,24 +88,17 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Information needed to render a quad tree node mesh.
-		 *
-		 * Previously we used @a GLCompiledDrawState for this since it's a lot easier to capture
-		 * renderer state and draw calls with it. But it consumed a bit too much memory due to
-		 * using a compiled draw state for each mesh drawable (adds up to a total of ~150Mb for a
-		 * quad tree depth of 6 - each GLState consumes a few Kb and there are about 32,000 at level 6).
-		 *
-		 * Now we just store the draw parameters ourselves and submit them in a draw call when requested.
 		 */
 		struct MeshDrawable
 		{
 			MeshDrawable(
-					const GLVertexArray::shared_ptr_to_const_type &vertex_array_,
+					GLVertexArray::shared_ptr_type vertex_array_,
 					GLuint start_,
 					GLuint end_,
 					GLsizei count_,
 					GLint indices_offset_);
 
-			GLVertexArray::shared_ptr_to_const_type vertex_array;
+			GLVertexArray::shared_ptr_type vertex_array;
 			GLuint start;
 			GLuint end;
 			GLsizei count;
@@ -188,7 +182,7 @@ namespace GPlatesOpenGL
 			 */
 			void
 			render_mesh_drawable(
-					GLRenderer &renderer) const;
+					GL &gl) const;
 
 			/**
 			 * Returns the clip space transform for this quad tree node.
@@ -278,10 +272,10 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesGui::MapProjection &map_projection)
 		{
-			return non_null_ptr_type(new GLMultiResolutionMapCubeMesh(renderer, map_projection));
+			return non_null_ptr_type(new GLMultiResolutionMapCubeMesh(gl, map_projection));
 		}
 
 
@@ -292,7 +286,7 @@ namespace GPlatesOpenGL
 		 */
 		bool
 		update_map_projection(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesGui::MapProjection &map_projection);
 
 		/**
@@ -424,6 +418,8 @@ namespace GPlatesOpenGL
 		 * All mesh drawables within a cube face share a single vertex array.
 		 */
 		GLVertexArray::shared_ptr_type d_meshes_vertex_array[6];
+		GLBuffer::shared_ptr_type d_meshes_vertex_buffer[6];
+		GLBuffer::shared_ptr_type d_meshes_vertex_element_buffer[6];
 
 		/**
 		 * The cube quad tree containing mesh drawables for the quad tree node tiles.
@@ -439,17 +435,17 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLMultiResolutionMapCubeMesh(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesGui::MapProjection &map_projection);
 
 		void
 		create_mesh(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesGui::MapProjection &map_projection);
 
 		mesh_cube_quad_tree_type::node_type::ptr_type
 		create_cube_face_mesh(
-				GLRenderer &renderer,
+				GL &gl,
 				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
 				const GLMapCubeMeshGenerator &map_cube_mesh_generator);
 

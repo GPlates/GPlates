@@ -621,7 +621,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 {
 	PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL state the way it was.
+	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
 	// Bind the shader program.
@@ -1618,7 +1618,7 @@ void
 GPlatesOpenGL::GLMultiResolutionRaster::compile_link_shader_program(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL state the way it was.
+	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
 	// Vertex shader source.
@@ -2727,7 +2727,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 	d_num_vertex_elements(0),
 	d_program(GLProgram::create(gl))
 {
-	// Make sure we leave the OpenGL state the way it was.
+	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
 	// Vertex shader source.
@@ -2823,7 +2823,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::render(
 		GL &gl,
 		const GLMatrix &view_projection_transform)
 {
-	// Make sure we leave the OpenGL state the way it was.
+	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
 	// Bind the shader program.

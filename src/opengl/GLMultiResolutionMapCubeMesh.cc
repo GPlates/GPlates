@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
+
 #include <limits>
 #include <vector>
 #include <boost/optional.hpp>
@@ -30,8 +32,8 @@
 
 #include "GLMultiResolutionMapCubeMesh.h"
 
+#include "GL.h"
 #include "GLIntersectPrimitives.h"
-#include "GLRenderer.h"
 #include "GLUtils.h"
 #include "GLVertexUtils.h"
 
@@ -47,9 +49,9 @@
 
 
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::GLMultiResolutionMapCubeMesh(
-		GLRenderer &renderer,
+		GL &gl,
 		const GPlatesGui::MapProjection &map_projection) :
-	d_xy_clip_texture(GLTextureUtils::create_xy_clip_texture_2D(renderer)),
+	d_xy_clip_texture(GLTextureUtils::create_xy_clip_texture_2D(gl)),
 	d_mesh_cube_quad_tree(mesh_cube_quad_tree_type::create()),
 	d_map_projection_settings(map_projection.get_projection_settings())
 {
@@ -62,13 +64,13 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::GLMultiResolutionMapCubeMesh(
 			CUBE_FACE_DIMENSION >= (1 << MESH_CUBE_QUAD_TREE_MAXIMUM_DEPTH),
 			GPLATES_ASSERTION_SOURCE);
 
-	create_mesh(renderer, map_projection);
+	create_mesh(gl, map_projection);
 }
 
 
 bool
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::update_map_projection(
-		GLRenderer &renderer,
+		GL &gl,
 		const GPlatesGui::MapProjection &map_projection)
 {
 	// Nothing to do if the map projection settings are the same as last time.
@@ -79,7 +81,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::update_map_projection(
 	d_map_projection_settings = map_projection.get_projection_settings();
 
 	// Generate a new internal mesh.
-	create_mesh(renderer, map_projection);
+	create_mesh(gl, map_projection);
 
 	return true;
 }
@@ -139,7 +141,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::get_child_node(
 
 void
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_mesh(
-		GLRenderer &renderer,
+		GL &gl,
 		const GPlatesGui::MapProjection &map_projection)
 {
 	PROFILE_FUNC();
@@ -162,7 +164,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_mesh(
 		// Generate the mesh quad tree for the current cube face.
 		const mesh_cube_quad_tree_type::node_type::ptr_type mesh_root_quad_tree_node =
 				create_cube_face_mesh(
-						renderer,
+						gl,
 						cube_face,
 						map_cube_mesh_generator);
 
@@ -179,7 +181,7 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::mesh_cube_quad_tree_type::node_type::ptr_type
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_mesh(
-		GLRenderer &renderer,
+		GL &gl,
 		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
 		const GLMapCubeMeshGenerator &map_cube_mesh_generator)
 {
@@ -212,7 +214,9 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_mesh(
 	// (and vertex elements or indices) of *all* meshes.
 	if (!d_meshes_vertex_array[cube_face])
 	{
-		d_meshes_vertex_array[cube_face] = GLVertexArray::create(renderer);
+		d_meshes_vertex_array[cube_face] = GLVertexArray::create(gl);
+		d_meshes_vertex_buffer[cube_face] = GLBuffer::create(gl);
+		d_meshes_vertex_element_buffer[cube_face] = GLBuffer::create(gl);
 	}
 
 	const GPlatesMaths::CubeQuadTreeLocation root_node_location(cube_face);
@@ -295,9 +299,41 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_mesh(
 		}
 	}
 
-	// Store the vertices/indices in a new vertex buffer and vertex element buffer that is then
-	// bound to the vertex array.
-	set_vertex_array_data(renderer, *d_meshes_vertex_array[cube_face], mesh_vertices, mesh_indices);
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+	// Bind vertex array object.
+	gl.BindVertexArray(d_meshes_vertex_array[cube_face]);
+
+	// Bind vertex element buffer object to currently bound vertex array object.
+	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_meshes_vertex_element_buffer[cube_face]);
+
+	// Transfer vertex element data to currently bound vertex element buffer object.
+	glBufferData(
+			GL_ELEMENT_ARRAY_BUFFER,
+			mesh_indices.size() * sizeof(mesh_indices[0]),
+			mesh_indices.data(),
+			GL_STATIC_DRAW);
+
+	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
+	gl.BindBuffer(GL_ARRAY_BUFFER, d_meshes_vertex_buffer[cube_face]);
+
+	// Transfer vertex data to currently bound vertex buffer object.
+	glBufferData(
+			GL_ARRAY_BUFFER,
+			mesh_vertices.size() * sizeof(mesh_vertices[0]),
+			mesh_vertices.data(),
+			GL_STATIC_DRAW);
+
+	// Specify vertex attributes (position and texture coords) in currently bound vertex buffer object.
+	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
+	// to currently bound vertex array object.
+	gl.EnableVertexAttribArray(0);
+	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::Texture3DVertex),
+			BUFFER_OFFSET(GLVertexUtils::Texture3DVertex, x));
+	gl.EnableVertexAttribArray(1);
+	gl.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::Texture3DVertex),
+			BUFFER_OFFSET(GLVertexUtils::Texture3DVertex, s));
 
 	return cube_face_root_quad_tree_node;
 }
@@ -825,7 +861,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::AABB::add(
 
 
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::MeshDrawable::MeshDrawable(
-		const GLVertexArray::shared_ptr_to_const_type &vertex_array_,
+		GLVertexArray::shared_ptr_type vertex_array_,
 		GLuint start_,
 		GLuint end_,
 		GLsizei count_,
@@ -888,18 +924,17 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::QuadTreeNode::QuadTreeNode(
 
 void
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::QuadTreeNode::render_mesh_drawable(
-		GLRenderer &renderer) const
+		GL &gl) const
 {
 	// Bind the vertex array.
-	d_mesh_drawable->vertex_array->gl_bind(renderer);
+	gl.BindVertexArray(d_mesh_drawable->vertex_array);
 
 	// Draw the vertex array.
-	d_mesh_drawable->vertex_array->gl_draw_range_elements(
-			renderer,
+	glDrawRangeElements(
 			GL_TRIANGLES,
 			d_mesh_drawable->start,
 			d_mesh_drawable->end,
 			d_mesh_drawable->count,
 			GLVertexUtils::ElementTraits<vertex_element_type>::type,
-			d_mesh_drawable->indices_offset);
+			GLVertexUtils::buffer_offset(d_mesh_drawable->indices_offset));
 }

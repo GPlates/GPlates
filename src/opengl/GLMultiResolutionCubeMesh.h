@@ -62,8 +62,6 @@ namespace GPlatesOpenGL
 	private:
 		/**
 		 * Information needed to render a quad tree node mesh.
-		 *
-		 * Now we just store the draw parameters ourselves and submit them in a draw call when requested.
 		 */
 		struct MeshDrawable
 		{
