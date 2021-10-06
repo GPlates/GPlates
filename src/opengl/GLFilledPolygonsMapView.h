@@ -32,6 +32,7 @@
 #include <QPointF>
 
 #include "GLBuffer.h"
+#include "GLProgram.h"
 #include "GLVertexArray.h"
 #include "GLVertexUtils.h"
 
@@ -40,7 +41,8 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
+	class GLViewProjection;
 
 	/**
 	 * Renders (reconstructed) filled polygons (static or dynamic) using stenciling to generate the
@@ -280,9 +282,9 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer)
+				GL &gl)
 		{
-			return non_null_ptr_type(new GLFilledPolygonsMapView(renderer));
+			return non_null_ptr_type(new GLFilledPolygonsMapView(gl));
 		}
 
 
@@ -291,20 +293,11 @@ namespace GPlatesOpenGL
 		 */
 		void
 		render(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLViewProjection &view_projection,
 				const filled_drawables_type &filled_drawables);
 
 	private:
-
-		/**
-		 * The vertex buffer containing the vertices of all drawables of the current @a render call.
-		 */
-		GLVertexBuffer::shared_ptr_type d_drawables_vertex_buffer;
-
-		/**
-		 * The vertex buffer containing the vertex elements (indices) of all drawables of the current @a render call.
-		 */
-		GLVertexElementBuffer::shared_ptr_type d_drawables_vertex_element_buffer;
 
 		/**
 		 * The vertex array containing all drawables of the current @a render call.
@@ -314,19 +307,38 @@ namespace GPlatesOpenGL
 		 */
 		GLVertexArray::shared_ptr_type d_drawables_vertex_array;
 
+		/**
+		 * The vertex buffer containing the vertices of all drawables of the current @a render call.
+		 */
+		GLBuffer::shared_ptr_type d_drawables_vertex_buffer;
+
+		/**
+		 * The vertex buffer containing the vertex elements (indices) of all drawables of the current @a render call.
+		 */
+		GLBuffer::shared_ptr_type d_drawables_vertex_element_buffer;
+
+		/**
+		 * Shader program to render filled polygons.
+		 */
+		GLProgram::shared_ptr_type d_program;
+
 
 		//! Constructor.
 		GLFilledPolygonsMapView(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		create_drawables_vertex_array(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		write_filled_drawables_to_vertex_array(
-				GLRenderer &renderer,
+				GL &gl,
 				const filled_drawables_type &filled_drawables);
+
+		void
+		compile_link_shader_program(
+				GL &gl);
 	};
 }
 

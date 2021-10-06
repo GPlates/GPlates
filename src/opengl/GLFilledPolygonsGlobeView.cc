@@ -220,7 +220,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::GLFilledPolygonsGlobeView(
 	d_render_to_tile_program(GLProgram::create(gl)),
 	d_render_tile_to_scene_program(GLProgram::create(gl))
 {
-	// Make sure we leave the OpenGL state the way it was.
+	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
 	create_tile_texture(gl);
@@ -300,7 +300,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 {
 	PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL state the way it was.
+	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
 	// If there are no filled drawables to render then return early.
@@ -879,7 +879,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_drawables_to_tile_textur
 {
 	//PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL state the way it was.
+	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(
 			gl,
 			// We're rendering to a render target so reset to the default OpenGL state...
@@ -961,12 +961,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_drawables_to_tile_textur
 	gl.BindVertexArray(d_drawables_vertex_array);
 
 	// Iterate over the filled drawables and render each one into the tile texture.
-	filled_drawable_seq_type::const_iterator filled_drawables_iter = filled_drawables.begin();
-	filled_drawable_seq_type::const_iterator filled_drawables_end = filled_drawables.end();
-	for ( ; filled_drawables_iter != filled_drawables_end; ++filled_drawables_iter)
+	for (const filled_drawable_type& filled_drawable : filled_drawables)
 	{
-		const filled_drawable_type &filled_drawable = *filled_drawables_iter;
-
 		// Set the stencil function to always pass.
 		gl.StencilFunc(GL_ALWAYS, 0, ~0);
 		// Set the stencil operation to invert the stencil buffer value every time a pixel is
@@ -1164,7 +1160,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::write_filled_drawables_to_vertex_array
 {
 	//PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL state the way it was.
+	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
 	// Bind the vertex array - this binds the vertex *element* buffer (before we load data into it).
@@ -1191,7 +1187,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::write_filled_drawables_to_vertex_array
 			filled_drawables.d_drawable_vertex_elements.data(),
 			GL_STATIC_DRAW);
 
-	// Transfer vertex element data to currently bound vertex element buffer object.
+	// Transfer vertex element data to currently bound vertex buffer object.
 	glBufferData(
 			GL_ARRAY_BUFFER,
 			filled_drawables.d_drawable_vertices.size() * sizeof(filled_drawables.d_drawable_vertices[0]),
@@ -1352,14 +1348,11 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_triangle_t
 			d_current_drawable,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Alpha blending will be set up for pre-multiplied alpha.
-	const GPlatesGui::rgba8_t pre_multiplied_alpha_rgba8_triangle_colour = pre_multiply_alpha(rgba8_triangle_color);
-
 	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
 
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), pre_multiplied_alpha_rgba8_triangle_colour));
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), pre_multiplied_alpha_rgba8_triangle_colour));
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), pre_multiplied_alpha_rgba8_triangle_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), rgba8_triangle_color));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), rgba8_triangle_color));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), rgba8_triangle_color));
 
 	d_drawable_vertex_elements.push_back(base_vertex_index);
 	d_drawable_vertex_elements.push_back(base_vertex_index + 1);
@@ -1387,9 +1380,9 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_triangle_t
 	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
 
 	// Alpha blending will be set up for pre-multiplied alpha.
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), pre_multiply_alpha(rgba8_vertex_color1)));
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), pre_multiply_alpha(rgba8_vertex_color2)));
-	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), pre_multiply_alpha(rgba8_vertex_color3)));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), rgba8_vertex_color1));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), rgba8_vertex_color2));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), rgba8_vertex_color3));
 
 	d_drawable_vertex_elements.push_back(base_vertex_index);
 	d_drawable_vertex_elements.push_back(base_vertex_index + 1);

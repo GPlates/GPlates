@@ -336,9 +336,6 @@ namespace GPlatesOpenGL
 						d_current_drawable,
 						GPLATES_ASSERTION_SOURCE);
 
-				// Alpha blending will be set up for pre-multiplied alpha.
-				const GPlatesGui::rgba8_t pre_multiplied_alpha_rgba8_colour = pre_multiply_alpha(rgba8_color);
-
 				//
 				// Create the OpenGL coloured vertices for the filled polygon ring (fan) mesh.
 				//
@@ -348,7 +345,7 @@ namespace GPlatesOpenGL
 				drawable_vertex_element_type vertex_index = base_vertex_index;
 
 				// First vertex is the centroid.
-				d_drawable_vertices.push_back(drawable_vertex_type(centroid, pre_multiplied_alpha_rgba8_colour));
+				d_drawable_vertices.push_back(drawable_vertex_type(centroid, rgba8_color));
 				++vertex_index;
 
 				// The remaining vertices form the boundary.
@@ -356,7 +353,7 @@ namespace GPlatesOpenGL
 				for (unsigned int n = 0; n < num_points; ++n, ++vertex_index, ++points_iter)
 				{
 					d_drawable_vertices.push_back(
-							drawable_vertex_type(points_iter->position_vector(), pre_multiplied_alpha_rgba8_colour));
+							drawable_vertex_type(points_iter->position_vector(), rgba8_color));
 
 					d_drawable_vertex_elements.push_back(base_vertex_index); // Centroid.
 					d_drawable_vertex_elements.push_back(vertex_index); // Current boundary point.
@@ -365,7 +362,7 @@ namespace GPlatesOpenGL
 
 				// Wraparound back to the first boundary vertex to close off the polygon.
 				d_drawable_vertices.push_back(
-						drawable_vertex_type(begin_points->position_vector(), pre_multiplied_alpha_rgba8_colour));
+						drawable_vertex_type(begin_points->position_vector(), rgba8_color));
 
 				// Update the current filled drawable.
 				d_current_drawable->end = vertex_index;
