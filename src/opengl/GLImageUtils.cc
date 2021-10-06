@@ -26,14 +26,15 @@
 #include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
 
 #include <boost/cstdint.hpp>
+#include <boost/scoped_array.hpp>
 #include <QDebug>
 #include <QPainter>
 
 #include "GLImageUtils.h"
 
+#include "GL.h"
 #include "GLBuffer.h"
 #include "GLContext.h"
-#include "GLRenderer.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -46,7 +47,7 @@
 
 void
 GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
-		GLRenderer &renderer,
+		GL &gl,
 		QImage &image,
 		const GLViewport &source_viewport,
 		const GLViewport &destination_viewport)
@@ -59,47 +60,44 @@ GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
 				image.format() == QImage::Format_ARGB32_Premultiplied,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Acquire a pixel buffer to read the framebuffer pixels into.
-	GLPixelBuffer::shared_ptr_type pixel_buffer =
-			renderer.get_context().get_shared_state()->acquire_pixel_buffer(
-					renderer,
-					4/*RGBA8*/
-							// We use power-of-two dimensions since (due to the finite number of
-							// power-of-two dimensions) we have more chance of re-using a pixel buffer...
-							* GPlatesUtils::Base2::next_power_of_two(source_viewport.width())
-							* GPlatesUtils::Base2::next_power_of_two(source_viewport.height()),
-					GLBuffer::USAGE_STREAM_READ);
+	// Make sure source and destination viewports have the same dimensions.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			source_viewport.width() == destination_viewport.width() &&
+				source_viewport.height() == destination_viewport.height(),
+			GPLATES_ASSERTION_SOURCE);
 
-	// Bind the pixel buffer so that all subsequent 'gl_read_pixels()' calls go into that buffer.
-	pixel_buffer->gl_bind_pack(renderer);
+	// Allocate client memory as the destination of our framebuffer readback.
+	boost::scoped_array<GPlatesGui::rgba8_t> rgba8_pixel_buffer(
+			new GPlatesGui::rgba8_t[source_viewport.width() * source_viewport.height()]);
 
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
+
+	// Unbind any pixel pack buffer object since we're reading into client memory instead.
+	gl.BindBuffer(GL_PIXEL_PACK_BUFFER, boost::none);
+
+	// Read the framebuffer data in source viewport into our client memory.
+	//
+	// Note that we don't use a pixel buffer object here since it doesn't give us a speed advantage
+	// because we (CPU) would immediately block when we map the pixel buffer object (to read from it).
+	// We'd need two ping-pong pixel buffer objects to take advantage of its asynchronous readback.
+	//
 	// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
 	// since our data is RGBA (already 4-byte aligned).
-	pixel_buffer->gl_read_pixels(
-			renderer,
+	glReadPixels(
 			source_viewport.x(),
 			source_viewport.y(),
 			source_viewport.width(),
 			source_viewport.height(),
 			GL_RGBA,
 			GL_UNSIGNED_BYTE,
-			0);
-
-	// Map the pixel buffer to access its data.
-	GLBuffer::MapBufferScope map_pixel_buffer_scope(
-			renderer,
-			*pixel_buffer->get_buffer(),
-			GLBuffer::TARGET_PIXEL_PACK_BUFFER);
-
-	// Map the pixel buffer data.
-	const void *const pixel_data = map_pixel_buffer_scope.gl_map_buffer_static(GLBuffer::ACCESS_READ_ONLY);
-	const GPlatesGui::rgba8_t *const rgba8_pixel_data = static_cast<const GPlatesGui::rgba8_t *>(pixel_data);
+			rgba8_pixel_buffer.get());
 
 	// Iterate over the pixel lines in the rendered tile and copy into a sub-rect of the image.
 	for (GLsizei tile_y = 0; tile_y < source_viewport.height(); ++tile_y)
 	{
 		// Source pixel data.
-		const GPlatesGui::rgba8_t *src_pixel_data = rgba8_pixel_data + tile_y * source_viewport.width();
+		const GPlatesGui::rgba8_t *src_pixel_data = rgba8_pixel_buffer.get() + tile_y * source_viewport.width();
 
 		// Destination pixel data.
 		const int dst_y = destination_viewport.y() + tile_y;
@@ -107,17 +105,10 @@ GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
 				reinterpret_cast<boost::uint32_t *>(
 						// Note that OpenGL and Qt y-axes are the reverse of each other...
 						image.scanLine(image.height()-1 - dst_y)) +
-						destination_viewport.x();
+							destination_viewport.x();
 
 		// Convert the current line to the QImage::Format_ARGB32 format supported by QImage.
 		GPlatesGui::convert_rgba8_to_argb32(src_pixel_data, dst_pixel_data, source_viewport.width());
-	}
-
-	const bool unmap_success = map_pixel_buffer_scope.gl_unmap_buffer();
-	if (!unmap_success)
-	{
-		// FIXME: This should probably be an exception, but a thrown exception will need to be handled.
-		qWarning() << "GlobeCanvas::render_scene_tile_into_image: error retrieving image tile.";
 	}
 }
 
