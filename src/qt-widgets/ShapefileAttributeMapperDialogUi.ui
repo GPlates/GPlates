@@ -1,0 +1,142 @@
+<ui version="4.0" >
+ <class>ShapefileAttributeMapper</class>
+ <widget class="QDialog" name="ShapefileAttributeMapper" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>384</width>
+    <height>190</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>ShapeFile Attribute Mapper</string>
+  </property>
+  <property name="windowIcon" >
+   <iconset/>
+  </property>
+  <widget class="QLabel" name="shapefileLabel" >
+   <property name="geometry" >
+    <rect>
+     <x>90</x>
+     <y>30</y>
+     <width>44</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>Shapefile</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="plateIDLabel" >
+   <property name="geometry" >
+    <rect>
+     <x>9</x>
+     <y>87</y>
+     <width>129</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>gpml:reconstructionPlateId</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="applyButton" >
+   <property name="geometry" >
+    <rect>
+     <x>10</x>
+     <y>140</y>
+     <width>201</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>Apply</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="cancelButton" >
+   <property name="geometry" >
+    <rect>
+     <x>220</x>
+     <y>140</y>
+     <width>108</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>Cancel</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="attribute_combo_box" >
+   <property name="geometry" >
+    <rect>
+     <x>150</x>
+     <y>90</y>
+     <width>171</width>
+     <height>18</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="shapefile_combo_box" >
+   <property name="geometry" >
+    <rect>
+     <x>150</x>
+     <y>30</y>
+     <width>171</width>
+     <height>18</height>
+    </rect>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>applyButton</sender>
+   <signal>clicked()</signal>
+   <receiver>ShapefileAttributeMapper</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>96</x>
+     <y>140</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>383</x>
+     <y>189</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>cancelButton</sender>
+   <signal>clicked()</signal>
+   <receiver>ShapefileAttributeMapper</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>290</x>
+     <y>140</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>383</x>
+     <y>189</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender></sender>
+   <signal></signal>
+   <receiver>ShapefileAttributeMapper</receiver>
+   <slot></slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>143</x>
+     <y>35</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>490</x>
+     <y>296</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

@@ -1,0 +1,195 @@
+Conception
+==========
+
+GPlates was conceived in 2002 by the following committee:
+ * Dietmar Muller [committee chair] (University of Sydney)
+ * Stuart Clark (University of Sydney)
+ * Mike Coffin (ORI/IFREE)
+ * Mike Gurnis (Caltech)
+ * Lawrence Lawver (PLATES/UTIG)
+ * Louis Moresi (Monash University/VPAC)
+ * Tim Redfield (PGP/NGU)
+ * Walter Roest (GSC)
+ * Trond Torsvik (PGP/NGU)
+
+
+GPlates 0.5
+===========
+
+The first GPlates prototype ("GPlates 0.5") was created (2003) by:
+ * James Boyden (University of Sydney)
+ * Hamish Ivey-Law (University of Sydney)
+with contributions by:
+ * Mike Dowman (University of Sydney)
+ * David Symonds (University of Sydney)
+under the direction of:
+ * Dietmar Muller
+funded by grants from:
+ * The Australian Research Council (ARC)
+
+GPlates 0.5 was able to load geological data from PLATES4 line-format files
+and total reconstruction poles (finite rotations) from PLATES4 rotation-format
+files, perform plate-reconstructions to user-specified geological times and
+display animations over user-specified geological time intervals.  GPlates 0.5
+had a simple, wxWidgets-based interactive GUI and displayed the 3-D globe in
+an orthographic projection in an OpenGL window.  Geological data were coloured
+according to reconstruction plate ID.
+
+GPlates 0.5 compiled and ran on Linux.
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+ * James Boyden
+   + spherical geometries and quaternions
+   + interpolation of finite rotations
+   + plate-reconstructions
+ * Hamish Ivey-Law
+   + 3-D graphics using OpenGL
+   + GPML v1 language and parser
+   + interactive GUI
+ * David Symonds
+   + Autoconf-based build system
+
+
+GPlates 0.8
+===========
+
+GPlates 0.8 was a specialised branch of GPlates development initiated and
+directed by Mike Gurnis at Caltech.  GPlates 0.8 enhanced and extended the
+GPlates 0.5 codebase with a significant amount of specialised functionality, to
+enable GPlates to integrate with geodynamic modelling software such as CitcomS
+and to become a component in a geodynamic modelling workflow, in addition to
+broad additions to the general interactive functionality. 
+
+GPlates 0.8 allowed the user to construct closed plate-boundaries interactively
+and use plate-reconstructions to calculate plate-velocity fields for input into
+CitcomS.
+
+GPlates 0.8 was created (2004-2007) by:
+ * Mark Turner (Caltech)
+with contributions by:
+ * James Boyden
+ * Hamish Ivey-Law
+under the direction of:
+ * Mike Gurnis
+funded by grants through the Caltech Tectonics Observatory by:
+ * The Gordon and Betty Moore Foundation
+
+In particular, the following developers were primarily responsible for the 
+following significant aspects of GPlates functionality:
+ * Mark Turner
+   + extension of the PLATES4 file-format to represent geometric intersection
+     topologies
+   + extension of the PLATES4 data-model implementation in GPlates to represent
+     geometric intersection topologies
+   + development of the GPlates GUI for the topology-construction workflow
+   + determination and implementation of the application logic of the manual
+     topology-construction workflow
+ * James Boyden
+   + in-software mouse-pointer-interaction with graphical objects in the
+     viewport
+   + algorithmic intersection of spherical polyline geometries
+   + calculation of point-velocities using finite rotations
+ * Hamish Ivey-Law
+   + research into automated topology-construction
+   + the initial topology-construction prototype (2004)
+
+
+GPGIM and GPML 1.5
+==================
+
+The GPGIM (GPlates Geological Information Model) is the formal description of
+the geological and tectonic entities which GPlates simulates, the conceptual
+building-blocks which GPlates defines, and the processing and simulation
+constraints to which GPlates adheres.
+
+The GPGIM is our abstract representation of our model of plate tectonics (as
+far as our plans for GPlates functionality are concerned); as our information
+model, it serves as our primary requirement for what needs to be implemented
+in GPlates in order for GPlates to be able to represent our model of plate
+tectonics.
+
+The GPML (GPlates Markup Language) is an application schema of GML (Geography
+Markup Language).  The GPML is intended to serve as the native file format of
+GPlates.
+
+The modelling for GPGIM 1.5 was performed (2005-2007) by:
+ * James Clark (University of Sydney)
+with assistance from:
+ * Simon Cox (CSIRO Exploration & Mining)
+with contributions by:
+ * James Boyden
+ * Mark Turner
+with the geological expertise of:
+ * Mike Gurnis
+ * Christian Heine (postgrad student, EarthByte group, University of Sydney)
+ * Dietmar Muller
+ * Tim Redfield
+ * Maria Sdrolias (postgrad student, EarthByte group, University of Sydney)
+ * Trond Torsvik
+ * Jo Whittaker (postgrad student, EarthByte group, University of Sydney)
+under the direction of:
+ * Dietmar Muller
+funded by grants from:
+ * The Australian Research Council (ARC)
+ * The Australian Partnership for Advanced Computing (APAC)
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+
+The XML schema for GPML 1.5 was created by:
+ * James Clark
+with assistance from:
+ * Simon Cox
+
+
+GPlates 0.9
+===========
+
+GPlates 0.9 was a significant re-engineering of the GPlates 0.5 codebase,
+to implement the GPGIM inside GPlates (in the new "Model" component of the
+GPlates architecture), to restructure the software architecture to allow
+greater extensibility (for both geological/geophysical and general-purpose
+functionality) and to migrate to a Qt-based GUI.
+
+GPlates 0.9 was created (2005-2007) by:
+ * James Boyden [technical lead]
+ * James Clark
+ * James Farrow (University of Sydney)
+ * Glen Fernandes (University of Sydney)
+ * Hamish Ivey-Law
+ * Robin Watson (Geological Survey of Norway (NGU))
+under the direction of:
+ * Dietmar Muller
+funded by grants from:
+ * The Australian Research Council (ARC)
+ * The Australian Partnership for Advanced Computing (APAC)
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+
+GPlates 0.9 compiled and ran on Linux and Microsoft Windows XP.
+
+In particular, the following developers were primarily responsible for the 
+following significant aspects of GPlates functionality:
+ * James Boyden
+   + software architecture
+   + design and majority implementation of the new Model component
+   + GUI and interaction design
+   + a new PLATES4 rotation-format parser for the new Model
+ * James Clark
+   + development of the Qt GUI
+ * James Farrow
+   + new Autoconf/Automake/Libtool-based build system
+   + conversion of the existing GUI from the wxWidgets toolkit to the Qt toolkit
+   + installation and configuration of the Trac site for the GPlates Project
+ * Glen Fernandes
+   + expertise in porting GPlates to Microsoft Windows
+   + project files for the MS Visual Studio compilers (MSVC 7.1 and MSVC 8)
+   + a new PLATES4 line-format parser for the new Model
+   + additional implementation of the new Model component
+ * Hamish Ivey-Law:
+   + PLATES4 line-format writer
+   + PLATES4 rotation-format writer
+   + OpenGL enhancements
+   + command-line argument handling
+ * Robin Watson:
+   + ESRI Shapefile parser
+   + testing and debugging on Microsoft Windows.
+

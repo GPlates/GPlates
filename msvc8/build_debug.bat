@@ -1,0 +1,1 @@
+VCBuild GPlates.vcproj DEBUG
