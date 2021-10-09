@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -127,11 +127,62 @@ namespace GPlatesGui
 		move_handle_to_pos(
 				const GPlatesMaths::PointOnSphere &pos);
 
+	public slots:
+	
+		/**
+		 * For keyboard camera controls to use: nudge the camera 'up' by a few degrees.
+		 */
+		void
+		move_camera_up();
+
+		/**
+		 * For keyboard camera controls to use: nudge the camera 'down' by a few degrees.
+		 */
+		void
+		move_camera_down();
+
+		/**
+		 * For keyboard camera controls to use: nudge the camera 'left' by a few degrees.
+		 */
+		void
+		move_camera_left();
+
+		/**
+		 * For keyboard camera controls to use: nudge the camera 'right' by a few degrees.
+		 */
+		void
+		move_camera_right();
+
+		/**
+		 * For keyboard camera controls to use: rotate the camera clockwise by a few degrees.
+		 */
+		void
+		rotate_camera_clockwise();
+
+		/**
+		 * For keyboard camera controls to use: rotate the camera anticlockwise by a few degrees.
+		 */
+		void
+		rotate_camera_anticlockwise();
+		
+		/**
+		 * Rotate the camera such that the poles are oriented vertically (with North at the top
+		 * of the screen). The camera should remain centred on its current (lat,lon) coordinate.
+		 */
+		void
+		orient_poles_vertically();
+
 	signals:
 		void
 		orientation_changed();
 
 	private:
+	
+		/**
+		 * How far to nudge or rotate the camera when using the move_camera_*
+		 * functions, in degrees.
+		 */
+		static const double s_nudge_camera_amount;
 
 		/**
 		 * The current position of the "handle".

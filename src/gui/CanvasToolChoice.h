@@ -29,7 +29,7 @@
 #include <QObject>
 
 #include "CanvasTool.h"
-#include "FeatureWeakRefSequence.h"
+#include "FeatureTableModel.h"
 
 
 namespace GPlatesQtWidgets
@@ -64,7 +64,7 @@ namespace GPlatesGui
 				Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				FeatureWeakRefSequence::non_null_ptr_type external_hit_sequence_ptr,
+				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::QueryFeaturePropertiesDialog &qfp_dialog_);
 
 		~CanvasToolChoice()

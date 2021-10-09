@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,6 +31,7 @@
 #endif
 
 #include "Real.h"
+#include "HighPrecision.h"
 #include "FunctionDomainException.h"
 
 /*
@@ -70,7 +71,7 @@
 
 
 const unsigned
-GPlatesMaths::Real::High_Precision = EXPONENT + 2;
+GPlatesMaths::Real::High_Precision = EXPONENT + 6;
 
 const double
 GPlatesMaths::Real::Epsilon = REAL_EPSILON(EXPONENT);
@@ -79,108 +80,139 @@ const double
 GPlatesMaths::Real::Negative_Epsilon = -REAL_EPSILON(EXPONENT);
 
 
-GPlatesMaths::Real
-GPlatesMaths::sqrt(GPlatesMaths::Real r)
+const GPlatesMaths::Real
+GPlatesMaths::sqrt(
+		const Real &r)
 {
-	// First, perform "almost exact" comparison.
-	if (r < 0.0) {
-		/*
-		 * Even allowing some flexibility of comparison,
-		 * the argument is negative, which falls outside
-		 * the domain of sqrt.
-		 */
-		std::ostringstream oss("function 'sqrt' invoked with invalid argument ");
-		oss << r;
-		throw FunctionDomainException(oss.str().c_str());
+	if (isNegative(r)) {
+		// The value of 'r' is not strictly valid as the argument to 'sqrt'.  Let's find
+		// out if it's almost valid (in which case, we'll be lenient).
+		if (r < 0.0) {
+			// Even allowing some flexibility of comparison, the value of 'r' is
+			// negative, which falls outside the domain of 'sqrt'.
+
+			std::ostringstream oss("function 'sqrt' invoked with invalid argument ");
+			oss << r;
+			throw FunctionDomainException(oss.str().c_str());
+		} else {
+			// It was almost valid.  Let's be lenient and pretend the value was exactly
+			// zero.  We'll return the sqrt of zero, which is zero.
+			// FIXME:  We should log that we "corrected" this here.
+			return Real(0.0);
+		}
 	}
 
-	/*
-	 * Now, clean up after any errors which are caused by "almost valid"
-	 * arguments.
-	 */
-	if (isNegative(r))
-	{
-		// it was just slightly less than zero -- return sqrt of zero
-		return Real(0.0);
-
-	}
+	// Else, the value of 'r' is valid as the argument to 'sqrt'.
 	return Real(std::sqrt(r.dval()));
 }
 
 
-/**
- * Calculate the arc sine of the Real r, which must lie in the valid domain
- * of the arc sine function, the range [-1, 1].
- *
- * Don't forget: the arc sine will be returned in radians, not degrees!
- */
-GPlatesMaths::Real
-GPlatesMaths::asin(GPlatesMaths::Real r)
+const GPlatesMaths::Real
+GPlatesMaths::asin(
+		const Real &r)
 {
-	// First, perform "almost exact" comparisons for bounds of domain.
-	if (r < -1.0 || r > 1.0) {
-		/*
-		 * Even allowing some flexibility of comparison, 
-		 * the argument which falls outside the domain of asin.
-		 */
-		std::ostringstream oss("function 'asin' invoked with invalid argument ");
-		oss << r;
-		throw FunctionDomainException(oss.str().c_str());
+	if (isLessThanMinusOne(r)) {
+		// The value of 'r' is not strictly valid as the argument to 'asin'.  Let's find
+		// out if it's almost valid (in which case, we'll be lenient).
+		if (r < -1.0) {
+			// Even allowing some flexibility of comparison, the value of 'r' is less
+			// than minus one, which falls outside the domain of 'asin'.
+
+			std::ostringstream oss("function 'asin' invoked with invalid argument ");
+			oss << r;
+			throw FunctionDomainException(oss.str().c_str());
+		} else {
+			// It was almost valid.  Let's be lenient and pretend the value was exactly
+			// minus one.  We'll return the asin of minus one, which is minus pi on
+			// two.
+			// FIXME:  We should log that we "corrected" this here.
+			std::cerr << "Corrected asin(" << HighPrecision<Real>(r) << ") to asin(-1)." << std::endl;
+			return Real(-GPlatesMaths::PI_2);
+		}
 	}
 
-	/*
-	 * Now, clean up after any errors which are caused by "almost valid"
-	 * arguments.
-	 */
-	if (isLessThanMinusOne(r)) {
-		// it was just slightly less than minus one
-		// -- return asin of minus one
-		return Real(-GPlatesMaths::PI_2);
-	}
 	if (isGreaterThanOne(r)) {
-		// it was just slightly greater than one -- return asin of one
-		return Real(GPlatesMaths::PI_2);
+		// The value of 'r' is not strictly valid as the argument to 'asin'.  Let's find
+		// out if it's almost valid (in which case, we'll be lenient).
+		if (r > 1.0) {
+			// Even allowing some flexibility of comparison, the value of 'r' is
+			// greater than one, which falls outside the domain of 'asin'.
+
+			std::ostringstream oss("function 'asin' invoked with invalid argument ");
+			oss << r;
+			throw FunctionDomainException(oss.str().c_str());
+		} else {
+			// It was almost valid.  Let's be lenient and pretend the value was exactly
+			// one.  We'll return the asin of one, which is pi on two.
+			// FIXME:  We should log that we "corrected" this here.
+			std::cerr << "Corrected asin(" << HighPrecision<Real>(r) << ") to asin(1)." << std::endl;
+			return Real(GPlatesMaths::PI_2);
+		}
 	}
+
+	// Else, the value of 'r' is valid as the argument to 'asin'.
 	return Real(std::asin(r.dval()));
 }
 
 
-/**
- * Calculate the arc cosine of the Real r, which must lie in the valid domain
- * of the arc cosine function, the range [-1, 1].
- *
- * Don't forget: the arc cosine will be returned in radians, not degrees!
- */
-GPlatesMaths::Real
-GPlatesMaths::acos(GPlatesMaths::Real r)
+const GPlatesMaths::Real
+GPlatesMaths::acos(
+		const Real &r)
 {
-	// First, perform "almost exact" comparisons for bounds of domain.
-	if (r < -1.0 || r > 1.0) {
-		/*
-		 * Even allowing some flexibility of comparison, 
-		 * the argument which falls outside the domain of asin.
-		 */
-		std::ostringstream oss("function 'acos' invoked with invalid argument ");
-		oss << r;
-		throw FunctionDomainException(oss.str().c_str());
+	if (isLessThanMinusOne(r)) {
+		// The value of 'r' is not strictly valid as the argument to 'acos'.  Let's find
+		// out if it's almost valid (in which case, we'll be lenient).
+		if (r < -1.0) {
+			// Even allowing some flexibility of comparison, the value of 'r' is less
+			// than minus one, which falls outside the domain of 'acos'.
+
+			std::ostringstream oss("function 'acos' invoked with invalid argument ");
+			oss << r;
+			throw FunctionDomainException(oss.str().c_str());
+		} else {
+			// It was almost valid.  Let's be lenient and pretend the value was exactly
+			// minus one.  We'll return the acos of minus one, which is pi.
+			// FIXME:  We should log that we "corrected" this here.
+			std::cerr << "Corrected acos(" << HighPrecision<Real>(r) << ") to acos(-1)." << std::endl;
+			return Real(GPlatesMaths::PI);
+		}
 	}
 
-	/*
-	 * Now, clean up after any errors which are caused by "almost valid"
-	 * arguments.
-	 */
-	if (isLessThanMinusOne(r))
-	{
-		// it was just slightly less than minus one
-		// -- return asin of minus one
-		return Real(-GPlatesMaths::PI_2);
+	if (isGreaterThanOne(r)) {
+		// The value of 'r' is not strictly valid as the argument to 'acos'.  Let's find
+		// out if it's almost valid (in which case, we'll be lenient).
+		if (r > 1.0) {
+			// Even allowing some flexibility of comparison, the value of 'r' is
+			// greater than one, which falls outside the domain of 'acos'.
+
+			std::ostringstream oss("function 'acos' invoked with invalid argument ");
+			oss << r;
+			throw FunctionDomainException(oss.str().c_str());
+		} else {
+			// It was almost valid.  Let's be lenient and pretend the value was exactly
+			// one.  We'll return the acos of one, which is zero.
+			// FIXME:  We should log that we "corrected" this here.
+			std::cerr << "Corrected acos(" << HighPrecision<Real>(r) << ") to acos(1)." << std::endl;
+			return Real(0.0);
+		}
 	}
-	if (isGreaterThanOne(r))
-	{
-		// it was just slightly greater than one -- return asin of one
-		return Real(GPlatesMaths::PI_2);
-	}
+
+	// Else, the value of 'r' is valid as the argument to 'acos'.
 	return Real(std::acos(r.dval()));
+}
+
+
+const GPlatesMaths::Real
+GPlatesMaths::atan2(
+		const Real &y,
+		const Real &x)
+{
+	// 0.0 is the only real floating-point value for which exact equality comparison is valid.
+	if ((y == 0.0) && (x == 0.0)) {
+		// Recall that we've defined atan2(0, 0) to be equal to zero.
+		return Real(0.0);
+	}
+	return Real(std::atan2(y.dval(), x.dval()));
 }
 
 

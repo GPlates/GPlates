@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -49,6 +49,9 @@ namespace GPlatesFeatureVisitors
 
 		// FIXME:  We should also pass the current reconstruction time, so we can correctly
 		// handle time-dependent property values.
+		PlateIdFinder()
+		{  }
+
 		explicit
 		PlateIdFinder(
 				const GPlatesModel::PropertyName &property_name_to_allow)
@@ -58,6 +61,13 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		~PlateIdFinder() {  }
+
+		void
+		add_property_name_to_allow(
+				const GPlatesModel::PropertyName &property_name_to_allow)
+		{
+			d_property_names_to_allow.push_back(property_name_to_allow);
+		}
 
 		virtual
 		void

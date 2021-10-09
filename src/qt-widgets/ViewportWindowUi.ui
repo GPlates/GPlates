@@ -15,12 +15,6 @@
     <height>600</height>
    </size>
   </property>
-  <property name="maximumSize" >
-   <size>
-    <width>1200</width>
-    <height>1000</height>
-   </size>
-  </property>
   <property name="windowTitle" >
    <string>GPlates</string>
   </property>
@@ -70,11 +64,21 @@
      <string>&amp;View</string>
     </property>
     <addaction name="action_Set_Camera_Viewpoint" />
+    <addaction name="action_Move_Camera_Up" />
+    <addaction name="action_Move_Camera_Down" />
+    <addaction name="action_Move_Camera_Left" />
+    <addaction name="action_Move_Camera_Right" />
+    <addaction name="separator" />
+    <addaction name="action_Rotate_Camera_Clockwise" />
+    <addaction name="action_Rotate_Camera_Anticlockwise" />
+    <addaction name="action_Reset_Camera_Orientation" />
     <addaction name="separator" />
     <addaction name="action_Set_Zoom" />
     <addaction name="action_Zoom_In" />
     <addaction name="action_Zoom_Out" />
     <addaction name="action_Reset_Zoom_Level" />
+    <addaction name="separator" />
+    <addaction name="action_Export_Geometry_Snapshot" />
    </widget>
    <addaction name="menu_File" />
    <addaction name="menu_Reconstruction" />
@@ -84,7 +88,7 @@
   <widget class="QStatusBar" name="statusbar" />
   <widget class="QToolBar" name="toolBar" >
    <property name="allowedAreas" >
-    <enum>Qt::AllToolBarAreas</enum>
+    <set>Qt::AllToolBarAreas</set>
    </property>
    <property name="orientation" >
     <enum>Qt::Vertical</enum>
@@ -96,7 +100,10 @@
     </size>
    </property>
    <attribute name="toolBarArea" >
-    <number>1</number>
+    <enum>LeftToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak" >
+    <bool>false</bool>
    </attribute>
    <addaction name="action_Drag_Globe" />
    <addaction name="action_Zoom_Globe" />
@@ -104,7 +111,7 @@
   </widget>
   <widget class="QDockWidget" name="dock_information" >
    <property name="features" >
-    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::NoDockWidgetFeatures</set>
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar|QDockWidget::NoDockWidgetFeatures</set>
    </property>
    <property name="allowedAreas" >
     <set>Qt::BottomDockWidgetArea|Qt::NoDockWidgetArea|Qt::TopDockWidgetArea</set>
@@ -114,18 +121,25 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents" >
     <layout class="QVBoxLayout" >
-     <property name="margin" >
+     <property name="spacing" >
       <number>0</number>
      </property>
-     <property name="spacing" >
+     <property name="leftMargin" >
+      <number>0</number>
+     </property>
+     <property name="topMargin" >
+      <number>0</number>
+     </property>
+     <property name="rightMargin" >
+      <number>0</number>
+     </property>
+     <property name="bottomMargin" >
       <number>0</number>
      </property>
      <item>
       <widget class="QTabWidget" name="tabWidget" >
        <property name="sizePolicy" >
-        <sizepolicy>
-         <hsizetype>7</hsizetype>
-         <vsizetype>3</vsizetype>
+        <sizepolicy vsizetype="MinimumExpanding" hsizetype="Expanding" >
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -144,21 +158,37 @@
          <string>Clicked</string>
         </attribute>
         <layout class="QHBoxLayout" >
-         <property name="margin" >
-          <number>2</number>
-         </property>
          <property name="spacing" >
           <number>6</number>
          </property>
+         <property name="leftMargin" >
+          <number>2</number>
+         </property>
+         <property name="topMargin" >
+          <number>2</number>
+         </property>
+         <property name="rightMargin" >
+          <number>2</number>
+         </property>
+         <property name="bottomMargin" >
+          <number>2</number>
+         </property>
          <item>
-          <widget class="QListWidget" name="tab_list_clicked" >
+          <widget class="QTableView" name="tab_list_clicked" >
            <property name="sizePolicy" >
-            <sizepolicy>
-             <hsizetype>7</hsizetype>
-             <vsizetype>13</vsizetype>
+            <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="selectionMode" >
+            <enum>QAbstractItemView::SingleSelection</enum>
+           </property>
+           <property name="selectionBehavior" >
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+           <property name="horizontalScrollMode" >
+            <enum>QAbstractItemView::ScrollPerPixel</enum>
            </property>
           </widget>
          </item>
@@ -169,18 +199,25 @@
          <string>Selected</string>
         </attribute>
         <layout class="QVBoxLayout" >
-         <property name="margin" >
-          <number>2</number>
-         </property>
          <property name="spacing" >
           <number>6</number>
          </property>
+         <property name="leftMargin" >
+          <number>2</number>
+         </property>
+         <property name="topMargin" >
+          <number>2</number>
+         </property>
+         <property name="rightMargin" >
+          <number>2</number>
+         </property>
+         <property name="bottomMargin" >
+          <number>2</number>
+         </property>
          <item>
-          <widget class="QListWidget" name="tab_list_selected" >
+          <widget class="QTableView" name="tab_list_selected" >
            <property name="sizePolicy" >
-            <sizepolicy>
-             <hsizetype>7</hsizetype>
-             <vsizetype>13</vsizetype>
+            <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -409,6 +446,17 @@
     <string>Z</string>
    </property>
   </action>
+  <action name="action_Export_Geometry_Snapshot" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_applets_screenshooter_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>E&amp;xport Geometry Snapshot...</string>
+   </property>
+   <property name="toolTip" >
+    <string>Save an SVG image of the current view.</string>
+   </property>
+  </action>
   <action name="action_Manage_Feature_Collections" >
    <property name="icon" >
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_preferences_desktop_16.png</iconset>
@@ -433,26 +481,86 @@
     <string>Ctrl+L</string>
    </property>
   </action>
+  <action name="action_Move_Camera_Up" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_up_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Move Camera &amp;Up</string>
+   </property>
+   <property name="shortcut" >
+    <string>Up</string>
+   </property>
+  </action>
+  <action name="action_Move_Camera_Down" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_down_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Move Camera &amp;Down</string>
+   </property>
+   <property name="shortcut" >
+    <string>Down</string>
+   </property>
+  </action>
+  <action name="action_Move_Camera_Left" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_previous_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Move Camera &amp;Left</string>
+   </property>
+   <property name="shortcut" >
+    <string>Left</string>
+   </property>
+  </action>
+  <action name="action_Move_Camera_Right" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_next_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Move Camera &amp;Right</string>
+   </property>
+   <property name="shortcut" >
+    <string>Right</string>
+   </property>
+  </action>
+  <action name="action_Rotate_Camera_Clockwise" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_view_refresh_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Rotate Camera Clock&amp;wise</string>
+   </property>
+   <property name="shortcut" >
+    <string>]</string>
+   </property>
+  </action>
+  <action name="action_Rotate_Camera_Anticlockwise" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_view_refresh_flipped_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Rotate Camera &amp;Anti-clockwise</string>
+   </property>
+   <property name="shortcut" >
+    <string>[</string>
+   </property>
+  </action>
+  <action name="action_Reset_Camera_Orientation" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/reorient_poles_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Reset Camera Orie&amp;ntation</string>
+   </property>
+   <property name="shortcut" >
+    <string>^</string>
+   </property>
+  </action>
  </widget>
  <resources>
   <include location="../qt-resources/qt_widgets.qrc" />
  </resources>
- <connections>
-  <connection>
-   <sender>action_Quit</sender>
-   <signal>triggered()</signal>
-   <receiver>ViewportWindow</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel" >
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel" >
-     <x>190</x>
-     <y>234</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

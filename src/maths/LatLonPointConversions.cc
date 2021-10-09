@@ -8,9 +8,9 @@
  *   $Date$
  * 
  * Copyright (C) 2003, 2004 The University of Sydney, Australia
- *  (under the name "OperationsOnSphere.h")
- * Copyright (C) 2004, 2005, 2006, 2007 The University of Sydney, Australia
- *  (under the name "LatLonPointConversions.h")
+ *  (under the name "OperationsOnSphere.cc")
+ * Copyright (C) 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
+ *  (under the name "LatLonPointConversions.cc")
  *
  * This file is part of GPlates.
  *
@@ -108,17 +108,21 @@ const GPlatesMaths::LatLonPoint
 GPlatesMaths::make_lat_lon_point(
 		const PointOnSphere& point)
 {
-	const double
-			&x = point.position_vector().x().dval(),
-			&y = point.position_vector().y().dval(),
-			&z = point.position_vector().z().dval();
+	// Note:  We use class Real's asin/atan2, since these functions perform domain-validity
+	// checking (and correct almost-valid values, whose invalidity is presumably the result of
+	// accumulated floating-point error).
+	const Real
+			&x = point.position_vector().x(),
+			&y = point.position_vector().y(),
+			&z = point.position_vector().z();
 
-	// arcsin(theta) is defined for all theta in [-PI/2, PI/2].
-	double lat = std::asin(z);
-	double lon = std::atan2(y, x);
+	//std::cerr << "--\nx: " << x << ", y: " << y << ", z: " << z << std::endl;
+	double lat = asin(z).dval();
+	double lon = atan2(y, x).dval();
 	if (lon < -GPlatesUtils::Pi) {
 		lon = GPlatesUtils::Pi;
 	}
+	//std::cerr << "lat: " << lat << ", lon: " << lon << std::endl;
 
 	return LatLonPoint::LatLonPoint(
 			GPlatesUtils::convert_rad_to_deg(lat),

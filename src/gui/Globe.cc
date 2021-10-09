@@ -41,54 +41,8 @@ using namespace GPlatesMaths;
 using namespace GPlatesState;
 
 
-namespace {
-
-	GPlatesGui::NurbsRenderer nurbs_renderer;
-
-
-	Vector3D
-	calc_ctrl_point(
-			const Vector3D &start_pt,
-			const Vector3D &end_pt)
-	{
-		Vector3D triangle_base_mid = 0.5*(end_pt - start_pt);
-		double triangle_height_sqrd = 3*triangle_base_mid.magSqrd().dval()/16.0;
-
-		Vector3D triangle_base = start_pt + triangle_base_mid;
-		Vector3D triangle_tip = std::sqrt(triangle_height_sqrd) * Vector3D(triangle_base.get_normalisation());
-		return triangle_base + triangle_tip;
-	}
-
-	void
-	draw_nurbs_arc(
-			const GPlatesMaths::GreatCircleArc &arc)
-	{
-		static const GLint STRIDE = 4;
-		static const GLint ORDER = 3;
-		static const GLsizei NUM_CONTROL_POINTS = 3;
-		static const GLsizei KNOT_SIZE = 6;
-		static GLfloat KNOTS[KNOT_SIZE] = 
-		{
-			0.0, 0.0, 0.0, 
-			1.0, 1.0, 1.0
-		};
-
-		const UnitVector3D &start_pt = arc.start_point().position_vector();
-		const UnitVector3D &end_pt = arc.end_point().position_vector();
-
-		Vector3D mid_ctrl_pt = calc_ctrl_point(Vector3D(start_pt), Vector3D(end_pt));
-
-		GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
-			{ start_pt.x().dval(),        start_pt.y().dval(),        start_pt.z().dval(),    1.0}, 
-			{ 0.5*mid_ctrl_pt.x().dval(), 0.5*mid_ctrl_pt.y().dval(), 0.5*mid_ctrl_pt.z().dval(), 0.5},
-			{ end_pt.x().dval(),          end_pt.y().dval(),          end_pt.z().dval(),      1.0}
-		};
-
-		nurbs_renderer.drawCurve(KNOT_SIZE, &KNOTS[0], STRIDE,
-				&ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
-	}
-	
-
+namespace 
+{
 	void
 	CallVertexWithPoint(
 			const PointOnSphere& p)
@@ -101,7 +55,8 @@ namespace {
 	void
 	CallVertexWithLine(
 			const PolylineOnSphere::const_iterator& begin, 
-			const PolylineOnSphere::const_iterator& end)
+			const PolylineOnSphere::const_iterator& end,
+			GPlatesGui::NurbsRenderer &nurbs_renderer)
 	{
 		// We will draw a NURBS if the two endpoints of the arc are
 		// more than PI/36 radians (= 5 degrees) apart.
@@ -111,8 +66,7 @@ namespace {
 
 		for ( ; iter != end; ++iter) {
 			if (iter->dot_of_endpoints().dval() < DISTANCE_THRESHOLD) {
-				// FIXME: Check for arcs of angle greater than PI/2.
-				draw_nurbs_arc(*iter);
+				nurbs_renderer.draw_great_circle_arc(*iter);
 			} else {
 				glBegin(GL_LINES);
 					CallVertexWithPoint(iter->start_point());
@@ -132,15 +86,25 @@ namespace {
 		CallVertexWithPoint(point);
 	}
 
-	void
-	PaintLineDataPos(Layout::LineDataPos& linedata)
-	{
-		const PolylineOnSphere& line = *linedata.first;
-		glColor3fv(*linedata.second);
-		
-		glLineWidth(1.5f);
-		CallVertexWithLine(line.begin(), line.end());
-	}
+
+	struct PaintLineDataPos {
+
+		GPlatesGui::NurbsRenderer &d_nurbs_renderer;
+
+		PaintLineDataPos(GPlatesGui::NurbsRenderer &nurbs_renderer) :
+			d_nurbs_renderer(nurbs_renderer)
+		{ }
+
+		void
+		operator()(Layout::LineDataPos& linedata)
+		{
+			const PolylineOnSphere& line = *linedata.first;
+			glColor3fv(*linedata.second);
+			
+			glLineWidth(1.5f);
+			CallVertexWithLine(line.begin(), line.end(), d_nurbs_renderer);
+		}
+	};
 
 
 	void
@@ -158,13 +122,13 @@ namespace {
 
 
 	void
-	PaintLines()
+	PaintLines(GPlatesGui::NurbsRenderer &nurbs_renderer)
 	{
 		Layout::LineDataLayout::iterator 
 			lines_begin = Layout::LineDataLayoutBegin(),
 			lines_end   = Layout::LineDataLayoutEnd();
 		
-		for_each(lines_begin, lines_end, PaintLineDataPos);
+		for_each(lines_begin, lines_end, PaintLineDataPos(nurbs_renderer));
 	}
 }
 
@@ -252,7 +216,53 @@ GPlatesGui::Globe::Paint()
 		PaintPoints();
 		
 		glColor3fv(GPlatesGui::Colour::BLACK);
-		PaintLines();
+		PaintLines(d_nurbs_renderer);
 
 	glPopMatrix();
 }
+
+void
+GPlatesGui::Globe::paint_vector_output()
+{
+
+	_grid.paint_circumference(GPlatesGui::Colour::GREY);
+
+	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
+	glPushMatrix();
+		// rotate everything to get a nice almost-equatorial shot
+//		glRotatef(-80.0, 1.0, 0.0, 0.0);
+
+		UnitVector3D axis = m_globe_orientation.rotation_axis();
+		real_t angle_in_deg =
+		 radiansToDegrees(m_globe_orientation.rotation_angle());
+		glRotatef(angle_in_deg.dval(),
+		           axis.x().dval(), axis.y().dval(), axis.z().dval());
+
+		// Set the grid's colour.
+		glColor3fv(GPlatesGui::Colour::WHITE);
+		
+		/*
+		 * Draw grid.
+		 * DepthRange calls push the grid back in the depth buffer
+		 * a bit to avoid Z-fighting with the LineData.
+		 */
+		glDepthRange(0.0, 0.9);
+		_grid.Paint(Colour::GREY);
+
+		// Restore DepthRange
+		glDepthRange(0.0, 1.0);
+
+		glPointSize(5.0f);
+		
+		/* 
+		 * Paint the data.
+		 */
+		glColor3fv(GPlatesGui::Colour::GREEN);
+		PaintPoints();
+		
+		glColor3fv(GPlatesGui::Colour::BLACK);
+		PaintLines(d_nurbs_renderer);
+
+	glPopMatrix();
+}
+

@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -130,6 +130,24 @@ namespace
 	}
 
 
+	const GPlatesPropertyValues::GeoTimeInstant
+	create_geo_time_instant(
+			const double &time)
+	{
+		if (time < -998.9 && time > -1000.0) {
+			// It's in the distant future, which is denoted in PLATES4 line-format
+			// files using times like -999.0 or -999.9.
+			return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
+		}
+		if (time > 998.9 && time < 1000.0) {
+			// It's in the distant past, which is denoted in PLATES4 line-format files
+			// using times like 999.0 or 999.9.
+			return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
+		}
+		return GPlatesPropertyValues::GeoTimeInstant(time);
+	}
+
+
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_common(
 			GPlatesModel::ModelInterface &model, 
@@ -147,8 +165,10 @@ namespace
 				model.create_feature(feature_type, collection);
 
 		const integer_plate_id_type plate_id = header->plate_id_number();
-		const GeoTimeInstant geo_time_instant_begin(header->age_of_appearance());
-		const GeoTimeInstant geo_time_instant_end(header->age_of_disappearance());
+		const GeoTimeInstant geo_time_instant_begin(
+				create_geo_time_instant(header->age_of_appearance()));
+		const GeoTimeInstant geo_time_instant_end(
+				create_geo_time_instant(header->age_of_disappearance()));
 
 		// Wrap a "gpml:plateId" in a "gpml:ConstantValue" and append it as the
 		// "gpml:reconstructionPlateId" property.

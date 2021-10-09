@@ -76,7 +76,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtopengld4.lib opengl32.lib glu32.lib gdal_i.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtguid4.lib qtmaind.lib qtcored4.lib qtopengld4.lib qtsvgd4.lib opengl32.lib glu32.lib gdal_i.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -163,7 +163,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtgui4.lib qtmain.lib qtcore4.lib qtopengl4.lib opengl32.lib glu32.lib gdal_i.lib"
+				AdditionalDependencies="icuio.lib icuuc.lib icuin.lib icudt.lib qtgui4.lib qtmain.lib qtcore4.lib qtopengl4.lib qtsvg4.lib opengl32.lib glu32.lib gdal_i.lib"
 				OutputFile="$(OutDir)/GPlates.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
@@ -303,7 +303,26 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\gui\FeatureTableModel.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\FeatureTableModel.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\gui\Globe.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\GuiException.h"
 				>
 			</File>
 			<File
@@ -319,7 +338,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\moc_FeatureTableModel.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\moc_SimpleGlobeOrientation.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_ViewportZoom.cc"
 				>
 			</File>
 			<File
@@ -362,8 +389,31 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\SphericalGrid.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\SvgExport.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\SvgExport.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\ViewportZoom.cc"
 				>
+			</File>
+			<File
+				RelativePath="..\src\gui\ViewportZoom.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -749,6 +799,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\utils\UnicodeStringUtils.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\utils\UniqueId.cc"
 				>
 			</File>
@@ -905,11 +959,23 @@
 			Name="feature-visitors"
 			>
 			<File
+				RelativePath="..\src\feature-visitors\GeometryFinder.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\GmlTimePeriodFinder.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\feature-visitors\PlateIdFinder.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\QueryFeaturePropertiesDialogPopulator.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\XsStringFinder.cc"
 				>
 			</File>
 		</Filter>

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -146,27 +146,18 @@ namespace GPlatesQtWidgets
 			spinbox_zoom_percent->selectAll();
 		}
 		
-		void
-		set_zoom(
-				double new_zoom_percent)
-		{
-			spinbox_zoom_percent->setValue(new_zoom_percent);
-		}
-		
-		void
-		propagate_zoom_percent()
-		{
-			emit zoom_changed(zoom_percent());
-		}
-
 	signals:
 		void
 		reconstruction_time_changed(
 				double new_reconstruction_time);
-		
+	
+	private slots:
+	
 		void
-		zoom_changed(
-				double new_zoom_percent);
+		propagate_zoom_percent();
+
+		void
+		handle_zoom_change();
 
 	private:
 		GlobeCanvas *d_canvas_ptr;

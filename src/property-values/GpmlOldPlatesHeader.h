@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -66,8 +66,8 @@ namespace GPlatesPropertyValues
 				unsigned int string_number,
 				const UnicodeString &geographic_description,
 				GPlatesModel::integer_plate_id_type plate_id_number,
-				double age_of_appearance,
-				double age_of_disappearance,
+				const double &age_of_appearance,
+				const double &age_of_disappearance,
 				const UnicodeString &data_type_code,
 				unsigned int data_type_code_number,
 				const UnicodeString &data_type_code_number_additional,
@@ -123,13 +123,13 @@ namespace GPlatesPropertyValues
 			return d_plate_id_number;
 		}
 		
-		double
+		const double &
 		age_of_appearance() const 
 		{
 			return d_age_of_appearance;
 		}
 		
-		double
+		const double &
 		age_of_disappearance() const 
 		{
 			return d_age_of_disappearance;
@@ -207,8 +207,8 @@ namespace GPlatesPropertyValues
 				unsigned int string_number_,
 				const UnicodeString &geographic_description_,
 				GPlatesModel::integer_plate_id_type plate_id_number_,
-				double age_of_appearance_,
-				double age_of_disappearance_,
+				const double &age_of_appearance_,
+				const double &age_of_disappearance_,
 				const UnicodeString &data_type_code_,
 				unsigned int data_type_code_number_,
 				const UnicodeString &data_type_code_number_additional_,

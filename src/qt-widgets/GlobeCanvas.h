@@ -141,6 +141,17 @@ namespace GPlatesQtWidgets
 		void
 		clear_data();
 
+		/**
+		 *  Draw the relevant objects for vector output. This is essentially like the 
+		 *	PaintGL method, except that:
+		 *	we will omit drawing the sphere (otherwise we end up with loads of little
+		 *	polygons);
+		 *	we will use the Nurbs renderer routines to draw a circle around the circumference
+		 *	of the sphere (prior to the sphere orientation).
+		 */
+		void
+		draw_vector_output();
+
 		GPlatesGui::Globe &
 		globe()
 		{
@@ -180,17 +191,10 @@ namespace GPlatesQtWidgets
 		notify_of_orientation_change();
 
 		void
-		zoom_in();
+		handle_mouse_pointer_pos_change();
 
 		void
-		zoom_out();
-
-		void
-		reset_zoom();
-		
-		void
-		set_zoom(
-				double new_zoom_percent);
+		force_mouse_pointer_pos_change();
 
 	protected:
 		/**
@@ -359,6 +363,11 @@ namespace GPlatesQtWidgets
 		zoom_changed(
 				double zoom_percent);
 
+	private slots:
+	
+		void
+		handle_zoom_change();
+
 	private:
 		ViewportWindow *d_view_state_ptr;
 
@@ -412,9 +421,6 @@ namespace GPlatesQtWidgets
 		GPlatesGui::ViewportZoom d_viewport_zoom;
 
 		void
-		handle_zoom_change();
-
-		void
 		set_view();
 
 		void
@@ -423,9 +429,6 @@ namespace GPlatesQtWidgets
 
 		void
 		update_dimensions();
-
-		void
-		handle_mouse_pointer_pos_change();
 
 		void
 		handle_wheel_rotation(

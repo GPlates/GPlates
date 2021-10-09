@@ -98,7 +98,7 @@ namespace
 	calc_next_zoom_level_in(
 			const double &power)
 	{
-		// To calcalute the next zoom level "in" (ie, zoomed in), we want to round the zoom
+		// To calculate the next zoom level "in" (ie, zoomed in), we want to round the zoom
 		// level UP.
 		return static_cast<int>(calc_in_between_zoom_level_from_power(power) + 0.5);
 	}
@@ -109,9 +109,22 @@ namespace
 	calc_next_zoom_level_out(
 			const double &power)
 	{
-		// To calcalute the next zoom level "out" (ie, zoomed out), we want to round the
+		// To calculate the next zoom level "out" (ie, zoomed out), we want to round the
 		// zoom level DOWN.
 		return static_cast<int>(calc_in_between_zoom_level_from_power(power) - 0.5);
+	}
+}
+
+
+int
+GPlatesGui::ViewportZoom::zoom_level() const
+{
+	if (d_zoom_percent_is_synced_with_level) {
+		return d_zoom_level;
+	} else {
+		// We have to return an approximation.
+		return static_cast<int>(calc_in_between_zoom_level_from_power(
+				calc_zoom_power_from_percent(d_zoom_percent)));
 	}
 }
 
@@ -119,6 +132,8 @@ namespace
 void
 GPlatesGui::ViewportZoom::zoom_in()
 {
+	GPlatesMaths::real_t prev_zoom_percent = d_zoom_percent;
+	
 	if (d_zoom_percent_is_synced_with_level) {
 		// Since the zoom-percent is synced, let's just increment the zoom level normally,
 		// then update the zoom percent.
@@ -134,12 +149,18 @@ GPlatesGui::ViewportZoom::zoom_in()
 			update_zoom_percent_from_level();
 		}
 	}
+
+	if (prev_zoom_percent != d_zoom_percent) {
+		emit zoom_changed();
+	}
 }
 
 
 void
 GPlatesGui::ViewportZoom::zoom_out()
 {
+	GPlatesMaths::real_t prev_zoom_percent = d_zoom_percent;
+	
 	if (d_zoom_percent_is_synced_with_level) {
 
 		// Since the zoom-percent is synced, let's just decrement the zoom level normally,
@@ -160,19 +181,29 @@ GPlatesGui::ViewportZoom::zoom_out()
 			update_zoom_percent_from_level();
 		}
 	}
+
+	if (prev_zoom_percent != d_zoom_percent) {
+		emit zoom_changed();
+	}
 }
 
 
 void
 GPlatesGui::ViewportZoom::reset_zoom()
 {
+	GPlatesMaths::real_t prev_zoom_percent = d_zoom_percent;
+	
 	d_zoom_level = s_initial_zoom_level;
 	update_zoom_percent_from_level();
+
+	if (prev_zoom_percent != d_zoom_percent) {
+		emit zoom_changed();
+	}
 }
 
 
 void
-GPlatesGui::ViewportZoom::set_zoom(
+GPlatesGui::ViewportZoom::set_zoom_percent(
 		double new_zoom_percent)
 {
 	// First, ensure the values lie within the valid zoom percent range.
@@ -186,6 +217,30 @@ GPlatesGui::ViewportZoom::set_zoom(
 	if (GPlatesMaths::Real(new_zoom_percent) != d_zoom_percent) {
 		d_zoom_percent = new_zoom_percent;
 		d_zoom_percent_is_synced_with_level = false;
+		emit zoom_changed();
+	}
+}
+
+
+void
+GPlatesGui::ViewportZoom::set_zoom_level(
+		int new_zoom_level)
+{
+	GPlatesMaths::real_t prev_zoom_percent = d_zoom_percent;
+
+	// First, ensure the values lie within the valid zoom level range.
+	if (new_zoom_level > s_max_zoom_level) {
+		new_zoom_level = s_max_zoom_level;
+	}
+	if (new_zoom_level < s_min_zoom_level) {
+		new_zoom_level = s_min_zoom_level;
+	}
+
+	d_zoom_level = new_zoom_level;
+	update_zoom_percent_from_level();
+
+	if (prev_zoom_percent != d_zoom_percent) {
+		emit zoom_changed();
 	}
 }
 

@@ -185,6 +185,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
 	setMouseTracking(true);
 
+	QObject::connect(&d_viewport_zoom, SIGNAL(zoom_changed()),
+			this, SLOT(handle_zoom_change()));
 	handle_zoom_change();
 }
 
@@ -302,6 +304,30 @@ GPlatesQtWidgets::GlobeCanvas::clear_data()
 	GPlatesState::Layout::Clear();
 }
 
+void
+GPlatesQtWidgets::GlobeCanvas::draw_vector_output()
+{
+
+	try {
+		clear_canvas();
+		glLoadIdentity();
+		glTranslatef(EYE_X,EYE_Y,EYE_Z);
+		// Set up our universe coordinate system (the standard geometric one):
+		//   Z points up
+		//   Y points right
+		//   X points out of the screen
+		glRotatef(-90.0, 1.0, 0.0, 0.0);
+		glRotatef(-90.0, 0.0, 0.0, 1.0);
+
+		// FIXME: Globe uses wrong naming convention for methods.
+		d_globe.paint_vector_output();
+	}
+	catch (const GPlatesGlobal::Exception &){
+		// The argument name in the above expression was removed to
+		// prevent "unreferenced local variable" compiler warnings under MSVC
+
+	}
+}
 
 void
 GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change() 
@@ -311,47 +337,42 @@ GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change()
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::zoom_in() 
+GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
 {
-	GPlatesMaths::real_t curr_zoom_percent = d_viewport_zoom.zoom_percent();
+	double y_pos = get_universe_coord_y_of_mouse();
+	double z_pos = get_universe_coord_z_of_mouse();
+	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
 
-	d_viewport_zoom.zoom_in();
-	if (curr_zoom_percent != d_viewport_zoom.zoom_percent()) {
-		handle_zoom_change();
+	// FIXME: Globe uses wrong naming convention for methods.
+	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
+
+	if (new_pos != d_virtual_mouse_pointer_pos_on_globe ||
+			is_now_on_globe != d_mouse_pointer_is_on_globe) {
+
+		d_virtual_mouse_pointer_pos_on_globe = new_pos;
+		d_mouse_pointer_is_on_globe = is_now_on_globe;
+
+		GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.Orient(new_pos);
+		emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
 	}
 }
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::zoom_out() 
+GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
 {
-	GPlatesMaths::real_t curr_zoom_percent = d_viewport_zoom.zoom_percent();
+	double y_pos = get_universe_coord_y_of_mouse();
+	double z_pos = get_universe_coord_z_of_mouse();
+	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
 
-	d_viewport_zoom.zoom_out();
-	if (curr_zoom_percent != d_viewport_zoom.zoom_percent()) {
-		handle_zoom_change();
-	}
-}
+	// FIXME: Globe uses wrong naming convention for methods.
+	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
 
+	d_virtual_mouse_pointer_pos_on_globe = new_pos;
+	d_mouse_pointer_is_on_globe = is_now_on_globe;
 
-void
-GPlatesQtWidgets::GlobeCanvas::reset_zoom() 
-{
-	d_viewport_zoom.reset_zoom();
-	handle_zoom_change();
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::set_zoom(
-		double new_zoom_percent) 
-{
-	GPlatesMaths::real_t curr_zoom_percent = d_viewport_zoom.zoom_percent();
-
-	d_viewport_zoom.set_zoom(new_zoom_percent);
-	if (curr_zoom_percent != d_viewport_zoom.zoom_percent()) {
-		handle_zoom_change();
-	}
+	GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.Orient(new_pos);
+	emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
 }
 
 
@@ -583,28 +604,6 @@ GPlatesQtWidgets::GlobeCanvas::update_mouse_pointer_pos(
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change() 
-{
-	double y_pos = get_universe_coord_y_of_mouse();
-	double z_pos = get_universe_coord_z_of_mouse();
-	GPlatesMaths::PointOnSphere new_pos = calc_virtual_globe_position(y_pos, z_pos);
-
-	// FIXME: Globe uses wrong naming convention for methods.
-	bool is_now_on_globe = discrim_signifies_on_globe(calc_globe_pos_discrim(y_pos, z_pos));
-
-	if (new_pos != d_virtual_mouse_pointer_pos_on_globe ||
-			is_now_on_globe != d_mouse_pointer_is_on_globe) {
-
-		d_virtual_mouse_pointer_pos_on_globe = new_pos;
-		d_mouse_pointer_is_on_globe = is_now_on_globe;
-
-		GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.Orient(new_pos);
-		emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
-	}
-}
-
-
-void
 GPlatesQtWidgets::GlobeCanvas::handle_wheel_rotation(
 		int delta) 
 {
@@ -615,11 +614,11 @@ GPlatesQtWidgets::GlobeCanvas::handle_wheel_rotation(
 
 	if (num_steps > 0) {
 		while (num_steps--) {
-			zoom_in();
+			d_viewport_zoom.zoom_in();
 		}
 	} else {
 		while (num_steps++) {
-			zoom_out();
+			d_viewport_zoom.zoom_out();
 		}
 	}
 }

@@ -26,10 +26,20 @@
 #include <QLocale>
 #include "QueryFeaturePropertiesDialog.h"
 
+#include "qt-widgets/ViewportWindow.h"
+#include "feature-visitors/QueryFeaturePropertiesDialogPopulator.h"
+#include "feature-visitors/PlateIdFinder.h"
+#include "maths/types.h"
+#include "maths/UnitVector3D.h"
+#include "maths/LatLonPointConversions.h"
+#include "utils/UnicodeStringUtils.h"
+
 
 GPlatesQtWidgets::QueryFeaturePropertiesDialog::QueryFeaturePropertiesDialog(
+		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		QWidget *parent_):
-	QDialog(parent_)
+	QDialog(parent_),
+	d_view_state_ptr(&view_state_)
 {
 	setupUi(this);
 
@@ -111,4 +121,78 @@ QTreeWidget &
 GPlatesQtWidgets::QueryFeaturePropertiesDialog::property_tree() const
 {
 	return *tree_widget_Properties;
+}
+
+
+
+void
+GPlatesQtWidgets::QueryFeaturePropertiesDialog::display_feature(
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	set_feature_type(
+			GPlatesUtils::make_qstring(feature_ref->feature_type()));
+
+	// These next few fields only make sense if the feature is reconstructable, ie. if it has a
+	// reconstruction plate ID.
+	static const GPlatesModel::PropertyName plate_id_property_name("gpml:reconstructionPlateId");
+	GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
+	plate_id_finder.visit_feature_handle(*feature_ref);
+	if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
+		// The feature has a reconstruction plate ID.
+		GPlatesModel::integer_plate_id_type recon_plate_id =
+				*plate_id_finder.found_plate_ids_begin();
+		set_plate_id(recon_plate_id);
+
+		GPlatesModel::integer_plate_id_type root_plate_id =
+				view_state().reconstruction_root();
+		set_root_plate_id(root_plate_id);
+		set_reconstruction_time(
+				view_state().reconstruction_time());
+
+		// Now let's use the reconstruction plate ID of the feature to find the appropriate 
+		// absolute rotation in the reconstruction tree.
+		GPlatesModel::ReconstructionTree &recon_tree =
+				view_state().reconstruction().reconstruction_tree();
+		std::pair<GPlatesMaths::FiniteRotation,
+				GPlatesModel::ReconstructionTree::ReconstructionCircumstance>
+				absolute_rotation =
+						recon_tree.get_composed_absolute_rotation(recon_plate_id);
+
+		// FIXME:  Do we care about the reconstruction circumstance?
+		// (For example, there may have been no match for the reconstruction plate ID.)
+		GPlatesMaths::UnitQuaternion3D uq = absolute_rotation.first.unit_quat();
+		if (GPlatesMaths::represents_identity_rotation(uq)) {
+			set_euler_pole(QObject::tr("indeterminate"));
+			set_angle(0.0);
+		} else {
+			using namespace GPlatesMaths;
+
+			UnitQuaternion3D::RotationParams params = uq.get_rotation_params();
+
+			PointOnSphere euler_pole(params.axis);
+			LatLonPoint llp = make_lat_lon_point(euler_pole);
+
+			// Use the default locale for the floating-point-to-string conversion.
+			// (We need the underscore at the end of the variable name, because
+			// apparently there is already a member of QueryFeature named 'locale'.)
+			QLocale locale_;
+			QString euler_pole_lat = locale_.toString(llp.latitude());
+			QString euler_pole_lon = locale_.toString(llp.longitude());
+			QString euler_pole_as_string;
+			euler_pole_as_string.append(euler_pole_lat);
+			euler_pole_as_string.append(QObject::tr(" ; "));
+			euler_pole_as_string.append(euler_pole_lon);
+
+			set_euler_pole(euler_pole_as_string);
+
+			const double &angle = radiansToDegrees(params.angle).dval();
+			set_angle(angle);
+		}
+	}
+
+	GPlatesFeatureVisitors::QueryFeaturePropertiesDialogPopulator populator(
+			property_tree());
+	populator.visit_feature_handle(*feature_ref);
+
+	show();
 }

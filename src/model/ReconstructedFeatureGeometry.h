@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,8 +28,8 @@
 #ifndef GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
 #define GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H
 
+#include "types.h"
 #include "FeatureHandle.h"
-#include "feature-visitors/PlateIdFinder.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include <boost/optional.hpp>
 
@@ -58,17 +58,19 @@ namespace GPlatesModel
 	public:
 		ReconstructedFeatureGeometry(
 				GPlatesUtils::non_null_intrusive_ptr<const geometry_type> geometry_ptr,
+				FeatureHandle &feature_handle,
+				integer_plate_id_type reconstruction_plate_id_):
+			d_geometry_ptr(geometry_ptr),
+			d_feature_ref(feature_handle.reference()),
+			d_reconstruction_plate_id(reconstruction_plate_id_)
+		{  }
+
+		ReconstructedFeatureGeometry(
+				GPlatesUtils::non_null_intrusive_ptr<const geometry_type> geometry_ptr,
 				FeatureHandle &feature_handle) :
 			d_geometry_ptr(geometry_ptr),
 			d_feature_ref(feature_handle.reference())
-		{
-			GPlatesFeatureVisitors::PlateIdFinder finder(PropertyName("gpml:plateId"));
-			feature_handle.accept_visitor(finder);
-			// Select the first plate id, if we found one.
-			if (finder.found_plate_ids_begin() != finder.found_plate_ids_end()) {
-				d_reconstruction_plate_id = *finder.found_plate_ids_begin();
-			}
-		}
+		{  }
 
 		const GPlatesUtils::non_null_intrusive_ptr<const geometry_type>
 		geometry() const
@@ -86,8 +88,8 @@ namespace GPlatesModel
 		 * Return the cached plate id.
 		 */
 		const boost::optional<integer_plate_id_type> &
-		reconstruction_plate_id() const {
-
+		reconstruction_plate_id() const
+		{
 			return d_reconstruction_plate_id;
 		}
 	};

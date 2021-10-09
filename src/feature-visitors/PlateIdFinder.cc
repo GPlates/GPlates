@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -63,8 +63,8 @@ GPlatesFeatureVisitors::PlateIdFinder::visit_inline_property_container(
 {
 	const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
 
-	if (d_property_names_to_allow.empty()) {
-		// We're allowing all property names.
+	if ( ! d_property_names_to_allow.empty()) {
+		// We're not allowing all property names.
 		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
 			// The current property name is not allowed.
 			return;

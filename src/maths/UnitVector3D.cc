@@ -44,6 +44,40 @@ GPlatesMaths::UnitVector3D::UnitVector3D(
 	d_z(z_comp)
 {
 	AssertInvariant(__LINE__);
+
+	if (d_x.dval() > 1.0) {
+		d_x = 1.0;
+	}
+	if (d_x.dval() < -1.0) {
+		d_x = -1.0;
+	}
+	if (d_y.dval() > 1.0) {
+		d_y = 1.0;
+	}
+	if (d_y.dval() < -1.0) {
+		d_y = -1.0;
+	}
+	if (d_z.dval() > 1.0) {
+		d_z = 1.0;
+	}
+	if (d_z.dval() < -1.0) {
+		d_z = -1.0;
+	}
+	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
+	if (std::fabs(mag_sqrd.dval() - 1.0) > 1.0e-13) {
+		double mag = std::sqrt(mag_sqrd.dval());
+		std::cerr << "Renormalising unit-vector (current deviation from 1.0 = "
+				<< HighPrecision<double>(mag - 1.0) << ")" << std::endl;
+
+		double one_on_mag = 1.0 / mag;
+		d_x = d_x * one_on_mag;
+		d_y = d_y * one_on_mag;
+		d_z = d_z * one_on_mag;
+
+		mag = std::sqrt(((d_x * d_x) + (d_y * d_y) + (d_z * d_z)).dval());
+		std::cerr << "After renormalisation, deviation from 1.0 = "
+				<< HighPrecision<double>(mag - 1.0) << std::endl;
+	}
 }
 
 

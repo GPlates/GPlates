@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -267,21 +267,25 @@ namespace GPlatesMaths
 	}
 
 	inline
-	Real
-	abs(const Real &r1)
+	const Real
+	abs(
+			const Real &r1)
 	{
-		return Real (fabs (r1.dval ()));
+		return Real(fabs(r1.dval()));
 	}
 
 
 	/**
 	 * Using the exact value of the Real, return whether it is positive
 	 * (ie. greater than exact zero) or not.
+	 *
+	 * FIXME:  Rename this to 'is_strictly_positive'.
 	 */
 	inline
 	bool
-	isPositive(Real r) {
-
+	isPositive(
+			const Real &r)
+	{
 		return r.dval() > 0.0;
 	}
 
@@ -289,10 +293,13 @@ namespace GPlatesMaths
 	/**
 	 * Using the exact value of the Real, return whether it is negative
 	 * (ie. less than exact zero) or not.
+	 *
+	 * FIXME:  Rename this to 'is_strictly_negative'.
 	 */
 	inline
 	bool
-	isNegative(Real r)
+	isNegative(
+			const Real &r)
 	{
 		return r.dval() < 0.0;
 	}
@@ -301,10 +308,13 @@ namespace GPlatesMaths
 	/**
 	 * Using the exact value of the Real, return whether it is greater
 	 * than exact one or not.
+	 *
+	 * FIXME:  Rename this to 'is_strictly_greater_than_one'.
 	 */
 	inline
 	bool
-	isGreaterThanOne(Real r)
+	isGreaterThanOne(
+			const Real &r)
 	{
 		return r.dval() > 1.0;
 	}
@@ -313,10 +323,13 @@ namespace GPlatesMaths
 	/**
 	 * Using the exact value of the Real, return whether it is greater
 	 * than exact minus-one or not.
+	 *
+	 * FIXME:  Rename this to 'is_strictly_less_than_minus_one'.
 	 */
 	inline
 	bool
-	isLessThanMinusOne(Real r)
+	isLessThanMinusOne(
+			const Real &r)
 	{
 		return r.dval() < -1.0;
 	}
@@ -418,33 +431,62 @@ namespace GPlatesMaths
 
 
 	/**
-	 * If the argument to this function is greater-than or equal-to 0.0
-	 * (and thus, no exceptions are thrown), on a Pentium IV processor,
-	 * this should cost about (5 [FSUB] + 2 [FCOM] + 2 [FCOM]) = 9 clock
-	 * cycles plus the cost of the invocation of the 'std::sqrt' function
-	 * (presumably at least 38 cycles for the P-IV FSQRT insn + the cost
-	 * of a function call).
+	 * Calculate the square-root of @a r.
 	 *
-	 * Thus, the execution of the body of this function should cost at
-	 * least 47 clock cycles + the cost of a function call.
+	 * @a r must be non-negative.
+	 *
+	 * The return-value will be non-negative.
 	 *
 	 * @throw FunctionDomainException if @a r is less than 0.
 	 */
-	Real sqrt(Real r);
+	const Real
+	sqrt(
+			const Real &r);
 
 	/**
 	 * Calculate the arc sine of @a r.
 	 *
+	 * @r must lie in the valid domain of the arc sine function, the closed range [-1, 1].
+	 *
+	 * The return-value will lie in the closed range [-PI/2, PI/2].
+	 *
+	 * Don't forget: the arc sine will be returned in radians, not degrees!
+	 *
 	 * @throws FunctionDomainException if @a r < -1 or @a r > 1.
 	 */
-	Real asin(Real r);
+	const Real
+	asin(
+			const Real &r);
 
 	/**
 	 * Calculate the arc cosine of @a r.
 	 *
+	 * @r must lie in the valid domain of the arc cosine function, the closed range [-1, 1].
+	 *
+	 * The return-value will lie in the closed range [0, PI].
+	 *
+	 * Don't forget: the arc cosine will be returned in radians, not degrees!
+	 *
 	 * @throws FunctionDomainException if @a r < -1 or @a r > 1.
 	 */
-	Real acos(Real r);
+	const Real
+	acos(
+			const Real &r);
+
+	/**
+	 * Calculate the two-variable arc tangent of @a y and @a x.
+	 *
+	 * The return-value will lie in the open-closed range [-PI, PI].
+	 *
+	 * Don't forget: the arc tangent will be returned in radians, not degrees!
+	 *
+	 * Note that, unlike some implementations, this function defines atan2(0, 0) to be 0; thus,
+	 * there are no invalid regions on the domain.
+	 */
+	const Real
+	atan2(
+			const Real &y,
+			const Real &x);
 
 
 	/**

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,10 +28,10 @@
 #include <boost/format.hpp>
 
 #include <QFileDialog>
-#include <QKeyEvent>
 #include <QLocale>
 #include <QString>
 #include <QStringList>
+#include <QHeaderView>
 
 #include "ViewportWindow.h"
 #include "InformationDialog.h"
@@ -55,6 +55,7 @@
 #include "file-io/Reader.h"
 #include "file-io/ShapeFileReader.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
+#include "gui/SvgExport.h"
 #include "gui/PlatesColourTable.h"
 
 
@@ -350,10 +351,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_animate_dialog(*this, this),
 	d_about_dialog(*this, this),
 	d_license_dialog(&d_about_dialog),
-	d_query_feature_properties_dialog(this),
+	d_query_feature_properties_dialog(*this, this),
 	d_read_errors_dialog(this),
 	d_manage_feature_collections_dialog(*this, this),
-	d_animate_dialog_has_been_shown(false)
+	d_animate_dialog_has_been_shown(false),
+	d_feature_table_model_ptr(new GPlatesGui::FeatureTableModel())
 {
 	setupUi(this);
 
@@ -375,6 +377,20 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	QObject::connect(action_Set_Camera_Viewpoint, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_camera_viewpoint_dialog()));
+	QObject::connect(action_Move_Camera_Up, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_up()));
+	QObject::connect(action_Move_Camera_Down, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_down()));
+	QObject::connect(action_Move_Camera_Left, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_left()));
+	QObject::connect(action_Move_Camera_Right, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(move_camera_right()));
+	QObject::connect(action_Rotate_Camera_Clockwise, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(rotate_camera_clockwise()));
+	QObject::connect(action_Rotate_Camera_Anticlockwise, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(rotate_camera_anticlockwise()));
+	QObject::connect(action_Reset_Camera_Orientation, SIGNAL(triggered()),
+			&(d_canvas_ptr->globe().orientation()), SLOT(orient_poles_vertically()));
 
 	QObject::connect(action_Animate, SIGNAL(triggered()),
 			this, SLOT(pop_up_animate_dialog()));
@@ -390,12 +406,15 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			&d_reconstruction_view_widget, SLOT(activate_zoom_spinbox()));
 
 	QObject::connect(action_Zoom_In, SIGNAL(triggered()),
-			d_canvas_ptr, SLOT(zoom_in()));
+			&(d_canvas_ptr->viewport_zoom()), SLOT(zoom_in()));
 	QObject::connect(action_Zoom_Out, SIGNAL(triggered()),
-			d_canvas_ptr, SLOT(zoom_out()));
+			&(d_canvas_ptr->viewport_zoom()), SLOT(zoom_out()));
 	QObject::connect(action_Reset_Zoom_Level, SIGNAL(triggered()),
-			d_canvas_ptr, SLOT(reset_zoom()));
+			&(d_canvas_ptr->viewport_zoom()), SLOT(reset_zoom()));
 	
+	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
+			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
+
 	QObject::connect(action_About, SIGNAL(triggered()),
 			this, SLOT(pop_up_about_dialog()));
 
@@ -424,8 +443,22 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 			d_active_reconstruction_files, 0.0, d_recon_root);
 	d_canvas_ptr->update_canvas();
 
-	GPlatesGui::FeatureWeakRefSequence::non_null_ptr_type clicked_features =
-			GPlatesGui::FeatureWeakRefSequence::create();
+	// FIXME: feature table model for this Qt widget and the Query Tool should be stored in ViewState.
+	tab_list_clicked->setModel(d_feature_table_model_ptr);
+	tab_list_clicked->verticalHeader()->hide();
+	tab_list_clicked->resizeColumnsToContents();
+	GPlatesGui::FeatureTableModel::set_default_resize_modes(*tab_list_clicked->horizontalHeader());
+	tab_list_clicked->horizontalHeader()->setMinimumSectionSize(60);
+	tab_list_clicked->horizontalHeader()->setMovable(true);
+	tab_list_clicked->horizontalHeader()->setHighlightSections(false);
+	QObject::connect(tab_list_clicked->selectionModel(),
+			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+			d_feature_table_model_ptr,
+			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
+	QObject::connect(d_feature_table_model_ptr,
+			SIGNAL(selected_feature_changed(GPlatesModel::FeatureHandle::weak_ref)),
+			&d_query_feature_properties_dialog,
+			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref)));
 
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
 	d_canvas_tool_choice_ptr =
@@ -433,7 +466,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_canvas_ptr->globe(),
 					*d_canvas_ptr,
 					*this,
-					clicked_features,
+					*d_feature_table_model_ptr,
 					d_query_feature_properties_dialog);
 
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
@@ -470,6 +503,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					const GPlatesMaths::PointOnSphere &, bool,
 					const GPlatesMaths::PointOnSphere &, bool,
 					Qt::MouseButton, Qt::KeyboardModifiers)));
+
+	QObject::connect(action_Quit, SIGNAL(triggered()), this, SLOT(close()));
 }
 
 
@@ -528,9 +563,10 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_camera_viewpoint_dialog()
 			GPlatesMaths::PointOnSphere oriented_desired_centre = 
 					d_canvas_ptr->globe().orientation().orient_point(
 							GPlatesMaths::make_point_on_sphere(desired_centre));
-
 			d_canvas_ptr->globe().SetNewHandlePos(oriented_desired_centre);
 			d_canvas_ptr->globe().UpdateHandlePos(centre_of_canvas);
+			
+			d_canvas_ptr->globe().orientation().orient_poles_vertically();
 			d_canvas_ptr->update_canvas();
 		} catch (GPlatesMaths::InvalidLatLonException &) {
 			// The argument name in the above expression was removed to
@@ -657,5 +693,48 @@ GPlatesQtWidgets::ViewportWindow::is_file_active(
 
 	// loaded_file not found in any active files lists, must not be active.
 	return false;
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::create_svg_file()
+{
+	QString filename = QFileDialog::getSaveFileName(this,
+			tr("Save As"), "", tr("SVG file (*.svg)"));
+
+	if (filename.isEmpty()){
+		return;
+	}
+
+	bool result = GPlatesGui::SvgExport::create_svg_output(filename,d_canvas_ptr);
+	if (!result){
+		std::cerr << "Error creating SVG output.." << std::endl;
+	}
+
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
+{
+	d_specify_fixed_plate_dialog.reject();
+	d_set_camera_viewpoint_dialog.reject();
+	d_animate_dialog.reject();
+	d_about_dialog.reject();
+	d_license_dialog.reject();
+	d_query_feature_properties_dialog.reject();
+	d_read_errors_dialog.reject();
+	d_manage_feature_collections_dialog.reject();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::closeEvent(QCloseEvent *close_event)
+{
+	// For now, always accept the close event.
+	// In the future, ->reject() can be used to postpone closure in the event of
+	// unsaved files, etc.
+	close_event->accept();
+	// If we decide to accept the close event, we should also tidy up after ourselves.
+	close_all_dialogs();
 }
 

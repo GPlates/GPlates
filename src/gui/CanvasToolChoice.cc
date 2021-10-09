@@ -35,12 +35,12 @@ GPlatesGui::CanvasToolChoice::CanvasToolChoice(
 		Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
-		FeatureWeakRefSequence::non_null_ptr_type external_hit_sequence_ptr,
+		FeatureTableModel &clicked_table_model,
 		GPlatesQtWidgets::QueryFeaturePropertiesDialog &qfp_dialog_):
 	d_reorient_globe_tool_ptr(GPlatesCanvasTools::ReorientGlobe::create(globe_, globe_canvas_)),
 	d_zoom_globe_tool_ptr(GPlatesCanvasTools::ZoomGlobe::create(globe_, globe_canvas_)),
 	d_query_feature_tool_ptr(GPlatesCanvasTools::QueryFeature::create(globe_, globe_canvas_,
-			view_state_, external_hit_sequence_ptr, qfp_dialog_)),
+			view_state_, clicked_table_model, qfp_dialog_)),
 	d_tool_choice_ptr(d_reorient_globe_tool_ptr)
 {
 	tool_choice().handle_activation();

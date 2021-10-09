@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -60,6 +60,15 @@ namespace GPlatesGui
 		virtual
 		const GPlatesMaths::real_t &
 		rotation_angle() const = 0;
+
+		/**
+		 * Apply the accumulated rotation of the globe to the supplied
+		 * point.
+		 */
+		virtual
+		const GPlatesMaths::PointOnSphere
+		orient_point(
+				const GPlatesMaths::PointOnSphere &pos) const = 0;
 
 		/**
 		 * Apply the reverse of the accumulated rotation of the globe

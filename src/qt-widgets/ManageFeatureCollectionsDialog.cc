@@ -157,7 +157,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 	{
 		QString message = tr("An error occurred while saving the file '%1'")
 				.arg(e.filename());
-		QMessageBox::critical(this, tr("Error saving file"), message,
+		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 				
 	}
@@ -166,7 +166,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Attempted to write an empty feature collection.");
-		QMessageBox::critical(this, tr("Error saving file"), message,
+		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	catch (GPlatesFileIO::FileFormatNotSupportedException &)
@@ -174,7 +174,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Writing files in this format is currently not supported.");
-		QMessageBox::critical(this, tr("Error saving file"), message,
+		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 }
@@ -206,7 +206,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 	{
 		QString message = tr("An error occurred while saving the file '%1'")
 				.arg(e.filename());
-		QMessageBox::critical(this, tr("Error saving file"), message,
+		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 				
 	}
@@ -215,7 +215,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Attempted to write an empty feature collection.");
-		QMessageBox::critical(this, tr("Error saving file"), message,
+		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	catch (GPlatesFileIO::FileFormatNotSupportedException &)
@@ -223,7 +223,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Writing files in this format is currently not supported.");
-		QMessageBox::critical(this, tr("Error saving file"), message,
+		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	
@@ -258,7 +258,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 	{
 		QString message = tr("An error occurred while saving the file '%1'")
 				.arg(e.filename());
-		QMessageBox::critical(this, tr("Error saving file"), message,
+		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 				
 	}
@@ -267,7 +267,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Attempted to write an empty feature collection.");
-		QMessageBox::critical(this, tr("Error saving file"), message,
+		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 	catch (GPlatesFileIO::FileFormatNotSupportedException &)
@@ -275,7 +275,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Writing files in this format is currently not supported.");
-		QMessageBox::critical(this, tr("Error saving file"), message,
+		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
 }
