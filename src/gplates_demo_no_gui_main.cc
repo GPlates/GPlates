@@ -96,7 +96,7 @@ create_isochron(
 
 	std::list<GPlatesMaths::PointOnSphere> points;
 	GPlatesMaths::populate_point_on_sphere_sequence(points, coords_vector);
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_type polyline =
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
 			GPlatesMaths::PolylineOnSphere::create_on_heap(points);
 	GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 			GPlatesPropertyValues::GmlLineString::create(polyline);
@@ -456,16 +456,16 @@ output_reconstructions(
 
 		std::cout << "\n--> Building tree, root node: 501\n";
 		GPlatesModel::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(501);
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> empty_vector;
 		GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
-				GPlatesModel::Reconstruction::create(tree);
+				GPlatesModel::Reconstruction::create(tree, empty_vector);
 
 		traverse_recon_tree(reconstruction->reconstruction_tree());
 
 		GPlatesModel::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
 				*reconstruction,
 				reconstruction->reconstruction_tree(),
-				reconstruction->point_geometries(),
-				reconstruction->polyline_geometries());
+				reconstruction->geometries());
 
 		GPlatesModel::FeatureCollectionHandle::features_iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {
@@ -473,22 +473,30 @@ output_reconstructions(
 		}
 
 		std::cout << "<> After feature geometry reconstructions, there are\n   "
-				<< reconstruction->point_geometries().size()
-				<< " reconstructed point geometries, and\n   "
-				<< reconstruction->polyline_geometries().size()
-				<< " reconstructed polyline geometries."
+				<< reconstruction->geometries().size()
+				<< " reconstructed geometries."
 				<< std::endl;
 
 		std::cout << " > The reconstructed polylines are:\n";
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
-				iter3 = reconstruction->polyline_geometries().begin();
-		std::vector<GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
-				end3 = reconstruction->polyline_geometries().end();
+		GPlatesModel::Reconstruction::geometry_collection_type::iterator
+				iter3 = reconstruction->geometries().begin();
+		GPlatesModel::Reconstruction::geometry_collection_type::iterator
+				end3 = reconstruction->geometries().end();
 		for ( ; iter3 != end3; ++iter3) {
+			// We only care about polylines (since all the geometries in this function
+			// *should* be polylines), so let's just use a dynamic cast.
+			const GPlatesMaths::PolylineOnSphere *polyline =
+					dynamic_cast<const GPlatesMaths::PolylineOnSphere *>((*iter3)->geometry().get());
+			if ( ! polyline) {
+				// Why wasn't it a polyline?
+				std::cerr << "Why wasn't it a polyline?" << std::endl;
+				std::exit(1);
+			}
+
 			GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter4 =
-					iter3->geometry()->vertex_begin();
+					polyline->vertex_begin();
 			GPlatesMaths::PolylineOnSphere::vertex_const_iterator end4 =
-					iter3->geometry()->vertex_end();
+					polyline->vertex_end();
 
 			{
 				GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter4);

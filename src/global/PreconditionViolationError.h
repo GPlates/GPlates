@@ -28,7 +28,7 @@
 #ifndef GPLATES_GLOBAL_PRECONDITIONVIOLATIONERROR_H
 #define GPLATES_GLOBAL_PRECONDITIONVIOLATIONERROR_H
 
-#include "global/Exception.h"
+#include "GPlatesException.h"
 
 
 namespace GPlatesGlobal

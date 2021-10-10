@@ -33,7 +33,7 @@
 #include "model/FeatureHandle.h"
 #include "QueryFeaturePropertiesWidget.h"
 #include "EditFeaturePropertiesWidget.h"
-#include "EditFeatureGeometriesWidget.h"
+#include "ViewFeatureGeometriesWidget.h"
 
 
 namespace GPlatesQtWidgets
@@ -65,7 +65,8 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		display_feature(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+				GPlatesModel::FeatureHandle::weak_ref feature_ref,
+				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type);
 		
 		/**
 		 * Update the current display from whatever feature the dialog
@@ -80,13 +81,13 @@ namespace GPlatesQtWidgets
 		refresh_display();
 		
 		void
-		choose_query_widget();
+		choose_query_widget_and_open();
 
 		void
-		choose_edit_widget();
+		choose_edit_widget_and_open();
 
 		void
-		choose_geometries_widget();
+		choose_geometries_widget_and_open();
 	
 		/**
 		 * We need to reimplement setVisible() because reimplementing closeEvent() is not
@@ -115,7 +116,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesQtWidgets::QueryFeaturePropertiesWidget *d_query_feature_properties_widget;
 		GPlatesQtWidgets::EditFeaturePropertiesWidget *d_edit_feature_properties_widget;
-		GPlatesQtWidgets::EditFeatureGeometriesWidget *d_edit_feature_geometries_widget;
+		GPlatesQtWidgets::ViewFeatureGeometriesWidget *d_view_feature_geometries_widget;
 	};
 }
 

@@ -42,7 +42,7 @@
 #include <wx/cmdline.h>
 
 #include "global/config.h"
-#include "global/Exception.h"
+#include "global/GPlatesException.h"
 
 #include "GPlatesApp.h"
 #include "MainWindow.h"

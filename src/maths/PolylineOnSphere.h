@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
  *  (under the name "PolyLineOnSphere.h")
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *  (under the name "PolylineOnSphere.h")
  *
  * This file is part of GPlates.
@@ -36,9 +36,9 @@
 #include <algorithm>  // std::swap
 #include <utility>  // std::pair
 
+#include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
-#include "InvalidPolylineException.h"
-#include "utils/non_null_intrusive_ptr.h"
+#include "global/PreconditionViolationError.h"
 
 
 namespace GPlatesMaths
@@ -80,22 +80,28 @@ namespace GPlatesMaths
 	 * which enable the modification of the class internals), in particular
 	 * the copy-assignment operator.
 	 */
-	class PolylineOnSphere
+	class PolylineOnSphere:
+			public GeometryOnSphere
 	{
+		/**
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * 
+		 * Note that this typedef is indeed meant to be private.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere> non_null_ptr_type;
-
-
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 
@@ -445,7 +451,6 @@ namespace GPlatesMaths
 		{
 			VALID,
 			INVALID_INSUFFICIENT_DISTINCT_POINTS,
-			INVALID_DUPLICATE_SEGMENT_ENDPOINTS,
 			INVALID_ANTIPODAL_SEGMENT_ENDPOINTS
 		};
 
@@ -465,28 +470,21 @@ namespace GPlatesMaths
 		 * get an exception thrown back at you.
 		 *
 		 * It's not terribly difficult to obtain a collection which
-		 * qualifias as valid parameters (no duplicate or antipodal
-		 * adjacent points; at least two distinct points in the
-		 * collection -- nothing particularly unreasonable) but the
-		 * creation functions are fairly unsympathetic if your
-		 * parameters @em do turn out to be invalid.
+		 * qualifias as valid parameters (no antipodal adjacent points;
+		 * at least two distinct points in the collection -- nothing
+		 * particularly unreasonable) but the creation functions are
+		 * fairly unsympathetic if your parameters @em do turn out to
+		 * be invalid.
 		 *
 		 * @a coll should be a sequential STL container (list, vector,
 		 * ...) of PointOnSphere.
 		 *
 		 * @a invalid_points is a return-parameter; if the
 		 * construction-parameters are found to be invalid due to
-		 * duplicate or antipodal adjacent points, the value of this
-		 * return-parameter will be set to the pair of const_iterators
-		 * of @a coll which point to the guilty points.  If no adjacent
-		 * points are found to be duplicate or antipodal, this
-		 * parameter will not be modified.
-		 *
-		 * The optional argument @a should_silently_drop_dups controls
-		 * whether or not duplicate adjacent points should silently be
-		 * dropped instead of causing an exception to be thrown.  (Dup
-		 * adjacent points are a not-uncommon occurrence when reading
-		 * PLATES4 data files.  All Hail PLATES4!)
+		 * antipodal adjacent points, the value of this return-parameter
+		 * will be set to the pair of const_iterators of @a coll which
+		 * point to the guilty points.  If no adjacent points are found
+		 * to be antipodal, this parameter will not be modified.
 		 */
 		template<typename C>
 		static
@@ -494,8 +492,7 @@ namespace GPlatesMaths
 		evaluate_construction_parameter_validity(
 				const C &coll,
 				std::pair<typename C::const_iterator, typename C::const_iterator> &
-						invalid_points,
-				bool should_silently_drop_dups = true);
+						invalid_points);
 
 
 		/**
@@ -525,7 +522,7 @@ namespace GPlatesMaths
 		 */
 		template<typename C>
 		static
-		const non_null_ptr_type
+		const non_null_ptr_to_const_type
 		create_on_heap(
 				const C &coll);
 
@@ -536,12 +533,64 @@ namespace GPlatesMaths
 		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
-		const PolylineOnSphere::non_null_ptr_type
-		clone_on_heap() const
+		const GeometryOnSphere::non_null_ptr_to_const_type
+		clone_as_geometry() const
 		{
-			PolylineOnSphere::non_null_ptr_type dup(*(new PolylineOnSphere(*this)));
+			GeometryOnSphere::non_null_ptr_to_const_type dup(
+					new PolylineOnSphere(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
+
+
+		/**
+		 * Clone this PolylineOnSphere instance, to create a duplicate instance on the
+		 * heap.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		const non_null_ptr_to_const_type
+		clone_as_polyline() const
+		{
+			non_null_ptr_to_const_type dup(
+					new PolylineOnSphere(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
+			return dup;
+		}
+
+
+		/**
+		 * Get a non-null pointer to a const PolylineOnSphere which points to this instance
+		 * (or a clone of this instance).
+		 *
+		 * (Since geometries are treated as immutable literals in GPlates, a geometry can
+		 * never be modified through a pointer, so there is no reason why it would be
+		 * inappropriate to return a pointer to a clone of this instance rather than a
+		 * pointer to this instance.)
+		 *
+		 * This function will behave correctly regardless of whether this instance is on
+		 * the stack or the heap.
+		 */
+		const non_null_ptr_to_const_type
+		get_non_null_pointer() const;
+
+
+		virtual
+		ProximityHitDetail::maybe_null_ptr_type
+		test_proximity(
+				const ProximityCriteria &criteria) const;
+
+
+		/**
+		 * Accept a ConstGeometryOnSphereVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				ConstGeometryOnSphereVisitor &visitor) const;
 
 
 		/**
@@ -692,7 +741,7 @@ namespace GPlatesMaths
 		 * being "close" to that segment.
 		 *
 		 * For more information, read the comment before
-		 * @a GPlatesState::Layout::find_close_data.
+		 * @a GPlatesGui::ProximityTests::find_close_rfgs.
 		 */
 		bool
 		is_close_to(
@@ -700,37 +749,6 @@ namespace GPlatesMaths
 				const real_t &closeness_inclusion_threshold,
 				const real_t &latitude_exclusion_threshold,
 				real_t &closeness) const;
-
-
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
 
 	private:
 
@@ -748,7 +766,7 @@ namespace GPlatesMaths
 		 * zero.
 		 */
 		PolylineOnSphere():
-			d_ref_count(0)
+			GeometryOnSphere()
 		{  }
 
 
@@ -759,14 +777,14 @@ namespace GPlatesMaths
 		 * instantiation of this type on the stack.
 		 *
 		 * This constructor should never be invoked directly by client code; only through
-		 * the 'clone_on_heap' function.
+		 * the 'clone_as_geometry' or 'clone_as_polyline' function.
 		 *
 		 * This constructor should act exactly the same as the default (auto-generated)
 		 * copy-constructor would, except that it should initialise the ref-count to zero.
 		 */
 		PolylineOnSphere(
 				const PolylineOnSphere &other):
-			d_ref_count(0),
+			GeometryOnSphere(),
 			d_seq(other.d_seq)
 		{  }
 
@@ -800,25 +818,15 @@ namespace GPlatesMaths
 		create_segment_and_append_to_seq(
 				seq_type &seq,
 				const PointOnSphere &p1,
-				const PointOnSphere &p2,
-				bool should_silently_drop_dups = true);
+				const PointOnSphere &p2);
 
 
 		/**
 		 * This is the minimum number of (distinct) collection points to be passed into the
-		 * 'create_on_heap' function to enable creation of a closed, well-defined polygon.
+		 * 'create_on_heap' function to enable creation of a closed, well-defined polyline.
 		 */
 		static const unsigned s_min_num_collection_points;
 
-		/**
-		 * This is the reference-count used by GPlatesUtils::non_null_intrusive_ptr.
-		 *
-		 * It is declared "mutable", because it is to be modified by 'increment_ref_count'
-		 * and 'decrement_ref_count', which are const member functions.  They are const
-		 * member functions because they do not modify the "abstract state" of the
-		 * instance; the reference-count is really only memory-management book-keeping.
-		 */
-		mutable ref_count_type d_ref_count;
 
 		/**
 		 * This is the sequence of polyline segments.
@@ -904,13 +912,12 @@ namespace GPlatesMaths
 	PolylineOnSphere::ConstructionParameterValidity
 	PolylineOnSphere::evaluate_construction_parameter_validity(
 			const C &coll,
-			std::pair<typename C::const_iterator, typename C::const_iterator> &invalid_points,
-			bool should_silently_drop_dups)
+			std::pair<typename C::const_iterator, typename C::const_iterator> &invalid_points)
 	{
-		typename C::size_type num_points = coll.size();
+		typename C::size_type num_points = count_distinct_adjacent_points(coll);
 		if (num_points < s_min_num_collection_points) {
-			// The collection does not contain enough points to
-			// create even one line-segment.
+			// The collection does not contain enough distinct points to create even
+			// one line-segment.
 			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
@@ -921,9 +928,8 @@ namespace GPlatesMaths
 
 			ConstructionParameterValidity v = evaluate_segment_endpoint_validity(p1, p2);
 
-			// Using a switch-statement, along with GCC's
-			// "-Wswitch" option (implicitly enabled by "-Wall"),
-			// will help to ensure that no cases are missed.
+			// Using a switch-statement, along with GCC's "-Wswitch" option (implicitly
+			// enabled by "-Wall"), will help to ensure that no cases are missed.
 			switch (v) {
 
 			case VALID:
@@ -933,27 +939,12 @@ namespace GPlatesMaths
 
 			case INVALID_INSUFFICIENT_DISTINCT_POINTS:
 
-				// This value shouldn't be returned.
-				// FIXME:  Can this be checked at compile-time?
-				// (Perhaps with use of template magic, to
-				// avoid the need to check at run-time and
-				// throw an exception if the assertion fails.)
-				break;
-
-			case INVALID_DUPLICATE_SEGMENT_ENDPOINTS:
-
-				if (should_silently_drop_dups) {
-					// You heard the man:  We should
-					// silently drop duplicates.  But we
-					// still need to keep track of the
-					// number of (usable) points.
-					--num_points;
-				} else {
-					invalid_points.first = prev;
-					invalid_points.second = iter;
-					return v;
-				}
-				// Keep looping.
+				// This value should never be returned, since it's not related to
+				// segments.
+				//
+				// FIXME:  This sucks.  We should separate "global" errors (like
+				// "insufficient distinct points") from "segment" errors (like
+				// "antipodal segment endpoints").
 				break;
 
 			case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
@@ -963,11 +954,6 @@ namespace GPlatesMaths
 				return v;
 			}
 		}
-		// Check the number of (usable) points again, now that we've
-		// abjusted for duplicates.
-		if (num_points < 2) {
-			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
-		}
 
 		// If we got this far, we couldn't find anything wrong with the
 		// construction parameters.
@@ -976,14 +962,76 @@ namespace GPlatesMaths
 
 
 	template<typename C>
-	const PolylineOnSphere::non_null_ptr_type
+	const PolylineOnSphere::non_null_ptr_to_const_type
 	PolylineOnSphere::create_on_heap(
 			const C &coll)
 	{
-		PolylineOnSphere::non_null_ptr_type ptr(*(new PolylineOnSphere()));
+		PolylineOnSphere::non_null_ptr_type ptr(new PolylineOnSphere(),
+				GPlatesUtils::NullIntrusivePointerHandler());
 		generate_segments_and_swap(*ptr, coll);
 		return ptr;
 	}
+
+
+	/**
+	 * The exception thrown when an attempt is made to create a polyline using invalid points.
+	 */
+	class InvalidPointsForPolylineConstructionError:
+			public GPlatesGlobal::PreconditionViolationError
+	{
+	public:
+		/**
+		 * Instantiate the exception.
+		 *
+		 * @param cpv is the polyline's construction parameter validity value, which
+		 * presumably describes why the points are invalid.
+		 */
+		InvalidPointsForPolylineConstructionError(
+				PolylineOnSphere::ConstructionParameterValidity cpv,
+				const char *filename,
+				int line_num):
+			d_cpv(cpv),
+			d_filename(filename),
+			d_line_num(line_num)
+		{  }
+
+		virtual
+		~InvalidPointsForPolylineConstructionError()
+		{  }
+
+	protected:
+		virtual
+		const char *
+		ExceptionName() const
+		{
+			return "InvalidPointsForPolylineConstructionError";
+		}
+
+		// FIXME: This would be better as a 'const std::string'.
+		virtual
+		std::string
+		Message() const
+		{
+			switch (d_cpv) {
+			case PolylineOnSphere::VALID:
+				return "valid";
+			case PolylineOnSphere::INVALID_INSUFFICIENT_DISTINCT_POINTS:
+				return "insufficient distinct points";
+			case PolylineOnSphere::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
+				return "antipodal segment endpoints";
+			}
+			// Control-flow should never reach the end of this function.
+			// FIXME:  We should assert this.
+			// We'll return an empty string to placate the compiler, which is
+			// complaining about control reaching end of non-void function.
+			return std::string();
+		}
+
+	private:
+		PolylineOnSphere::ConstructionParameterValidity d_cpv;
+		const char *d_filename;
+		int d_line_num;
+	};
 
 
 	template<typename C>
@@ -992,18 +1040,15 @@ namespace GPlatesMaths
 			PolylineOnSphere &poly,
 			const C &coll)
 	{
-		if (coll.size() < s_min_num_collection_points) {
-			// The collection does not contain enough points to
-			// create even one line-segment.
-			
-			throw InvalidPolylineException("Attempted to create a "
-					"polyline from an insufficient number (ie, less than "
-					"2) of endpoints.");
+		std::pair<typename C::const_iterator, typename C::const_iterator> invalid_points;
+		ConstructionParameterValidity v =
+				evaluate_construction_parameter_validity(coll, invalid_points);
+		if (v != VALID) {
+			throw InvalidPointsForPolylineConstructionError(v, __FILE__, __LINE__);
 		}
 
-		// Make it easier to provide strong exception safety by
-		// appending the new segments to a temporary sequence (rather
-		// than putting them directly into 'd_seq').
+		// Make it easier to provide strong exception safety by appending the new segments
+		// to a temporary sequence (rather than putting them directly into 'd_seq').
 		seq_type tmp_seq;
 		// Observe that the number of points used to define a polyline (which will become
 		// the number of vertices in the polyline, counting the begin-point and end-point
@@ -1016,15 +1061,6 @@ namespace GPlatesMaths
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
 			create_segment_and_append_to_seq(tmp_seq, p1, p2);
-		}
-
-		if (tmp_seq.size() == 0) {
-			// No line-segments were created, which must mean that
-			// all points in the collection were identical.
-			
-			throw InvalidPolylineException("Attempted to create a "
-					"polyline from an insufficient number (ie, less than "
-					"2) of unique endpoints.");
 		}
 		poly.d_seq.swap(tmp_seq);
 	}

@@ -63,8 +63,11 @@ namespace GPlatesGui
 	 * To link a FeaturePropertyTableModel to the GUI, simply create a QTableView (either
 	 * in the designer or in code) and call table_view->setModel(FeaturePropertyTableModel *);
 	 *
-	 * The model is editable, however the propagation of those edits to the GPlates Model is
-	 * not yet complete.
+	 * The model was editable, but this has been disabled for now due to Complicated Things
+	 * happening with time-dependent PropertyValues. In short: a properties_iterator is not
+	 * always enough. Perhaps this model could be re-written sometime to display (and edit)
+	 * more complicated feature-property trees. Until then, editing is disabled.
+	 * See Bug #77 for some details.
 	 */
 	class FeaturePropertyTableModel:
 			public QAbstractTableModel
@@ -165,31 +168,24 @@ namespace GPlatesGui
 		bool
 		is_property_editable_inline(
 				int row) const;
-		
-		bool
-		assign_new_property_value(
-				GPlatesModel::FeatureHandle::properties_iterator property_iterator,
-				GPlatesModel::PropertyValue::non_null_ptr_type property_value);
-		
-		void
-		delete_property(
-				GPlatesModel::FeatureHandle::properties_iterator property_iterator);
 
-		GPlatesModel::FeatureHandle::properties_iterator
-		append_property_value_to_feature(
-				GPlatesModel::PropertyValue::non_null_ptr_type property_value,
-				const GPlatesModel::PropertyName &property_name);
 
 	public slots:
 		
 		/**
 		 * Use this slot to clear the table and set it to a new feature reference.
-		 * If there are any uncommited changes for the previous feature reference,
-		 * they will be lost.
+		 * This is called at the appropriate time from EditFeaturePropertiesWidget.
 		 */
 		void
 		set_feature_reference(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
+		/**
+		 * Use this slot to simply rebuild the table from the current feature reference.
+		 * This is called at the appropriate time from EditFeaturePropertiesWidget.
+		 */
+		void
+		refresh_data();
 
 	signals:
 		
@@ -202,6 +198,9 @@ namespace GPlatesGui
 				GPlatesModel::FeatureHandle::weak_ref feature_ref);
 		
 	private:
+		
+		void
+		clear_table();
 		
 		QVariant
 		get_property_name_as_qvariant(

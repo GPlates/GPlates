@@ -30,7 +30,7 @@
 
 #include <string>
 #include "maths/Real.h"
-#include "global/Exception.h"
+#include "global/GPlatesException.h"
 
 
 namespace GPlatesUtils

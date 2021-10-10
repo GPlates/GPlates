@@ -31,6 +31,9 @@
 #endif
 #include "PointOnSphere.h"
 #include "PointLiesOnGreatCircleArc.h"
+#include "PointProximityHitDetail.h"
+#include "ProximityCriteria.h"
+#include "ConstGeometryOnSphereVisitor.h"
 
 
 const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::north_pole =
@@ -39,6 +42,51 @@ const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::north_pole =
 
 const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::south_pole =
 		GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(-90.0, 0.0));
+
+
+const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PointOnSphere::get_non_null_pointer() const
+{
+	if (ref_count() == 0) {
+		// There are no intrusive-pointers referencing this class.  Hence, this instance is
+		// either on the stack or on the heap managed by a non-intrusive-pointer mechanism.
+		// 
+		// Either way, we should clone this instance, so the clone can be managed by
+		// intrusive-pointers.
+		std::cerr << "PointOnSphere::get_non_null_pointer just cloned something!"
+				<< std::endl;
+		return clone_as_point();
+	} else {
+		// This instance is already managed by intrusive-pointers, so we can simply return
+		// another intrusive-pointer to this instance.
+		return non_null_ptr_to_const_type(
+				this,
+				GPlatesUtils::NullIntrusivePointerHandler());
+	}
+}
+
+
+GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+GPlatesMaths::PointOnSphere::test_proximity(
+		const ProximityCriteria &criteria) const
+{
+	double closeness = calculate_closeness(criteria.test_point(), *this).dval();
+	if (closeness > criteria.closeness_inclusion_threshold()) {
+		return make_maybe_null_ptr(PointProximityHitDetail::create(
+				this->get_non_null_pointer(),
+				closeness));
+	} else {
+		return ProximityHitDetail::null;
+	}
+}
+
+
+void
+GPlatesMaths::PointOnSphere::accept_visitor(
+		ConstGeometryOnSphereVisitor &visitor) const
+{
+	visitor.visit_point_on_sphere(this->get_non_null_pointer());
+}
 
 
 bool

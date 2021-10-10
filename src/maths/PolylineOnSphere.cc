@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
  *  (under the name "PolyLineOnSphere.cc")
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *  (under the name "PolylineOnSphere.cc")
  *
  * This file is part of GPlates.
@@ -34,10 +34,13 @@
 # include <boost/python.hpp>
 #endif
 #include "PolylineOnSphere.h"
+#include "PolylineProximityHitDetail.h"
+#include "ProximityCriteria.h"
+#include "ConstGeometryOnSphereVisitor.h"
 #include "HighPrecision.h"
-#include "InvalidPolylineException.h"
 #include "global/InvalidParametersException.h"
 #include "global/UninitialisedIteratorException.h"
+#include "global/IntrusivePointerZeroRefCountException.h"
 
 
 const unsigned
@@ -49,25 +52,74 @@ GPlatesMaths::PolylineOnSphere::evaluate_segment_endpoint_validity(
 		const PointOnSphere &p1,
 		const PointOnSphere &p2)
 {
-	GreatCircleArc::ParameterStatus s = GreatCircleArc::test_parameter_status(p1, p2);
+	GreatCircleArc::ConstructionParameterValidity cpv =
+			GreatCircleArc::evaluate_construction_parameter_validity(p1, p2);
 
-	// Using a switch-statement, along with GCC's "-Wswitch" option
-	// (implicitly enabled by "-Wall"), will help to ensure that no cases
-	// are missed.
-	switch (s) {
+	// Using a switch-statement, along with GCC's "-Wswitch" option (implicitly enabled by
+	// "-Wall"), will help to ensure that no cases are missed.
+	switch (cpv) {
 
 	case GreatCircleArc::VALID:
 		// Continue after switch block so that we don't get warnings
 		// about "control reach[ing] end of non-void function".
 		break;
 
-	case GreatCircleArc::INVALID_IDENTICAL_ENDPOINTS:
-		return INVALID_DUPLICATE_SEGMENT_ENDPOINTS;
-
 	case GreatCircleArc::INVALID_ANTIPODAL_ENDPOINTS:
 		return INVALID_ANTIPODAL_SEGMENT_ENDPOINTS;
 	}
 	return VALID;
+}
+
+
+const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PolylineOnSphere::get_non_null_pointer() const
+{
+	if (ref_count() == 0) {
+		// How did this happen?  This should not have happened.
+		//
+		// Presumably, the programmer obtained the raw PolylineOnSphere pointer from inside
+		// a PolylineOnSphere::non_null_ptr_type, and is invoking this member function upon
+		// the instance indicated by the raw pointer, after all ref-counting pointers have
+		// expired and the instance has actually been deleted.
+		//
+		// Regardless of how this happened, this is an error.
+		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(this, __FILE__, __LINE__);
+	} else {
+		// This instance is already managed by intrusive-pointers, so we can simply return
+		// another intrusive-pointer to this instance.
+		return non_null_ptr_to_const_type(
+				this,
+				GPlatesUtils::NullIntrusivePointerHandler());
+	}
+}
+
+
+GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+GPlatesMaths::PolylineOnSphere::test_proximity(
+		const ProximityCriteria &criteria) const
+{
+	// FIXME: This function should get its own implementation, rather than delegating to
+	// 'is_close_to', to enable it to provide more hit detail (for example, whether a vertex or
+	// a segment was hit).
+
+	real_t closeness;  // Don't bother initialising this.
+	if (this->is_close_to(criteria.test_point(), criteria.closeness_inclusion_threshold(),
+			criteria.latitude_exclusion_threshold(), closeness)) {
+		// OK, this polyline is close to the test point.
+		return make_maybe_null_ptr(PolylineProximityHitDetail::create(
+				this->get_non_null_pointer(),
+				closeness.dval()));
+	} else {
+		return ProximityHitDetail::null;
+	}
+}
+
+
+void
+GPlatesMaths::PolylineOnSphere::accept_visitor(
+		ConstGeometryOnSphereVisitor &visitor) const
+{
+	visitor.visit_polyline_on_sphere(this->get_non_null_pointer());
 }
 
 
@@ -139,63 +191,13 @@ void
 GPlatesMaths::PolylineOnSphere::create_segment_and_append_to_seq(
 		seq_type &seq, 
 		const PointOnSphere &p1,
-		const PointOnSphere &p2,
-		bool should_silently_drop_dups)
+		const PointOnSphere &p2)
 {
-	GreatCircleArc::ParameterStatus s = GreatCircleArc::test_parameter_status(p1, p2);
+	// We'll assume that the validity of 'p1' and 'p2' to create a GreatCircleArc has been
+	// evaluated in the function 'PolylineOnSphere::evaluate_construction_parameter_validity',
+	// which was presumably invoked in 'PolylineOnSphere::generate_segments_and_swap' before
+	// this function was.
 
-	// Using a switch-statement, along with GCC's "-Wswitch" option
-	// (implicitly enabled by "-Wall"), will help to ensure that no cases
-	// are missed.
-	switch (s) {
-
-	case GreatCircleArc::VALID:
-		// Continue after switch.
-		break;
-
-	case GreatCircleArc::INVALID_IDENTICAL_ENDPOINTS:
-		if (should_silently_drop_dups) {
-			// You heard the man:  We should silently drop
-			// duplicates, instead of throwing an exception.
-			return;
-		} else {
-			// The start-point was the same as the end-point
-			// => no segment.
-			std::ostringstream oss;
-			oss << "Attempted to create a polyline line-segment from "
-					<< "duplicate endpoints "
-					<< p1
-					<< " and "
-					<< p2
-					<< ".";
-			throw InvalidPolylineException(oss.str().c_str());
-			// FIXME: Should be
-			// 'PolylineSegmentConstructionException', a derived
-			// class of 'PolylineConstructionException'.
-		}
-
-	 case GreatCircleArc::INVALID_ANTIPODAL_ENDPOINTS:
-		{
-			// The start-point and the end-point are antipodal
-			// => indeterminate segment
-			std::ostringstream oss;
-
-			oss << "Attempted to create a polyline line-segment from "
-					<< "antipodal endpoints "
-					<< p1
-					<< " and "
-					<< p2
-					<< ".";
-			throw InvalidPolylineException(oss.str().c_str());
-			// FIXME: Should be
-			// 'PolylineSegmentConstructionException', a derived
-			// class of 'PolylineConstructionException'.
-		}
-	}
-
-	// We should only have arrived at this point if
-	// GreatCircleArc::test_parameter_status returned
-	// GreatCircleArc::VALID.
 	GreatCircleArc segment = GreatCircleArc::create(p1, p2);
 	seq.push_back(segment);
 }

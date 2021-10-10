@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,6 +28,8 @@
 #include <iostream>
 #include <iterator>  /* std::distance */
 #include <deque>
+#include <boost/none.hpp>
+
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeEdge.h"
 #include "maths/PointOnSphere.h"
@@ -59,8 +61,9 @@ GPlatesModel::ReconstructionTree::create(
 	//std::cerr << std::endl << "Starting new tree... " << std::endl;
 	// FIXME:  This function is very, very exception-unsafe.
 
-	ReconstructionTree::non_null_ptr_type tree(*(new ReconstructionTree(root_plate_id_,
-			graph.reconstruction_time())));
+	ReconstructionTree::non_null_ptr_type tree(
+			new ReconstructionTree(root_plate_id_, graph.reconstruction_time()),
+			GPlatesUtils::NullIntrusivePointerHandler());
 
 	// We *could* do this recursively, but to minimise the chance that pathological input data
 	// (eg, trees which are actually linear, like lists) could kill the program, let's use a
@@ -157,8 +160,10 @@ GPlatesModel::ReconstructionTree::create(
 			{
 				
 				edge_ref_type parent_edge = 
-					GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeEdge>(
-						*(edge_being_processed->parent_edge()));
+						GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeEdge,
+								GPlatesUtils::NullIntrusivePointerHandler>(
+								edge_being_processed->parent_edge(),
+								GPlatesUtils::NullIntrusivePointerHandler());
 				
 				edge_collection_type::iterator kids;
 				edge_collection_type::iterator kids_begin =
@@ -269,86 +274,6 @@ GPlatesModel::ReconstructionTree::create(
 }
 
 
-const std::pair<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>,
-		GPlatesModel::ReconstructionTree::ReconstructionCircumstance>
-GPlatesModel::ReconstructionTree::reconstruct_point(
-		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
-		integer_plate_id_type plate_id_of_feature) const
-{
-	// If the requested plate ID is the root of the reconstruction tree, return the point (as
-	// if the point were reconstructed using the identity rotation!).  Note that since we're
-	// returning an intrusive-pointer to a _const_ instance, we don't need to clone the point
-	// instance.
-	if (plate_id_of_feature == d_root_plate_id) {
-		return std::make_pair(p, ExactlyOnePlateIdMatchFound);
-	}
-
-	edge_refs_by_plate_id_map_const_range_type range =
-			find_edges_whose_moving_plate_id_match(plate_id_of_feature);
-
-	if (range.first == range.second) {
-		// No matches.  Let's return the original geometry and inform the client code.
-		return std::make_pair(p, NoPlateIdMatchesFound);
-	}
-	if (std::distance(range.first, range.second) > 1) {
-		// More than one match.  Ambiguity!
-		// For now, let's just use the first match anyway.
-		// FIXME:  Should we verify that all alternatives are equivalent?
-		// FIXME:  Should we complain to the user about this?
-		const GPlatesMaths::FiniteRotation &finite_rotation =
-				range.first->second->composed_absolute_rotation();
-
-		return std::make_pair(finite_rotation * p, MultiplePlateIdMatchesFound);
-	} else {
-		// Exactly one match.  Ideal!
-		const GPlatesMaths::FiniteRotation &finite_rotation =
-				range.first->second->composed_absolute_rotation();
-
-		return std::make_pair(finite_rotation * p, ExactlyOnePlateIdMatchFound);
-	}
-}
-
-
-const std::pair<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>,
-		GPlatesModel::ReconstructionTree::ReconstructionCircumstance>
-GPlatesModel::ReconstructionTree::reconstruct_polyline(
-		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
-		integer_plate_id_type plate_id_of_feature) const
-{
-	// If the requested plate ID is the root of the reconstruction tree, return the polyline
-	// (as if the polyline were reconstructed using the identity rotation!).  Note that since
-	// we're returning an intrusive-pointer to a _const_ instance, we don't need to clone the
-	// polyline instance.
-	if (plate_id_of_feature == d_root_plate_id) {
-		return std::make_pair(p, ExactlyOnePlateIdMatchFound);
-	}
-
-	edge_refs_by_plate_id_map_const_range_type range =
-			find_edges_whose_moving_plate_id_match(plate_id_of_feature);
-
-	if (range.first == range.second) {
-		// No matches.  Let's return the original geometry and inform the client code.
-		return std::make_pair(p, NoPlateIdMatchesFound);
-	}
-	if (std::distance(range.first, range.second) > 1) {
-		// More than one match.  Ambiguity!
-		// For now, let's just use the first match anyway.
-		// FIXME:  Should we verify that all alternatives are equivalent?
-		// FIXME:  Should we complain to the user about this?
-		const GPlatesMaths::FiniteRotation &finite_rotation =
-				range.first->second->composed_absolute_rotation();
-
-		return std::make_pair(finite_rotation * p, MultiplePlateIdMatchesFound);
-	} else {
-		// Exactly one match.  Ideal!
-		const GPlatesMaths::FiniteRotation &finite_rotation =
-				range.first->second->composed_absolute_rotation();
-
-		return std::make_pair(finite_rotation * p, ExactlyOnePlateIdMatchFound);
-	}
-}
-
-
 const std::pair<GPlatesMaths::FiniteRotation,
 		GPlatesModel::ReconstructionTree::ReconstructionCircumstance>
 GPlatesModel::ReconstructionTree::get_composed_absolute_rotation(
@@ -360,7 +285,8 @@ GPlatesModel::ReconstructionTree::get_composed_absolute_rotation(
 	// rotation.
 	if (moving_plate_id == d_root_plate_id) {
 		return std::make_pair(
-				FiniteRotation::create(UnitQuaternion3D::create_identity_rotation()),
+				FiniteRotation::create(UnitQuaternion3D::create_identity_rotation(),
+						boost::none),
 				ExactlyOnePlateIdMatchFound);
 	}
 
@@ -370,7 +296,8 @@ GPlatesModel::ReconstructionTree::get_composed_absolute_rotation(
 	if (range.first == range.second) {
 		// No matches.  Let's return the identity rotation and inform the client code.
 		return std::make_pair(
-				FiniteRotation::create(UnitQuaternion3D::create_identity_rotation()),
+				FiniteRotation::create(UnitQuaternion3D::create_identity_rotation(),
+						boost::none),
 				NoPlateIdMatchesFound);
 	}
 	if (std::distance(range.first, range.second) > 1) {

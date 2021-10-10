@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,25 +28,28 @@
 #include <sstream>
 #include "GreatCircleArc.h"
 #include "Vector3D.h"
+#include "FiniteRotation.h"
 #include "IndeterminateResultException.h"
-#include "InvalidOperationException.h"
+#include "IndeterminateArcRotationAxisException.h"
 
 
-GPlatesMaths::GreatCircleArc::ParameterStatus
-GPlatesMaths::GreatCircleArc::test_parameter_status(
- const PointOnSphere &p1,
- const PointOnSphere &p2) {
-
+GPlatesMaths::GreatCircleArc::ConstructionParameterValidity
+GPlatesMaths::GreatCircleArc::evaluate_construction_parameter_validity(
+		const PointOnSphere &p1,
+		const PointOnSphere &p2)
+{
 	const UnitVector3D &u1 = p1.position_vector();
 	const UnitVector3D &u2 = p2.position_vector();
 
 	real_t dp = dot(u1, u2);
 
+#if 0  // Identical endpoints are now valid.
 	if (dp >= 1.0) {
 
 		// parallel => start-point same as end-point => no arc
 		return INVALID_IDENTICAL_ENDPOINTS;
 	}
+#endif
 	if (dp <= -1.0) {
 
 		// antiparallel => start-point and end-point antipodal =>
@@ -58,32 +61,18 @@ GPlatesMaths::GreatCircleArc::test_parameter_status(
 }
 
 
-GPlatesMaths::GreatCircleArc
+const GPlatesMaths::GreatCircleArc
 GPlatesMaths::GreatCircleArc::create(
- const PointOnSphere &p1,
- const PointOnSphere &p2) {
-
-	ParameterStatus ps = test_parameter_status(p1, p2);
+		const PointOnSphere &p1,
+		const PointOnSphere &p2)
+{
+	ConstructionParameterValidity cpv = evaluate_construction_parameter_validity(p1, p2);
 
 	/*
 	 * First, we ensure that these two endpoints do in fact define a single
 	 * unique great-circle arc.
 	 */
-	if (ps == INVALID_IDENTICAL_ENDPOINTS) {
-
-		// start-point same as end-point => no arc
-		std::ostringstream oss;
-
-		oss
-		 << "Attempted to calculate a great-circle arc from "
-		 << "duplicate endpoints "
-		 << p1
-		 << " and "
-		 << p2
-		 << ".";
-		throw IndeterminateResultException(oss.str().c_str());
-	}
-	if (ps == INVALID_ANTIPODAL_ENDPOINTS) {
+	if (cpv == INVALID_ANTIPODAL_ENDPOINTS) {
 
 		// start-point and end-point antipodal => indeterminate arc
 		std::ostringstream oss;
@@ -110,114 +99,63 @@ GPlatesMaths::GreatCircleArc::create(
 	Vector3D v = cross(u1, u2);
 
 	/*
-	 * Since u1 and u2 are unit vectors, the magnitude of v will be
-	 * in the half-open range (0, 1], and will be equal to the sine
-	 * of the smaller of the two angles between u1 and u2.
-	 *
-	 * Note that the magnitude of v cannot be _equal_ to zero,
-	 * since the vectors are neither parallel nor antiparallel.
+	 * Since u1 and u2 are unit vectors which might be parallel (but won't be antiparallel),
+	 * the magnitude of v will be in the range [0, 1], and will be equal to the sine of the
+	 * smaller of the two angles between u1 and u2.
 	 */
-	UnitVector3D rot_axis = v.get_normalisation();
-
-	return GreatCircleArc(p1, p2, rot_axis);
+	if (v.magSqrd() <= 0.0) {
+		// The points are coincident, which means there is no determinate rotation axis.
+		return GreatCircleArc(p1, p2);
+	} else {
+		// The points are non-coincident, which means there is a determinate rotation axis.
+		UnitVector3D rot_axis = v.get_normalisation();
+		return GreatCircleArc(p1, p2, rot_axis);
+	}
 }
 
 
-GPlatesMaths::GreatCircleArc
-GPlatesMaths::GreatCircleArc::create(
- const PointOnSphere &p1,
- const PointOnSphere &p2,
- const UnitVector3D &rot_axis) {
-
-	ParameterStatus ps = test_parameter_status(p1, p2);
-
-	/*
-	 * First, we ensure that these two endpoints do in fact define a single
-	 * unique great-circle arc.
-	 */
-	if (ps == INVALID_IDENTICAL_ENDPOINTS) {
-
-		// start-point same as end-point => no arc
-		std::ostringstream oss;
-		
-		oss
-		 << "Attempted to calculate a great-circle arc from "
-		 << "duplicate endpoints "
-		 << p1
-		 << " and "
-		 << p2
-		 << ".";
-		throw IndeterminateResultException(oss.str().c_str());
+const GPlatesMaths::GreatCircleArc
+GPlatesMaths::GreatCircleArc::create_rotated_arc(
+		const FiniteRotation &rot,
+		const GreatCircleArc &arc)
+{
+	PointOnSphere start = rot * arc.start_point();
+	PointOnSphere end   = rot * arc.end_point();
+	if (arc.is_zero_length()) {
+		// The arc is pointlike, so there is no determinate rotation axis.
+		return GreatCircleArc(start, end);
+	} else {
+		// There is a determinate rotation axis.
+		UnitVector3D rot_axis = rot * arc.rotation_axis();
+		return GreatCircleArc(start, end, rot_axis);
 	}
-	if (ps == INVALID_ANTIPODAL_ENDPOINTS) {
-
-		// start-point and end-point antipodal => indeterminate arc
-		std::ostringstream oss;
-		
-		oss
-		 << "Attempted to calculate a great-circle arc from "
-		 << "antipodal endpoints "
-		 << p1
-		 << " and "
-		 << p2
-		 << ".";
-		throw IndeterminateResultException(oss.str().c_str());
-	}
-
-	/*
-	 * Ensure that 'rot_axis' does, in fact, qualify as a rotation axis
-	 * (ie. that it is collinear with (ie. parallel or antiparallel to)
-	 * the cross product of 'u1' and 'u2').
-	 *
-	 * To do this, we calculate the cross product.
-	 * (We use the Vector3D cross product, which is faster).
-	 */
-	const UnitVector3D &u1 = p1.position_vector();
-	const UnitVector3D &u2 = p2.position_vector();
-
-	Vector3D v = cross(Vector3D(u1), Vector3D(u2));
-	if ( ! collinear(v, Vector3D(rot_axis))) {
-
-		// 'rot_axis' is not the axis which rotates 'u1' into 'u2'
-		std::ostringstream oss;
-		
-		oss
-		 << "Attempted to calculate a great-circle arc from "
-		 << "an invalid triple of vectors ("
-		 << u1
-		 << " and "
-		 << u2
-		 << " around "
-		 << rot_axis
-		 << ").";
-		throw InvalidOperationException(oss.str().c_str());
-	}
-
-	return GreatCircleArc(p1, p2, rot_axis);
 }
 
 
-namespace {
+const GPlatesMaths::UnitVector3D &
+GPlatesMaths::GreatCircleArc::rotation_axis() const
+{
+	if (is_zero_length()) {
+		throw IndeterminateArcRotationAxisException(*this);
+	}
+	return *d_rot_axis;
+}
 
+
+namespace
+{
 	inline
 	GPlatesMaths::UnitVector3D
 	calculate_u_of_closest(
-	 const GPlatesMaths::UnitVector3D &u_test_point,
-	 const GPlatesMaths::UnitVector3D &rotation_axis) {
+			const GPlatesMaths::UnitVector3D &u_test_point,
+			const GPlatesMaths::UnitVector3D &rotation_axis)
+	{
+		// The projection of 'u_test_point' in the direction of 'rotation_axis'.
+		GPlatesMaths::Vector3D proj = dot(u_test_point, rotation_axis) * rotation_axis;
 
-		/*
-		 * The projection of 'u_test_point' in the direction of
-		 * 'rotation_axis'.
-		 */
-		GPlatesMaths::Vector3D proj =
-		 dot(u_test_point, rotation_axis) * rotation_axis;
-
-		/*
-		 * The projection of 'u_test_point' perpendicular to the
-		 * direction of 'rotation_axis'.
-		 */
-		GPlatesMaths::Vector3D perp =
-		 GPlatesMaths::Vector3D(u_test_point) - proj;
+		// The projection of 'u_test_point' perpendicular to the direction of
+		// 'rotation_axis'.
+		GPlatesMaths::Vector3D perp = GPlatesMaths::Vector3D(u_test_point) - proj;
 
 		return perp.get_normalisation();
 	}
@@ -227,121 +165,122 @@ namespace {
 
 bool
 GPlatesMaths::GreatCircleArc::is_close_to(
- const PointOnSphere &test_point,
- const real_t &closeness_inclusion_threshold,
- const real_t &latitude_exclusion_threshold,
- real_t &closeness) const {
-
+		const PointOnSphere &test_point,
+		const real_t &closeness_inclusion_threshold,
+		const real_t &latitude_exclusion_threshold,
+		real_t &closeness) const
+{
 	/*
 	 * The following acronyms will be used:
 	 * - GC = great-circle
 	 * - GCA = great-circle-arc
 	 */
 
-	// First, a few convenient aliases.
-	const UnitVector3D &n = rotation_axis();  // The "normal" to the GC.
-	const UnitVector3D &t = test_point.position_vector();
+	// Firstly, let's check whether this arc has a determinate rotation axis.  If it doesn't,
+	// then its start-point will be coincident with its end-point, which will mean the arc is
+	// point-like, in which case, we can fall back to point comparisons.
+	if ( ! is_zero_length()) {
+		// The arc has a determinate rotation axis.
 
-	real_t closeness_to_poles = abs(dot(t, n));
+		// First, a few convenient aliases.
+		const UnitVector3D &n = rotation_axis();  // The "normal" to the GC.
+		const UnitVector3D &t = test_point.position_vector();
 
-	// This first if-statement should weed out most of the no-hopers.
-	if (closeness_to_poles.isPreciselyGreaterThan(
-	     latitude_exclusion_threshold.dval())) {
+		real_t closeness_to_poles = abs(dot(t, n));
 
-		/*
-		 * 'test_point' lies within latitudes sufficiently far above or
-		 * below the GC that there is no chance it could be "close to"
-		 * this GCA.
-		 */
-		return false;
-
-	} else {
-
-		/*
-		 * 'test_point' is sufficiently far from the poles (and hence,
-		 * close to the GC) that it could be "close to" this GCA.
-		 *
-		 * In particular, because 'test_point' is far from the poles,
-		 * it cannot be coincident with either of the poles, and hence
-		 * there must exist a unique and well-defined "closest point"
-		 * on the GC to 'test_point'.
-		 */
-
-		// A few more convenient aliases.
-		const UnitVector3D &a = start_point().position_vector();
-		const UnitVector3D &b = end_point().position_vector();
-
-		// The unit-vector of the "closest point" on the GC.
-		const UnitVector3D c = calculate_u_of_closest(t, n);
-
-		real_t closeness_a_to_b = dot(a, b);
-		real_t closeness_c_to_a = dot(c, a);
-		real_t closeness_c_to_b = dot(c, b);
-
-		if (closeness_c_to_a.isPreciselyGreaterThan(
-		     closeness_a_to_b.dval()) &&
-		    closeness_c_to_b.isPreciselyGreaterThan(
-		     closeness_a_to_b.dval())) {
+		// This first if-statement should weed out most of the no-hopers.
+		if (closeness_to_poles.isPreciselyGreaterThan(latitude_exclusion_threshold.dval())) {
 
 			/*
-			 * C is closer to A than B is to A, and also closer to
-			 * B than A is to B, so C must lie _between_ A and B,
-			 * which means it lies on the GCA.
-			 *
-			 * Hence, C is the closest point on the GCA to
-			 * 'test_point'.
+			 * 'test_point' lies within latitudes sufficiently far above or
+			 * below the GC that there is no chance it could be "close to"
+			 * this GCA.
 			 */
-			closeness = dot(t, c);
-			return
-			 (closeness.isPreciselyGreaterThan(
-			   closeness_inclusion_threshold.dval()));
+			return false;
 
 		} else {
 
 			/*
-			 * C does not lie between A and B, so either A or B
-			 * will be the closest point on the GCA to
-			 * 'test_point'.
+			 * 'test_point' is sufficiently far from the poles (and hence,
+			 * close to the GC) that it could be "close to" this GCA.
+			 *
+			 * In particular, because 'test_point' is far from the poles,
+			 * it cannot be coincident with either of the poles, and hence
+			 * there must exist a unique and well-defined "closest point"
+			 * on the GC to 'test_point'.
 			 */
-			if (closeness_c_to_a.isPreciselyGreaterThan(
-			     closeness_c_to_b.dval())) {
+
+			// A few more convenient aliases.
+			const UnitVector3D &a = start_point().position_vector();
+			const UnitVector3D &b = end_point().position_vector();
+
+			// The unit-vector of the "closest point" on the GC.
+			const UnitVector3D c = calculate_u_of_closest(t, n);
+
+			real_t closeness_a_to_b = dot(a, b);
+			real_t closeness_c_to_a = dot(c, a);
+			real_t closeness_c_to_b = dot(c, b);
+
+			if (closeness_c_to_a.isPreciselyGreaterThan(closeness_a_to_b.dval()) &&
+			    closeness_c_to_b.isPreciselyGreaterThan(closeness_a_to_b.dval())) {
 
 				/*
-				 * C is closer to A than it is to B, so by
-				 * Pythagoras' Theorem (which still holds
-				 * approximately, since we're dealing with a
-				 * thin, almost-cylindrical, strip of spherical
-				 * surface around the equator) we assert that
-				 * 'test_point' must be closer to A than it is
-				 * to B.
+				 * C is closer to A than B is to A, and also closer to
+				 * B than A is to B, so C must lie _between_ A and B,
+				 * which means it lies on the GCA.
+				 *
+				 * Hence, C is the closest point on the GCA to
+				 * 'test_point'.
 				 */
-				closeness = dot(t, a);
+				closeness = dot(t, c);
+				return (closeness.isPreciselyGreaterThan(closeness_inclusion_threshold.dval()));
 
 			} else {
 
-				closeness = dot(t, b);
-			}
+				/*
+				 * C does not lie between A and B, so either A or B
+				 * will be the closest point on the GCA to
+				 * 'test_point'.
+				 */
+				if (closeness_c_to_a.isPreciselyGreaterThan(closeness_c_to_b.dval())) {
 
-			return
-			 (closeness.isPreciselyGreaterThan(
-			   closeness_inclusion_threshold.dval()));
+					/*
+					 * C is closer to A than it is to B, so by
+					 * Pythagoras' Theorem (which still holds
+					 * approximately, since we're dealing with a
+					 * thin, almost-cylindrical, strip of spherical
+					 * surface around the equator) we assert that
+					 * 'test_point' must be closer to A than it is
+					 * to B.
+					 */
+					closeness = dot(t, a);
+
+				} else {
+
+					closeness = dot(t, b);
+				}
+
+				return (closeness.isPreciselyGreaterThan(closeness_inclusion_threshold.dval()));
+			}
 		}
+	} else {
+		// The arc is point-like.
+		return start_point().is_close_to(test_point, closeness_inclusion_threshold, closeness);
 	}
 }
 
 
 bool
 GPlatesMaths::arcs_are_near_each_other(
- const GreatCircleArc &arc1,
- const GreatCircleArc &arc2) {
-
-	real_t
-	 arc1_start_dot_arc2_start =
-	  dot(arc1.start_point().position_vector(), arc2.start_point().position_vector()),
-	 arc1_start_dot_arc2_end =
-	  dot(arc1.start_point().position_vector(), arc2.end_point().position_vector()),
-	 arc1_end_dot_arc2_start =
-	  dot(arc1.end_point().position_vector(), arc2.start_point().position_vector());
+		const GreatCircleArc &arc1,
+		const GreatCircleArc &arc2)
+{
+	real_t arc1_start_dot_arc2_start =
+			dot(arc1.start_point().position_vector(), arc2.start_point().position_vector());
+	real_t arc1_start_dot_arc2_end =
+			dot(arc1.start_point().position_vector(), arc2.end_point().position_vector());
+	real_t arc1_end_dot_arc2_start =
+			dot(arc1.end_point().position_vector(), arc2.start_point().position_vector());
 
 	/*
 	 * arc1 and arc2 are "near" each other if one of the following is true:
@@ -359,61 +298,67 @@ GPlatesMaths::arcs_are_near_each_other(
 
 
 bool
-GPlatesMaths::arcs_are_directed_equivalent(
- const GreatCircleArc &arc1,
- const GreatCircleArc &arc2) {
+GPlatesMaths::arcs_lie_on_same_great_circle(
+		const GreatCircleArc &arc1,
+		const GreatCircleArc &arc2)
+{
+	if (( ! arc1.is_zero_length()) && ( ! arc2.is_zero_length())) {
+		// Each arc has a determinate rotation axis, so we can check whether their rotation
+		// axes are collinear.
+		return collinear(arc1.rotation_axis(), arc2.rotation_axis());
+	} else if (arc1.is_zero_length() && arc2.is_zero_length()) {
+		// OK, so neither arc has a determinate rotation axis, which means that they are
+		// both of zero length (ie, they are both point-like), which means that they must
+		// trivially lie on the same great circle.  This is not a very interesting result,
+		// but we'll handle it for the sake of completeness.
+		return true;
+	} else if (arc2.is_zero_length()) {
+		// arc2 is point-like, while arc1 is *not* point-like.  Hence, they will lie on the
+		// same great-circle if the unit-vector of the arc2 start-point is perpendicular to
+		// the rotation axis of arc1.
+		return (perpendicular(arc2.start_point().position_vector(), arc1.rotation_axis()));
+	} else {
+		// Else, arc1 is point-like, while arc2 is *not* point-like.  Hence, they will lie
+		// on the same great-circle if the unit-vector of the arc1 start-point is
+		// perpendicular to the rotation axis of arc2.
+		return (perpendicular(arc1.start_point().position_vector(), arc2.rotation_axis()));
+	}
+}
 
-	const PointOnSphere
-	 &arc1_start = arc1.start_point(),
-	 &arc1_end = arc1.end_point(),
-	 &arc2_start = arc2.start_point(),
-	 &arc2_end = arc2.end_point();
+
+bool
+GPlatesMaths::arcs_are_directed_equivalent(
+		const GreatCircleArc &arc1,
+		const GreatCircleArc &arc2)
+{
+	const PointOnSphere &arc1_start = arc1.start_point(),
+			&arc1_end = arc1.end_point(),
+			&arc2_start = arc2.start_point(),
+			&arc2_end = arc2.end_point();
 
 	return (points_are_coincident(arc1_start, arc2_start) &&
-		points_are_coincident(arc1_end, arc2_end));
+			points_are_coincident(arc1_end, arc2_end));
 }
 
 
 bool
 GPlatesMaths::arcs_are_undirected_equivalent(
- const GreatCircleArc &arc1,
- const GreatCircleArc &arc2) {
-
+		const GreatCircleArc &arc1,
+		const GreatCircleArc &arc2)
+{
 	if ( ! arcs_lie_on_same_great_circle(arc1, arc2)) {
 
 		// There is no way the arcs can be equivalent.
 		return false;
 	}
 
-	const PointOnSphere
-	 &arc1_start = arc1.start_point(),
-	 &arc1_end = arc1.end_point(),
-	 &arc2_start = arc2.start_point(),
-	 &arc2_end = arc2.end_point();
+	const PointOnSphere &arc1_start = arc1.start_point(),
+			&arc1_end = arc1.end_point(),
+			&arc2_start = arc2.start_point(),
+			&arc2_end = arc2.end_point();
 
 	return ((points_are_coincident(arc1_start, arc2_start) &&
 		 points_are_coincident(arc1_end, arc2_end)) ||
 		(points_are_coincident(arc1_start, arc2_end) &&
 		 points_are_coincident(arc1_end, arc2_start)));
-}
-
-
-std::pair< GPlatesMaths::PointOnSphere, GPlatesMaths::PointOnSphere >
-GPlatesMaths::calculate_intersections_of_extended_arcs(
- const GreatCircleArc &arc1,
- const GreatCircleArc &arc2) {
-
-	if (arcs_lie_on_same_great_circle(arc1, arc2)) {
-
-		throw
-		 IndeterminateResultException("Attempted to calculate the "
-		  "unique intersection points\n of identical great-circles.");
-	}
-	Vector3D v = cross(arc1.rotation_axis(), arc2.rotation_axis());
-	UnitVector3D normalised_v = v.get_normalisation();
-
-	PointOnSphere inter_point1(normalised_v);
-	PointOnSphere inter_point2( -normalised_v);
-
-	return std::make_pair(inter_point1, inter_point2);
 }

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -163,6 +163,11 @@ namespace GPlatesQtWidgets
 		 * being saved.
 		 */
 		QString d_open_file_path;
+		
+		/**
+		 * Controls whether Save File dialogs include a Compressed GPML option.
+		 */
+		bool d_gzip_available;
 	};
 }
 

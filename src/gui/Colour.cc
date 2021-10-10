@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,35 +28,51 @@
 #include <iostream>
 #include "Colour.h"
 
-using namespace GPlatesGui;
 
-const Colour Colour::BLACK	(0.0, 0.0, 0.0);
-const Colour Colour::WHITE	(1.0, 1.0, 1.0);
-const Colour Colour::RED	(1.0, 0.0, 0.0);
-const Colour Colour::GREEN	(0.0, 0.5, 0.0);
+const GPlatesGui::Colour GPlatesGui::Colour::BLACK	(0.0, 0.0, 0.0);
+const GPlatesGui::Colour GPlatesGui::Colour::WHITE	(1.0, 1.0, 1.0);
+const GPlatesGui::Colour GPlatesGui::Colour::RED	(1.0, 0.0, 0.0);
+const GPlatesGui::Colour GPlatesGui::Colour::GREEN	(0.0, 0.5, 0.0);
 
-const Colour Colour::BLUE	(0.0, 0.0, 1.0);
-const Colour Colour::GREY	(0.5, 0.5, 0.5);
-const Colour Colour::SILVER	(0.75, 0.75, 0.75);
-const Colour Colour::MAROON	(0.5, 0.0, 0.0);
+const GPlatesGui::Colour GPlatesGui::Colour::BLUE	(0.0, 0.0, 1.0);
+const GPlatesGui::Colour GPlatesGui::Colour::GREY	(0.5, 0.5, 0.5);
+const GPlatesGui::Colour GPlatesGui::Colour::SILVER	(0.75, 0.75, 0.75);
+const GPlatesGui::Colour GPlatesGui::Colour::MAROON	(0.5, 0.0, 0.0);
 
-const Colour Colour::PURPLE	(0.5, 0.0, 0.5);
-const Colour Colour::FUSCHIA(1.0, 0.0, 1.0);
-const Colour Colour::LIME	(0.0, 1.0, 0.0);
-const Colour Colour::OLIVE	(0.5, 0.5, 0.0);
+const GPlatesGui::Colour GPlatesGui::Colour::PURPLE	(0.5, 0.0, 0.5);
+const GPlatesGui::Colour GPlatesGui::Colour::FUSCHIA	(1.0, 0.0, 1.0);
+const GPlatesGui::Colour GPlatesGui::Colour::LIME	(0.0, 1.0, 0.0);
+const GPlatesGui::Colour GPlatesGui::Colour::OLIVE	(0.5, 0.5, 0.0);
 
-const Colour Colour::YELLOW	(1.0, 1.0, 0.0);
-const Colour Colour::NAVY	(0.0, 0.0, 0.5);
-const Colour Colour::TEAL	(0.0, 0.5, 0.5);
-const Colour Colour::AQUA	(0.0, 1.0, 1.0);
+const GPlatesGui::Colour GPlatesGui::Colour::YELLOW	(1.0, 1.0, 0.0);
+const GPlatesGui::Colour GPlatesGui::Colour::NAVY	(0.0, 0.0, 0.5);
+const GPlatesGui::Colour GPlatesGui::Colour::TEAL	(0.0, 0.5, 0.5);
+const GPlatesGui::Colour GPlatesGui::Colour::AQUA	(0.0, 1.0, 1.0);
 
-Colour::Colour(const GLfloat& red, 
-			   const GLfloat& green, 
-			   const GLfloat& blue, 
-			   const GLfloat& alpha)
+
+GPlatesGui::Colour::Colour(
+		const GLfloat &red_,
+		const GLfloat &green_,
+		const GLfloat &blue_,
+		const GLfloat &alpha_)
 {
-	_rgba[RED_INDEX]   = red;
-	_rgba[GREEN_INDEX] = green;
-	_rgba[BLUE_INDEX]  = blue;
-	_rgba[ALPHA_INDEX] = alpha;
+	d_rgba[RED_INDEX]   = red_;
+	d_rgba[GREEN_INDEX] = green_;
+	d_rgba[BLUE_INDEX]  = blue_;
+	d_rgba[ALPHA_INDEX] = alpha_;
+}
+
+
+std::ostream &
+GPlatesGui::operator<<(
+		std::ostream &os,
+		const Colour &c)
+{
+	os << "("
+			<< c.red() << ", "
+			<< c.green() << ", "
+			<< c.blue() << ", "
+			<< c.alpha() << ")";
+
+	return os;
 }

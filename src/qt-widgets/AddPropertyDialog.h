@@ -28,12 +28,14 @@
 
 #include <QDialog>
 #include "AddPropertyDialogUi.h"
-#include "gui/FeaturePropertyTableModel.h"
 #include "qt-widgets/EditWidgetGroupBox.h"
 
 
 namespace GPlatesQtWidgets
 {
+	class EditFeaturePropertiesWidget;
+	class ViewportWindow;
+	
 	class AddPropertyDialog: 
 			public QDialog,
 			protected Ui_AddPropertyDialog 
@@ -41,9 +43,16 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
+		/**
+		 * Constructs the Add Property Dialog instance.
+		 * The reference to the EditFeaturePropertiesWidget is necessary for
+		 * this dialog to add new properties; this is done purely to keep
+		 * any model-editing functionality in EditFeaturePropertiesWidget.
+		 */
 		explicit
 		AddPropertyDialog(
-				GPlatesGui::FeaturePropertyTableModel &property_model,
+				GPlatesQtWidgets::EditFeaturePropertiesWidget &edit_widget,
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
 
 		virtual
@@ -85,7 +94,8 @@ namespace GPlatesQtWidgets
 		void
 		set_up_edit_widgets();
 
-		GPlatesGui::FeaturePropertyTableModel *d_property_model_ptr;
+		GPlatesQtWidgets::EditFeaturePropertiesWidget *d_edit_feature_properties_widget_ptr;
+		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 		GPlatesQtWidgets::EditWidgetGroupBox *d_edit_widget_group_box_ptr;
 	};
 }

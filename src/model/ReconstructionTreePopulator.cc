@@ -187,7 +187,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 		// Let's visit the time sample, to collect (what we expect to be) the
 		// FiniteRotation inside it.
 		d_accumulator->d_is_expecting_a_finite_rotation = true;
-		iter->accept_visitor(*this);
+		iter->value()->accept_visitor(*this);
 
 		// Did the visitor successfully collect the FiniteRotation?
 		if ( ! d_accumulator->d_finite_rotation) {
@@ -236,7 +236,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			iter->accept_visitor(*this);
+			iter->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {
@@ -251,7 +251,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			// Now let's visit the _previous_ non-disabled time sample, to collect
 			// (what we expect to be) the FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			prev->accept_visitor(*this);
+			prev->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {
@@ -270,11 +270,18 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			GPlatesMaths::real_t target_time =
 					d_recon_time.value();
 
+			// If either of the finite rotations has an axis hint, use it.
+			boost::optional<GPlatesMaths::UnitVector3D> axis_hint;
+			if (previous_finite_rotation->axis_hint()) {
+				axis_hint = previous_finite_rotation->axis_hint();
+			} else if (current_finite_rotation->axis_hint()) {
+				axis_hint = current_finite_rotation->axis_hint();
+			}
 			d_accumulator->d_finite_rotation =
-					GPlatesMaths::FiniteRotation(
-						GPlatesMaths::interpolate(
-							*previous_finite_rotation, *current_finite_rotation,
-							previous_time, current_time, target_time));
+					GPlatesMaths::interpolate(
+						*previous_finite_rotation, *current_finite_rotation,
+						previous_time, current_time, target_time,
+						axis_hint);
 
 			return;
 		}
@@ -285,7 +292,7 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			iter->accept_visitor(*this);
+			iter->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {
@@ -324,9 +331,3 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_plate_id(
 	}
 }
 
-
-void
-GPlatesModel::ReconstructionTreePopulator::visit_gpml_time_sample(
-		GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) {
-	gpml_time_sample.value()->accept_visitor(*this);
-}

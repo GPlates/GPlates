@@ -33,11 +33,13 @@
 # include <boost/python.hpp>
 #endif
 
+#include <vector>
 #include <string>
 #include <list>
 #include <QtCore/QTimer>
 #include <QCloseEvent>
 #include <QStringList>
+#include <QUndoGroup>
 
 #include "ApplicationState.h"
 #include "ViewportWindowUi.h"
@@ -52,11 +54,15 @@
 #include "ReadErrorAccumulationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
 #include "EulerPoleDialog.h"
+#include "TaskPanel.h"
 
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
+#include "gui/ColourTable.h"
 
 #include "model/ModelInterface.h"
+
+#include "maths/GeometryOnSphere.h"
 
 
 namespace GPlatesGui
@@ -75,13 +81,13 @@ namespace GPlatesQtWidgets
 		
 	public:
 		ViewportWindow();
-
+		
 		GPlatesModel::Reconstruction &
 		reconstruction() const
 		{
 			return *d_reconstruction_ptr;
 		}
-	
+
 		const double &
 		reconstruction_time() const
 		{
@@ -100,14 +106,30 @@ namespace GPlatesQtWidgets
 			return d_reconstruction_view_widget;
 		}
 
+		GlobeCanvas &
+		globe_canvas() const
+		{
+			return *d_canvas_ptr;
+		}
+
 		void
 		create_svg_file();
 
-
-
 	public slots:
+		
 		void
-		reconstruct();
+		status_message(
+				const QString &message,
+				int timeout = 20000) const
+		{
+			statusBar()->showMessage(message, timeout);
+		}
+
+		/**
+		 * Highlights the first row in the "Clicked" feature table.
+		 */
+		void
+		highlight_first_clicked_feature_table_row() const;
 
 		void
 		reconstruct_to_time(
@@ -116,6 +138,14 @@ namespace GPlatesQtWidgets
 		void
 		reconstruct_with_root(
 				unsigned long recon_root);
+
+		void
+		reconstruct_to_time_with_root(
+				double recon_time,
+				unsigned long recon_root);
+
+		void
+		reconstruct();
 
 		void
 		pop_up_license_dialog();
@@ -127,10 +157,41 @@ namespace GPlatesQtWidgets
 		choose_zoom_globe_tool();
 
 		void
-		choose_query_feature_tool();
+		choose_click_geometry_tool();
 
 		void
-		choose_edit_feature_tool();
+		choose_digitise_polyline_tool();
+
+		void
+		choose_digitise_multipoint_tool();
+
+		void
+		choose_digitise_polygon_tool();
+
+		void
+		choose_move_geometry_tool();
+
+		void
+		choose_move_vertex_tool();
+
+		void
+		choose_manipulate_pole_tool();
+
+		void
+		enable_or_disable_feature_actions(
+				GPlatesModel::FeatureHandle::weak_ref focused_feature);
+
+		void		
+		choose_colour_by_plate_id();
+
+		void
+		choose_colour_by_single_colour();
+		
+		void	
+		choose_colour_by_feature_type();
+
+		void
+		choose_colour_by_age();
 
 		void
 		pop_up_read_errors_dialog();
@@ -152,6 +213,10 @@ namespace GPlatesQtWidgets
 
 		void
 		open_time_dependent_global_raster_set();
+		
+		// FIXME: Should be a ViewState operation, or /somewhere/ better than this.
+		void
+		delete_focused_feature();
 
 	signals:
 		
@@ -171,6 +236,12 @@ namespace GPlatesQtWidgets
 		typedef std::list<file_info_iterator> active_files_collection_type;
 		typedef active_files_collection_type::iterator active_files_iterator;
 		
+		/**
+		 * Returns the current colour table in use.
+		 */
+		GPlatesGui::ColourTable *
+		get_colour_table();
+
 		void
 		load_files(
 				const QStringList &file_names);
@@ -238,6 +309,29 @@ namespace GPlatesQtWidgets
 			GPlatesFileIO::FileInfo &file_info);
 
 	private:
+	
+		/**
+		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
+		 * buttons and menu items.
+		 */
+		void
+		connect_menu_actions();
+
+		/**
+		 * Configures the ActionButtonBox inside the Feature tab of the Task Panel
+		 * with some of the QActions that ViewportWindow has on the menu bar.
+		 */
+		void
+		set_up_task_panel_actions();
+
+		/**
+		 * Creates a context menu to allow the user to dock DockWidgets even if
+		 * they are misbehaving and not docking when dragged over the main window.
+		 */
+		void
+		set_up_dock_context_menus();
+
+
 		GPlatesModel::ModelInterface *d_model_ptr;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
 
@@ -246,6 +340,8 @@ namespace GPlatesQtWidgets
 
 		active_files_collection_type d_active_reconstructable_files;
 		active_files_collection_type d_active_reconstruction_files;
+		
+		QUndoGroup d_undo_group;
 
 		//@}
 
@@ -264,8 +360,9 @@ namespace GPlatesQtWidgets
 		bool d_animate_dialog_has_been_shown;
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
-		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does.
+		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
 		EulerPoleDialog d_euler_pole_dialog;
+		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
 
 		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
 
@@ -275,8 +372,15 @@ namespace GPlatesQtWidgets
 		// The last path used for opening raster files.
 		QString d_open_file_path; 
 
+		// The current colour table in use. Do not access this directly, use
+		// get_colour_table() instead.
+		GPlatesGui::ColourTable *d_colour_table_ptr;
+
 		void
 		uncheck_all_tools();
+
+		void 
+		uncheck_all_colouring_tools();
 
 		bool
 		load_global_raster(
@@ -284,6 +388,7 @@ namespace GPlatesQtWidgets
 
 		void
 		update_time_dependent_raster();
+
 
 	private slots:
 		void
@@ -298,10 +403,14 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_about_dialog();
 
-
-
 		void
 		close_all_dialogs();
+		
+		void
+		dock_search_results_at_top();
+		
+		void
+		dock_search_results_at_bottom();
 
 		void
 		enable_raster_display();
@@ -315,7 +424,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		closeEvent(QCloseEvent *close_event);
-
 	};
 }
 

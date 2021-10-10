@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="GPlates"
 	ProjectGUID="{30E6493E-D095-4EF6-B65E-34FB3A7B8B8A}"
 	RootNamespace="GPlates"
@@ -227,11 +227,11 @@
 			Name="canvas-tools"
 			>
 			<File
-				RelativePath="..\src\canvas-tools\EditFeature.cc"
+				RelativePath="..\src\canvas-tools\ClickGeometry.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\EditFeature.h"
+				RelativePath="..\src\canvas-tools\ClickGeometry.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -242,27 +242,28 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\moc_EditFeature.cc"
+				RelativePath="..\src\canvas-tools\DigitiseGeometry.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\moc_QueryFeature.cc"
+				RelativePath="..\src\canvas-tools\ManipulatePole.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\QueryFeature.cc"
+				RelativePath="..\src\canvas-tools\moc_ClickGeometry.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\canvas-tools\QueryFeature.h"
+				RelativePath="..\src\canvas-tools\MoveGeometry.cc"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\MoveVertex.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\canvas-tools\ReorientGlobe.cc"
+				>
 			</File>
 			<File
 				RelativePath="..\src\canvas-tools\ZoomGlobe.cc"
@@ -272,6 +273,10 @@
 		<Filter
 			Name="gui"
 			>
+			<File
+				RelativePath="..\src\gui\AgeColourTable.cc"
+				>
+			</File>
 			<File
 				RelativePath="..\src\gui\CanvasTool.cc"
 				>
@@ -311,6 +316,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\ColourSpectrum.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\CsvExport.cc"
 				>
 			</File>
@@ -319,26 +328,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\FeatureColourTable.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\FeatureFocus.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\gui\FeatureFocus.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\gui\FeaturePropertyTableDelegate.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\gui\FeaturePropertyTableDelegate.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -381,9 +379,28 @@
 			<File
 				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\gui\FeatureWeakRefSequence.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\GeometricPropertyValueConstructor.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\GeometryFocusHighlight.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\GeometryFocusHighlight.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -414,10 +431,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\gui\moc_FeaturePropertyTableDelegate.cc"
-				>
-			</File>
-			<File
 				RelativePath="..\src\gui\moc_FeaturePropertyTableModel.cc"
 				>
 			</File>
@@ -430,7 +443,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gui\moc_GeometryFocusHighlight.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\moc_SimpleGlobeOrientation.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\moc_TemporaryGeometryFocus.cc"
 				>
 			</File>
 			<File
@@ -473,6 +494,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\gui\SingleColourTable.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\gui\SphericalGrid.cc"
 				>
 			</File>
@@ -487,6 +512,21 @@
 			<File
 				RelativePath="..\src\gui\SvgExport.h"
 				>
+			</File>
+			<File
+				RelativePath="..\src\gui\TemporaryGeometryFocus.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\gui\TemporaryGeometryFocus.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\gui\Texture.cc"
@@ -550,6 +590,21 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ActionButtonBox.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ActionButtonBox.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\AddPropertyDialog.cc"
 				>
 			</File>
@@ -589,6 +644,67 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\ApplicationState.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ApplyReconstructionPoleAdjustmentDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ApplyReconstructionPoleAdjustmentDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ApplyReconstructionPoleAdjustmentDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\CreateFeatureDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\CreateFeatureDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\CreateFeatureDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\DigitisationWidgetUndoCommands.h"
 				>
 			</File>
 			<File
@@ -668,25 +784,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidget.cc"
-				>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidget.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="Build MOC Files"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\src\qt-widgets\EditFeatureGeometriesWidgetUi.ui"
-				>
-			</File>
-			<File
 				RelativePath="..\src\qt-widgets\EditFeaturePropertiesWidget.cc"
 				>
 			</File>
@@ -703,6 +800,44 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\EditFeaturePropertiesWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryActionWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryActionWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryActionWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditGeometryWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -779,6 +914,10 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\EditPolarityChronIdWidgetUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\EditShapefileAttributesWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -881,6 +1020,25 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\ExportCoordinatesDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ExportCoordinatesDialog.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ExportCoordinatesDialogUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\FeaturePropertiesDialog.cc"
 				>
 			</File>
@@ -897,6 +1055,25 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\FeaturePropertiesDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\FeatureSummaryWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -995,11 +1172,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_ActionButtonBox.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_AddPropertyDialog.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_AnimateDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ApplyReconstructionPoleAdjustmentDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_CreateFeatureDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_DigitisationWidget.cc"
 				>
 			</File>
 			<File
@@ -1019,11 +1212,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_EditFeatureGeometriesWidget.cc"
+				RelativePath="..\src\qt-widgets\moc_EditFeaturePropertiesWidget.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\qt-widgets\moc_EditFeaturePropertiesWidget.cc"
+				RelativePath="..\src\qt-widgets\moc_EditGeometryActionWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_EditGeometryWidget.cc"
 				>
 			</File>
 			<File
@@ -1063,7 +1260,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_ExportCoordinatesDialog.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_FeaturePropertiesDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_FeatureSummaryWidget.cc"
 				>
 			</File>
 			<File
@@ -1095,6 +1300,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\moc_ReconstructionPoleWidget.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\moc_ReconstructionViewWidget.cc"
 				>
 			</File>
@@ -1116,6 +1325,14 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\moc_SpecifyFixedPlateDialog.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_TaskPanel.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\moc_ViewFeatureGeometriesWidget.cc"
 				>
 			</File>
 			<File
@@ -1158,6 +1375,25 @@
 			</File>
 			<File
 				RelativePath="..\src\qt-widgets\ReadErrorAccumulationDialogUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionPoleWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionPoleWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ReconstructionPoleWidgetUi.ui"
 				>
 			</File>
 			<File
@@ -1283,6 +1519,44 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\qt-widgets\TaskPanel.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\TaskPanel.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\TaskPanelUi.ui"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidget.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidget.h"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="Build MOC Files"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\qt-widgets\ViewFeatureGeometriesWidgetUi.ui"
+				>
+			</File>
+			<File
 				RelativePath="..\src\qt-widgets\ViewportWindow.cc"
 				>
 			</File>
@@ -1310,11 +1584,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\model\ConstFeatureVisitor.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\model\DummyTransactionHandle.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\model\FeatureCollectionRevision.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\model\FeatureId.h"
 				>
 			</File>
 			<File
@@ -1326,7 +1608,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\model\FeatureType.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\model\FeatureVisitor.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\model\FeatureVisitor.h"
 				>
 			</File>
 			<File
@@ -1335,6 +1625,18 @@
 			</File>
 			<File
 				RelativePath="..\src\model\ModelUtils.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\model\PropertyName.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\model\PropertyValue.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\model\ReconstructedFeatureGeometry.cc"
 				>
 			</File>
 			<File
@@ -1366,6 +1668,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\model\TemporaryGeometry.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\src\model\XmlNode.cc"
 				>
 			</File>
@@ -1379,6 +1685,14 @@
 			</File>
 			<File
 				RelativePath="..\src\utils\FloatingPointComparisons.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\utils\GeometryCreationUtils.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\utils\NullIntrusivePointerHandler.cc"
 				>
 			</File>
 			<File
@@ -1426,6 +1740,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\maths\MultiPointOnSphere.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\maths\MultiPointOnSphere.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\maths\PointLiesOnGreatCircleArc.cc"
 				>
 			</File>
@@ -1434,7 +1756,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\maths\PointOnSphere.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\maths\PolygonOnSphere.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\maths\PolygonOnSphere.h"
 				>
 			</File>
 			<File
@@ -1443,6 +1773,22 @@
 			</File>
 			<File
 				RelativePath="..\src\maths\PolylineOnSphere.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\maths\PolylineOnSphere.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\maths\ProximityCriteria.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\maths\ProximityHitDetail.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\maths\ProximityHitDetailVisitor.cc"
 				>
 			</File>
 			<File
@@ -1471,14 +1817,6 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="state"
-			>
-			<File
-				RelativePath="..\src\state\Layout.cc"
-				>
-			</File>
-		</Filter>
-		<Filter
 			Name="global"
 			>
 			<File
@@ -1486,7 +1824,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\global\Exception.cc"
+				RelativePath="..\src\global\GPlatesException.cc"
 				>
 			</File>
 			<File
@@ -1497,6 +1835,14 @@
 		<Filter
 			Name="file-io"
 			>
+			<File
+				RelativePath="..\src\file-io\ErrorOpeningFileForWritingException.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\ExternalProgram.cc"
+				>
+			</File>
 			<File
 				RelativePath="..\src\file-io\FeaturePropertiesMap.cc"
 				>
@@ -1518,11 +1864,23 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\file-io\GpmlOnePointSixOutputVisitor.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\GpmlOnePointSixReader.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\file-io\GpmlReaderUtils.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\GpmlReaderUtils.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\PlatesLineFormatGeometryExporter.cc"
 				>
 			</File>
 			<File
@@ -1542,7 +1900,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\file-io\PlatesRotationFormatWriter.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\PropertyCreationUtils.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\PropertyCreationUtils.h"
 				>
 			</File>
 			<File
@@ -1562,7 +1928,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\file-io\ReadErrors.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file-io\ShapeFileReader.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file-io\ShapeFileReader.h"
 				>
 			</File>
 			<File
@@ -1589,6 +1963,10 @@
 				RelativePath="..\src\file-io\XmlWriter.cc"
 				>
 			</File>
+			<File
+				RelativePath="..\src\file-io\XmlWriter.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="property-values"
@@ -1602,11 +1980,31 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\property-values\GmlMultiPoint.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GmlMultiPoint.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\property-values\GmlPoint.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\property-values\GpmlFiniteRotation.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GpmlIrregularSampling.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GpmlKeyValueDictionary.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\GpmlKeyValueDictionaryElement.h"
 				>
 			</File>
 			<File
@@ -1617,20 +2015,28 @@
 				RelativePath="..\src\property-values\InMemoryRaster.h"
 				>
 			</File>
+			<File
+				RelativePath="..\src\property-values\TemplateTypeParameterType.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\property-values\XsString.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="feature-visitors"
 			>
-			<File
-				RelativePath="..\src\feature-visitors\EditFeatureGeometriesWidgetPopulator.cc"
-				>
-			</File>
 			<File
 				RelativePath="..\src\feature-visitors\FromQvariantConverter.cc"
 				>
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\GeometryFinder.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\GeometrySetter.cc"
 				>
 			</File>
 			<File
@@ -1642,11 +2048,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\feature-visitors\PropertyValueSetter.cc"
+				RelativePath="..\src\feature-visitors\QueryFeaturePropertiesWidgetPopulator.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\src\feature-visitors\QueryFeaturePropertiesWidgetPopulator.cc"
+				RelativePath="..\src\feature-visitors\QueryFeaturePropertiesWidgetPopulator.h"
 				>
 			</File>
 			<File
@@ -1659,6 +2065,30 @@
 			</File>
 			<File
 				RelativePath="..\src\feature-visitors\ToQvariantConverter.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\TotalReconstructionSequencePlateIdFinder.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceRotationInserter.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceRotationInterpolater.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\TotalReconstructionSequenceTimePeriodFinder.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\ViewFeatureGeometriesWidgetPopulator.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\feature-visitors\ViewFeatureGeometriesWidgetPopulator.h"
 				>
 			</File>
 			<File

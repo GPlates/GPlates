@@ -157,7 +157,8 @@ GPlatesModel::ReconstructionGraph::insert_total_reconstruction_pole(
 }
 
 
-GPlatesUtils::non_null_intrusive_ptr<GPlatesModel::ReconstructionTree>
+GPlatesUtils::non_null_intrusive_ptr<GPlatesModel::ReconstructionTree,
+		GPlatesUtils::NullIntrusivePointerHandler>
 GPlatesModel::ReconstructionGraph::build_tree(
 		integer_plate_id_type root_plate_id)
 {

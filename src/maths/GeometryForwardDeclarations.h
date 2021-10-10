@@ -33,9 +33,18 @@
 
 namespace GPlatesMaths
 {
+	class MultiPointOnSphere;
 	class PointOnSphere;
 	class PolylineOnSphere;
 	class PolygonOnSphere;
+
+	void
+	intrusive_ptr_add_ref(
+			const MultiPointOnSphere *p);
+
+	void
+	intrusive_ptr_release(
+			const MultiPointOnSphere *p);
 
 	void
 	intrusive_ptr_add_ref(

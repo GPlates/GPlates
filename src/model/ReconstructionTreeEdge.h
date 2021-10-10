@@ -34,6 +34,7 @@
 #include "types.h"
 #include "maths/FiniteRotation.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesModel
@@ -51,9 +52,11 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeEdge>.
+		 * GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeEdge,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeEdge> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeEdge,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * The type used to store the reference-count of an instance of this class.
@@ -93,8 +96,9 @@ namespace GPlatesModel
 				PoleTypes::PoleType pole_type_)
 		{
 			non_null_ptr_type ptr(
-					*(new ReconstructionTreeEdge(fixed_plate_, moving_plate_,
-							relative_rotation_, pole_type_)));
+					new ReconstructionTreeEdge(fixed_plate_, moving_plate_,
+							relative_rotation_, pole_type_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
@@ -106,7 +110,9 @@ namespace GPlatesModel
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(*(new ReconstructionTreeEdge(*this)));
+			non_null_ptr_type dup(
+					new ReconstructionTreeEdge(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

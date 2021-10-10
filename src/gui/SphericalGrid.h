@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,77 +25,92 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _GPLATES_GUI_SPHERICALGRID_H_
-#define _GPLATES_GUI_SPHERICALGRID_H_
+#ifndef GPLATES_GUI_SPHERICALGRID_H
+#define GPLATES_GUI_SPHERICALGRID_H
 
-#include "Colour.h"
 #include "NurbsRenderer.h"
+
 
 namespace GPlatesGui
 {
+	class Colour;
+
+
 	class SphericalGrid
 	{
-		public:
-			SphericalGrid(unsigned num_circles_lat,
-			              unsigned num_circles_lon,
-			              const Colour &colour);
+	public:
+		SphericalGrid(
+				unsigned num_circles_lat,
+				unsigned num_circles_lon);
 
-			~SphericalGrid() {  }
+		~SphericalGrid()
+		{  }
 
-		private:
-			/*
-			 * These two member functions intentionally declared
-			 * private to avoid object copying/assignment.
-			 * [Since the data member '_nurbs' itself cannot be
-			 * copied or assigned.]
-			 */
-			SphericalGrid(const SphericalGrid &other);
+		void
+		paint(
+				const Colour &colour);
 
-			SphericalGrid &operator=(const SphericalGrid &other);
+		/**
+		 * Paint the circumference for vector output.
+		 */
+		void
+		paint_circumference(
+				const Colour &colour);
 
-		public:
-			void Paint();
+	private:
+		NurbsRenderer d_nurbs;
 
-			void Paint(GPlatesGui::Colour colour);
+		unsigned d_num_circles_lat;
+		unsigned d_num_circles_lon;
 
-			/*
-			 *  paint the circumference for vector output.
-			 */
-			void
-			paint_circumference(GPlatesGui::Colour colour);
+		/**
+		 * The delta (in radians) between adjacent circles of latitude.
+		 */
+		double d_lat_delta;
 
-		private:
-			void drawLineOfLat(double lat);  // in radians
-			void drawLineOfLon(double lon);
+		/**
+		 * The delta (in radians) between adjacent circles of latitude.
+		 */
+		double d_lon_delta;
 
-			NurbsRenderer _nurbs;
+		/**
+		 * The value of pi.
+		 *
+		 * FIXME:  Pi is often defined in the C Standard Library -- but is it @em always
+		 * defined on @em every platform? and to the @em same precision?
+		 */
+		static const double s_pi;
 
-			unsigned _num_circles_lat;
-			unsigned _num_circles_lon;
+		/**
+		 * Draw a line of latitude for latitude @a lat.
+		 * The angle is in radians.
+		 */
+		void draw_line_of_lat(
+				const double &lat);
 
-			Colour _colour;
+		/**
+		 * Draw a line of longitude for longitude @a lon.
+		 * The angle is in radians.
+		 */
+		void draw_line_of_lon(
+				const double &lon);
 
-			double _lat_delta;  // in radians
-			double _lon_delta;
+		/*
+		 * These two member functions are intentionally declared
+		 * private to avoid object copying/assignment.
+		 *
+		 * (Since the data member 'd_nurbs' itself cannot be
+		 * copied or assigned.)
+		 */
 
-			/**
-			 * FIXME: Pi is often defined in the C Standard Library
-			 * -- but is it <em>always</em> defined on
-			 * <em>every</em> platform? and to the <em>same
-			 * precision</em>?
-			 */
-			static const double pi;
+		SphericalGrid(
+				const SphericalGrid &other);
 
-#if 0  // FIXME: implement display lists
-			/**
-			 * Magic number to refer to the grid's display list.
-			 * XXX: we need to implement a mechanism by which
-			 * we can guarantee that this number is unique among
-			 * all the display lists.
-			 */ 
-			static const int GRID = 42;
-#endif
+		SphericalGrid &
+		operator=(
+				const SphericalGrid &other);
+
 	};
 }
 
-#endif /* _GPLATES_GUI_SPHERICALGRID_H_ */
+#endif  // GPLATES_GUI_SPHERICALGRID_H

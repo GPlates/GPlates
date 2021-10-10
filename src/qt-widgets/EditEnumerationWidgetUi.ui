@@ -5,14 +5,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>414</width>
+    <width>408</width>
     <height>33</height>
    </rect>
   </property>
   <property name="windowTitle" >
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" >
+  <layout class="QHBoxLayout" >
    <property name="leftMargin" >
     <number>2</number>
    </property>
@@ -26,7 +26,24 @@
     <number>2</number>
    </property>
    <item>
-    <widget class="QComboBox" name="combobox_enumeration" />
+    <widget class="QLabel" name="label_value" >
+     <property name="text" >
+      <string>&amp;Value:</string>
+     </property>
+     <property name="buddy" >
+      <cstring>combobox_enumeration</cstring>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QComboBox" name="combobox_enumeration" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

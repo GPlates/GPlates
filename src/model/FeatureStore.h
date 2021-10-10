@@ -48,15 +48,19 @@ namespace GPlatesModel
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<FeatureStore>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<FeatureStore,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureStore> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureStore,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureStore>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureStore,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureStore>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureStore,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**
@@ -71,7 +75,8 @@ namespace GPlatesModel
 		const non_null_ptr_type
 		create()
 		{
-			non_null_ptr_type ptr(*(new FeatureStore()));
+			non_null_ptr_type ptr(new FeatureStore(),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 

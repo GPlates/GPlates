@@ -28,11 +28,23 @@
 #ifndef GPLATES_FILEIO_GPMLONEPOINTSIXOUTPUTVISITOR_H
 #define GPLATES_FILEIO_GPMLONEPOINTSIXOUTPUTVISITOR_H
 
+#include <QFile>
+#include <QProcess>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "XmlWriter.h"
+#include "FileInfo.h"
+#include "ExternalProgram.h"
 
+
+namespace GPlatesPropertyValues
+{
+	class GpmlKeyValueDictionaryElement;
+	class GpmlTimeSample;
+	class GpmlTimeWindow;
+}
 
 namespace GPlatesFileIO
 {
@@ -41,12 +53,41 @@ namespace GPlatesFileIO
 	{
 	public:
 
+		/**
+		 * Creates a GPML writer for the given file.
+		 *
+		 * The GpmlOnePointSixOutputVisitor will take care of opening the file for writing,
+		 * and is responsible for cleaning up afterwards.
+		 *
+		 * This constructor can throw a ErrorOpeningFileForWritingException.
+		 */
+		explicit
+		GpmlOnePointSixOutputVisitor(
+				const FileInfo &file_info,
+				bool use_gzip);
+
+		/**
+		 * Creates a GPML writer for the given QIODevice.
+		 *
+		 * The GpmlOnePointSixOutputVisitor will write to the QIODevice, but it is the
+		 * caller's responsibility for performing any necessary maintainance on the device,
+		 * e.g. closing files, sockets, terminating subprocesses.
+		 */
 		explicit
 		GpmlOnePointSixOutputVisitor(
 				QIODevice *target);
 
 		virtual
 		~GpmlOnePointSixOutputVisitor();
+
+
+		/**
+		 * Start writing the document (via the XML writer) to the output file or device.
+		 */
+		static
+		void
+		start_writing_document(
+				XmlWriter &writer);
 
 
 		virtual
@@ -68,6 +109,11 @@ namespace GPlatesFileIO
 		void
 		visit_gml_line_string(
 				const GPlatesPropertyValues::GmlLineString &gml_line_string);
+
+		virtual
+		void
+		visit_gml_multi_point(
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
 
 		virtual
 		void
@@ -131,6 +177,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_key_value_dictionary(
+				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
+
+		virtual
+		void
 		visit_gpml_measure(
 				const GPlatesPropertyValues::GpmlMeasure &gpml_measure);
 
@@ -164,14 +215,12 @@ namespace GPlatesFileIO
 		visit_gpml_revision_id(
 				const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id);
 
-		virtual
 		void
-		visit_gpml_time_sample(
+		write_gpml_time_sample(
 				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
 
-		virtual
 		void
-		visit_gpml_time_window(
+		write_gpml_time_window(
 				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window);
 
 		virtual
@@ -199,17 +248,88 @@ namespace GPlatesFileIO
 		visit_xs_string(
 				const GPlatesPropertyValues::XsString &xs_string);
 
+		static const ExternalProgram s_gzip_program;
+
 	private:
+		 
+		void
+		write_gpml_key_value_dictionary_element(
+				const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element);
+
+		/**
+		 * Keeps track of the file currently being written to.
+		 *
+		 * This shared_ptr will only have been initialised with a QFile *
+		 * if the GpmlOnePointSixOutputVisitor(const FileInfo &) constructor
+		 * was used. In this case, this class is responsible for opening
+		 * the file and closing it afterwards - this gets a little messy
+		 * as raw QIODevice pointers are preferred by the QXmlStreamWriter
+		 * that this class encapsulates.
+		 * 
+		 * To address this problem without risking a memory leak or a
+		 * double-free, this class is responsible for cleaning up any
+		 * QFile objects it may have opened. boost::shared_ptr takes
+		 * care of this nicely, and QFile will automatically close itself
+		 * when it is destroyed. The sequence of events looks like this:
+		 *
+		 * ViewportWindow::save_file()
+		 *  - Requests FileInfo::get_writer()
+		 *     - Creates GpmlOnePointSixOutputVisitor shared ptr,
+		 *        - Creates QFile * stored as this d_qfile member,
+		 *        - passes that to XmlWriter constructor
+		 *           - which passes that to QXmlStreamWriter()
+		 *     - Returns GpmlOnePointSixOutputVisitor shared ptr,
+		 *  - iterates over feature collection using visitor,
+		 *  - end of function, GpmlOnePointSixOutputVisitor goes out of scope.
+		 *     - QFile shared ptr goes out of scope.
+		 *       - file gets closed.
+		 *
+		 * If the alternative GpmlOnePointSixOutputVisitor(QIODevice *)
+		 * constructor has been used, this is safe as the QFile shared ptr
+		 * will be empty.
+		 */
+		boost::shared_ptr<QFile> d_qfile_ptr;
+		
+		/**
+		 * Keeps track of the process currently being written to.
+		 *
+		 * This shared_ptr will only have been initialised with a QProcess *
+		 * if the GpmlOnePointSixOutputVisitor(const FileInfo &) constructor
+		 * was used. In this case, this class is responsible for starting
+		 * the process and closing it afterwards, just like the QFile
+		 * shared_ptr above.
+		 *
+		 * boost::shared_ptr takes care of cleaning up the QProcess * when
+		 * this parser is destroyed, and QProcess' destructor handles closing
+		 * input/output streams and stopping processes.
+		 *
+		 * If the alternative GpmlOnePointSixOutputVisitor(QIODevice *)
+		 * constructor has been used, this is safe as the QFile shared ptr
+		 * will be empty.
+		 */
+		boost::shared_ptr<QProcess> d_qprocess_ptr;
+		
 
 		/**
 		 * The destination of the the XML data.
 		 */
 		XmlWriter d_output;
-
+		
 		/**
 		 * Keeps track of the last property that was read.
 		 */
 		boost::optional<GPlatesModel::PropertyName> d_last_property_seen;
+
+		/**
+		 * Whether or not we need to perform a gzip after producing uncompressed gpml output.
+		 * This should be true when compressed output is requested on a Windows system. 
+		 */
+		bool d_gzip_afterwards;
+
+		/**
+		 * The requested output filename. 
+		 */
+		QString d_output_filename;
 	};
 }
 

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2005, 2006, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,10 +26,12 @@
  */
 
 #include <vector>
-#include <iterator>  /* distance */
-#include <algorithm>  /* find */
+#include <iterator>  /* std::distance */
+#include <algorithm>  /* std::find */
 #include "PolylineIntersections.h"
 #include "global/NotYetImplementedException.h"
+#include "UnableToIntersectEquivalentGreatCirclesException.h"
+#include "UnableToExtendPointlikeArcException.h"
 
 
 namespace {
@@ -1237,6 +1239,42 @@ namespace {
 
 
 	/**
+	 * Calculate the two unique (antipodal) points at which these two great-circle arcs would
+	 * intersect if they were "extended" to whole great-circles.
+	 *
+	 * It is assumed that these arcs lie on distinct great-circles; if they do indeed lie on
+	 * equivalent great-circles, an UnableToIntersectEquivalentGreatCirclesException will be
+	 * thrown.
+	 *
+	 * It is also assumed that neither of the arcs are pointlike; if either arc @em is
+	 * pointlike, an UnableToExtendPointlikeArcException will be thrown.
+	 */
+	const std::pair<PointOnSphere, PointOnSphere>
+	calculate_intersections_of_extended_arcs(
+			const GreatCircleArc &arc1,
+			const GreatCircleArc &arc2)
+	{
+		if (arcs_lie_on_same_great_circle(arc1, arc2)) {
+			throw GPlatesMaths::UnableToIntersectEquivalentGreatCirclesException(arc1, arc2);
+		}
+		if (arc1.is_zero_length()) {
+			throw GPlatesMaths::UnableToExtendPointlikeArcException(arc1);
+		}
+		if (arc2.is_zero_length()) {
+			throw GPlatesMaths::UnableToExtendPointlikeArcException(arc2);
+		}
+
+		GPlatesMaths::Vector3D v = cross(arc1.rotation_axis(), arc2.rotation_axis());
+		GPlatesMaths::UnitVector3D normalised_v = v.get_normalisation();
+
+		PointOnSphere inter_point1(normalised_v);
+		PointOnSphere inter_point2( -normalised_v);
+
+		return std::make_pair(inter_point1, inter_point2);
+	}
+
+
+	/**
 	 * Handle the possible intersection of the arc pointed-at by @a iter1
 	 * (an iterator pointing to a non-"end" location in @a arcs1) and the
 	 * arc pointed-at by @a iter2 (an iterator pointing to a non-"end"
@@ -1499,7 +1537,7 @@ namespace {
 	 */
 	void
 	generate_polylines_from_arc_seqs(
-	 std::list< PolylineOnSphere::non_null_ptr_type > &partitioned_polys,
+	 std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polys,
 	 std::vector< ArcList::iterator > &begins,
 	 std::vector< ArcList::iterator > &ends) {
 
@@ -1552,7 +1590,7 @@ namespace {
 	 ArcList &arcs2,
 	 IntersectionNodeList &inter_nodes,
 	 std::list< ArcList::iterator > &overlap_arcs_in_2,
-	 std::list< PolylineOnSphere::non_null_ptr_type > &partitioned_polys) {
+	 std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polys) {
 
 		/*
 		 * We need two vectors here, because 'ends[i]' won't always
@@ -1608,13 +1646,21 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
  const PolylineOnSphere &polyline1,
  const PolylineOnSphere &polyline2,
  std::list< PointOnSphere > &intersection_points,
- std::list< PolylineOnSphere::non_null_ptr_type > &partitioned_polylines) {
+ std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polylines) {
 
 	std::list< IntersectionNode > inter_nodes;
 
 	std::list< GreatCircleArc >
 	 polyline1_arcs(polyline1.begin(), polyline1.end()),
 	 polyline2_arcs(polyline2.begin(), polyline2.end());
+
+	/*
+	 * Firstly, let's filter out any zero-length arcs in each list, since
+	 * these contribute nothing useful, and with them out of the way, we
+	 * can assume that all arcs have determinate rotation axes.
+	 */
+	polyline1_arcs.remove_if(ArcHasIndeterminateRotationAxis());
+	polyline2_arcs.remove_if(ArcHasIndeterminateRotationAxis());
 
 	/*
 	 * An overlap is caused when a non-trivial linear extent of an arc in
@@ -1708,7 +1754,7 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
 	if (num_intersections_found != 0) {
 
 		std::list< PointOnSphere > tmp_intersection_points;
-		std::list< PolylineOnSphere::non_null_ptr_type > tmp_partitioned_polylines;
+		std::list< PolylineOnSphere::non_null_ptr_to_const_type > tmp_partitioned_polylines;
 
 		generate_partitioned_polylines(polyline1_arcs, polyline2_arcs,
 		 inter_nodes, overlap_arcs_in_2, tmp_partitioned_polylines);
@@ -1735,7 +1781,7 @@ GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
 
 bool
 GPlatesMaths::PolylineIntersections::polyline_set_is_self_intersecting(
- const std::list< PolylineOnSphere::non_null_ptr_type > &polyline_set,
+ const std::list< PolylineOnSphere::non_null_ptr_to_const_type > &polyline_set,
  std::list< PointOnSphere > &intersection_points,
  std::list< GreatCircleArc > &overlap_segments) {
 

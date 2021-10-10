@@ -43,21 +43,26 @@ namespace GPlatesPropertyValues
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlPolygon>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlPolygon,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPolygon> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPolygon,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**
 		 * A convenience typedef for the ring representation used internally.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				ring_type;
 		
 		/**
@@ -74,29 +79,20 @@ namespace GPlatesPropertyValues
 		 * Create a GmlPolygon instance which contains an exterior ring only (no interior
 		 * rings).
 		 *
-		 * This function will clone @a exterior_ring.
+		 * This function will store a copy of @a exterior_ring (which is a pointer).
 		 */
 		static
 		const non_null_ptr_type
 		create(
 				const ring_type &exterior_ring)
 		{
-			// Because PolygonOnSphere is mutable (it possesses non-const member
-			// functions -- specifically, 'operator=' and 'swap'), we need to take our
-			// own copy of the PolygonOnSphere instance:  Even though *this function*
-			// was passed a pointer-to-const-PolygonOnSphere, there is no guarantee
-			// that the calling code doesn't possess a
-			// pointer-to-non-const-PolygonOnSphere, which would enable it to modify
-			// the referenced polygon "behind our back".
-			//
-			// Hence, we take our own copy of the PolygonOnSphere instance, and
-			// reference it using a pointer-to-const-PolygonOnSphere (which means that
-			// *we* can never modify this copy, nor can any other GmlPolygon instances
-			// which subsequently reference our PolygonOnSphere), which will make it
-			// safe for us to share our PolygonOnSphere instance between any number of
-			// GmlPolygon instances.
+			// Because PolygonOnSphere can only ever be handled via a
+			// non_null_ptr_to_const_type, there is no way a PolylineOnSphere instance
+			// can be changed.  Hence, it is safe to store a pointer to the instance
+			// which was passed into this 'create' function.
 			GmlPolygon::non_null_ptr_type polygon_ptr(
-					*(new GmlPolygon(exterior_ring->clone_on_heap())));
+					new GmlPolygon(exterior_ring),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return polygon_ptr;
 		}
 
@@ -113,8 +109,8 @@ namespace GPlatesPropertyValues
 		 * instance of ring_type.
 		 *  -# size, which returns the number of elements in the container.
 		 *
-		 * This function will clone @a exterior_ring and each ring in
-		 * @a interior_ring_collection.
+		 * This function will store a copy of @a exterior_ring (which is a pointer) and
+		 * each ring in @a interior_ring_collection (which are pointers).
 		 */
 		template<typename C>
 		static
@@ -123,32 +119,13 @@ namespace GPlatesPropertyValues
 				const ring_type &exterior_ring,
 				const C &interior_ring_collection)
 		{
-			// Because PolygonOnSphere is mutable (it possesses non-const member
-			// functions -- specifically, 'operator=' and 'swap'), we need to take our
-			// own copy of the PolygonOnSphere instance:  Even though *this function*
-			// was passed a pointer-to-const-PolygonOnSphere, there is no guarantee
-			// that the calling code doesn't possess a
-			// pointer-to-non-const-PolygonOnSphere, which would enable it to modify
-			// the referenced polygon "behind our back".
-			//
-			// Hence, we take our own copy of the PolygonOnSphere instance, and
-			// reference it using a pointer-to-const-PolygonOnSphere (which means that
-			// *we* can never modify this copy, nor can any other GmlPolygon instances
-			// which subsequently reference our PolygonOnSphere), which will make it
-			// safe for us to share our PolygonOnSphere instance between any number of
-			// GmlPolygon instances.
-
-			// We need to clone the interior ring collection in a loop.
-			ring_sequence_type cloned_interior_rings;
-			cloned_interior_rings.reserve(interior_ring_collection.size());
-			typename C::const_iterator it = interior_ring_collection.begin();
-			typename C::const_iterator end = interior_ring_collection.end();
-			for ( ; it != end; ++it) {
-				cloned_interior_rings.push_back((*it)->clone_on_heap());
-			}
-			
+			// Because PolygonOnSphere can only ever be handled via a
+			// non_null_ptr_to_const_type, there is no way a PolylineOnSphere instance
+			// can be changed.  Hence, it is safe to store a pointer to the instance
+			// which was passed into this 'create' function.
 			GmlPolygon::non_null_ptr_type polygon_ptr(
-					*(new GmlPolygon(exterior_ring->clone_on_heap(), cloned_interior_rings)));
+					new GmlPolygon(exterior_ring, interior_ring_collection),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return polygon_ptr;
 		}
 
@@ -159,7 +136,9 @@ namespace GPlatesPropertyValues
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GmlPolygon(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new GmlPolygon(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
@@ -181,6 +160,10 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the exterior polygon within this instance to @a r.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_exterior(
@@ -211,12 +194,30 @@ namespace GPlatesPropertyValues
 		
 		/**
 		 * Add an interior polygon @a r to the list of interiors of this instance.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		add_interior(
 				const ring_type &r)
 		{
 			d_interiors.push_back(r);
+		}
+		
+		
+		/**
+		 * Removes all interior rings from this GmlPolygon.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		clear_interiors()
+		{
+			d_interiors.clear();
 		}
 		
 
@@ -266,19 +267,14 @@ namespace GPlatesPropertyValues
 		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
-		 *
-		 * Note! the interior_rings vector will be taken by this constructor, gutted,
-		 * and you will end up with an empty one!
 		 */
 		GmlPolygon(
 				const ring_type &exterior_ring,
-				ring_sequence_type &interior_rings):
+				const ring_sequence_type &interior_rings):
 			PropertyValue(),
-			d_exterior(exterior_ring)
-		{
-			// Swap the internals of our own d_interiors with the provided vector.
-			d_interiors.swap(interior_rings);
-		}
+			d_exterior(exterior_ring),
+			d_interiors(interior_rings)
+		{  }
 
 
 		// This constructor should not be public, because we don't want to allow

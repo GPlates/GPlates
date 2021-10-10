@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -245,7 +245,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_irregular_sampling(
 		std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator end =
 				gpml_irregular_sampling.time_samples().end();
 		for ( ; iter != end; ++iter) {
-			iter->accept_visitor(*this);
+			write_gpml_time_sample(*iter);
 		}
 	}
 	// The interpolation function is optional.
@@ -268,7 +268,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_plate_id(
 
 
 void
-GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_time_sample(
+GPlatesFileIO::GpmlOnePointFiveOutputVisitor::write_gpml_time_sample(
 		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) {
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:TimeSample");
 	{

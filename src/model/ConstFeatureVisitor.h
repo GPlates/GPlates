@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,6 +35,7 @@ namespace GPlatesPropertyValues
 	// Please keep these ordered alphabetically.
 	class Enumeration;
 	class GmlLineString;
+	class GmlMultiPoint;
 	class GmlOrientableCurve;
 	class GmlPoint;
 	class GmlPolygon;
@@ -47,6 +48,7 @@ namespace GPlatesPropertyValues
 	class GpmlFiniteRotationSlerp;
 	class GpmlHotSpotTrailMark;
 	class GpmlIrregularSampling;
+	class GpmlKeyValueDictionary;
 	class GpmlMeasure;
 	class GpmlOldPlatesHeader;
 	class GpmlPiecewiseAggregation;
@@ -54,8 +56,6 @@ namespace GPlatesPropertyValues
 	class GpmlPolarityChronId;
 	class GpmlPropertyDelegate;
 	class GpmlRevisionId;
-	class GpmlTimeSample;
-	class GpmlTimeWindow;
 	class UninterpretedPropertyValue;
 	class XsBoolean;
 	class XsDouble;
@@ -184,6 +184,11 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gml_multi_point(
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point) {  }
+
+		virtual
+		void
 		visit_gml_orientable_curve(
 				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve) {  }
 
@@ -244,6 +249,12 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_key_value_dictionary(
+				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary) {  }
+
+
+		virtual
+		void
 		visit_gpml_measure(
 				const GPlatesPropertyValues::GpmlMeasure &gpml_measure) {  }
 
@@ -277,16 +288,6 @@ namespace GPlatesModel
 		void
 		visit_gpml_revision_id(
 				const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id) {  }
-
-		virtual
-		void
-		visit_gpml_time_sample(
-				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) {  }
-
-		virtual
-		void
-		visit_gpml_time_window(
-				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window) {  }
 
 		virtual
 		void

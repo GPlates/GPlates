@@ -79,5 +79,6 @@ GPlatesFeatureVisitors::GmlTimePeriodFinder::visit_gml_time_period(
 		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
 	d_found_time_periods.push_back(
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type(gml_time_period));
+			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type(&gml_time_period,
+					GPlatesUtils::NullIntrusivePointerHandler()));
 }

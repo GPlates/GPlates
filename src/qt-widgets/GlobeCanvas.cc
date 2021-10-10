@@ -50,8 +50,7 @@
 #include "maths/UnitVector3D.h"
 #include "maths/LatLonPointConversions.h"
 
-#include "global/Exception.h"
-#include "state/Layout.h"
+#include "global/GPlatesException.h"
 #include "model/FeatureHandle.h"
 #include "utils/UnicodeStringUtils.h"
 
@@ -170,6 +169,14 @@ namespace
 }
 
 
+const GPlatesMaths::PointOnSphere &
+GPlatesQtWidgets::GlobeCanvas::centre_of_viewport()
+{
+	static const GPlatesMaths::PointOnSphere centre_point(GPlatesMaths::UnitVector3D(1, 0, 0));
+	return centre_point;
+}
+
+
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		ViewportWindow &view_state,
 		QWidget *parent_):
@@ -177,7 +184,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_view_state_ptr(&view_state),
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
-	d_mouse_pointer_is_on_globe(false)
+	d_mouse_pointer_is_on_globe(false),
+	d_geometry_focus_highlight(d_globe.rendered_geometry_layers().geometry_focus_layer())
 {
 	// QWidget::setMouseTracking:
 	//   If mouse tracking is disabled (the default), the widget only receives mouse move
@@ -187,6 +195,9 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	//   are pressed.
 	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
 	setMouseTracking(true);
+
+	QObject::connect(&d_geometry_focus_highlight, SIGNAL(canvas_should_update()),
+			this, SLOT(update_canvas()));
 
 	QObject::connect(&d_viewport_zoom, SIGNAL(zoom_changed()),
 			this, SLOT(handle_zoom_change()));
@@ -279,11 +290,12 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::draw_polyline(
-		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+GPlatesQtWidgets::GlobeCanvas::draw_multi_point(
+		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &multi_point,
 		GPlatesGui::PlatesColourTable::const_iterator colour)
 {
-	GPlatesState::Layout::InsertLineDataPos(std::make_pair(polyline, colour));
+	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
+			GPlatesGui::RenderedGeometry(multi_point, colour));
 }
 
 
@@ -292,7 +304,28 @@ GPlatesQtWidgets::GlobeCanvas::draw_point(
 		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point,
 		GPlatesGui::PlatesColourTable::const_iterator colour)
 {
-	GPlatesState::Layout::InsertPointDataPos(std::make_pair(point, colour));
+	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
+			GPlatesGui::RenderedGeometry(point, colour));
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::draw_polygon(
+		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon,
+		GPlatesGui::PlatesColourTable::const_iterator colour)
+{
+	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
+			GPlatesGui::RenderedGeometry(polygon, colour));
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::draw_polyline(
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+		GPlatesGui::PlatesColourTable::const_iterator colour)
+{
+	d_globe.rendered_geometry_layers().reconstruction_layer().push_back(
+			GPlatesGui::RenderedGeometry(polyline, colour));
 }
 
 
@@ -306,7 +339,7 @@ GPlatesQtWidgets::GlobeCanvas::update_canvas()
 void
 GPlatesQtWidgets::GlobeCanvas::clear_data()
 {
-	GPlatesState::Layout::Clear();
+	d_globe.rendered_geometry_layers().reconstruction_layer().clear();
 }
 
 void
@@ -448,6 +481,11 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 		QMouseEvent *press_event) 
 {
 	update_mouse_pointer_pos(press_event);
+
+	// Let's ignore all mouse buttons except the left mouse button.
+	if (press_event->button() != Qt::LeftButton) {
+		return;
+	}
 	d_mouse_press_info =
 			MousePressInfo(
 					press_event->x(),
@@ -485,7 +523,9 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 					d_globe.Orient(d_mouse_press_info->d_mouse_pointer_pos),
 					d_mouse_press_info->d_is_on_globe,
 					virtual_mouse_pointer_pos_on_globe(),
+					d_globe.Orient(virtual_mouse_pointer_pos_on_globe()),
 					mouse_pointer_is_on_globe(),
+					d_globe.Orient(centre_of_viewport()),
 					d_mouse_press_info->d_button,
 					d_mouse_press_info->d_modifiers);
 		}
@@ -497,6 +537,25 @@ void
 GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 		QMouseEvent *release_event)
 {
+	// Let's ignore all mouse buttons except the left mouse button.
+	if (release_event->button() != Qt::LeftButton) {
+		return;
+	}
+
+	// Let's do our best to avoid crash-inducing Boost assertions.
+	if ( ! d_mouse_press_info) {
+		// OK, something strange happened:  Our boost::optional MousePressInfo is not
+		// initialised.  Rather than spontaneously crashing with a Boost assertion error,
+		// let's log a warning on the console and NOT crash.
+		std::cerr << "Warning (GlobeCanvas::mouseReleaseEvent, "
+				<< __FILE__
+				<< " line "
+				<< __LINE__
+				<< "):\nUninitialised mouse press info!"
+				<< std::endl;
+		return;
+	}
+
 	if (abs(release_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
 			abs(release_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
 		d_mouse_press_info->d_is_mouse_drag = true;
@@ -507,7 +566,9 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 				d_globe.Orient(d_mouse_press_info->d_mouse_pointer_pos),
 				d_mouse_press_info->d_is_on_globe,
 				virtual_mouse_pointer_pos_on_globe(),
+				d_globe.Orient(virtual_mouse_pointer_pos_on_globe()),
 				mouse_pointer_is_on_globe(),
+				d_globe.Orient(centre_of_viewport()),
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
 	} else {

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,6 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/none.hpp>
+
 #include "GpmlFiniteRotation.h"
 #include "GmlPoint.h"
 #include "maths/LatLonPointConversions.h"
@@ -34,21 +36,33 @@
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesPropertyValues::GpmlFiniteRotation::create(
+		const GPlatesMaths::FiniteRotation &finite_rotation)
+{
+	non_null_ptr_type gpml_finite_rotation(
+			new GpmlFiniteRotation(finite_rotation),
+			GPlatesUtils::NullIntrusivePointerHandler());
+
+	return gpml_finite_rotation;
+}
+
+
+const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
+GPlatesPropertyValues::GpmlFiniteRotation::create(
 		const std::pair<double, double> &gpml_euler_pole,
 		const double &gml_angle_in_degrees)
 {
-	using namespace ::GPlatesMaths;
-
 	const double &lon = gpml_euler_pole.first;
 	const double &lat = gpml_euler_pole.second;
 
 	// FIXME:  Check the validity of the lat/lon coords using functions in LatLonPoint.
-	LatLonPoint llp(lat, lon);
-	PointOnSphere p = make_point_on_sphere(llp);
-	FiniteRotation fr = FiniteRotation::create(p, degreesToRadians(gml_angle_in_degrees));
+	GPlatesMaths::LatLonPoint llp(lat, lon);
+	GPlatesMaths::PointOnSphere p = GPlatesMaths::make_point_on_sphere(llp);
+	GPlatesMaths::FiniteRotation fr =
+			GPlatesMaths::FiniteRotation::create(
+					p,
+					GPlatesMaths::degreesToRadians(gml_angle_in_degrees));
 
-	non_null_ptr_type finite_rotation_ptr(*(new GpmlFiniteRotation(fr)));
-	return finite_rotation_ptr;
+	return create(fr);
 }
 
 
@@ -57,14 +71,12 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 		const GmlPoint::non_null_ptr_type &gpml_euler_pole,
 		const GpmlMeasure::non_null_ptr_type &gml_angle_in_degrees)
 {
-	using namespace ::GPlatesMaths;
+	GPlatesMaths::FiniteRotation fr =
+			GPlatesMaths::FiniteRotation::create(
+					*gpml_euler_pole->point(),
+					GPlatesMaths::degreesToRadians(gml_angle_in_degrees->quantity()));
 
-	FiniteRotation fr = FiniteRotation::create(
-			*gpml_euler_pole->point(),
-			degreesToRadians(gml_angle_in_degrees->quantity()));
-
-	non_null_ptr_type finite_rotation_ptr(*(new GpmlFiniteRotation(fr)));
-	return finite_rotation_ptr;
+	return create(fr);
 }
 
 
@@ -73,9 +85,12 @@ GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation()
 {
 	using namespace ::GPlatesMaths;
 
-	FiniteRotation fr = FiniteRotation::create(UnitQuaternion3D::create_identity_rotation());
+	FiniteRotation fr = FiniteRotation::create(
+			UnitQuaternion3D::create_identity_rotation(),
+			boost::none);
 
-	non_null_ptr_type finite_rotation_ptr(*(new GpmlFiniteRotation(fr)));
+	non_null_ptr_type finite_rotation_ptr(new GpmlFiniteRotation(fr),
+			GPlatesUtils::NullIntrusivePointerHandler());
 	return finite_rotation_ptr;
 }
 
@@ -95,9 +110,10 @@ GPlatesPropertyValues::calculate_euler_pole(
 	using namespace ::GPlatesMaths;
 
 	// If 'fr' is a zero rotation, this will throw an exception.
-	UnitQuaternion3D::RotationParams rp = fr.finite_rotation().unit_quat().get_rotation_params();
-	GmlPoint::non_null_ptr_type euler_pole_ptr(*(GmlPoint::create(PointOnSphere(rp.axis))));
-	return euler_pole_ptr;
+	UnitQuaternion3D::RotationParams rp =
+			fr.finite_rotation().unit_quat().get_rotation_params(
+					fr.finite_rotation().axis_hint());
+	return GmlPoint::create(PointOnSphere(rp.axis));
 }
 
 
@@ -109,6 +125,8 @@ GPlatesPropertyValues::calculate_angle(
 	using namespace ::GPlatesMaths;
 
 	// If 'fr' is a zero rotation, this will throw an exception.
-	UnitQuaternion3D::RotationParams rp = fr.finite_rotation().unit_quat().get_rotation_params();
+	UnitQuaternion3D::RotationParams rp =
+			fr.finite_rotation().unit_quat().get_rotation_params(
+					fr.finite_rotation().axis_hint());
 	return GPlatesMaths::radiansToDegrees(rp.angle);
 }

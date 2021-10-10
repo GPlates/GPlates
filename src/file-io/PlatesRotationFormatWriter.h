@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,6 +37,13 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "maths/FiniteRotation.h"
+
+
+namespace GPlatesPropertyValues
+{
+	class GpmlTimeSample;
+	class GpmlTimeWindow;
+}
 
 namespace GPlatesFileIO
 {
@@ -125,15 +132,14 @@ namespace GPlatesFileIO
 
 		virtual
 		void
-		visit_gpml_time_sample(
-				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
-
-		virtual
-		void
 		visit_xs_string(
 				const GPlatesPropertyValues::XsString &xs_string);
 
 	private:
+
+		void
+		write_gpml_time_sample(
+				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
 
 		struct PlatesRotationFormatAccumulator
 		{

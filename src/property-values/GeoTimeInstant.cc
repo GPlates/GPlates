@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,6 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <ostream>
 #include <cmath>
 #include "GeoTimeInstant.h"
 #include "utils/FloatingPointComparisons.h"
@@ -143,4 +144,21 @@ GPlatesPropertyValues::GeoTimeInstant::is_coincident_with(
 	using namespace GPlatesUtils::FloatingPointComparisons;
 
 	return (geo_times_are_approx_equal(d_value, other.d_value));
+}
+
+
+std::ostream &
+GPlatesPropertyValues::operator<<(
+		std::ostream &o,
+		const GeoTimeInstant &g)
+{
+	if (g.is_real()) {
+		o << g.value();
+	} else if (g.is_distant_past()) {
+		o << "(distant past)";
+	} else {
+		o << "(distant future)";
+	}
+
+	return o;
 }

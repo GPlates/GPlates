@@ -34,6 +34,7 @@
 #include "ConstFeatureVisitor.h"
 #include "FeatureVisitor.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesModel
@@ -48,15 +49,19 @@ namespace GPlatesModel
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PropertyValue>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PropertyValue,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyValue> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyValue,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PropertyValue>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const PropertyValue,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyValue>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyValue,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**
@@ -89,7 +94,7 @@ namespace GPlatesModel
 		 * instance and return a new intrusive_ptr reference to the new duplicate.  Since
 		 * initially the only reference to the new duplicate will be the one returned by
 		 * the @a clone function, *before* the new intrusive_ptr is created, the ref-count
-		 * of the new PropertyContainer instance should be zero.
+		 * of the new PropertyValue instance should be zero.
 		 *
 		 * Note that this ctor should act exactly the same as the default (auto-generated)
 		 * copy-ctor, except that it should initialise the ref-count to zero.

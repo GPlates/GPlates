@@ -33,24 +33,31 @@
 #include "model/PropertyValue.h"
 #include "model/FeatureHandle.h"
 #include "qt-widgets/AbstractEditWidget.h"
-#include "qt-widgets/EditTimeInstantWidget.h"
-#include "qt-widgets/EditTimePeriodWidget.h"
-#include "qt-widgets/EditOldPlatesHeaderWidget.h"
-#include "qt-widgets/EditDoubleWidget.h"
-#include "qt-widgets/EditEnumerationWidget.h"
-#include "qt-widgets/EditIntegerWidget.h"
-#include "qt-widgets/EditPlateIdWidget.h"
-#include "qt-widgets/EditPolarityChronIdWidget.h"
-#include "qt-widgets/EditAngleWidget.h"
-#include "qt-widgets/EditStringWidget.h"
-#include "qt-widgets/EditBooleanWidget.h"
 
 
 namespace GPlatesQtWidgets
 {
+	class ViewportWindow;
+	class EditTimeInstantWidget;
+	class EditTimePeriodWidget;
+	class EditOldPlatesHeaderWidget;
+	class EditDoubleWidget;
+	class EditEnumerationWidget;
+	class EditGeometryWidget;
+	class EditIntegerWidget;
+	class EditPlateIdWidget;
+	class EditPolarityChronIdWidget;
+	class EditAngleWidget;
+	class EditStringWidget;
+	class EditBooleanWidget;
+	
+
 	/**
 	 * A collection of pre-allocated property edit widgets, which are hidden/shown
 	 * depending on which edit widget needs to be displayed.
+	 *
+	 * Attention! If you want to add a new type of EditWidget, see instructions in
+	 * AbstractEditWidget.h.
 	 */
 	class EditWidgetGroupBox: 
 			public QGroupBox
@@ -74,6 +81,7 @@ namespace GPlatesQtWidgets
 		
 		explicit
 		EditWidgetGroupBox(
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				QWidget *parent_ = NULL);
 		
 		virtual
@@ -99,10 +107,15 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Uses EditWidgetChooser to activate the editing widget most appropriate
-		 * for the given property iterator. Used by EditFeaturePropertiesWidget.
+		 * for the given property iterator @a it. Used by EditFeaturePropertiesWidget.
+		 * 
+		 * @a feature_ref only needs to be provided as context - for example,
+		 * EditGeometryWidget needs it so it can figure out what reconstruction plate id
+		 * to use.
 		 */
 		void
 		activate_appropriate_edit_widget(
+				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesModel::FeatureHandle::properties_iterator it);
 
 		/**
@@ -112,9 +125,14 @@ namespace GPlatesQtWidgets
 		 * the interface would appear to 'flicker') - it is used by EditFeaturePropertiesWidget
 		 * to handle a case where a user has edited a value via the QTableView and the
 		 * currently selected edit widget needs to be updated.
+		 * 
+		 * @a feature_ref only needs to be provided as context - for example,
+		 * EditGeometryWidget needs it so it can figure out what reconstruction plate id
+		 * to use.
 		 */
 		void
 		refresh_edit_widget(
+				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesModel::FeatureHandle::properties_iterator it);
 		 
 		/**
@@ -134,9 +152,40 @@ namespace GPlatesQtWidgets
 		
 		/**
 		 * Creates an appropriate property value for the currently active edit widget.
+		 * It is the caller's responsibility to insert this into the model, or
+		 * insert it wherever else the caller wishes.
+		 *
+		 * Can throw NoActiveEditWidgetException.
 		 */
 		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_property_value_from_widget();
+		
+		/**
+		 * Tells the current edit widget (if any) that it should modify the last
+		 * PropertyValue that it loaded data from to match what the user has
+		 * entered. This will update the model directly.
+		 *
+		 * Note that this means (once we have revisioning 100% implemented) calling
+		 * this method will cause a new revision to be propagated up from the current
+		 * PropertyValue being edited; If the caller is displaying other data from
+		 * the same feature (I'm looking at you, EditFeaturePropertiesWidget!), then
+		 * any cached data must be purged and re-populated from the most current
+		 * revision of the Feature.
+		 *
+		 * You cannot use this method without first calling
+		 * activate_appropriate_edit_widget() and providing a properties_iterator;
+		 * otherwise how would the edit widget know what PropertyValue it should
+		 * be modifying?
+		 *
+		 * Can throw NoActiveEditWidgetException, and UninitialisedEditWidgetException.
+		 *
+		 * Returns true only if the edit widget was dirty and the model was altered;
+		 * you should pay attention to this if you plan on calling the FeatureFocus
+		 * method announce_modfication_of_focused_feature, because otherwise you'll
+		 * likely end up with infinite Signal/Slot loops.
+		 */
+		bool
+		update_property_value_from_widget();
 		
 		/**
 		 * Checks if the current edit widget is 'dirty' (user has modified fields and
@@ -170,77 +219,151 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		activate_edit_time_instant_widget(
-				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
+				GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_time_period_widget(
-				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
+				GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_old_plates_header_widget(
-				const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
+				GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_double_widget(
-				const GPlatesPropertyValues::XsDouble &xs_double);
+				GPlatesPropertyValues::XsDouble &xs_double);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_enumeration_widget(
-				const GPlatesPropertyValues::Enumeration &enumeration);
+				GPlatesPropertyValues::Enumeration &enumeration);
+
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 * 
+		 * @a feature_ref is used as context for the EditGeometryWidget.
+		 */
+		void
+		activate_edit_line_string_widget(
+				GPlatesPropertyValues::GmlLineString &gml_line_string,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 * 
+		 * @a feature_ref is used as context for the EditGeometryWidget.
+		 */
+		void
+		activate_edit_multi_point_widget(
+				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 * 
+		 * @a feature_ref is used as context for the EditGeometryWidget.
+		 */
+		void
+		activate_edit_point_widget(
+				GPlatesPropertyValues::GmlPoint &gml_point,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+		
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 * 
+		 * @a feature_ref is used as context for the EditGeometryWidget.
+		 */
+		void
+		activate_edit_polygon_widget(
+				GPlatesPropertyValues::GmlPolygon &gml_polygon,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_integer_widget(
-				const GPlatesPropertyValues::XsInteger &xs_integer);
+				GPlatesPropertyValues::XsInteger &xs_integer);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_plate_id_widget(
-				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_polarity_chron_id_widget(
-				const GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id);
+				GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_angle_widget(
-				const GPlatesPropertyValues::GpmlMeasure &gpml_measure);
+				GPlatesPropertyValues::GpmlMeasure &gpml_measure);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_string_widget(
-				const GPlatesPropertyValues::XsString &xs_string);
+				GPlatesPropertyValues::XsString &xs_string);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_boolean_widget(
-				const GPlatesPropertyValues::XsBoolean &xs_boolean);
+				GPlatesPropertyValues::XsBoolean &xs_boolean);
+		
+		
+		/**
+		 * Obtain a reference to the ViewState this EditWidgetGroupBox knows about.
+		 * Used for e.g. obtaining the current reconstruction time.
+		 */
+		const GPlatesQtWidgets::ViewportWindow &
+		view_state() const
+		{
+			return *d_view_state_ptr;
+		}
+		
+		/**
+		 * Accessor for the EditGeometryWidget, to support the extra functionality
+		 * available (e.g. set_reconstruction_plate_id())
+		 */
+		GPlatesQtWidgets::EditGeometryWidget &
+		geometry_widget()
+		{
+			return *d_edit_geometry_widget_ptr;
+		}
+
+		/**
+		 * Accessor for the EditTimePeriodWidget, to allow the EditFeaturePropertiesWidget
+		 * to change the accelerator mneumonics on the labels.
+		 *
+		 * TODO: These accessors could probably be extended to all of the widgets.
+		 */
+		GPlatesQtWidgets::EditTimePeriodWidget &
+		time_period_widget()
+		{
+			return *d_edit_time_period_widget_ptr;
+		}
+		
 	
 	signals:
 		
@@ -273,6 +396,11 @@ namespace GPlatesQtWidgets
 		get_widget_by_name(
 				const QString &property_value_type_name);
 		
+		/**
+		 * The view state, used to obtain current reconstruction time and allow
+		 * EditGeometryWidget to iterate over RFGs.
+		 */
+		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * This pointer always refers to the one edit widget which is currently active
@@ -285,6 +413,7 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::EditOldPlatesHeaderWidget *d_edit_old_plates_header_widget_ptr;
 		GPlatesQtWidgets::EditDoubleWidget *d_edit_double_widget_ptr;
 		GPlatesQtWidgets::EditEnumerationWidget *d_edit_enumeration_widget_ptr;
+		GPlatesQtWidgets::EditGeometryWidget *d_edit_geometry_widget_ptr;
 		GPlatesQtWidgets::EditIntegerWidget *d_edit_integer_widget_ptr;
 		GPlatesQtWidgets::EditPlateIdWidget *d_edit_plate_id_widget_ptr;
 		GPlatesQtWidgets::EditPolarityChronIdWidget *d_edit_polarity_chron_id_widget_ptr;

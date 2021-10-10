@@ -11,12 +11,13 @@ libgui_la_SOURCES	= CanvasTool.cc CanvasToolAdapter.cc \
 				CanvasToolChoice.cc Colour.cc Globe.cc \
 				NurbsRenderer.cc OpaqueSphere.cc \
 				PlatesColourTable.cc ProximityTests.cc \
+				SingleColourTable.cc FeatureColourTable.cc \
+				AgeColourTable.cc ColourSpectrum.cc\
 				Quadrics.cc SimpleGlobeOrientation.cc \
 				SphericalGrid.cc SvgExport.cc \
 				ViewportZoom.cc \
 				FeatureTableModel.cc \
 				FeaturePropertyTableModel.cc \
-				FeaturePropertyTableDelegate.cc \
 				FeatureFocus.cc \
 				CsvExport.cc \
 				moc_CanvasToolAdapter.cc \
@@ -26,9 +27,13 @@ libgui_la_SOURCES	= CanvasTool.cc CanvasToolAdapter.cc \
 				moc_ViewportZoom.cc \
 				moc_FeatureTableModel.cc \
 				moc_FeaturePropertyTableModel.cc \
-				moc_FeaturePropertyTableDelegate.cc \
 				moc_FeatureFocus.cc \
-				Texture.cc
+				Texture.cc \
+				TemporaryGeometryFocus.cc \
+				moc_TemporaryGeometryFocus.cc \
+				GeometryFocusHighlight.cc \
+				moc_GeometryFocusHighlight.cc \
+				GeometricPropertyValueConstructor.cc
 
 CLEANFILES		= moc_*.cc
 

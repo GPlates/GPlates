@@ -34,7 +34,12 @@
 
 namespace GPlatesPropertyValues {
 
-	class GpmlInterpolationFunction :
+	/**
+	 * This is an abstract class, because it derives from class PropertyValue, which contains
+	 * the pure virtual member functions @a clone and @a accept_visitor, which this class does
+	 * not override with non-pure-virtual definitions.
+	 */
+	class GpmlInterpolationFunction:
 			public GPlatesModel::PropertyValue {
 
 	public:
@@ -53,16 +58,19 @@ namespace GPlatesPropertyValues {
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction>
-				non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**

@@ -38,6 +38,10 @@ GPlatesModel::XmlNode::create(
 		QXmlStreamReader &reader)
 {
 	bool found_parsable = false;
+	// .atEnd() can not be relied upon when reading a QProcess,
+	// so we must make sure we block for a moment to make sure
+	// the process is ready to feed us data.
+	reader.device()->waitForReadyRead(1000);
 	while ( ! reader.atEnd()) 
 	{
 		switch (reader.tokenType()) 
@@ -72,8 +76,12 @@ GPlatesModel::XmlNode::create(
 			break;
 
 		reader.readNext();
-
+		reader.device()->waitForReadyRead(1000);
 	}
+	// .atEnd() can not be relied upon when reading a QProcess,
+	// so we must make sure we block for a moment to make sure
+	// the process is ready to feed us data.
+	reader.device()->waitForReadyRead(1000);
 	Q_ASSERT( ! reader.atEnd());
 	Q_ASSERT(reader.tokenType() == QXmlStreamReader::Characters);
 	return XmlTextNode::create(reader);
@@ -87,10 +95,8 @@ GPlatesModel::XmlTextNode::create(
 {
 	QString text = reader.text().toString().trimmed();
 	return non_null_ptr_type(
-			*(new XmlTextNode(
-					reader.lineNumber(), 
-					reader.columnNumber(), 
-					text)));
+			new XmlTextNode(reader.lineNumber(), reader.columnNumber(), text),
+			GPlatesUtils::NullIntrusivePointerHandler());
 }
 
 
@@ -133,10 +139,8 @@ GPlatesModel::XmlElementNode::create(
 			reader.name().toString());
 
 	non_null_ptr_type elem(
-			*(new XmlElementNode(
-					reader.lineNumber(),
-					reader.columnNumber(),
-					prop_name)));
+			new XmlElementNode(reader.lineNumber(), reader.columnNumber(), prop_name),
+			GPlatesUtils::NullIntrusivePointerHandler());
 
 	QXmlStreamNamespaceDeclarations ns_decls = reader.namespaceDeclarations();
 	// If this element contains namespace declarations...
@@ -165,6 +169,10 @@ GPlatesModel::XmlElementNode::create(
 
 	elem->load_attributes(reader.attributes());
 
+	// .atEnd() can not be relied upon when reading a QProcess,
+	// so we must make sure we block for a moment to make sure
+	// the process is ready to feed us data.
+	reader.device()->waitForReadyRead(1000);
 	while ( ! reader.atEnd()) {
 		reader.readNext();
 
@@ -189,6 +197,7 @@ GPlatesModel::XmlElementNode::create(
 		} catch (...) {
 			throw;
 		}
+		reader.device()->waitForReadyRead(1000);
 	}
 
 	return elem;
@@ -201,10 +210,8 @@ GPlatesModel::XmlElementNode::create(
 		const GPlatesModel::PropertyName &prop_name)
 {	
 	non_null_ptr_type elem(
-			*(new XmlElementNode(
-					text->line_number(),
-					text->column_number(),
-					prop_name)));
+			new XmlElementNode(text->line_number(), text->column_number(), prop_name),
+			GPlatesUtils::NullIntrusivePointerHandler());
 
 	elem->d_children.push_back(text);
 	return elem;
@@ -345,7 +352,8 @@ void
 GPlatesModel::XmlTextNode::accept_visitor(
 		GPlatesModel::XmlNodeVisitor &visitor)
 {
-	visitor.visit_text_node(non_null_ptr_type(*this));
+	visitor.visit_text_node(non_null_ptr_type(this,
+			GPlatesUtils::NullIntrusivePointerHandler()));
 }
 
 
@@ -356,5 +364,6 @@ GPlatesModel::XmlElementNode::accept_visitor(
 	// FIXME: This is nasty, but I can't think of any other way to work it
 	// at the moment.
 	//XmlElementNode *ptr = const_cast<XmlElementNode *>(this);
-	visitor.visit_element_node(non_null_ptr_type(*this));
+	visitor.visit_element_node(non_null_ptr_type(this,
+			GPlatesUtils::NullIntrusivePointerHandler()));
 }

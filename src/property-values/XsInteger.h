@@ -39,15 +39,19 @@ namespace GPlatesPropertyValues {
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsIntger>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsIntger,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<XsInteger> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XsInteger,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsInteger>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const XsInteger,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const XsInteger>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XsInteger,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -57,21 +61,40 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				int value) {
-			XsInteger::non_null_ptr_type ptr(*(new XsInteger(value)));
+			XsInteger::non_null_ptr_type ptr(new XsInteger(value),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new XsInteger(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new XsInteger(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
+		/**
+		 * Accesses the int contained within this XsInteger.
+		 */
 		int
 		value() const {
 			return d_value;
 		}
+
+		/**
+		 * Set the int value contained within this XsInteger to @a i.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const int &i) {
+			d_value = i;
+		}
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

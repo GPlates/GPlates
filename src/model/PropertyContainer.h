@@ -38,6 +38,7 @@
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesModel
@@ -47,15 +48,19 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<PropertyContainer>.
+		 * GPlatesUtils::non_null_intrusive_ptr<PropertyContainer,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyContainer> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyContainer,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PropertyContainer>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const PropertyContainer,
+		 * 		GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyContainer>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyContainer,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		typedef long ref_count_type;

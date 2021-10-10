@@ -31,23 +31,12 @@
 GPlatesModel::Reconstruction::~Reconstruction()
 {
 	// Tell all RFGs, which currently point to this Reconstruction instance, to set those
-	// pointers to NULL, lest they become dangling pointers.  (Note that currently, since RFGs
-	// are contained directly within a Reconstruction instance, it's not possible for contained
-	// RFGs to outlive their Reconstruction.  However, this could change in the future (for
-	// example, if we start holding RFGs by intrusive-ptr), so we should put this "correct"
-	// code in place before we forget.)
+	// pointers to NULL, lest they become dangling pointers.
 
-	std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >::iterator
-			point_iter = d_point_geometries.begin(),
-			point_end = d_point_geometries.end();
-	for ( ; point_iter != point_end; ++point_iter) {
-		point_iter->set_reconstruction_ptr(NULL);
-	}
-
-	std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >::iterator
-			polyline_iter = d_polyline_geometries.begin(),
-			polyline_end = d_polyline_geometries.end();
-	for ( ; polyline_iter != polyline_end; ++polyline_iter) {
-		polyline_iter->set_reconstruction_ptr(NULL);
+	geometry_collection_type::iterator
+			geometry_iter = d_geometries.begin(),
+			geometry_end = d_geometries.end();
+	for ( ; geometry_iter != geometry_end; ++geometry_iter) {
+		(*geometry_iter)->set_reconstruction_ptr(NULL);
 	}
 }

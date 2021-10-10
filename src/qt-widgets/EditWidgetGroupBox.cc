@@ -28,20 +28,65 @@
 #include <map>
 #include "EditWidgetGroupBox.h"
 
-#include "qt-widgets/AbstractEditWidget.h"
-#include "qt-widgets/EditWidgetChooser.h"
-#include "NoActiveEditWidgetException.h"
+#include "AbstractEditWidget.h"
+#include "EditTimeInstantWidget.h"
+#include "EditTimePeriodWidget.h"
+#include "EditOldPlatesHeaderWidget.h"
+#include "EditDoubleWidget.h"
+#include "EditEnumerationWidget.h"
+#include "EditGeometryWidget.h"
+#include "EditIntegerWidget.h"
+#include "EditPlateIdWidget.h"
+#include "EditPolarityChronIdWidget.h"
+#include "EditAngleWidget.h"
+#include "EditStringWidget.h"
+#include "EditBooleanWidget.h"
 
+#include "EditWidgetChooser.h"
+#include "NoActiveEditWidgetException.h"
+#include "qt-widgets/ViewportWindow.h"
+#include "feature-visitors/PlateIdFinder.h"
+
+
+namespace
+{
+	/**
+	 * EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
+	 * Find it, and set it (or unset it).
+	 */
+	void
+	find_reconstruction_plate_id_for_geometry_widget(
+			GPlatesModel::FeatureHandle::weak_ref feature_ref,
+			GPlatesQtWidgets::EditGeometryWidget *edit_geometry_widget_ptr)
+	{
+		static const GPlatesModel::PropertyName plate_id_property_name =
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+		// Find it.
+		GPlatesFeatureVisitors::PlateIdFinder plate_id_finder(plate_id_property_name);
+		plate_id_finder.visit_feature_handle(*feature_ref);
+		if (plate_id_finder.found_plate_ids_begin() != plate_id_finder.found_plate_ids_end()) {
+			// Set it.
+			edit_geometry_widget_ptr->set_reconstruction_plate_id(
+					*plate_id_finder.found_plate_ids_begin());
+		} else {
+			// Unset it.
+			edit_geometry_widget_ptr->unset_reconstruction_plate_id();
+		}
+	}
+}
 
 
 GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
+		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		QWidget *parent_):
+	d_view_state_ptr(&view_state_),
 	d_active_widget_ptr(NULL),
 	d_edit_time_instant_widget_ptr(new EditTimeInstantWidget(this)),
 	d_edit_time_period_widget_ptr(new EditTimePeriodWidget(this)),
 	d_edit_old_plates_header_widget_ptr(new EditOldPlatesHeaderWidget(this)),
 	d_edit_double_widget_ptr(new EditDoubleWidget(this)),
 	d_edit_enumeration_widget_ptr(new EditEnumerationWidget(this)),
+	d_edit_geometry_widget_ptr(new EditGeometryWidget(view_state_, this)),
 	d_edit_integer_widget_ptr(new EditIntegerWidget(this)),
 	d_edit_plate_id_widget_ptr(new EditPlateIdWidget(this)),
 	d_edit_polarity_chron_id_widget_ptr(new EditPolarityChronIdWidget(this)),
@@ -61,6 +106,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	edit_layout->addWidget(d_edit_old_plates_header_widget_ptr);
 	edit_layout->addWidget(d_edit_double_widget_ptr);
 	edit_layout->addWidget(d_edit_enumeration_widget_ptr);
+	edit_layout->addWidget(d_edit_geometry_widget_ptr);
 	edit_layout->addWidget(d_edit_integer_widget_ptr);
 	edit_layout->addWidget(d_edit_plate_id_widget_ptr);
 	edit_layout->addWidget(d_edit_polarity_chron_id_widget_ptr);
@@ -78,6 +124,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	QObject::connect(d_edit_double_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
 	QObject::connect(d_edit_enumeration_widget_ptr, SIGNAL(commit_me()),
+			this, SLOT(edit_widget_wants_committing()));
+	QObject::connect(d_edit_geometry_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
 	QObject::connect(d_edit_integer_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
@@ -112,6 +160,10 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map() const
 	map["gpml:SlipComponentEnumeration"] = d_edit_enumeration_widget_ptr;
 	map["gpml:FoldPlaneAnnotationEnumeration"] = d_edit_enumeration_widget_ptr;
 	map["gpml:AbsoluteReferenceFrameEnumeration"] = d_edit_enumeration_widget_ptr;
+	map["gml:LineString"] = d_edit_geometry_widget_ptr;
+	map["gml:MultiPoint"] = d_edit_geometry_widget_ptr;
+	map["gml:Point"] = d_edit_geometry_widget_ptr;
+	map["gml:Polygon"] = d_edit_geometry_widget_ptr;
 	map["xs:integer"] = d_edit_integer_widget_ptr;
 	map["gpml:plateId"] = d_edit_plate_id_widget_ptr;
 	map["gpml:PolarityChronId"] = d_edit_polarity_chron_id_widget_ptr;
@@ -140,8 +192,15 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types_list() const
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
 		GPlatesModel::FeatureHandle::properties_iterator it)
 {
+	if ( ! feature_ref.is_valid()) {
+		// Although in principle we only need the properties_iterator here,
+		// not having a valid feature ref is still worth checking for.
+		deactivate_edit_widgets();
+		return;
+	}
 	if (*it == NULL) {
 		// Always check your property iterators.
 		deactivate_edit_widgets();
@@ -149,21 +208,27 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
 	}
 	// Get EditWidgetChooser to tell us what widgets to show.
 	deactivate_edit_widgets();
-	GPlatesQtWidgets::EditWidgetChooser chooser(*this);
+	GPlatesQtWidgets::EditWidgetChooser chooser(*this, feature_ref);
 	(*it)->accept_visitor(chooser);
 }
 
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::refresh_edit_widget(
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
 		GPlatesModel::FeatureHandle::properties_iterator it)
 {
+	if ( ! feature_ref.is_valid()) {
+		// Although in principle we only need the properties_iterator here,
+		// not having a valid feature ref is still worth checking for.
+		return;
+	}
 	if (*it == NULL) {
 		// Always check your property iterators.
 		return;
 	}
 	// Get EditWidgetChooser to tell us what widgets to update.
-	GPlatesQtWidgets::EditWidgetChooser chooser(*this);
+	GPlatesQtWidgets::EditWidgetChooser chooser(*this, feature_ref);
 	(*it)->accept_visitor(chooser);
 }
 
@@ -210,6 +275,17 @@ GPlatesQtWidgets::EditWidgetGroupBox::create_property_value_from_widget()
 
 
 bool
+GPlatesQtWidgets::EditWidgetGroupBox::update_property_value_from_widget()
+{
+	if (d_active_widget_ptr != NULL) {
+		return d_active_widget_ptr->update_property_value_from_widget();
+	} else {
+		throw NoActiveEditWidgetException();
+	}
+}
+
+
+bool
 GPlatesQtWidgets::EditWidgetGroupBox::is_dirty()
 {
 	if (d_active_widget_ptr != NULL) {
@@ -239,7 +315,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::set_dirty()
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_time_instant_widget(
-		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
+		GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	setTitle(tr("%1 Time Instant").arg(d_edit_verb));
 	show();
@@ -250,7 +326,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_time_instant_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_time_period_widget(
-		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
+		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
 	setTitle(tr("%1 Time Period").arg(d_edit_verb));
 	show();
@@ -261,7 +337,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_time_period_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_old_plates_header_widget(
-		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
+		GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
 	setTitle(tr("%1 Old PLATES Header").arg(d_edit_verb));
 	show();
@@ -272,7 +348,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_old_plates_header_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_double_widget(
-		const GPlatesPropertyValues::XsDouble &xs_double)
+		GPlatesPropertyValues::XsDouble &xs_double)
 {
 	setTitle(tr("%1 Double").arg(d_edit_verb));
 	show();
@@ -283,7 +359,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_double_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_enumeration_widget(
-		const GPlatesPropertyValues::Enumeration &enumeration)
+		GPlatesPropertyValues::Enumeration &enumeration)
 {
 	setTitle(tr("%1 Enumeration").arg(d_edit_verb));
 	show();
@@ -293,8 +369,76 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_enumeration_widget(
 }
 
 void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_line_string_widget(
+		GPlatesPropertyValues::GmlLineString &gml_line_string,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	setTitle(tr("%1 Polyline").arg(d_edit_verb));
+	show();
+	d_edit_geometry_widget_ptr->update_widget_from_line_string(gml_line_string);
+	
+	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
+	// Find it, and set it (or unset it).
+	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
+	
+	d_active_widget_ptr = d_edit_geometry_widget_ptr;
+	d_edit_geometry_widget_ptr->show();
+}
+
+void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_multi_point_widget(
+		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	setTitle(tr("%1 Multi-Point").arg(d_edit_verb));
+	show();
+	d_edit_geometry_widget_ptr->update_widget_from_multi_point(gml_multi_point);
+	
+	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
+	// Find it, and set it (or unset it).
+	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
+	
+	d_active_widget_ptr = d_edit_geometry_widget_ptr;
+	d_edit_geometry_widget_ptr->show();
+}
+
+void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_point_widget(
+		GPlatesPropertyValues::GmlPoint &gml_point,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	setTitle(tr("%1 Point").arg(d_edit_verb));
+	show();
+	d_edit_geometry_widget_ptr->update_widget_from_point(gml_point);
+	
+	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
+	// Find it, and set it (or unset it).
+	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
+	
+	d_active_widget_ptr = d_edit_geometry_widget_ptr;
+	d_edit_geometry_widget_ptr->show();
+}
+
+void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_polygon_widget(
+		GPlatesPropertyValues::GmlPolygon &gml_polygon,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	setTitle(tr("%1 Polygon").arg(d_edit_verb));
+	show();
+	d_edit_geometry_widget_ptr->update_widget_from_polygon(gml_polygon);
+	
+	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
+	// Find it, and set it (or unset it).
+	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
+	
+	d_active_widget_ptr = d_edit_geometry_widget_ptr;
+	d_edit_geometry_widget_ptr->show();
+}
+
+void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_integer_widget(
-		const GPlatesPropertyValues::XsInteger &xs_integer)
+		GPlatesPropertyValues::XsInteger &xs_integer)
 {
 	setTitle(tr("%1 Integer").arg(d_edit_verb));
 	show();
@@ -305,7 +449,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_integer_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_plate_id_widget(
-		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	setTitle(tr("%1 Plate ID").arg(d_edit_verb));
 	show();
@@ -317,7 +461,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_plate_id_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_polarity_chron_id_widget(
-		const GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id)
+		GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id)
 {
 	setTitle(tr("%1 Polarity Chron ID").arg(d_edit_verb));
 	show();
@@ -329,7 +473,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_polarity_chron_id_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_angle_widget(
-		const GPlatesPropertyValues::GpmlMeasure &gpml_measure)
+		GPlatesPropertyValues::GpmlMeasure &gpml_measure)
 {
 	setTitle(tr("%1 Angle").arg(d_edit_verb));
 	show();
@@ -341,7 +485,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_angle_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_string_widget(
-		const GPlatesPropertyValues::XsString &xs_string)
+		GPlatesPropertyValues::XsString &xs_string)
 {
 	setTitle(tr("%1 String").arg(d_edit_verb));
 	show();
@@ -353,7 +497,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_string_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_boolean_widget(
-		const GPlatesPropertyValues::XsBoolean &xs_boolean)
+		GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
 	setTitle(tr("%1 Boolean").arg(d_edit_verb));
 	show();
@@ -369,16 +513,29 @@ GPlatesQtWidgets::EditWidgetGroupBox::deactivate_edit_widgets()
 	hide();
 	d_active_widget_ptr = NULL;
 	d_edit_time_instant_widget_ptr->hide();
+	d_edit_time_instant_widget_ptr->reset_widget_to_default_values();
 	d_edit_time_period_widget_ptr->hide();
+	d_edit_time_period_widget_ptr->reset_widget_to_default_values();
 	d_edit_old_plates_header_widget_ptr->hide();
+	d_edit_old_plates_header_widget_ptr->reset_widget_to_default_values();
 	d_edit_double_widget_ptr->hide();
+	d_edit_double_widget_ptr->reset_widget_to_default_values();
 	d_edit_enumeration_widget_ptr->hide();
+	d_edit_enumeration_widget_ptr->reset_widget_to_default_values();
+	d_edit_geometry_widget_ptr->hide();
+	d_edit_geometry_widget_ptr->reset_widget_to_default_values();
 	d_edit_integer_widget_ptr->hide();
+	d_edit_integer_widget_ptr->reset_widget_to_default_values();
 	d_edit_plate_id_widget_ptr->hide();
+	d_edit_plate_id_widget_ptr->reset_widget_to_default_values();
 	d_edit_polarity_chron_id_widget_ptr->hide();
+	d_edit_polarity_chron_id_widget_ptr->reset_widget_to_default_values();
 	d_edit_angle_widget_ptr->hide();
+	d_edit_angle_widget_ptr->reset_widget_to_default_values();
 	d_edit_string_widget_ptr->hide();
+	d_edit_string_widget_ptr->reset_widget_to_default_values();
 	d_edit_boolean_widget_ptr->hide();
+	d_edit_boolean_widget_ptr->reset_widget_to_default_values();
 }
 
 

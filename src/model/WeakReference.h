@@ -149,6 +149,18 @@ namespace GPlatesModel
 		}
 
 		/**
+		 * Return whether this weak-reference references @a that_handle.
+		 *
+		 * This function will not throw.
+		 */
+		bool
+		references(
+				const_handle_type &that_handle) const
+		{
+			return (handle_ptr() == &that_handle);
+		}
+
+		/**
 		 * Return whether this instance is equal to @a other.
 		 *
 		 * This instance will be considered equal to @a other if both instances reference

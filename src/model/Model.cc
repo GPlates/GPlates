@@ -172,12 +172,12 @@ GPlatesModel::Model::create_reconstruction(
 
 	// Build the reconstruction tree, using 'root' as the root of the tree.
 	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
-	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create(tree);
+	Reconstruction::non_null_ptr_type reconstruction =
+			Reconstruction::create(tree, reconstruction_features_collection);
 
 	ReconstructedFeatureGeometryPopulator rfgp(time, root, *reconstruction,
 			reconstruction->reconstruction_tree(),
-			reconstruction->point_geometries(),
-			reconstruction->polyline_geometries());
+			reconstruction->geometries());
 
 	visit_feature_collections(
 		reconstructable_features_collection.begin(),
@@ -199,7 +199,8 @@ GPlatesModel::Model::create_empty_reconstruction(
 
 	// Build the reconstruction tree, using 'root' as the root of the tree.
 	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
-	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create(tree);
+	std::vector<FeatureCollectionHandle::weak_ref> empty_vector;
+	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create(tree, empty_vector);
 
 	return reconstruction;
 }

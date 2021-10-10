@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,8 @@
 
 #ifndef GPLATES_PROPERTYVALUES_GEOTIMEINSTANT_H
 #define GPLATES_PROPERTYVALUES_GEOTIMEINSTANT_H
+
+#include <iosfwd>
 
 
 namespace GPlatesPropertyValues
@@ -267,6 +269,12 @@ namespace GPlatesPropertyValues
 	{
 		return g1.is_coincident_with(g2);
 	}
+
+
+	std::ostream &
+	operator<<(
+			std::ostream &o,
+			const GeoTimeInstant &g);
 }
 
 #endif  // GPLATES_PROPERTYVALUES_GEOTIMEINSTANT_H

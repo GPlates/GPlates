@@ -26,6 +26,7 @@
  */
  
 #include "ProximityTests.h"
+#include "maths/ProximityCriteria.h"
 
 
 void
@@ -33,45 +34,22 @@ GPlatesGui::ProximityTests::find_close_rfgs(
 		std::priority_queue<ProximityHit> &sorted_hits,
 		GPlatesModel::Reconstruction &recon,
 		const GPlatesMaths::PointOnSphere &test_point,
-		const GPlatesMaths::real_t &proximity_inclusion_threshold)
+		const double &proximity_inclusion_threshold)
 {
-	typedef GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere>
-			reconstructed_point;
-	typedef GPlatesModel::ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere>
-			reconstructed_polyline;
+	GPlatesMaths::ProximityCriteria criteria(test_point, proximity_inclusion_threshold);
 
-	// First, test for proximity to reconstructed points.
-	std::vector<reconstructed_point>::const_iterator point_iter = recon.point_geometries().begin();
-	std::vector<reconstructed_point>::const_iterator point_end = recon.point_geometries().end();
-	for ( ; point_iter != point_end; ++point_iter) {
-		const GPlatesMaths::PointOnSphere &curr_point = *(point_iter->geometry());
-		GPlatesModel::FeatureHandle::weak_ref feature_ref = point_iter->feature_ref();
-
-		// Don't bother initialising this.
-		GPlatesMaths::real_t proximity;
-
-		if (curr_point.is_close_to(test_point, proximity_inclusion_threshold, proximity)) {
-			sorted_hits.push(ProximityHit(feature_ref, proximity.dval()));
-		}
-	}
-
-	// Next, test for proximity to reconstructed polylines.
-
-	const GPlatesMaths::real_t pit_sqrd = proximity_inclusion_threshold * proximity_inclusion_threshold;
-	const GPlatesMaths::real_t latitude_exclusion_threshold = sqrt(1.0 - pit_sqrd);
-
-	std::vector<reconstructed_polyline>::const_iterator polyline_iter = recon.polyline_geometries().begin();
-	std::vector<reconstructed_polyline>::const_iterator polyline_end = recon.polyline_geometries().end();
-	for ( ; polyline_iter != polyline_end; ++polyline_iter) {
-		const GPlatesMaths::PolylineOnSphere &curr_polyline = *(polyline_iter->geometry());
-		GPlatesModel::FeatureHandle::weak_ref feature_ref = polyline_iter->feature_ref();
-
-		// Don't bother initialising this.
-		GPlatesMaths::real_t proximity;
-
-		if (curr_polyline.is_close_to(test_point, proximity_inclusion_threshold,
-				latitude_exclusion_threshold, proximity)) {
-			sorted_hits.push(ProximityHit(feature_ref, proximity.dval()));
+	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator iter =
+			recon.geometries().begin();
+	GPlatesModel::Reconstruction::geometry_collection_type::const_iterator end =
+			recon.geometries().end();
+	for ( ; iter != end; ++iter) {
+		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type hit =
+				(*iter)->geometry()->test_proximity(criteria);
+		if (hit) {
+			sorted_hits.push(ProximityHit(*iter,
+					GPlatesMaths::ProximityHitDetail::non_null_ptr_type(
+						hit.get(),
+						GPlatesUtils::NullIntrusivePointerHandler())));
 		}
 	}
 }

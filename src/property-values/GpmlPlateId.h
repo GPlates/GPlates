@@ -40,15 +40,19 @@ namespace GPlatesPropertyValues {
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlPlateId>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlPlateId,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPlateId> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPlateId,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -63,21 +67,44 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				const GPlatesModel::integer_plate_id_type &value_) {
-			non_null_ptr_type ptr(*(new GpmlPlateId(value_)));
+			non_null_ptr_type ptr(new GpmlPlateId(value_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GpmlPlateId(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GpmlPlateId(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
+		/**
+		 * Access the integer_plate_id_type contained within this GpmlPlateId.
+		 *
+		 * Note that this does not allow you to directly modify the plate id
+		 * inside this GpmlPlateId. For that, you should use @a set_value.
+		 */
 		const GPlatesModel::integer_plate_id_type &
 		value() const {
 			return d_value;
 		}
+		
+		/**
+		 * Set the plate id contained within this GpmlPlateId to @a p.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const GPlatesModel::integer_plate_id_type &p)
+		{
+			d_value = p;
+		}
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

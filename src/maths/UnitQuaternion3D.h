@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,6 +29,7 @@
 #define GPLATES_MATHS_UNITQUATERNION3D_H
 
 #include <iosfwd>
+#include <boost/optional.hpp>
 
 #include "types.h"  /* real_t */
 #include "Vector3D.h"
@@ -301,7 +302,8 @@ namespace GPlatesMaths {
 		 * identity rotation.
 		 */
 		const RotationParams
-		get_rotation_params() const;
+		get_rotation_params(
+				const boost::optional<UnitVector3D> &axis_hint) const;
 
 
 		/**

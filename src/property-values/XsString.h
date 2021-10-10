@@ -40,15 +40,19 @@ namespace GPlatesPropertyValues {
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsString>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsString,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<XsString> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XsString,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsString>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const XsString,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const XsString>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XsString,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -58,21 +62,46 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				const UnicodeString &s) {
-			XsString::non_null_ptr_type ptr(*(new XsString(s)));
+			XsString::non_null_ptr_type ptr(new XsString(s),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new XsString(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new XsString(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
+		/**
+		 * Accesses the TextContent contained within this XsString.
+		 *
+		 * Note that this does not allow you to modify the TextContent contained
+		 * within this XsString directly; for that, you should set a new
+		 * TextContent using the @a set_value function below.
+		 */
 		const TextContent &
 		value() const {
 			return d_value;
 		}
+
+		/**
+		 * Set the TextContent contained within this XsString to @a tc.
+		 * TextContent can be created by passing a UnicodeString in to
+		 * TextContent's constructor.
+		 * 
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const TextContent &tc) {
+			d_value = tc;
+		}
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

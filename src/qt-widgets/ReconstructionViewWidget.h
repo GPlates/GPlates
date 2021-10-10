@@ -46,6 +46,7 @@ namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
 	class GlobeCanvas;
+	class TaskPanel;
 
 
 	class ReconstructionViewWidget:
@@ -100,6 +101,17 @@ namespace GPlatesQtWidgets
 		{
 			return *d_canvas_ptr;
 		}
+		
+		/**
+		 * The Task Panel is created, and initialised by ViewportWindow.
+		 * ViewportWindow uses this method to insert the panel into the
+		 * ReconstructionViewWidget's layout. This is done mainly to reduce
+		 * dependencies in ViewportWindow's initialiser list.
+		 */
+		void
+		insert_task_panel(
+				GPlatesQtWidgets::TaskPanel *task_panel);
+				
 
 	public slots:
 		void
@@ -160,6 +172,7 @@ namespace GPlatesQtWidgets
 		handle_zoom_change();
 
 	private:
+
 		GlobeCanvas *d_canvas_ptr;
 
 	};

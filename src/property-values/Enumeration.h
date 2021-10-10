@@ -40,34 +40,54 @@ namespace GPlatesPropertyValues {
 
 	public:
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<Enumeration> 
+		typedef GPlatesUtils::non_null_intrusive_ptr<Enumeration,
+				GPlatesUtils::NullIntrusivePointerHandler> 
 				non_null_ptr_type;
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<const Enumeration>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const Enumeration,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
 		~Enumeration() {  }
 
+		// FIXME: enum_type should probably be a PropertyName.
 		static
 		const non_null_ptr_type
 		create(
 				const UnicodeString &enum_type,
 				const UnicodeString &enum_content) {
-			Enumeration::non_null_ptr_type ptr(*(new Enumeration(enum_type, enum_content)));
+			Enumeration::non_null_ptr_type ptr(new Enumeration(enum_type, enum_content),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new Enumeration(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new Enumeration(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
 		const EnumerationContent &
 		value() const {
 			return d_value;
+		}
+		
+		/**
+		 * Set the content of this enumeration to @a new_value.
+		 * EnumerationContent can be created by passing a UnicodeString in to
+		 * EnumerationContent's constructor.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const EnumerationContent &new_value) {
+			d_value = new_value;
 		}
 
 		const EnumerationType &

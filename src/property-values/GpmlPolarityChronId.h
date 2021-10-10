@@ -43,15 +43,20 @@ namespace GPlatesPropertyValues
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId>.
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -73,15 +78,18 @@ namespace GPlatesPropertyValues
 				boost::optional<QString> era,
 				boost::optional<unsigned int> major_region,
 				boost::optional<QString> minor_region) {
-			GpmlPolarityChronId::non_null_ptr_type ptr(*(new GpmlPolarityChronId(era,
-						   major_region, minor_region)));
+			GpmlPolarityChronId::non_null_ptr_type ptr(
+					new GpmlPolarityChronId(era, major_region, minor_region),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GpmlPolarityChronId(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new GpmlPolarityChronId(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
@@ -95,6 +103,10 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the "era" attribute of this GpmlPolarityChronId instance.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_era(
@@ -112,6 +124,10 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the "major region" attribute of this GpmlPolarityChronId instance.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_major_region(
@@ -129,6 +145,10 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the "minor region" attribute of this GpmlPolarityChronId instance.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_minor_region(

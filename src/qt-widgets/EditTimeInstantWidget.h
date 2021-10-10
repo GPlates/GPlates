@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_EDITTIMEINSTANTWIDGET_H
 #define GPLATES_QTWIDGETS_EDITTIMEINSTANTWIDGET_H
 
+#include <boost/intrusive_ptr.hpp>
 #include "AbstractEditWidget.h"
 #include "property-values/GmlTimeInstant.h"
 
@@ -50,12 +51,33 @@ namespace GPlatesQtWidgets
 
 		void
 		update_widget_from_time_instant(
-				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
+				GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
 
 		virtual
 		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_property_value_from_widget() const;
 
+		virtual
+		bool
+		update_property_value_from_widget();
+	
+	private:
+
+		/**
+		 * This boost::intrusive_ptr is used to remember the property value which
+		 * was last loaded into this editing widget. This is done so that the
+		 * edit widget can directly update the property value later.
+		 *
+		 * We need to use a reference-counting pointer to make sure the property
+		 * value doesn't disappear while this edit widget is active; however, since
+		 * the property value is not known at the time the widget is created,
+		 * the pointer may be NULL and this must be checked for.
+		 *
+		 * The pointer will also be NULL when the edit widget is being used for
+		 * adding brand new properties to the model.
+		 */
+		boost::intrusive_ptr<GPlatesPropertyValues::GmlTimeInstant> d_time_instant_ptr;
+		
 	};
 }
 

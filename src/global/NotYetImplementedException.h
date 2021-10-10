@@ -28,7 +28,7 @@
 #ifndef _GPLATES_GLOBAL_NOTYETIMPLEMENTEDEXCEPTION_H_
 #define _GPLATES_GLOBAL_NOTYETIMPLEMENTEDEXCEPTION_H_
 
-#include "Exception.h"
+#include "GPlatesException.h"
 
 namespace GPlatesGlobal
 {

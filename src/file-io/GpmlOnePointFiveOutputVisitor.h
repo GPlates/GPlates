@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,6 +31,11 @@
 #include "XmlOutputInterface.h"
 #include "model/ConstFeatureVisitor.h"
 
+
+namespace GPlatesPropertyValues
+{
+	class GpmlTimeSample;
+}
 
 namespace GPlatesFileIO
 {
@@ -114,17 +119,16 @@ namespace GPlatesFileIO
 
 		virtual
 		void
-		visit_gpml_time_sample(
-				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
-
-		virtual
-		void
 		visit_xs_string(
 				const GPlatesPropertyValues::XsString &xs_string);
 
 	private:
 
 		XmlOutputInterface d_output;
+
+		void
+		write_gpml_time_sample(
+				const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
 
 	};
 }

@@ -30,6 +30,7 @@
 
 #include "FileInfo.h"
 #include "ReadErrorAccumulation.h"
+#include "ExternalProgram.h"
 #include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
 
@@ -44,6 +45,8 @@ namespace GPlatesFileIO
 				FileInfo &fileinfo,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
+		
+		static const ExternalProgram s_gunzip_program;
 	};
 }
 

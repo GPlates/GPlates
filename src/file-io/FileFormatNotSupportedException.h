@@ -28,7 +28,7 @@
 #ifndef GPLATES_GLOBAL_FILEFORMATNOTSUPPORTEDEXCEPTION_H
 #define GPLATES_GLOBAL_FILEFORMATNOTSUPPORTEDEXCEPTION_H
 
-#include "global/Exception.h"
+#include "global/GPlatesException.h"
 
 namespace GPlatesFileIO
 {

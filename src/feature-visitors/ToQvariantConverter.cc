@@ -42,6 +42,7 @@
 #include "property-values/GpmlMeasure.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/Enumeration.h"
+#include "property-values/UninterpretedPropertyValue.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
@@ -102,16 +103,6 @@ void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_inline_property_container(
 		const GPlatesModel::InlinePropertyContainer &inline_property_container)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
-
-	if ( ! d_property_names_to_allow.empty()) {
-		// We're not allowing all property names.
-		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
-			// The current property name is not allowed.
-			return;
-		}
-	}
-
 	visit_property_values(inline_property_container);
 }
 
@@ -121,7 +112,7 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_enumeration(
 		const GPlatesPropertyValues::Enumeration &enumeration)
 {
 	QString qstring = GPlatesUtils::make_qstring_from_icu_string(enumeration.value().get());
-	d_found_qvariants.push_back(QVariant(qstring));
+	d_found_values.push_back(QVariant(qstring));
 }
 
 
@@ -130,7 +121,7 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_gml_time_instant(
 		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	const GPlatesPropertyValues::GeoTimeInstant &time_position = gml_time_instant.time_position();
-	d_found_qvariants.push_back(geo_time_instant_to_qvariant(time_position, d_role));
+	d_found_values.push_back(geo_time_instant_to_qvariant(time_position, d_role));
 }
 
 
@@ -145,12 +136,12 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_gml_time_period(
 		QList<QVariant> list;
 		list.append(geo_time_instant_to_qvariant(begin, d_role));
 		list.append(geo_time_instant_to_qvariant(end, d_role));
-		d_found_qvariants.push_back(QVariant(list));
+		d_found_values.push_back(QVariant(list));
 	} else {
 		QString str = QString("%1 - %2")
 				.arg(geo_time_instant_to_qvariant(begin, d_role).toString())
 				.arg(geo_time_instant_to_qvariant(end, d_role).toString());
-		d_found_qvariants.push_back(QVariant(str));
+		d_found_values.push_back(QVariant(str));
 	}
 }
 
@@ -159,6 +150,7 @@ void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
+	d_found_time_dependencies.push_back(QVariant("ConstantValue"));
 	gpml_constant_value.value()->accept_visitor(*this);
 }
 
@@ -167,7 +159,7 @@ void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-	d_found_qvariants.push_back(QVariant(static_cast<quint32>(gpml_plate_id.value())));
+	d_found_values.push_back(QVariant(static_cast<quint32>(gpml_plate_id.value())));
 }
 
 
@@ -190,7 +182,7 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_polarity_chron_id(
 	if (minor) {
 		str.append(*minor);
 	}
-	d_found_qvariants.push_back(QVariant(str));
+	d_found_values.push_back(QVariant(str));
 }
 
 
@@ -199,8 +191,9 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_measure(
 		const GPlatesPropertyValues::GpmlMeasure &gpml_measure)
 {
 	// FIXME: Ideally we'd render things like the degrees symbol depending on the value of
-	// the uom attribute.
-	d_found_qvariants.push_back(QVariant(gpml_measure.quantity()));
+	// the uom attribute. (urn:ogc:def:uom:OGC:1.0:degree)
+	// Naturally this would be for DisplayRole only; EditRole would need the raw double value.
+	d_found_values.push_back(QVariant(gpml_measure.quantity()));
 }
 
 
@@ -212,7 +205,7 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_old_plates_header(
 	static const QChar space_padded(' ');
 	
 	const GPlatesPropertyValues::GpmlOldPlatesHeader &header = gpml_old_plates_header;
-	d_found_qvariants.push_back(QVariant(QString("%L1 %2 %3 %4 %5 %L6 %L7 %8 %9 %10 %11 %12 %13")
+	d_found_values.push_back(QVariant(QString("%L1 %2 %3 %4 %5 %L6 %L7 %8 %9 %10 %11 %12 %13")
 			.arg(header.region_number(), 2, 10, zero_padded)
 			.arg(header.reference_number(), 2, 10, zero_padded)
 			.arg(header.string_number(), 4, 10, zero_padded)
@@ -231,10 +224,22 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_old_plates_header(
 
 
 void
+GPlatesFeatureVisitors::ToQvariantConverter::visit_uninterpreted_property_value(
+		const GPlatesPropertyValues::UninterpretedPropertyValue &uninterpreted_prop_val)
+{
+	QString buf;
+	QXmlStreamWriter writer(&buf);
+	writer.writeDefaultNamespace("http://www.gplates.org/gplates");
+	uninterpreted_prop_val.value()->write_to(writer);
+	d_found_values.push_back(buf);
+}
+
+
+void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_xs_boolean(
 		const GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
-	d_found_qvariants.push_back(QVariant(xs_boolean.value()));
+	d_found_values.push_back(QVariant(xs_boolean.value()));
 }
 
 
@@ -242,14 +247,14 @@ void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_xs_double(
 	const GPlatesPropertyValues::XsDouble& xs_double)
 {
-	d_found_qvariants.push_back(QVariant(xs_double.value()));
+	d_found_values.push_back(QVariant(xs_double.value()));
 }
 
 void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_xs_integer(
 	const GPlatesPropertyValues::XsInteger& xs_integer)
 {
-	d_found_qvariants.push_back(QVariant(xs_integer.value()));
+	d_found_values.push_back(QVariant(xs_integer.value()));
 }
 
 void
@@ -257,7 +262,7 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
 	QString qstring = GPlatesUtils::make_qstring(xs_string.value());
-	d_found_qvariants.push_back(QVariant(qstring));
+	d_found_values.push_back(QVariant(qstring));
 }
 
 

@@ -5,7 +5,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>639</width>
+    <width>724</width>
     <height>600</height>
    </rect>
   </property>
@@ -19,7 +19,7 @@
    <string>GPlates</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gplates_logo_16.png</iconset>
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/GPlates-icon-160x160-opaque.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget" />
   <widget class="QMenuBar" name="menubar" >
@@ -27,8 +27,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>639</width>
-     <height>22</height>
+     <width>724</width>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -65,7 +65,18 @@
     <property name="title" >
      <string>&amp;View</string>
     </property>
-    <addaction name="action_Enable_Raster_Display" />
+    <widget class="QMenu" name="menu_Colour_By" >
+     <property name="title" >
+      <string>&amp;Colour By</string>
+     </property>
+     <addaction name="action_Colour_By_Plate_ID" />
+     <addaction name="action_Colour_By_Single_Colour" />
+     <addaction name="action_Colour_By_Feature_Type" />
+     <addaction name="action_Colour_By_Age" />
+    </widget>
+    <addaction name="action_Show_Rasters" />
+    <addaction name="separator" />
+    <addaction name="menu_Colour_By" />
     <addaction name="separator" />
     <addaction name="action_Set_Camera_Viewpoint" />
     <addaction name="action_Move_Camera_Up" />
@@ -84,20 +95,41 @@
     <addaction name="separator" />
     <addaction name="action_Export_Geometry_Snapshot" />
    </widget>
-   <widget class="QMenu" name="menu_Tools" >
+   <widget class="QMenu" name="menu_Utilities" >
     <property name="title" >
-     <string>&amp;Tools</string>
+     <string>&amp;Utilities</string>
     </property>
     <addaction name="action_Reconstruction_Tree_and_Poles" />
    </widget>
+   <widget class="QMenu" name="menu_Edit" >
+    <property name="title" >
+     <string>&amp;Edit</string>
+    </property>
+    <addaction name="action_Query_Feature" />
+    <addaction name="action_Edit_Feature" />
+    <addaction name="separator" />
+    <addaction name="action_Undo_Placeholder" />
+    <addaction name="action_Redo_Placeholder" />
+    <addaction name="separator" />
+    <addaction name="action_Delete_Feature" />
+    <addaction name="separator" />
+    <addaction name="action_Clear_Selection" />
+   </widget>
    <addaction name="menu_File" />
+   <addaction name="menu_Edit" />
    <addaction name="menu_Reconstruction" />
    <addaction name="menu_View" />
-   <addaction name="menu_Tools" />
+   <addaction name="menu_Utilities" />
    <addaction name="menu_Help" />
   </widget>
   <widget class="QStatusBar" name="statusbar" />
-  <widget class="QToolBar" name="toolBar" >
+  <widget class="QToolBar" name="toolbar_main_tools" >
+   <property name="contextMenuPolicy" >
+    <enum>Qt::PreventContextMenu</enum>
+   </property>
+   <property name="windowTitle" >
+    <string>Tools</string>
+   </property>
    <property name="allowedAreas" >
     <set>Qt::AllToolBarAreas</set>
    </property>
@@ -118,10 +150,18 @@
    </attribute>
    <addaction name="action_Drag_Globe" />
    <addaction name="action_Zoom_Globe" />
-   <addaction name="action_Query_Feature" />
-   <addaction name="action_Edit_Feature" />
+   <addaction name="action_Click_Geometry" />
+   <addaction name="action_Digitise_New_Polyline" />
+   <addaction name="action_Digitise_New_MultiPoint" />
+   <addaction name="action_Digitise_New_Polygon" />
+   <addaction name="action_Move_Geometry" />
+   <addaction name="action_Move_Vertex" />
+   <addaction name="action_Manipulate_Pole" />
   </widget>
-  <widget class="QDockWidget" name="dock_information" >
+  <widget class="QDockWidget" name="dock_search_results" >
+   <property name="contextMenuPolicy" >
+    <enum>Qt::ActionsContextMenu</enum>
+   </property>
    <property name="features" >
     <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar|QDockWidget::NoDockWidgetFeatures</set>
    </property>
@@ -132,6 +172,9 @@
     <number>8</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents" >
+    <property name="contextMenuPolicy" >
+     <enum>Qt::PreventContextMenu</enum>
+    </property>
     <layout class="QVBoxLayout" >
      <property name="spacing" >
       <number>0</number>
@@ -159,8 +202,14 @@
        <property name="minimumSize" >
         <size>
          <width>0</width>
-         <height>100</height>
+         <height>130</height>
         </size>
+       </property>
+       <property name="contextMenuPolicy" >
+        <enum>Qt::PreventContextMenu</enum>
+       </property>
+       <property name="tabPosition" >
+        <enum>QTabWidget::North</enum>
        </property>
        <property name="currentIndex" >
         <number>0</number>
@@ -171,7 +220,7 @@
         </attribute>
         <layout class="QHBoxLayout" >
          <property name="spacing" >
-          <number>6</number>
+          <number>2</number>
          </property>
          <property name="leftMargin" >
           <number>2</number>
@@ -186,7 +235,7 @@
           <number>2</number>
          </property>
          <item>
-          <widget class="QTableView" name="tab_list_clicked" >
+          <widget class="QTableView" name="table_view_clicked_geometries" >
            <property name="sizePolicy" >
             <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
              <horstretch>0</horstretch>
@@ -198,6 +247,9 @@
            </property>
            <property name="selectionBehavior" >
             <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+           <property name="verticalScrollMode" >
+            <enum>QAbstractItemView::ScrollPerItem</enum>
            </property>
            <property name="horizontalScrollMode" >
             <enum>QAbstractItemView::ScrollPerPixel</enum>
@@ -212,7 +264,7 @@
         </attribute>
         <layout class="QVBoxLayout" >
          <property name="spacing" >
-          <number>6</number>
+          <number>2</number>
          </property>
          <property name="leftMargin" >
           <number>2</number>
@@ -227,7 +279,7 @@
           <number>2</number>
          </property>
          <item>
-          <widget class="QTableView" name="tab_list_selected" >
+          <widget class="QTableView" name="table_view_selected_features" >
            <property name="sizePolicy" >
             <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
              <horstretch>0</horstretch>
@@ -361,30 +413,33 @@
     <string>Drag Globe</string>
    </property>
    <property name="toolTip" >
-    <string>Drag globe to re-orient  D</string>
+    <string>Re-orient Globe  R</string>
    </property>
    <property name="shortcut" >
-    <string>D</string>
+    <string>R</string>
    </property>
   </action>
   <action name="action_Query_Feature" >
    <property name="checkable" >
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="checked" >
     <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/query_feature_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_edit_find_22.png</iconset>
    </property>
    <property name="text" >
-    <string>Query Feature</string>
+    <string>&amp;Query Feature</string>
+   </property>
+   <property name="iconText" >
+    <string>&amp;Query Feature</string>
    </property>
    <property name="toolTip" >
-    <string>Click feature to query  Q</string>
+    <string>Query Feature  Ctrl+Y</string>
    </property>
    <property name="shortcut" >
-    <string>Q</string>
+    <string>Ctrl+Y</string>
    </property>
   </action>
   <action name="action_Docks" >
@@ -435,7 +490,7 @@
     <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_original_16.png</iconset>
    </property>
    <property name="text" >
-    <string>&amp;Reset Zoom Level</string>
+    <string>Reset Zoo&amp;m Level</string>
    </property>
    <property name="shortcut" >
     <string>1</string>
@@ -452,7 +507,7 @@
     <string>Zoom Globe</string>
    </property>
    <property name="toolTip" >
-    <string>Click globe to zoom  Z</string>
+    <string>Zoom In  Z</string>
    </property>
    <property name="shortcut" >
     <string>Z</string>
@@ -575,19 +630,25 @@
   </action>
   <action name="action_Edit_Feature" >
    <property name="checkable" >
-    <bool>true</bool>
+    <bool>false</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
    </property>
    <property name="icon" >
-    <iconset resource="../qt-resources/qt_widgets.qrc" >:/edit_feature_35.png</iconset>
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_gtk_edit_22.png</iconset>
    </property>
    <property name="text" >
-    <string>Edit Feature</string>
+    <string>&amp;Edit Feature</string>
+   </property>
+   <property name="iconText" >
+    <string>&amp;Edit Feature</string>
    </property>
    <property name="toolTip" >
-    <string>Click feature to edit  E</string>
+    <string>Edit Feature  Ctrl+E</string>
    </property>
    <property name="shortcut" >
-    <string>E</string>
+    <string>Ctrl+E</string>
    </property>
   </action>
   <action name="action_Reconstruction_Tree_and_Poles" >
@@ -600,17 +661,302 @@
     <string>Open Global &amp;Raster...</string>
    </property>
   </action>
-  <action name="action_Enable_Raster_Display" >
+  <action name="action_Show_Rasters" >
    <property name="checkable" >
     <bool>true</bool>
    </property>
    <property name="text" >
-    <string>&amp;Enable Raster Display</string>
+    <string>&amp;Show Rasters</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether rasters are shown.</string>
    </property>
   </action>
   <action name="action_Open_Time_Dependent_Global_Raster_Set" >
    <property name="text" >
-    <string>Open Time Dependent Global Raster Set...</string>
+    <string>Open &amp;Time Dependent Global Raster Set...</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Plate_ID" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Plate ID</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Single_Colour" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Single Colour ...</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Feature_Type" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Feature &amp;Type</string>
+   </property>
+  </action>
+  <action name="action_Colour_By_Age" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Feature &amp;Age</string>
+   </property>
+  </action>
+  <action name="action_Digitise_New_Polyline" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/digitise_polyline_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Digitise New Poly&amp;line</string>
+   </property>
+   <property name="iconText" >
+    <string>Digitise New Poly&amp;line</string>
+   </property>
+   <property name="toolTip" >
+    <string>Digitise Polyline Geometry  L</string>
+   </property>
+   <property name="shortcut" >
+    <string>L</string>
+   </property>
+  </action>
+  <action name="action_Click_Geometry" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/focus_feature_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Click Geometry</string>
+   </property>
+   <property name="iconText" >
+    <string>&amp;Click Geometry</string>
+   </property>
+   <property name="toolTip" >
+    <string>Choose Feature  F</string>
+   </property>
+   <property name="shortcut" >
+    <string>F</string>
+   </property>
+  </action>
+  <action name="action_Delete_Feature" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_edit_delete_22.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Delete Feature</string>
+   </property>
+   <property name="toolTip" >
+    <string>Delete Feature  Del</string>
+   </property>
+   <property name="shortcut" >
+    <string>Del</string>
+   </property>
+  </action>
+  <action name="action_Add_Feature_To_Selection" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_list_add_22.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Add Feature to Select&amp;ion</string>
+   </property>
+  </action>
+  <action name="action_Remove_Feature_From_Selection" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_list_remove_22.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Remove Feature from Selecti&amp;on</string>
+   </property>
+  </action>
+  <action name="action_Clear_Selection" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_window_close_22.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Clear Se&amp;lection</string>
+   </property>
+  </action>
+  <action name="action_Information_Dock_At_Bottom" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_down_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Dock at &amp;Bottom</string>
+   </property>
+  </action>
+  <action name="action_Information_Dock_At_Top" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_up_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Dock at &amp;Top</string>
+   </property>
+  </action>
+  <action name="action_Actions_Dock_At_Left" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_previous_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Dock at &amp;Left</string>
+   </property>
+  </action>
+  <action name="action_Actions_Dock_At_Right" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_go_next_16.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Dock at &amp;Right</string>
+   </property>
+  </action>
+  <action name="action_Digitise_New_Polygon" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/digitise_polygon_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Digitise New P&amp;olygon</string>
+   </property>
+   <property name="iconText" >
+    <string>Digitise New P&amp;olygon</string>
+   </property>
+   <property name="toolTip" >
+    <string>Digitise Polygon Geometry  G</string>
+   </property>
+   <property name="shortcut" >
+    <string>G</string>
+   </property>
+  </action>
+  <action name="action_Digitise_New_MultiPoint" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/digitise_multipoint_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Digitise New &amp;Points</string>
+   </property>
+   <property name="iconText" >
+    <string>Digitise New &amp;Points</string>
+   </property>
+   <property name="toolTip" >
+    <string>Digitise Multi-point Geometry  M</string>
+   </property>
+   <property name="shortcut" >
+    <string>M</string>
+   </property>
+  </action>
+  <action name="action_Undo_Placeholder" >
+   <property name="text" >
+    <string>Undo (Placeholder)</string>
+   </property>
+   <property name="shortcut" >
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="action_Redo_Placeholder" >
+   <property name="text" >
+    <string>Redo (Placeholder)</string>
+   </property>
+   <property name="shortcut" >
+    <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="action_Move_Geometry" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/move_geometry_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Move Geometry</string>
+   </property>
+   <property name="iconText" >
+    <string>&amp;Move Geometry</string>
+   </property>
+   <property name="toolTip" >
+    <string>Move Geometry  Y</string>
+   </property>
+   <property name="shortcut" >
+    <string>Y</string>
+   </property>
+  </action>
+  <action name="action_Move_Vertex" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/move_vertex_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Mo&amp;ve Vertex</string>
+   </property>
+   <property name="iconText" >
+    <string>Mo&amp;ve Vertex</string>
+   </property>
+   <property name="toolTip" >
+    <string>Move Vertex  V</string>
+   </property>
+   <property name="shortcut" >
+    <string>V</string>
+   </property>
+  </action>
+  <action name="action_Manipulate_Pole" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/plate_pole_modification_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Manipulate Po&amp;le</string>
+   </property>
+   <property name="iconText" >
+    <string>Manipulate Po&amp;le</string>
+   </property>
+   <property name="toolTip" >
+    <string>Modify Reconstruction Pole  P</string>
+   </property>
+   <property name="shortcut" >
+    <string>P</string>
    </property>
   </action>
  </widget>

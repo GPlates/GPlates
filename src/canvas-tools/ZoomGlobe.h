@@ -29,6 +29,12 @@
 #include "gui/CanvasTool.h"
 
 
+namespace GPlatesQtWidgets
+{
+	class GlobeCanvas;
+	class ViewportWindow;
+}
+
 namespace GPlatesCanvasTools
 {
 	/**
@@ -39,9 +45,11 @@ namespace GPlatesCanvasTools
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ZoomGlobe>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ZoomGlobe,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ZoomGlobe> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ZoomGlobe,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
 		~ZoomGlobe()
@@ -54,15 +62,28 @@ namespace GPlatesCanvasTools
 		const non_null_ptr_type
 		create(
 				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_)
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				const GPlatesQtWidgets::ViewportWindow &view_state_)
 		{
-			ZoomGlobe::non_null_ptr_type ptr(*(new ZoomGlobe(globe_, globe_canvas_)));
+			ZoomGlobe::non_null_ptr_type ptr(new ZoomGlobe(globe_, globe_canvas_, view_state_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		void
+		handle_activation();
+
+		virtual
+		void
 		handle_left_click(
+				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
+				bool is_on_globe);
+
+		virtual
+		void
+		handle_shift_left_click(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe);
@@ -73,11 +94,19 @@ namespace GPlatesCanvasTools
 		explicit
 		ZoomGlobe(
 				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_):
-			CanvasTool(globe_, globe_canvas_)
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				const GPlatesQtWidgets::ViewportWindow &view_state_):
+			CanvasTool(globe_, globe_canvas_),
+			d_view_state_ptr(&view_state_)
 		{  }
 
 	private:
+
+		/**
+		 * This is the View State used to pass messages to the status bar.
+		 */
+		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.
 		ZoomGlobe(

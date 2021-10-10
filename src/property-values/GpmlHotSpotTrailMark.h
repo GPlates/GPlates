@@ -40,20 +40,25 @@
 
 namespace GPlatesPropertyValues {
 
-	class GpmlHotSpotTrailMark :
+	class GpmlHotSpotTrailMark:
 			public GPlatesModel::PropertyValue {
 
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlHotSpotTrailMark>.
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlHotSpotTrailMark,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlHotSpotTrailMark> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlHotSpotTrailMark,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlHotSpotTrailMark>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlHotSpotTrailMark,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlHotSpotTrailMark>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlHotSpotTrailMark,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -71,15 +76,19 @@ namespace GPlatesPropertyValues {
 				const boost::optional<GpmlMeasure::non_null_ptr_type> &trail_width_,
 				const boost::optional<GmlTimeInstant::non_null_ptr_type> &measured_age_,
 				const boost::optional<GmlTimePeriod::non_null_ptr_type> &measured_age_range_) {
-			non_null_ptr_type ptr(*(new GpmlHotSpotTrailMark(
-							position_, trail_width_, measured_age_, measured_age_range_)));
+			non_null_ptr_type ptr(
+					new GpmlHotSpotTrailMark( position_, trail_width_,
+							measured_age_, measured_age_range_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GpmlHotSpotTrailMark(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new GpmlHotSpotTrailMark(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

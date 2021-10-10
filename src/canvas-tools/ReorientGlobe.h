@@ -29,6 +29,12 @@
 #include "gui/CanvasTool.h"
 
 
+namespace GPlatesQtWidgets
+{
+	class GlobeCanvas;
+	class ViewportWindow;
+}
+
 namespace GPlatesCanvasTools
 {
 	/**
@@ -39,9 +45,11 @@ namespace GPlatesCanvasTools
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ReorientGlobe>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ReorientGlobe,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ReorientGlobe> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ReorientGlobe,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		virtual
 		~ReorientGlobe()
@@ -54,11 +62,18 @@ namespace GPlatesCanvasTools
 		const non_null_ptr_type
 		create(
 				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_)
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				const GPlatesQtWidgets::ViewportWindow &view_state_)
 		{
-			ReorientGlobe::non_null_ptr_type ptr(*(new ReorientGlobe(globe_, globe_canvas_)));
+			ReorientGlobe::non_null_ptr_type ptr(
+					new ReorientGlobe(globe_, globe_canvas_, view_state_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
+
+		virtual
+		void
+		handle_activation();
 
 		virtual
 		void
@@ -67,12 +82,9 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				bool is_on_globe)
-		{
-			reorient_globe_by_drag_update(initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe, is_on_globe);
-		}
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
 		virtual
 		void
@@ -81,12 +93,31 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				bool is_on_globe)
-		{
-			reorient_globe_by_drag_release(initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe, is_on_globe);
-		}
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+
+		virtual
+		void
+		handle_shift_left_drag(
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				bool was_on_globe,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
+
+		virtual
+		void
+		handle_shift_left_release_after_drag(
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+				bool was_on_globe,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
 	protected:
 		// This constructor should not be public, because we don't want to allow
@@ -94,11 +125,19 @@ namespace GPlatesCanvasTools
 		explicit
 		ReorientGlobe(
 				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_):
-			CanvasTool(globe_, globe_canvas_)
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				const GPlatesQtWidgets::ViewportWindow &view_state_):
+			CanvasTool(globe_, globe_canvas_),
+			d_view_state_ptr(&view_state_)
 		{  }
 
 	private:
+
+		/**
+		 * This is the View State used to pass messages to the status bar.
+		 */
+		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.
 		ReorientGlobe(

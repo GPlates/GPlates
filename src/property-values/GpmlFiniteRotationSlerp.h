@@ -33,23 +33,26 @@
 
 namespace GPlatesPropertyValues {
 
-	class GpmlFiniteRotationSlerp :
+	class GpmlFiniteRotationSlerp:
 			public GpmlInterpolationFunction {
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp>
-				non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -64,14 +67,17 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				const TemplateTypeParameterType &value_type_) {
-			non_null_ptr_type ptr(*(new GpmlFiniteRotationSlerp(value_type_)));
+			non_null_ptr_type ptr(new GpmlFiniteRotationSlerp(value_type_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GpmlFiniteRotationSlerp(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new GpmlFiniteRotationSlerp(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

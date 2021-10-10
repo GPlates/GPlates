@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2004, 2005, 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,8 +27,11 @@
 
 #include <iostream>
 #include <utility>
+
 #include "NurbsRenderer.h"
 #include "OpenGLBadAllocException.h"
+
+#include "maths/GreatCircleArc.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 #include "maths/GenericVectorOps3D.h"
@@ -40,8 +43,8 @@ namespace
 {
 	// Handle GLU NURBS errors
 	GLvoid
-	NurbsError() {
-
+	NurbsError()
+	{
 		// XXX I'm not sure if glGetError actually returns the GLU 
 		// error codes as well as the GL codes.
 		std::cerr
@@ -54,10 +57,10 @@ namespace
 }
 
 
-GPlatesGui::NurbsRenderer::NurbsRenderer() {
-
-	_nr = gluNewNurbsRenderer();
-	if (_nr == 0) {
+GPlatesGui::NurbsRenderer::NurbsRenderer()
+{
+	d_nurbs_ptr = gluNewNurbsRenderer();
+	if (d_nurbs_ptr == 0) {
 
 		// not enough memory to allocate object
 		throw OpenGLBadAllocException(
@@ -67,7 +70,7 @@ GPlatesGui::NurbsRenderer::NurbsRenderer() {
 	// On Mac OS X, the compiler complained, so it was changed to this.
 	// Update: Fixed the prototype of the NurbsError callback function 
 	// and removed the varargs ellipsis from the cast type.
-	gluNurbsCallback(_nr, GLU_ERROR,
+	gluNurbsCallback(d_nurbs_ptr, GLU_ERROR,
 #if defined(__APPLE__)
 			// Assume compilation on OS X.
 			reinterpret_cast< GLvoid (__CONVENTION__ *)(...) >(&NurbsError));
@@ -78,10 +81,10 @@ GPlatesGui::NurbsRenderer::NurbsRenderer() {
 	// Increase the resolution so we get smoother curves:
 	//  -  Even though it's the default, we force GLU_SAMPLING_METHOD
 	//    to be GLU_PATH_LENGTH.
-	gluNurbsProperty(_nr, GLU_SAMPLING_METHOD, GLU_PATH_LENGTH);
+	gluNurbsProperty(d_nurbs_ptr, GLU_SAMPLING_METHOD, GLU_PATH_LENGTH);
 	//  -  The default GLU_SAMPLING_TOLERANCE is 50.0 pixels.  The OpenGL
 	//    API notes that this is rather conservative, so we halve it.
-	gluNurbsProperty(_nr, GLU_SAMPLING_TOLERANCE, 25.0);
+	gluNurbsProperty(d_nurbs_ptr, GLU_SAMPLING_TOLERANCE, 25.0);
 }
 
 namespace
@@ -198,6 +201,6 @@ GPlatesGui::NurbsRenderer::draw_great_circle_arc_smaller_than_ninety_degrees(
 		}
 	};
 
-	drawCurve(KNOT_SIZE, &KNOTS[0], STRIDE,
+	draw_curve(KNOT_SIZE, &KNOTS[0], STRIDE,
 			&ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
 }

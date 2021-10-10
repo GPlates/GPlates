@@ -28,7 +28,7 @@
 #ifndef _GPLATES_GUI_GUIEXCEPTION_H_
 #define _GPLATES_GUI_GUIEXCEPTION_H_
 
-#include "global/Exception.h"
+#include "global/GPlatesException.h"
 
 namespace GPlatesGui
 {

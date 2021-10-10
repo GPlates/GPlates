@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,8 +28,6 @@
 #ifndef GPLATES_MODEL_RECONSTRUCTIONTREEPOPULATOR_H
 #define GPLATES_MODEL_RECONSTRUCTIONTREEPOPULATOR_H
 
-#include <memory>  /* std::auto_ptr */
-#include <boost/intrusive_ptr.hpp>
 #include <boost/optional.hpp>
 
 #include "FeatureVisitor.h"
@@ -73,7 +71,6 @@ namespace GPlatesModel
 
 		};
 
-		explicit
 		ReconstructionTreePopulator(
 				const double &recon_time,
 				ReconstructionGraph &graph);
@@ -111,11 +108,6 @@ namespace GPlatesModel
 		void
 		visit_gpml_plate_id(
 				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
-
-		virtual
-		void
-		visit_gpml_time_sample(
-				GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample);
 
 	private:
 

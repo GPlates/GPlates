@@ -53,28 +53,28 @@ namespace GPlatesFeatureVisitors
 
 		// FIXME:  We should also pass the current reconstruction time, so we can correctly
 		// handle time-dependent property values.
+		// FIXME: Which means a lot more code needs to know about the current reconstruction
+		// time.
+		/**
+		 * Creates a ToQvariantConverter. The typical usage pattern for this feature visitor
+		 * is to create on, set it up with a 'role' if necessary, then call accept_visitor
+		 * directly on a PropertyContainer you are interested in. For instance, if you
+		 * had a FeatureHandle::properties_iterator @a it, and a ToQvariantConverter @a toqv,
+		 * you might write:-
+		 * 	(*it)->accept_visitor(toqv);
+		 *
+		 * After the visitor has finished, you can check to see if it was able to create
+		 * any QVariants from the property by checking @a found_values_begin() and
+		 * @a found_values_end().
+		 */
 		explicit
 		ToQvariantConverter():
 			d_role(Qt::DisplayRole)
 		{  }
 
-		explicit
-		ToQvariantConverter(
-				const GPlatesModel::PropertyName &property_name_to_allow):
-			d_role(Qt::DisplayRole)
-		{
-			d_property_names_to_allow.push_back(property_name_to_allow);
-		}
-
 		virtual
 		~ToQvariantConverter() {  }
 
-		void
-		add_property_name_to_allow(
-				const GPlatesModel::PropertyName &property_name_to_allow)
-		{
-			d_property_names_to_allow.push_back(property_name_to_allow);
-		}
 		
 		/**
 		 * The ToQvariantConverter defaults to Qt::DisplayRole, for returning QVariants
@@ -153,6 +153,11 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
+		visit_uninterpreted_property_value(
+				const GPlatesPropertyValues::UninterpretedPropertyValue &uninterpreted_prop_val);
+
+		virtual
+		void
 		visit_xs_boolean(
 				const GPlatesPropertyValues::XsBoolean &xs_boolean);
 
@@ -173,26 +178,55 @@ namespace GPlatesFeatureVisitors
 
 
 		qvariant_container_const_iterator
-		found_qvariants_begin() const
+		found_values_begin() const
 		{
-			return d_found_qvariants.begin();
+			return d_found_values.begin();
 		}
 
 		qvariant_container_const_iterator
-		found_qvariants_end() const
+		found_values_end() const
 		{
-			return d_found_qvariants.end();
+			return d_found_values.end();
 		}
 
 		void
-		clear_found_qvariants()
+		clear_found_values()
 		{
-			d_found_qvariants.clear();
+			d_found_values.clear();
+		}
+
+		qvariant_container_const_iterator
+		found_time_dependencies_begin() const
+		{
+			return d_found_time_dependencies.begin();
+		}
+
+		qvariant_container_const_iterator
+		found_time_dependencies_end() const
+		{
+			return d_found_time_dependencies.end();
+		}
+
+		void
+		clear_found_time_dependencies()
+		{
+			d_found_time_dependencies.clear();
 		}
 
 	private:
-		std::vector<GPlatesModel::PropertyName> d_property_names_to_allow;
-		qvariant_container_type d_found_qvariants;
+		/**
+		 * A sequence of values that the ToQvariantConverter has encountered,
+		 * converted to QVariants where possible.
+		 */
+		qvariant_container_type d_found_values;
+		
+		/**
+		 * A sequence of TimeDependentPropertyValues that the ToQvariantConverter has encountered,
+		 * represented as QVariants. This is mostly available for debugging purposes, to figure
+		 * out exactly what time-dependent wrappers are around the PropertyValues we eventually
+		 * find (or don't find).
+		 */
+		qvariant_container_type d_found_time_dependencies;
 		
 		/**
 		 * The role that is to be used for the returned QVariant.

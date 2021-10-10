@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -110,7 +110,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 			moving_plate_id_or_comment = 999;
 		}
 
-		GPlatesMaths::UnitQuaternion3D quat = iter->finite_rotation->unit_quat();
+		const GPlatesMaths::UnitQuaternion3D &quat = iter->finite_rotation->unit_quat();
 		if (GPlatesMaths::represents_identity_rotation(quat)) 
 		{
 			print_rotation_line_details(os, moving_plate_id_or_comment, *(iter->time), 0.0, 0.0, 0.0, 
@@ -119,7 +119,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 		else 
 		{
 			GPlatesMaths::UnitQuaternion3D::RotationParams rot_params =
-				quat.get_rotation_params();
+				quat.get_rotation_params(iter->finite_rotation->axis_hint());
 
 			GPlatesMaths::LatLonPoint pole = 
 				GPlatesMaths::make_lat_lon_point(GPlatesMaths::PointOnSphere(rot_params.axis));
@@ -241,7 +241,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_irregular_sampling(
 		iter = gpml_irregular_sampling.time_samples().begin(),
 		end = gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter) {
-		iter->accept_visitor(*this);
+		write_gpml_time_sample(*iter);
 	}
 }
 
@@ -271,7 +271,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_plate_id(
 
 
 void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_time_sample(
+GPlatesFileIO::PlatesRotationFormatWriter::write_gpml_time_sample(
 		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
 {
 	// Start a new reconstruction pole
@@ -293,7 +293,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_time_sample(
 void
 GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_old_plates_header(
 		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
-{ }
+{  }
 
 
 void

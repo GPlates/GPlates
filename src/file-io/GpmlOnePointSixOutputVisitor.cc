@@ -29,8 +29,15 @@
 
 #include <vector>
 #include <utility>
-
+#include <QDir>
+#include <QFile>
+#include <QtCore/QUuid>
+#include <QtGlobal> 
+#include <QProcess>
 #include <boost/bind.hpp>
+
+#include "ErrorOpeningFileForWritingException.h"
+#include "ErrorOpeningPipeToGzipException.h"
 #include "model/FeatureHandle.h"
 #include "model/InlinePropertyContainer.h"
 #include "model/FeatureRevision.h"
@@ -39,6 +46,7 @@
 
 #include "property-values/Enumeration.h"
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
@@ -53,6 +61,7 @@
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlHotSpotTrailMark.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlMeasure.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
@@ -67,11 +76,64 @@
 #include "property-values/XsInteger.h"
 
 #include "maths/PolylineOnSphere.h"
+#include "maths/MultiPointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
+
+
+const GPlatesFileIO::ExternalProgram
+		GPlatesFileIO::GpmlOnePointSixOutputVisitor::s_gzip_program("gzip", "gzip --version");
 
 
 namespace
 {
+	/**
+	 * Replace the q_file_ptr's filename with a unique temporary .gpml filename.
+	 */
+	void
+	set_temporary_filename(
+		boost::shared_ptr<QFile> q_file_ptr)
+	{
+		if (!q_file_ptr)
+		{
+			return;
+		}
+		// I'm using a uuid to generate a unique name... is this overkill?
+		QUuid uuid = QUuid::createUuid();
+		QString uuid_string = uuid.toString();
+
+		// The uuid string has braces around it, so remove them. 
+		uuid_string.remove(0,1);
+		uuid_string.remove(uuid_string.length()-1,1);
+
+		QFileInfo file_info(*q_file_ptr);
+
+		// And don't forget to put ".gpml" at the end. 
+		q_file_ptr->setFileName(file_info.absolutePath() + QDir::separator() + uuid_string + ".gpml");
+	}
+
+
+	/**
+	 * If the filename of the QFile ends in ".gz", this will be stripped from the QFile's filename. 
+	 */
+	void
+	remove_gz_from_filename(
+		boost::shared_ptr<QFile> q_file_ptr)
+	{
+		if (!q_file_ptr){
+			return;
+		}
+
+		QString file_name = q_file_ptr->fileName();
+
+		QString gz_string(".gz");
+
+		if (file_name.endsWith(gz_string))
+		{
+			file_name.remove(file_name.length()-gz_string.length(),gz_string.length());
+			q_file_ptr->setFileName(file_name);
+		}
+	}
+
 	typedef std::pair<
 		GPlatesModel::XmlAttributeName, 
 		GPlatesModel::XmlAttributeValue> 
@@ -107,42 +169,260 @@ namespace
 		}
 
 		writer.writeText(prefix + ":" + value_type.get_name());
-	} 
+	}
+	
+	
+	/**
+	 * Convenience function to help write GmlPolygon's exterior and interior rings.
+	 */
+	void
+	write_gml_linear_ring(
+			GPlatesFileIO::XmlWriter &xml_output,
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr)
+	{
+		xml_output.writeStartGmlElement("LinearRing");
+	
+		static std::vector<std::pair<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> > 
+			pos_list_xml_attrs;
+	
+		if (pos_list_xml_attrs.empty()) 
+		{
+			GPlatesModel::XmlAttributeName attr_name =
+				GPlatesModel::XmlAttributeName::create_gml("dimension");
+			GPlatesModel::XmlAttributeValue attr_value("2");
+			pos_list_xml_attrs.push_back(std::make_pair(attr_name, attr_value));
+		}
+		// FIXME: srsName?
+		xml_output.writeStartGmlElement("posList");
+		xml_output.writeAttributes(
+				pos_list_xml_attrs.begin(),
+				pos_list_xml_attrs.end());
+	
+		// It would be slightly "nicer" (ie, avoiding the allocation of a temporary buffer) if we
+		// were to create an iterator which performed the following transformation for us
+		// automatically, but (i) that's probably not the most efficient use of our time right now;
+		// (ii) it's file I/O, it's slow anyway; and (iii) we can cut it down to a single memory
+		// allocation if we reserve the size of the vector in advance.
+		std::vector<double> pos_list;
+		// Reserve enough space for the coordinates, to avoid the need to reallocate.
+		//
+		// number of coords = 
+		//   (one for each segment start-point, plus one for the final end-point
+		//   (all other end-points are the start-point of the next segment, so are not counted)),
+		//   times two, since each point is a (lat, lon) duple.
+		pos_list.reserve((polygon_ptr->number_of_segments() + 1) * 2);
+	
+		GPlatesMaths::PolygonOnSphere::vertex_const_iterator begin = polygon_ptr->vertex_begin();
+		GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = begin;
+		GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_ptr->vertex_end();
+		for ( ; iter != end; ++iter) 
+		{
+			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
+	
+			// NOTE: We are assuming GPML is using (lat,lon) ordering.
+			// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
+			pos_list.push_back(llp.latitude());
+			pos_list.push_back(llp.longitude());
+		}
+		// When writing gml:Polygons, the last point must be identical to the first point,
+		// because the format wasn't verbose enough.
+		GPlatesMaths::LatLonPoint begin_llp = GPlatesMaths::make_lat_lon_point(*begin);
+		pos_list.push_back(begin_llp.latitude());
+		pos_list.push_back(begin_llp.longitude());
+		
+		// Now that we have assembled the coordinates, write them into the XML.
+		xml_output.writeNumericalSequence(pos_list.begin(), pos_list.end());
+	
+		// Don't forget to clear the vector when we're done with it!
+		pos_list.clear();
+	
+		xml_output.writeEndElement(); // </gml:posList>
+		xml_output.writeEndElement(); // </gml:LinearRing>
+	}
+
+
+	/**
+	 * Convenience function to help write GmlPoint and GmlMultiPoint.
+	 */
+	void
+	write_gml_point(
+			GPlatesFileIO::XmlWriter &xml_output,
+			const GPlatesMaths::PointOnSphere &point)
+	{
+		xml_output.writeStartGmlElement("Point");
+			xml_output.writeStartGmlElement("pos");
+
+				GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+				// NOTE: We are assuming GPML is using (lat,lon) ordering.
+				// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
+				xml_output.writeDecimalPair(llp.latitude(), llp.longitude());
+
+			xml_output.writeEndElement();  // </gml:pos>
+		xml_output.writeEndElement();  // </gml:Point>
+	}
+
+
+}
+
+
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
+		const FileInfo &file_info,
+		bool use_gzip):
+	d_qfile_ptr(new QFile(file_info.get_qfileinfo().filePath())),
+	d_qprocess_ptr(new QProcess),
+	d_gzip_afterwards(false),
+	d_output_filename(file_info.get_qfileinfo().filePath())
+{
+
+// If we're on a Windows system, we have to treat the whole gzip thing differently. 
+//	The approach under Windows is:
+//	1. Produce uncompressed output.
+//	2. Gzip it.
+//
+//  To prevent us from overwriting any existing uncompressed file which the user may want preserved,
+//  we generate a temporary gpml file name. The desired output file name is stored in the member variable
+//  "d_output_filename". 
+//
+//	To implement this we do the following:
+//	1. If we're on Windows, AND compressed output is requested, then
+//		a. Set the "d_gzip_afterwards" flag to true. (We need to check the status of this flag in the destructor
+//			where we'll actually do the gzipping).
+//		b. Set "use_gzip" to false, so that uncompressed output will be produced.
+//		c. Replace the d_qfile_ptr's filename with a temporary .gpml filename. 
+//
+//	2. In the destructor, (i.e. after the uncompressed file has been written), check if the 
+//		"d_gzip_afterwards" flag is set. If so, gzip the uncompressed file, and rename it to 
+//		"d_output_filename". If not, do the normal wait-for-process-to-end stuff. 
+//																	
+#ifdef Q_WS_WIN
+	if (use_gzip) {
+		d_gzip_afterwards = true;
+		use_gzip = false;
+		set_temporary_filename(d_qfile_ptr);
+	}
+#endif
+
+	if ( ! d_qfile_ptr->open(QIODevice::WriteOnly | QIODevice::Text)) {
+		throw ErrorOpeningFileForWritingException(file_info.get_qfileinfo().filePath());
+	}
+
+	if (use_gzip) {
+		// Using gzip; We already opened the file using d_qfile_ptr, but that's okay,
+		// since it verifies that we can actually write to that location.
+		// Now we've verified that, we can close the file.
+		d_qfile_ptr->close();
+		
+		// Set up the gzip process. Just like the QFile output, we need to keep it
+		// as a shared_ptr belonging to this class.
+		d_qprocess_ptr->setStandardOutputFile(file_info.get_qfileinfo().filePath());
+		// FIXME: Assuming gzip is in a standard place on the path. Not true on MS/Win32. Not true at all.
+		// In fact, it may need to be a user preference.
+		d_qprocess_ptr->start(s_gzip_program.command());
+		if ( ! d_qprocess_ptr->waitForStarted()) {
+			throw ErrorOpeningPipeToGzipException(s_gzip_program.command(), file_info.get_qfileinfo().filePath());
+		}
+		// Use the newly-launched process as the device the XML writer writes to.
+		d_output.setDevice(d_qprocess_ptr.get());
+		
+	} else {
+		// Not using gzip, just write to the file as normal.
+		d_output.setDevice(d_qfile_ptr.get());
+		
+	}
+	
+	start_writing_document(d_output);
 }
 
 
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
 		QIODevice *target):
-	d_output(target)
+	d_qfile_ptr(),
+	d_qprocess_ptr(),
+	d_output(target),
+	d_gzip_afterwards(false)
 {
-	d_output.writeStartDocument();
+	start_writing_document(d_output);
+}
 
-	d_output.writeNamespace(
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::start_writing_document(
+		XmlWriter &writer)
+{
+	writer.writeStartDocument();
+
+	writer.writeNamespace(
 			GPlatesUtils::XmlNamespaces::GPML_NAMESPACE, 
 			GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS);
-	d_output.writeNamespace(
+	writer.writeNamespace(
 			GPlatesUtils::XmlNamespaces::GML_NAMESPACE, 
 			GPlatesUtils::XmlNamespaces::GML_STANDARD_ALIAS);
-	d_output.writeNamespace(
+	writer.writeNamespace(
 			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE, 
 			GPlatesUtils::XmlNamespaces::XSI_STANDARD_ALIAS);
 
-	d_output.writeStartGpmlElement("FeatureCollection");
+	writer.writeStartGpmlElement("FeatureCollection");
 
-	d_output.writeGpmlAttribute("version", "1.6");
-	d_output.writeAttribute(
+	writer.writeGpmlAttribute("version", "1.6");
+	writer.writeAttribute(
 			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE,
 			"schemaLocation",
 			"http://www.gplates.org/gplates ../xsd/gpml.xsd "\
 			"http://www.opengis.net/gml ../../../gml/current/base");
-
 }
 
 
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::~GpmlOnePointSixOutputVisitor()
 {
-	d_output.writeEndElement(); // </gpml:FeatureCollection>
-	d_output.writeEndDocument();
+	// Wrap the entire body of the function in a 'try {  } catch(...)' block so that no
+	// exceptions can escape from the destructor.
+	try {
+		d_output.writeEndElement(); // </gpml:FeatureCollection>
+		d_output.writeEndDocument();
+
+
+		// d_gzip_aftewards should only be true if we're on Windows, and compressed output was requested. 
+		if (d_gzip_afterwards && d_qfile_ptr)
+		{
+			// Do the zipping now, but close the file first.
+			d_output.device()->close();
+
+			QStringList args;
+
+			args << d_qfile_ptr->fileName();
+
+			// The temporary gpml filename, and hence the corresponding .gpml.gz name, should be unique, 
+			// so we can just go ahead and compress the file. 
+			QProcess::execute(s_gzip_program.command(),args);
+			
+			// The requested output file may exist. If that is the case, at this stage the user has already
+			// confirmed that the file be overwritten. We can't rename a file if a file with the new name
+			// already exists, so remove it. 
+			if (QFile::exists(d_output_filename))
+			{
+				QFile::remove(d_output_filename);
+			}
+			QString gz_filename = d_qfile_ptr->fileName() + ".gz";
+			QFile::rename(gz_filename,d_output_filename);
+		}
+		else
+		{
+			// If we were using gzip compression, we must wait for the process to finish.
+			if (d_qprocess_ptr.get() != NULL) {
+				// in fact, we need to forcibly close the input to gzip, because
+				// if we wait for it to go out of scope to clean itself up, there seems
+				// to be a bit of data left in a buffer somewhere - either ours, or gzip's.
+				d_qprocess_ptr->closeWriteChannel();
+				d_qprocess_ptr->waitForFinished();
+			}
+		}
+	}
+	catch (...) {
+		// Nothing we can really do in here, I think... unless we want to log that we
+		// smothered an exception.  However, if we DO want to log that we smothered an
+		// exception, we need to wrap THAT code in a try-catch block also, to ensure that
+		// THAT code can't throw an exception which escapes the destructor.
+	}
 }
 
 
@@ -238,8 +518,10 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_line_string(
 	{
 		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
 
-		pos_list.push_back(llp.longitude());
+		// NOTE: We are assuming GPML is using (lat,lon) ordering.
+		// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
 		pos_list.push_back(llp.latitude());
+		pos_list.push_back(llp.longitude());
 	}
 	d_output.writeNumericalSequence(pos_list.begin(), pos_list.end());
 
@@ -248,6 +530,28 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_line_string(
 
 	d_output.writeEndElement(); // </gml:posList>
 	d_output.writeEndElement(); // </gml:LineString>
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_multi_point(
+		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point) 
+{
+	d_output.writeStartGmlElement("MultiPoint");
+
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multipoint_ptr =
+			gml_multi_point.multipoint();
+
+	GPlatesMaths::MultiPointOnSphere::const_iterator iter = multipoint_ptr->begin();
+	GPlatesMaths::MultiPointOnSphere::const_iterator end = multipoint_ptr->end();
+	for ( ; iter != end; ++iter) 
+	{
+		d_output.writeStartGmlElement("pointMember");
+		write_gml_point(d_output, *iter);
+		d_output.writeEndElement(); // </gml:pointMember>
+	}
+
+	d_output.writeEndElement(); // </gml:MultiPoint>
 }
 
 
@@ -272,15 +576,7 @@ void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point) 
 {
-	d_output.writeStartGmlElement("Point");
-		d_output.writeStartGmlElement("pos");
-
-			const GPlatesMaths::PointOnSphere &pos = *gml_point.point();
-			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
-			d_output.writeDecimalPair(llp.longitude(), llp.latitude());
-
-		d_output.writeEndElement();  // </gml:pos>
-	d_output.writeEndElement();  // </gml:Point>
+	write_gml_point(d_output, *gml_point.point());
 }
 
 
@@ -288,55 +584,22 @@ void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gml_polygon(
 		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	// FIXME: Update this to the new GmlPolygon which uses interior and exterior rings!
 	d_output.writeStartGmlElement("Polygon");
-
-	static std::vector<std::pair<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> > 
-		pos_list_xml_attrs;
-
-	if (pos_list_xml_attrs.empty()) 
-	{
-		GPlatesModel::XmlAttributeName attr_name =
-			GPlatesModel::XmlAttributeName::create_gml("dimension");
-		GPlatesModel::XmlAttributeValue attr_value("2");
-		pos_list_xml_attrs.push_back(std::make_pair(attr_name, attr_value));
+	
+	// GmlPolygon has exactly one exterior ring.
+	d_output.writeStartGmlElement("exterior");
+	write_gml_linear_ring(d_output, gml_polygon.exterior());
+	d_output.writeEndElement(); // </gml:exterior>
+	
+	// GmlPolygon has zero or more interior rings.
+	GPlatesPropertyValues::GmlPolygon::ring_const_iterator it = gml_polygon.interiors_begin();
+	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
+	for ( ; it != end; ++it) {
+		d_output.writeStartGmlElement("interior");
+		write_gml_linear_ring(d_output, *it);
+		d_output.writeEndElement(); // </gml:interior>
 	}
-	d_output.writeStartGmlElement("posList");
-	d_output.writeAttributes(
-			pos_list_xml_attrs.begin(),
-			pos_list_xml_attrs.end());
 
-	// It would be slightly "nicer" (ie, avoiding the allocation of a temporary buffer) if we
-	// were to create an iterator which performed the following transformation for us
-	// automatically, but (i) that's probably not the most efficient use of our time right now;
-	// (ii) it's file I/O, it's slow anyway; and (iii) we can cut it down to a single memory
-	// allocation if we reserve the size of the vector in advance.
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr =
-			gml_polygon.exterior();
-	std::vector<double> pos_list;
-	// Reserve enough space for the coordinates, to avoid the need to reallocate.
-	//
-	// number of coords = 
-	//   (one for each segment start-point, plus one for the final end-point
-	//   (all other end-points are the start-point of the next segment, so are not counted)),
-	//   times two, since each point is a (lat, lon) duple.
-	pos_list.reserve((polygon_ptr->number_of_segments() + 1) * 2);
-
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_ptr->vertex_begin();
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_ptr->vertex_end();
-	for ( ; iter != end; ++iter) 
-	{
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
-
-		pos_list.push_back(llp.longitude());
-		pos_list.push_back(llp.latitude());
-	}
-	d_output.writeNumericalSequence(pos_list.begin(), pos_list.end());
-
-	// Don't forget to clear the vector when we're done with it!
-	pos_list.clear();
-
-	d_output.writeEndElement(); // </gml:posList>
 	d_output.writeEndElement(); // </gml:Polygon>
 }
 
@@ -495,12 +758,10 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_finite_rotation(
 				visit_gml_point(*gml_point);
 			d_output.writeEndElement();
 
-			d_output.writeStartGmlElement("angle");
-				GPlatesMaths::real_t angle_in_radians =
+			d_output.writeStartGpmlElement("angle");
+				GPlatesMaths::real_t angle_in_degrees =
 						GPlatesPropertyValues::calculate_angle(gpml_finite_rotation);
-				double angle_in_degrees =
-						GPlatesMaths::degreesToRadians(angle_in_radians).dval();
-				d_output.writeDecimal(angle_in_degrees);
+				d_output.writeDecimal(angle_in_degrees.dval());
 			d_output.writeEndElement();
 
 		d_output.writeEndElement();  // </gpml:AxisAngleFiniteRotation>
@@ -519,6 +780,23 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_finite_rotation_slerp(
 	d_output.writeEndElement();
 }
 
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_key_value_dictionary(
+		const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
+{
+	d_output.writeStartGpmlElement("KeyValueDictionary");
+		//d_output.writeStartGpmlElement("elements");
+			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+				iter = gpml_key_value_dictionary.elements().begin(),
+				end = gpml_key_value_dictionary.elements().end();
+			for ( ; iter != end; ++iter) {
+				d_output.writeStartGpmlElement("element");
+				write_gpml_key_value_dictionary_element(*iter);
+				d_output.writeEndElement();
+			}
+		//d_output.writeEndElement();
+	d_output.writeEndElement();
+}
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_piecewise_aggregation(
@@ -536,7 +814,7 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_piecewise_aggregation(
 		for ( ; iter != end; ++iter) 
 		{
 			d_output.writeStartGpmlElement("timeWindow");
-				iter->accept_visitor(*this);
+				write_gpml_time_window(*iter);
 			d_output.writeEndElement();
 		}
 	d_output.writeEndElement();  // </gpml:IrregularSampling>
@@ -583,7 +861,7 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_measure(
 
 
 void
-GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_time_window(
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_gpml_time_window(
 		const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 {
 	d_output.writeStartGpmlElement("TimeWindow");
@@ -612,7 +890,7 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_irregular_sampling(
 		for ( ; iter != end; ++iter) 
 		{
 			d_output.writeStartGpmlElement("timeSample");
-				iter->accept_visitor(*this);
+				write_gpml_time_sample(*iter);
 			d_output.writeEndElement();
 		}
 
@@ -648,7 +926,7 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_revision_id(
 
 
 void
-GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_time_sample(
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_gpml_time_sample(
 		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) 
 {
 	d_output.writeStartGpmlElement("TimeSample");
@@ -738,7 +1016,8 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_old_plates_header(
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_xs_string(
-		const GPlatesPropertyValues::XsString &xs_string) {
+		const GPlatesPropertyValues::XsString &xs_string)
+{
 	d_output.writeText(xs_string.value().get());
 }
 
@@ -780,3 +1059,24 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_xs_integer(
 {
 	d_output.writeInteger(xs_integer.value());
 }
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_gpml_key_value_dictionary_element(
+			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
+{
+	d_output.writeStartGpmlElement("KeyValueDictionaryElement");
+		d_output.writeStartGpmlElement("key");
+			element.key()->accept_visitor(*this);
+		d_output.writeEndElement();
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(
+				d_output,
+				element.value_type());
+		d_output.writeEndElement();
+		d_output.writeStartGpmlElement("value");
+			element.value()->accept_visitor(*this);
+		d_output.writeEndElement();
+	d_output.writeEndElement();
+}
+

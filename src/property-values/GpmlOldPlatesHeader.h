@@ -42,16 +42,20 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader>
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -76,11 +80,12 @@ namespace GPlatesPropertyValues
 				unsigned int number_of_points)
 		{
 			non_null_ptr_type ptr(
-					*(new GpmlOldPlatesHeader(region_number, reference_number, 
+					new GpmlOldPlatesHeader(region_number, reference_number, 
 					string_number, geographic_description, plate_id_number, 
 					age_of_appearance, age_of_disappearance, data_type_code,
 					data_type_code_number, data_type_code_number_additional,
-					conjugate_plate_id_number, colour_code, number_of_points)));
+					conjugate_plate_id_number, colour_code, number_of_points),
+					GPlatesUtils::NullIntrusivePointerHandler());
 					
 			return ptr;
 		}
@@ -89,7 +94,8 @@ namespace GPlatesPropertyValues
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const 
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GpmlOldPlatesHeader(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GpmlOldPlatesHeader(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
@@ -98,12 +104,42 @@ namespace GPlatesPropertyValues
 		{
 			return d_region_number;
 		}
+		
+		/**
+		 * Set the region number to @a i.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_region_number(
+				const unsigned int &i)
+		{
+			d_region_number = i;
+		}
+
 
 		unsigned int
 		reference_number() const 
 		{
 			return d_reference_number;
 		}
+
+		/**
+		 * Set the reference number to @a i.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_reference_number(
+				const unsigned int &i)
+		{
+			d_reference_number = i;
+		}
+
 		
 		unsigned int
 		string_number() const 
@@ -111,64 +147,228 @@ namespace GPlatesPropertyValues
 			return d_string_number;
 		}
 		
+		/**
+		 * Set the string number to @a i.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_string_number(
+				const unsigned int &i)
+		{
+			d_string_number = i;
+		}
+
+		
 		const UnicodeString &
 		geographic_description() const 
 		{
 			return d_geographic_description.get();
 		}
+
+		/**
+		 * Set the geographic description to @a us.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_geographic_description(
+				const UnicodeString &us)
+		{
+			d_geographic_description = TextContent(us);
+		}
+
 		
 		GPlatesModel::integer_plate_id_type
 		plate_id_number() const 
 		{
 			return d_plate_id_number;
 		}
+
+		/**
+		 * Set the plate id number to @a i.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_plate_id_number(
+				const GPlatesModel::integer_plate_id_type &i)
+		{
+			d_plate_id_number = i;
+		}
+
 		
 		const double &
 		age_of_appearance() const 
 		{
 			return d_age_of_appearance;
 		}
+
+		/**
+		 * Set the age of appearance to @a d.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_age_of_appearance(
+				const double &d)
+		{
+			d_age_of_appearance = d;
+		}
+
 		
 		const double &
 		age_of_disappearance() const 
 		{
 			return d_age_of_disappearance;
 		}
+
+		/**
+		 * Set the age of disappearance to @a d.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_age_of_disappearance(
+				const double &d)
+		{
+			d_age_of_disappearance = d;
+		}
+
 		
 		const UnicodeString & 
 		data_type_code() const 
 		{
 			return d_data_type_code.get();
 		}
+
+		/**
+		 * Set the data type code to @a us.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_data_type_code(
+				const UnicodeString &us)
+		{
+			d_data_type_code = TextContent(us);
+		}
+
 		
 		unsigned int
 		data_type_code_number() const 
 		{
 			return d_data_type_code_number;
 		}
+
+		/**
+		 * Set the data type code number to @a i.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_data_type_code_number(
+				const unsigned int &i)
+		{
+			d_data_type_code_number = i;
+		}
+
 		
 		const UnicodeString & 
 		data_type_code_number_additional() const 
 		{
 			return d_data_type_code_number_additional.get();
 		}
+
+		/**
+		 * Set the data type code number (additional) string to @a us.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_data_type_code_number_additional(
+				const UnicodeString &us)
+		{
+			d_data_type_code_number_additional = TextContent(us);
+		}
+
 		
 		GPlatesModel::integer_plate_id_type
 		conjugate_plate_id_number() const 
 		{
 			return d_conjugate_plate_id_number;
 		}
+
+		/**
+		 * Set the conjugate plate id number to @a i.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_conjugate_plate_id_number(
+				const GPlatesModel::integer_plate_id_type &i)
+		{
+			d_conjugate_plate_id_number = i;
+		}
+		
 		
 		unsigned int
 		colour_code() const 
 		{
 			return d_colour_code;
 		}
+		
+		/**
+		 * Set the colour code to @a i.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_colour_code(
+				const unsigned int &i)
+		{
+			d_colour_code = i;
+		}
+
 			
 		unsigned int
 		number_of_points() const 
 		{
 			return d_number_of_points;
+		}
+
+		/**
+		 * Set the number of points to @a i.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_number_of_points(
+				const unsigned int &i)
+		{
+			d_number_of_points = i;
 		}
 
 		

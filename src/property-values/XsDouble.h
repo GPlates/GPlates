@@ -39,15 +39,19 @@ namespace GPlatesPropertyValues {
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsIntger>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsIntger,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<XsDouble> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XsDouble,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsDouble>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const XsDouble,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const XsDouble>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XsDouble,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -57,21 +61,40 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				double value) {
-			XsDouble::non_null_ptr_type ptr(*(new XsDouble(value)));
+			XsDouble::non_null_ptr_type ptr(new XsDouble(value),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new XsDouble(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new XsDouble(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
+		/**
+		 * Accesses the double contained within this XsDouble.
+		 */
 		double
 		value() const {
 			return d_value;
 		}
+		
+		/**
+		 * Set the double value contained within this XsDouble to @a d.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const double &d) {
+			d_value = d;
+		}
+
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

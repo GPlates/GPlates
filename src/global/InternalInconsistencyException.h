@@ -28,7 +28,7 @@
 #ifndef GPLATES_GLOBAL_INTERNALINCONSISTENCYEXCEPTION_H
 #define GPLATES_GLOBAL_INTERNALINCONSISTENCYEXCEPTION_H
 
-#include "Exception.h"
+#include "GPlatesException.h"
 
 namespace GPlatesGlobal {
 

@@ -46,15 +46,19 @@ namespace GPlatesPropertyValues
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -79,14 +83,16 @@ namespace GPlatesPropertyValues
 		create(
 				GmlTimeInstant::non_null_ptr_type begin_,
 				GmlTimeInstant::non_null_ptr_type end_) {
-			GmlTimePeriod::non_null_ptr_type ptr(*(new GmlTimePeriod(begin_, end_)));
+			GmlTimePeriod::non_null_ptr_type ptr(new GmlTimePeriod(begin_, end_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GmlTimePeriod(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GmlTimePeriod(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
@@ -128,6 +134,10 @@ namespace GPlatesPropertyValues
 		 *
 		 * Note that it is an invariant of this class that the "begin" attribute must not
 		 * be later than the "end" attribute.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_begin(
@@ -173,6 +183,10 @@ namespace GPlatesPropertyValues
 		 *
 		 * Note that it is an invariant of this class that the "end" attribute must not
 		 * be earlier than the "begin" attribute.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_end(

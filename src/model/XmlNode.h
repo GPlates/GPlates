@@ -34,6 +34,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 #include "utils/StringSet.h"
 #include "PropertyName.h"
 #include "XmlAttributeName.h"
@@ -56,10 +57,12 @@ namespace GPlatesModel {
 		 */
 		typedef long ref_count_type;
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<XmlNode> 
-			non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const XmlNode> 
-			non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XmlNode,
+				GPlatesUtils::NullIntrusivePointerHandler>
+						non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XmlNode,
+				GPlatesUtils::NullIntrusivePointerHandler>
+						non_null_ptr_to_const_type;
 
 
 		virtual
@@ -90,13 +93,13 @@ namespace GPlatesModel {
 				XmlNodeVisitor &visitor) = 0;
 
 
-		const qint64
+		qint64
 		line_number() const {
 			return d_line_num;
 		}
 
 
-		const qint64
+		qint64
 		column_number() const {
 			return d_col_num;
 		}
@@ -156,10 +159,12 @@ namespace GPlatesModel {
 		: public XmlNode
 	{
 	public:
-		typedef GPlatesUtils::non_null_intrusive_ptr<XmlTextNode> 
-			non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const XmlTextNode> 
-			non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XmlTextNode,
+				GPlatesUtils::NullIntrusivePointerHandler> 
+						non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XmlTextNode,
+				GPlatesUtils::NullIntrusivePointerHandler>
+						non_null_ptr_to_const_type;
 
 		const QString &
 		get_text() const {
@@ -211,10 +216,12 @@ namespace GPlatesModel {
 		: public XmlNode
 	{
 	public:
-		typedef GPlatesUtils::non_null_intrusive_ptr<XmlElementNode> 
-			non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const XmlElementNode> 
-			non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XmlElementNode,
+				GPlatesUtils::NullIntrusivePointerHandler> 
+						non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XmlElementNode,
+				GPlatesUtils::NullIntrusivePointerHandler> 
+						non_null_ptr_to_const_type;
 
 		/**
 		 * Convenience typedefs for dealing with this node's attributes.
@@ -260,7 +267,7 @@ namespace GPlatesModel {
 		/**
 		 * Warning: O(n).  Map should be small though...
 		 */
-		const size_t
+		size_t
 		number_of_attributes() const {
 			return d_attributes.size();
 		}
@@ -292,7 +299,7 @@ namespace GPlatesModel {
 		/**
 		 * Warning: O(n).  List should be small though...
 		 */
-		const size_t
+		size_t
 		number_of_children() const {
 			return d_children.size();
 		}

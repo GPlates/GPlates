@@ -39,10 +39,13 @@
 #include "property-values/XsInteger.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
+#include "property-values/Enumeration.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlTimeInstant.h"
@@ -56,6 +59,8 @@
 #include "property-values/GpmlFeatureReference.h"
 #include "property-values/GpmlFeatureSnapshotReference.h"
 #include "property-values/GpmlHotSpotTrailMark.h"
+#include "property-values/GpmlKeyValueDictionary.h"
+#include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlMeasure.h"
 #include "property-values/GpmlRevisionId.h"
 #include "property-values/GpmlIrregularSampling.h"
@@ -63,7 +68,6 @@
 #include "property-values/GpmlPolarityChronId.h"
 #include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/UninterpretedPropertyValue.h"
-#include "property-values/XsString.h"
 #include "ReadErrors.h"
 
 
@@ -98,7 +102,7 @@ namespace GPlatesFileIO
 				return d_location;
 			}
 
-			const ReadErrors::Description
+			ReadErrors::Description
 			description() const {
 				return d_description;
 			}
@@ -166,6 +170,76 @@ namespace GPlatesFileIO
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
 
 		AS_PROP_VAL(create_xs_string)
+
+
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_gpml_absolute_reference_frame_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gpml_absolute_reference_frame_enumeration)
+
+
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_gpml_continental_boundary_crust_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gpml_continental_boundary_crust_enumeration)
+
+
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_gpml_continental_boundary_edge_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gpml_continental_boundary_edge_enumeration)
+
+
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_gpml_continental_boundary_side_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gpml_continental_boundary_side_enumeration)
+
+
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_gpml_dip_side_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gpml_dip_side_enumeration)
+
+
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_gpml_dip_slip_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gpml_dip_slip_enumeration)
+
+
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_gpml_fold_plane_annotation_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gpml_fold_plane_annotation_enumeration)
+
+
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_gpml_slip_component_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gpml_slip_component_enumeration)
+
+
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_gpml_strike_slip_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gpml_strike_slip_enumeration)
+
+
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type
+		create_gpml_subduction_side_enumeration(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gpml_subduction_side_enumeration)
 
 
 		GPlatesPropertyValues::GpmlRevisionId::non_null_ptr_type
@@ -295,11 +369,25 @@ namespace GPlatesFileIO
 		AS_PROP_VAL(create_line_string)
 
 
+		GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
+		create_gml_multi_point(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gml_multi_point)
+
+
 		GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
 		create_orientable_curve(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
 
 		AS_PROP_VAL(create_orientable_curve)
+
+
+		GPlatesPropertyValues::GmlPolygon::non_null_ptr_type
+		create_gml_polygon(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_gml_polygon)
 
 
 		GPlatesPropertyValues::GpmlFeatureReference::non_null_ptr_type
@@ -328,6 +416,18 @@ namespace GPlatesFileIO
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
 
 		AS_PROP_VAL(create_time_dependent_property_value)
+
+
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement
+		create_key_value_dictionary_element(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
+		create_key_value_dictionary(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem);
+
+		AS_PROP_VAL(create_key_value_dictionary)
+
 	}
 }
 

@@ -6,13 +6,13 @@
     <x>0</x>
     <y>0</y>
     <width>440</width>
-    <height>50</height>
+    <height>36</height>
    </rect>
   </property>
   <property name="windowTitle" >
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" >
+  <layout class="QHBoxLayout" >
    <property name="leftMargin" >
     <number>2</number>
    </property>
@@ -26,7 +26,29 @@
     <number>2</number>
    </property>
    <item>
+    <widget class="QLabel" name="label_angle" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text" >
+      <string>&amp;Angle:</string>
+     </property>
+     <property name="buddy" >
+      <cstring>spinbox_double</cstring>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QDoubleSpinBox" name="spinbox_double" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="suffix" >
       <string>°</string>
      </property>

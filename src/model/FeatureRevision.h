@@ -33,6 +33,7 @@
 #include "RevisionId.h"
 #include "PropertyContainer.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesModel
@@ -78,15 +79,19 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<FeatureRevision>.
+		 * GPlatesUtils::non_null_intrusive_ptr<FeatureRevision,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureRevision> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureRevision,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureRevision>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureRevision,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureRevision>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureRevision,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**
@@ -110,7 +115,8 @@ namespace GPlatesModel
 		const non_null_ptr_type
 		create()
 		{
-			non_null_ptr_type ptr(*(new FeatureRevision()));
+			non_null_ptr_type ptr(new FeatureRevision(),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
@@ -122,7 +128,8 @@ namespace GPlatesModel
 		create(
 				const RevisionId &revision_id_)
 		{
-			non_null_ptr_type ptr(*(new FeatureRevision(revision_id_)));
+			non_null_ptr_type ptr(new FeatureRevision(revision_id_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
@@ -132,7 +139,8 @@ namespace GPlatesModel
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(*(new FeatureRevision(*this)));
+			non_null_ptr_type dup(new FeatureRevision(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

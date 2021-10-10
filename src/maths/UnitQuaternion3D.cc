@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -72,8 +72,9 @@ GPlatesMaths::UnitQuaternion3D::renormalise_if_necessary() {
 
 
 const GPlatesMaths::UnitQuaternion3D::RotationParams
-GPlatesMaths::UnitQuaternion3D::get_rotation_params() const {
-
+GPlatesMaths::UnitQuaternion3D::get_rotation_params(
+		const boost::optional<UnitVector3D> &axis_hint) const
+{
 	/*
 	 * Ensure that the quaternion does not represent an identity rotation.
 	 *
@@ -105,6 +106,18 @@ GPlatesMaths::UnitQuaternion3D::get_rotation_params() const {
 
 	Vector3D axis_vector = (1 / sin_of_theta_on_2) * vector_part();
 	UnitVector3D axis_unit_vector = axis_vector.get_normalisation();
+
+	// Now, let's use the axis hint (if provided) to determine whether our rotation axis is
+	// pointing in the expected direction (ie, in the direction the user originally specified).
+	// FIXME:  Should we assert that the result of the dot product is never approx zero?
+	if (axis_hint) {
+		if (isNegative(dot(axis_unit_vector, *axis_hint))) {
+			// The calculated axis seems to be pointing in the opposite direction to
+			// that which the user would expect.
+			axis_unit_vector = -axis_unit_vector;
+			theta_on_2 = -theta_on_2;
+		}
+	}
 
 	return RotationParams(axis_unit_vector, theta_on_2 * 2.0);
 }

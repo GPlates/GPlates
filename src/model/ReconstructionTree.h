@@ -33,6 +33,7 @@
 #include "ReconstructionGraph.h"
 #include "maths/GeometryForwardDeclarations.h"
 #include "utils/non_null_intrusive_ptr.h"
+#include "utils/NullIntrusivePointerHandler.h"
 
 
 namespace GPlatesModel
@@ -48,9 +49,11 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree>.
+		 * GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * The type used to store the reference-count of an instance of this class.
@@ -140,7 +143,8 @@ namespace GPlatesModel
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(*(new ReconstructionTree(*this)));
+			non_null_ptr_type dup(new ReconstructionTree(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 	
@@ -189,18 +193,6 @@ namespace GPlatesModel
 		edge_refs_by_plate_id_map_range_type
 		find_edges_whose_moving_plate_id_match(
 				integer_plate_id_type plate_id);
-
-		const std::pair<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>,
-				ReconstructionCircumstance>
-		reconstruct_point(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
-				integer_plate_id_type plate_id_of_feature) const;
-
-		const std::pair<GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>,
-				ReconstructionCircumstance>
-		reconstruct_polyline(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> p,
-				integer_plate_id_type plate_id_of_feature) const;
 
 		/**
 		 * Get the composed absolute rotation which describes the motion of @a

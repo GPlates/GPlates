@@ -1,0 +1,284 @@
+<ui version="4.0" >
+ <class>EditGeometryWidget</class>
+ <widget class="QWidget" name="EditGeometryWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>506</width>
+    <height>381</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" >
+   <property name="leftMargin" >
+    <number>2</number>
+   </property>
+   <property name="topMargin" >
+    <number>2</number>
+   </property>
+   <property name="rightMargin" >
+    <number>2</number>
+   </property>
+   <property name="bottomMargin" >
+    <number>2</number>
+   </property>
+   <item>
+    <widget class="QTableWidget" name="table_elements" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="styleSheet" >
+      <string/>
+     </property>
+     <property name="verticalScrollBarPolicy" >
+      <enum>Qt::ScrollBarAlwaysOn</enum>
+     </property>
+     <property name="horizontalScrollBarPolicy" >
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
+     <property name="alternatingRowColors" >
+      <bool>true</bool>
+     </property>
+     <property name="selectionBehavior" >
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+     <property name="verticalScrollMode" >
+      <enum>QAbstractItemView::ScrollPerItem</enum>
+     </property>
+     <property name="gridStyle" >
+      <enum>Qt::DashLine</enum>
+     </property>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <column>
+      <property name="text" >
+       <string>Name</string>
+      </property>
+     </column>
+     <column>
+      <property name="text" >
+       <string>Type</string>
+      </property>
+     </column>
+     <column>
+      <property name="text" >
+       <string>Value</string>
+      </property>
+     </column>
+     <column>
+      <property name="text" >
+       <string>Actions</string>
+      </property>
+     </column>
+     <item row="0" column="0" >
+      <property name="text" >
+       <string>50</string>
+      </property>
+     </item>
+     <item row="0" column="2" >
+      <property name="text" >
+       <string>100</string>
+      </property>
+     </item>
+     <item row="1" column="0" >
+      <property name="text" >
+       <string>51</string>
+      </property>
+     </item>
+     <item row="1" column="2" >
+      <property name="text" >
+       <string>101</string>
+      </property>
+     </item>
+     <item row="2" column="0" >
+      <property name="text" >
+       <string>52</string>
+      </property>
+     </item>
+     <item row="2" column="2" >
+      <property name="text" >
+       <string>102</string>
+      </property>
+     </item>
+     <item row="3" column="0" >
+      <property name="text" >
+       <string>53</string>
+      </property>
+     </item>
+     <item row="3" column="2" >
+      <property name="text" >
+       <string>103</string>
+      </property>
+     </item>
+     <item row="4" column="0" >
+      <property name="text" >
+       <string>54</string>
+      </property>
+     </item>
+     <item row="4" column="2" >
+      <property name="text" >
+       <string>104</string>
+      </property>
+     </item>
+     <item row="5" column="0" >
+      <property name="text" >
+       <string>55</string>
+      </property>
+     </item>
+     <item row="5" column="2" >
+      <property name="text" >
+       <string>105</string>
+      </property>
+     </item>
+     <item row="6" column="0" >
+      <property name="text" >
+       <string>56</string>
+      </property>
+     </item>
+     <item row="6" column="2" >
+      <property name="text" >
+       <string>106</string>
+      </property>
+     </item>
+     <item row="7" column="0" >
+      <property name="text" >
+       <string>57</string>
+      </property>
+     </item>
+     <item row="7" column="2" >
+      <property name="text" >
+       <string>107</string>
+      </property>
+     </item>
+     <item row="8" column="0" >
+      <property name="text" >
+       <string>58</string>
+      </property>
+     </item>
+     <item row="8" column="2" >
+      <property name="text" >
+       <string>108</string>
+      </property>
+     </item>
+     <item row="9" column="0" >
+      <property name="text" >
+       <string>59</string>
+      </property>
+     </item>
+     <item row="9" column="2" >
+      <property name="text" >
+       <string>109</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupbox_append_point" >
+     <property name="title" >
+      <string>A&amp;ppend elements</string>
+     </property>
+     <property name="flat" >
+      <bool>true</bool>
+     </property>
+     <layout class="QHBoxLayout" >
+      <property name="leftMargin" >
+       <number>4</number>
+      </property>
+      <property name="topMargin" >
+       <number>4</number>
+      </property>
+      <property name="rightMargin" >
+       <number>4</number>
+      </property>
+      <property name="bottomMargin" >
+       <number>4</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="label_type" >
+        <property name="sizePolicy" >
+         <sizepolicy vsizetype="Preferred" hsizetype="Minimum" >
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text" >
+         <string>Name</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="line_edit_name" />
+      </item>
+      <item>
+       <widget class="QLabel" name="label_name" >
+        <property name="text" >
+         <string>Type</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="combo_box_type" />
+      </item>
+      <item>
+       <widget class="QLabel" name="label_value" >
+        <property name="text" >
+         <string>Value</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="line_edit_value" />
+      </item>
+      <item>
+       <widget class="QPushButton" name="button_append_element" >
+        <property name="text" >
+         <string/>
+        </property>
+        <property name="icon" >
+         <iconset resource="../qt-resources/qt_widgets.qrc" >:/tango_list_add_22.png</iconset>
+        </property>
+        <property name="iconSize" >
+         <size>
+          <width>22</width>
+          <height>22</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer>
+        <property name="orientation" >
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" >
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
+ <connections/>
+</ui>

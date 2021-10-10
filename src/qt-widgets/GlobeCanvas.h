@@ -47,7 +47,10 @@
 #include "gui/Texture.h"
 #include "gui/ViewportZoom.h"
 #include "gui/PlatesColourTable.h"
+#include "gui/GeometryFocusHighlight.h"
 
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
 
@@ -90,6 +93,16 @@ namespace GPlatesQtWidgets
 			bool d_is_mouse_drag;
 		};
 
+		/**
+		 * The point which corresponds to the centre of the viewport.
+		 *
+		 * (I'm not expecting that this will change, but I'm creating this accessor as an
+		 * alternative to littering lots of equivalent PointOnSphere definitions throughout
+		 * the code.
+		 */
+		static
+		const GPlatesMaths::PointOnSphere &
+		centre_of_viewport();
 
 		explicit
 		GlobeCanvas(
@@ -129,8 +142,8 @@ namespace GPlatesQtWidgets
 				const GPlatesMaths::PointOnSphere &click_point) const;
 
 		void
-		draw_polyline(
-				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+		draw_multi_point(
+				const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &multi_point,
 				GPlatesGui::PlatesColourTable::const_iterator colour);
 
 		void
@@ -139,13 +152,21 @@ namespace GPlatesQtWidgets
 				GPlatesGui::PlatesColourTable::const_iterator colour);
 
 		void
-		update_canvas();
+		draw_polygon(
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon,
+				GPlatesGui::PlatesColourTable::const_iterator colour);
 
+		void
+		draw_polyline(
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+				GPlatesGui::PlatesColourTable::const_iterator colour);
+
+		// FIXME:  Is this function used anywhere?  Alternatively, should it be a slot?
 		void
 		clear_data();
 
 		/**
-		 *  Draw the relevant objects for vector output. This is essentially like the 
+		 * Draw the relevant objects for vector output. This is essentially like the 
 		 *	PaintGL method, except that:
 		 *	we will omit drawing the sphere (otherwise we end up with loads of little
 		 *	polygons);
@@ -165,6 +186,12 @@ namespace GPlatesQtWidgets
 		viewport_zoom()
 		{
 			return d_viewport_zoom;
+		}
+
+		GPlatesGui::GeometryFocusHighlight &
+		geometry_focus_highlight()
+		{
+			return d_geometry_focus_highlight;
 		}
 
 		/**
@@ -190,6 +217,9 @@ namespace GPlatesQtWidgets
 		}
 
 	public slots:
+		void
+		update_canvas();
+
 		void
 		notify_of_orientation_change();
 
@@ -365,7 +395,9 @@ namespace GPlatesQtWidgets
 				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -375,7 +407,9 @@ namespace GPlatesQtWidgets
 				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				bool was_on_globe,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -443,6 +477,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::Globe d_globe;
 		GPlatesGui::ViewportZoom d_viewport_zoom;
+		GPlatesGui::GeometryFocusHighlight d_geometry_focus_highlight;  // Depends upon Globe.
 
 		void
 		set_view();

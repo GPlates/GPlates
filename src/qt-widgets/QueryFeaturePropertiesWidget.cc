@@ -142,6 +142,12 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 		return;
 	}
 	
+	// Update our text fields at the top.
+	lineedit_feature_id->setText(
+			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->feature_id().get()));
+	lineedit_revision_id->setText(
+			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->revision_id().get()));
+
 	// These next few fields only make sense if the feature is reconstructable, ie. if it has a
 	// reconstruction plate ID.
 	static const GPlatesModel::PropertyName plate_id_property_name = 
@@ -171,14 +177,15 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 		// FIXME:  Do we care about the reconstruction circumstance?
 		// (For example, there may have been no match for the reconstruction plate ID.)
-		GPlatesMaths::UnitQuaternion3D uq = absolute_rotation.first.unit_quat();
+		const GPlatesMaths::UnitQuaternion3D &uq = absolute_rotation.first.unit_quat();
 		if (GPlatesMaths::represents_identity_rotation(uq)) {
 			set_euler_pole(QObject::tr("indeterminate"));
 			set_angle(0.0);
 		} else {
 			using namespace GPlatesMaths;
 
-			UnitQuaternion3D::RotationParams params = uq.get_rotation_params();
+			UnitQuaternion3D::RotationParams params =
+					uq.get_rotation_params(absolute_rotation.first.axis_hint());
 
 			PointOnSphere euler_pole(params.axis);
 			LatLonPoint llp = make_lat_lon_point(euler_pole);

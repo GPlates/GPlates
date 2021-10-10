@@ -42,15 +42,19 @@ namespace GPlatesPropertyValues {
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlMeasure>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlMeasure,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlMeasure> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlMeasure,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlMeasure>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlMeasure,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlMeasure>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlMeasure,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -68,23 +72,39 @@ namespace GPlatesPropertyValues {
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
 						quantity_xml_attributes_) {
 			non_null_ptr_type ptr(
-					*(new GpmlMeasure(quantity,
-							quantity_xml_attributes_)));
+					new GpmlMeasure(quantity, quantity_xml_attributes_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GpmlMeasure(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GpmlMeasure(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
+		/**
+		 * Access the quantity contained in this GpmlMeasure.
+		 *
+		 * Note that this accessor does not allow you to modify the
+		 * double contained in this GpmlMeasure - to do that,
+		 * set a new double value using the method @a set_quantity
+		 * below.
+		 */
 		const double &
 		quantity() const {
 			return d_quantity;
 		}
 
+		/**
+		 * Set the quantity of this GpmlMeasure to @a q.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
 		void
 		set_quantity(
 				const double &q) {

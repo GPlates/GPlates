@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -43,21 +43,26 @@ namespace GPlatesPropertyValues
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlLineString>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlLineString,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlLineString> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlLineString,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlLineString>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlLineString,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlLineString>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlLineString,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		/**
 		 * A convenience typedef for the internal polyline representation.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				internal_polyline_type;
 
 		virtual
@@ -79,7 +84,8 @@ namespace GPlatesPropertyValues
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GmlLineString(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GmlLineString(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
@@ -101,6 +107,10 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the polyline within this instance to @a p.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
 		 */
 		void
 		set_polyline(

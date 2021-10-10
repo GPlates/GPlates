@@ -36,22 +36,26 @@
 
 namespace GPlatesPropertyValues {
 
-	class GpmlPropertyDelegate :
+	class GpmlPropertyDelegate:
 			public GPlatesModel::PropertyValue {
 
 	public:
 		/**
 		 * A convenience typedef for 
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate> 
-			non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate,
+				GPlatesUtils::NullIntrusivePointerHandler> 
+				non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPropertyDelegate>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPropertyDelegate,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPropertyDelegate>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPropertyDelegate,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 
@@ -69,16 +73,18 @@ namespace GPlatesPropertyValues {
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::PropertyName &property_,
 				const TemplateTypeParameterType &value_type_) {
-			non_null_ptr_type ptr(*(new GpmlPropertyDelegate(
-							feature_, property_, value_type_)));
+			non_null_ptr_type ptr(
+					new GpmlPropertyDelegate(feature_, property_, value_type_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type 
-				dup(*(new GpmlPropertyDelegate(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new GpmlPropertyDelegate(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

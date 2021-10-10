@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_EDITBOOLEANWIDGET_H
 #define GPLATES_QTWIDGETS_EDITBOOLEANWIDGET_H
 
+#include <boost/intrusive_ptr.hpp>
 #include "AbstractEditWidget.h"
 #include "property-values/XsBoolean.h"
 
@@ -50,12 +51,16 @@ namespace GPlatesQtWidgets
 
 		void
 		update_widget_from_boolean(
-				const GPlatesPropertyValues::XsBoolean &xs_boolean);
+				GPlatesPropertyValues::XsBoolean &xs_boolean);
 
 		virtual
 		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_property_value_from_widget() const;
 	
+		virtual
+		bool
+		update_property_value_from_widget();
+
 	private slots:
 		
 		void
@@ -64,6 +69,22 @@ namespace GPlatesQtWidgets
 			set_dirty();
 			emit commit_me();
 		}
+	
+	private:
+		/**
+		 * This boost::intrusive_ptr is used to remember the property value which
+		 * was last loaded into this editing widget. This is done so that the
+		 * edit widget can directly update the property value later.
+		 *
+		 * We need to use a reference-counting pointer to make sure the property
+		 * value doesn't disappear while this edit widget is active; however, since
+		 * the property value is not known at the time the widget is created,
+		 * the pointer may be NULL and this must be checked for.
+		 *
+		 * The pointer will also be NULL when the edit widget is being used for
+		 * adding brand new properties to the model.
+		 */
+		boost::intrusive_ptr<GPlatesPropertyValues::XsBoolean> d_boolean_ptr;
 		
 	};
 }

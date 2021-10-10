@@ -45,6 +45,11 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
 #include "property-values/XsString.h"
+#include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
+#include "property-values/GmlOrientableCurve.h"
+#include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
 
 #include "qt-widgets/EditTimePeriodWidget.h"
 
@@ -66,7 +71,7 @@ namespace
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle)
+		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Visit each of the properties in turn.
 	visit_feature_properties(feature_handle);
@@ -75,7 +80,7 @@ GPlatesQtWidgets::EditWidgetChooser::visit_feature_handle(
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+		GPlatesModel::InlinePropertyContainer &inline_property_container)
 {
 	const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
 
@@ -93,15 +98,65 @@ GPlatesQtWidgets::EditWidgetChooser::visit_inline_property_container(
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_enumeration(
-		const GPlatesPropertyValues::Enumeration &enumeration)
+		GPlatesPropertyValues::Enumeration &enumeration)
 {
 	d_edit_widget_group_box_ptr->activate_edit_enumeration_widget(enumeration);
 }
 
 
 void
+GPlatesQtWidgets::EditWidgetChooser::visit_gml_line_string(
+		GPlatesPropertyValues::GmlLineString &gml_line_string)
+{
+	// The EditGeometryWidget wants an extra bit of context; the feature weak_ref
+	// which contains the geometric property we are editing.
+	d_edit_widget_group_box_ptr->activate_edit_line_string_widget(gml_line_string, d_feature_ref);
+}
+
+
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gml_multi_point(
+		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+{
+	// The EditGeometryWidget wants an extra bit of context; the feature weak_ref
+	// which contains the geometric property we are editing.
+	d_edit_widget_group_box_ptr->activate_edit_multi_point_widget(gml_multi_point, d_feature_ref);
+}
+
+
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gml_orientable_curve(
+		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
+{
+	// FIXME: We might want to edit the OrientableCurve directly.
+	// For now, simply let the user edit the embedded LineString.
+	gml_orientable_curve.base_curve()->accept_visitor(*this);
+}
+
+
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gml_point(
+		GPlatesPropertyValues::GmlPoint &gml_point)
+{
+	// The EditGeometryWidget wants an extra bit of context; the feature weak_ref
+	// which contains the geometric property we are editing.
+	d_edit_widget_group_box_ptr->activate_edit_point_widget(gml_point, d_feature_ref);
+}
+
+
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gml_polygon(
+		GPlatesPropertyValues::GmlPolygon &gml_polygon)
+{
+	// The EditGeometryWidget wants an extra bit of context; the feature weak_ref
+	// which contains the geometric property we are editing.
+	d_edit_widget_group_box_ptr->activate_edit_polygon_widget(gml_polygon, d_feature_ref);
+}
+
+
+void
 GPlatesQtWidgets::EditWidgetChooser::visit_gml_time_instant(
-		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
+		GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	d_edit_widget_group_box_ptr->activate_edit_time_instant_widget(gml_time_instant);
 }
@@ -109,7 +164,7 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gml_time_instant(
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gml_time_period(
-		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
+		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
 	d_edit_widget_group_box_ptr->activate_edit_time_period_widget(gml_time_period);
 }
@@ -117,7 +172,7 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gml_time_period(
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_constant_value(
-		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
 }
@@ -125,7 +180,7 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_constant_value(
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_plate_id(
-		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	d_edit_widget_group_box_ptr->activate_edit_plate_id_widget(gpml_plate_id);
 }
@@ -133,7 +188,7 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_plate_id(
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_polarity_chron_id(
-		const GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id)
+		GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id)
 {
 	d_edit_widget_group_box_ptr->activate_edit_polarity_chron_id_widget(gpml_polarity_chron_id);
 }
@@ -141,7 +196,7 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_polarity_chron_id(
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_measure(
-		const GPlatesPropertyValues::GpmlMeasure &gpml_measure)
+		GPlatesPropertyValues::GpmlMeasure &gpml_measure)
 {
 	// FIXME: Check what kind of gpml:measure it is! In this case, assuming it's a gpml:angle.
 	d_edit_widget_group_box_ptr->activate_edit_angle_widget(gpml_measure);
@@ -150,7 +205,7 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_measure(
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_old_plates_header(
-		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
+		GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
 	d_edit_widget_group_box_ptr->activate_edit_old_plates_header_widget(gpml_old_plates_header);
 }
@@ -158,7 +213,7 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_old_plates_header(
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_xs_boolean(
-		const GPlatesPropertyValues::XsBoolean &xs_boolean)
+		GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
 	d_edit_widget_group_box_ptr->activate_edit_boolean_widget(xs_boolean);
 }
@@ -166,21 +221,21 @@ GPlatesQtWidgets::EditWidgetChooser::visit_xs_boolean(
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_xs_double(
-	const GPlatesPropertyValues::XsDouble& xs_double)
+		GPlatesPropertyValues::XsDouble& xs_double)
 {
 	d_edit_widget_group_box_ptr->activate_edit_double_widget(xs_double);
 }
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_xs_integer(
-	const GPlatesPropertyValues::XsInteger& xs_integer)
+		GPlatesPropertyValues::XsInteger& xs_integer)
 {
 	d_edit_widget_group_box_ptr->activate_edit_integer_widget(xs_integer);
 }
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_xs_string(
-		const GPlatesPropertyValues::XsString &xs_string)
+		GPlatesPropertyValues::XsString &xs_string)
 {
 	d_edit_widget_group_box_ptr->activate_edit_string_widget(xs_string);
 }

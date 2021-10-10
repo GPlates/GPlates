@@ -39,15 +39,19 @@ namespace GPlatesPropertyValues {
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsBoolean>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsBoolean,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<XsBoolean> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XsBoolean,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsBoolean>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const XsBoolean,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const XsBoolean>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XsBoolean,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -57,21 +61,40 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				bool value) {
-			XsBoolean::non_null_ptr_type ptr(*(new XsBoolean(value)));
+			XsBoolean::non_null_ptr_type ptr(new XsBoolean(value),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new XsBoolean(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new XsBoolean(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
+		/**
+		 * Accesses the bool contained within this XsBoolean.
+		 */
 		bool
 		value() const {
 			return d_value;
 		}
+		
+		/**
+		 * Set the bool value contained within this XsBoolean to @a b.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
+		void
+		set_value(
+				const bool &b) {
+			d_value = b;
+		}
+		
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,9 +33,10 @@ const GPlatesPropertyValues::GmlLineString::non_null_ptr_type
 GPlatesPropertyValues::GmlLineString::create(
 		const internal_polyline_type &polyline_)
 {
-	// Because PolylineOnSphere is mutable, we must clone the polyline we are given,
-	// otherwise it might be possible to change the polyline without our knowledge.
-	GmlLineString::non_null_ptr_type line_string_ptr(*(new GmlLineString(
-			polyline_->clone_on_heap())));
+	// Because PolylineOnSphere can only ever be handled via a non_null_ptr_to_const_type,
+	// there is no way a PolylineOnSphere instance can be changed.  Hence, it is safe to store
+	// a pointer to the instance which was passed into this 'create' function.
+	GmlLineString::non_null_ptr_type line_string_ptr(new GmlLineString(polyline_),
+			GPlatesUtils::NullIntrusivePointerHandler());
 	return line_string_ptr;
 }

@@ -6,13 +6,13 @@
     <x>0</x>
     <y>0</y>
     <width>414</width>
-    <height>34</height>
+    <height>28</height>
    </rect>
   </property>
   <property name="windowTitle" >
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" >
+  <layout class="QHBoxLayout" >
    <property name="leftMargin" >
     <number>2</number>
    </property>
@@ -26,7 +26,24 @@
     <number>2</number>
    </property>
    <item>
-    <widget class="QComboBox" name="combobox_boolean" />
+    <widget class="QLabel" name="label_value" >
+     <property name="text" >
+      <string>&amp;Value:</string>
+     </property>
+     <property name="buddy" >
+      <cstring>combobox_boolean</cstring>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QComboBox" name="combobox_boolean" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

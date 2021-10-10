@@ -36,22 +36,26 @@
 
 namespace GPlatesPropertyValues {
 
-	class GpmlFeatureSnapshotReference :
+	class GpmlFeatureSnapshotReference:
 			public GPlatesModel::PropertyValue {
 
 	public:
 		/**
 		 * A convenience typedef for 
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureSnapshotReference>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureSnapshotReference,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureSnapshotReference> 
-			non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureSnapshotReference,
+				GPlatesUtils::NullIntrusivePointerHandler>
+				non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureSnapshotReference>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureSnapshotReference,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureSnapshotReference>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureSnapshotReference,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 
@@ -69,16 +73,18 @@ namespace GPlatesPropertyValues {
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::RevisionId &revision_,
 				const TemplateTypeParameterType &value_type_) {
-			non_null_ptr_type ptr(*(new GpmlFeatureSnapshotReference(
-							feature_, revision_, value_type_)));
+			non_null_ptr_type ptr(
+					new GpmlFeatureSnapshotReference(feature_, revision_, value_type_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type 
-				dup(*(new GpmlFeatureSnapshotReference(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new GpmlFeatureSnapshotReference(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

@@ -37,23 +37,26 @@
 
 namespace GPlatesPropertyValues {
 
-	class GpmlPiecewiseAggregation :
+	class GpmlPiecewiseAggregation:
 			public GPlatesModel::PropertyValue {
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPiecewiseAggregation>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPiecewiseAggregation,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPiecewiseAggregation>
-				non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPiecewiseAggregation,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPiecewiseAggregation>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPiecewiseAggregation,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPiecewiseAggregation>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPiecewiseAggregation,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -70,15 +73,17 @@ namespace GPlatesPropertyValues {
 				const std::vector<GpmlTimeWindow> &time_windows_,
 				const TemplateTypeParameterType &value_type_) {
 			non_null_ptr_type ptr(
-					*(new GpmlPiecewiseAggregation(time_windows_, value_type_)));
+					new GpmlPiecewiseAggregation(time_windows_, value_type_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type 
-				dup(*(new GpmlPiecewiseAggregation(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new GpmlPiecewiseAggregation(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

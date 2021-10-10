@@ -43,15 +43,19 @@ namespace GPlatesPropertyValues {
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimeInstant>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimeInstant,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimeInstant> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimeInstant,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -69,23 +73,39 @@ namespace GPlatesPropertyValues {
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
 						time_position_xml_attributes_) {
 			non_null_ptr_type ptr(
-					*(new GmlTimeInstant(time_position_,
-							time_position_xml_attributes_)));
+					new GmlTimeInstant(time_position_, time_position_xml_attributes_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new GmlTimeInstant(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GmlTimeInstant(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
+		/**
+		 * Access the GeoTimeInstant which encodes the temporal position of this
+		 * GmlTimeInstant.
+		 *
+		 * Note that there is no accessor provided which returns a non-const
+		 * GeoTimeInstant. This is intentional. To modify this GmlTimeInstant,
+		 * set a new GeoTimeInstant using the method @a set_time_position()
+		 */
 		const GeoTimeInstant &
 		time_position() const {
 			return d_time_position;
 		}
 
+		/**
+		 * Set the temporal position of this GmlTimeInstant to @a tp.
+		 *
+		 * FIXME: when we have undo/redo, this act should cause
+		 * a new revision to be propagated up to the Feature which
+		 * contains this PropertyValue.
+		 */
 		void
 		set_time_position(
 				const GeoTimeInstant &tp) {

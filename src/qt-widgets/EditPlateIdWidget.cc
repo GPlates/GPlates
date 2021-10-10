@@ -27,6 +27,7 @@
 
 #include "property-values/GpmlPlateId.h"
 #include "model/ModelUtils.h"
+#include "UninitialisedEditWidgetException.h"
 
 
 GPlatesQtWidgets::EditPlateIdWidget::EditPlateIdWidget(
@@ -39,13 +40,16 @@ GPlatesQtWidgets::EditPlateIdWidget::EditPlateIdWidget(
 	QObject::connect(spinbox_plate_id, SIGNAL(valueChanged(int)),
 			this, SLOT(set_dirty()));
 
-	setFocusPolicy(Qt::StrongFocus);
+	label_plate_id->setHidden(false);
+	declare_default_label(label_plate_id);
+	setFocusProxy(spinbox_plate_id);
 }
 
 
 void
 GPlatesQtWidgets::EditPlateIdWidget::reset_widget_to_default_values()
 {
+	d_plate_id_ptr = NULL;
 	spinbox_plate_id->setValue(0);
 	set_clean();
 }
@@ -53,8 +57,9 @@ GPlatesQtWidgets::EditPlateIdWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditPlateIdWidget::update_widget_from_plate_id(
-		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
+		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
+	d_plate_id_ptr = &gpml_plate_id;
 	spinbox_plate_id->setValue(gpml_plate_id.value());
 	set_clean();
 }
@@ -65,5 +70,29 @@ GPlatesQtWidgets::EditPlateIdWidget::create_property_value_from_widget() const
 {
 	return GPlatesPropertyValues::GpmlPlateId::create(
 			spinbox_plate_id->value());
+}
+
+
+GPlatesModel::integer_plate_id_type
+GPlatesQtWidgets::EditPlateIdWidget::create_integer_plate_id_from_widget() const
+{
+	return static_cast<GPlatesModel::integer_plate_id_type>(spinbox_plate_id->value());
+}
+
+
+bool
+GPlatesQtWidgets::EditPlateIdWidget::update_property_value_from_widget()
+{
+	if (d_plate_id_ptr.get() != NULL) {
+		if (is_dirty()) {
+			d_plate_id_ptr->set_value(spinbox_plate_id->value());
+			set_clean();
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		throw UninitialisedEditWidgetException();
+	}
 }
 

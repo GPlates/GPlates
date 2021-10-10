@@ -29,11 +29,10 @@
 #define GPLATES_MODEL_RECONSTRUCTION_H
 
 #include <vector>
-#include "ReconstructedFeatureGeometry.h"
+#include "ReconstructionGeometry.h"
 #include "ReconstructionTree.h"
-#include "maths/PointOnSphere.h"
-#include "maths/PolylineOnSphere.h"
-#include "utils/non_null_intrusive_ptr.h"
+#include "FeatureCollectionHandle.h"
+
 
 namespace GPlatesModel
 {
@@ -46,16 +45,25 @@ namespace GPlatesModel
 	public:
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<Reconstruction>.
+		 * GPlatesUtils::non_null_intrusive_ptr<Reconstruction,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<Reconstruction> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<Reconstruction,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const Reconstruction>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const Reconstruction,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const Reconstruction>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const Reconstruction,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
+
+		/**
+		 * The type of the collection of RFGs.
+		 */
+		typedef std::vector<ReconstructionGeometry::non_null_ptr_type> geometry_collection_type;
 
 		/**
 		 * The type used to store the reference-count of an instance of this class.
@@ -70,28 +78,22 @@ namespace GPlatesModel
 		static
 		const non_null_ptr_type
 		create(
-				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_)
+				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_,
+				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections_)
 		{
-			non_null_ptr_type ptr(*(new Reconstruction(reconstruction_tree_ptr_)));
+			non_null_ptr_type ptr(new Reconstruction(reconstruction_tree_ptr_,
+							reconstruction_feature_collections_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		/**
-		 * Access the reconstructed point-geometries.
+		 * Access the reconstructed geometries.
 		 */
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> > &
-		point_geometries()
+		geometry_collection_type &
+		geometries()
 		{
-			return d_point_geometries;
-		}
-
-		/**
-		 * Access the reconstructed polyline-geometries.
-		 */
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> > &
-		polyline_geometries()
-		{
-			return d_polyline_geometries;
+			return d_geometries;
 		}
 
 		/**
@@ -101,6 +103,16 @@ namespace GPlatesModel
 		reconstruction_tree()
 		{
 			return *d_reconstruction_tree_ptr;
+		}
+
+		/**
+		 * Access the feature collections containing the reconstruction features used to
+		 * create this reconstruction.
+		 */
+		const std::vector<FeatureCollectionHandle::weak_ref> &
+		reconstruction_feature_collections() const
+		{
+			return d_reconstruction_feature_collections;
 		}
 
 		/**
@@ -140,16 +152,9 @@ namespace GPlatesModel
 		mutable ref_count_type d_ref_count;
 
 		/**
-		 * The reconstructed point-geometries.
+		 * The reconstructed geometries.
 		 */
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PointOnSphere> >
-				d_point_geometries;
-
-		/**
-		 * The reconstructed polyline-geometries.
-		 */
-		std::vector<ReconstructedFeatureGeometry<GPlatesMaths::PolylineOnSphere> >
-				d_polyline_geometries;
+		geometry_collection_type d_geometries;
 
 		/**
 		 * The plate-reconstruction hierarchy of total reconstruction poles which was used
@@ -158,14 +163,22 @@ namespace GPlatesModel
 		ReconstructionTree::non_null_ptr_type d_reconstruction_tree_ptr;
 
 		/**
+		 * Access the feature collections containing the reconstruction features used to
+		 * create this reconstruction.
+		 */
+		std::vector<FeatureCollectionHandle::weak_ref> d_reconstruction_feature_collections;
+
+		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
 		explicit
 		Reconstruction(
-				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_):
+				ReconstructionTree::non_null_ptr_type reconstruction_tree_ptr_,
+				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections_):
 			d_ref_count(0),
-			d_reconstruction_tree_ptr(reconstruction_tree_ptr_)
+			d_reconstruction_tree_ptr(reconstruction_tree_ptr_),
+			d_reconstruction_feature_collections(reconstruction_feature_collections_)
 		{  }
 
 		// This constructor should never be defined, because we don't want to allow
@@ -174,9 +187,8 @@ namespace GPlatesModel
 				const Reconstruction &other);
 
 		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive-pointer to another.
+		// copy-assignment:  All "assignment" should really only be assignment of one
+		// intrusive-pointer to another.
 		Reconstruction &
 		operator=(
 				const Reconstruction &);

@@ -94,9 +94,17 @@ namespace GPlatesFileIO
 			InvalidShapefileLongitude,
 			NoPlateIdFound,
 			InvalidShapefilePlateIdNumber,
+			UnrecognisedShapefileFeatureType,
 			InvalidShapefileAgeOfAppearance,
 			InvalidShapefileAgeOfDisappearance,
+			InvalidShapefilePoint,
+			InvalidShapefileMultiPoint,
+			InvalidShapefilePolyline,
+			InvalidShapefilePolygon,
 			
+			// The following relate to raster files.
+			InsufficientTextureMemory,
+
 			// The following relate to GDAL-readable Raster files.
 			ErrorReadingGDALBand,
 
@@ -119,14 +127,23 @@ namespace GPlatesFileIO
 			InvalidLatLonPoint,
 			InvalidLong,
 			InvalidPointsInPolyline,
+			InsufficientDistinctPointsInPolyline,
+			AntipodalAdjacentPointsInPolyline,
+			InvalidPointsInPolygon,
+			InvalidPolygonEndPoint,
+			InsufficientPointsInPolygon,
+			InsufficientDistinctPointsInPolygon,
+			AntipodalAdjacentPointsInPolygon,
 			InvalidString,
 			InvalidUnsignedInt,
 			InvalidUnsignedLong,
 			MissingNamespaceAlias,
 			NonUniqueStructuralElement,
+			StructuralElementNotFound,
 			TooManyChildrenInElement,
 			UnexpectedEmptyString,
 			UnrecognisedChildFound,
+			ConstantValueOnNonTimeDependentProperty,
 			DuplicateIdentityProperty,
 			DuplicateRevisionProperty,
 			UnrecognisedFeatureCollectionElement,
@@ -170,6 +187,7 @@ namespace GPlatesFileIO
 			NoPlateIdLoadedForFile,
 			NoPlateIdLoadedForFeature,
 			AttributeIgnored,
+			UnclassifiedShapefileFeatureCreated,
 
 			// The following relate to time-dependent raster file sets.
 			NoRasterSetsLoaded,

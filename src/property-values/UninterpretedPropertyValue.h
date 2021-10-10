@@ -34,21 +34,26 @@
 
 namespace GPlatesPropertyValues {
 
-	class UninterpretedPropertyValue :
+	class UninterpretedPropertyValue:
 			public GPlatesModel::PropertyValue {
 
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<UninterpretedPropertyValue>.
+		 * A convenience typedef for
+		 * GPlatesUtils::non_null_intrusive_ptr<UninterpretedPropertyValue,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<UninterpretedPropertyValue> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<UninterpretedPropertyValue,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		virtual
@@ -63,14 +68,17 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &value_) {
-			non_null_ptr_type ptr(*(new UninterpretedPropertyValue(value_)));
+			non_null_ptr_type ptr(new UninterpretedPropertyValue(value_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(*(new UninterpretedPropertyValue(*this)));
+			GPlatesModel::PropertyValue::non_null_ptr_type dup(
+					new UninterpretedPropertyValue(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 

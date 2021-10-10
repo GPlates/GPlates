@@ -44,7 +44,8 @@ GPlatesPropertyValues::GmlPoint::create(
 	PointOnSphere p = make_point_on_sphere(llp);
 
 	non_null_ptr_type point_ptr(
-			*(new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()))));
+			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector())),
+			GPlatesUtils::NullIntrusivePointerHandler());
 	return point_ptr;
 }
 
@@ -56,6 +57,7 @@ GPlatesPropertyValues::GmlPoint::create(
 	using namespace ::GPlatesMaths;
 
 	GmlPoint::non_null_ptr_type point_ptr(
-			*(new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()))));
+			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector())),
+			GPlatesUtils::NullIntrusivePointerHandler());
 	return point_ptr;
 }

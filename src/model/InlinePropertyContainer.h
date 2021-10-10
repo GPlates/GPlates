@@ -41,16 +41,19 @@ namespace GPlatesModel
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<InlinePropertyContainer>.
+		 * GPlatesUtils::non_null_intrusive_ptr<InlinePropertyContainer,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<InlinePropertyContainer>
-				non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<InlinePropertyContainer,
+				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const InlinePropertyContainer>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const InlinePropertyContainer,
+		 * GPlatesUtils::NullIntrusivePointerHandler>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const InlinePropertyContainer>
+		typedef GPlatesUtils::non_null_intrusive_ptr<const InlinePropertyContainer,
+				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
 		typedef std::vector<PropertyValue::non_null_ptr_type> container_type;
@@ -71,8 +74,8 @@ namespace GPlatesModel
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_)
 		{
 			non_null_ptr_type ptr(
-					*(new InlinePropertyContainer(property_name_, values_,
-							xml_attributes_)));
+					new InlinePropertyContainer(property_name_, values_, xml_attributes_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
@@ -84,7 +87,8 @@ namespace GPlatesModel
 				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_)
 		{
 			non_null_ptr_type ptr(
-					*(new InlinePropertyContainer(property_name_, value_, xml_attributes_)));
+					new InlinePropertyContainer(property_name_, value_, xml_attributes_),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
 
@@ -93,7 +97,8 @@ namespace GPlatesModel
 		clone() const 
 		{
 			PropertyContainer::non_null_ptr_type dup(
-					*(new InlinePropertyContainer(*this)));
+					new InlinePropertyContainer(*this),
+					GPlatesUtils::NullIntrusivePointerHandler());
 			return dup;
 		}
 
