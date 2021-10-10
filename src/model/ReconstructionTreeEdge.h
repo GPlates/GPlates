@@ -98,6 +98,8 @@ namespace GPlatesModel
 			return ptr;
 		}
 
+
+
 		/**
 		 * Create a duplicate of this ReconstructionTreeEdge instance.
 		 */
@@ -161,6 +163,29 @@ namespace GPlatesModel
 		}
 
 		/**
+		 * Access the parent edge pointer.
+		 *
+		 * The return value will be NULL if there is no parent edge.
+		 */
+		ReconstructionTreeEdge *
+		parent_edge()
+		{
+			return d_parent_edge;
+		}
+
+		/**
+		 * Set the parent edge pointer.
+		 *
+		 * NULL is a valid value for the pointer.
+		 */
+		void
+		set_parent_edge(
+				ReconstructionTreeEdge *parent)
+		{
+			d_parent_edge = parent;
+		}
+
+		/**
 		 * Increment the reference-count of this instance.
 		 *
 		 * Client code should not use this function!
@@ -188,6 +213,8 @@ namespace GPlatesModel
 		{
 			return --d_ref_count;
 		}
+
+		~ReconstructionTreeEdge();
 
 	private:
 		/**
@@ -237,6 +264,13 @@ namespace GPlatesModel
 		edge_collection_type d_children_in_built_tree;
 
 		/**
+		 * A pointer to the parent of this edge. 
+		 *
+		 * This might be NULL, if this edge does not currently have any parent.
+		 */
+		ReconstructionTreeEdge* d_parent_edge;
+
+		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
@@ -250,7 +284,8 @@ namespace GPlatesModel
 			d_moving_plate(moving_plate_),
 			d_relative_rotation(relative_rotation_),
 			d_composed_absolute_rotation(relative_rotation_),
-			d_pole_type(pole_type_)
+			d_pole_type(pole_type_),
+			d_parent_edge(NULL)
 		{  }
 
 		/**
@@ -274,7 +309,8 @@ namespace GPlatesModel
 			d_moving_plate(other.d_moving_plate),
 			d_relative_rotation(other.d_relative_rotation),
 			d_composed_absolute_rotation(other.d_composed_absolute_rotation),
-			d_pole_type(other.d_pole_type)
+			d_pole_type(other.d_pole_type),
+			d_parent_edge(other.d_parent_edge)
 		{  }
 
 		// This operator should never be defined, because we don't want/need to allow

@@ -72,6 +72,10 @@ namespace GPlatesMaths
 	 * will create a polygon composed of 4 segments: A->B, B->C, C->D and D->A. 
 	 * If you subsequently iterate through the vertices of this polygon,
 	 * you will get the same sequence of points back again: A, B, C, D.
+	 *
+	 * Note that PolygonOnSphere does have mutators (non-const member functions
+	 * which enable the modification of the class internals), in particular
+	 * the copy-assignment operator.
 	 */
 	class PolygonOnSphere
 	{

@@ -65,6 +65,13 @@ namespace GPlatesQtWidgets
 		update();
 		
 		/**
+		 * Initiates editing of the file configuration. 
+		 */
+		void
+		edit_configuration(
+			ManageFeatureCollectionsActionWidget *action_widget_ptr);
+
+		/**
 		 * Causes the file referenced by the action widget to be saved with its
 		 * current name. No user interaction is necessary unless an exception
 		 * occurs.

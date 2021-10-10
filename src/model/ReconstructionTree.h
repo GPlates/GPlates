@@ -143,6 +143,18 @@ namespace GPlatesModel
 			non_null_ptr_type dup(*(new ReconstructionTree(*this)));
 			return dup;
 		}
+	
+		edge_refs_by_plate_id_map_const_iterator
+		edge_map_begin()
+		{
+			return d_edges_by_moving_plate_id.begin();
+		}
+
+		edge_refs_by_plate_id_map_const_iterator
+		edge_map_end()
+		{
+			return d_edges_by_moving_plate_id.end();
+		}
 
 		/**
 		 * Access the begin iterator of the collection of rootmost edges.

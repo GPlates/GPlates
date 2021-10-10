@@ -53,7 +53,7 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GpmlPlateId.h"
-#include "property-values/GpmlStrikeSlipEnumeration.h"
+#include "property-values/Enumeration.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/XsBoolean.h"
 
@@ -83,7 +83,7 @@ namespace
 	void
 	append_appropriate_geometry(
 			const std::list<GPlatesMaths::PointOnSphere> &points,
-			const char *property_name_string,
+			const GPlatesModel::PropertyName &property_name,
 			GPlatesModel::FeatureHandle::weak_ref &feature)
 	{
 		using namespace GPlatesMaths;
@@ -111,18 +111,20 @@ namespace
 					GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
 			GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
 					GPlatesModel::ModelUtils::create_gpml_constant_value(
-							gml_orientable_curve, "gml:OrientableCurve");
+							gml_orientable_curve, 
+							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
 			GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
-					property_name_string, feature);
+					property_name, feature);
 		} else if (num_distinct_adj_points == 1) {
 			// It's a point.
 			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point =
 					GPlatesPropertyValues::GmlPoint::create(points.front());
 			GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
 					GPlatesModel::ModelUtils::create_gpml_constant_value(
-							gml_point, "gml:Point");
+							gml_point, 
+							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
 			GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
-					property_name_string, feature);
+					property_name, feature);
 		} else {
 			// FIXME:  A pre-condition of this function has been violated.  We should
 			// throw an exception.
@@ -154,13 +156,12 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points,
-			const UnicodeString &feature_type_string,
-			const char *geometry_property_name_string)
+			const GPlatesModel::FeatureType &feature_type,
+			const GPlatesModel::PropertyName &geometry_property_name)
 	{
 		using namespace GPlatesPropertyValues;
 		using namespace GPlatesModel;
 
-		FeatureType feature_type(feature_type_string);
 		FeatureHandle::weak_ref feature_handle =
 				model.create_feature(feature_type, collection);
 
@@ -174,24 +175,32 @@ namespace
 		// "gpml:reconstructionPlateId" property.
 		GpmlPlateId::non_null_ptr_type recon_plate_id = GpmlPlateId::create(plate_id);
 		ModelUtils::append_property_value_to_feature(
-				ModelUtils::create_gpml_constant_value(recon_plate_id, "gpml:plateId"),
-				"gpml:reconstructionPlateId", feature_handle);
+				ModelUtils::create_gpml_constant_value(recon_plate_id, 
+					TemplateTypeParameterType::create_gpml("plateId")),
+				PropertyName::create_gpml("reconstructionPlateId"),
+				feature_handle);
 
-		append_appropriate_geometry(points, geometry_property_name_string, feature_handle);
+		append_appropriate_geometry(points, geometry_property_name, feature_handle);
 
 		GmlTimePeriod::non_null_ptr_type gml_valid_time =
 				ModelUtils::create_gml_time_period(geo_time_instant_begin, geo_time_instant_end);
 		ModelUtils::append_property_value_to_feature(
-				gml_valid_time, "gml:validTime", feature_handle);
+				gml_valid_time, 
+				PropertyName::create_gml("validTime"), 
+				feature_handle);
 
 		// Use the PLATES4 geographic description as the "gml:description" property.
 		XsString::non_null_ptr_type gml_description = 
 				XsString::create(header->geographic_description());
 		ModelUtils::append_property_value_to_feature(
-				gml_description, "gml:description", feature_handle);
+				gml_description, 
+				PropertyName::create_gml("description"), 
+				feature_handle);
 
 		ModelUtils::append_property_value_to_feature(
-				header->clone(), "gpml:oldPlatesHeader", feature_handle);
+				header->clone(), 
+				PropertyName::create_gpml("oldPlatesHeader"), 
+				feature_handle);
 
 		return feature_handle;
 	}
@@ -207,8 +216,8 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points,
-			const UnicodeString &feature_type_string,
-			const char *geometry_property_name_string)
+			const GPlatesModel::FeatureType &feature_type,
+			const GPlatesModel::PropertyName &geometry_property_name)
 	{
 		// Check for invalid data
 		std::list<GPlatesMaths::PointOnSphere>::size_type num_distinct_adj_points =
@@ -219,7 +228,7 @@ namespace
 			throw GPlatesFileIO::ReadErrors::MoreThanOneDistinctPoint;
 		}
 		// Assume create_common will do the right thing with append_appropriate_geometry.
-		return create_common(model, collection, header, points, feature_type_string, geometry_property_name_string);
+		return create_common(model, collection, header, points, feature_type, geometry_property_name);
 	}
 
 
@@ -230,7 +239,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:Fault", "gpml:centerLineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("Fault"), 
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -244,11 +255,12 @@ namespace
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
 				create_fault(model, collection, header, points);
 		
-		// FIXME: Create a GpmlDipSlipEnumeration, which involves a suprising amount of effort.
-		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration::non_null_ptr_type dip_slip_property_value =
-				GPlatesPropertyValues::GpmlStrikeSlipEnumeration::create("Compression");
+		const GPlatesPropertyValues::Enumeration::non_null_ptr_type dip_slip_property_value =
+				GPlatesPropertyValues::Enumeration::create("gpml:DipSlipEnumeration", "Compression");
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				dip_slip_property_value, "gpml:dipSlip", feature_handle);
+				dip_slip_property_value, 
+				GPlatesModel::PropertyName::create_gpml("dipSlip"), 
+				feature_handle);
 
 		return feature_handle;
 	}
@@ -264,11 +276,12 @@ namespace
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
 				create_fault(model, collection, header, points);
 		
-		// FIXME: Create a GpmlDipSlipEnumeration, which involves a suprising amount of effort.
-		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration::non_null_ptr_type dip_slip_property_value =
-				GPlatesPropertyValues::GpmlStrikeSlipEnumeration::create("Extension");
+		const GPlatesPropertyValues::Enumeration::non_null_ptr_type dip_slip_property_value =
+				GPlatesPropertyValues::Enumeration::create("gpml:DipSlipEnumeration", "Extension");
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				dip_slip_property_value, "gpml:dipSlip", feature_handle);
+				dip_slip_property_value, 
+				GPlatesModel::PropertyName::create_gpml("dipSlip"), 
+				feature_handle);
 
 		return feature_handle;
 	}
@@ -287,7 +300,9 @@ namespace
 		const GPlatesPropertyValues::XsString::non_null_ptr_type subcategory_property_value =
 				GPlatesPropertyValues::XsString::create("Thrust");
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				subcategory_property_value, "gpml:subcategory", feature_handle);
+				subcategory_property_value, 
+				GPlatesModel::PropertyName::create_gpml("subcategory"), 
+				feature_handle);
 
 		return feature_handle;
 	}
@@ -303,10 +318,12 @@ namespace
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
 				create_fault(model, collection, header, points);
 		
-		const GPlatesPropertyValues::GpmlStrikeSlipEnumeration::non_null_ptr_type strike_slip_property_value =
-				GPlatesPropertyValues::GpmlStrikeSlipEnumeration::create("Unknown");
+		const GPlatesPropertyValues::Enumeration::non_null_ptr_type strike_slip_property_value =
+				GPlatesPropertyValues::Enumeration::create("gpml:StrikeSlipEnumeration", "Unknown");
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				strike_slip_property_value, "gpml:strikeSlip", feature_handle);
+				strike_slip_property_value, 
+				GPlatesModel::PropertyName::create_gpml("strikeSlip"), 
+				feature_handle);
 
 		return feature_handle;
 	}
@@ -319,7 +336,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:UnclassifiedFeature", "gpml:unclassifiedGeometry");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature"), 
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
 
 
@@ -330,7 +349,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:AseismicRidge", "gpml:centerLineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("AseismicRidge"), 
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -343,7 +364,9 @@ namespace
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, collection, header, points, "gpml:Bathymetry", "gpml:outlineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("Bathymetry"), 
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
 
 
@@ -354,7 +377,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:Basin", "gpml:outlineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("Basin"), 
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
 
 
@@ -365,7 +390,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:Coastline", "gpml:centerLineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("Coastline"), 
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -376,7 +403,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:PassiveContinentalBoundary", "gpml:centerLineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("PassiveContinentalBoundary"), 
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -387,7 +416,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:ContinentalFragment", "gpml:outlineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("ContinentalFragment"), 
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
 
 
@@ -398,7 +429,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:Craton", "gpml:outlineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("Craton"), 
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
 
 
@@ -409,7 +442,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:ExtendedContinentalCrust", "gpml:centerLineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("ExtendedContinentalCrust"), 
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -420,7 +455,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:FractureZone", "gpml:centerLineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("FractureZone"), 
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -433,7 +470,9 @@ namespace
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, collection, header, points, "gpml:Gravimetry", "gpml:outlineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("Gravimetry"), 
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
 
 
@@ -446,7 +485,9 @@ namespace
 	{
 		// FIXME: This will create lots of gpml:OldPlatesGridMarks if the source GR feature uses
 		// lots of pen up pen down commands. A way to specify use of gml:MultiCurve would be nice.
-		return create_common(model, collection, header, points, "gpml:OldPlatesGridMark", "gpml:centerLineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("OldPlatesGridMark"), 
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -459,7 +500,9 @@ namespace
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, collection, header, points, "gpml:HeatFlow", "gpml:outlineOf");
+		return create_common(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("HeatFlow"), 
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
 
 
@@ -470,7 +513,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_single_point_feature(model, collection, header, points, "gpml:HotSpot", "gpml:position");
+		return create_single_point_feature(model, collection, header, points, 
+				GPlatesModel::FeatureType::create_gpml("HotSpot"), 
+				GPlatesModel::PropertyName::create_gpml("position"));
 	}
 
 
@@ -481,7 +526,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:HotSpotTrail", "gpml:unclassifiedGeometry");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("HotSpotTrail"),
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
 
 
@@ -492,7 +539,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:InferredPaleoBoundary", "gpml:centerLineOf");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("InferredPaleoBoundary"),
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -505,12 +554,16 @@ namespace
 			bool is_active)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-			create_common(model, collection, header, points, "gpml:IslandArc", "gpml:outlineOf");
+			create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("IslandArc"),
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 		
 		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type is_active_property_value =
 				GPlatesPropertyValues::XsBoolean::create(is_active);
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				is_active_property_value, "gpml:isActive", feature_handle);
+				is_active_property_value, 
+				GPlatesModel::PropertyName::create_gpml("isActive"), 
+				feature_handle);
 
 		return feature_handle;
 	}
@@ -546,11 +599,15 @@ namespace
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature =
-		   	create_common(model, collection, header, points, "gpml:Isochron", "gpml:centerLineOf");
+		   	create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("Isochron"),
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 		const GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type conj_plate_id =
 				GPlatesPropertyValues::GpmlPlateId::create(header->conjugate_plate_id_number());
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				conj_plate_id, "gpml:conjugatePlateId", feature);
+				conj_plate_id, 
+				GPlatesModel::PropertyName::create_gpml("conjugatePlateId"), 
+				feature);
 		return feature;
 	}
 
@@ -564,7 +621,9 @@ namespace
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, collection, header, points, "gpml:SedimentThickness", "gpml:outlineOf");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("SedimentThickness"),
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
 
 
@@ -575,7 +634,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:GeologicalLineation", "gpml:centerLineOf");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("GeologicalLineation"),
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -588,7 +649,9 @@ namespace
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, collection, header, points, "gpml:Magnetics", "gpml:outlineOf");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("Magnetics"),
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
 
 
@@ -601,7 +664,9 @@ namespace
 	{
 		// FIXME: fill in the rest of MagneticAnomalyIdentification from the appropriate PLATES header data,
 		// assuming it is available.
-		return create_single_point_feature(model, collection, header, points, "gpml:MagneticAnomalyIdentification", "gpml:position");
+		return create_single_point_feature(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification"),
+				GPlatesModel::PropertyName::create_gpml("position"));
 	}
 
 
@@ -614,12 +679,16 @@ namespace
 			bool is_active)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-			create_common(model, collection, header, points, "gpml:MidOceanRidge", "gpml:centerLineOf");
+			create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("MidOceanRidge"),
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 		
 		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type is_active_property_value =
 				GPlatesPropertyValues::XsBoolean::create(is_active);
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				is_active_property_value, "gpml:isActive", feature_handle);
+				is_active_property_value, 
+				GPlatesModel::PropertyName::create_gpml("isActive"), 
+				feature_handle);
 
 		return feature_handle;
 	}
@@ -655,12 +724,16 @@ namespace
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-				create_common(model, collection, header, points, "gpml:BasicRockUnit", "gpml:outlineOf");
+				create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("BasicRockUnit"),
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 
 		const GPlatesPropertyValues::XsString::non_null_ptr_type subcategory_property_value =
 				GPlatesPropertyValues::XsString::create("Ophiolite");
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				subcategory_property_value, "gpml:subcategory", feature_handle);
+				subcategory_property_value, 
+				GPlatesModel::PropertyName::create_gpml("subcategory"), 
+				feature_handle);
 		
 		return feature_handle;
 	}
@@ -673,7 +746,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:OrogenicBelt", "gpml:centerLineOf");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("OrogenicBelt"),
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -684,7 +759,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:Seamount", "gpml:unclassifiedGeometry");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("Seamount"),
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
 
 
@@ -697,12 +774,16 @@ namespace
 			bool is_active)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-				create_common(model, collection, header, points, "gpml:SubductionZone", "gpml:centerLineOf");
+				create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("SubductionZone"),
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 		
 		const GPlatesPropertyValues::XsBoolean::non_null_ptr_type is_active_property_value =
 				GPlatesPropertyValues::XsBoolean::create(is_active);
 		GPlatesModel::ModelUtils::append_property_value_to_feature(
-				is_active_property_value, "gpml:isActive", feature_handle);
+				is_active_property_value, 
+				GPlatesModel::PropertyName::create_gpml("isActive"), 
+				feature_handle);
 
 		return feature_handle;
 	}
@@ -737,7 +818,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:Suture", "gpml:centerLineOf");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("Suture"),
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -748,7 +831,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:TerraneBoundary", "gpml:centerLineOf");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("TerraneBoundary"),
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -759,7 +844,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:TransitionalCrust", "gpml:outlineOf");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("TransitionalCrust"),
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
 
 
@@ -770,7 +857,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:Transform", "gpml:centerLineOf");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("Transform"),
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 
@@ -783,7 +872,9 @@ namespace
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, collection, header, points, "gpml:Topography", "gpml:outlineOf");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("Topography"),
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
 
 
@@ -794,7 +885,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:Volcano", "gpml:unclassifiedGeometry");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("Volcano"),
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
 
 
@@ -805,7 +898,9 @@ namespace
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const std::list<GPlatesMaths::PointOnSphere> &points)
 	{
-		return create_common(model, collection, header, points, "gpml:LargeIgneousProvince", "gpml:outlineOf");
+		return create_common(model, collection, header, points,
+				GPlatesModel::FeatureType::create_gpml("LargeIgneousProvince"),
+				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
 
 
@@ -1136,7 +1231,7 @@ namespace
 }
 
 
-const GPlatesModel::FeatureCollectionHandle::weak_ref
+void
 GPlatesFileIO::PlatesLineFormatReader::read_file(
 		FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
@@ -1168,5 +1263,4 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 	}
 
 	fileinfo.set_feature_collection(collection);
-	return collection;
 }

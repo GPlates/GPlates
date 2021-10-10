@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -61,6 +61,14 @@ namespace GPlatesUtils
 	{
 		return make_qstring_from_icu_string(source.get());
 	}
+
+
+	/**
+	 * Make a ICU UnicodeString from a QString.
+	 */
+	const UnicodeString
+	make_icu_string_from_qstring(
+			const QString &qstring);
 }
 
 #endif  // GPLATES_UTILS_UNICODESTRINGUTILS_H

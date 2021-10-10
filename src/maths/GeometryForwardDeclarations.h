@@ -35,6 +35,7 @@ namespace GPlatesMaths
 {
 	class PointOnSphere;
 	class PolylineOnSphere;
+	class PolygonOnSphere;
 
 	void
 	intrusive_ptr_add_ref(
@@ -51,6 +52,14 @@ namespace GPlatesMaths
 	void
 	intrusive_ptr_release(
 			const PolylineOnSphere *p);
+
+	void
+	intrusive_ptr_add_ref(
+			const PolygonOnSphere *p);
+
+	void
+	intrusive_ptr_release(
+			const PolygonOnSphere *p);
 
 }
 

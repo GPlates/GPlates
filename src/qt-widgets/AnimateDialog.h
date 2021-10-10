@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -101,6 +101,13 @@ namespace GPlatesQtWidgets
 		void
 		react_animation_playback_step();
 
+		void
+		swap_start_and_end_times();
+		
+		void
+		set_current_time_from_slider(
+				int slider_pos);
+
 	private:
 		/**
 		 * This is the viewport which will be queried for the current view time whenever
@@ -141,6 +148,14 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		ensure_bounds_contain_current_time();
+
+		int
+		ma_to_slider_units(
+				const double &ma);
+
+		double
+		slider_units_to_ma(
+				const int &slider_pos);
 
 		void
 		recalculate_slider();

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,6 +28,7 @@
 
 #include <QObject>
 
+#include "gui/FeatureFocus.h"
 #include "CanvasTool.h"
 #include "FeatureTableModel.h"
 
@@ -36,7 +37,7 @@ namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
 	class ViewportWindow;
-	class QueryFeaturePropertiesDialog;
+	class FeaturePropertiesDialog;
 }
 
 namespace GPlatesGui
@@ -65,7 +66,8 @@ namespace GPlatesGui
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_,
 				FeatureTableModel &clicked_table_model,
-				GPlatesQtWidgets::QueryFeaturePropertiesDialog &qfp_dialog_);
+				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
+				GPlatesGui::FeatureFocus &feature_focus);
 
 		~CanvasToolChoice()
 		{  }
@@ -95,6 +97,12 @@ namespace GPlatesGui
 			change_tool_if_necessary(d_query_feature_tool_ptr);
 		}
 
+		void
+		choose_edit_feature_tool()
+		{
+			change_tool_if_necessary(d_edit_feature_tool_ptr);
+		}
+
 	private:
 		/**
 		 * This is the ReorientGlobe tool which the user may choose.
@@ -110,6 +118,11 @@ namespace GPlatesGui
 		 * This is the QueryFeature tool which the user may choose.
 		 */
 		CanvasTool::non_null_ptr_type d_query_feature_tool_ptr;
+
+		/**
+		 * This is the EditFeature tool which the user may choose.
+		 */
+		CanvasTool::non_null_ptr_type d_edit_feature_tool_ptr;
 
 		/**
 		 * The current choice of CanvasTool.

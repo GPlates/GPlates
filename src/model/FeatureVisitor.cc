@@ -38,6 +38,8 @@ void
 GPlatesModel::FeatureVisitor::visit_feature_properties(
 		FeatureHandle &feature_handle)
 {
+	// FIXME: Store the properties_iterator that was most recently visited,
+	// as used in ReconstructedFeatureGeometryPopulator.
 	FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
 	FeatureHandle::properties_iterator end = feature_handle.properties_end();
 	for ( ; iter != end; ++iter) {

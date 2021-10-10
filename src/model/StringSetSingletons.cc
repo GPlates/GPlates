@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -78,11 +78,43 @@ GPlatesModel::StringSetSingletons::xml_attribute_value_instance() {
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::strike_slip_enumeration_value_instance() {
-	if (s_strike_slip_enumeration_value_instance == NULL) {
-		s_strike_slip_enumeration_value_instance = new GPlatesUtils::StringSet();
+GPlatesModel::StringSetSingletons::xml_namespace_instance() {
+	if (s_xml_namespace_instance == NULL) {
+		s_xml_namespace_instance = new GPlatesUtils::StringSet();
 	}
-	return *s_strike_slip_enumeration_value_instance;
+	return *s_xml_namespace_instance;
+}
+
+GPlatesUtils::StringSet &
+GPlatesModel::StringSetSingletons::xml_namespace_alias_instance() {
+	if (s_xml_namespace_alias_instance == NULL) {
+		s_xml_namespace_alias_instance = new GPlatesUtils::StringSet();
+	}
+	return *s_xml_namespace_alias_instance;
+}
+
+GPlatesUtils::StringSet &
+GPlatesModel::StringSetSingletons::xml_element_name_instance() {
+	if (s_xml_element_name_instance == NULL) {
+		s_xml_element_name_instance = new GPlatesUtils::StringSet();
+	}
+	return *s_xml_element_name_instance;
+}
+
+GPlatesUtils::StringSet &
+GPlatesModel::StringSetSingletons::enumeration_content_instance() {
+	if (s_enumeration_content_instance == NULL) {
+		s_enumeration_content_instance = new GPlatesUtils::StringSet();
+	}
+	return *s_enumeration_content_instance;
+}
+
+GPlatesUtils::StringSet &
+GPlatesModel::StringSetSingletons::enumeration_type_instance() {
+	if (s_enumeration_type_instance == NULL) {
+		s_enumeration_type_instance = new GPlatesUtils::StringSet();
+	}
+	return *s_enumeration_type_instance;
 }
 
 GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_feature_type_instance = NULL;
@@ -91,4 +123,9 @@ GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_template_type_para
 GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_text_content_instance = NULL;
 GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_name_instance = NULL;
 GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_attribute_value_instance = NULL;
-GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_strike_slip_enumeration_value_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_namespace_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_namespace_alias_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_xml_element_name_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_enumeration_content_instance = NULL;
+GPlatesUtils::StringSet *GPlatesModel::StringSetSingletons::s_enumeration_type_instance = NULL;
+

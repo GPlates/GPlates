@@ -44,6 +44,7 @@
 #include <boost/optional.hpp>
 
 #include "gui/Globe.h"
+#include "gui/Texture.h"
 #include "gui/ViewportZoom.h"
 #include "gui/PlatesColourTable.h"
 
@@ -54,6 +55,7 @@ namespace GPlatesQtWidgets
 {
 	// Remove this when there is a ViewState class.
 	class ViewportWindow;
+	class Texture;
 
 	class GlobeCanvas:
 			public QGLWidget 
@@ -93,6 +95,7 @@ namespace GPlatesQtWidgets
 		GlobeCanvas(
 				ViewportWindow &view_state,
 				QWidget *parent_ = 0);
+
 
 		/**
 		 * The proximity inclusion threshold is a measure of how close a geometry must be
@@ -195,6 +198,20 @@ namespace GPlatesQtWidgets
 
 		void
 		force_mouse_pointer_pos_change();
+
+		void
+		toggle_raster_image();
+
+		void
+		enable_raster_display();
+
+		void
+		disable_raster_display();
+
+		void
+		draw_colour_legend(
+			QPainter *painter,
+			GPlatesGui::Texture &texture);
 
 	protected:
 		/**
@@ -320,6 +337,13 @@ namespace GPlatesQtWidgets
 		void
 		wheelEvent(
 				QWheelEvent *event);
+
+#if 0
+		virtual
+		void
+		paintEvent(
+			QPaintEvent *paint_event);
+#endif
 
 	signals:
 		void

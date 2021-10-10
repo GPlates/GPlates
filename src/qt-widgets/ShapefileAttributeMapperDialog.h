@@ -27,9 +27,12 @@
 #define GPLATES_QTWIDGETS_SHAPEFILEATTRIBUTEMAPPERDIALOG_H
 
 #include <QDialog>
-#include "ShapefileAttributeMapperDialogUi.h"
 
 #include "model/FeatureCollectionHandle.h"
+
+#include "ShapefileAttributeMapperDialogUi.h"
+#include "ShapefileAttributeWidget.h"
+
 
 namespace GPlatesQtWidgets
 {
@@ -40,7 +43,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
-		explicit
+		
 		ShapefileAttributeMapperDialog(
 				QWidget *parent_ = NULL);
 
@@ -49,19 +52,30 @@ namespace GPlatesQtWidgets
 		{  }
 
 		void
-		setup(std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>&);
+		setup(
+			QString &filename,
+			QStringList &field_names,
+			QMap<QString,QString> &model_to_attribute_map);
 
-		public slots:
-		void
-		shapefileChanged(int);
+	public slots:
 
+		/**
+		 * Use the current state of the combo boxes to build up the 
+		 * shapefile-attribute-to-model-property map.
+		 */
 		void
 		accept();
 
-	signals:
+		/**
+		 * Reset the combo boxes to the state they were in when the 
+		 * dialog was created. 
+		 */
+		void
+		reset_fields();
+
 	private:
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_collections;
-		
+
+		ShapefileAttributeWidget *d_shapefile_attribute_widget;
 	};
 }
 

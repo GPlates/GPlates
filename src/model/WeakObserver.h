@@ -44,7 +44,7 @@ namespace GPlatesModel
 	 * reference-count.
 	 *
 	 * @par
-	 * Class WeakObserver serves as a common base for both class HandleContainerIterator and
+	 * Class WeakObserver serves as a common base for both class RevisionAwareIterator and
 	 * class WeakReference.
 	 *
 	 * @par Why class WeakObserverBase?
@@ -237,7 +237,7 @@ namespace GPlatesModel
 	/**
 	 * This class is a weak observer of publisher-type T.
 	 *
-	 * This class serves as a common base for both class HandleContainerIterator and class
+	 * This class serves as a common base for both class RevisionAwareIterator and class
 	 * WeakReference.
 	 *
 	 * @par Exception safety

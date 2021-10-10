@@ -112,7 +112,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
 	header->resizeSection(ColumnNames::FORMAT, 128);
 	header->resizeSection(ColumnNames::IN_USE, 56);
-	header->resizeSection(ColumnNames::ACTIONS, 146);
+	header->resizeSection(ColumnNames::ACTIONS, 180);
 
 	// Enforce minimum row height for the Actions widget's sake.
 	QHeaderView *sider = table_feature_collections->verticalHeader();
@@ -139,6 +139,22 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update()
 	}
 }
 
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::edit_configuration(
+	ManageFeatureCollectionsActionWidget *action_widget_ptr)
+{
+	// The "edit configuration" method only makes sense for shapefiles 
+	// (until there is some sort of equivalent requirement for other types of 
+	// feature collection), and as such, only shapefiles have the "edit configuration" 
+	// icon enabled in the ManageFeatureCollectionsActionWidget. 
+	//  
+	// For shapefiles, "edit configuration" translates to "re-map shapefile attributes to model properties". 
+	// 
+	GPlatesAppState::ApplicationState::file_info_iterator file_it =
+			action_widget_ptr->get_file_info_iterator();
+
+	d_viewport_window_ptr->remap_shapefile_attributes(*file_it);
+}
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
@@ -378,6 +394,12 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 			new ManageFeatureCollectionsActionWidget(*this, file_it, this);
 	table_feature_collections->setCellWidget(row, ColumnNames::ACTIONS, action_widget_ptr);
 	
+	// Enable the edit_configuration button if we have a shapefile. 
+	if (format_str == "ESRI shapefile")
+	{
+		action_widget_ptr->enable_edit_configuration_button();
+	}
+
 	return action_widget_ptr;
 }
 

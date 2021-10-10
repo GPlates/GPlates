@@ -260,7 +260,7 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_feature_handle(
 
 	// These two strings will be used to write the "Geographic description"
 	// field in the case that no old PLATES4 header is found.
-	d_accum.feature_type = feature_handle.feature_type().get();
+	d_accum.feature_type = feature_handle.feature_type().get_name();
 	d_accum.feature_id   = feature_handle.feature_id().get();
 
 	// Visit each of the properties in turn.
@@ -358,7 +358,8 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_gml_time_instant(
 		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	// Only the "gml:validTime" is meaningful for the ages of appearance and disappearance.
-	static const GPlatesModel::PropertyName validTime("gml:validTime");
+	static const GPlatesModel::PropertyName validTime =
+		GPlatesModel::PropertyName::create_gml("validTime");
 	if (*d_accum.current_propname != validTime) {
 		return;
 	}
@@ -379,7 +380,8 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_gml_time_period(
 		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
 	// Only the "gml:validTime" is meaningful for the ages of appearance and disappearance.
-	static const GPlatesModel::PropertyName validTime("gml:validTime");
+	static const GPlatesModel::PropertyName validTime =
+		GPlatesModel::PropertyName::create_gml("validTime");
 	if (*d_accum.current_propname != validTime) {
 		return;
 	}
@@ -432,13 +434,16 @@ GPlatesFileIO::PlatesLineFormatWriter::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	// This occurs in "gpml:ReconstructableFeature" instances.
-	static const GPlatesModel::PropertyName reconstructionPlateId("gpml:reconstructionPlateId");
+	static const GPlatesModel::PropertyName reconstructionPlateId = 
+		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 	// This occurs in "gpml:Isochron" and its instantaneous equivalent.
-	static const GPlatesModel::PropertyName conjugatePlateId("gpml:conjugatePlateId");
+	static const GPlatesModel::PropertyName conjugatePlateId =
+		GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
 	// This occurs in "gpml:InstantaneousFeature" instances.
-	static const GPlatesModel::PropertyName reconstructedPlateId("gpml:reconstructedPlateId");
+	static const GPlatesModel::PropertyName reconstructedPlateId =
+		GPlatesModel::PropertyName::create_gpml("reconstructedPlateId");
 
 	if (*d_accum.current_propname == reconstructionPlateId) {
 		if ( ! d_accum.plate_id) {

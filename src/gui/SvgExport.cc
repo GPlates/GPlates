@@ -31,12 +31,34 @@
 #include <QSvgGenerator>
 
 #include "qt-widgets/GlobeCanvas.h"
+#include "OpenGLException.h"
 #include "SvgExport.h"
 
 
 namespace
 {
+
 	struct SvgExportException { };
+
+	void
+	clear_gl_errors()
+	{	
+		while (glGetError() != GL_NO_ERROR)
+		{};
+	}
+
+	GLenum
+	check_gl_errors(
+		const char *message = "")
+	{
+		GLenum error = glGetError();
+		if (error != GL_NO_ERROR)
+		{
+			std::cout << message << ": openGL error: " << gluErrorString(error) << std::endl;
+			throw GPlatesGui::OpenGLException("OpenGL error in SvgExport");
+		}
+		return error;
+	}
 
 	struct vertex_data
 	{
@@ -70,9 +92,10 @@ namespace
 		vertex->alpha = *position;
 	}
 
-	/* Try drawing to the opengl feedback buffer, and return the number of items
+	/**
+	 * Try drawing to the opengl feedback buffer, and return the number of items
 	 * in the buffer. If the buffer was not large enough, a negative number
-	 * is returned
+	 * is returned.
 	 */
 	GLint
 	draw_to_feedback_buffer(
@@ -80,7 +103,7 @@ namespace
 			GPlatesQtWidgets::GlobeCanvas *canvas)
 	{
 
-		GLenum error;
+		clear_gl_errors();
 
 		// using the GL_3D_COLOR flag in the glFeedbackBuffer flag will
 		// tell openGL to return data in the form (x,y,z,k) where
@@ -104,22 +127,15 @@ namespace
 		// "For this step, you can ignore the value returned by glRenderMode()."
 		glRenderMode(GL_FEEDBACK);
 
-		if ((error = glGetError()) != GL_NO_ERROR){
-			// do something about this....
-			std::cerr << "there was an opengl error after call to glRenderMode(GL_FEEDBACK)" << std::endl;
-			throw SvgExportException();
-		}
+		check_gl_errors("After glRenderMode(GL_FEEDBACK)");
+
+		clear_gl_errors();
 
 		canvas->draw_vector_output();
 
 		GLint num_items = glRenderMode(GL_RENDER);
 
-	
-		if ((error = glGetError()) != GL_NO_ERROR){
-			// do something about this....
-			std::cerr << "there was an opengl error after call to glRenderMode(GL_RENDER)" << std::endl;
-			throw SvgExportException();
-		}
+		check_gl_errors("After glRenderMode(GL_RENDER)");
 
 		// According to http://www.glprogramming.com/red/chapter13.html#name1 , section
 		// "Selection", sub-section "The Basic Steps", a negative value means that the
@@ -133,7 +149,7 @@ namespace
 	}
 
 
-	/*
+	/**
 	 * Go through the buffer and count how many of the various token types
 	 * we have, and send them to std::cerr. Just out of interest, like.
 	 */
@@ -280,7 +296,7 @@ namespace
 	}
 
 
-	/*
+	/**
 	 * Go through the buffer and interpret the points/lines as Qt geometrical items,
 	 * and send them to the QPainter. 
 	 */
@@ -495,6 +511,8 @@ GPlatesGui::SvgExport::create_svg_output(
 	// stored in contiguous memory, just like the elements in an array.
 	std::vector<GLfloat> feedback_buffer(buffer_size);
 
+	SvgExport svg_export;
+
 	try{
 
 		filled_size = draw_to_feedback_buffer(feedback_buffer,canvas);
@@ -525,11 +543,23 @@ GPlatesGui::SvgExport::create_svg_output(
 
 		draw_to_svg_file(filename, feedback_buffer);
 
-	} catch (const SvgExportException &) {
+	}
+	catch (const OpenGLException &e){
+		e.write(std::cerr);
+		return false;
+	}
+	catch (const SvgExportException &) {
 		std::cerr << "An exception was caught in SvgExport." << std::endl;
 		return false;
 	}
 
+
 	return true;
 }
 
+
+GPlatesGui::SvgExport::~SvgExport()
+{
+	glRenderMode(GL_RENDER);
+	clear_gl_errors();
+}

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -53,6 +53,11 @@ GPlatesQtWidgets::AnimateDialog::AnimateDialog(
 	QObject::connect(widget_current_time, SIGNAL(valueChanged(double)),
 			this, SLOT(react_current_time_changed(double)));
 
+	QObject::connect(button_Reverse_the_Animation, SIGNAL(clicked()),
+			this, SLOT(swap_start_and_end_times()));
+
+	QObject::connect(slider_current_time, SIGNAL(valueChanged(int)),
+			this, SLOT(set_current_time_from_slider(int)));
 	QObject::connect(button_Start, SIGNAL(clicked()),
 			this, SLOT(toggle_animation_playback_state()));
 	QObject::connect(button_Rewind, SIGNAL(clicked()),
@@ -192,13 +197,55 @@ GPlatesQtWidgets::AnimateDialog::react_animation_playback_step()
 	// Now let's handle the more general case in which the time increment is larger than the
 	// remaining time.
 	if (abs_time_increment > abs_remaining_time) {
-		// Another frame would take us past the end-time, so stop the animation here.
+		// Another frame would take us past the end-time. Decide what to do based on the
+		// "Finish animation exactly at end time" and "Loop" checkboxes.
+		if (checkbox_Finish_animation_on_end_time->checkState() == Qt::Checked) {
+			// We should finish at the exact end point.
+			widget_current_time->setValue(widget_end_time->value());
+		} else {
+			// Else, the animation should stop where the last increment left us,
+			// even if this does not exactly equal the specified end time.
+		}
 
-		stop_animation_playback();
-		return;
+		if (checkbox_Loop->checkState() == Qt::Checked) {
+			// Return to the start of the animation and keep animating.
+			widget_current_time->setValue(widget_start_time->value());
+			return;
+		} else {
+			// We are not looping and should stop the animation here.
+			stop_animation_playback();
+			return;
+		}
 	}
 
 	widget_current_time->setValue(widget_current_time->value() + d_time_increment);
+}
+
+
+void
+GPlatesQtWidgets::AnimateDialog::swap_start_and_end_times()
+{
+	double current_time = widget_current_time->value();
+	double start_time = widget_start_time->value();
+	double end_time = widget_end_time->value();
+
+	// We first set both endpoints to equal the current time, in a clever hack
+	// to preserve the current time (a simple swap would result in both start
+	// and end times temporarily equal to the min or max time, firing an event
+	// which would clamp the current time at one of those endpoints)
+	widget_start_time->setValue(current_time);
+	widget_end_time->setValue(current_time);
+
+	widget_start_time->setValue(end_time);
+	widget_end_time->setValue(start_time);
+}
+
+
+void
+GPlatesQtWidgets::AnimateDialog::set_current_time_from_slider(
+		int slider_pos)
+{
+	widget_current_time->setValue(slider_units_to_ma(slider_pos));
 }
 
 
@@ -256,17 +303,59 @@ GPlatesQtWidgets::AnimateDialog::ensure_bounds_contain_current_time()
 }
 
 
+int
+GPlatesQtWidgets::AnimateDialog::ma_to_slider_units(
+		const double &ma)
+{
+	// QSlider uses integers for it's min, max, and current values.
+	// We convert from reconstruction times to 'slider units' by
+	// multiplying by 100 and negating the value if necessary
+	// (so that the slider always moves left-to-right)
+	if (widget_start_time->value() > widget_end_time->value()) {
+		// Left - Right on the slider corresponds to Past - Future (Large Ma. - Small Ma.)
+		return 0 - static_cast<int>(ma * 100 + 0.5);
+	} else {
+		// Left - Right on the slider corresponds to Future - Past (Small Ma. - Large Ma.)
+		return static_cast<int>(ma * 100 + 0.5);
+	}
+}
+
+
+double
+GPlatesQtWidgets::AnimateDialog::slider_units_to_ma(
+		const int &slider_pos)
+{
+	// QSlider uses integers for it's min, max, and current values.
+	// We convert from reconstruction times to 'slider units' by
+	// multiplying by 100 and negating the value if necessary
+	// (so that the slider always moves left-to-right)
+	if (widget_start_time->value() > widget_end_time->value()) {
+		// Left - Right on the slider corresponds to Past - Future (Large Ma. - Small Ma.)
+		return (0 - slider_pos) / 100.0;
+	} else {
+		// Left - Right on the slider corresponds to Future - Past (Small Ma. - Large Ma.)
+		return slider_pos / 100.0;
+	}
+}
+
+
 void
 GPlatesQtWidgets::AnimateDialog::recalculate_slider()
 {
-	// The slider functionality is not yet implemented.
+	double start_time = widget_start_time->value();
+	double end_time = widget_end_time->value();
+	double current_time = widget_current_time->value();
+	
+	slider_current_time->setMinimum(ma_to_slider_units(start_time));
+	slider_current_time->setMaximum(ma_to_slider_units(end_time));
+	slider_current_time->setValue(ma_to_slider_units(current_time));
 }
 
 
 void
 GPlatesQtWidgets::AnimateDialog::start_animation_playback()
 {
-	const double num_frames_per_sec = 5.0;
+	double num_frames_per_sec = widget_Frames_per_second->value();
 	double frame_duration_millisecs = (1000.0 / num_frames_per_sec);
 	d_timer.start(static_cast<int>(frame_duration_millisecs));
 
@@ -291,3 +380,5 @@ GPlatesQtWidgets::AnimateDialog::recalculate_increment()
 		d_time_increment = -widget_time_increment->value();
 	}
 }
+
+

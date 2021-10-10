@@ -31,6 +31,7 @@
 #include "Colour.h"
 #include "OpaqueSphere.h"
 #include "SphericalGrid.h"
+#include "Texture.h"
 #include "NurbsRenderer.h"
 #include "SimpleGlobeOrientation.h"
 #include "maths/UnitVector3D.h"
@@ -41,6 +42,7 @@ namespace GPlatesGui
 {
 	class Globe
 	{
+
 		public:
 			Globe() :
 			 _sphere(Colour(0.35f, 0.35f, 0.35f)),
@@ -68,6 +70,9 @@ namespace GPlatesGui
 			GPlatesMaths::PointOnSphere Orient(const
 			 GPlatesMaths::PointOnSphere &pos);
 
+			void
+			initialise_texture();
+
 			void Paint();
 			
 			/*
@@ -75,6 +80,20 @@ namespace GPlatesGui
 			 * for vector output
 			 */
 			void paint_vector_output();
+
+			void
+			toggle_raster_image();
+
+			void
+			enable_raster_display();
+
+			void
+			disable_raster_display();
+
+			Texture &
+			texture(){
+				return d_texture;
+			}
 
 		private:
 			/**
@@ -86,6 +105,12 @@ namespace GPlatesGui
 			 * The solid earth.
 			 */
 			OpaqueSphere _sphere;
+
+
+			/**
+			 * A (single) texture to be texture-mapped over the sphere surface.
+			 */
+			Texture d_texture;
 
 			/**
 			 * Lines of lat and lon on surface of earth.

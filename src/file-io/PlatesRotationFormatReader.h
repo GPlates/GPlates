@@ -52,7 +52,7 @@ namespace GPlatesFileIO
 		 * ErrorOpeningFileForReadingException will be thrown.
 		 */
 		static
-		const GPlatesModel::FeatureCollectionHandle::weak_ref
+		void
 		read_file(
 				FileInfo &filename,
 				GPlatesModel::ModelInterface &model,

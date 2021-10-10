@@ -31,6 +31,7 @@
 #include <utility>  /* std::pair */
 #include "model/PropertyValue.h"
 #include "GmlPoint.h"
+#include "GpmlMeasure.h"
 #include "maths/FiniteRotation.h"
 
 
@@ -84,6 +85,24 @@ namespace GPlatesPropertyValues
 		create(
 				const std::pair<double, double> &gpml_euler_pole,
 				const double &gml_angle_in_degrees);
+
+		/**
+		 * Create a GpmlFiniteRotation instance from an Euler pole (longitude, latitude)
+		 * and a rotation angle (units-of-measure: degrees).
+		 *
+		 * It is assumed that the angle is non-zero (since, technically-speaking, a zero
+		 * angle would result in an indeterminate Euler pole).
+		 */
+		// This creation function is here purely for the simple, hard-coded construction of
+		// features.  It may not be necessary or appropriate later on when we're doing
+		// everything properly, so don't look at this function and think "Uh oh, this
+		// function doesn't look like it should be here, but I'm sure it's here for a
+		// reason..."
+		static
+		const non_null_ptr_type
+		create(
+				const GmlPoint::non_null_ptr_type &gpml_euler_pole,
+				const GpmlMeasure::non_null_ptr_type &gml_angle_in_degrees);
 
 		/**
 		 * Create a GpmlFiniteRotation instance which represents a "zero" rotation.

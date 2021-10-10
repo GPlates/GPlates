@@ -33,6 +33,8 @@ const GPlatesPropertyValues::GmlLineString::non_null_ptr_type
 GPlatesPropertyValues::GmlLineString::create(
 		const internal_polyline_type &polyline_)
 {
+	// Because PolylineOnSphere is mutable, we must clone the polyline we are given,
+	// otherwise it might be possible to change the polyline without our knowledge.
 	GmlLineString::non_null_ptr_type line_string_ptr(*(new GmlLineString(
 			polyline_->clone_on_heap())));
 	return line_string_ptr;

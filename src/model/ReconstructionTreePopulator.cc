@@ -309,8 +309,10 @@ void
 GPlatesModel::ReconstructionTreePopulator::visit_gpml_plate_id(
 		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-	static const PropertyName fixed_ref_frame_property_name("gpml:fixedReferenceFrame");
-	static const PropertyName moving_ref_frame_property_name("gpml:movingReferenceFrame");
+	static const PropertyName fixed_ref_frame_property_name =
+		PropertyName::create_gpml("fixedReferenceFrame");
+	static const PropertyName moving_ref_frame_property_name =
+		PropertyName::create_gpml("movingReferenceFrame");
 
 	// Note that we're going to assume that we've read a property name...
 	if (*(d_accumulator->d_most_recent_propname_read) == fixed_ref_frame_property_name) {

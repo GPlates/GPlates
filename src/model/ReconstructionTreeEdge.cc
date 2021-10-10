@@ -42,3 +42,18 @@ GPlatesModel::output_for_debugging(
 	}
 	os << (&edge) << ",\n finite rotation " << edge.composed_absolute_rotation() << std::endl;
 }
+
+
+GPlatesModel::ReconstructionTreeEdge::~ReconstructionTreeEdge()
+{
+	// Unsubscribe all the edge's children, so they aren't left with dangling pointers.
+	edge_collection_type::iterator it;
+	edge_collection_type::iterator it_begin = d_children_in_built_tree.begin();
+	edge_collection_type::iterator it_end = d_children_in_built_tree.end();
+
+	for (it = it_begin; it != it_end ; it++)
+	{
+		(*it)->set_parent_edge(NULL);
+	}
+}
+

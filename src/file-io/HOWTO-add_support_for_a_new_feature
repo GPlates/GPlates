@@ -1,0 +1,116 @@
+HOWTO: Add support for a new feature in GPlates
+===============================================
+
+Suppose Dietmar has insisted that it is imperative that GPlates supports
+a new feature, called  IncomprehensibleGibberish, and that this must be
+implemented by yesterday (hard to imagine, I know).  This HOWTO
+describes how one should add  IncomprehensibleGibberish  support to
+GPlates.
+
+-*-
+
+The very first stage in the process is determining what properties
+IncomprehensibleGibberish  has.  This information should be obtained
+from JB and JC, who will most likely have a number of loud "meetings"
+with Dietmar to determine precisely what  IncomprehensibleGibberish  is.
+The definition of  IncomprehensibleGibberish  should be given to you in
+the form of a list of the properties that  IncomprehensibleGibberish
+has, as well as the "parent type" of the feature (the type from which
+IncomprehensibleGibberish  inherits).  Each property consists of a name
+and a type.  For example, you might have the following information:
+
+  IncomprehensibleGibberish  inherits from  TangibleFeature
+  It has the following properties:
+  - name: originator;  type: gpml:PersonReference
+  - name: timeObserved;  type: gml:TimeInstant
+  - name: measureOfIncomprehensibility;  type: gpml:measure.
+
+For a Real Life (tm) example of the specification of a feature and its
+properties, refer to
+
+  http://www.earthbyte.org/Resources/GPGIM/public/#Isochron
+
+Having acquired this information, the following steps are required to
+add  IncomprehensibleGibberish  support to GPlates:
+
+ 0. Triple-check that GPlates does not already support
+  IncomprehensibleGibberish.  You can determine this by looking through
+  the file "file-io/FeaturePropertiesMap.cc"  and checking to see
+  if there is a feature called  IncomprehensibleGibberish  already, or
+  if there is a feature with a similar name already (e.g. there may be
+  an IncomprehensibleNonsense  feature; how does it differ from
+  IncomprehensibleGibberish?).  If you are sure you need to add
+  IncomprehensibleGibberish to GPlates, then continue...
+
+ 1. Have a look at each of the properties of IncomprehensibleGibberish.
+  Each property has a name and a type.  GPlates already supports various
+  property types, but to add a new feature you must ensure that *all* of
+  the property types you require are supported first.  For information
+  on how to check if a particular property type is supported, and how to
+  add it if it is not already supported, see the document titled:
+
+    HOWTO: Add support for a new property type in GPlates
+
+  which you should be able to find in roughly the same place you found
+  the present document.
+
+ 2. At this stage, you should (i) be sure that GPlates needs support
+  for  IncomprehensibleGibberish, and (ii) be sure that GPlates supports
+  all the property types needed to completely define
+  IncomprehensibleGibberish.  If this is the case, you can add
+  IncomprehensibleGibberish  support by executing the following steps:
+
+   a) Open the file "file-io/FeaturePropertiesMap.cc" in your favourite
+   editor.  This is the only file that you will need to edit.
+
+   b) Add a new function in the anonymous namespace with the following
+   structure (pay attention to the naming conventions!):
+
+     const PropertyCreationUtils::PropertyCreatorMap
+     get_incomprehensible_gibberish_properties()
+     {
+         PropertyCreationUtils::PropertyCreatorMap map = 
+             get_tangible_feature_properties();
+
+         // We will add stuff to the map here in the next step...
+
+         return map;
+     }
+
+   Note that we initialise  map  using the function
+   get_tangible_feature_properties()  *because*
+   IncomprehensibleGibberish  inherits from  TangibleFeature.  The
+   function you use to initialise  map  will be different if your
+   feature inherits from some other type.
+
+   c) Now we need to add a mapping for each property that
+   IncomprehensibleGibberish has.  Suppose we want to add the property
+   called "originator", which is of type "PersonReference".  Because we
+   passed step 1. above, there must be a function called
+   create_person_reference  that will create  GpmlPersonReferences for
+   us.  To add the mapping from the name "originator" to the code that
+   makes  GpmlPersonReferences, add the following statement (pay
+   attention to the naming conventions!):
+
+     map[ PropertyName::create_gpml("originator") ] = 
+         GET_PROP_VAL_NAME(create_person_reference);
+
+   to the function  get_incomprehensible_gibberish_properties()  at the
+   point where the comment is.
+
+   d) Repeat step c) for each of  IncomprehensibleGibberish's
+   properties.
+
+   e)  Finally, locate the method
+
+     GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
+
+   inside "file-io/FeaturePropertiesMap.cc".  To this function, add the
+   line:
+
+     d_map[ FeatureType::create_gpml("IncomprehensibleGibberish") ] =
+         get_incomprehensible_gibberish_properties();
+
+
+And that's it!  Recompile GPlates, and it will proudly support
+IncomprehensibleGibberish!

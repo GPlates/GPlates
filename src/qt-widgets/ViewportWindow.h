@@ -48,10 +48,12 @@
 #include "AnimateDialog.h"
 #include "AboutDialog.h"
 #include "LicenseDialog.h"
-#include "QueryFeaturePropertiesDialog.h"
+#include "FeaturePropertiesDialog.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
+#include "EulerPoleDialog.h"
 
+#include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
 
 #include "model/ModelInterface.h"
@@ -79,7 +81,7 @@ namespace GPlatesQtWidgets
 		{
 			return *d_reconstruction_ptr;
 		}
-
+	
 		const double &
 		reconstruction_time() const
 		{
@@ -91,9 +93,17 @@ namespace GPlatesQtWidgets
 		{
 			return d_recon_root;
 		}
+		
+		const GPlatesQtWidgets::ReconstructionViewWidget &
+		reconstruction_view_widget() const
+		{
+			return d_reconstruction_view_widget;
+		}
 
 		void
 		create_svg_file();
+
+
 
 	public slots:
 		void
@@ -120,6 +130,9 @@ namespace GPlatesQtWidgets
 		choose_query_feature_tool();
 
 		void
+		choose_edit_feature_tool();
+
+		void
 		pop_up_read_errors_dialog();
 
 		void
@@ -130,6 +143,28 @@ namespace GPlatesQtWidgets
 		{
 			create_svg_file();
 		}
+
+		void
+		pop_up_euler_pole_dialog();
+	
+		void
+		open_global_raster();
+
+		void
+		open_time_dependent_global_raster_set();
+
+	signals:
+		
+		/**
+		 * Emitted when the current reconstruction time has changed and after the reconstruction
+		 * has been performed and the canvas updated.
+		 *
+		 * Note that this signal is emitted ONLY when the new reconstruction time is different
+		 * to the old one - if the ViewportWindow is asked to reconstruct to the current time
+		 * (e.g. after a feature gets a plateid changed), this signal will not be emitted.
+		 */
+		void
+		reconstruction_time_changed(double time);
 
 	public:
 		typedef GPlatesAppState::ApplicationState::file_info_iterator file_info_iterator;
@@ -195,6 +230,12 @@ namespace GPlatesQtWidgets
 		is_file_active(
 				file_info_iterator loaded_file);
 			
+		/**
+		 * Temporary method for initiating shapefile attribute remapping. 
+		 */
+		void
+		remap_shapefile_attributes(
+			GPlatesFileIO::FileInfo &file_info);
 
 	private:
 		GPlatesModel::ModelInterface *d_model_ptr;
@@ -211,23 +252,39 @@ namespace GPlatesQtWidgets
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
 		ReconstructionViewWidget d_reconstruction_view_widget;
+		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
 		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
 		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
 		AnimateDialog d_animate_dialog;
 		AboutDialog d_about_dialog;
 		LicenseDialog d_license_dialog;
-		QueryFeaturePropertiesDialog d_query_feature_properties_dialog;
+		FeaturePropertiesDialog d_feature_properties_dialog;	// Depends on FeatureFocus.
 		ReadErrorAccumulationDialog d_read_errors_dialog;
 		ManageFeatureCollectionsDialog d_manage_feature_collections_dialog;
 		bool d_animate_dialog_has_been_shown;
 		GlobeCanvas *d_canvas_ptr;
 		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
-		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;
+		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does.
+		EulerPoleDialog d_euler_pole_dialog;
 
-		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// Should be in ViewState.
+		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
+
+		//  map a time value to a raster filename
+		QMap<int,QString> d_time_dependent_raster_map;
+
+		// The last path used for opening raster files.
+		QString d_open_file_path; 
 
 		void
 		uncheck_all_tools();
+
+		bool
+		load_global_raster(
+			QString filename);
+
+		void
+		update_time_dependent_raster();
+
 	private slots:
 		void
 		pop_up_specify_fixed_plate_dialog();
@@ -241,8 +298,13 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_about_dialog();
 
+
+
 		void
 		close_all_dialogs();
+
+		void
+		enable_raster_display();
 
 	protected:
 	

@@ -33,6 +33,7 @@
 #include "Globe.h"
 #include "PlatesColourTable.h"
 #include "NurbsRenderer.h"
+#include "Texture.h"
 #include "maths/Vector3D.h"
 #include "state/Layout.h"
 
@@ -168,6 +169,7 @@ GPlatesGui::Globe::Paint()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
+
 	// NOTE: OpenGL rotations are *counter-clockwise* (API v1.4, p35).
 	glPushMatrix();
 		// rotate everything to get a nice almost-equatorial shot
@@ -178,14 +180,8 @@ GPlatesGui::Globe::Paint()
 		 radiansToDegrees(m_globe_orientation.rotation_angle());
 		glRotatef(angle_in_deg.dval(),
 		           axis.x().dval(), axis.y().dval(), axis.z().dval());
-
-		// Set the sphere's colour.
-		glColor3fv(GPlatesGui::Colour(
-				static_cast<GLfloat>(0.35), 
-				static_cast<GLfloat>(0.35), 
-				static_cast<GLfloat>(0.35)));
 		
-		/*
+		/**
 		 * Draw sphere.
 		 * DepthRange calls push the sphere back in the depth buffer
 		 * a bit to avoid Z-fighting with the LineData.
@@ -193,29 +189,31 @@ GPlatesGui::Globe::Paint()
 		glDepthRange(0.1, 1.0);
 		_sphere.Paint();
 
-		// Set the grid's colour.
-		glColor3fv(Colour::WHITE);
+		// Draw the texture slightly in front of the grey sphere, otherwise we 
+		// get little bits of the sphere sticking out. 
+		glDepthRange(0.05,1.0);
+		d_texture.paint();
 		
-		/*
+		/**
 		 * Draw grid.
 		 * DepthRange calls push the grid back in the depth buffer
 		 * a bit to avoid Z-fighting with the LineData.
 		 */
 		glDepthRange(0.0, 0.9);
-		_grid.Paint();
 
+		_grid.Paint();
+		
 		// Restore DepthRange
 		glDepthRange(0.0, 1.0);
 
 		glPointSize(5.0f);
 		
-		/* 
+		/** 
 		 * Paint the data.
 		 */
-		glColor3fv(GPlatesGui::Colour::GREEN);
+
 		PaintPoints();
 		
-		glColor3fv(GPlatesGui::Colour::BLACK);
 		PaintLines(d_nurbs_renderer);
 
 	glPopMatrix();
@@ -264,5 +262,30 @@ GPlatesGui::Globe::paint_vector_output()
 		PaintLines(d_nurbs_renderer);
 
 	glPopMatrix();
+}
+
+void
+GPlatesGui::Globe::initialise_texture()
+{
+//	d_texture.generate_test_texture2();
+}
+
+void
+GPlatesGui::Globe::toggle_raster_image()
+{
+	d_texture.toggle();
+
+}
+
+void
+GPlatesGui::Globe::enable_raster_display()
+{
+	d_texture.set_enabled(true);
+}
+
+void
+GPlatesGui::Globe::disable_raster_display()
+{
+	d_texture.set_enabled(false);
 }
 

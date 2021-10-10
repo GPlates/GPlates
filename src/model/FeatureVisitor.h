@@ -33,19 +33,30 @@ namespace GPlatesPropertyValues
 {
 	// Forward declarations for the member functions.
 	// Please keep these ordered alphabetically.
+	class Enumeration;
 	class GmlLineString;
 	class GmlOrientableCurve;
 	class GmlPoint;
+	class GmlPolygon;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
 	class GpmlConstantValue;
+	class GpmlFeatureReference;
+	class GpmlFeatureSnapshotReference;
 	class GpmlFiniteRotation;
 	class GpmlFiniteRotationSlerp;
+	class GpmlHotSpotTrailMark;
 	class GpmlIrregularSampling;
+	class GpmlMeasure;
 	class GpmlOldPlatesHeader;
+	class GpmlPiecewiseAggregation;
 	class GpmlPlateId;
-	class GpmlStrikeSlipEnumeration;
+	class GpmlPolarityChronId;
+	class GpmlPropertyDelegate;
+	class GpmlRevisionId;
 	class GpmlTimeSample;
+	class GpmlTimeWindow;
+	class UninterpretedPropertyValue;
 	class XsBoolean;
 	class XsDouble;
 	class XsInteger;
@@ -140,6 +151,12 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_enumeration(
+				GPlatesPropertyValues::Enumeration &enumeration)
+		{  }
+
+		virtual
+		void
 		visit_gml_line_string(
 				GPlatesPropertyValues::GmlLineString &gml_line_string)
 		{  }
@@ -154,6 +171,12 @@ namespace GPlatesModel
 		void
 		visit_gml_point(
 				GPlatesPropertyValues::GmlPoint &gml_point)
+		{  }
+
+		virtual
+		void
+		visit_gml_polygon(
+				GPlatesPropertyValues::GmlPolygon &gml_polygon)
 		{  }
 
 		virtual
@@ -176,6 +199,18 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_feature_reference(
+				GPlatesPropertyValues::GpmlFeatureReference &gpml_feature_reference)
+		{  }
+
+		virtual
+		void
+		visit_gpml_feature_snapshot_reference(
+				GPlatesPropertyValues::GpmlFeatureSnapshotReference &gpml_feature_snapshot_reference)
+		{  }
+
+		virtual
+		void
 		visit_gpml_finite_rotation(
 				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 		{  }
@@ -188,8 +223,20 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_hot_spot_trail_mark(
+				GPlatesPropertyValues::GpmlHotSpotTrailMark &gpml_hot_spot_trail_mark)
+		{  }
+
+		virtual
+		void
 		visit_gpml_irregular_sampling(
 				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+		{  }
+
+		virtual
+		void
+		visit_gpml_measure(
+				GPlatesPropertyValues::GpmlMeasure &gpml_measure)
 		{  }
 
 		virtual
@@ -200,20 +247,49 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_piecewise_aggregation(
+				GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		{  }
+
+		virtual
+		void
 		visit_gpml_plate_id(
 				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 		{  }
 
 		virtual
 		void
-		visit_gpml_strike_slip_enumeration(
-				GPlatesPropertyValues::GpmlStrikeSlipEnumeration &strike_slip_enumeration)
+		visit_gpml_polarity_chron_id(
+				GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id)
 		{  }
+
+		virtual
+		void
+		visit_gpml_property_delegate(
+				GPlatesPropertyValues::GpmlPropertyDelegate &gpml_property_delegate)
+		{  }
+
+		virtual
+		void
+		visit_gpml_revision_id(
+				const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id) {  }
 
 		virtual
 		void
 		visit_gpml_time_sample(
 				GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
+		{  }
+
+		virtual
+		void
+		visit_gpml_time_window(
+				GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
+		{  }
+
+		virtual
+		void
+		visit_uninterpreted_property_value(
+				GPlatesPropertyValues::UninterpretedPropertyValue &uninterpreted_prop_val) 
 		{  }
 
 		virtual

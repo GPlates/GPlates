@@ -28,6 +28,8 @@
 
 #include "Model.h"
 #include "InlinePropertyContainer.h"
+#include "DummyTransactionHandle.h"
+#include "PropertyName.h"
 #include "PropertyValue.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -36,7 +38,7 @@
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlConstantValue.h"
-
+#include "property-values/TemplateTypeParameterType.h"
 
 namespace GPlatesModel
 {
@@ -55,16 +57,26 @@ namespace GPlatesModel
 		const InlinePropertyContainer::non_null_ptr_type
 		append_property_value_to_feature(
 				PropertyValue::non_null_ptr_type property_value,
-				const UnicodeString &property_name_string,
+				const PropertyName &property_name,
 				FeatureHandle::weak_ref &feature);
 
 
 		const InlinePropertyContainer::non_null_ptr_type
 		append_property_value_to_feature(
 				PropertyValue::non_null_ptr_type property_value,
-				const UnicodeString &property_name_string,
+				const PropertyName &property_name,
 				const UnicodeString &attribute_name_string,
 				const UnicodeString &attribute_value_string,
+				FeatureHandle::weak_ref &feature);
+
+
+		template< typename AttributeIterator >
+		const InlinePropertyContainer::non_null_ptr_type
+		append_property_value_to_feature(
+				PropertyValue::non_null_ptr_type property_value,
+				const PropertyName &property_name,
+				const AttributeIterator &attributes_begin,
+				const AttributeIterator &attributes_end,
 				FeatureHandle::weak_ref &feature);
 
 
@@ -88,7 +100,7 @@ namespace GPlatesModel
 		const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 		create_gpml_constant_value(
 				const PropertyValue::non_null_ptr_type property_value,
-				const UnicodeString &template_type_parameter_type_string);
+				const GPlatesPropertyValues::TemplateTypeParameterType &template_type_parameter_type);
 
 
 		// Before this line are the new, hopefully-better-designed functions; after this
@@ -107,6 +119,29 @@ namespace GPlatesModel
 				unsigned long fixed_plate_id,
 				unsigned long moving_plate_id,
 				const std::vector<TotalReconstructionPoleData> &five_tuples);
+	}
+
+
+	template< typename AttributeIterator >
+	const InlinePropertyContainer::non_null_ptr_type
+	ModelUtils::append_property_value_to_feature(
+			PropertyValue::non_null_ptr_type property_value,
+			const PropertyName &property_name,
+			const AttributeIterator &attributes_begin,
+			const AttributeIterator &attributes_end,
+			FeatureHandle::weak_ref &feature)
+	{
+		std::map<XmlAttributeName, XmlAttributeValue> xml_attributes(
+				attributes_begin, attributes_end);
+		
+		InlinePropertyContainer::non_null_ptr_type property_container =
+				InlinePropertyContainer::create(property_name, property_value, xml_attributes);
+
+		DummyTransactionHandle transaction(__FILE__, __LINE__);
+		feature->append_property_container(property_container, transaction);
+		transaction.commit();
+
+		return property_container;
 	}
 }
 

@@ -45,6 +45,7 @@
 #endif  // HAVE_CONFIG_H
 
 #include "FileInfo.h"
+#include "PropertyMapper.h"
 #include "ReadErrorAccumulation.h"
 
 #include "model/ModelInterface.h"
@@ -63,11 +64,23 @@ namespace GPlatesFileIO
 	public:
 
 		static
-		const GPlatesModel::FeatureCollectionHandle::weak_ref
+		void
 		read_file(
 				FileInfo& fileinfo,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
+
+		static
+		void
+		set_property_mapper(
+			boost::shared_ptr< PropertyMapper > property_mapper);
+
+		static
+		void
+		remap_shapefile_attributes(
+			FileInfo &file_info,
+			GPlatesModel::ModelInterface &model,
+			ReadErrorAccumulation &read_errors);
 
 	private:
 
@@ -198,7 +211,16 @@ namespace GPlatesFileIO
 
 		OGRwkbGeometryType 
 		get_OGR_type();
-				
+
+		void
+		add_ring_to_points_list(
+			OGRLinearRing *ring,
+			std::list<GPlatesMaths::PointOnSphere> &list,
+			ReadErrorAccumulation &read_errors,
+			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
+			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
+
+
 		QString d_filename;
 
 		int d_num_layers;
@@ -211,11 +233,21 @@ namespace GPlatesFileIO
 
 		OGRLayer *d_layer_ptr;
 
+		// The type of the current geometry (e.g. LineString, Polygon, MultiPolygon...)
 		OGRwkbGeometryType d_type;
 
-		std::map<int, QString> d_field_names;
+		// The shapefile attribute field names. 
+		static QStringList d_field_names;
 
+		// The shapefile attributes for the current geometry.
 		std::vector<QVariant> d_attributes;
+
+		// Map for associating a model property with a shapefile attribute.
+//		std::map<int, int> d_model_to_attribute_map;
+		static QMap<QString,QString> d_model_to_attribute_map;
+
+		// The feature type and the geometry type
+		std::pair<QString,QString> d_feature_creation_pair;
 
 		// The total number of geometries, including those from multi-geometries, in the file.
 		unsigned d_total_geometries;
@@ -226,6 +258,7 @@ namespace GPlatesFileIO
 		// The total number of features in the file.
 		unsigned d_total_features;
 
+		static boost::shared_ptr< PropertyMapper > d_property_mapper;
 	};
 
 

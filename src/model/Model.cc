@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -85,6 +85,41 @@ GPlatesModel::Model::create_feature(
 	return feature_handle->reference();
 }
 
+const GPlatesModel::FeatureHandle::weak_ref
+GPlatesModel::Model::create_feature(
+		const FeatureType &feature_type,
+		const RevisionId &revision_id,
+		const FeatureCollectionHandle::weak_ref &target_collection)
+{	
+	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
+			GPlatesModel::FeatureHandle::create(feature_type, revision_id);
+	
+	DummyTransactionHandle transaction(__FILE__, __LINE__);
+	target_collection->append_feature(feature_handle, transaction);
+	transaction.commit();
+
+	return feature_handle->reference();
+
+}
+
+
+const GPlatesModel::FeatureHandle::weak_ref
+GPlatesModel::Model::create_feature(
+		const FeatureType &feature_type,
+		const FeatureId &feature_id,
+		const RevisionId &revision_id,
+		const FeatureCollectionHandle::weak_ref &target_collection)
+{
+	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
+			GPlatesModel::FeatureHandle::create(feature_type, feature_id, revision_id);
+	
+	DummyTransactionHandle transaction(__FILE__, __LINE__);
+	target_collection->append_feature(feature_handle, transaction);
+	transaction.commit();
+
+	return feature_handle->reference();
+}
+
 
 namespace 
 {
@@ -139,7 +174,7 @@ GPlatesModel::Model::create_reconstruction(
 	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
 	Reconstruction::non_null_ptr_type reconstruction = Reconstruction::create(tree);
 
-	ReconstructedFeatureGeometryPopulator rfgp(time, root,
+	ReconstructedFeatureGeometryPopulator rfgp(time, root, *reconstruction,
 			reconstruction->reconstruction_tree(),
 			reconstruction->point_geometries(),
 			reconstruction->polyline_geometries());

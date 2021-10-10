@@ -39,6 +39,22 @@ namespace GPlatesGui {
 			QString filename,
 			GPlatesQtWidgets::GlobeCanvas *d_canvas_ptr);
 
+	private:
+
+		SvgExport()
+		{}
+
+		~SvgExport();
+
+		SvgExport &
+		operator= (
+			const SvgExport &other);
+
+		SvgExport(
+			const SvgExport &other);
+			
+
+
 	};
 
 }

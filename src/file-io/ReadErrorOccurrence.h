@@ -62,6 +62,7 @@ namespace GPlatesFileIO
 	{
 		enum DataFormat
 		{
+			GpmlOnePointSix,
 			PlatesRotation,
 			PlatesLine,
 			Shapefile,

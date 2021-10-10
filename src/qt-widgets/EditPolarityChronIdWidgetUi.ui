@@ -1,0 +1,96 @@
+<ui version="4.0" >
+ <class>EditPolarityChronIdWidget</class>
+ <widget class="QWidget" name="EditPolarityChronIdWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>416</width>
+    <height>59</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" >
+   <property name="leftMargin" >
+    <number>2</number>
+   </property>
+   <property name="topMargin" >
+    <number>2</number>
+   </property>
+   <property name="rightMargin" >
+    <number>2</number>
+   </property>
+   <property name="bottomMargin" >
+    <number>2</number>
+   </property>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_era" >
+       <property name="text" >
+        <string>&amp;Era:</string>
+       </property>
+       <property name="buddy" >
+        <cstring>combobox_era</cstring>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="combobox_era" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <item>
+        <property name="text" >
+         <string>Cenozoic</string>
+        </property>
+       </item>
+       <item>
+        <property name="text" >
+         <string>Mesozoic</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_major" >
+       <property name="text" >
+        <string>&amp;Major:</string>
+       </property>
+       <property name="buddy" >
+        <cstring>spinbox_major</cstring>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="spinbox_major" />
+     </item>
+     <item>
+      <widget class="QLabel" name="label_minor" >
+       <property name="text" >
+        <string>Mi&amp;nor:</string>
+       </property>
+       <property name="buddy" >
+        <cstring>lineedit_minor</cstring>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineedit_minor" />
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

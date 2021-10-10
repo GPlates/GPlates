@@ -34,6 +34,9 @@ GPlatesFileIO::DataFormats::data_format_to_str(
 	const char *str = NULL;
 
 	switch (data_format) {
+	case GpmlOnePointSix:
+		str = "GPML 1.6";
+		break;
 	case PlatesRotation:
 		str = "PLATES \"rotation\"";
 		break;

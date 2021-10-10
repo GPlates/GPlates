@@ -5,7 +5,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>580</width>
+    <width>639</width>
     <height>600</height>
    </rect>
   </property>
@@ -27,8 +27,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>580</width>
-     <height>29</height>
+     <width>639</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -42,6 +42,8 @@
      <string>&amp;File</string>
     </property>
     <addaction name="action_Open_Feature_Collection" />
+    <addaction name="action_Open_Global_Raster" />
+    <addaction name="action_Open_Time_Dependent_Global_Raster_Set" />
     <addaction name="action_File_Errors" />
     <addaction name="action_Manage_Feature_Collections" />
     <addaction name="separator" />
@@ -63,6 +65,8 @@
     <property name="title" >
      <string>&amp;View</string>
     </property>
+    <addaction name="action_Enable_Raster_Display" />
+    <addaction name="separator" />
     <addaction name="action_Set_Camera_Viewpoint" />
     <addaction name="action_Move_Camera_Up" />
     <addaction name="action_Move_Camera_Down" />
@@ -80,9 +84,16 @@
     <addaction name="separator" />
     <addaction name="action_Export_Geometry_Snapshot" />
    </widget>
+   <widget class="QMenu" name="menu_Tools" >
+    <property name="title" >
+     <string>&amp;Tools</string>
+    </property>
+    <addaction name="action_Reconstruction_Tree_and_Poles" />
+   </widget>
    <addaction name="menu_File" />
    <addaction name="menu_Reconstruction" />
    <addaction name="menu_View" />
+   <addaction name="menu_Tools" />
    <addaction name="menu_Help" />
   </widget>
   <widget class="QStatusBar" name="statusbar" />
@@ -108,6 +119,7 @@
    <addaction name="action_Drag_Globe" />
    <addaction name="action_Zoom_Globe" />
    <addaction name="action_Query_Feature" />
+   <addaction name="action_Edit_Feature" />
   </widget>
   <widget class="QDockWidget" name="dock_information" >
    <property name="features" >
@@ -474,6 +486,9 @@
    </property>
   </action>
   <action name="action_Set_Camera_Viewpoint" >
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
    <property name="text" >
     <string>Set Camera &amp;Viewpoint...</string>
    </property>
@@ -556,6 +571,46 @@
    </property>
    <property name="shortcut" >
     <string>^</string>
+   </property>
+  </action>
+  <action name="action_Edit_Feature" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >:/edit_feature_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Edit Feature</string>
+   </property>
+   <property name="toolTip" >
+    <string>Click feature to edit  E</string>
+   </property>
+   <property name="shortcut" >
+    <string>E</string>
+   </property>
+  </action>
+  <action name="action_Reconstruction_Tree_and_Poles" >
+   <property name="text" >
+    <string>Total Reconstruction &amp;Poles</string>
+   </property>
+  </action>
+  <action name="action_Open_Global_Raster" >
+   <property name="text" >
+    <string>Open Global &amp;Raster...</string>
+   </property>
+  </action>
+  <action name="action_Enable_Raster_Display" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Enable Raster Display</string>
+   </property>
+  </action>
+  <action name="action_Open_Time_Dependent_Global_Raster_Set" >
+   <property name="text" >
+    <string>Open Time Dependent Global Raster Set...</string>
    </property>
   </action>
  </widget>

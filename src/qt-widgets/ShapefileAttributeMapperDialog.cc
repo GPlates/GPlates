@@ -22,8 +22,10 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <algorithm> // std::find
 #include <iostream>
 
+#include <QMap>
 #include <QString>
 
 #include "model/FeatureCollectionHandle.h"
@@ -32,114 +34,44 @@
 #include "model/XmlAttributeValue.h"
 #include "utils/UnicodeStringUtils.h"
 
+#include "ShapefilePropertyMapper.h"
+#include "ShapefileAttributeWidget.h"
 #include "ShapefileAttributeMapperDialog.h"
 
 
+
 GPlatesQtWidgets::ShapefileAttributeMapperDialog::ShapefileAttributeMapperDialog(
-		QWidget *parent_):
+		QWidget *parent_
+):
 	QDialog(parent_)
 {
 	setupUi(this);
 
-	connect(shapefile_combo_box,SIGNAL(currentIndexChanged(int)),this,SLOT(shapefileChanged(int)));
-
+	QObject::connect(button_reset,SIGNAL(clicked()),this,SLOT(reset_fields()));
 }
 
 void
-GPlatesQtWidgets::ShapefileAttributeMapperDialog::setup(std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>& collections)
+GPlatesQtWidgets::ShapefileAttributeMapperDialog::setup(
+		QString &filename,
+		QStringList &field_names,
+		QMap< QString,QString > &model_to_attribute_map)
 {
-	d_collections = collections;
-// fill the combo boxes with 0 index, and the attributes of the 0th shapefile. 
-	shapefile_combo_box->clear();
-	attribute_combo_box->clear();
-
-	int n = d_collections.size();
-	for(int count = 0; count < n; count++)
-	{
-		QString str;
-		str.setNum(count);
-		shapefile_combo_box->insertItem(count,str);
-	}
-
-#if 0
-	// get the first feature collection for the intial display
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::iterator iter = d_collections.begin();
-	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection = *iter;
-
-	// get the first feature in that collection
-	GPlatesModel::FeatureCollectionHandle::features_iterator feature_iter = feature_collection->features_begin();
-
-	// iterate over the properties, and find which, if any, have an XmlAttribute identifying the 
-	// attribute as one of shapefile-origin. 
-	GPlatesModel::FeatureHandle::properties_iterator p_iter = (*feature_iter)->properties_begin();
-	GPlatesModel::FeatureHandle::properties_iterator p_end = (*feature_iter)->properties_end();
-	GPlatesModel::XmlAttributeName targetName("source");
-	GPlatesModel::XmlAttributeValue targetValue("shapefile");
-	for(p_iter; p_iter != p_end; p_iter++)
-	{
-
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes = (*p_iter)->xml_attributes();
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>::iterator it = xml_attributes.find(targetName);
-		if(it != xml_attributes.end())
-		{
-			GPlatesModel::XmlAttributeValue value = it->second;
-			if(value == targetValue) // we've found a shapefile attribute, so stick it in the box.
-			{
-				std::cerr << "found shapefile attribute" << std::endl;
-				GPlatesModel::PropertyName name = (*p_iter)->property_name();
-				QString string = GPlatesUtils::make_qstring_from_icu_string(name.get());
-				attribute_combo_box->addItem(string);
-			}
-		}
-	
-	}
-#endif
+	d_shapefile_attribute_widget = new ShapefileAttributeWidget(this,filename,field_names,model_to_attribute_map,false);
+	gridLayout->addWidget(d_shapefile_attribute_widget,0,0);
 
 }
 
-void
-GPlatesQtWidgets::ShapefileAttributeMapperDialog::shapefileChanged(int file_number)
-{
-	attribute_combo_box->clear();
-
-	if(d_collections.empty()) return;
-	if(file_number > d_collections.size()) return;
-
-	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection = d_collections[file_number];
-
-	// get the first feature in that collection
-	GPlatesModel::FeatureCollectionHandle::features_iterator feature_iter = feature_collection->features_begin();
-
-	// iterate over the properties, and find which, if any, have an XmlAttribute identifying the 
-	// attribute as one of shapefile-origin. 
-	GPlatesModel::FeatureHandle::properties_iterator p_iter = (*feature_iter)->properties_begin();
-	GPlatesModel::FeatureHandle::properties_iterator p_end = (*feature_iter)->properties_end();
-	GPlatesModel::XmlAttributeName targetName("source");
-	GPlatesModel::XmlAttributeValue targetValue("shapefile");
-	for(p_iter; p_iter != p_end; p_iter++)
-	{
-
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes = (*p_iter)->xml_attributes();
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>::iterator it = xml_attributes.find(targetName);
-		if(it != xml_attributes.end())
-		{
-			GPlatesModel::XmlAttributeValue value = it->second;
-			if(value == targetValue) // we've found a shapefile attribute, so stick it in the box.
-			{
-				std::cerr << "found shapefile attribute" << std::endl;
-				GPlatesModel::PropertyName name = (*p_iter)->property_name();
-				QString string = GPlatesUtils::make_qstring_from_icu_string(name.get());
-				attribute_combo_box->addItem(string);
-			}
-		}
-	
-	}
-}
 
 void
 GPlatesQtWidgets::ShapefileAttributeMapperDialog::accept()
 {
-	//std::cout << "in accept..." << std::endl;
-	QString selected_attribute_string = attribute_combo_box->currentText();
+	d_shapefile_attribute_widget->accept_fields();	
+	done(QDialog::Accepted);
+}
+
+void
+GPlatesQtWidgets::ShapefileAttributeMapperDialog::reset_fields()
+{
+	d_shapefile_attribute_widget->reset_fields();
 }
 

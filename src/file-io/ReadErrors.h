@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -94,9 +94,52 @@ namespace GPlatesFileIO
 			InvalidShapefileLongitude,
 			NoPlateIdFound,
 			InvalidShapefilePlateIdNumber,
+			InvalidShapefileAgeOfAppearance,
+			InvalidShapefileAgeOfDisappearance,
+			
+			// The following relate to GDAL-readable Raster files.
+			ErrorReadingGDALBand,
+
+			// The following relate to QImage-readable image files.
+			ErrorReadingQImageFile,
+
+			// The following relate to time-dependent raster file sets.
+			NoRasterSetsFound,
+			MultipleRasterSetsFound,
+
+			// The following apply to GPML import
+			DuplicateProperty,
+			NecessaryPropertyNotFound,
+			UnknownValueType,
+			BadOrMissingTargetForValueType,
+			InvalidBoolean,
+			InvalidDouble,
+			InvalidGeoTime,
+			InvalidInt,
+			InvalidLatLonPoint,
+			InvalidLong,
+			InvalidPointsInPolyline,
+			InvalidString,
+			InvalidUnsignedInt,
+			InvalidUnsignedLong,
+			MissingNamespaceAlias,
+			NonUniqueStructuralElement,
+			TooManyChildrenInElement,
+			UnexpectedEmptyString,
+			UnrecognisedChildFound,
+			DuplicateIdentityProperty,
+			DuplicateRevisionProperty,
+			UnrecognisedFeatureCollectionElement,
+			UnrecognisedFeatureType,
+			IncorrectRootElementName,
+			MissingVersionAttribute,
+			IncorrectVersionAttribute,
+			ParseError,
+			UnexpectedNonEmptyAttributeList,
 
 			// The following are generic to all local files
-			ErrorOpeningFileForReading
+			ErrorOpeningFileForReading,
+			FileIsEmpty
 		};
 
 		enum Result
@@ -126,6 +169,20 @@ namespace GPlatesFileIO
 			OnlyExteriorRingRead,
 			NoPlateIdLoadedForFile,
 			NoPlateIdLoadedForFeature,
+			AttributeIgnored,
+
+			// The following relate to time-dependent raster file sets.
+			NoRasterSetsLoaded,
+			OnlyFirstRasterSetLoaded,
+			
+			// The following are specific to GPML reading.
+			ElementIgnored,
+			PropertyIgnored,
+			ParsingStoppedPrematurely,
+			ElementNameChanged,
+			AssumingCorrectVersion,
+			FeatureNotInterpreted,
+			AttributesIgnored,
 
 			// The following are generic to all local files
 			FileNotLoaded
