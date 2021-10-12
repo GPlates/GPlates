@@ -15,32 +15,39 @@ set(srcs
     ConstFeatureVisitor.h
     DummyTransactionHandle.cc
     DummyTransactionHandle.h
+    FeatureCollectionHandle.cc
     FeatureCollectionHandle.h
     FeatureCollectionRevision.cc
     FeatureCollectionRevision.h
+    FeatureHandle.cc
     FeatureHandle.h
+    FeatureHandleWeakRefBackInserter.h
     FeatureId.h
     FeatureRevision.cc
     FeatureRevision.h
     FeatureStore.h
+    FeatureStoreRootHandle.cc
     FeatureStoreRootHandle.h
     FeatureStoreRootRevision.cc
     FeatureStoreRootRevision.h
     FeatureType.h
     FeatureVisitor.cc
     FeatureVisitor.h
-    InlinePropertyContainer.h
+    IdTypeGenerator.h
     Model.cc
     Model.h
+    ModelInterface.cc
     ModelInterface.h
     ModelUtils.cc
     ModelUtils.h
-    PropertyContainer.h
     PropertyName.h
     PropertyValue.h
+    PropertyValueContainer.h
     QualifiedXmlName.h
     ReconstructedFeatureGeometry.cc
     ReconstructedFeatureGeometry.h
+    ReconstructedFeatureGeometryFinder.cc
+    ReconstructedFeatureGeometryFinder.h
     ReconstructedFeatureGeometryPopulator.cc
     ReconstructedFeatureGeometryPopulator.h
     Reconstruction.cc
@@ -55,6 +62,8 @@ set(srcs
     ReconstructionTreeEdge.h
     ReconstructionTreePopulator.cc
     ReconstructionTreePopulator.h
+    ResolvedTopologicalGeometry.cc
+    ResolvedTopologicalGeometry.h
     RevisionAwareIterator.h
     RevisionId.h
     StringContentTypeGenerator.h
@@ -62,8 +71,13 @@ set(srcs
     StringSetSingletons.h
     TemporaryGeometry.cc
     TemporaryGeometry.h
+    TopLevelProperty.h
+    TopLevelPropertyInline.cc
+    TopLevelPropertyInline.h
     types.h
     WeakObserver.h
+    WeakObserverVisitor.cc
+    WeakObserverVisitor.h
     WeakReference.h
     XmlAttributeName.h
     XmlAttributeValue.h

@@ -11,25 +11,33 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    ActiveGeometryOperation.h
     AddPointGeometryOperation.cc
     AddPointGeometryOperation.h
+    DeleteVertexGeometryOperation.cc
+    DeleteVertexGeometryOperation.h
+    ExportReconstructedFeatureGeometries.cc
+    ExportReconstructedFeatureGeometries.h
     FocusedFeatureGeometryManipulator.cc
     FocusedFeatureGeometryManipulator.h
     GeometryBuilder.cc
     GeometryBuilder.h
-    GeometryBuilderToolTarget.cc
-    GeometryBuilderToolTarget.h
     GeometryBuilderUndoCommands.h
-    GeometryOperationRenderParameters.cc
-    GeometryOperationRenderParameters.h
+    GeometryOperation.cc
+    GeometryOperation.h
+    GeometryOperationTarget.cc
+    GeometryOperationTarget.h
+    GeometryOperationUndo.cc
+    GeometryOperationUndo.h
     GeometryType.h
-    GlobeRenderedGeometryFactory.cc
-    GlobeRenderedGeometryFactory.h
+    InsertVertexGeometryOperation.cc
+    InsertVertexGeometryOperation.h
     InternalGeometryBuilder.cc
     InternalGeometryBuilder.h
     MoveVertexGeometryOperation.cc
     MoveVertexGeometryOperation.h
     QueryProximityThreshold.h
+    RenderedDirectionArrow.h
     RenderedGeometry.cc
     RenderedGeometry.h
     RenderedGeometryCollection.cc
@@ -41,6 +49,7 @@ set(srcs
     RenderedGeometryLayer.cc
     RenderedGeometryLayer.h
     RenderedGeometryLayerVisitor.h
+    RenderedGeometryParameters.h
     RenderedGeometryProximity.cc
     RenderedGeometryProximity.h
     RenderedGeometryUtils.cc
@@ -50,6 +59,7 @@ set(srcs
     RenderedPointOnSphere.h
     RenderedPolygonOnSphere.h
     RenderedPolylineOnSphere.h
+    RenderedReconstructionGeometry.h
     UndoRedo.cc
     UndoRedo.h
 )

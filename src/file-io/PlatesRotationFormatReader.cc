@@ -32,6 +32,7 @@
 #include <string>
 #include "PlatesRotationFormatReader.h"
 #include "LineReader.h"
+#include "model/Model.h"
 #include "model/ModelUtils.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlFiniteRotation.h"
@@ -292,7 +293,7 @@ namespace
 
 		// Create a new total reconstruction sequence in the feature collection.
 		FeatureType feature_type = FeatureType::create_gpml("TotalReconstructionSequence");
-		current_total_recon_seq = model.create_feature(feature_type, rotations);
+		current_total_recon_seq = model->create_feature(feature_type, rotations);
 
 		GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
 				GpmlFiniteRotationSlerp::create(time_sample.value_type());
@@ -625,7 +626,7 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 	boost::shared_ptr<DataSource> data_source(
 			new LocalFileDataSource(filename, DataFormats::PlatesRotation));
 	GPlatesModel::FeatureCollectionHandle::weak_ref rotations =
-			model.create_feature_collection();
+			model->create_feature_collection();
 
 	try
 	{

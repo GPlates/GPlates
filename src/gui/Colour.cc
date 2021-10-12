@@ -29,25 +29,37 @@
 #include "Colour.h"
 
 
-const GPlatesGui::Colour GPlatesGui::Colour::BLACK	(0.0, 0.0, 0.0);
-const GPlatesGui::Colour GPlatesGui::Colour::WHITE	(1.0, 1.0, 1.0);
-const GPlatesGui::Colour GPlatesGui::Colour::RED	(1.0, 0.0, 0.0);
-const GPlatesGui::Colour GPlatesGui::Colour::GREEN	(0.0, 0.5, 0.0);
+/**
+ * Define a function (eg, "get_black()") that creates a local static colour object
+ * and returns it.
+ */
+#define DEFINE_COLOUR(colour_name, r, g, b) \
+	const GPlatesGui::Colour & \
+	GPlatesGui::Colour::get_##colour_name() \
+	{ \
+		static const GPlatesGui::Colour colour_name(r, g, b); \
+		return colour_name; \
+	}
 
-const GPlatesGui::Colour GPlatesGui::Colour::BLUE	(0.0, 0.0, 1.0);
-const GPlatesGui::Colour GPlatesGui::Colour::GREY	(0.5, 0.5, 0.5);
-const GPlatesGui::Colour GPlatesGui::Colour::SILVER	(0.75, 0.75, 0.75);
-const GPlatesGui::Colour GPlatesGui::Colour::MAROON	(0.5, 0.0, 0.0);
+DEFINE_COLOUR(black, 0.0, 0.0, 0.0)
+DEFINE_COLOUR(white, 1.0, 1.0, 1.0)
+DEFINE_COLOUR(red, 1.0, 0.0, 0.0)
+DEFINE_COLOUR(green, 0.0, 0.5, 0.0)
 
-const GPlatesGui::Colour GPlatesGui::Colour::PURPLE	(0.5, 0.0, 0.5);
-const GPlatesGui::Colour GPlatesGui::Colour::FUSCHIA	(1.0, 0.0, 1.0);
-const GPlatesGui::Colour GPlatesGui::Colour::LIME	(0.0, 1.0, 0.0);
-const GPlatesGui::Colour GPlatesGui::Colour::OLIVE	(0.5, 0.5, 0.0);
+DEFINE_COLOUR(blue, 0.0, 0.0, 1.0)
+DEFINE_COLOUR(grey, 0.5, 0.5, 0.5)
+DEFINE_COLOUR(silver, 0.75, 0.75, 0.75)
+DEFINE_COLOUR(maroon, 0.5, 0.0, 0.0)
 
-const GPlatesGui::Colour GPlatesGui::Colour::YELLOW	(1.0, 1.0, 0.0);
-const GPlatesGui::Colour GPlatesGui::Colour::NAVY	(0.0, 0.0, 0.5);
-const GPlatesGui::Colour GPlatesGui::Colour::TEAL	(0.0, 0.5, 0.5);
-const GPlatesGui::Colour GPlatesGui::Colour::AQUA	(0.0, 1.0, 1.0);
+DEFINE_COLOUR(purple, 0.5, 0.0, 0.5)
+DEFINE_COLOUR(fuschia, 1.0, 0.0, 1.0)
+DEFINE_COLOUR(lime, 0.0, 1.0, 0.0)
+DEFINE_COLOUR(olive, 0.5, 0.5, 0.0)
+
+DEFINE_COLOUR(yellow, 1.0, 1.0, 0.0)
+DEFINE_COLOUR(navy, 0.0, 0.0, 0.5)
+DEFINE_COLOUR(teal, 0.0, 0.5, 0.5)
+DEFINE_COLOUR(aqua, 0.0, 1.0, 1.0)
 
 
 GPlatesGui::Colour::Colour(

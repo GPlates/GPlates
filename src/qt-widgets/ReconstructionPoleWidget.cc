@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,16 +31,16 @@
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "utils/MathUtils.h"
+#include "view-operations/RenderedGeometryFactory.h"
+#include "view-operations/RenderedGeometryParameters.h"
 
 
 GPlatesQtWidgets::ReconstructionPoleWidget::ReconstructionPoleWidget(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 		ViewportWindow &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_rendered_geom_collection(&rendered_geom_collection),
-	d_rendered_geom_factory(&rendered_geom_factory),
 	d_view_state_ptr(&view_state),
 	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&view_state)),
 	d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr))
@@ -194,17 +194,17 @@ namespace
 			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
 			const double &reconstruction_time,
-			boost::intrusive_ptr<GPlatesModel::FeatureHandle> current_feature)
+			GPlatesModel::FeatureCollectionHandle::features_iterator &current_feature)
 	{
 		using namespace GPlatesQtWidgets;
 
-		if ( ! current_feature) {
+		if ( ! current_feature.is_valid()) {
 			// There was a feature here, but it's been deleted.
 			return;
 		}
 
 		trs_plate_id_finder.reset();
-		trs_plate_id_finder.visit_feature_handle(*current_feature);
+		trs_plate_id_finder.visit_feature(current_feature);
 
 		// A valid TRS should have a fixed reference frame and a moving reference frame. 
 		// Let's verify that this is a valid TRS.
@@ -228,7 +228,7 @@ namespace
 #if 0
 		if (*trs_plate_id_finder.fixed_ref_frame_plate_id() == plate_id_of_interest) {
 			trs_time_period_finder.reset();
-			trs_time_period_finder.visit_feature_handle(*current_feature);
+			trs_time_period_finder.visit_feature(current_feature);
 			if ( ! (trs_time_period_finder.begin_time() && trs_time_period_finder.end_time())) {
 				// No time samples were found.  Skip this feature.
 				return;
@@ -254,7 +254,7 @@ namespace
 #endif
 		if (*trs_plate_id_finder.moving_ref_frame_plate_id() == plate_id_of_interest) {
 			trs_time_period_finder.reset();
-			trs_time_period_finder.visit_feature_handle(*current_feature);
+			trs_time_period_finder.visit_feature(current_feature);
 			if ( ! (trs_time_period_finder.begin_time() && trs_time_period_finder.end_time())) {
 				// No time samples were found.  Skip this feature.
 				return;
@@ -270,7 +270,7 @@ namespace
 
 			sequence_choices.push_back(
 					ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo(
-							current_feature->reference(),
+							(*current_feature)->reference(),
 							*trs_plate_id_finder.fixed_ref_frame_plate_id(),
 							*trs_plate_id_finder.moving_ref_frame_plate_id(),
 							trs_time_period_finder.begin_time()->value(),
@@ -318,10 +318,9 @@ namespace
 			FeatureCollectionHandle::features_iterator features_end =
 					current_collection->features_end();
 			for ( ; features_iter != features_end; ++features_iter) {
-				boost::intrusive_ptr<FeatureHandle> current_feature = *features_iter;
 				examine_trs(sequence_choices, trs_plate_id_finder,
 						trs_time_period_finder, plate_id_of_interest,
-						reconstruction_time, current_feature);
+						reconstruction_time, features_iter);
 			}
 		}
 	}
@@ -404,6 +403,10 @@ GPlatesQtWidgets::ReconstructionPoleWidget::set_focus(
 		reset_adjustment();
 		d_initial_geometries.clear();
 		field_moving_plate->clear();
+		// This is to clear the rendered geometries if the feature geometry
+		// disappears when this tool is still active (eg, when a
+		// feature collection is unloaded and its features should disappear).
+		draw_initial_geometries();
 		return;
 	}
 	if (d_plate_id == focused_geometry->reconstruction_plate_id()) {
@@ -500,7 +503,7 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_initial_geometries()
 	d_initial_geom_layer_ptr->clear_rendered_geometries();
 	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 
-	const GPlatesGui::Colour &white_colour = GPlatesGui::Colour::WHITE;
+	const GPlatesGui::Colour &white_colour = GPlatesGui::Colour::get_white();
 
 	geometry_collection_type::const_iterator iter = d_initial_geometries.begin();
 	geometry_collection_type::const_iterator end = d_initial_geometries.end();
@@ -508,8 +511,11 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_initial_geometries()
 	{
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
-					*iter, white_colour);
+			GPlatesViewOperations::create_rendered_geometry_on_sphere(
+					*iter,
+					white_colour,
+					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT,
+					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT);
 
 		// Add to pole manipulation layer.
 		d_initial_geom_layer_ptr->add_rendered_geometry(rendered_geometry);
@@ -537,7 +543,7 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_dragged_geometries()
 	// Clear all dragged geometry RenderedGeometry's before adding new ones.
 	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 
-	const GPlatesGui::Colour &silver_colour = GPlatesGui::Colour::SILVER;
+	const GPlatesGui::Colour &silver_colour = GPlatesGui::Colour::get_silver();
 
 	geometry_collection_type::const_iterator iter = d_initial_geometries.begin();
 	geometry_collection_type::const_iterator end = d_initial_geometries.end();
@@ -545,9 +551,11 @@ GPlatesQtWidgets::ReconstructionPoleWidget::draw_dragged_geometries()
 	{
 		// Create rendered geometry.
 		const GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+			GPlatesViewOperations::create_rendered_geometry_on_sphere(
 					d_accum_orientation->orient_geometry(*iter),
-					silver_colour);
+					silver_colour,
+					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_POINT_SIZE_HINT,
+					GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT);
 
 		// Add to pole manipulation layer.
 		d_dragged_geom_layer_ptr->add_rendered_geometry(rendered_geometry);

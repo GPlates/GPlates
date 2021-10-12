@@ -28,10 +28,6 @@
 #ifndef GPLATES_GLOBAL_ASSERTIONFAILUREEXCEPTION_H
 #define GPLATES_GLOBAL_ASSERTIONFAILUREEXCEPTION_H
 
-// FIXME: I suspect that the appropriate thing to do here is similar to
-// IntrusivePointerZeroRefCountException: When the definition of 'write_message'
-// moves to a .cc file, replace this with <iosfwd>
-#include <ostream>
 #include "GPlatesException.h"
 
 namespace GPlatesGlobal
@@ -46,34 +42,21 @@ namespace GPlatesGlobal
 	{
 	public:
 		/**
-		 * @param filename_ should be supplied using the @c __FILE__ macro,
-		 * @param line_num_ should be supplied using the @c __LINE__ macro.
-		 *
-		 * FIXME: Ideally, we'd be tracking the call stack etc, and also supplying
-		 * some sort of function object that might be used to do damage control
-		 * for the program should such an exception be thrown. For example, the
-		 * DigitisationStateUndoCommands have a few exceptional 'should never
-		 * ever reach here' states. The 'recovery' function of those exceptions
-		 * might be to clear the digitisation widget and wipe the undo stack clean,
-		 * restoring the widget to a known sane state, and then alerting the user.
+		 * @param exception_source should be supplied using the @c GPLATES_EXCEPTION_SOURCE macro,
 		 */
 		explicit
 		AssertionFailureException(
-				const char *filename_,
-				int line_num_):
-			d_filename(filename_),
-			d_line_num(line_num_)
-		{  }
-
-		virtual
-		~AssertionFailureException()
+				const GPlatesUtils::CallStack::Trace &exception_source) :
+			Exception(exception_source),
+			d_filename(exception_source.get_filename()),
+			d_line_num(exception_source.get_line_num())
 		{  }
 
 	protected:
 
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			return "AssertionFailureException";
 		}
@@ -81,11 +64,7 @@ namespace GPlatesGlobal
 		virtual
 		void
 		write_message(
-				std::ostream &os) const
-		{
-			os << "Assertion failure: " << ExceptionName() << " in " <<
-					d_filename << ":" << d_line_num << std::endl;
-		}
+				std::ostream &os) const;
 
 	private:
 		const char *d_filename;

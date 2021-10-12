@@ -35,11 +35,14 @@
 void
 GPlatesCanvasTools::ZoomGlobe::handle_activation()
 {
-	// FIXME: May have to adjust message if we are using Map view.
-	d_view_state_ptr->status_message(QObject::tr(
-			"Click to zoom in."
-			" Shift+click to zoom out."
-			" Ctrl+drag to re-orient the globe."));
+	if (globe_canvas().isVisible())
+	{
+		d_view_state_ptr->status_message(QObject::tr(
+				"Click to zoom in."
+				" Shift+click to zoom out."
+				" Ctrl+drag to re-orient the globe."));
+
+	}
 }
 
 

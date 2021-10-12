@@ -201,7 +201,8 @@ namespace {
 			    "are we.  You should probably contact us (the "
 			    "developers).";
 
-			throw IndeterminateResultException(oss.str().c_str());
+			throw IndeterminateResultException(GPLATES_EXCEPTION_SOURCE,
+					oss.str().c_str());
 		}
 
 		// Since cos(theta) lies in the range (-1, 1), theta will lie
@@ -243,8 +244,9 @@ GPlatesMaths::interpolate(
 {
 	if (t1 == t2) {
 
-		throw IndeterminateResultException("Attempted to interpolate "
-		 "between two finite rotations using a zero-length interval.");
+		throw IndeterminateResultException(GPLATES_EXCEPTION_SOURCE,
+				"Attempted to interpolate "
+				"between two finite rotations using a zero-length interval.");
 	}
 	real_t interpolation_parameter = (t_target - t1) / (t2 - t1);
 	UnitQuaternion3D res_uq = ::slerp(r1.unit_quat(), r2.unit_quat(), interpolation_parameter);

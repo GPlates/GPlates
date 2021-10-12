@@ -37,14 +37,33 @@ namespace GPlatesGui
 	class Colour
 	{
 	public:
-		/**
+		/*
 		 * Some commonly used colours.
+		 *
+		 * Note: functions are used instead of non-member variables to
+		 * avoid undefined initialisation order of non-local static variables.
+		 * For example defining one static variable equal to another.
+		 * These functions have a local static colour variable.
 		 */
-		static const Colour 
-			BLACK, WHITE, RED, GREEN, 
-			BLUE, GREY, SILVER, MAROON,
-			PURPLE, FUSCHIA, LIME, OLIVE,
-			YELLOW, NAVY, TEAL, AQUA;
+		static const Colour & get_black();
+		static const Colour & get_white();
+		static const Colour & get_red();
+		static const Colour & get_green();
+
+		static const Colour & get_blue();
+		static const Colour & get_grey();
+		static const Colour & get_silver();
+		static const Colour & get_maroon();
+
+		static const Colour & get_purple();
+		static const Colour & get_fuschia();
+		static const Colour & get_lime();
+		static const Colour & get_olive();
+
+		static const Colour & get_yellow();
+		static const Colour & get_navy();
+		static const Colour & get_teal();
+		static const Colour & get_aqua();
 
 		/**
 		 * Indices of the respective colour componets.

@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,6 +35,7 @@
 #include <QTextStream>
 #include <QString>
 
+#include "GMTFormatHeader.h"
 #include "FileInfo.h"
 #include "FeatureWriter.h"
 #include "model/ConstFeatureVisitor.h"
@@ -49,8 +50,6 @@
 
 namespace GPlatesFileIO
 {
-	class GMTHeaderFormatter;
-
 	class GMTFormatWriter :
 		public FeatureWriter,
 		private GPlatesModel::ConstFeatureVisitor
@@ -92,20 +91,31 @@ namespace GPlatesFileIO
 		* @param feature_handle feature to write
 		*/
 		virtual
-			void
-			write_feature(
-			const GPlatesModel::FeatureHandle& feature_handle);
+		void
+		write_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
+
+		/**
+		* Writes a feature in GMT 'xy' format.
+		*
+		* @param feature_handle feature to write
+		*/
+		virtual
+		void
+		write_feature(
+				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
 
 	private:
-		virtual
-			void
-			visit_feature_handle(
-			const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
-			void
-			visit_inline_property_container(
-			const GPlatesModel::InlinePropertyContainer &inline_property_container);
+		bool
+		initialise_pre_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle);
+
+		virtual
+		void
+		finalise_post_feature_properties(
+				const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 			void
@@ -181,29 +191,11 @@ namespace GPlatesFileIO
 			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_feature_geometries;
 		};
 
-		//! Prints lines of header and keeps track of writing starting '>' character.
-		class HeaderPrinter
-		{
-		public:
-			HeaderPrinter()
-				: d_is_first_header_in_file(true)
-			{ }
-
-			void
-				print_header_lines(
-				QTextStream& output_stream,
-				std::vector<QString>& header_lines);
-
-		private:
-			//! Is the next feature to be written the first one ?
-			bool d_is_first_header_in_file;
-		};
-
 		boost::scoped_ptr<QFile> d_output_file;
 		boost::scoped_ptr<QTextStream> d_output_stream;
-		boost::scoped_ptr<GMTHeaderFormatter> d_feature_header;
+		boost::scoped_ptr<GMTFormatHeader> d_feature_header;
 		FeatureAccumulator d_feature_accumulator;
-		HeaderPrinter d_header_printer;
+		GMTHeaderPrinter d_header_printer;
 	};
 }
 

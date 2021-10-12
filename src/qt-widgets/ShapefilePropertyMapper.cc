@@ -41,13 +41,13 @@ GPlatesQtWidgets::ShapefilePropertyMapper::map_properties(
 {
 	if (remapping)
 	{
-		return (map_remapped_properties(filename,field_names,model_to_attribute_map));
+		return (map_remapped_properties(filename,field_names,model_to_attribute_map,d_parent_window_ptr));
 	}
 	else{
-		return (map_initial_properties(filename,field_names,model_to_attribute_map));
+		return (map_initial_properties(filename,field_names,model_to_attribute_map,d_parent_window_ptr));
 	}
 #if 0
-	ShapefileAttributeMapperDialog mapper;
+	ShapefileAttributeMapperDialog mapper(d_parent_window_ptr);
 	mapper.setup(filename,field_names,model_to_attribute_map,remapping);
 	mapper.exec();
 
@@ -64,9 +64,10 @@ bool
 GPlatesQtWidgets::ShapefilePropertyMapper::map_initial_properties(
 		QString &filename,
 		QStringList &field_names,
-		QMap<QString,QString> &model_to_attribute_map)
+		QMap<QString,QString> &model_to_attribute_map,
+		QWidget *parent_window_ptr)
 {
-	ShapefileAttributeMapperDialog mapper;
+	ShapefileAttributeMapperDialog mapper(parent_window_ptr);
 	mapper.setup(filename,field_names,model_to_attribute_map);
 	mapper.exec();
 
@@ -82,9 +83,10 @@ bool
 GPlatesQtWidgets::ShapefilePropertyMapper::map_remapped_properties(
 		QString &filename,
 		QStringList &field_names,
-		QMap<QString,QString> &model_to_attribute_map)
+		QMap<QString,QString> &model_to_attribute_map,
+		QWidget *parent_window_ptr)
 {
-	ShapefileAttributeRemapperDialog mapper;
+	ShapefileAttributeRemapperDialog mapper(parent_window_ptr);
 	mapper.setup(filename,field_names,model_to_attribute_map);
 	mapper.exec();
 

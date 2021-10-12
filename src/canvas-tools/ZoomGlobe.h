@@ -26,7 +26,7 @@
 #ifndef GPLATES_CANVASTOOLS_ZOOMGLOBE_H
 #define GPLATES_CANVASTOOLS_ZOOMGLOBE_H
 
-#include "gui/CanvasTool.h"
+#include "gui/GlobeCanvasTool.h"
 
 
 namespace GPlatesQtWidgets
@@ -41,7 +41,7 @@ namespace GPlatesCanvasTools
 	 * This is the canvas tool used to zoom into a point on the globe by clicking.
 	 */
 	class ZoomGlobe:
-			public GPlatesGui::CanvasTool
+			public GPlatesGui::GlobeCanvasTool
 	{
 	public:
 		/**
@@ -96,7 +96,7 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				const GPlatesQtWidgets::ViewportWindow &view_state_):
-			CanvasTool(globe_, globe_canvas_),
+			GlobeCanvasTool(globe_, globe_canvas_),
 			d_view_state_ptr(&view_state_)
 		{  }
 

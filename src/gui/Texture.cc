@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -200,7 +200,8 @@ namespace{
 
 		if (width_out == 0){
 			QString message = QString("Cannot render texture of size %1 by %2").arg(width).arg(height);
-			throw GPlatesGui::OpenGLException(message.toStdString().c_str());
+			throw GPlatesGui::OpenGLException(GPLATES_EXCEPTION_SOURCE,
+					message.toStdString().c_str());
 		}
 	}
 		
@@ -222,7 +223,8 @@ namespace{
 		{
 			std::cout << message << ": openGL error: " << gluErrorString(error) << std::endl;
 			glDeleteTextures(1,&texture_name);
-			throw GPlatesGui::OpenGLException("OpenGL error in Texture.cc");
+			throw GPlatesGui::OpenGLException(GPLATES_EXCEPTION_SOURCE,
+					"OpenGL error in Texture.cc");
 		}
 		return error;
 	}
@@ -235,13 +237,15 @@ namespace{
 		if (error == GLU_OUT_OF_MEMORY)
 		{
 			glDeleteTextures(1,&texture_name);
-			throw GPlatesGui::OpenGLBadAllocException("There was insufficient memory to load the requested texture.");
+			throw GPlatesGui::OpenGLBadAllocException(GPLATES_EXCEPTION_SOURCE,
+					"There was insufficient memory to load the requested texture.");
 		}
 		if (error != GL_NO_ERROR)
 		{
 			std::cout << " GLU error: " << gluErrorString(error) << std::endl;
 			glDeleteTextures(1,&texture_name);
-			throw GPlatesGui::OpenGLException("GLU error in Texture.cc");
+			throw GPlatesGui::OpenGLException(GPLATES_EXCEPTION_SOURCE,
+					"GLU error in Texture.cc");
 		}
 	}
 
@@ -343,6 +347,12 @@ GPlatesGui::Texture::paint()
 		glEnable(GL_TEXTURE_2D);
 		
 		glBindTexture(GL_TEXTURE_2D, d_texture_name);
+
+		if (d_should_be_remapped)
+		{
+			remap_texture();
+			d_should_be_remapped = false;
+		}
 
 		int i,j;
 		for (j = 0; j < NUM_STRIPS_T ; j++)
@@ -621,12 +631,7 @@ GPlatesGui::Texture::set_extent(
 	const QRectF &rect)
 {
 	d_extent = rect;
-
-	// Seeing as we've changed the extent, check if a texture is loaded. If there is, re-map it.
-	if (texture_is_loaded())
-	{
-		remap_texture();
-	}
+	d_should_be_remapped = true;
 }
 
 bool

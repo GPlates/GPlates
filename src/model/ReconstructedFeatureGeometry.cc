@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,13 +27,14 @@
 
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
+#include "WeakObserverVisitor.h"
 #include "global/IntrusivePointerZeroRefCountException.h"
 
 
 const GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type
 GPlatesModel::ReconstructedFeatureGeometry::get_non_null_pointer()
 {
-	if (ref_count() == 0) {
+	if (get_reference_count() == 0) {
 		// How did this happen?  This should not have happened.
 		//
 		// Presumably, the programmer obtained the raw ReconstructedFeatureGeometry pointer
@@ -42,7 +43,8 @@ GPlatesModel::ReconstructedFeatureGeometry::get_non_null_pointer()
 		// ref-counting pointers have expired and the instance has actually been deleted.
 		//
 		// Regardless of how this happened, this is an error.
-		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(this, __FILE__, __LINE__);
+		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(GPLATES_EXCEPTION_SOURCE,
+				this);
 	} else {
 		// This instance is already managed by intrusive-pointers, so we can simply return
 		// another intrusive-pointer to this instance.
@@ -53,9 +55,28 @@ GPlatesModel::ReconstructedFeatureGeometry::get_non_null_pointer()
 }
 
 
+const GPlatesModel::FeatureHandle::weak_ref
+GPlatesModel::ReconstructedFeatureGeometry::get_feature_ref() const
+{
+	if (is_valid()) {
+		return feature_handle_ptr()->reference();
+	} else {
+		return FeatureHandle::weak_ref();
+	}
+}
+
+
 void
 GPlatesModel::ReconstructedFeatureGeometry::accept_visitor(
 		ReconstructionGeometryVisitor &visitor)
 {
 	visitor.visit_reconstructed_feature_geometry(this->get_non_null_pointer());
+}
+
+
+void
+GPlatesModel::ReconstructedFeatureGeometry::accept_weak_observer_visitor(
+		WeakObserverVisitor<FeatureHandle> &visitor)
+{
+	visitor.visit_reconstructed_feature_geometry(*this);
 }

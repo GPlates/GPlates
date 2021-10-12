@@ -44,22 +44,27 @@ namespace GPlatesGlobal
 			 * @param fname is the name of the function which is
 			 * not supported.
 			 */
-			explicit
-			UnsupportedFunctionException(const char *fname)
-				: _fname(fname) {  }
-
-			virtual
-			~UnsupportedFunctionException() {  }
+			UnsupportedFunctionException(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const char *fname) :
+				Exception(exception_source),
+				_fname(fname)
+			{  }
 
 		protected:
 			virtual const char *
-			ExceptionName() const {
+			exception_name() const {
 
 				return "UnsupportedFunctionException";
 			}
 
-			virtual std::string
-			Message() const { return _fname; }
+			virtual
+			void
+			write_message(
+					std::ostream &os) const
+			{
+				write_string_message(os, _fname);
+			}
 
 		private:
 			std::string _fname;

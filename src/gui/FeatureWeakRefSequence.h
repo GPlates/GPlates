@@ -32,6 +32,7 @@
 #include "model/FeatureHandle.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesGui
@@ -53,7 +54,8 @@ namespace GPlatesGui
 	 * instance are valid to be dereferenced.
 	 */
 	class FeatureWeakRefSequence:
-			public QObject
+			public QObject,
+			public GPlatesUtils::ReferenceCount<FeatureWeakRefSequence>
 	{
 		Q_OBJECT
 
@@ -65,11 +67,6 @@ namespace GPlatesGui
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureWeakRefSequence,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
 
 		/**
 		 * The type used to contain the sequence of feature weak-refs.
@@ -137,42 +134,8 @@ namespace GPlatesGui
 		{
 			d_sequence.push_back(new_elem);
 		}
-		
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
 	
 	private:
-		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
-
 		/**
 		 * The sequence of feature weak-refs.
 		 */
@@ -181,8 +144,7 @@ namespace GPlatesGui
 		/**
 		 * Construct a FeatureWeakRefSequence instance.
 		 */
-		FeatureWeakRefSequence():
-			d_ref_count(0)
+		FeatureWeakRefSequence()
 		{  }
 
 		// This constructor should never be defined, because we don't want/need to allow
@@ -196,26 +158,6 @@ namespace GPlatesGui
 		operator=(
 				const FeatureWeakRefSequence &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const FeatureWeakRefSequence *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const FeatureWeakRefSequence *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
 }
 
 #endif  // GPLATES_GUI_FEATUREWEAKREFSEQUENCE_H

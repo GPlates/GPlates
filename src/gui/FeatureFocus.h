@@ -27,6 +27,8 @@
 #define GPLATES_GUI_FEATUREFOCUS_H
 
 #include <QObject>
+#include <boost/optional.hpp>
+
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 
@@ -57,7 +59,7 @@ namespace GPlatesGui
 		 * Remember to check is_valid()!
 		 */
 		GPlatesModel::FeatureHandle::weak_ref
-		focused_feature()
+		focused_feature() const
 		{
 			return d_focused_feature;
 		}
@@ -66,7 +68,7 @@ namespace GPlatesGui
 		 * Return whether the current focus is valid.
 		 */
 		bool
-		is_valid()
+		is_valid() const
 		{
 			return d_focused_feature.is_valid();
 		}
@@ -76,7 +78,7 @@ namespace GPlatesGui
 		 * currently-focused feature (if there is one).
 		 */
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type
-		associated_rfg()
+		associated_rfg() const
 		{
 			return d_associated_rfg;
 		}
@@ -245,6 +247,24 @@ namespace GPlatesGui
 		 */
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_associated_rfg;
 
+		/**
+		 * The geometry property used by the Reconstructed Feature Geometry (RFG)
+		 * associated with the currently-focused feature.
+		 *
+		 * Note that when focused feature changes the associated.
+		 */
+		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_associated_geometry_property;
+
+
+		/**
+		 * Accessor for the geometry property used by the most recent RFG associated with the
+		 * currently-focused feature (if there is one).
+		 */
+		const boost::optional<GPlatesModel::FeatureHandle::properties_iterator> &
+		associated_geometry_property() const
+		{
+			return d_associated_geometry_property;
+		}
 	};
 }
 

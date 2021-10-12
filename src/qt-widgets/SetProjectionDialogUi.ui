@@ -1,0 +1,116 @@
+<ui version="4.0" >
+ <class>SetProjectionDialog</class>
+ <widget class="QDialog" name="SetProjectionDialog" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>282</width>
+    <height>148</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Set Projection</string>
+  </property>
+  <property name="windowIcon" >
+   <iconset resource="../qt-resources/qt_widgets.qrc" >:/GPlates-icon-160x160-opaque.png</iconset>
+  </property>
+  <layout class="QGridLayout" >
+   <item row="0" column="0" >
+    <widget class="QLabel" name="label_select_projection" >
+     <property name="text" >
+      <string>Projection</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1" >
+    <widget class="QComboBox" name="combo_projection" />
+   </item>
+   <item row="1" column="0" >
+    <widget class="QLabel" name="label_set_central_meridian" >
+     <property name="text" >
+      <string>Central Meridian</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1" >
+    <widget class="QDoubleSpinBox" name="spin_central_meridian" >
+     <property name="minimum" >
+      <double>-180.000000000000000</double>
+     </property>
+     <property name="maximum" >
+      <double>180.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="2" >
+    <layout class="QHBoxLayout" >
+     <item>
+      <spacer>
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" >
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_OK" >
+       <property name="text" >
+        <string>OK</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_cancel" >
+       <property name="text" >
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
+ <connections>
+  <connection>
+   <sender>button_cancel</sender>
+   <signal>clicked()</signal>
+   <receiver>SetProjectionDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>238</x>
+     <y>117</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>256</x>
+     <y>137</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>button_OK</sender>
+   <signal>clicked()</signal>
+   <receiver>SetProjectionDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>158</x>
+     <y>112</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>165</x>
+     <y>138</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

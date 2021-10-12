@@ -14,12 +14,8 @@ set(srcs
     AbstractWindow.h
     AgeColourTable.cc
     AgeColourTable.h
-    CanvasTool.cc
-    CanvasTool.h
-    CanvasToolAdapter.cc
-    CanvasToolAdapter.h
-    CanvasToolChoice.cc
-    CanvasToolChoice.h
+    AnimationController.cc
+    AnimationController.h
     ChooseCanvasTool.cc
     ChooseCanvasTool.h
     Colour.cc
@@ -29,6 +25,18 @@ set(srcs
     ColourTable.h
     CsvExport.cc
     CsvExport.h
+    EnableCanvasTool.cc
+    EnableCanvasTool.h
+    ExportAnimationContext.cc
+    ExportAnimationContext.h
+    ExportAnimationStrategy.cc
+    ExportAnimationStrategy.h
+    ExportReconstructedGeometryAnimationStrategy.cc
+    ExportReconstructedGeometryAnimationStrategy.h
+    ExportSvgAnimationStrategy.cc
+    ExportSvgAnimationStrategy.h
+    ExportVelocityAnimationStrategy.cc
+    ExportVelocityAnimationStrategy.h
     FeatureColourTable.cc
     FeatureColourTable.h
     FeatureFocus.cc
@@ -44,9 +52,33 @@ set(srcs
     GeometryFocusHighlight.h
     Globe.cc
     Globe.h
+    GlobeCanvasTool.cc
+    GlobeCanvasTool.h
+    GlobeCanvasToolAdapter.cc
+    GlobeCanvasToolAdapter.h
+    GlobeCanvasToolChoice.cc
+    GlobeCanvasToolChoice.h
     GlobeOrientation.h
+    GlobeRenderedGeometryCollectionPainter.cc
+    GlobeRenderedGeometryCollectionPainter.h
+    GlobeRenderedGeometryLayerPainter.cc
+    GlobeRenderedGeometryLayerPainter.h
+    GPlatesQApplication.cc
+    GPlatesQApplication.h
+    GPlatesQtMsgHandler.cc
+    GPlatesQtMsgHandler.h
     GuiException.h
     Interface.h
+    MapCanvasPainter.cc
+    MapCanvasPainter.h
+    MapCanvasTool.cc
+    MapCanvasTool.h
+    MapCanvasToolAdapter.cc
+    MapCanvasToolAdapter.h
+    MapCanvasToolChoice.cc
+    MapCanvasToolChoice.h
+    MapProjection.cc
+    MapProjection.h
     NurbsRenderer.cc
     NurbsRenderer.h
     OpaqueSphere.cc
@@ -56,6 +88,7 @@ set(srcs
     OpenGLException.h
     PlatesColourTable.cc
     PlatesColourTable.h
+    ProjectionException.h
     ProximityTests.cc
     ProximityTests.h
     Quadrics.cc
@@ -73,6 +106,12 @@ set(srcs
     TemporaryGeometryFocus.h
     Texture.cc
     Texture.h
+    TopologySectionsContainer.cc
+    TopologySectionsContainer.h
+    TopologySectionsTable.cc
+    TopologySectionsTable.h
+    TreeWidgetBuilder.cc
+    TreeWidgetBuilder.h
     Viewport.h
     ViewportProjection.h
     ViewportZoom.cc

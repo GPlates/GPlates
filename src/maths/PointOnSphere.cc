@@ -47,14 +47,21 @@ const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::south_pole =
 const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
 GPlatesMaths::PointOnSphere::get_non_null_pointer() const
 {
-	if (ref_count() == 0) {
+	if (get_reference_count() == 0) {
 		// There are no intrusive-pointers referencing this class.  Hence, this instance is
 		// either on the stack or on the heap managed by a non-intrusive-pointer mechanism.
 		// 
 		// Either way, we should clone this instance, so the clone can be managed by
 		// intrusive-pointers.
-		std::cerr << "PointOnSphere::get_non_null_pointer just cloned something!"
-				<< std::endl;
+		//
+
+		// NOTE: this error message has been commented out because a valid usage of
+		// this method ('get_non_null_pointer()') occurs when calling 'test_proxmity()' on
+		// a PointOnSphere that is not reference counted.
+		//
+		//std::cerr << "PointOnSphere::get_non_null_pointer just cloned something!"
+		//		<< std::endl;
+
 		return clone_as_point();
 	} else {
 		// This instance is already managed by intrusive-pointers, so we can simply return

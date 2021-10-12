@@ -187,7 +187,6 @@ GPlatesGui::SphericalGrid::paint_circumference(
 	glColor3fv(colour);
 
 	draw_line_of_lon(s_pi/2.0);
-	draw_line_of_lat(-s_pi/2.0);
 }
 
 

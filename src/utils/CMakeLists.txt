@@ -11,17 +11,30 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    AnimationSequenceUtils.cc
+    AnimationSequenceUtils.h
     CallStackTracker.cc
     CallStackTracker.h
+    ExportTemplateFilenameSequence.cc
+    ExportTemplateFilenameSequence.h
+    ExportTemplateFilenameSequenceFormats.cc
+    ExportTemplateFilenameSequenceFormats.h
+    ExportTemplateFilenameSequenceImpl.cc
+    ExportTemplateFilenameSequenceImpl.h
     FloatingPointComparisons.cc
     FloatingPointComparisons.h
-    GeometryCreationUtils.cc
     GeometryCreationUtils.h
+    IdStringSet.cc
+    IdStringSet.h
+    LatLonAreaSampling.h
     MathUtils.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
+    ReferenceCount.h
+    SmartNodeLinkedList.h
+    SmartNodeLinkedList_test.cc
     StringFormattingUtils.cc
     StringFormattingUtils.h
     StringSet.cc

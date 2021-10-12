@@ -42,19 +42,19 @@
 namespace
 {
 	/**
-	 * Returns a simple representation of the first value of a PropertyContainer.
+	 * Returns a simple representation of the first value of a TopLevelProperty.
 	 * Note that returning a QVariant allows for the model/view architecture to supply
 	 * QSpinboxes etc as appropriate (for an editable model)
 	 */
 	QVariant
-	property_container_to_simple_qvariant(
-			const GPlatesModel::PropertyContainer &property_container,
+	top_level_property_to_simple_qvariant(
+			const GPlatesModel::TopLevelProperty &top_level_property,
 			int role)
 	{
 		// For now, just test the actual feature - no modified cache yet.
 		GPlatesFeatureVisitors::ToQvariantConverter qvariant_converter;
 		qvariant_converter.set_desired_role(role);
-		property_container.accept_visitor(qvariant_converter);
+		top_level_property.accept_visitor(qvariant_converter);
 		
 		if (qvariant_converter.found_values_begin() != qvariant_converter.found_values_end()) {
 			// We were able to make a QVariant out of this property value.
@@ -69,20 +69,20 @@ namespace
 	
 
 	/**
-	 * Returns a more verbose representation of a PropertyContainer.
+	 * Returns a more verbose representation of a TopLevelProperty.
 	 * Useful for debugging.
 	 */
 	QVariant
-	property_container_to_verbose_qstring(
-			const GPlatesModel::PropertyContainer &property_container,
+	top_level_property_to_verbose_qstring(
+			const GPlatesModel::TopLevelProperty &top_level_property,
 			int role)
 	{
 		if (role != Qt::DisplayRole) {
-			return property_container_to_simple_qvariant(property_container, role);
+			return top_level_property_to_simple_qvariant(top_level_property, role);
 		}
 		
 		GPlatesFeatureVisitors::ToQvariantConverter toqv_converter;
-		property_container.accept_visitor(toqv_converter);
+		top_level_property.accept_visitor(toqv_converter);
 		QString str;
 		if (toqv_converter.found_time_dependencies_begin() != toqv_converter.found_time_dependencies_end()) {
 			GPlatesFeatureVisitors::ToQvariantConverter::qvariant_container_const_iterator it =
@@ -109,7 +109,7 @@ namespace
 			str.append(" ]");
 			return str;
 		} else {
-			return QString("[ Empty PropertyContainer or unable to convert ]");
+			return QString("[ Empty TopLevelProperty or unable to convert ]");
 		}
 	}
 
@@ -120,18 +120,19 @@ namespace
 	 */
 	int
 	calculate_number_of_properties(
-			GPlatesModel::FeatureHandle::weak_ref feature_ref)
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 	{
 		int count = 0;
+		// Need to test weak-ref *before* we dereference it to get properties iterators.
+		if ( ! feature_ref.is_valid()) {
+			// Nothing can be done.
+			return 0;
+		}
 		GPlatesModel::FeatureHandle::properties_iterator it = feature_ref->properties_begin();
 		GPlatesModel::FeatureHandle::properties_iterator end = feature_ref->properties_end();
 		for (; it != end; ++it)
 		{
-			if ( ! feature_ref.is_valid()) {
-				// Feature handles might become invalid at any time!
-				return 0;
-			}
-			if (*it != NULL) {
+			if (it.is_valid()) {
 				++count;
 			}
 		}
@@ -252,7 +253,7 @@ GPlatesGui::FeaturePropertyTableModel::setData(
 	}
 	
 	GPlatesModel::FeatureHandle::properties_iterator it = get_property_iterator_for_row(idx.row());
-	if (*it == NULL) {
+	if ( ! it.is_valid()) {
 		// Always check your property iterators.
 		return false;
 	}
@@ -354,6 +355,9 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 			endRemoveRows();
 			element_was_erased = true;
 		} else if (*remove_it->property_iterator == NULL) {
+			// FIXME:  The above if-test NULL-check is not necessary.
+			// The properties_iterator 'is_valid' test already checks for NULL.
+
 			int row = get_row_for_property_iterator(remove_it->property_iterator);
 
 			// Found a NULL intrusive_ptr.  Remove it from the table.
@@ -387,7 +391,7 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 	for (; add_it != add_end; ++add_it)
 	{
 		// Check the properties_iterator and the intrusive_ptr it refers to.
-		if (add_it.is_valid() && *add_it != NULL) {
+		if (add_it.is_valid()) {
 			int test_row = get_row_for_property_iterator(add_it);
 			if (test_row == -1) {
 				// We've found something not in the cache.
@@ -487,12 +491,12 @@ GPlatesGui::FeaturePropertyTableModel::get_property_value_as_qvariant(
 		int role) const
 {
 	GPlatesModel::FeatureHandle::properties_iterator it = get_property_iterator_for_row(row);
-	if (*it == NULL) {
+	if ( ! it.is_valid()) {
 		// Always check your property iterators.
 		return QVariant("< NULL >");
 	}
 
-	return property_container_to_simple_qvariant(**it, role);
+	return top_level_property_to_simple_qvariant(**it, role);
 }
 
 

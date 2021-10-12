@@ -13,6 +13,7 @@ include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
     ErrorOpeningFileForReadingException.h
+    ErrorOpeningFileForWritingException.cc
     ErrorOpeningFileForWritingException.h
     ErrorOpeningPipeFromGzipException.h
     ErrorOpeningPipeToGzipException.h
@@ -31,6 +32,10 @@ set(srcs
     GeometryExporter.h
     GMTFormatGeometryExporter.cc
     GMTFormatGeometryExporter.h
+    GMTFormatHeader.cc
+    GMTFormatHeader.h
+    GMTFormatReconstructedFeatureGeometryExport.cc
+    GMTFormatReconstructedFeatureGeometryExport.h
     GMTFormatWriter.cc
     GMTFormatWriter.h
     GpmlOnePointFiveOutputVisitor.cc
@@ -42,6 +47,9 @@ set(srcs
     GpmlReaderUtils.cc
     GpmlReaderUtils.h
     LineReader.h
+    OgrException.h
+    OgrWriter.cc
+    OgrWriter.h
     PlatesLineFormatGeometryExporter.cc
     PlatesLineFormatGeometryExporter.h
     PlatesLineFormatHeaderVisitor.cc
@@ -63,8 +71,18 @@ set(srcs
     ReadErrorOccurrence.cc
     ReadErrorOccurrence.h
     ReadErrors.h
-    ShapeFileReader.cc
-    ShapeFileReader.h
+    ReconstructedFeatureGeometryExport.cc
+    ReconstructedFeatureGeometryExport.h
+    ShapefileFormatReconstructedFeatureGeometryExport.cc
+    ShapefileFormatReconstructedFeatureGeometryExport.h
+    ShapefileGeometryExporter.cc
+    ShapefileGeometryExporter.h
+    ShapefileReader.cc
+    ShapefileReader.h
+    ShapefileUtils.cc
+    ShapefileUtils.h
+    ShapefileWriter.cc
+    ShapefileWriter.h
     ShapefileXmlReader.cc
     ShapefileXmlReader.h
     ShapefileXmlWriter.cc

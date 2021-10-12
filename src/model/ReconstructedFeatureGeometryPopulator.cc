@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,7 +31,7 @@
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
 #include "FeatureHandle.h"
-#include "InlinePropertyContainer.h"
+#include "TopLevelPropertyInline.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
@@ -132,10 +132,10 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_properties(
 
 
 void
-GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_inline_property_container(
-		InlinePropertyContainer &inline_property_container)
+GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_top_level_property_inline(
+		TopLevelPropertyInline &top_level_property_inline)
 {
-	visit_property_values(inline_property_container);
+	visit_property_values(top_level_property_inline);
 }
 
 

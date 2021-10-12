@@ -200,7 +200,7 @@ GPlatesQtWidgets::EditShapefileAttributesWidget::update_property_value_from_widg
 			return false;
 		}
 	} else {
-		throw UninitialisedEditWidgetException();
+		throw UninitialisedEditWidgetException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
 

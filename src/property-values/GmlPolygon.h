@@ -29,9 +29,16 @@
 #define GPLATES_PROPERTYVALUES_GMLPOLYGON_H
 
 #include <vector>
+
+#include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "maths/PolygonOnSphere.h"
 
+
+// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlPolygon, visit_gml_polygon)
 
 namespace GPlatesPropertyValues
 {

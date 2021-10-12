@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,7 +31,7 @@
 
 #include "TotalReconstructionSequenceTimePeriodFinder.h"
 
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "property-values/GpmlIrregularSampling.h"
 
 
@@ -39,15 +39,6 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::TotalRecons
 {
 	d_property_names_to_allow.push_back(
 			GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"));
-}
-
-
-void
-GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Now visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
 }
 
 
@@ -64,21 +55,19 @@ namespace
 }
 
 
-void
-GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+bool
+GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::initialise_pre_property_values(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
 		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
 			// The current property name is not allowed.
-			return;
+			return false;
 		}
 	}
-	d_most_recent_propname_read = curr_prop_name;
-
-	visit_property_values(inline_property_container);
+	return true;
 }
 
 
@@ -150,7 +139,6 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_
 void
 GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::reset()
 {
-	d_most_recent_propname_read = boost::none;
 	d_begin_time = boost::none;
 	d_end_time = boost::none;
 }

@@ -43,22 +43,27 @@ namespace GPlatesGlobal
 			/**
 			 * @param msg is a message describing the situation.
 			 */
-			explicit
-			UninitialisedIteratorException(const char *msg)
-				: _msg(msg) {  }
-
-			virtual
-			~UninitialisedIteratorException() {  }
+			UninitialisedIteratorException(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const char *msg) :
+				Exception(exception_source),
+				_msg(msg)
+			{  }
 
 		protected:
 			virtual const char *
-			ExceptionName() const {
+			exception_name() const {
 
 				return "UninitialisedIteratorException";
 			}
 
-			virtual std::string
-			Message() const { return _msg; }
+			virtual
+			void
+			write_message(
+					std::ostream &os) const
+			{
+				write_string_message(os, _msg);
+			}
 
 		private:
 			std::string _msg;

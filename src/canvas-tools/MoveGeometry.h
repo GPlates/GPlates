@@ -26,8 +26,7 @@
 #ifndef GPLATES_CANVASTOOLS_MOVEGEOMETRY_H
 #define GPLATES_CANVASTOOLS_MOVEGEOMETRY_H
 
-#include "gui/CanvasTool.h"
-
+#include "gui/GlobeCanvasTool.h"
 
 namespace GPlatesQtWidgets
 {
@@ -40,7 +39,7 @@ namespace GPlatesCanvasTools
 	 * This is the canvas tool used to move a whole geometry.
 	 */
 	class MoveGeometry:
-			public GPlatesGui::CanvasTool
+			public GPlatesGui::GlobeCanvasTool
 	{
 	public:
 		/**
@@ -136,6 +135,9 @@ namespace GPlatesCanvasTools
 				const MoveGeometry &);
 		
 	};
+
+
 }
+
 
 #endif  // GPLATES_CANVASTOOLS_MOVEGEOMETRY_H

@@ -33,11 +33,13 @@
 #include "ApplicationState.h"
 #include "ViewportWindow.h"
 #include "file-io/FileInfo.h"
+#include "file-io/ExternalProgram.h"
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
 #include "file-io/FileFormatNotSupportedException.h"
 #include "file-io/GpmlOnePointSixOutputVisitor.h"
+#include "file-io/OgrException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "feature-visitors/FeatureCollectionClassifier.h"
 #include "ManageFeatureCollectionsActionWidget.h"
@@ -56,7 +58,7 @@ namespace
 		 */
 		enum ColumnName
 		{
-			FILENAME, FORMAT, IN_USE, ACTIONS
+			FILENAME, FORMAT, LAYER_TYPES, ACTIONS
 		};
 	}
 	
@@ -144,6 +146,7 @@ namespace
 				}
 				filters << filter_gpml;
 				filters << filter_line;
+				filters << filter_shapefile;
 				filters << filter_all;
 				return filters.join(";;");
 
@@ -159,6 +162,7 @@ namespace
 				}
 				filters << filter_gpml;
 				filters << filter_gmt;
+				filters << filter_shapefile;
 				filters << filter_all;
 				return filters.join(";;");
 
@@ -183,6 +187,7 @@ namespace
 			{
 				// No shapefile writing support yet! Write shapefiles to PLATES4 line files by default.
 				QStringList filters;
+				filters << filter_shapefile;
 				filters << filter_line;
 				if (has_gzip) {
 					filters << filter_gpml_gz;
@@ -208,6 +213,7 @@ namespace
 					// actually has reconstructable features in it!
 					filters << filter_gmt;
 					filters << filter_line;
+					filters << filter_shapefile;
 				}
 				if (has_reconstruction_features) {
 					// Only offer to save as PLATES4 .rot if feature collection
@@ -230,6 +236,7 @@ namespace
 					// actually has reconstructable features in it!
 					filters << filter_gmt;
 					filters << filter_line;
+					filters << filter_shapefile;
 				}
 				if (has_reconstruction_features) {
 					// Only offer to save as PLATES4 .rot if feature collection
@@ -262,7 +269,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	QHeaderView *header = table_feature_collections->horizontalHeader();
 	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
 	header->resizeSection(ColumnNames::FORMAT, 128);
-	header->resizeSection(ColumnNames::IN_USE, 88);
+	header->resizeSection(ColumnNames::LAYER_TYPES, 88);
 	header->resizeSection(ColumnNames::ACTIONS, 216);
 
 	// Enforce minimum row height for the Actions widget's sake.
@@ -279,7 +286,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	// The user will still be able to type in a .gpml.gz file name and activate the
 	// gzipped saving code, however this will produce an exception which pops up
 	// a suitable message box (See ViewportWindow.cc)
-	d_gzip_available = GPlatesFileIO::GpmlOnePointSixOutputVisitor::s_gzip_program.test();
+	d_gzip_available = GPlatesFileIO::GpmlOnePointSixOutputVisitor::gzip_program().test();
 }
 
 
@@ -305,7 +312,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_state()
 	for (; row < end; ++row) {
 		// Update the State widget.
 		ManageFeatureCollectionsStateWidget *state_widget = dynamic_cast<ManageFeatureCollectionsStateWidget *>(
-				table_feature_collections->cellWidget(row, ColumnNames::IN_USE));
+				table_feature_collections->cellWidget(row, ColumnNames::LAYER_TYPES));
 		if (state_widget) {
 			GPlatesAppState::ApplicationState::file_info_iterator file_it =
 					state_widget->get_file_info_iterator();
@@ -396,6 +403,12 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file(
 		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
+	catch (GPlatesFileIO::OgrException &)
+	{
+		QString message = tr("An OGR error occurred.");
+		QMessageBox::critical(this, tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
 }
 
 
@@ -462,6 +475,12 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Writing files in this format is currently not supported.");
+		QMessageBox::critical(this, tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
+	catch (GPlatesFileIO::OgrException &)
+	{
+		QString message = tr("An OGR error occurred.");
 		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
@@ -534,6 +553,12 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
 		QString message = tr("Error: Writing files in this format is currently not supported.");
+		QMessageBox::critical(this, tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+	}
+	catch (GPlatesFileIO::OgrException &)
+	{
+		QString message = tr("An OGR error occurred.");
 		QMessageBox::critical(this, tr("Error Saving File"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 	}
@@ -668,11 +693,11 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	format_item->setFlags(Qt::ItemIsEnabled);
 	table_feature_collections->setItem(row, ColumnNames::FORMAT, format_item);
 
-	// Add in use status.
+	// Add layer type / in use status.
 	ManageFeatureCollectionsStateWidget *state_widget_ptr =
 			new ManageFeatureCollectionsStateWidget(*this, file_it, 
 					in_use_reconstructable, in_use_reconstruction, this);
-	table_feature_collections->setCellWidget(row, ColumnNames::IN_USE, state_widget_ptr);
+	table_feature_collections->setCellWidget(row, ColumnNames::LAYER_TYPES, state_widget_ptr);
 	
 	// Add action buttons widget.
 	ManageFeatureCollectionsActionWidget *action_widget_ptr =

@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,21 +27,23 @@
 #ifndef GPLATES_FILEIO_FEATUREWRITER_H
 #define GPLATES_FILEIO_FEATUREWRITER_H
 
-namespace GPlatesModel
-{
-	class FeatureHandle;
-}
+#include "model/FeatureHandle.h"
+#include "model/FeatureCollectionHandle.h"
+
 
 namespace GPlatesFileIO
 {
 	/**
 	 * Interface for writing features.
+	 *
+	 * FIXME:  Is this class really necessary in addition to ConstFeatureVisitor?
+	 * FIXME:  Should this class really be an ABC?  Why not just contain a ConstFeatureVisitor?
 	 */
 	class  FeatureWriter
 	{
 	public:
 		virtual
-			~FeatureWriter()
+		~FeatureWriter()
 		{  }
 
 		/**
@@ -50,8 +52,19 @@ namespace GPlatesFileIO
 		 * @param feature_handle feature to write
 		 */
 		virtual
-			void
-			write_feature(const GPlatesModel::FeatureHandle& feature_handle) = 0;
+		void
+		write_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature) = 0;
+
+		/**
+		 * Writes a feature to a file (the format is defined in derived class).
+		 *
+		 * @param feature_handle feature to write
+		 */
+		virtual
+		void
+		write_feature(
+				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature) = 0;
 	};
 }
 

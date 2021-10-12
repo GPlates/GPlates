@@ -29,15 +29,17 @@
 #define GPLATES_GUI_GLOBE_H
 
 #include "Colour.h"
+#include "GlobeRenderedGeometryCollectionPainter.h"
+#include "NurbsRenderer.h"
 #include "OpaqueSphere.h"
 #include "SphericalGrid.h"
 #include "Texture.h"
-#include "NurbsRenderer.h"
 #include "SimpleGlobeOrientation.h"
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
 #include "utils/VirtualProxy.h"
+
 
 namespace GPlatesViewOperations
 {
@@ -79,16 +81,26 @@ namespace GPlatesGui
 		Orient(
 				const GPlatesMaths::PointOnSphere &pos);
 
-		void
-		initialise_texture();
-
-		void paint();
+		/**
+		 * Paint the globe and all the visible features and rasters on it.
+		 *
+		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
+		 *        Value should be one when earth fills viewport and proportionately greater
+		 *        than one when viewport shows only part of the globe.
+		 */
+		void paint(
+				const double &viewport_zoom_factor);
 		
 		/*
 		 * A special version of the globe's paint() method more suitable
 		 * for vector output
+		 *
+		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
+		 *        Value should be one when earth fills viewport and proportionately greater
+		 *        than one when viewport shows only part of the globe.
 		 */
-		void paint_vector_output();
+		void paint_vector_output(
+				const double &viewport_zoom_factor);
 
 		void
 		toggle_raster_image();
@@ -146,6 +158,11 @@ namespace GPlatesGui
 		 * The accumulated orientation of the globe.
 		 */
 		SimpleGlobeOrientation d_globe_orientation;
+
+		/**
+		 * Painter used to draw @a RenderedGeometry objects on the globe.
+		 */
+		GlobeRenderedGeometryCollectionPainter d_rendered_geom_collection_painter;
 
 		/**
 		 * One circle of latitude every 30 degrees.

@@ -30,8 +30,15 @@
 
 #include <vector>
 
+#include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
+
+
+// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlKeyValueDictionary, visit_gpml_key_value_dictionary)
 
 namespace GPlatesPropertyValues {
 
@@ -134,6 +141,18 @@ namespace GPlatesPropertyValues {
 		accept_visitor(
 				GPlatesModel::FeatureVisitor &visitor) {
 			visitor.visit_gpml_key_value_dictionary(*this);
+		}
+
+		bool
+		is_empty() const
+		{
+			return d_elements.empty();
+		}
+
+		int
+		num_elements() const
+		{
+			return d_elements.size();
 		}
 
 	protected:

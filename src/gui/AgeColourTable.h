@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,16 +28,14 @@
 #ifndef GPLATES_GUI_AGECOLOURTABLE_H
 #define GPLATES_GUI_AGECOLOURTABLE_H
 
-#include "Colour.h"
-#include "model/types.h"
-#include "model/Model.h"
 #include "ColourTable.h"
 #include "qt-widgets/ViewportWindow.h"
 #include <vector>
 
+
 namespace GPlatesGui 
 {
-	class AgeColourTable :
+	class AgeColourTable:
 			public ColourTable
 	{
 	public:

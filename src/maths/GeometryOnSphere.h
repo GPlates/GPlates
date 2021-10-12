@@ -31,6 +31,7 @@
 #include "ProximityHitDetail.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesMaths
@@ -45,7 +46,8 @@ namespace GPlatesMaths
 	 * It provides pure virtual function declarations for cloning and accepting visitors.  It
 	 * also provides the functions to be used by boost::intrusive_ptr for reference-counting.
 	 */
-	class GeometryOnSphere
+	class GeometryOnSphere :
+			public GPlatesUtils::ReferenceCount<GeometryOnSphere>
 	{
 	public:
 		/**
@@ -63,11 +65,6 @@ namespace GPlatesMaths
 		typedef boost::intrusive_ptr<const GeometryOnSphere> maybe_null_ptr_to_const_type;
 
 		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
-
-		/**
 		 * Construct a GeometryOnSphere instance.
 		 *
 		 * Since this class is an abstract class, this constructor can never be invoked
@@ -75,8 +72,7 @@ namespace GPlatesMaths
 		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
 		 * explicitly, since this class contains members which need to be initialised.
 		 */
-		GeometryOnSphere():
-			d_ref_count(0)
+		GeometryOnSphere()
 		{  }
 
 		/**
@@ -100,7 +96,7 @@ namespace GPlatesMaths
 		 */
 		GeometryOnSphere(
 				const GeometryOnSphere &other) :
-			d_ref_count(0)
+			GPlatesUtils::ReferenceCount<GeometryOnSphere>()
 		{  }
 
 		virtual
@@ -139,52 +135,7 @@ namespace GPlatesMaths
 		accept_visitor(
 				ConstGeometryOnSphereVisitor &visitor) const = 0;
 
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
-
-		/**
-		 * Access the reference-count of this instance.
-		 *
-		 * This function is intended for use by @a PointOnSphere::get_non_null_pointer.
-		 */
-		ref_count_type
-		ref_count() const
-		{
-			return d_ref_count;
-		}
-
 	private:
-		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
-
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor
 		// 'clone_as_geometry' (which will in turn use the copy-constructor); all
@@ -194,27 +145,6 @@ namespace GPlatesMaths
 				const GeometryOnSphere &);
 
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const GeometryOnSphere *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const GeometryOnSphere *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MATHS_GEOMETRYONSPHERE_H

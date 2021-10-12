@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -40,33 +40,33 @@
 #endif
 
 
-namespace GPlatesModel {
-
+namespace GPlatesModel
+{
 	/**
 	 * This class provides an efficient means of containing the qualifed name of an element
 	 * or attribute occuring in an XML document
 	 *
-	 * Since many elements and attributes share the same name, this class minimises memory usage for the
-	 * storage of all these names, by allowing them all to share a single string; each
-	 * QualifiedXmlName instance stores an iterator to the shared string for namespace, namespace
-	 * alias and the name associated with the element or attribute.
+	 * Since many elements and attributes share the same name, this class minimises memory
+	 * usage for the storage of all these names, by allowing them all to share a single string;
+	 * each QualifiedXmlName instance stores an iterator to the shared string for namespace,
+	 * namespace alias and the name associated with the element or attribute.
+	 *
 	 * Accessing the details is as inexpensive as dereferencing the iterator.
 	 *
-	 * Since the strings are unique in the StringSet, comparison for equality of qualified XML names
-	 * is as simple as comparing three pairs of iterators for equality.
+	 * Since the strings are unique in the StringSet, comparison for equality of qualified XML
+	 * names is as simple as comparing three pairs of iterators for equality.
 	 *
 	 * Since StringSet uses a 'std::set' for storage, testing whether an arbitrary Unicode
-	 * string is a member of the StringSet has O(log n) cost.  Further, since all loaded
-	 * names are stored within the StringSet, it is inexpensive to test whether a
-	 * desired name is even loaded, without needing to iterate through all properties
-	 * of all features.
+	 * string is a member of the StringSet has O(log n) cost.  Further, since all loaded names
+	 * are stored within the StringSet, it is inexpensive to test whether a desired name is
+	 * even loaded, without needing to iterate through all properties of all features.
 	 *
 	 * The SingletonType template parameter should be the singleton StringSet that is used
-	 * for the name of this QualifiedXmlName.  See PropertyName.h for an example.
+	 * for the name of this QualifiedXmlName.  See "PropertyName.h" for an example.
 	 */
 	template<typename SingletonType>
-	class QualifiedXmlName {
-
+	class QualifiedXmlName
+	{
 	public:
 
 		static
@@ -160,7 +160,7 @@ namespace GPlatesModel {
 						GPlatesUtils::make_icu_string_from_qstring(namespace_alias))),
 			d_name(SingletonType::instance().insert(
 						GPlatesUtils::make_icu_string_from_qstring(name)))
-		{ }
+		{  }
 
 
 		QualifiedXmlName(

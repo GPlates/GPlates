@@ -1255,13 +1255,16 @@ namespace {
 			const GreatCircleArc &arc2)
 	{
 		if (arcs_lie_on_same_great_circle(arc1, arc2)) {
-			throw GPlatesMaths::UnableToIntersectEquivalentGreatCirclesException(arc1, arc2);
+			throw GPlatesMaths::UnableToIntersectEquivalentGreatCirclesException(
+					GPLATES_EXCEPTION_SOURCE, arc1, arc2);
 		}
 		if (arc1.is_zero_length()) {
-			throw GPlatesMaths::UnableToExtendPointlikeArcException(arc1);
+			throw GPlatesMaths::UnableToExtendPointlikeArcException(GPLATES_EXCEPTION_SOURCE,
+					arc1);
 		}
 		if (arc2.is_zero_length()) {
-			throw GPlatesMaths::UnableToExtendPointlikeArcException(arc2);
+			throw GPlatesMaths::UnableToExtendPointlikeArcException(GPLATES_EXCEPTION_SOURCE,
+					arc2);
 		}
 
 		GPlatesMaths::Vector3D v = cross(arc1.rotation_axis(), arc2.rotation_axis());

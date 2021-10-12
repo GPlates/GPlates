@@ -28,8 +28,6 @@
 #ifndef GPLATES_MATHS_UNABLETONORMALILEZEROVECTOREXCEPTION_H
 #define GPLATES_MATHS_UNABLETONORMALILEZEROVECTOREXCEPTION_H
 
-// FIXME:  When the definition of 'write_message' moves to a .cc file, replace this with <iosfwd>.
-#include <ostream>
 #include "global/PreconditionViolationError.h"
 #include "Vector3D.h"
 
@@ -43,20 +41,17 @@ namespace GPlatesMaths
 			public GPlatesGlobal::PreconditionViolationError
 	{
 	public:
-		explicit
 		UnableToNormaliseZeroVectorException(
-				const Vector3D &v):
+				const GPlatesUtils::CallStack::Trace &exception_source,
+				const Vector3D &v) :
+			GPlatesGlobal::PreconditionViolationError(exception_source),
 			d_vector(v)
-		{  }
-
-		virtual
-		~UnableToNormaliseZeroVectorException()
 		{  }
 
 	protected:
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 			return "UnableToNormaliseZeroVectorException";
@@ -69,6 +64,7 @@ namespace GPlatesMaths
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 		}
+
 	private:
 		Vector3D d_vector;
 	};

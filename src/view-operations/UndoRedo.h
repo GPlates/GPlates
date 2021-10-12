@@ -113,7 +113,10 @@ namespace GPlatesViewOperations
 		public:
 			typedef boost::shared_ptr<UndoRedoInternal::CommandIdImpl> impl_ptr_type;
 
-			//! Creates command with id of -1.
+			/**
+			 * Creates command with id of -1.
+			 * This will prevent Qt from merging two adjacent commands.
+			 */
 			CommandId();
 
 			CommandId(

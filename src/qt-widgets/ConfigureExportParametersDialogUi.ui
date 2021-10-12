@@ -1,0 +1,245 @@
+<ui version="4.0" >
+ <class>ConfigureExportParametersDialog</class>
+ <widget class="QDialog" name="ConfigureExportParametersDialog" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>503</width>
+    <height>351</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Configure Export Parameters</string>
+  </property>
+  <property name="sizeGripEnabled" >
+   <bool>true</bool>
+  </property>
+  <property name="modal" >
+   <bool>true</bool>
+  </property>
+  <layout class="QVBoxLayout" >
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_target_directory" >
+       <property name="text" >
+        <string>Target &amp;Directory:</string>
+       </property>
+       <property name="alignment" >
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="buddy" >
+        <cstring>lineedit_target_directory</cstring>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineedit_target_directory" />
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_choose_target_directory" >
+       <property name="text" >
+        <string>&amp;Choose...</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_target_directory_error" >
+     <property name="styleSheet" >
+      <string>color: #A00000</string>
+     </property>
+     <property name="text" >
+      <string>&lt;Error text about target directory></string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkbox_export_gmt" >
+     <property name="text" >
+      <string>Export reconstructed geometries as &amp;GMT</string>
+     </property>
+     <property name="checked" >
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_example_filename" >
+       <property name="text" >
+        <string>Example filename:</string>
+       </property>
+       <property name="alignment" >
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_example_filename_gmt" >
+       <property name="text" >
+        <string>reconstructed_01_65.00.xy</string>
+       </property>
+       <property name="textInteractionFlags" >
+        <set>Qt::LinksAccessibleByMouse|Qt::NoTextInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkbox_export_shp" >
+     <property name="text" >
+      <string>Export reconstructed geometries as S&amp;hapefiles</string>
+     </property>
+     <property name="checked" >
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_example_filename_5" >
+       <property name="text" >
+        <string>Example filename:</string>
+       </property>
+       <property name="alignment" >
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_example_filename_gmt_3" >
+       <property name="text" >
+        <string>reconstructed_01_65.00.shp</string>
+       </property>
+       <property name="wordWrap" >
+        <bool>true</bool>
+       </property>
+       <property name="textInteractionFlags" >
+        <set>Qt::LinksAccessibleByMouse|Qt::NoTextInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkbox_export_svg" >
+     <property name="text" >
+      <string>Export projected geometries as &amp;SVG</string>
+     </property>
+     <property name="checked" >
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_example_filename_2" >
+       <property name="text" >
+        <string>Example filename:</string>
+       </property>
+       <property name="alignment" >
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_example_filename_svg" >
+       <property name="text" >
+        <string>snapshot_01_65.00.svg</string>
+       </property>
+       <property name="textInteractionFlags" >
+        <set>Qt::LinksAccessibleByMouse|Qt::NoTextInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkbox_export_velocity" >
+     <property name="text" >
+      <string>Export colat/lon mesh &amp;velocities</string>
+     </property>
+     <property name="checked" >
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_example_filename_3" >
+       <property name="text" >
+        <string>Example filename:</string>
+       </property>
+       <property name="alignment" >
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_example_filename_velocity" >
+       <property name="text" >
+        <string>&lt;cap filename>velocity_01_65.00.gpml</string>
+       </property>
+       <property name="textInteractionFlags" >
+        <set>Qt::LinksAccessibleByMouse|Qt::NoTextInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox" >
+     <property name="orientation" >
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons" >
+      <set>QDialogButtonBox::Close</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>ConfigureExportParametersDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>157</x>
+     <y>272</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>ConfigureExportParametersDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>286</x>
+     <y>272</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

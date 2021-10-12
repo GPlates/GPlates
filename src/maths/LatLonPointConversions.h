@@ -125,6 +125,7 @@ namespace GPlatesMaths
 	const LatLonPoint 
 	make_lat_lon_point(
 			const PointOnSphere &);
+
 }
 
 #endif  // GPLATES_MATHS_LATLONPOINTCONVERSIONS_H

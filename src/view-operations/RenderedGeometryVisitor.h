@@ -33,6 +33,8 @@ namespace GPlatesViewOperations
 	class RenderedMultiPointOnSphere;
 	class RenderedPolylineOnSphere;
 	class RenderedPolygonOnSphere;
+	class RenderedDirectionArrow;
+	class RenderedReconstructionGeometry;
 
 	/**
 	 * Interface for visiting a derived @a RenderedGeometryImpl object.
@@ -70,6 +72,18 @@ namespace GPlatesViewOperations
 		void
 		visit_rendered_polygon_on_sphere(
 				const RenderedPolygonOnSphere &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_direction_arrow(
+				const RenderedDirectionArrow &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_reconstruction_geometry(
+				const RenderedReconstructionGeometry &)
 		{  }
 	};
 }

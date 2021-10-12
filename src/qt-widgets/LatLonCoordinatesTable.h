@@ -32,8 +32,20 @@
 #include <QObject>
 #include <QTreeWidget>
 
+#include "gui/TreeWidgetBuilder.h"
 #include "view-operations/GeometryBuilder.h"
 
+
+namespace GPlatesGui
+{
+	class Colour;
+}
+
+namespace GPlatesViewOperations
+{
+	class ActiveGeometryOperation;
+	class GeometryOperation;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -46,7 +58,8 @@ namespace GPlatesQtWidgets
 		explicit
 		LatLonCoordinatesTable(
 				QTreeWidget *coordinates_table,
-				GPlatesViewOperations::GeometryBuilder *initial_geom_builder = NULL);
+				GPlatesViewOperations::GeometryBuilder *initial_geom_builder = NULL,
+				GPlatesViewOperations::ActiveGeometryOperation *active_geometry_operation = NULL);
 
 		/**
 		 * Disconnects from the previous @a GeometryBuilder, if any, and
@@ -88,6 +101,38 @@ namespace GPlatesQtWidgets
 				GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
 				const GPlatesMaths::PointOnSphere &new_oriented_pos_on_globe);
 
+		/**
+		 * The geometry operation emitting signals has changed.
+		 * Only one geometry operation is active as any time.
+		 * @a geometry_operation is NULL if no @a GeometryOperation
+		 * is currently activated.
+		 */
+		void
+		switched_geometry_operation(
+				GPlatesViewOperations::GeometryOperation *geometry_operation);
+
+		/**
+		 * The point at index @a point_index was in the geometry at
+		 * index @a geometry_index in the geometry builder @a geometry_builder
+		 * was highlighted by a geometry operation.
+		 */
+		void
+		highlight_point_in_geometry(
+				GPlatesViewOperations::GeometryBuilder *geometry_builder,
+				GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
+				GPlatesViewOperations::GeometryBuilder::PointIndex point_index,
+				const GPlatesGui::Colour &highlight_colour);
+
+		/**
+		 * No points are highlighted by this geometry operation in the geometry
+		 * builder @a geometry_builder.
+		 */
+		void
+		unhighlight_point_in_geometry(
+				GPlatesViewOperations::GeometryBuilder *geometry_builder,
+				GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
+				GPlatesViewOperations::GeometryBuilder::PointIndex point_index);
+
 	private:
 		/**
 		 * The @a QTreeWidget that we fill in.
@@ -95,10 +140,30 @@ namespace GPlatesQtWidgets
 		QTreeWidget *d_coordinates_table;
 
 		/**
+		 * Helps assemble our QTreeWidget.
+		 */
+		GPlatesGui::TreeWidgetBuilder d_tree_widget_builder;
+
+		/**
 		 * The @a GeometryBuilder we are listening to.
 		 */
-		GPlatesViewOperations::GeometryBuilder *d_current_geom_builder;
+		GPlatesViewOperations::GeometryBuilder *d_current_geometry_builder;
 
+		/**
+		 * The @a GeometryOperation we are listening to.
+		 */
+		GPlatesViewOperations::GeometryOperation *d_current_geometry_operation;
+
+
+		void
+		connect_to_active_geometry_operation_signals(
+				GPlatesViewOperations::ActiveGeometryOperation *active_geometry_operation);
+
+		void
+		connect_to_current_geometry_operation();
+
+		void
+		disconnect_from_current_geometry_operation();
 
 		void
 		connect_to_current_geometry_builder();
@@ -120,6 +185,11 @@ namespace GPlatesQtWidgets
 
 		void
 		remove_point_from_geometry(
+				GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
+				GPlatesViewOperations::GeometryBuilder::PointIndex point_index);
+
+		QTreeWidgetItem *
+		get_coord_item(
 				GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
 				GPlatesViewOperations::GeometryBuilder::PointIndex point_index);
 	};

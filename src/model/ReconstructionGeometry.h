@@ -32,6 +32,7 @@
 #include "maths/GeometryOnSphere.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesModel
@@ -44,7 +45,8 @@ namespace GPlatesModel
 	/**
 	 * The abstract base class which stores geometries in a reconstruction.
 	 */
-	class ReconstructionGeometry
+	class ReconstructionGeometry :
+			public GPlatesUtils::ReferenceCount<ReconstructionGeometry>
 	{
 	public:
 		/**
@@ -72,11 +74,6 @@ namespace GPlatesModel
 		 * A convenience typedef for the geometry of this RFG.
 		 */
 		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr_type;
-
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
 
 		virtual
 		~ReconstructionGeometry()
@@ -144,47 +141,6 @@ namespace GPlatesModel
 		accept_visitor(
 				ReconstructionGeometryVisitor &visitor) = 0;
 
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
-
-		/**
-		 * Access the reference-count of this instance.
-		 *
-		 * This function is intended for use by the @a get_non_null_pointer function in
-		 * derived classes.
-		 */
-		ref_count_type
-		ref_count() const
-		{
-			return d_ref_count;
-		}
-
 	protected:
 
 		/**
@@ -198,17 +154,11 @@ namespace GPlatesModel
 		explicit
 		ReconstructionGeometry(
 				geometry_ptr_type geometry_ptr):
-			d_ref_count(0),
 			d_geometry_ptr(geometry_ptr),
 			d_reconstruction_ptr(NULL)
 		{  }
 
 	private:
-
-		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
 
 		/**
 		 * The geometry.
@@ -244,27 +194,6 @@ namespace GPlatesModel
 		operator=(
 				const ReconstructionGeometry &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const ReconstructionGeometry *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const ReconstructionGeometry *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_RECONSTRUCTIONGEOMETRY_H

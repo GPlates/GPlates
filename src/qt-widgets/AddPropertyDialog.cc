@@ -74,6 +74,7 @@ namespace
 		{ "gpml:angle", "gpml:angle", false },
 		{ "gpml:boundary", "gml:Polygon", true }, // TimeDependentPropertyValue<>
 		{ "gpml:centerLineOf", "gml:LineString", true }, // TimeDependentPropertyValue<> _Geometry
+		{ "gpml:conjugatePlateId", "gpml:plateId", false },	// half-way support for Isochron.
 		{ "gpml:continentalSide", "gpml:ContinentalBoundarySideEnumeration", false }, // Enumeration
 		{ "gml:description", "xs:string", false },
 		{ "gpml:dipAngle", "gpml:angle", false },

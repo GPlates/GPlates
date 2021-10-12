@@ -28,8 +28,6 @@
 #ifndef GPLATES_GLOBAL_INTRUSIVEPOINTERZEROREFCOUNTEXCEPTION_H
 #define GPLATES_GLOBAL_INTRUSIVEPOINTERZEROREFCOUNTEXCEPTION_H
 
-// FIXME:  When the definition of 'write_message' moves to a .cc file, replace this with <iosfwd>.
-#include <ostream>
 #include "global/PreconditionViolationError.h"
 
 
@@ -46,24 +44,20 @@ namespace GPlatesGlobal
 		/**
 		 * When this exception is thrown, presumably in a member function of the object
 		 * whose ref-count has been observed to be zero, the parameters to this constructor
-		 * should be @c this, @c __FILE__ and @c __LINE__, which indicate the object, the
-		 * file name and the line number, respectively.
+		 * should be @c this, @c GPLATES_EXCEPTION_SOURCE, which indicate the object
+		 * and the location the exception is thrown, respectively.
 		 */
 		RetrievalFromEmptyContainerException(
-				const char *filename_,
-				int line_num_):
-			d_filename(filename_),
-			d_line_num(line_num_)
-		{  }
-
-		virtual
-		~RetrievalFromEmptyContainerException()
+				const GPlatesUtils::CallStack::Trace &exception_source) :
+			GPlatesGlobal::PreconditionViolationError(exception_source),
+			d_filename(exception_source.get_filename()),
+			d_line_num(exception_source.get_line_num())
 		{  }
 
 	protected:
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 			return "RetrievalFromEmptyContainerException";

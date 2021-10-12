@@ -12,7 +12,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -34,6 +34,8 @@
 #include <iostream>
 #include <utility>  /* std::pair */
 
+#include "model/Model.h"
+#include "model/ModelInterface.h"
 #include "model/FeatureStore.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureCollectionRevision.h"
@@ -80,7 +82,7 @@ create_isochron(
 {
 	GPlatesModel::FeatureType feature_type = GPlatesModel::FeatureType::create_gpml("Isochron");
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
-			model.create_feature(feature_type, target_collection);
+			model->create_feature(feature_type, target_collection);
 
 	const std::vector<double> coords_vector(coords, coords + num_coords);
 
@@ -253,9 +255,9 @@ populate_feature_store(
 #endif
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref isochrons =
-			model.create_feature_collection();
+			model->create_feature_collection();
 	GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs =
-			model.create_feature_collection();
+			model->create_feature_collection();
 
 	static const unsigned long plate_id1 = 501;
 	// lon, lat, lon, lat... is how GML likes it.
@@ -416,7 +418,7 @@ output_as_gpml(
 	GPlatesFileIO::GpmlOnePointSixOutputVisitor v(&standard_output);
 
 	for ( ; begin != end; ++begin) {
-		(*begin)->accept_visitor(v);
+		v.visit_feature(begin);
 	}
 }
 
@@ -451,7 +453,7 @@ output_reconstructions(
 		GPlatesModel::FeatureCollectionHandle::features_iterator iter1 =
 				total_recon_seqs_begin;
 		for ( ; iter1 != total_recon_seqs_end; ++iter1) {
-			(*iter1)->accept_visitor(rtp);
+			rtp.visit_feature(iter1);
 		}
 
 		std::cout << "\n--> Building tree, root node: 501\n";
@@ -469,7 +471,7 @@ output_reconstructions(
 
 		GPlatesModel::FeatureCollectionHandle::features_iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {
-			(*iter2)->accept_visitor(rfgp);
+			rfgp.visit_feature(iter2);
 		}
 
 		std::cout << "<> After feature geometry reconstructions, there are\n   "
@@ -533,7 +535,7 @@ output_reconstructions(
 int
 main(int argc, char *argv[])
 {
-	GPlatesModel::Model model;
+	GPlatesModel::ModelInterface model;
 
 	std::pair<GPlatesModel::FeatureCollectionHandle::weak_ref,
 			GPlatesModel::FeatureCollectionHandle::weak_ref>
@@ -556,7 +558,7 @@ main(int argc, char *argv[])
 		QString filename = argv[1];
 
 		GPlatesFileIO::FileInfo fileinfo(filename);
-		GPlatesModel::Model new_model;
+		GPlatesModel::ModelInterface new_model;
 		GPlatesFileIO::ReadErrorAccumulation accum;
 
 

@@ -29,11 +29,18 @@
 #define GPLATES_PROPERTYVALUES_GPMLFINITEROTATION_H
 
 #include <utility>  /* std::pair */
-#include "model/PropertyValue.h"
+
 #include "GmlPoint.h"
 #include "GpmlMeasure.h"
+#include "feature-visitors/PropertyValueFinder.h"
 #include "maths/FiniteRotation.h"
+#include "model/PropertyValue.h"
 
+
+// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlFiniteRotation, visit_gpml_finite_rotation)
 
 namespace GPlatesPropertyValues
 {

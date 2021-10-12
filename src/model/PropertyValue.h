@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,17 +35,44 @@
 #include "FeatureVisitor.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
+
+// This macro is used to define the template function 'assign_member' inside a class of type C.
+// To define the function, invoke the macro in the class definition, supplying the class type as
+// the argument to the macro.  The macro invocation will expand to a definition of the function.
+#define DEFINE_FUNCTION_ASSIGN_MEMBER(C)  \
+		template<typename MemberType>  \
+		void  \
+		assign_member(  \
+				MemberType C::*member_ptr_lvalue,  \
+				const MemberType &rvalue)  \
+		{  \
+			if (container() == NULL) {  \
+				/* This property value is not contained, so assign to 'this'. */  \
+				this->*member_ptr_lvalue = rvalue;  \
+			} else {  \
+				GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);  \
+				C::non_null_ptr_type dup = clone_as_derived_type();  \
+				dup.get()->*member_ptr_lvalue = rvalue;  \
+				container()->bubble_up_change(this, dup, transaction);  \
+				transaction.commit();  \
+			}  \
+		}
 
 
 namespace GPlatesModel
 {
+	class PropertyValueContainer;
+
+
 	/**
 	 * This class is the abstract base of all property values.
 	 *
 	 * It provides pure virtual function declarations for cloning and accepting visitors.  It
 	 * also provides the functions to be used by boost::intrusive_ptr for reference-counting.
 	 */
-	class PropertyValue
+	class PropertyValue :
+			public GPlatesUtils::ReferenceCount<PropertyValue>
 	{
 	public:
 		/**
@@ -65,11 +92,6 @@ namespace GPlatesModel
 				non_null_ptr_to_const_type;
 
 		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
-
-		/**
 		 * Construct a PropertyValue instance.
 		 *
 		 * Since this class is an abstract class, this constructor can never be invoked
@@ -78,7 +100,8 @@ namespace GPlatesModel
 		 * explicitly, since this class contains members which need to be initialised.
 		 */
 		PropertyValue() :
-			d_ref_count(0)
+			GPlatesUtils::ReferenceCount<PropertyValue>(),
+			d_container(NULL)
 		{  }
 
 		/**
@@ -101,7 +124,8 @@ namespace GPlatesModel
 		 */
 		PropertyValue(
 				const PropertyValue &other) :
-			d_ref_count(0)
+			GPlatesUtils::ReferenceCount<PropertyValue>(),
+			d_container(NULL)
 		{  }
 
 		virtual
@@ -138,39 +162,53 @@ namespace GPlatesModel
 				FeatureVisitor &visitor) = 0;
 
 		/**
-		 * Increment the reference-count of this instance.
+		 * Access the PropertyValueContainer which contains this PropertyValue.
 		 *
 		 * Client code should not use this function!
 		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
+		 * Note that the return value may be a NULL pointer, which signifies that this
+		 * PropertyValue is not contained within a PropertyValueContainer.
 		 */
-		void
-		increment_ref_count() const
+		PropertyValueContainer *
+		container() const
 		{
-			++d_ref_count;
+			return d_container;
 		}
 
 		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
+		 * Set the PropertyValueContainer which contains this PropertyValue.
 		 *
 		 * Client code should not use this function!
 		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
+		 * Note that @a new_container may be a NULL pointer... but only if this
+		 * PropertyValue instance will not be contained within a PropertyValueContainer.
 		 */
-		ref_count_type
-		decrement_ref_count() const
+		void
+		set_container(
+				PropertyValueContainer *new_container)
 		{
-			return --d_ref_count;
+			d_container = new_container;
 		}
 
 	private:
 		/**
-		 * The reference-count of this instance by intrusive-pointers.
+		 * The property value container which contains this PropertyValue instance.
+		 *
+		 * Note that this should be held via a (regular, raw) pointer rather than a
+		 * ref-counting pointer (or any other type of smart pointer) because:
+		 *  -# The PropertyValueContainer instance conceptually manages the instance of
+		 * this class, not the other way around.
+		 *  -# A PropertyValueContainer instance will outlive the PropertyValue instances
+		 * it contains; thus, it doesn't make sense for a PropertyValueContainer to have
+		 * its memory managed by its contained PropertyValue.
+		 *  -# Each PropertyValueContainer derivation will contain a ref-counting pointer
+		 * to class PropertyValue, and we don't want to set up a ref-counting loop (which
+		 * would lead to memory leaks).
+		 *
+		 * This pointer may be NULL.  It will be NULL when this PropertyValue instance is
+		 * not contained.
 		 */
-		mutable ref_count_type d_ref_count;
+		PropertyValueContainer *d_container;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
@@ -181,26 +219,6 @@ namespace GPlatesModel
 				const PropertyValue &);
 
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const PropertyValue *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const PropertyValue *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
 
 }
 

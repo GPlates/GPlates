@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -52,6 +52,8 @@ namespace GPlatesFileIO
 		virtual
 		~GpmlOnePointFiveOutputVisitor() {  }
 
+	protected:
+
 		virtual
 		void
 		visit_feature_handle(
@@ -59,8 +61,8 @@ namespace GPlatesFileIO
 
 		virtual
 		void
-		visit_inline_property_container(
-				const GPlatesModel::InlinePropertyContainer &inline_property_container);
+		visit_top_level_property_inline(
+				const GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 		virtual
 		void

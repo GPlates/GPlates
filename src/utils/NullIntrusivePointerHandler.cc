@@ -32,5 +32,5 @@
 void
 GPlatesUtils::NullIntrusivePointerHandler::operator()() const
 {
-	throw NullNonNullIntrusivePointerException();
+	throw NullNonNullIntrusivePointerException(GPLATES_EXCEPTION_SOURCE);
 }

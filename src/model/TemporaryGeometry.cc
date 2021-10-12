@@ -33,7 +33,7 @@
 const GPlatesModel::TemporaryGeometry::non_null_ptr_type
 GPlatesModel::TemporaryGeometry::get_non_null_pointer()
 {
-	if (ref_count() == 0) {
+	if (get_reference_count() == 0) {
 		// How did this happen?  This should not have happened.
 		//
 		// Presumably, the programmer obtained the raw TemporaryGeometry pointer
@@ -42,7 +42,8 @@ GPlatesModel::TemporaryGeometry::get_non_null_pointer()
 		// ref-counting pointers have expired and the instance has actually been deleted.
 		//
 		// Regardless of how this happened, this is an error.
-		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(this, __FILE__, __LINE__);
+		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(GPLATES_EXCEPTION_SOURCE,
+				this);
 	} else {
 		// This instance is already managed by intrusive-pointers, so we can simply return
 		// another intrusive-pointer to this instance.

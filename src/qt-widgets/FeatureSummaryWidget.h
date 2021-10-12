@@ -62,7 +62,12 @@ namespace GPlatesQtWidgets
 		display_feature(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
-		
+	
+	private:
+
+		void
+		hide_plate_id_fields_as_appropriate();
+	
 	};
 }
 

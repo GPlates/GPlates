@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,6 +29,7 @@
 #define GPLATES_MODEL_RECONSTRUCTIONGEOMETRYVISITOR_H
 
 #include "ReconstructedFeatureGeometry.h"
+#include "ResolvedTopologicalGeometry.h"
 #include "TemporaryGeometry.h"
 
 
@@ -72,6 +73,15 @@ namespace GPlatesModel
 		void
 		visit_reconstructed_feature_geometry(
 				ReconstructedFeatureGeometry::non_null_ptr_type rfg)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_resolved_topological_geometry(
+				ResolvedTopologicalGeometry::non_null_ptr_type rtg)
 		{  }
 
 		/**

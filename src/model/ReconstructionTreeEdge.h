@@ -35,6 +35,7 @@
 #include "maths/FiniteRotation.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesModel
@@ -47,7 +48,8 @@ namespace GPlatesModel
 	 * tree vertices, each of which corresponds to a plate ID (actually: a plate
 	 * identified by the plate ID).
 	 */
-	class ReconstructionTreeEdge
+	class ReconstructionTreeEdge :
+			public GPlatesUtils::ReferenceCount<ReconstructionTreeEdge>
 	{
 	public:
 		/**
@@ -57,11 +59,6 @@ namespace GPlatesModel
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeEdge,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef long ref_count_type;
 
 		/**
 		 * To enable the tree-building algorithm to construct the fullest-possible
@@ -191,42 +188,9 @@ namespace GPlatesModel
 			d_parent_edge = parent;
 		}
 
-		/**
-		 * Increment the reference-count of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		void
-		increment_ref_count() const
-		{
-			++d_ref_count;
-		}
-
-		/**
-		 * Decrement the reference-count of this instance, and return the new
-		 * reference-count.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by boost::intrusive_ptr and
-		 * GPlatesUtils::non_null_intrusive_ptr.
-		 */
-		ref_count_type
-		decrement_ref_count() const
-		{
-			return --d_ref_count;
-		}
-
 		~ReconstructionTreeEdge();
 
 	private:
-		/**
-		 * The reference-count of this instance by intrusive-pointers.
-		 */
-		mutable ref_count_type d_ref_count;
 
 		/**
 		 * The plate ID of the fixed plate of the total reconstruction pole.
@@ -285,7 +249,6 @@ namespace GPlatesModel
 				GPlatesModel::integer_plate_id_type moving_plate_,
 				const GPlatesMaths::FiniteRotation &relative_rotation_,
 				PoleTypes::PoleType pole_type_):
-			d_ref_count(0),
 			d_fixed_plate(fixed_plate_),
 			d_moving_plate(moving_plate_),
 			d_relative_rotation(relative_rotation_),
@@ -310,7 +273,7 @@ namespace GPlatesModel
 		 */
 		ReconstructionTreeEdge(
 				const ReconstructionTreeEdge &other):
-			d_ref_count(0),
+			GPlatesUtils::ReferenceCount<ReconstructionTreeEdge>(),
 			d_fixed_plate(other.d_fixed_plate),
 			d_moving_plate(other.d_moving_plate),
 			d_relative_rotation(other.d_relative_rotation),
@@ -335,26 +298,6 @@ namespace GPlatesModel
 	output_for_debugging(
 			std::ostream &os,
 			const ReconstructionTreeEdge &edge);
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const ReconstructionTreeEdge *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const ReconstructionTreeEdge *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
 
 }
 

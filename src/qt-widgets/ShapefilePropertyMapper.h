@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_SHAPEFILEPROPERTYMAPPER_H
 #define GPLATES_QTWIDGETS_SHAPEFILEPROPERTYMAPPER_H
 
+#include <QWidget>
 #include "file-io/PropertyMapper.h"
 
 namespace ShapefileAttributes {
@@ -65,7 +66,9 @@ namespace GPlatesQtWidgets
 		public GPlatesFileIO::PropertyMapper
 	{
 	public:
-		ShapefilePropertyMapper()
+		ShapefilePropertyMapper(
+			QWidget *parent_window_ptr):
+		d_parent_window_ptr(parent_window_ptr)
 		{ }
 
 		~ShapefilePropertyMapper()
@@ -83,6 +86,11 @@ namespace GPlatesQtWidgets
 
 
 	private:
+		/**
+		 * The Qt window which will be the parent of the dialogs.
+		 */
+		QWidget *d_parent_window_ptr;
+
 		// Make copy and assignment private.
 		ShapefilePropertyMapper(
 			const ShapefilePropertyMapper &other);
@@ -96,22 +104,26 @@ namespace GPlatesQtWidgets
 		 * <name>.shp.gplates.xml file, if it exists. Failing that, the
 		 * mapping is obtained from the ShapefileAttributeMapping dialog.  
 		 */
+		static
 		bool
 		map_initial_properties(
 			QString &filename,
 			QStringList &field_names,
-			QMap<QString,QString> &model_to_attribute_map);
+			QMap<QString,QString> &model_to_attribute_map,
+			QWidget *parent_);
 
 		/**
 		 * Obtains the shapefile attribute mapping from the <name>.shp.gplates.xml,
 		 * and opens the ShapefileAttributeRemapping dialog to allow the user to 
 		 * change the mapping. 
 		 */
+		static
 		bool
 		map_remapped_properties(
 			QString &filename,
 			QStringList &field_names,
-			QMap<QString,QString> &model_to_attribute_map);
+			QMap<QString,QString> &model_to_attribute_map,
+			QWidget *parent_);
 	};
 
 }

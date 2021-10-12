@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -35,18 +35,18 @@
 
 #include <QWidget>
 #include <QSlider>
-#include <QVBoxLayout>
-#include <QLabel>
-#include <QPixmap>
-#include <QDebug>
 
-#include "gui/ViewportZoom.h"
+
+namespace GPlatesGui
+{
+	class ViewportZoom;
+}
 
 namespace GPlatesQtWidgets
 {
 	/**
-	 * Trivial widget with a slider and two icons that responds to and emits
-	 * zoom events. This is implemented in code in a separate class because
+	 * Trivial widget with a slider and two icons that responds to and changes
+	 * the viewport zoom. This is implemented in code in a separate class because
 	 * this slider now needs to be inserted very carefully between two other
 	 * widgets which are also set up via code rather than Qt Designer.
 	 * 
@@ -61,86 +61,55 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		ZoomSliderWidget(
-				const GPlatesGui::ViewportZoom &vzoom,
-				QWidget *parent_ = NULL):
-			QWidget(parent_),
-			d_slider_zoom(new QSlider(this))
-		{
-			// Set our own properties.
-			setFocusPolicy(Qt::NoFocus);
-			setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-
-			// Set up the widgets, as though the Designer had created them.
-			QVBoxLayout *vbox = new QVBoxLayout(this);
-			vbox->setContentsMargins(0, 0, 0, 0);
-			vbox->setSpacing(2);
-			
-			QLabel *label_zoom_max = new QLabel(this);
-			label_zoom_max->setPixmap(QPixmap(QString::fromUtf8(":/gnome_zoom_in_16.png")));
-			vbox->addWidget(label_zoom_max);
-
-			d_slider_zoom->setSingleStep(1);
-			d_slider_zoom->setOrientation(Qt::Vertical);
-			d_slider_zoom->setTickPosition(QSlider::NoTicks);
-			d_slider_zoom->setFocusPolicy(Qt::WheelFocus);
-			vbox->addWidget(d_slider_zoom);
-
-			QLabel *label_zoom_min = new QLabel(this);
-			label_zoom_min->setPixmap(QPixmap(QString::fromUtf8(":/gnome_zoom_out_16.png")));
-			vbox->addWidget(label_zoom_min);
-
-			// Set up the zoom slider to use appropriate range and current zoom level.
-			d_slider_zoom->setRange(vzoom.s_min_zoom_level, vzoom.s_max_zoom_level);
-			d_slider_zoom->setValue(vzoom.s_initial_zoom_level);
-
-			// This could go straight to the ViewportZoom - but we're not sure if that
-			// will change when we have multiple views.
-			QObject::connect(d_slider_zoom, SIGNAL(sliderMoved(int)),
-					this, SLOT(handle_slider_moved(int)));
-		}
-
-
-		/**
-		 * In response to a zoom event, calling this method will set the slider
-		 * to the new zoom level (i.e. canvas.viewport_zoom().zoom_level()).
-		 *
-		 * Note: I'm being cautious, and not making this a 'zoom has changed' signal
-		 * listener. It instead relies on the existing slot in ReconstructionViewWidget
-		 * to update the ZoomSliderWidget via this setter. My reasoning is,
-		 * once the Map Canvas stuff is merged in, we may have two entirely different
-		 * ViewportZoom instances/derivations, and so this class should not cache
-		 * that ViewportZoom as a member. Let ReconstructionViewWidget deal with
-		 * the indirection.
-		 */
-		void
-		set_zoom_value(
-				int new_zoom_level)
-		{
-			d_slider_zoom->setValue(new_zoom_level);
-		}
-	
-	signals:
-		
-		/**
-		 * Emitted when the slider has been changed to a new zoom level.
-		 * Does not modify a ViewportZoom for the reasons stated in set_zoom_value().
-		 */
-		void
-		slider_moved(
-				int slider_position);
+				GPlatesGui::ViewportZoom &vzoom,
+				QWidget *parent_ = NULL);
 
 	private slots:
 		
 		void
 		handle_slider_moved(
-				int slider_position)
-		{
-			emit slider_moved(slider_position);
-		}
-	
+				int slider_position);
+
+		void
+		handle_zoom_changed();
+
 	private:
-	
+
+		void
+		set_up_ui();
+
+		void
+		set_up_signals_and_slots();
+
+		/**
+		 * This is a pointer to the viewport zoom we are using to control
+		 * the current zoom level (and react to zoom events not caused
+		 * by us so we can update our slider).
+		 */
+		GPlatesGui::ViewportZoom *d_viewport_zoom_ptr;
+
+		/**
+		 * This is our slider widget that we get events from.
+		 */
 		QSlider *d_slider_zoom;
+
+		/**
+		 * A necessary work-around to using QSlider::setValue() while tracking
+		 * is enabled; we don't want the programmatic modification of the slider
+		 * to cause zoom level changes, because the slider ticks by zoom level,
+		 * which may not be exactly the same as the current zoom percentage.
+		 *
+		 * The subtle interaction of signals and slots in this fashion was causing
+		 * a bug that meant it was (mostly) impossible for the user to set a
+		 * specific zoom percentage with the spinbox, because the slider would
+		 * react to the change and immediately clamp it's own value to a zoom
+		 * level, which would then be propagated back to ViewportZoom and change
+		 * the spinbox.
+		 *
+		 * This kind of thing is not as big a problem for (say) the Animation
+		 * slider, as the slider has enough granularity in it's "ticks".
+		 */
+		bool d_suppress_zoom_change_event;
 
 	};
 }

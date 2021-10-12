@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,14 +31,13 @@
 #include <boost/scoped_ptr.hpp>
 #include <vector>
 
-#include "Colour.h"
-#include "model/types.h"
-#include "model/Model.h"
 #include "ColourTable.h"
+#include "model/types.h"
+
 
 namespace GPlatesGui 
 {
-	class PlatesColourTable :
+	class PlatesColourTable:
 			public ColourTable
 	{
 		public:

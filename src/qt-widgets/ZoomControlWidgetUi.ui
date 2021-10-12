@@ -1,0 +1,126 @@
+<ui version="4.0" >
+ <class>ZoomControlWidget</class>
+ <widget class="QWidget" name="ZoomControlWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>252</width>
+    <height>34</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Form</string>
+  </property>
+  <layout class="QHBoxLayout" >
+   <property name="spacing" >
+    <number>2</number>
+   </property>
+   <property name="leftMargin" >
+    <number>1</number>
+   </property>
+   <property name="topMargin" >
+    <number>1</number>
+   </property>
+   <property name="rightMargin" >
+    <number>1</number>
+   </property>
+   <property name="bottomMargin" >
+    <number>1</number>
+   </property>
+   <item>
+    <widget class="QLabel" name="label_zoom" >
+     <property name="text" >
+      <string>Zoom:</string>
+     </property>
+     <property name="buddy" >
+      <cstring>spinbox_zoom_percent</cstring>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="button_zoom_in" >
+     <property name="toolTip" >
+      <string>Zoom in  +</string>
+     </property>
+     <property name="icon" >
+      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_in_22.png</iconset>
+     </property>
+     <property name="iconSize" >
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="flat" >
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="button_zoom_out" >
+     <property name="toolTip" >
+      <string>Zoom out  -</string>
+     </property>
+     <property name="icon" >
+      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_out_22.png</iconset>
+     </property>
+     <property name="iconSize" >
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="flat" >
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="button_zoom_reset" >
+     <property name="toolTip" >
+      <string>Reset zoom level  1</string>
+     </property>
+     <property name="icon" >
+      <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_zoom_original_22.png</iconset>
+     </property>
+     <property name="iconSize" >
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="flat" >
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDoubleSpinBox" name="spinbox_zoom_percent" >
+     <property name="toolTip" >
+      <string>Set zoom percent</string>
+     </property>
+     <property name="suffix" >
+      <string>%</string>
+     </property>
+     <property name="decimals" >
+      <number>0</number>
+     </property>
+     <property name="minimum" >
+      <double>100.000000000000000</double>
+     </property>
+     <property name="maximum" >
+      <double>10000.000000000000000</double>
+     </property>
+     <property name="singleStep" >
+      <double>5.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
+ <connections/>
+</ui>

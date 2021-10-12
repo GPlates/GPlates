@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -34,8 +34,15 @@
 #endif
 
 #include <memory>
+#include <QGraphicsScene>
 #include <QWidget>
 #include <QSplitter>
+#include <QLabel>
+
+#include <boost/optional.hpp>
+
+#include "gui/ViewportZoom.h"
+#include "maths/LatLonPointConversions.h"
 #include "ReconstructionViewWidgetUi.h"
 
 #include "ZoomSliderWidget.h"
@@ -51,12 +58,23 @@ namespace GPlatesViewOperations
 	class RenderedGeometryCollection;
 }
 
+namespace GPlatesGui
+{
+	class AnimationController;
+}
+
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;
 	class GlobeCanvas;
+	class AnimateControlWidget;
+	class ZoomControlWidget;
+	class TimeControlWidget;
+	class MapCanvas;
+	class MapView;
+	class ProjectionControlWidget;
+	class SceneView;
 	class TaskPanel;
-
+	class ViewportWindow;
 
 	class ReconstructionViewWidget:
 			public QWidget, 
@@ -67,43 +85,10 @@ namespace GPlatesQtWidgets
 	public:
 		ReconstructionViewWidget(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesGui::AnimationController &animation_controller,
 				ViewportWindow &view_state,
 				QWidget *parent_ = NULL);
 
-		static
-		inline
-		double
-		min_reconstruction_time()
-		{
-			// This value denotes the present-day.
-			return 0.0;
-		}
-
-		static
-		inline
-		double
-		max_reconstruction_time()
-		{
-			// This value denotes a time 10000 million years ago.
-			return 10000.0;
-		}
-
-		static
-		bool
-		is_valid_reconstruction_time(
-				const double &time);
-
-		double
-		reconstruction_time() const
-		{
-			return spinbox_reconstruction_time->value();
-		}
-
-		double
-		zoom_percent() const
-		{
-			return spinbox_zoom_percent->value();
-		}
 
 		GlobeCanvas &
 		globe_canvas() const
@@ -122,35 +107,47 @@ namespace GPlatesQtWidgets
 				std::auto_ptr<GPlatesQtWidgets::TaskPanel> task_panel);
 				
 
+		MapView &
+		map_view() const
+		{
+			return *d_map_view_ptr;
+		}
+
+		SceneView &
+		active_view() const
+		{
+			return *d_active_view_ptr;
+		}
+
+		MapCanvas &
+		map_canvas() const
+		{
+			return *d_map_canvas_ptr;
+		}
+
+		bool
+		globe_is_active();
+
+		bool
+		map_is_active();
+
+		GPlatesMaths::LatLonPoint &
+		camera_llp()
+		{
+			return *d_camera_llp;
+		}
+#if 0
+		GPlatesGui::ViewportZoom &
+		viewport_zoom() 
+		{
+			return d_viewport_zoom;
+		}
+#endif
+
+
 	public slots:
 		void
-		activate_time_spinbox()
-		{
-			spinbox_reconstruction_time->setFocus();
-			spinbox_reconstruction_time->selectAll();
-		}
-
-		void
-		set_reconstruction_time(
-				double new_recon_time);
-
-		void
-		increment_reconstruction_time()
-		{
-			set_reconstruction_time(reconstruction_time() + 1.0);
-		}
-
-		void
-		decrement_reconstruction_time()
-		{
-			set_reconstruction_time(reconstruction_time() - 1.0);
-		}
-
-		void
-		propagate_reconstruction_time()
-		{
-			emit reconstruction_time_changed(reconstruction_time());
-		}
+		activate_time_spinbox();
 
 		void
 		recalc_camera_position();
@@ -159,32 +156,82 @@ namespace GPlatesQtWidgets
 		update_mouse_pointer_position(
 				const GPlatesMaths::PointOnSphere &new_virtual_pos,
 				bool is_on_globe);
+
+		void
+		update_mouse_pointer_position(
+				const boost::optional<GPlatesMaths::LatLonPoint> &new_lat_lon_pos,
+				bool is_on_map);
 		
 		void
-		activate_zoom_spinbox()
-		{
-			spinbox_zoom_percent->setFocus();
-			spinbox_zoom_percent->selectAll();
-		}
-		
-	signals:
-		void
-		reconstruction_time_changed(
-				double new_reconstruction_time);
-	
-	private slots:
-	
-		void
-		propagate_zoom_percent();
+		activate_zoom_spinbox();
 
 		void
 		handle_zoom_change();
 
-	private:
+		void
+		change_projection(
+			int projection_type);
 
+	signals:
+
+		void
+		update_tools_and_status_message();
+
+	private:
+		
+		std::auto_ptr<QWidget>
+		construct_awesomebar_one(
+				GPlatesGui::AnimationController &animation_controller);
+
+		std::auto_ptr<QWidget>
+		construct_awesomebar_two(
+				GPlatesGui::ViewportZoom &vzoom,
+				GPlatesQtWidgets::MapCanvas *map_canvas_ptr);
+
+		std::auto_ptr<QWidget>
+		construct_viewbar(
+				GPlatesGui::ViewportZoom &vzoom);
+
+		// Experiment with adding the proj combo-box to the lower toolbar. 
+		std::auto_ptr<QWidget>
+		construct_viewbar_with_projections(
+				GPlatesGui::ViewportZoom &vzoom,
+				GPlatesQtWidgets::MapCanvas *map_canvas_ptr);
+
+		/**
+		 * The QSplitter responsible for dividing the interface between canvas
+		 * and TaskPanel.
+		 */
 		QSplitter *d_splitter_widget;
+
+		/**
+		 * The camera coordinates label.
+		 */
+		QLabel *d_label_camera_coords;
+
+		/**
+		 * The mouse coordinates label.
+		 */
+		QLabel *d_label_mouse_coords;
+
 		GlobeCanvas *d_globe_canvas_ptr;
+		AnimateControlWidget *d_animate_control_widget_ptr;
+		ZoomControlWidget *d_zoom_control_widget_ptr;
+		TimeControlWidget *d_time_control_widget_ptr;
 		ZoomSliderWidget *d_zoom_slider_widget;
+		ProjectionControlWidget *d_projection_control_widget_ptr;
+
+		// The QGraphicsScene representing the map canvas.
+		MapCanvas *d_map_canvas_ptr;
+
+		// The QGraphicsView associated with the map canvas.
+		MapView *d_map_view_ptr;
+
+		// The active scene view.
+		SceneView *d_active_view_ptr;
+
+		boost::optional<GPlatesMaths::LatLonPoint> d_camera_llp;
+
 	};
 }
 

@@ -31,6 +31,7 @@
 
 #include "maths/GeometryOnSphere.h"
 #include "model/ModelInterface.h"
+#include "model/FeatureHandle.h"
 
 
 namespace GPlatesQtWidgets

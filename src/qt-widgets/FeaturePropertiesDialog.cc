@@ -27,6 +27,7 @@
 #include "FeaturePropertiesDialog.h"
 
 #include "utils/UnicodeStringUtils.h"
+//#include "utils/Profile.h"
 #include "model/FeatureType.h"
 #include "model/FeatureId.h"
 #include "model/FeatureRevision.h"
@@ -83,9 +84,11 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 void
 GPlatesQtWidgets::FeaturePropertiesDialog::display_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)
+		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg)
 {
 	d_feature_ref = feature_ref;
+	d_focused_rfg = focused_rfg;
+
 	refresh_display();
 }
 
@@ -100,7 +103,9 @@ GPlatesQtWidgets::FeaturePropertiesDialog::refresh_display()
 		lineedit_feature_type->clear();
 		return;
 	}
-	
+
+	//PROFILE_FUNC();
+
 	// Ensure everything is enabled.
 	lineedit_feature_type->setEnabled(true);
 	tabwidget_query_edit->setEnabled(true);
@@ -110,9 +115,9 @@ GPlatesQtWidgets::FeaturePropertiesDialog::refresh_display()
 			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->feature_type().build_aliased_name()));
 	
 	// Update our tabbed sub-widgets.
-	d_query_feature_properties_widget->display_feature(d_feature_ref);
+	d_query_feature_properties_widget->display_feature(d_feature_ref, d_focused_rfg);
 	d_edit_feature_properties_widget->edit_feature(d_feature_ref);
-	d_view_feature_geometries_widget->edit_feature(d_feature_ref);
+	d_view_feature_geometries_widget->edit_feature(d_feature_ref, d_focused_rfg);
 }
 
 		
@@ -120,21 +125,35 @@ void
 GPlatesQtWidgets::FeaturePropertiesDialog::choose_query_widget_and_open()
 {
 	tabwidget_query_edit->setCurrentWidget(d_query_feature_properties_widget);
-	setVisible(true);
+	pop_up();
 }
 
 void
 GPlatesQtWidgets::FeaturePropertiesDialog::choose_edit_widget_and_open()
 {
 	tabwidget_query_edit->setCurrentWidget(d_edit_feature_properties_widget);
-	setVisible(true);
+	pop_up();
 }
 
 void
 GPlatesQtWidgets::FeaturePropertiesDialog::choose_geometries_widget_and_open()
 {
 	tabwidget_query_edit->setCurrentWidget(d_view_feature_geometries_widget);
-	setVisible(true);
+	pop_up();
+}
+
+
+void
+GPlatesQtWidgets::FeaturePropertiesDialog::pop_up()
+{
+	show();
+	// In most cases, 'show()' is sufficient. However, selecting the menu entry
+	// a second time, when the dialog is still open, should make the dialog 'active'
+	// and return keyboard focus to it.
+	activateWindow();
+	// On platforms which do not keep dialogs on top of their parent, a call to
+	// raise() may also be necessary to properly 're-pop-up' the dialog.
+	raise();
 }
 
 

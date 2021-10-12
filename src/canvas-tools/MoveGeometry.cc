@@ -36,7 +36,7 @@ GPlatesCanvasTools::MoveGeometry::MoveGeometry(
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 		const GPlatesQtWidgets::ViewportWindow &view_state_):
-	CanvasTool(globe_, globe_canvas_),
+	GlobeCanvasTool(globe_, globe_canvas_),
 	d_view_state_ptr(&view_state_)
 {  }
 

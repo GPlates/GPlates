@@ -28,12 +28,17 @@
 #ifndef GPLATES_GUI_NURBSRENDERER_H
 #define GPLATES_GUI_NURBSRENDERER_H
 
+#include <boost/noncopyable.hpp>
+
 #include "OpenGL.h"
+
+#include "maths/types.h"
 
 
 namespace GPlatesMaths
 {
 	class GreatCircleArc;
+	class PointOnSphere;
 	class UnitVector3D;
 }
 
@@ -44,7 +49,9 @@ namespace GPlatesGui
 	 *
 	 * Performs resource management and provides a nice class interface.
 	 */
-	class NurbsRenderer
+	class NurbsRenderer :
+			// Noncopyable because there doesn't seem to be a way to duplicate a GLUnurbsObj resource.
+			private boost::noncopyable
 	{
 		public:
 			NurbsRenderer();
@@ -100,32 +107,35 @@ namespace GPlatesGui
 			draw_great_circle_arc(
 					const GPlatesMaths::GreatCircleArc &arc);
 
+
+			/**
+			 * Draw a great circle arc on a sphere of radius one.
+			 *
+			 * The angle spanned by points @a start and @a end
+			 * must be strictly less than PI.
+			 */
+			void
+			draw_great_circle_arc(
+					const GPlatesMaths::PointOnSphere &start,
+					const GPlatesMaths::PointOnSphere &end);
+
 		private:
 			/**
 			 * GLU nurbs renderer object
 			 */
 			GLUnurbsObj *d_nurbs_ptr;
 
+
+			void
+			draw_great_circle_arc(
+					const GPlatesMaths::UnitVector3D &start_pt,
+					const GPlatesMaths::UnitVector3D &end_pt,
+					const GPlatesMaths::real_t &dot_of_endpoints);
+
 			void
 			draw_great_circle_arc_smaller_than_ninety_degrees(
 					const GPlatesMaths::UnitVector3D &start_pt,
 					const GPlatesMaths::UnitVector3D &end_pt);
-
-			/*
-			 * These two member functions are intentionally declared
-			 * private to avoid object copying/assignment.
-			 *
-			 * (There doesn't seem to be a way to duplicate
-			 * a GLUnurbsObj resource.)
-			 */ 
-
-			NurbsRenderer(
-					const NurbsRenderer &other);
-
-			NurbsRenderer &
-			operator=(
-					const NurbsRenderer &other);
-
 	};
 }
 

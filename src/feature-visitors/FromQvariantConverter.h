@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -45,7 +45,7 @@ namespace GPlatesFeatureVisitors
 	 * PropertyValue to accept_visitor(this). FromQvariantConverter will perform the
 	 * neccessary conversion and provide the new PropertyValue via get_property_value().
 	 *
-	 * If it visits an InlinePropertyContainer with multiple PropertyValues, it will only
+	 * If it visits an TopLevelPropertyInline with multiple PropertyValues, it will only
 	 * consider the first PropertyValue.
 	 *
 	 * As the conversion may not be possible, get_property_value returns a boost::optional
@@ -62,25 +62,28 @@ namespace GPlatesFeatureVisitors
 			d_qvariant(new_property_value)
 		{  }
 
+
 		virtual
 		~FromQvariantConverter() {  }
-		
 
-		virtual
-		void
-		visit_feature_handle(
-				GPlatesModel::FeatureHandle &feature_handle);
 
-		virtual
-		void
-		visit_inline_property_container(
-				GPlatesModel::InlinePropertyContainer &inline_property_container);
+		/**
+		 * Returns the PropertyValue that has been created from the given QVariant.
+		 * This is wrapped in a boost::optional - you must test it before dereferencing it!
+		 */
+		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+		get_property_value()
+		{
+			return d_property_value;
+		}
 
+	protected:
 
 		virtual
 		void
 		visit_enumeration(
 				GPlatesPropertyValues::Enumeration &enumeration);
+
 
 		void
 		visit_gml_time_instant(
@@ -123,16 +126,6 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_xs_string(
 				GPlatesPropertyValues::XsString &xs_string);
-
-		/**
-		 * Returns the PropertyValue that has been created from the given QVariant.
-		 * This is wrapped in a boost::optional - you must test it before dereferencing it!
-		 */
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
-		get_property_value()
-		{
-			return d_property_value;
-		}
 
 	private:
 	

@@ -71,7 +71,8 @@ GPlatesMaths::GreatCircle::calcNormal(const UnitVector3D &u1,
 		oss << "Attempted to calculate a great-circle from "
 		 << "collinear points "
 		 << u1 << " and " << u2 << ".";
-		throw IndeterminateResultException (oss.str().c_str());
+		throw IndeterminateResultException (GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 	return v.get_normalisation();
 }

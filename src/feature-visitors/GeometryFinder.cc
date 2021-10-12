@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,7 @@
 
 #include "GeometryFinder.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -42,15 +42,6 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
-
-
-void
-GPlatesFeatureVisitors::GeometryFinder::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Now visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-}
 
 
 namespace
@@ -66,21 +57,20 @@ namespace
 }
 
 
-void
-GPlatesFeatureVisitors::GeometryFinder::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+bool
+GPlatesFeatureVisitors::GeometryFinder::initialise_pre_property_values(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
 
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
 		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
 			// The current property name is not allowed.
-			return;
+			return false;
 		}
 	}
-
-	visit_property_values(inline_property_container);
+	return true;
 }
 
 
@@ -145,7 +135,7 @@ GPlatesFeatureVisitors::GeometryFinder::first_geometry_found() const
 {
 	if ( ! has_found_geometries()) {
 		// Whoops, the container's empty.
-		throw GPlatesGlobal::RetrievalFromEmptyContainerException(__FILE__, __LINE__);
+		throw GPlatesGlobal::RetrievalFromEmptyContainerException(GPLATES_EXCEPTION_SOURCE);
 	}
 	return *(found_geometries_begin());
 }

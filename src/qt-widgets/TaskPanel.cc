@@ -31,19 +31,44 @@
 
 #include "FeatureSummaryWidget.h"
 #include "DigitisationWidget.h"
-#include "MoveVertexWidget.h"
+#include "ModifyGeometryWidget.h"
 #include "ReconstructionPoleWidget.h"
 #include "ActionButtonBox.h"
 #include "gui/FeatureFocus.h"
+
+
+namespace
+{
+	/**
+	 * For use with set_up_xxxx_tab methods: Adds a standard vertical box
+	 * layout to the taskpanel page, and returns it for convenience.
+	 *
+	 * You don't have to use this if you want to set up a TaskPanel page
+	 * with some unusual layout - this function is just to help keep things
+	 * consistent.
+	 */
+	QLayout *
+	add_default_layout(
+			QWidget* page)
+	{
+		// Set up the layout to be used by the tab.
+		// The layout will be parented to the widget, and cleaned up by Qt.
+		QVBoxLayout *lay = new QVBoxLayout(page);
+		lay->setSpacing(2);
+		lay->setContentsMargins(2, 2, 2, 2);
+		return lay;
+	}
+}
+
 
 
 GPlatesQtWidgets::TaskPanel::TaskPanel(
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesModel::ModelInterface &model_interface,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 		GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
-		GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		ViewportWindow &view_state,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		QWidget *parent_):
@@ -51,9 +76,10 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	d_feature_action_button_box_ptr(new ActionButtonBox(5, 22, this)),
 	d_digitisation_widget_ptr(new DigitisationWidget(
 			model_interface, digitise_geometry_builder, view_state, choose_canvas_tool)),
-	d_move_vertex_widget_ptr(new MoveVertexWidget(geom_builder_tool_target)),
+	d_modify_geometry_widget_ptr(new ModifyGeometryWidget(
+			geometry_operation_target, active_geometry_operation)),
 	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(
-			rendered_geom_collection, rendered_geom_factory, view_state))
+			rendered_geom_collection, view_state))
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
 	// 32 pixels wide (and 31 high, for some reason) on Linux/Qt/Plastique. Including
@@ -73,7 +99,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	// Set up the EX-TREME Task Panel's tabs.
 	set_up_feature_tab(feature_focus);
 	set_up_digitisation_tab();
-	set_up_move_vertex_tab();
+	set_up_modify_geometry_tab();
 	set_up_modify_pole_tab();
 	
 	choose_feature_tab();
@@ -112,9 +138,7 @@ void
 GPlatesQtWidgets::TaskPanel::set_up_digitisation_tab()
 {
 	// Set up the layout to be used by the Digitisation tab.
-	QVBoxLayout *lay = new QVBoxLayout(tab_digitisation);
-	lay->setSpacing(2);
-	lay->setContentsMargins(2, 2, 2, 2);
+	QLayout *lay = add_default_layout(tab_digitisation);
 	
 	// Add a summary of the current geometry being digitised.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
@@ -130,22 +154,20 @@ GPlatesQtWidgets::TaskPanel::set_up_digitisation_tab()
 
 
 void
-GPlatesQtWidgets::TaskPanel::set_up_move_vertex_tab()
+GPlatesQtWidgets::TaskPanel::set_up_modify_geometry_tab()
 {
-	// Set up the layout to be used by the Move Vertex tab.
-	QVBoxLayout *lay = new QVBoxLayout(tab_move_vertex);
-	lay->setSpacing(2);
-	lay->setContentsMargins(2, 2, 2, 2);
+	// Set up the layout to be used by the Modify Geometry tab.
+	QLayout *lay = add_default_layout(tab_modify_geometry);
 	
-	// Add a summary of the current geometry being modified by move vertex tool.
+	// Add a summary of the current geometry being modified by a modify geometry tool.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
 	// We cannot set this parent widget in the TaskPanel initialiser list because
 	// setupUi() has not been called yet.
-	lay->addWidget(d_move_vertex_widget_ptr);
+	lay->addWidget(d_modify_geometry_widget_ptr);
 
 	// After the main widget and anything else we might want to cram in there,
 	// a spacer to eat up remaining space and push all the widgets to the top
-	// of the Move Vertex tab.
+	// of the Modify Geometry tab.
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
 
@@ -154,9 +176,7 @@ void
 GPlatesQtWidgets::TaskPanel::set_up_modify_pole_tab()
 {
 	// Set up the layout to be used by the Modify Pole tab.
-	QVBoxLayout *lay = new QVBoxLayout(tab_modify_pole);
-	lay->setSpacing(2);
-	lay->setContentsMargins(2, 2, 2, 2);
+	QLayout *lay = add_default_layout(tab_modify_pole);
 	
 	// Add the main ReconstructionPoleWidget.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
@@ -169,3 +189,13 @@ GPlatesQtWidgets::TaskPanel::set_up_modify_pole_tab()
 	// of the Modify Pole tab.
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
+
+void
+GPlatesQtWidgets::TaskPanel::enable_modify_pole_tab(
+	bool enable)
+{
+	
+	tab_modify_pole->setEnabled(enable);
+	
+}
+

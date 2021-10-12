@@ -93,7 +93,8 @@ GPlatesMaths::sqrt(
 
 			std::ostringstream oss("function 'sqrt' invoked with invalid argument ");
 			oss << r;
-			throw FunctionDomainException(oss.str().c_str());
+			throw FunctionDomainException(GPLATES_EXCEPTION_SOURCE,
+					oss.str().c_str());
 		} else {
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
 			// zero.  We'll return the sqrt of zero, which is zero.
@@ -120,7 +121,8 @@ GPlatesMaths::asin(
 
 			std::ostringstream oss("function 'asin' invoked with invalid argument ");
 			oss << r;
-			throw FunctionDomainException(oss.str().c_str());
+			throw FunctionDomainException(GPLATES_EXCEPTION_SOURCE,
+					oss.str().c_str());
 		} else {
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
 			// minus one.  We'll return the asin of minus one, which is minus pi on
@@ -140,7 +142,8 @@ GPlatesMaths::asin(
 
 			std::ostringstream oss("function 'asin' invoked with invalid argument ");
 			oss << r;
-			throw FunctionDomainException(oss.str().c_str());
+			throw FunctionDomainException(GPLATES_EXCEPTION_SOURCE,
+					oss.str().c_str());
 		} else {
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
 			// one.  We'll return the asin of one, which is pi on two.
@@ -168,7 +171,8 @@ GPlatesMaths::acos(
 
 			std::ostringstream oss("function 'acos' invoked with invalid argument ");
 			oss << r;
-			throw FunctionDomainException(oss.str().c_str());
+			throw FunctionDomainException(GPLATES_EXCEPTION_SOURCE,
+					oss.str().c_str());
 		} else {
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
 			// minus one.  We'll return the acos of minus one, which is pi.
@@ -187,7 +191,8 @@ GPlatesMaths::acos(
 
 			std::ostringstream oss("function 'acos' invoked with invalid argument ");
 			oss << r;
-			throw FunctionDomainException(oss.str().c_str());
+			throw FunctionDomainException(GPLATES_EXCEPTION_SOURCE,
+					oss.str().c_str());
 		} else {
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
 			// one.  We'll return the acos of one, which is zero.

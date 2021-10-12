@@ -33,11 +33,12 @@
 #include "PlatesLineFormatWriter.h"
 #include "PlatesRotationFormatWriter.h"
 #include "GMTFormatWriter.h"
+#include "ShapefileWriter.h"
 
 #include "GpmlOnePointSixReader.h"
 #include "PlatesLineFormatReader.h"
 #include "PlatesRotationFormatReader.h"
-#include "ShapeFileReader.h"
+#include "ShapefileReader.h"
 
 #include "FileFormatNotSupportedException.h"
 #include "ErrorOpeningFileForWritingException.h"
@@ -45,6 +46,7 @@
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "qt-widgets/ShapefilePropertyMapper.h"
 
 
 namespace
@@ -82,6 +84,9 @@ namespace
 		is_shapefile_format_file(const QFileInfo &file)
 	{
 		return file_name_ends_with(file, "shp");
+
+	// RJW: Testing ESRI Geodatabases.
+	//	return file_name_ends_with(file, "mdb");
 	}
 
 	bool
@@ -158,8 +163,10 @@ namespace
 				new GPlatesFileIO::GMTFormatWriter(file_info));
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
+			return boost::shared_ptr<GPlatesFileIO::FeatureWriter>(
+				new GPlatesFileIO::ShapefileWriter(file_info));
 		default:
-			throw GPlatesFileIO::FileFormatNotSupportedException(
+			throw GPlatesFileIO::FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
 				"Chosen file format is not currently supported.");
 		}
 	}
@@ -261,7 +268,8 @@ GPlatesFileIO::get_feature_collection_writer(
 {
 	if ( ! is_writable(file_info) )
 	{
-		throw ErrorOpeningFileForWritingException(file_info.get_qfileinfo().filePath());
+		throw ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
+				file_info.get_qfileinfo().filePath());
 	}
 
 	// Assert GMT format compatilibity.
@@ -270,9 +278,9 @@ GPlatesFileIO::get_feature_collection_writer(
 	case FeatureCollectionWriteFormat::GMT_WITH_PLATES4_STYLE_HEADER:
 	case FeatureCollectionWriteFormat::GMT_VERBOSE_HEADER:
 	case FeatureCollectionWriteFormat::GMT_PREFER_PLATES4_STYLE_HEADER:
-		GPlatesGlobal::Assert(
-			get_feature_collection_file_format(file_info) == FeatureCollectionFileFormat::GMT,
-			GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				get_feature_collection_file_format(file_info) == FeatureCollectionFileFormat::GMT,
+				GPLATES_ASSERTION_SOURCE);
 		break;
 	default:
 		break;
@@ -297,7 +305,8 @@ GPlatesFileIO::get_feature_collection_writer(
 			new GMTFormatWriter(file_info, GMTFormatWriter::PREFER_PLATES4_STYLE_HEADER));
 
 	default:
-		throw FileFormatNotSupportedException("Chosen write format is not currently supported.");
+		throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
+				"Chosen write format is not currently supported.");
 	}
 }
 
@@ -330,7 +339,7 @@ GPlatesFileIO::read_feature_collection_file(
 			break;
 
 		default:
-			throw FileFormatNotSupportedException(
+			throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
 				"File extension is '.gpml' or '.gpml.gz' but file format is neither.");
 		}
 		break;
@@ -344,12 +353,13 @@ GPlatesFileIO::read_feature_collection_file(
 		break;
 
 	case FeatureCollectionFileFormat::SHAPEFILE:
-		ShapeFileReader::read_file(file_info, model, read_errors);
+		ShapefileReader::read_file(file_info, model, read_errors);
 		break;
 
 	case FeatureCollectionFileFormat::GMT:
 	case FeatureCollectionFileFormat::UNKNOWN:
 	default:
-		throw FileFormatNotSupportedException("Chosen file format is not currently supported.");
+		throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
+				"Chosen file format is not currently supported.");
 	}
 }

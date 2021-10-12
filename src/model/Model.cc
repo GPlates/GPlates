@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -43,9 +43,11 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 
+
 GPlatesModel::Model::Model():
 	d_feature_store(FeatureStore::create())
 {  }
+
 
 const GPlatesModel::FeatureCollectionHandle::weak_ref
 GPlatesModel::Model::create_feature_collection()
@@ -60,6 +62,7 @@ GPlatesModel::Model::create_feature_collection()
 	return (*iter)->reference();
 }
 
+
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesModel::Model::create_feature(
 		const FeatureType &feature_type,
@@ -68,6 +71,7 @@ GPlatesModel::Model::create_feature(
 	FeatureId feature_id;
 	return create_feature(feature_type, feature_id, target_collection);
 }
+
 
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesModel::Model::create_feature(
@@ -83,23 +87,6 @@ GPlatesModel::Model::create_feature(
 	transaction.commit();
 
 	return feature_handle->reference();
-}
-
-const GPlatesModel::FeatureHandle::weak_ref
-GPlatesModel::Model::create_feature(
-		const FeatureType &feature_type,
-		const RevisionId &revision_id,
-		const FeatureCollectionHandle::weak_ref &target_collection)
-{	
-	GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle =
-			GPlatesModel::FeatureHandle::create(feature_type, revision_id);
-	
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	target_collection->append_feature(feature_handle, transaction);
-	transaction.commit();
-
-	return feature_handle->reference();
-
 }
 
 
@@ -128,26 +115,25 @@ namespace
 	visit_feature_collections(
 			FeatureCollectionIterator collections_begin, 
 			FeatureCollectionIterator collections_end,
-			GPlatesModel::FeatureVisitor &visitor) {
-
+			GPlatesModel::FeatureVisitor &visitor)
+	{
 		using namespace GPlatesModel;
 
-		// We visit each of the features in each of the feature collections in
-		// the given range.
-		FeatureCollectionIterator collections_iter = collections_begin;
-		for ( ; collections_iter != collections_end; ++collections_iter) {
+		// Visit each of the features in each of the feature collections in the given
+		// iterator range.
+		for ( ; collections_begin != collections_end; ++collections_begin) {
 
-			FeatureCollectionHandle::weak_ref feature_collection = *collections_iter;
+			FeatureCollectionHandle::weak_ref feature_collection = *collections_begin;
 
-			// Before we dereference the weak_ref using 'operator->',
-			// let's be sure that it's valid to dereference.
+			// Before we dereference the weak_ref using 'operator->', let's be sure
+			// that it's valid to dereference.
 			if (feature_collection.is_valid()) {
 				FeatureCollectionHandle::features_iterator iter =
 						feature_collection->features_begin();
 				FeatureCollectionHandle::features_iterator end =
 						feature_collection->features_end();
 				for ( ; iter != end; ++iter) {
-					(*iter)->accept_visitor(visitor);
+					visitor.visit_feature(iter);
 				}
 			}
 		}
@@ -155,9 +141,8 @@ namespace
 }
 
 
-const GPlatesModel::Reconstruction::non_null_ptr_type
-GPlatesModel::Model::create_reconstruction(
-		const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+const GPlatesModel::ReconstructionTree::non_null_ptr_type
+GPlatesModel::Model::create_reconstruction_tree(
 		const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
 		const double &time,
 		GPlatesModel::integer_plate_id_type root)
@@ -172,6 +157,19 @@ GPlatesModel::Model::create_reconstruction(
 
 	// Build the reconstruction tree, using 'root' as the root of the tree.
 	ReconstructionTree::non_null_ptr_type tree = graph.build_tree(root);
+	return tree;
+}
+
+
+const GPlatesModel::Reconstruction::non_null_ptr_type
+GPlatesModel::Model::create_reconstruction(
+		const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+		const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		const double &time,
+		GPlatesModel::integer_plate_id_type root)
+{
+	ReconstructionTree::non_null_ptr_type tree =
+			create_reconstruction_tree(reconstruction_features_collection, time, root);
 	Reconstruction::non_null_ptr_type reconstruction =
 			Reconstruction::create(tree, reconstruction_features_collection);
 

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,7 @@
 
 #include "GeometrySetter.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -43,15 +43,19 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
-
 void
-GPlatesFeatureVisitors::GeometrySetter::visit_feature_handle(
-		GPlatesModel::FeatureHandle &feature_handle)
+GPlatesFeatureVisitors::GeometrySetter::set_geometry(
+		GPlatesModel::PropertyValue *geometry_property_value)
 {
-	// Now visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
+	geometry_property_value->accept_visitor(*this);
 }
 
+void
+GPlatesFeatureVisitors::GeometrySetter::set_geometry(
+		GPlatesModel::TopLevelProperty *geometry_top_level_property)
+{
+	geometry_top_level_property->accept_visitor(*this);
+}
 
 void
 GPlatesFeatureVisitors::GeometrySetter::visit_gml_line_string(

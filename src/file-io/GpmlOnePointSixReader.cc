@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -38,6 +38,7 @@
 #include "FileInfo.h"
 #include "ReadErrors.h"
 #include "ReadErrorOccurrence.h"
+#include "ExternalProgram.h"
 #include "global/GPlatesAssert.h"
 #include "PropertyCreationUtils.h"
 #include "FeaturePropertiesMap.h"
@@ -50,8 +51,9 @@
 
 #include "maths/LatLonPointConversions.h"
 
+#include "model/Model.h"
 #include "model/FeatureRevision.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/DummyTransactionHandle.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
@@ -73,8 +75,17 @@
 #include "property-values/XsBoolean.h"
 
 
-const GPlatesFileIO::ExternalProgram
-		GPlatesFileIO::GpmlOnePointSixReader::s_gunzip_program("gzip -d", "gzip --version");
+const GPlatesFileIO::ExternalProgram &
+GPlatesFileIO::GpmlOnePointSixReader::gunzip_program()
+{
+	if (s_gunzip_program == NULL) {
+		s_gunzip_program = new ExternalProgram("gzip -d", "gzip --version");
+	}
+	return *s_gunzip_program;
+}
+
+
+const GPlatesFileIO::ExternalProgram *GPlatesFileIO::GpmlOnePointSixReader::s_gunzip_program = NULL;
 
 
 namespace
@@ -235,7 +246,7 @@ namespace
 		Model::FeatureType feature_type(xml_elem->get_name());
 
 		Model::FeatureHandle::weak_ref feature = 
-			model.create_feature(feature_type, collection);
+			model->create_feature(feature_type, collection);
 
 		// Read properties of the feature.
 		PropertyList properties;
@@ -288,13 +299,13 @@ namespace
 		Model::FeatureHandle::weak_ref feature;
 
 		if (feature_id && revision_id) {
-			feature = model.create_feature(feature_type, *feature_id, *revision_id, collection);
+			feature = model->create_feature(feature_type, *feature_id, *revision_id, collection);
 		} else if (feature_id) {
-			feature = model.create_feature(feature_type, *feature_id, collection);
-		} else if (revision_id) {
-			feature = model.create_feature(feature_type, *revision_id, collection);
+			feature = model->create_feature(feature_type, *feature_id, collection);
 		} else {
-			feature = model.create_feature(feature_type, collection);
+			// Without a feature ID, a revision ID is meaningless.  So, even if we have
+			// a revision ID, if we don't have a feature ID, regenerate both.
+			feature = model->create_feature(feature_type, collection);
 		}
 
 		// Add properties to feature.
@@ -454,9 +465,9 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		input_process.setStandardInputFile(filename);
 		// FIXME: Assuming gzip is in a standard place on the path. Not true on MS/Win32. Not true at all.
 		// In fact, it may need to be a user preference.
-		input_process.start(s_gunzip_program.command(), QIODevice::ReadWrite | QIODevice::Unbuffered);
+		input_process.start(gunzip_program().command(), QIODevice::ReadWrite | QIODevice::Unbuffered);
 		if ( ! input_process.waitForStarted()) {
-			throw ErrorOpeningPipeFromGzipException(s_gunzip_program.command(), filename);
+			throw ErrorOpeningPipeFromGzipException(gunzip_program().command(), filename);
 		}
 		input_process.waitForReadyRead(20000);
 		reader.setDevice(&input_process);
@@ -474,7 +485,7 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 	boost::shared_ptr<DataSource> source( 
 			new LocalFileDataSource(filename, DataFormats::GpmlOnePointSix));
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection =
-			model.create_feature_collection();
+			model->create_feature_collection();
 
 	GpmlReaderUtils::ReaderParams params(reader, source, read_errors);
 	boost::shared_ptr<Model::XmlElementNode::AliasToNamespaceMap> alias_map(

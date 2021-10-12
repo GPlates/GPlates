@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,14 +28,12 @@
 #ifndef GPLATES_GUI_SINGLECOLOURTABLE_H
 #define GPLATES_GUI_SINGLECOLOURTABLE_H
 
-#include "Colour.h"
-#include "model/types.h"
-#include "model/Model.h"
 #include "ColourTable.h"
+
 
 namespace GPlatesGui 
 {
-	class SingleColourTable :
+	class SingleColourTable:
 			public ColourTable
 	{
 		public:

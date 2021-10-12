@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,16 +26,8 @@
 
 #include "FileInfo.h"
 
-bool
-GPlatesFileIO::is_writable(
-	const QFileInfo& file_info)
-{
-	QFileInfo dir(file_info.path());
-	return dir.permission(QFile::WriteUser);
-}
 
-
-QString
+const QString
 GPlatesFileIO::FileInfo::get_display_name(
 		bool use_absolute_path_name) const
 {
@@ -63,4 +55,38 @@ GPlatesFileIO::FileInfo::get_display_name(
 	} else {
 		return d_file_info.fileName();
 	}
+}
+
+
+GPlatesFileIO::FileInfo::~FileInfo()
+{
+}
+
+
+bool
+GPlatesFileIO::FileInfo::unload_feature_collection()
+{
+	if ( ! d_feature_collection) {
+		// No associated feature-collection.
+		return false;
+	}
+	const GPlatesModel::FeatureCollectionHandle::weak_ref &fc_weak_ref = *d_feature_collection;
+	if ( ! fc_weak_ref.is_valid()) {
+		// The weak-ref of the associated feature-collection is invalid.  (Perhaps the
+		// feature-collection has already been unloaded?)
+		return false;
+	}
+
+	// OK, we can finally unload the feature-collection.
+	fc_weak_ref->unload();
+	return true;
+}
+
+
+bool
+GPlatesFileIO::is_writable(
+		const QFileInfo &file_info)
+{
+	QFileInfo dir(file_info.path());
+	return dir.permission(QFile::WriteUser);
 }

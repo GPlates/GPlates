@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,6 +30,7 @@
 
 #include <boost/optional.hpp>
 #include "ReconstructionGeometry.h"
+#include "WeakObserver.h"
 #include "types.h"
 #include "FeatureHandle.h"
 #include "property-values/GeoTimeInstant.h"
@@ -38,7 +39,8 @@
 namespace GPlatesModel
 {
 	class ReconstructedFeatureGeometry:
-			public ReconstructionGeometry
+			public ReconstructionGeometry,
+			public WeakObserver<FeatureHandle>
 	{
 	public:
 		/**
@@ -63,8 +65,13 @@ namespace GPlatesModel
 		typedef boost::intrusive_ptr<ReconstructedFeatureGeometry> maybe_null_ptr_type;
 
 		/**
-		 * Create a ReconstructedFeatureGeometry instance with an optional
-		 * reconstruction plate ID and an optional time of formation.
+		 * A convenience typedef for the WeakObserver base class of this class.
+		 */
+		typedef WeakObserver<FeatureHandle> WeakObserverType;
+
+		/**
+		 * Create a ReconstructedFeatureGeometry instance with an optional reconstruction
+		 * plate ID and an optional time of formation.
 		 */
 		static
 		const non_null_ptr_type
@@ -72,13 +79,13 @@ namespace GPlatesModel
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
-				boost::optional<integer_plate_id_type> reconstruction_plate_id_opt_,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> reconstruction_feature_time_opt_)
+				boost::optional<integer_plate_id_type> reconstruction_plate_id_,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_)
 		{
 			non_null_ptr_type ptr(
 					new ReconstructedFeatureGeometry(geometry_ptr, feature_handle,
-							property_iterator_, reconstruction_plate_id_opt_,
-							reconstruction_feature_time_opt_),
+							property_iterator_, reconstruction_plate_id_,
+							time_of_formation_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -123,14 +130,49 @@ namespace GPlatesModel
 		get_non_null_pointer();
 
 		/**
-		 * Access (a reference to) the feature whose reconstructed geometry this RFG
-		 * contains.
+		 * Return whether this RFG references @a that_feature_handle.
+		 *
+		 * This function will not throw.
+		 */
+		bool
+		references(
+				const FeatureHandle &that_feature_handle) const
+		{
+			return (feature_handle_ptr() == &that_feature_handle);
+		}
+
+		/**
+		 * Return the pointer to the FeatureHandle.
+		 *
+		 * The pointer returned will be NULL if this instance does not reference a
+		 * FeatureHandle; non-NULL otherwise.
+		 *
+		 * This function will not throw.
+		 */
+		FeatureHandle *
+		feature_handle_ptr() const
+		{
+			return WeakObserverType::publisher_ptr();
+		}
+
+		/**
+		 * Return whether this pointer is valid to be dereferenced (to obtain a
+		 * FeatureHandle).
+		 *
+		 * This function will not throw.
+		 */
+		bool
+		is_valid() const
+		{
+			return (feature_handle_ptr() != NULL);
+		}
+
+		/**
+		 * Return a weak-ref to the feature whose reconstructed geometry this RFG contains,
+		 * or an invalid weak-ref, if this pointer is not valid to be dereferenced.
 		 */
 		const FeatureHandle::weak_ref
-		feature_ref() const
-		{
-			return d_feature_ref;
-		}
+		get_feature_ref() const;
 
 		/**
 		 * Access the feature property which contained the reconstructed geometry.
@@ -157,14 +199,13 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return the cached feature time.
+		 * Return the cached time of formation of the feature.
 		 */
 		const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
-		reconstruction_feature_time() const
+		time_of_formation() const
 		{
-			return d_reconstruction_feature_time;
+			return d_time_of_formation;
 		}
-
 
 		/**
 		 * Accept a ReconstructionGeometryVisitor instance.
@@ -174,13 +215,16 @@ namespace GPlatesModel
 		accept_visitor(
 				ReconstructionGeometryVisitor &visitor);
 
+		/**
+		 * Accept a WeakObserverVisitor instance.
+		 */
+		virtual
+		void
+		accept_weak_observer_visitor(
+				WeakObserverVisitor<FeatureHandle> &visitor);
+
 	private:
 
-		/**
-		 * This is a weak-ref to the feature, of which this RFG is a reconstruction.
-		 */
-		FeatureHandle::weak_ref d_feature_ref;
-		
 		/**
 		 * This is an iterator to the (geometry-valued) property from which this RFG was
 		 * derived.
@@ -196,20 +240,23 @@ namespace GPlatesModel
 		 * still wants to "reconstruct" the geometries of the feature using the identity
 		 * rotation.
 		 *
-		 * We cache the plate ID here so that it can be extracted by drawing code for use
-		 * with on-screen colouring, and accessed quickly when RFGs are being queried.
+		 * The reconstruction plate ID is used when colouring feature geometries by plate
+		 * ID.  It's also of interest to a user who has clicked on the feature geometry.
 		 */
 		boost::optional<integer_plate_id_type> d_reconstruction_plate_id;
 
 		/**
-		 * We cache the feature time so that it can be extracted by drawing code
-		 * for use with on-screen colouring.
+		 * The cached time of formation of the feature, if it exists.
+		 *
+		 * This is cached so that it can be used to calculate the age of the feature at any
+		 * particular reconstruction time.  The age of the feature is used when colouring
+		 * feature geometries by age.
 		 */
-		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_reconstruction_feature_time;
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_formation;
 
 		/**
-		 * Instantiate a reconstructed feature geometry with an optional
-		 * reconstruction plate ID and an optional time of formation.
+		 * Instantiate a reconstructed feature geometry with an optional reconstruction
+		 * plate ID and an optional time of formation.
 		 *
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
@@ -218,13 +265,13 @@ namespace GPlatesModel
 				geometry_ptr_type geometry_ptr,
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_,
-				boost::optional<integer_plate_id_type> reconstruction_plate_id_opt_,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> reconstruction_feature_time_opt_):
+				boost::optional<integer_plate_id_type> reconstruction_plate_id_,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_):
 			ReconstructionGeometry(geometry_ptr),
-			d_feature_ref(feature_handle.reference()),
+			WeakObserverType(feature_handle),
 			d_property_iterator(property_iterator_),
-			d_reconstruction_plate_id(reconstruction_plate_id_opt_),
-			d_reconstruction_feature_time(reconstruction_feature_time_opt_)
+			d_reconstruction_plate_id(reconstruction_plate_id_),
+			d_time_of_formation(time_of_formation_)
 		{  }
 
 		/**
@@ -239,7 +286,7 @@ namespace GPlatesModel
 				FeatureHandle &feature_handle,
 				FeatureHandle::properties_iterator property_iterator_):
 			ReconstructionGeometry(geometry_ptr),
-			d_feature_ref(feature_handle.reference()),
+			WeakObserverType(feature_handle),
 			d_property_iterator(property_iterator_)
 		{  }
 
@@ -256,27 +303,6 @@ namespace GPlatesModel
 		operator=(
 				const ReconstructedFeatureGeometry &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const ReconstructedFeatureGeometry *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const ReconstructedFeatureGeometry *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_RECONSTRUCTEDFEATUREGEOMETRY_H

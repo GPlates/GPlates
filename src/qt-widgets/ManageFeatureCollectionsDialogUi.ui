@@ -55,7 +55,7 @@
      </column>
      <column>
       <property name="text" >
-       <string>In Use?</string>
+       <string>Layer Types</string>
       </property>
      </column>
      <column>

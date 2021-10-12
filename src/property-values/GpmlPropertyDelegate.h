@@ -28,11 +28,17 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLPROPERTYDELEGATE_H
 #define GPLATES_PROPERTYVALUES_GPMLPROPERTYDELEGATE_H
 
+#include "TemplateTypeParameterType.h"
+#include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "model/FeatureId.h"
 #include "model/PropertyName.h"
-#include "TemplateTypeParameterType.h"
 
+
+// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlPropertyDelegate, visit_gpml_property_delegate)
 
 namespace GPlatesPropertyValues {
 

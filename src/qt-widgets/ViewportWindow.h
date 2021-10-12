@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -45,6 +45,8 @@
 #include "AboutDialog.h"
 #include "AnimateDialog.h"
 #include "ApplicationState.h"
+#include "ExportAnimationDialog.h"
+#include "ExportReconstructedFeatureGeometryDialog.h"
 #include "FeaturePropertiesDialog.h"
 #include "GlobeCanvas.h"
 #include "LicenseDialog.h"
@@ -52,8 +54,10 @@
 #include "ReadErrorAccumulationDialog.h"
 #include "ReconstructionViewWidget.h"
 #include "SetCameraViewpointDialog.h"
+#include "SetProjectionDialog.h"
 #include "SetRasterSurfaceExtentDialog.h"
-#include "SpecifyFixedPlateDialog.h"
+#include "SpecifyAnchoredPlateIdDialog.h"
+#include "SpecifyTimeIncrementDialog.h"
 #include "TaskPanel.h"
 #include "TotalReconstructionPolesDialog.h"
 #include "ShapefileAttributeViewerDialog.h"
@@ -61,33 +65,33 @@
 
 #include "file-io/FeatureCollectionFileFormat.h"
 
+#include "gui/AnimationController.h"
+#include "gui/ChooseCanvasTool.h"
 #include "gui/ColourTable.h"
+#include "gui/EnableCanvasTool.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
-#include "gui/ChooseCanvasTool.h"
 
 #include "maths/GeometryOnSphere.h"
 
 #include "model/ModelInterface.h"
 
-
+#include "view-operations/ActiveGeometryOperation.h"
 #include "view-operations/GeometryBuilder.h"
-#include "view-operations/GeometryOperationRenderParameters.h"
 #include "view-operations/FocusedFeatureGeometryManipulator.h"
-#include "view-operations/GeometryBuilderToolTarget.h"
+#include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 
 namespace GPlatesGui
 {
-	class CanvasToolAdapter;
-	class CanvasToolChoice;
 	class ChooseCanvasTool;
-}
-
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryFactory;
+	class GlobeCanvasToolAdapter;
+	class GlobeCanvasToolChoice;
+	class MapCanvasToolAdapter;
+	class MapCanvasToolChoice;
+	class TopologySectionsTable;
+	class TopologySectionsContainer;
 }
 
 namespace GPlatesQtWidgets
@@ -130,11 +134,15 @@ namespace GPlatesQtWidgets
 		GlobeCanvas &
 		globe_canvas() const
 		{
-			return *d_canvas_ptr;
+			return *d_globe_canvas_ptr;
 		}
 
 		void
 		create_svg_file();
+
+		void
+		create_svg_file(
+				const QString &filename);
 
 	public slots:
 		
@@ -172,6 +180,50 @@ namespace GPlatesQtWidgets
 		pop_up_license_dialog();
 
 		void
+		enable_drag_globe_tool(
+				bool enable = true);
+
+		void
+		enable_zoom_globe_tool(
+				bool enable = true);
+
+		void
+		enable_click_geometry_tool(
+				bool enable = true);
+
+		void
+		enable_digitise_polyline_tool(
+				bool enable = true);
+
+		void
+		enable_digitise_multipoint_tool(
+				bool enable = true);
+
+		void
+		enable_digitise_polygon_tool(
+				bool enable = true);
+
+		void
+		enable_move_geometry_tool(
+				bool enable = true);
+
+		void
+		enable_move_vertex_tool(
+				bool enable = true);
+
+		void
+		enable_delete_vertex_tool(
+				bool enable = true);
+
+		void
+		enable_insert_vertex_tool(
+				bool enable = true);
+
+		void
+		enable_manipulate_pole_tool(
+				bool enable = true);
+
+		void
 		choose_drag_globe_tool();
 
 		void
@@ -196,6 +248,12 @@ namespace GPlatesQtWidgets
 		choose_move_vertex_tool();
 
 		void
+		choose_delete_vertex_tool();
+
+		void
+		choose_insert_vertex_tool();
+
+		void
 		choose_manipulate_pole_tool();
 
 		void
@@ -215,6 +273,24 @@ namespace GPlatesQtWidgets
 		choose_colour_by_age();
 
 		void
+		choose_clicked_geometry_table()
+		{
+			tabWidget->setCurrentWidget(tab_clicked);
+		}
+
+		void
+		choose_selected_feature_table()
+		{
+			tabWidget->setCurrentWidget(tab_selected);
+		}
+
+		void
+		choose_topology_sections_table()
+		{
+			tabWidget->setCurrentWidget(tab_topology);
+		}
+
+		void
 		pop_up_read_errors_dialog();
 
 		void
@@ -227,8 +303,17 @@ namespace GPlatesQtWidgets
 		}
 
 		void
+		pop_up_export_animation_dialog();
+
+		void
+		pop_up_export_reconstruction_dialog();
+
+		void
 		pop_up_total_reconstruction_poles_dialog();
 	
+		void
+		pop_up_animate_dialog();
+
 		void
 		open_raster();
 
@@ -238,6 +323,11 @@ namespace GPlatesQtWidgets
 		// FIXME: Should be a ViewState operation, or /somewhere/ better than this.
 		void
 		delete_focused_feature();
+
+		void
+		update_tools_and_status_message();
+
+
 
 	signals:
 		
@@ -379,6 +469,15 @@ namespace GPlatesQtWidgets
 		 * Temporarily enables or disables a reconstruction tree by adding or
 		 * removing it from the list of active reconstruction files. This does not
 		 * un-load the file.
+		 * Connects Signal/Slots for the map- and globe- canvas tools.
+		 */
+		void
+		connect_canvas_tools();
+		 
+
+		/**
+		 * Configures the ActionButtonBox inside the Feature tab of the Task Panel
+		 * with some of the QActions that ViewportWindow has on the menu bar.
 		 */
 		void
 		set_file_active_reconstruction(
@@ -392,8 +491,41 @@ namespace GPlatesQtWidgets
 		remap_shapefile_attributes(
 			GPlatesFileIO::FileInfo &file_info);
 
+		/**
+		 * ViewState accessor for getting at the active reconstructable files list.
+		 * Used by the ExportReconstructionDialog and
+		 * ExportReconstructedGeometryAnimationStrategy.
+		 */
+		const active_files_collection_type &
+		active_reconstructable_files() const
+		{
+			return d_active_reconstructable_files;
+		}
+
+		/**
+		 * ViewState accessor for getting at the active reconstruction files list.
+		 * Included for completeness.
+		 */
+		const active_files_collection_type &
+		active_reconstruction_files() const
+		{
+			return d_active_reconstruction_files;
+		}
+
+		/**
+		 * ViewState accessor for getting at the RenderedGeometryCollection.
+		 * Used by the ExportReconstructionDialog and
+		 * ExportReconstructedGeometryAnimationStrategy.
+		 */
+		const GPlatesViewOperations::RenderedGeometryCollection &
+		rendered_geometry_collection() const
+		{
+			return d_rendered_geom_collection;
+		}
+
+
 	private:
-		GPlatesModel::ModelInterface *d_model_ptr;
+		GPlatesModel::ModelInterface d_model;
 		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
 
 		//@{
@@ -409,11 +541,13 @@ namespace GPlatesQtWidgets
 
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
-		ReconstructionViewWidget d_reconstruction_view_widget;
 		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
+		GPlatesGui::AnimationController d_animation_controller;
 
+		ReconstructionViewWidget d_reconstruction_view_widget;
 		AboutDialog d_about_dialog;
 		AnimateDialog d_animate_dialog;
+		ExportAnimationDialog d_export_animation_dialog;
 		TotalReconstructionPolesDialog d_total_reconstruction_poles_dialog;
 		FeaturePropertiesDialog d_feature_properties_dialog;	// Depends on FeatureFocus.
 		LicenseDialog d_license_dialog;
@@ -421,23 +555,36 @@ namespace GPlatesQtWidgets
 		ReadErrorAccumulationDialog d_read_errors_dialog;
 		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
 		SetRasterSurfaceExtentDialog d_set_raster_surface_extent_dialog;
-		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
+		SpecifyAnchoredPlateIdDialog d_specify_anchored_plate_id_dialog;
+		ExportReconstructedFeatureGeometryDialog d_export_rfg_dialog;
+		SpecifyTimeIncrementDialog d_specify_time_increment_dialog;
 
-		bool d_animate_dialog_has_been_shown;
-		GlobeCanvas *d_canvas_ptr;
-		boost::scoped_ptr<GPlatesGui::CanvasToolChoice> d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
-		boost::scoped_ptr<GPlatesGui::CanvasToolAdapter> d_canvas_tool_adapter_ptr;
-		boost::scoped_ptr<GPlatesGui::ChooseCanvasTool> d_choose_canvas_tool;
+		SetProjectionDialog d_set_projection_dialog;
+
+		GlobeCanvas *d_globe_canvas_ptr;
+		
+		// Tool Adapter and Choice for the Globe. 
+		boost::scoped_ptr<GPlatesGui::GlobeCanvasToolChoice> d_globe_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
+		boost::scoped_ptr<GPlatesGui::GlobeCanvasToolAdapter> d_globe_canvas_tool_adapter_ptr;
+		GPlatesGui::ChooseCanvasTool d_choose_canvas_tool;
+		// Tool Adapter and Choice for the Map. 
+		boost::scoped_ptr<GPlatesGui::MapCanvasToolAdapter> d_map_canvas_tool_adapter_ptr;
+		boost::scoped_ptr<GPlatesGui::MapCanvasToolChoice> d_map_canvas_tool_choice_ptr;
+
 		GPlatesViewOperations::GeometryBuilder d_digitise_geometry_builder;
 		GPlatesViewOperations::GeometryBuilder d_focused_feature_geometry_builder;
-		GPlatesViewOperations::GeometryOperationRenderParameters d_geom_operation_render_parameters;
-		GPlatesViewOperations::GeometryBuilderToolTarget d_geom_builder_tool_target;
+		GPlatesViewOperations::GeometryOperationTarget d_geometry_operation_target;
+		GPlatesViewOperations::ActiveGeometryOperation d_active_geometry_operation;
+		GPlatesGui::EnableCanvasTool d_enable_canvas_tool;
 		GPlatesViewOperations::FocusedFeatureGeometryManipulator d_focused_feature_geom_manipulator;
 
 		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
 		ShapefileAttributeViewerDialog d_shapefile_attribute_viewer_dialog;
 
-		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
+		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.		
+
+		boost::scoped_ptr<GPlatesGui::TopologySectionsContainer> d_topology_sections_container_ptr;	// The data behind the Topology Sections table.
+		GPlatesGui::TopologySectionsTable *d_topology_sections_table_ptr;	// Manages the 'Topology Sections' table, and is parented to it - Qt will clean up when the table disappears!
 
 		//  map a time value to a raster filename
 		QMap<int,QString> d_time_dependent_raster_map;
@@ -470,14 +617,6 @@ namespace GPlatesQtWidgets
 		void
 		set_up_dock_context_menus();
 
-		/**
-		 * Returns rendered geometry factory.
-		 *
-		 * Since this is canvas-specific it could be moved to a base Canvas interface.
-		 */
-		GPlatesViewOperations::RenderedGeometryFactory &
-		get_rendered_geometry_factory();
-
 		void
 		uncheck_all_tools();
 
@@ -496,14 +635,11 @@ namespace GPlatesQtWidgets
 
 	private slots:
 		void
-		pop_up_specify_fixed_plate_dialog();
+		pop_up_specify_anchored_plate_id_dialog();
 
 		void
 		pop_up_set_camera_viewpoint_dialog();
 		
-		void
-		pop_up_animate_dialog();
-
 		void
 		pop_up_about_dialog();
 
@@ -524,6 +660,30 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_shapefile_attribute_viewer_dialog();
+
+		void
+		handle_move_camera_up();
+
+		void
+		handle_move_camera_down();
+
+		void
+		handle_move_camera_left();
+
+		void
+		handle_move_camera_right();
+
+		void
+		handle_rotate_camera_clockwise();
+
+		void
+		handle_rotate_camera_anticlockwise();
+
+		void
+		handle_reset_camera_orientation();
+
+		void
+		pop_up_set_projection_dialog();
 
 	protected:
 	

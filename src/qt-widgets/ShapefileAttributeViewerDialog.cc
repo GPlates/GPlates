@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -35,7 +35,7 @@ namespace
 {
 	bool
 	feature_collection_contains_shapefile_attributes(
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection)
+			const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 	{
 
 		if (!feature_collection.is_valid())
@@ -53,9 +53,7 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
 
 			GPlatesFeatureVisitors::KeyValueDictionaryFinder finder(shapefile_attribute_property_name);
-
-			(*iter)->accept_visitor(finder);
-
+			finder.visit_feature(iter);
 			if (finder.found_key_value_dictionaries_begin() != finder.found_key_value_dictionaries_end())
 			{	
 				return true;
@@ -97,16 +95,14 @@ namespace
 
 	void
 	fill_header_from_feature(
-		GPlatesModel::FeatureHandle::const_weak_ref feature_handle,
+			const GPlatesModel::FeatureHandle::weak_ref &feature,
 		QTableWidget *table_widget)
 	{
 		static const GPlatesModel::PropertyName shapefile_attribute_property_name =
 			GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
 
 		GPlatesFeatureVisitors::KeyValueDictionaryFinder finder(shapefile_attribute_property_name);
-
-		feature_handle->accept_visitor(finder);
-
+		finder.visit_feature(feature);
 		if (finder.found_key_value_dictionaries_begin() != finder.found_key_value_dictionaries_end())
 		{
 			// We got a set of shapefile attributes. Set the horizontal header fields from the key values.
@@ -136,17 +132,15 @@ namespace
 
 	void
 	fill_row_from_feature(
-		GPlatesModel::FeatureHandle::const_weak_ref feature_handle,
-		QTableWidget* table_widget,
-		int row)
+			const GPlatesModel::FeatureHandle::weak_ref &feature,
+			QTableWidget* table_widget,
+			int row)
 	{
 		static const GPlatesModel::PropertyName shapefile_attribute_property_name =
 			GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
 
 		GPlatesFeatureVisitors::KeyValueDictionaryFinder finder(shapefile_attribute_property_name);
-
-		feature_handle->accept_visitor(finder);
-
+		finder.visit_feature(feature);
 		if (finder.found_key_value_dictionaries_begin() != finder.found_key_value_dictionaries_end())
 		{
 			if (finder.number_of_found_dictionaries() > 1)
@@ -184,13 +178,13 @@ namespace
 
 	void
 	fill_table_from_feature_collection(
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection,
-		QTableWidget *table_widget)
+			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+			QTableWidget *table_widget)
 	{
 
 		if (feature_collection.is_valid())
 		{
-			GPlatesModel::FeatureCollectionHandle::features_const_iterator
+			GPlatesModel::FeatureCollectionHandle::features_iterator
 				iter = feature_collection->features_begin(),
 				end = feature_collection->features_end();
 
@@ -282,14 +276,14 @@ GPlatesQtWidgets::ShapefileAttributeViewerDialog::update_table()
 
 	if (index >= 0 && index < static_cast<int>(d_fileinfo_vector.size()))
 	{
-		const GPlatesFileIO::FileInfo info = d_fileinfo_vector.at(index);
+		GPlatesFileIO::FileInfo info = d_fileinfo_vector.at(index);
 
 		//std::cerr << index << " " << info.get_qfileinfo().fileName().toStdString().c_str() << std::endl;
 
 		// Check that the feature collection exists.
 		if (info.get_feature_collection())
 		{
-			GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
+			GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 				*info.get_feature_collection();
 			fill_table_from_feature_collection(feature_collection,table_attributes);
 		}

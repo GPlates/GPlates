@@ -213,8 +213,10 @@ namespace
 		static const GPlatesPropertyValues::TemplateTypeParameterType string_type =
 			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string");
 
-		if ( ! (target && (*target)->attributes_empty() 
-				&& (((*target)->number_of_children() == 1)) || (type == string_type) )) {
+		if ( ! (target 
+				&& (*target)->attributes_empty() 
+				&& ( (*target)->number_of_children() == 1 || type == string_type)
+				)) {
 
 			// Can't find target value!
 			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::BadOrMissingTargetForValueType,

@@ -33,6 +33,7 @@
 #include <vector>
 #include <utility>
 #include <cmath>
+#include <iostream>
 #include <boost/none.hpp>
 
 #include <QLinearGradient>
@@ -42,9 +43,9 @@
 #include <QSizePolicy>
 
 #include "ViewportWindow.h"  // Remove this when there is a ViewState class.
-#include "feature-visitors/PlateIdFinder.h"
 #include "gui/ProximityTests.h"
 #include "gui/PlatesColourTable.h"
+#include "gui/SvgExport.h"
 #include "gui/Texture.h"
 
 #include "maths/types.h"
@@ -189,8 +190,9 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
+	d_rendered_geom_collection(&rendered_geom_collection),
 	d_globe(rendered_geom_collection),
-	d_geometry_focus_highlight(d_rendered_geom_factory, rendered_geom_collection)
+	d_geometry_focus_highlight(rendered_geom_collection)
 {
 	// QWidget::setMouseTracking:
 	//   If mouse tracking is disabled (the default), the widget only receives mouse move
@@ -220,11 +222,10 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		this,
 		SLOT(update_canvas()));
 
-	QObject::connect(&d_viewport_zoom, SIGNAL(zoom_changed()),
-			this, SLOT(handle_zoom_change()));
 	handle_zoom_change();
 
 	setAttribute(Qt::WA_NoSystemBackground);
+
 }
 
 
@@ -318,7 +319,7 @@ GPlatesQtWidgets::GlobeCanvas::update_canvas()
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::draw_vector_output()
+GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 {
 
 	try {
@@ -332,13 +333,11 @@ GPlatesQtWidgets::GlobeCanvas::draw_vector_output()
 		glRotatef(-90.0, 1.0, 0.0, 0.0);
 		glRotatef(-90.0, 0.0, 0.0, 1.0);
 
-		// FIXME: Globe uses wrong naming convention for methods.
-		d_globe.paint_vector_output();
+		const double viewport_zoom_factor = viewport_zoom().zoom_factor();
+		d_globe.paint_vector_output(viewport_zoom_factor);
 	}
-	catch (const GPlatesGlobal::Exception &){
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-
+	catch (const GPlatesGlobal::Exception &e){
+			std::cerr << e << std::endl;
 	}
 }
 
@@ -394,11 +393,16 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 {
 	glEnable(GL_DEPTH_TEST);
 
+	// Right now the only filled polygons we draw are rendered arrow heads and
+	// we draw both sides of polygons for now to avoid having to close the 3d mesh
+	// used to render the arrow head.
+	// This is the default - just making it explicit.
+	glDisable(GL_CULL_FACE);
+
 	// FIXME: Enable polygon offset here or in Globe?
 	
 	clear_canvas();
 
-	d_globe.initialise_texture();
 }
 
 
@@ -409,11 +413,8 @@ GPlatesQtWidgets::GlobeCanvas::resizeGL(
 {
 	try {
 		set_view();
-	} catch (const GPlatesGlobal::Exception &){
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-
-		// FIXME: Use new exception system which doesn't involve strings.
+	} catch (const GPlatesGlobal::Exception &e){
+			std::cerr << e << std::endl;
 	}
 }
 
@@ -438,14 +439,11 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		glRotatef(-90.0, 1.0, 0.0, 0.0);
 		glRotatef(-90.0, 0.0, 0.0, 1.0);
 
-		// FIXME: Globe uses wrong naming convention for methods.
-		d_globe.paint();
+		const double viewport_zoom_factor = viewport_zoom().zoom_factor();
+		d_globe.paint(viewport_zoom_factor);
 
-	} catch (const GPlatesGlobal::Exception &){
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-
-		// FIXME: Use new exception system which doesn't involve strings.
+	} catch (const GPlatesGlobal::Exception &e){
+			std::cerr << e << std::endl;
 	}
 
 }
@@ -472,13 +470,12 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 
 }
 
-
 void
 GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		QMouseEvent *move_event) 
 {
 	update_mouse_pointer_pos(move_event);
-
+	
 	if (d_mouse_press_info) {
 		// Call it a drag if EITHER:
 		//  * the mouse moved at least 2 pixels in one direction and 1 pixel in the other;
@@ -504,6 +501,21 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 					d_mouse_press_info->d_button,
 					d_mouse_press_info->d_modifiers);
 		}
+	}
+	else
+	{
+		//
+		// The mouse has moved but the left mouse button is not currently pressed.
+		// This could mean no mouse buttons are currently pressed or it could mean a
+		// button other than the left mouse button is currently pressed.
+		// Either way it is an mouse movement that is not currently invoking a
+		// canvas tool operation.
+		//
+		emit mouse_moved_without_drag(
+				virtual_mouse_pointer_pos_on_globe(),
+				d_globe.Orient(virtual_mouse_pointer_pos_on_globe()),
+				mouse_pointer_is_on_globe(),
+				d_globe.Orient(centre_of_viewport()));
 	}
 }
 
@@ -568,9 +580,10 @@ void GPlatesQtWidgets::GlobeCanvas::wheelEvent(
 void
 GPlatesQtWidgets::GlobeCanvas::handle_zoom_change() 
 {
-	emit zoom_changed(d_viewport_zoom.zoom_percent());
 
 	set_view();
+
+	d_rendered_geom_collection->set_viewport_zoom_factor(d_viewport_zoom.zoom_factor());
 
 	// QWidget::update:
 	//   Updates the widget unless updates are disabled or the widget is hidden.
@@ -713,6 +726,7 @@ GPlatesQtWidgets::GlobeCanvas::toggle_raster_image()
 	update_canvas();
 }
 
+
 void
 GPlatesQtWidgets::GlobeCanvas::enable_raster_display()
 {
@@ -731,7 +745,7 @@ GPlatesQtWidgets::GlobeCanvas::disable_raster_display()
 void
 GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
 {
-// This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Q overpainting
+// This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Qt overpainting
 //  ( http://doc.trolltech.com/4.3/opengl-overpainting.html )
 
 	try {
@@ -776,11 +790,8 @@ GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
 
 		painter.end();
 
-	} catch (const GPlatesGlobal::Exception &){
-		// The argument name in the above expression was removed to
-		// prevent "unreferenced local variable" compiler warnings under MSVC
-
-		// FIXME: Use new exception system which doesn't involve strings.
+	} catch (const GPlatesGlobal::Exception &e){
+			std::cerr << e << std::endl;
 	}
 
 }
@@ -858,4 +869,88 @@ GPlatesQtWidgets::GlobeCanvas::draw_colour_legend(
 			med_string);
 	painter->drawText(bar_rect.right()+5, bar_rect.top()+2, max_string);
 
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::create_svg_output(
+	QString filename)
+{
+
+	GPlatesGui::SvgExport::create_svg_output(filename,this);
+
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
+	const GPlatesMaths::LatLonPoint &desired_centre)
+{
+
+	static const GPlatesMaths::PointOnSphere centre_of_canvas =
+			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
+
+	GPlatesMaths::PointOnSphere oriented_desired_centre = 
+	d_globe.orientation().orient_point(
+		GPlatesMaths::make_point_on_sphere(desired_centre));
+	d_globe.SetNewHandlePos(oriented_desired_centre);
+	d_globe.UpdateHandlePos(centre_of_canvas);
+			
+	d_globe.orientation().orient_poles_vertically();
+	
+	update_canvas();
+
+}
+
+boost::optional<GPlatesMaths::LatLonPoint>
+GPlatesQtWidgets::GlobeCanvas::camera_llp()
+{
+// This returns a boost::optional for consistency with the virtual function. The globe
+// should always return a valid camera llp. 
+	static const GPlatesMaths::PointOnSphere centre_of_canvas =
+			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
+
+	GPlatesMaths::PointOnSphere oriented_centre = globe().Orient(centre_of_canvas);
+	return GPlatesMaths::make_lat_lon_point(oriented_centre);
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_up()
+{
+	globe().orientation().move_camera_up();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_down()
+{
+	globe().orientation().move_camera_down();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_left()
+{
+	globe().orientation().move_camera_left();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_right()
+{
+	globe().orientation().move_camera_right();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::rotate_camera_clockwise()
+{
+	globe().orientation().rotate_camera_clockwise();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::rotate_camera_anticlockwise()
+{
+	globe().orientation().rotate_camera_anticlockwise();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
+{
+	globe().orientation().orient_poles_vertically();
 }

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -32,7 +32,7 @@
 
 #include "ShapefileAttributeFinder.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
 
 #include "property-values/GmlTimeInstant.h"
@@ -65,28 +65,18 @@ namespace
 }
 
 
-void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle)
+bool
+GPlatesFeatureVisitors::ShapefileAttributeFinder::initialise_pre_property_values(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	// Visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-}
-
-
-void
-GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
-{
-	
-	QString property_name = GPlatesUtils::make_qstring_from_icu_string(inline_property_container.property_name().get_name());
+	// FIXME:  Why are we comparing QString to string literal rather than PropertyName to (static) PropertyName?
+	QString property_name = GPlatesUtils::make_qstring_from_icu_string(top_level_property_inline.property_name().get_name());
 
 	if (property_name != "shapefileAttributes") 
 	{
-		return;
+		return false;
 	}
-	
-	visit_property_values(inline_property_container);
+	return true;
 }
 
 

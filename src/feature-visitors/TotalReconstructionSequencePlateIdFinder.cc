@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,7 @@
 
 #include "TotalReconstructionSequencePlateIdFinder.h"
 
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
 
@@ -41,15 +41,6 @@ GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::TotalReconstru
 			GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame"));
 	d_property_names_to_allow.push_back(
 			GPlatesModel::PropertyName::create_gpml("movingReferenceFrame"));
-}
-
-
-void
-GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Now visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
 }
 
 
@@ -66,21 +57,19 @@ namespace
 }
 
 
-void
-GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
+bool
+GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::initialise_pre_property_values(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
 		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
 			// The current property name is not allowed.
-			return;
+			return false;
 		}
 	}
-	d_most_recent_propname_read = curr_prop_name;
-
-	visit_property_values(inline_property_container);
+	return true;
 }
 
 
@@ -102,10 +91,10 @@ GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::visit_gpml_pla
 			GPlatesModel::PropertyName::create_gpml("movingReferenceFrame");
 
 	// Note that we're going to assume that we've read a property name...
-	if (*d_most_recent_propname_read == fixed_ref_frame_property_name) {
+	if (*current_top_level_propname() == fixed_ref_frame_property_name) {
 		// We're dealing with the fixed ref-frame of the Total Reconstruction Sequence.
 		d_fixed_ref_frame_plate_id = gpml_plate_id.value();
-	} else if (*d_most_recent_propname_read == moving_ref_frame_property_name) {
+	} else if (*current_top_level_propname() == moving_ref_frame_property_name) {
 		// We're dealing with the moving ref-frame of the Total Reconstruction Sequence.
 		d_moving_ref_frame_plate_id = gpml_plate_id.value();
 	}
@@ -115,7 +104,6 @@ GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::visit_gpml_pla
 void
 GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::reset()
 {
-	d_most_recent_propname_read = boost::none;
 	d_fixed_ref_frame_plate_id = boost::none;
 	d_moving_ref_frame_plate_id = boost::none;
 }

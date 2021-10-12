@@ -2,12 +2,12 @@
 
 /**
  * \file
- * Contains the definitions of the member functions of the class CallStackTracker.
+ * Contains the definitions of the member functions of the class CallStack.
  *
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,21 +29,40 @@
 #include "CallStackTracker.h"
 
 
-GPlatesUtils::CallStackTracker::CallStackTracker(
-		const char *filename,
-		int line_num):
-	d_filename(filename),
-	d_line_num(line_num)
+void
+GPlatesUtils::CallStack::push(
+		const Trace &trace)
 {
-	std::cerr << "+ " << this << ": line " << d_line_num << " in file " << d_filename << std::endl;
+	d_call_stack.push_back(trace);
 }
 
 
-GPlatesUtils::CallStackTracker::~CallStackTracker()
+void
+GPlatesUtils::CallStack::pop()
 {
-	// Don't let any exceptions escape from the destructor.
-	try {
-		std::cerr << "- " << this << ": line " << d_line_num << " in file " << d_filename << std::endl;
-	} catch (...) {
+	d_call_stack.pop_back();
+}
+
+
+void
+GPlatesUtils::CallStack::write_call_stack_trace(
+		std::ostream &output)
+{
+	output << "Call stack trace:" << std::endl;
+
+	GPlatesUtils::CallStack::trace_const_iterator trace_iter;
+	for (trace_iter = call_stack_begin();
+		trace_iter != call_stack_end();
+		++trace_iter)
+	{
+		const GPlatesUtils::CallStack::Trace &trace = *trace_iter;
+
+		output
+			<< '('
+			<< trace.get_filename()
+			<< ", "
+			<< trace.get_line_num()
+			<< ')'
+			<< std::endl;
 	}
 }

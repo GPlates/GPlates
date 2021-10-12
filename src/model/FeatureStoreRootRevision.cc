@@ -42,7 +42,7 @@ GPlatesModel::FeatureStoreRootRevision::append_feature_collection(
 
 void
 GPlatesModel::FeatureStoreRootRevision::remove_feature_collection(
-		feature_collection_container_type::size_type index,
+		container_size_type index,
 		DummyTransactionHandle &transaction)
 {
 	// FIXME:  Use the TransactionHandle properly to perform revisioning.

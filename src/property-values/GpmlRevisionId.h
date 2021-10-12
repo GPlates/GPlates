@@ -28,9 +28,15 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLREVISIONID_H
 #define GPLATES_PROPERTYVALUES_GPMLREVISIONID_H
 
+#include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "model/RevisionId.h"
 
+
+// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlRevisionId, visit_gpml_revision_id)
 
 namespace GPlatesPropertyValues {
 

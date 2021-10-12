@@ -41,6 +41,7 @@
 #include "ViewportWindow.h"
 #include "qt-widgets/ApplicationState.h"
 #include "model/types.h"
+#include "model/Model.h"
 #include "model/PropertyName.h"
 #include "model/FeatureType.h"
 #include "model/FeatureCollectionHandle.h"
@@ -421,7 +422,18 @@ namespace
 		for ( ; list_it != list_end; ++list_it) {
 			list_widget.addItem(new FeatureTypeItem(*list_it));
 		}
-		list_widget.setCurrentRow(0);
+
+		// Set the default field to UnclassifiedFeature. 
+		QList<QListWidgetItem*> unclassified_items = list_widget.findItems(
+			QString("gpml:UnclassifiedFeature"),Qt::MatchFixedString);
+		if (unclassified_items.isEmpty())
+		{
+			list_widget.setCurrentRow(0);
+		}
+		else
+		{
+			list_widget.setCurrentItem(unclassified_items.first());
+		}
 	}
 
 	/**
@@ -805,7 +817,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		collection = collection_item->get_collection();
 	}
 	// Actually create the Feature!
-	GPlatesModel::FeatureHandle::weak_ref feature = d_model_ptr->create_feature(type, collection);
+	GPlatesModel::FeatureHandle::weak_ref feature = (*d_model_ptr)->create_feature(type, collection);
 	
 
 	// Add a (possibly ConstantValue-wrapped, see GeometricPropertyValueConstructor)

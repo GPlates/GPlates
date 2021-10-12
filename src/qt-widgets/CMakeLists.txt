@@ -21,6 +21,9 @@ set(srcs
     AddPropertyDialog.cc
     AddPropertyDialog.h
     AddPropertyDialogUi.ui
+    AnimateControlWidget.cc
+    AnimateControlWidget.h
+    AnimateControlWidgetUi.ui
     AnimateDialog.cc
     AnimateDialog.h
     AnimateDialogUi.ui
@@ -29,10 +32,12 @@ set(srcs
     ApplyReconstructionPoleAdjustmentDialog.cc
     ApplyReconstructionPoleAdjustmentDialog.h
     ApplyReconstructionPoleAdjustmentDialogUi.ui
+    ConfigureExportParametersDialog.cc
+    ConfigureExportParametersDialog.h
+    ConfigureExportParametersDialogUi.ui
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
-    DigitisationUndoParadoxException.h
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
@@ -85,9 +90,14 @@ set(srcs
     EditWidgetChooser.h
     EditWidgetGroupBox.cc
     EditWidgetGroupBox.h
+    ExportAnimationDialog.cc
+    ExportAnimationDialog.h
+    ExportAnimationDialogUi.ui
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
+    ExportReconstructedFeatureGeometryDialog.cc
+    ExportReconstructedFeatureGeometryDialog.h
     FeaturePropertiesDialog.cc
     FeaturePropertiesDialog.h
     FeaturePropertiesDialogUi.ui
@@ -102,6 +112,8 @@ set(srcs
     InformationDialog.cc
     InformationDialog.h
     InformationDialogUi.ui
+    InsertionPointWidget.h
+    InsertionPointWidgetUi.ui
     InvalidPropertyValueException.h
     LatLonCoordinatesTable.cc
     LatLonCoordinatesTable.h
@@ -116,10 +128,17 @@ set(srcs
     ManageFeatureCollectionsStateWidget.cc
     ManageFeatureCollectionsStateWidget.h
     ManageFeatureCollectionsStateWidgetUi.ui
-    MoveVertexWidget.cc
-    MoveVertexWidget.h
-    MoveVertexWidgetUi.ui
+    MapCanvas.cc
+    MapCanvas.h
+    MapView.cc
+    MapView.h
+    ModifyGeometryWidget.cc
+    ModifyGeometryWidget.h
+    ModifyGeometryWidgetUi.ui
     NoActiveEditWidgetException.h
+    ProjectionControlWidget.cc
+    ProjectionControlWidget.h
+    ProjectionControlWidgetUi.ui
     PropertyValueNotSupportedException.h
     QueryFeaturePropertiesWidget.cc
     QueryFeaturePropertiesWidget.h
@@ -133,9 +152,13 @@ set(srcs
     ReconstructionViewWidget.cc
     ReconstructionViewWidget.h
     ReconstructionViewWidgetUi.ui
+    SceneView.h
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui
+    SetProjectionDialog.cc
+    SetProjectionDialog.h
+    SetProjectionDialogUi.ui
     SetRasterSurfaceExtentDialog.cc
     SetRasterSurfaceExtentDialog.h
     SetRasterSurfaceExtentDialogUi.ui
@@ -153,12 +176,18 @@ set(srcs
     ShapefileAttributeWidgetUi.ui
     ShapefilePropertyMapper.cc
     ShapefilePropertyMapper.h
-    SpecifyFixedPlateDialog.cc
-    SpecifyFixedPlateDialog.h
-    SpecifyFixedPlateDialogUi.ui
+    SpecifyAnchoredPlateIdDialog.cc
+    SpecifyAnchoredPlateIdDialog.h
+    SpecifyAnchoredPlateIdDialogUi.ui
+    SpecifyTimeIncrementDialog.cc
+    SpecifyTimeIncrementDialog.h
+    SpecifyTimeIncrementDialogUi.ui
     TaskPanel.cc
     TaskPanel.h
     TaskPanelUi.ui
+    TimeControlWidget.cc
+    TimeControlWidget.h
+    TimeControlWidgetUi.ui
     TotalReconstructionPolesDialog.cc
     TotalReconstructionPolesDialog.h
     TotalReconstructionPolesDialogUi.ui
@@ -169,6 +198,10 @@ set(srcs
     ViewportWindow.cc
     ViewportWindow.h
     ViewportWindowUi.ui
+    ZoomControlWidget.cc
+    ZoomControlWidget.h
+    ZoomControlWidgetUi.ui
+    ZoomSliderWidget.cc
     ZoomSliderWidget.h
 )
 

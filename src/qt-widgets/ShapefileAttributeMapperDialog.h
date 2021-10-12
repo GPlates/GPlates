@@ -44,6 +44,7 @@ namespace GPlatesQtWidgets
 		
 	public:
 		
+		explicit
 		ShapefileAttributeMapperDialog(
 				QWidget *parent_ = NULL);
 

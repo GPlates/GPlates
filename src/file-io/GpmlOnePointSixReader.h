@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,12 +30,14 @@
 
 #include "FileInfo.h"
 #include "ReadErrorAccumulation.h"
-#include "ExternalProgram.h"
 #include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
 
 namespace GPlatesFileIO
 {
+	class ExternalProgram;
+
+
 	class GpmlOnePointSixReader
 	{
 	public:
@@ -46,8 +48,13 @@ namespace GPlatesFileIO
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors,
 				bool use_gzip = false);
-		
-		static const ExternalProgram s_gunzip_program;
+
+		static
+		const ExternalProgram &
+		gunzip_program();
+
+	private:
+		static const ExternalProgram *s_gunzip_program;
 	};
 }
 

@@ -122,27 +122,6 @@ namespace GPlatesModel
 		operator=(
 				const TemporaryGeometry &);
 	};
-
-
-	inline
-	void
-	intrusive_ptr_add_ref(
-			const TemporaryGeometry *p)
-	{
-		p->increment_ref_count();
-	}
-
-
-	inline
-	void
-	intrusive_ptr_release(
-			const TemporaryGeometry *p)
-	{
-		if (p->decrement_ref_count() == 0) {
-			delete p;
-		}
-	}
-
 }
 
 #endif  // GPLATES_MODEL_TEMPORARYGEOMETRY_H

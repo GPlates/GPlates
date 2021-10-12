@@ -13,6 +13,7 @@
 #ifdef _MSC_VER
 #include <cfloat>
 #define isnan _isnan
+#define isinf !_finite
 #endif // _MSC_VER
 
 #ifdef isnan
@@ -38,5 +39,26 @@ namespace std
     isnan(Tp f) { return std_impl::capture_isnan(f); }
 }
 #endif // ifdef isnan
+
+#ifdef isinf
+
+namespace std_impl
+{
+  template<typename Tp>
+    inline int
+    capture_isinf(Tp f) { return isinf(f); }
+}
+
+#undef isinf
+
+namespace std
+{
+  template<typename Tp>
+    inline int
+    isinf(Tp f) { return std_impl::capture_isinf(f); }
+}
+
+
+#endif // ifdef isinf
 
 #endif // CMATH_EXTENDED

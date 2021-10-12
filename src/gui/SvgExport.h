@@ -28,16 +28,20 @@
 #ifndef GPLATES_GUI_SVGEXPORT_H
 #define GPLATES_GUI_SVGEXPORT_H
 
+#include "qt-widgets/SceneView.h"
+
 namespace GPlatesGui {
+
 
 	class SvgExport
 	{
 	public:
+
 		static
-		bool 
+		bool
 		create_svg_output(
-			QString filename,
-			GPlatesQtWidgets::GlobeCanvas *d_canvas_ptr);
+			QString filename, 
+			GPlatesQtWidgets::SceneView *d_scene_view_ptr);
 
 	private:
 

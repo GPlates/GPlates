@@ -63,18 +63,19 @@ GPlatesGui::NurbsRenderer::NurbsRenderer()
 	if (d_nurbs_ptr == 0) {
 
 		// not enough memory to allocate object
-		throw OpenGLBadAllocException(
+		throw OpenGLBadAllocException(GPLATES_EXCEPTION_SOURCE,
 		 "Not enough memory for OpenGL to create new NURBS renderer.");
 	}
-	// Previously, the type-parameter of the cast was 'void (*)()'.
-	// On Mac OS X, the compiler complained, so it was changed to this.
-	// Update: Fixed the prototype of the NurbsError callback function 
-	// and removed the varargs ellipsis from the cast type.
-#if 1
+
+#if !defined(__APPLE__) || (MAC_OSX_MAJOR_VERSION >= 10 && MAC_OSX_MINOR_VERSION > 4)
+	// All non apple platforms use this path.
+	// Also Mac OSX version 10.5 and greater use this code path.
 	gluNurbsCallback(d_nurbs_ptr, GLU_ERROR, &NurbsError);
 #else
 	// A few OS X platforms need this instead - could be OS X 10.4 or
 	// gcc 4.0.0 or PowerPC Macs ?
+	// Update: it seems after many installations on different Macs that
+	// Mac OSX versions 10.4 require this code path.
 	gluNurbsCallback(d_nurbs_ptr, GLU_ERROR,
 		reinterpret_cast< GLvoid (__CONVENTION__ *)(...) >(&NurbsError));
 #endif
@@ -95,10 +96,11 @@ namespace
 	 */
 	GPlatesMaths::UnitVector3D
 	mid_point_of(
-			const GPlatesMaths::GreatCircleArc &arc)
+			const GPlatesMaths::UnitVector3D &start,
+			const GPlatesMaths::UnitVector3D &end)
 	{
-		GPlatesMaths::Vector3D start_pt = GPlatesMaths::Vector3D(arc.start_point().position_vector());
-		GPlatesMaths::Vector3D end_pt = GPlatesMaths::Vector3D(arc.end_point().position_vector());
+		const GPlatesMaths::Vector3D start_pt(start);
+		const GPlatesMaths::Vector3D end_pt(end);
 
 		return GPlatesMaths::Vector3D(start_pt + 0.5*(end_pt - start_pt)).get_normalisation();
 	}
@@ -140,14 +142,40 @@ namespace
 
 void
 GPlatesGui::NurbsRenderer::draw_great_circle_arc(
+		const GPlatesMaths::PointOnSphere &start,
+		const GPlatesMaths::PointOnSphere &end)
+{
+	const GPlatesMaths::UnitVector3D &start_pt = start.position_vector();
+	const GPlatesMaths::UnitVector3D &end_pt = end.position_vector();
+
+	const GPlatesMaths::real_t dot_of_endpoints = dot(start_pt, end_pt);
+
+	draw_great_circle_arc(start_pt, end_pt, dot_of_endpoints);
+}
+
+
+void
+GPlatesGui::NurbsRenderer::draw_great_circle_arc(
 		const GPlatesMaths::GreatCircleArc &arc)
 {
 	const GPlatesMaths::UnitVector3D &start_pt = arc.start_point().position_vector();
 	const GPlatesMaths::UnitVector3D &end_pt = arc.end_point().position_vector();
 
-	if (arc.dot_of_endpoints() < 0.0) {
+	const GPlatesMaths::real_t dot_of_endpoints = dot(start_pt, end_pt);
+
+	draw_great_circle_arc(start_pt, end_pt, dot_of_endpoints);
+}
+
+
+void
+GPlatesGui::NurbsRenderer::draw_great_circle_arc(
+		const GPlatesMaths::UnitVector3D &start_pt,
+		const GPlatesMaths::UnitVector3D &end_pt,
+		const GPlatesMaths::real_t &dot_of_endpoints)
+{
+	if (dot_of_endpoints < 0.0) {
 		// arc is bigger than 90 degrees.
-		GPlatesMaths::UnitVector3D mid_pt = mid_point_of(arc);
+		GPlatesMaths::UnitVector3D mid_pt = mid_point_of(start_pt, end_pt);
 
 		// A great circle arc is always less than 180 degress, so if we split it
 		// into two pieces, we definitely get two arcs of less than 90 degress.

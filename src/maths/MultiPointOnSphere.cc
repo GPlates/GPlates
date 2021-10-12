@@ -42,7 +42,7 @@ GPlatesMaths::MultiPointOnSphere::s_min_num_collection_points = 1;
 const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
 GPlatesMaths::MultiPointOnSphere::get_non_null_pointer() const
 {
-	if (ref_count() == 0) {
+	if (get_reference_count() == 0) {
 		// How did this happen?  This should not have happened.
 		//
 		// Presumably, the programmer obtained the raw MultiPointOnSphere pointer from
@@ -51,7 +51,8 @@ GPlatesMaths::MultiPointOnSphere::get_non_null_pointer() const
 		// pointers have expired and the instance has actually been deleted.
 		//
 		// Regardless of how this happened, this is an error.
-		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(this, __FILE__, __LINE__);
+		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(GPLATES_EXCEPTION_SOURCE,
+				this);
 	} else {
 		// This instance is already managed by intrusive-pointers, so we can simply return
 		// another intrusive-pointer to this instance.

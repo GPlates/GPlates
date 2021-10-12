@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,9 +29,8 @@
 #include <algorithm>
 
 #include "FeatureColourTable.h"
-#include "model/WeakReference.h"
-#include "model/FeatureType.h"
-#include "model/FeatureHandle.h"
+#include "model/ReconstructedFeatureGeometry.h"
+
 
 GPlatesGui::FeatureColourTable *
 GPlatesGui::FeatureColourTable::Instance()
@@ -44,137 +43,139 @@ GPlatesGui::FeatureColourTable::Instance()
 	return d_instance;
 }
 
+
 GPlatesGui::FeatureColourTable::FeatureColourTable()
 {
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary") ] =
-			GPlatesGui::Colour::BLACK;
+			GPlatesGui::Colour::get_black();
 
 	// Reconstruction features.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence") ] = 
-			GPlatesGui::Colour::AQUA;
+			GPlatesGui::Colour::get_aqua();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("AbsoluteReferenceFrame") ] = 
-			GPlatesGui::Colour::RED;
+			GPlatesGui::Colour::get_red();
 	
 	// Artificial features.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("ClosedPlateBoundary") ] =
-			GPlatesGui::Colour::GREEN;
+			GPlatesGui::Colour::get_green();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("ClosedContinentalBoundary") ] =
-			GPlatesGui::Colour::BLUE;
+			GPlatesGui::Colour::get_blue();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("InferredPaleoBoundary") ] =
-			GPlatesGui::Colour::SILVER;
+			GPlatesGui::Colour::get_silver();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("OldPlatesGridMark") ] =
-			GPlatesGui::Colour::MAROON;
+			GPlatesGui::Colour::get_maroon();
 
 	// Rock units.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("BasicRockUnit") ] =
-			GPlatesGui::Colour::PURPLE;
+			GPlatesGui::Colour::get_purple();
 		
 	// Abstract Geological Plane & Contact features.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("GeologicalPlane") ] =
-			GPlatesGui::Colour::FUSCHIA;
+			GPlatesGui::Colour::get_fuschia();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("FoldPlane") ] =
-			GPlatesGui::Colour::LIME;
+			GPlatesGui::Colour::get_lime();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Fault") ] =
-			GPlatesGui::Colour::GREY;
+			GPlatesGui::Colour::get_grey();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TerraneBoundary") ] =
-			GPlatesGui::Colour::YELLOW;
+			GPlatesGui::Colour::get_yellow();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Unconformity") ] =
-			GPlatesGui::Colour::NAVY;
+			GPlatesGui::Colour::get_navy();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("UnknownContact") ] =
-			GPlatesGui::Colour::TEAL;
+			GPlatesGui::Colour::get_teal();
 
 	// Tectonic sections.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("MidOceanRidge") ] =
-			GPlatesGui::Colour::AQUA;
+			GPlatesGui::Colour::get_aqua();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("ContinentalRift") ] =
-			GPlatesGui::Colour::BLACK;
+			GPlatesGui::Colour::get_black();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("SubductionZone") ] =
-			GPlatesGui::Colour::AQUA;
+			GPlatesGui::Colour::get_aqua();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("OrogenicBelt") ] =
-			GPlatesGui::Colour::RED;
+			GPlatesGui::Colour::get_red();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Transform") ] =
-			GPlatesGui::Colour::GREEN;
+			GPlatesGui::Colour::get_green();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("FractureZone") ] =
-			GPlatesGui::Colour::BLUE;
+			GPlatesGui::Colour::get_blue();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("PassiveContinentalBoundary") ] =
-			GPlatesGui::Colour::SILVER;
+			GPlatesGui::Colour::get_silver();
 
 	// Abstract fields.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Bathymetry") ] =
-			GPlatesGui::Colour::MAROON;
+			GPlatesGui::Colour::get_maroon();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Topography") ] =
-			GPlatesGui::Colour::PURPLE;
+			GPlatesGui::Colour::get_purple();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Gravimetry") ] =
-			GPlatesGui::Colour::FUSCHIA;
+			GPlatesGui::Colour::get_fuschia();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Magnetics") ] =
-			GPlatesGui::Colour::LIME;
+			GPlatesGui::Colour::get_lime();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("GlobalElevation") ] =
-			GPlatesGui::Colour::GREY;
+			GPlatesGui::Colour::get_grey();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("OceanicAge") ] =
-			GPlatesGui::Colour::YELLOW;
+			GPlatesGui::Colour::get_yellow();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("CrustalThickness") ] =
-			GPlatesGui::Colour::NAVY;
+			GPlatesGui::Colour::get_navy();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("DynamicTopography") ] =
-			GPlatesGui::Colour::TEAL;
+			GPlatesGui::Colour::get_teal();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("MantleDensity") ] =
-			GPlatesGui::Colour::AQUA;
+			GPlatesGui::Colour::get_aqua();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("HeatFlow") ] =
-			GPlatesGui::Colour::BLACK;
+			GPlatesGui::Colour::get_black();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("SedimentThickness") ] =
-			GPlatesGui::Colour::AQUA;
+			GPlatesGui::Colour::get_aqua();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Roughness") ] =
-			GPlatesGui::Colour::RED;
+			GPlatesGui::Colour::get_red();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("SpreadingRate") ] =
-			GPlatesGui::Colour::GREEN;
+			GPlatesGui::Colour::get_green();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("SpreadingAsymmetry") ] =
-			GPlatesGui::Colour::BLUE;
+			GPlatesGui::Colour::get_blue();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Stress") ] =
-			GPlatesGui::Colour::SILVER;
+			GPlatesGui::Colour::get_silver();
 
 	// Tangible features.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Isochron") ] = 
-			GPlatesGui::Colour::MAROON;
+			GPlatesGui::Colour::get_maroon();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIndentification") ] = 
-			GPlatesGui::Colour::PURPLE;
+			GPlatesGui::Colour::get_purple();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("MagneticAnomalyShipTrack") ] = 
-			GPlatesGui::Colour::FUSCHIA;
+			GPlatesGui::Colour::get_fuschia();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("FractureZoneIdentification") ] = 
-			GPlatesGui::Colour::LIME;
+			GPlatesGui::Colour::get_lime();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Suture") ] = 
-			GPlatesGui::Colour::GREY;
+			GPlatesGui::Colour::get_grey();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("IslandArc") ] = 
-			GPlatesGui::Colour::YELLOW;
+			GPlatesGui::Colour::get_yellow();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("HotSpotTrail") ] = 
-			GPlatesGui::Colour::NAVY;
+			GPlatesGui::Colour::get_navy();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Seamount") ] =
-			GPlatesGui::Colour::TEAL;
+			GPlatesGui::Colour::get_teal();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Volcano") ] =
-			GPlatesGui::Colour::AQUA;
+			GPlatesGui::Colour::get_aqua();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("AseismicRidge") ] =
-			GPlatesGui::Colour::BLACK;
+			GPlatesGui::Colour::get_black();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Coastline") ] =
-			GPlatesGui::Colour::AQUA;
+			GPlatesGui::Colour::get_aqua();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Craton") ] =
-			GPlatesGui::Colour::RED;
+			GPlatesGui::Colour::get_red();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("LargeIgneousProvince") ] =
-			GPlatesGui::Colour::GREEN;
+			GPlatesGui::Colour::get_green();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Basin") ] =
-			GPlatesGui::Colour::BLUE;
+			GPlatesGui::Colour::get_blue();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("ExtendedContinentalCrust") ] =
-			GPlatesGui::Colour::SILVER;
+			GPlatesGui::Colour::get_silver();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TransitionalCrust") ] =
-			GPlatesGui::Colour::MAROON;
+			GPlatesGui::Colour::get_maroon();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("ContinentalFragment") ] =
-			GPlatesGui::Colour::PURPLE;
+			GPlatesGui::Colour::get_purple();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("GeologicalLineation") ] =
-			GPlatesGui::Colour::FUSCHIA;
+			GPlatesGui::Colour::get_fuschia();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("PseudoFault") ] =
-			GPlatesGui::Colour::LIME;
+			GPlatesGui::Colour::get_lime();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature") ] =
-			GPlatesGui::Colour::GREY;
+			GPlatesGui::Colour::get_grey();
 
 	//see file-io/FeaturePropertiesMap.h
 }
+
 
 GPlatesGui::ColourTable::const_iterator
 GPlatesGui::FeatureColourTable::lookup(
@@ -182,19 +183,19 @@ GPlatesGui::FeatureColourTable::lookup(
 {
 	GPlatesGui::ColourTable::const_iterator colour = NULL;
 
-	GPlatesModel::FeatureHandle::weak_ref ref = feature_geometry.feature_ref();
-	if( ref.is_valid() )
-	{	
-		GPlatesModel::FeatureType feature = ref->feature_type();
-		colour_map_type::const_iterator iter = d_colours.find(feature);	
-		if( iter == d_colours.end() )
+	if (feature_geometry.is_valid()) {
+		GPlatesModel::FeatureType feature_type =
+				feature_geometry.feature_handle_ptr()->feature_type();
+		colour_map_type::const_iterator iter = d_colours.find(feature_type);
+		if (iter == d_colours.end()) {
 			colour = NULL;
-		else
+		} else {
 			colour = &(iter->second);
+		}
 	}
-	
 	return colour;
 }
+
 
 GPlatesGui::FeatureColourTable *
 GPlatesGui::FeatureColourTable::d_instance;

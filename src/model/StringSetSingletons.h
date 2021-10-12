@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,6 +29,7 @@
 #define GPLATES_MODEL_STRINGSETSINGLETONS_H
 
 #include "utils/StringSet.h"
+#include "utils/IdStringSet.h"
 
 
 namespace GPlatesModel {
@@ -36,6 +37,10 @@ namespace GPlatesModel {
 	class StringSetSingletons {
 
 	public:
+
+		static
+		GPlatesUtils::IdStringSet &
+		feature_id_instance();
 
 		static
 		GPlatesUtils::StringSet &
@@ -86,6 +91,8 @@ namespace GPlatesModel {
 		// This constructor should never be defined, because we don't want to allow
 		// instantiation of this class.
 		StringSetSingletons();
+
+		static GPlatesUtils::IdStringSet *s_feature_id_instance;
 
 		static GPlatesUtils::StringSet *s_feature_type_instance;
 		static GPlatesUtils::StringSet *s_property_name_instance;

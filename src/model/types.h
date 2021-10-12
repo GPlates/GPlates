@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -34,6 +34,20 @@ namespace GPlatesModel
 	 * This is the type which is used to represent integer plate IDs.
 	 */
 	typedef unsigned long integer_plate_id_type;
+
+	/**
+	 * This is the type which is used to describe the sizes of containers of properties,
+	 * features, and feature collections, and also for the indices into these containers.  We
+	 * define this (rather than using the appropriate container<T>::size_type in each different
+	 * context) to avoid circular header includes and to simplify code in general.
+	 */
+	typedef size_t container_size_type;
+
+	/**
+	 * This is the value used to indicate an invalid index.  We define this as a constant here
+	 * to avoid circular header includes and to simplify code in general.
+	 */
+	static const container_size_type INVALID_INDEX = -1;
 }
 
 #endif  // GPLATES_MODEL_TYPES_H

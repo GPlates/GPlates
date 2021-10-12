@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -28,7 +28,7 @@
 #include "KeyValueDictionaryFinder.h"
 
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 
@@ -45,30 +45,20 @@ namespace
 }
 
 
-void
-GPlatesFeatureVisitors::KeyValueDictionaryFinder::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle)
+bool
+GPlatesFeatureVisitors::KeyValueDictionaryFinder::initialise_pre_property_values(
+		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	// Visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-}
-
-
-void
-GPlatesFeatureVisitors::KeyValueDictionaryFinder::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
-{
-	const GPlatesModel::PropertyName &curr_prop_name = inline_property_container.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
 
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
 		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
 			// The current property name is not allowed.
-			return;
+			return false;
 		}
 	}	
-	
-	visit_property_values(inline_property_container);
+	return true;
 }
 
 

@@ -12,12 +12,14 @@ include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
     AlreadyInitialisedSingletonException.h
+    AssertionFailureException.cc
     AssertionFailureException.h
     config.h
     Constants.cc
     Constants.h
     ControlFlowException.h
     ExternalResourceFailureException.h
+    GPlatesAssert.cc
     GPlatesAssert.h
     GPlatesException.cc
     GPlatesException.h

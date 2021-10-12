@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,7 @@
 #include "ReconstructionTreePopulator.h"
 #include "ReconstructionGraph.h"
 #include "FeatureHandle.h"
-#include "InlinePropertyContainer.h"
+#include "TopLevelPropertyInline.h"
 
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
@@ -63,15 +63,19 @@ GPlatesModel::ReconstructionTreePopulator::ReconstructionTreePopulator(
 {  }
 
 
-void
-GPlatesModel::ReconstructionTreePopulator::visit_feature_handle(
+bool
+GPlatesModel::ReconstructionTreePopulator::initialise_pre_feature_properties(
 		FeatureHandle &feature_handle)
 {
 	d_accumulator = ReconstructionSequenceAccumulator();
+	return true;
+}
 
-	// Now visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
 
+void
+GPlatesModel::ReconstructionTreePopulator::finalise_post_feature_properties(
+		FeatureHandle &feature_handle)
+{
 	// So now we've visited the contents of this Total Recon Seq feature.  Let's find out if we
 	// were able to obtain all the information we need.
 	if ( ! d_accumulator->d_fixed_ref_frame) {
@@ -97,15 +101,6 @@ GPlatesModel::ReconstructionTreePopulator::visit_feature_handle(
 			*(d_accumulator->d_finite_rotation));
 
 	d_accumulator = boost::none;
-}
-
-
-void
-GPlatesModel::ReconstructionTreePopulator::visit_inline_property_container(
-		InlinePropertyContainer &inline_property_container) {
-	d_accumulator->d_most_recent_propname_read = inline_property_container.property_name();
-
-	visit_property_values(inline_property_container);
 }
 
 
@@ -322,10 +317,10 @@ GPlatesModel::ReconstructionTreePopulator::visit_gpml_plate_id(
 		PropertyName::create_gpml("movingReferenceFrame");
 
 	// Note that we're going to assume that we've read a property name...
-	if (*(d_accumulator->d_most_recent_propname_read) == fixed_ref_frame_property_name) {
+	if (*current_top_level_propname() == fixed_ref_frame_property_name) {
 		// We're dealing with the fixed ref-frame of the Total Reconstruction Sequence.
 		d_accumulator->d_fixed_ref_frame = gpml_plate_id.value();
-	} else if (*(d_accumulator->d_most_recent_propname_read) == moving_ref_frame_property_name) {
+	} else if (*current_top_level_propname() == moving_ref_frame_property_name) {
 		// We're dealing with the moving ref-frame of the Total Reconstruction Sequence.
 		d_accumulator->d_moving_ref_frame = gpml_plate_id.value();
 	}

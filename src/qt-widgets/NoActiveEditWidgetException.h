@@ -41,15 +41,13 @@ namespace GPlatesQtWidgets
 	{
 		public:
 			explicit
-			NoActiveEditWidgetException()
-			{  }
-			
-			virtual
-			~NoActiveEditWidgetException()
+			NoActiveEditWidgetException(
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				GPlatesGlobal::PreconditionViolationError(exception_source)
 			{  }
 			
 			const char *
-			ExceptionName() const
+			exception_name() const
 			{
 				return "NoActiveEditWidgetException";
 			}

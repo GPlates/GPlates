@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,6 +26,7 @@
  */
 
 #include "StringSet.h"
+#include <boost/none.hpp>
 
 
 bool
@@ -51,6 +52,7 @@ GPlatesUtils::StringSet::SharedIterator::operator==(
 	return (d_iter == other.d_iter);
 }
 
+
 void
 GPlatesUtils::StringSet::SharedIterator::increment_ref_count()
 {
@@ -75,6 +77,25 @@ GPlatesUtils::StringSet::SharedIterator::decrement_ref_count()
 	{
 		// There are no more references to the element in the set.
 		d_impl_ptr->collection().erase(d_iter);
+	}
+}
+
+
+const boost::optional<GPlatesUtils::StringSet::SharedIterator>
+GPlatesUtils::StringSet::contains(
+		const UnicodeString &s) const
+{
+	UnicodeStringAndRefCount elem(s);
+	collection_type::iterator iter = d_impl->collection().find(elem);
+	if (iter != d_impl->collection().end())
+	{
+		// The element already exists in the set.
+		SharedIterator sh_iter(iter, d_impl);
+		return sh_iter;
+	}
+	else
+	{
+		return boost::none;
 	}
 }
 

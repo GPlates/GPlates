@@ -34,7 +34,13 @@
     <file>gnome_list_add_22.png</file>
     <file>gnome_list_remove_22.png</file>
     <file>gnome_media_eject_22.png</file>
+    <file>gnome_media_playback_pause_22.png</file>
+    <file>gnome_media_playback_start_22.png</file>
+    <file>gnome_media_playback_stop_22.png</file>
+    <file>gnome_media_skip_backward_22.png</file>
+    <file>gnome_media_skip_forward_22.png</file>
     <file>gnome_preferences_desktop_16.png</file>
+    <file>gnome_run_22.png</file>
     <file>gnome_save_22.png</file>
     <file>gnome_save_as_22.png</file>
     <file>gnome_seek_backward_16.png</file>
@@ -57,19 +63,27 @@
     <file>human_view_refresh_16.png</file>
     <file>human_view_refresh_flipped_16.png</file>
     <file>info_sign_16.png</file>
+    <file>insertion_point_48x24.png</file>
+    <file>insertion_point_cancel_22.png</file>
     <file>move_geometry_35.png</file>
     <file>move_vertex_35.png</file>
+    <file>delete_vertex_35.png</file>
+    <file>insert_vertex_35.png</file>
     <file>plate_pole_modification_35.png</file>
     <file>query_feature_35.png</file>
     <file>reorient_poles_16.png</file>
     <file>reorient_poles_22.png</file>
     <file>save_a_copy_22.png</file>
+    <file>seek_beginning_22.png</file>
+    <file>seek_end_22.png</file>
     <file>select_plate_35.png</file>
     <file>spin_globe_35.png</file>
+    <file>tango_document_save_22.png</file>
     <file>tango_emblem_unreadable_22.png</file>
     <file>tango_go_bottom_22.png</file>
     <file>tango_go_top_22.png</file>
     <file>tango_list_add_22.png</file>
+    <file>tango_process_stop_22.png</file>
     <file>zoom_globe_35.png</file>
 </qresource>
 </RCC>

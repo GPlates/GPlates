@@ -28,8 +28,6 @@
 #ifndef GPLATES_MATHS_INDETERMINATEARCROTATIONAXISEXCEPTION_H
 #define GPLATES_MATHS_INDETERMINATEARCROTATIONAXISEXCEPTION_H
 
-// FIXME:  When the definition of 'write_message' moves to a .cc file, replace this with <iosfwd>.
-#include <ostream>
 #include "global/PreconditionViolationError.h"
 #include "GreatCircleArc.h"
 
@@ -45,12 +43,10 @@ namespace GPlatesMaths
 	{
 	public:
 		IndeterminateArcRotationAxisException(
+				const GPlatesUtils::CallStack::Trace &exception_source,
 				const GreatCircleArc &arc_):
+			GPlatesGlobal::PreconditionViolationError(exception_source),
 			d_arc(arc_)
-		{  }
-
-		virtual
-		~IndeterminateArcRotationAxisException()
 		{  }
 
 		const GreatCircleArc &
@@ -61,7 +57,7 @@ namespace GPlatesMaths
 	protected:
 		virtual
 		const char *
-		ExceptionName() const
+		exception_name() const
 		{
 			// FIXME:  This function should really be defined in a .cc file.
 			return "IndeterminateArcRotationAxisException";

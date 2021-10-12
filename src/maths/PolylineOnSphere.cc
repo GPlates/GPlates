@@ -74,7 +74,7 @@ GPlatesMaths::PolylineOnSphere::evaluate_segment_endpoint_validity(
 const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 GPlatesMaths::PolylineOnSphere::get_non_null_pointer() const
 {
-	if (ref_count() == 0) {
+	if (get_reference_count() == 0) {
 		// How did this happen?  This should not have happened.
 		//
 		// Presumably, the programmer obtained the raw PolylineOnSphere pointer from inside
@@ -83,7 +83,8 @@ GPlatesMaths::PolylineOnSphere::get_non_null_pointer() const
 		// expired and the instance has actually been deleted.
 		//
 		// Regardless of how this happened, this is an error.
-		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(this, __FILE__, __LINE__);
+		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(GPLATES_EXCEPTION_SOURCE,
+				this);
 	} else {
 		// This instance is already managed by intrusive-pointers, so we can simply return
 		// another intrusive-pointer to this instance.
@@ -153,7 +154,8 @@ GPlatesMaths::PolylineOnSphere::is_close_to(
 				<< HighPrecision< real_t >(calculated_hypotenuse)
 				<< ")\nrather than the expected value of 1.";
 
-		throw GPlatesGlobal::InvalidParametersException(oss.str().c_str());
+		throw GPlatesGlobal::InvalidParametersException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
 	}
 
 	real_t &closest_closeness_so_far = closeness;  // A descriptive alias.
@@ -208,7 +210,7 @@ GPlatesMaths::PolylineOnSphere::VertexConstIterator::current_point() const
 {
 	if (d_poly_ptr == NULL) {
 		// I think the exception message sums it up pretty nicely...
-		throw GPlatesGlobal::UninitialisedIteratorException(
+		throw GPlatesGlobal::UninitialisedIteratorException(GPLATES_EXCEPTION_SOURCE,
 				"Attempted to dereference an uninitialised iterator.");
 	}
 	if (d_curr_gca == d_poly_ptr->begin() && d_gca_start_or_end == START) {
@@ -321,6 +323,35 @@ GPlatesMaths::polylines_are_undirected_equivalent(
 		}
 	}
 	return true;
+}
+
+
+void
+GPlatesMaths::InvalidPointsForPolylineConstructionError::write_message(
+				std::ostream &os) const
+{
+	const char *message;
+
+	switch (d_cpv) {
+	case PolylineOnSphere::VALID:
+		message = "valid";
+		break;
+	case PolylineOnSphere::INVALID_INSUFFICIENT_DISTINCT_POINTS:
+		message = "insufficient distinct points";
+		break;
+	case PolylineOnSphere::INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
+		message = "antipodal segment endpoints";
+		break;
+	default:
+		// Control-flow should never reach here.
+		message = NULL;
+		break;
+	}
+
+	if (message)
+	{
+		os << message;
+	}
 }
 
 

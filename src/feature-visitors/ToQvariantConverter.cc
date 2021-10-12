@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,7 +31,7 @@
 
 #include "ToQvariantConverter.h"
 #include "model/FeatureHandle.h"
-#include "model/InlinePropertyContainer.h"
+#include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
 
 #include "property-values/GmlTimeInstant.h"
@@ -87,23 +87,6 @@ namespace
 		}
 	}
 
-}
-
-
-void
-GPlatesFeatureVisitors::ToQvariantConverter::visit_feature_handle(
-		const GPlatesModel::FeatureHandle &feature_handle)
-{
-	// Visit each of the properties in turn.
-	visit_feature_properties(feature_handle);
-}
-
-
-void
-GPlatesFeatureVisitors::ToQvariantConverter::visit_inline_property_container(
-		const GPlatesModel::InlinePropertyContainer &inline_property_container)
-{
-	visit_property_values(inline_property_container);
 }
 
 

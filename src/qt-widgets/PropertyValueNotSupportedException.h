@@ -46,19 +46,17 @@ namespace GPlatesQtWidgets
 		public:
 			// FIXME: I thought we weren't using strings in exceptions?
 			explicit
-			PropertyValueNotSupportedException():
-					IllegalParametersException(
-							"An edit widget was asked to edit an unsupported property value.")
-			{  }
-			
-			virtual
-			~PropertyValueNotSupportedException()
+			PropertyValueNotSupportedException(
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				IllegalParametersException(
+						exception_source,
+						"An edit widget was asked to edit an unsupported property value.")
 			{  }
 		
 		protected:
 			
 			const char *
-			ExceptionName() const
+			exception_name() const
 			{
 				return "PropertyValueNotSupportedException";
 			}

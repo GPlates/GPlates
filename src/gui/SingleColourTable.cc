@@ -40,7 +40,7 @@ GPlatesGui::SingleColourTable::Instance()
 
 GPlatesGui::SingleColourTable::SingleColourTable()
 {
-	d_colour = GPlatesGui::Colour::GREEN;
+	d_colour = GPlatesGui::Colour::get_green();
 }
 
 void

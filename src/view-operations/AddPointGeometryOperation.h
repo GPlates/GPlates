@@ -31,8 +31,8 @@
 #include <QObject>
 
 #include "GeometryBuilder.h"
+#include "GeometryOperation.h"
 #include "GeometryType.h"
-#include "GeometryOperationRenderParameters.h"
 #include "RenderedGeometryCollection.h"
 
 
@@ -48,9 +48,11 @@ namespace GPlatesGui
 
 namespace GPlatesViewOperations
 {
+	class ActiveGeometryOperation;
 	class GeometryBuilder;
+	class GeometryOperationTarget;
+	class QueryProximityThreshold;
 	class RenderedGeometryCollection;
-	class RenderedGeometryFactory;
 	class RenderedGeometryLayer;
 
 	/**
@@ -58,7 +60,7 @@ namespace GPlatesViewOperations
 	 * to @a RenderedGeometryCollection.
 	 */
 	class AddPointGeometryOperation :
-		public QObject,
+		public GeometryOperation,
 		private boost::noncopyable
 	{
 		Q_OBJECT
@@ -66,28 +68,35 @@ namespace GPlatesViewOperations
 	public:
 		AddPointGeometryOperation(
 				GeometryType::Value build_geom_type,
+				GeometryOperationTarget &geometry_operation_target,
+				ActiveGeometryOperation &active_geometry_operation,
 				RenderedGeometryCollection *rendered_geometry_collection,
-				RenderedGeometryFactory *rendered_geometry_factory,
-				const GPlatesViewOperations::GeometryOperationRenderParameters &digitise_render_parameters,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool);
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				const QueryProximityThreshold &query_proximity_threshold);
 
 		/**
 		 * Activate this operation and attach to specified @a GeometryBuilder
 		 * and render into specified main rendered layer.
 		 */
+		virtual
 		void
 		activate(
 				GeometryBuilder *,
 				RenderedGeometryCollection::MainLayerType main_layer_type);
 
 		//! Deactivate this operation.
+		virtual
 		void
 		deactivate();
 
-		//! Add a point to the curent geometry builder at the specified position on sphere.
+		/**
+		 * Add a point to the curent geometry builder at the specified position on sphere.
+		 * This can fail to add a point if it is too close to an existing point.
+		 */
 		void
 		add_point(
-				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere);
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -104,6 +113,16 @@ namespace GPlatesViewOperations
 		GeometryType::Value d_build_geom_type;
 
 		/**
+		 * Used by undo/redo.
+		 */
+		GeometryOperationTarget *d_geometry_operation_target;
+
+		/**
+		 * We call this when we activate/deactivate.
+		 */
+		ActiveGeometryOperation *d_active_geometry_operation;
+
+		/**
 		 * This is used to build geometry. We add points to it.
 		 */
 		GeometryBuilder *d_geometry_builder;
@@ -112,11 +131,6 @@ namespace GPlatesViewOperations
 		 * This is where we render our geometries and activate our render layer.
 		 */
 		RenderedGeometryCollection *d_rendered_geometry_collection;
-
-		/**
-		 * Use this to create @a RenderedGeometry objects.
-		 */
-		RenderedGeometryFactory *d_rendered_geometry_factory;
 
 		/**
 		 * The main rendered layer we're currently rendering into.
@@ -140,9 +154,17 @@ namespace GPlatesViewOperations
 		GPlatesGui::ChooseCanvasTool *d_choose_canvas_tool;
 
 		/**
-		 * Parameters that specify how to draw digitised geometry.
+		 * Used to query the proximity threshold based on position on globe.
 		 */
-		GeometryOperationRenderParameters d_geom_operation_render_parameters;
+		const QueryProximityThreshold *d_query_proximity_threshold;
+
+		/**
+		 * Returns true if specified point is too close to existing points.
+		 */
+		bool
+		too_close_to_existing_points(
+				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
+				const double &closeness_inclusion_threshold);
 
 		void
 		connect_to_geometry_builder_signals();

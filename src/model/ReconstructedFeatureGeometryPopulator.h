@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -104,6 +104,8 @@ namespace GPlatesModel
 		~ReconstructedFeatureGeometryPopulator()
 		{  }
 
+	protected:
+
 		virtual
 		void
 		visit_feature_handle(
@@ -116,8 +118,8 @@ namespace GPlatesModel
 
 		virtual
 		void
-		visit_inline_property_container(
-				InlinePropertyContainer &inline_property_container);
+		visit_top_level_property_inline(
+				TopLevelPropertyInline &top_level_property_inline);
 
 		virtual
 		void

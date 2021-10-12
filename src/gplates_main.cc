@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -39,7 +39,9 @@
 #include <vector>
 #include <QStringList>
 #include <QTextStream>
-#include <QtGui/QApplication>
+
+#include "gui/GPlatesQApplication.h"
+#include "gui/GPlatesQtMsgHandler.h"
 #include "qt-widgets/ViewportWindow.h"
 
 
@@ -101,10 +103,20 @@ namespace {
 	}
 }
 
-
-int main(int argc, char* argv[])
+int internal_main(int argc, char* argv[])
 {
-	QApplication application(argc, argv);
+	// This will only install handler if any of the following conditions are satisfied:
+	//   1) GPLATES_PUBLIC_RELEASE is defined (automatically handled by CMake build system), or
+	//   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
+	//      "true", "1", "yes" or "on".
+	// Note: Installing handler overrides default Qt message handler.
+	//       And does not log messages to the console.
+	GPlatesGui::GPlatesQtMsgHandler::install_qt_message_handler();
+
+	// GPlatesQApplication is a QApplication that also handles uncaught exceptions
+	// in the Qt event thread.
+	GPlatesGui::GPlatesQApplication application(argc, argv);
+
 	Q_INIT_RESOURCE(qt_widgets);
 
 	// All the libtool cruft causes the value of 'argv[0]' to be not what the user invoked,
@@ -120,5 +132,15 @@ int main(int argc, char* argv[])
 	viewport_window.load_files(cmdline.first + cmdline.second);
 	viewport_window.reconstruct_to_time_with_root(0.0, 0);
 
+	// Make sure the appropriate tool status message is displayed at start up. 
+	viewport_window.update_tools_and_status_message();
+
 	return application.exec();
+}
+
+
+int main(int argc, char* argv[])
+{
+	// Handle any uncaught exceptions that occur in main() but outside the Qt event thread.
+	return GPlatesGui::GPlatesQApplication::call_main(internal_main, argc, argv);
 }

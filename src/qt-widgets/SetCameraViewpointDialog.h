@@ -62,6 +62,13 @@ namespace GPlatesQtWidgets
 			return spinbox_longitude->value();
 		}
 		
+		/**
+		 * Call this prior to displaying the dialog, so we can set the widgets to their
+		 * appropriate states.
+		 */
+		void
+		setup();
+
 	private:
 
 		ViewportWindow *d_viewport_window_ptr;

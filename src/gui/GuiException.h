@@ -38,8 +38,11 @@ namespace GPlatesGui
 	class GuiException : public GPlatesGlobal::Exception
 	{
 		public:
-			virtual
-			~GuiException() {  }
+			explicit
+			GuiException(
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				Exception(exception_source)
+			{  }
 	};
 }
 

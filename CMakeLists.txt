@@ -1,6 +1,6 @@
 project(GPlates)
 
-cmake_minimum_required(VERSION 2.4.0)
+cmake_minimum_required(VERSION 2.4.0 FATAL_ERROR)
 
 # Where to find our CMake modules (this variable is visible in subdirectories).
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
