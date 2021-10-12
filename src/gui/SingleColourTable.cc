@@ -51,7 +51,7 @@ GPlatesGui::SingleColourTable::set_colour(const Colour &colour)
 
 GPlatesGui::ColourTable::const_iterator
 GPlatesGui::SingleColourTable::lookup(
-		const GPlatesModel::ReconstructedFeatureGeometry &feature) const
+		const GPlatesModel::ReconstructionGeometry &) const
 {
 	return &d_colour;
 }

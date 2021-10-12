@@ -78,6 +78,10 @@ namespace GPlatesQtWidgets
 		react_export_velocity_checked(
 				bool enable);
 
+		void
+		react_export_resolved_topology_checked(
+				bool enable);
+
 	private:
 	
 		/**

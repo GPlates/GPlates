@@ -59,7 +59,7 @@ void
 GPlatesGui::EnableCanvasTool::initialise()
 {
 	// Set initial enable/disable state of canvas tools.
-	d_feature_geom_is_in_focus = d_feature_focus->associated_rfg();
+	d_feature_geom_is_in_focus = d_feature_focus->associated_reconstruction_geometry();
 
 	update();
 
@@ -81,11 +81,11 @@ GPlatesGui::EnableCanvasTool::connect_to_feature_focus(
 		&feature_focus,
 		SIGNAL(focus_changed(
 				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 		this,
 		SLOT(feature_focus_changed(
 				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
 }
 
 void
@@ -122,7 +122,7 @@ GPlatesGui::EnableCanvasTool::connect_to_geometry_operation_target(
 void
 GPlatesGui::EnableCanvasTool::feature_focus_changed(
 		GPlatesModel::FeatureHandle::weak_ref /*focused_feature*/,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry)
 {
 	d_feature_geom_is_in_focus = focused_geometry;
 

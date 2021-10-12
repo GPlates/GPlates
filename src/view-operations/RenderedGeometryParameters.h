@@ -41,7 +41,11 @@ namespace GPlatesViewOperations
 		 * Default point size hint used by most (or all) layers.
 		 */
 		const float DEFAULT_POINT_SIZE_HINT = 4.0f;
-		const float DEFUALT_LINE_WIDTH_HINT = 1.5f;
+
+		/**
+		 * Default line width hint used by most (or all) layers.
+		 */
+		const float DEFAULT_LINE_WIDTH_HINT = 1.5f;
 
 		//! Point size for reconstruction layer.
 		const float RECONSTRUCTION_POINT_SIZE_HINT = DEFAULT_POINT_SIZE_HINT;
@@ -136,7 +140,7 @@ namespace GPlatesViewOperations
 		 * Extra large size of point to render at each point/vertex.
 		 * Used to make point/vertex even more visible or to emphasise it even more.
 		 */
-		const float EXTRA_LARGE_POINT_SIZE_HINT = 6.0f;
+		const float EXTRA_LARGE_POINT_SIZE_HINT = 8.0f;
 
 		/////////////
 		// Colours //

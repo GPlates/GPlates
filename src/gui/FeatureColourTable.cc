@@ -29,7 +29,7 @@
 #include <algorithm>
 
 #include "FeatureColourTable.h"
-#include "model/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
 
 
 GPlatesGui::FeatureColourTable *
@@ -179,20 +179,31 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 
 GPlatesGui::ColourTable::const_iterator
 GPlatesGui::FeatureColourTable::lookup(
-		const GPlatesModel::ReconstructedFeatureGeometry &feature_geometry) const
+		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
 {
-	GPlatesGui::ColourTable::const_iterator colour = NULL;
-
-	if (feature_geometry.is_valid()) {
-		GPlatesModel::FeatureType feature_type =
-				feature_geometry.feature_handle_ptr()->feature_type();
-		colour_map_type::const_iterator iter = d_colours.find(feature_type);
-		if (iter == d_colours.end()) {
-			colour = NULL;
-		} else {
-			colour = &(iter->second);
-		}
+	GPlatesModel::FeatureHandle::weak_ref feature_ref;
+	if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
+			&reconstruction_geometry, feature_ref))
+	{
+		return end();
 	}
+
+	return lookup_by_feature_type(feature_ref->feature_type());
+}
+
+
+GPlatesGui::ColourTable::const_iterator
+GPlatesGui::FeatureColourTable::lookup_by_feature_type(
+		const GPlatesModel::FeatureType &feature_type) const
+{
+	GPlatesGui::ColourTable::const_iterator colour = end();
+
+	colour_map_type::const_iterator iter = d_colours.find(feature_type);
+	if (iter != d_colours.end())
+	{
+		colour = &(iter->second);
+	}
+
 	return colour;
 }
 

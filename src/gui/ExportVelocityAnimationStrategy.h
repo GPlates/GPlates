@@ -36,7 +36,6 @@
 #include "utils/ReferenceCount.h"
 
 #include "utils/ExportTemplateFilenameSequence.h"
-#include "qt-widgets/ApplicationState.h"
 
 #include "gui/ExportAnimationStrategy.h"
 
@@ -63,13 +62,6 @@ namespace GPlatesGui
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<ExportVelocityAnimationStrategy,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		/**
-		 * Typedef for iterator into global list of loaded feature collection files,
-		 * plus container for the ones we'll be using.
-		 */
-		typedef GPlatesAppState::ApplicationState::file_info_iterator file_info_iterator;
-		typedef std::vector<file_info_iterator> file_info_collection_type;
 
 
 		static
@@ -118,8 +110,6 @@ namespace GPlatesGui
 				GPlatesGui::ExportAnimationContext &export_animation_context);
 		
 	private:
-		
-		file_info_collection_type d_cap_files;
 	};
 }
 

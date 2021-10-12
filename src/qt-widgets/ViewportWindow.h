@@ -64,7 +64,6 @@
 #include "ViewportWindowUi.h"
 
 #include "app-logic/PlateVelocities.h"
-#include "app-logic/ReconstructContext.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
 
@@ -78,6 +77,7 @@
 #include "maths/GeometryOnSphere.h"
 
 #include "model/ModelInterface.h"
+#include "model/types.h"
 
 #include "view-operations/ActiveGeometryOperation.h"
 #include "view-operations/GeometryBuilder.h"
@@ -113,7 +113,7 @@ namespace GPlatesQtWidgets
 		GPlatesModel::Reconstruction &
 		reconstruction() const
 		{
-			return *d_reconstruct_context.get_reconstruction();
+			return *d_reconstruction;
 		}
 
 		const double &
@@ -581,10 +581,10 @@ namespace GPlatesQtWidgets
 			return d_rendered_geom_collection;
 		}
 
-		GPlatesAppLogic::PlateVelocitiesHook &
-		plate_velocities_hook() const
+		const GPlatesAppLogic::PlateVelocities &
+		plate_velocities() const
 		{
-			return *d_plate_velocities_hook;
+			return d_plate_velocities;
 		}
 
 
@@ -599,7 +599,7 @@ namespace GPlatesQtWidgets
 		 * Currently must be declared after 'd_rendered_geom_collection' because
 		 * it contains objects created by it.
 		 */
-		GPlatesAppLogic::ReconstructContext d_reconstruct_context;
+		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction;
 
 		//@{
 		// ViewState 
@@ -614,7 +614,7 @@ namespace GPlatesQtWidgets
 			d_comp_mesh_point_layer;
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_comp_mesh_arrow_layer;
-		GPlatesAppLogic::PlateVelocitiesHook::non_null_ptr_type d_plate_velocities_hook;
+		GPlatesAppLogic::PlateVelocities d_plate_velocities;
 
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
@@ -708,10 +708,12 @@ namespace GPlatesQtWidgets
 		update_time_dependent_raster();
 
 		void
-		setup_reconstruct_context();
+		setup_rendered_geom_collection();
 
 		void
-		setup_rendered_geom_collection();
+		reconstruct_view(
+				double recon_time,
+				GPlatesModel::integer_plate_id_type recon_root);
 
 	private slots:
 		void

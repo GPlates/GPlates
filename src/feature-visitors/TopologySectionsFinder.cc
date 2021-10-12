@@ -177,8 +177,8 @@ GPlatesFeatureVisitors::TopologySectionsFinder::TopologySectionsFinder(
 
 
 
-void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_feature_handle(
+bool
+GPlatesFeatureVisitors::TopologySectionsFinder::initialise_pre_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// super short-cut for features without boundary list properties
@@ -186,40 +186,14 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_feature_handle(
 	if ( type != GPlatesUtils::make_qstring_from_icu_string(
 			feature_handle.feature_type().get_name() ) ) { 
 		// Quick-out: No need to continue.
-		return; 
+		return false; 
 	}
 
 	// clear the working vector
 	d_table_rows.clear();
 
 	// else process this feature's properties:
-	visit_feature_properties(feature_handle);
-}
-
-
-
-void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_feature_properties(
-		GPlatesModel::FeatureHandle &feature_handle)
-{
-	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
-	GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
-	for ( ; iter != end; ++iter) {
-		// Elements of this properties vector can be NULL pointers.  (See the comment in
-		// "model/FeatureRevision.h" for more details.)
-		if (*iter != NULL) 
-		{
-			(*iter)->accept_visitor(*this);
-		}
-	}
-}
-
-
-void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_top_level_property_inline(
-		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
-{
-	visit_property_values(top_level_property_inline);
+	return true;
 }
 
 

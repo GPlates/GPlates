@@ -70,7 +70,7 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::refresh_display()
 
 	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
 			d_view_state_ptr->reconstruction(), *tree_geometry);
-	populator.populate(d_feature_ref, d_focused_rfg);
+	populator.populate(d_feature_ref, d_focused_rg);
 	
 	double time = d_view_state_ptr->reconstruction_time();
 	unsigned long root = d_view_state_ptr->reconstruction_root();
@@ -90,10 +90,10 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::refresh_display()
 void
 GPlatesQtWidgets::ViewFeatureGeometriesWidget::edit_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg)
 {
 	d_feature_ref = feature_ref;
-	d_focused_rfg = focused_rfg;
+	d_focused_rg = focused_rg;
 
 	refresh_display();
 }

@@ -153,6 +153,12 @@ namespace GPlatesGui
 		update_geometry();
 
 		/**
+		 * Loop over the Sections Table, check each entry 
+		 */
+		void
+		check_sections_table();
+
+		/**
 		 * From the Sections Table, create the tmp. geom. and property value items 
 		 */
 		void
@@ -220,22 +226,22 @@ namespace GPlatesGui
 		void
 		set_focus(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
 
 		void
 		display_feature(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
 
 		void
 		display_feature_focus_modified(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
 
 		void
 		display_topology(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+			GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
 
 		void
 		handle_shift_left_click(
@@ -370,6 +376,7 @@ namespace GPlatesGui
 			d_segments_layer_ptr,
 			d_end_points_layer_ptr,
 			d_intersection_points_layer_ptr,
+			d_click_point_layer_ptr,
 			d_click_points_layer_ptr;
 
 		/**
@@ -405,6 +412,8 @@ namespace GPlatesGui
 		 * and used during interation around the Sections Table
 		 * as the code bounces between visitor functions and intersection processing functions.
 		 */
+		QString d_warning;
+
 		int d_tmp_index;
 		int d_tmp_sections_size;
 		int d_tmp_prev_index;
@@ -466,21 +475,19 @@ namespace GPlatesGui
 		 * These vectors hold results from a TopologySectionsFinder
 		 */
 		std::vector<GPlatesModel::FeatureId> d_section_ids;
-		std::vector<std::pair<double, double> > d_section_click_points;
-		std::vector<bool> d_section_reverse_flags;
-
-		/** 
-		 * Filled by both TopologySectionsFinder and create_sections_from_sections_table()
-		 */
 		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> 
 			d_section_ptrs;
-
+		std::vector<std::pair<double, double> > d_section_click_points;
+		std::vector<bool> d_section_reverse_flags;
 
 		/**
 		 * a collection of TopologySectionsContainer::TableRow structs
 		 */
 		GPlatesGui::TopologySectionsContainer::container_type d_topology_sections;
 
+		// collection of click points from the Topolog
+			//
+		std::vector<GPlatesMaths::PointOnSphere> d_click_points;
 
 		// collection of end points for all boundary features
 		std::vector<GPlatesMaths::PointOnSphere> d_head_end_points;

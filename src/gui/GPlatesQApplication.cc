@@ -45,7 +45,7 @@ namespace
 	 */
 	template <typename ReturnType>
 	ReturnType
-	call_function(
+	try_catch(
 			boost::function<ReturnType ()> func,
 			QObject *qreceiver,
 			QEvent *qevent)
@@ -161,7 +161,7 @@ GPlatesGui::GPlatesQApplication::notify(
 	// the call stack if needed for some reason.
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
-	return call_function<bool>(
+	return try_catch<bool>(
 		boost::bind(&qapplication_notify, this, qreceiver, qevent),
 		qreceiver,
 		qevent);
@@ -174,7 +174,7 @@ GPlatesGui::GPlatesQApplication::call_main(
 		int argc,
 		char* argv[])
 {
-	return call_function<int>(
+	return try_catch<int>(
 		boost::bind(main_function, argc, argv),
 		NULL/*qreceiver*/,
 		NULL/*qevent*/);

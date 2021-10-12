@@ -87,18 +87,9 @@ namespace GPlatesFeatureVisitors
 		{  }
 
 		virtual
-		void
-		visit_feature_handle(
-			GPlatesModel::FeatureHandle &feature_handle);
-
-		virtual
-		void
-		visit_feature_properties(
-			GPlatesModel::FeatureHandle &feature_handle);
-
-		void
-		visit_top_level_property_inline(
-			GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
+		bool
+		initialise_pre_feature_properties(
+				GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void

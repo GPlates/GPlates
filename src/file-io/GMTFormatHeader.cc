@@ -802,6 +802,13 @@ GPlatesFileIO::GMTHeaderPrinter::print_feature_header_lines(
 		d_is_first_feature_header_in_file = false;
 	}
 
+	if (header_lines.empty())
+	{
+		// There are no header lines to output so just output a newline and return.
+		output_stream << endl;
+		return;
+	}
+
 	bool first_line_in_header = true;
 
 	// Print each line of the GMT header.

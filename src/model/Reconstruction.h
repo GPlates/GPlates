@@ -129,8 +129,8 @@ namespace GPlatesModel
 		 * Access the feature collections containing the reconstruction features used to
 		 * create this reconstruction.
 		 */
-		 std::vector<FeatureCollectionHandle::weak_ref> d_reconstruction_feature_collections;
-	
+		std::vector<FeatureCollectionHandle::weak_ref> d_reconstruction_feature_collections;
+
 		/**
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.

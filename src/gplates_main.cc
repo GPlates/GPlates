@@ -42,7 +42,10 @@
 
 #include "gui/GPlatesQApplication.h"
 #include "gui/GPlatesQtMsgHandler.h"
+
 #include "qt-widgets/ViewportWindow.h"
+
+#include "utils/Profile.h"
 
 
 namespace {
@@ -141,6 +144,21 @@ int internal_main(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
-	// Handle any uncaught exceptions that occur in main() but outside the Qt event thread.
-	return GPlatesGui::GPlatesQApplication::call_main(internal_main, argc, argv);
+	// The first of two reasons to wrap 'main()' around 'internal_main()' is to
+	// handle any uncaught exceptions that occur in main() but outside the Qt event thread.
+	// Any uncaught exceptions occurring in the Qt event thread will caught by the
+	// local variable of type "GPlatesGui::GPlatesQApplication" inside 'internal_main()'.
+	const int return_code = GPlatesGui::GPlatesQApplication::call_main(internal_main, argc, argv);
+
+	// The second of two reasons to wrap 'main' around 'internal_main' is because
+	// we want all profiles to have completed before we do profile reporting
+	// and we only want to do profile reporting if no exceptions have made their
+	// way back to 'main' (in other words we won't get here if 'internal_main()' threw
+	// an exception).
+	// NOTE: This statement is a no-op unless the current build type is "ProfileGplates"
+	// in Visual Studio or you used the "-DCMAKE_BUILD_TYPE:STRING=profilegplates"
+	// command-line option in "cmake" on Linux or Mac.
+	PROFILE_REPORT_TO_FILE("profile.txt");
+
+	return return_code;
 }

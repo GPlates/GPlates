@@ -33,6 +33,7 @@
 #include "GeometryBuilder.h"
 #include "gui/FeatureFocus.h"
 #include "maths/GeometryOnSphere.h"
+#include "model/ReconstructedFeatureGeometry.h"
 #include "model/types.h"
 
 
@@ -86,7 +87,7 @@ namespace GPlatesViewOperations
 		void
 		set_focus(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry);
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry);
 
 	private:
 		/**
@@ -144,8 +145,8 @@ namespace GPlatesViewOperations
 		/**
 		 * The reconstruction geometry which is focused.
 		 *
-		 * Note that there may not be a focused reconstruction geometry, in which case this
-		 * would be a null pointer.
+		 * Note that there may not be a focused reconstructed feature geometry,
+		 * in which case this would be a null pointer.
 		 */
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type d_focused_geometry;
 

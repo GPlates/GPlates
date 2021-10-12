@@ -36,7 +36,7 @@
 #include "maths/PolygonOnSphere.h"
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyValue.h"
-#include "model/ReconstructedFeatureGeometry.h"
+#include "model/ReconstructionGeometry.h"
 
 namespace GPlatesPropertyValues
 {
@@ -61,23 +61,23 @@ namespace GPlatesFeatureVisitors
 		/**
 		 * Populates the tree widget passed into constructor with the properties of
 		 * @a feature.
-		 * @a focused_rfg is the clicked geometry, if any, and is the only geometry
+		 * @a focused_rg is the clicked geometry, if any, and is the only geometry
 		 * property that is expanded in the widget.
 		 */
 		void
 		populate(
 				GPlatesModel::FeatureHandle::weak_ref &feature,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg);
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg);
 
 	private:
 		virtual
-		void
-		visit_feature_properties(
-				GPlatesModel::FeatureHandle &feature_handle);
+		bool
+		initialise_pre_property_values(
+				GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 		virtual
 		void
-		visit_top_level_property_inline(
+		finalise_post_property_values(
 				GPlatesModel::TopLevelPropertyInline &top_level_property_inline);
 
 		virtual
@@ -187,9 +187,6 @@ namespace GPlatesFeatureVisitors
 
 		//! The focused geometry if any.
 		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_focused_geometry;
-
-		//! The last property visited when iterating through the property values.
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_last_property_visited;
 
 		void
 		add_child_then_visit_value(

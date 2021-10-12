@@ -61,7 +61,7 @@ namespace GPlatesQtWidgets
 		void
 		display_feature(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type associated_rfg);
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
 	
 	private:
 

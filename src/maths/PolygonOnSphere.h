@@ -28,6 +28,7 @@
 #ifndef GPLATES_MATHS_POLYGONONSPHERE_H
 #define GPLATES_MATHS_POLYGONONSPHERE_H
 
+#include <cstddef>  // For std::size_t
 #include <vector>
 #include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
 #include <algorithm>  // std::swap
@@ -635,6 +636,21 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Return the const_iterator that is equivalent to @a begin + @a index
+		 * to iterate over GreatCircleArc's of this polygon.
+		 * @a index must be less than or equal to @a number_of_segments.
+		 */
+		const_iterator
+		indexed_iterator(
+				std::size_t index) const
+		{
+			const_iterator iter = begin();
+			std::advance(iter, index);
+			return iter;
+		}
+
+
+		/**
 		 * Return the number of segments in this polygon.
 		 */
 		size_type
@@ -663,6 +679,21 @@ namespace GPlatesMaths
 		vertex_end() const
 		{
 			return vertex_const_iterator::create_end(*this);
+		}
+
+
+		/**
+		 * Return the vertex_const_iterator that is equivalent to @a vertex_begin + @a index
+		 * to iterate over vertices of this polygon.
+		 * @a index must be less than or equal to @a number_of_vertices.
+		 */
+		vertex_const_iterator
+		vertex_indexed_iterator(
+				std::size_t index) const
+		{
+			vertex_const_iterator iter = vertex_begin();
+			std::advance(iter, index);
+			return iter;
 		}
 
 

@@ -49,6 +49,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 	checkbox_export_shp->setChecked(d_export_animation_context_ptr->shp_exporter_enabled());
 	checkbox_export_svg->setChecked(d_export_animation_context_ptr->svg_exporter_enabled());
 	checkbox_export_velocity->setChecked(d_export_animation_context_ptr->velocity_exporter_enabled());
+	checkbox_export_resolved_topology->setChecked(d_export_animation_context_ptr->resolved_topology_exporter_enabled());
 
 	// Make our private signal/slot connections.
 	// Note that we do not need to listen for enable/disable change events @em from the Context,
@@ -66,6 +67,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 			this, SLOT(react_export_svg_checked(bool)));
 	QObject::connect(checkbox_export_velocity, SIGNAL(clicked(bool)),
 			this, SLOT(react_export_velocity_checked(bool)));
+	QObject::connect(checkbox_export_resolved_topology, SIGNAL(clicked(bool)),
+			this, SLOT(react_export_resolved_topology_checked(bool)));
 }
 
 
@@ -129,6 +132,13 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_velocity_checked
 		bool enable)
 {
 	d_export_animation_context_ptr->set_velocity_exporter_enabled(enable);
+}
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_resolved_topology_checked(
+		bool enable)
+{
+	d_export_animation_context_ptr->set_resolved_topology_exporter_enabled(enable);
 }
 
 

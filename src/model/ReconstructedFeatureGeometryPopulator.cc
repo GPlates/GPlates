@@ -114,39 +114,13 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_handle(
 
 
 void
-GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_feature_properties(
-		FeatureHandle &feature_handle)
-{
-	FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
-	FeatureHandle::properties_iterator end = feature_handle.properties_end();
-	for ( ; iter != end; ++iter) {
-		// Elements of this properties vector can be NULL pointers.  (See the comment in
-		// "model/FeatureRevision.h" for more details.)
-		if (*iter != NULL) {
-			// FIXME: This d_current_property thing could go in the {Const,}FeatureVisitor base.
-			d_accumulator->d_current_property = iter;
-			(*iter)->accept_visitor(*this);
-		}
-	}
-}
-
-
-void
-GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_top_level_property_inline(
-		TopLevelPropertyInline &top_level_property_inline)
-{
-	visit_property_values(top_level_property_inline);
-}
-
-
-void
 GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	using namespace GPlatesMaths;
 
 	if (d_accumulator->d_perform_reconstructions) {
-		FeatureHandle::properties_iterator property = *(d_accumulator->d_current_property);
+		FeatureHandle::properties_iterator property = *current_top_level_propiter();
 
 		if (d_accumulator->d_recon_plate_id) {
 			const FiniteRotation &r = *d_accumulator->d_recon_rotation;
@@ -156,8 +130,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 					ReconstructedFeatureGeometry::create(
 							reconstructed_polyline,
-							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property,
+							*current_top_level_propiter()->collection_handle_ptr(),
+							*current_top_level_propiter(),
 							d_accumulator->d_recon_plate_id,
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
@@ -167,8 +141,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_line_string(
 			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 					ReconstructedFeatureGeometry::create(
 							gml_line_string.polyline(),
-							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property,
+							*current_top_level_propiter()->collection_handle_ptr(),
+							*current_top_level_propiter(),
 							boost::none,
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
@@ -185,7 +159,7 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 	using namespace GPlatesMaths;
 
 	if (d_accumulator->d_perform_reconstructions) {
-		FeatureHandle::properties_iterator property = *(d_accumulator->d_current_property);
+		FeatureHandle::properties_iterator property = *(current_top_level_propiter());
 
 		if (d_accumulator->d_recon_plate_id) {
 			const FiniteRotation &r = *d_accumulator->d_recon_rotation;
@@ -195,8 +169,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 					ReconstructedFeatureGeometry::create(
 							reconstructed_multipoint,
-							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property,
+							*current_top_level_propiter()->collection_handle_ptr(),
+							*current_top_level_propiter(),
 							d_accumulator->d_recon_plate_id,
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
@@ -206,8 +180,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_multi_point(
 			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 					ReconstructedFeatureGeometry::create(
 							gml_multi_point.multipoint(),
-							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property,
+							*current_top_level_propiter()->collection_handle_ptr(),
+							*current_top_level_propiter(),
 							boost::none,
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
@@ -232,7 +206,7 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 	using namespace GPlatesMaths;
 
 	if (d_accumulator->d_perform_reconstructions) {
-		FeatureHandle::properties_iterator property = *(d_accumulator->d_current_property);
+		FeatureHandle::properties_iterator property = *(current_top_level_propiter());
 
 		if (d_accumulator->d_recon_plate_id) {
 			const FiniteRotation &r = *d_accumulator->d_recon_rotation;
@@ -242,8 +216,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 					ReconstructedFeatureGeometry::create(
 							reconstructed_point,
-							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property,
+							*current_top_level_propiter()->collection_handle_ptr(),
+							*current_top_level_propiter(),
 							d_accumulator->d_recon_plate_id,
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
@@ -253,8 +227,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_point(
 			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 					ReconstructedFeatureGeometry::create(
 							gml_point.point(),
-							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property,
+							*current_top_level_propiter()->collection_handle_ptr(),
+							*current_top_level_propiter(),
 							boost::none,
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
@@ -271,7 +245,7 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 	using namespace GPlatesMaths;
 
 	if (d_accumulator->d_perform_reconstructions) {
-		FeatureHandle::properties_iterator property = *(d_accumulator->d_current_property);
+		FeatureHandle::properties_iterator property = *(current_top_level_propiter());
 
 		if (d_accumulator->d_recon_plate_id) {
 			// Reconstruct the exterior PolygonOnSphere,
@@ -283,8 +257,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 					ReconstructedFeatureGeometry::create(
 							reconstructed_exterior,
-							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property,
+							*current_top_level_propiter()->collection_handle_ptr(),
+							*current_top_level_propiter(),
 							d_accumulator->d_recon_plate_id,
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
@@ -300,8 +274,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 				ReconstructedFeatureGeometry::non_null_ptr_type interior_rfg_ptr =
 						ReconstructedFeatureGeometry::create(
 								reconstructed_interior,
-								*d_accumulator->d_current_property->collection_handle_ptr(),
-								*d_accumulator->d_current_property,
+								*current_top_level_propiter()->collection_handle_ptr(),
+								*current_top_level_propiter(),
 								d_accumulator->d_recon_plate_id,
 								d_accumulator->d_time_of_appearance);
 				d_reconstruction_geometries_to_populate->push_back(interior_rfg_ptr);
@@ -313,8 +287,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 			ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
 					ReconstructedFeatureGeometry::create(
 							gml_polygon.exterior(),
-							*d_accumulator->d_current_property->collection_handle_ptr(),
-							*d_accumulator->d_current_property,
+							*current_top_level_propiter()->collection_handle_ptr(),
+							*current_top_level_propiter(),
 							boost::none,
 							d_accumulator->d_time_of_appearance);
 			d_reconstruction_geometries_to_populate->push_back(rfg_ptr);
@@ -327,8 +301,8 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_polygon(
 				ReconstructedFeatureGeometry::non_null_ptr_type interior_rfg_ptr =
 						ReconstructedFeatureGeometry::create(
 								*it,
-								*d_accumulator->d_current_property->collection_handle_ptr(),
-								*d_accumulator->d_current_property,
+								*current_top_level_propiter()->collection_handle_ptr(),
+								*current_top_level_propiter(),
 								boost::none,
 								d_accumulator->d_time_of_appearance);
 				d_reconstruction_geometries_to_populate->push_back(interior_rfg_ptr);
@@ -350,7 +324,7 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gml_time_period(
 		// We're gathering information, not performing reconstructions.
 
 		// Note that we're going to assume that we're in a property...
-		if (d_accumulator->current_property_name() == valid_time_property_name) {
+		if (current_top_level_propname() == valid_time_property_name) {
 			// This time period is the "valid time" time period.
 			if ( ! gml_time_period.contains(d_recon_time)) {
 				// Oh no!  This feature instance is not defined at the recon time!
@@ -382,7 +356,7 @@ GPlatesModel::ReconstructedFeatureGeometryPopulator::visit_gpml_plate_id(
 		// We're gathering information, not performing reconstructions.
 
 		// Note that we're going to assume that we're in a property...
-		if (d_accumulator->current_property_name() == reconstruction_plate_id_property_name) {
+		if (current_top_level_propname() == reconstruction_plate_id_property_name) {
 			// This plate ID is the reconstruction plate ID.
 			d_accumulator->d_recon_plate_id = gpml_plate_id.value();
 		}

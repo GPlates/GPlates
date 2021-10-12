@@ -210,7 +210,8 @@ namespace GPlatesGui
 		void
 		render_table_row(
 				int row,
-				const TopologySectionsContainer::TableRow &row_data);
+				const TopologySectionsContainer::TableRow &row_data,
+				QColor bg = Qt::white);
 
 		/**
 		 * Updates data in table cells for one visual row to draw

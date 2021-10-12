@@ -26,13 +26,6 @@
 #ifndef GPLATES_GUI_TOPOLOGYSECTIONSCONTAINER_H
 #define GPLATES_GUI_TOPOLOGYSECTIONSCONTAINER_H
 
-// Some things won't compile on my branch until it gets merged to platepolygon!
-// kill this #define after the merge.
-// kill all the #ifndef NEEDS_PLATEPOLYGON_BRANCH checks after the merge -works-.
-
-// #define NEEDS_PLATEPOLYGON_BRANCH
-
-
 #include <QDebug>
 #include <QObject>
 #include <iterator>
@@ -44,10 +37,7 @@
 #include "model/FeatureId.h"
 #include "maths/GeometryOnSphere.h"
 
-
-#ifndef NEEDS_PLATEPOLYGON_BRANCH
 #include "property-values/GpmlTopologicalSection.h"
-#endif
 
 namespace GPlatesGui
 {
@@ -84,13 +74,11 @@ namespace GPlatesGui
 		 */
 		struct TableRow
 		{
-#ifndef NEEDS_PLATEPOLYGON_BRANCH
 			/**
 			 * The pointer to the gpml:TopologicalSection property-value that
 			 * this table row represents.
 			 */
 			boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> d_section_ptr;
-#endif
 			/**
 			 * The gpml:FeatureId of the topological section.
 			 * Remember, we may be in a position where this does not resolve to a
@@ -327,6 +315,14 @@ namespace GPlatesGui
 		clear();
 
 
+		/**
+		 * Updates the container data 
+		 *
+		 * The @a update_table() signal is emitted.
+		 */
+		void
+		update();
+
 
 #if 0	// The following slots were only used to support easier testing before the platepolygon branch merge.
 		// they should go away once everything works fine.
@@ -370,6 +366,9 @@ namespace GPlatesGui
 		 */
 		void
 		cleared();
+
+		void
+		update_table_sig();
 
 		/**
 		 * Emitted whenever the insertion point changes location.

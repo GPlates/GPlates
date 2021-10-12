@@ -261,7 +261,7 @@ namespace GPlatesGui
 		void
 		handle_feature_modified(
 				GPlatesModel::FeatureHandle::weak_ref modified_feature_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type);
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type);
 
 
 		QModelIndex

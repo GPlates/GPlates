@@ -34,6 +34,7 @@
 #include <QDebug>
 #include <boost/none.hpp>
 
+#include "app-logic/ReconstructionGeometryUtils.h"
 #include "model/types.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
@@ -84,25 +85,16 @@ namespace
 	get_feature_weak_ref_if_valid(
 			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
-		// We use a dynamic cast here (despite the fact that dynamic casts are generally
-		// considered bad form) because we only care about one specific derivation.
-		// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
-		// "if ... else if ..." chain would imply that we should be using polymorphism --
-		// specifically, the double-dispatch of the Visitor pattern -- rather than updating
-		// the "if ... else if ..." chain each time a new derivation is added.)
-		GPlatesModel::ReconstructedFeatureGeometry *rfg =
-				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(geometry.get());
-		if (rfg) {
-			// It's an RFG, so let's look at the feature it's referencing.
-			if (rfg->is_valid()) {
-				return boost::optional<GPlatesModel::FeatureHandle::weak_ref>(
-						rfg->get_feature_ref());
-			}
-			// Else, the weak-ref is not valid, so we'll return boost::none instead.
+		// See if reconstruction geometry references a feature.
+		GPlatesModel::FeatureHandle::weak_ref feature_ref;
+		if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(geometry, feature_ref))
+		{
+			// It's a reconstruction geometry with no feature reference or feature reference
+			// is invalid.
 			return boost::none;
 		}
-		// Else, it's not an RFG, so there's no associated feature.
-		return boost::none;
+
+		return boost::optional<GPlatesModel::FeatureHandle::weak_ref>(feature_ref);
 	}
 
 
@@ -151,27 +143,21 @@ namespace
 	{
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
-		if (weak_ref) {
-			// We use a dynamic cast here (despite the fact that dynamic casts are
-			// generally considered bad form) because we only care about one specific
-			// derivation.  There's no "if ... else if ..." chain, so I think it's not
-			// super-bad form.  (The "if ... else if ..." chain would imply that we
-			// should be using polymorphism -- specifically, the double-dispatch of the
-			// Visitor pattern -- rather than updating the "if ... else if ..." chain
-			// each time a new derivation is added.)
-			GPlatesModel::ReconstructedFeatureGeometry *rfg =
-					dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(geometry.get());
-			if (rfg) {
-				// It's an RFG, so it might have a cached reconstruction plate ID.
-				if (rfg->reconstruction_plate_id()) {
-					// Yes, it has a cached reconstruction plate ID.
-					return QVariant(static_cast<quint32>(*rfg->reconstruction_plate_id()));
-				} else {
-					// Otherwise, there wasn't a reconstruction plate ID.  Let's find
-					// the reconstruction plate ID the hard way -- by iterating through
-					// all the properties of the referenced feature.
-					return get_reconstruction_plate_id_from_properties(*weak_ref, true);
-				}
+		if (weak_ref)
+		{
+			// See if type derived from ReconstructionGeometry has a plate id.
+			GPlatesModel::integer_plate_id_type plate_id = 0;
+			if (GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(
+					geometry, plate_id))
+			{
+				return QVariant(static_cast<quint32>(plate_id));
+			}
+			else
+			{
+				// Otherwise, there wasn't a reconstruction plate ID.  Let's find
+				// the reconstruction plate ID the hard way -- by iterating through
+				// all the properties of the referenced feature.
+				return get_reconstruction_plate_id_from_properties(*weak_ref, true);
 			}
 		}
 		return QVariant();
@@ -461,28 +447,18 @@ namespace
 	get_geometry_property_if_valid(
 			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
-		// We use a dynamic cast here (despite the fact that dynamic casts are generally
-		// considered bad form) because we only care about one specific derivation.
-		// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
-		// "if ... else if ..." chain would imply that we should be using polymorphism --
-		// specifically, the double-dispatch of the Visitor pattern -- rather than updating
-		// the "if ... else if ..." chain each time a new derivation is added.)
-		GPlatesModel::ReconstructedFeatureGeometry *rfg =
-				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(geometry.get());
-		if (rfg) {
-			// It's an RFG, so let's look at the property iterator of the geometry.
-			if (rfg->property().is_valid()) {
-				// Okay fine, but is the property NULL (i.e. deleted)?
-				if (*rfg->property() != NULL) {
-					return boost::optional<GPlatesModel::FeatureHandle::properties_iterator>(
-							rfg->property());
-				}
-			}
-			// Else, the iterator is not valid, so we'll return boost::none instead.
+		// See if type derived from ReconstructionGeometry has a valid geometry property.
+		GPlatesModel::FeatureHandle::properties_iterator geometry_property;
+		if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
+				geometry, geometry_property))
+		{
+			// The derived reconstruction geometry type has no geometry property or
+			// the property iterator is not valid, so we'll return boost::none instead.
 			return boost::none;
 		}
-		// Else, it's not an RFG, so there's no associated feature.
-		return boost::none;
+
+		return boost::optional<GPlatesModel::FeatureHandle::properties_iterator>(
+				geometry_property);
 	}
 
 
@@ -613,10 +589,10 @@ GPlatesGui::FeatureTableModel::FeatureTableModel(
 {
 	QObject::connect(d_feature_focus_ptr,
 			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this,
 			SLOT(handle_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
 }
 
 
@@ -744,26 +720,17 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 	// set the current index
 	d_current_index = idx;
 
-	// We use a dynamic cast here (despite the fact that dynamic casts are generally
-	// considered bad form) because we only care about one specific derivation.
-	// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
-	// "if ... else if ..." chain would imply that we should be using polymorphism --
-	// specifically, the double-dispatch of the Visitor pattern -- rather than updating
-	// the "if ... else if ..." chain each time a new derivation is added.)
-	GPlatesModel::ReconstructedFeatureGeometry *rfg =
-			dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
-	if (rfg) {
-		// It's an RFG, so let's look at the feature it's referencing.
-		if ( ! rfg->is_valid()) {
-			return;
-		}
-
+	// See if reconstruction geometry references a feature.
+	GPlatesModel::FeatureHandle::weak_ref feature_ref;
+	if (GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
+			rg, feature_ref))
+	{
 		// When the user clicks a line of the table, we change the currently focused
 		// feature.
 		//
 		// FIXME: If we end up using this class elsewhere, e.g. search results, we may
 		// want to re-evaluate this behaviour.
-		d_feature_focus_ptr->set_focus(rfg->get_feature_ref(), rfg);
+		d_feature_focus_ptr->set_focus(feature_ref, rg);
 	}
 }
 
@@ -771,7 +738,7 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 void
 GPlatesGui::FeatureTableModel::handle_feature_modified(
 		GPlatesModel::FeatureHandle::weak_ref modified_feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)
 {
 	// First, figure out which row(s) of the table (if any) contains the modified feature
 	// weak-ref.  Note that, since each row of the table corresponds to a single geometry
@@ -779,26 +746,23 @@ GPlatesGui::FeatureTableModel::handle_feature_modified(
 	int row = 0;
 	geometry_sequence_type::const_iterator it = d_sequence.begin();
 	geometry_sequence_type::const_iterator end = d_sequence.end();
-	for ( ; it != end; ++it, ++row) {
+	for ( ; it != end; ++it, ++row)
+	{
 		GPlatesModel::ReconstructionGeometry *rg = it->get();
 
-		// We use a dynamic cast here (despite the fact that dynamic casts are generally
-		// considered bad form) because we only care about one specific derivation.
-		// There's no "if ... else if ..." chain, so I think it's not super-bad form.  (The
-		// "if ... else if ..." chain would imply that we should be using polymorphism --
-		// specifically, the double-dispatch of the Visitor pattern -- rather than updating
-		// the "if ... else if ..." chain each time a new derivation is added.)
-		GPlatesModel::ReconstructedFeatureGeometry *rfg =
-				dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(rg);
-		if (rfg) {
-			// It's an RFG, so let's look at the feature it's referencing.
-			if (rfg->get_feature_ref() == modified_feature_ref) {
+		GPlatesModel::FeatureHandle::weak_ref feature_ref;
+		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
+				rg, feature_ref))
+		{
+			// The RG references a feature, so let's look at the feature it's referencing.
+			if (feature_ref == modified_feature_ref)
+			{
 				QModelIndex idx_begin = index(row, 0);
 				QModelIndex idx_end = index(row, NUM_ELEMS(column_heading_info_table) - 1);
 				emit dataChanged(idx_begin, idx_end);
 			}
 		}
-		// Else, it's not an RFG, so it doesn't reference a feature.
+		// Else it doesn't reference a feature.
 	}
 }
 

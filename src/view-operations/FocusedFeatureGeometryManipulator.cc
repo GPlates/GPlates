@@ -27,6 +27,7 @@
 
 #include "FocusedFeatureGeometryManipulator.h"
 #include "UndoRedo.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "model/ReconstructionTree.h"
 #include "feature-visitors/GeometrySetter.h"
@@ -263,11 +264,11 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::connect_to_feature_foc
 		d_feature_focus,
 		SIGNAL(focus_changed(
 				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 		this,
 		SLOT(set_focus(
 				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
 }
 
 void
@@ -322,7 +323,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::move_point_in_current_
 void
 GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry)
 {
 	// Stop infinite loop from happening where we update geometry builder with feature
 	// which updates feature with geometry builder in a continuous loop.
@@ -344,7 +345,20 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
 	// on GeometryBuilder then 'this' object will receive signals from it
 	// and use these variables.
 	d_feature = feature_ref;
-	d_focused_geometry = focused_geometry;
+
+	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalGeometry's,
+	// for instance, reference regular feature geometries).
+	GPlatesModel::ReconstructedFeatureGeometry *focused_rfg = NULL;
+	if (focused_geometry &&
+		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
+				focused_geometry, focused_rfg))
+	{
+		d_focused_geometry = focused_rfg;
+	}
+	else
+	{
+		d_focused_geometry = NULL;
+	}
 
 	convert_geom_from_feature_to_builder();
 }

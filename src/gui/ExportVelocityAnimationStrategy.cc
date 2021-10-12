@@ -104,9 +104,8 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 	// velocities. The View is already set to the appropriate reconstruction time for
 	// this frame; all we have to do is the maths and the file-writing (to @a full_filename)
 	//
-	// But for now, we're just going to do nothing.
-	GPlatesAppLogic::PlateVelocitiesHook &plate_velocities =
-			d_export_animation_context_ptr->view_state().plate_velocities_hook();
+	const GPlatesAppLogic::PlateVelocities &plate_velocities =
+			d_export_animation_context_ptr->view_state().plate_velocities();
 	
 	// Iterate over the velocity feature collections currently being solved.
 	const unsigned int num_velocity_feature_collections =
@@ -118,7 +117,9 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 		GPlatesFileIO::FileInfo velocity_file;
 
 		// Get cap file information, work out filenames we will use.
-		const QString velocity_filename = plate_velocities.get_velocity_filename(velocity_index);
+		const GPlatesFileIO::FileInfo &velocity_file_info =
+				plate_velocities.get_velocity_file(velocity_index);
+		const QString &velocity_filename = velocity_file_info.get_qfileinfo().absoluteFilePath();
 		//QString cap_display_name = velocity_filename.fileName();
 		QString output_basename = calculate_output_basename(output_filename_prefix, velocity_filename);
 		QString full_output_filename = target_dir.absoluteFilePath(output_basename);

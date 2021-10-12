@@ -64,16 +64,16 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 	// Handle focus changes.
 	QObject::connect(&feature_focus, 
 			SIGNAL(focus_changed(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this,
 			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
 	QObject::connect(&feature_focus,
 			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this,
 			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
 	
 	// Refresh display - since the feature ref is invalid at this point,
 	// the dialog should lock everything down that might otherwise cause problems.
@@ -84,10 +84,10 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 void
 GPlatesQtWidgets::FeaturePropertiesDialog::display_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg)
 {
 	d_feature_ref = feature_ref;
-	d_focused_rfg = focused_rfg;
+	d_focused_rg = focused_rg;
 
 	refresh_display();
 }
@@ -115,9 +115,9 @@ GPlatesQtWidgets::FeaturePropertiesDialog::refresh_display()
 			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->feature_type().build_aliased_name()));
 	
 	// Update our tabbed sub-widgets.
-	d_query_feature_properties_widget->display_feature(d_feature_ref, d_focused_rfg);
+	d_query_feature_properties_widget->display_feature(d_feature_ref, d_focused_rg);
 	d_edit_feature_properties_widget->edit_feature(d_feature_ref);
-	d_view_feature_geometries_widget->edit_feature(d_feature_ref, d_focused_rfg);
+	d_view_feature_geometries_widget->edit_feature(d_feature_ref, d_focused_rg);
 }
 
 		

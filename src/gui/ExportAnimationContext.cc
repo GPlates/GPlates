@@ -37,6 +37,7 @@
 #include "gui/ExportSvgAnimationStrategy.h"
 #include "gui/ExportVelocityAnimationStrategy.h"
 #include "gui/ExportReconstructedGeometryAnimationStrategy.h"
+#include "gui/ExportResolvedTopologyAnimationStrategy.h"
 
 
 
@@ -52,7 +53,8 @@ GPlatesGui::ExportAnimationContext::ExportAnimationContext(
 	d_svg_exporter_enabled(true),
 	d_velocity_exporter_enabled(true),
 	d_gmt_exporter_enabled(true),
-	d_shp_exporter_enabled(true)
+	d_shp_exporter_enabled(true),
+	d_resolved_topology_exporter_enabled(true)
 {  }
 
 
@@ -103,6 +105,9 @@ GPlatesGui::ExportAnimationContext::do_export()
 		// override the ExportTemplateFilenameSequence right here.
 		exporters.back()->set_template_filename(shp_exporter_filename_template());
 		// This should be fine for now since we need to overhaul the filename parameter setup anyway.
+	}
+	if (d_resolved_topology_exporter_enabled) {
+		exporters.push_back(ExportResolvedTopologyAnimationStrategy::create(*this));
 	}
 	
 	// Determine how many frames we need to iterate through.

@@ -537,19 +537,6 @@ namespace
 		return map;
 	}
 
-	const PropertyCreationUtils::PropertyCreatorMap
-	get_coverage_properties()
-	{
-		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();
-
-#if 0
-		map[ PropertyName::create_gpml("domainSet") ] = 
-			GET_PROP_VAL_NAME(create_domain_set);
-#endif
-
-		return map;
-	}
-
 
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_mesh_node_properties()
@@ -861,8 +848,6 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_inferred_paleo_boundary_properties();
 	d_map[ FeatureType::create_gpml("OldPlatesGridMark") ] =
 		get_old_plates_grid_mark_properties();
-	d_map[ FeatureType::create_gpml("Coverage") ] =
-		get_coverage_properties();
 	d_map[ FeatureType::create_gpml("MeshNode") ] =
 		get_mesh_node_properties();
 

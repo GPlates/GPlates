@@ -127,10 +127,10 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::property_tree() const
 void
 GPlatesQtWidgets::QueryFeaturePropertiesWidget::display_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg)
 {
 	d_feature_ref = feature_ref;
-	d_focused_rfg = focused_rfg;
+	d_focused_rg = focused_rg;
 
 	refresh_display();
 }
@@ -217,6 +217,6 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 	GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(
 			property_tree());
-	populator.populate(d_feature_ref, d_focused_rfg);
+	populator.populate(d_feature_ref, d_focused_rg);
 }
 

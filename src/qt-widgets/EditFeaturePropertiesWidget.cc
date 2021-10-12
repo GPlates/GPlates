@@ -75,7 +75,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::EditFeaturePropertiesWidget(
 	QObject::connect(d_feature_focus_ptr, 
 			SIGNAL(focused_feature_deleted(
 					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)),
+					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this,
 			SLOT(handle_feature_deletion()));
 

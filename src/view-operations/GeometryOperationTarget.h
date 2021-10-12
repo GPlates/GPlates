@@ -162,7 +162,7 @@ namespace GPlatesViewOperations
 		void
 		set_focus(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry);
+				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry);
 
 		/**
 		 * A canvas tool has been chosen.

@@ -138,6 +138,12 @@ GPlatesGui::TopologySectionsContainer::clear()
 }
 
 void
+GPlatesGui::TopologySectionsContainer::update()
+{
+	emit update_table_sig();
+}
+
+void
 GPlatesGui::TopologySectionsContainer::set_focus_feature_at_index( 
 		size_type index )
 {

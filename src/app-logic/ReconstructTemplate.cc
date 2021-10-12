@@ -23,45 +23,22 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "ReconstructContext.h"
+#include "ReconstructTemplate.h"
 
 #include "Reconstruct.h"
 
 #include "model/Model.h"
 
 
-GPlatesAppLogic::ReconstructContext::ReconstructContext(
+GPlatesAppLogic::ReconstructTemplate::ReconstructTemplate(
 		GPlatesModel::ModelInterface &model) :
-	d_model(model),
-	d_current_reconstruction(model->create_empty_reconstruction(0.0, 0))
+	d_model(model)
 {
 }
 
 
-GPlatesAppLogic::ReconstructContext::ReconstructContext(
-		GPlatesModel::ModelInterface &model,
-		ReconstructHook::non_null_ptr_type reconstruct_hook) :
-	d_model(model),
-	d_current_reconstruction(model->create_empty_reconstruction(0.0, 0)),
-	// We can do this because reconstruct_hook is non_null_ptr_type and hence
-	// has a reference count greater than zero.
-	d_reconstruct_hook(reconstruct_hook.get())
-{
-}
-
-
-void
-GPlatesAppLogic::ReconstructContext::set_reconstruct_hook(
-		ReconstructHook::non_null_ptr_type reconstruct_hook)
-{
-	// We can do this because reconstruct_hook is non_null_ptr_type and hence
-	// has a reference count greater than zero.
-	d_reconstruct_hook = reconstruct_hook.get();
-}
-
-
-void
-GPlatesAppLogic::ReconstructContext::reconstruct(
+GPlatesModel::Reconstruction::non_null_ptr_type
+GPlatesAppLogic::ReconstructTemplate::reconstruct(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				reconstructable_features_collection,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
@@ -70,15 +47,12 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 		GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id)
 {
 	//
-	// Call pre-reconstruction hook.
+	// Call template method.
 	//
-	if (d_reconstruct_hook)
-	{
-		d_reconstruct_hook->pre_reconstruction_hook(
-				d_model,
-				reconstruction_time,
-				reconstruction_anchored_plate_id);
-	}
+	begin_reconstruction(
+			d_model,
+			reconstruction_time,
+			reconstruction_anchored_plate_id);
 
 	// Get app logic to perform a reconstruction.
 	std::pair<
@@ -92,20 +66,19 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 								reconstruction_anchored_plate_id);
 
 	// Unpack the results of the reconstruction.
-	d_current_reconstruction = reconstruct_result.first;
+	GPlatesModel::Reconstruction::non_null_ptr_type reconstruction = reconstruct_result.first;
 	GPlatesFeatureVisitors::TopologyResolver &topology_resolver =
 			*reconstruct_result.second;
 
 	//
-	// Call post-reconstruction hook.
+	// Call template method.
 	//
-	if (d_reconstruct_hook)
-	{
-		d_reconstruct_hook->post_reconstruction_hook(
-				d_model,
-				*d_current_reconstruction,
-				reconstruction_time,
-				reconstruction_anchored_plate_id,
-				topology_resolver);
-	}
+	end_reconstruction(
+			d_model,
+			*reconstruction,
+			reconstruction_time,
+			reconstruction_anchored_plate_id,
+			topology_resolver);
+
+	return reconstruction;
 }

@@ -33,6 +33,11 @@
 #include <vector>
 
 
+namespace GPlatesPropertyValues
+{
+	class GeoTimeInstant;
+}
+
 namespace GPlatesGui 
 {
 	class AgeColourTable:
@@ -50,7 +55,11 @@ namespace GPlatesGui
 		virtual
 		ColourTable::const_iterator
 		lookup(
-				const GPlatesModel::ReconstructedFeatureGeometry &feature_geometry) const;
+				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
+
+		ColourTable::const_iterator
+		lookup_by_age(
+				const GPlatesPropertyValues::GeoTimeInstant &geo_time) const;
 
 		void 
 		set_viewport_window(

@@ -31,23 +31,20 @@ MSDN product page for Visual C++.
 
 Version requirements
 
-GPlates can be built with version 8.0 (2005) of Microsoft Visual C++ (MSVC8), and 
-MSVC8 project files are provided in the GPlates source package. GPlates should also 
-build under MSVC9 (2008) with the provided MSVC8 project files. Older versions of 
-the environment are tied to older versions of the Microsoft C/C++ compiler (CL.EXE) 
+GPlates can be built with version 8.0 (2005) of Microsoft Visual C++ (MSVC8).
+GPlates should also build under MSVC9 (2008). Older versions of the environment
+are tied to older versions of the Microsoft C/C++ compiler (CL.EXE) 
 which are not standard-conforming enough, and do not properly support many of the 
 C++ features that GPlates and its dependencies (especially Boost) use. 
 
 Visual C++ Express Edition
 
-The Express edition of Visual C++ is freely available from MSDN and can be 
-downloaded from http://msdn2.microsoft.com/vstudio/ . The steps for building 
-GPlates with the Express edition are the same as those for the Standard or 
-Professional editions, with one additional requirement. The Platform SDK must 
-be downloaded and installed, and integrated with the version of Visual C++ 
-Express installed. Download and installation instructions are available at 
-http://www.microsoft.com/downloads/details.aspx?FamilyID=0baf2b35-c656-4969-
-ace8-e4c0c0716adb&DisplayLang=en . 
+The Express edition of Visual C++ is freely available (although Microsoft's support
+for the 2005 edition is coming to an end and the 2008 edition may have issues
+with the boost library). The steps for building GPlates with the Express edition
+are the same as those for the Standard or Professional editions, with one
+additional requirement. The Platform SDK must be downloaded and installed,
+and integrated with the version of Visual C++ Express installed. 
 
 Note before starting
 

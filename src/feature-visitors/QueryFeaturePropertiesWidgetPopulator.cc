@@ -30,6 +30,8 @@
 
 #include "QueryFeaturePropertiesWidgetPopulator.h"
 
+#include "app-logic/ReconstructionGeometryUtils.h"
+
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
@@ -67,20 +69,25 @@
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::populate(
 		GPlatesModel::FeatureHandle::weak_ref &feature,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg)
 {
 	d_tree_widget_ptr->clear();
 
 	d_tree_widget_builder.reset();
 
 	// Visit the feature handle.
-	if (focused_rfg)
+	if (focused_rg)
 	{
 		// The focused geometry property will be expanded but the others won't.
 		// This serves two purposes:
 		//   1) highlights to the user which geometry (of the feature) is in focus.
 		//   2) serves a dramatic optimisation for large number of geometries in feature.
-		d_focused_geometry = focused_rfg->property();
+		GPlatesModel::FeatureHandle::properties_iterator focused_geometry_property;
+		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
+				focused_rg, focused_geometry_property))
+		{
+			d_focused_geometry = focused_geometry_property;
+		}
 	}
 	visit_feature(feature);
 
@@ -91,25 +98,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::populate(
 }
 
 
-void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_feature_properties(
-		GPlatesModel::FeatureHandle &feature_handle)
-{
-	GPlatesModel::FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
-	GPlatesModel::FeatureHandle::properties_iterator end = feature_handle.properties_end();
-	for ( ; iter != end; ++iter) {
-		// Elements of this properties vector can be NULL pointers.  (See the comment in
-		// "model/FeatureRevision.h" for more details.)
-		if (*iter != NULL) {
-			d_last_property_visited = iter;
-			(*iter)->accept_visitor(*this);
-		}
-	}
-}
-
-
-void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_top_level_property_inline(
+bool
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::initialise_pre_property_values(
 		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	const QString name = GPlatesUtils::make_qstring_from_icu_string(
@@ -127,7 +117,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_top_level_p
 
 	// If the current property is the focused geometry then scroll to it
 	// so the user can see it.
-	if (d_focused_geometry == d_last_property_visited)
+	if (d_focused_geometry == current_top_level_propiter())
 	{
 		// Call QTreeWidget::scrollToItem() passing the current item, but do it later
 		// when the item is attached to the QTreeWidget otherwise it will have no effect.
@@ -142,8 +132,15 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_top_level_p
 
 	d_tree_widget_builder.push_current_item(item_handle);
 
-	visit_property_values(top_level_property_inline);
+	// Visit the properties.
+	return true;
+}
 
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::finalise_post_property_values(
+		GPlatesModel::TopLevelPropertyInline &)
+{
 	d_tree_widget_builder.pop_current_item();
 }
 
@@ -168,7 +165,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_line_st
 	// This serves two purposes:
 	//   1) highlights to the user which geometry (of the feature) is in focus.
 	//   2) serves a dramatic optimisation for large number of geometries in feature.
-	if (d_focused_geometry == d_last_property_visited)
+	if (d_focused_geometry == current_top_level_propiter())
 	{
 		// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
 		// when the item is attached to the QTreeWidget otherwise it will have no effect.
@@ -278,7 +275,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_orienta
 	// This serves two purposes:
 	//   1) highlights to the user which geometry (of the feature) is in focus.
 	//   2) serves a dramatic optimisation for large number of geometries in feature.
-	if (d_focused_geometry == d_last_property_visited)
+	if (d_focused_geometry == current_top_level_propiter())
 	{
 		// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
 		// when the item is attached to the QTreeWidget otherwise it will have no effect.

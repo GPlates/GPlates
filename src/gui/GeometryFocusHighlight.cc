@@ -27,7 +27,7 @@
 
 #include "GeometryFocusHighlight.h"
 #include "gui/ColourTable.h"
-#include "model/ReconstructedFeatureGeometryFinder.h"
+#include "model/ReconstructionGeometryFinder.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
@@ -46,7 +46,7 @@ d_highlight_layer_ptr(
 void
 GPlatesGui::GeometryFocusHighlight::set_focus(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_geometry)
+		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry)
 {
 	if (d_focused_geometry == focused_geometry && d_feature == feature_ref) {
 		// No change, so nothing to do.
@@ -95,25 +95,25 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 
 	// Iterate through the RFGs belonging to the same 'reconstruction' that the
 	// clicked geometry came from and that belong to the focused feature.
-	GPlatesModel::ReconstructedFeatureGeometryFinder rfgFinder(reconstruction);
-	rfgFinder.find_rfgs_of_feature(d_feature);
+	GPlatesModel::ReconstructionGeometryFinder rgFinder(reconstruction);
+	rgFinder.find_rgs_of_feature(d_feature);
 
-	GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator rfgIter;
-	for (rfgIter = rfgFinder.found_rfgs_begin();
-		rfgIter != rfgFinder.found_rfgs_end();
-		++rfgIter)
+	GPlatesModel::ReconstructionGeometryFinder::rg_container_type::const_iterator rgIter;
+	for (rgIter = rgFinder.found_rgs_begin();
+		rgIter != rgFinder.found_rgs_end();
+		++rgIter)
 	{
-		GPlatesModel::ReconstructedFeatureGeometry *rfg = rfgIter->get();
+		GPlatesModel::ReconstructionGeometry *rg = rgIter->get();
 
-		// If the RFG is the same as the focused geometry (the geometry that the
+		// If the RG is the same as the focused geometry (the geometry that the
 		// user clicked on) then highlight it in a different colour.
-		const GPlatesGui::Colour &highlight_colour = (rfg == d_focused_geometry.get())
+		const GPlatesGui::Colour &highlight_colour = (rg == d_focused_geometry.get())
 			? GPlatesViewOperations::FocusedFeatureParameters::CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR
 			: GPlatesViewOperations::FocusedFeatureParameters::NON_CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR;
 
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				GPlatesViewOperations::create_rendered_geometry_on_sphere(
-						rfg->geometry(),
+						rg->geometry(),
 						highlight_colour,
 						GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,
 						GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT);
@@ -121,43 +121,3 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 		d_highlight_layer_ptr->add_rendered_geometry(rendered_geometry);
 	}
 }
-
-#if 0
-void
-GPlatesGui::GeometryFocusHighlight::visit_polyline_on_sphere(
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline)
-{
-		GPlatesGui::PlatesColourTable::const_iterator colour = &GPlatesGui::Colour::get_silver();
-
-		GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
-		std::vector<GPlatesMaths::PointOnSphere> points;
-
-		// get the begin and end points ; NOTE the -- on end
-		GPlatesMaths::PolylineOnSphere::vertex_const_iterator v_begin= polyline->vertex_begin();
-		GPlatesMaths::PolylineOnSphere::vertex_const_iterator v_end= --(polyline->vertex_end());
-
-		// add the first point of the line to the layer
-		points.clear();
-		points.push_back( *v_begin );
-
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> g_start = 
-				GPlatesUtils::create_point_on_sphere(points, validity);
-
-		GPlatesGui::RenderedGeometry rg_start = 
-			GPlatesGui::RenderedGeometry( *g_start, colour, 7.0f );
-
-		d_highlight_layer_ptr->push_back( rg_start );
-
-		// add the last point of the line to the layer
-		points.clear();
-		points.push_back( *v_end );
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> g_end = 
-				GPlatesUtils::create_point_on_sphere(points, validity);
-
-		GPlatesGui::RenderedGeometry rg_end = 
-			GPlatesGui::RenderedGeometry( *g_end, colour, 5.0f);
-
-		d_highlight_layer_ptr->push_back( rg_end );
-}
-#endif
-
