@@ -336,6 +336,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	recon_method_label->setText(tr("Reconstruction Method:"));
 	recon_method_layout->addWidget(recon_method_label);
 	recon_method_layout->addWidget(d_recon_method_combobox);
+	recon_method_layout->setSpacing(6);
 
 	// Create the edit widgets we'll need, and add them to the Designer-created widgets.
 	QHBoxLayout *plate_id_layout;
@@ -485,6 +486,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 			d_button_create->setEnabled(false);
 			button_create_and_save->setEnabled(false);
 			d_conjugate_plate_id_widget->setVisible(
+					d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
 					should_offer_conjugate_plate_id_prop(
 						d_choose_feature_type_widget));
 			break;
@@ -682,6 +684,13 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		d_application_state_ptr->update_layers(collection_file_iter.first);
 		
 		emit feature_created(feature);
+
+		// If the user got into digitisation mode because they clicked the
+		// "Clone Geometry" button whilst in the Click Geometry tool, for
+		// example, they get taken back to the Click Geometry tool instead of
+		// remaining in a digitisation tool.
+		d_viewport_window_ptr->restore_canvas_tool_last_chosen_by_user();
+
 		accept();
 	}
 	catch (const ChooseFeatureCollectionWidget::NoFeatureCollectionSelectedException &)

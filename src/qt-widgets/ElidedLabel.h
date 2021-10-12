@@ -179,6 +179,8 @@ namespace GPlatesQtWidgets
 
 			QFrame *d_internal_label_frame;
 			QLabel *d_internal_label;
+
+			bool d_inside_do_show; // to prevent infinite loops on some platforms.
 		};
 
 		// Initialisation common to both constructors.

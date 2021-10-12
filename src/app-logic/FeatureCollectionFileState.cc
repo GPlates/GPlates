@@ -465,10 +465,22 @@ GPlatesAppLogic::FeatureCollectionFileState::destroying_feature_collection(
 			GPLATES_ASSERTION_SOURCE);
 	FileSlot &deleted_file_slot = d_file_slots[file_handle];
 
+	// It is possible that this function is called when d_is_active_in_model is true.
+	// This is the case if we don't get a deactivation signal before the impending
+	// destruction signal. This can occur if there is a notification guard blocking
+	// the deactivation signal, but notification guards don't block impending
+	// destruction signals.
+	if (deleted_file_slot.d_is_active_in_model)
+	{
+		deactivated_feature_collection(file_handle);
+	}
+
+#if 0
 	// Should have already been deactivated in the model.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			!deleted_file_slot.d_is_active_in_model,
 			GPLATES_ASSERTION_SOURCE);
+#endif
 
 	//
 	// Reuse the file slot and compact the slots array and compact the file indices array.

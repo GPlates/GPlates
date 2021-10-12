@@ -21,7 +21,7 @@ set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the int
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION_MAJOR "0")
 set(GPLATES_PACKAGE_VERSION_MINOR "9")
-set(GPLATES_PACKAGE_VERSION_PATCH "10")
+set(GPLATES_PACKAGE_VERSION_PATCH "10.1")
 
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION_MAJOR}.${GPLATES_PACKAGE_VERSION_MINOR}.${GPLATES_PACKAGE_VERSION_PATCH}")
@@ -67,7 +67,7 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # This is manually set when making GPlates *public* releases.
 # However, when making internal releases or just an ordinary developer build, leave it
 # empty; if it is empty, the revision number is automatically populated for you on build.
-set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "9547")
+set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "9767")
 
 # List the Qt plugins used by GPlates.
 # This is needed for packaging standalone versions of GPlates for a binary installer.
@@ -82,6 +82,11 @@ set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "9547")
 # Debian/RPM package manager to install Qt (and its plugins) on the target machine.
 set(GPLATES_QT_PLUGINS_MACOSX 
 	"imageformats/libqjpeg.dylib"
+	"imageformats/libqgif.dylib"
+	"imageformats/libqico.dylib"
+	"imageformats/libqmng.dylib"
+	"imageformats/libqsvg.dylib"
+	"imageformats/libqtiff.dylib"
 	)
 set(GPLATES_QT_PLUGINS_WIN32 
 	"imageformats/qjpeg4.dll"

@@ -76,6 +76,7 @@ namespace
 	{
 		static const HTMLColourNames &html_colours = HTMLColourNames::instance();
 
+		// If you add an entry here, don't forget to also add an entry in get_layer_icon below!
 		static const Colour RECONSTRUCTION_COLOUR = *html_colours.get_colour("gold");
 		static const Colour RECONSTRUCT_COLOUR = *html_colours.get_colour("yellowgreen");
 		static const Colour RASTER_COLOUR = *html_colours.get_colour("tomato");
@@ -154,6 +155,8 @@ namespace
 					ICON_SIZE, ICON_SIZE, get_layer_colour(TOPOLOGY_BOUNDARY_RESOLVER)));
 		static const QIcon TOPOLOGY_NETWORK_RESOLVER_ICON(get_filled_pixmap(
 					ICON_SIZE, ICON_SIZE, get_layer_colour(TOPOLOGY_NETWORK_RESOLVER)));
+		static const QIcon VELOCITY_FIELD_CALCULATOR_ICON(get_filled_pixmap(
+					ICON_SIZE, ICON_SIZE, get_layer_colour(VELOCITY_FIELD_CALCULATOR)));
 
 		static const QIcon DEFAULT_ICON;
 
@@ -176,6 +179,9 @@ namespace
 
 			case TOPOLOGY_NETWORK_RESOLVER:
 			 	return TOPOLOGY_NETWORK_RESOLVER_ICON;
+
+			case VELOCITY_FIELD_CALCULATOR:
+				return VELOCITY_FIELD_CALCULATOR_ICON;
 
 			default:
 				return DEFAULT_ICON;

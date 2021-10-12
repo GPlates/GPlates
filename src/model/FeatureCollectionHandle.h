@@ -113,19 +113,6 @@ namespace GPlatesModel
 				const WeakReference<FeatureStoreRootHandle> &feature_store_root);
 
 		/**
-		 * Returns true iff this feature collection contains unsaved changes.
-		 */
-		bool
-		contains_unsaved_changes() const;
-
-		/**
-		 * Clears the unsaved changes flag to mark this feature collection as having
-		 * no unsaved changes.
-		 */
-		void
-		clear_unsaved_changes();
-
-		/**
 		 * Returns the collection of miscellaneous metadata associated with this
 		 * feature collection.
 		 */
@@ -161,17 +148,6 @@ namespace GPlatesModel
 		this_type &
 		operator=(
 				const this_type &);
-
-		/**
-		 * True iff the feature collection contains unsaved changes.
-		 */
-		bool d_contains_unsaved_changes;
-		
-		/**
-		 * We hold a weak-ref to ourselves so that we can set the unsaved changes
-		 * flag when there are any modifications.
-		 */
-		weak_ref d_weak_ref_to_self;
 
 		/**
 		 * A miscellaneous collection of metadata associated with this feature collection.

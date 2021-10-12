@@ -110,7 +110,7 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 	QString full_filename = d_export_animation_context_ptr->target_dir().absoluteFilePath(basename);
 
 	d_export_animation_context_ptr->viewport_window().reconstruction_view_widget().
-			globe_and_map_widget().get_globe_canvas().repaint_canvas();
+			globe_and_map_widget().update_canvas();
 
 	QCoreApplication::processEvents();
 	QImage img=

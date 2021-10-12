@@ -241,7 +241,9 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries_per_collect
 				reconstruction_anchor_plate_id,
 				reconstruction_time);
 			break;
+		case GMT:
 		// We don't yet support GMT in per-collection export form.
+			break;
 		default:
 			throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
 				"Chosen export format is not currently supported.");

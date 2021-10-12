@@ -84,6 +84,69 @@ namespace GPlatesModel
 			 */
 			typedef RevisionAwareIterator<const HandleType> const_iterator;
 		};
+
+
+		/**
+		 * A policy class that indicates that a handle type stores an unsaved
+		 * changes flag.
+		 */
+		class WithUnsavedChangesFlag
+		{
+		public:
+
+			bool
+			contains_unsaved_changes() const
+			{
+				return d_contains_unsaved_changes;
+			}
+
+			void
+			clear_unsaved_changes()
+			{
+				d_contains_unsaved_changes = false;
+			}
+
+		protected:
+
+			WithUnsavedChangesFlag() :
+				d_contains_unsaved_changes(false)
+			{  }
+
+			~WithUnsavedChangesFlag()
+			{  }
+
+			void
+			set_unsaved_changes()
+			{
+				d_contains_unsaved_changes = true;
+			}
+			
+		private:
+
+			bool d_contains_unsaved_changes;
+		};
+
+
+		/**
+		 * A policy class that indicates that a handle type does not store an
+		 * unsaved changes flag.
+		 */
+		class WithoutUnsavedChangesFlag
+		{
+		protected:
+
+			WithoutUnsavedChangesFlag()
+			{  }
+
+			~WithoutUnsavedChangesFlag()
+			{  }
+
+			void
+			set_unsaved_changes()
+			{
+				// Do nothing.
+			}
+		};
 	}
 
 	/**
@@ -133,6 +196,11 @@ namespace GPlatesModel
 		 * returned on dereference of the FeatureHandle const iterator.
 		 */
 		typedef GPlatesGlobal::PointerTraits<const TopLevelProperty>::non_null_ptr_type const_iterator_value_type;
+
+		/**
+		 * FeatureHandles don't have an unsaved changes flag.
+		 */
+		typedef HandleTraitsInternals::WithoutUnsavedChangesFlag unsaved_changes_flag_policy;
 	};
 
 	template<>
@@ -176,6 +244,11 @@ namespace GPlatesModel
 		 * returned on dereference of the FeatureCollectionHandle const iterator.
 		 */
 		typedef GPlatesGlobal::PointerTraits<const FeatureHandle>::non_null_ptr_type const_iterator_value_type;
+
+		/**
+		 * FeatureCollectionHandles have an unsaved changes flag.
+		 */
+		typedef HandleTraitsInternals::WithUnsavedChangesFlag unsaved_changes_flag_policy;
 	};
 
 	template<>
@@ -219,6 +292,11 @@ namespace GPlatesModel
 		 * returned on dereference of the FeatureStoreRoothandle const iterator.
 		 */
 		typedef GPlatesGlobal::PointerTraits<const FeatureCollectionHandle>::non_null_ptr_type const_iterator_value_type;
+		
+		/**
+		 * FeatureStoreRootHandles don't have an unsaved changes flag.
+		 */
+		typedef HandleTraitsInternals::WithoutUnsavedChangesFlag unsaved_changes_flag_policy;
 	};
 
 	template<>

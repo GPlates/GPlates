@@ -139,6 +139,13 @@ const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type *
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::get_custom_child_layers_order(
 		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer)
 {
-	return &d_visual_layers.get_layer_order();
+	if (parent_layer == GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
+	{
+		return &d_visual_layers.get_layer_order();
+	}
+	else
+	{
+		return NULL;
+	}
 }
 

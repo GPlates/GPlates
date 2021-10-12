@@ -45,6 +45,7 @@ namespace GPlatesAppLogic
 
 namespace GPlatesGui
 {
+	class FeatureFocus;
 	class UnsavedChangesTracker;
 }
 
@@ -84,6 +85,7 @@ namespace GPlatesGui
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				GPlatesAppLogic::FeatureCollectionFileState &file_state_,
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io_,
+				FeatureFocus &feature_focus_,
 				QObject *parent_ = NULL);
 
 		virtual
@@ -254,6 +256,11 @@ namespace GPlatesGui
 		 * Handles loading/unloading of feature collections.
 		 */
 		GPlatesAppLogic::FeatureCollectionFileIO *d_feature_collection_file_io_ptr;
+
+		/**
+		 * Stores the notion of which feature has the focus.
+		 */
+		FeatureFocus &d_feature_focus;
 		
 		
 

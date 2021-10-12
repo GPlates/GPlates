@@ -55,13 +55,13 @@ namespace GPlatesModel
 	 * inheritance. For example, FeatureHandle is derived from
 	 * BasicHandle<FeatureHandle>. (Although delegation is usually preferred to
 	 * inheritance, the use of inheritance in this case significantlly simplifies
-	 * the Handle class interfaces.
+	 * the Handle class interfaces.)
 	 */
 	template<class HandleType> // HandleType is one of FeatureHandle, FeatureCollectionHandle or FeatureStoreRootHandle.
 	class BasicHandle :
-			public WeakObserverPublisher<HandleType>
+			public WeakObserverPublisher<HandleType>,
+			public HandleTraits<HandleType>::unsaved_changes_flag_policy
 	{
-
 	public:
 
 		// Get typedefs from HandleTraits.
@@ -75,6 +75,8 @@ namespace GPlatesModel
 		typedef typename HandleTraits<handle_type>::revision_type revision_type;
 		typedef typename HandleTraits<handle_type>::parent_type parent_type;
 		typedef typename HandleTraits<handle_type>::child_type child_type;
+
+		using typename HandleTraits<handle_type>::unsaved_changes_flag_policy::set_unsaved_changes;
 
 		/**
 		 * The type of this class.
@@ -469,7 +471,6 @@ namespace GPlatesModel
 
 		friend class RevisionAwareIterator<HandleType>;
 		friend class RevisionAwareIterator<const HandleType>;
-
 	};
 
 
@@ -598,7 +599,7 @@ namespace GPlatesModel
 		// changeset_ptr will be NULL if we're not connected to a model.
 		if (changeset_ptr)
 		{
-			// changeset_ptr might not point our changeset.
+			// changeset_ptr might not point to our changeset.
 			changeset_ptr->add_handle(d_handle_ptr);
 		}
 
@@ -799,7 +800,8 @@ namespace GPlatesModel
 		d_index_in_container(INVALID_INDEX),
 		d_is_active(true),
 		d_has_pending_publisher_modification_notification(false),
-		d_has_pending_child_modification_notification(false)
+		d_has_pending_child_modification_notification(false),
+		d_was_active_before_pending_notifications(true)
 	{
 	}
 
@@ -818,6 +820,10 @@ namespace GPlatesModel
 			bool publisher_modified,
 			bool child_modified)
 	{
+		// We always set the unsaved changes flag immediately regardless of
+		// whether there is a NotificationGuard.
+		set_unsaved_changes();
+
 		Model *model = model_ptr();
 
 		if (model && model->has_notification_guard())
@@ -932,6 +938,8 @@ namespace GPlatesModel
 	{
 		Model *model = model_ptr();
 
+		// If there is a notification guard, we let d_was_active_before_pending_notifications
+		// drift out of sync with d_is_active.
 		if (!(model && model->has_notification_guard()))
 		{
 			d_was_active_before_pending_notifications = d_is_active;
@@ -958,6 +966,8 @@ namespace GPlatesModel
 	{
 		Model *model = model_ptr();
 
+		// If there is a notification guard, we let d_was_active_before_pending_notifications
+		// drift out of sync with d_is_active.
 		if (!(model && model->has_notification_guard()))
 		{
 			d_was_active_before_pending_notifications = d_is_active;
@@ -998,7 +1008,7 @@ namespace GPlatesModel
 	{
 		if (d_parent_ptr)
 		{
-			BasicHandle<parent_type> &parent = *(dynamic_cast<BasicHandle<parent_type> *>(d_parent_ptr));
+			BasicHandle<parent_type> &parent = dynamic_cast<BasicHandle<parent_type> &>(*d_parent_ptr);
 			parent.handle_child_modified();
 		}
 	}
@@ -1036,23 +1046,18 @@ namespace GPlatesModel
 			d_pending_addition_notifications.reset(NULL);
 		}
 
-		// Deactivation and/or reactivation notifications:
-		if (d_was_active_before_pending_notifications)
+		// d_was_active_before_pending_notifications is usually kept in sync with
+		// d_is_active; if they are not in sync, this means that at least one
+		// deactivation/reactivation was performed when a NotificationGuard was active.
+		if (d_is_active && !d_was_active_before_pending_notifications)
 		{
-			// We were deactivated and/or reactivated, possibly multiple times.
-			// Our listeners need not be bothered with such trivialities, so we will
-			// only send a notification if d_is_active has changed.
-			if (d_is_active && !d_was_active_before_pending_notifications)
-			{
-				notify_listeners_of_reactivation();
-			}
-			else if (!d_is_active && d_was_active_before_pending_notifications)
-			{
-				notify_listeners_of_deactivation();
-			}
-
-			// Reset them to be the same again.
-			d_was_active_before_pending_notifications = d_is_active;
+			notify_listeners_of_reactivation();
+			d_was_active_before_pending_notifications = true;
+		}
+		else if (!d_is_active && d_was_active_before_pending_notifications)
+		{
+			notify_listeners_of_deactivation();
+			d_was_active_before_pending_notifications = false;
 		}
 	}
 
@@ -1063,7 +1068,7 @@ namespace GPlatesModel
 	{
 		for (iterator iter = begin(); iter != end(); ++iter)
 		{
-			BasicHandle<child_type> &child = *dynamic_cast<BasicHandle<child_type> *>((*iter).get());
+			BasicHandle<child_type> &child = dynamic_cast<BasicHandle<child_type> &>(**iter);
 			child.flush_pending_notifications();
 		}
 	}
