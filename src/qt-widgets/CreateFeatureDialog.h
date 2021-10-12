@@ -34,6 +34,18 @@
 #include "model/FeatureHandle.h"
 
 
+namespace GPlatesAppLogic
+{
+	class FeatureCollectionFileState;
+	class FeatureCollectionFileIO;
+	class Reconstruct;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
@@ -60,8 +72,8 @@ namespace GPlatesQtWidgets
 
 		explicit
 		CreateFeatureDialog(
-				GPlatesModel::ModelInterface &model_interface,
-				GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesPresentation::ViewState &view_state_,
+				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				FeatureType creation_type,
 				QWidget *parent_ = NULL);
 		
@@ -129,16 +141,28 @@ namespace GPlatesQtWidgets
 		/**
 		 * The Model interface, used to create new features.
 		 */
-		GPlatesModel::ModelInterface *d_model_ptr;
-	
+		GPlatesModel::ModelInterface d_model_ptr;
+
 		/**
-		 * The View State is used to access the reconstruction tree to perform reverse
-		 * reconstruction of the temporary geometry (once we know the plate id).
-		 *
-		 * It is also necessary for a call to create_empty_reconstructable_file(),
-		 * should the user decide to create a new FeatureCollection on the spot.
+		 * The loaded feature collection files.
 		 */
-		ViewportWindow *d_view_state_ptr;
+		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
+
+		/**
+		 * Used to create an empty feature collection file.
+		 */
+		GPlatesAppLogic::FeatureCollectionFileIO &d_file_io;
+		
+		/**
+		 * The reconstruction generator is used to access the reconstruction tree to
+		 * perform reverse reconstruction of the temporary geometry (once we know the plate id).
+		 */
+		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+
+		/**
+		 * Used to popup dialogs in the main window.
+		 */
+		ViewportWindow *d_viewport_window_ptr;
 
 		/**
 		* Type of feature to create 

@@ -34,8 +34,11 @@
 #endif
 
 #include <QWidget>
-#include "ApplicationState.h"
+
 #include "ManageFeatureCollectionsActionWidgetUi.h"
+
+#include "app-logic/FeatureCollectionFileState.h"
+
 
 namespace GPlatesQtWidgets
 {
@@ -52,7 +55,7 @@ namespace GPlatesQtWidgets
 		explicit
 		ManageFeatureCollectionsActionWidget(
 				ManageFeatureCollectionsDialog &feature_collections_dialog,
-				GPlatesAppState::ApplicationState::file_info_iterator file_it,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
 				QWidget *parent_ = NULL);
 		
 		/**
@@ -61,7 +64,7 @@ namespace GPlatesQtWidgets
 		void
 		update_state();
 		
-		GPlatesAppState::ApplicationState::file_info_iterator
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator
 		get_file_info_iterator() const
 		{
 			return d_file_info_iterator;
@@ -93,7 +96,7 @@ namespace GPlatesQtWidgets
 	private:
 	
 		ManageFeatureCollectionsDialog &d_feature_collections_dialog;
-		GPlatesAppState::ApplicationState::file_info_iterator d_file_info_iterator;
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator d_file_info_iterator;
 		
 	};
 }

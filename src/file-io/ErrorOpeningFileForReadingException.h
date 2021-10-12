@@ -33,13 +33,17 @@
 
 #include <QString>
 
+#include "global/GPlatesException.h"
+
+
 namespace GPlatesFileIO
 {
 	/**
 	 * This exception is thrown when an error is encountered while attempting to open a file
 	 * for reading.
 	 */
-	class ErrorOpeningFileForReadingException
+	class ErrorOpeningFileForReadingException :
+			public GPlatesGlobal::Exception
 	{
 	public:
 		/**
@@ -47,7 +51,9 @@ namespace GPlatesFileIO
 		 */
 		explicit
 		ErrorOpeningFileForReadingException(
+				const GPlatesUtils::CallStack::Trace &exception_source,
 				const QString &filename_):
+			Exception(exception_source),
 			d_filename(filename_)
 		{  }
 
@@ -59,6 +65,20 @@ namespace GPlatesFileIO
 		{
 			return d_filename;
 		}
+
+	protected:
+		virtual
+		const char *
+		exception_name() const
+		{
+			return "ErrorOpeningFileForReadingException";
+		}
+
+		virtual
+		void
+		write_message(
+				std::ostream &os) const;
+
 	private:
 		/**
 		 * The filename of the file which couldn't be opened for reading.

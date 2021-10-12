@@ -26,15 +26,19 @@
 #include "ProjectionControlWidget.h"
 
 #include "MapCanvas.h"
-#include "gui/MapProjection.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/AssertionFailureException.h"
+
+#include "view-operations/ViewportProjection.h"
 
 #include <QVariant>
 
 GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
-		MapCanvas *map_canvas_ptr,
+		GPlatesViewOperations::ViewportProjection &viewport_projection,
 		QWidget *parent_ = NULL):
 	QWidget(parent_),
-	d_map_canvas_ptr(map_canvas_ptr)
+	d_viewport_projection(viewport_projection)
 {
 	setupUi(this);
 	show_label(false);
@@ -54,9 +58,11 @@ GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
 	QObject::connect(combo_projections, SIGNAL(activated(int)),
 			this, SLOT(handle_combobox_changed(int)));
 	
-	// TODO: Listen for projection changes that may occur from some
+	// Listen for projection changes that may occur from some
 	// other source, and update the combobox appropriately.
-	// connect to handle_projection_changed(some data type)
+	QObject::connect(
+			&d_viewport_projection, SIGNAL(projection_type_changed(const GPlatesViewOperations::ViewportProjection &)),
+			this, SLOT(handle_projection_type_changed(const GPlatesViewOperations::ViewportProjection &)));
 }
 
 
@@ -66,29 +72,33 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_combobox_changed(
 {
 	// Retrieve the embedded QVariant for the selected combobox choice.
 	QVariant selected_projection_qv = combo_projections->itemData(idx);
-	
-	// TODO: Extract selected projection from the QVariant and do something
-	// to the canvas with it.
-	d_map_canvas_ptr->set_projection_type(idx);
 
-	// The reconstruction widget listens for this, and switches from map<-->globe if necessary.
-	emit projection_changed(idx);
+	// Extract projection type from QVariant.
+	const GPlatesGui::ProjectionType projection_type =
+			static_cast<GPlatesGui::ProjectionType>(selected_projection_qv.toInt());
+	
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			projection_type >= 0 && projection_type < GPlatesGui::NUM_PROJECTIONS,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Set the projection type - it will also notify us of the change with its signal.
+	d_viewport_projection.set_projection_type(projection_type);
 }
 
 
 void
-GPlatesQtWidgets::ProjectionControlWidget::handle_projection_changed(
-		int projection_type
-		)
+GPlatesQtWidgets::ProjectionControlWidget::handle_projection_type_changed(
+		const GPlatesViewOperations::ViewportProjection &viewport_projection)
 {
-	// TODO: Wrap the projection ID in a QVariant.
-	QVariant selected_projection_qv(projection_type);
+	QVariant selected_projection_qv(viewport_projection.get_projection_type());
 	
 	// Now we can quickly select the appropriate line of the combobox
 	// by finding our projection ID (and not worrying about the text
 	// label)
-	int idx = combo_projections->findData(selected_projection_qv);
+	const int idx = combo_projections->findData(selected_projection_qv);
 	if (idx != -1) {
+		// This will not trigger activate() causing a infinite cycle
+		// because we're setting this programmatically.
 		combo_projections->setCurrentIndex(idx);
 	}
 }

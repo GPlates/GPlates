@@ -16,8 +16,6 @@ set(srcs
     AddPointGeometryOperation.h
     DeleteVertexGeometryOperation.cc
     DeleteVertexGeometryOperation.h
-    ExportReconstructedFeatureGeometries.cc
-    ExportReconstructedFeatureGeometries.h
     FocusedFeatureGeometryManipulator.cc
     FocusedFeatureGeometryManipulator.h
     GeometryBuilder.cc
@@ -37,6 +35,8 @@ set(srcs
     MoveVertexGeometryOperation.cc
     MoveVertexGeometryOperation.h
     QueryProximityThreshold.h
+    ReconstructView.cc
+    ReconstructView.h
     RenderedDirectionArrow.h
     RenderedGeometry.cc
     RenderedGeometry.h
@@ -60,10 +60,14 @@ set(srcs
     RenderedPolygonOnSphere.h
     RenderedPolylineOnSphere.h
     RenderedReconstructionGeometry.h
+    RenderedString.h
     RenderReconstructionGeometries.cc
     RenderReconstructionGeometries.h
     UndoRedo.cc
     UndoRedo.h
+    ViewportProjection.h
+    VisibleReconstructedFeatureGeometryExport.cc
+    VisibleReconstructedFeatureGeometryExport.h
 )
 
 

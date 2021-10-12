@@ -25,7 +25,7 @@
 
 #include "TimeControlWidget.h"
 
-#include <QDebug>
+#include <QFont>
 #include "gui/AnimationController.h"
 #include "utils/FloatingPointComparisons.h"
 
@@ -75,6 +75,15 @@ GPlatesQtWidgets::TimeControlWidget::TimeControlWidget(
 	// React to time-change events and update our widgets accordingly.
 	QObject::connect(d_animation_controller_ptr, SIGNAL(view_time_changed(double)),
 			this, SLOT(handle_view_time_changed(double)));
+
+	// Special: on OS X, the style stubbornly refuses to scale up the font size used
+	// in the TimeControlWidget spinbox, despite it being allocated plenty of space.
+	// However, we can manually bump the point size up a bit to compensate.
+#ifdef Q_WS_MAC
+	QFont time_font = spinbox_current_time->font();
+	time_font.setPointSize(20);
+	spinbox_current_time->setFont(time_font);
+#endif
 }
 
 

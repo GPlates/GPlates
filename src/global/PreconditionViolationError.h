@@ -41,12 +41,20 @@ namespace GPlatesGlobal
 	class PreconditionViolationError:
 			public Exception
 	{
-		public:
-			explicit
+	public:
+		explicit
 			PreconditionViolationError(
-					const GPlatesUtils::CallStack::Trace &exception_source) :
-				Exception(exception_source)
-			{  }
+			const GPlatesUtils::CallStack::Trace &exception_source) :
+		Exception(exception_source)
+		{  }
+
+	protected:
+		virtual
+			const char *
+			exception_name() const
+		{
+			return "PreconditionViolationError";
+		}
 	};
 }
 

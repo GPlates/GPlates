@@ -37,7 +37,6 @@
 
 #include "GMTFormatHeader.h"
 #include "FileInfo.h"
-#include "FeatureWriter.h"
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "property-values/GmlTimeInstant.h"
@@ -51,8 +50,7 @@
 namespace GPlatesFileIO
 {
 	class GMTFormatWriter :
-		public FeatureWriter,
-		private GPlatesModel::ConstFeatureVisitor
+		public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 
@@ -78,32 +76,12 @@ namespace GPlatesFileIO
 		* @param header_format determines what information is printed in each feature header.
 		*/
 		explicit
-			GMTFormatWriter(
-			const FileInfo &file_info,
-			HeaderFormat header_format = PLATES4_STYLE_HEADER);
+		GMTFormatWriter(
+				const FileInfo &file_info,
+				HeaderFormat header_format = PLATES4_STYLE_HEADER);
 
 		virtual
-			~GMTFormatWriter();
-
-		/**
-		* Writes a feature in GMT 'xy' format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
-
-		/**
-		* Writes a feature in GMT 'xy' format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
+		~GMTFormatWriter();
 
 	private:
 

@@ -28,6 +28,7 @@
 #include "AgeColourTable.h"
 #include "ColourSpectrum.h"
 
+#include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -83,7 +84,7 @@ GPlatesGui::AgeColourTable::lookup_by_age(
 		colour = &GPlatesGui::Colour::get_red();
 		
 	} else if (geo_time.is_real()) {
-		double age = geo_time.value() - d_viewport_window->reconstruction_time();
+		double age = geo_time.value() - d_reconstruct->get_current_reconstruction_time();
 		if (age < 0) {
 			// The feature shouldn't exist yet.
 			// If (for some reason) we are drawing things without regard to their
@@ -113,10 +114,10 @@ GPlatesGui::AgeColourTable::set_colour_scale_factor(
 
 
 void 
-GPlatesGui::AgeColourTable::set_viewport_window(
-		const GPlatesQtWidgets::ViewportWindow &viewport)
+GPlatesGui::AgeColourTable::set_reconstruct_state(
+		const GPlatesAppLogic::Reconstruct &reconstruct)
 {
-	d_viewport_window = &viewport;
+	d_reconstruct = &reconstruct;
 }
 
 GPlatesGui::AgeColourTable *

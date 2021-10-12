@@ -29,6 +29,8 @@
 #define GPLATES_QTWIDGETS_MAPVIEW_H
 
 #include <QGraphicsView>
+#include <QGLWidget>
+#include <QMouseEvent>
 
 #include <boost/optional.hpp>
 
@@ -37,9 +39,14 @@
 #include "qt-widgets/SceneView.h"
 #include "view-operations/QueryProximityThreshold.h"
 
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
-
 	class MapCanvas;
 	class ViewportWindow;
 
@@ -82,9 +89,8 @@ namespace GPlatesQtWidgets
 		};
 
 		MapView(
-			ViewportWindow &view_state,
+			GPlatesPresentation::ViewState &view_state,
 			QWidget *parent,
-			GPlatesGui::ViewportZoom *viewport_zoom,
 			MapCanvas *map_canvas);
 
 		/** 
@@ -129,7 +135,7 @@ namespace GPlatesQtWidgets
 		 */
 		virtual
 		boost::optional<GPlatesMaths::LatLonPoint>
-		camera_llp();
+		camera_llp() const;
 				
 		virtual
 		void
@@ -352,6 +358,10 @@ namespace GPlatesQtWidgets
 		 */
 		QRectF d_scene_rect;
 
+		/**
+		 * The QGLWidget that we use for this widget's viewport
+		 */
+		QGLWidget *d_gl_widget_ptr;
 	};
 
 }

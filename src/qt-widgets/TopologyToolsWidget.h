@@ -32,6 +32,12 @@
 
 #include "gui/TopologyTools.h"
 
+
+namespace GPlatesAppLogic
+{
+	class FeatureCollectionFileState;
+}
+
 namespace GPlatesGui
 {
 	class FeatureFocus;
@@ -46,6 +52,11 @@ namespace GPlatesModel
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
 }
 
 namespace GPlatesQtWidgets
@@ -64,10 +75,8 @@ namespace GPlatesQtWidgets
 
 		explicit
 		TopologyToolsWidget(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesModel::ModelInterface &model_interface,
-				GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesPresentation::ViewState &view_state,
+				GPlatesQtWidgets::ViewportWindow &viewport_window,
 				QWidget *parent_ = NULL);
 
 	public slots:
@@ -128,11 +137,6 @@ namespace GPlatesQtWidgets
 
 		void
 		setup_connections();
-	
-		/**
-		 * Used to draw rendered geometries.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
 
 		/**
 		 * This is our reference to the Feature Focus, which we use to let the rest of the
@@ -144,12 +148,6 @@ namespace GPlatesQtWidgets
 		 * The model
 		 */ 
 		GPlatesModel::ModelInterface *d_model_interface;
-
-		/**
-		 * The View State is used to access the digitisation layer in the globe in the
-		 * globe canvas.
-		 */
-		ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * The dialog the user sees when they hit the Create button.

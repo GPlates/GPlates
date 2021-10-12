@@ -330,7 +330,7 @@ GPlatesFileIO::GdalReader::read_file(
 	if (d_dataset_ptr == NULL)
 	{
 	//	std::cerr << "Error opening dataset via GDAL." << std::endl;
-		throw GPlatesFileIO::ErrorOpeningFileForReadingException(filename);
+		throw GPlatesFileIO::ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 
 	display_gdal_projection_info(d_dataset_ptr);

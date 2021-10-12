@@ -440,7 +440,7 @@ std::cout << ")" << std::endl;
 
 	// Create a RenderedGeometry using the reconstructed geometry.
 	const GPlatesViewOperations::RenderedGeometry rendered_geom =
-		GPlatesViewOperations::create_rendered_geometry_on_sphere(
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 			point.clone_as_geometry(),
 			*colour,
 			GPlatesViewOperations::GeometryOperationParameters::REGULAR_POINT_SIZE_HINT,
@@ -476,7 +476,7 @@ std::cout << ")" << std::endl;
 
 	// Create a RenderedGeometry using the vector
 	const GPlatesViewOperations::RenderedGeometry rendered_vector =
-		GPlatesViewOperations::create_rendered_direction_arrow(
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 			point,
 			vector_xyz,
 			0.05f,

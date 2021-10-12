@@ -2079,9 +2079,9 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 }
 
 
-void
+GPlatesFileIO::File::shared_ref
 GPlatesFileIO::PlatesLineFormatReader::read_file(
-		FileInfo &fileinfo,
+		const FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
@@ -2090,13 +2090,17 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
 	std::ifstream input(filename.toAscii().constData());
 	if ( ! input) {
-		throw ErrorOpeningFileForReadingException(filename);
+		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 
 	boost::shared_ptr<DataSource> source( 
 			new GPlatesFileIO::LocalFileDataSource(filename, DataFormats::PlatesLine));
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection
 			= model->create_feature_collection();
+
+	// Make sure feature collection gets unloaded when it's no longer needed.
+	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =
+			GPlatesModel::FeatureCollectionHandleUnloader::create(collection);
 	
 	LineReader in(input);
 	while (in) {
@@ -2110,5 +2114,5 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 		}
 	}
 
-	fileinfo.set_feature_collection(collection);
+	return File::create_loaded_file(collection_unloader, fileinfo);
 }

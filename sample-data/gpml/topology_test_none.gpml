@@ -651,4 +651,82 @@
             </gpml:oldPlatesHeader>
         </gpml:MidOceanRidge>
     </gml:featureMember>
+    <gml:featureMember>
+        <gpml:PassiveContinentalBoundary>
+            <gpml:identity>GPlates-19942c2e-213f-4949-9fbc-b5846e4bfcb0</gpml:identity>
+            <gpml:revision>GPlates-547f9862-6e8c-47ae-bcca-655f64a04dcc</gpml:revision>
+            <gpml:outlineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:Polygon>
+                            <gml:exterior>
+                                <gml:LinearRing>
+                                    <gml:posList gml:dimension="2">-9.88495 42.8686 -15.4107 39.9075 -21.3772 49.0334 -13.1858 51.2744 -4.45088 51.3293 -3.10052 40.7199 -4.72122 34.0031 -10.7066 31.9327 -9.88495 42.8686 </gml:posList>
+                                </gml:LinearRing>
+                            </gml:exterior>
+                        </gml:Polygon>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Polygon</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:outlineOf>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>103</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition>http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition>http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>Test Polygon</gml:name>
+        </gpml:PassiveContinentalBoundary>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:UnclassifiedFeature>
+            <gpml:identity>GPlates-881840ac-e08a-4de1-80a3-67ef7957d936</gpml:identity>
+            <gpml:revision>GPlates-76aeb372-fb62-434d-bcd7-25c1016e7a9b</gpml:revision>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:LineString>
+                            <gml:posList gml:dimension="2">-13.8635 47.5211 -17.2255 58.2623 </gml:posList>
+                        </gml:LineString>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gml:name>cut through line</gml:name>
+        </gpml:UnclassifiedFeature>
+    </gml:featureMember>
 </gpml:FeatureCollection>

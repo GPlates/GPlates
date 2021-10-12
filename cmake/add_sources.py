@@ -17,6 +17,7 @@ __description__ = "Finds all source files '.cc', '.h', '.ui' and '.qrc' in subdi
 GPLATES_SUB_DIRECTORIES = [
 	'app-logic',
     'canvas-tools',
+	'cli',
     'feature-visitors',
     'file-io',
     'global',
@@ -24,6 +25,7 @@ GPLATES_SUB_DIRECTORIES = [
     'maths',
     'model',
     'property-values',
+    'presentation',
     'qt-resources',
     'qt-widgets',
     'utils',
@@ -34,6 +36,18 @@ GPLATES_EXTRA_SOURCE_FILES = [
     ('global', 'config.h'),
     ('global', 'Constants.cc')
 ]
+
+#
+# A source file is included if it:
+# - matches the regular expression pattern in FILE_INCLUDE_REGEXP
+#    *and*
+# - does not match the regular expression pattern in FILE_EXCLUDE_REGEXP.
+#
+# What constitutes a source file.
+FILE_INCLUDE_REGEXP = r'\S+\.cc$|\S+\.h$|\S+\.ui$|\S+\.qrc$'
+# What of the above pattern to exclude from source file list.
+FILE_EXCLUDE_REGEXP = r'\S+Ui\.h$|^moc_\S+\.cc|_pch\.h$|^qrc_\S+\.cc$|\S+_test\.(h|cc)$'
+
 
 def get_existing_sources(directory, file_include_regexp, file_exclude_regexp):
     srcs_list = []
@@ -88,10 +102,10 @@ def add_sources_to_cmake_lists_file(cmake_lists_filename, directory, name):
     srcs_regexp  = re.compile(r'set\s*\(srcs[^\)]*\)', re.IGNORECASE)
 
     # What constitutes a source file.
-    file_include_regexp = re.compile(r'\S+\.cc$|\S+\.h$|\S+\.ui$|\S+\.qrc$')
+    file_include_regexp = re.compile(FILE_INCLUDE_REGEXP)
     
     # What of the above pattern to exclude from source file list.
-    file_exclude_regexp = re.compile(r'\S+Ui\.h$|^moc_\S+\.cc|_pch\.h$|^qrc_\S+\.cc$')
+    file_exclude_regexp = re.compile(FILE_EXCLUDE_REGEXP)
     
     # Modify file contents with new 'set(src ... )' expression.
     file_contents = get_sources(file_contents, srcs_regexp, directory, file_include_regexp, file_exclude_regexp)

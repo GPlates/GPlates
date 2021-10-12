@@ -34,10 +34,12 @@
 #endif
 
 #include <memory>
+#include <QByteArray>
 #include <QGraphicsScene>
-#include <QWidget>
-#include <QSplitter>
 #include <QLabel>
+#include <QMainWindow>
+#include <QSplitter>
+#include <QWidget>
 
 #include <boost/optional.hpp>
 
@@ -46,6 +48,8 @@
 #include "ReconstructionViewWidgetUi.h"
 
 #include "ZoomSliderWidget.h"
+#include "GMenuButton.h"
+
 
 
 namespace GPlatesMaths
@@ -56,6 +60,12 @@ namespace GPlatesMaths
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
+	class ViewportProjection;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
 }
 
 namespace GPlatesGui
@@ -84,11 +94,16 @@ namespace GPlatesQtWidgets
 		
 	public:
 		ReconstructionViewWidget(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesGui::AnimationController &animation_controller,
-				ViewportWindow &view_state,
+				ViewportWindow &viewport_window,
+				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
+		enum WidgetIndex
+		{
+			CANVAS_WIDGET_INDEX = 0,
+			TASK_PANEL_INDEX
+		};
 
 		GlobeCanvas &
 		globe_canvas() const
@@ -136,6 +151,7 @@ namespace GPlatesQtWidgets
 		{
 			return *d_camera_llp;
 		}
+		
 #if 0
 		GPlatesGui::ViewportZoom &
 		viewport_zoom() 
@@ -143,6 +159,12 @@ namespace GPlatesQtWidgets
 			return d_viewport_zoom;
 		}
 #endif
+
+		void
+		enable_raster_display();
+
+		void
+		disable_raster_display();
 
 		void
 		enable_point_display();
@@ -199,23 +221,25 @@ namespace GPlatesQtWidgets
 
 		void
 		change_projection(
-			int projection_type);
-
+			const GPlatesViewOperations::ViewportProjection &view_projection);
+			
 	signals:
 
 		void
 		update_tools_and_status_message();
+		
 
 	private:
 		
 		std::auto_ptr<QWidget>
 		construct_awesomebar_one(
-				GPlatesGui::AnimationController &animation_controller);
+				GPlatesGui::AnimationController &animation_controller,
+				GPlatesQtWidgets::ViewportWindow &main_window);
 
 		std::auto_ptr<QWidget>
 		construct_awesomebar_two(
 				GPlatesGui::ViewportZoom &vzoom,
-				GPlatesQtWidgets::MapCanvas *map_canvas_ptr);
+				GPlatesViewOperations::ViewportProjection &vprojection);
 
 		std::auto_ptr<QWidget>
 		construct_viewbar(
@@ -225,7 +249,10 @@ namespace GPlatesQtWidgets
 		std::auto_ptr<QWidget>
 		construct_viewbar_with_projections(
 				GPlatesGui::ViewportZoom &vzoom,
-				GPlatesQtWidgets::MapCanvas *map_canvas_ptr);
+				GPlatesViewOperations::ViewportProjection &vprojection);
+				
+				
+			
 
 		/**
 		 * The QSplitter responsible for dividing the interface between canvas
@@ -249,6 +276,7 @@ namespace GPlatesQtWidgets
 		TimeControlWidget *d_time_control_widget_ptr;
 		ZoomSliderWidget *d_zoom_slider_widget;
 		ProjectionControlWidget *d_projection_control_widget_ptr;
+		GMenuButton *d_gmenu_button_ptr;
 
 		// The QGraphicsScene representing the map canvas.
 		MapCanvas *d_map_canvas_ptr;

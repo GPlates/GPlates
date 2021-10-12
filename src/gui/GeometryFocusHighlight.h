@@ -32,7 +32,6 @@
 
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
-#include "view-operations/GeometryBuilder.h"
 
 namespace GPlatesViewOperations
 {
@@ -106,8 +105,6 @@ namespace GPlatesGui
 		 * The layer of rendered geometries which is used for highlighting.
 		 */
 		GPlatesViewOperations::RenderedGeometryLayer *d_highlight_layer_ptr;
-
-		GPlatesViewOperations::GeometryBuilder d_geometry_builder;
 	};
 }
 

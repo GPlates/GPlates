@@ -50,6 +50,11 @@ namespace GPlatesQtWidgets
 	class TopologyToolsWidget;
 }
 
+namespace GPlatesCanvasTools
+{
+	class MeasureDistanceState;
+}
+
 namespace GPlatesViewOperations
 {
 	class ActiveGeometryOperation;
@@ -60,8 +65,6 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
-	class GeometryFocusHighlight;
-
 	/**
 	 * This class contains the current choice of MapCanvasTool.
 	 *
@@ -96,7 +99,7 @@ namespace GPlatesGui
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
+				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state);
 
 		~MapCanvasToolChoice()
 		{  }
@@ -177,6 +180,12 @@ namespace GPlatesGui
 			change_tool_if_necessary(d_manipulate_pole_tool_ptr);
 		}
 
+		void
+		choose_measure_distance_tool()
+		{
+			change_tool_if_necessary(d_measure_distance_tool_ptr);
+		}
+
 	private:
 		/**
 		 * This is the PanMap tool which the user may choose.
@@ -235,6 +244,11 @@ namespace GPlatesGui
 		 * This is the ManipulatePole tool which the user may choose.
 		 */
 		MapCanvasTool::non_null_ptr_type d_manipulate_pole_tool_ptr;
+
+		/**
+		 * This is the Measure Distance canvas tool which the user may choose.
+		 */
+		MapCanvasTool::non_null_ptr_type d_measure_distance_tool_ptr;
 
 		/**
 		 * The current choice of CanvasTool.

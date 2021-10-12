@@ -36,13 +36,13 @@
 #include <QString>
 
 #include "FileInfo.h"
-#include "FeatureWriter.h"
 #include "OgrWriter.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "model/ConstFeatureVisitor.h"
+#include "model/FeatureCollectionHandle.h"
 #include "model/PropertyName.h"
 
 
@@ -50,42 +50,24 @@ namespace GPlatesFileIO
 {
 
 	class ShapefileWriter :
-		public FeatureWriter,
-		private GPlatesModel::ConstFeatureVisitor
+		public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 
 		/**
 		* @pre is_writable(file_info) is true.
 		* @param file_info file to write to.
+		* @param feature_collection_ref feature collection that will be written
+		*        using calls to @a write_feature.
 		*/
 		explicit
-			ShapefileWriter(
-			const FileInfo &file_info);
+		ShapefileWriter(
+				const FileInfo &file_info,
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_ref);
 
 		virtual
 			~ShapefileWriter()
 		{};
-
-		/**
-		* Writes a feature in ESRI Shapefile format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
-
-		/**
-		* Writes a feature in ESRI Shapefile format.
-		*
-		* @param feature_handle feature to write
-		*/
-		virtual
-		void
-		write_feature(
-				const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature);
 
 	private:
 

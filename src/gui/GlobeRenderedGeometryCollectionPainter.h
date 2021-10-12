@@ -28,11 +28,13 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "GlobeRenderedGeometryLayerPainter.h"
-
+#include "RenderSettings.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
 
+#include <QGLWidget>
 
 namespace GPlatesViewOperations
 {
@@ -42,10 +44,8 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
-	// FIXME: remove all reference to Globe.
-	class Globe;
-
 	class GlobeRenderedGeometryLayerPainter;
+	class GlobeVisibilityTester;
 	class NurbsRenderer;
 
 	/**
@@ -59,8 +59,9 @@ namespace GPlatesGui
 	public:
 		GlobeRenderedGeometryCollectionPainter(
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				// FIXME: Remove globe hack.
-				GPlatesGui::Globe *globe);
+				const RenderSettings &render_settings,
+				TextRenderer::ptr_to_const_type text_renderer_ptr,
+				const GlobeVisibilityTester &visibility_tester);
 
 
 		/**
@@ -87,8 +88,14 @@ namespace GPlatesGui
 		double d_current_layer_far_depth;
 		double d_depth_range_per_layer;
 
-		// FIXME: Remove this hack.
-		GPlatesGui::Globe *const d_globe;
+		//! Rendering flags to determine what gets shown
+		const RenderSettings &d_render_settings;
+		
+		//! Used for rendering text on an OpenGL canvas
+		TextRenderer::ptr_to_const_type d_text_renderer_ptr;
+
+		//! Used for determining whether a particular point on the globe is visible
+		GlobeVisibilityTester d_visibility_tester;
 
 		//! Parameters that are only available when @a paint is called.
 		struct PaintParams

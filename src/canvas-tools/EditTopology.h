@@ -28,11 +28,16 @@
 #include <QObject>
 
 #include "gui/FeatureFocus.h"
-#include "gui/GlobeCanvasTool.h"
 #include "gui/FeatureTableModel.h"
+#include "gui/GlobeCanvasTool.h"
 #include "gui/TopologySectionsContainer.h"
 #include "gui/TopologyTools.h"
 
+
+namespace GPlatesAppLogic
+{
+	class Reconstruct;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -76,25 +81,23 @@ namespace GPlatesCanvasTools
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesGui::Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesPresentation::ViewState &view_state,
+				const GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesGui::FeatureFocus &feature_focus)
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget)
 		{
 			EditTopology::non_null_ptr_type ptr(
 					new EditTopology(
-							rendered_geom_collection,
 							globe, 
 							globe_canvas, 
-							view_state, 
+							view_state,
+							viewport_window, 
 							clicked_table_model,
 							topology_sections_container,
-							topology_tools_widget,
-							feature_focus),
+							topology_tools_widget),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -138,21 +141,13 @@ namespace GPlatesCanvasTools
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		EditTopology(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesGui::Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesPresentation::ViewState &view_state,
+				const GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesGui::FeatureFocus &feature_focus);
-
-
-		const GPlatesQtWidgets::ViewportWindow &
-		view_state() const
-		{
-			return *d_view_state_ptr;
-		}
+				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget);
 
 		GPlatesGui::FeatureTableModel &
 		clicked_table_model() const
@@ -170,11 +165,14 @@ namespace GPlatesCanvasTools
 
 		/**
 		 * This is the view state which is used to obtain the reconstruction root.
-		 *
-		 * Since the view state is also the ViewportWindow, it is currently used to
-		 * pass messages to the status bar.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+
+		/**
+		 *
+		 * This is currently used to pass messages to the status bar.
+		 */
+		const GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
 
 		/**
 		 * This is the external table of hits which will be updated in the event that

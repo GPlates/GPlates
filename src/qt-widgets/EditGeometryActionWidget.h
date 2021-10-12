@@ -27,8 +27,10 @@
 #define GPLATES_QTWIDGETS_EDITGEOMETRYACTIONWIDGET_H
 
 #include <QWidget>
-#include "ApplicationState.h"
+
 #include "EditGeometryActionWidgetUi.h"
+
+#include "app-logic/FeatureCollectionFileState.h"
 
 namespace GPlatesQtWidgets
 {

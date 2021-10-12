@@ -32,10 +32,18 @@
 #include "model/FeatureHandle.h"
 
 
+namespace GPlatesAppLogic
+{
+	class Reconstruct;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;
-
 	class QueryFeaturePropertiesWidget: 
 			public QWidget,
 			protected Ui_QueryFeaturePropertiesWidget 
@@ -45,19 +53,12 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		QueryFeaturePropertiesWidget(
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesPresentation::ViewState &view_state_,
 				QWidget *parent_ = NULL);
 
 		virtual
 		~QueryFeaturePropertiesWidget()
 		{  }
-
-		const GPlatesQtWidgets::ViewportWindow &
-		view_state() const
-		{
-			return *d_view_state_ptr;
-		}
 
 		/**
 		 * The parameter is a QString to enable us to pass the string "indeterminate".
@@ -110,7 +111,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * This is the view state which is used to obtain the reconstruction root.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
 
 		/**
 		 * This is the feature we are displaying. Make sure to check this ref is_valid()!

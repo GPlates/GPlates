@@ -112,7 +112,7 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 			: GPlatesViewOperations::FocusedFeatureParameters::NON_CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR;
 
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				GPlatesViewOperations::create_rendered_geometry_on_sphere(
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 						rg->geometry(),
 						highlight_colour,
 						GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT,

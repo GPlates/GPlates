@@ -28,6 +28,7 @@
 #ifndef GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
 #define GPLATES_FILEIO_GPMLONEPOINTSIXREADER_H
 
+#include "File.h"
 #include "FileInfo.h"
 #include "ReadErrorAccumulation.h"
 #include "model/ModelInterface.h"
@@ -42,9 +43,9 @@ namespace GPlatesFileIO
 	{
 	public:
 		static
-		void
+		const File::shared_ref
 		read_file(
-				FileInfo &fileinfo,
+				const FileInfo &fileinfo,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors,
 				bool use_gzip = false);

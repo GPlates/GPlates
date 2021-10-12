@@ -34,10 +34,18 @@
 #include "model/ReconstructedFeatureGeometry.h"
 
 
+namespace GPlatesAppLogic
+{
+	class Reconstruct;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;
-
 	class ViewFeatureGeometriesWidget: 
 			public QWidget,
 			protected Ui_ViewFeatureGeometriesWidget 
@@ -47,8 +55,7 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		ViewFeatureGeometriesWidget(
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesPresentation::ViewState &view_state_,
 				QWidget *parent_ = NULL);
 
 		virtual
@@ -87,10 +94,10 @@ namespace GPlatesQtWidgets
 		
 	private:
 		/**
-		 * This is the view state which is used to obtain the reconstruction in order to
-		 * iterate over RFGs.
+		 * This is the reconstruction generator which is used to obtain the
+		 * reconstruction in order to iterate over RFGs.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
 
 		/**
 		 * This is the feature focus which tracks changes to the currently focused feature.

@@ -40,6 +40,11 @@ namespace GPlatesGui
 	class AnimationController;
 }
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 
 namespace GPlatesQtWidgets
 {
@@ -56,7 +61,8 @@ namespace GPlatesQtWidgets
 		explicit
 		ExportAnimationDialog(
 				GPlatesGui::AnimationController &animation_controller,
-				GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesPresentation::ViewState &view_state_,
+				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				QWidget *parent_ = NULL);
 
 		virtual

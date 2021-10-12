@@ -36,6 +36,11 @@ namespace GPlatesGlobal
 	extern const char CopyrightString[];
 
 	extern const char HtmlCopyrightString[];
+
+	/**
+	 * The Subversion revision number of GPlates.
+	 */
+	extern const char SourceCodeControlVersionString[];
 }
 
 #endif // GPLATES_GLOBAL_CONSTANTS_H

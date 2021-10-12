@@ -142,22 +142,6 @@ GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatWriter(
 }
 
 
-void
-GPlatesFileIO::PlatesLineFormatWriter::write_feature(
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
-{
-	visit_feature(feature);
-}
-
-
-void
-GPlatesFileIO::PlatesLineFormatWriter::write_feature(
-		const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature)
-{
-	visit_feature(feature);
-}
-
-
 bool
 GPlatesFileIO::PlatesLineFormatWriter::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
@@ -185,14 +169,13 @@ GPlatesFileIO::PlatesLineFormatWriter::finalise_post_feature_properties(
 	{
 		using boost::lambda::_1;
 		using boost::lambda::_2;
-		using boost::lambda::bind;
 
 		// Calculate total number of geometry points in the current feature.
 		const unsigned int number_points_in_feature = std::accumulate(
 				d_feature_accumulator.geometries_begin(),
 				d_feature_accumulator.geometries_end(),
 				0 /*initial_value*/,
-				_1 + bind(&get_number_of_points_in_geometry, _2));
+				_1 + boost::lambda::bind(&get_number_of_points_in_geometry, _2));
 
 		// Store the total number of geometry points in old plates header.
 		old_plates_header.number_of_points = number_points_in_feature;

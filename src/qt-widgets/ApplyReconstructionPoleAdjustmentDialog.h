@@ -33,15 +33,23 @@
 #include "maths/Rotation.h"
 
 
+namespace GPlatesAppLogic
+{
+	class Reconstruct;
+}
+
 namespace GPlatesMaths
 {
 	class FiniteRotation;
 }
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;
-
 	class ApplyReconstructionPoleAdjustmentDialog: 
 			public QDialog,
 			protected Ui_ApplyReconstructionPoleAdjustmentDialog 
@@ -172,12 +180,8 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		AdjustmentApplicator(
-				ViewportWindow &view_state,
-				ApplyReconstructionPoleAdjustmentDialog &dialog):
-			d_view_state_ptr(&view_state),
-			d_dialog_ptr(&dialog),
-			d_pole_time(0.0)
-		{  }
+				GPlatesPresentation::ViewState &view_state,
+				ApplyReconstructionPoleAdjustmentDialog &dialog);
 
 		void
 		set(
@@ -213,7 +217,8 @@ namespace GPlatesQtWidgets
 		have_reconstructed();
 
 	private:
-		ViewportWindow *d_view_state_ptr;
+		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+
 		ApplyReconstructionPoleAdjustmentDialog *d_dialog_ptr;
 		// The adjustment as calculated interactively, relative to the stationary plate.
 		boost::optional<GPlatesMaths::Rotation> d_adjustment;

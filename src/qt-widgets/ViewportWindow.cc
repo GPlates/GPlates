@@ -29,6 +29,7 @@
 #include <boost/format.hpp>
 #include <boost/scoped_ptr.hpp>
 
+#include <QtGlobal>
 #include <QFileDialog>
 #include <QLocale>
 #include <QString>
@@ -40,22 +41,29 @@
 #include <QInputDialog>
 #include <QProgressBar>
 #include <QDockWidget>
+#include <QActionGroup>
 #include <QDebug>
 
 #include "ViewportWindow.h"
+
+#include "AboutDialog.h"
+#include "ActionButtonBox.h"
+#include "CreateFeatureDialog.h"
+#include "GlobeCanvas.h"
 #include "InformationDialog.h"
 #include "ShapefilePropertyMapper.h"
 #include "TaskPanel.h"
-#include "ActionButtonBox.h"
-#include "CreateFeatureDialog.h"
 
+#include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/AppLogicUtils.h"
-#include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
-#include "app-logic/ReconstructTemplate.h"
+#include "app-logic/Reconstruct.h"
+
+#include "canvas-tools/MeasureDistanceState.h"
 
 #include "global/GPlatesException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
+
 #include "gui/AgeColourTable.h"
 #include "gui/ChooseCanvasTool.h"
 #include "gui/FeatureColourTable.h"
@@ -70,10 +78,12 @@
 #include "gui/SvgExport.h"
 #include "gui/TopologySectionsContainer.h"
 #include "gui/TopologySectionsTable.h"
+
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 #include "maths/InvalidLatLonException.h"
 #include "maths/Real.h"
+
 #include "model/Model.h"
 #include "model/types.h"
 #include "model/ReconstructedFeatureGeometry.h"
@@ -82,7 +92,6 @@
 #include "model/ReconstructionTreePopulator.h"
 #include "model/ReconstructionTree.h"
 
-#include "file-io/FeatureWriter.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/FileFormatNotSupportedException.h"
@@ -95,536 +104,105 @@
 #include "file-io/ShapefileReader.h"
 #include "file-io/GpmlOnePointSixReader.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
+
+#include "feature-visitors/FeatureCollectionClassifier.h"
+#include "feature-visitors/ComputationalMeshSolver.h"
+#include "feature-visitors/TopologyResolver.h"
+
+#include "presentation/Application.h"
+
+#include "qt-widgets/MapCanvas.h"
+#include "qt-widgets/ShapefilePropertyMapper.h"
+
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/RenderReconstructionGeometries.h"
 #include "view-operations/UndoRedo.h"
-#include "feature-visitors/FeatureCollectionClassifier.h"
-#include "feature-visitors/ComputationalMeshSolver.h"
-#include "feature-visitors/TopologyResolver.h"
-#include "qt-widgets/MapCanvas.h"
-#include "qt-widgets/MapView.h"
+#include "view-operations/ViewportProjection.h"
+#include "presentation/ViewState.h"
 
-
-void
-GPlatesQtWidgets::ViewportWindow::save_file(
-		const GPlatesFileIO::FileInfo &file_info,
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
-{
-	if ( ! GPlatesFileIO::is_writable(file_info)) {
-		throw GPlatesFileIO::ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
-				file_info.get_qfileinfo().filePath());
-	}
-
-	if ( ! file_info.get_feature_collection()) {
-		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(GPLATES_EXCEPTION_SOURCE,
-				"Attempted to write an empty feature collection.");
-	}
-
-	boost::shared_ptr<GPlatesFileIO::FeatureWriter> writer =
-		GPlatesFileIO::get_feature_collection_writer(
-		file_info,
-		feature_collection_write_format);
-
-	GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection =
-		*file_info.get_feature_collection();
-
-
-	if (feature_collection.is_valid())
-	{
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator
-			iter = feature_collection->features_begin(), 
-			end = feature_collection->features_end();
-
-		for ( ; iter != end; ++iter)
-		{
-			writer->write_feature(iter);
-		}
-		feature_collection->set_contains_unsaved_changes(false);
-	}
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::save_file_as(
-		const GPlatesFileIO::FileInfo &file_info,
-		file_info_iterator features_to_save,
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
-{
-	GPlatesFileIO::FileInfo file_copy = save_file_copy(
-		file_info,
-		features_to_save,
-		feature_collection_write_format);
-
-	// Update iterator
-	*features_to_save = file_copy;
-}
-
-
-GPlatesFileIO::FileInfo
-GPlatesQtWidgets::ViewportWindow::save_file_copy(
-		const GPlatesFileIO::FileInfo &file_info,
-		file_info_iterator features_to_save,
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
-{
-	GPlatesFileIO::FileInfo file_copy(file_info.get_qfileinfo().filePath());
-	if ( ! features_to_save->get_feature_collection()) {
-		throw GPlatesGlobal::UnexpectedEmptyFeatureCollectionException(GPLATES_EXCEPTION_SOURCE,
-				"Attempted to write an empty feature collection.");
-	}
-	file_copy.set_feature_collection(*(features_to_save->get_feature_collection()));
-	save_file(file_copy, feature_collection_write_format);
-	return file_copy;
-}
 
 void
 GPlatesQtWidgets::ViewportWindow::load_files(
-		const QStringList &file_names)
+		const QStringList &filenames)
 {
-	d_read_errors_dialog.clear();
-	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
-
-	QStringList::const_iterator iter = file_names.begin();
-	QStringList::const_iterator end = file_names.end();
-
-	bool have_loaded_new_rotation_file = false;
-
-	for ( ; iter != end; ++iter) {
-
-		GPlatesFileIO::FileInfo file(*iter);
-
-		try
-		{
-
-			switch ( GPlatesFileIO::get_feature_collection_file_format(*iter) )
-			{
-			case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-				GPlatesFileIO::ShapefileReader::set_property_mapper(
-					boost::shared_ptr< ShapefilePropertyMapper >(
-						new ShapefilePropertyMapper(this)));
-				break;
-
-			default:
-				break;
-			}
-			// Read the feature collection from file.
-			GPlatesFileIO::read_feature_collection_file(file, d_model, read_errors);
-
-			switch ( GPlatesFileIO::get_feature_collection_file_format(file) )
-			{
-			case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
-			case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
-				{
-					// All loaded files are added to the set of loaded files.
-					GPlatesAppState::ApplicationState::file_info_iterator new_file =
-						GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
-
-					// GPML format files can contain both reconstructable features and
-					// reconstruction trees. This visitor lets us find out which.
-					if (file.get_feature_collection()) {
-						GPlatesFeatureVisitors::FeatureCollectionClassifier classifier;
-						classifier.scan_feature_collection(
-								GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
-										*file.get_feature_collection())
-								);
-						// Check if the file contains reconstructable features.
-						if (classifier.reconstructable_feature_count() > 0) {
-							// I am very bad for putting this here - I'll clean it up when
-							// ApplicationState notifies of load/unload events - John.
-							GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-									*file.get_feature_collection();
-							if (!d_plate_velocities.load_reconstructable_feature_collection(
-									feature_collection, file, d_model))
-							{
-								// Only add the file if it's not a velocity cap file because
-								// would like to render things its own way.
-								// In the future this will be taken care of by Visual Layers.
-								d_active_reconstructable_files.push_back(new_file);
-							}
-
-						}
-						// Check if the file contains reconstruction features.
-						if (classifier.reconstruction_feature_count() > 0) {
-							// We only want to make the first rotation file active.
-							if ( ! have_loaded_new_rotation_file) 
-							{
-								d_active_reconstruction_files.clear();
-								d_active_reconstruction_files.push_back(new_file);
-
-								// I am very bad for putting this here - I'll clean it up when
-								// ApplicationState notifies of load/unload events - John.
-								GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-										*file.get_feature_collection();
-								d_plate_velocities.load_reconstruction_feature_collection(
-										feature_collection);
-
-								have_loaded_new_rotation_file = true;
-							}
-						}
-					}
-				}
-				break;
-
-			case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
-				if (file.get_feature_collection())
-				{
-					// All loaded files are added to the set of loaded files.
-					GPlatesAppState::ApplicationState::file_info_iterator new_file =
-						GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
-
-					// Line format files are made active by default.
-					d_active_reconstructable_files.push_back(new_file);
-				}
-				break;
-
-			case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
-				if (file.get_feature_collection())
-				{
-					// All loaded files are added to the set of loaded files.
-					GPlatesAppState::ApplicationState::file_info_iterator new_file =
-						GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);				
-
-					// We only want to make the first rotation file active.
-					if ( ! have_loaded_new_rotation_file) 
-					{
-						d_active_reconstruction_files.clear();
-						d_active_reconstruction_files.push_back(new_file);
-
-						// I am very bad for putting this here - I'll clean it up when
-						// ApplicationState notifies of load/unload events - John.
-						GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-								*file.get_feature_collection();
-						d_plate_velocities.load_reconstruction_feature_collection(
-								feature_collection);
-
-						have_loaded_new_rotation_file = true;
-					}
-				}
-				break;
-
-			case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-				if (file.get_feature_collection())
-				{
-					GPlatesAppState::ApplicationState::file_info_iterator new_file =
-						GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
-					d_active_reconstructable_files.push_back(new_file);
-				}
-				break;
-
-			default:
-				break;
-			}
-		}
-		catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
-		{
-			// FIXME: A bit of a sucky conversion from ErrorOpeningFileForReadingException to
-			// ReadErrorOccurrence, but hey, this whole function will be rewritten when we add
-			// QFileDialog support.
-			// FIXME: I suspect I'm Missing The Point with these shared_ptrs.
-			boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
-					new GPlatesFileIO::LocalFileDataSource(e.filename(), GPlatesFileIO::DataFormats::Unspecified));
-			boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-					new GPlatesFileIO::LineNumberInFile(0));
-			read_errors.d_failures_to_begin.push_back(GPlatesFileIO::ReadErrorOccurrence(
-					e_source,
-					e_location,
-					GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
-					GPlatesFileIO::ReadErrors::FileNotLoaded));
-		}
-		catch (GPlatesFileIO::ErrorOpeningPipeFromGzipException &e)
-		{
-			QString message = tr("GPlates was unable to use the '%1' program to read the file '%2'."
-					" Please check that gzip is installed and in your PATH. You will still be able to open"
-					" files which are not compressed.")
-					.arg(e.command())
-					.arg(e.filename());
-			QMessageBox::critical(this, tr("Error Opening File"), message,
-					QMessageBox::Ok, QMessageBox::Ok);
-		}
-		catch (GPlatesFileIO::FileFormatNotSupportedException &)
-		{
-			QString message = tr("Error: Loading files in this format is currently not supported.");
-			QMessageBox::critical(this, tr("Error Opening File"), message,
-					QMessageBox::Ok, QMessageBox::Ok);
-		}
-		catch (GPlatesGlobal::Exception &e)
-		{
-			std::cerr << "Caught exception: " << e << std::endl;
-		}
-
-
-	}
-
-	// Internal state changed, make sure dialogs are up to date.
-	d_read_errors_dialog.update();
-	d_manage_feature_collections_dialog.update();
-	d_shapefile_attribute_viewer_dialog.update();
-
-	// Pop up errors only if appropriate.
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
-	if (num_initial_errors != num_final_errors) {
-		d_read_errors_dialog.show();
-	}
-
+	d_manage_feature_collections_dialog.open_files(filenames);
 }
 
 
 void
-GPlatesQtWidgets::ViewportWindow::reload_file(
-		file_info_iterator file_it)
+GPlatesQtWidgets::ViewportWindow::reconstruct_to_time_with_root(
+		double new_recon_time,
+		unsigned long new_recon_root)
 {
-	d_read_errors_dialog.clear();
-	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
-
-	// Now load the files in a similar way to 'load_files' above, but in this case
-	// we don't need to worry about adding/removing from ApplicationState, or the
-	// d_active_reconstructable_files and d_active_reconstruction_files lists.
-	// The file should already belong to them.
-	
-	try
-	{
-		// FIXME: In fact, we are sharing plenty of exception-handling code with load_files as
-		// well, though this might also change after the merge. A possible area for refactoring
-		// if someone is bored?
-
-		switch ( GPlatesFileIO::get_feature_collection_file_format(*file_it) )
-		{
-		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-			GPlatesFileIO::ShapefileReader::set_property_mapper(
-				boost::shared_ptr< ShapefilePropertyMapper >(new ShapefilePropertyMapper(this)));
-			break;
-
-		default:
-			break;
-		}
-
-		// Read the feature collection from file.
-		GPlatesFileIO::read_feature_collection_file(*file_it, d_model, read_errors);
-
-	}
-	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &e)
-	{
-		// FIXME: A bit of a sucky conversion from ErrorOpeningFileForReadingException to
-		// ReadErrorOccurrence, but hey, this whole function will be rewritten when we add
-		// QFileDialog support.
-		// FIXME: I suspect I'm Missing The Point with these shared_ptrs.
-		boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
-				new GPlatesFileIO::LocalFileDataSource(e.filename(), GPlatesFileIO::DataFormats::Unspecified));
-		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-				new GPlatesFileIO::LineNumberInFile(0));
-		read_errors.d_failures_to_begin.push_back(GPlatesFileIO::ReadErrorOccurrence(
-				e_source,
-				e_location,
-				GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
-				GPlatesFileIO::ReadErrors::FileNotLoaded));
-	}
-	catch (GPlatesFileIO::ErrorOpeningPipeFromGzipException &e)
-	{
-		QString message = tr("GPlates was unable to use the '%1' program to read the file '%2'."
-				" Please check that gzip is installed and in your PATH. You will still be able to open"
-				" files which are not compressed.")
-				.arg(e.command())
-				.arg(e.filename());
-		QMessageBox::critical(this, tr("Error Opening File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
-	}
-	catch (GPlatesGlobal::Exception &e)
-	{
-		std::cerr << "Caught exception: " << e << std::endl;
-	}
-
-	
-	// Internal state changed, make sure dialogs are up to date.
-	d_read_errors_dialog.update();
-	// We should be able to get by with just updating the MFCD's state buttons,
-	// not rebuild the whole table. This avoids an ugly table redraw.
-	d_manage_feature_collections_dialog.update_state();
-
-	// Pop up errors only if appropriate.
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
-	if (num_initial_errors != num_final_errors) {
-		d_read_errors_dialog.show();
-	}
-
-	// Data may have changed, update the display.
-	reconstruct();
+	get_view_state().get_reconstruct().reconstruct_to_time_with_anchor(
+			new_recon_time, new_recon_root);
 }
-
-
-GPlatesAppState::ApplicationState::file_info_iterator
-GPlatesQtWidgets::ViewportWindow::create_empty_reconstructable_file()
-{
-	// Create an empty "file" - does not correspond to anything on disk yet.
-	GPlatesFileIO::FileInfo file;
-	file.set_feature_collection(d_model->create_feature_collection());
-
-	GPlatesAppState::ApplicationState::file_info_iterator new_file =
-	GPlatesAppState::ApplicationState::instance()->push_back_loaded_file(file);
-
-	// Given this method's name, we are promised this new FeatureCollection will
-	// be used for reconstructable data.
-	d_active_reconstructable_files.push_back(new_file);
-
-	// Internal state changed, make sure dialogs are up to date.
-	d_manage_feature_collections_dialog.update();
-	
-	return new_file;
-}
-
-
-namespace
-{
-	void
-	get_features_collection_from_file_info_collection(
-			GPlatesQtWidgets::ViewportWindow::active_files_collection_type &active_files,
-			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &features_collection) {
-
-		GPlatesQtWidgets::ViewportWindow::active_files_collection_type::iterator
-			iter = active_files.begin(),
-			end = active_files.end();
-		for ( ; iter != end; ++iter)
-		{
-			if ((*iter)->get_feature_collection())
-			{
-				features_collection.push_back(*((*iter)->get_feature_collection()));
-			}
-		}
-	}
-
-
-	/**
-	 * Handles reconstruction, solving plate velocities and rendering RFGs.
-	 */
-	class ReconstructView :
-			public GPlatesAppLogic::ReconstructTemplate
-	{
-	public:
-		ReconstructView(
-				GPlatesModel::ModelInterface &model,
-				GPlatesAppLogic::PlateVelocities &plate_velocities,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				const GPlatesGui::ColourTable &colour_table) :
-			GPlatesAppLogic::ReconstructTemplate(model),
-			d_plate_velocities(plate_velocities),
-			d_rendered_geom_collection(rendered_geom_collection),
-			d_colour_table(colour_table)
-		{  }
-
-		virtual
-		~ReconstructView()
-		{	}
-
-
-	private:
-		GPlatesAppLogic::PlateVelocities &d_plate_velocities;
-		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
-		const GPlatesGui::ColourTable &d_colour_table;
-
-
-		/**
-		 * Called after a reconstruction is created.
-		 */
-		virtual
-		void
-		end_reconstruction(
-				GPlatesModel::ModelInterface &model,
-				GPlatesModel::Reconstruction &reconstruction,
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
-				GPlatesFeatureVisitors::TopologyResolver &topology_resolver)
-		{
-			// Solve plate velocities.
-			d_plate_velocities.solve_velocities(
-					reconstruction,
-					reconstruction_time,
-					reconstruction_anchored_plate_id,
-					topology_resolver);
-
-			// Render all RFGs as rendered geometries.
-			GPlatesViewOperations::render_reconstruction_geometries(
-					reconstruction,
-					d_rendered_geom_collection,
-					d_colour_table);
-		}
-	};
-
-} // namespace
 
 
 void
-GPlatesQtWidgets::ViewportWindow::reconstruct_view(
-		double recon_time,
-		GPlatesModel::integer_plate_id_type recon_root)
+GPlatesQtWidgets::ViewportWindow::end_add_feature_collections(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state,
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator /*new_files_begin*/,
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator /*new_files_end*/)
 {
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-		reconstructable_features_collection,
-		reconstruction_features_collection;
-
-	get_features_collection_from_file_info_collection(
-			d_active_reconstructable_files,
-			reconstructable_features_collection);
-
-	get_features_collection_from_file_info_collection(
-			d_active_reconstruction_files,
-			reconstruction_features_collection);
-
-	// Create a reconstruction and carry out any extra operations
-	// in the inherited ReconstructView class.
-	ReconstructView reconstruct_view_obj(
-			d_model,
-			d_plate_velocities,
-			d_rendered_geom_collection,
-			*get_colour_table());
-	d_reconstruction = reconstruct_view_obj.reconstruct(
-			reconstructable_features_collection,
-			reconstruction_features_collection,
-			recon_time,
-			recon_root);
+	// Internal state changed, make sure dialogs are up to date.
+	d_shapefile_attribute_viewer_dialog.update(file_state);
 }
 
 
-GPlatesGui::ColourTable *
-GPlatesQtWidgets::ViewportWindow::get_colour_table()
+void
+GPlatesQtWidgets::ViewportWindow::end_remove_feature_collection(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state)
 {
-	GPlatesGui::ColourTable *value;
-	if (d_colour_table_ptr == NULL) {
-		value = GPlatesGui::PlatesColourTable::Instance();
-	} else {
-		value = d_colour_table_ptr;
+	// Update the shapefile-attribute viewer dialog, which needs to know which files are loaded.
+	d_shapefile_attribute_viewer_dialog.update(file_state);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_read_errors(
+		GPlatesAppLogic::FeatureCollectionFileIO &,
+		const GPlatesFileIO::ReadErrorAccumulation &new_read_errors)
+{
+	// Pop up errors only if we have new read errors.
+	if (new_read_errors.is_empty())
+	{
+		return;
 	}
-	return value;
+
+	d_read_errors_dialog.clear();
+	d_read_errors_dialog.read_errors().accumulate(new_read_errors);
+	d_read_errors_dialog.update();
+	d_read_errors_dialog.show();
 }
 
-GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
-	d_model(),
-	d_reconstruction(d_model->create_empty_reconstruction(0.0, 0)),
-	d_comp_mesh_point_layer(
-			d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
-					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
-					0.175f)),
-	d_comp_mesh_arrow_layer(
-			d_rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
-					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
-					0.175f)),
-	d_plate_velocities(d_comp_mesh_point_layer, d_comp_mesh_arrow_layer),
-	d_recon_time(0.0),
-	d_recon_root(0),
-	d_feature_focus(*this),
-	d_animation_controller(*this),
-	d_reconstruction_view_widget(d_rendered_geom_collection, d_animation_controller, *this, this),
-	d_about_dialog(*this, this),
+
+GPlatesQtWidgets::ViewportWindow::ViewportWindow(
+		GPlatesPresentation::Application &application) :
+	d_application(application),
+	d_animation_controller(get_view_state().get_reconstruct()),
+	d_full_screen_mode(*this),
+	d_reconstruction_view_widget(
+			d_animation_controller,
+			*this,
+			get_view_state(),
+			this),
+	d_about_dialog_ptr(NULL),
 	d_animate_dialog(d_animation_controller, this),
-	d_export_animation_dialog(d_animation_controller, *this, this),
-	d_total_reconstruction_poles_dialog(*this, this),
-	d_feature_properties_dialog(*this, d_feature_focus, this),
-	d_license_dialog(&d_about_dialog),
-	d_manage_feature_collections_dialog(*this, this),
+	d_export_animation_dialog(d_animation_controller, get_view_state(), *this, this),
+	d_total_reconstruction_poles_dialog(get_view_state(), this),
+	d_feature_properties_dialog(get_view_state(), this),
+	d_manage_feature_collections_dialog(
+			get_application_state().get_feature_collection_file_state(),
+			get_application_state().get_feature_collection_file_io(),
+			this),
 	d_read_errors_dialog(this),
 	d_set_camera_viewpoint_dialog(*this, this),
 	d_set_raster_surface_extent_dialog(*this, this),
-	d_specify_anchored_plate_id_dialog(d_recon_root, this),
+	d_specify_anchored_plate_id_dialog(
+			get_view_state().get_reconstruct().get_current_anchored_plate_id(),
+			this),
 	d_export_rfg_dialog(this),
 	d_specify_time_increment_dialog(d_animation_controller, this),
 	d_set_projection_dialog(*this,this),
@@ -632,31 +210,46 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	d_geometry_operation_target(
 			d_digitise_geometry_builder,
 			d_focused_feature_geometry_builder,
-			d_feature_focus,
+			get_view_state().get_feature_focus(),
 			d_choose_canvas_tool),
-	d_enable_canvas_tool(*this, d_feature_focus, d_geometry_operation_target),
+	d_enable_canvas_tool(*this, get_view_state().get_feature_focus(), d_geometry_operation_target),
 	d_focused_feature_geom_manipulator(
 			d_focused_feature_geometry_builder,
-			d_feature_focus,
-			*this),
+			get_view_state()),
+	d_measure_distance_state_ptr(new GPlatesCanvasTools::MeasureDistanceState(
+				get_view_state().get_rendered_geometry_collection(),
+				d_geometry_operation_target)),
 	d_task_panel_ptr(NULL),
 	d_shapefile_attribute_viewer_dialog(*this,this),
-	d_feature_table_model_ptr( new GPlatesGui::FeatureTableModel(d_feature_focus)),
+	d_feature_table_model_ptr( new GPlatesGui::FeatureTableModel(get_view_state().get_feature_focus())),
 	d_topology_sections_container_ptr( new GPlatesGui::TopologySectionsContainer()),
-	d_open_file_path(""),
-	d_colour_table_ptr(NULL)
+	d_open_file_path("")
 {
 	setupUi(this);
+
+	// FIXME: remove this when all non Qt widget state has been moved into ViewState.
+	// This is a temporary solution to avoiding passing ViewportWindow references around
+	// when only non Qt widget related view state is needed - currently ViewportWindow contains
+	// some of this state so just get the ViewportWindow reference from ViewState -
+	// the method will eventually get removed when the state has been moved over.
+	get_view_state().set_other_view_state(*this);
+
+	// Initialise the Shapefile property mapper before we start reading.
+	// FIXME: Not sure where this should go since it involves qt widgets (logical place is
+	// in FeatureCollectionFileIO but that is application state and shouldn't know about
+	// qt widgets).
+	boost::shared_ptr<GPlatesQtWidgets::ShapefilePropertyMapper> shapefile_property_mapper(
+			new GPlatesQtWidgets::ShapefilePropertyMapper(this));
+	GPlatesFileIO::ShapefileReader::set_property_mapper(shapefile_property_mapper);
 
 	d_globe_canvas_ptr = &(d_reconstruction_view_widget.globe_canvas());
 
 	std::auto_ptr<TaskPanel> task_panel_auto_ptr(new TaskPanel(
-			d_feature_focus,
-			d_model,
-			d_rendered_geom_collection,
+			get_view_state(),
 			d_digitise_geometry_builder,
 			d_geometry_operation_target,
 			d_active_geometry_operation,
+			*d_measure_distance_state_ptr,
 			*this,
 			d_choose_canvas_tool,
 			this));
@@ -665,6 +258,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// Connect all the Signal/Slot relationships of ViewportWindow's
 	// toolbar buttons and menu items.
 	connect_menu_actions();
+	
+	// Duplicate the menu structure for the full-screen-mode GMenu.
+	populate_gmenu_from_menubar();
+	// Initialise various elements for full-screen-mode that must wait until after setupUi().
+	d_full_screen_mode.init();
 	
 	// Set up an emergency context menu to control QDockWidgets even if
 	// they're no longer behaving properly.
@@ -677,6 +275,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// Stretchable Task Panel hack for testing: Make the Task Panel
 	// into a QDockWidget, undocked by default.
 	QDockWidget *task_panel_dock = new QDockWidget(tr("Task Panel"), this);
+	task_panel_dock->setObjectName("TaskPanelDock");
 	task_panel_dock->setWidget(task_panel_auto_ptr.release());
 	task_panel_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	addDockWidget(Qt::RightDockWidgetArea, task_panel_dock);
@@ -687,57 +286,29 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// Enable/disable canvas tools according to the current state.
 	d_enable_canvas_tool.initialise();
 	// Disable the feature-specific Actions as there is no currently focused feature to act on.
-	enable_or_disable_feature_actions(d_feature_focus.focused_feature());
-	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
+	enable_or_disable_feature_actions(get_view_state().get_feature_focus().focused_feature());
+	QObject::connect(&get_view_state().get_feature_focus(), SIGNAL(focus_changed(
 					GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			this, SLOT(enable_or_disable_feature_actions(GPlatesModel::FeatureHandle::weak_ref)));
 
 	// Set up the Specify Anchored Plate ID dialog.
-	QObject::connect(&d_specify_anchored_plate_id_dialog, SIGNAL(value_changed(unsigned long)),
-			this, SLOT(reconstruct_with_root(unsigned long)));
+	// Perform a reconstruction when the anchor plate id changes.
+	QObject::connect(&d_specify_anchored_plate_id_dialog,
+			SIGNAL(value_changed(unsigned long)),
+			&get_view_state().get_reconstruct(),
+			SLOT(reconstruct_with_anchor(unsigned long)));
 
 	// Set up the Reconstruction View widget.
 	setCentralWidget(&d_reconstruction_view_widget);
+
+	connect_feature_collection_file_io_signals();
+	connect_feature_collection_file_state_signals();
 
 	QObject::connect(d_globe_canvas_ptr, SIGNAL(mouse_pointer_position_changed(const GPlatesMaths::PointOnSphere &, bool)),
 			&d_reconstruction_view_widget, SLOT(update_mouse_pointer_position(const GPlatesMaths::PointOnSphere &, bool)));
 	QObject::connect(&(d_reconstruction_view_widget.map_view()), SIGNAL(mouse_pointer_position_changed(const boost::optional<GPlatesMaths::LatLonPoint>&, bool)),
 			&d_reconstruction_view_widget, SLOT(update_mouse_pointer_position(const boost::optional<GPlatesMaths::LatLonPoint>&, bool)));
-
-	// Connect the geometry-focus highlight to the feature focus.
-	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
-			&(d_globe_canvas_ptr->geometry_focus_highlight()), SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
-	QObject::connect(&d_feature_focus, SIGNAL(focused_feature_modified(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
-			&(d_globe_canvas_ptr->geometry_focus_highlight()), SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
-
-	// Connect the reconstruction pole widget to the feature focus.
-	QObject::connect(&d_feature_focus, SIGNAL(focus_changed(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
-			&(d_task_panel_ptr->reconstruction_pole_widget()), SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
-
-	// The Reconstruction Pole widget needs to know when the reconstruction time changes.
-	QObject::connect(this, SIGNAL(reconstruction_time_changed(
-					double)),
-			&(d_task_panel_ptr->reconstruction_pole_widget()), SLOT(handle_reconstruction_time_change(
-					double)));
-
-	// Setup RenderedGeometryCollection.
-	setup_rendered_geom_collection();
-
-	// Render everything on the screen in present-day positions.
-	reconstruct_view(0.0/*reconstruction time*/, d_recon_root);
 
 
 	// Set up the Clicked table.
@@ -758,19 +329,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 
 	// Set up the Topology Sections Table, now that the table widget has been created.
 	d_topology_sections_table_ptr = new GPlatesGui::TopologySectionsTable(
-			*table_widget_topology_sections, *d_topology_sections_container_ptr, d_feature_focus);
-
-	// If the focused feature is modified, we may need to reconstruct to update the view.
-	// FIXME:  If the FeatureFocus emits the 'focused_feature_modified' signal, the view will
-	// be reconstructed twice -- once here, and once as a result of the 'set_focus' slot in the
-	// GeometryFocusHighlight below.
-	QObject::connect(&d_feature_focus,
-			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
-			this, SLOT(reconstruct()));
+			*table_widget_topology_sections,
+			*d_topology_sections_container_ptr,
+			get_view_state().get_feature_focus());
 
 	// If the focused feature is modified, we may need to update the ShapefileAttributeViewerDialog.
-	QObject::connect(&d_feature_focus,
+	QObject::connect(&get_view_state().get_feature_focus(),
 			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
 			&d_shapefile_attribute_viewer_dialog, SLOT(update()));
@@ -778,7 +342,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	// Set up the Map and Globe Canvas Tools Choices.
 	d_map_canvas_tool_choice_ptr.reset(
 			new GPlatesGui::MapCanvasToolChoice(
-					d_rendered_geom_collection,
+					get_view_state().get_rendered_geometry_collection(),
 					d_geometry_operation_target,
 					d_active_geometry_operation,
 					d_choose_canvas_tool,
@@ -788,18 +352,18 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					*this,
 					*d_feature_table_model_ptr,
 					d_feature_properties_dialog,
-					d_feature_focus,
+					get_view_state().get_feature_focus(),
 					d_task_panel_ptr->reconstruction_pole_widget(),
 					*d_topology_sections_container_ptr,
 					d_task_panel_ptr->topology_tools_widget(),
-					d_globe_canvas_ptr->geometry_focus_highlight()));
+					*d_measure_distance_state_ptr));
 
 
 
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
 	d_globe_canvas_tool_choice_ptr.reset(
 			new GPlatesGui::GlobeCanvasToolChoice(
-					d_rendered_geom_collection,
+					get_view_state().get_rendered_geometry_collection(),
 					d_geometry_operation_target,
 					d_active_geometry_operation,
 					d_choose_canvas_tool,
@@ -807,14 +371,14 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 					d_globe_canvas_ptr->globe(),
 					*d_globe_canvas_ptr,
 					*this,
+					get_view_state(),
 					*d_feature_table_model_ptr,
 					d_feature_properties_dialog,
-					d_feature_focus,
+					get_view_state().get_feature_focus(),
 					d_task_panel_ptr->reconstruction_pole_widget(),
 					*d_topology_sections_container_ptr,
 					d_task_panel_ptr->topology_tools_widget(),
-					d_globe_canvas_ptr->geometry_focus_highlight()));
-
+					*d_measure_distance_state_ptr));
 
 
 
@@ -828,12 +392,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	connect_canvas_tools();
 
 
-
 	// If the user creates a new feature with the DigitisationWidget, we need to reconstruct to
 	// make sure everything is displayed properly.
 	QObject::connect(&(d_task_panel_ptr->digitisation_widget().get_create_feature_dialog()),
 			SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
-			this,
+			&get_view_state().get_reconstruct(),
 			SLOT(reconstruct()));
 
 	// Add a progress bar to the status bar (Hidden until needed).
@@ -843,29 +406,52 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow() :
 	statusBar()->addPermanentWidget(progress_bar.release());
 
 
+	// Registered a slot to be called when a new reconstruction is generated.
+	QObject::connect(
+			&get_view_state().get_reconstruct(),
+			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+			this,
+			SLOT(handle_reconstruction()));
 
+	// Render everything on the screen in present-day positions.
+	get_view_state().get_reconstruct().reconstruct_to_time_with_anchor(0.0, 0);
 }
 
 
 GPlatesQtWidgets::ViewportWindow::~ViewportWindow()
 {
-	// boost::scoped_ptr destructors needs complete type.
+	// boost::scoped_ptr destructors need complete type.
 }
 
 
 void	
 GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 {
-	GlobeCanvas *canvas_ptr = &(d_reconstruction_view_widget.globe_canvas());
 	// If you want to add a new menu action, the steps are:
 	// 0. Open ViewportWindowUi.ui in the Designer.
 	// 1. Create a QAction in the Designer's Action Editor, called action_Something.
 	// 2. Assign icons, tooltips, and shortcuts as necessary.
+	//    2a. Canvas Tools must have the 'checkable' property set.
 	// 3. Drag this action to a menu.
+	//    3a. If it's a canvas tool, drag it to the toolbar instead. It will appear on the
+	//        Tools menu automatically.
 	// 4. Add code for the triggered() signal your action generates here.
 	//    Please keep this function sorted in the same order as menu items appear.
 
-	// Main Tools:
+	// Canvas Tools:
+	// The canvas tools are special; we only want one of them to be checked at any time.
+	// We can do this quite easily by adding all the actions on the toolbar to a QActionGroup.
+	QList<QAction *> canvas_tools_actions_list = toolbar_canvas_tools->actions();
+	QActionGroup* canvas_tools_group = new QActionGroup(this);	// parented to ViewportWindow.
+	Q_FOREACH(QAction *tool_action, canvas_tools_actions_list) {
+		canvas_tools_group->addAction(tool_action);
+	}
+	// We also want to populate the Tools menu based on the actions added to the toolbar.
+	Q_FOREACH(QAction *tool_action, canvas_tools_actions_list) {
+		menu_Tools->addAction(tool_action);
+	}
+
+	// Canvas Tool connections:
 	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
 			&d_choose_canvas_tool, SLOT(choose_drag_globe_tool()));
 	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
@@ -895,10 +481,13 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 			&d_choose_canvas_tool, SLOT(choose_build_topology_tool()));
 	QObject::connect(action_Edit_Topology, SIGNAL(triggered()),
 			&d_choose_canvas_tool, SLOT(choose_edit_topology_tool()));
+	QObject::connect(action_Measure_Distance, SIGNAL(triggered()),
+			&d_choose_canvas_tool, SLOT(choose_measure_distance_tool()));
+
 
 	// File Menu:
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
-			&d_manage_feature_collections_dialog, SLOT(open_file()));
+			&d_manage_feature_collections_dialog, SLOT(open_files()));
 	QObject::connect(action_Open_Raster, SIGNAL(triggered()),
 			this, SLOT(open_raster()));
 	QObject::connect(action_Open_Time_Dependent_Raster_Sequence, SIGNAL(triggered()),
@@ -946,7 +535,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 #endif
 	// ----
 	QObject::connect(action_Clear_Selection, SIGNAL(triggered()),
-			&d_feature_focus, SLOT(unset_focus()));
+			&get_view_state().get_feature_focus(), SLOT(unset_focus()));
 
 	// Reconstruction Menu:
 	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
@@ -1002,6 +591,8 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// ----
 	QObject::connect(action_Set_Projection, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_projection_dialog()));
+	QObject::connect(action_Full_Screen, SIGNAL(triggered(bool)),
+			&d_full_screen_mode, SLOT(toggle_full_screen(bool)));
 	// ----
 	QObject::connect(action_Set_Camera_Viewpoint, SIGNAL(triggered()),
 			this, SLOT(pop_up_set_camera_viewpoint_dialog()));
@@ -1026,11 +617,11 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	QObject::connect(action_Set_Zoom, SIGNAL(triggered()),
 			&d_reconstruction_view_widget, SLOT(activate_zoom_spinbox()));
 	QObject::connect(action_Zoom_In, SIGNAL(triggered()),
-			&(canvas_ptr->viewport_zoom()), SLOT(zoom_in()));
+			&get_view_state().get_viewport_zoom(), SLOT(zoom_in()));
 	QObject::connect(action_Zoom_Out, SIGNAL(triggered()),
-			&(canvas_ptr->viewport_zoom()), SLOT(zoom_out()));
+			&get_view_state().get_viewport_zoom(), SLOT(zoom_out()));
 	QObject::connect(action_Reset_Zoom_Level, SIGNAL(triggered()),
-			&(canvas_ptr->viewport_zoom()), SLOT(reset_zoom()));
+			&get_view_state().get_viewport_zoom(), SLOT(reset_zoom()));
 	// ----
 	QObject::connect(action_Export_Geometry_Snapshot, SIGNAL(triggered()),
 			this, SLOT(pop_up_export_geometry_snapshot_dialog()));
@@ -1038,6 +629,90 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// Help Menu:
 	QObject::connect(action_About, SIGNAL(triggered()),
 			this, SLOT(pop_up_about_dialog()));
+
+	// This action is for GUI debugging purposes, to help developers trigger
+	// some arbitrary code while debugging GUI problems:
+#if 0	// I'm paranoid this will make it into the release somehow, so disabling until we get a commandline switch.
+	menu_View->addAction(action_Gui_Debug_Action);
+#endif
+	QObject::connect(action_Gui_Debug_Action, SIGNAL(triggered()),
+			this, SLOT(handle_gui_debug_action()));
+}
+
+
+void	
+GPlatesQtWidgets::ViewportWindow::connect_feature_collection_file_io_signals()
+{
+	QObject::connect(
+			&get_application_state().get_feature_collection_file_io(),
+			SIGNAL(handle_read_errors(
+					GPlatesAppLogic::FeatureCollectionFileIO &,
+					const GPlatesFileIO::ReadErrorAccumulation &)),
+			this,
+			SLOT(handle_read_errors(
+					GPlatesAppLogic::FeatureCollectionFileIO &,
+					const GPlatesFileIO::ReadErrorAccumulation &)));
+}
+
+
+void	
+GPlatesQtWidgets::ViewportWindow::connect_feature_collection_file_state_signals()
+{
+	QObject::connect(
+			&get_application_state().get_feature_collection_file_state(),
+			SIGNAL(end_add_feature_collections(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
+					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
+			this,
+			SLOT(end_add_feature_collections(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
+					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
+
+	QObject::connect(
+			&get_application_state().get_feature_collection_file_state(),
+			SIGNAL(end_remove_feature_collection(
+					GPlatesAppLogic::FeatureCollectionFileState &)),
+			this,
+			SLOT(end_remove_feature_collection(
+					GPlatesAppLogic::FeatureCollectionFileState &)));
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::populate_gmenu_from_menubar()
+{
+	// Populate the GMenu with the menubar's menu actions.
+	// For now, this has to be done here in ViewportWindow so we can get at 'menubar'.
+	// It is also difficult to do this in GMenu's constructor, where I'd prefer to put
+	// it, because at that time @a ViewportWindow::setupUi() hasn't been called yet,
+	// so the menu structure does not exist.
+	
+	// Find the GMenu by Qt object name. This is a lot more convenient for this kind
+	// of one-off setup than going through ReconstructionViewWidget, etc.
+	QMenu *gmenu = findChild<QMenu *>("GMenu");
+	if (gmenu) {
+		// Add each of the top-level menu items from the main menu bar.
+		QList<QAction *> main_menubar_actions = menubar->actions();
+		Q_FOREACH(QAction *action, main_menubar_actions) {
+			gmenu->addAction(action);
+		}
+	}
+}
+
+
+GPlatesAppLogic::ApplicationState &
+GPlatesQtWidgets::ViewportWindow::get_application_state()
+{
+	return d_application.get_application_state();
+}
+
+
+GPlatesPresentation::ViewState &
+GPlatesQtWidgets::ViewportWindow::get_view_state()
+{
+	return d_application.get_view_state();
 }
 
 void
@@ -1187,80 +862,18 @@ GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row() co
 }
 
 
-
 void
-GPlatesQtWidgets::ViewportWindow::reconstruct_to_time(
-		double new_recon_time)
+GPlatesQtWidgets::ViewportWindow::handle_reconstruction()
 {
-	// != does not work with doubles, so we must wrap them in Real.
-	GPlatesMaths::Real original_recon_time(d_recon_time);
-	if (original_recon_time != GPlatesMaths::Real(new_recon_time)) {
-		d_recon_time = new_recon_time;
-
-	}
-	// Reconstruct before we tell everyone that we've reconstructed!
-	reconstruct();
-	emit reconstruction_time_changed(d_recon_time);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::reconstruct_with_root(
-		unsigned long new_recon_root)
-{
-	if (d_recon_root != new_recon_root) {
-		d_recon_root = new_recon_root;
-		// Does anyone care if the reconstruction root changed?
-	}
-	reconstruct();
-
-	// The reconstruction time hasn't really changed, but emitting this signal will 
-	// make sure that other parts of GPlates which are dependent on new geometry values 
-	// will get updated.
-	// FIXME: Create a suitable new slot, or maybe just rename the slot to 
-	// something like "reconstruction_time_or_root_changed"
-	emit reconstruction_time_changed(d_recon_time);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::reconstruct_to_time_with_root(
-		double new_recon_time,
-		unsigned long new_recon_root)
-{
-	// FIXME: This function is only called once, on application startup, for root=0 and time=0;
-	// if we ever need to call this for other reasons, then we should be careful about the relative 
-	// order of the reconstruction, and the emit signal. 
-
-	// != does not work with doubles, so we must wrap them in Real.
-	GPlatesMaths::Real original_recon_time(d_recon_time);
-	if (original_recon_time != GPlatesMaths::Real(new_recon_time)) {
-		d_recon_time = new_recon_time;
-		emit reconstruction_time_changed(d_recon_time);
-	}
-	if (d_recon_root != new_recon_root) {
-		d_recon_root = new_recon_root;
-		// Does anyone care if the reconstruction root changed?
-	}
-	reconstruct();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::reconstruct()
-{
-	reconstruct_view(d_recon_time, d_recon_root);
-
-	if (d_total_reconstruction_poles_dialog.isVisible()) {
+	// A new reconstruction has just happened so do some updating.
+	if (d_total_reconstruction_poles_dialog.isVisible())
+	{
 		d_total_reconstruction_poles_dialog.update();
 	}
-	if (action_Show_Raster->isChecked() && ! d_time_dependent_raster_map.isEmpty()) {	
+
+	if (action_Show_Raster->isChecked() && ! d_time_dependent_raster_map.isEmpty())
+	{	
 		update_time_dependent_raster();
-	}
-	if (d_feature_focus.is_valid()) {
-		// There's a focused feature.
-		// We need to update the associated RFG for the new reconstruction.
-		d_feature_focus.find_new_associated_reconstruction_geometry(reconstruction());
 	}
 }
 
@@ -1338,28 +951,19 @@ GPlatesQtWidgets::ViewportWindow::pop_up_animate_dialog()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_about_dialog()
 {
-	d_about_dialog.show();
+	if (!d_about_dialog_ptr)
+	{
+		d_about_dialog_ptr.reset(new AboutDialog(this));
+	}
+
+	d_about_dialog_ptr->show();
 	// In most cases, 'show()' is sufficient. However, selecting the menu entry
 	// a second time, when the dialog is still open, should make the dialog 'active'
 	// and return keyboard focus to it.
-	d_about_dialog.activateWindow();
+	d_about_dialog_ptr->activateWindow();
 	// On platforms which do not keep dialogs on top of their parent, a call to
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_about_dialog.raise();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_license_dialog()
-{
-	d_license_dialog.show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_license_dialog.activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_license_dialog.raise();
+	d_about_dialog_ptr->raise();
 }
 
 
@@ -1381,17 +985,29 @@ GPlatesQtWidgets::ViewportWindow::pop_up_export_animation_dialog()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_export_reconstruction_dialog()
 {
-	GPlatesViewOperations::ExportReconstructedFeatureGeometries::active_files_collection_type
-			active_reconstructable_geometry_files(
-					active_reconstructable_files().begin(),
-					active_reconstructable_files().end());
+	GPlatesAppLogic::FeatureCollectionFileState &file_state =
+			get_application_state().get_feature_collection_file_state();
+
+	GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::files_collection_type
+			active_reconstructable_geometry_files;
+
+	// Copy active reconstructable file pointers into a vector.
+	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator_range active_files =
+		file_state.get_active_reconstructable_files();
+	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator iter = active_files.begin;
+	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator end = active_files.end;
+	for ( ; iter != end; ++iter)
+	{
+		GPlatesFileIO::File &file = *iter;
+		active_reconstructable_geometry_files.push_back(&file);
+	}
 
 	d_export_rfg_dialog.export_visible_reconstructed_feature_geometries(
-			reconstruction(),
-			rendered_geometry_collection(),
+			get_view_state().get_reconstruct().get_current_reconstruction(),
+			get_view_state().get_rendered_geometry_collection(),
 			active_reconstructable_geometry_files,
-			d_recon_root,
-			d_recon_time);
+			get_view_state().get_reconstruct().get_current_anchored_plate_id(),
+			get_view_state().get_reconstruct().get_current_reconstruction_time());
 }
 
 
@@ -1497,10 +1113,15 @@ GPlatesQtWidgets::ViewportWindow::enable_edit_topology_tool(
 }
 
 void
+GPlatesQtWidgets::ViewportWindow::enable_measure_distance_tool(
+		bool enable)
+{
+	action_Measure_Distance->setEnabled(enable);
+}
+
+void
 GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 {
-	uncheck_all_tools();
-	action_Drag_Globe->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_reorient_globe_tool();
 	d_map_canvas_tool_choice_ptr->choose_pan_map_tool();
 }
@@ -1509,8 +1130,6 @@ GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_zoom_globe_tool()
 {
-	uncheck_all_tools();
-	action_Zoom_Globe->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_zoom_globe_tool();
 
 	d_map_canvas_tool_choice_ptr->choose_zoom_map_tool();
@@ -1520,10 +1139,6 @@ GPlatesQtWidgets::ViewportWindow::choose_zoom_globe_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_click_geometry_tool()
 {
-	uncheck_all_tools();
-	action_Click_Geometry->setChecked(true);
-
-
 	d_globe_canvas_tool_choice_ptr->choose_click_geometry_tool();
 	d_map_canvas_tool_choice_ptr->choose_click_geometry_tool();
 
@@ -1534,8 +1149,6 @@ GPlatesQtWidgets::ViewportWindow::choose_click_geometry_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_digitise_polyline_tool()
 {
-	uncheck_all_tools();
-	action_Digitise_New_Polyline->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_digitise_polyline_tool();
 	d_map_canvas_tool_choice_ptr->choose_digitise_polyline_tool();
 	d_task_panel_ptr->choose_digitisation_tab();
@@ -1545,8 +1158,6 @@ GPlatesQtWidgets::ViewportWindow::choose_digitise_polyline_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_digitise_multipoint_tool()
 {
-	uncheck_all_tools();
-	action_Digitise_New_MultiPoint->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_digitise_multipoint_tool();
 	d_map_canvas_tool_choice_ptr->choose_digitise_multipoint_tool();
 	d_task_panel_ptr->choose_digitisation_tab();
@@ -1556,8 +1167,6 @@ GPlatesQtWidgets::ViewportWindow::choose_digitise_multipoint_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_digitise_polygon_tool()
 {
-	uncheck_all_tools();
-	action_Digitise_New_Polygon->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_digitise_polygon_tool();
 	d_map_canvas_tool_choice_ptr->choose_digitise_polygon_tool();
 	d_task_panel_ptr->choose_digitisation_tab();
@@ -1569,8 +1178,6 @@ GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
 {
 	// The MoveGeometry tool is not yet implemented.
 #if 0
-	uncheck_all_tools();
-	action_Move_Geometry->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_move_geometry_tool();
 	d_task_panel_ptr->choose_feature_tab();
 #endif
@@ -1580,8 +1187,6 @@ GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
 {
-	uncheck_all_tools();
-	action_Move_Vertex->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_move_vertex_tool();
 	d_map_canvas_tool_choice_ptr->choose_move_vertex_tool();
 	d_task_panel_ptr->choose_modify_geometry_tab();
@@ -1591,8 +1196,6 @@ GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_delete_vertex_tool()
 {
-	uncheck_all_tools();
-	action_Delete_Vertex->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_delete_vertex_tool();
 	d_map_canvas_tool_choice_ptr->choose_delete_vertex_tool();
 
@@ -1603,20 +1206,25 @@ GPlatesQtWidgets::ViewportWindow::choose_delete_vertex_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_insert_vertex_tool()
 {
-	uncheck_all_tools();
-	action_Insert_Vertex->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_insert_vertex_tool();
 	d_map_canvas_tool_choice_ptr->choose_insert_vertex_tool();
 
 	d_task_panel_ptr->choose_modify_geometry_tab();
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::choose_measure_distance_tool()
+{
+	action_Measure_Distance->setChecked(true);
+	d_globe_canvas_tool_choice_ptr->choose_measure_distance_tool();
+	d_map_canvas_tool_choice_ptr->choose_measure_distance_tool();
+
+	d_task_panel_ptr->choose_measure_distance_tab();
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 {
-	uncheck_all_tools();
-	action_Manipulate_Pole->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_manipulate_pole_tool();
 
 // The map's manipulate pole tool doesn't yet do anything. 
@@ -1627,8 +1235,6 @@ GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
 {
-	uncheck_all_tools();
-	action_Build_Topology->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_build_topology_tool();
 	// FIXME: There is no MapCanvasToolChoice equivalent yet.
 	
@@ -1645,8 +1251,6 @@ GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
 void
 GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 {
-	uncheck_all_tools();
-	action_Edit_Topology->setChecked(true);
 	d_globe_canvas_tool_choice_ptr->choose_edit_topology_tool();
 	// FIXME: There is no MapCanvasToolChoice equivalent yet.
 	if(d_reconstruction_view_widget.map_is_active())
@@ -1658,25 +1262,6 @@ GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
-
-
-void
-GPlatesQtWidgets::ViewportWindow::uncheck_all_tools()
-{
-	action_Drag_Globe->setChecked(false);
-	action_Zoom_Globe->setChecked(false);
-	action_Click_Geometry->setChecked(false);
-	action_Digitise_New_Polyline->setChecked(false);
-	action_Digitise_New_MultiPoint->setChecked(false);
-	action_Digitise_New_Polygon->setChecked(false);
-	action_Move_Geometry->setChecked(false);
-	action_Move_Vertex->setChecked(false);
-	action_Delete_Vertex->setChecked(false);
-	action_Insert_Vertex->setChecked(false);
-	action_Manipulate_Pole->setChecked(false);
-	action_Build_Topology->setChecked(false);
-	action_Edit_Topology->setChecked(false);
-}
 
 
 void
@@ -1716,43 +1301,64 @@ GPlatesQtWidgets::ViewportWindow::uncheck_all_colouring_tools() {
 
 void		
 GPlatesQtWidgets::ViewportWindow::choose_colour_by_plate_id() {
-	d_colour_table_ptr = GPlatesGui::PlatesColourTable::Instance();
+	get_view_state().choose_colour_by_plate_id();
 	uncheck_all_colouring_tools();
 	action_Colour_By_Plate_ID->setChecked(true);
-	reconstruct();
+
+	// Force a new reconstruction.
+	get_view_state().get_reconstruct().reconstruct();
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::choose_colour_by_single_colour() {	
-	QColor qcolor = QColorDialog::getColor();
-
-	GPlatesGui::Colour colour(qcolor.redF(), qcolor.greenF(), qcolor.blueF(), qcolor.alphaF());
-
-	GPlatesGui::SingleColourTable::Instance()->set_colour(colour);
-	d_colour_table_ptr = GPlatesGui::SingleColourTable::Instance();
+	// Pop up Qt's colour-choosing dialog.
+	// Specifying the default isn't absolutely necessary, but does allow us to pass 'this'
+	// as the parent, solving some dialog placement problems.
+	static QColor default_qcolor = Qt::white;
+	QColor qcolor = QColorDialog::getColor(default_qcolor, this);
+	
+	// Cancelling the dialog returns an invalid colour.
+	if (!qcolor.isValid()) {
+		// Use the default colour.
+		qcolor = default_qcolor;
+	}
+	
+	// Regardless of whether the user cancels the colour selection dialog, the
+	// colouring mode will change to 'single colour', as it is nontrivial to revert
+	// the selection back to whatever prior colouring method may have been selected.
+	const GPlatesGui::Colour colour(qcolor.redF(), qcolor.greenF(), qcolor.blueF(), qcolor.alphaF());
+	get_view_state().choose_colour_by_single_colour(colour);
+	
+	// To be nice, present the user with the colour they chose last time.
+	default_qcolor = qcolor;
 
 	uncheck_all_colouring_tools();
 	action_Colour_By_Single_Colour->setChecked(true);
-	reconstruct();
+
+	// Force a new reconstruction.
+	get_view_state().get_reconstruct().reconstruct();
 }
 
 void	
 GPlatesQtWidgets::ViewportWindow::choose_colour_by_feature_type() {
-	d_colour_table_ptr = GPlatesGui::FeatureColourTable::Instance();
+	get_view_state().choose_colour_by_feature_type();
 
 	uncheck_all_colouring_tools();
 	action_Colour_By_Feature_Type->setChecked(true);
-	reconstruct();
+
+	// Force a new reconstruction.
+	get_view_state().get_reconstruct().reconstruct();
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::choose_colour_by_age() {
-	GPlatesGui::AgeColourTable::Instance()->set_viewport_window(*this);
-	d_colour_table_ptr = GPlatesGui::AgeColourTable::Instance();
+	get_view_state().choose_colour_by_age();
 
 	uncheck_all_colouring_tools();
 	action_Colour_By_Age->setChecked(true);
-	reconstruct();
+
+	// Force a new reconstruction.
+	get_view_state().get_reconstruct().reconstruct();
 }
 
 
@@ -1781,165 +1387,6 @@ GPlatesQtWidgets::ViewportWindow::pop_up_manage_feature_collections_dialog()
 	// On platforms which do not keep dialogs on top of their parent, a call to
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
 	d_manage_feature_collections_dialog.raise();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::deactivate_loaded_file(
-		file_info_iterator loaded_file)
-{
-	// Don't bother checking whether 'loaded_file' is actually an element of
-	// 'd_active_reconstructable_files' and/or 'd_active_reconstruction_files' -- just tell the
-	// lists to remove the value if it *is* an element.
-
-	// list<T>::remove(const T &val) -- remove all elements with value 'val'.
-	// Will not throw (unless element comparisons can throw).
-	// See Josuttis section 6.10.7 "Inserting and Removing Elements".
-	d_active_reconstructable_files.remove(loaded_file);
-	d_active_reconstruction_files.remove(loaded_file);
-
-	// Before we delete the feature collection let the plate velocities hook know this.
-	// This will need to be refactored to listen to ApplicationState for load/unload events.
-	if (loaded_file->get_feature_collection())
-	{
-		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-				*loaded_file->get_feature_collection();
-		d_plate_velocities.unload_feature_collection(feature_collection);
-	}
-
-	// FIXME: This is a temporary hack to stop highlighting the focused feature if
-	// it's in the feature collection we're about to unload.
-	if (d_feature_focus.is_valid() && loaded_file->get_feature_collection())
-	{
-		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-				*loaded_file->get_feature_collection();
-
-		GPlatesModel::FeatureHandle::weak_ref focused_feature = d_feature_focus.focused_feature();
-
-		GPlatesModel::FeatureCollectionHandle::features_iterator feature_iter;
-		for (feature_iter = feature_collection->features_begin();
-			feature_iter != feature_collection->features_end();
-			++feature_iter)
-		{
-			if (feature_iter.is_valid() &&
-				(*feature_iter).get() == focused_feature.handle_ptr())
-			{
-				d_feature_focus.unset_focus();
-				break;
-			}
-		}
-	}
-
-	// FIXME:  This should not happen here -- in fact, it should be removal of the loaded file
-	// (using 'remove_loaded_file' in ApplicationState) which triggers *this*! -- but until we
-	// have multiple view windows, it doesn't matter.
-	GPlatesAppState::ApplicationState::instance()->remove_loaded_file(loaded_file);
-
-	// Update the shapefile-attribute viewer dialog, which needs to know which files are loaded.
-	d_shapefile_attribute_viewer_dialog.update();
-
-	// FIXME: Force a reconstruction so that any unloaded features will be refreshed
-	// and will disappear if they've been unloaded.
-	reconstruct();
-}
-
-
-bool
-GPlatesQtWidgets::ViewportWindow::is_file_active(
-		file_info_iterator loaded_file)
-{
-	return is_file_active_reconstructable(loaded_file) ||
-			is_file_active_reconstruction(loaded_file);
-}
-
-
-bool
-GPlatesQtWidgets::ViewportWindow::is_file_active_reconstructable(
-		file_info_iterator loaded_file)
-{
-	active_files_iterator reconstructable_it = d_active_reconstructable_files.begin();
-	active_files_iterator reconstructable_end = d_active_reconstructable_files.end();
-	for (; reconstructable_it != reconstructable_end; ++reconstructable_it) {
-		if (*reconstructable_it == loaded_file) {
-			return true;
-		}
-	}
-	return false;
-}
-
-
-bool
-GPlatesQtWidgets::ViewportWindow::is_file_active_reconstruction(
-		file_info_iterator loaded_file)
-{
-	active_files_iterator reconstruction_it = d_active_reconstruction_files.begin();
-	active_files_iterator reconstruction_end = d_active_reconstruction_files.end();
-	for (; reconstruction_it != reconstruction_end; ++reconstruction_it) {
-		if (*reconstruction_it == loaded_file) {
-			return true;
-		}
-	}
-	return false;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::set_file_active_reconstructable(
-		file_info_iterator file_it,
-		bool activate)
-{
-	if (activate) {
-		// Add it to the list, if it's not there already.
-		if ( ! is_file_active_reconstructable(file_it)) {
-			d_active_reconstructable_files.push_back(file_it);
-		}
-	} else {
-		// Don't bother checking whether 'loaded_file' is actually an element of
-		// 'd_active_reconstructable_files' and/or 'd_active_reconstruction_files' -- just tell the
-		// lists to remove the value if it *is* an element.
-		
-		// list<T>::remove(const T &val) -- remove all elements with value 'val'.
-		// Will not throw (unless element comparisons can throw).
-		// See Josuttis section 6.10.7 "Inserting and Removing Elements".
-		d_active_reconstructable_files.remove(file_it);
-	}
-	// Active features changed, will need to reconstruct() to make RFGs for them.
-	reconstruct();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::set_file_active_reconstruction(
-		file_info_iterator file_it,
-		bool activate)
-{
-	if (activate) {
-		// At the moment, we only want one active reconstruction tree
-		// at a time. Deactivate the others, and update ManageFeatureCollectionsDialog
-		// so that the other buttons get deselected appropriately.
-		d_active_reconstruction_files.clear();
-		d_active_reconstruction_files.push_back(file_it);
-		// NOTE: in the current setup, the only place this set_file_active_xxxx()
-		// method is called is by ManageFeatureCollectionsDialog itself, in response
-		// to a button press. Therefore we can assume it is up-to-date already, except
-		// for this one case where we have cleared all the other reconstruction files.
-		// If this situation changes and other code will also be calling
-		// set_file_active_xxxx() or otherwise messing with file 'active' status, you
-		// will need to call ManageFeatureCollectionsDialog::update_state() at the end
-		// of both these methods.
-		d_manage_feature_collections_dialog.update_state();
-	} else {
-		// Don't bother checking whether 'loaded_file' is actually an element of
-		// 'd_active_reconstructable_files' and/or 'd_active_reconstruction_files' -- just tell the
-		// lists to remove the value if it *is* an element.
-		
-		// list<T>::remove(const T &val) -- remove all elements with value 'val'.
-		// Will not throw (unless element comparisons can throw).
-		// See Josuttis section 6.10.7 "Inserting and Removing Elements".
-		d_active_reconstruction_files.remove(file_it);
-	}
-	// Active rotation changed, will need to reconstruct() to make make use of it.
-	reconstruct();
 }
 
 
@@ -1978,11 +1425,13 @@ GPlatesQtWidgets::ViewportWindow::create_svg_file(
 void
 GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
 {
-	d_about_dialog.reject();
+	if (d_about_dialog_ptr)
+	{
+		d_about_dialog_ptr->reject();
+	}
 	d_animate_dialog.reject();
 	d_total_reconstruction_poles_dialog.reject();
 	d_feature_properties_dialog.reject();
-	d_license_dialog.reject();
 	d_manage_feature_collections_dialog.reject();
 	d_read_errors_dialog.reject();
 	d_set_camera_viewpoint_dialog.reject();
@@ -2003,29 +1452,6 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(QCloseEvent *close_event)
 	// If we decide to accept the close event, we should also tidy up after ourselves.
 	close_all_dialogs();
 }
-
-void
-GPlatesQtWidgets::ViewportWindow::remap_shapefile_attributes(
-	GPlatesFileIO::FileInfo &file_info)
-{
-	d_read_errors_dialog.clear();
-	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
-
-	GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(file_info, d_model, read_errors);
-
-	d_read_errors_dialog.update();
-
-	// Pop up errors only if appropriate.
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
-	if (num_initial_errors != num_final_errors) {
-		d_read_errors_dialog.show();
-	}
-
-	// Plate-ids may have changed, so update the reconstruction. 
-	reconstruct();
-}
-
 
 
 void
@@ -2101,11 +1527,11 @@ GPlatesQtWidgets::ViewportWindow::enable_raster_display()
 {
 	if (action_Show_Raster->isChecked())
 	{
-		d_globe_canvas_ptr->enable_raster_display();
+		d_reconstruction_view_widget.enable_raster_display();
 	}
 	else
 	{
-		d_globe_canvas_ptr->disable_raster_display();
+		d_reconstruction_view_widget.disable_raster_display();
 	}
 }
 
@@ -2113,7 +1539,7 @@ void
 GPlatesQtWidgets::ViewportWindow::open_raster()
 {
 
-	QString filename = QFileDialog::getOpenFileName(0,
+	QString filename = QFileDialog::getOpenFileName(this,
 		QObject::tr("Open File"), d_open_file_path, QObject::tr("Raster files (*.jpg *.jpeg)") );
 
 	if ( filename.isEmpty()){
@@ -2187,22 +1613,14 @@ GPlatesQtWidgets::ViewportWindow::open_time_dependent_raster_sequence()
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog.read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();	
 
-	QFileDialog file_dialog(this,QObject::tr("Choose Folder Containing Time-dependent Rasters"),d_open_file_path,NULL);
-	file_dialog.setFileMode(QFileDialog::DirectoryOnly);
+	QString directory = QFileDialog::getExistingDirectory(this, "Choose Folder Containing Time-dependent Rasters", d_open_file_path);
 
-	if (file_dialog.exec())
+	if (directory.length() > 0) // i.e. the user did not click cancel
 	{
-		
-		QStringList directory_list = file_dialog.selectedFiles();
-		QString directory = directory_list.at(0);
-
 		GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(d_time_dependent_raster_map,directory,read_errors);
-		
-		QFileInfo last_opened_file(file_dialog.directory().absoluteFilePath(directory_list.last()));
-		d_open_file_path = last_opened_file.path();
-
+		d_open_file_path = directory;
 		d_read_errors_dialog.update();
-	
+
 		// Pop up errors only if appropriate.
 		GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
 		if (num_initial_errors != num_final_errors) {
@@ -2215,15 +1633,15 @@ GPlatesQtWidgets::ViewportWindow::open_time_dependent_raster_sequence()
 		action_Show_Raster->setChecked(true);
 		update_time_dependent_raster();
 	}
-
-
-
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::update_time_dependent_raster()
 {
-	QString filename = GPlatesFileIO::RasterReader::get_nearest_raster_filename(d_time_dependent_raster_map,d_recon_time);
+	QString filename = GPlatesFileIO::RasterReader::get_nearest_raster_filename(
+			d_time_dependent_raster_map,
+			get_view_state().get_reconstruct().get_current_reconstruction_time());
+
 	load_raster(filename);
 }
 
@@ -2231,14 +1649,16 @@ GPlatesQtWidgets::ViewportWindow::update_time_dependent_raster()
 void
 GPlatesQtWidgets::ViewportWindow::delete_focused_feature()
 {
-	if (d_feature_focus.is_valid()) {
-		GPlatesModel::FeatureHandle::weak_ref feature_ref = d_feature_focus.focused_feature();
+	if (get_view_state().get_feature_focus().is_valid())
+	{
+		GPlatesModel::FeatureHandle::weak_ref feature_ref =
+				get_view_state().get_feature_focus().focused_feature();
 #if 0		// Cannot call ModelInterface::remove_feature() as it is #if0'd out and not implemented in Model!
 		// FIXME: figure out FeatureCollectionHandle::weak_ref that feature_ref belongs to.
 		// Possibly implement that as part of ModelUtils.
 		d_model->remove_feature(feature_ref, collection_ref);
 #endif
-		d_feature_focus.announce_deletion_of_focused_feature();
+		get_view_state().get_feature_focus().announce_deletion_of_focused_feature();
 	}
 }
 
@@ -2266,8 +1686,8 @@ GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 	action_Show_Arrow_Decorations->setEnabled(globe_is_active);
 	
 	// Grey-out the modify pole tab when in map mode. 
-	d_task_panel_ptr->enable_modify_pole_tab(globe_is_active);
-	d_task_panel_ptr->enable_topology_tab(d_reconstruction_view_widget.globe_is_active());
+	d_task_panel_ptr->set_tab_enabled(TaskPanel::MODIFY_POLE, globe_is_active);
+	d_task_panel_ptr->set_tab_enabled(TaskPanel::TOPOLOGY_TOOLS, globe_is_active);
 	
 	// Display appropriate status bar message for tools which are not available on the map.
 	if (action_Build_Topology->isChecked() && d_reconstruction_view_widget.map_is_active())
@@ -2283,6 +1703,7 @@ GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 			" Ctrl+drag to pan the map."));			
 	}
 }
+
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_move_camera_up()
@@ -2335,16 +1756,14 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_projection_dialog()
 	if (d_set_projection_dialog.exec())
 	{
 		try {
-			// Update the map canvas' projection
-			d_reconstruction_view_widget.map_canvas().set_projection_type(
-				d_set_projection_dialog.projection_type());
-
-			d_reconstruction_view_widget.map_canvas().set_central_meridian(
-				d_set_projection_dialog.central_meridian());
-
-			// Update the reconstruction view. 
-			d_reconstruction_view_widget.change_projection(d_set_projection_dialog.projection_type());
-
+			// Notify the view state of the projection change.
+			// It will handle the rest.
+			GPlatesViewOperations::ViewportProjection &viewport_projection =
+					get_view_state().get_viewport_projection();
+			viewport_projection.set_projection_type(
+					d_set_projection_dialog.get_projection_type());
+			viewport_projection.set_central_meridian(
+					d_set_projection_dialog.central_meridian());
 		}
 		catch(GPlatesGui::ProjectionException &e)
 		{
@@ -2355,27 +1774,23 @@ GPlatesQtWidgets::ViewportWindow::pop_up_set_projection_dialog()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::setup_rendered_geom_collection()
+GPlatesQtWidgets::ViewportWindow::handle_gui_debug_action()
 {
-	// Reconstruction rendered layer is always active.
-	d_rendered_geom_collection.set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
+	// Some handy information that may aid debugging:
+#if 0
+	// "Where the hell did my keyboard focus go?"
+	qDebug() << "Current focus:" << QApplication::focusWidget();
+#endif
+	// "What's the name of the current style so I can test against it?"
+	qDebug() << "Current style:" << style()->objectName();
 
-	d_rendered_geom_collection.set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
-
-	// Activate the main rendered layer.
-	// Specify which main rendered layers are orthogonal to each other - when
-	// one is activated the others are automatically deactivated.
-	GPlatesViewOperations::RenderedGeometryCollection::orthogonal_main_layers_type orthogonal_main_layers;
-	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_LAYER);
-	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
-	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
-
-	d_rendered_geom_collection.set_orthogonal_main_layers(orthogonal_main_layers);
+	// "What's this thing doing there?"
+	QWidget *cursor_widget = QApplication::widgetAt(QCursor::pos());
+	qDebug() << "Current widget under cursor:" << cursor_widget;
+	while (cursor_widget && cursor_widget->parentWidget()) {
+		cursor_widget = cursor_widget->parentWidget();
+		qDebug() << "\twhich is inside:" << cursor_widget;
+	}
 }
 
 
@@ -2383,7 +1798,8 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_shapefile_attribute_viewer_dialog()
 {
 	d_shapefile_attribute_viewer_dialog.show();
-	d_shapefile_attribute_viewer_dialog.update();
+	d_shapefile_attribute_viewer_dialog.update(
+			get_application_state().get_feature_collection_file_state());
 	// In most cases, 'show()' is sufficient. However, selecting the menu entry
 	// a second time, when the dialog is still open, should make the dialog 'active'
 	// and return keyboard focus to it.

@@ -27,11 +27,11 @@
 #define GPLATES_FILEIO_RECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
 
 #include <vector>
-#include <list>
-#include <QFileInfo>
+#include <QString>
+
+#include "file-io/File.h"
 
 #include "model/types.h"
-#include "qt-widgets/ApplicationState.h"
 
 
 namespace GPlatesModel
@@ -54,36 +54,12 @@ namespace GPlatesFileIO
 		};
 
 
-		/**
-		 * Typedef for a sequence of @a ReconstructedFeatureGeometry pointers.
-		 */
+		//! Typedef for sequence of feature collection files.
+		typedef std::vector<const GPlatesFileIO::File *> files_collection_type;
+
+		//! Typedef for sequence of RFGs.
 		typedef std::vector<const GPlatesModel::ReconstructedFeatureGeometry *>
-			reconstructed_feature_geometry_seq_type;
-
-		/**
-		 * Groups @a ReconstructedFeatureGeometry objects with their feature.
-		 */
-		struct FeatureGeometryGroup
-		{
-			FeatureGeometryGroup(
-					const GPlatesModel::FeatureHandle::const_weak_ref &_feature_ref) :
-				feature_ref(_feature_ref)
-			{  }
-
-			GPlatesModel::FeatureHandle::const_weak_ref feature_ref;
-			reconstructed_feature_geometry_seq_type recon_feature_geoms;
-		};
-
-		/**
-		 * Typedef for a sequence of @a FeatureGeometryGroup objects.
-		 */
-		typedef std::list<FeatureGeometryGroup> feature_geometry_group_seq_type;
-
-		//! Typedef for iterator into global list of loaded feature collection files.
-		typedef GPlatesAppState::ApplicationState::file_info_const_iterator file_info_const_iterator;
-
-		//! Typedef for sequence of file iterators that reference a collection of geometries.
-		typedef std::vector<file_info_const_iterator> referenced_files_collection_type;
+				reconstructed_feature_geom_seq_type;
 
 
 		/**
@@ -97,8 +73,7 @@ namespace GPlatesFileIO
 
 
 		/**
-		* Exports @a ReconstructedFeatureGeometry objects that are already grouped
-		* with their feature.
+		* Exports @a ReconstructedFeatureGeometry objects.
 		*
 		* @param export_format specifies which format to write.
 		*
@@ -107,17 +82,16 @@ namespace GPlatesFileIO
 		*/
 		void
 		export_geometries(
-				const feature_geometry_group_seq_type &feature_geometry_group_seq,
+				const QString &filename,
 				ReconstructedFeatureGeometryExport::Format export_format,
-				const QFileInfo& file_info,
-				const referenced_files_collection_type &referenced_files,
+				const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
+				const files_collection_type &reconstructable_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
 
 
 		/**
-		* Exports @a ReconstructedFeatureGeometry objects that are already grouped
-		* with their feature.
+		* Exports @a ReconstructedFeatureGeometry objects.
 		*
 		* @param file_info file whose extension is used to determine which format to write.
 		*
@@ -127,17 +101,17 @@ namespace GPlatesFileIO
 		inline
 		void
 		export_geometries(
-				const feature_geometry_group_seq_type &feature_geometry_group_seq,
-				const QFileInfo& file_info,
-				const referenced_files_collection_type &referenced_files,
+				const QString &filename,
+				const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
+				const files_collection_type &reconstructable_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time)
 		{
 			export_geometries(
-					feature_geometry_group_seq,
-					get_export_file_format(file_info),
-					file_info,
-					referenced_files,
+					filename,
+					get_export_file_format(filename),
+					reconstructed_feature_geom_seq,
+					reconstructable_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time);
 		}

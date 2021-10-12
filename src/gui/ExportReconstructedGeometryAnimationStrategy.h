@@ -37,7 +37,7 @@
 
 #include "utils/ExportTemplateFilenameSequence.h"
 
-#include "view-operations/ExportReconstructedFeatureGeometries.h"
+#include "view-operations/VisibleReconstructedFeatureGeometryExport.h"
 
 #include "gui/ExportAnimationStrategy.h"
 
@@ -101,7 +101,7 @@ namespace GPlatesGui
 		 * The list of visible, reconstructable FeatureCollections to take
 		 * geometry from.
 		 */
-		GPlatesViewOperations::ExportReconstructedFeatureGeometries::active_files_collection_type
+		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::files_collection_type
 				d_active_reconstructable_files;
 	};
 }

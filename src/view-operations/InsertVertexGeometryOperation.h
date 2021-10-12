@@ -33,6 +33,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <QObject>
+#include <vector>
 
 #include "GeometryBuilder.h"
 #include "GeometryOperation.h"
@@ -154,6 +155,14 @@ namespace GPlatesViewOperations
 		 * that the mouse cursor is currently hovering over if any).
 		 */
 		RenderedGeometryCollection::child_layer_owner_ptr_type d_highlight_layer_ptr;
+
+		/**
+		 * A mapping from rendered line segment indices to point indices, such that the
+		 * i-th element of this vector is the index of the point at the beginning of the
+		 * i-th rendered line segment. This is because a line segment is not rendered
+		 * between two points if they are too close together.
+		 */
+		std::vector<GeometryBuilder::PointIndex> d_line_to_point_mapping;
 
 		/**
 		 * Used by undo/redo to make sure appropriate tool is active

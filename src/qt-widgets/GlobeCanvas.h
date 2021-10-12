@@ -47,7 +47,6 @@
 #include "gui/Texture.h"
 #include "gui/ViewportZoom.h"
 #include "gui/PlatesColourTable.h"
-#include "gui/GeometryFocusHighlight.h"
 
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -56,6 +55,12 @@
 #include "qt-widgets/SceneView.h"
 #include "view-operations/QueryProximityThreshold.h"
 #include "view-operations/RenderedGeometryFactory.h"
+
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
 
 namespace GPlatesViewOperations
 {
@@ -116,8 +121,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		GlobeCanvas(
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				ViewportWindow &view_state,
+				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = 0);
 
 
@@ -152,23 +156,16 @@ namespace GPlatesQtWidgets
 		current_proximity_inclusion_threshold(
 				const GPlatesMaths::PointOnSphere &click_point) const;
 
-
 		GPlatesGui::Globe &
 		globe()
 		{
 			return d_globe;
 		}
 
-		GPlatesGui::ViewportZoom &
-		viewport_zoom()
+		const GPlatesGui::Globe &
+		globe() const
 		{
-			return d_viewport_zoom;
-		}
-
-		GPlatesGui::GeometryFocusHighlight &
-		geometry_focus_highlight()
-		{
-			return d_geometry_focus_highlight;
+			return d_globe;
 		}
 
 		/**
@@ -270,7 +267,7 @@ namespace GPlatesQtWidgets
 
 		virtual
 		boost::optional<GPlatesMaths::LatLonPoint>
-		camera_llp();
+		camera_llp() const;
 
 
 		virtual
@@ -509,14 +506,6 @@ namespace GPlatesQtWidgets
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
-		/**
-		 * This signal should only be emitted if the zoom is actually different to what it
-		 * was.
-		 */
-		void
-		zoom_changed(
-				double zoom_percent);
-
 	private slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -526,8 +515,6 @@ namespace GPlatesQtWidgets
 		handle_zoom_change();
 
 	private:
-		ViewportWindow *d_view_state_ptr;
-
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer
 		 * on the globe.
@@ -574,17 +561,9 @@ namespace GPlatesQtWidgets
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
-		/**
-		 * The collection of @a RenderedGeometry objects we need to paint.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
-
 		GPlatesGui::Globe d_globe;
 
-		// FIXME: As this is now shared between the GlobeCanvas and the MapView, it should
-		// probably reside somewhere else. 
-		GPlatesGui::ViewportZoom d_viewport_zoom;
-		GPlatesGui::GeometryFocusHighlight d_geometry_focus_highlight;  // Depends upon Globe.
+		GPlatesGui::ViewportZoom &d_viewport_zoom;
 
 
 		void

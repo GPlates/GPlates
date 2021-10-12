@@ -25,7 +25,6 @@
  
 #include "LicenseDialog.h"
 
-
 GPlatesQtWidgets::LicenseDialog::LicenseDialog(
 		QWidget *parent_):
 	QDialog(parent_)
@@ -48,4 +47,6 @@ GPlatesQtWidgets::LicenseDialog::LicenseDialog(
 			"51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA."));
 
 	text_information->setPlainText(message);
+
+	setWindowModality(Qt::WindowModal);
 }

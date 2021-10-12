@@ -26,13 +26,16 @@
 
 #include "ExportReconstructedGeometryAnimationStrategy.h"
 
-#include "utils/FloatingPointComparisons.h"
+#include "app-logic/ApplicationState.h"
+#include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/Reconstruct.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
 
-// ViewState, needed for .reconstruction_root() and all that ExportReconstructedFeatureGeometries needs.
-#include "qt-widgets/ViewportWindow.h"
+#include "utils/FloatingPointComparisons.h"
+
+#include "presentation/ViewState.h"
 
 
 
@@ -53,10 +56,21 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::ExportReconstructedGeo
 	// Later, we will let the user configure this.
 	set_template_filename(QString("reconstructed_%u_%0.2f.xy"));
 	
+	GPlatesAppLogic::FeatureCollectionFileState &file_state =
+			d_export_animation_context_ptr->view_state().get_application_state()
+					.get_feature_collection_file_state();
+
 	// From the ViewState, obtain the list of files with usable reconstructed geometry in them.
-	d_active_reconstructable_files.assign(
-			d_export_animation_context_ptr->view_state().active_reconstructable_files().begin(),
-			d_export_animation_context_ptr->view_state().active_reconstructable_files().end());
+	// Copy GPlatesFileIO:File into GPlatesFileIO:File::weak_ref.
+	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator_range active_files =
+			file_state.get_active_reconstructable_files();
+	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator iter = active_files.begin;
+	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator end = active_files.end;
+	for ( ; iter != end; ++iter)
+	{
+		GPlatesFileIO::File &file = *iter;
+		d_active_reconstructable_files.push_back(&file);
+	}
 }
 
 
@@ -96,12 +110,12 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 	// given frame_index, filename, reconstructable files and geoms, and target_dir. Etc.
 	try {
 
-		GPlatesViewOperations::ExportReconstructedFeatureGeometries::export_visible_geometries(
+		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries(
 				full_filename,
-				d_export_animation_context_ptr->view_state().reconstruction(),
-				d_export_animation_context_ptr->view_state().rendered_geometry_collection(),
+				d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
 				d_active_reconstructable_files,
-				d_export_animation_context_ptr->view_state().reconstruction_root(),
+				d_export_animation_context_ptr->view_state().get_reconstruct()
+						.get_current_anchored_plate_id(),
 				d_export_animation_context_ptr->view_time());
 
 	} catch (...) {

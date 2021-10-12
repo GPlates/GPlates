@@ -26,12 +26,15 @@
  */
 
 #include "FocusedFeatureGeometryManipulator.h"
+
 #include "UndoRedo.h"
+
+#include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "feature-visitors/GeometrySetter.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "model/ReconstructionTree.h"
-#include "feature-visitors/GeometrySetter.h"
-#include "qt-widgets/ViewportWindow.h"
+#include "presentation/ViewState.h"
 
 
 namespace GPlatesViewOperations
@@ -216,11 +219,10 @@ namespace GPlatesViewOperations
 
 GPlatesViewOperations::FocusedFeatureGeometryManipulator::FocusedFeatureGeometryManipulator(
 		GeometryBuilder &focused_feature_geom_builder,
-		GPlatesGui::FeatureFocus &feature_focus,
-		GPlatesQtWidgets::ViewportWindow &viewport_window) :
+		GPlatesPresentation::ViewState &view_state) :
 d_focused_feature_geom_builder(&focused_feature_geom_builder),
-d_feature_focus(&feature_focus),
-d_viewport_window(&viewport_window),
+d_feature_focus(&view_state.get_feature_focus()),
+d_reconstruct(&view_state.get_reconstruct()),
 d_ignore_geom_builder_update(false),
 d_block_infinite_signal_slot_loop_depth(0)
 {
@@ -432,7 +434,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
 	{
 		// Get current reconstruction tree.
 		GPlatesModel::ReconstructionTree &recon_tree =
-			d_viewport_window->reconstruction().reconstruction_tree();
+				d_reconstruct->get_current_reconstruction().reconstruction_tree();
 
 		geometry_on_sphere = Reconstruct(
 			plate_id, recon_tree, reverse_reconstruct).reconstruct(geometry_on_sphere);

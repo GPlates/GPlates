@@ -48,6 +48,7 @@ void
 GPlatesQtWidgets::ZoomSliderWidget::set_up_ui()
 {
 	// Set our own properties.
+	setObjectName("ZoomSlider");
 	setFocusPolicy(Qt::NoFocus);
 	setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 

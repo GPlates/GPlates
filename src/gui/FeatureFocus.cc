@@ -26,10 +26,36 @@
 #include <boost/none.hpp>
 
 #include "FeatureFocus.h"
+
+#include "app-logic/ApplicationState.h"
+#include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructionGeometryFinder.h"
-#include "qt-widgets/ViewportWindow.h"		//ViewState.
+
+
+GPlatesGui::FeatureFocus::FeatureFocus(
+		GPlatesAppLogic::ApplicationState &application_state,
+		GPlatesAppLogic::Reconstruct &reconstruct):
+	d_reconstruct_ptr(&reconstruct)
+{
+	// Get notified whenever a new reconstruction occurs.
+	QObject::connect(
+			d_reconstruct_ptr,
+			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+			this,
+			SLOT(handle_reconstruction(GPlatesAppLogic::Reconstruct &)));
+
+	QObject::connect(
+			&application_state.get_feature_collection_file_state(),
+			SIGNAL(begin_remove_feature_collection(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
+			this,
+			SLOT(begin_remove_feature_collection(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
+}
 
 
 void
@@ -102,7 +128,7 @@ GPlatesGui::FeatureFocus::set_focus(
 	// However, the topology tools will want an RG to be highlighted after the table gets
 	// clicked. The best place to do this lookup is here, rather than force the topology
 	// tools to do the lookup (which forces an additional focus event, which is unnecessary.)
-	find_new_associated_reconstruction_geometry(d_view_state_ptr->reconstruction());
+	find_new_associated_reconstruction_geometry(d_reconstruct_ptr->get_current_reconstruction());
 	// In this specific case, find_new_associated_reconstruction_geometry() should always handle the emitting of
 	// the focus_changed signal for us; we don't need to emit a second one.
 	// Note that changing the semantics of find_new_associated_reconstruction_geometry() just for this method
@@ -207,4 +233,43 @@ GPlatesGui::FeatureFocus::announce_deletion_of_focused_feature()
 	}
 	emit focused_feature_deleted(d_focused_feature, d_associated_reconstruction_geometry);
 	unset_focus();
+}
+
+
+void
+GPlatesGui::FeatureFocus::handle_reconstruction(
+		GPlatesAppLogic::Reconstruct &reconstructer)
+{
+	find_new_associated_reconstruction_geometry(
+			reconstructer.get_current_reconstruction());
+}
+
+
+void
+GPlatesGui::FeatureFocus::begin_remove_feature_collection(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state,
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file)
+{
+	// FIXME: This is a temporary hack to stop highlighting the focused feature if
+	// it's in the feature collection we're about to unload.
+	if (!is_valid())
+	{
+		return;
+	}
+
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
+			file->get_feature_collection();
+
+	GPlatesModel::FeatureCollectionHandle::features_iterator feature_iter;
+	for (feature_iter = feature_collection->features_begin();
+		feature_iter != feature_collection->features_end();
+		++feature_iter)
+	{
+		if (feature_iter.is_valid() &&
+			(*feature_iter).get() == d_focused_feature.handle_ptr())
+		{
+			unset_focus();
+			break;
+		}
+	}
 }

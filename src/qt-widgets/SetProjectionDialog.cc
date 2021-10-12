@@ -28,6 +28,10 @@
 #include "MapCanvas.h"
 #include "ViewportWindow.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/AssertionFailureException.h"
+
+
 GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
 	ViewportWindow &viewport_window,
 	QWidget *parent_):
@@ -37,23 +41,30 @@ GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
 	setupUi(this);
 
 	// FIXME: Synchronise these with the definitions in the the MapProjection class. 
-	combo_projection->addItem(QString(QObject::tr("3D Globe")));
-	combo_projection->addItem(QString(QObject::tr("Rectangular")));
-	combo_projection->addItem(QString(QObject::tr("Mercator")));
-	combo_projection->addItem(QString(QObject::tr("Mollweide")));
-	combo_projection->addItem(QString(QObject::tr("Robinson")));
+	combo_projection->addItem(tr("3D Globe"),GPlatesGui::ORTHOGRAPHIC);
+	combo_projection->addItem(tr("Rectangular"),GPlatesGui::RECTANGULAR);
+	combo_projection->addItem(tr("Mercator"),GPlatesGui::MERCATOR);
+	combo_projection->addItem(tr("Mollweide"),GPlatesGui::MOLLWEIDE);
+	combo_projection->addItem(tr("Robinson"),GPlatesGui::ROBINSON);
 
 	// The central_meridian spinbox should be disabled if we're in Orthographic mode. 
 	update_central_meridian_status();
-	QObject::connect(combo_projection,SIGNAL(currentIndexChanged(int)),this,SLOT(update_central_meridian_status()));
+	QObject::connect(combo_projection,SIGNAL(currentIndexChanged(int)),
+			this,SLOT(update_central_meridian_status()));
 
 }
 
 void
 GPlatesQtWidgets::SetProjectionDialog::set_projection(
-	int projection_type_)
+	GPlatesGui::ProjectionType projection_type)
 {
-	combo_projection->setCurrentIndex(projection_type_);
+	// Now we can quickly select the appropriate line of the combobox
+	// by finding our projection ID (and not worrying about the text
+	// label)
+	const int idx = combo_projection->findData(projection_type);
+	if (idx != -1) {
+		combo_projection->setCurrentIndex(idx);
+	}
 }
 
 void
@@ -67,10 +78,10 @@ void
 GPlatesQtWidgets::SetProjectionDialog::setup()
 {
 	// Get the current projection. 
-	int projection = d_viewport_window_ptr->reconstruction_view_widget().map_canvas().projection_type();
+	const GPlatesGui::ProjectionType projection_type =
+			d_viewport_window_ptr->reconstruction_view_widget().map_canvas().projection_type();
 
-	combo_projection->setCurrentIndex(projection);
-
+	set_projection(projection_type);
 }
 
 void
@@ -80,10 +91,21 @@ GPlatesQtWidgets::SetProjectionDialog::update_central_meridian_status()
 		combo_projection->currentIndex() == GPlatesGui::ORTHOGRAPHIC);
 }
 
-int
-GPlatesQtWidgets::SetProjectionDialog::projection_type()
+GPlatesGui::ProjectionType
+GPlatesQtWidgets::SetProjectionDialog::get_projection_type() const
 {
-	return combo_projection->currentIndex();
+	// Retrieve the embedded QVariant for the selected combobox choice.
+	QVariant projection_qv = combo_projection->itemData(combo_projection->currentIndex());
+
+	// Extract projection type from QVariant.
+	const GPlatesGui::ProjectionType projection_type =
+			static_cast<GPlatesGui::ProjectionType>(projection_qv.toInt());
+	
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			projection_type >= 0 && projection_type < GPlatesGui::NUM_PROJECTIONS,
+			GPLATES_ASSERTION_SOURCE);
+
+	return projection_type;
 }
 
 double

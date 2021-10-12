@@ -40,11 +40,9 @@ namespace GPlatesGui
 namespace GPlatesQtWidgets
 {
 	/**
-	 * This widget resides inside a QDockWidget. The dock is usually hidden
-	 * from view, but can pop up and sit in the top dock slot if the user
-	 * starts playing an animation.
+	 * This widget resides inside the AwesomeBar at the top of the ReconstructionViewWidget.
 	 *
-	 * It offers basic control over the animation.
+	 * It offers basic control over the current reconstruction time.
 	 */
 	class TimeControlWidget: 
 			public QWidget,

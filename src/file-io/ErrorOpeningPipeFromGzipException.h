@@ -28,13 +28,17 @@
 
 #include <QString>
 
+#include "global/GPlatesException.h"
+
+
 namespace GPlatesFileIO
 {
 	/**
 	 * This exception is thrown when GPlates cannot start the 'gzip' program
 	 * to do on-the-fly compression to read a compressed GPML file.
 	 */
-	class ErrorOpeningPipeFromGzipException
+	class ErrorOpeningPipeFromGzipException :
+			public GPlatesGlobal::Exception
 	{
 	public:
 		/**
@@ -42,8 +46,10 @@ namespace GPlatesFileIO
 		 */
 		explicit
 		ErrorOpeningPipeFromGzipException(
+				const GPlatesUtils::CallStack::Trace &exception_source,
 				const QString &command_,
 				const QString &filename_):
+			Exception(exception_source),
 			d_command(command_),
 			d_filename(filename_)
 		{  }
@@ -65,6 +71,19 @@ namespace GPlatesFileIO
 		{
 			return d_filename;
 		}
+
+	protected:
+		virtual
+		const char *
+		exception_name() const
+		{
+			return "ErrorOpeningPipeFromGzipException";
+		}
+
+		virtual
+		void
+		write_message(
+				std::ostream &os) const;
 
 	private:
 		/**

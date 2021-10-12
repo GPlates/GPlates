@@ -225,7 +225,7 @@ namespace GPlatesViewOperations
 		 * The number of internal geometries.
 		 *
 		 * There can be more than one geometry for things such as GML multi-curve
-		 * but since that's not currently implemented we only ever have one geometry.
+		 * but since that's not currently implemented we have at most one geometry.
 		 */
 		unsigned int
 		get_num_geometries() const;

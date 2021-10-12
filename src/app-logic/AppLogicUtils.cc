@@ -32,7 +32,7 @@
 
 void
 GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
-		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 		GPlatesModel::FeatureVisitor &visitor)
 {
 	// Before we dereference the weak_ref be sure that it's valid to dereference.
@@ -56,7 +56,7 @@ GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 
 void
 GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
 		GPlatesModel::ConstFeatureVisitor &visitor)
 {
 	// Before we dereference the weak_ref be sure that it's valid to dereference.
@@ -66,6 +66,32 @@ GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 				feature_collection->features_begin();
 		GPlatesModel::FeatureCollectionHandle::features_const_iterator end =
 				feature_collection->features_end();
+		for ( ; iter != end; ++iter)
+		{
+			// Check that it's ok to dereference the iterator.
+			if (iter.is_valid())
+			{
+				visitor.visit_feature(iter);
+			}
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		GPlatesModel::ConstFeatureVisitor &visitor)
+{
+	// Before we dereference the weak_ref be sure that it's valid to dereference.
+	if (feature_collection.is_valid())
+	{
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref const_feature_collection =
+				GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(feature_collection);
+		GPlatesModel::FeatureCollectionHandle::features_const_iterator iter =
+				const_feature_collection->features_begin();
+		GPlatesModel::FeatureCollectionHandle::features_const_iterator end =
+				const_feature_collection->features_end();
 		for ( ; iter != end; ++iter)
 		{
 			// Check that it's ok to dereference the iterator.

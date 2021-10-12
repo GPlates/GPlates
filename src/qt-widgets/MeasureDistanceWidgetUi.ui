@@ -1,0 +1,472 @@
+<ui version="4.0" >
+ <class>MeasureDistanceWidget</class>
+ <widget class="QWidget" name="MeasureDistanceWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>194</width>
+    <height>686</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" >
+   <property name="spacing" >
+    <number>2</number>
+   </property>
+   <property name="leftMargin" >
+    <number>2</number>
+   </property>
+   <property name="topMargin" >
+    <number>2</number>
+   </property>
+   <property name="rightMargin" >
+    <number>2</number>
+   </property>
+   <property name="bottomMargin" >
+    <number>2</number>
+   </property>
+   <item>
+    <layout class="QHBoxLayout" >
+     <property name="bottomMargin" >
+      <number>6</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="label_radius" >
+       <property name="text" >
+        <string>Earth radius:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineedit_radius" >
+       <property name="text" >
+        <string>6378.1</string>
+       </property>
+       <property name="alignment" >
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_radius_km" >
+       <property name="text" >
+        <string>km</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupbox_quick" >
+     <property name="title" >
+      <string>Quick Measure</string>
+     </property>
+     <layout class="QVBoxLayout" >
+      <property name="spacing" >
+       <number>2</number>
+      </property>
+      <property name="leftMargin" >
+       <number>2</number>
+      </property>
+      <property name="topMargin" >
+       <number>2</number>
+      </property>
+      <property name="rightMargin" >
+       <number>2</number>
+      </property>
+      <property name="bottomMargin" >
+       <number>6</number>
+      </property>
+      <item>
+       <layout class="QGridLayout" >
+        <property name="bottomMargin" >
+         <number>6</number>
+        </property>
+        <property name="horizontalSpacing" >
+         <number>2</number>
+        </property>
+        <property name="verticalSpacing" >
+         <number>2</number>
+        </property>
+        <item row="0" column="1" >
+         <widget class="QLabel" name="label_quick_lat" >
+          <property name="text" >
+           <string>Lat</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2" >
+         <widget class="QLabel" name="label_quick_lon" >
+          <property name="text" >
+           <string>Lon</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" >
+         <widget class="QLabel" name="label_feature_start" >
+          <property name="text" >
+           <string>1:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1" >
+         <widget class="QLineEdit" name="lineedit_quick_start_lat" >
+          <property name="enabled" >
+           <bool>false</bool>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2" >
+         <widget class="QLineEdit" name="lineedit_quick_start_lon" >
+          <property name="enabled" >
+           <bool>false</bool>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0" >
+         <widget class="QLabel" name="label_quick_end" >
+          <property name="text" >
+           <string>2:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1" >
+         <widget class="QLineEdit" name="lineedit_quick_end_lat" >
+          <property name="enabled" >
+           <bool>false</bool>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2" >
+         <widget class="QLineEdit" name="lineedit_quick_end_lon" >
+          <property name="enabled" >
+           <bool>false</bool>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QLabel" name="label_quick_distance" >
+          <property name="text" >
+           <string>Dist:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineedit_quick_distance" >
+          <property name="enabled" >
+           <bool>false</bool>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_quick_km" >
+          <property name="text" >
+           <string>km</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupbox_feature_none" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Expanding" hsizetype="Preferred" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="title" >
+      <string>Feature Measure</string>
+     </property>
+     <layout class="QVBoxLayout" >
+      <property name="spacing" >
+       <number>2</number>
+      </property>
+      <property name="leftMargin" >
+       <number>2</number>
+      </property>
+      <property name="topMargin" >
+       <number>2</number>
+      </property>
+      <property name="rightMargin" >
+       <number>2</number>
+      </property>
+      <property name="bottomMargin" >
+       <number>2</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="label_feature_none" >
+        <property name="text" >
+         <string>Select an existing polyline or polygon, or start digitising a new polyline or polygon to measure distances between more than two points.</string>
+        </property>
+        <property name="wordWrap" >
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer>
+        <property name="orientation" >
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" >
+         <size>
+          <width>20</width>
+          <height>71</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupbox_feature_present" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Expanding" hsizetype="Preferred" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="title" >
+      <string>Feature Measure</string>
+     </property>
+     <layout class="QVBoxLayout" >
+      <property name="spacing" >
+       <number>2</number>
+      </property>
+      <property name="leftMargin" >
+       <number>2</number>
+      </property>
+      <property name="topMargin" >
+       <number>2</number>
+      </property>
+      <property name="rightMargin" >
+       <number>2</number>
+      </property>
+      <property name="bottomMargin" >
+       <number>2</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" >
+        <property name="bottomMargin" >
+         <number>6</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_feature_total" >
+          <property name="text" >
+           <string>Total:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineedit_feature_total" >
+          <property name="alignment" >
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_feature_total_km" >
+          <property name="text" >
+           <string>km</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_feature_current_segment" >
+        <property name="text" >
+         <string>Current segment:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QGridLayout" >
+        <property name="bottomMargin" >
+         <number>6</number>
+        </property>
+        <property name="horizontalSpacing" >
+         <number>2</number>
+        </property>
+        <property name="verticalSpacing" >
+         <number>2</number>
+        </property>
+        <item row="0" column="1" >
+         <widget class="QLabel" name="label_feature_lat" >
+          <property name="text" >
+           <string>Lat</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2" >
+         <widget class="QLabel" name="label_feature_lon" >
+          <property name="text" >
+           <string>Lon</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" >
+         <widget class="QLabel" name="label_feature_start_2" >
+          <property name="text" >
+           <string>1:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1" >
+         <widget class="QLineEdit" name="lineedit_feature_start_lat" >
+          <property name="enabled" >
+           <bool>false</bool>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2" >
+         <widget class="QLineEdit" name="lineedit_feature_start_lon" >
+          <property name="enabled" >
+           <bool>false</bool>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0" >
+         <widget class="QLabel" name="label_feature_end" >
+          <property name="text" >
+           <string>2:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1" >
+         <widget class="QLineEdit" name="lineedit_feature_end_lat" >
+          <property name="enabled" >
+           <bool>false</bool>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2" >
+         <widget class="QLineEdit" name="lineedit_feature_end_lon" >
+          <property name="enabled" >
+           <bool>false</bool>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" >
+        <item>
+         <widget class="QLabel" name="label_feature_distance" >
+          <property name="text" >
+           <string>Dist:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineedit_feature_distance" >
+          <property name="enabled" >
+           <bool>false</bool>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_feature_distance_km" >
+          <property name="text" >
+           <string>km</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <spacer>
+        <property name="orientation" >
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" >
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

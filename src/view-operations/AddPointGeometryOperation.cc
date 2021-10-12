@@ -145,20 +145,27 @@ GPlatesViewOperations::AddPointGeometryOperation::add_point(
 		return;
 	}
 
-	// First see if the point to be added is too close to an existing point.
+	// Get number of points in current geometry.
+	const int num_geom_points =
+		d_geometry_builder->get_num_points_in_current_geometry();
+
+	// First see if the point to be added is too close to the last added point.
 	// If it is then don't add it.
-	if (too_close_to_existing_points(oriented_pos_on_sphere,closeness_inclusion_threshold))
+	if (num_geom_points)
 	{
-		return;
+		GPlatesViewOperations::GeometryBuilder::GeometryIndex geom_index =
+			d_geometry_builder->get_current_geometry_index();
+		GPlatesMaths::PointOnSphere last_point_added =
+			*(d_geometry_builder->get_geometry_point_end(geom_index) - 1);
+		if (last_point_added == oriented_pos_on_sphere)
+		{
+			return;
+		}
 	}
 
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
-
-	// Get number of points in current geometry.
-	const int num_geom_points =
-		d_geometry_builder->get_num_points_in_current_geometry();
 
 	// The command that does the actual adding of the point.
 	std::auto_ptr<QUndoCommand> add_point_command(
@@ -183,53 +190,6 @@ GPlatesViewOperations::AddPointGeometryOperation::add_point(
 	// Note: the command's redo() gets executed inside the push() call and this is where
 	// the vertex is initially inserted.
 	UndoRedo::instance().get_active_undo_stack().push(undo_command.release());
-}
-
-bool
-GPlatesViewOperations::AddPointGeometryOperation::too_close_to_existing_points(
-		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
-		const double &closeness_inclusion_threshold)
-{
-	// We currently only support one internal geometry so set geom index to zero.
-	const GeometryBuilder::GeometryIndex geom_index = 0;
-
-	// Number of points in the geometry (is zero if no geometry).
-	const unsigned int num_points_in_geom = (d_geometry_builder->get_num_geometries() > 0)
-			? d_geometry_builder->get_num_points_in_geometry(geom_index) : 0;
-
-	if (num_points_in_geom == 0)
-	{
-		return false;
-	}
-
-	GPlatesMaths::ProximityCriteria proximity_criteria(
-			oriented_pos_on_sphere,
-			closeness_inclusion_threshold);
-
-	GeometryBuilder::point_const_iterator_type builder_geom_begin =
-		d_geometry_builder->get_geometry_point_begin(geom_index);
-	GeometryBuilder::point_const_iterator_type builder_geom_end =
-		d_geometry_builder->get_geometry_point_end(geom_index);
-
-	GeometryBuilder::point_const_iterator_type builder_geom_iter;
-	for (builder_geom_iter = builder_geom_begin;
-		builder_geom_iter != builder_geom_end;
-		++builder_geom_iter)
-	{
-		const GPlatesMaths::PointOnSphere &point_on_sphere = *builder_geom_iter;
-
-		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type hit =
-				point_on_sphere.test_proximity(proximity_criteria);
-
-		// If we got a hit then we're too close to an existing point.
-		if (hit)
-		{
-			return true;
-		}
-	}
-
-	// Not too close to any existing points.
-	return false;
 }
 
 void
@@ -359,10 +319,11 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_multipoint_on_
 	{
 		const GPlatesMaths::PointOnSphere &point_on_sphere = *builder_geom_iter;
 
-		RenderedGeometry rendered_geom = create_rendered_point_on_sphere(
-					point_on_sphere,
-					GeometryOperationParameters::FOCUS_COLOUR,
-					GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
+		RenderedGeometry rendered_geom =
+				RenderedGeometryFactory::create_rendered_point_on_sphere(
+						point_on_sphere,
+						GeometryOperationParameters::FOCUS_COLOUR,
+						GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
 
 		// Add to the points layer.
 		d_points_layer_ptr->add_rendered_geometry(rendered_geom);
@@ -383,10 +344,11 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polyline_on_sp
 						d_geometry_builder->get_geometry_point_begin(geom_index),
 						d_geometry_builder->get_geometry_point_end(geom_index));
 
-		RenderedGeometry polyline_rendered_geom = create_rendered_polyline_on_sphere(
-					polyline_on_sphere,
-					GeometryOperationParameters::FOCUS_COLOUR,
-					GeometryOperationParameters::LINE_WIDTH_HINT);
+		RenderedGeometry polyline_rendered_geom =
+				RenderedGeometryFactory::create_rendered_polyline_on_sphere(
+						polyline_on_sphere,
+						GeometryOperationParameters::FOCUS_COLOUR,
+						GeometryOperationParameters::LINE_WIDTH_HINT);
 
 		// Add to the lines layer.
 		d_lines_layer_ptr->add_rendered_geometry(polyline_rendered_geom);
@@ -394,10 +356,11 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polyline_on_sp
 		const GPlatesMaths::PointOnSphere &end_point_on_sphere =
 			d_geometry_builder->get_geometry_point(geom_index, num_points_in_geom - 1);
 
-		RenderedGeometry end_point_rendered_geom = create_rendered_point_on_sphere(
-					end_point_on_sphere,
-					GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
-					GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
+		RenderedGeometry end_point_rendered_geom =
+				RenderedGeometryFactory::create_rendered_point_on_sphere(
+						end_point_on_sphere,
+						GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
+						GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
 
 		// Add to the points layer.
 		d_points_layer_ptr->add_rendered_geometry(end_point_rendered_geom);
@@ -408,10 +371,11 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polyline_on_sp
 		const GPlatesMaths::PointOnSphere &point_on_sphere =
 			d_geometry_builder->get_geometry_point(geom_index, 0);
 
-		RenderedGeometry rendered_geom = create_rendered_point_on_sphere(
-					point_on_sphere,
-					GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
-					GeometryOperationParameters::REGULAR_POINT_SIZE_HINT);
+		RenderedGeometry rendered_geom =
+				RenderedGeometryFactory::create_rendered_point_on_sphere(
+						point_on_sphere,
+						GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
+						GeometryOperationParameters::REGULAR_POINT_SIZE_HINT);
 
 		// Add to the points layer.
 		d_points_layer_ptr->add_rendered_geometry(rendered_geom);
@@ -441,10 +405,11 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polygon_on_sph
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type end_segment_polyline_on_sphere =
 				GPlatesMaths::PolylineOnSphere::create_on_heap(end_segment, end_segment + 2);
 
-		RenderedGeometry end_segment_polyline_rendered_geom = create_rendered_polyline_on_sphere(
-					end_segment_polyline_on_sphere,
-					GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
-					GeometryOperationParameters::LINE_WIDTH_HINT);
+		RenderedGeometry end_segment_polyline_rendered_geom =
+				RenderedGeometryFactory::create_rendered_polyline_on_sphere(
+						end_segment_polyline_on_sphere,
+						GeometryOperationParameters::NOT_IN_FOCUS_COLOUR,
+						GeometryOperationParameters::LINE_WIDTH_HINT);
 
 		// Add to the lines layer.
 		d_lines_layer_ptr->add_rendered_geometry(end_segment_polyline_rendered_geom);

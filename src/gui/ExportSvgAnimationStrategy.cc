@@ -26,12 +26,14 @@
 
 #include "ExportSvgAnimationStrategy.h"
 
-#include "utils/FloatingPointComparisons.h"
-
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
-#include "qt-widgets/ViewportWindow.h"	// ViewState, needed for .reconstruction_root()
 
+#include "qt-widgets/ViewportWindow.h"
+
+#include "utils/FloatingPointComparisons.h"
+
+#include "presentation/ViewState.h"
 
 
 const GPlatesGui::ExportSvgAnimationStrategy::non_null_ptr_type
@@ -87,7 +89,7 @@ GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 
 	// Here's where we do the actual work of exporting of the SVG snapshots,
 	// given frame_index, filename, and target_dir.
-	d_export_animation_context_ptr->view_state().create_svg_file(full_filename);
+	d_export_animation_context_ptr->view_state().get_other_view_state().create_svg_file(full_filename);
 	
 	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;

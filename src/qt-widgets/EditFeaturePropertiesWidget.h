@@ -36,10 +36,13 @@
 #include "model/FeatureHandle.h"
 
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;
-
 	class EditFeaturePropertiesWidget: 
 			public QWidget,
 			protected Ui_EditFeaturePropertiesWidget 
@@ -49,8 +52,7 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		EditFeaturePropertiesWidget(
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesPresentation::ViewState &view_state_,
 				QWidget *parent_ = NULL);
 
 		virtual
@@ -119,12 +121,6 @@ namespace GPlatesQtWidgets
 		
 		void
 		set_up_edit_widgets();
-
-		/**
-		 * This is the view state which is used to obtain the reconstruction in order to
-		 * iterate over RFGs.
-		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * This is the feature focus which tracks changes to the currently focused feature.

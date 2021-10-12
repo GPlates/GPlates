@@ -505,7 +505,8 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
 		// In fact, it may need to be a user preference.
 		d_qprocess_ptr->start(gzip_program().command());
 		if ( ! d_qprocess_ptr->waitForStarted()) {
-			throw ErrorOpeningPipeToGzipException(gzip_program().command(), file_info.get_qfileinfo().filePath());
+			throw ErrorOpeningPipeToGzipException(GPLATES_EXCEPTION_SOURCE,
+					gzip_program().command(), file_info.get_qfileinfo().filePath());
 		}
 		// Use the newly-launched process as the device the XML writer writes to.
 		d_output.setDevice(d_qprocess_ptr.get());
@@ -528,22 +529,6 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
 	d_gzip_afterwards(false)
 {
 	start_writing_document(d_output);
-}
-
-
-void
-GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_feature(
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
-{
-	visit_feature(feature);
-}
-
-
-void
-GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_feature(
-		const GPlatesModel::FeatureCollectionHandle::features_const_iterator &feature)
-{
-	visit_feature(feature);
 }
 
 

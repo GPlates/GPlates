@@ -36,20 +36,17 @@
 #include <vector>
 #include <string>
 #include <list>
+#include <memory>
 #include <boost/scoped_ptr.hpp>
 #include <QtCore/QTimer>
 #include <QCloseEvent>
 #include <QStringList>
 #include <QUndoGroup>
 
-#include "AboutDialog.h"
 #include "AnimateDialog.h"
-#include "ApplicationState.h"
 #include "ExportAnimationDialog.h"
 #include "ExportReconstructedFeatureGeometryDialog.h"
 #include "FeaturePropertiesDialog.h"
-#include "GlobeCanvas.h"
-#include "LicenseDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ReconstructionViewWidget.h"
@@ -63,7 +60,9 @@
 #include "ShapefileAttributeViewerDialog.h"
 #include "ViewportWindowUi.h"
 
-#include "app-logic/PlateVelocities.h"
+#include "app-logic/FeatureCollectionFileIO.h"
+#include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/PlateVelocityWorkflow.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
 
@@ -73,6 +72,7 @@
 #include "gui/EnableCanvasTool.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
+#include "gui/FullScreenMode.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -86,6 +86,16 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
+
+namespace GPlatesCanvasTools
+{
+	class MeasureDistanceState;
+}
+
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
@@ -97,8 +107,20 @@ namespace GPlatesGui
 	class TopologySectionsContainer;
 }
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
+namespace GPlatesPresentation
+{
+	class Application;
+}
+
 namespace GPlatesQtWidgets
 {
+	class AboutDialog;
+
 	class ViewportWindow:
 			public QMainWindow, 
 			protected Ui_ViewportWindow
@@ -106,28 +128,23 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
-		ViewportWindow();
+		ViewportWindow(
+				GPlatesPresentation::Application &application);
 
 		~ViewportWindow();
 
-		GPlatesModel::Reconstruction &
-		reconstruction() const
-		{
-			return *d_reconstruction;
-		}
 
-		const double &
-		reconstruction_time() const
-		{
-			return d_recon_time;
-		}
+		void
+		load_files(
+				const QStringList &filenames);
 
-		unsigned long
-		reconstruction_root() const
-		{
-			return d_recon_root;
-		}
+
+		void
+		reconstruct_to_time_with_root(
+				double recon_time,
+				unsigned long recon_root);
 		
+
 		const GPlatesQtWidgets::ReconstructionViewWidget &
 		reconstruction_view_widget() const
 		{
@@ -179,13 +196,6 @@ namespace GPlatesQtWidgets
 			return d_task_panel_ptr;
 		}
 
-		/** Get a pointer to the GPlatesModel::ModelInterface */
-		GPlatesModel::ModelInterface &
-		model_interface()
-		{
-			return d_model;
-		}
-
 
 
 	public slots:
@@ -205,23 +215,7 @@ namespace GPlatesQtWidgets
 		highlight_first_clicked_feature_table_row() const;
 
 		void
-		reconstruct_to_time(
-				double recon_time);
-
-		void
-		reconstruct_with_root(
-				unsigned long recon_root);
-
-		void
-		reconstruct_to_time_with_root(
-				double recon_time,
-				unsigned long recon_root);
-
-		void
-		reconstruct();
-
-		void
-		pop_up_license_dialog();
+		handle_reconstruction();
 
 		void
 		enable_drag_globe_tool(
@@ -276,6 +270,10 @@ namespace GPlatesQtWidgets
 				bool enable = true);
 
 		void
+		enable_measure_distance_tool(
+				bool enable = true);
+
+		void
 		choose_drag_globe_tool();
 
 		void
@@ -313,6 +311,9 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_edit_topology_tool();
+
+		void
+		choose_measure_distance_tool();
 
 		void
 		enable_or_disable_feature_actions(
@@ -386,142 +387,31 @@ namespace GPlatesQtWidgets
 		update_tools_and_status_message();
 
 
-
-	signals:
-		
-		/**
-		 * Emitted when the current reconstruction time has changed and after the reconstruction
-		 * has been performed and the canvas updated.
-		 *
-		 * Note that this signal is emitted ONLY when the new reconstruction time is different
-		 * to the old one - if the ViewportWindow is asked to reconstruct to the current time
-		 * (e.g. after a feature gets a plateid changed), this signal will not be emitted.
-		 */
 		void
-		reconstruction_time_changed(double time);
-
-	public:
-		typedef GPlatesAppState::ApplicationState::file_info_iterator file_info_iterator;
-		typedef std::list<file_info_iterator> active_files_collection_type;
-		typedef active_files_collection_type::iterator active_files_iterator;
-		
-		/**
-		 * Returns the current colour table in use.
-		 */
-		GPlatesGui::ColourTable *
-		get_colour_table();
+		handle_read_errors(
+				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
+				const GPlatesFileIO::ReadErrorAccumulation &new_read_errors);
 
 		void
-		load_files(
-				const QStringList &file_names);
+		end_add_feature_collections(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_begin,
+				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_end);
 
-		/**
-		 * Given a file_info_iterator, reloads the data for that file from disk,
-		 * replacing the FeatureCollection associated with that file_info_iterator.
-		 */
 		void
-		reload_file(
-				file_info_iterator file_it);
-
-		/**
-		 * Creates a fresh, empty, FeatureCollection. Associates a 'dummy'
-		 * FileInfo for it, and registers it with ApplicationState so that
-		 * the FeatureCollection can be reconstructed and saved via
-		 * the ManageFeatureCollectionsDialog.
-		 */
-		GPlatesAppState::ApplicationState::file_info_iterator
-		create_empty_reconstructable_file();
+		end_remove_feature_collection(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
 
-		/**
-		 * Write the feature collection associated to @a file_info to the file
-		 * from which the features were read.
-		 */
-		void
-		save_file(
-				const GPlatesFileIO::FileInfo &file_info,
-				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
-					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
+	private:
+		//! Returns the application state.
+		GPlatesAppLogic::ApplicationState &
+		get_application_state();
 
 
-		/**
-		 * Write the feature collection associated to @a features_to_save to the file
-		 * specified by @file_info.
-		 *
-		 * The list of loaded files is updated so as to refer to the recently written file.
-		 */
-		void
-		save_file_as(
-				const GPlatesFileIO::FileInfo &file_info,
-				file_info_iterator features_to_save,
-				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
-					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
-
-
-		/**
-		 * Write the feature collection associated to @a features_to_save to the file
-		 * specified by @file_info.  Returns a FileInfo object corresponding to the file
-		 * that was written (this will usually be ignored).
-		 *
-		 * The list of loaded files is @b not updated so as to refer to the recently written file.
-		 */
-		GPlatesFileIO::FileInfo
-		save_file_copy(
-				const GPlatesFileIO::FileInfo &file_info,
-				file_info_iterator features_to_save,
-				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
-					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
-
-
-		/**
-		 * Ensure the @a loaded_file is deactivated.
-		 *
-		 * It is assumed that @a loaded_file is an iterator which references the FileInfo
-		 * instance of a loaded file.  The file is going to be unloaded, so it will be
-		 * removed from the list of files in the application state.  Let's also ensure that
-		 * it is not an "active" file in this class (ie, an element of the collections of
-		 * active reconstructable or reconstruction files).
-		 *
-		 * This function should be invoked when a feature collection is unloaded by the
-		 * user.
-		 */
-		void
-		deactivate_loaded_file(
-				file_info_iterator loaded_file);
-
-		/**
-		 * Tests if the @a loaded_file is active, either as reconstructable features
-		 * or an active reconstruction tree.
-		 */
-		bool
-		is_file_active(
-				file_info_iterator loaded_file);
-
-		/**
-		 * Tests if the @a loaded_file is active and being used for reconstructable
-		 * feature data.
-		 */
-		bool
-		is_file_active_reconstructable(
-				file_info_iterator loaded_file);
-
-		/**
-		 * Tests if the @a loaded_file is active and being used for reconstruction
-		 * tree data.
-		 */
-		bool
-		is_file_active_reconstruction(
-				file_info_iterator loaded_file);
-		
-		/**
-		 * Temporarily shows or hides a feature collection by adding or removing
-		 * it from the list of active reconstructable files. This does not
-		 * un-load the file.
-		 */
-		void
-		set_file_active_reconstructable(
-				file_info_iterator file_it,
-				bool activate);
+		//! Returns the view state.
+		GPlatesPresentation::ViewState &
+		get_view_state();
 
 		/**
 		 * Temporarily enables or disables a reconstruction tree by adding or
@@ -531,103 +421,21 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		connect_canvas_tools();
-		 
-
-		/**
-		 * Configures the ActionButtonBox inside the Feature tab of the Task Panel
-		 * with some of the QActions that ViewportWindow has on the menu bar.
-		 */
-		void
-		set_file_active_reconstruction(
-				file_info_iterator file_it,
-				bool activate);
-			
-		/**
-		 * Temporary method for initiating shapefile attribute remapping. 
-		 */
-		void
-		remap_shapefile_attributes(
-			GPlatesFileIO::FileInfo &file_info);
-
-		/**
-		 * ViewState accessor for getting at the active reconstructable files list.
-		 * Used by the ExportReconstructionDialog and
-		 * ExportReconstructedGeometryAnimationStrategy.
-		 */
-		const active_files_collection_type &
-		active_reconstructable_files() const
-		{
-			return d_active_reconstructable_files;
-		}
-
-		/**
-		 * ViewState accessor for getting at the active reconstruction files list.
-		 * Included for completeness.
-		 */
-		const active_files_collection_type &
-		active_reconstruction_files() const
-		{
-			return d_active_reconstruction_files;
-		}
-
-		/**
-		 * ViewState accessor for getting at the RenderedGeometryCollection.
-		 * Used by the ExportReconstructionDialog and
-		 * ExportReconstructedGeometryAnimationStrategy.
-		 */
-		const GPlatesViewOperations::RenderedGeometryCollection &
-		rendered_geometry_collection() const
-		{
-			return d_rendered_geom_collection;
-		}
-
-		const GPlatesAppLogic::PlateVelocities &
-		plate_velocities() const
-		{
-			return d_plate_velocities;
-		}
 
 
 	private:
-		GPlatesModel::ModelInterface d_model;
+		//! Holds application state and view state.
+		GPlatesPresentation::Application &d_application;
 
-		//! Must be declared before 'd_reconstruction_view_widget'.
-		GPlatesViewOperations::RenderedGeometryCollection d_rendered_geom_collection;
-
-		/**
-		 * Is the reconstruction engine/framework.
-		 * Currently must be declared after 'd_rendered_geom_collection' because
-		 * it contains objects created by it.
-		 */
-		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction;
-
-		//@{
-		// ViewState 
-
-		active_files_collection_type d_active_reconstructable_files;
-		active_files_collection_type d_active_reconstruction_files;
-
-
-		//@}
-
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_comp_mesh_point_layer;
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_comp_mesh_arrow_layer;
-		GPlatesAppLogic::PlateVelocities d_plate_velocities;
-
-		double d_recon_time;
-		GPlatesModel::integer_plate_id_type d_recon_root;
-		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
 		GPlatesGui::AnimationController d_animation_controller;
+		GPlatesGui::FullScreenMode d_full_screen_mode;
 
 		ReconstructionViewWidget d_reconstruction_view_widget;
-		AboutDialog d_about_dialog;
+		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		AnimateDialog d_animate_dialog;
 		ExportAnimationDialog d_export_animation_dialog;
 		TotalReconstructionPolesDialog d_total_reconstruction_poles_dialog;
-		FeaturePropertiesDialog d_feature_properties_dialog;	// Depends on FeatureFocus.
-		LicenseDialog d_license_dialog;
+		FeaturePropertiesDialog d_feature_properties_dialog;
 		ManageFeatureCollectionsDialog d_manage_feature_collections_dialog;
 		ReadErrorAccumulationDialog d_read_errors_dialog;
 		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
@@ -655,6 +463,8 @@ namespace GPlatesQtWidgets
 		GPlatesGui::EnableCanvasTool d_enable_canvas_tool;
 		GPlatesViewOperations::FocusedFeatureGeometryManipulator d_focused_feature_geom_manipulator;
 
+		boost::scoped_ptr<GPlatesCanvasTools::MeasureDistanceState> d_measure_distance_state_ptr;
+
 		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
 		ShapefileAttributeViewerDialog d_shapefile_attribute_viewer_dialog;
 
@@ -668,17 +478,33 @@ namespace GPlatesQtWidgets
 
 		// The last path used for opening raster files.
 		QString d_open_file_path; 
-
-		// The current colour table in use. Do not access this directly, use
-		// get_colour_table() instead.
-		GPlatesGui::ColourTable *d_colour_table_ptr;
 	
+
 		/**
 		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
 		 * buttons and menu items.
 		 */
 		void
 		connect_menu_actions();
+
+		/**
+		 * Copies the menu structure found in ViewportWindow's menu bar into the
+		 * special full-screen-mode 'GMenu' button.
+		 */
+		void
+		populate_gmenu_from_menubar();
+
+		/**
+		 * Connects signals of @a FeatureCollectionFileIO to slots of 'this'.
+		 */
+		void
+		connect_feature_collection_file_io_signals();
+
+		/**
+		 * Connects signals of @a FeatureCollectionFileState to slots of 'this'.
+		 */
+		void
+		connect_feature_collection_file_state_signals();
 
 		/**
 		 * Configures the ActionButtonBox inside the Feature tab of the Task Panel
@@ -694,9 +520,6 @@ namespace GPlatesQtWidgets
 		void
 		set_up_dock_context_menus();
 
-		void
-		uncheck_all_tools();
-
 		void 
 		uncheck_all_colouring_tools();
 
@@ -706,14 +529,6 @@ namespace GPlatesQtWidgets
 
 		void
 		update_time_dependent_raster();
-
-		void
-		setup_rendered_geom_collection();
-
-		void
-		reconstruct_view(
-				double recon_time,
-				GPlatesModel::integer_plate_id_type recon_root);
 
 	private slots:
 		void
@@ -781,6 +596,12 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_set_projection_dialog();
+		
+		/**
+		 * A secret action triggerable with Ctrl+Shift+? to aid GUI-related debugging.
+		 */
+		void
+		handle_gui_debug_action();
 
 	protected:
 	

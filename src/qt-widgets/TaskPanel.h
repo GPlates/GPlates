@@ -27,8 +27,7 @@
 #define GPLATES_QTWIDGETS_TASKPANEL_H
 
 #include <QWidget>
-#include <QDebug>
-#include "TaskPanelUi.h"
+#include <QStackedWidget>
 
 #include "DigitisationWidget.h"
 #include "ReconstructionPoleWidget.h"
@@ -38,6 +37,15 @@
 #include "gui/FeatureFocus.h"
 #include "model/ModelInterface.h"
 
+namespace GPlatesCanvasTools
+{
+	class MeasureDistanceState;
+}
+
+namespace GPlatesAppLogic
+{
+	class FeatureCollectionFileState;
+}
 
 namespace GPlatesGui
 {
@@ -55,6 +63,7 @@ namespace GPlatesViewOperations
 namespace GPlatesQtWidgets
 {
 	class ModifyGeometryWidget;
+	class MeasureDistanceWidget;
 	class ViewportWindow;
 
 	/**
@@ -62,20 +71,36 @@ namespace GPlatesQtWidgets
 	 * to manipulate GPlates.... to the XTREME!
 	 */
 	class TaskPanel:
-			public QWidget,
-			protected Ui_TaskPanel
+			public QWidget
 	{
 		Q_OBJECT
 	public:
+
+		/**
+		 * Enumeration of all possible pages (or 'tabs') that the TaskPanel can display.
+		 *
+		 * Please ensure that this enumeration matches the order in which tabs are set
+		 * up in the TaskPanel constructor.
+		 */
+		enum Page
+		{
+			CURRENT_FEATURE,
+			DIGITISATION,
+			MODIFY_GEOMETRY,
+			MODIFY_POLE,
+			TOPOLOGY_TOOLS,
+			MEASURE_DISTANCE
+		};
+
+
 		explicit
 		TaskPanel(
-				GPlatesGui::FeatureFocus &feature_focus_,
-				GPlatesModel::ModelInterface &model_interface,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesPresentation::ViewState &view_state,
 				GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
-				ViewportWindow &view_state_,
+				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
+				ViewportWindow &viewport_window_,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				QWidget *parent_ = NULL);
 		
@@ -126,49 +151,95 @@ namespace GPlatesQtWidgets
 		{
 			return *d_topology_tools_widget_ptr;
 		}
+		
+		/**
+		 * Access for the MeasureDistanceWidget
+		 *
+		 * This lets the Measure Distance canvas tool interact with the
+		 * MeasureDistanceWidget
+		 */
+		MeasureDistanceWidget &
+		measure_distance_widget() const
+		{
+			return *d_measure_distance_widget_ptr;
+		}
 
-		void
-		enable_modify_pole_tab(
-			bool enable);
 	
 	public slots:
+		
+		/**
+		 * Select a particular tab/page and make it visible.
+		 */
+		void
+		choose_tab(
+				GPlatesQtWidgets::TaskPanel::Page page)
+		{
+			int page_idx = static_cast<int>(page);
+			d_stacked_widget_ptr->setCurrentIndex(page_idx);
+		}
+
+		/**
+		 * Used to disable (and re-enable) widgets for a particular tab.
+		 *
+		 * Currently this is needed by ViewportWindow::update_tools_and_status_message(),
+		 * to disable some task panels that do not have a Map view implementation.
+		 */
+		void
+		set_tab_enabled(
+				GPlatesQtWidgets::TaskPanel::Page page,
+				bool enabled)
+		{
+			int page_idx = static_cast<int>(page);
+			d_stacked_widget_ptr->widget(page_idx)->setEnabled(enabled);
+		}
+		
 		
 		void
 		choose_feature_tab()
 		{
-			tabwidget_task_panel->setCurrentWidget(tab_feature);
+			choose_tab(CURRENT_FEATURE);
 		}
 		
 		void
 		choose_digitisation_tab()
 		{
-			tabwidget_task_panel->setCurrentWidget(tab_digitisation);
+			choose_tab(DIGITISATION);
 		}		
 		
 		void
 		choose_modify_geometry_tab()
 		{
-			tabwidget_task_panel->setCurrentWidget(tab_modify_geometry);
+			choose_tab(MODIFY_GEOMETRY);
 		}		
 
 		void
 		choose_modify_pole_tab()
 		{
-			tabwidget_task_panel->setCurrentWidget(tab_modify_pole);
+			choose_tab(MODIFY_POLE);
 		}		
 		
 		void
 		choose_topology_tools_tab()
 		{
-			tabwidget_task_panel->setCurrentWidget(tab_topology_tools);
+			choose_tab(TOPOLOGY_TOOLS);
 		}
-		
+
 		void
-		enable_topology_tab(
-			bool enable);
-			
+		choose_measure_distance_tab()
+		{
+			choose_tab(MEASURE_DISTANCE);
+		}
+
 	private:
 		
+		/**
+		 * Does the basic tasks that setupUi(this) would do if we were using a
+		 * Designer-made widget.
+		 */
+		void
+		set_up_ui();
+
+
 		/**
 		 * Sets up the "Current Feature" tab in the X-Treme Task Panel.
 		 * This connects all the QToolButtons in the "Feature" tab to QActions,
@@ -211,6 +282,19 @@ namespace GPlatesQtWidgets
 		void
 		set_up_topology_tools_tab();
 
+		/**
+		 * Sets up the "Measure Distance" tab in the Task Panel.
+		 * This adds the MeasureDistanceWidget.
+		 */
+		void
+		set_up_measure_distance_tab();
+
+
+		/**
+		 * The QStackedWidget that emulates tab-like behaviour without actual tabs.
+		 * Parented to the TaskPanel, memory managed by Qt.
+		 */
+		QStackedWidget *d_stacked_widget_ptr;
 
 		/**
 		 * Widget responsible for the buttons in the Feature Tab.
@@ -252,6 +336,12 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		GPlatesQtWidgets::TopologyToolsWidget *d_topology_tools_widget_ptr;
+
+		/**
+		 * Widget responsible for the controls in the Measure Distance Tab.
+		 * Memory managed by Qt.
+		 */
+		GPlatesQtWidgets::MeasureDistanceWidget *d_measure_distance_widget_ptr;
 
 	};
 }

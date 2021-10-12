@@ -28,14 +28,17 @@
 #include <cmath>
 #include <QDebug>
 #include <QGraphicsView>
+#include <boost/shared_ptr.hpp>
+
+#include "MapView.h"
+
+#include "MapCanvas.h"
 
 #include "gui/ProjectionException.h"
 #include "gui/SvgExport.h"
+#include "gui/QGLWidgetTextRenderer.h"
 #include "maths/InvalidLatLonException.h"
-#include "MapCanvas.h"
-#include "ViewportWindow.h"
-
-#include "MapView.h"
+#include "presentation/ViewState.h"
 
 namespace
 {
@@ -66,18 +69,19 @@ namespace
 
 
 GPlatesQtWidgets::MapView::MapView(
-	GPlatesQtWidgets::ViewportWindow &view_state,
+	GPlatesPresentation::ViewState &view_state,
 	QWidget *parent_,
-	GPlatesGui::ViewportZoom *viewport_zoom_,
 	GPlatesQtWidgets::MapCanvas *map_canvas_):
-	d_viewport_zoom(viewport_zoom_),
+	d_viewport_zoom(&view_state.get_viewport_zoom()),
 	d_map_canvas_ptr(map_canvas_),
 	d_centre_of_viewport(0.,0.),
-	d_scene_rect(-180,-90,360,180)
+	d_scene_rect(-180,-90,360,180),
+	d_gl_widget_ptr(new QGLWidget(
+			QGLFormat(QGL::SampleBuffers)))
 {
-
-	setViewport(new QGLWidget(
-		QGLFormat(QGL::SampleBuffers)));
+	setViewport(d_gl_widget_ptr);
+	d_map_canvas_ptr->set_text_renderer(
+				GPlatesGui::QGLWidgetTextRenderer::create(d_gl_widget_ptr));
 
 	setViewportUpdateMode(
 		QGraphicsView::MinimalViewportUpdate);
@@ -421,7 +425,7 @@ GPlatesQtWidgets::MapView::set_camera_viewpoint(
 }
 
 boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::MapView::camera_llp()
+GPlatesQtWidgets::MapView::camera_llp() const
 {
 	double x_pos = d_centre_of_viewport.x();
 	double y_pos = d_centre_of_viewport.y();

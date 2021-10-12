@@ -166,7 +166,7 @@ namespace GPlatesModel
 
 		/**
 		 * Forward iterator over export template filename sequence.
-		 * Dereferencing iterator returns a 'const QString'.
+		 * Dereferencing iterator returns a 'const SubSegment &'.
 		 */
 		class SubSegmentConstIterator :
 				public std::iterator<std::bidirectional_iterator_tag, const SubSegment>,

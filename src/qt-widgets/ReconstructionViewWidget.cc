@@ -29,6 +29,8 @@
 #include <QFrame>
 #include <QLabel>
 #include <QSizePolicy>
+#include <QToolButton>
+#include <QMenu>
 
 #include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
@@ -39,10 +41,13 @@
 #include "ProjectionControlWidget.h"
 #include "MapCanvas.h"
 #include "MapView.h"
+#include "LeaveFullScreenButton.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
 #include "utils/FloatingPointComparisons.h"
+#include "view-operations/ViewportProjection.h"
+#include "presentation/ViewState.h"
 
 
 namespace
@@ -156,32 +161,24 @@ namespace
 
 
 GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		GPlatesGui::AnimationController &animation_controller,
-		ViewportWindow &view_state,
+		ViewportWindow &viewport_window,
+		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_splitter_widget(new QSplitter(this))
 {
 	setupUi(this);
 
-#if 0
-	// Create the GlobeCanvas,
-	d_canvas_ptr = new GlobeCanvas(view_state, this);
-	// and add it to the grid layout in the ReconstructionViewWidget.
-	// Note this is a bit of a hack, relying on the QGridLayout set up in the Designer.
-
-	gridLayout->addWidget(d_canvas_ptr, 0, 0);
-#endif
 	// Create the GlobeCanvas.
-	d_globe_canvas_ptr = new GlobeCanvas(rendered_geom_collection, view_state, this);
+	d_globe_canvas_ptr = new GlobeCanvas(view_state, this);
 	// Create the MapCanvas.
-	d_map_canvas_ptr = new MapCanvas(rendered_geom_collection);
+	d_map_canvas_ptr = new MapCanvas(view_state.get_rendered_geometry_collection());
 	// Create the ZoomSliderWidget for the right-hand side.
-	d_zoom_slider_widget = new ZoomSliderWidget(d_globe_canvas_ptr->viewport_zoom(), this);
+	d_zoom_slider_widget = new ZoomSliderWidget(view_state.get_viewport_zoom(), this);
 
 	// Create the MapView.
-	d_map_view_ptr = new MapView(view_state,this,&(d_globe_canvas_ptr->viewport_zoom()),d_map_canvas_ptr);
+	d_map_view_ptr = new MapView(view_state,this,d_map_canvas_ptr);
 
 	// Set the active_view_ptr to the globe view.
 	d_active_view_ptr = static_cast<SceneView*>(d_globe_canvas_ptr);
@@ -190,15 +187,13 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Construct the Awesome Bar. This used to go on top, but we want to push this
 	// down so it goes to the left of the splitter, giving the TaskPanel some more
 	// room.
-	std::auto_ptr<QWidget> awesomebar_one = construct_awesomebar_one(animation_controller);
-#if 0
-	// Construct the "View Bar" for the bottom.
-	std::auto_ptr<QWidget> viewbar = construct_viewbar(d_globe_canvas_ptr->viewport_zoom());
-#endif
+	std::auto_ptr<QWidget> awesomebar_one = construct_awesomebar_one(
+			animation_controller, viewport_window);
+
 	// Construct the "View Bar" for the bottom.
 	std::auto_ptr<QWidget> viewbar = 
-		construct_viewbar_with_projections(d_globe_canvas_ptr->viewport_zoom(),
-										   d_map_canvas_ptr);
+		construct_viewbar_with_projections(view_state.get_viewport_zoom(),
+										   view_state.get_viewport_projection());
 
 
 	// With all our widgets constructed, on to the main canvas layout:-
@@ -219,15 +214,16 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	bars_plus_canvas_layout->setSpacing(2);
 	bars_plus_canvas_layout->setContentsMargins(0, 0, 0, 0);
 	bars_plus_canvas_layout->addWidget(awesomebar_one.release());
+
 	// Globe and slider:
+	
 	QHBoxLayout *canvas_widget_layout = new QHBoxLayout();
 	bars_plus_canvas_layout->addItem(canvas_widget_layout);
 	canvas_widget_layout->setSpacing(2);
-	canvas_widget_layout->setContentsMargins(2, 4, 0, 0);
+	canvas_widget_layout->setContentsMargins(0, 0, 0, 0);
 
 	// Add GlobeCanvas, MapView, and ZoomSliderWidget to this hand-made widget.
 
-	// Try adding yet another level of widget-in-a-widget-ness.
 	QWidget *globe_and_map_widget = new QWidget(canvas_widget);
 	QHBoxLayout *globe_and_map_layout = new QHBoxLayout(globe_and_map_widget);
 	globe_and_map_layout->setSpacing(0);
@@ -271,14 +267,17 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QObject::connect(d_map_view_ptr, SIGNAL(view_changed()),
 			this, SLOT(recalc_camera_position()));
 
-	GPlatesGui::ViewportZoom &vzoom = d_globe_canvas_ptr->viewport_zoom();
+	GPlatesGui::ViewportZoom &vzoom = view_state.get_viewport_zoom();
 	QObject::connect(&vzoom, SIGNAL(zoom_changed()),
 			this, SLOT(handle_zoom_change()));
 
-	QObject::connect(d_projection_control_widget_ptr, SIGNAL(projection_changed(int)),
-		this,SLOT(change_projection(int)));
+	GPlatesViewOperations::ViewportProjection &vprojection = view_state.get_viewport_projection();
+	QObject::connect(
+			&vprojection, SIGNAL(projection_type_changed(const GPlatesViewOperations::ViewportProjection &)),
+			this, SLOT(change_projection(const GPlatesViewOperations::ViewportProjection &)));
 
-	QObject::connect(this,SIGNAL(update_tools_and_status_message()),&view_state,SLOT(update_tools_and_status_message()));
+	QObject::connect(this,SIGNAL(update_tools_and_status_message()),
+			&viewport_window,SLOT(update_tools_and_status_message()));
 
 	recalc_camera_position();
 
@@ -287,16 +286,24 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 
 std::auto_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
-		GPlatesGui::AnimationController &animation_controller)
+		GPlatesGui::AnimationController &animation_controller,
+		GPlatesQtWidgets::ViewportWindow &main_window)
 {
 	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
 	// auto_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
 	std::auto_ptr<QWidget> awesomebar_widget(new QWidget);
+	awesomebar_widget->setObjectName("AwesomeBar_1");
 	QHBoxLayout *awesomebar_layout = new QHBoxLayout(awesomebar_widget.get());
 	awesomebar_layout->setSpacing(2);
 	awesomebar_layout->setContentsMargins(0, 0, 0, 0);
 	
+	// Create the GMenu Button (which is hidden until full-screen mode activates).
+	d_gmenu_button_ptr = new GMenuButton(main_window, awesomebar_widget.get());
+	
+	// Create the Leave Full Screen Mode Button (which is hidden until full-screen mode activates).
+	LeaveFullScreenButton *leave_full_screen_button_ptr = new LeaveFullScreenButton(awesomebar_widget.get());
+
 	// Create the AnimateControlWidget.
 	d_animate_control_widget_ptr = new AnimateControlWidget(animation_controller, awesomebar_widget.get());
 
@@ -306,29 +313,36 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
 			d_globe_canvas_ptr, SLOT(setFocus()));
 	
 	// Insert Time and Animate controls.
+	awesomebar_layout->addWidget(d_gmenu_button_ptr);
 	awesomebar_layout->addWidget(wrap_with_frame(d_time_control_widget_ptr));
 	awesomebar_layout->addWidget(wrap_with_frame(d_animate_control_widget_ptr));
+	awesomebar_layout->addWidget(leave_full_screen_button_ptr);
 
 	return awesomebar_widget;
 }
 
 
+/**
+ * NOTE! Awesomebar two is not currently used. We played with the idea of a double-bar
+ * at the top for a while, but in the end found other ways to save space.
+ */
 std::auto_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_two(
 		GPlatesGui::ViewportZoom &vzoom,
-		GPlatesQtWidgets::MapCanvas *map_canvas_ptr)
+		GPlatesViewOperations::ViewportProjection &vprojection)
 {
 	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
 	// auto_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
 	std::auto_ptr<QWidget> awesomebar_widget(new QWidget);
+	awesomebar_widget->setObjectName("AwesomeBar_2");
 	QHBoxLayout *awesomebar_layout = new QHBoxLayout(awesomebar_widget.get());
 	awesomebar_layout->setSpacing(2);
 	awesomebar_layout->setContentsMargins(0, 0, 0, 0);
 		
 	// Insert Zoom and Projection controls.
 	awesomebar_layout->addWidget(wrap_with_frame(new ProjectionControlWidget(
-			map_canvas_ptr,
+			vprojection,
 			awesomebar_widget.get())));
 
 	return awesomebar_widget;
@@ -343,6 +357,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
 	// auto_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
 	std::auto_ptr<QWidget> viewbar_widget(new QWidget);
+	viewbar_widget->setObjectName("ViewBar");
 	QHBoxLayout *viewbar_layout = new QHBoxLayout(viewbar_widget.get());
 	viewbar_layout->setSpacing(2);
 	viewbar_layout->setContentsMargins(0, 0, 0, 0);
@@ -382,12 +397,13 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
 std::auto_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 	GPlatesGui::ViewportZoom &vzoom,
-	GPlatesQtWidgets::MapCanvas *map_canvas_ptr)
+	GPlatesViewOperations::ViewportProjection &vprojection)
 {
 	// We create the bar widget in an auto_ptr, because it has no Qt parent yet.
 	// auto_ptr will keep tabs on the memory for us until we can return it
 	// and add it to the main ReconstructionViewWidget somewhere.
 	std::auto_ptr<QWidget> viewbar_widget(new QWidget);
+	viewbar_widget->setObjectName("ViewBar");
 	QHBoxLayout *viewbar_layout = new QHBoxLayout(viewbar_widget.get());
 	viewbar_layout->setSpacing(2);
 	viewbar_layout->setContentsMargins(0, 0, 0, 0);
@@ -417,7 +433,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 		d_globe_canvas_ptr, SLOT(setFocus()));
 
 	// Create the ProjectionControlWidget
-	d_projection_control_widget_ptr = new ProjectionControlWidget(map_canvas_ptr,viewbar_widget.get());
+	d_projection_control_widget_ptr = new ProjectionControlWidget(vprojection,viewbar_widget.get());
 
 	// Create a view-controls widget to house the View label, Projection box, Zoom spinbox, and Camera. 
 	QWidget *view_controls_widget = new QWidget(viewbar_widget.get());
@@ -560,12 +576,15 @@ GPlatesQtWidgets::ReconstructionViewWidget::handle_zoom_change()
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::change_projection(
-	int projection_type)
+		const GPlatesViewOperations::ViewportProjection &view_projection)
 {
+	// Update the map canvas' projection
+	d_map_canvas_ptr->set_projection_type(
+		view_projection.get_projection_type());
 
-	switch(projection_type)
+	switch(view_projection.get_projection_type())
 	{
-	case 0:
+	case GPlatesGui::ORTHOGRAPHIC:
 		d_active_view_ptr = d_globe_canvas_ptr;
 		d_globe_canvas_ptr->update_canvas();
 		if (d_camera_llp)
@@ -588,9 +607,6 @@ GPlatesQtWidgets::ReconstructionViewWidget::change_projection(
 		break;
 	}
 	
-	// This will be unnecessary if we arrived here because of a change in the projection
-	// widget's status, but we may have arrived here via the SetProjectionDialog. 
-	d_projection_control_widget_ptr->handle_projection_changed(projection_type);
 	recalc_camera_position();
 	emit update_tools_and_status_message();
 }
@@ -605,6 +621,22 @@ bool
 GPlatesQtWidgets::ReconstructionViewWidget::map_is_active()
 {
 	return d_map_view_ptr->isVisible();
+}
+
+void
+GPlatesQtWidgets::ReconstructionViewWidget::enable_raster_display()
+{
+	d_globe_canvas_ptr->enable_raster_display();
+	// map doesn't show rasters
+	d_active_view_ptr->update_canvas();
+}
+
+void
+GPlatesQtWidgets::ReconstructionViewWidget::disable_raster_display()
+{
+	d_globe_canvas_ptr->disable_raster_display();
+	// map doesn't show rasters
+	d_active_view_ptr->update_canvas();
 }
 
 void
@@ -686,4 +718,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::disable_arrows_display()
 	d_map_canvas_ptr->disable_arrows_display();
 	d_active_view_ptr->update_canvas();	
 }
+
+
+
 

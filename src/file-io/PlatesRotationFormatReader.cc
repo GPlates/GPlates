@@ -611,22 +611,26 @@ namespace
 }
 
 
-void
+GPlatesFileIO::File::shared_ref
 GPlatesFileIO::PlatesRotationFormatReader::read_file(
-		FileInfo &fileinfo,
+		const FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
 	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	std::ifstream input(filename.toAscii().constData());
 	if ( ! input) {
-		throw ErrorOpeningFileForReadingException(filename);
+		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 	LineReader line_buffer(input);
 	boost::shared_ptr<DataSource> data_source(
 			new LocalFileDataSource(filename, DataFormats::PlatesRotation));
 	GPlatesModel::FeatureCollectionHandle::weak_ref rotations =
 			model->create_feature_collection();
+
+	// Make sure feature collection gets unloaded when it's no longer needed.
+	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref rotations_unloader =
+			GPlatesModel::FeatureCollectionHandleUnloader::create(rotations);
 
 	try
 	{
@@ -639,5 +643,5 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 		// FIXME:  Handle this exception properly, with logging of the exception, etc.
 	}
 
-	fileinfo.set_feature_collection(rotations);
+	return File::create_loaded_file(rotations_unloader, fileinfo);
 }

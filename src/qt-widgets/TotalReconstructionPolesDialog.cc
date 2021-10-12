@@ -28,11 +28,18 @@
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QTableWidget>
+#include <QMap>
+#include <QMessageBox>
+#include <QDebug>
 
 #include "TotalReconstructionPolesDialog.h"
+
+#include "app-logic/Reconstruct.h"
 #include "gui/CsvExport.h"
 #include "model/ReconstructionTreeEdge.h"
-#include "qt-widgets/ViewportWindow.h"
+#include "presentation/ViewState.h"
+
+#define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
 
 namespace ColumnNames
@@ -47,6 +54,75 @@ namespace ColumnNames
 }
 
 namespace {
+
+	/**
+	 * Struct to build the following table of file dialog filters / options.
+	 * Typedef for the resulting QMap.
+	 */
+	struct FileDialogFilterOption
+	{
+		const char *text;
+		const GPlatesGui::CsvExport::ExportOptions options;
+	};
+	typedef QMap<QString, GPlatesGui::CsvExport::ExportOptions> FileDialogFilterMapType;
+	
+	/**
+	 * Table of filter options to present to the user when exporting CSV.
+	 */
+	static FileDialogFilterOption file_dialog_filter_table[] = {
+		{ "CSV file, comma-delimited (*.csv)", { ',' } },
+		{ "CSV file, semicolon-delimited (*.csv)", { ';' } },
+		{ "CSV file, tab-delimited (*.csv)", { '\t' } },
+	};
+	
+	/**
+	 * This map is built for a quick, easy way to get back the CSV options
+	 * based on what filter the QFileDialog says was selected.
+	 */
+	const FileDialogFilterMapType &
+	build_export_filter_map()
+	{
+		static FileDialogFilterMapType map;
+		FileDialogFilterOption *begin = file_dialog_filter_table;
+		FileDialogFilterOption *end = begin + NUM_ELEMS(file_dialog_filter_table);
+		for (; begin != end; ++begin) {
+			map[QObject::tr(begin->text)] = begin->options;
+		}
+		return map;
+	}
+	
+
+	/**
+	 * Anon namespace function to create and set up a QFileDialog
+	 * for getting names of CSV files to export. Called once
+	 * from @a handle_export() and assigned to a static member.
+	 * Memory will be managed by Qt if you supply a valid @a parent.
+	 */
+	QFileDialog *
+	create_export_file_dialog(
+			QWidget *parent)
+	{
+		QFileDialog *dialog = new QFileDialog(parent, QObject::tr("Export tablular data"));
+		
+		// Use "Save As"-like behaviour.
+		dialog->setFileMode(QFileDialog::AnyFile);
+		dialog->setAcceptMode(QFileDialog::AcceptSave);
+		
+		// Set up different filters for different CSV options.
+		QStringList filters;
+		FileDialogFilterOption *begin = file_dialog_filter_table;
+		FileDialogFilterOption *end = begin + NUM_ELEMS(file_dialog_filter_table);
+		for (; begin != end; ++begin) {
+			filters << QObject::tr(begin->text);
+		}
+		dialog->setFilters(filters);
+		dialog->setDefaultSuffix("csv");
+		
+		return dialog;
+	}
+
+
+
 
 	QString
 	make_string_from_rotation(
@@ -138,10 +214,10 @@ namespace {
 } // anonymous namespace
 
 GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog(
-		ViewportWindow &viewport_window,
+		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QDialog(parent_),
-	d_viewport_window_ptr(&viewport_window)
+	d_reconstruct_ptr(&view_state.get_reconstruct())
 {
 	setupUi(this);
 
@@ -190,8 +266,8 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 	tree_circuit_header->resizeSection(2,270);
 	tree_circuit_header->resizeSection(3,270);
 
-	set_time(d_viewport_window_ptr->reconstruction_time());
-	set_plate(d_viewport_window_ptr->reconstruction_root());
+	set_time(d_reconstruct_ptr->get_current_reconstruction_time());
+	set_plate(d_reconstruct_ptr->get_current_anchored_plate_id());
 
 	QObject::connect(button_export_relative_rotations,SIGNAL(clicked()),this,SLOT(export_relative()));
 	QObject::connect(button_export_equiv_rotations,SIGNAL(clicked()),this,SLOT(export_equivalent()));
@@ -232,10 +308,10 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table()
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
-			d_viewport_window_ptr->reconstruction().reconstruction_tree().edge_map_begin();
+			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
-			d_viewport_window_ptr->reconstruction().reconstruction_tree().edge_map_end();
+			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
 
 
 	for(it = it_begin; it != it_end ; ++it)
@@ -264,9 +340,9 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table()
 			longitude_item->setFlags(Qt::ItemIsEnabled);
 			table_equivalent->setItem(num_row,ColumnNames::LONGITUDE,longitude_item);
 
-			QString angle_string(QObject::tr("0.0"));
-			QTableWidgetItem* angle_item = new QTableWidgetItem(angle_string);
+			QTableWidgetItem* angle_item = new QTableWidgetItem();
 			angle_item->setFlags(Qt::ItemIsEnabled);
+			angle_item->setData(Qt::DisplayRole, QVariant(0.0));
 			table_equivalent->setItem(num_row,ColumnNames::ANGLE,angle_item);
 		} else {
 
@@ -308,10 +384,10 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table()
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
-			d_viewport_window_ptr->reconstruction().reconstruction_tree().edge_map_begin();
+			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
-			d_viewport_window_ptr->reconstruction().reconstruction_tree().edge_map_end();
+			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
 
 
 	for(it = it_begin; it != it_end ; ++it)
@@ -339,9 +415,9 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table()
 			longitude_item->setFlags(Qt::ItemIsEnabled);
 			table_relative->setItem(num_row,ColumnNames::LONGITUDE,longitude_item);
 
-			QString angle_string(QObject::tr("0.0"));
-			QTableWidgetItem* angle_item = new QTableWidgetItem(angle_string);
+			QTableWidgetItem* angle_item = new QTableWidgetItem();
 			angle_item->setFlags(Qt::ItemIsEnabled);
+			angle_item->setData(Qt::DisplayRole, QVariant(0.0));
 			table_relative->setItem(num_row,ColumnNames::ANGLE,angle_item);
 		} else {
 
@@ -389,7 +465,8 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_reconstruction_tree()
 {
 	tree_reconstruction->clear();
 
-	GPlatesModel::ReconstructionTree& tree = d_viewport_window_ptr->reconstruction().reconstruction_tree();
+	GPlatesModel::ReconstructionTree& tree =
+			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree();
 
 	std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator it;
 	std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator it_begin = 
@@ -424,10 +501,10 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree()
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
-			d_viewport_window_ptr->reconstruction().reconstruction_tree().edge_map_begin();
+			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
-			d_viewport_window_ptr->reconstruction().reconstruction_tree().edge_map_end();
+			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
 
 
 	for(it = it_begin; it != it_end ; ++it)
@@ -468,8 +545,8 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree()
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::update()
 {
-	set_time(d_viewport_window_ptr->reconstruction_time());
-	set_plate(d_viewport_window_ptr->reconstruction_root());
+	set_time(d_reconstruct_ptr->get_current_reconstruction_time());
+	set_plate(d_reconstruct_ptr->get_current_anchored_plate_id());
 	fill_equivalent_table();
 	fill_relative_table();
 	fill_reconstruction_tree();
@@ -479,6 +556,8 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::update()
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::export_relative()
 {
+	handle_export(*table_relative);
+#if 0
 	QString filename = QFileDialog::getSaveFileName(this,
 			tr("Save As"), "", tr("CSV file (*.csv)"));
 
@@ -489,11 +568,14 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::export_relative()
 	GPlatesGui::CsvExport::export_table(filename,table_relative);
 
 	return;
+#endif
 }
 
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::export_equivalent()
 {
+	handle_export(*table_equivalent);
+#if 0
 	QString filename = QFileDialog::getSaveFileName(this,
 			tr("Save As"), "", tr("CSV file (*.csv)"));
 
@@ -504,4 +586,36 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::export_equivalent()
 	GPlatesGui::CsvExport::export_table(filename,table_equivalent);
 
 	return;
+#endif
 }
+
+
+void
+GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_export(
+		const QTableWidget &table)
+{
+	// Build the dialog we present to the user. Keep the same instance so that
+	// the dialog will remember where the user last exported to, etc.
+	// Parented to this dialog; memory managed by Qt.
+	static QFileDialog *file_dialog = create_export_file_dialog(this);
+	// Build a map to let us look up the options the user wants based on what
+	// file filter was selected in the dialog.
+	static const FileDialogFilterMapType &filter_map = build_export_filter_map();
+	
+	// Pop up and ask for file.
+	if (file_dialog->exec()) {
+		QStringList filenames = file_dialog->selectedFiles();
+		if (filenames.size() == 1 && ! filenames.front().isEmpty()) {
+			QString filename = filenames.front();
+			QString filter = file_dialog->selectedFilter();
+			if (filter_map.contains(filter)) {
+				GPlatesGui::CsvExport::ExportOptions options = filter_map.value(filter);
+				GPlatesGui::CsvExport::export_table(filename, options, table);
+			} else {
+				// Somehow, user chose filter that we didn't put in there.
+				QMessageBox::critical(this, tr("Invalid export filter"), tr("Please specify a CSV file format variant in the save dialog."));
+			}
+		}
+	}
+}
+

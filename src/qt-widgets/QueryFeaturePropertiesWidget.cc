@@ -26,8 +26,8 @@
 #include <QLocale>
 #include "QueryFeaturePropertiesWidget.h"
 
+#include "app-logic/Reconstruct.h"
 #include "gui/FeatureFocus.h"
-#include "qt-widgets/ViewportWindow.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "feature-visitors/QueryFeaturePropertiesWidgetPopulator.h"
 #include "maths/types.h"
@@ -35,15 +35,14 @@
 #include "maths/LatLonPointConversions.h"
 #include "property-values/GpmlPlateId.h"
 #include "utils/UnicodeStringUtils.h"
-//#include "utils/Profile.h"
+#include "presentation/ViewState.h"
 
 
 GPlatesQtWidgets::QueryFeaturePropertiesWidget::QueryFeaturePropertiesWidget(
-		const GPlatesQtWidgets::ViewportWindow &view_state_,
-		GPlatesGui::FeatureFocus &feature_focus,
+		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_view_state_ptr(&view_state_)
+	d_reconstruct_ptr(&view_state_.get_reconstruct())
 {
 	setupUi(this);
 
@@ -57,8 +56,10 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::QueryFeaturePropertiesWidget(
 	field_Root_Plate_ID->setMaximumSize(50, 27);
 	field_Recon_Time->setMaximumSize(50, 27);
 
-	QObject::connect(d_view_state_ptr, SIGNAL(reconstruction_time_changed(double)),
-			this, SLOT(refresh_display()));
+	QObject::connect(d_reconstruct_ptr,
+			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+			this,
+			SLOT(refresh_display()));
 }
 
 
@@ -166,15 +167,15 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 		set_plate_id(recon_plate_id->value());
 
 		GPlatesModel::integer_plate_id_type root_plate_id =
-				view_state().reconstruction_root();
+				d_reconstruct_ptr->get_current_anchored_plate_id();
 		set_root_plate_id(root_plate_id);
 		set_reconstruction_time(
-				view_state().reconstruction_time());
+				d_reconstruct_ptr->get_current_reconstruction_time());
 
 		// Now let's use the reconstruction plate ID of the feature to find the appropriate 
 		// absolute rotation in the reconstruction tree.
 		GPlatesModel::ReconstructionTree &recon_tree =
-				view_state().reconstruction().reconstruction_tree();
+				d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree();
 		std::pair<GPlatesMaths::FiniteRotation,
 				GPlatesModel::ReconstructionTree::ReconstructionCircumstance>
 				absolute_rotation =

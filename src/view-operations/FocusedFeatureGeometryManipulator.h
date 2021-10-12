@@ -37,9 +37,14 @@
 #include "model/types.h"
 
 
-namespace  GPlatesQtWidgets
+namespace GPlatesAppLogic
 {
-	class ViewportWindow;
+	class Reconstruct;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
 }
 
 namespace GPlatesViewOperations
@@ -58,8 +63,7 @@ namespace GPlatesViewOperations
 	public:
 		FocusedFeatureGeometryManipulator(
 				GeometryBuilder &focused_feature_geom_builder,
-				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesQtWidgets::ViewportWindow &viewport_window);
+				GPlatesPresentation::ViewState &view_state);
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -131,7 +135,7 @@ namespace GPlatesViewOperations
 		/**
 		 * Used to get access to current reconstruction tree.
 		 */
-		GPlatesQtWidgets::ViewportWindow *d_viewport_window;
+		GPlatesAppLogic::Reconstruct *d_reconstruct;
 
 		/**
 		 * The feature which contains the geometry whose RFG is the currently-focused

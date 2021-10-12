@@ -29,6 +29,7 @@ set(srcs
     InternalObjectInconsistencyException.h
     InternalRID.h
     IntrusivePointerZeroRefCountException.h
+    InvalidFeatureCollectionException.h
     InvalidParametersException.h
     NotYetImplementedException.h
     NullParameterException.h

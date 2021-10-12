@@ -25,10 +25,12 @@
 
 #include <QRectF>
 
-#include "property-values/InMemoryRaster.h"
+#include "GlobeCanvas.h"
 #include "InformationDialog.h"
 #include "SetRasterSurfaceExtentDialog.h"
 #include "ViewportWindow.h"
+
+#include "property-values/InMemoryRaster.h"
 
 const float DEFAULT_LOWER_LEFT_LAT = -90.;
 const float DEFAULT_LOWER_LEFT_LON = -180.;

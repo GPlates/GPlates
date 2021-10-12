@@ -151,6 +151,22 @@ namespace
 			std::copy(beg, end, std::back_inserter( d_vertex_list ) );
 		}
 
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_vertex_list.clear();
+
+			GPlatesMaths::PolygonOnSphere::vertex_const_iterator beg = 
+				polygon_on_sphere->vertex_begin();
+			GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = 
+				polygon_on_sphere->vertex_end();
+
+			std::copy(beg, end, std::back_inserter( d_vertex_list ) );
+		}
+
+
 	private:
 		/** 
 		 * A sequence of vertices obtained when visiting the geometry on spheres 
@@ -2377,6 +2393,7 @@ std::cout << "TopologyResolver::resolve_intersection: llp=" << GPlatesMaths::mak
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
+
 
 		if ( GPlatesFeatureVisitors::get_property_value(
 			ref_point_feature_ref, plate_id_property_name, recon_plate_id ) )

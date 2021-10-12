@@ -27,6 +27,8 @@
 #include <QPushButton>
 
 #include "ManageFeatureCollectionsDialog.h"
+
+#include "app-logic/ClassifyFeatureCollection.h"
 #include "feature-visitors/FeatureCollectionClassifier.h"
 
 #include "ManageFeatureCollectionsStateWidget.h"
@@ -34,13 +36,15 @@
 
 GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::ManageFeatureCollectionsStateWidget(
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &feature_collections_dialog,
-		GPlatesAppState::ApplicationState::file_info_iterator file_it,
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
 		bool reconstructable_active,
 		bool reconstruction_active,
+		bool enable_reconstructable,
+		bool enable_reconstruction,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_feature_collections_dialog(feature_collections_dialog),
-	d_file_info_iterator(file_it)
+	d_file_iterator(file_it)
 {
 	setupUi(this);
 
@@ -57,55 +61,26 @@ GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::ManageFeatureCollectionsS
 	QObject::connect(button_active_reconstruction, SIGNAL(clicked()),
 			this, SLOT(handle_active_reconstruction_toggled()));
 
-	update_state(reconstructable_active, reconstruction_active);
+	update_reconstructable_state(reconstructable_active, enable_reconstructable);
+	update_reconstruction_state(reconstruction_active, enable_reconstruction);
 }
 
-void
-GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::update_state(
-		bool reconstructable_active,
-		bool reconstruction_active)
-{
-	// Get the FeatureCollection from the FileInfo and determine what kinds
-	// of features it contains using the FeatureCollectionClassifier visitor,
-	// then entirely disable the Reconstructable or Reconstruction buttons
-	// accordingly.
-	bool reconstructable_enabled = true;
-	bool reconstruction_enabled = true;
-	if (d_file_info_iterator->get_feature_collection()) {
-		GPlatesFeatureVisitors::FeatureCollectionClassifier classifier;
-		classifier.scan_feature_collection(
-				GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
-						*d_file_info_iterator->get_feature_collection()) );
-		
-		// We have to be a little cautious in testing for reconstructable
-		// features, as if we don't enable them for reconstruction,
-		// GPlates just won't bother displaying them. So the present
-		// behaviour only disables the file for the reconstructable list
-		// IFF there is rotation data present. Having 0 on both counts
-		// means that Something Is Amiss and we should not rule out
-		// 'reconstructable' as an option.
-		if (classifier.reconstructable_feature_count() == 0 &&
-				classifier.reconstruction_feature_count() > 0) {
-			// Disable reconstructable button, obviously a rotations-only file.
-			reconstructable_enabled = false;
-		}
-		// In testing for reconstruction features, we can be a little
-		// more relaxed, because the set of features which make up
-		// a reconstruction tree are smaller and easier to identify.
-		// In this case, if we can't identify them, it would be pointless
-		// attempting to reconstruct data with them anyway.
-		if (classifier.reconstruction_feature_count() == 0) {
-			// Disable reconstruction button, obviously no rotations here.
-			reconstruction_enabled = false;
-		}
-	}
 
-	// FIXME: It occurs to me we may have to sync the state of the buttons to
-	// the actual program state - or at least initialise them when they are
-	// constructed, and just let ManageFeatureCollectionsDialog create new
-	// buttons (and rows, etc) when program state changes (as it has been doing)
-	set_reconstructable_button_properties(reconstructable_active, reconstructable_enabled);
-	set_reconstruction_button_properties(reconstruction_active, reconstruction_enabled);
+void
+GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::update_reconstructable_state(
+		bool active,
+		bool enable_reconstructable)
+{
+	set_reconstructable_button_properties(active, enable_reconstructable);
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::update_reconstruction_state(
+		bool active,
+		bool enable_reconstruction)
+{
+	set_reconstruction_button_properties(active, enable_reconstruction);
 }
 
 
@@ -119,9 +94,11 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::handle_active_reconstructable_checked(
 		bool checked)
 {
-	// Change the icon and tooltip depending on whether we should be depressed or not.
-	set_reconstructable_button_properties(checked, true);
 	// Activate or deactivate the file.
+	// This will cause ManageFeatureCollectionsDialog to attempt to activate/deactivate
+	// the file through FeatureCollectionFileState and if successful it will get signaled
+	// and call our 'update_reconstructable_state()' which will set the button properties
+	// appropriately.
 	d_feature_collections_dialog.set_reconstructable_state_for_file(this, checked);
 }
 
@@ -136,9 +113,11 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsStateWidget::handle_active_reconstruction_checked(
 		bool checked)
 {
-	// Change the icon and tooltip depending on whether we should be depressed or not.
-	set_reconstruction_button_properties(checked, true);
 	// Activate or deactivate the file.
+	// This will cause ManageFeatureCollectionsDialog to attempt to activate/deactivate
+	// the file through FeatureCollectionFileState and if successful it will get signaled
+	// and call our 'update_reconstruction_state()' which will set the button properties
+	// appropriately.
 	d_feature_collections_dialog.set_reconstruction_state_for_file(this, checked);
 }
 

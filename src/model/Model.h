@@ -178,67 +178,6 @@ namespace GPlatesModel
 				const FeatureCollectionHandle::weak_ref &containing_collection);
 #endif
 
-
-		/**
-		 * Create and return a reconstruction tree for the reconstruction time @a time,
-		 * with root @a root.
-		 *
-		 * The feature collections in @a reconstruction_features_collection are expected to
-		 * contain reconstruction features (ie, total reconstruction sequences and absolute
-		 * reference frames).
-		 *
-		 * Question:  Do any of those other functions actually throw exceptions when
-		 * they're passed invalid weak_refs?  They should.
-		 */
-		const ReconstructionTree::non_null_ptr_type
-		create_reconstruction_tree(
-				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
-				const double &time,
-				integer_plate_id_type root);
-
-
-		/**
-		 * Create and return a reconstruction for the reconstruction time @a time, with
-		 * root @a root.
-		 *
-		 * The feature collections in @a reconstruction_features_collection are expected to
-		 * contain reconstruction features (ie, total reconstruction sequences and absolute
-		 * reference frames).
-		 *
-		 * Question:  Do any of those other functions actually throw exceptions when
-		 * they're passed invalid weak_refs?  They should.
-		 */
-		const Reconstruction::non_null_ptr_type
-		create_reconstruction(
-				const std::vector<FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
-				const std::vector<FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
-				const double &time,
-				integer_plate_id_type root);
-
-
-		/**
-		 * Create and return an empty reconstruction for the reconstruction time @a time,
-		 * with root @a root.
-		 *
-		 * The reconstruction tree contained within the reconstruction will also be empty.
-		 *
-		 * FIXME:  Remove this function once it is possible to create empty reconstructions
-		 * by simply passing empty lists of feature-collections into the prev function.
-		 */
-		const Reconstruction::non_null_ptr_type
-		create_empty_reconstruction(
-				const double &time,
-				integer_plate_id_type root);
-
-
-#ifdef HAVE_PYTHON
-		// A Python wrapper for create_reconstruction
-		boost::python::tuple
-		create_reconstruction_py(
-				const double &time,
-				unsigned long root);
-#endif
-
 	private:
 		FeatureStore::non_null_ptr_type d_feature_store;
 	};

@@ -37,6 +37,38 @@
 
 namespace {
 
+	/**
+	 * Attempts to apply quoting/escaping rules to a single CSV field
+	 * as correctly as possible.
+	 *
+	 * http://en.wikipedia.org/wiki/Comma-separated_values#Specification
+	 */
+	QString
+	csv_quote_if_necessary(
+			QString str,
+			const GPlatesGui::CsvExport::ExportOptions &options)
+	{
+		static const QChar quote_char('"');
+		static const QString escaped_quote("\"\"");	// ""
+		
+		// Determine if we need quotes at all; some CSV implementations may find it more
+		// convenient if we don't quote (for example) numbers which do not need quoting.
+		bool needs_quoting = str.contains(quote_char) || str.contains(options.delimiter) ||
+				str.contains('\n') || str.startsWith(' ') || str.endsWith(' ');
+		
+		// If we're putting quotes around the string, we'll need to escape any quote marks
+		// which may be embedded in the string. Sadly, for CSV, this is not done with
+		// backslashes, but by doubling the quote character.
+		str.replace(quote_char, escaped_quote);
+		
+		// Finally, return the field (wrapped in quotes if necessary)
+		if (needs_quoting) {
+			return str.prepend(quote_char).append(quote_char);
+		} else {
+			return str;
+		}
+	}
+
 } // anonymous namespace
 
 
@@ -45,8 +77,9 @@ namespace GPlatesGui {
 
 	void
 	GPlatesGui::CsvExport::export_table(
-		QString &filename,
-		QTableWidget *table)
+		const QString &filename,
+		const GPlatesGui::CsvExport::ExportOptions &options,
+		const QTableWidget &table)
 	{
 		QFileInfo file_info(filename);
 		try{	
@@ -55,8 +88,8 @@ namespace GPlatesGui {
 			os.exceptions(std::ios::badbit | std::ios::failbit);
 			os.open(filename.toStdString().c_str());
 
-			int num_columns = table->columnCount();
-			int num_rows = table->rowCount();
+			int num_columns = table.columnCount();
+			int num_rows = table.rowCount();
 
 			int column_count;
 			int row_count;
@@ -67,12 +100,12 @@ namespace GPlatesGui {
 			{
 				for (column_count = 0 ; column_count < num_columns  ; column_count++)
 				{
-					item = table->item(row_count,column_count);
-					item_string = item->text();
+					item = table.item(row_count,column_count);
+					item_string = csv_quote_if_necessary(item->text(), options);
 					os << item_string.toStdString().c_str();
 				
 					if (column_count < (num_columns - 1)){
-						os << ",";
+						os << options.delimiter;
 					}
 	
 				}

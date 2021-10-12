@@ -33,7 +33,7 @@
 
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/FileFormatNotSupportedException.h"
-#include "view-operations/ExportReconstructedFeatureGeometries.h"
+#include "view-operations/VisibleReconstructedFeatureGeometryExport.h"
 
 
 namespace
@@ -102,8 +102,8 @@ void
 GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::export_visible_reconstructed_feature_geometries(
 		const GPlatesModel::Reconstruction &reconstruction,
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		const GPlatesViewOperations::ExportReconstructedFeatureGeometries::
-				active_files_collection_type &active_reconstructable_files,
+		const GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::
+				files_collection_type &active_reconstructable_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time)
 {
@@ -121,9 +121,8 @@ GPlatesQtWidgets::ExportReconstructedFeatureGeometryDialog::export_visible_recon
 
 	try
 	{
-		GPlatesViewOperations::ExportReconstructedFeatureGeometries::export_visible_geometries(
+		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries(
 				filename,
-				reconstruction,
 				rendered_geom_collection,
 				active_reconstructable_files,
 				reconstruction_anchor_plate_id,

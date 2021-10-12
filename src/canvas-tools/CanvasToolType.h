@@ -50,7 +50,8 @@ namespace GPlatesCanvasTools
 			INSERT_VERTEX,
 			MANIPULATE_POLE,
 			BUILD_TOPOLOGY,
-			EDIT_TOPOLOGY
+			EDIT_TOPOLOGY,
+			MEASURE_DISTANCE
 		};
 	}
 }

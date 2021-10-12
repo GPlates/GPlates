@@ -28,7 +28,7 @@
 
 #include <QFileInfo>
 
-#include "ReconstructedFeatureGeometryExport.h"
+#include "ReconstructedFeatureGeometryExportImpl.h"
 
 #include "model/types.h"
 
@@ -40,13 +40,13 @@ namespace GPlatesFileIO
 		/**
 		 * Typedef for a sequence of @a FeatureGeometryGroup objects.
 		 */
-		typedef ReconstructedFeatureGeometryExport::feature_geometry_group_seq_type
+		typedef ReconstructedFeatureGeometryExportImpl::feature_geometry_group_seq_type
 			feature_geometry_group_seq_type;
 
 		/**
 		 * Typedef for a sequence of files that reference the geometries.
 		 */
-		typedef ReconstructedFeatureGeometryExport::referenced_files_collection_type
+		typedef ReconstructedFeatureGeometryExportImpl::referenced_files_collection_type
 			referenced_files_collection_type;
 
 

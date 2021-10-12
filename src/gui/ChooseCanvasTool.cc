@@ -195,7 +195,15 @@ GPlatesGui::ChooseCanvasTool::choose_edit_topology_tool()
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }
 
+void
+GPlatesGui::ChooseCanvasTool::choose_measure_distance_tool()
+{
+	d_viewport_window->choose_measure_distance_tool();
 
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::MEASURE_DISTANCE;
+
+	emit chose_canvas_tool(*this, d_most_recent_tool_type);
+}
 
 GPlatesGui::ChooseCanvasToolUndoCommand::ChooseCanvasToolUndoCommand(
 		GPlatesGui::ChooseCanvasTool *choose_canvas_tool,

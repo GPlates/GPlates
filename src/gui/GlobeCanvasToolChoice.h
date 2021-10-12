@@ -50,6 +50,16 @@ namespace GPlatesQtWidgets
 	class TopologyToolsWidget;
 }
 
+namespace GPlatesCanvasTools
+{
+	class MeasureDistanceState;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesViewOperations
 {
 	class ActiveGeometryOperation;
@@ -60,8 +70,6 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
-	class GeometryFocusHighlight;
-
 	/**
 	 * This class contains the current choice of GlobeCanvasTool.
 	 *
@@ -90,14 +98,15 @@ namespace GPlatesGui
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
 				Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				const GPlatesQtWidgets::ViewportWindow &viewport_window,
+				GPlatesPresentation::ViewState &view_state,
 				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
+				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state);
 
 		~GlobeCanvasToolChoice()
 		{  }
@@ -187,6 +196,12 @@ namespace GPlatesGui
 			change_tool_if_necessary(d_edit_topology_tool_ptr);
 		}
 
+		void
+		choose_measure_distance_tool()
+		{
+			change_tool_if_necessary(d_measure_distance_tool_ptr);
+		}
+
 	private:
 		/**
 		 * This is the ReorientGlobe tool which the user may choose.
@@ -252,6 +267,11 @@ namespace GPlatesGui
 		 * This is the EditTopology Canvas tool which the user may choose.
 		 */
 		GlobeCanvasTool::non_null_ptr_type d_edit_topology_tool_ptr;
+
+		/**
+		 * This is the Measure Distance canvas tool which the user may choose.
+		 */
+		GlobeCanvasTool::non_null_ptr_type d_measure_distance_tool_ptr;
 
 		/**
 		 * The current choice of GlobeCanvasTool.

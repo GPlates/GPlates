@@ -27,8 +27,6 @@ set(srcs
     AnimateDialog.cc
     AnimateDialog.h
     AnimateDialogUi.ui
-    ApplicationState.cc
-    ApplicationState.h
     ApplyReconstructionPoleAdjustmentDialog.cc
     ApplyReconstructionPoleAdjustmentDialog.h
     ApplyReconstructionPoleAdjustmentDialogUi.ui
@@ -108,6 +106,9 @@ set(srcs
     FeatureSummaryWidgetUi.ui
     GlobeCanvas.cc
     GlobeCanvas.h
+    GMenuButton.cc
+    GMenuButton.h
+    GMenuButtonUi.ui
     GMTHeaderFormatDialog.cc
     GMTHeaderFormatDialog.h
     GMTHeaderFormatDialogUi.ui
@@ -119,6 +120,8 @@ set(srcs
     InvalidPropertyValueException.h
     LatLonCoordinatesTable.cc
     LatLonCoordinatesTable.h
+    LeaveFullScreenButton.h
+    LeaveFullScreenButtonUi.ui
     LicenseDialog.cc
     LicenseDialog.h
     ManageFeatureCollectionsActionWidget.cc
@@ -134,6 +137,9 @@ set(srcs
     MapCanvas.h
     MapView.cc
     MapView.h
+    MeasureDistanceWidget.cc
+    MeasureDistanceWidget.h
+    MeasureDistanceWidgetUi.ui
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui
@@ -186,7 +192,6 @@ set(srcs
     SpecifyTimeIncrementDialogUi.ui
     TaskPanel.cc
     TaskPanel.h
-    TaskPanelUi.ui
     TimeControlWidget.cc
     TimeControlWidget.h
     TimeControlWidgetUi.ui

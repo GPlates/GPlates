@@ -31,7 +31,7 @@
 #include <QFileDialog>
 
 #include "model/types.h"
-#include "view-operations/ExportReconstructedFeatureGeometries.h"
+#include "view-operations/VisibleReconstructedFeatureGeometryExport.h"
 
 
 namespace GPlatesModel
@@ -68,8 +68,8 @@ namespace GPlatesQtWidgets
 		export_visible_reconstructed_feature_geometries(
 				const GPlatesModel::Reconstruction &reconstruction,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				const GPlatesViewOperations::ExportReconstructedFeatureGeometries::
-						active_files_collection_type &active_reconstructable_files,
+				const GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::
+						files_collection_type &active_reconstructable_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
 

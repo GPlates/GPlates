@@ -23,6 +23,7 @@ set(srcs
     ColourSpectrum.cc
     ColourSpectrum.h
     ColourTable.h
+    ColourTableDelegator.h
     CsvExport.cc
     CsvExport.h
     EnableCanvasTool.cc
@@ -48,6 +49,8 @@ set(srcs
     FeatureTableModel.cc
     FeatureTableModel.h
     FeatureWeakRefSequence.h
+    FullScreenMode.cc
+    FullScreenMode.h
     GeometricPropertyValueConstructor.cc
     GeometricPropertyValueConstructor.h
     GeometryFocusHighlight.cc
@@ -65,6 +68,8 @@ set(srcs
     GlobeRenderedGeometryCollectionPainter.h
     GlobeRenderedGeometryLayerPainter.cc
     GlobeRenderedGeometryLayerPainter.h
+    GlobeVisibilityTester.cc
+    GlobeVisibilityTester.h
     GPlatesQApplication.cc
     GPlatesQApplication.h
     GPlatesQtMsgHandler.cc
@@ -93,9 +98,12 @@ set(srcs
     ProjectionException.h
     ProximityTests.cc
     ProximityTests.h
+    QGLWidgetTextRenderer.cc
+    QGLWidgetTextRenderer.h
     Quadrics.cc
     Quadrics.h
     ReconstructionGeometrySequence.h
+    RenderSettings.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
     SingleColourTable.cc
@@ -106,6 +114,7 @@ set(srcs
     SvgExport.h
     TemporaryGeometryFocus.cc
     TemporaryGeometryFocus.h
+    TextRenderer.h
     Texture.cc
     Texture.h
     TopologySectionsContainer.cc
@@ -117,7 +126,6 @@ set(srcs
     TreeWidgetBuilder.cc
     TreeWidgetBuilder.h
     Viewport.h
-    ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h
 )

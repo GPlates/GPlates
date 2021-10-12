@@ -29,7 +29,6 @@
 #include <iterator>  /* std::distance */
 #include <algorithm>  /* std::find */
 #include "PolylineIntersections.h"
-#include "global/NotYetImplementedException.h"
 #include "UnableToIntersectEquivalentGreatCirclesException.h"
 #include "UnableToExtendPointlikeArcException.h"
 

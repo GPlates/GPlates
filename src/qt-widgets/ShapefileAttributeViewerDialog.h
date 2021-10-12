@@ -30,11 +30,12 @@
 
 #include "ShapefileAttributeViewerDialogUi.h"
 
-#include "file-io/FileInfo.h"
+#include "file-io/File.h"
 
-namespace GPlatesFileIO
+
+namespace GPlatesAppLogic
 {
-	class FileInfo;
+	class FeatureCollectionFileState;
 }
 
 namespace GPlatesQtWidgets
@@ -62,7 +63,8 @@ namespace GPlatesQtWidgets
 		 * Update the dialog to reflect the current Application State.
 		 */
 		void
-		update();
+		update(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
 	private:
 		
@@ -81,10 +83,10 @@ namespace GPlatesQtWidgets
 	private:
 
 		/** 
-		 * FileInfos corresponding to shapefile feature collections.
-		 * This will make its own copy of the fileinfos....
+		 * Files corresponding to shapefile feature collections.
+		 * This will make its own copy of the files....
 		 */
-		std::vector<GPlatesFileIO::FileInfo> d_fileinfo_vector;
+		std::vector<GPlatesFileIO::File *> d_file_vector;
 
 	};
 

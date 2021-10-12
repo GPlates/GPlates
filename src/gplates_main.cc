@@ -43,6 +43,8 @@
 #include "gui/GPlatesQApplication.h"
 #include "gui/GPlatesQtMsgHandler.h"
 
+#include "presentation/Application.h"
+
 #include "qt-widgets/ViewportWindow.h"
 
 #include "utils/Profile.h"
@@ -118,7 +120,7 @@ int internal_main(int argc, char* argv[])
 
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions
 	// in the Qt event thread.
-	GPlatesGui::GPlatesQApplication application(argc, argv);
+	GPlatesGui::GPlatesQApplication qapplication(argc, argv);
 
 	Q_INIT_RESOURCE(qt_widgets);
 
@@ -127,18 +129,20 @@ int internal_main(int argc, char* argv[])
 	const std::string prog_name = "gplates-demo";
 
 	cmdline_options_type cmdline = process_command_line_options(
-			application.argc(), application.argv(), prog_name);
+			qapplication.argc(), qapplication.argv(), prog_name);
 
-	GPlatesQtWidgets::ViewportWindow viewport_window;
+	// The application state and view state are stored in this object.
+	GPlatesPresentation::Application state;
 
-	viewport_window.show();
-	viewport_window.load_files(cmdline.first + cmdline.second);
-	viewport_window.reconstruct_to_time_with_root(0.0, 0);
-
+	// The main window widget.
+	GPlatesQtWidgets::ViewportWindow main_window_widget(state);
+	main_window_widget.show();
+	main_window_widget.load_files(cmdline.first + cmdline.second);
+	main_window_widget.reconstruct_to_time_with_root(0.0, 0);
 	// Make sure the appropriate tool status message is displayed at start up. 
-	viewport_window.update_tools_and_status_message();
+	main_window_widget.update_tools_and_status_message();
 
-	return application.exec();
+	return qapplication.exec();
 }
 
 

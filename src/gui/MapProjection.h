@@ -43,7 +43,7 @@ namespace GPlatesGui
 	// Make the first enum Orthographic (even though we don't implement that
 	// as a map projection), so that we'll match up better with the combo-box indices, which will
 	// use the zeroth entry for the 3D Orthographic (Globe) view. 
-	enum ProjectionTypes{
+	enum ProjectionType{
 		ORTHOGRAPHIC = 0,
 		RECTANGULAR,
 		MERCATOR,
@@ -61,7 +61,7 @@ namespace GPlatesGui
 
 		MapProjection();
 
-		MapProjection(int projection_type);
+		MapProjection(ProjectionType projection_type);
 
 		~MapProjection();
 
@@ -70,12 +70,12 @@ namespace GPlatesGui
 		 */ 
 		void
 		set_projection_type(
-			int projection_type);
+				ProjectionType projection_type);
 
 		/**
 		 * Get the projection type.
 		 */
-		int projection_type() const
+		ProjectionType projection_type() const
 		{
 			return d_projection_type;
 		}
@@ -164,7 +164,7 @@ namespace GPlatesGui
 		/**
 		 * An integer representing the current projection. 
 		 */
-		int d_projection_type;
+		ProjectionType d_projection_type;
 
 
 		/**
