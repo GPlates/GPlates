@@ -623,7 +623,10 @@ namespace GPlatesMaths
 		 * the stack or the heap.
 		 */
 		const non_null_ptr_to_const_type
-		get_non_null_pointer() const;
+		get_non_null_pointer() const
+		{
+			return GPlatesUtils::get_non_null_pointer(this);
+		}
 
 
 		virtual
@@ -631,6 +634,11 @@ namespace GPlatesMaths
 		test_proximity(
 				const ProximityCriteria &criteria) const;
 
+
+		virtual
+		ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+				const ProximityCriteria &criteria) const;
 
 		/**
 		 * Accept a ConstGeometryOnSphereVisitor instance.

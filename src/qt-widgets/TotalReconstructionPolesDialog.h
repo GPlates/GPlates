@@ -36,6 +36,7 @@
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+	class ReconstructionTree;
 }
 
 namespace GPlatesPresentation
@@ -52,79 +53,32 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
-	TotalReconstructionPolesDialog(
-			GPlatesPresentation::ViewState &view_state,
-			QWidget *parent_ = NULL);
+		TotalReconstructionPolesDialog(
+				GPlatesPresentation::ViewState &view_state,
+				QWidget *parent_ = NULL);
 
-	/**
-	 * Set the dialog reconstruction time. 
-	 */ 
-	void 
-	set_time(
-		const double time);
-
-	/**
-	 * Set the dialog stationary plate id.
-	 */
-	void
-	set_plate(
-		unsigned long plate);
-
-	/**
-	 * Fill the equivalent-rotation QTableWidget. 
-	 */
-	void 
-	fill_equivalent_table();
-
-	/**
-	 * Fill the relative-rotation QTableWidget.
-	 */
-	void
-	fill_relative_table();
-
-
-	/**
-	 * Fill the reconstruction tree QTreeWidget.
-	 */
-	void
-	fill_reconstruction_tree();
-
-	/**
-	 * Fill the circuit-to-stationary-plate QTreeWidget.
-	 */
-	void
-	fill_circuit_tree();
-
-	/**
-	 * Update the dialog. (After the reconstruction time/plate has been
-	 * changed in the Viewport Window, for example). 
-	 */
-	void
-	update();
-
-	public slots:
-
-	/**
-	 * Export the relative-rotation data in csv form. 
-	 */ 
-	void
-	export_relative();
-
-	/** 
-	 * Export the equivalent-rotation data in csv form.
-	 */ 
-	void
-	export_equivalent();
-
-	private:
-	
 		/**
-		 * Called from @a export_relative and @a export_equivalent to handle
-		 * getting the filename from the user and different export options.
+		 * Update the dialog. (After the reconstruction time/plate has been
+		 * changed in the Viewport Window, for example). 
 		 */
 		void
-		handle_export(
-				const QTableWidget &table);
+		update();
+
+	private slots:
+
+		/**
+		 * Export the relative-rotation data in csv form. 
+		 */ 
+		void
+		export_relative();
+
+		/** 
+		 * Export the equivalent-rotation data in csv form.
+		 */ 
+		void
+		export_equivalent();
+
+	private:
 
 		/**
 		 * To query the reconstruction.
@@ -141,6 +95,57 @@ namespace GPlatesQtWidgets
 		 */
 		double d_time;
 
+	
+		/**
+		 * Called from @a export_relative and @a export_equivalent to handle
+		 * getting the filename from the user and different export options.
+		 */
+		void
+		handle_export(
+				const QTableWidget &table);
+
+		/**
+		 * Set the dialog reconstruction time. 
+		 */ 
+		void 
+		set_time(
+			const double time);
+
+		/**
+		 * Set the dialog stationary plate id.
+		 */
+		void
+		set_plate(
+			unsigned long plate);
+
+		/**
+		 * Fill the equivalent-rotation QTableWidget. 
+		 */
+		void 
+		fill_equivalent_table(
+				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree);
+
+		/**
+		 * Fill the relative-rotation QTableWidget.
+		 */
+		void
+		fill_relative_table(
+				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree);
+
+
+		/**
+		 * Fill the reconstruction tree QTreeWidget.
+		 */
+		void
+		fill_reconstruction_tree(
+				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree);
+
+		/**
+		 * Fill the circuit-to-stationary-plate QTreeWidget.
+		 */
+		void
+		fill_circuit_tree(
+				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree);
 	};
 
 }

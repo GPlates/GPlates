@@ -47,22 +47,14 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 				d_view_state,
 				d_view_state.get_colour_scheme(),
 				this)),
-	d_map_canvas_ptr(
-			new MapCanvas(
-				d_view_state.get_rendered_geometry_collection(),
-				d_view_state.get_render_settings(),
-				d_view_state.get_viewport_zoom(),
-				d_view_state.get_colour_scheme(),
-				d_view_state,
-				this)),
 	d_map_view_ptr(
 			new MapView(
 				d_view_state,
-				d_map_canvas_ptr,
+				d_view_state.get_colour_scheme(),
 				this))
 {
 	// Globe is the active view by default.
-	d_active_view_ptr = d_globe_canvas_ptr;
+	d_active_view_ptr = d_globe_canvas_ptr.get();
 	d_map_view_ptr->hide();
 
 	init();
@@ -70,7 +62,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 
 // For cloning GlobeAndMapWidget
 GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
-		GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
+		const GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_) :
 	QWidget(parent_),
@@ -79,29 +71,21 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 			existing_globe_and_map_widget_ptr->d_globe_canvas_ptr->clone(
 				colour_scheme,
 				this)),
-	d_map_canvas_ptr(
-			new MapCanvas(
-				d_view_state.get_rendered_geometry_collection(),
-				d_view_state.get_render_settings(),
-				d_view_state.get_viewport_zoom(),
-				colour_scheme,
-				d_view_state,
-				this)),
 	d_map_view_ptr(
 			new MapView(
 				d_view_state,
-				d_map_canvas_ptr,
+				colour_scheme,
 				this))
 {
 	// Copy which of globe and map is active.
 	if (existing_globe_and_map_widget_ptr->is_globe_active())
 	{
-		d_active_view_ptr = d_globe_canvas_ptr;
+		d_active_view_ptr = d_globe_canvas_ptr.get();
 		d_map_view_ptr->hide();
 	}
 	else
 	{
-		d_active_view_ptr = d_map_view_ptr;
+		d_active_view_ptr = d_map_view_ptr.get();
 		d_globe_canvas_ptr->hide();
 	}
 
@@ -111,14 +95,12 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 void
 GPlatesQtWidgets::GlobeAndMapWidget::init()
 {
-	d_map_canvas_ptr->set_map_view_ptr(d_map_view_ptr);
-
 	// Add the globe and the map to this widget.
 	QHBoxLayout *globe_and_map_layout = new QHBoxLayout(this);
 	globe_and_map_layout->setSpacing(0);
 	globe_and_map_layout->setContentsMargins(0, 0, 0, 0);
-	globe_and_map_layout->addWidget(d_globe_canvas_ptr);
-	globe_and_map_layout->addWidget(d_map_view_ptr);
+	globe_and_map_layout->addWidget(d_globe_canvas_ptr.get());
+	globe_and_map_layout->addWidget(d_map_view_ptr.get());
 
 	// Make sure the cursor is always an arrow.
 	d_globe_canvas_ptr->setCursor(Qt::ArrowCursor);
@@ -130,23 +112,18 @@ GPlatesQtWidgets::GlobeAndMapWidget::init()
 
 GPlatesQtWidgets::GlobeAndMapWidget::~GlobeAndMapWidget()
 {
-	delete d_globe_canvas_ptr;
-
-	// Delete the view first because the view depends on the canvas.
-	delete d_map_view_ptr;
-	delete d_map_canvas_ptr;
 }
 
 bool
 GPlatesQtWidgets::GlobeAndMapWidget::is_globe_active() const
 {
-	return d_active_view_ptr == d_globe_canvas_ptr;
+	return d_active_view_ptr == d_globe_canvas_ptr.get();
 }
 
 bool
 GPlatesQtWidgets::GlobeAndMapWidget::is_map_active() const
 {
-	return d_active_view_ptr == d_map_view_ptr;
+	return d_active_view_ptr == d_map_view_ptr.get();
 }
 
 QSize
@@ -181,12 +158,12 @@ GPlatesQtWidgets::GlobeAndMapWidget::make_signal_slot_connections()
 
 	// Get notified when globe and map get repainted.
 	QObject::connect(
-			d_globe_canvas_ptr,
+			d_globe_canvas_ptr.get(),
 			SIGNAL(repainted(bool)),
 			this,
 			SLOT(handle_globe_or_map_repainted(bool)));
 	QObject::connect(
-			d_map_view_ptr,
+			d_map_view_ptr.get(),
 			SIGNAL(repainted(bool)),
 			this,
 			SLOT(handle_globe_or_map_repainted(bool)));
@@ -204,9 +181,9 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		const GPlatesGui::ViewportProjection &view_projection)
 {
 	// Update the map canvas's projection.
-	d_map_canvas_ptr->map().set_projection_type(
+	d_map_view_ptr->map_canvas().map().set_projection_type(
 		view_projection.get_projection_type());
-	d_map_canvas_ptr->map().set_central_meridian(
+	d_map_view_ptr->map_canvas().map().set_central_meridian(
 		view_projection.get_central_meridian());
 
 	// Save the existing camera llp.
@@ -215,7 +192,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	if (view_projection.get_projection_type() == GPlatesGui::ORTHOGRAPHIC)
 	{
 		// Switch to globe.
-		d_active_view_ptr = d_globe_canvas_ptr;
+		d_active_view_ptr = d_globe_canvas_ptr.get();
 		d_globe_canvas_ptr->update_canvas();
 		if (camera_llp)
 		{
@@ -227,7 +204,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	else
 	{
 		// Switch to map.
-		d_active_view_ptr = d_map_view_ptr;
+		d_active_view_ptr = d_map_view_ptr.get();
 		d_map_view_ptr->set_view();
 		d_map_view_ptr->update_canvas();
 		if (camera_llp)
@@ -249,24 +226,36 @@ GPlatesQtWidgets::GlobeAndMapWidget::handle_zoom_change()
 }
 
 GPlatesQtWidgets::GlobeCanvas &
+GPlatesQtWidgets::GlobeAndMapWidget::get_globe_canvas()
+{
+	return *d_globe_canvas_ptr;
+}
+
+const GPlatesQtWidgets::GlobeCanvas &
 GPlatesQtWidgets::GlobeAndMapWidget::get_globe_canvas() const
 {
 	return *d_globe_canvas_ptr;
 }
 
-GPlatesQtWidgets::MapCanvas &
-GPlatesQtWidgets::GlobeAndMapWidget::get_map_canvas() const
+GPlatesQtWidgets::MapView &
+GPlatesQtWidgets::GlobeAndMapWidget::get_map_view()
 {
-	return *d_map_canvas_ptr;
+	return *d_map_view_ptr;
 }
 
-GPlatesQtWidgets::MapView &
+const GPlatesQtWidgets::MapView &
 GPlatesQtWidgets::GlobeAndMapWidget::get_map_view() const
 {
 	return *d_map_view_ptr;
 }
 
 GPlatesQtWidgets::SceneView &
+GPlatesQtWidgets::GlobeAndMapWidget::get_active_view()
+{
+	return *d_active_view_ptr;
+}
+
+const GPlatesQtWidgets::SceneView &
 GPlatesQtWidgets::GlobeAndMapWidget::get_active_view() const
 {
 	return *d_active_view_ptr;

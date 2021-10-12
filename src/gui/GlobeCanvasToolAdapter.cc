@@ -41,6 +41,55 @@ namespace
 	}
 }
 
+void
+GPlatesGui::GlobeCanvasToolAdapter::handle_press(
+	const GPlatesMaths::PointOnSphere &press_pos_on_globe,
+	const GPlatesMaths::PointOnSphere &oriented_press_pos_on_globe,
+	bool is_on_globe,
+	Qt::MouseButton button,
+	Qt::KeyboardModifiers modifiers)
+{
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block. This is so we can do multiple changes
+	// without redrawing canvas after each change.
+	// This should ideally be located at the highest level to capture one
+	// user GUI interaction - the user performs an action and we update canvas once.
+	// But since these guards can be nested it's probably a good idea to have it here too.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
+	switch (button) {
+	case Qt::LeftButton:
+		switch (modifiers) {
+	case Qt::NoModifier:
+		get_tool(*this).handle_left_press(press_pos_on_globe,
+			oriented_press_pos_on_globe, is_on_globe);
+		break;
+
+	case Qt::ShiftModifier:
+		break;
+
+	case Qt::ControlModifier:
+		break;
+
+	default:
+		// This is an ugly way of getting around the fact that
+		// (Qt::ShiftModifier | Qt::ControlModifier) is not a constant-expression,
+		// and so cannot be used as a case label.
+		if (modifiers == (Qt::ShiftModifier | Qt::ControlModifier)) {
+		}
+		else {
+		}
+		break;
+		}
+		break;
+
+	case Qt::RightButton:
+		break;
+
+	default:
+		break;
+	}
+}
 
 void
 GPlatesGui::GlobeCanvasToolAdapter::handle_click(

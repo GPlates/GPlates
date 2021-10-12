@@ -25,18 +25,20 @@ set(srcs
     ColourNameSet.cc
     ColourNameSet.h
     ColourPalette.h
+    ColourPaletteAdapter.h
     ColourProxy.cc
     ColourProxy.h
+    ColourRawRaster.h
     ColourScheme.h
     ColourSchemeContainer.cc
     ColourSchemeContainer.h
     ColourSchemeDelegator.cc
     ColourSchemeDelegator.h
-    ColourSchemeFactory.cc
-    ColourSchemeFactory.h
     ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
+    CptColourPalette.cc
+    CptColourPalette.h
     CsvExport.cc
     CsvExport.h
     EnableCanvasTool.cc
@@ -53,27 +55,25 @@ set(srcs
     ExportResolvedTopologyAnimationStrategy.h
     ExportRotationAnimationStrategy.cc
     ExportRotationAnimationStrategy.h
+    ExportRotationParamsAnimationStrategy.cc
+    ExportRotationParamsAnimationStrategy.h
     ExportSvgAnimationStrategy.cc
     ExportSvgAnimationStrategy.h
     ExportVelocityAnimationStrategy.cc
     ExportVelocityAnimationStrategy.h
-    FeatureColourPalette.cc
-    FeatureColourPalette.h
     FeatureFocus.cc
     FeatureFocus.h
     FeaturePropertyTableModel.cc
     FeaturePropertyTableModel.h
     FeatureTableModel.cc
     FeatureTableModel.h
-    FeatureWeakRefSequence.h
+    FeatureTypeColourPalette.cc
+    FeatureTypeColourPalette.h
     FileIOFeedback.cc
     FileIOFeedback.h
     FullScreenMode.cc
     FullScreenMode.h
     GenericColourScheme.h
-    GenericContinuousColourPalette.cc
-    GenericContinuousColourPalette.h
-    GenericDiscreteColourPalette.h
     GeometryFocusHighlight.cc
     GeometryFocusHighlight.h
     Globe.cc
@@ -102,7 +102,8 @@ set(srcs
     GuiException.h
     HTMLColourNames.cc
     HTMLColourNames.h
-    Interface.h
+    LayerTaskTypeInfo.cc
+    LayerTaskTypeInfo.h
     Map.cc
     Map.h
     MapCanvasPainter.cc
@@ -117,20 +118,22 @@ set(srcs
     MapProjection.h
     MapTransform.cc
     MapTransform.h
-    NurbsRenderer.cc
-    NurbsRenderer.h
+    Mipmapper.h
     OpaqueSphere.cc
     OpaqueSphere.h
-    OpenGL.h
-    OpenGLBadAllocException.h
-    OpenGLException.h
+    PersistentOpenGLObjects.cc
+    PersistentOpenGLObjects.h
     PlateIdColourPalettes.cc
     PlateIdColourPalettes.h
     ProjectionException.h
     QGLWidgetTextRenderer.cc
     QGLWidgetTextRenderer.h
-    Quadrics.cc
-    Quadrics.h
+    RasterColourPalette.cc
+    RasterColourPalette.h
+    RasterColourScheme.cc
+    RasterColourScheme.h
+    RasterColourSchemeMap.cc
+    RasterColourSchemeMap.h
     ReconstructionGeometrySequence.h
     RenderSettings.h
     SimpleGlobeOrientation.cc
@@ -142,12 +145,12 @@ set(srcs
     SvgExport.cc
     SvgExport.h
     TextRenderer.h
-    Texture.cc
-    Texture.h
     TopologySectionsContainer.cc
     TopologySectionsContainer.h
     TopologySectionsTable.cc
     TopologySectionsTable.h
+    TopologySectionsTableColumns.cc
+    TopologySectionsTableColumns.h
     TopologyTools.cc
     TopologyTools.h
     TreeWidgetBuilder.cc
@@ -159,6 +162,10 @@ set(srcs
     ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h
+    VisualLayersListModel.cc
+    VisualLayersListModel.h
+    VisualLayersProxy.cc
+    VisualLayersProxy.h
 )
 
 

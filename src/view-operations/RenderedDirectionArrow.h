@@ -74,7 +74,7 @@ namespace GPlatesViewOperations
 		virtual
 		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
 		test_proximity(
-				const GPlatesMaths::ProximityCriteria &criteria) const
+			const GPlatesMaths::ProximityCriteria &criteria) const
 		{
 			// Always return the equivalent of false.
 			return NULL;

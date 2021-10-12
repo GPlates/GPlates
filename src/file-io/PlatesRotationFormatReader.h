@@ -55,9 +55,9 @@ namespace GPlatesFileIO
 		 * ErrorOpeningFileForReadingException will be thrown.
 		 */
 		static
-		File::shared_ref
+		void
 		read_file(
-				const FileInfo &filename,
+				const File::Reference &file,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
 	};

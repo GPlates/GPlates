@@ -176,6 +176,15 @@ namespace GPlatesCanvasTools
 				double proximity_inclusion_threshold)
 		{
 		}
+		
+		virtual
+		void
+		handle_left_press(
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold)
+		{
+		}
 
 		virtual
 		void

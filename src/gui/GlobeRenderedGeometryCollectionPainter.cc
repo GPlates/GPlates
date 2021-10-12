@@ -27,24 +27,33 @@
 #include <cstdlib>
 #include <cmath>
 #include <algorithm>
+#include <opengl/OpenGL.h>
 
 #include "GlobeRenderedGeometryCollectionPainter.h"
-#include "OpenGL.h"
-#include "gui/NurbsRenderer.h"
+
+#include "opengl/GLEnterOrLeaveStateSet.h"
+#include "opengl/GLStateSet.h"
+#include "opengl/GLUNurbsRenderer.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryUtils.h"
 
+
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollectionPainter(
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
+		RasterColourSchemeMap &raster_colour_scheme_map,
 		TextRenderer::ptr_to_const_type text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_collection(rendered_geometry_collection),
-	d_current_layer_far_depth(0),
-	d_depth_range_per_layer(0),
+	d_persistent_opengl_objects(persistent_opengl_objects),
+	d_visual_layers(visual_layers),
 	d_render_settings(render_settings),
+	d_raster_colour_scheme_map(raster_colour_scheme_map),
 	d_text_renderer_ptr(text_renderer_ptr),
 	d_visibility_tester(visibility_tester),
 	d_colour_scheme(colour_scheme),
@@ -55,30 +64,18 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 
 void
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint(
+		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 		const double &viewport_zoom_factor,
-		GPlatesGui::NurbsRenderer &nurbs_renderer,
-		double depth_range_near,
-		double depth_range_far)
+		const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer)
 {
-	// Initialise our paint parameters so other methods can access them.
-	d_paint_params = PaintParams(viewport_zoom_factor, nurbs_renderer);
-
-	// Count the number of layers that we're going to draw.
-	const unsigned num_layers_to_draw =
-			GPlatesViewOperations::RenderedGeometryUtils::get_num_active_non_empty_layers(
-					d_rendered_geometry_collection);
-
-	// Divide our given depth range equally amongst the layers.
-	// Draw layers back to front as we visit them.
-	d_depth_range_per_layer = (depth_range_far - depth_range_near) / num_layers_to_draw;
-	d_current_layer_far_depth = depth_range_far;
+	// Initialise our paint parameters so our visit methods can access them.
+	d_paint_params = PaintParams(render_graph_node, viewport_zoom_factor, nurbs_renderer);
 
 	// Draw the layers.
 	d_rendered_geometry_collection.accept_visitor(*this);
 
-	// Re-enable writes to the depth buffer.
-	// This is might have been turned off when rendering the individual layers.
-	glDepthMask(GL_TRUE);
+	// These parameters are only used for the duration of this 'paint()' method.
+	d_paint_params = boost::none;
 }
 
 
@@ -97,20 +94,33 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 		return false;
 	}
 
-	// Set the depth range for the current rendered geometry layer.
-	move_to_next_rendered_layer_depth_range_and_set();
+	// Create an internal node to represent the current rendered geometry layer.
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type rendered_layer_node =
+			GPlatesOpenGL::GLRenderGraphInternalNode::create();
+
+	// Create a state set that ensures this rendered layer will form a render sub group
+	// that will not get reordered with other layers by the renderer (to minimise state changes).
+	GPlatesOpenGL::GLStateSet::non_null_ptr_type state_set = GPlatesOpenGL::GLStateSet::create();
+	state_set->set_enable_render_sub_group();
+
+	rendered_layer_node->set_state_set(state_set);
+
+	// Add the render layer node to the parent render graph node.
+	d_paint_params->d_render_collection_node->add_child_node(rendered_layer_node);
 
 	// Draw the current rendered geometry layer.
 	GlobeRenderedGeometryLayerPainter rendered_geom_layer_painter(
 			rendered_geometry_layer,
+			d_persistent_opengl_objects,
 			d_paint_params->d_inverse_viewport_zoom_factor,
-			*d_paint_params->d_nurbs_renderer,
+			d_paint_params->d_nurbs_renderer,
 			d_render_settings,
+			d_raster_colour_scheme_map,
 			d_text_renderer_ptr,
 			d_visibility_tester,
 			d_colour_scheme);
 	rendered_geom_layer_painter.set_scale(d_scale);
-	rendered_geom_layer_painter.paint();
+	rendered_geom_layer_painter.paint(rendered_layer_node);
 
 	// We've already visited the rendered geometry layer so don't visit its rendered geometries.
 	return false;
@@ -118,14 +128,17 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 
 
 void
-GPlatesGui::GlobeRenderedGeometryCollectionPainter::move_to_next_rendered_layer_depth_range_and_set()
+GPlatesGui::GlobeRenderedGeometryCollectionPainter::set_scale(
+		float scale)
 {
-	// Since the layer is not empty we have allocated a depth range for it.
-	const double far_depth = d_current_layer_far_depth;
-	double near_depth = far_depth - d_depth_range_per_layer;
-	if (near_depth < 0) near_depth = 0;
-
-	glDepthRange(near_depth, far_depth);
-
-	d_current_layer_far_depth -= d_depth_range_per_layer;
+	d_scale = scale;
 }
+
+
+const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type *
+GPlatesGui::GlobeRenderedGeometryCollectionPainter::get_custom_child_layers_order(
+		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer)
+{
+	return &d_visual_layers.get_layer_order();
+}
+

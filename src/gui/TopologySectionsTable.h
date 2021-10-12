@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "gui/TopologySectionsContainer.h"
+#include "gui/TopologySectionsTableColumns.h"
 #include "gui/FeatureFocus.h"
 
 
@@ -116,14 +117,12 @@ namespace GPlatesGui
 		void
 		clear_table();
 
+		//! A table row in the topology sections container was modified.
+		void
+		topology_section_modified(
+				GPlatesGui::TopologySectionsContainer::size_type topology_sections_container_index);
 		
 	private:
-
-		/**
-		 * 
-		 */
-		void
-		update_cell_widgets();
 
 		/**
 		 * Returns the current table row associated with the ActionButtonBox.
@@ -138,6 +137,10 @@ namespace GPlatesGui
 
 		void
 		remove_action_box();
+
+		void
+		set_action_box_widget(
+				int row);
 
 
 		/**
@@ -208,7 +211,7 @@ namespace GPlatesGui
 		 * matches the given TableRow struct.
 		 */
 		void
-		render_table_row(
+		render_valid_row(
 				int row,
 				const TopologySectionsContainer::TableRow &row_data,
 				QColor bg = Qt::white);
@@ -218,7 +221,7 @@ namespace GPlatesGui
 		 * the special 'insertion point' row.
 		 */
 		void
-		render_insertion_point(
+		render_insertion_point_row(
 				int row);
 
 		/**
@@ -241,6 +244,40 @@ namespace GPlatesGui
 		update_data_from_table(
 				int row);
 
+		/**
+		 * Install a QTableWidgetItem for the cell at @a row and @a column.
+		 */
+		void
+		install_table_widget_item(
+				int row,
+				int column,
+				const TopologySectionsContainer::TableRow &row_data,
+				QColor bg);
+
+		/**
+		 * Create and install a widget to edit the cell at @a row and @a column
+		 * (as opposed to using a QTableWidgetItem).
+		 */
+		void
+		install_edit_cell_widget(
+				int row,
+				int column);
+
+		//! Removes cell (either widget or QTableWidgetItem) at @a row and @a column.
+		void
+		remove_cell(
+				int row,
+				int column);
+
+		//! Removes all cells in @a row.
+		void
+		remove_cells(
+				int row);
+
+		//! Reset @a row to the default state so we can render a new row.
+		void
+		reset_row(
+				int row);
 
 
 		/**
@@ -253,6 +290,13 @@ namespace GPlatesGui
 		 * if we wanted to.
 		 */
 		TopologySectionsContainer *d_container_ptr;
+
+		/**
+		 * Column information for setting up the table columns and converting
+		 * data to/from the topology sections container.
+		 */
+		std::vector<TopologySectionsTableColumns::ColumnHeadingInfo> d_column_heading_infos;
+
 
 		/**
 		 * The row that the ActionButtonBox we display is in.

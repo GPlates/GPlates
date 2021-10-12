@@ -28,7 +28,6 @@
 #include "TopologyToolsWidgetUi.h"
 
 #include "model/FeatureHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
 
 #include "gui/TopologyTools.h"
 
@@ -95,12 +94,9 @@ namespace GPlatesQtWidgets
 		clear();
 
 		void
-		set_click_point( double lat, double lon );
-
-		void
 		display_topology(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg);
+				GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type associated_rg);
 
 		void
 		display_number_of_sections( int i ) {

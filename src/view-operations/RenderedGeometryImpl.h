@@ -78,6 +78,19 @@ namespace GPlatesViewOperations
 		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
 		test_proximity(
 				const GPlatesMaths::ProximityCriteria &criteria) const = 0;
+				
+		/**
+		 * Default implementation returns no hit since this method probably only
+		 * makes sense for rendered geometries that wrap @a GeometryOnSphere types
+		 * where interest in vertex proximity occurs.
+		 */
+		virtual
+		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+				const GPlatesMaths::ProximityCriteria &criteria) const
+		{
+			return GPlatesMaths::ProximityHitDetail::null;
+		}		
 	};
 }
 

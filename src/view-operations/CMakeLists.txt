@@ -16,6 +16,8 @@ set(srcs
     AddPointGeometryOperation.h
     CloneOperation.cc
     CloneOperation.h
+    DeleteFeatureOperation.cc
+    DeleteFeatureOperation.h
     DeleteVertexGeometryOperation.cc
     DeleteVertexGeometryOperation.h
     FocusedFeatureGeometryManipulator.cc
@@ -38,8 +40,6 @@ set(srcs
     MoveVertexGeometryOperation.cc
     MoveVertexGeometryOperation.h
     QueryProximityThreshold.h
-    ReconstructView.cc
-    ReconstructView.h
     RenderedDirectionArrow.h
     RenderedEllipse.h
     RenderedGeometry.cc
@@ -64,11 +64,10 @@ set(srcs
     RenderedPolygonOnSphere.h
     RenderedPolylineOnSphere.h
     RenderedReconstructionGeometry.h
+    RenderedResolvedRaster.h
     RenderedSmallCircle.h
     RenderedSmallCircleArc.h
     RenderedString.h
-    RenderReconstructionGeometries.cc
-    RenderReconstructionGeometries.h
     SplitFeatureGeometryOperation.cc
     SplitFeatureGeometryOperation.h
     SplitFeatureUndoCommand.cc

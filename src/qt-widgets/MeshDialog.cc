@@ -260,11 +260,16 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 		GPlatesModel::ModelInterface model =
 				d_view_state.get_application_state().get_model_interface();
 
-		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection = 
-				GPlatesModel::FeatureCollectionHandle::create(model->root());
+		// Create a feature collection that is not added to the model.
+		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection = 
+				GPlatesModel::FeatureCollectionHandle::create();
+
+		// Get a weak reference so we can add features to the feature collection.
+		const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+				feature_collection->reference();
 
 		GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(
-				feature_collection,
+				feature_collection_ref,
 				mesh_node_feature_type);
 
 		//create the geometry property and append to feature

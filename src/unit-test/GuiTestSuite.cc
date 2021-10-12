@@ -26,9 +26,9 @@
 
 #include <QDebug>
 
-#include "unit-test/GuiTestSuite.h"
-#include "unit-test/TestSuiteFilter.h"
-#include "unit-test/GenericContinuousColourPaletteTest.h"
+#include "GuiTestSuite.h"
+#include "TestSuiteFilter.h"
+#include "MipmapperTest.h"
 
 GPlatesUnitTest::GuiTestSuite::GuiTestSuite(
 		unsigned level) : 
@@ -41,7 +41,6 @@ GPlatesUnitTest::GuiTestSuite::GuiTestSuite(
 void 
 GPlatesUnitTest::GuiTestSuite::construct_maps()
 {
-	ADD_TESTSUITE(GenericContinuousColourPalette);
+	ADD_TESTSUITE(Mipmapper);
 }
-
 

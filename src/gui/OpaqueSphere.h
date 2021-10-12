@@ -29,10 +29,13 @@
 #define _GPLATES_GUI_OPAQUESPHERE_H_
 
 #include <boost/noncopyable.hpp>
+#include <opengl/OpenGL.h>
 
-#include "OpenGL.h"
 #include "Colour.h"
-#include "Quadrics.h"
+
+#include "opengl/GLRenderGraphInternalNode.h"
+#include "opengl/GLUQuadric.h"
+
 
 namespace GPlatesGui
 {
@@ -47,10 +50,16 @@ namespace GPlatesGui
 			~OpaqueSphere()
 			{  }
 
-			void paint();
+
+			/**
+			 * Creates child render graph node and attaches it to @a render_graph_parent_node.
+			 */
+			void paint(
+					const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &
+							render_graph_parent_node);
 
 		private:
-			Quadrics d_quad;
+			GPlatesOpenGL::GLUQuadric::non_null_ptr_type d_quad;
 			Colour d_colour;
 	};
 }

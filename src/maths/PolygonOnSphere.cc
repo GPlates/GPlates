@@ -67,30 +67,6 @@ GPlatesMaths::PolygonOnSphere::evaluate_segment_endpoint_validity(
 }
 
 
-const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-GPlatesMaths::PolygonOnSphere::get_non_null_pointer() const
-{
-	if (get_reference_count() == 0) {
-		// How did this happen?  This should not have happened.
-		//
-		// Presumably, the programmer obtained the raw PolygonOnSphere pointer from inside
-		// a PolygonOnSphere::non_null_ptr_type, and is invoking this member function upon
-		// the instance indicated by the raw pointer, after all ref-counting pointers have
-		// expired and the instance has actually been deleted.
-		//
-		// Regardless of how this happened, this is an error.
-		throw GPlatesGlobal::IntrusivePointerZeroRefCountException(GPLATES_EXCEPTION_SOURCE,
-				this);
-	} else {
-		// This instance is already managed by intrusive-pointers, so we can simply return
-		// another intrusive-pointer to this instance.
-		return non_null_ptr_to_const_type(
-				this,
-				GPlatesUtils::NullIntrusivePointerHandler());
-	}
-}
-
-
 GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
 GPlatesMaths::PolygonOnSphere::test_proximity(
 		const ProximityCriteria &criteria) const
@@ -110,6 +86,49 @@ GPlatesMaths::PolygonOnSphere::test_proximity(
 		return ProximityHitDetail::null;
 	}
 }
+
+
+GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+GPlatesMaths::PolygonOnSphere::test_vertex_proximity(
+	const ProximityCriteria &criteria) const
+{
+	vertex_const_iterator 
+		v_it = vertex_begin(),
+		v_end = vertex_end();
+
+	real_t closeness;
+	real_t closest_closeness_so_far = 0.;
+	unsigned int index_of_closest_closeness = 0;
+	bool have_found_close_vertex = false;
+	for (unsigned int index = 0; v_it != v_end ; ++v_it, ++index)
+	{
+		ProximityHitDetail::maybe_null_ptr_type hit = v_it->test_proximity(criteria);
+		if (hit)
+		{
+			have_found_close_vertex = true;
+			closeness = hit->closeness();
+			if (closeness.is_precisely_greater_than(closest_closeness_so_far.dval()))
+			{
+				closest_closeness_so_far = closeness;
+				index_of_closest_closeness = index;
+			}
+		}
+	}	
+
+	if (have_found_close_vertex)
+	{
+		return make_maybe_null_ptr(PolygonProximityHitDetail::create(
+			this->get_non_null_pointer(),
+			closest_closeness_so_far.dval(),
+			index_of_closest_closeness));
+	}
+	else
+	{
+		return ProximityHitDetail::null;	 
+	}
+
+}
+
 
 
 void

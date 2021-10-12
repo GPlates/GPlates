@@ -67,6 +67,15 @@ namespace GPlatesGui
 		}
 
 	public slots:
+	
+		void
+		handle_press(
+				const QPointF &clicked_point_on_scene,
+				bool is_on_surface,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
+	
+	
 		void
 		handle_click(
 				const QPointF &clicked_point_on_scene,

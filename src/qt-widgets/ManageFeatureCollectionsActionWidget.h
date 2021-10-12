@@ -55,7 +55,7 @@ namespace GPlatesQtWidgets
 		explicit
 		ManageFeatureCollectionsActionWidget(
 				ManageFeatureCollectionsDialog &feature_collections_dialog,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
 				QWidget *parent_ = NULL);
 		
 		/**
@@ -64,10 +64,10 @@ namespace GPlatesQtWidgets
 		void
 		update_state();
 		
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator
-		get_file_info_iterator() const
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference
+		get_file_reference() const
 		{
-			return d_file_info_iterator;
+			return d_file_reference;
 		}
 	
 		void
@@ -96,7 +96,7 @@ namespace GPlatesQtWidgets
 	private:
 	
 		ManageFeatureCollectionsDialog &d_feature_collections_dialog;
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator d_file_info_iterator;
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference d_file_reference;
 		
 	};
 }

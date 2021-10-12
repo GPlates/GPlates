@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 #include <map>
@@ -35,10 +36,13 @@
 
 #include "CreateFeatureDialog.h"
 
+#include "ChooseFeatureCollectionWidget.h"
+#include "ChooseFeatureTypeWidget.h"
 #include "EditPlateIdWidget.h"
 #include "EditTimePeriodWidget.h"
 #include "EditStringWidget.h"
 #include "InformationDialog.h"
+#include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
@@ -46,290 +50,35 @@
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructUtils.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+
 #include "model/types.h"
 #include "model/Model.h"
 #include "model/PropertyName.h"
 #include "model/FeatureType.h"
 #include "model/FeatureCollectionHandle.h"
+#include "model/GPGIMInfo.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
+
 #include "presentation/ViewState.h"
+
 #include "utils/UnicodeStringUtils.h"
+
+#include "property-values/Enumeration.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
 namespace
 {
-	typedef std::multimap<GPlatesModel::FeatureType, GPlatesModel::PropertyName> feature_geometric_prop_map_type;
-	typedef feature_geometric_prop_map_type::const_iterator feature_geometric_prop_map_const_iterator;
-
-	typedef std::map<GPlatesModel::PropertyName, QString> geometry_prop_name_map_type;
-	typedef geometry_prop_name_map_type::const_iterator geometry_prop_name_map_const_iterator;
-
-	typedef std::map<GPlatesModel::PropertyName, bool> geometry_prop_timedependency_map_type;
-	typedef geometry_prop_timedependency_map_type::const_iterator geometry_prop_timedependency_map_const_iterator;
-	
-	/**
-	 * This struct is used to build a static table of all possible geometric properties
-	 * we can fill in with this dialog.
-	 */
-	struct GeometryPropInfo
-	{
-		/**
-		 * The name of the geometric property, without the gpml: prefix.
-		 */
-		const char *prop_name;
-		
-		/**
-		 * The human-friendly name of the geometric property, made ready
-		 * for translation by being wrapped in a QT_TR_NOOP() macro.
-		 */
-		const char *friendly_name;
-		
-		/**
-		 * Whether the property should have a time-dependent wrapper.
-		 */
-		bool expects_time_dependent_wrapper;
-	};
-	
-	/**
-	 * Information about geometric properties we can fill in with this dialog.
-	 */
-	static const GeometryPropInfo geometry_prop_info_table[] = {
-		{ "centerLineOf", QT_TR_NOOP("Centre line"), true },
-		{ "outlineOf", QT_TR_NOOP("Outline"), true },
-		{ "errorBounds", QT_TR_NOOP("Error boundary"), false },
-		{ "boundary", QT_TR_NOOP("Boundary"), false },
-		{ "position", QT_TR_NOOP("Position"), false },
-		{ "locations", QT_TR_NOOP("Locations"), false },
-		{ "unclassifiedGeometry", QT_TR_NOOP("Unclassified / miscellaneous"), true },
-	};
-
-	
-	/**
-	 * Converts the above table into a map of PropertyName -> QString.
-	 */
-	const geometry_prop_name_map_type &
-	build_geometry_prop_name_map()
-	{
-		static geometry_prop_name_map_type map;
-		// Add all the friendly names from the table.
-		const GeometryPropInfo *it = geometry_prop_info_table;
-		const GeometryPropInfo *end = it + NUM_ELEMS(geometry_prop_info_table);
-		for ( ; it != end; ++it) {
-			map.insert(std::make_pair(GPlatesModel::PropertyName::create_gpml(it->prop_name),
-					QObject::tr(it->friendly_name) ));
-		}
-		return map;
-	}	
-
-
-	/**
-	 * Converts the above table into a map of PropertyName -> bool.
-	 */
-	const geometry_prop_timedependency_map_type &
-	build_geometry_prop_timedependency_map()
-	{
-		static geometry_prop_timedependency_map_type map;
-		// Add all the expects_time_dependent_wrapper flags from the table.
-		const GeometryPropInfo *it = geometry_prop_info_table;
-		const GeometryPropInfo *end = it + NUM_ELEMS(geometry_prop_info_table);
-		for ( ; it != end; ++it) {
-			map.insert(std::make_pair(GPlatesModel::PropertyName::create_gpml(it->prop_name),
-					it->expects_time_dependent_wrapper ));
-		}
-		return map;
-	}	
-
-
-	/**
-	 * This struct is used to build a static table of all possible FeatureTypes we can
-	 * create with this dialog.
-	 */
-	struct FeatureTypeInfo
-	{
-		/**
-		 * The name of the feature, without the gpml: prefix.
-		 */
-		const char *gpml_type;
-		
-		/**
-		 * The name of a geometric property you can associate with this feature.
-		 */
-		const char *geometric_property;
-	};
-	
-	/**
-	 * This list was created by a Python script which processed the maps of
-	 *   feature-type -> feature-creation function
-	 * and
-	 *   feature-creation function -> property-creation function
-	 * in "src/file-io/FeaturePropertiesMap.cc" (part of the GPML parser).
-	 */
-	static const FeatureTypeInfo feature_type_info_table[] = {
-		{ "AseismicRidge", "centerLineOf" },
-		{ "AseismicRidge", "outlineOf" },
-		{ "AseismicRidge", "unclassifiedGeometry" },
-		{ "BasicRockUnit", "outlineOf" },
-		{ "BasicRockUnit", "unclassifiedGeometry" },
-		{ "Basin", "outlineOf" },
-		{ "Basin", "unclassifiedGeometry" },
-		{ "Bathymetry", "outlineOf" },
-		{ "ClosedContinentalBoundary", "boundary" },
-		{ "ClosedPlateBoundary", "boundary" },
-		{ "Coastline", "centerLineOf" },
-		{ "Coastline", "unclassifiedGeometry" },
-		{ "ComputationalMesh", "locations" },
-		{ "ContinentalFragment", "outlineOf" },
-		{ "ContinentalFragment", "unclassifiedGeometry" },
-		{ "ContinentalRift", "centerLineOf" },
-		{ "ContinentalRift", "outlineOf" },
-		{ "ContinentalRift", "unclassifiedGeometry" },
-		{ "Craton", "outlineOf" },
-		{ "Craton", "unclassifiedGeometry" },
-		{ "CrustalThickness", "outlineOf" },
-		{ "DynamicTopography", "outlineOf" },
-		{ "ExtendedContinentalCrust", "outlineOf" },
-		{ "ExtendedContinentalCrust", "unclassifiedGeometry" },
-		{ "Fault", "centerLineOf" },
-		{ "Fault", "unclassifiedGeometry" },
-		{ "FoldPlane", "centerLineOf" },
-		{ "FoldPlane", "unclassifiedGeometry" },
-		{ "FractureZone", "centerLineOf" },
-		{ "FractureZone", "outlineOf" },
-		{ "FractureZone", "unclassifiedGeometry" },
-		{ "FractureZoneIdentification", "position" },
-		{ "GeologicalLineation", "centerLineOf" },
-		{ "GeologicalLineation", "unclassifiedGeometry" },
-		{ "GeologicalPlane", "centerLineOf" },
-		{ "GeologicalPlane", "unclassifiedGeometry" },
-		{ "GlobalElevation", "outlineOf" },
-		{ "Gravimetry", "outlineOf" },
-		{ "HeatFlow", "outlineOf" },
-		{ "HotSpot", "position" },
-		{ "HotSpot", "unclassifiedGeometry" },
-		{ "HotSpotTrail", "errorBounds" },
-		{ "HotSpotTrail", "unclassifiedGeometry" },
-		{ "InferredPaleoBoundary", "centerLineOf" },
-		{ "InferredPaleoBoundary", "errorBounds" },
-		{ "InferredPaleoBoundary", "unclassifiedGeometry" },
-		{ "IslandArc", "outlineOf" },
-		{ "IslandArc", "unclassifiedGeometry" },
-		{ "Isochron", "centerLineOf" },
-		{ "Isochron", "unclassifiedGeometry" },
-		{ "LargeIgneousProvince", "outlineOf" },
-		{ "LargeIgneousProvince", "unclassifiedGeometry" },
-		{ "MagneticAnomalyIdentification", "position" },
-		{ "MagneticAnomalyShipTrack", "centerLineOf" },
-		{ "MagneticAnomalyShipTrack", "unclassifiedGeometry" },
-		{ "Magnetics", "outlineOf" },
-		{ "MantleDensity", "outlineOf" },
-		{ "MidOceanRidge", "centerLineOf" },
-		{ "MidOceanRidge", "outlineOf" },
-		{ "MidOceanRidge", "unclassifiedGeometry" },
-		{ "OceanicAge", "outlineOf" },
-		{ "OldPlatesGridMark", "centerLineOf" },
-		{ "OldPlatesGridMark", "unclassifiedGeometry" },
-		{ "OrogenicBelt", "centerLineOf" },
-		{ "OrogenicBelt", "outlineOf" },
-		{ "OrogenicBelt", "unclassifiedGeometry" },
-		{ "PassiveContinentalBoundary", "centerLineOf" },
-		{ "PassiveContinentalBoundary", "outlineOf" },
-		{ "PassiveContinentalBoundary", "unclassifiedGeometry" },
-		{ "PseudoFault", "centerLineOf" },
-		{ "PseudoFault", "unclassifiedGeometry" },
-		{ "Roughness", "outlineOf" },
-		{ "Seamount", "outlineOf" },
-		{ "Seamount", "position" },
-		{ "Seamount", "unclassifiedGeometry" },
-		{ "SedimentThickness", "outlineOf" },
-		{ "Slab", "centerLineOf" },
-		{ "Slab", "outlineOf" },
-		{ "Slab", "unclassifiedGeometry" },
-		{ "SpreadingAsymmetry", "outlineOf" },
-		{ "SpreadingRate", "outlineOf" },
-		{ "Stress", "outlineOf" },
-		{ "SubductionZone", "centerLineOf" },
-		{ "SubductionZone", "outlineOf" },
-		{ "SubductionZone", "unclassifiedGeometry" },
-		{ "Suture", "centerLineOf" },
-		{ "Suture", "outlineOf" },
-		{ "Suture", "unclassifiedGeometry" },
-		{ "TerraneBoundary", "centerLineOf" },
-		{ "TerraneBoundary", "unclassifiedGeometry" },
-		{ "Topography", "outlineOf" },
-		{ "TopologicalClosedPlateBoundary", "boundary" },
-		{ "Transform", "centerLineOf" },
-		{ "Transform", "outlineOf" },
-		{ "Transform", "unclassifiedGeometry" },
-		{ "TransitionalCrust", "outlineOf" },
-		{ "TransitionalCrust", "unclassifiedGeometry" },
-		{ "UnclassifiedFeature", "centerLineOf" },
-		{ "UnclassifiedFeature", "outlineOf" },
-		{ "UnclassifiedFeature", "unclassifiedGeometry" },
-		{ "Unconformity", "centerLineOf" },
-		{ "Unconformity", "unclassifiedGeometry" },
-		{ "UnknownContact", "centerLineOf" },
-		{ "UnknownContact", "unclassifiedGeometry" },
-		{ "Volcano", "outlineOf" },
-		{ "Volcano", "position" },
-		{ "Volcano", "unclassifiedGeometry" },
-	};
-	
-	static const FeatureTypeInfo topological_feature_type_info_table[] = {
-		{ "TopologicalClosedPlateBoundary", "boundary" },
-	};
-
-	/**
-	 * Converts the above table into a multimap.
-	 */
-	const feature_geometric_prop_map_type &
-	build_feature_geometric_prop_map()
-	{
-		static feature_geometric_prop_map_type map;
-		// Add all the feature types -> geometric props from the feature_type_info_table.
-		const FeatureTypeInfo *it = feature_type_info_table;
-		const FeatureTypeInfo *end = it + NUM_ELEMS(feature_type_info_table);
-		for ( ; it != end; ++it) {
-			map.insert(std::make_pair(GPlatesModel::FeatureType::create_gpml(it->gpml_type),
-					GPlatesModel::PropertyName::create_gpml(it->geometric_property) ));
-		}
-		return map;
-	}
-		
 	/**
 	 * This typedef is used wherever geometry (of some unknown type) is expected.
 	 * It is a boost::optional because creation of geometry may fail for various reasons.
 	 */
 	typedef boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_opt_ptr_type;
-	
-	/**
-	 * Subclass of QListWidgetItem so that we can display QualifiedXmlNames in the QListWidget
-	 * without converting them to a QString (and thus forgetting that we had a QualifiedXmlName
-	 * in the first place).
-	 */
-	class FeatureTypeItem :
-			public QListWidgetItem
-	{
-	public:
-		FeatureTypeItem(
-				const GPlatesModel::FeatureType type_):
-			QListWidgetItem(GPlatesUtils::make_qstring_from_icu_string(type_.build_aliased_name())),
-			d_type(type_)
-		{  }
-		
-		const GPlatesModel::FeatureType
-		get_type()
-		{
-			return d_type;
-		}
-			
-	private:
-		const GPlatesModel::FeatureType d_type;
-	};
 
 
 	/**
@@ -366,113 +115,7 @@ namespace
 		const GPlatesModel::PropertyName d_name;
 		bool d_expects_time_dependent_wrapper;
 	};
-	
 
-	/**
-	 * Subclass of QListWidgetItem so that we can display a list of FeatureCollection in
-	 * the list widget using the filename as the label, while keeping track of which
-	 * list item corresponds to which FeatureCollection.
-	 */
-	class FeatureCollectionItem :
-			public QListWidgetItem
-	{
-	public:
-		// Standard constructor for creating FeatureCollection entry.
-		FeatureCollectionItem(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_iter,
-				const QString &label):
-			QListWidgetItem(label),
-			d_file_iter(file_iter)
-		{  }
-
-		// Constructor for creating fake "Make a new Feature Collection" entry.
-		FeatureCollectionItem(
-				const QString &label):
-			QListWidgetItem(label)
-		{  }
-			
-		bool
-		is_create_new_collection_item()
-		{
-			return !d_file_iter;
-		}
-
-		/**
-		 * NOTE: Check with @a is_create_new_collection_item first and set a valid file
-		 * iterator if necessary before calling this method.
-		 */
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator
-		get_file_iterator()
-		{
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_file_iter, GPLATES_ASSERTION_SOURCE);
-
-			return *d_file_iter;
-		}
-
-		void
-		set_file_iterator(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_iter)
-		{
-			d_file_iter = file_iter;
-		}
-	
-	private:
-		boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_iterator> d_file_iter;
-	};
-
-
-	/**
-	 * Fill the list with possible feature types we can create with this dialog.
-	 */
-	void
-	populate_feature_types_list(
-			QListWidget &list_widget,
-			GPlatesQtWidgets::CreateFeatureDialog::FeatureType creation_type)
-	{
-		std::list<GPlatesModel::FeatureType> list;
-
-		// Build a list of all FeatureTypes mentioned in the table.
-		const FeatureTypeInfo *table_it = feature_type_info_table;
-		const FeatureTypeInfo *table_end = table_it + NUM_ELEMS(feature_type_info_table);
-
-		// Reset the table for TOPOLOGICAL types
-		if( creation_type == GPlatesQtWidgets::CreateFeatureDialog::TOPOLOGICAL)
-		{
-			table_it = topological_feature_type_info_table;
-			table_end = table_it + NUM_ELEMS(topological_feature_type_info_table);
-		}
-
-		for ( ; table_it != table_end; ++table_it) {
-			list.push_back(GPlatesModel::FeatureType::create_gpml(table_it->gpml_type));
-		}
-		list.sort();
-		list.unique();
-
-		// FIXME: For extra brownie points, filter -this- list based on features
-		// which you couldn't possibly create given the digitised geometry.
-		// E.g. no Cratons made from PolylineOnSphere!
-
-		list_widget.clear();
-		// Add all the feature types from the finished list.
-		std::list<GPlatesModel::FeatureType>::const_iterator list_it = list.begin();
-		std::list<GPlatesModel::FeatureType>::const_iterator list_end = list.end();
-		for ( ; list_it != list_end; ++list_it) {
-			list_widget.addItem(new FeatureTypeItem(*list_it));
-		}
-
-		// Set the default field to UnclassifiedFeature. 
-		QList<QListWidgetItem*> unclassified_items = list_widget.findItems(
-			QString("gpml:UnclassifiedFeature"),Qt::MatchFixedString);
-		if (unclassified_items.isEmpty())
-		{
-			list_widget.setCurrentRow(0);
-		}
-		else
-		{
-			list_widget.setCurrentItem(unclassified_items.first());
-		}
-	}
 
 	/**
 	 * Fill the list with possible property names we can assign geometry to.
@@ -482,10 +125,12 @@ namespace
 			QListWidget &list_widget,
 			GPlatesModel::FeatureType target_feature_type)
 	{
+		typedef GPlatesModel::GPGIMInfo::geometry_prop_name_map_type geometry_prop_name_map_type;
 		static const geometry_prop_name_map_type geometry_prop_names =
-				build_geometry_prop_name_map();
+				GPlatesModel::GPGIMInfo::get_geometry_prop_name_map();
+		typedef GPlatesModel::GPGIMInfo::geometry_prop_timedependency_map_type geometry_prop_timedependency_map_type;
 		static const geometry_prop_timedependency_map_type geometry_time_dependencies =
-				build_geometry_prop_timedependency_map();
+				GPlatesModel::GPGIMInfo::get_geometry_prop_timedependency_map();
 		// FIXME: This list should ideally be dynamic, depending on:
 		//  - the type of GeometryOnSphere we are given (e.g. gpml:position for gml:Point)
 		//  - the type of feature the user has selected in the first list (since different
@@ -493,20 +138,22 @@ namespace
 		list_widget.clear();
 		// Iterate over the feature_type_info_table, and add all property names
 		// that match our desired feature.
-		static const feature_geometric_prop_map_type map = build_feature_geometric_prop_map();
-		feature_geometric_prop_map_const_iterator it = map.lower_bound(target_feature_type);
-		feature_geometric_prop_map_const_iterator end = map.upper_bound(target_feature_type);
+		typedef GPlatesModel::GPGIMInfo::feature_geometric_prop_map_type feature_geometric_prop_map_type;
+		static const feature_geometric_prop_map_type map =
+			GPlatesModel::GPGIMInfo::get_feature_geometric_prop_map();
+		feature_geometric_prop_map_type::const_iterator it = map.lower_bound(target_feature_type);
+		feature_geometric_prop_map_type::const_iterator end = map.upper_bound(target_feature_type);
 		for ( ; it != end; ++it) {
 			GPlatesModel::PropertyName property = it->second;
 			// Display name defaults to the QualifiedXmlName.
 			QString display_name = GPlatesUtils::make_qstring_from_icu_string(property.build_aliased_name());
-			geometry_prop_name_map_const_iterator display_name_it = geometry_prop_names.find(property);
+			geometry_prop_name_map_type::const_iterator display_name_it = geometry_prop_names.find(property);
 			if (display_name_it != geometry_prop_names.end()) {
 				display_name = display_name_it->second;
 			}
 			// Now we have to look up the time-dependent flag somewhere, too.
 			bool expects_time_dependent_wrapper = true;
-			geometry_prop_timedependency_map_const_iterator time_dependency_it = geometry_time_dependencies.find(property);
+			geometry_prop_timedependency_map_type::const_iterator time_dependency_it = geometry_time_dependencies.find(property);
 			if (time_dependency_it != geometry_time_dependencies.end()) {
 				expects_time_dependent_wrapper = time_dependency_it->second;
 			}
@@ -514,65 +161,6 @@ namespace
 			list_widget.addItem(new PropertyNameItem(property, display_name, expects_time_dependent_wrapper));
 		}
 		list_widget.setCurrentRow(0);
-	}
-	
-	/**
-	 * Fill the list with currently loaded FeatureCollections we can add the feature to.
-	 */
-	void
-	populate_feature_collections_list(
-			QListWidget &list_widget,
-			GPlatesAppLogic::FeatureCollectionFileState &state)
-	{
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
-				state.get_loaded_files();
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
-		
-		list_widget.clear();
-		for (; it != end; ++it) {
-			// Get the FeatureCollectionHandle for this file.
-			GPlatesModel::FeatureCollectionHandle::weak_ref collection_opt =
-					it->get_feature_collection();
-
-			// Some files might not actually exist yet if the user created a new
-			// feature collection internally and hasn't saved it to file yet.
-			QString label;
-			if (GPlatesFileIO::file_exists(it->get_file_info()))
-			{
-				// Get a suitable label; we will prefer the full filename.
-				label = it->get_file_info().get_display_name(true);
-			}
-			else
-			{
-				// The file doesn't exist so give it a filename to indicate this.
-				label = "New Feature Collection";
-			}
-			
-			// We are only interested in loaded files which have valid FeatureCollections.
-			if (collection_opt.is_valid()) {
-				list_widget.addItem(new FeatureCollectionItem(it, label));
-			}
-		}
-		// Add a final option for creating a brand new FeatureCollection.
-		list_widget.addItem(new FeatureCollectionItem(QObject::tr(" < Create a new Feature Collection > ")));
-		// Default to first entry.
-		list_widget.setCurrentRow(0);
-	}
-
-	/**
-	 * Get the FeatureType the user has selected.
-	 */
-	boost::optional<const GPlatesModel::FeatureType>
-	currently_selected_feature_type(
-			const QListWidget *listwidget_feature_types)
-	{
-		FeatureTypeItem *type_item = dynamic_cast<FeatureTypeItem *>(
-				listwidget_feature_types->currentItem());
-		if (type_item == NULL) {
-			return boost::none;
-		}
-		return type_item->get_type();
 	}
 
 
@@ -598,7 +186,7 @@ namespace
 	 */
 	bool
 	should_offer_conjugate_plate_id_prop(
-			const QListWidget *listwidget_feature_types)
+			const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget)
 	{
 		// Build set of feature types that allow conjugate plate id.
 		static const QSet<QString> &conjugate_feature_set =
@@ -606,7 +194,7 @@ namespace
 		
 		// Get currently selected feature type
 		boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
-				currently_selected_feature_type(listwidget_feature_types);
+				choose_feature_type_widget->get_feature_type();
 		if (feature_type_opt) {
 			QString t = GPlatesUtils::make_qstring_from_icu_string(feature_type_opt->build_aliased_name());
 			return conjugate_feature_set.contains(t);
@@ -634,9 +222,27 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_plate_id_widget(new EditPlateIdWidget(this)),
 	d_conjugate_plate_id_widget(new EditPlateIdWidget(this)),
 	d_time_period_widget(new EditTimePeriodWidget(this)),
-	d_name_widget(new EditStringWidget(this))
+	d_name_widget(new EditStringWidget(this)),
+	d_choose_feature_type_widget(new ChooseFeatureTypeWidget(this)),
+	d_choose_feature_collection_widget(
+			new ChooseFeatureCollectionWidget(
+				d_file_state,
+				d_file_io,
+				this)),
+	d_recon_method_combobox(new QComboBox(this)),
+	d_right_plate_id(new EditPlateIdWidget(this)),
+	d_left_plate_id(new EditPlateIdWidget(this)),
+	d_recon_method(GPlatesAppLogic::BY_PLATE_ID)
 {
 	setupUi(this);
+
+	// Add sub-widgets to placeholders.
+	GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
+			d_choose_feature_type_widget,
+			widget_choose_feature_type_placeholder);
+	GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
+			d_choose_feature_collection_widget,
+			widget_choose_feature_collection_placeholder);
 	
 	set_up_button_box();
 	
@@ -681,11 +287,14 @@ void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_type_page()
 {
 	// Populate list of feature types.
-	populate_feature_types_list( *listwidget_feature_types, d_creation_type);
+	d_choose_feature_type_widget->initialise(d_creation_type == TOPOLOGICAL);
 	
 	// Pushing Enter or double-clicking should cause the page to advance.
-	QObject::connect(listwidget_feature_types, SIGNAL(itemActivated(QListWidgetItem *)),
-			this, SLOT(handle_next()));
+	QObject::connect(
+			d_choose_feature_type_widget,
+			SIGNAL(item_activated()),
+			this,
+			SLOT(handle_next()));
 }
 
 
@@ -702,6 +311,8 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 			d_name_widget, SLOT(setFocus()));
 	QObject::connect(d_name_widget, SIGNAL(enter_pressed()),
 			button_next, SLOT(setFocus()));
+	QObject::connect(d_recon_method_combobox, SIGNAL(currentIndexChanged(int)),
+			this, SLOT(recon_method_changed(int)));
 	
 	// Reconfigure some accelerator keys that conflict.
 	d_plate_id_widget->label()->setText(tr("Plate &ID:"));
@@ -713,6 +324,19 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	d_name_widget->label()->setText(tr("&Name:"));
 	d_name_widget->label()->setHidden(false);
 	
+	//Add reconstruction method combobox
+	QHBoxLayout *recon_method_layout;
+	QLabel * recon_method_label;
+	recon_method_label = new QLabel(this);
+	d_recon_method_combobox->insertItem(GPlatesAppLogic::BY_PLATE_ID, tr("By Plate ID"));
+	d_recon_method_combobox->insertItem(GPlatesAppLogic::HALF_STAGE_ROTATION, tr("Half Stage Rotation"));
+	recon_method_layout = new QHBoxLayout;
+	QSizePolicy sizePolicy1(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	d_recon_method_combobox->setSizePolicy(sizePolicy1);
+	recon_method_label->setText(tr("Reconstruction Method:"));
+	recon_method_layout->addWidget(recon_method_label);
+	recon_method_layout->addWidget(d_recon_method_combobox);
+
 	// Create the edit widgets we'll need, and add them to the Designer-created widgets.
 	QHBoxLayout *plate_id_layout;
 	plate_id_layout = new QHBoxLayout;
@@ -721,13 +345,27 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	plate_id_layout->addWidget(d_plate_id_widget);
 	plate_id_layout->addWidget(d_conjugate_plate_id_widget);
 
+	//Add right and left plate id widgets
+	//these widgets are invisible by default
+	QHBoxLayout *right_and_left_plate_id_layout;
+	right_and_left_plate_id_layout = new QHBoxLayout;
+	right_and_left_plate_id_layout->setSpacing(2);
+	right_and_left_plate_id_layout->setMargin(0);
+	d_left_plate_id->label()->setText(tr("&Left Plate ID:"));
+	d_right_plate_id->label()->setText(tr("&Right Plate ID:"));
+	right_and_left_plate_id_layout->addWidget(d_right_plate_id);
+	right_and_left_plate_id_layout->addWidget(d_left_plate_id);
+	d_left_plate_id->setVisible(false);
+	d_right_plate_id->setVisible(false);
+
 	QVBoxLayout *edit_layout;
 	edit_layout = new QVBoxLayout;
-	edit_layout->setSpacing(0);
-	edit_layout->setMargin(4);
+	edit_layout->addItem(recon_method_layout);
 	edit_layout->addItem(plate_id_layout);
+	edit_layout->addItem(right_and_left_plate_id_layout);
 	edit_layout->addWidget(d_time_period_widget);
 	edit_layout->addWidget(d_name_widget);
+	edit_layout->insertStretch(-1);
 	groupbox_properties->setLayout(edit_layout);
 	
 	// Note that the geometric properties list must be populated dynamically
@@ -738,14 +376,9 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_collection_page()
 {
-	// Populate list of feature collections.
-	// Note that this should also be done any time the user opens the dialog with
-	// fresh geometry they wish to create a Feature with.
-	populate_feature_collections_list(*listwidget_feature_collections, d_file_state);
-	
-	// Pushing Enter or double-clicking should cause the buttonbox to focus.
-	QObject::connect(listwidget_feature_collections, SIGNAL(itemActivated(QListWidgetItem *)),
-			buttonbox, SLOT(setFocus()));
+	// Pushing Enter or double-clicking should be the same as clicking create.
+	QObject::connect(d_choose_feature_collection_widget, SIGNAL(item_activated()),
+			this, SLOT(handle_create()));
 }
 
 
@@ -754,7 +387,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_geometric_property_list()
 {
 	// Get the FeatureType the user has selected.
 	boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
-			currently_selected_feature_type(listwidget_feature_types);
+		d_choose_feature_type_widget->get_feature_type();
 	if ( ! feature_type_opt) {
 		QMessageBox::critical(this, tr("No feature type selected"),
 				tr("Please select a feature type to create."));
@@ -784,7 +417,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_geometry_and_display(
 	// Set the stack back to the first page.
 	stack->setCurrentIndex(0);
 	// The Feature Collections list needs to be repopulated each time.
-	populate_feature_collections_list(*listwidget_feature_collections, d_file_state);
+	d_choose_feature_collection_widget->initialise();
 	
 	// Show the dialog modally.
 	return exec();
@@ -797,7 +430,7 @@ GPlatesQtWidgets::CreateFeatureDialog::display()
 	// Set the stack back to the first page.
 	stack->setCurrentIndex(0);
 	// The Feature Collections list needs to be repopulated each time.
-	populate_feature_collections_list(*listwidget_feature_collections, d_file_state);
+	d_choose_feature_collection_widget->initialise();
 	
 	// Show the dialog modally.
 	return exec();
@@ -839,7 +472,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 	switch (page)
 	{
 	case 0:
-			listwidget_feature_types->setFocus();
+			d_choose_feature_type_widget->setFocus();
 			button_prev->setEnabled(false);
 			d_button_create->setEnabled(false);
 			button_create_and_save->setEnabled(false);
@@ -851,12 +484,13 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 			listwidget_geometry_destinations->setFocus();
 			d_button_create->setEnabled(false);
 			button_create_and_save->setEnabled(false);
-			d_conjugate_plate_id_widget->setVisible(should_offer_conjugate_plate_id_prop(
-					listwidget_feature_types));
+			d_conjugate_plate_id_widget->setVisible(
+					should_offer_conjugate_plate_id_prop(
+						d_choose_feature_type_widget));
 			break;
 
 	case 2:
-			listwidget_feature_collections->setFocus();
+			d_choose_feature_collection_widget->setFocus();
 			button_next->setEnabled(false);
 			break;
 	}
@@ -867,140 +501,195 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 void
 GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 {
-	if (d_creation_type == TOPOLOGICAL)
-	{
-		handle_create_topological();
-		return;
-	}
+	bool topological = (d_creation_type == TOPOLOGICAL);
+
 	// Get the PropertyName the user has selected for geometry to go into.
-	// Also find out if we should be wrapping geometry in a GpmlConstantValue.
 	PropertyNameItem *geom_prop_name_item = dynamic_cast<PropertyNameItem *>(
 			listwidget_geometry_destinations->currentItem());
-	if (geom_prop_name_item == NULL) {
+	if (geom_prop_name_item == NULL)
+	{
 		QMessageBox::critical(this, tr("No geometry destination selected"),
 				tr("Please select a property name to use for your digitised geometry."));
 		return;
 	}
 	const GPlatesModel::PropertyName geom_prop_name = geom_prop_name_item->get_name();
-	bool geom_prop_needs_constant_value = geom_prop_name_item->expects_time_dependent_wrapper();
-
-
-	// Check we have a valid GeometryOnSphere supplied from the DigitisationWidget.
-	if ( ! d_geometry_opt_ptr) {
-		// Should never happen, as we can't open the dialog (legitimately) without geometry!
-		QMessageBox::critical(this, tr("No geometry"),
-				tr("No geometry was supplied to this dialog. Please try digitising again."));
-		// FIXME: Exception.
-		reject();
-		return;
-	}
-
-	// Un-Reconstruct the temporary geometry so that it's coordinates are
-	// expressed in terms of present day location, given the plate ID that is associated
-	// with it and the current reconstruction time.
-	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
-			GPlatesAppLogic::ReconstructUtils::reconstruct(
-					d_geometry_opt_ptr.get(),
-					d_plate_id_widget->create_integer_plate_id_from_widget(),
-					d_application_state_ptr->get_current_reconstruction().reconstruction_tree(),
-					true /*reverse_reconstruct*/);
-
-	// Create a property value using the present-day GeometryOnSphere and optionally
-	// wrap with a GpmlConstantValue wrapper.
-	const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_value_opt =
-			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
-					present_day_geometry,
-					geom_prop_needs_constant_value);
-	
-	if ( ! geometry_value_opt) {
-		// Might happen, if DigitisationWidget and CreateFeatureDialog (specifically, the
-		// GeometricPropertyValueConstructor) disagree on what is implemented and what is not.
-		// FIXME: Exception?
-		QMessageBox::critical(this, tr("Cannot convert geometry to property value"),
-				tr("There was an error converting the digitised geometry to a usable property value."));
-		reject();
-		return;
-	}
-	
 	
 	// Get the FeatureType the user has selected.
 	boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
-			currently_selected_feature_type(listwidget_feature_types);
-	if ( ! feature_type_opt) {
+			d_choose_feature_type_widget->get_feature_type();
+	if (!feature_type_opt)
+	{
 		QMessageBox::critical(this, tr("No feature type selected"),
 				tr("Please select a feature type to create."));
 		return;
 	}
 	const GPlatesModel::FeatureType type = *feature_type_opt;
+
+	try
+	{
+		// Get the FeatureCollection the user has selected.
+		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> collection_file_iter =
+			d_choose_feature_collection_widget->get_file_reference();
+		GPlatesModel::FeatureCollectionHandle::weak_ref collection =
+			(collection_file_iter.first).get_file().get_feature_collection();
+
+		// Actually create the Feature!
+		GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(collection, type);
+
+		// Add a (possibly ConstantValue-wrapped, see GeometricPropertyValueConstructor)
+		// Geometry Property using present-day geometry.
+		if (!topological)
+		{
+			bool geom_prop_needs_constant_value = geom_prop_name_item->expects_time_dependent_wrapper();
+
+			// Check we have a valid GeometryOnSphere supplied from the DigitisationWidget.
+			if (!d_geometry_opt_ptr)
+			{
+				// Should never happen, as we can't open the dialog (legitimately) without geometry!
+				QMessageBox::critical(this, tr("No geometry"),
+						tr("No geometry was supplied to this dialog. Please try digitising again."));
+				// FIXME: Exception.
+				reject();
+				return;
+			}
+
+			// Un-Reconstruct the temporary geometry so that it's coordinates are
+			// expressed in terms of present day location, given the plate ID that is associated
+			// with it and the current reconstruction time.
+			//
+			// FIXME: Currently we can have multiple reconstruction tree visual layers but we
+			// only allow one active at a time - when this changes we'll need to somehow figure out
+			// which reconstruction tree to use here.
+			// We could search the layers for the one that reconstructs the feature collection that
+			// will contain the new feature and see which reconstruction tree that layer uses in turn.
+			// This could fail if the containing feature collection is reconstructed by multiple layers
+			// (for example if the user wants to reconstruct the same features using two different
+			// reconstruction trees). We could detect this case and ask the user which reconstruction tree
+			// to use (for reverse reconstructing).
+			// This can also fail if the user is adding the created feature to a new feature collection
+			// in which case we cannot know which reconstruction tree they will choose when they wrap
+			// the new feature collection in a new layer. Although when the new feature collection is
+			// created it will automatically create a new layer and set the "default" reconstruction tree
+			// layer as its input (where 'default' will probably be the most recently created
+			// reconstruction tree layer that is currently active). In this case we could figure out
+			// which reconstruction tree layer this is going to be. But this is not ideal because the
+			// user may then immediately switch to a different reconstruction tree input layer and our
+			// reverse reconstruction will not be the one they wanted.
+			// Perhaps the safest solution here is to again ask the user which reconstruction tree layer
+			// to use and then use that instead of the 'default' when creating a new layer for the new
+			// feature collection.
+			// So in summary:
+			// * if adding feature to an existing feature collection:
+			//   * if feature collection is being processed by only one layer then reverse reconstruct
+			//     using the reconstruction tree used by that layer,
+			//   * if feature collection is being processed by more than one layer then gather the
+			//     reconstruction trees used by those layers and ask user which one to
+			//     reverse reconstruct with,
+			// * if adding feature to a new feature collection gather all reconstruction tree layers
+			//   including inactive ones and ask user which one to use for the new layer that will
+			//   wrap the new feature collection.
+			//
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
+					GPlatesAppLogic::ReconstructUtils::reconstruct(
+							d_geometry_opt_ptr.get(),
+							d_plate_id_widget->create_integer_plate_id_from_widget(),
+							*d_application_state_ptr->get_current_reconstruction()
+									.get_default_reconstruction_tree(),
+							true /*reverse_reconstruct*/);
+
+			// Create a property value using the present-day GeometryOnSphere and optionally
+			// wrap with a GpmlConstantValue wrapper.
+			const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_value_opt =
+					GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
+							present_day_geometry,
+							geom_prop_needs_constant_value);
+			
+			if (!geometry_value_opt)
+			{
+				// Might happen, if DigitisationWidget and CreateFeatureDialog (specifically, the
+				// GeometricPropertyValueConstructor) disagree on what is implemented and what is not.
+				// FIXME: Exception?
+				QMessageBox::critical(this, tr("Cannot convert geometry to property value"),
+						tr("There was an error converting the digitised geometry to a usable property value."));
+				reject();
+				return;
+			}
+
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+						geom_prop_name,
+						*geometry_value_opt));
+		}
+
+		// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
+		GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
+				d_plate_id_widget->create_property_value_from_widget();
+		GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+					GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
+
+		//if we are using half stage rotation, add right and left plate id
+		if(GPlatesAppLogic::HALF_STAGE_ROTATION == d_recon_method)
+		{
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+							GPlatesModel::PropertyName::create_gpml("rightPlate"),
+							d_right_plate_id->create_property_value_from_widget()));
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+							GPlatesModel::PropertyName::create_gpml("leftPlate"),
+							d_left_plate_id->create_property_value_from_widget()));
+
+			const GPlatesPropertyValues::Enumeration::non_null_ptr_type recon_method_value =
+					GPlatesPropertyValues::Enumeration::create(
+							"gpml:ReconstructionMethodEnumeration", "HalfStageRotation");
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+							GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
+							recon_method_value));
+		}
+
+		// Add a gpml:conjugatePlateId Property.
+		if (!topological)
+		{
+			if (!d_conjugate_plate_id_widget->is_null() &&
+					should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget))
+			{
+				feature->add(
+						GPlatesModel::TopLevelPropertyInline::create(
+							GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+							d_conjugate_plate_id_widget->create_property_value_from_widget()));
+			}
+		}
 	
-	
-	// Get the FeatureCollection the user has selected.
-	FeatureCollectionItem *collection_item = dynamic_cast<FeatureCollectionItem *>(
-			listwidget_feature_collections->currentItem());
-	if (collection_item == NULL) {
+
+		// Add a gml:validTime Property.
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gml("validTime"),
+					d_time_period_widget->create_property_value_from_widget()));
+
+		// Add a gml:name Property.
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gml("name"),
+					d_name_widget->create_property_value_from_widget()));
+
+		// Ensure a layer gets created for the new feature.
+		d_application_state_ptr->update_layers(collection_file_iter.first);
+		
+		emit feature_created(feature);
+		accept();
+	}
+	catch (const ChooseFeatureCollectionWidget::NoFeatureCollectionSelectedException &)
+	{
 		QMessageBox::critical(this, tr("No feature collection selected"),
 				tr("Please select a feature collection to add the new feature to."));
 		return;
 	}
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection;
-
-	if (collection_item->is_create_new_collection_item()) {
-		collection_item->set_file_iterator(d_file_io.create_empty_file());
-	}
-
-	collection = collection_item->get_file_iterator()->get_feature_collection();
-
-	// Actually create the Feature!
-	GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(collection, type);
-
-	// Add a (possibly ConstantValue-wrapped, see GeometricPropertyValueConstructor)
-	// Geometry Property using present-day geometry.
-	feature->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				geom_prop_name,
-				*geometry_value_opt));
-
-	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
-	GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
-			d_plate_id_widget->create_property_value_from_widget();
-	GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
-	feature->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-				GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
-
-	// Add a gpml:conjugatePlateId Property.
-	if ( ! d_conjugate_plate_id_widget->is_null() &&
-			should_offer_conjugate_plate_id_prop(listwidget_feature_types)) {
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
-					d_conjugate_plate_id_widget->create_property_value_from_widget()));
-	}
-
-	// Add a gml:validTime Property.
-	feature->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				GPlatesModel::PropertyName::create_gml("validTime"),
-				d_time_period_widget->create_property_value_from_widget()));
-
-	// Add a gml:name Property.
-	feature->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				GPlatesModel::PropertyName::create_gml("name"),
-				d_name_widget->create_property_value_from_widget()));
-
-	// We've just modified the feature collection so let the feature collection file state
-	// know this so it can reclassify it.
-	// TODO: This is not ideal since we have to manually call this whenever a feature in
-	// the feature collection is modified - remove this call when feature/feature-collection
-	// callbacks have been implemented and then utilised inside FeatureCollectionFileState to
-	// listen on feature collection changes.
-	d_file_state.reclassify_feature_collection(collection_item->get_file_iterator());
-	
-	emit feature_created(feature);
-	accept();
 }
 
 void
@@ -1013,88 +702,32 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_and_save()
 	d_viewport_window_ptr->pop_up_manage_feature_collections_dialog();
 }
 
-void
-GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
+void 
+GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
 {
-	// Get the PropertyName the user has selected for geometry to go into.
-	// Also find out if we should be wrapping geometry in a GpmlConstantValue.
-	PropertyNameItem *geom_prop_name_item = dynamic_cast<PropertyNameItem *>(
-			listwidget_geometry_destinations->currentItem());
-	if (geom_prop_name_item == NULL) {
-		QMessageBox::critical(this, tr("No geometry destination selected"),
-				tr("Please select a property name to use for your topology."));
-		return;
+	switch(index)
+	{
+		case GPlatesAppLogic::HALF_STAGE_ROTATION:
+			d_plate_id_widget->setVisible(false);
+			d_conjugate_plate_id_widget->setVisible(false);
+			d_right_plate_id->setVisible(true);
+			d_left_plate_id->setVisible(true);
+			d_recon_method = GPlatesAppLogic::HALF_STAGE_ROTATION;
+		break;
+		
+		case GPlatesAppLogic::BY_PLATE_ID:
+		default:	
+			d_right_plate_id->setVisible(false);
+			d_left_plate_id->setVisible(false);
+			d_plate_id_widget->setVisible(true);
+			d_conjugate_plate_id_widget->setVisible(
+					should_offer_conjugate_plate_id_prop(
+							d_choose_feature_type_widget));
+			d_recon_method = GPlatesAppLogic::BY_PLATE_ID;
+		break;
 	}
-	const GPlatesModel::PropertyName geom_prop_name = geom_prop_name_item->get_name();
-	// bool geom_prop_needs_constant_value = geom_prop_name_item->expects_time_dependent_wrapper();
-
-
-	// Get the FeatureType the user has selected.
-	boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
-			currently_selected_feature_type(listwidget_feature_types);
-	if ( ! feature_type_opt) {
-		QMessageBox::critical(this, tr("No feature type selected"),
-				tr("Please select a feature type to create."));
-		return;
-	}
-	const GPlatesModel::FeatureType type = *feature_type_opt;
-	
-	
-	// Get the FeatureCollection the user has selected.
-	FeatureCollectionItem *collection_item = dynamic_cast<FeatureCollectionItem *>(
-			listwidget_feature_collections->currentItem());
-	if (collection_item == NULL) {
-		QMessageBox::critical(this, tr("No feature collection selected"),
-				tr("Please select a feature collection to add the new feature to."));
-		return;
-	}
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection;
-
-	if (collection_item->is_create_new_collection_item()) {
-		collection_item->set_file_iterator(d_file_io.create_empty_file());
-	}
-
-	collection = collection_item->get_file_iterator()->get_feature_collection();
-	
-	// Actually create the Feature!
-	GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(collection, type);
-
-	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
-	GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
-			d_plate_id_widget->create_property_value_from_widget();
-
-	GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
-
-	feature->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-				GPlatesPropertyValues::GpmlConstantValue::create(
-					plate_id_value, 
-					plate_id_value_type)));
-
-	// Add a gml:validTime Property.
-	feature->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				GPlatesModel::PropertyName::create_gml("validTime"),
-				d_time_period_widget->create_property_value_from_widget()));
-
-	// Add a gml:name Property.
-	feature->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				GPlatesModel::PropertyName::create_gml("name"),
-				d_name_widget->create_property_value_from_widget()));
-
-	// We've just modified the feature collection so let the feature collection file state
-	// know this so it can reclassify it.
-	// TODO: This is not ideal since we have to manually call this whenever a feature in
-	// the feature collection is modified - remove this call when feature/feature-collection
-	// callbacks have been implemented and then utilised inside FeatureCollectionFileState to
-	// listen on feature collection changes.
-	d_file_state.reclassify_feature_collection(collection_item->get_file_iterator());
-
-	emit feature_created(feature);
-	accept();
-
+	return;
 }
+
+
 

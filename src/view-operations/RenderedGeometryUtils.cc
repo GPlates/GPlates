@@ -130,15 +130,23 @@ namespace GPlatesViewOperations
 				std::sort(
 						reconstruction_geom_seq.begin(),
 						reconstruction_geom_seq.end(),
-						boost::lambda::bind(&GPlatesModel::ReconstructionGeometry::non_null_ptr_type::get, _1) <
-								boost::lambda::bind(&GPlatesModel::ReconstructionGeometry::non_null_ptr_type::get, _2));
+						boost::lambda::bind(
+								&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
+								_1) <
+								boost::lambda::bind(
+										&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
+										_2));
 
 				reconstruction_geom_seq.erase(
 						std::unique(
 								reconstruction_geom_seq.begin(),
 								reconstruction_geom_seq.end(),
-								boost::lambda::bind(&GPlatesModel::ReconstructionGeometry::non_null_ptr_type::get, _1) ==
-										boost::lambda::bind(&GPlatesModel::ReconstructionGeometry::non_null_ptr_type::get, _2)),
+								boost::lambda::bind(
+										&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
+										_1) ==
+										boost::lambda::bind(
+												&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
+												_2)),
 						reconstruction_geom_seq.end());
 			}
 		}

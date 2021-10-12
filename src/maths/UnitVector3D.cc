@@ -233,7 +233,6 @@ GPlatesMaths::operator*(
 	return GenericVectorOps3D::ReturnType<Vector3D>::scale(s, u);
 }
 
-
 std::ostream &
 GPlatesMaths::operator<<(
 		std::ostream &os,

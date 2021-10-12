@@ -33,11 +33,11 @@
 #include <boost/optional.hpp>
 
 #include "ModifyReconstructionPoleWidgetUi.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "gui/SimpleGlobeOrientation.h"
-#include "model/FeatureHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
-#include "view-operations/RenderedGeometryCollection.h"
 #include "maths/PointOnSphere.h"
+#include "model/FeatureHandle.h"
+#include "view-operations/RenderedGeometryCollection.h"
 
 
 namespace GPlatesAppLogic
@@ -69,11 +69,11 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 	public:
 
-		// FIXME: This typedef has been changed to include an RFG pointer.
-		// This is part of the paleomag workarounds.
-		typedef std::vector<std::pair<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
-			GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_to_const_type> >
-				geometry_collection_type;
+		/**
+		 * Typedef for a sequence of @a ReconstructedFeatureGeometry objects.
+		 */
+		typedef std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+				reconstructed_feature_geometry_collection_type;
 
 		ModifyReconstructionPoleWidget(
 				GPlatesPresentation::ViewState &view_state,
@@ -263,23 +263,30 @@ namespace GPlatesQtWidgets
 		 *
 		 * Note that this could be 'boost::none' -- it's possible for an RFG to be created
 		 * without a reconstruction plate ID.  (See the comments in class
-		 * GPlatesModel::ReconstructedFeatureGeometry for details.)
+		 * GPlatesAppLogic::ReconstructedFeatureGeometry for details.)
 		 */
 		boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
 
 		/**
-		 * The (initial) geometry of each of the RFGs whose plate IDs equal the plate ID of
-		 * the currently-focused RFG (if there is one).
+		 * The reconstruction tree used to reconstruct the focused feature geometry.
+		 *
+		 * This is used to restrict our search for 
+		 */
+		boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type>
+				d_reconstruction_tree;
+
+		/**
+		 * The RFGs whose plate IDs equal the plate ID of the currently-focused RFG (if there is one).
 		 *
 		 * As the user drags the geometries around to modify the total reconstruction pole,
-		 * these geometries will be rotated to new positions on the globe by the
+		 * the geometries from these RFGs will be rotated to new positions on the globe by the
 		 * accumulated rotation.
 		 *
 		 * Presumably, this container will be non-empty when the 'update_drag_position'
 		 * slot is triggered, since if there were no geometry, what would the user be
 		 * dragging?
 		 */
-		geometry_collection_type d_initial_geometries;
+		reconstructed_feature_geometry_collection_type d_reconstructed_feature_geometries;
 		
 		/**
 		 * View state for extracting VGP visibility settings.                                                                      

@@ -31,8 +31,13 @@
 #include "TopologyBoundaryResolver.h"
 
 #include "GeometryUtils.h"
+#include "ReconstructionGeometryCollection.h"
 #include "ReconstructionGeometryUtils.h"
+#include "ReconstructedFeatureGeometry.h"
+#include "Reconstruction.h"
+#include "ResolvedTopologicalBoundary.h"
 #include "TopologyInternalUtils.h"
+#include "TopologyUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -40,10 +45,6 @@
 #include "global/GPlatesAssert.h"
 
 #include "maths/GeometryOnSphere.h"
-
-#include "model/ReconstructedFeatureGeometry.h"
-#include "model/Reconstruction.h"
-#include "model/ResolvedTopologicalBoundary.h"
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
@@ -69,9 +70,9 @@
 
 
 GPlatesAppLogic::TopologyBoundaryResolver::TopologyBoundaryResolver(
-			GPlatesModel::Reconstruction &recon) :
-	d_reconstruction(recon),
-	d_reconstruction_params(recon.get_reconstruction_time())
+			ReconstructionGeometryCollection &reconstruction_geometry_collection) :
+	d_reconstruction_geometry_collection(reconstruction_geometry_collection),
+	d_reconstruction_params(reconstruction_geometry_collection.get_reconstruction_time())
 {  
 	d_num_topologies = 0;
 }
@@ -82,15 +83,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::initialise_pre_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// super short-cut for features without boundary list properties
-	//
-	// FIXME: Do this check based on feature properties rather than feature type.
-	// So if something looks like a TCPB (because it has a topology polygon property)
-	// then treat it like one. For this to happen we first need TopologicalNetwork to
-	// use a property type different than TopologicalPolygon.
-	//
-	static QString type("TopologicalClosedPlateBoundary");
-	if ( type != GPlatesUtils::make_qstring_from_icu_string(
-			feature_handle.feature_type().get_name() ) ) 
+	if (!TopologyUtils::is_topological_closed_plate_boundary_feature(feature_handle))
 	{ 
 		// Quick-out: No need to continue.
 		return false; 
@@ -281,9 +274,12 @@ GPlatesAppLogic::TopologyBoundaryResolver::record_topological_section_reconstruc
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
 {
 	// Get the reconstructed geometry of the topological section's delegate.
-	boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
+	// The referenced features must have been reconstructed using the
+	// reconstruction tree referenced by our destination reconstruction geometry collection.
+	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
-					geometry_delegate, d_reconstruction);
+					geometry_delegate,
+					*d_reconstruction_geometry_collection.reconstruction_tree());
 
 	// If no RFG was found then it's possible that the current reconstruction time is
 	// outside the age range of the feature this section is referencing.
@@ -510,7 +506,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 #endif
 
 	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalBoundary.
-	std::vector<GPlatesModel::ResolvedTopologicalBoundary::SubSegment> output_subsegments;
+	std::vector<ResolvedTopologicalBoundary::SubSegment> output_subsegments;
 
 	// Iterate over the sections of the resolved boundary and construct
 	// the resolved polygon boundary and its subsegments.
@@ -538,7 +534,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 
 		// Create a subsegment structure that'll get used when
 		// creating the resolved topological geometry.
-		const GPlatesModel::ResolvedTopologicalBoundary::SubSegment output_subsegment(
+		const ResolvedTopologicalBoundary::SubSegment output_subsegment(
 				section.d_final_boundary_segment_unreversed_geom.get(),
 				subsegment_feature_const_ref,
 				section.d_use_reverse);
@@ -589,8 +585,9 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 	//
 	// Create the RTB for the plate polygon.
 	//
-	GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_type rtg_ptr =
-		GPlatesModel::ResolvedTopologicalBoundary::create(
+	ResolvedTopologicalBoundary::non_null_ptr_type rtg_ptr =
+		ResolvedTopologicalBoundary::create(
+			d_reconstruction_geometry_collection.reconstruction_tree(),
 			*plate_polygon,
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()),
@@ -599,8 +596,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 			d_reconstruction_params.get_recon_plate_id(),
 			d_reconstruction_params.get_time_of_appearance());
 
-	ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-			rtg_ptr, d_reconstruction);
+	d_reconstruction_geometry_collection.add_reconstruction_geometry(rtg_ptr);
 
 #if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
 	//
@@ -611,14 +607,15 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type rotated_reference_points_geom = 
 				GPlatesMaths::MultiPointOnSphere::create_on_heap(rotated_reference_points);
 
-		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rotated_reference_points_rfg =
-			GPlatesModel::ReconstructedFeatureGeometry::create(
+		ReconstructedFeatureGeometry::non_null_ptr_type rotated_reference_points_rfg =
+			ReconstructedFeatureGeometry::create(
+				d_reconstruction_geometry_collection.reconstruction_tree(),
 				rotated_reference_points_geom,
 				*(current_top_level_propiter()->handle_weak_ref()),
 				*(current_top_level_propiter()));
 
-		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rotated_reference_points_rfg, d_reconstruction);
+		d_reconstruction_geometry_collection.add_reconstruction_geometry(
+				rotated_reference_points_rfg);
 	}
 #endif // if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
 }

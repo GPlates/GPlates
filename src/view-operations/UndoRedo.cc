@@ -137,7 +137,7 @@ namespace GPlatesViewOperations
 			public GPlatesUtils::Singleton<NullCommandIdImpl>
 		{
 
-			GPLATES_SINGLETON_CONSTRUCTOR_IMPL(NullCommandIdImpl)
+			GPLATES_SINGLETON_CONSTRUCTOR_DEF(NullCommandIdImpl)
 
 		public:
 			static

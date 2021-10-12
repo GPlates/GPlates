@@ -108,6 +108,38 @@ namespace GPlatesGui
 		handle_deactivation()
 		{  }
 
+
+
+		/**
+		 * Handle a left mouse-button press.
+		 *
+		 * @a press_pos_on_globe is the position of the click on the globe, without taking
+		 * the globe-orientation into account:  (0, 0) is always in the centre of the
+		 * canvas; (0, -90) is always on the left-most point of the globe in the canvas;
+		 * (0, 90) is always on the right-most point of the globe in the canvas; etc.  This
+		 * position is used to determine the proximity inclusion threshold of clicks.
+		 *
+		 * @a oriented_press_pos_on_globe is the position of the click on the oriented
+		 * globe.  This is the position which should be compared to geometries on the globe
+		 * when testing for hits.
+		 *
+		 * Note that the mouse pointer may not actually be on the globe:  If the mouse
+		 * pointer is not actually on the globe, @a is_on_globe will be false, and the
+		 * positions reported in the previous two parameters will be the closest positions
+		 * on the globe to the actual mouse pointer position on-screen.
+		 *
+		 * This function is a no-op implementation which may be overridden in a derived
+		 * class.
+		 */
+		virtual
+		void
+		handle_left_press(
+			const GPlatesMaths::PointOnSphere &press_pos_on_globe,
+			const GPlatesMaths::PointOnSphere &oriented_press_pos_on_globe,
+			bool is_on_globe)
+		{  }
+
+
 		/**
 		 * Handle a left mouse-button click.
 		 *

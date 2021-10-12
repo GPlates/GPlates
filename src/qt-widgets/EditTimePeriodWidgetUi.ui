@@ -5,30 +5,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>557</width>
-    <height>59</height>
+    <width>642</width>
+    <height>70</height>
    </rect>
   </property>
   <property name="windowTitle" >
    <string>Form</string>
   </property>
   <layout class="QGridLayout" >
-   <property name="leftMargin" >
-    <number>2</number>
-   </property>
-   <property name="topMargin" >
-    <number>2</number>
-   </property>
-   <property name="rightMargin" >
-    <number>2</number>
-   </property>
-   <property name="bottomMargin" >
-    <number>2</number>
-   </property>
-   <property name="horizontalSpacing" >
-    <number>2</number>
-   </property>
    <property name="verticalSpacing" >
+    <number>2</number>
+   </property>
+   <property name="margin" >
     <number>2</number>
    </property>
    <item row="0" column="0" >
@@ -65,7 +53,7 @@
         </sizepolicy>
        </property>
        <property name="text" >
-        <string>Ma</string>
+        <string> Ma</string>
        </property>
       </widget>
      </item>
@@ -88,6 +76,19 @@
       </widget>
      </item>
      <item>
+      <spacer name="horizontalSpacer" >
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0" >
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
       <widget class="QPushButton" name="button_help" >
        <property name="sizePolicy" >
         <sizepolicy vsizetype="Fixed" hsizetype="Fixed" >
@@ -102,7 +103,8 @@
         <string/>
        </property>
        <property name="icon" >
-        <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+        <iconset resource="../qt-resources/qt_widgets.qrc" >
+         <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
        </property>
       </widget>
      </item>
@@ -139,7 +141,7 @@
         </sizepolicy>
        </property>
        <property name="text" >
-        <string>Ma</string>
+        <string> Ma</string>
        </property>
       </widget>
      </item>
@@ -166,10 +168,7 @@
        <property name="orientation" >
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeType" >
-        <enum>QSizePolicy::Preferred</enum>
-       </property>
-       <property name="sizeHint" >
+       <property name="sizeHint" stdset="0" >
         <size>
          <width>16</width>
          <height>16</height>

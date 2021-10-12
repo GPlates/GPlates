@@ -33,7 +33,6 @@
 #include <boost/any.hpp>
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <unicode/unistr.h>
 
 #include "BasicHandle.h"
 #include "FeatureCollectionRevision.h"
@@ -92,7 +91,7 @@ namespace GPlatesModel
 		typedef std::map<std::string, boost::any> tags_type;
 
 		/**
-		 * Creates a new FeatureCollectionHandle instance with optional filename.
+		 * Creates a new FeatureCollectionHandle instance.
 		 *
 		 * This new FeatureCollectionHandle instance is not in the model. It is the
 		 * responsibility of the caller to add it into a FeatureStoreRootHandle if
@@ -100,11 +99,10 @@ namespace GPlatesModel
 		 */
 		static
 		const non_null_ptr_type
-		create(
-				const boost::optional<UnicodeString> &filename_ = boost::none);
+		create();
 
 		/**
-		 * Creates a new FeatureCollectionHandle instance with optional filename.
+		 * Creates a new FeatureCollectionHandle instance.
 		 *
 		 * This new FeatureCollectionHandle instance is added to
 		 * @a feature_store_root and a weak-ref is to the new instance is returned.
@@ -112,20 +110,7 @@ namespace GPlatesModel
 		static
 		const weak_ref
 		create(
-				const WeakReference<FeatureStoreRootHandle> &feature_store_root,
-				const boost::optional<UnicodeString> &filename_ = boost::none);
-
-		/**
-		 * Returns a non-const reference to the feature collection's filename.
-		 */
-		boost::optional<UnicodeString> &
-		filename();
-
-		/**
-		 * Returns a const reference to the feature collection's filename.
-		 */
-		const boost::optional<UnicodeString> &
-		filename() const;
+				const WeakReference<FeatureStoreRootHandle> &feature_store_root);
 
 		/**
 		 * Returns true iff this feature collection contains unsaved changes.
@@ -160,8 +145,7 @@ namespace GPlatesModel
 		 * This constructor should not be public, because we don't want to allow
 		 * instantiation of this type on the stack.
 		 */
-		FeatureCollectionHandle(
-				const boost::optional<UnicodeString> &filename_);
+		FeatureCollectionHandle();
 
 		/**
 		 * This constructor should not be defined, because we don't want to be able
@@ -177,12 +161,6 @@ namespace GPlatesModel
 		this_type &
 		operator=(
 				const this_type &);
-
-		/**
-		 * If set, the filename of the file that contains the persistent storage
-		 * representation of the contents of this feature collection.
-		 */
-		boost::optional<UnicodeString> d_filename;
 
 		/**
 		 * True iff the feature collection contains unsaved changes.

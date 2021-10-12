@@ -75,7 +75,7 @@ GPlatesAppLogic::VgpPartitionFeatureTask::partition_feature(
 	const GPlatesMaths::PointOnSphere &sample_site_point = *sample_site_gml_point->point();
 
 	// Find a partitioning polygon boundary that contains the sample site.
-	const boost::optional<const GPlatesModel::ReconstructionGeometry *> partitioning_polygon =
+	const boost::optional<const ReconstructionGeometry *> partitioning_polygon =
 						geometry_cookie_cutter.partition_point(sample_site_point);
 
 	if (!partitioning_polygon)

@@ -28,13 +28,15 @@
 #include <iostream>
 
 #include "GmlPoint.h"
-#include "maths/LatLonPoint.h"
+
+#include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
 
 
 const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 GPlatesPropertyValues::GmlPoint::create(
-		const std::pair<double, double> &gml_pos)
+		const std::pair<double, double> &gml_pos,
+		GmlProperty gml_property_)
 {
 	using namespace ::GPlatesMaths;
 
@@ -46,20 +48,43 @@ GPlatesPropertyValues::GmlPoint::create(
 	PointOnSphere p = make_point_on_sphere(llp);
 
 	non_null_ptr_type point_ptr(
-			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector())));
+			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()), gml_property_));
+	point_ptr->d_original_longitude = lon;
+
 	return point_ptr;
 }
 
 
 const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 GPlatesPropertyValues::GmlPoint::create(
-		const GPlatesMaths::PointOnSphere &p)
+		const GPlatesMaths::PointOnSphere &p,
+		GmlProperty gml_property_)
 {
 	using namespace ::GPlatesMaths;
 
 	GmlPoint::non_null_ptr_type point_ptr(
-			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector())));
+			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()), gml_property_));
 	return point_ptr;
+}
+
+
+GPlatesMaths::LatLonPoint
+GPlatesPropertyValues::GmlPoint::point_in_lat_lon() const
+{
+	// First convert it to lat-lon directly.
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*d_point);
+
+	// Fix up the lon if the lat is near 90 or -90.
+	if (d_original_longitude)
+	{
+		if (GPlatesMaths::are_almost_exactly_equal(llp.latitude(), 90.0) ||
+				GPlatesMaths::are_almost_exactly_equal(llp.latitude(), -90.0))
+		{
+			llp = GPlatesMaths::LatLonPoint(llp.latitude(), *d_original_longitude);
+		}
+	}
+
+	return llp;
 }
 
 

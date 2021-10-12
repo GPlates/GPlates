@@ -33,7 +33,7 @@
 
 
 GPlatesAppLogic::GenericPartitionFeatureTask::GenericPartitionFeatureTask(
-		const GPlatesModel::ReconstructionTree &reconstruction_tree,
+		const ReconstructionTree &reconstruction_tree,
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
 		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign) :
 	d_reconstruction_tree(reconstruction_tree),
@@ -159,7 +159,7 @@ GPlatesAppLogic::GenericPartitionFeatureTask::assign_feature_to_plate_it_overlap
 {
 	// Find the partitioning polygon that contains the most partitioned geometry
 	// over all geometry properties of the feature.
-	const boost::optional<const GPlatesModel::ReconstructionGeometry *> partition =
+	const boost::optional<const ReconstructionGeometry *> partition =
 			PartitionFeatureUtils::find_partition_containing_most_geometry(*partitioned_feature);
 
 	//
@@ -209,7 +209,7 @@ GPlatesAppLogic::GenericPartitionFeatureTask::assign_feature_sub_geometry_to_pla
 
 		// Find the partitioning polygon that contains the most partitioned geometry
 		// of the current geometry property.
-		const boost::optional<const GPlatesModel::ReconstructionGeometry *> partition =
+		const boost::optional<const ReconstructionGeometry *> partition =
 				PartitionFeatureUtils::find_partition_containing_most_geometry(geometry_property);
 
 		// Transfer current geometry property to the feature associated with the

@@ -7,7 +7,7 @@
 * Most recent change:
 *   $Date$
 * 
-* Copyright (C) 2009 Geological Survey of Norway
+* Copyright (C) 2009, 2010 Geological Survey of Norway
 *
 * This file is part of GPlates.
 *
@@ -27,6 +27,7 @@
 
 #include <QMessageBox>
 
+#include "feature-visitors/KeyValueDictionaryFinder.h"
 #include "ShapefileUtils.h"
 #include "ShapefileXmlWriter.h"
 
@@ -119,5 +120,35 @@ GPlatesFileIO::ShapefileUtils::build_feature_map()
 	map["XT"] = "SubductionZone";
 
 	return map;
+}
+
+void
+GPlatesFileIO::ShapefileUtils::create_default_kvd_from_collection(
+	const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+	boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> &default_key_value_dictionary)
+{
+	if (feature_collection.is_valid())
+	{
+		GPlatesModel::FeatureCollectionHandle::const_iterator
+			iter = feature_collection->begin(), 
+			end = feature_collection->end();
+
+		while ((iter != end) && !default_key_value_dictionary)
+		{
+			// FIXME: Replace this kvd-finder with the new PropertyValueFinder.
+			GPlatesFeatureVisitors::KeyValueDictionaryFinder finder;
+			finder.visit_feature(iter);
+			if (finder.number_of_found_dictionaries() != 0)
+			{
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type found_kvd =
+					*(finder.found_key_value_dictionaries_begin());
+				default_key_value_dictionary = GPlatesPropertyValues::GpmlKeyValueDictionary::create(
+					found_kvd->elements());
+			}
+
+			++iter;
+		}
+
+	}		
 }
 

@@ -28,8 +28,12 @@
 #ifndef GPLATES_GUI_SPHERICALGRID_H
 #define GPLATES_GUI_SPHERICALGRID_H
 
-#include "NurbsRenderer.h"
-#include "utils/VirtualProxy.h"
+#include <boost/noncopyable.hpp>
+
+#include "opengl/GLDrawable.h"
+#include "opengl/GLRenderGraphInternalNode.h"
+#include "opengl/GLStateSet.h"
+#include "opengl/GLUNurbsRenderer.h"
 
 
 namespace GPlatesGui
@@ -37,7 +41,8 @@ namespace GPlatesGui
 	class Colour;
 
 
-	class SphericalGrid
+	class SphericalGrid :
+			private boost::noncopyable
 	{
 	public:
 		SphericalGrid(
@@ -49,6 +54,7 @@ namespace GPlatesGui
 
 		void
 		paint(
+				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node,
 				const Colour &colour);
 
 		/**
@@ -56,11 +62,12 @@ namespace GPlatesGui
 		 */
 		void
 		paint_circumference(
+				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node,
 				const Colour &colour);
 
 	private:
-		// Delay creation of NurbsRenderer object until it's used.
-		GPlatesUtils::VirtualProxy<NurbsRenderer> d_nurbs;
+		GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type d_nurbs;
+		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type d_state_set;
 
 		unsigned d_num_circles_lat;
 		unsigned d_num_circles_lon;
@@ -87,31 +94,26 @@ namespace GPlatesGui
 		 * Draw a line of latitude for latitude @a lat.
 		 * The angle is in radians.
 		 */
-		void draw_line_of_lat(
-				const double &lat);
+		GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+		draw_line_of_lat(
+				const double &lat,
+				const Colour &colour);
 
 		/**
 		 * Draw a line of longitude for longitude @a lon.
 		 * The angle is in radians.
 		 */
-		void draw_line_of_lon(
-				const double &lon);
+		GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
+		draw_line_of_lon(
+				const double &lon,
+				const Colour &colour);
 
-		/*
-		 * These two member functions are intentionally declared
-		 * private to avoid object copying/assignment.
-		 *
-		 * (Since the data member 'd_nurbs' itself cannot be
-		 * copied or assigned.)
+		/**
+		 * Creates an OpenGL state set that defines the appearance of the grid lines.
 		 */
-
-		SphericalGrid(
-				const SphericalGrid &other);
-
-		SphericalGrid &
-		operator=(
-				const SphericalGrid &other);
-
+		static
+		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
+		create_state_set();
 	};
 }
 

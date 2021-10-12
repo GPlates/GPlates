@@ -77,6 +77,12 @@ namespace GPlatesQtWidgets
 			return d_map;
 		}
 
+		const GPlatesGui::Map &
+		map() const
+		{
+			return d_map;
+		}
+
 		void
 		draw_svg_output();
 

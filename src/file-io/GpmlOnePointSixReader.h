@@ -43,9 +43,9 @@ namespace GPlatesFileIO
 	{
 	public:
 		static
-		const File::shared_ref
+		void
 		read_file(
-				const FileInfo &fileinfo,
+				const File::Reference &file,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors,
 				bool use_gzip = false);

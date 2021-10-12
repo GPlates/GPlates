@@ -611,7 +611,7 @@ namespace
 	reverse_reconstruct(
 			std::vector<GPlatesMaths::PointOnSphere> &points,
 			const GPlatesModel::integer_plate_id_type plate_id,
-			GPlatesModel::ReconstructionTree &recon_tree)
+			GPlatesAppLogic::ReconstructionTree &recon_tree)
 	{
 		// Get the composed absolute rotation needed to bring a thing on that plate
 		// in the present day to this time.

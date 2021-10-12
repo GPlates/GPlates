@@ -12,6 +12,8 @@ include_directories(${internal_INCLUDE_DIRS})
 
 
 set(srcs
+    CptReader.cc
+    CptReader.h
     ErrorOpeningFileForReadingException.cc
     ErrorOpeningFileForReadingException.h
     ErrorOpeningFileForWritingException.cc
@@ -34,8 +36,11 @@ set(srcs
     FileInfo.cc
     FileInfo.h
     FileLoadAbortedException.h
-    GdalReader.cc
-    GdalReader.h
+    Gdal.h
+    GdalRasterReader.cc
+    GdalRasterReader.h
+    GdalUtils.cc
+    GdalUtils.h
     GeometryExporter.h
     GmapReader.cc
     GmapReader.h
@@ -56,6 +61,10 @@ set(srcs
     GpmlReaderUtils.cc
     GpmlReaderUtils.h
     LineReader.h
+    MipmappedRasterFormat.cc
+    MipmappedRasterFormat.h
+    MipmappedRasterFormatReader.h
+    MipmappedRasterFormatWriter.h
     OgrException.h
     OgrWriter.cc
     OgrWriter.h
@@ -76,6 +85,10 @@ set(srcs
     PropertyCreationUtils.cc
     PropertyCreationUtils.h
     PropertyMapper.h
+    RasterBandReader.cc
+    RasterBandReader.h
+    RasterBandReaderHandle.cc
+    RasterBandReaderHandle.h
     RasterReader.cc
     RasterReader.h
     ReadErrorAccumulation.h
@@ -86,8 +99,8 @@ set(srcs
     ReconstructedFeatureGeometryExport.h
     ReconstructedFeatureGeometryExportImpl.cc
     ReconstructedFeatureGeometryExportImpl.h
-    RegularCptReader.cc
-    RegularCptReader.h
+    RgbaRasterReader.cc
+    RgbaRasterReader.h
     ShapefileFormatReconstructedFeatureGeometryExport.cc
     ShapefileFormatReconstructedFeatureGeometryExport.h
     ShapefileGeometryExporter.cc
@@ -104,6 +117,8 @@ set(srcs
     ShapefileXmlWriter.h
     StructurePropertyCreatorMap.cc
     StructurePropertyCreatorMap.h
+    TemporaryFileRegistry.cc
+    TemporaryFileRegistry.h
     XmlOutputInterface.cc
     XmlOutputInterface.h
     XmlWriter.cc

@@ -118,6 +118,17 @@ namespace GPlatesFileIO
 
 
 		/**
+		 * Returns the file name up to (but not including) the last '.' character.
+		 *
+		 * As a special case, if the file name has a double-barrelled extension and
+		 * the part after the last '.' is "gz" (e.g. ".tar.gz", ".gpml.gz"), the final
+		 * two extensions are removed, e.g. for "foo.gpml.gz", "foo" is returned.
+		 */
+		const QString
+		get_file_name_without_extension() const;
+
+
+		/**
 		 * Return a @a QFileInfo object.
 		 */
 		const QFileInfo &

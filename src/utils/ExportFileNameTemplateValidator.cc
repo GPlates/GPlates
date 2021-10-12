@@ -32,35 +32,55 @@ boost::shared_ptr<
 GPlatesUtils::ExportFileNameTemplateValidatorFactory::create_validator(
 		GPlatesUtils::Exporter_ID id)
 {
-	if(	id==GPlatesUtils::RECONSTRUCTED_GEOMETRIES_SHAPEFILE||
-		id==GPlatesUtils::RECONSTRUCTED_GEOMETRIES_GMT)
+	if(	id == GPlatesUtils::RECONSTRUCTED_GEOMETRIES_SHAPEFILE ||
+		id == GPlatesUtils::RECONSTRUCTED_GEOMETRIES_GMT)
+	{
 		return boost::shared_ptr<
 				GPlatesUtils::ExportFileNameTemplateValidator >(
 						new ExportReconstructedGeometryFileNameTemplateValidator());
+	}
 
-	if(id==GPlatesUtils::PROJECTED_GEOMETRIES_SVG)
+	if(id == GPlatesUtils::PROJECTED_GEOMETRIES_SVG)
+	{
 		return boost::shared_ptr<
 				GPlatesUtils::ExportFileNameTemplateValidator >(
 						new ExportSvgFileNameTemplateValidator());
+	}
 	
-	if(id==GPlatesUtils::MESH_VILOCITIES_GPML)
+	if(id == GPlatesUtils::MESH_VELOCITIES_GPML)
+	{
 		return boost::shared_ptr<
 				GPlatesUtils::ExportFileNameTemplateValidator >(
 						new ExportVelocityFileNameTemplateValidator());
+	}
 	
-	if(id==GPlatesUtils::RESOLVED_TOPOLOGIES_GMT)
+	if(id == GPlatesUtils::RESOLVED_TOPOLOGIES_GMT)
+	{
 		return boost::shared_ptr<
 				GPlatesUtils::ExportFileNameTemplateValidator >(
 						new ExportResolvedTopologyFileNameTemplateValidator());
+	}
 	
-	if( id==GPlatesUtils::RELATIVE_ROTATION_CSV_COMMA||
-		id==GPlatesUtils::RELATIVE_ROTATION_CSV_SEMICOLON||
-		id==GPlatesUtils::RELATIVE_ROTATION_CSV_TAB||
-		id==GPlatesUtils::EQUIVALENT_ROTATION_CSV_COMMA||
-		id==GPlatesUtils::EQUIVALENT_ROTATION_CSV_SEMICOLON||
-		id==GPlatesUtils::EQUIVALENT_ROTATION_CSV_TAB)
-		return boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator>(
-				new ExportRotationFileNameTemplateValidator());
+	if( id == GPlatesUtils::RELATIVE_ROTATION_CSV_COMMA ||
+		id == GPlatesUtils::RELATIVE_ROTATION_CSV_SEMICOLON ||
+		id == GPlatesUtils::RELATIVE_ROTATION_CSV_TAB ||
+		id == GPlatesUtils::EQUIVALENT_ROTATION_CSV_COMMA ||
+		id == GPlatesUtils::EQUIVALENT_ROTATION_CSV_SEMICOLON ||
+		id == GPlatesUtils::EQUIVALENT_ROTATION_CSV_TAB)
+	{
+		return boost::shared_ptr<
+				GPlatesUtils::ExportFileNameTemplateValidator >(
+						new ExportRotationFileNameTemplateValidator());
+	}
+
+	if( id == GPlatesUtils::ROTATION_PARAMS_CSV_SEMICOLON ||
+		id == GPlatesUtils::ROTATION_PARAMS_CSV_TAB ||
+		id == GPlatesUtils::ROTATION_PARAMS_CSV_COMMA)
+	{
+		return boost::shared_ptr<
+				GPlatesUtils::ExportFileNameTemplateValidator >(
+						new ExportRotationParamsFileNameTemplateValidator());
+	}
 	
 	if( id == GPlatesUtils::RASTER_BMP ||
 		id == GPlatesUtils::RASTER_JPG ||
@@ -84,7 +104,7 @@ bool
 GPlatesUtils::ExportRotationFileNameTemplateValidator::is_valid(
 		const QString &filename)
 {
-	if(has_invalid_characters(filename)||has_percent_P(filename))
+	if(has_invalid_characters(filename) || has_percent_P(filename))
 	{
 		return false;
 	}
@@ -95,7 +115,7 @@ bool
 GPlatesUtils::ExportSvgFileNameTemplateValidator::is_valid(
 		const QString &filename)
 {
-	if(has_invalid_characters(filename)||has_percent_P(filename))
+	if(has_invalid_characters(filename) || has_percent_P(filename))
 	{
 		return false;
 	}
@@ -106,7 +126,7 @@ bool
 GPlatesUtils::ExportVelocityFileNameTemplateValidator::is_valid(
 		const QString &filename)
 {
-	if(has_invalid_characters(filename)||!has_percent_P(filename))
+	if(has_invalid_characters(filename) || !has_percent_P(filename))
 	{
 		return false;
 	}
@@ -117,7 +137,7 @@ bool
 GPlatesUtils::ExportReconstructedGeometryFileNameTemplateValidator::is_valid(
 		const QString &filename)
 {
-	if(has_invalid_characters(filename)||has_percent_P(filename))
+	if(has_invalid_characters(filename) || has_percent_P(filename))
 	{
 		return false;
 	}
@@ -128,7 +148,7 @@ bool
 GPlatesUtils::ExportResolvedTopologyFileNameTemplateValidator::is_valid(
 		const QString &filename)
 {
-	if(has_invalid_characters(filename)||!has_percent_P(filename))
+	if(has_invalid_characters(filename) || !has_percent_P(filename))
 	{
 		return false;
 	}
@@ -138,6 +158,17 @@ GPlatesUtils::ExportResolvedTopologyFileNameTemplateValidator::is_valid(
 bool
 GPlatesUtils::ExportRasterFileNameTemplateValidator::is_valid(
 	const QString &filename)
+{
+	if(has_invalid_characters(filename) || has_percent_P(filename))
+	{
+		return false;
+	}
+	return file_sequence_validate(filename);
+}
+
+bool
+GPlatesUtils::ExportRotationParamsFileNameTemplateValidator::is_valid(
+		const QString &filename)
 {
 	if(has_invalid_characters(filename) || has_percent_P(filename))
 	{

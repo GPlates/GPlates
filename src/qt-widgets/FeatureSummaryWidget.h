@@ -31,7 +31,6 @@
 
 #include "app-logic/FeatureCollectionFileState.h"
 #include "model/FeatureHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "presentation/ViewState.h"
 
 

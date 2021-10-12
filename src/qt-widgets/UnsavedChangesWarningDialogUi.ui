@@ -1,7 +1,8 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>UnsavedChangesWarningDialog</class>
- <widget class="QDialog" name="UnsavedChangesWarningDialog" >
-  <property name="geometry" >
+ <widget class="QDialog" name="UnsavedChangesWarningDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,55 +10,55 @@
     <height>236</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Unsaved Changes</string>
   </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
     <normaloff>:/gnome_dialog_warning_16.png</normaloff>:/gnome_dialog_warning_16.png</iconset>
   </property>
-  <property name="sizeGripEnabled" >
+  <property name="sizeGripEnabled">
    <bool>true</bool>
   </property>
-  <property name="modal" >
+  <property name="modal">
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" >
+  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="label" >
-     <property name="text" >
-      <string>The following feature collections have unsaved changes:-</string>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>The following feature collections have unsaved changes:</string>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QListWidget" name="list_files" >
-     <property name="alternatingRowColors" >
+    <widget class="QListWidget" name="list_files">
+     <property name="alternatingRowColors">
       <bool>false</bool>
      </property>
-     <property name="selectionMode" >
+     <property name="selectionMode">
       <enum>QAbstractItemView::NoSelection</enum>
      </property>
-     <property name="isWrapping" stdset="0" >
+     <property name="isWrapping" stdset="0">
       <bool>false</bool>
      </property>
-     <property name="resizeMode" >
+     <property name="resizeMode">
       <enum>QListView::Adjust</enum>
      </property>
-     <property name="wordWrap" >
+     <property name="wordWrap">
       <bool>false</bool>
      </property>
-     <property name="selectionRectVisible" >
+     <property name="selectionRectVisible">
       <bool>false</bool>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QDialogButtonBox" name="buttonbox" >
-     <property name="orientation" >
+    <widget class="QDialogButtonBox" name="buttonbox">
+     <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
-     <property name="standardButtons" >
+     <property name="standardButtons">
       <set>QDialogButtonBox::Abort|QDialogButtonBox::Discard|QDialogButtonBox::SaveAll</set>
      </property>
     </widget>
@@ -65,7 +66,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections>
   <connection>
@@ -74,11 +75,11 @@
    <receiver>UnsavedChangesWarningDialog</receiver>
    <slot>accept()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>248</x>
      <y>254</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>157</x>
      <y>274</y>
     </hint>
@@ -90,11 +91,11 @@
    <receiver>UnsavedChangesWarningDialog</receiver>
    <slot>reject()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>316</x>
      <y>260</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>286</x>
      <y>274</y>
     </hint>

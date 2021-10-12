@@ -24,38 +24,39 @@
  */
 #include <QDebug>
 
+#include "CalculateReconstructionPoleDialog.h"
+
+#include "InsertVGPReconstructionPoleDialog.h"
+#include "QtWidgetUtils.h"
+#include "ReconstructionPoleWidget.h"
+
 #include "maths/GreatCircleArc.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
-#include "presentation/ViewState.h"
-#include "InsertVGPReconstructionPoleDialog.h"
-#include "ReconstructionPoleWidget.h"
 
-#include "CalculateReconstructionPoleDialog.h"
+#include "presentation/ViewState.h"
+
 
 
 GPlatesQtWidgets::CalculateReconstructionPoleDialog::CalculateReconstructionPoleDialog(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_dialog_ptr(new InsertVGPReconstructionPoleDialog(view_state_,parent_)),
-	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget()),
+	d_dialog_ptr(new InsertVGPReconstructionPoleDialog(view_state_, parent_)),
+	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(this)),
 	d_application_state_ptr(&view_state_.get_application_state())
 {
 	setupUi(this);
 
-	QHBoxLayout *layout_ = new QHBoxLayout(groupbox_recon_pole);
-	layout_->setSpacing(0);
-	layout_->setContentsMargins(0, 0, 0, 0);
-	layout_->addWidget(d_reconstruction_pole_widget_ptr);
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_reconstruction_pole_widget_ptr,
+			groupbox_recon_pole);
 
 	QObject::connect(button_done,SIGNAL(clicked()),this,SLOT(close()));
 	QObject::connect(button_calculate,SIGNAL(clicked()),this,SLOT(handle_calculate()));	
 	QObject::connect(button_apply,SIGNAL(clicked()),this,SLOT(handle_apply()));	
-	
-	
 	
 	update_buttons();
 	

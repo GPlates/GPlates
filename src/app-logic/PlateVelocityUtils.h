@@ -40,8 +40,6 @@
 #include "maths/Vector3D.h"
 
 #include "model/FeatureCollectionHandle.h"
-#include "model/FeatureCollectionHandleUnloader.h"
-#include "model/ModelInterface.h"
 #include "model/types.h"
 
 // FIXME: There should be no view operation code here (this is app logic code).
@@ -50,14 +48,12 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
-namespace GPlatesModel
-{
-	class Reconstruction;
-	class ReconstructionTree;
-}
-
 namespace GPlatesAppLogic
 {
+	class Reconstruction;
+	class ReconstructionGeometryCollection;
+	class ReconstructionTree;
+
 	namespace PlateVelocityUtils
 	{
 		/**
@@ -67,7 +63,7 @@ namespace GPlatesAppLogic
 		 */
 		bool
 		detect_velocity_mesh_nodes(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
 
 
 		/**
@@ -76,51 +72,62 @@ namespace GPlatesAppLogic
 		 * that can be used as a domain for velocity calculations (currently this is
 		 * feature type "gpml:MeshNode").
 		 *
-		 * Note: Returned feature collection may not be valid (eg, if
-		 * @a feature_collection_with_mesh_nodes is not valid).
 		 * Note: Returned feature collection might be empty if
 		 * @a feature_collection_with_mesh_nodes contains no features that have a
 		 * domain suitable for velocity calculations (use @a detect_velocity_mesh_nodes
 		 * to avoid this).
+		 *
+		 * @throws PreconditionViolationError if @a feature_collection_with_mesh_nodes is invalid.
 		 */
-		GPlatesModel::FeatureCollectionHandleUnloader::shared_ref
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 		create_velocity_field_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_with_mesh_nodes,
-				GPlatesModel::ModelInterface &model);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_with_mesh_nodes);
 
 
 		/**
-		 * Solves velocities for features in @a velocity_field_feature_collection.
+		 * Solves velocities for all loaded velocity feature collections.
+		 *
+		 * See @a PlateVelocityUtils::solve_velocities for details on
+		 * how the results are generated and where they are stored.
+		 */
+		const ReconstructionGeometryCollection::non_null_ptr_type
+		solve_velocities(
+				ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &mesh_point_feature_collections,
+				const ReconstructionGeometryCollection &reconstructed_polygons);
+
+
+		/**
+		 * Solves velocities for mesh-point features in @a mesh_point_feature_collection
+		 * and stores the new MultiPointVectorField instances in
+		 * @a velocity_fields_to_populate.
 		 *
 		 * The velocities are calculated at the domain points specified in each feature
 		 * (currently by the GmlMultiPoint in the gpml:VelocityField feature).
-		 *
-		 * The generated velocities are stored in a new property named "velocities" of
-		 * type GmlDataBlock.
 		 *
 		 * The reconstruction trees @a reconstruction_tree_1 and @a reconstruction_tree_2
 		 * are used to calculate velocities and correspond to times
 		 * @a reconstruction_time_1 and @a reconstruction_time_2.
 		 * The larger the time delta the larger the calculated velocities will be.
 		 *
-		 * The feature collection @a velocity_field_feature_collection ideally should be
-		 * created with @a create_velocity_field_feature_collection so that it contains
-		 * features and property(s) of the correct type for the velocity solver.
+		 * @a reconstruction_time_1 is "the" reconstruction time, and
+		 * @a reconstruction_tree_1 is "the" reconstruction tree.
 		 *
 		 * FIXME: Presentation code should not be in here (this is app logic code).
 		 * Remove any rendered geometry code to the presentation tier.
 		 */
 		void
-		solve_velocities(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection,
-				GPlatesModel::Reconstruction &reconstruction,
-				GPlatesModel::ReconstructionTree &reconstruction_tree_1,
-				GPlatesModel::ReconstructionTree &reconstruction_tree_2,
+		solve_velocities_inner(
+				ReconstructionGeometryCollection &velocity_fields_to_populate,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &mesh_point_feature_collection,
+				const ReconstructionGeometryCollection &reconstructed_polygons,
+				ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_1,
+				ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_2,
 				const double &reconstruction_time_1,
 				const double &reconstruction_time_2,
-				GPlatesModel::integer_plate_id_type reconstruction_root,
-				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_point_layer,
-				GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type comp_mesh_arrow_layer);
+				GPlatesModel::integer_plate_id_type reconstruction_root);
 
 
 		//////////////////////////////
@@ -137,8 +144,8 @@ namespace GPlatesAppLogic
 		GPlatesMaths::VectorColatitudeLongitude
 		calc_velocity_colat_lon(
 				const GPlatesMaths::PointOnSphere &point,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree1,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree2,
+				const ReconstructionTree &reconstruction_tree1,
+				const ReconstructionTree &reconstruction_tree2,
 				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id);
 
 
@@ -151,8 +158,8 @@ namespace GPlatesAppLogic
 		GPlatesMaths::Vector3D
 		calc_velocity_vector(
 				const GPlatesMaths::PointOnSphere &point,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree1,
-				const GPlatesModel::ReconstructionTree &reconstruction_tree2,
+				const ReconstructionTree &reconstruction_tree1,
+				const ReconstructionTree &reconstruction_tree2,
 				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id);
 
 

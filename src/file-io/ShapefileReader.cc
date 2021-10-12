@@ -195,6 +195,23 @@ namespace
 		
 
 	void
+	append_conjugate_plate_id_to_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &feature,
+		int conjugate_plate_id_as_int)
+	{
+		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type conjugate_plate_id = 
+			GPlatesPropertyValues::GpmlPlateId::create(conjugate_plate_id_as_int);
+
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+					GPlatesModel::ModelUtils::create_gpml_constant_value(
+						conjugate_plate_id,
+						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("conjugateplateId"))));
+	}
+
+
+	void
 	append_plate_id_to_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
 		int plate_id_as_int)
@@ -253,20 +270,6 @@ namespace
 					gml_description));
 	}
 	
-	void
-	append_conjugate_plate_id_to_feature(
-		const GPlatesModel::FeatureHandle::weak_ref &feature,
-		int conjugate_plate_id_as_int)
-	{
-		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type conjugate_plate_id = 
-			GPlatesPropertyValues::GpmlPlateId::create(conjugate_plate_id_as_int);
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
-					GPlatesModel::ModelUtils::create_gpml_constant_value(
-						conjugate_plate_id,
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("conjugatePlateId"))));
-	}	
 
 	/**
 	 * Removes properties with the property names:
@@ -361,7 +364,8 @@ namespace
 		boost::optional<double> age_of_appearance;
 		boost::optional<double> age_of_disappearance;
 
-		it = model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::BEGIN]);
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::BEGIN]);
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
@@ -381,7 +385,8 @@ namespace
 			}
 		}
 
-		it = model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::END]);
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::END]);
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
@@ -400,7 +405,8 @@ namespace
 			}
 		}
 
-		it = model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::NAME]);
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::NAME]);
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
@@ -408,7 +414,8 @@ namespace
 			append_name_to_feature(feature,name);
 		}
 
-		it = model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::DESCRIPTION]);
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::DESCRIPTION]);
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
@@ -420,8 +427,10 @@ namespace
 		if (age_of_appearance && age_of_disappearance){
 			append_geo_time_to_feature(feature,*age_of_appearance,*age_of_disappearance);
 		}
+		
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::CONJUGATE_PLATE_ID]);
 
-		it = model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::CONJUGATE_PLATE_ID]);		
 		if (it != model_to_attribute_map.constEnd())
 		{
 			attribute = get_qvariant_from_finder(it.value(),feature);
@@ -435,11 +444,12 @@ namespace
 					GPlatesFileIO::ReadErrorOccurrence(
 					source,
 					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefileConjugatePlateIdNumber,
-					GPlatesFileIO::ReadErrors::AttributeIgnored));
+					GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
+					GPlatesFileIO::ReadErrors::NoConjugatePlateIdLoadedForFeature));
 			}
 
 		}		
+		
 		
 	}
 
@@ -450,7 +460,7 @@ namespace
 	 */
 	void
 	remap_feature_collection(
-		GPlatesFileIO::File &file,
+		const GPlatesFileIO::File::Reference &file,
 		QMap< QString,QString > model_to_attribute_map,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
@@ -466,7 +476,7 @@ namespace
 			boost::shared_ptr<GPlatesFileIO::DataSource> source(
 				new GPlatesFileIO::LocalFileDataSource(filename, GPlatesFileIO::DataFormats::Shapefile));
 			boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-				new GPlatesFileIO::LineNumberInFile(count));
+				new GPlatesFileIO::LineNumber(count));
 			GPlatesModel::FeatureHandle::weak_ref feature = (*it)->reference();
 			remove_old_properties(feature);
 			map_attributes_to_properties(feature,model_to_attribute_map,read_errors,source,location);
@@ -585,7 +595,7 @@ GPlatesFileIO::ShapefileReader::check_file_format(
 	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
 		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Shapefile));
 	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-				new GPlatesFileIO::LineNumberInFile(0));
+				new GPlatesFileIO::LineNumber(0));
 
 	d_num_layers = d_data_source_ptr->GetLayerCount();
 
@@ -709,7 +719,7 @@ GPlatesFileIO::ShapefileReader::read_features(
 	while ((d_feature_ptr = d_layer_ptr->GetNextFeature()) != NULL){
 	
 		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-				new GPlatesFileIO::LineNumberInFile(feature_number));
+				new GPlatesFileIO::LineNumber(feature_number));
 
 		d_geometry_ptr = d_feature_ptr->GetGeometryRef();
 		if (d_geometry_ptr == NULL){
@@ -980,7 +990,7 @@ GPlatesFileIO::ShapefileReader::get_field_names(
 		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Shapefile));
 
 	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-		new GPlatesFileIO::LineNumberInFile(0));
+		new GPlatesFileIO::LineNumber(0));
 				
 	s_field_names.clear();
 	if (!d_feature_ptr){
@@ -1178,12 +1188,14 @@ GPlatesFileIO::ShapefileReader::is_valid_shape_data(
 	return true;
 }
 
-const GPlatesFileIO::File::shared_ref
+void
 GPlatesFileIO::ShapefileReader::read_file(
-		const FileInfo &fileinfo,
+		const GPlatesFileIO::File::Reference &file_ref,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	const FileInfo &fileinfo = file_ref.get_file_info();
+
 	// By placing all changes to the model under the one changeset, we ensure that
 	// feature revision ids don't get changed from what was loaded from file no
 	// matter what we do to the features.
@@ -1222,21 +1234,12 @@ GPlatesFileIO::ShapefileReader::read_file(
 	// Store the map in the feature collection's file-info
 	fileinfo.set_model_to_shapefile_map(s_model_to_attribute_map);
 
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection
-		= GPlatesModel::FeatureCollectionHandle::create(
-				model->root(),
-				GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
-
-	// Make sure feature collection gets unloaded when it's no longer needed.
-	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =
-			GPlatesModel::FeatureCollectionHandleUnloader::create(collection);
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection = file_ref.get_feature_collection();
 
 	reader.read_features(model,collection,read_errors);
 
 
 	//reader.display_feature_counts();
-
-	return File::create_loaded_file(collection_unloader, fileinfo);
 }
 
 void
@@ -1667,7 +1670,7 @@ GPlatesFileIO::ShapefileReader::add_ring_to_points_list(
 
 void
 GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
-	File &file,
+	const GPlatesFileIO::File::Reference &file,
 	GPlatesModel::ModelInterface &model,
 	ReadErrorAccumulation &read_errors)
 {

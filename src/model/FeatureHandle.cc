@@ -129,11 +129,14 @@ GPlatesModel::FeatureHandle::add(
 	ChangesetHandle changeset(model_ptr());
 
 	ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
-	// changeset_ptr must be non-NULL because we created one at the top of the
-	// function. But changeset_ptr might not point to our changeset.
-	if (!changeset_ptr->has_handle(this))
+	// changeset_ptr will be NULL if we're not connected to a model.
+	if (changeset_ptr)
 	{
-		current_revision()->update_revision_id();
+		// changeset_ptr might not point to our changeset.
+		if (!changeset_ptr->has_handle(this))
+		{
+			current_revision()->update_revision_id();
+		}
 	}
 
 	return BasicHandle<FeatureHandle>::add(new_child);
@@ -147,11 +150,14 @@ GPlatesModel::FeatureHandle::remove(
 	ChangesetHandle changeset(model_ptr());
 
 	ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
-	// changeset_ptr must be non-NULL because we created one at the top of the
-	// function. But changeset_ptr might not point to our changeset.
-	if (!changeset_ptr->has_handle(this))
+	// changeset_ptr will be NULL if we're not connected to a model.
+	if (changeset_ptr)
 	{
-		current_revision()->update_revision_id();
+		// changeset_ptr might not point to our changeset.
+		if (!changeset_ptr->has_handle(this))
+		{
+			current_revision()->update_revision_id();
+		}
 	}
 
 	BasicHandle<FeatureHandle>::remove(iter);
@@ -220,6 +226,13 @@ GPlatesModel::FeatureHandle::revision_id() const
 }
 
 
+time_t
+GPlatesModel::FeatureHandle::creation_time() const
+{
+	return d_creation_time;
+}
+
+
 GPlatesModel::FeatureHandle::FeatureHandle(
 		const FeatureType &feature_type_,
 		const FeatureId &feature_id_,
@@ -228,7 +241,8 @@ GPlatesModel::FeatureHandle::FeatureHandle(
 			this,
 			revision_),
 	d_feature_type(feature_type_),
-	d_feature_id(feature_id_)
+	d_feature_id(feature_id_),
+	d_creation_time(time(NULL))
 {
 	d_feature_id.set_back_ref_target(*this);
 }

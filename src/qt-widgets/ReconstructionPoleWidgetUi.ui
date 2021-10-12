@@ -1,148 +1,149 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>ReconstructionPoleWidget</class>
- <widget class="QWidget" name="ReconstructionPoleWidget" >
-  <property name="geometry" >
+ <widget class="QWidget" name="ReconstructionPoleWidget">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>549</width>
-    <height>62</height>
+    <height>70</height>
    </rect>
   </property>
-  <property name="windowTitle" >
-   <string>Form</string>
+  <property name="windowTitle">
+   <string>Reconstruction Pole</string>
   </property>
-  <layout class="QGridLayout" >
-   <item row="0" column="0" >
-    <layout class="QGridLayout" >
-     <item row="0" column="0" >
-      <widget class="QLabel" name="label" >
-       <property name="text" >
-        <string>Moving plate id</string>
+  <layout class="QGridLayout">
+   <item row="0" column="0">
+    <layout class="QGridLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Moving Plate ID:</string>
        </property>
-       <property name="indent" >
+       <property name="indent">
         <number>1</number>
        </property>
       </widget>
      </item>
-     <item row="0" column="1" >
-      <widget class="QLabel" name="label_2" >
-       <property name="text" >
-        <string>Time</string>
+     <item row="0" column="1">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Time:</string>
        </property>
-       <property name="indent" >
+       <property name="indent">
         <number>1</number>
        </property>
       </widget>
      </item>
-     <item row="0" column="2" >
-      <widget class="QLabel" name="label_3" >
-       <property name="text" >
-        <string>Latitude</string>
+     <item row="0" column="2">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Latitude:</string>
        </property>
-       <property name="indent" >
+       <property name="indent">
         <number>1</number>
        </property>
       </widget>
      </item>
-     <item row="0" column="3" >
-      <widget class="QLabel" name="label_4" >
-       <property name="text" >
-        <string>Longitude</string>
+     <item row="0" column="3">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>Longitude:</string>
        </property>
-       <property name="indent" >
+       <property name="indent">
         <number>1</number>
        </property>
       </widget>
      </item>
-     <item row="0" column="4" >
-      <widget class="QLabel" name="label_5" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
+     <item row="0" column="4">
+      <widget class="QLabel" name="label_5">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="minimumSize" >
+       <property name="minimumSize">
         <size>
          <width>82</width>
          <height>0</height>
         </size>
        </property>
-       <property name="text" >
-        <string>Angle</string>
+       <property name="text">
+        <string>Angle:</string>
        </property>
-       <property name="indent" >
+       <property name="indent">
         <number>1</number>
        </property>
       </widget>
      </item>
-     <item row="0" column="5" >
-      <widget class="QLabel" name="label_6" >
-       <property name="text" >
-        <string>Fixed plate id</string>
+     <item row="0" column="5">
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>Fixed Plate ID:</string>
        </property>
-       <property name="indent" >
+       <property name="indent">
         <number>1</number>
        </property>
       </widget>
      </item>
-     <item row="1" column="0" >
-      <widget class="QLineEdit" name="lineedit_moving_plate" >
-       <property name="readOnly" >
+     <item row="1" column="0">
+      <widget class="QLineEdit" name="lineedit_moving_plate">
+       <property name="readOnly">
         <bool>true</bool>
        </property>
       </widget>
      </item>
-     <item row="1" column="1" >
-      <widget class="QLineEdit" name="lineedit_time" >
-       <property name="readOnly" >
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="lineedit_time">
+       <property name="readOnly">
         <bool>true</bool>
        </property>
       </widget>
      </item>
-     <item row="1" column="2" >
-      <widget class="QLineEdit" name="lineedit_latitude" >
-       <property name="readOnly" >
+     <item row="1" column="2">
+      <widget class="QLineEdit" name="lineedit_latitude">
+       <property name="readOnly">
         <bool>true</bool>
        </property>
       </widget>
      </item>
-     <item row="1" column="3" >
-      <widget class="QLineEdit" name="lineedit_longitude" >
-       <property name="readOnly" >
+     <item row="1" column="3">
+      <widget class="QLineEdit" name="lineedit_longitude">
+       <property name="readOnly">
         <bool>true</bool>
        </property>
       </widget>
      </item>
-     <item row="1" column="4" >
-      <widget class="QDoubleSpinBox" name="spinbox_angle" >
-       <property name="minimumSize" >
+     <item row="1" column="4">
+      <widget class="QDoubleSpinBox" name="spinbox_angle">
+       <property name="minimumSize">
         <size>
          <width>82</width>
          <height>0</height>
         </size>
        </property>
-       <property name="readOnly" >
+       <property name="readOnly">
         <bool>true</bool>
        </property>
-       <property name="buttonSymbols" >
+       <property name="buttonSymbols">
         <enum>QAbstractSpinBox::NoButtons</enum>
        </property>
-       <property name="suffix" >
+       <property name="suffix">
         <string>°</string>
        </property>
-       <property name="minimum" >
+       <property name="minimum">
         <double>-360.000000000000000</double>
        </property>
-       <property name="maximum" >
+       <property name="maximum">
         <double>360.000000000000000</double>
        </property>
       </widget>
      </item>
-     <item row="1" column="5" >
-      <widget class="QLineEdit" name="lineedit_fixed_plate" >
-       <property name="readOnly" >
+     <item row="1" column="5">
+      <widget class="QLineEdit" name="lineedit_fixed_plate">
+       <property name="readOnly">
         <bool>true</bool>
        </property>
       </widget>

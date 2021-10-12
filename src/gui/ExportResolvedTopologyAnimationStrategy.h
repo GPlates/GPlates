@@ -42,7 +42,7 @@
 #include "utils/ExportTemplateFilenameSequence.h"
 
 
-namespace GPlatesModel
+namespace GPlatesAppLogic
 {
 	class ResolvedTopologicalBoundary;
 }
@@ -171,7 +171,7 @@ namespace GPlatesGui
 		static const QString s_placeholder_right_subductions;
 
 		//! Typedef for a sequence of resolved topological geometries.
-		typedef std::vector<const GPlatesModel::ResolvedTopologicalBoundary *> resolved_geom_seq_type;
+		typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_geom_seq_type;
 
 
 		/**

@@ -35,6 +35,9 @@
 #include "ColourScheme.h"
 #include "RenderSettings.h"
 #include "TextRenderer.h"
+
+#include "presentation/VisualLayers.h"
+
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
@@ -49,7 +52,7 @@ namespace GPlatesGui
 	 * This is a Visitor to paint geometries on the map canvas.
 	 */
 	class MapCanvasPainter:
-			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor,
+			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<>,
 			public boost::noncopyable
 	{
 	public:
@@ -57,10 +60,11 @@ namespace GPlatesGui
 		explicit
 		MapCanvasPainter(
 				Map &map,
+				const GPlatesPresentation::VisualLayers &visual_layers,
 				GPlatesGui::RenderSettings &render_settings,
 				GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr,
 				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit,
-				const double &inverse_zoom_factor,
+				double inverse_zoom_factor,
 				ColourScheme::non_null_ptr_type colour_scheme);
 		
 		virtual
@@ -134,6 +138,8 @@ namespace GPlatesGui
 	private:
 
 		Map &d_map;
+
+		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		//! Rendering flags for determining what gets shown
 		RenderSettings &d_render_settings;

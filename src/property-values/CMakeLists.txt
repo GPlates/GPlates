@@ -15,12 +15,18 @@ set(srcs
     Enumeration.h
     EnumerationContent.h
     EnumerationType.h
+    Georeferencing.cc
+    Georeferencing.h
     GeoTimeInstant.cc
     GeoTimeInstant.h
     GmlDataBlock.cc
     GmlDataBlock.h
     GmlDataBlockCoordinateList.cc
     GmlDataBlockCoordinateList.h
+    GmlFile.cc
+    GmlFile.h
+    GmlGridEnvelope.cc
+    GmlGridEnvelope.h
     GmlLineString.cc
     GmlLineString.h
     GmlMultiPoint.cc
@@ -31,6 +37,8 @@ set(srcs
     GmlPoint.h
     GmlPolygon.cc
     GmlPolygon.h
+    GmlRectifiedGrid.cc
+    GmlRectifiedGrid.h
     GmlTimeInstant.cc
     GmlTimeInstant.h
     GmlTimePeriod.cc
@@ -66,6 +74,8 @@ set(srcs
     GpmlPolarityChronId.h
     GpmlPropertyDelegate.cc
     GpmlPropertyDelegate.h
+    GpmlRasterBandNames.cc
+    GpmlRasterBandNames.h
     GpmlRevisionId.cc
     GpmlRevisionId.h
     GpmlTimeSample.cc
@@ -82,9 +92,19 @@ set(srcs
     GpmlTopologicalPolygon.h
     GpmlTopologicalSection.cc
     GpmlTopologicalSection.h
-    InMemoryRaster.h
     PropertyValues.cc
     PropertyValues.h
+    ProxiedRasterCache.cc
+    ProxiedRasterCache.h
+    ProxiedRasterResolver.cc
+    ProxiedRasterResolver.h
+    RasterStatistics.h
+    RasterType.cc
+    RasterType.h
+    RawRaster.cc
+    RawRaster.h
+    RawRasterUtils.cc
+    RawRasterUtils.h
     TemplateTypeParameterType.h
     TextContent.h
     UninterpretedPropertyValue.cc

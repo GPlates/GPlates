@@ -46,7 +46,7 @@ namespace GPlatesUtils
 		virtual
 		bool
 		is_valid(
-				const QString&)=0;
+				const QString&) = 0;
 
 		virtual
 		~ExportFileNameTemplateValidator()
@@ -101,7 +101,7 @@ namespace GPlatesUtils
 		set_result_message(
 				const QString &msg)
 		{
-			d_result.d_message=msg;
+			d_result.d_message = msg;
 		}
 		ResultReport d_result;
 	};
@@ -153,6 +153,15 @@ namespace GPlatesUtils
 	};
 
 	class ExportRasterFileNameTemplateValidator :
+		public ExportFileNameTemplateValidator
+	{
+		virtual
+		bool
+		is_valid(
+				const QString&);
+	};
+
+	class ExportRotationParamsFileNameTemplateValidator :
 		public ExportFileNameTemplateValidator
 	{
 		virtual

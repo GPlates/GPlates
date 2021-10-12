@@ -29,7 +29,11 @@
 #include <algorithm>
 #include <boost/bind.hpp>
 #include <iostream>
+#include <QDir>
+#include <QFileInfo>
+
 #include "XmlWriter.h"
+
 #include "model/StringSetSingletons.h"
 
 
@@ -98,12 +102,24 @@ GPlatesFileIO::XmlWriter::writeEndElement(
 
 void
 GPlatesFileIO::XmlWriter::writeDecimalPair(
-		const double &val1,
-		const double &val2)
+		double val1,
+		double val2)
 {
 	writeDecimal(val1);
 	static const QString space(" ");
 	d_writer.writeCharacters(space);
+	writeDecimal(val2);
+}
+
+
+void
+GPlatesFileIO::XmlWriter::writeCommaSeparatedDecimalPair(
+		double val1,
+		double val2)
+{
+	writeDecimal(val1);
+	static const QString comma(",");
+	d_writer.writeCharacters(comma);
 	writeDecimal(val2);
 }
 
@@ -182,3 +198,23 @@ GPlatesFileIO::XmlWriter::declare_namespace_if_necessary(
 	
 	return namespace_added;
 }
+
+
+void
+GPlatesFileIO::XmlWriter::writeRelativeFilePath(
+		const QString &absolute_file_path)
+{
+	QFile *file = dynamic_cast<QFile *>(device());
+
+	if (file)
+	{
+		QFileInfo file_info(*file);
+		QDir dir = file_info.absoluteDir();
+		writeText(dir.relativeFilePath(absolute_file_path));
+	}
+	else
+	{
+		writeText(absolute_file_path);
+	}
+}
+

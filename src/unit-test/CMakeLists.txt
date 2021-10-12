@@ -21,8 +21,6 @@ set(srcs
     FeatureVisitorsTestSuite.h
     FileIoTestSuite.cc
     FileIoTestSuite.h
-    GenericContinuousColourPaletteTest.cc
-    GenericContinuousColourPaletteTest.h
     GeometryVisitorsTestSuite.cc
     GeometryVisitorsTestSuite.h
     GlobalTestSuite.cc
@@ -36,6 +34,10 @@ set(srcs
     MainTestSuite.h
     MathsTestSuite.cc
     MathsTestSuite.h
+    MeshGeneratorTest.cc
+    MeshGeneratorTest.h
+    MipmapperTest.cc
+    MipmapperTest.h
     ModelTestSuite.cc
     ModelTestSuite.h
     PresentationTestSuite.cc
@@ -46,6 +48,8 @@ set(srcs
     RealTest.h
     SmartNodeLinkedListTest.cc
     SmartNodeLinkedListTest.h
+    StringSetTest.cc
+    StringSetTest.h
     TestSuiteFilter.cc
     TestSuiteFilter.h
     TestSuiteFilterTest.cc

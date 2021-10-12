@@ -49,10 +49,11 @@ namespace GPlatesMaths
 		const ProximityHitDetail::non_null_ptr_type
 		create(
 				PolygonOnSphere::non_null_ptr_to_const_type polygon_,
-				const double &closeness_)
+				const double &closeness_,
+				const boost::optional<unsigned int> &index_ = boost::none)
 		{
 			ProximityHitDetail::non_null_ptr_type ptr(
-					new PolygonProximityHitDetail(polygon_, closeness_),
+					new PolygonProximityHitDetail(polygon_, closeness_,index_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -76,8 +77,9 @@ namespace GPlatesMaths
 		// instantiation of this type on the stack.
 		PolygonProximityHitDetail(
 				PolygonOnSphere::non_null_ptr_to_const_type polygon_,
-				const double &closeness_):
-			ProximityHitDetail(closeness_),
+				const double &closeness_,
+				const boost::optional<unsigned int> &index_):
+			ProximityHitDetail(closeness_,index_),
 			d_polygon(polygon_)
 		{  }
 

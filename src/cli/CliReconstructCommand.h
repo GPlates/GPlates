@@ -82,7 +82,8 @@ namespace GPlatesCli
 				const boost::program_options::variables_map &vm);
 
 	private:
-		typedef std::vector<GPlatesFileIO::File::shared_ref> loaded_feature_collection_file_seq_type;
+		typedef std::vector<GPlatesFileIO::File::non_null_ptr_type>
+				loaded_feature_collection_file_seq_type;
 
 		GPlatesModel::ModelInterface d_model;
 		double d_recon_time;

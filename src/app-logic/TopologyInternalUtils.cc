@@ -34,7 +34,9 @@
 
 #include "TopologyInternalUtils.h"
 
+#include "ReconstructedFeatureGeometryFinder.h"
 #include "ReconstructionGeometryUtils.h"
+#include "ReconstructionTree.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -51,8 +53,6 @@
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/PropertyName.h"
-#include "model/ReconstructedFeatureGeometryFinder.h"
-#include "model/ReconstructionTree.h"
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -740,10 +740,10 @@ GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 }
 
 
-boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
+boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-		GPlatesModel::Reconstruction &reconstruction)
+		const ReconstructionTree &reconstruction_tree)
 {
 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolve_feature_id(
 			geometry_delegate.feature_id());
@@ -759,11 +759,11 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	const GPlatesModel::PropertyName property_name = GPlatesModel::PropertyName::create_gpml(
 			property_name_qstring);
 
-	// Find the RFGs, in the reconstruction, for the feature ref and target property.
-	GPlatesModel::ReconstructedFeatureGeometryFinder rfg_finder(property_name, &reconstruction); 
+	// Find the RFGs, in the reconstruction_tree, for the feature ref and target property.
+	ReconstructedFeatureGeometryFinder rfg_finder(property_name, &reconstruction_tree); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
-	// If we found no RFG in 'reconstruction' that is reconstructed from
+	// If we found no RFG (referencing 'reconstruction_tree') that is reconstructed from
 	// 'geometry_property' then it probably means the reconstruction time is
 	// outside the age range of the feature containing 'geometry_property'.
 	// This is ok - it's not necessarily an error.
@@ -787,7 +787,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	}
 
 	// Get the only RFG found.
-	const GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type &rfg =
+	const ReconstructedFeatureGeometry::non_null_ptr_type &rfg =
 			*rfg_finder.found_rfgs_begin();
 
 	// Return the RFG.
@@ -795,10 +795,10 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 }
 
 
-boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
+boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property,
-		GPlatesModel::Reconstruction &reconstruction)
+		const ReconstructionTree &reconstruction_tree)
 {
 	/*
 	if (!geometry_property.is_valid())
@@ -811,8 +811,8 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	const GPlatesModel::FeatureHandle::weak_ref &feature_ref =
 			geometry_property.handle_weak_ref();
 
-	// Find the RFGs, in the reconstruction, for the feature ref and geometry property.
-	GPlatesModel::ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, &reconstruction); 
+	// Find the RFGs, referencing 'reconstruction_tree', for the feature ref and geometry property.
+	ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, &reconstruction_tree); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
 	// Because we are searching using a geometry properties iterator we can only
@@ -822,7 +822,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 			rfg_finder.num_rfgs_found() <= 1,
 			GPLATES_ASSERTION_SOURCE);
 
-	// If we found no RFG in 'reconstruction' that is reconstructed from
+	// If we found no RFG (referencing 'reconstruction_tree') that is reconstructed from
 	// 'geometry_property' then it probably means the reconstruction time is
 	// outside the age range of the feature containing 'geometry_property'.
 	// This is ok - it's not necessarily an error.
@@ -832,7 +832,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	}
 
 	// Get the only RFG found.
-	const GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type &rfg =
+	const ReconstructedFeatureGeometry::non_null_ptr_type &rfg =
 			*rfg_finder.found_rfgs_begin();
 
 	// Return the RFG.
@@ -843,7 +843,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 boost::optional<GPlatesMaths::FiniteRotation>
 GPlatesAppLogic::TopologyInternalUtils::get_finite_rotation(
 		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_plateid_feature,
-		const GPlatesModel::ReconstructionTree &reconstruction_tree)
+		const ReconstructionTree &reconstruction_tree)
 {
 	if (!reconstruction_plateid_feature.is_valid())
 	{
@@ -1597,10 +1597,9 @@ GPlatesAppLogic::TopologyInternalUtils::find_closest_intersected_segment_to_refe
 
 bool
 GPlatesAppLogic::TopologyInternalUtils::include_only_reconstructed_feature_geometries(
-		const GPlatesModel::ReconstructionGeometry::non_null_ptr_type &recon_geom)
+		const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom)
 {
 	// We only return true if the reconstruction geometry is a reconstructed feature geometry.
-	GPlatesModel::ReconstructedFeatureGeometry *rfg_ptr = NULL;
-	return GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
-			recon_geom, rfg_ptr);
+	return ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+			const ReconstructedFeatureGeometry>(recon_geom);
 }

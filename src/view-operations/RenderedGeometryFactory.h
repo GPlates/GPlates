@@ -33,6 +33,9 @@
 #include <QFont>
 
 #include "RenderedGeometry.h"
+
+#include "app-logic/ReconstructionGeometry.h"
+#include "app-logic/ReconstructRasterPolygons.h"
 #include "gui/Colour.h"
 #include "gui/ColourProxy.h"
 #include "maths/GeometryOnSphere.h"
@@ -41,7 +44,16 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/SmallCircle.h"
-#include "model/ReconstructionGeometry.h"
+
+#include "property-values/Georeferencing.h"
+#include "property-values/GpmlRasterBandNames.h"
+#include "property-values/RawRaster.h"
+
+
+namespace GPlatesAppLogic
+{
+	class Layer;
+}
 
 namespace GPlatesMaths
 {
@@ -153,6 +165,28 @@ namespace GPlatesViewOperations
 				float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
 
 		/**
+		 * Creates a @a RenderedGeometry for a resolved raster.
+		 *
+		 * @a layer is the layer the resolved raster was created in.
+		 * FIXME: This is a temporary solution to tracking persistent OpenGL objects.
+		 */
+		RenderedGeometry
+		create_rendered_resolved_raster(
+				const GPlatesAppLogic::Layer &layer,
+				const double &reconstruction_time,
+				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+				const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
+				const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names,
+				const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
+						reconstruct_raster_polygons = boost::none,
+				const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
+						age_grid_georeferencing = boost::none,
+				const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
+						age_grid_proxied_rasters = boost::none,
+				const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
+						age_grid_raster_band_names = boost::none);
+
+		/**
 		 * Creates a single direction arrow consisting of an arc line segment on the globe's surface
 		 * with an arrowhead at the end.
 		 *
@@ -235,7 +269,7 @@ namespace GPlatesViewOperations
 		 */
 		RenderedGeometry
 		create_rendered_reconstruction_geometry(
-				GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geom,
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geom,
 				RenderedGeometry rendered_geom);
 	}
 
@@ -414,7 +448,7 @@ namespace GPlatesViewOperations
 	 */
 	RenderedGeometry
 	create_rendered_reconstruction_geometry(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geom,
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geom,
 			RenderedGeometry rendered_geom);
 }
 

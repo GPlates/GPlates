@@ -30,15 +30,15 @@
 #include <vector>
 #include <boost/optional.hpp>
 
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "model/FeatureHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
+
 
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryLayer;
 	class RenderedGeometryCollection;
 }
-
 
 namespace GPlatesGui
 {
@@ -98,7 +98,7 @@ namespace GPlatesGui
 		 * Note that there may not be a focused reconstruction geometry, in which case this
 		 * would be a null pointer.
 		 */
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_geometry;
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_focused_geometry;
 
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
 

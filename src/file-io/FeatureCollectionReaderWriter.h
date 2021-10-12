@@ -76,17 +76,17 @@ namespace GPlatesFileIO
 
 
 	/**
-	* Reads a feature collection from a file.
+	* Reads features from a file into its feature collection.
+	* Both the filename and feature collection are provided by @a file_ref.
 	*
-	* @param fileinfo file to read from and store feature collection in.
-	* @param model to create feature collection.
+	* @param file_ref both filename of file to read from and feature collection to store in.
 	* @param read_errors to contain errors reading file.
 	*
 	* @throws FileFormatNotSupportedException if file format not recognised or has no reader.
 	*/
-	const GPlatesFileIO::File::shared_ref
+	void
 	read_feature_collection(
-			const FileInfo &fileinfo,
+			const GPlatesFileIO::File::Reference &file_ref,
 			GPlatesModel::ModelInterface &model,
 			ReadErrorAccumulation &read_errors);
 }

@@ -30,18 +30,19 @@
 #include <QList>
 #include <vector>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/none.hpp>
 
 #include "ViewFeatureGeometriesWidgetPopulator.h"
 
+#include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructedFeatureGeometryFinder.h"
 
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
 #include "model/FeatureRevision.h"
-#include "model/Reconstruction.h"
-#include "model/ReconstructedFeatureGeometry.h"
-#include "model/ReconstructedFeatureGeometryFinder.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
@@ -256,7 +257,7 @@ namespace
 void
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate(
 		GPlatesModel::FeatureHandle::weak_ref &feature,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg)
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg)
 {
 	d_tree_widget_ptr->clear();
 	
@@ -269,11 +270,12 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate(
 		// This serves two purposes:
 		//   1) highlights to the user which geometry (of the feature) is in focus.
 		//   2) serves a dramatic optimisation for large number of geometries in feature.
-		GPlatesModel::FeatureHandle::iterator focused_geometry_property;
-		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
-				focused_rg, focused_geometry_property))
+		boost::optional<GPlatesModel::FeatureHandle::iterator> focused_geometry_property =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
+						focused_rg);
+		if (focused_geometry_property)
 		{
-			d_focused_geometry = focused_geometry_property;
+			d_focused_geometry = focused_geometry_property.get();
 		}
 	}
 	visit_feature(feature);
@@ -682,20 +684,37 @@ void
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geometries_for_feature(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
-	// Iterate through the RFGs (belonging to 'd_reconstruction_ptr')
-	// that are observing 'feature_handle'.
-	GPlatesModel::ReconstructedFeatureGeometryFinder rfgFinder(d_reconstruction_ptr);
-	rfgFinder.find_rfgs_of_feature(&feature_handle);
-
-	GPlatesModel::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator rfgIter;
-	for (rfgIter = rfgFinder.found_rfgs_begin();
-		rfgIter != rfgFinder.found_rfgs_end();
-		++rfgIter)
+	// Iterate through the ReconstructionTrees in the current reconstruction.
+	GPlatesAppLogic::Reconstruction::reconstruction_tree_const_iterator reconstruction_tree_iter =
+			d_reconstruction_ptr->begin_reconstruction_trees();
+	GPlatesAppLogic::Reconstruction::reconstruction_tree_const_iterator reconstruction_tree_end =
+			d_reconstruction_ptr->end_reconstruction_trees();
+	for ( ; reconstruction_tree_iter != reconstruction_tree_end; ++reconstruction_tree_iter)
 	{
-		GPlatesModel::ReconstructedFeatureGeometry *rfg = rfgIter->get();
+		const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree =
+				*reconstruction_tree_iter;
 
-		ReconstructedGeometryInfo info(rfg->property(), rfg->geometry());
-		d_rfg_geometries.push_back(info);
+		// Iterate through the RFGs that were reconstructed using 'reconstruction_tree'
+		// and that are observing 'feature_handle'.
+		//
+		// Usually we'll only get RFGs from single ReconstructionTree but it's possible for
+		// the user to hook up the same reconstructable feature collection to multiple
+		// reconstruction layers with each layer using a different ReconstructionTree.
+		// In this case we'll be displaying the same geometry property more than once (where
+		// each displayed geometry was reconstructed with a different reconstruction tree).
+		GPlatesAppLogic::ReconstructedFeatureGeometryFinder rfgFinder(reconstruction_tree.get());
+		rfgFinder.find_rfgs_of_feature(&feature_handle);
+
+		GPlatesAppLogic::ReconstructedFeatureGeometryFinder::rfg_container_type::const_iterator rfgIter;
+		for (rfgIter = rfgFinder.found_rfgs_begin();
+			rfgIter != rfgFinder.found_rfgs_end();
+			++rfgIter)
+		{
+			GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = rfgIter->get();
+
+			ReconstructedGeometryInfo info(rfg->property(), rfg->geometry());
+			d_rfg_geometries.push_back(info);
+		}
 	}
 }
 

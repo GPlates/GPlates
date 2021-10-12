@@ -285,7 +285,6 @@ namespace GPlatesMaths
 	UnitVector3D generate_perpendicular(
 			const UnitVector3D &u);
 
-
 	std::ostream &
 	operator<<(
 			std::ostream &os,

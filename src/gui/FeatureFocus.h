@@ -26,17 +26,20 @@
 #ifndef GPLATES_GUI_FEATUREFOCUS_H
 #define GPLATES_GUI_FEATUREFOCUS_H
 
+#include <boost/optional.hpp>
 #include <QObject>
 
+#include "app-logic/Layer.h"
+#include "app-logic/ReconstructionGeometry.h"
+#include "app-logic/ReconstructionTree.h"
 #include "app-logic/FeatureCollectionFileState.h"
-
 #include "model/FeatureHandle.h"
-#include "model/ReconstructionGeometry.h"
 
 
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+	class Reconstruction;
 }
 
 
@@ -87,7 +90,7 @@ namespace GPlatesGui
 		 *
 		 * NOTE: Remember to do boolean check on returned reconstruction geometry.
 		 */
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type
 		associated_reconstruction_geometry() const
 		{
 			return d_associated_reconstruction_geometry;
@@ -120,22 +123,7 @@ namespace GPlatesGui
 		void
 		set_focus(
 				GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
-				GPlatesModel::ReconstructionGeometry::non_null_ptr_type new_associated_rg);
-
-		/**
-		 * Change which feature is currently focused, also specifying an associated
-		 * ReconstructionGeometry.
-		 *
-		 * Will emit focus_changed() to anyone who cares, provided that @a new_feature_ref
-		 * is actually different to the previous feature.
-		 *
-		 * Note that nothing will be done with @a new_associated_rg unless
-		 * @a new_feature_ref is both valid and different to the previous feature.
-		 */
-		void
-		set_focus(
-				GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
-				GPlatesModel::ReconstructionGeometry *new_associated_rg);
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type new_associated_rg);
 
 		/**
 		 * Change which feature is currently focused, also specifying an associated
@@ -144,13 +132,29 @@ namespace GPlatesGui
 		 * Will emit focus_changed() to anyone who cares, provided that @a new_feature_ref
 		 * is actually different to the previous feature.
 		 *
-		 * As a stopgap, this also causes a call to @a find_new_associated_rg to attempt
-		 * to find a suitable RG given the properties_iterator.
+		 * Also attempts to find a suitable ReconstructionGeometry given the properties iterator.
 		 */
 		void
 		set_focus(
 				GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
 				GPlatesModel::FeatureHandle::iterator new_associated_property);
+
+		/**
+		 * Change which feature is currently focused, @em without specifying any geometry property.
+		 *
+		 * Will emit focus_changed() to anyone who cares, provided that @a new_feature_ref
+		 * is actually different to the previous feature.
+		 *
+		 * This method will set the focus to the first (if any!) geometry found within the
+		 * supplied feature. While it may seem counterproductive to set this so arbitrarily,
+		 * it is sometimes desirable to focus an entire feature rather than a specific geometry
+		 * within it, such as after using the Clone Feature button.
+		 * Also, finding exactly one geometry should be the most common case.
+		 * If no geometry can be found, this method behaves as @a unset_focus().
+		 */
+		void
+		set_focus(
+				GPlatesModel::FeatureHandle::weak_ref new_feature_ref);
 
 		/**
 		 * Clear the focus.
@@ -207,15 +211,6 @@ namespace GPlatesGui
 		handle_reconstruction(
 				GPlatesAppLogic::ApplicationState &application_state);
 
-		/**
-		 * FIXME: This is a temporary hack to stop highlighting the focused feature if
-		 * it's in the feature collection we're about to unload.
-		 */
-		void
-		modifying_feature_collection(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
-
 	signals:
 
 		/**
@@ -263,13 +258,11 @@ namespace GPlatesGui
 		 * Note that there may not be a RG associated with the currently-focused feature,
 		 * in which case this would be a null pointer.
 		 */
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_associated_reconstruction_geometry;
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_associated_reconstruction_geometry;
 
 		/**
 		 * The geometry property used by the ReconstructionGeometry
 		 * associated with the currently-focused feature.
-		 *
-		 * Note that when focused feature changes the associated.
 		 */
 		GPlatesModel::FeatureHandle::iterator d_associated_geometry_property;
 
@@ -294,7 +287,7 @@ namespace GPlatesGui
 		 */
 		void
 		find_new_associated_reconstruction_geometry(
-				GPlatesModel::Reconstruction &reconstruction);
+				const GPlatesAppLogic::Reconstruction &reconstruction);
 	};
 }
 

@@ -173,4 +173,9 @@ if (ICU_INCLUDE_DIR)
     FIND_ICU_LIBRARY(ICU_LE_LIBRARY ICU_LE_FOUND icule cygicule cygicule32)
     FIND_ICU_LIBRARY(ICU_LX_LIBRARY ICU_LX_FOUND iculx cygiculx cygiculx32)
     FIND_ICU_LIBRARY(ICU_TU_LIBRARY ICU_TU_FOUND icutu cygicutu cygicutu32)
+	
+	# We've found ICU if we've found the include headers and the core library.
+	if (ICU_CORE_FOUND)
+	  set(ICU_FOUND 1)
+	endif (ICU_CORE_FOUND)
 endif (ICU_INCLUDE_DIR)

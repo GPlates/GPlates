@@ -1,5 +1,5 @@
 # Find our required libraries.
-set(required_libs "Qt4" "OpenGL" "ICU" "GDAL" "GZIP" "PROJ4" "CGAL")
+set(required_libs "Qt4" "OpenGL" "GLEW" "ICU" "GDAL" "GZIP" "PROJ4" "CGAL")
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
@@ -19,6 +19,13 @@ find_package("Boost" 1.33.1 COMPONENTS program_options unit_test_framework)
 if (NOT Boost_INCLUDE_DIR)
 	message(FATAL_ERROR "Boost include path not found - please make sure boost is installed.")
 endif (NOT Boost_INCLUDE_DIR)
+
+# Special case for ImageMagick, because we need to specify the Magick++
+# component.
+find_package(ImageMagick COMPONENTS Magick++)
+if (NOT ImageMagick_INCLUDE_DIRS)
+	message(FATAL_ERROR "ImageMagick include path not found - please make sure ImageMagick is installed.")
+endif (NOT ImageMagick_INCLUDE_DIRS)
 
 # The program_options library is now required for GPlates (both the GUI and command-line versions).
 if (NOT Boost_PROGRAM_OPTIONS_FOUND)
@@ -60,13 +67,32 @@ SET(ICU_USE_I18N 1)
 SET(ICU_USE_IO 1)
 include (${ICU_USE_FILE})
 
+# Make sure the ICU headers and the requested libraries were found.
+if (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
+	message(FATAL_ERROR "ICU library was not found - please make sure it is installed.")
+endif (NOT ICU_CORE_FOUND OR NOT ICU_I18N_FOUND OR NOT ICU_IO_FOUND)
+
 # Include CGAL.
 include(${CGAL_USE_FILE})
 if ( NOT WIN32 )
-	string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
-	if ( CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER} )
-		set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}})
-	endif ( CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER} )
+	# The system-provided CGAL CMake scripts do something silly: they insert
+	# -g and -O<something> into CMAKE_CXX_FLAGS, which means that even if you
+	# want a Release build, you get debug symbols, and the optimisation level
+	# might conflict with the optimisation level you want for the particular
+	# type of build (Release/Debug).
+	# The two following lines scrub out the -g and -O<something> from
+	# CMAKE_CXX_FLAGS but leave the good stuff (e.g. -frounding-math).
+	string(REGEX REPLACE "-g" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+	string(REGEX REPLACE "-O." "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
+	# Valgrind doesn't emulate the FPU properly, so CGAL will complain about
+	# incorrect rounding when run under Valgrind (this is even if we compile
+	# with -frounding-math).
+	# If you intend to run GPlates under Valgrind, set the CMake variable
+	# GPlates_CGAL_DISABLE_ROUNDING_MATH_CHECK (type BOOL) to true.
+	if ( GPlates_CGAL_DISABLE_ROUNDING_MATH_CHECK )
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCGAL_DISABLE_ROUNDING_MATH_CHECK")
+	endif ( GPlates_CGAL_DISABLE_ROUNDING_MATH_CHECK )
 endif ( NOT WIN32 )
 
 # Include compiler options for the C++ programming language.
@@ -116,12 +142,16 @@ endif (ADD_UNIT_TEST_TARGET)
 # specified is significant.  For example, model must come before
 # feature-visitors.  (This stops weird "undefined reference to 
 # vtable for blah" error messages occurring.)
+#
+# NOTE: 'opengl' is an app library since it can be used to reconstruct
+# floating-point rasters using an off-screen context (can be used by
+# command-line version of GPlates to export reconstructed rasters for example).
 set(gui_LIBS
 	qt-widgets qt-resources)
 set(presentation_LIBS
 	view-operations presentation gui canvas-tools)
 set(app_LIBS
-	app-logic file-io feature-visitors property-values model)
+	app-logic file-io feature-visitors opengl property-values model)
 set(util_LIBS
 	maths utils global)
 
@@ -181,11 +211,13 @@ set(generated_headers_INCLUDE_DIRS
 # External include directories:
 # NOTE: Qt, ICU and CGAL includes are taken care of by including QT_USE_FILE, ICU_USE_FILE and CGAL_USE_FILE.
 set(external_INCLUDE_DIRS
-	${OPENGL_INCLUDE_DIR} 
+	${OPENGL_INCLUDE_DIR}
+	${GLEW_INCLUDE_DIR}
 	${GDAL_INCLUDE_DIR}
 	${GPlates_SOURCE_DIR}/src/system-fixes	# A fixed boost library file lives here.
 	${Boost_INCLUDE_DIR}
-	${PROJ4_INCLUDE_DIR})
+	${PROJ4_INCLUDE_DIR}
+	${ImageMagick_INCLUDE_DIRS})
 	
 # Internal include directories:
 set(internal_INCLUDE_DIRS
@@ -205,6 +237,34 @@ foreach(dir ${ALL_GPlates_src_subdirs})
 endforeach(dir)
 
 #
+# Compile and run the gplates-extract-svn-info executable, which generates SubversionInfo.cc,
+# a file that contains the parsed output of the 'svnversion' and 'svn info' commands.
+#
+# There is an optional CMake variable called GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING
+# that, if set, will cause the value of that variable to be used as the source
+# control version instead of any value read from `svnversion` and "" to be
+# used as the branch name. This optional variable is useful when making public
+# releases from a branch (e.g. the 0.9.9 branch) or an exported source tree. The
+# CMake type of the GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING variable is STRING; it
+# may be set to non-numeric string values.
+#
+add_executable(gplates-extract-svn-info
+	gplates_extract_svn_info_main.cc)
+GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-extract-svn-info FALSE)
+target_link_libraries(gplates-extract-svn-info ${QT_LIBRARIES})
+set(GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/global/SubversionInfo.cc)
+if (WIN32)
+	set (GPlates_EXTRACT_SVN_INFO_PATH gplates-extract-svn-info)
+else (WIN32)
+	set (GPlates_EXTRACT_SVN_INFO_PATH ${EXECUTABLE_OUTPUT_PATH}/gplates-extract-svn-info)
+endif (WIN32)
+add_custom_target(
+	run-gplates-extract-svn-info ALL ${GPlates_EXTRACT_SVN_INFO_PATH} ${CMAKE_SOURCE_DIR} ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} ${GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING}
+	DEPENDS gplates-extract-svn-info)
+# Create a dummy output file so that CMake doesn't complain about it being missing.
+file(WRITE ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} "")
+
+#
 # Set top-level target dependencies.
 # A top-level target is one created by ADD_EXECUTABLE, ADD_LIBRARY, or ADD_CUSTOM_TARGET.
 #
@@ -217,6 +277,8 @@ if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGR
     add_dependencies(view-operations qt-widgets)
     add_dependencies(presentation qt-widgets)
     add_dependencies(gui qt-widgets)
+    add_dependencies(global run-gplates-extract-svn-info)
+    	# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
     #add_dependencies(qt-widgets qt-resources)
 endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
 
@@ -260,7 +322,8 @@ endif (APPLE)
 message(STATUS "Adding executable for GPlates application.")
 add_executable(gplates
 	${target_GPlates_SRCS}
-	${GPlates_ICON})
+	${GPlates_ICON}
+	${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
 GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates TRUE)
 
 # The "EXCLUDE_FROM_ALL" flag means you have to type 'make gplates-no-gui' to build this target -
@@ -270,13 +333,17 @@ GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-no-gui FALSE)
 
 if (ADD_GPLATES_CLI_TARGET)
     message(STATUS "Adding executable for GPlates command line application.")
-	add_executable(gplates-cli EXCLUDE_FROM_ALL ${target_GPlates_cli_SRCS})
+	add_executable(gplates-cli EXCLUDE_FROM_ALL
+		${target_GPlates_cli_SRCS}
+		${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
 	GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-cli FALSE)
 endif (ADD_GPLATES_CLI_TARGET)
 
 if (ADD_UNIT_TEST_TARGET)
     message(STATUS "Adding executable for GPlates unit test application.")
-	add_executable(gplates-unit-test EXCLUDE_FROM_ALL ${target_GPlates_unit_test_SRCS})
+	add_executable(gplates-unit-test EXCLUDE_FROM_ALL
+		${target_GPlates_unit_test_SRCS}
+		${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
 	GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-unit-test FALSE)
 endif (ADD_UNIT_TEST_TARGET)
 
@@ -314,16 +381,18 @@ endif (APPLE)
 # NOTE: Even though Qt and ICU includes are taken care of by including QT_USE_FILE and ICU_USE_FILE
 # their libraries still have to be explicitly listed at each 'target_link_libraries()' call.
 # CGAL also uses a CGAL_USE_FILE but it differs from QT and ICU in that it uses the deprecated
-# 'link_libraries()' to link it's library to all targets (it's not physically deprecated, just
+# 'link_libraries()' to link its library to all targets (it's not physically deprecated, just
 # advised not to use). See http://www.cmake.org/pipermail/cmake/2009-April/028439.html
-#	for a description of the difference between 'link_libraries' and 'target_link_libraries'.
+# for a description of the difference between 'link_libraries' and 'target_link_libraries'.
 set(dependency_LIBS
 	${GDAL_LIBRARY}
 	${ICU_LIBRARIES}
 	${QT_LIBRARIES}
+	${GLEW_LIBRARY}
 	${OPENGL_LIBRARIES}
 	${PROJ4_LIBRARY}
-	)
+	${ImageMagick_LIBRARIES})
+
 # Visual Studio and Borland compilers use autolinking for the Boost libraries
 # (where pragma in header file brings in the library).
 if (NOT WIN32)
@@ -405,4 +474,3 @@ endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
 if (CMAKE_COMPILER_IS_GNUCXX)
 	set_source_files_properties(gplates_cli_main.cc PROPERTIES COMPILE_FLAGS "-Wno-shadow")
 endif (CMAKE_COMPILER_IS_GNUCXX)
-

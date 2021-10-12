@@ -26,22 +26,37 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <iterator>
+#include <utility>
+#include <vector>
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
+#include <boost/optional.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/construct.hpp>
 #include <QDir>
-#include <QImageReader>
-#include <iostream>
+#include <QFileInfo>
+#include <QStringList>
+#include <QDebug>
 
-#include "gui/OpenGLBadAllocException.h"
-#include "gui/OpenGLException.h"
-#include "gui/Texture.h"
-
-#include "ErrorOpeningFileForReadingException.h"
-#include "GdalReader.h"
-#include "ReadErrorAccumulation.h"
 #include "RasterReader.h"
 
+#include "ErrorOpeningFileForReadingException.h"
+#include "GdalRasterReader.h"
+#include "RgbaRasterReader.h"
+#include "ReadErrorAccumulation.h"
 
-namespace{
-	
+#include "opengl/OpenGLBadAllocException.h"
+#include "opengl/OpenGLException.h"
+
+#include "utils/OverloadResolution.h"
+
+using namespace GPlatesFileIO;
+
+namespace
+{
 	/**
 	 * Returns true if the filename is of the required form (i.e. <root>-<time>.grd), and sets the 
 	 * value of time.
@@ -50,27 +65,29 @@ namespace{
 	 */
 	bool
 	parse_filename(
-		const QString filename, 
-		QString &root,
-		int &time)
+			const QString filename, 
+			QString &root,
+			int &time)
 	{
 		// Strip extension from filename.
 		
-		QString filename_stripped = filename.section('.',-2,-2);
+		QString filename_stripped = filename.section('.', -2, -2);
 
 		// Split into <root> and <time> parts.
 		QStringList parts = filename_stripped.split(QString("-"));	
 		if (parts.size() != 2)
 		{
-			std::cerr << "Filename is not of required form." << std::endl;
+			qDebug() << "Filename is not of required form.";
 			return false;
 		}
+
 		QString potential_root = parts.at(0);
 		QString num_string = parts.at(1);
 		bool ok;
 		time = num_string.toInt(&ok);
-		if (!ok){
-			std::cerr << "Second field cannot be converted to an integer." << std::endl;
+		if (!ok)
+		{
+			qDebug() << "Second field cannot be converted to an integer.";
 			return false;
 		}
 		
@@ -79,226 +96,208 @@ namespace{
 	}
 
 
-/*
- * We use this macro to compare the return value of 'fread' (the number of objects read) with the
- * number of objects expected, and return (after closing the file to avoid a resource leak) if the
- * two numbers don't match.
- *
- * We weren't initially making this comparison, but now G++ 4.4.1 complains if we don't:
- *   RasterReader.cc: In function 'void<unnamed>::load_tga_file(const QString&,
- *     GPlatesPropertyValues::InMemoryRaster&, GPlatesFileIO::ReadErrorAccumulation&)':
- *   RasterReader.cc:103: error: ignoring return value of 'size_t fread(void*, size_t, size_t,
- *     FILE*)', declared with attribute warn_unused_result
- *
- * The behaviour of returning without complaining was chosen because this is how the existing code
- * in this function was handling error conditions.
- *
- * FIXME:  We should report to the user that there was an error reading their file (and what the
- * problem was) rather than silently dropping the file.
- */
-#define FREAD_OR_RETURN(obj_ptr, obj_size, num_objs, stream) \
-		if (fread((obj_ptr), (obj_size), (num_objs), (stream)) != (num_objs)) { \
-			fclose(stream); \
-			return; \
-		}
-
-
-	void
-	load_tga_file(
-			const QString &filename,
-			GPlatesPropertyValues::InMemoryRaster &raster,
-			GPlatesFileIO::ReadErrorAccumulation &read_errors)
+	template<class InputIterator, class OutputIterator, class UnaryOperator, class Predicate>
+	OutputIterator
+	transform_if(
+			InputIterator begin,
+			InputIterator end,
+			OutputIterator result,
+			UnaryOperator op,
+			Predicate pred)
 	{
-		unsigned char temp_char;
-		unsigned char type;
-		unsigned short temp_short;
-		unsigned short width, height;
-		unsigned char bpp;
-
-		FILE *tga_file;
-		if ( ! (tga_file = fopen(filename.toStdString().c_str(), "rb"))) {
-			return;
-		}
-
-		// skip over some header data
-		FREAD_OR_RETURN(&temp_char, sizeof (unsigned char), 1, tga_file)
-		FREAD_OR_RETURN(&temp_char, sizeof (unsigned char), 1, tga_file)
-
-		// get the type, and make sure it's RGB
-		FREAD_OR_RETURN(&type, sizeof (unsigned char), 1, tga_file)
-
-		if (type != 2) {
-			fclose(tga_file);
-			return;
-		}
-
-		// skip over some more header data
-		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
-		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
-		FREAD_OR_RETURN(&temp_char, sizeof(unsigned char), 1, tga_file)
-		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
-		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
-
-		// read the width, height, and bits-per-pixel.
-		FREAD_OR_RETURN(&width, sizeof(unsigned short), 1, tga_file)
-		FREAD_OR_RETURN(&height, sizeof(unsigned short), 1, tga_file)
-		FREAD_OR_RETURN(&bpp, sizeof(unsigned char), 1, tga_file)
-
-		FREAD_OR_RETURN(&temp_char, sizeof(unsigned char), 1, tga_file)
-
-		if (bpp != 24) {
-			fclose(tga_file);
-			return;
-		}
-
-		size_t size = width * height; 
-
-		std::vector<GLubyte> image_data_vector(size*3);
-
-		FREAD_OR_RETURN(&image_data_vector[0], sizeof(unsigned char), size*3, tga_file)
-
-		fclose (tga_file);
-
-		// change BGR to RGB
-		GLubyte temp;
-		for (size_t i = 0; i < size * 3; i += 3) {
-			temp = image_data_vector[i];
-			image_data_vector[i] = image_data_vector[i + 2];
-			image_data_vector[i + 2] = temp;
-		}
-
-		GPlatesPropertyValues::InMemoryRaster::ColourFormat format =
-				GPlatesPropertyValues::InMemoryRaster::RgbFormat;
-		raster.set_corresponds_to_data(false);
-
-		QSize image_size = QSize(width,height);
-
-		raster.generate_raster(image_data_vector, image_size, format);
-		raster.set_enabled(true);
-	}
-
-	void
-	load_qimage_file(
-		const QString &filename,
-		GPlatesPropertyValues::InMemoryRaster &raster,
-		GPlatesFileIO::ReadErrorAccumulation &read_errors)
-	{
-		boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
-			new GPlatesFileIO::LocalFileDataSource(filename, GPlatesFileIO::DataFormats::Unspecified));
-		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-			new GPlatesFileIO::LineNumberInFile(0));
-
-		QImageReader image_reader(filename);
-		QImage raw_image = image_reader.read();
-		if (raw_image.isNull()){
-	//		std::cerr << image_reader.errorString().toStdString().c_str() << std::endl;
-			read_errors.d_failures_to_begin.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-				e_source,
-				e_location,
-				GPlatesFileIO::ReadErrors::ErrorReadingQImageFile,
-				GPlatesFileIO::ReadErrors::FileNotLoaded));
-			return;
-		}
-		
-		QImage image = QGLWidget::convertToGLFormat(raw_image);
-
-		GPlatesPropertyValues::InMemoryRaster::ColourFormat format =
-				GPlatesPropertyValues::InMemoryRaster::RgbaFormat;
-
-		raster.set_corresponds_to_data(false);
-
-		QSize image_size = image.size();
-
-		try {
-			raster.generate_raster(
-				image.bits(),
-				image_size,
-				format);
-		}
-		catch(GPlatesGui::OpenGLBadAllocException &)
+		while (begin != end)
 		{
-			read_errors.d_failures_to_begin.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-				e_source,
-				e_location,
-				GPlatesFileIO::ReadErrors::InsufficientTextureMemory,
-				GPlatesFileIO::ReadErrors::FileNotLoaded));		
-			return;
+			if (pred(*begin))
+			{
+				*result = op(*begin);
+			}
+			++result;
+			++begin;
 		}
-		catch(GPlatesGui::OpenGLException &)
+		return result;
+	}
+
+
+	std::map<QString, RasterReader::FormatInfo>
+	create_supported_formats_map()
+	{
+		using namespace GPlatesUtils::OverloadResolution;
+
+		typedef std::map<QString, RasterReader::FormatInfo> formats_map_type;
+		formats_map_type formats;
+
+		// Add formats that we support via the RGBA reader.
+		// Note: The descriptions are those used by the GIMP.
+		formats.insert(std::make_pair(
+				"bmp",
+				RasterReader::FormatInfo(
+					"Windows BMP image",
+					"image/bmp",
+					RasterReader::RGBA)));
+		formats.insert(std::make_pair(
+				"gif",
+				RasterReader::FormatInfo(
+					"GIF image",
+					"image/gif",
+					RasterReader::RGBA)));
+		formats.insert(std::make_pair(
+				"jpg",
+				RasterReader::FormatInfo(
+					"JPEG image",
+					"image/jpeg",
+					RasterReader::RGBA)));
+		formats.insert(std::make_pair(
+				"jpeg",
+				RasterReader::FormatInfo(
+					"JPEG image",
+					"image/jpeg",
+					RasterReader::RGBA)));
+		formats.insert(std::make_pair(
+				"png",
+				RasterReader::FormatInfo(
+					"PNG image",
+					"image/png",
+					RasterReader::RGBA)));
+		formats.insert(std::make_pair(
+				"svg",
+				RasterReader::FormatInfo(
+					"SVG image",
+					"image/svg+xml",
+					RasterReader::RGBA)));
+		formats.insert(std::make_pair(
+				"tif",
+				RasterReader::FormatInfo(
+					"TIFF image",
+					"image/tiff",
+					RasterReader::RGBA)));
+		formats.insert(std::make_pair(
+				"tiff",
+				RasterReader::FormatInfo(
+					"TIFF image",
+					"image/tiff",
+					RasterReader::RGBA)));
+
+		// Also add GMT grid/NetCDF files, read by GDAL.
+		formats.insert(std::make_pair(
+				"grd",
+				RasterReader::FormatInfo(
+					"NetCDF/GMT grid data",
+					"application/x-netcdf",
+					RasterReader::GDAL)));
+		formats.insert(std::make_pair(
+				"nc",
+				RasterReader::FormatInfo(
+					"NetCDF/GMT grid data",
+					"application/x-netcdf",
+					RasterReader::GDAL)));
+
+		return formats;
+	}
+
+
+	/**
+	 * Creates a single entry in the filters string.
+	 */
+	QString
+	create_file_dialog_filter_string(
+			const QString &description,
+			QStringList exts)
+	{
+		// Prepend *. to each extension first.
+		using namespace GPlatesUtils::OverloadResolution;
+		std::for_each(
+				exts.begin(),
+				exts.end(),
+				boost::lambda::bind(
+					resolve<mem_fn_types<QString>::prepend1>(&QString::prepend),
+					boost::lambda::_1,
+					"*."));
+
+		return description + " (" + exts.join(" ") + ")";
+	}
+
+
+	class FormatAccumulator
+	{
+	public:
+		FormatAccumulator(
+				std::map<QString, QStringList> &descriptions_to_ext) :
+			d_descriptions_to_ext(descriptions_to_ext)
 		{
-			read_errors.d_failures_to_begin.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-				e_source,
-				e_location,
-				GPlatesFileIO::ReadErrors::ErrorGeneratingTexture,
-				GPlatesFileIO::ReadErrors::FileNotLoaded));		
-			return;
 		}
-		raster.set_enabled(true);
-	}
 
-	void
-	load_gdal_file(
-		const QString &filename,
-		GPlatesPropertyValues::InMemoryRaster &raster,
-		GPlatesFileIO::ReadErrorAccumulation &read_errors)
+		void operator()(
+				const std::pair<const QString, RasterReader::FormatInfo> &format)
+		{
+			d_descriptions_to_ext[format.second.description].push_back(format.first);
+		}
+
+	private:
+		std::map<QString, QStringList> &d_descriptions_to_ext;
+	};
+
+
+	QString
+	create_file_dialog_filters_string(
+			const std::map<QString, RasterReader::FormatInfo> &formats)
 	{
+		QStringList filters;
 
-		GPlatesFileIO::GdalReader reader;
-		
-		reader.read_file(filename,raster,read_errors);
+		// The first filter is an all-inclusive filter that matches all supported
+		// raster formats.
+		QStringList all_exts;
+		std::for_each(
+				formats.begin(),
+				formats.end(),
+				boost::ref(all_exts) <<
+					boost::lambda::bind(
+						&std::pair<const QString, RasterReader::FormatInfo>::first,
+						boost::lambda::_1));
+		filters << create_file_dialog_filter_string("All rasters", all_exts);
 
+		// We then map textual descriptions to file extensions.
+		// Note: jpg and jpeg (amongst others) have the same textual descriptions.
+		std::map<QString, QStringList> descriptions_to_ext;
+		std::for_each(
+				formats.begin(),
+				formats.end(),
+				FormatAccumulator(descriptions_to_ext));
+
+		// We then create one filter entry for each textual description.
+		std::for_each(
+				descriptions_to_ext.begin(),
+				descriptions_to_ext.end(),
+				boost::ref(filters) <<
+					boost::lambda::bind(
+						&create_file_dialog_filter_string,
+						boost::lambda::bind(
+							&std::pair<const QString, QStringList>::first,
+							boost::lambda::_1),
+						boost::lambda::bind(
+							&std::pair<const QString, QStringList>::second,
+							boost::lambda::_1)));
+
+		// The last filter matches all files, regardless of file extension.
+		QStringList all_files(QString("*"));
+		filters << create_file_dialog_filter_string("All files", all_files);
+
+		return filters.join(";;");
 	}
-} // anonymous namespace
 
-void
-GPlatesFileIO::RasterReader::read_file(
-	   const FileInfo &file_info,
-	   GPlatesPropertyValues::InMemoryRaster &raster,
-	   ReadErrorAccumulation &read_errors)
-{
-	QFileInfo q_file_info = file_info.get_qfileinfo();
+}  // anonymous namespace
 
-	QString suffix = q_file_info.suffix();
-
-
-	if ((suffix.compare(QString("jpg"),Qt::CaseInsensitive) == 0) ||
-		(suffix.compare(QString("jpeg"),Qt::CaseInsensitive) == 0))
-	{
-
-		load_qimage_file(file_info.get_qfileinfo().absoluteFilePath(),
-						raster,
-						read_errors);
-	}
-	else if (suffix.compare(QString("grd"),Qt::CaseInsensitive) == 0)
-	{
-
-		load_gdal_file(file_info.get_qfileinfo().absoluteFilePath(),
-						raster,
-						read_errors);
-
-	}
-	else
-	{
-		// FIXME: add to read errors.
-		std::cerr << "Unrecognised file type for file: " << q_file_info.absoluteFilePath().toStdString() << std::endl;
-	}
-}
 
 void
 GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(
-	   QMap<int,QString> &raster_map,
+	   QMap<int, QString> &raster_map,
 	   QString directory_path,
 	   GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
-
 		boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
 			new GPlatesFileIO::LocalFileDataSource(directory_path, GPlatesFileIO::DataFormats::Unspecified));
 
 		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
-			new GPlatesFileIO::LineNumberInFile(0));
+			new GPlatesFileIO::LineNumber(0));
 
 		QDir directory(directory_path);
 		QStringList filters;
@@ -324,7 +323,7 @@ GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(
 		bool have_found_suitable_file = false;
 		for (; it != it_end ; ++it)
 		{
-			int time;
+			int time = 0;
 			if (parse_filename(*it,potential_file_root,time))
 			{
 				// We have a suitable file name.
@@ -370,11 +369,11 @@ GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(
 		}
 #if 0
 	// Print out the raster map
-		QMap<int,QString>::const_iterator map_it = raster_map.constBegin();
-		QMap<int,QString>::const_iterator map_it_end = raster_map.constEnd();
+		QMap<int, QString>::const_iterator map_it = raster_map.constBegin();
+		QMap<int, QString>::const_iterator map_it_end = raster_map.constEnd();
 		for ( ; map_it != map_it_end ; ++map_it)
 		{
-			std::cerr << map_it.key() << " " << map_it.value().toStdString().c_str() << std::endl;
+			qDebug() << map_it.key() << " " << map_it.value().toStdString().c_str();
 		}
 #endif
 }
@@ -382,12 +381,12 @@ GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(
 
 QString
 GPlatesFileIO::RasterReader::get_nearest_raster_filename(
-		const QMap<int,QString> &raster_map,
+		const QMap<int, QString> &raster_map,
 		double time)
 {
 	QString result;
-	QMap<int,QString>::const_iterator it = raster_map.constBegin();
-	QMap<int,QString>::const_iterator it_end = raster_map.constEnd();
+	QMap<int, QString>::const_iterator it = raster_map.constBegin();
+	QMap<int, QString>::const_iterator it_end = raster_map.constEnd();
 
 	for (; (it != it_end) && (it.key() <= time) ; ++it)
 	{}
@@ -416,4 +415,201 @@ GPlatesFileIO::RasterReader::get_nearest_raster_filename(
 
 	return result;
 }
+
+
+const std::map<QString, GPlatesFileIO::RasterReader::FormatInfo> &
+GPlatesFileIO::RasterReader::get_supported_formats()
+{
+	static const std::map<QString, FormatInfo> supported_formats = create_supported_formats_map();
+	return supported_formats;
+}
+
+
+const QString &
+GPlatesFileIO::RasterReader::get_file_dialog_filters()
+{
+	static const QString file_dialog_filters = create_file_dialog_filters_string(get_supported_formats());
+	return file_dialog_filters;
+}
+
+
+GPlatesFileIO::RasterReader::non_null_ptr_type
+GPlatesFileIO::RasterReader::create(
+		const QString &filename,
+		ReadErrorAccumulation *read_errors)
+{
+	return new RasterReader(filename, read_errors);
+}
+
+
+GPlatesFileIO::RasterReader::RasterReader(
+		const QString &filename,
+		ReadErrorAccumulation *read_errors) :
+	d_impl(NULL),
+	d_filename(filename)
+{
+	QFileInfo file_info(filename);
+	QString suffix = file_info.suffix().toLower();
+
+	const std::map<QString, FormatInfo> &supported_formats = get_supported_formats();
+	std::map<QString, FormatInfo>::const_iterator iter = supported_formats.find(suffix);
+	FormatHandler handler =
+		(iter != supported_formats.end()) ? iter->second.handler : UNKNOWN;
+
+	boost::function<RasterBandReaderHandle (unsigned int)> proxy_handle_function =
+		boost::bind(&RasterReader::create_raster_band_reader_handle, boost::ref(*this), _1);
+
+	switch (handler)
+	{
+		case RGBA:
+			d_impl.reset(new RgbaRasterReader(filename, proxy_handle_function, read_errors));
+			break;
+		
+		case GDAL:
+			d_impl.reset(new GDALRasterReader(filename, proxy_handle_function, read_errors));
+			break;
+
+		default:
+			if (read_errors)
+			{
+				read_errors->d_failures_to_begin.push_back(
+						make_read_error_occurrence(
+							filename,
+							DataFormats::RasterImage,
+							0,
+							ReadErrors::UnrecognisedRasterFileType,
+							ReadErrors::FileNotLoaded));
+			}
+	}
+}
+
+
+const QString &
+GPlatesFileIO::RasterReader::get_filename() const
+{
+	return d_filename;
+}
+
+
+bool
+GPlatesFileIO::RasterReader::can_read()
+{
+	if (d_impl)
+	{
+		return d_impl->can_read();
+	}
+	else
+	{
+		return false;
+	}
+}
+
+
+unsigned int
+GPlatesFileIO::RasterReader::get_number_of_bands(
+		ReadErrorAccumulation *read_errors)
+{
+	if (d_impl)
+	{
+		return d_impl->get_number_of_bands(read_errors);
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+
+std::pair<unsigned int, unsigned int>
+GPlatesFileIO::RasterReader::get_size(
+		ReadErrorAccumulation *read_errors)
+{
+	if (d_impl)
+	{
+		return d_impl->get_size(read_errors);
+	}
+	else
+	{
+		return std::make_pair(0, 0);
+	}
+}
+
+
+boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
+GPlatesFileIO::RasterReader::get_proxied_raw_raster(
+		unsigned int band_number,
+		ReadErrorAccumulation *read_errors)
+{
+	if (d_impl)
+	{
+		return d_impl->get_proxied_raw_raster(band_number, read_errors);
+	}
+	else
+	{
+		return boost::none;
+	}
+}
+
+
+boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
+GPlatesFileIO::RasterReader::get_raw_raster(
+		unsigned int band_number,
+		const QRect &region,
+		ReadErrorAccumulation *read_errors)
+{
+	if (d_impl)
+	{
+		return d_impl->get_raw_raster(band_number, region, read_errors);
+	}
+	else
+	{
+		return boost::none;
+	}
+}
+
+
+GPlatesPropertyValues::RasterType::Type
+GPlatesFileIO::RasterReader::get_type(
+		unsigned int band_number,
+		ReadErrorAccumulation *read_errors)
+{
+	if (d_impl)
+	{
+		return d_impl->get_type(band_number, read_errors);
+	}
+	else
+	{
+		return GPlatesPropertyValues::RasterType::UNKNOWN;
+	}
+}
+
+
+void *
+GPlatesFileIO::RasterReader::get_data(
+		unsigned int band_number,
+		const QRect &region,
+		ReadErrorAccumulation *read_errors)
+{
+	if (d_impl)
+	{
+		return d_impl->get_data(band_number, region, read_errors);
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
+
+GPlatesFileIO::RasterBandReaderHandle
+GPlatesFileIO::RasterReader::create_raster_band_reader_handle(
+		unsigned int band_number)
+{
+	return RasterBandReaderHandle(
+			RasterBandReader(non_null_ptr_type(this), band_number));
+}
+
+
+GPlatesFileIO::RasterReaderImpl::~RasterReaderImpl()
+{  }
 

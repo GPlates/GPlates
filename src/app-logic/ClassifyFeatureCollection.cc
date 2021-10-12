@@ -92,7 +92,7 @@ namespace
 
 GPlatesAppLogic::ClassifyFeatureCollection::classifications_type
 GPlatesAppLogic::ClassifyFeatureCollection::classify_feature_collection(
-		const GPlatesFileIO::File &file)
+	const GPlatesFileIO::File::Reference &file)
 {
 	// First try classifying by the file type.
 	// This is because certain file types are known to contain only one type of feature.

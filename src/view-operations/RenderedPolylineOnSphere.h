@@ -63,6 +63,14 @@ namespace GPlatesViewOperations
 			return d_polyline_on_sphere->test_proximity(criteria);
 		}
 
+		virtual
+		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+			const GPlatesMaths::ProximityCriteria &criteria) const
+		{
+			return d_polyline_on_sphere->test_vertex_proximity(criteria);
+		}
+		
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 		get_polyline_on_sphere() const
 		{

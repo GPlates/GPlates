@@ -28,13 +28,14 @@
 #ifndef GPLATES_GUI_GLOBE_H
 #define GPLATES_GUI_GLOBE_H
 
+#include <boost/shared_ptr.hpp>
+
 #include "Colour.h"
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryCollectionPainter.h"
-#include "NurbsRenderer.h"
 #include "OpaqueSphere.h"
+#include "PersistentOpenGLObjects.h"
 #include "SphericalGrid.h"
-#include "Texture.h"
 #include "SimpleGlobeOrientation.h"
 #include "TextRenderer.h"
 #include "RenderSettings.h"
@@ -42,9 +43,15 @@
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
+
+#include "opengl/GLContext.h"
+#include "opengl/GLUNurbsRenderer.h"
+#include "opengl/GLRenderGraphInternalNode.h"
+
+#include "presentation/VisualLayers.h"
+
 #include "utils/VirtualProxy.h"
 
-#include <boost/shared_ptr.hpp>
 
 namespace GPlatesViewOperations
 {
@@ -54,14 +61,18 @@ namespace GPlatesViewOperations
 namespace GPlatesGui
 {
 	class GlobeVisibilityTester;
+	class RasterColourSchemeMap;
 
 	class Globe
 	{
 	public:
 
 		Globe(
+				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
+				RasterColourSchemeMap &raster_colour_scheme_map,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
@@ -69,6 +80,8 @@ namespace GPlatesGui
 		//! To clone a Globe
 		Globe(
 				Globe &existing_globe,
+				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+				RasterColourSchemeMap &raster_colour_scheme_map,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
@@ -96,22 +109,31 @@ namespace GPlatesGui
 
 		/**
 		 * Paint the globe and all the visible features and rasters on it.
+		 *
+		 * @param render_graph_node the render graph node that all rendering should be attached to.
 		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
 		 */
-		void paint(
+		void
+		paint(
+				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 				const double &viewport_zoom_factor,
 				float scale);
 		
 		/*
 		 * A special version of the globe's paint() method more suitable
-		 * for vector output
+		 * for vector output.
+		 *
+		 * @param render_graph_node the render graph node that all rendering should be attached to.
 		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
 		 */
-		void paint_vector_output(
+		void
+		paint_vector_output(
+				const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
+				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
 				const double &viewport_zoom_factor,
 				float scale);
 
@@ -124,13 +146,11 @@ namespace GPlatesGui
 		void
 		disable_raster_display();
 
-		Texture &
-		texture()
-		{
-			return **d_texture_ptr;
-		}
-
 	private:
+		/**
+		 * Keeps track of OpenGL-related objects that persist from one render to the next.
+		 */
+		const PersistentOpenGLObjects::non_null_ptr_type d_persistent_opengl_objects;
 			
 		//! Flags to determine what data to show
 		RenderSettings &d_render_settings;
@@ -138,32 +158,17 @@ namespace GPlatesGui
 		//! The collection of @a RenderedGeometry objects we need to paint.
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 
-		/**
-		 * The NurbsRenderer used to draw large GreatCircleArcs.
-		 * Delay creation until it's used.
-		 */
-		GPlatesUtils::VirtualProxy<NurbsRenderer> d_nurbs_renderer;
+		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
-		// Factory used by GPlatesUtils::VirtualProxy to create OpaqueSphere.
-		class OpaqueSphereFactory
-		{
-		public:
-			OpaqueSphereFactory(const Colour& colour) : d_colour(colour) { }
-			OpaqueSphere* create() const  { return new OpaqueSphere(d_colour); }
-		private:
-			Colour d_colour;
-		};
+		/**
+		 * The GLUNurbsRenderer used to draw large GreatCircleArcs.
+		 */
+		GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type d_nurbs_renderer;
 
 		/**
 		 * The solid earth.
 		 */
-		GPlatesUtils::VirtualProxy<OpaqueSphere, OpaqueSphereFactory> d_sphere;
-
-		/**
-		 * A (single) texture to be texture-mapped over the sphere surface.
-		 * Delay creation until it's used.
-		 */
-		boost::shared_ptr<GPlatesUtils::VirtualProxy<Texture> > d_texture_ptr;
+		OpaqueSphere d_sphere;
 
 		/**
 		 * Lines of lat and lon on surface of earth.
@@ -190,6 +195,21 @@ namespace GPlatesGui
 		 */
 		static const unsigned NUM_CIRCLES_LON = 6;
 
+
+		/**
+		 * Adds a render graph node to @a render_graph_node that transforms the view
+		 * according to the current globe orientation (and returns the node).
+		 */
+		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
+		setup_globe_orientation_transform(
+					GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
+
+		/**
+		 * Create a render graph node.
+		 */
+		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
+		create_rendered_layer_node(
+				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &parent_render_graph_node);
 	};
 }
 

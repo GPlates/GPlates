@@ -29,24 +29,25 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <QFile>
+#include <QFileInfo>
+#include <QDir>
 #include <QProcess>
 #include <QtXml/QXmlStreamReader>
-#include <boost/bind.hpp>
+
 
 #include "FileInfo.h"
 #include "ReadErrors.h"
 #include "ReadErrorOccurrence.h"
 #include "ExternalProgram.h"
-#include "global/GPlatesAssert.h"
 #include "PropertyCreationUtils.h"
 #include "FeaturePropertiesMap.h"
 #include "ErrorOpeningPipeFromGzipException.h"
 #include "ErrorOpeningFileForReadingException.h"
 
-#include "utils/StringUtils.h"
-#include "utils/UnicodeStringUtils.h"
+#include "global/GPlatesAssert.h"
 
 #include "maths/LatLonPoint.h"
 
@@ -72,6 +73,9 @@
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/UninterpretedPropertyValue.h"
 #include "property-values/XsBoolean.h"
+
+#include "utils/StringUtils.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 const GPlatesFileIO::ExternalProgram &
@@ -345,12 +349,12 @@ namespace
 				IO::ReadErrors::UnexpectedNonEmptyAttributeList,
 				IO::ReadErrors::AttributesIgnored);
 	
-		IO::FeaturePropertiesMap *feature_properties_map = IO::FeaturePropertiesMap::instance();
+		IO::FeaturePropertiesMap &feature_properties_map = IO::FeaturePropertiesMap::instance();
 		IO::FeaturePropertiesMap::const_iterator property_creator_map =
-		   	feature_properties_map->find(
+		   	feature_properties_map.find(
 					Model::FeatureType(xml_elem->get_name()));
 
-		if (property_creator_map != feature_properties_map->end()) {
+		if (property_creator_map != feature_properties_map.end()) {
 			create_feature(xml_elem, model, collection, property_creator_map->second, params);
 		} else {
 			append_recoverable_error_if(true, xml_elem, params,
@@ -444,7 +448,7 @@ namespace
 				IO::ReadErrors::ElementNameChanged);
 
 		QStringRef file_version = reader.attributes().value(
-				XmlUtils::GPML_NAMESPACE, "version");
+				XmlUtils::GPML_NAMESPACE_QSTRING, "version");
 		append_warning_if(file_version == "", params,
 				IO::ReadErrors::MissingVersionAttribute,
 				IO::ReadErrors::AssumingCorrectVersion);
@@ -457,13 +461,85 @@ namespace
 }
 
 
-const GPlatesFileIO::File::shared_ref
+namespace
+{
+	/**
+	 * Turns the relative file paths in the GPML into absolute file paths in the model.
+	 */
+	class MakeFilePathsAbsoluteVisitor :
+			public GPlatesModel::FeatureVisitor
+	{
+	public:
+
+		MakeFilePathsAbsoluteVisitor(
+				const QString &absolute_path) :
+			d_absolute_path(absolute_path)
+		{
+			if (!d_absolute_path.endsWith("/"))
+			{
+				d_absolute_path.append("/");
+			}
+		}
+
+		virtual
+		void
+		visit_gml_file(
+				GPlatesPropertyValues::GmlFile &gml_file)
+		{
+			const UnicodeString &filename = gml_file.file_name()->value().get();
+			QString filename_qstring = GPlatesUtils::make_qstring_from_icu_string(filename);
+			
+			// Only fix if the filename in the GPML is relative.
+			// Even if GPlates only ever writes relative filenames, there's
+			// nothing to stop an absolute filename appearing
+			if (QFileInfo(filename_qstring).isRelative())
+			{
+				QString result_qstring = QDir::cleanPath(d_absolute_path + filename_qstring);
+
+				// qDebug() << result_qstring;
+
+				UnicodeString result = GPlatesUtils::make_icu_string_from_qstring(result_qstring);
+				gml_file.set_file_name(GPlatesPropertyValues::XsString::create(result));
+			}
+		}
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		{
+			gpml_constant_value.value()->accept_visitor(*this);
+		}
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		{
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+				gpml_piecewise_aggregation.time_windows();
+			BOOST_FOREACH(GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
+			{
+				time_window.time_dependent_value()->accept_visitor(*this);
+			}
+		}
+
+	private:
+
+		QString d_absolute_path;
+	};
+}
+
+
+void
 GPlatesFileIO::GpmlOnePointSixReader::read_file(
-		const FileInfo &fileinfo,
+		const File::Reference &file,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors,
 		bool use_gzip)
 {
+	const FileInfo &fileinfo = file.get_file_info();
+
 	// By placing all changes to the model under the one changeset, we ensure that
 	// feature revision ids don't get changed from what was loaded from file no
 	// matter what we do to the features.
@@ -502,14 +578,8 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 
 	boost::shared_ptr<DataSource> source( 
 			new LocalFileDataSource(filename, DataFormats::GpmlOnePointSix));
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection =
-			GPlatesModel::FeatureCollectionHandle::create(
-					model->root(),
-					GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
 
-	// Make sure feature collection gets unloaded when it's no longer needed.
-	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =
-			GPlatesModel::FeatureCollectionHandleUnloader::create(collection);
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection = file.get_feature_collection();
 
 	GpmlReaderUtils::ReaderParams params(reader, source, read_errors);
 	boost::shared_ptr<Model::XmlElementNode::AliasToNamespaceMap> alias_map(
@@ -531,7 +601,7 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 				if (reader.isStartElement()) {
 					append_warning_if( 
 						! qualified_names_are_equal(
-								reader, XmlUtils::GML_NAMESPACE, "featureMember"), 
+								reader, XmlUtils::GML_NAMESPACE_QSTRING, "featureMember"), 
 						// FIXME: What do I use for the XmlNode here?  Maybe append the error
 						// manually instead?
 						params, 
@@ -548,7 +618,7 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		if (reader.error()) {
 			// The XML was malformed somewhere along the line.
 			boost::shared_ptr<LocationInDataSource> loc(
-					new LineNumberInFile(reader.lineNumber()));
+					new LineNumber(reader.lineNumber()));
 			read_errors.d_terminating_errors.push_back(
 					ReadErrorOccurrence(source, loc,
 						ReadErrors::ParseError, 
@@ -556,6 +626,12 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		}
 	}
 
-	return File::create_loaded_file(collection_unloader, fileinfo);
+	// Turns relative paths into absolute paths in all GmlFile instances.
+	MakeFilePathsAbsoluteVisitor visitor(fileinfo.get_qfileinfo().absolutePath());
+	for (GPlatesModel::FeatureCollectionHandle::iterator iter = collection->begin();
+			iter != collection->end(); ++iter)
+	{
+		visitor.visit_feature(iter);
+	}
 }
 

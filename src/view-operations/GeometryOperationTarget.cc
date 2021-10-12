@@ -342,3 +342,9 @@ GPlatesViewOperations::GeometryOperationTargetUndoCommand::undo()
 
 	d_geometry_operation_target->set_internal_state(d_internal_state);
 }
+
+const GPlatesGui::FeatureFocus*
+GPlatesViewOperations::GeometryOperationTarget::get_feature_focus()
+{
+	return d_feature_focus;
+}

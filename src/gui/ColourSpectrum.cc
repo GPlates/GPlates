@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,70 +25,46 @@
 
 #include "ColourSpectrum.h"
 #include "Colour.h"
-#include <vector>
 
-GPlatesGui::ColourSpectrum::ColourSpectrum()
+
+namespace
 {
-	//worked out the ranges from the QtColourDialogue
-	//the colour wheel is as follows 
-	//R 	G 	B
-	//255	0 	0
-	//255	0	255
-	//0	0	255
-	//0	255	255
-	//0	255	0
-	//255	255	0
-	//255	0	0
+	using namespace GPlatesGui;
 
-	static int total_steps = 1784; //number of distinct steps to cycle through the colour wheel
-	d_colours.reserve(total_steps);
+	static const Colour COLOURS[] = {
+		Colour(1, 0, 0),
+		Colour(1, 1, 0),
+		Colour(0, 1, 0),
+		Colour(0, 1, 1),
+		Colour(0, 0, 1),
+		Colour(1, 0, 1)
+	};
 
-	int red = 255;
-	int green = 0;
-	int blue = 0;
-	static float channel_max = 255;
-
-	//(255,0,0) -> (255,0,255)
-	for( int i = 0; i < 255; i++) {
-		++blue;
-		Colour colour(red/channel_max, green/channel_max, blue/channel_max);
-		d_colours.push_back(colour);	
-	}
-
-	//(255,0,255) -> (0,0,255)
-	for( int i = 0; i < 255; i++) {
-		--red;
-		d_colours.push_back(Colour(red/channel_max, green/channel_max, blue/channel_max));		
-	}
-
-	//(0,0,255) -> (0,255,255)
-	for( int i = 0; i < 255; i++) {
-		++green;
-		d_colours.push_back(Colour(red/channel_max, green/channel_max, blue/channel_max));		
-	}
-
-	//(0,255,255) -> (0,255,0)
-	for( int i = 0; i < 255; i++) {
-		--blue;
-		d_colours.push_back(Colour(red/channel_max, green/channel_max, blue/channel_max));		
-	}
-
-	//(0,255,0) -> (255,255,0)
-	for( int i = 0; i < 255; i++) {
-		++red;
-		d_colours.push_back(Colour(red/channel_max, green/channel_max, blue/channel_max));		
-	}
-
-	//(255,255,0) -> (255,0,0)
-	for( int i = 0; i < 255; i++) {
-		--green;
-		d_colours.push_back(Colour(red/channel_max, green/channel_max, blue/channel_max));		
-	}
+	static const int NUM_RANGES = sizeof(COLOURS) / sizeof(Colour) - 1;
 }
 
-std::vector<GPlatesGui::Colour> &
-GPlatesGui::ColourSpectrum::get_colour_spectrum()
+
+GPlatesGui::Colour
+GPlatesGui::ColourSpectrum::get_colour_at(
+		double position)
 {
-	return d_colours;
+	int range = static_cast<int>(position * NUM_RANGES);
+
+	// Handle cases where position is outside of [0.0, 1.0].
+	if (range < 0)
+	{
+		return COLOURS[0];
+	}
+	else if (range >= NUM_RANGES)
+	{
+		return COLOURS[NUM_RANGES];
+	}
+
+	double position_in_range = position * NUM_RANGES - range;
+
+	return Colour::linearly_interpolate(
+			COLOURS[range],
+			COLOURS[range + 1],
+			position_in_range);
 }
 

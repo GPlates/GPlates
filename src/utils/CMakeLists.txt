@@ -17,6 +17,7 @@ set(srcs
     CallStackTracker.h
     CommandLineParser.cc
     CommandLineParser.h
+    CopyConst.h
     ExportAnimationStrategyExporterID.h
     ExportAnimationStrategyFactory.cc
     ExportAnimationStrategyFactory.h
@@ -38,10 +39,14 @@ set(srcs
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
+    OverloadResolution.h
+    Parse.h
     Profile.cc
     Profile.h
+    QtFormattingUtils.h
     ReferenceCount.h
-    ScopeGuard.h
+    SafeBool.h
+    Select.h
     Singleton.h
     SmartNodeLinkedList.h
     StringFormattingUtils.cc
@@ -49,11 +54,13 @@ set(srcs
     StringSet.cc
     StringSet.h
     StringUtils.h
+    TypeTraits.h
     UnicodeStringUtils.cc
     UnicodeStringUtils.h
     UniqueId.cc
     UniqueId.h
     VirtualProxy.h
+    XmlNamespaces.cc
     XmlNamespaces.h
 )
 

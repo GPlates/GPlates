@@ -28,7 +28,9 @@
 
 #include "unit-test/UtilsTestSuite.h"
 #include "unit-test/TestSuiteFilter.h"
+
 #include "unit-test/SmartNodeLinkedListTest.h"
+#include "unit-test/StringSetTest.h"
 
 GPlatesUnitTest::UtilsTestSuite::UtilsTestSuite(
 		unsigned level) : 
@@ -42,6 +44,7 @@ void
 GPlatesUnitTest::UtilsTestSuite::construct_maps()
 {
 	ADD_TESTSUITE(SmartNodeLinkedList);
+	ADD_TESTSUITE(StringSet);
 }
 
 

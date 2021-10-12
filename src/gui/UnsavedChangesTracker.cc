@@ -24,12 +24,14 @@
  */
 
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <QDialogButtonBox>
 #include <QtGlobal>
 #include <QDebug>
 
 #include "UnsavedChangesTracker.h"
 
+#include "file-io/File.h"
 #include "file-io/FileInfo.h"
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
@@ -51,13 +53,6 @@ namespace
 			public GPlatesModel::WeakReferenceCallback<GPlatesModel::FeatureCollectionHandle>
 	{
 	public:
-
-		typedef GPlatesModel::WeakReferencePublisherModifiedEvent<GPlatesModel::FeatureCollectionHandle> modified_event_type;
-		typedef GPlatesModel::WeakReferencePublisherDeactivatedEvent<GPlatesModel::FeatureCollectionHandle> deactivated_event_type;
-		typedef GPlatesModel::WeakReferencePublisherReactivatedEvent<GPlatesModel::FeatureCollectionHandle> reactivated_event_type;
-		typedef GPlatesModel::WeakReferencePublisherAboutToBeDestroyedEvent<GPlatesModel::FeatureCollectionHandle> about_to_be_destroyed_event_type;
-
-
 		explicit
 		UnsavedChangesCallback(
 				GPlatesGui::UnsavedChangesTracker &tracker):
@@ -132,13 +127,12 @@ GPlatesGui::UnsavedChangesTracker::has_unsaved_changes()
 {
 	// Taking the brute force approach for now, later should delegate to an applogic class which
 	// could be smarter about the whole deal.
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
-			d_file_state_ptr->get_loaded_files();
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
-	
-	for (; it != end; ++it) {
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_ref = it->get_const_feature_collection();
+
+	// Iterate over our internal sequence.
+	BOOST_FOREACH(const LoadedFile &loaded_file, d_loaded_files)
+	{
+		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_ref =
+				loaded_file.d_file_reference.get_file().get_feature_collection();
 
 		if (feature_collection_ref.is_valid() && feature_collection_ref->contains_unsaved_changes()) {
 			return true;
@@ -153,14 +147,14 @@ QStringList
 GPlatesGui::UnsavedChangesTracker::list_unsaved_filenames()
 {
 	QStringList filenames;
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
-			d_file_state_ptr->get_loaded_files();
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
-	
-	for (; it != end; ++it) {
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_ref = it->get_const_feature_collection();
-		const GPlatesFileIO::FileInfo &file_info = it->get_file_info();
+
+	// Iterate over our internal sequence.
+	BOOST_FOREACH(const LoadedFile &loaded_file, d_loaded_files)
+	{
+		GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_ref =
+				loaded_file.d_file_reference.get_file().get_feature_collection();
+		const GPlatesFileIO::FileInfo &file_info =
+				loaded_file.d_file_reference.get_file().get_file_info();
 		const QFileInfo &qfileinfo = file_info.get_qfileinfo();
 
 		if (feature_collection_ref.is_valid() && feature_collection_ref->contains_unsaved_changes()) {
@@ -236,21 +230,26 @@ GPlatesGui::UnsavedChangesTracker::handle_model_has_changed()
 
 
 void
-GPlatesGui::UnsavedChangesTracker::handle_end_add_feature_collections(
+GPlatesGui::UnsavedChangesTracker::handle_file_state_files_added(
 		GPlatesAppLogic::FeatureCollectionFileState &/*file_state*/,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_begin,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_end)
+		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files)
 {
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_file_it = new_files_begin;
-	for ( ; new_file_it != new_files_end; ++new_file_it)
+	BOOST_FOREACH(
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
+			new_files)
 	{
-		//qDebug() << "[UnsavedChanges] a new FC has appeared!";
+		//qDebug() << "[UnsavedChanges] a new file containing a FC has appeared!";
 
-		GPlatesFileIO::File &file = *new_file_it;
 		// Insert the weak_ref into our "set" - really a vector, not that it matters much here.
-		d_feature_collection_weak_refs.push_back(file.get_feature_collection());
+		// NOTE: We can simply append without inserting according to the new file indices because
+		// the file state guarantees the file indices are sequential and contiguous.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				file_ref.get_file_index() == d_loaded_files.size(),
+				GPLATES_ASSERTION_SOURCE);
+		d_loaded_files.push_back(LoadedFile(file_ref));
 		// Get a reference to the copied weak ref that is actually in the container.
-		GPlatesModel::FeatureCollectionHandle::weak_ref &fc_weak_ref = d_feature_collection_weak_refs.back();
+		GPlatesModel::FeatureCollectionHandle::weak_ref &fc_weak_ref =
+				d_loaded_files.back().d_callback_feature_collection;
 		// Attach callback to *that* one, because it will persist.
 		fc_weak_ref.attach_callback(new UnsavedChangesCallback(*this));
 	}
@@ -262,72 +261,26 @@ GPlatesGui::UnsavedChangesTracker::handle_end_add_feature_collections(
 
 
 void
-GPlatesGui::UnsavedChangesTracker::handle_begin_remove_feature_collection(
+GPlatesGui::UnsavedChangesTracker::handle_file_state_file_about_to_be_removed(
 		GPlatesAppLogic::FeatureCollectionFileState &/*file_state*/,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator unload_file_it)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_about_to_be_removed)
 {
-	//qDebug() << "[UnsavedChanges] a FC is disappearing!";
+	//qDebug() << "[UnsavedChanges] a file containing a FC is about to disappear!";
 
-	// Here's the file that's leaving:
-	GPlatesFileIO::File &file = *unload_file_it;
-	// Find it in our cache of weakrefs. weakref will be equal if they point to the same FC.
-	feature_collection_weak_ref_iterator rm_it = std::find(
-			d_feature_collection_weak_refs.begin(), d_feature_collection_weak_refs.end(),
-			file.get_feature_collection());
+	// Here's the file index of the file that's leaving:
+	const unsigned int file_index = file_about_to_be_removed.get_file_index();
 	// Remove it - we no longer care about updates for this one.
-	d_feature_collection_weak_refs.erase(rm_it);
-}
-
-void
-GPlatesGui::UnsavedChangesTracker::handle_end_remove_feature_collection(
-		GPlatesAppLogic::FeatureCollectionFileState &/*file_state*/)
-{
-	//qDebug() << "[UnsavedChanges] a FC has disappeared!";
+	// We can simply erase the file entry in our internal sequence at index 'file_index'.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			file_index < d_loaded_files.size(),
+			GPLATES_ASSERTION_SOURCE);
+	d_loaded_files.erase(
+			d_loaded_files.begin() + file_index);
 
 	// Since that file might have been the sole unsaved file, and all remaining files might
 	// be clean, ensure that all saved/unsaved state is reported accurately.
 	handle_model_has_changed();
 }
-
-
-void
-GPlatesGui::UnsavedChangesTracker::handle_begin_reset_feature_collection(
-		GPlatesAppLogic::FeatureCollectionFileState &/*file_state*/,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator reset_file_it)
-{
-	//qDebug() << "[UnsavedChanges] a FC is about to be reset!";
-
-	// Here's the file that's leaving:
-	GPlatesFileIO::File &file = *reset_file_it;
-	// Find it in our cache of weakrefs. weakref will be equal if they point to the same FC.
-	feature_collection_weak_ref_iterator rm_it = std::find(
-			d_feature_collection_weak_refs.begin(), d_feature_collection_weak_refs.end(),
-			file.get_feature_collection());
-	// Remove it - we no longer care about updates for this one.
-	d_feature_collection_weak_refs.erase(rm_it);
-}
-
-
-void
-GPlatesGui::UnsavedChangesTracker::handle_end_reset_feature_collection(
-		GPlatesAppLogic::FeatureCollectionFileState &/*file_state*/,
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator reset_file_it)
-{
-	//qDebug() << "[UnsavedChanges] a FC has been reset!";
-
-	GPlatesFileIO::File &file = *reset_file_it;
-	// Insert the weak_ref into our "set" - really a vector, not that it matters much here.
-	d_feature_collection_weak_refs.push_back(file.get_feature_collection());
-	// Get a reference to the copied weak ref that is actually in the container.
-	GPlatesModel::FeatureCollectionHandle::weak_ref &fc_weak_ref = d_feature_collection_weak_refs.back();
-	// Attach callback to *that* one, because it will persist.
-	fc_weak_ref.attach_callback(new UnsavedChangesCallback(*this));
-
-	// Since that file might have been the sole unsaved file, and all remaining files might
-	// be clean, ensure that all saved/unsaved state is reported accurately.
-	handle_model_has_changed();
-}
-
 
 
 GPlatesQtWidgets::ManageFeatureCollectionsDialog &
@@ -366,54 +319,23 @@ GPlatesGui::UnsavedChangesTracker::connect_to_file_state_signals()
 {
 	QObject::connect(
 			d_file_state_ptr,
-			SIGNAL(end_add_feature_collections(
+			SIGNAL(file_state_files_added(
 					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
+					const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &)),
 			this,
-			SLOT(handle_end_add_feature_collections(
+			SLOT(handle_file_state_files_added(
 					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
+					const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &)));
 
 	QObject::connect(
 			d_file_state_ptr,
-			SIGNAL(begin_remove_feature_collection(
+			SIGNAL(file_state_file_about_to_be_removed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
+					GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
 			this,
-			SLOT(handle_begin_remove_feature_collection(
+			SLOT(handle_file_state_file_about_to_be_removed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
-
-	QObject::connect(
-			d_file_state_ptr,
-			SIGNAL(end_remove_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &)),
-			this,
-			SLOT(handle_end_remove_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &)));
-
-	QObject::connect(
-			d_file_state_ptr,
-			SIGNAL(begin_reset_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
-			this,
-			SLOT(handle_begin_reset_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
-
-	QObject::connect(
-			d_file_state_ptr,
-			SIGNAL(end_reset_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
-			this,
-			SLOT(handle_end_reset_feature_collection(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)));
-
+					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
 }
 
 

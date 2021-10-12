@@ -48,10 +48,11 @@ namespace GPlatesMaths
 		const ProximityHitDetail::non_null_ptr_type
 		create(
 				MultiPointOnSphere::non_null_ptr_to_const_type multi_point_,
-				const double &closeness_)
+				const double &closeness_,
+				const boost::optional<unsigned int> &index_ = boost::none)
 		{
 			ProximityHitDetail::non_null_ptr_type ptr(
-					new MultiPointProximityHitDetail(multi_point_, closeness_),
+					new MultiPointProximityHitDetail(multi_point_, closeness_, index_),
 					GPlatesUtils::NullIntrusivePointerHandler());
 			return ptr;
 		}
@@ -75,8 +76,9 @@ namespace GPlatesMaths
 		// instantiation of this type on the stack.
 		MultiPointProximityHitDetail(
 				MultiPointOnSphere::non_null_ptr_to_const_type multi_point_,
-				const double &closeness_):
-			ProximityHitDetail(closeness_),
+				const double &closeness_,
+				const boost::optional<unsigned int> &index_):
+			ProximityHitDetail(closeness_,index_),
 			d_multi_point(multi_point_)
 		{  }
 

@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -79,6 +80,7 @@ namespace GPlatesGui
 			GMT
 		};
 
+
 		static
 		const non_null_ptr_type
 		create(
@@ -132,15 +134,14 @@ namespace GPlatesGui
 				const QString &filename_template);
 		
 	private:
-		
 		/**
-		 * The list of visible, reconstructable FeatureCollections to take
-		 * geometry from.
+		 * The list of currently loaded files that are active.
 		 */
 		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::files_collection_type
-				d_active_reconstructable_files;
-		ExportReconstructedGeometryAnimationStrategy();
+				d_active_files;
 		FileFormat d_file_format;
+
+		ExportReconstructedGeometryAnimationStrategy();
 	};
 }
 

@@ -28,6 +28,8 @@
 
 #include <QObject>
 #include <QString>
+#include <QList>
+#include <QUrl>
 #include <boost/function.hpp>
 
 #include "app-logic/FeatureCollectionFileState.h"
@@ -93,33 +95,41 @@ namespace GPlatesGui
 		 * Opens the specified files, handling any exceptions thrown by popping up
 		 * appropriate error dialogs.
 		 *
-		 * See the slot open_files() for the version which pops up a dialog.
+		 * See the slot open_files() for the version which pops up a file selection dialog.
 		 */
 		void
 		open_files(
 				const QStringList &filenames);
 
 		/**
-		 * Reloads the file given by FileState file_iterator @a file and handles any
+		 * As @a open_files(QStringList), but for a list of QUrl. For drag-and-drop
+		 * functionality.
+		 */
+		void
+		open_urls(
+				const QList<QUrl> &urls);
+
+		/**
+		 * Reloads the file given by FileState file_reference @a file and handles any
 		 * exceptions thrown by popping up appropriate error dialogs.
 		 */
 		void
 		reload_file(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator &file_it);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_it);
 
 
 		/**
-		 * Save a file, given by FileState file_iterator @a file. If the file has not
+		 * Save a file, given by FileState file_reference @a file. If the file has not
 		 * yet been named, save using a Save As dialog with @a save_file_as(); if the
 		 * file does have a name, save with as little user intervention as possible using
 		 * @a save_file_in_place().
 		 */
 		bool
 		save_file_as_appropriate(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 		/**
-		 * Save a file, given by FileState file_iterator @a file. Does not prompt the
+		 * Save a file, given by FileState file_reference @a file. Does not prompt the
 		 * user with any kind of Save As dialog, it assumes the file is to be saved
 		 * with the current name and settings and the only feedback desired is progress
 		 * bars and/or error dialogs.
@@ -130,25 +140,25 @@ namespace GPlatesGui
 		 */
 		bool
 		save_file_in_place(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 		/**
-		 * Save a file, given by FileState file_iterator @a file, and prompt the
+		 * Save a file, given by FileState file_reference @a file, and prompt the
 		 * user with a Save As dialog to let them specify a new name for the loaded file.
 		 * The new name will be associated with the loaded file afterwards.
 		 */
 		bool
 		save_file_as(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 		/**
-		 * Save a file, given by FileState file_iterator @a file, and prompt the
+		 * Save a file, given by FileState file_reference @a file, and prompt the
 		 * user with a Save a Copy dialog to let them specify a new name for the loaded file.
 		 * The loaded file retains its original filename.
 		 */
 		bool
 		save_file_copy(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 
 		/**

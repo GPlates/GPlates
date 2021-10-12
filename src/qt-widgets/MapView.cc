@@ -31,7 +31,6 @@
 #include <QPaintEngine>
 
 #include "MapView.h"
-
 #include "MapCanvas.h"
 
 #include "gui/MapTransform.h"
@@ -70,10 +69,17 @@ namespace
 
 GPlatesQtWidgets::MapView::MapView(
 		GPlatesPresentation::ViewState &view_state,
-		GPlatesQtWidgets::MapCanvas *map_canvas_,
+		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
 	d_viewport_zoom(&view_state.get_viewport_zoom()),
-	d_map_canvas_ptr(map_canvas_),
+	d_map_canvas_ptr(
+			new MapCanvas(
+				view_state.get_rendered_geometry_collection(),
+				view_state.get_render_settings(),
+				view_state.get_viewport_zoom(),
+				colour_scheme,
+				view_state,
+				this)),
 	d_scene_rect(-180,-90,360,180),
 	d_gl_widget_ptr(
 			new QGLWidget(
@@ -116,7 +122,8 @@ GPlatesQtWidgets::MapView::MapView(
 
 	d_map_canvas_ptr->map().set_text_renderer(
 				GPlatesGui::QGLWidgetTextRenderer::create(d_gl_widget_ptr));
-	setScene(map_canvas_);
+	d_map_canvas_ptr->set_map_view_ptr(this);
+	setScene(d_map_canvas_ptr.get());
 
 	setViewportUpdateMode(
 		QGraphicsView::MinimalViewportUpdate);
@@ -142,6 +149,10 @@ GPlatesQtWidgets::MapView::MapView(
 	make_signal_slot_connections();
 }
 
+GPlatesQtWidgets::MapView::~MapView()
+{
+}
+
 void
 GPlatesQtWidgets::MapView::make_signal_slot_connections()
 {
@@ -159,7 +170,7 @@ GPlatesQtWidgets::MapView::make_signal_slot_connections()
 
 	// Pass up repainted signals from MapCanvas.
 	QObject::connect(
-			d_map_canvas_ptr,
+			d_map_canvas_ptr.get(),
 			SIGNAL(repainted()),
 			this,
 			SLOT(handle_map_canvas_repainted()));
@@ -265,6 +276,12 @@ GPlatesQtWidgets::MapView::mousePressEvent(
 					mouse_pointer_is_on_surface(),
 					press_event->button(),
 					press_event->modifiers());
+					
+	emit mouse_pressed(
+		d_mouse_press_info->d_mouse_pointer_scene_coords,
+		d_mouse_press_info->d_is_on_surface,
+		d_mouse_press_info->d_button,
+		d_mouse_press_info->d_modifiers);
 
 }
 
@@ -482,8 +499,14 @@ GPlatesQtWidgets::MapView::draw_svg_output()
 	map_canvas().draw_svg_output();
 }
 
-GPlatesQtWidgets::MapCanvas &
+const GPlatesQtWidgets::MapCanvas &
 GPlatesQtWidgets::MapView::map_canvas() const
+{
+	return *d_map_canvas_ptr;
+}
+
+GPlatesQtWidgets::MapCanvas &
+GPlatesQtWidgets::MapView::map_canvas()
 {
 	return *d_map_canvas_ptr;
 }

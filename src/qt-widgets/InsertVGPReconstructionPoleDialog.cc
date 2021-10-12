@@ -25,9 +25,9 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/Reconstruction.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
-#include "model/Reconstruction.h"
 #include "presentation/ViewState.h"
 #include "PoleSequenceTableWidget.h"
 #include "ReconstructionPoleWidget.h"
@@ -142,32 +142,35 @@ namespace
 			GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder &trs_plate_id_finder,
 			GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder &trs_time_period_finder,
 			GPlatesModel::integer_plate_id_type plate_id_of_interest,
-			const GPlatesModel::Reconstruction &reconstruction,
-			const double &reconstruction_time)
+			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 	{
 		using namespace GPlatesModel;
 
-		std::vector<FeatureHandle::weak_ref>::const_iterator features_iter =
-				reconstruction.reconstruction_tree().get_reconstruction_features().begin();
-		std::vector<FeatureHandle::weak_ref>::const_iterator features_end =
-				reconstruction.reconstruction_tree().get_reconstruction_features().end();
-		for ( ; features_iter != features_end; ++features_iter) {
-			const FeatureHandle::weak_ref &current_feature = *features_iter;
-			if ( ! current_feature.is_valid()) {
+		std::vector<FeatureCollectionHandle::weak_ref>::const_iterator collections_iter =
+				reconstruction_tree.get_reconstruction_features().begin();
+		std::vector<FeatureCollectionHandle::weak_ref>::const_iterator collections_end =
+				reconstruction_tree.get_reconstruction_features().end();
+		for ( ; collections_iter != collections_end; ++collections_iter) {
+			const FeatureCollectionHandle::weak_ref &current_collection = *collections_iter;
+			if ( ! current_collection.is_valid()) {
 				// FIXME:  Should we do anything about this? Or is this acceptable?
-				// (If the handle is not valid, then presumably it belongs to a feature
-				// collection that has been unloaded.  In which case, why hasn't the
-				// reconstruction been recalculated?)
+				// (If the collection is not valid, then presumably it has been
+				// unloaded.  In which case, why hasn't the reconstruction been
+				// recalculated?)
 				continue;
 			}
 
-#if 0			
-			examine_trs(sequence_choices, trs_plate_id_finder,
-					trs_time_period_finder, plate_id_of_interest,
-					reconstruction_time, current_feature);
+#if 0
+			FeatureCollectionHandle::iterator features_iter = current_collection->begin();
+			FeatureCollectionHandle::iterator features_end = current_collection->end();
+			for ( ; features_iter != features_end; ++features_iter) {
+				examine_trs(sequence_choices, trs_plate_id_finder,
+						trs_time_period_finder, plate_id_of_interest,
+						reconstruction_tree.get_reconstruction_time(), features_iter);
+			}
 #endif
 		}
-	} 
+	}
 }
  
  
@@ -208,9 +211,18 @@ GPlatesQtWidgets::InsertVGPReconstructionPoleDialog::setup(
 	
 	QString feature_collection_name;
 	
-
-	
 	// Should I use "reconstruction" or "file state" to access feature collections...?
+	//
+	// This is a tricky one...
+	// "reconstruction" can now contain multiple reconstruction trees but it will only
+	// contain those from "layer"s that have their input feature collection(s) enabled.
+	// One possible solution is to get feature collections by asking the
+	// reconstruction tree "layers" for their input feature collections.
+	// But this is a bit difficult at the moment though - perhaps we can discuss when
+	// this dialog is enabled - John.
+#if 1
+	feature_collection_name = QString("< Create a new feature collection >");
+#else
 	if (d_application_state_ptr->get_current_reconstruction().reconstruction_tree()
 		.get_reconstruction_features().empty())
 	{
@@ -227,6 +239,7 @@ GPlatesQtWidgets::InsertVGPReconstructionPoleDialog::setup(
 							false /*use absolute file name =false */);
 		}	
 	}
+#endif
 	
 	lineedit_collection->setText(feature_collection_name);
 
@@ -237,9 +250,10 @@ GPlatesQtWidgets::InsertVGPReconstructionPoleDialog::setup(
 	GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder trs_plate_id_finder;
 	GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder trs_time_period_finder;
 
+#if 0 // Needs to pass in a ReconstructionTree instead of a Reconstruction...
 	find_trses(sequence_choices, trs_plate_id_finder, trs_time_period_finder, d_reconstruction_pole.d_moving_plate,
-		d_application_state_ptr->get_current_reconstruction(),
-		d_application_state_ptr->get_current_reconstruction_time());	
+		d_application_state_ptr->get_current_reconstruction());	
+#endif
 	
 }
 

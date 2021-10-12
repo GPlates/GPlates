@@ -26,10 +26,16 @@
  */
 
 #include <cmath>
+#include <opengl/OpenGL.h>
 
-#include "SphericalGrid.h"
-#include "OpenGL.h"
 #include "Colour.h"
+#include "SphericalGrid.h"
+
+#include "opengl/GLBlendState.h"
+#include "opengl/GLCompositeDrawable.h"
+#include "opengl/GLCompositeStateSet.h"
+#include "opengl/GLPointLinePolygonState.h"
+#include "opengl/GLRenderGraphDrawableNode.h"
 
 
 namespace
@@ -59,7 +65,7 @@ namespace
 	static const GLsizei KNOT_SIZE = 12;
 
 	// Would have made this const but OpenGL doesn't allow it.
-	static GLfloat knots[KNOT_SIZE] = {
+	static GLfloat KNOTS[KNOT_SIZE] = {
 
 		0.0, 0.0, 0.0,
 		0.25, 0.25,
@@ -73,6 +79,8 @@ namespace
 GPlatesGui::SphericalGrid::SphericalGrid(
 		unsigned num_circles_lat,
 		unsigned num_circles_lon):
+	d_nurbs(GPlatesOpenGL::GLUNurbsRenderer::create()),
+	d_state_set(create_state_set()),
 	d_num_circles_lat(num_circles_lat),
 	d_num_circles_lon(num_circles_lon)
 {
@@ -90,25 +98,42 @@ GPlatesGui::SphericalGrid::SphericalGrid(
 
 void
 GPlatesGui::SphericalGrid::paint(
+		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node,
 		const Colour &colour)
 {
-	glColor3fv(colour);
-	glLineWidth(1.0f);
+	GPlatesOpenGL::GLCompositeDrawable::non_null_ptr_type composite_drawable =
+			GPlatesOpenGL::GLCompositeDrawable::create();
+
+	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type drawable_node =
+			GPlatesOpenGL::GLRenderGraphDrawableNode::create(composite_drawable);
+
+	drawable_node->set_state_set(d_state_set);
+
+	render_graph_parent_node->add_child_node(drawable_node);
 
 	for (unsigned i = 0; i < d_num_circles_lat; i++) {
 		double lat = ((i + 1) * d_lat_delta) - (s_pi / 2);
-		draw_line_of_lat(lat);
+		composite_drawable->add_drawable(
+				draw_line_of_lat(lat, colour));
 	}
 	for (unsigned j = 0; j < d_num_circles_lon; j++) {
 		double lon = j * d_lon_delta;
-		draw_line_of_lon(lon);
+		composite_drawable->add_drawable(
+				draw_line_of_lon(lon, colour));
 	}
 }
 
-void
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
 GPlatesGui::SphericalGrid::draw_line_of_lat(
-		const double &lat)
+		const double &lat,
+		const Colour &colour)
 {
+	boost::shared_array<GLfloat> knots(new GLfloat[KNOT_SIZE]);
+	for (GLsizei n = 0; n < KNOT_SIZE; ++n)
+	{
+		knots[n] = KNOTS[n];
+	}
+
 	/*
 	 * We want to draw a small circle around the z-axis.
 	 * Calculate the height (above z = 0) and radius of this circle.
@@ -119,28 +144,61 @@ GPlatesGui::SphericalGrid::draw_line_of_lat(
 	GLfloat u_radius = WEIGHT * radius;
 	GLfloat u_height = WEIGHT * height;
 
-	GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
+	boost::shared_array<GLfloat> ctrl_points(new GLfloat[NUM_CONTROL_POINTS * STRIDE]);
+	ctrl_points[0 * STRIDE + 0] = radius;
+	ctrl_points[0 * STRIDE + 1] = 0.0f;
+	ctrl_points[0 * STRIDE + 2] = height;
+	ctrl_points[0 * STRIDE + 3] = 1.0f;
+	ctrl_points[1 * STRIDE + 0] = u_radius;
+	ctrl_points[1 * STRIDE + 1] = u_radius;
+	ctrl_points[1 * STRIDE + 2] = u_height;
+	ctrl_points[1 * STRIDE + 3] = WEIGHT;
+	ctrl_points[2 * STRIDE + 0] = 0.0f;
+	ctrl_points[2 * STRIDE + 1] = radius;
+	ctrl_points[2 * STRIDE + 2] = height;
+	ctrl_points[2 * STRIDE + 3] = 1.0f;
+	ctrl_points[3 * STRIDE + 0] = -u_radius;
+	ctrl_points[3 * STRIDE + 1] = u_radius;
+	ctrl_points[3 * STRIDE + 2] = u_height;
+	ctrl_points[3 * STRIDE + 3] = WEIGHT;
+	ctrl_points[4 * STRIDE + 0] = -radius;
+	ctrl_points[4 * STRIDE + 1] = 0.0f;
+	ctrl_points[4 * STRIDE + 2] = height;
+	ctrl_points[4 * STRIDE + 3] = 1.0f;
+	ctrl_points[5 * STRIDE + 0] = -u_radius;
+	ctrl_points[5 * STRIDE + 1] = -u_radius;
+	ctrl_points[5 * STRIDE + 2] = u_height;
+	ctrl_points[5 * STRIDE + 3] = WEIGHT;
+	ctrl_points[6 * STRIDE + 0] = 0.0f;
+	ctrl_points[6 * STRIDE + 1] = -radius;
+	ctrl_points[6 * STRIDE + 2] = height;
+	ctrl_points[6 * STRIDE + 3] = 1.0f;
+	ctrl_points[7 * STRIDE + 0] = u_radius;
+	ctrl_points[7 * STRIDE + 1] = -u_radius;
+	ctrl_points[7 * STRIDE + 2] = u_height;
+	ctrl_points[7 * STRIDE + 3] = WEIGHT;
+	ctrl_points[8 * STRIDE + 0] = radius;
+	ctrl_points[8 * STRIDE + 1] = 0.0f;
+	ctrl_points[8 * STRIDE + 2] = height;
+	ctrl_points[8 * STRIDE + 3] = 1.0f;
 
-		{ radius, 0.0, height, 1.0 },
-		{ u_radius, u_radius, u_height, WEIGHT },
-		{ 0.0, radius, height, 1.0 },
-		{ -u_radius, u_radius, u_height, WEIGHT },
-		{ -radius, 0.0, height, 1.0 },
-		{ -u_radius, -u_radius, u_height, WEIGHT },
-		{ 0.0, -radius, height, 1.0 },
-		{ u_radius, -u_radius, u_height, WEIGHT },
-		{ radius, 0.0, height, 1.0 }
-	};
-
-	d_nurbs->draw_curve(KNOT_SIZE, &knots[0], STRIDE, &ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
+	return d_nurbs->draw_curve(
+			KNOT_SIZE, knots, STRIDE, ctrl_points, ORDER, GL_MAP1_VERTEX_4, colour);
 }
 
 
-void
+GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
 GPlatesGui::SphericalGrid::draw_line_of_lon(
-		const double &lon)
+		const double &lon,
+		const Colour &colour)
 {
 	using namespace GPlatesMaths;
+
+	boost::shared_array<GLfloat> knots(new GLfloat[KNOT_SIZE]);
+	for (GLsizei n = 0; n < KNOT_SIZE; ++n)
+	{
+		knots[n] = KNOTS[n];
+	}
 
 	/*
 	 * We want to draw a great circle which is bisected by the z-axis.
@@ -163,30 +221,87 @@ GPlatesGui::SphericalGrid::draw_line_of_lon(
 	GLfloat u_p_y = WEIGHT * p_y;
 	GLfloat u_p_z = WEIGHT * static_cast<GLfloat>(1.0);
 
-	GLfloat ctrl_points[NUM_CONTROL_POINTS][STRIDE] = {
+	boost::shared_array<GLfloat> ctrl_points(new GLfloat[NUM_CONTROL_POINTS * STRIDE]);
+	// North pole
+	ctrl_points[0 * STRIDE + 0] = 0.0;
+	ctrl_points[0 * STRIDE + 1] = 0.0;
+	ctrl_points[0 * STRIDE + 2] = 1.0;
+	ctrl_points[0 * STRIDE + 3] = 1.0;
+	ctrl_points[1 * STRIDE + 0] = u_p_x;
+	ctrl_points[1 * STRIDE + 1] = u_p_y;
+	ctrl_points[1 * STRIDE + 2] = u_p_z;
+	ctrl_points[1 * STRIDE + 3] = WEIGHT;
+	ctrl_points[2 * STRIDE + 0] = p_x;
+	ctrl_points[2 * STRIDE + 1] = p_y;
+	ctrl_points[2 * STRIDE + 2] = 0.0;
+	ctrl_points[2 * STRIDE + 3] = 1.0;
+	ctrl_points[3 * STRIDE + 0] = u_p_x;
+	ctrl_points[3 * STRIDE + 1] = u_p_y;
+	ctrl_points[3 * STRIDE + 2] = -u_p_z;
+	ctrl_points[3 * STRIDE + 3] = WEIGHT;
+	// South pole
+	ctrl_points[4 * STRIDE + 0] = 0.0;
+	ctrl_points[4 * STRIDE + 1] = 0.0;
+	ctrl_points[4 * STRIDE + 2] = -1.0;
+	ctrl_points[4 * STRIDE + 3] = 1.0;
+	ctrl_points[5 * STRIDE + 0] = -u_p_x;
+	ctrl_points[5 * STRIDE + 1] = -u_p_y;
+	ctrl_points[5 * STRIDE + 2] = -u_p_z;
+	ctrl_points[5 * STRIDE + 3] = WEIGHT;
+	ctrl_points[6 * STRIDE + 0] = -p_x;
+	ctrl_points[6 * STRIDE + 1] = -p_y;
+	ctrl_points[6 * STRIDE + 2] = 0.0;
+	ctrl_points[6 * STRIDE + 3] = 1.0;
+	ctrl_points[7 * STRIDE + 0] = -u_p_x;
+	ctrl_points[7 * STRIDE + 1] = -u_p_y;
+	ctrl_points[7 * STRIDE + 2] = u_p_z;
+	ctrl_points[7 * STRIDE + 3] = WEIGHT;
+	// North pole again (to close loop)
+	ctrl_points[8 * STRIDE + 0] = 0.0;
+	ctrl_points[8 * STRIDE + 1] = 0.0;
+	ctrl_points[8 * STRIDE + 2] = 1.0;
+	ctrl_points[8 * STRIDE + 3] = 1.0;
 
-		{ 0.0, 0.0, 1.0, 1.0 },    // North pole
-		{ u_p_x, u_p_y, u_p_z, WEIGHT },
-		{ p_x, p_y, 0.0, 1.0 },
-		{ u_p_x, u_p_y, -u_p_z, WEIGHT },
-		{ 0.0, 0.0, -1.0, 1.0 },   // South pole
-		{ -u_p_x, -u_p_y, -u_p_z, WEIGHT },
-		{ -p_x, -p_y, 0.0, 1.0 },
-		{ -u_p_x, -u_p_y, u_p_z, WEIGHT },
-		{ 0.0, 0.0, 1.0, 1.0 }     // North pole again (to close loop).
-	};
-
-	d_nurbs->draw_curve(KNOT_SIZE, &knots[0], STRIDE, &ctrl_points[0][0], ORDER, GL_MAP1_VERTEX_4);
+	return d_nurbs->draw_curve(
+			KNOT_SIZE, knots, STRIDE, ctrl_points, ORDER, GL_MAP1_VERTEX_4, colour);
 }
 
 
 void
 GPlatesGui::SphericalGrid::paint_circumference(
+		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node,
 		const GPlatesGui::Colour &colour)
 {
-	glColor3fv(colour);
+	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type drawable =
+			draw_line_of_lon(s_pi/2.0, colour);
 
-	draw_line_of_lon(s_pi/2.0);
+	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type drawable_node =
+			GPlatesOpenGL::GLRenderGraphDrawableNode::create(drawable);
+
+	drawable_node->set_state_set(d_state_set);
+
+	render_graph_parent_node->add_child_node(drawable_node);
+}
+
+
+GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
+GPlatesGui::SphericalGrid::create_state_set()
+{
+	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type composite_state =
+			GPlatesOpenGL::GLCompositeStateSet::create();
+
+	// Set the alpha-blend state.
+	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
+			GPlatesOpenGL::GLBlendState::create();
+	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	composite_state->add_state_set(blend_state);
+
+	// Set the anti-aliased line state.
+	GPlatesOpenGL::GLLineState::non_null_ptr_type line_state = GPlatesOpenGL::GLLineState::create();
+	line_state->gl_enable_line_smooth(GL_TRUE).gl_hint_line_smooth(GL_NICEST).gl_line_width(1.0f);
+	composite_state->add_state_set(line_state);
+
+	return composite_state;
 }
 
 

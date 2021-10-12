@@ -32,7 +32,6 @@
 
 #include "gui/FeatureFocus.h"
 #include "model/FeatureHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
 
 
 namespace GPlatesAppLogic
@@ -89,7 +88,7 @@ namespace GPlatesQtWidgets
 		void
 		edit_feature(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg);
+				GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg);
 
 	private slots:
 		
@@ -113,7 +112,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * The @a ReconstructionGeometry associated with the feature that is in focus.
 		 */
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_rg;
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_focused_rg;
 	};
 }
 

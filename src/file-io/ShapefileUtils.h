@@ -7,7 +7,7 @@
 * Most recent change:
 *   $Date$
 * 
-* Copyright (C) 2009 Geological Survey of Norway
+* Copyright (C) 2009, 2010 Geological Survey of Norway
 *
 * This file is part of GPlates.
 *
@@ -31,6 +31,8 @@
 #include <QFileInfo>
 #include <QMap>
 #include <QString>
+
+#include "property-values/GpmlKeyValueDictionary.h"
 
 namespace GPlatesFileIO
 {
@@ -129,7 +131,13 @@ namespace GPlatesFileIO
 			const QString &filename,
 			const QMap<QString,QString> &model_to_attribute_map);
 	
+		void
+		create_default_kvd_from_collection(
+			const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+			boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> 
+				&default_key_value_dictionary);
 
+	
 	}
 
 }

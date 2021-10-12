@@ -121,6 +121,16 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gml_file(
+				const GPlatesPropertyValues::GmlFile &gml_file);
+
+		virtual
+		void
+		visit_gml_grid_envelope(
+				const GPlatesPropertyValues::GmlGridEnvelope &gml_grid_envelope);
+
+		virtual
+		void
 		visit_gml_line_string(
 				const GPlatesPropertyValues::GmlLineString &gml_line_string);
 
@@ -143,6 +153,11 @@ namespace GPlatesFileIO
 		void
 		visit_gml_polygon(
 				const GPlatesPropertyValues::GmlPolygon &gml_polygon);
+
+		virtual
+		void
+		visit_gml_rectified_grid(
+				const GPlatesPropertyValues::GmlRectifiedGrid &gml_rectified_grid);
 
 		virtual
 		void
@@ -223,6 +238,11 @@ namespace GPlatesFileIO
 		void
 		visit_gpml_property_delegate(
 				const GPlatesPropertyValues::GpmlPropertyDelegate &gpml_property_delegate);
+
+		virtual
+		void
+		visit_gpml_raster_band_names(
+				const GPlatesPropertyValues::GpmlRasterBandNames &gpml_raster_band_names);
 
 		virtual
 		void

@@ -25,9 +25,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "AgeColourPalettes.h"
 #include "ColourSchemeContainer.h"
-#include "ColourSchemeFactory.h"
+#include "FeatureTypeColourPalette.h"
+#include "GenericColourScheme.h"
 #include "HTMLColourNames.h"
+#include "PlateIdColourPalettes.h"
+#include "SingleColourScheme.h"
+
+#include "app-logic/PropertyExtractors.h"
 
 #include "presentation/ViewState.h"
 
@@ -149,22 +155,32 @@ GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
 	add(
 			ColourSchemeCategory::PLATE_ID,
 			ColourSchemeInfo(
-				ColourSchemeFactory::create_default_plate_id_colour_scheme(),
+				make_colour_scheme(
+					DefaultPlateIdColourPalette::create(),
+					GPlatesAppLogic::PlateIdPropertyExtractor()),
 				"Default",
-				"Colours geometries by plate ID in a manner that visually distinguishes nearby plates",
+				"Colour geometries by plate ID in a manner that visually distinguishes nearby plates",
 				true));
 	add(
 			ColourSchemeCategory::PLATE_ID,
 			ColourSchemeInfo(
-				ColourSchemeFactory::create_regional_plate_id_colour_scheme(),
+				make_colour_scheme(
+					RegionalPlateIdColourPalette::create(),
+					GPlatesAppLogic::PlateIdPropertyExtractor()),
 				"Group by Region",
-				"Colours geometries by plate ID such that plates with the same leading digit have similar colours",
+				"Colour geometries by plate ID such that plates with the same leading digit have similar colours",
 				true));
 
 	// Single Colour colouring schemes:
 	add_single_colour_scheme(
 			Colour::get_white(),
 			"white");
+	add_single_colour_scheme(
+			Colour::get_black(),
+			"black");
+	add_single_colour_scheme(
+			Colour::get_silver(),
+			"silver");
 	add_single_colour_scheme(
 			*HTMLColourNames::instance().get_colour("gold"),
 			"gold");
@@ -185,25 +201,31 @@ GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
 	add(
 			ColourSchemeCategory::FEATURE_AGE,
 			ColourSchemeInfo(
-				ColourSchemeFactory::create_default_age_colour_scheme(view_state.get_application_state()),
+				make_colour_scheme(
+					DefaultAgeColourPalette::create(),
+					GPlatesAppLogic::AgePropertyExtractor(view_state.get_application_state())),
 				"Default",
-				"Colours geometries by their age based on the current reconstruction time",
+				"Colour geometries by age based on the current reconstruction time",
 				true));
 	add(
 			ColourSchemeCategory::FEATURE_AGE,
 			ColourSchemeInfo(
-				ColourSchemeFactory::create_monochrome_age_colour_scheme(view_state.get_application_state()),
+				make_colour_scheme(
+					MonochromeAgeColourPalette::create(),
+					GPlatesAppLogic::AgePropertyExtractor(view_state.get_application_state())),
 				"Monochrome",
-				"Colours geometries, in shades of grey, by their age based on the current reconstruction time",
+				"Colour geometries by age based on the current reconstruction time using shades of grey",
 				true));
 
 	// Feature Type colour schemes:
 	add(
 			ColourSchemeCategory::FEATURE_TYPE,
 			ColourSchemeInfo(
-				ColourSchemeFactory::create_default_feature_colour_scheme(),
+				make_colour_scheme(
+					FeatureTypeColourPalette::create(),
+					GPlatesAppLogic::FeatureTypePropertyExtractor()),
 				"Default",
-				"Colours geometries by feature type",
+				"Colour geometries by feature type",
 				true));
 }
 
@@ -249,8 +271,8 @@ GPlatesGui::ColourSchemeContainer::create_single_colour_scheme(
 	capitalised_colour_name[0] = capitalised_colour_name[0].toUpper();
 
 	return ColourSchemeInfo(
-			ColourSchemeFactory::create_single_colour_scheme(colour),
+			make_single_colour_scheme(colour),
 			capitalised_colour_name,
-			"Colours all geometries " + colour_name,
+			"Colour all geometries " + colour_name,
 			is_built_in);
 }

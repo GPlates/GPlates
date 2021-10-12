@@ -33,7 +33,11 @@
 #include "ColourScheme.h"
 #include "MapProjection.h"
 #include "TextRenderer.h"
+
 #include "gui/ViewportZoom.h"
+
+#include "presentation/VisualLayers.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 
 namespace GPlatesGui
@@ -49,6 +53,7 @@ namespace GPlatesGui
 
 		Map(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
 				ViewportZoom &viewport_zoom,
 				ColourScheme::non_null_ptr_type colour_scheme);
@@ -56,8 +61,11 @@ namespace GPlatesGui
 		MapProjection &
 		projection();
 
+		const MapProjection &
+		projection() const;
+
 		ProjectionType
-		projection_type();
+		projection_type() const;
 
 		void
 		set_projection_type(
@@ -99,6 +107,8 @@ namespace GPlatesGui
 		//! A pointer to the state's RenderedGeometryCollection
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type d_update_type;
+
+		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		//! Used for rendering text
 		GPlatesGui::TextRenderer::ptr_to_const_type d_text_renderer_ptr;

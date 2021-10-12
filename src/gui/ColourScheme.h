@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -34,7 +34,7 @@
 #include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
 
-namespace GPlatesModel
+namespace GPlatesAppLogic
 {
 	class ReconstructionGeometry;
 }
@@ -72,7 +72,7 @@ namespace GPlatesGui
 		virtual
 		boost::optional<Colour>
 		get_colour(
-				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const = 0;
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const = 0;
 
 	};
 }

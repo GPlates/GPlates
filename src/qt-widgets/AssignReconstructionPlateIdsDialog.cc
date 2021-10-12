@@ -26,6 +26,7 @@
 #include <numeric>
 #include <vector>
 #include <boost/cast.hpp>
+#include <boost/foreach.hpp>
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QString>
@@ -37,6 +38,8 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/AssignPlateIds.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionTree.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "global/AssertionFailureException.h"
@@ -281,8 +284,8 @@ GPlatesAppLogic::AssignPlateIds::non_null_ptr_type
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 {
 	// Get the reconstruction files.
-	const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruction_feature_collections =
-			get_active_reconstruction_files();
+	const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+			reconstruction_feature_collections = get_default_reconstruction_feature_collections();
 
 	// Get the partitioning polygon files.
 	const feature_collection_seq_type partitioning_feature_collections =
@@ -448,25 +451,21 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::pop_up_no_partitioned_file
 
 
 std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_active_reconstruction_files()
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_default_reconstruction_feature_collections()
 {
+	// Get the feature collection(s) used to create the default reconstruction tree.
 	//
-	// Get a list of all active file reconstruction files.
-	//
-	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruction_files;
+	// FIXME: Now that the user can select a non-default reconstruction tree for specific
+	// layers it's possible the user doesn't want to use the default reconstruction tree layer
+	// (which generated this default reconstruction tree) - currently they'd have to change
+	// the default layer before using this dialog.
+	// Perhaps we should ask the user to select the reconstruction feature collections they
+	// want to use (and bypass the layers which we already do for the partitioning and
+	// partitioned feature collections).
+	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
+			d_application_state.get_current_reconstruction().get_default_reconstruction_tree();
 
-	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator_range active_files =
-			d_feature_collection_file_state.get_active_reconstruction_files();
-
-	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator file_iter = active_files.begin;
-	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator file_end = active_files.end;
-	for ( ; file_iter != file_end; ++file_iter)
-	{
-		GPlatesFileIO::File &file = *file_iter;
-		reconstruction_files.push_back(file.get_feature_collection());
-	}
-
-	return reconstruction_files;
+	return default_reconstruction_tree->get_reconstruction_features();
 }
 
 
@@ -478,14 +477,13 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_loaded_files()
 	//
 	file_ptr_seq_type loaded_files;
 
-	const GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range loaded_files_range =
+	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_file_refs =
 			d_feature_collection_file_state.get_loaded_files();
-
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator loaded_file_iter = loaded_files_range.begin;
-	GPlatesAppLogic::FeatureCollectionFileState::file_iterator loaded_file_end = loaded_files_range.end;
-	for ( ; loaded_file_iter != loaded_file_end; ++loaded_file_iter)
+	BOOST_FOREACH(
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &loaded_file_ref,
+			loaded_file_refs)
 	{
-		GPlatesFileIO::File &loaded_file = *loaded_file_iter;
+		const GPlatesFileIO::File::Reference &loaded_file = loaded_file_ref.get_file();
 		loaded_files.push_back(&loaded_file);
 	}
 
@@ -710,7 +708,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::initialise_file_list(
 		file_iter != files.end();
 		++file_iter)
 	{
-		add_row(file_state_collection, *file_iter);
+		add_row(file_state_collection, **file_iter);
 	}
 }
 
@@ -727,9 +725,9 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::clear_rows(
 void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::add_row(
 		FileStateCollection &file_state_collection,
-		GPlatesFileIO::File *file)
+		const GPlatesFileIO::File::Reference &file)
 {
-	const GPlatesFileIO::FileInfo &file_info = file->get_file_info();
+	const GPlatesFileIO::FileInfo &file_info = file.get_file_info();
 
 	// Obtain information from the FileInfo
 	const QFileInfo &qfileinfo = file_info.get_qfileinfo();

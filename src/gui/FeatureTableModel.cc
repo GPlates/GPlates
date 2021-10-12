@@ -25,31 +25,39 @@
 
 #include "FeatureTableModel.h"
 
+#include <utility>
+#include <vector>
 #include <QApplication>
 #include <QHeaderView>
 #include <QString>
 #include <QLocale>
+#include <QDateTime>
 #include <QFont>
-#include <QFontMetrics>
 #include <QDebug>
 #include <boost/none.hpp>
 
+#include "FeatureFocus.h"
+
+#include "app-logic/ApplicationState.h"
+#include "app-logic/ReconstructGraph.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
-#include "model/types.h"
-#include "model/FeatureHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/GeometryFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
-#include "property-values/GmlTimePeriod.h"
-#include "property-values/GpmlPlateId.h"
-#include "property-values/GeoTimeInstant.h"
-#include "property-values/XsString.h"
-#include "utils/UnicodeStringUtils.h"
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
+#include "model/types.h"
+#include "model/FeatureHandle.h"
+#include "presentation/ViewState.h"
+#include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlPlateId.h"
+#include "property-values/GeoTimeInstant.h"
+#include "property-values/XsString.h"
+#include "utils/QtFormattingUtils.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -58,7 +66,7 @@
 namespace
 {
 	typedef const QVariant (*table_cell_accessor_type)(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry);
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry);
 	
 	struct ColumnHeadingInfo
 	{
@@ -75,7 +83,7 @@ namespace
 	
 	const QVariant
 	null_table_accessor(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry)
 	{
 		return QVariant();
 	}
@@ -83,24 +91,16 @@ namespace
 
 	const boost::optional<GPlatesModel::FeatureHandle::weak_ref>
 	get_feature_weak_ref_if_valid(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry)
 	{
 		// See if reconstruction geometry references a feature.
-		GPlatesModel::FeatureHandle::weak_ref feature_ref;
-		if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(geometry, feature_ref))
-		{
-			// It's a reconstruction geometry with no feature reference or feature reference
-			// is invalid.
-			return boost::none;
-		}
-
-		return boost::optional<GPlatesModel::FeatureHandle::weak_ref>(feature_ref);
+		return GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(geometry);
 	}
 
 
 	const QVariant
 	get_feature_type(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry)
 	{
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
@@ -139,7 +139,7 @@ namespace
 
 	const QVariant
 	get_plate_id(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry)
 	{
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
@@ -192,7 +192,7 @@ namespace
 
 	const QVariant
 	get_time_begin(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry)
 	{
 		static const GPlatesModel::PropertyName valid_time_property_name =
 				GPlatesModel::PropertyName::create_gml("validTime");
@@ -217,7 +217,7 @@ namespace
 
 	const QVariant
 	get_time_end(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry)
 	{
 		static const GPlatesModel::PropertyName valid_time_property_name =
 				GPlatesModel::PropertyName::create_gml("validTime");
@@ -242,7 +242,7 @@ namespace
 
 	const QVariant
 	get_name(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry)
 	{
 		// FIXME: Need to adapt according to user's current codeSpace setting.
 		static const GPlatesModel::PropertyName name_property_name = 
@@ -266,7 +266,7 @@ namespace
 
 	const QVariant
 	get_description(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
 		static const GPlatesModel::PropertyName description_property_name = 
 				GPlatesModel::PropertyName::create_gml("description");
@@ -448,23 +448,13 @@ namespace
 			ReconstructionGeometryPointer geometry)
 	{
 		// See if type derived from ReconstructionGeometry has a valid geometry property.
-		GPlatesModel::FeatureHandle::iterator geometry_property;
-		if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
-				geometry, geometry_property))
-		{
-			// The derived reconstruction geometry type has no geometry property or
-			// the property iterator is not valid, so we'll return boost::none instead.
-			return boost::none;
-		}
-
-		return boost::optional<GPlatesModel::FeatureHandle::iterator>(
-				geometry_property);
+		return GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(geometry);
 	}
 
 
 	const QVariant
 	get_present_day_geometry(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry)
 	{
 		boost::optional<GPlatesModel::FeatureHandle::iterator> property =
 				get_geometry_property_if_valid(geometry);
@@ -483,7 +473,7 @@ namespace
 
 	const QVariant
 	get_clicked_geometry_property(
-			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry)
 	{
 		boost::optional<GPlatesModel::FeatureHandle::iterator> property =
 				get_geometry_property_if_valid(geometry);
@@ -495,6 +485,22 @@ namespace
 	}
 
 
+	const QVariant
+	get_creation_time(
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry)
+	{
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref_opt =
+				get_feature_weak_ref_if_valid(geometry);
+		if (weak_ref_opt) {
+			// Convert raw time_t into a more useful QDateTime.
+			QDateTime created = QDateTime::fromTime_t((*weak_ref_opt)->creation_time());
+			return GPlatesUtils::qdatetime_to_elapsed_duration(created);
+		}
+		return QVariant();
+	}
+			
+
+
 	// The dispatch table for the above functions:
 	
 	static const ColumnHeadingInfo column_heading_info_table[] = {
@@ -503,7 +509,7 @@ namespace
 				get_feature_type, Qt::AlignLeft | Qt::AlignVCenter },
 
 		{ QT_TR_NOOP("Plate ID"), QT_TR_NOOP("The plate ID used to reconstruct this feature"),
-				60, QHeaderView::Fixed,
+				60, QHeaderView::ResizeToContents, // Note: used to be Fixed.
 				get_plate_id, Qt::AlignCenter },
 
 		{ QT_TR_NOOP("Name"), QT_TR_NOOP("A convenient label for this feature"),
@@ -515,12 +521,16 @@ namespace
 				get_clicked_geometry_property, Qt::AlignLeft | Qt::AlignVCenter },
 
 		{ QT_TR_NOOP("Begin"), QT_TR_NOOP("The time of appearance (Ma)"),
-				60, QHeaderView::Fixed,
+				60, QHeaderView::ResizeToContents, // Note: used to be Fixed.
 				get_time_begin, Qt::AlignCenter },
 
 		{ QT_TR_NOOP("End"), QT_TR_NOOP("The time of disappearance (Ma)"),
-				60, QHeaderView::Fixed,
+				60, QHeaderView::ResizeToContents, // Note: used to be Fixed.
 				get_time_end, Qt::AlignCenter }, 
+
+		{ QT_TR_NOOP("Created"), QT_TR_NOOP("How long ago the feature data was created (or loaded into GPlates)"),
+				140, QHeaderView::ResizeToContents,
+				get_creation_time, Qt::AlignCenter },
 
 		{ QT_TR_NOOP("Present-day geometry (lat ; lon)"), QT_TR_NOOP("A summary of the present-day coordinates"),
 				240, QHeaderView::ResizeToContents,
@@ -580,13 +590,29 @@ namespace
 }
 
 
+GPlatesGui::FeatureTableModel::ReconstructionGeometryRow::ReconstructionGeometryRow(
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry_,
+		const GPlatesAppLogic::ReconstructGraph &reconstruct_graph_) :
+	reconstruction_geometry(reconstruction_geometry_),
+	reconstruction_tree_layer(
+			find_layer(
+					reconstruct_graph_,
+					reconstruction_geometry_->reconstruction_tree()))
+{
+}
+
 
 GPlatesGui::FeatureTableModel::FeatureTableModel(
-		FeatureFocus &feature_focus,
+		GPlatesPresentation::ViewState &view_state,
 		QObject *parent_):
 	QAbstractTableModel(parent_),
-	d_feature_focus_ptr(&feature_focus)
+	d_feature_focus_ptr(&view_state.get_feature_focus())
 {
+	QObject::connect(&view_state.get_application_state(),
+			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
+			this,
+			SLOT(handle_reconstruction(GPlatesAppLogic::ApplicationState &)));
+
 	QObject::connect(d_feature_focus_ptr,
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
@@ -624,22 +650,6 @@ GPlatesGui::FeatureTableModel::headerData(
 {
 	// The new way we are attempting to return an appropriate vertical
 	// and horizontal size in the Qt::SizeHintRole for the header!
-	QFontMetrics fm = QApplication::fontMetrics();
-	
-#if 0
-	qDebug() << "\nFONT METRICS DEBUGGING:";
-	qDebug() << "QApplication::style() == " << QApplication::style()->metaObject()->className();
-	qDebug() << "QApplication::font().toString() == " << QApplication::font().toString();
-	qDebug() << "QLocale().name() == " << QLocale().name();
-	qDebug() << "fm.ascent() == " << fm.ascent();
-	qDebug() << "fm.descent() == " << fm.descent();
-	qDebug() << "fm.boundingRect(Q) == " << fm.boundingRect('Q');
-	qDebug() << "fm.boundingRect(y) == " << fm.boundingRect('y');
-	qDebug() << "fm.boundingRect(QylLj!|[]`~_) == " << fm.boundingRect("QylLj!|[]`~_");
-	qDebug() << "fm.height() == " << fm.height();
-	qDebug() << "fm.lineSpacing() == " << fm.lineSpacing();
-	qDebug() << "fm.leading() == " << fm.leading();
-#endif
 	
 	// We are only interested in modifying the horizontal header.
 	if (orientation == Qt::Horizontal) {
@@ -652,6 +662,10 @@ GPlatesGui::FeatureTableModel::headerData(
 		} else if (role == Qt::ToolTipRole) {
 			return get_column_tooltip(section);
 			
+#if 0
+		// Commenting this out because the logic is chopping off the descenders of
+		// letters (like the bottom part of 'g').
+
 		} else if (role == Qt::SizeHintRole) {
 			// Annoyingly, the metrics alone do not appear to be sufficient to supply
 			// the height of the header, so a few pixels are added.
@@ -660,7 +674,7 @@ GPlatesGui::FeatureTableModel::headerData(
 			// the width does not updated until a call to
 			// QTableView::resizeColumnsToContents();
 			return QSize(get_column_width(section), fm.height()+4);
-			
+#endif		
 		} else {
 			return QVariant();
 		}
@@ -685,8 +699,8 @@ GPlatesGui::FeatureTableModel::data(
 	}
 	
 	if (role == Qt::DisplayRole) {
-		GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry =
-				d_sequence.at(idx.row());
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type geometry =
+				d_sequence.at(idx.row()).reconstruction_geometry;
 
 		// Cell contents is returned via call to column-specific dispatch function.
 		table_cell_accessor_type accessor = get_column_accessor(idx.column());
@@ -713,39 +727,21 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 	if ( ! idx.isValid()) {
 		return;
 	}
-	GPlatesModel::ReconstructionGeometry *rg = d_sequence.at(idx.row()).get();
+	const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type rg =
+			d_sequence.at(idx.row()).reconstruction_geometry;
 
 	// set the current index
 	d_current_index = idx;
 
 	// See if reconstruction geometry references a feature.
-	GPlatesModel::FeatureHandle::weak_ref feature_ref;
-	if (GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
-			rg, feature_ref))
+	boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(rg);
+	if (feature_ref)
 	{
 		// When the user clicks a line of the table, we change the currently focused
 		// feature.
 		//
-
-		// NOTE: We use the geometry property iterator rather than the reconstruction geometry
-		// because the reconstruction time may have changed since the reconstruction geometries
-		// were added to the table and hence (for RFGs) they no longer reference a Reconstruction
-		// (since it probably got deleted/replaced and set all its RFGs to point to NULL).
-		// This can be problematic when we set one of these reconstruction geometries as
-		// as the focused geometry because the code to highlight the focused geometry
-		// finds all reconstruction geometries that are in the same Reconstruction as the
-		// focused geometry and if that is NULL then RFGs from all Reconstruction's are
-		// found and we start drawing RFGs from different reconstruction times.
-		// FIXME: A better solution might be to store geometry property iterators in the
-		// table rather than reconstruction geometries.
-		boost::optional<GPlatesModel::FeatureHandle::iterator> rg_geom_property =
-				get_geometry_property_if_valid(rg);
-		if (rg_geom_property)
-		{
-			// FIXME: If we end up using this class elsewhere, e.g. search results, we may
-			// want to re-evaluate this behaviour.
-			d_feature_focus_ptr->set_focus(feature_ref, *rg_geom_property);
-		}
+		d_feature_focus_ptr->set_focus(feature_ref.get(), rg);
 	}
 }
 
@@ -765,14 +761,14 @@ GPlatesGui::FeatureTableModel::handle_feature_modified(
 	geometry_sequence_type::const_iterator end = d_sequence.end();
 	for ( ; it != end; ++it, ++row)
 	{
-		GPlatesModel::ReconstructionGeometry *rg = it->get();
+		const GPlatesAppLogic::ReconstructionGeometry *rg = it->reconstruction_geometry.get();
 
-		GPlatesModel::FeatureHandle::weak_ref feature_ref;
-		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
-				rg, feature_ref))
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(rg);
+		if (feature_ref)
 		{
 			// The RG references a feature, so let's look at the feature it's referencing.
-			if (feature_ref == modified_feature_ref)
+			if (feature_ref.get() == modified_feature_ref)
 			{
 				QModelIndex idx_begin = index(row, 0);
 				QModelIndex idx_end = index(row, NUM_ELEMS(column_heading_info_table) - 1);
@@ -780,6 +776,110 @@ GPlatesGui::FeatureTableModel::handle_feature_modified(
 			}
 		}
 		// Else it doesn't reference a feature.
+	}
+}
+
+
+void
+GPlatesGui::FeatureTableModel::handle_reconstruction(
+		GPlatesAppLogic::ApplicationState &application_state)
+{
+	std::vector<int> rows_to_remove;
+
+	// Iterate over the reconstruction geometries and update them if possible for
+	// the new reconstruction.
+	int row = 0;
+	geometry_sequence_type::iterator it = d_sequence.begin();
+	geometry_sequence_type::iterator end = d_sequence.end();
+	for ( ; it != end; ++it, ++row)
+	{
+		// FIXME: For the time being assume there's only one reconstruction tree active
+		// (the default reconstruction tree from the default reconstruction tree layer).
+		// It will soon be possible for the user to connect up a non-default reconstruction tree
+		// in which case we'll need to handle this better.
+#if 1
+		// Find the new ReconstructionGeometry, if any, from inside the current Reconstruction
+		// that corresponds to the current ReconstructionGeometry.
+		const GPlatesAppLogic::ReconstructionGeometry &old_rg = *it->reconstruction_geometry;
+		boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> new_rg =
+				GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometry(
+						old_rg,
+						*application_state.get_current_reconstruction().get_default_reconstruction_tree());
+#else
+		const boost::optional<GPlatesAppLogic::Layer> &recon_tree_layer =
+				it->reconstruction_tree_layer;
+
+		// If the reconstruction tree layer has since been destroyed then
+		// record this row for later removal.
+		if (!recon_tree_layer)
+		{
+			rows_to_remove.push_back(row);
+			continue;
+		}
+
+		// Get the reconstruction tree output of the current reconstruction tree layer.
+		const boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type>
+				reconstruction_tree = recon_tree_layer->get_output_data<
+						GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type>();
+
+		// If the reconstruction tree layer has since changed its output data type
+		// for some reason then record this row for later removal.
+		if (!reconstruction_tree)
+		{
+			rows_to_remove.push_back(row);
+			continue;
+		}
+
+		// Find the new ReconstructionGeometry, if any, from inside the current Reconstruction
+		// that corresponds to the current ReconstructionGeometry.
+		const GPlatesAppLogic::ReconstructionGeometry &old_rg = *it->reconstruction_geometry;
+		boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> new_rg =
+				GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometry(
+						old_rg,
+						*reconstruction_tree.get());
+#endif
+
+		// If no new reconstruction geometry could be found then it's possible the
+		// current reconstruction time is outside the begin/end valid time range of the
+		// current feature in which case we'll just leave it in case the time changes back again
+		// in which case the reconstruction geometry will become highlighted again.
+		if (!new_rg)
+		{
+			//rows_to_remove.push_back(row);
+			continue;
+		}
+
+		// Change the reconstruction geometry for the current row.
+		it->reconstruction_geometry = new_rg.get();
+
+		// Notify of the change.
+		QModelIndex idx_begin = index(row, 0);
+		QModelIndex idx_end = index(row, NUM_ELEMS(column_heading_info_table) - 1);
+		emit dataChanged(idx_begin, idx_end);
+	}
+
+	if (rows_to_remove.empty())
+	{
+		return;
+	}
+
+	// Remove rows that don't have a ReconstructionGeometry for the current reconstruction.
+	// NOTE: We're removing the rows with higher indices first to avoid removing the wrong
+	// subsequent rows.
+	std::vector<int>::const_reverse_iterator remove_rows_iter = rows_to_remove.rbegin();
+	std::vector<int>::const_reverse_iterator remove_rows_end = rows_to_remove.rend();
+	for ( ; remove_rows_iter != remove_rows_end; ++remove_rows_iter)
+	{
+		const int row_to_remove = *remove_rows_iter;
+
+		// Get the iterator to the reconstruction geometry that we'll be removing.
+		geometry_sequence_type::iterator geometry_iter = d_sequence.begin();
+		std::advance(geometry_iter, row_to_remove);
+
+		// Remove the row.
+		begin_remove_features(row_to_remove, row_to_remove);
+		d_sequence.erase(geometry_iter);
+		end_remove_features();
 	}
 }
 
@@ -794,17 +894,16 @@ GPlatesGui::FeatureTableModel::set_default_resize_modes(
 }
 
 
-#if 0
 QModelIndex
-GPlatesGui::FeatureTableModel::get_index_for_feature(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+GPlatesGui::FeatureTableModel::get_index_for_geometry(
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry)
 {
-	// Figure out which row of the table (if any) contains the target feature.
-	FeatureWeakRefSequence::const_iterator it = d_sequence_ptr->begin();
-	FeatureWeakRefSequence::const_iterator end = d_sequence_ptr->end();
+	// Figure out which row of the table (if any) contains the target geometry.
+	geometry_sequence_type::const_iterator it = d_sequence.begin();
+	geometry_sequence_type::const_iterator end = d_sequence.end();
 	int row = 0;
 	for ( ; it != end; ++it, ++row) {
-		if (*it == feature_ref) {
+		if (it->reconstruction_geometry == reconstruction_geometry) {
 			QModelIndex idx = index(row, 0);
 			return idx;
 		}
@@ -813,4 +912,3 @@ GPlatesGui::FeatureTableModel::get_index_for_feature(
 	// No such feature exists in our table, return an invalid index.
 	return QModelIndex();
 }
-#endif

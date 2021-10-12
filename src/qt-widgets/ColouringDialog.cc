@@ -24,28 +24,37 @@
  */
 
 #include <boost/foreach.hpp>
+#include <QPalette>
+#include <QApplication>
+#include <QColorDialog>
+#include <QDesktopWidget>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QHeaderView>
-#include <QApplication>
-#include <QDesktopWidget>
+#include <QMessageBox>
 #include <QMetaType>
 #include <QPixmap>
-#include <QColorDialog>
-#include <QFileDialog>
-#include <QMessageBox>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QList>
+#include <QUrl>
 
 #include "ColouringDialog.h"
 #include "GlobeAndMapWidget.h"
+#include "QtWidgetUtils.h"
+#include "ReadErrorAccumulationDialog.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/PropertyExtractors.h"
 
-#include "file-io/RegularCptReader.h"
+#include "file-io/CptReader.h"
+#include "file-io/File.h"
 
 #include "gui/Colour.h"
 #include "gui/ColourSchemeContainer.h"
 #include "gui/ColourSchemeInfo.h"
-#include "gui/ColourSchemeFactory.h"
-#include "gui/GenericContinuousColourPalette.h"
+#include "gui/CptColourPalette.h"
+#include "gui/GenericColourScheme.h"
 #include "gui/HTMLColourNames.h"
 #include "gui/SingleColourScheme.h"
 
@@ -68,25 +77,23 @@ Q_DECLARE_METATYPE(GPlatesModel::WeakReference<const GPlatesModel::FeatureCollec
 
 namespace
 {
+	const QString NEW_FEATURE_COLLECTION = "New Feature Collection";
+
 	void
 	insert_separator(
 			QComboBox *combobox)
 	{
-#if QT_VERSION >= 0x040400
 		combobox->insertSeparator(combobox->count());
-#endif
 	}
 
 	void
 	remove_separator(
 			QComboBox *combobox)
 	{
-#if QT_VERSION >= 0x040400
 		if (combobox->count() == 2)
 		{
 			combobox->removeItem(1);
 		}
-#endif
 	}
 
 	/**
@@ -142,6 +149,7 @@ namespace
 	void
 	add_feature_collection_to_combobox(
 			GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection,
+			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &loaded_files,
 			QComboBox *combobox)
 	{
 		// FIXME: Maybe show a feature collection only if it contains reconstructable features.
@@ -155,12 +163,24 @@ namespace
 		{
 			insert_separator(combobox);
 		}
-		
-		// Now, add it to the feature collection combobox.
-		const boost::optional<UnicodeString> &filename_opt = feature_collection->filename();
-		QString filename = filename_opt ?
-			QFileInfo(GPlatesUtils::make_qstring_from_icu_string(*filename_opt)).fileName() :
-			"New Feature Collection";
+
+		// Look up the filename from the file state.
+		// NOTE: This is a hack until we get colouring into the layering framework.
+		typedef GPlatesAppLogic::FeatureCollectionFileState::file_reference file_reference;
+		QString filename;
+		BOOST_FOREACH(const file_reference &loaded_file, loaded_files)
+		{
+			const GPlatesFileIO::File::Reference &file_ref = loaded_file.get_file();
+			if (file_ref.get_feature_collection().publisher_ptr() == feature_collection.publisher_ptr())
+			{
+				filename = file_ref.get_file_info().get_display_name(false);
+			}
+		}
+		if (filename.isEmpty())
+		{
+			filename = NEW_FEATURE_COLLECTION;
+		}
+
 		QVariant qv;
 		qv.setValue(feature_collection);
 		combobox->addItem(filename, qv);
@@ -173,7 +193,9 @@ namespace
 	public:
 
 		AddFeatureCollectionCallback(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				QComboBox *combobox) :
+			d_file_state(file_state),
 			d_combobox(combobox)
 		{
 		}
@@ -193,6 +215,7 @@ namespace
 				{
 					add_feature_collection_to_combobox(
 							(*new_child_iter)->reference(),
+							d_file_state.get_loaded_files(),
 							d_combobox);
 				}
 			}
@@ -200,18 +223,49 @@ namespace
 
 	private:
 
+		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
 		QComboBox *d_combobox;
 	};
-}
+
+
+	/**
+	 * Transforms a list of file:// urls into a list of pathnames in string form.
+	 * Ignores any non-file url, and ignores any non-colour-palette file extension.
+	 * Used for drag-and-drop support.
+	 */
+	QStringList
+	extract_colour_palette_pathnames_from_file_urls(
+			const QList<QUrl> &urls)
+	{
+		QStringList pathnames;
+		BOOST_FOREACH(const QUrl &url, urls)
+		{
+			if (url.scheme() == "file")
+			{
+				QString path = url.toLocalFile();
+
+				// Only accept .cpt files.
+				if (path.endsWith(".cpt"))
+				{
+					pathnames.push_back(path);
+				}
+			}
+		}
+		return pathnames;	// QStringList implicitly shares data and uses pimpl idiom, return by value is fine.
+	}
+
+}  // anonymous namespace
 
 
 GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 		GPlatesPresentation::ViewState &view_state,
-		GlobeAndMapWidget *existing_globe_and_map_widget_ptr,
+		const GlobeAndMapWidget &existing_globe_and_map_widget,
+		ReadErrorAccumulationDialog &read_error_accumulation_dialog,
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
 	d_application_state(view_state.get_application_state()),
-	d_existing_globe_and_map_widget_ptr(existing_globe_and_map_widget_ptr),
+	d_existing_globe_and_map_widget_ptr(&existing_globe_and_map_widget),
+	d_read_error_accumulation_dialog_ptr(&read_error_accumulation_dialog),
 	d_colour_scheme_container(view_state.get_colour_scheme_container()),
 	d_view_state_colour_scheme_delegator(view_state.get_colour_scheme_delegator()),
 	d_preview_colour_scheme(
@@ -219,7 +273,7 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 				d_view_state_colour_scheme_delegator)),
 	d_globe_and_map_widget_ptr(
 			new GlobeAndMapWidget(
-				existing_globe_and_map_widget_ptr,
+				d_existing_globe_and_map_widget_ptr,
 				d_preview_colour_scheme,
 				this)),
 	d_feature_store_root(
@@ -230,8 +284,6 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 {
 	setupUi(this);
 	reposition();
-
-	d_categories_table_original_palette = categories_table->palette();
 
 	// Create the blank icon.
 	QPixmap blank_pixmap(ICON_SIZE, ICON_SIZE);
@@ -250,21 +302,20 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 	categories_table->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
 	categories_table->horizontalHeader()->hide();
 	categories_table->verticalHeader()->hide();
-	set_categories_table_active_palette();
 
 	// Set up the list of colour schemes.
-	colour_schemes_list->setViewMode(QListWidget::IconMode);
-	colour_schemes_list->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
-	colour_schemes_list->setSpacing(SPACING);
-	colour_schemes_list->setMovement(QListView::Static);
-	colour_schemes_list->setWrapping(true);
-	colour_schemes_list->setResizeMode(QListView::Adjust);
-	colour_schemes_list->setUniformItemSizes(true);
-	colour_schemes_list->setWordWrap(true);
+ 	colour_schemes_list->setViewMode(QListWidget::IconMode);
+ 	colour_schemes_list->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
+ //	colour_schemes_list->setSpacing(SPACING); //Due to a qt bug, the setSpacing doesn't work well in IconMode.
+ 	colour_schemes_list->setMovement(QListView::Static);
+ 	colour_schemes_list->setWrapping(true);
+ 	colour_schemes_list->setResizeMode(QListView::Adjust);
+ 	colour_schemes_list->setUniformItemSizes(true);
+ 	colour_schemes_list->setWordWrap(true);
 	
 	// Change the background colour of the right hand side.
 	QPalette right_palette = right_side_frame->palette();
-	right_palette.setColor(QPalette::Window, colour_schemes_list->palette().color(QPalette::Base));
+	right_palette.setColor(QPalette::Active, QPalette::Window, colour_schemes_list->palette().color(QPalette::Base));
 	right_side_frame->setPalette(right_palette);
 
 	// Get current colour scheme selection from ViewState's colour scheme delegator.
@@ -274,7 +325,9 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 
 	// Listen in to notifications from the feature store root to find out new FCs.
 	d_feature_store_root.attach_callback(
-			new AddFeatureCollectionCallback(feature_collections_combobox));
+			new AddFeatureCollectionCallback(
+				d_application_state.get_feature_collection_file_state(),
+				feature_collections_combobox));
 	
 	// Move the splitter as far left as possible without collapsing the left side
 	QList<int> sizes;
@@ -289,48 +342,9 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 
 
 void
-GPlatesQtWidgets::ColouringDialog::set_categories_table_active_palette()
-{
-	QPalette categories_table_palette = categories_table->palette();
-	categories_table_palette.setColor(
-			QPalette::Disabled /* cells are not editable, so by default they get painted as disabled, which looks ugly */,
-			QPalette::Text,
-			categories_table_palette.color(QPalette::Active, QPalette::Text));
-	categories_table->setPalette(categories_table_palette);
-}
-
-
-void
-GPlatesQtWidgets::ColouringDialog::set_categories_table_inactive_palette()
-{
-	categories_table->setPalette(d_categories_table_original_palette);
-}
-
-
-void
 GPlatesQtWidgets::ColouringDialog::reposition()
 {
-	// Reposition to halfway down the right side of the parent window.
-	QWidget *par = parentWidget();
-	if (par)
-	{
-		int new_x = par->pos().x() + par->frameGeometry().width();
-		int new_y = par->pos().y() + (par->frameGeometry().height() - frameGeometry().height()) / 2;
-
-		// Ensure the dialog is not off-screen.
-		QDesktopWidget *desktop = QApplication::desktop();
-		QRect screen_geometry = desktop->screenGeometry(par);
-		if (new_x + frameGeometry().width() > screen_geometry.right())
-		{
-			new_x = screen_geometry.right() - frameGeometry().width();
-		}
-		if (new_y + frameGeometry().height() > screen_geometry.bottom())
-		{
-			new_y = screen_geometry.bottom() - frameGeometry().height();
-		}
-
-		move(new_x, new_y);
-	}
+	QtWidgetUtils::reposition_to_side_of_parent(this);
 }
 
 
@@ -365,10 +379,13 @@ GPlatesQtWidgets::ColouringDialog::populate_feature_collections()
 
 	// Get the present feature collections from the feature store root.
 	typedef GPlatesModel::FeatureStoreRootHandle::const_iterator iterator_type;
+	std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
+		d_application_state.get_feature_collection_file_state().get_loaded_files();
 	for (iterator_type iter = d_feature_store_root->begin(); iter != d_feature_store_root->end(); ++iter)
 	{
 		add_feature_collection_to_combobox(
 				(*iter)->reference(),
+				loaded_files,
 				feature_collections_combobox);
 	}
 }
@@ -424,28 +441,19 @@ GPlatesQtWidgets::ColouringDialog::load_category(
 		colour_schemes_list->setCurrentRow(0);
 	}
 
-	// Change the "Open" button to "Add" for Single Colour category.
+	// Show "Add" button for Single Colour category, "Open" button for every other category.
+	// Also show "Edit" button only for Single Colour category.
 	if (category == GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR)
 	{
-		open_button->setText("Add...");
-	}
-	else
-	{
-		open_button->setText("Open...");
-	}
-	
-	// FIXME: For now, hide "Open" and "Remove" for Plate ID and Feature Type
-	// because we can't read categorical CPT files yet.
-	if (category == GPlatesGui::ColourSchemeCategory::PLATE_ID ||
-			category == GPlatesGui::ColourSchemeCategory::FEATURE_TYPE)
-	{
 		open_button->hide();
-		remove_button->hide();
+		add_button->show();
+		edit_button->show();
 	}
 	else
 	{
 		open_button->show();
-		remove_button->show();
+		add_button->hide();
+		edit_button->hide();
 	}
 
 	// Set the rendering chain in motion.
@@ -470,6 +478,61 @@ GPlatesQtWidgets::ColouringDialog::insert_list_widget_item(
 	qv.setValue(id); // Store the colour scheme ID in the item data.
 	item->setData(Qt::UserRole, qv);
 	colour_schemes_list->addItem(item);
+}
+
+
+void
+GPlatesQtWidgets::ColouringDialog::dragEnterEvent(
+		QDragEnterEvent *ev)
+{
+	// We don't support any dropping of files for the Single Colour mode.
+	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR)
+	{
+		ev->ignore();
+		return;
+	}
+	
+	// OK, user wants to drop something. Does it have .cpt files?
+	if (ev->mimeData()->hasUrls())
+	{
+		QStringList cpts = extract_colour_palette_pathnames_from_file_urls(ev->mimeData()->urls());
+		if (!cpts.isEmpty())
+		{
+			ev->acceptProposedAction();
+		}
+		else
+		{
+			ev->ignore();
+		}
+	}
+	else
+	{
+		ev->ignore();
+	}
+}
+
+void
+GPlatesQtWidgets::ColouringDialog::dropEvent(
+		QDropEvent *ev)
+{
+	// OK, user is dropping something. Does it have .cpt files?
+	if (ev->mimeData()->hasUrls())
+	{
+		QStringList cpts = extract_colour_palette_pathnames_from_file_urls(ev->mimeData()->urls());
+		if (!cpts.isEmpty())
+		{
+			ev->acceptProposedAction();
+			open_cpt_files(cpts);
+		}
+		else
+		{
+			ev->ignore();
+		}
+	}
+	else
+	{
+		ev->ignore();
+	}
 }
 
 
@@ -525,14 +588,82 @@ void
 GPlatesQtWidgets::ColouringDialog::handle_open_button_clicked(
 		bool checked)
 {
-	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR)
+	static const QString OPEN_DIALOG_TITLE = "Open Files";
+	static const QString ALL_FILES = ";;All files (*)";
+	static const QString REGULAR_FILTER = "Regular CPT files (*.cpt)" + ALL_FILES;
+	static const QString CATEGORICAL_FILTER = "Categorical CPT files (*.cpt)" + ALL_FILES;
+	static const QString UNIFIED_FILTER = "Regular or categorical CPT files (*.cpt)" + ALL_FILES;
+
+	const QString *filter = NULL;
+
+	switch (d_current_colour_scheme_category)
 	{
-		add_single_colour();
+		case GPlatesGui::ColourSchemeCategory::PLATE_ID:
+			filter = &UNIFIED_FILTER;
+			break;
+
+		case GPlatesGui::ColourSchemeCategory::FEATURE_AGE:
+			filter = &REGULAR_FILTER;
+			break;
+
+		case GPlatesGui::ColourSchemeCategory::FEATURE_TYPE:
+			filter = &CATEGORICAL_FILTER;
+			break;
+
+		default:
+			return;
 	}
-	else
+
+	QStringList file_list = QFileDialog::getOpenFileNames(
+			this,
+			OPEN_DIALOG_TITLE,
+			QString() /* directory */,
+			*filter);
+	open_cpt_files(file_list);
+}
+
+
+void
+GPlatesQtWidgets::ColouringDialog::open_cpt_files(
+		const QStringList &file_list)
+{
+	if (file_list.count() == 0)
 	{
-		open_file();
+		return;
 	}
+
+	switch (d_current_colour_scheme_category)
+	{
+		case GPlatesGui::ColourSchemeCategory::PLATE_ID:
+			open_cpt_files<GPlatesFileIO::IntegerCptReader<int> >(
+					file_list,
+					GPlatesAppLogic::PropertyExtractorAdapter<
+						GPlatesAppLogic::PlateIdPropertyExtractor, int>());
+			break;
+
+		case GPlatesGui::ColourSchemeCategory::FEATURE_AGE:
+			open_cpt_files<GPlatesFileIO::RegularCptReader>(
+					file_list,
+					GPlatesAppLogic::AgePropertyExtractor(d_application_state));
+			break;
+
+		case GPlatesGui::ColourSchemeCategory::FEATURE_TYPE:
+			open_cpt_files<GPlatesFileIO::CategoricalCptReader<GPlatesModel::FeatureType>::Type>(
+					file_list,
+					GPlatesAppLogic::FeatureTypePropertyExtractor());
+			break;
+
+		default:
+			break;
+	}
+}
+
+
+void
+GPlatesQtWidgets::ColouringDialog::handle_add_button_clicked(
+		bool checked)
+{
+	add_single_colour();
 }
 
 
@@ -555,48 +686,32 @@ GPlatesQtWidgets::ColouringDialog::handle_remove_button_clicked(
 }
 
 
+template<class CptReaderType, typename PropertyExtractorType>
 void
-GPlatesQtWidgets::ColouringDialog::open_file()
+GPlatesQtWidgets::ColouringDialog::open_cpt_files(
+		const QStringList &file_list,
+		const PropertyExtractorType &property_extractor)
 {
-	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::PLATE_ID ||
-			d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_TYPE)
-	{
-		open_categorical_cpt_file();
-	}
-	else if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::FEATURE_AGE)
-	{
-		open_regular_cpt_file();
-	}
-}
-
-
-void
-GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file()
-{
-	QStringList file_list = QFileDialog::getOpenFileNames(
-			this,
-			"Open Files",
-			QString(),
-			"Regular CPT file (*.cpt)");
-
-	if (file_list.count() == 0)
-	{
-		return;
-	}
-
 	int first_index_in_list = -1;
 
-	GPlatesFileIO::RegularCptReader reader;
-	BOOST_FOREACH(QString file, file_list)
-	{
-		try
-		{
-			GPlatesGui::GenericContinuousColourPalette *cpt = reader.read_file(file);
-			GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme =
-				GPlatesGui::ColourSchemeFactory::create_custom_age_colour_scheme(
-						d_application_state, cpt);
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_error_accumulation_dialog_ptr->read_errors();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
 
-			QFileInfo file_info(file);
+	CptReaderType reader;
+	BOOST_FOREACH(QString filename, file_list)
+	{
+		typedef typename CptReaderType::colour_palette_type colour_palette_type;
+		typename colour_palette_type::maybe_null_ptr_type cpt = reader.read_file(filename, read_errors);
+
+		// cpt can be NULL if the file yielded no parseable lines.
+		if (cpt)
+		{
+			GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme =
+				GPlatesGui::make_colour_scheme(
+						cpt.get(),
+						property_extractor);
+
+			QFileInfo file_info(filename);
 
 			GPlatesGui::ColourSchemeInfo cpt_info(
 					colour_scheme,
@@ -612,10 +727,13 @@ GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file()
 				first_index_in_list = colour_schemes_list->count() - 1;
 			}
 		}
-		catch (const GPlatesFileIO::ErrorReadingCptFileException &err)
-		{
-			QMessageBox::critical(this, "Error", err.message);
-		}
+	}
+
+	d_read_error_accumulation_dialog_ptr->update();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+	if (num_initial_errors != num_final_errors)
+	{
+		d_read_error_accumulation_dialog_ptr->show();
 	}
 
 	if (first_index_in_list != -1)
@@ -623,17 +741,6 @@ GPlatesQtWidgets::ColouringDialog::open_regular_cpt_file()
 		start_rendering_from(first_index_in_list);
 		colour_schemes_list->setCurrentRow(colour_schemes_list->count() - 1);
 	}
-}
-
-
-void
-GPlatesQtWidgets::ColouringDialog::open_categorical_cpt_file()
-{
-	QStringList file_list = QFileDialog::getOpenFileNames(
-			this,
-			"Open Files",
-			QString(),
-			"Categorical CPT file (*.cpt)");
 }
 
 
@@ -767,45 +874,57 @@ GPlatesQtWidgets::ColouringDialog::handle_colour_schemes_list_selection_changed(
 			const GPlatesGui::ColourSchemeInfo &colour_scheme_info =
 				d_colour_scheme_container.get(d_current_colour_scheme_category, id);
 			remove_button->setEnabled(!colour_scheme_info.is_built_in);
+
+			// Also enable or disable the Edit button.
+			edit_button->setEnabled(!colour_scheme_info.is_built_in);
 		}
 	}
 }
 
 
 void
-GPlatesQtWidgets::ColouringDialog::handle_colour_schemes_list_item_double_clicked(
-		QListWidgetItem *item)
+GPlatesQtWidgets::ColouringDialog::edit_current_colour_scheme()
 {
 	// If a non-built-in colour scheme is double clicked, the user can edit the colour.
 	if (d_current_colour_scheme_category == GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR)
 	{
+		QListWidgetItem *item = colour_schemes_list->currentItem();
+		if (!item)
+		{
+			return;
+		}
+
 		QVariant qv = item->data(Qt::UserRole);
 		GPlatesGui::ColourSchemeContainer::id_type id = qv.value<GPlatesGui::ColourSchemeContainer::id_type>();
 		
 		const GPlatesGui::ColourSchemeInfo &colour_scheme_info = d_colour_scheme_container.get(
 				GPlatesGui::ColourSchemeCategory::SINGLE_COLOUR, id);
-		if (!colour_scheme_info.is_built_in)
+		if (colour_scheme_info.is_built_in)
 		{
-			GPlatesGui::SingleColourScheme *colour_scheme_ptr =
-				dynamic_cast<GPlatesGui::SingleColourScheme *>(colour_scheme_info.colour_scheme_ptr.get());
-			if (colour_scheme_ptr)
-			{
-				boost::optional<GPlatesGui::Colour> original_colour = colour_scheme_ptr->get_colour();
-				QColor selected_colour = QColorDialog::getColor(
-						original_colour ? *original_colour : GPlatesGui::Colour::get_white(),
-						this);
-				if (selected_colour.isValid())
-				{
-					d_colour_scheme_container.edit_single_colour_scheme(
-							id,
-							selected_colour,
-							selected_colour.name());
+			return;
+		}
 
-					// colour_scheme_info should now be modified.
-					item->setText(colour_scheme_info.short_description);
-					item->setToolTip(colour_scheme_info.long_description);
-				}
-			}
+		GPlatesGui::SingleColourScheme *colour_scheme_ptr =
+			dynamic_cast<GPlatesGui::SingleColourScheme *>(colour_scheme_info.colour_scheme_ptr.get());
+		if (!colour_scheme_ptr)
+		{
+			return;
+		}
+
+		boost::optional<GPlatesGui::Colour> original_colour = colour_scheme_ptr->get_colour();
+		QColor selected_colour = QColorDialog::getColor(
+				original_colour ? *original_colour : GPlatesGui::Colour::get_white(),
+				this);
+		if (selected_colour.isValid())
+		{
+			d_colour_scheme_container.edit_single_colour_scheme(
+					id,
+					selected_colour,
+					selected_colour.name());
+
+			// colour_scheme_info should now be modified.
+			item->setText(colour_scheme_info.short_description);
+			item->setToolTip(colour_scheme_info.long_description);
 		}
 	}
 }
@@ -846,7 +965,6 @@ GPlatesQtWidgets::ColouringDialog::handle_feature_collections_combobox_index_cha
 		use_global_checkbox->setCheckState(Qt::Unchecked);
 
 		splitter->setEnabled(true);
-		set_categories_table_active_palette();
 
 		GPlatesGui::ColourSchemeCategory::Type category = colour_scheme_handle->first;
 		GPlatesGui::ColourSchemeContainer::id_type id = colour_scheme_handle->second;
@@ -858,7 +976,6 @@ GPlatesQtWidgets::ColouringDialog::handle_feature_collections_combobox_index_cha
 		use_global_checkbox->setCheckState(Qt::Checked);
 
 		splitter->setEnabled(false);
-		set_categories_table_inactive_palette();
 	}
 }
 
@@ -888,6 +1005,38 @@ GPlatesQtWidgets::ColouringDialog::handle_use_global_changed(
 
 
 void
+GPlatesQtWidgets::ColouringDialog::handle_file_info_changed(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state,
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
+{
+	GPlatesModel::FeatureCollectionHandle::weak_ref changed_feature_collection =
+		file.get_file().get_feature_collection();
+
+	// Loop through the items in the combobox until we find the right feature collection.
+	for (int i = 0; i != feature_collections_combobox->count(); ++i)
+	{
+		QVariant qv = feature_collections_combobox->itemData(i);
+		if (qv.canConvert<GPlatesModel::FeatureCollectionHandle::const_weak_ref>())
+		{
+			GPlatesModel::FeatureCollectionHandle::const_weak_ref item_feature_collection =
+				qv.value<GPlatesModel::FeatureCollectionHandle::const_weak_ref>();
+			if (item_feature_collection.publisher_ptr() == changed_feature_collection.publisher_ptr())
+			{
+				QString filename = file.get_file().get_file_info().get_display_name(false);
+				if (filename.isEmpty())
+				{
+					filename = NEW_FEATURE_COLLECTION;
+				}
+
+				feature_collections_combobox->setItemText(i, filename);
+				break;
+			}
+		}
+	}
+}
+
+
+void
 GPlatesQtWidgets::ColouringDialog::make_signal_slot_connections()
 {
 	// Close button.
@@ -897,12 +1046,26 @@ GPlatesQtWidgets::ColouringDialog::make_signal_slot_connections()
 			this,
 			SLOT(handle_close_button_clicked(bool)));
 
-	// Open/Add button.
+	// Open button.
 	QObject::connect(
 			open_button,
 			SIGNAL(clicked(bool)),
 			this,
 			SLOT(handle_open_button_clicked(bool)));
+
+	// Add button.
+	QObject::connect(
+			add_button,
+			SIGNAL(clicked(bool)),
+			this,
+			SLOT(handle_add_button_clicked(bool)));
+
+	// Edit button.
+	QObject::connect(
+			edit_button,
+			SIGNAL(clicked(bool)),
+			this,
+			SLOT(edit_current_colour_scheme()));
 
 	// Remove button.
 	QObject::connect(
@@ -940,7 +1103,7 @@ GPlatesQtWidgets::ColouringDialog::make_signal_slot_connections()
 			colour_schemes_list,
 			SIGNAL(itemDoubleClicked(QListWidgetItem *)),
 			this,
-			SLOT(handle_colour_schemes_list_item_double_clicked(QListWidgetItem *)));
+			SLOT(edit_current_colour_scheme()));
 
 	// Show thumbnails checkbox.
 	QObject::connect(
@@ -962,6 +1125,16 @@ GPlatesQtWidgets::ColouringDialog::make_signal_slot_connections()
 			SIGNAL(stateChanged(int)),
 			this,
 			SLOT(handle_use_global_changed(int)));
+
+	QObject::connect(
+			&d_application_state.get_feature_collection_file_state(),
+			SIGNAL(file_state_file_info_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
+			this,
+			SLOT(handle_file_info_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
 }
 
 
@@ -985,7 +1158,7 @@ GPlatesQtWidgets::ColouringDialog::PreviewColourScheme::set_preview_colour_schem
 
 boost::optional<GPlatesGui::Colour>
 GPlatesQtWidgets::ColouringDialog::PreviewColourScheme::get_colour(
-		const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
+		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 {
 	if (!d_preview_colour_scheme)
 	{
@@ -993,12 +1166,11 @@ GPlatesQtWidgets::ColouringDialog::PreviewColourScheme::get_colour(
 	}
 
 	// Find the feature collection from which the reconstruction_geometry was created.
-	GPlatesModel::FeatureHandle::weak_ref feature_ref;
+	boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
+					&reconstruction_geometry);
 	GPlatesModel::FeatureCollectionHandle *feature_collection_ptr =
-		GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
-			&reconstruction_geometry, feature_ref) ?
-		feature_ref->parent_ptr() :
-		NULL;
+			feature_ref ? feature_ref.get()->parent_ptr() : NULL;
 
 	if (d_altered_feature_collection)
 	{
@@ -1032,3 +1204,4 @@ GPlatesQtWidgets::ColouringDialog::PreviewColourScheme::get_colour(
 		}
 	}
 }
+

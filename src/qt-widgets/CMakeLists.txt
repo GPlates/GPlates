@@ -37,6 +37,12 @@ set(srcs
     CalculateReconstructionPoleDialog.cc
     CalculateReconstructionPoleDialog.h
     CalculateReconstructionPoleDialogUi.ui
+    ChooseFeatureCollectionWidget.cc
+    ChooseFeatureCollectionWidget.h
+    ChooseFeatureCollectionWidgetUi.ui
+    ChooseFeatureTypeWidget.cc
+    ChooseFeatureTypeWidget.h
+    ChooseFeatureTypeWidgetUi.ui
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
@@ -52,6 +58,9 @@ set(srcs
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
+    EditAffineTransformGeoreferencingWidget.cc
+    EditAffineTransformGeoreferencingWidget.h
+    EditAffineTransformGeoreferencingWidgetUi.ui
     EditAngleWidget.cc
     EditAngleWidget.h
     EditAngleWidgetUi.ui
@@ -102,20 +111,25 @@ set(srcs
     EditWidgetChooser.h
     EditWidgetGroupBox.cc
     EditWidgetGroupBox.h
+    ElidedLabel.cc
+    ElidedLabel.h
     ExportAnimationDialog.cc
     ExportAnimationDialog.h
     ExportAnimationDialogUi.ui
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
-    ExportReconstructedFeatureGeometryDialog.cc
-    ExportReconstructedFeatureGeometryDialog.h
     FeaturePropertiesDialog.cc
     FeaturePropertiesDialog.h
     FeaturePropertiesDialogUi.ui
     FeatureSummaryWidget.cc
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
+    FriendlyLineEdit.cc
+    FriendlyLineEdit.h
+    GeoreferencingPage.cc
+    GeoreferencingPage.h
+    GeoreferencingPageUi.ui
     GlobeAndMapWidget.cc
     GlobeAndMapWidget.h
     GlobeCanvas.cc
@@ -126,6 +140,8 @@ set(srcs
     GMTHeaderFormatDialog.cc
     GMTHeaderFormatDialog.h
     GMTHeaderFormatDialogUi.ui
+    ImportRasterDialog.cc
+    ImportRasterDialog.h
     InformationDialog.cc
     InformationDialog.h
     InformationDialogUi.ui
@@ -176,9 +192,23 @@ set(srcs
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui
     PropertyValueNotSupportedException.h
+    QtWidgetUtils.cc
+    QtWidgetUtils.h
     QueryFeaturePropertiesWidget.cc
     QueryFeaturePropertiesWidget.h
     QueryFeaturePropertiesWidgetUi.ui
+    RasterBandPage.cc
+    RasterBandPage.h
+    RasterBandPageUi.ui
+    RasterFeatureCollectionPage.cc
+    RasterFeatureCollectionPage.h
+    RasterFeatureCollectionPageUi.ui
+    RasterLayerOptionsWidget.cc
+    RasterLayerOptionsWidget.h
+    RasterLayerOptionsWidgetUi.ui
+    RasterPropertiesDialog.cc
+    RasterPropertiesDialog.h
+    RasterPropertiesDialogUi.ui
     ReadErrorAccumulationDialog.cc
     ReadErrorAccumulationDialog.h
     ReadErrorAccumulationDialogUi.ui
@@ -197,9 +227,6 @@ set(srcs
     SetProjectionDialog.cc
     SetProjectionDialog.h
     SetProjectionDialogUi.ui
-    SetRasterSurfaceExtentDialog.cc
-    SetRasterSurfaceExtentDialog.h
-    SetRasterSurfaceExtentDialogUi.ui
     SetVGPVisibilityDialog.cc
     SetVGPVisibilityDialog.h
     SetVGPVisibilityDialogUi.ui
@@ -217,6 +244,9 @@ set(srcs
     ShapefileAttributeWidgetUi.ui
     ShapefilePropertyMapper.cc
     ShapefilePropertyMapper.h
+    SnapNearbyVerticesWidget.cc
+    SnapNearbyVerticesWidget.h
+    SnapNearbyVerticesWidgetUi.ui
     SpecifyAnchoredPlateIdDialog.cc
     SpecifyAnchoredPlateIdDialog.h
     SpecifyAnchoredPlateIdDialogUi.ui
@@ -228,6 +258,9 @@ set(srcs
     TimeControlWidget.cc
     TimeControlWidget.h
     TimeControlWidgetUi.ui
+    TimeDependentRasterPage.cc
+    TimeDependentRasterPage.h
+    TimeDependentRasterPageUi.ui
     TopologyToolsWidget.cc
     TopologyToolsWidget.h
     TopologyToolsWidgetUi.ui
@@ -245,6 +278,16 @@ set(srcs
     ViewportWindow.cc
     ViewportWindow.h
     ViewportWindowUi.ui
+    VisualLayersDelegate.cc
+    VisualLayersDelegate.h
+    VisualLayersListView.cc
+    VisualLayersListView.h
+    VisualLayersWidget.cc
+    VisualLayersWidget.h
+    VisualLayersWidgetUi.ui
+    VisualLayerWidget.cc
+    VisualLayerWidget.h
+    VisualLayerWidgetUi.ui
     ZoomControlWidget.cc
     ZoomControlWidget.h
     ZoomControlWidgetUi.ui

@@ -80,6 +80,7 @@ namespace
 		{ "gpml:centerLineOf", "gml:LineString", true, false }, // TimeDependentPropertyValue<> _Geometry
 		{ "gpml:conjugatePlateId", "gpml:plateId", false, true },	// half-way support for Isochron.
 		{ "gpml:continentalSide", "gpml:ContinentalBoundarySideEnumeration", false, false }, // Enumeration
+		{ "gpml:reconstructionMethod", "gpml:ReconstructionMethodEnumeration", false, false }, // Enumeration
 		{ "gpml:depthList", "gpml:depthList", false, false },
 		{ "gml:description", "xs:string", false, true },
 		{ "gpml:dipAngle", "gpml:angle", false, false },

@@ -194,18 +194,12 @@ GPlatesQtWidgets::TopologyToolsWidget::clear()
 
 	d_feature_summary_widget_ptr->clear();
 }
-
-void
-GPlatesQtWidgets::TopologyToolsWidget::set_click_point(  double lat, double lon )
-{
-	d_topology_tools_ptr->set_click_point(lat, lon);
-}
 	
 
 void
 GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type /*associated_rg*/)
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type /*associated_rg*/)
 {
 	// Always check your weak_refs!
 	if ( ! feature_ref.is_valid()) {

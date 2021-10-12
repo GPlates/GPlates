@@ -39,6 +39,9 @@
 
 #include "TopologySectionsContainer.h"
 
+#include "app-logic/Layer.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructionTree.h"
 #include "app-logic/TopologyBoundaryIntersections.h"
 
 #include "feature-visitors/TopologySectionsFinder.h"
@@ -50,16 +53,14 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
-#include "model/ModelInterface.h"
 #include "model/FeatureHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
+#include "model/ModelInterface.h"
 
 #include "model/PropertyValue.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlTopologicalLineSection.h"
-#include "property-values/GpmlTopologicalIntersection.h"
 
 #include "utils/GeometryCreationUtils.h"
 #include "utils/UnicodeStringUtils.h"
@@ -118,13 +119,6 @@ namespace GPlatesGui
 
 		void
 		deactivate();
-
-
-		/**
-		 * Set the click point (called from canvas tool)
-		 */
-		void
-		set_click_point( double lat, double lon );
 
 
 		/**
@@ -239,9 +233,7 @@ namespace GPlatesGui
 			VisibleSection(
 					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &
 							section_geometry_unreversed,
-					const GPlatesGui::TopologySectionsContainer::TableRow &table_row,
-					const std::size_t section_info_index,
-					const GPlatesModel::Reconstruction &reconstruction);
+					const std::size_t section_info_index);
 
 			/**
 			 * Index of the @a SectionInfo that 'this' object was created from.
@@ -290,11 +282,6 @@ namespace GPlatesGui
 			 */
 			boost::optional<GPlatesMaths::PointOnSphere> d_section_end_point;
 
-			/**
-			 * This is the 'd_click_point' in 'd_table_row' at the current reconstruction time.
-			 */
-			boost::optional<GPlatesMaths::PointOnSphere> d_reconstructed_click_point;
-
 			//! The optional intersection point with previous section.
 			boost::optional<GPlatesMaths::PointOnSphere> d_intersection_point_with_prev;
 
@@ -337,13 +324,15 @@ namespace GPlatesGui
 			 * Reconstruct this section and return a data structure to be used
 			 * for intersection processing and rendering.
 			 *
-			 * Returns false if no RFG could be found in @a reconstruction meaning
-			 * the current section's age range does not contain the current recon time.
+			 * Returns false if no RFG could be found that was reconstructed using
+			 * @a reconstruction_tree meaning the current section's age range does
+			 * not contain the current reconstruction time or that there is no
+			 * reconstruction tree to match.
 			 */
 			boost::optional<VisibleSection>
 			reconstruct_section_info_from_table_row(
 					std::size_t section_index,
-					GPlatesModel::Reconstruction &reconstruction) const;
+					const GPlatesAppLogic::ReconstructionTree &reconstruction_tree) const;
 
 			/**
 			 * Keep a copy of the @a TopologySectionsContainer table row.
@@ -355,54 +344,6 @@ namespace GPlatesGui
 
 		//! Typedef for a sequence of @a SectionInfo objects.
 		typedef std::vector<SectionInfo> section_info_seq_type;
-
-
-		/**
-		 * Keeps track of the user's click point, the feature that was clicked and
-		 * reconstructions needed to rotate the click point with the feature.
-		 */
-		class ClickPoint
-		{
-		public:
-			void
-			set_focus(
-					const GPlatesModel::FeatureHandle::weak_ref &focused_feature_ref,
-					const GPlatesMaths::PointOnSphere &reconstructed_click_point,
-					GPlatesModel::ReconstructionTree &reconstruction_tree)
-			{
-				d_clicked_feature_ref = focused_feature_ref;
-				d_reconstructed_click_point = reconstructed_click_point;
-				d_present_day_click_point = boost::none;
-				// Calculate present day click point from reconstructed click point.
-				calc_present_day_click_point(reconstruction_tree);
-			}
-
-			void
-			unset_focus()
-			{
-				d_clicked_feature_ref = GPlatesModel::FeatureHandle::weak_ref();
-				d_present_day_click_point = boost::none;
-				d_reconstructed_click_point = boost::none;
-			}
-
-			/**
-			 * Recalculates 'd_reconstructed_click_point' when the reconstruction time
-			 * changes - uses the 'reconstructionPlateId' in the clicked feature.
-			 */
-			void
-			update_reconstructed_click_point(
-					GPlatesModel::ReconstructionTree &reconstruction_tree);
-
-			GPlatesModel::FeatureHandle::weak_ref d_clicked_feature_ref;
-			boost::optional<GPlatesMaths::PointOnSphere> d_present_day_click_point;
-			boost::optional<GPlatesMaths::PointOnSphere> d_reconstructed_click_point;
-
-		private:
-			//! Calculates the present day click point from the reconstructed click point.
-			void
-			calc_present_day_click_point(
-					GPlatesModel::ReconstructionTree &reconstruction_tree);
-		};
 
 
 		/**
@@ -419,9 +360,7 @@ namespace GPlatesGui
 			d_insertion_neighbors_layer_ptr,
 			d_segments_layer_ptr,
 			d_end_points_layer_ptr,
-			d_intersection_points_layer_ptr,
-			d_click_point_layer_ptr,
-			d_click_points_layer_ptr;
+			d_intersection_points_layer_ptr;
 
 		/**
 		 * This is our reference to the Feature Focus, which we use to let the rest of the
@@ -469,9 +408,6 @@ namespace GPlatesGui
 		// This gets set upon activation 
 		GPlatesGlobal::TopologyTypes d_topology_type;
 
-		//! Keeps track of the click point and the feature clicked on.
-		ClickPoint d_click_point;
-
 		/**
 		 * Contains information about the sections in the topology.
 		 *
@@ -484,6 +420,7 @@ namespace GPlatesGui
 		 * Contains the intersection/rendering information of the current visible sections.
 		 */
 		visible_section_seq_type d_visible_section_seq;
+
 
 		/**
 		 * An ordered collection of all the vertices in the topology.
@@ -718,12 +655,6 @@ namespace GPlatesGui
 
 		void
 		draw_insertion_neighbors();
-
-		void
-		draw_click_points();
-
-		void
-		draw_click_point();
 	};
 }
 

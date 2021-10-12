@@ -38,17 +38,23 @@
 #include "RevisionAwareIterator.h"
 #include "TopLevelPropertyInline.h"
 
+#include "utils/CopyConst.h"
+
+
 namespace GPlatesPropertyValues
 {
 	// Forward declarations for the member functions.
 	// Please keep these ordered alphabetically.
 	class Enumeration;
 	class GmlDataBlock;
+	class GmlFile;
+	class GmlGridEnvelope;
 	class GmlLineString;
 	class GmlMultiPoint;
 	class GmlOrientableCurve;
 	class GmlPoint;
 	class GmlPolygon;
+	class GmlRectifiedGrid;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
 	class GpmlConstantValue;
@@ -65,6 +71,7 @@ namespace GPlatesPropertyValues
 	class GpmlPlateId;
 	class GpmlPolarityChronId;
 	class GpmlPropertyDelegate;
+	class GpmlRasterBandNames;
 	class GpmlRevisionId;
 	class GpmlTopologicalPolygon;
 	class GpmlTopologicalLineSection;
@@ -103,22 +110,6 @@ namespace GPlatesModel
 			typedef const TopLevelPropertyInline top_level_property_inline_type;
 			typedef TopLevelPropertyInline::const_iterator top_level_property_inline_iterator_type;
 		};
-
-		/**
-		 * CopyConst takes the const-ness of FeatureHandleType and applies it to T.
-		 */
-		template<class FeatureHandleType, class T>
-		struct CopyConst
-		{
-			typedef T type;
-		};
-
-		template<class FeatureHandleType, class T>
-		struct CopyConst<const FeatureHandleType, T>
-		{
-			typedef const T type;
-		};
-
 	}
 
 	/**
@@ -185,39 +176,43 @@ namespace GPlatesModel
 		typedef typename FeatureVisitorInternals::Traits<feature_handle_type>::top_level_property_inline_iterator_type top_level_property_inline_iterator_type;
 
 		// Typedefs to give the property values appropriate const-ness.
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::Enumeration>::type enumeration_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlDataBlock>::type gml_data_block_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlLineString>::type gml_line_string_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlMultiPoint>::type gml_multi_point_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlOrientableCurve>::type gml_orientable_curve_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlPoint>::type gml_point_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlPolygon>::type gml_polygon_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimeInstant>::type gml_time_instant_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimePeriod>::type gml_time_period_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlConstantValue>::type gpml_constant_value_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureReference>::type gpml_feature_reference_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureSnapshotReference>::type gpml_feature_snapshot_reference_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFiniteRotation>::type gpml_finite_rotation_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFiniteRotationSlerp>::type gpml_finite_rotation_slerp_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlHotSpotTrailMark>::type gpml_hot_spot_trail_mark_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlIrregularSampling>::type gpml_irregular_sampling_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlKeyValueDictionary>::type gpml_key_value_dictionary_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlMeasure>::type gpml_measure_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlOldPlatesHeader>::type gpml_old_plates_header_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPiecewiseAggregation>::type gpml_piecewise_aggregation_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPlateId>::type gpml_plate_id_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPolarityChronId>::type gpml_polarity_chron_id_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPropertyDelegate>::type gpml_property_delegate_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlRevisionId>::type gpml_revision_id_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPolygon>::type gpml_topological_polygon_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalLineSection>::type gpml_topological_line_section_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalIntersection>::type gpml_topological_intersection_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPoint>::type gpml_topological_point_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::UninterpretedPropertyValue>::type uninterpreted_property_value_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::XsBoolean>::type xs_boolean_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::XsDouble>::type xs_double_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::XsInteger>::type xs_integer_type;
-		typedef typename FeatureVisitorInternals::CopyConst<feature_handle_type, GPlatesPropertyValues::XsString>::type xs_string_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::Enumeration>::type enumeration_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlDataBlock>::type gml_data_block_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlFile>::type gml_file_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlGridEnvelope>::type gml_grid_envelope_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlLineString>::type gml_line_string_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlMultiPoint>::type gml_multi_point_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlOrientableCurve>::type gml_orientable_curve_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlPoint>::type gml_point_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlPolygon>::type gml_polygon_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlRectifiedGrid>::type gml_rectified_grid_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimeInstant>::type gml_time_instant_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimePeriod>::type gml_time_period_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlConstantValue>::type gpml_constant_value_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureReference>::type gpml_feature_reference_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureSnapshotReference>::type gpml_feature_snapshot_reference_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFiniteRotation>::type gpml_finite_rotation_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFiniteRotationSlerp>::type gpml_finite_rotation_slerp_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlHotSpotTrailMark>::type gpml_hot_spot_trail_mark_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlIrregularSampling>::type gpml_irregular_sampling_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlKeyValueDictionary>::type gpml_key_value_dictionary_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlMeasure>::type gpml_measure_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlOldPlatesHeader>::type gpml_old_plates_header_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPiecewiseAggregation>::type gpml_piecewise_aggregation_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPlateId>::type gpml_plate_id_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPolarityChronId>::type gpml_polarity_chron_id_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPropertyDelegate>::type gpml_property_delegate_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlRasterBandNames>::type gpml_raster_band_names_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlRevisionId>::type gpml_revision_id_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPolygon>::type gpml_topological_polygon_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalLineSection>::type gpml_topological_line_section_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalIntersection>::type gpml_topological_intersection_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPoint>::type gpml_topological_point_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::UninterpretedPropertyValue>::type uninterpreted_property_value_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsBoolean>::type xs_boolean_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsDouble>::type xs_double_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsInteger>::type xs_integer_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsString>::type xs_string_type;
 
 		/**
 		 * Destructor.
@@ -398,6 +393,18 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gml_file(
+				gml_file_type &gml_file)
+		{  }
+
+		virtual
+		void
+		visit_gml_grid_envelope(
+				gml_grid_envelope_type &gml_grid_envelope)
+		{  }
+
+		virtual
+		void
 		visit_gml_line_string(
 				gml_line_string_type &gml_line_string)
 		{  }
@@ -424,6 +431,12 @@ namespace GPlatesModel
 		void
 		visit_gml_polygon(
 				gml_polygon_type &gml_polygon)
+		{  }
+
+		virtual
+		void
+		visit_gml_rectified_grid(
+				gml_rectified_grid_type &gml_rectified_grid)
 		{  }
 
 		virtual
@@ -520,6 +533,12 @@ namespace GPlatesModel
 		void
 		visit_gpml_property_delegate(
 				gpml_property_delegate_type &gpml_property_delegate)
+		{  }
+
+		virtual
+		void
+		visit_gpml_raster_band_names(
+				gpml_raster_band_names_type &gpml_raster_band_names)
 		{  }
 
 		virtual

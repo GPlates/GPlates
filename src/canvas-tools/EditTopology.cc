@@ -38,7 +38,6 @@
 #include "gui/AddClickedGeometriesToFeatureTable.h"
 #include "maths/LatLonPoint.h"
 #include "model/FeatureHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "presentation/ViewState.h"
 #include "property-values/XsString.h"
 #include "qt-widgets/GlobeCanvas.h"
@@ -49,20 +48,22 @@
 
 
 GPlatesCanvasTools::EditTopology::EditTopology(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesPresentation::ViewState &view_state_,
-				const GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				GPlatesGui::FeatureTableModel &clicked_table_model_,	
-				GPlatesGui::TopologySectionsContainer &topology_sections_container,
-				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget):
+		GPlatesGui::Globe &globe_,
+		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+		GPlatesPresentation::ViewState &view_state_,
+		const GPlatesQtWidgets::ViewportWindow &viewport_window_,
+		GPlatesGui::FeatureTableModel &clicked_table_model_,	
+		GPlatesGui::TopologySectionsContainer &topology_sections_container,
+		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
+		GPlatesAppLogic::ApplicationState &application_state):
 	GlobeCanvasTool(globe_, globe_canvas_),
 	d_rendered_geom_collection(&view_state_.get_rendered_geometry_collection()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
 	d_topology_sections_container_ptr(&topology_sections_container),
 	d_topology_tools_widget_ptr(&topology_tools_widget),
-	d_feature_focus_ptr(&view_state_.get_feature_focus())
+	d_feature_focus_ptr(&view_state_.get_feature_focus()),
+	d_reconstruct_graph(application_state.get_reconstruct_graph())
 {
 }
 
@@ -140,18 +141,11 @@ GPlatesCanvasTools::EditTopology::handle_left_click(
 			*d_clicked_table_model_ptr,
 			*d_feature_focus_ptr,
 			*d_rendered_geom_collection,
+			d_reconstruct_graph,
 			&GPlatesAppLogic::TopologyInternalUtils::include_only_reconstructed_feature_geometries);
 
 	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
 		oriented_click_pos_on_globe);
-
-	// Send the click point to the widget.
-	//
-	// NOTE: This is done after adding the clicked geometries to the feature table
-	// to ensure that the focused feature is set, or unset, first since our handling
-	// of 'set_click_point()' relies on this - because it tracks the feature that was
-	// clicked on.
-	d_topology_tools_widget_ptr->set_click_point( llp.latitude(), llp.longitude() );
 }
 
 

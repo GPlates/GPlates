@@ -35,6 +35,7 @@ class ParserMSVC(IncludeParser):
             ('src/gui', 'gui'),
             ('src/maths', 'maths'),
             ('src/model', 'model'),
+            ('src/opengl', 'opengl'),
             ('src/property-values', 'property-values'),
             ('src/qt-resources', 'qt-resources'),
             ('src/qt-widgets', 'qt-widgets'),

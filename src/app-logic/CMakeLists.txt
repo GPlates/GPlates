@@ -11,6 +11,10 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    AgeGridLayerTask.cc
+    AgeGridLayerTask.h
+    AgeGridRaster.cc
+    AgeGridRaster.h
     ApplicationState.cc
     ApplicationState.h
     AppLogicUtils.cc
@@ -21,73 +25,107 @@ set(srcs
     CgalUtils.h
     ClassifyFeatureCollection.cc
     ClassifyFeatureCollection.h
-    FeatureCollectionActivationStrategy.cc
-    FeatureCollectionActivationStrategy.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
     FeatureCollectionFileState.h
-    FeatureCollectionFileStateDecls.h
-    FeatureCollectionFileStateImpl.cc
-    FeatureCollectionFileStateImpl.h
-    FeatureCollectionFileStateImplDecls.h
-    FeatureCollectionWorkflow.cc
-    FeatureCollectionWorkflow.h
     GenericPartitionFeatureTask.cc
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc
     GeometryCookieCutter.h
     GeometryUtils.cc
     GeometryUtils.h
+    Layer.cc
+    Layer.h
+    LayerTask.cc
     LayerTask.h
+    LayerTaskDataType.h
     LayerTaskRegistry.cc
     LayerTaskRegistry.h
-    LayerTaskTypes.cc
-    LayerTaskTypes.h
+    LayerTaskType.h
     MeshGenerator.cc
     MeshGenerator.h
-    PaleomagUtils.cc
-    PaleomagUtils.h
-    PaleomagWorkflow.cc
-    PaleomagWorkflow.h
+    MultiPointVectorField.cc
+    MultiPointVectorField.h
     PartitionFeatureTask.cc
     PartitionFeatureTask.h
     PartitionFeatureUtils.cc
     PartitionFeatureUtils.h
     PlateVelocityUtils.cc
     PlateVelocityUtils.h
-    PlateVelocityWorkflow.cc
-    PlateVelocityWorkflow.h
+    PropertyExtractors.cc
+    PropertyExtractors.h
+    RasterLayerTask.cc
+    RasterLayerTask.h
+    ReconstructedFeatureGeometry.cc
+    ReconstructedFeatureGeometry.h
+    ReconstructedFeatureGeometryFinder.cc
+    ReconstructedFeatureGeometryFinder.h
     ReconstructedFeatureGeometryPopulator.cc
     ReconstructedFeatureGeometryPopulator.h
+    ReconstructedPaleomagGeometryPopulator.h
+    ReconstructedVirtualGeomagneticPole.cc
+    ReconstructedVirtualGeomagneticPole.h
     ReconstructGraph.cc
     ReconstructGraph.h
     ReconstructGraphImpl.cc
     ReconstructGraphImpl.h
-    ReconstructionActivationStrategy.cc
-    ReconstructionActivationStrategy.h
+    Reconstruction.cc
+    Reconstruction.h
     ReconstructionFeatureProperties.cc
     ReconstructionFeatureProperties.h
+    ReconstructionGeometry.cc
+    ReconstructionGeometry.h
+    ReconstructionGeometryCollection.cc
+    ReconstructionGeometryCollection.h
+    ReconstructionGeometryFinder.cc
+    ReconstructionGeometryFinder.h
     ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
+    ReconstructionGeometryVisitor.h
+    ReconstructionGraph.cc
+    ReconstructionGraph.h
     ReconstructionLayerTask.cc
     ReconstructionLayerTask.h
+    ReconstructionMethodId.h
+    ReconstructionTree.cc
+    ReconstructionTree.h
+    ReconstructionTreeEdge.cc
+    ReconstructionTreeEdge.h
+    ReconstructionTreePopulator.cc
+    ReconstructionTreePopulator.h
     ReconstructLayerTask.cc
     ReconstructLayerTask.h
+    ReconstructRasterPolygons.cc
+    ReconstructRasterPolygons.h
     ReconstructUtils.cc
     ReconstructUtils.h
+    ResolvedRaster.cc
+    ResolvedRaster.h
+    ResolvedTopologicalBoundary.cc
+    ResolvedTopologicalBoundary.h
+    ResolvedTopologicalNetwork.cc
+    ResolvedTopologicalNetwork.h
     TopologyBoundaryIntersections.cc
     TopologyBoundaryIntersections.h
     TopologyBoundaryResolver.cc
     TopologyBoundaryResolver.h
+    TopologyBoundaryResolverLayerTask.cc
+    TopologyBoundaryResolverLayerTask.h
     TopologyInternalUtils.cc
     TopologyInternalUtils.h
     TopologyNetworkResolver.cc
     TopologyNetworkResolver.h
+    TopologyNetworkResolverLayerTask.cc
+    TopologyNetworkResolverLayerTask.h
     TopologyUtils.cc
     TopologyUtils.h
+    VelocityFieldCalculatorLayerTask.cc
+    VelocityFieldCalculatorLayerTask.h
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h
+    VGPRenderSettings.cc
+    VGPRenderSettings.h
 )
 
 

@@ -53,7 +53,7 @@ namespace GPlatesViewOperations
 	class UndoRedo :
 			public GPlatesUtils::Singleton<UndoRedo>
 	{
-		GPLATES_SINGLETON_CONSTRUCTOR_DEF(UndoRedo)
+		GPLATES_SINGLETON_CONSTRUCTOR_DECL(UndoRedo)
 
 	public:
 		~UndoRedo();

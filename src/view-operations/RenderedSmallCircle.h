@@ -69,6 +69,7 @@ namespace GPlatesViewOperations
 			return NULL;
 		}
 		
+		
 		const GPlatesMaths::PointOnSphere &
 		get_centre() const
 		{

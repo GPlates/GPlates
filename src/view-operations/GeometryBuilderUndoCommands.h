@@ -123,6 +123,7 @@ namespace GPlatesViewOperations
 		d_geometry_builder(geometry_builder),
 		d_point_index_to_move(point_index_to_move),
 		d_oriented_pos_on_globe(oriented_pos_on_globe),
+		d_secondary_geometries(geometry_builder->get_secondary_geometries()),
 		d_is_intermediate_move(is_intermediate_move)
 		{
 			setText(QObject::tr("move vertex"));
@@ -131,6 +132,7 @@ namespace GPlatesViewOperations
 		virtual
 		void
 		redo();
+
 
 		virtual
 		void
@@ -152,6 +154,7 @@ namespace GPlatesViewOperations
 		GeometryBuilder* d_geometry_builder;
 		GeometryBuilder::PointIndex d_point_index_to_move;
 		GPlatesMaths::PointOnSphere d_oriented_pos_on_globe;
+		std::vector<GPlatesViewOperations::SecondaryGeometry> &d_secondary_geometries;
 		bool d_is_intermediate_move;
 		GeometryBuilder::UndoOperation d_undo_operation;
 	};

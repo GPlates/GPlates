@@ -29,9 +29,9 @@
 
 #include "RenderedGeometryUtils.h"
 #include "RenderedGeometryCollection.h"
+
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "file-io/ReconstructedFeatureGeometryExport.h"
-#include "model/ReconstructedFeatureGeometry.h"
 
 
 namespace
@@ -43,10 +43,10 @@ namespace
 
 
 void
-GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries(
+GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries_as_single_file(
 		const QString &filename,
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		const files_collection_type &reconstructable_files,
+		const files_collection_type &active_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time)
 {
@@ -65,10 +65,42 @@ GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible
 			reconstruct_feature_geom_seq);
 
 	// Export the RFGs to a file format based on the filename extension.
-	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries(
+	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries_as_single_file(
 			filename,
 			reconstruct_feature_geom_seq,
-			reconstructable_files,
+			active_files,
 			reconstruction_anchor_plate_id,
 			reconstruction_time);
 }
+
+void
+GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries_per_collection(
+	const QString &filename,
+	const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+	const files_collection_type &active_files,
+	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+	const double &reconstruction_time)
+{
+	// Get any ReconstructionGeometry objects that are visible in any active layers
+	// of the RenderedGeometryCollection.
+	RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
+	RenderedGeometryUtils::get_unique_reconstruction_geometries(
+		reconstruction_geom_seq,
+		rendered_geom_collection);
+
+	// Get any ReconstructionGeometry objects that are of type ReconstructedFeatureGeometry.
+	reconstructed_feature_geom_seq_type reconstruct_feature_geom_seq;
+	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+		reconstruction_geom_seq.begin(),
+		reconstruction_geom_seq.end(),
+		reconstruct_feature_geom_seq);
+
+	// Export the RFGs to a file format based on the filename extension.
+	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries_per_collection(
+		filename,
+		reconstruct_feature_geom_seq,
+		active_files,
+		reconstruction_anchor_plate_id,
+		reconstruction_time);
+}
+

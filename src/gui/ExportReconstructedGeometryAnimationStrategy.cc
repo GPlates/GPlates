@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -22,7 +23,8 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
+#include <boost/foreach.hpp>
 
 #include "ExportReconstructedGeometryAnimationStrategy.h"
 
@@ -43,7 +45,7 @@ const QString
 GPlatesGui::ExportReconstructedGeometryAnimationStrategy::DEFAULT_RECONSTRUCTED_GEOMETRIES_SHP_FILENAME_TEMPLATE
 		="reconstructed_%u_%0.2f.shp";
 const QString GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_FILENAME_TEMPLATE_DESC
-		=FORMAT_CODE_DESC;
+		= FORMAT_CODE_DESC;
 const QString GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_DESC
 		="Export reconstructed geometries.";
 
@@ -60,7 +62,7 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::create(
 					cfg.filename_template());
 
 	ptr->d_file_format=format;
-	
+
 	return non_null_ptr_type(
 			ptr,
 			GPlatesUtils::NullIntrusivePointerHandler());
@@ -77,16 +79,17 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::ExportReconstructedGeo
 			d_export_animation_context_ptr->view_state().get_application_state()
 					.get_feature_collection_file_state();
 
-	// From the ViewState, obtain the list of files with usable reconstructed geometry in them.
-	// Copy GPlatesFileIO:File into GPlatesFileIO:File::weak_ref.
-	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator_range active_files =
-			file_state.get_active_reconstructable_files();
-	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator iter = active_files.begin;
-	GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator end = active_files.end;
-	for ( ; iter != end; ++iter)
+	// From the ViewState, obtain the list of all currently loaded files.
+	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
+			file_state.get_loaded_files();
+
+	// Add those that are currently active to our list of active files.
+	BOOST_FOREACH(GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref, loaded_files)
 	{
-		GPlatesFileIO::File &file = *iter;
-		d_active_reconstructable_files.push_back(&file);
+		if (file_ref.is_file_active())
+		{
+			d_active_files.push_back(&file_ref.get_file());
+		}
 	}
 }
 
@@ -120,12 +123,21 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 	// given frame_index, filename, reconstructable files and geoms, and target_dir. Etc.
 	try {
 
-		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries(
-				full_filename,
-				d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
-				d_active_reconstructable_files,
-				d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
-				d_export_animation_context_ptr->view_time());
+		
+		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries_as_single_file(
+			full_filename,
+			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
+			d_active_files,
+			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
+			d_export_animation_context_ptr->view_time());
+
+
+		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::export_visible_geometries_per_collection(
+			full_filename,
+			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
+			d_active_files,
+			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
+			d_export_animation_context_ptr->view_time());
 
 	} catch (...) {
 		// FIXME: Catch all proper exceptions we might get here.

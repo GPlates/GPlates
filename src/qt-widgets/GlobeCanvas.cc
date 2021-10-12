@@ -28,32 +28,40 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "GlobeCanvas.h"
-
 #include <vector>
 #include <utility>
 #include <cmath>
 #include <iostream>
 #include <boost/none.hpp>
+#include <opengl/OpenGL.h>
 
+#include <QDebug>
 #include <QLinearGradient>
 #include <QLocale>
 #include <QPainter>
 #include <QtGui/QMouseEvent>
 #include <QSizePolicy>
 
+#include "GlobeCanvas.h"
+
+#include "global/GPlatesException.h"
+
 #include "gui/ColourScheme.h"
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/QGLWidgetTextRenderer.h"
 #include "gui/SvgExport.h"
-#include "gui/Texture.h"
 
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
 #include "maths/LatLonPoint.h"
 
-#include "global/GPlatesException.h"
 #include "model/FeatureHandle.h"
+
+#include "opengl/GLCullVisitor.h"
+#include "opengl/GLRenderGraph.h"
+#include "opengl/GLRenderGraphDrawableNode.h"
+#include "opengl/GLRenderGraphInternalNode.h"
+#include "opengl/GLViewportNode.h"
 
 #include "presentation/ViewState.h"
 
@@ -189,14 +197,32 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
-	QGLWidget(parent_),
+	QGLWidget(
+			// We need an alpha channel in case falling back to main frame buffer for render textures...
+			QGLFormat(QGL::AlphaChannel),
+			parent_),
 	d_view_state(view_state),
+	d_gl_context(
+			GPlatesOpenGL::GLContext::create(
+					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
+							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
+	d_gl_render_target_manager(GPlatesOpenGL::GLRenderTargetManager::create(d_gl_context)),
+	d_gl_clear_buffers_state(GPlatesOpenGL::GLClearBuffersState::create()),
+	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
+	d_gl_viewport(0, 0, width(), height()),
+	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_persistent_objects(
+			GPlatesGui::PersistentOpenGLObjects::create(
+					d_gl_context, view_state.get_application_state())),
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
 	d_globe(
+			d_gl_persistent_objects,
 			view_state.get_rendered_geometry_collection(),
+			view_state.get_visual_layers(),
 			view_state.get_render_settings(),
+			view_state.get_raster_colour_scheme_map(),
 			GPlatesGui::QGLWidgetTextRenderer::create(this),
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme),
@@ -217,18 +243,49 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		bool mouse_wheel_enabled_,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
-	QGLWidget(parent_, existing_globe_canvas /* share display lists and texture objects */),
+	QGLWidget(
+			// We need an alpha channel in case falling back to main frame buffer for render textures...
+			QGLFormat(QGL::AlphaChannel),
+			// Share display lists and texture objects...
+			parent_, existing_globe_canvas),
 	d_view_state(view_state_),
+	d_gl_context(isSharing() // Mirror the sharing of OpenGL context state (if sharing)...
+			? GPlatesOpenGL::GLContext::create(
+					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
+							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)),
+					*existing_globe_canvas->d_gl_context)
+			: GPlatesOpenGL::GLContext::create(
+					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
+							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
+	d_gl_render_target_manager(GPlatesOpenGL::GLRenderTargetManager::create(d_gl_context)),
+	d_gl_clear_buffers_state(GPlatesOpenGL::GLClearBuffersState::create()),
+	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
+	d_gl_viewport(0, 0, width(), height()),
+	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_persistent_objects(
+			// Attempt to share OpenGL resources across contexts.
+			// This will depend on whether the two 'GLContext's share any state.
+			GPlatesGui::PersistentOpenGLObjects::create(
+					d_gl_context,
+					existing_globe_canvas->d_gl_persistent_objects,
+					view_state_.get_application_state())),
 	d_virtual_mouse_pointer_pos_on_globe(virtual_mouse_pointer_pos_on_globe_),
 	d_mouse_pointer_is_on_globe(mouse_pointer_is_on_globe_),
 	d_globe(
 			existing_globe_,
+			d_gl_persistent_objects,
+			view_state_.get_raster_colour_scheme_map(),
 			GPlatesGui::QGLWidgetTextRenderer::create(this),
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme_),
 	d_viewport_zoom(view_state_.get_viewport_zoom()),
 	d_mouse_wheel_enabled(mouse_wheel_enabled_)
 {
+	if (!isSharing())
+	{
+		qWarning() << "Unable to share an OpenGL context between QGLWidgets.";
+	}
+
 	init();
 }
 
@@ -273,13 +330,6 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	QObject::connect(
 			&(d_view_state.get_render_settings()),
 			SIGNAL(settings_changed()),
-			this,
-			SLOT(update_canvas()));
-
-	// Update canvas whenever Texture gets changed.
-	QObject::connect(
-			&(d_globe.texture()),
-			SIGNAL(texture_changed()),
 			this,
 			SLOT(update_canvas()));
 
@@ -398,22 +448,35 @@ GPlatesQtWidgets::GlobeCanvas::update_canvas()
 void
 GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 {
+	try
+	{
+		// Beginning rendering.
+		d_gl_context->begin_render();
 
-	try {
-		clear_canvas();
-		glLoadIdentity();
-		glTranslatef(EYE_X,EYE_Y,EYE_Z);
-		// Set up our universe coordinate system (the standard geometric one):
-		//   Z points up
-		//   Y points right
-		//   X points out of the screen
-		glRotatef(-90.0, 1.0, 0.0, 0.0);
-		glRotatef(-90.0, 0.0, 0.0, 1.0);
+		// Create an empty render graph - it will get populated as we traverse
+		// the scene to be rendered.
+		GPlatesOpenGL::GLRenderGraph::non_null_ptr_type render_graph =
+				GPlatesOpenGL::GLRenderGraph::create();
+
+		// Initialise the render graph before we ask Globe to do its job.
+		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_render_graph_node =
+				initialise_render_graph(*render_graph);
 
 		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
-		d_globe.paint_vector_output(viewport_zoom_factor, calculate_scale());
+		// Fill up the render graph with more nodes.
+		d_globe.paint_vector_output(
+				d_gl_context->get_shared_state(),
+				globe_render_graph_node,
+				viewport_zoom_factor,
+				calculate_scale());
+
+		draw_render_graph(*render_graph);
+
+		// Finished rendering.
+		d_gl_context->end_render();
 	}
-	catch (const GPlatesGlobal::Exception &e){
+	catch (const GPlatesGlobal::Exception &e)
+	{
 			std::cerr << e << std::endl;
 	}
 }
@@ -466,18 +529,20 @@ GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
 void 
 GPlatesQtWidgets::GlobeCanvas::initializeGL() 
 {
-	glEnable(GL_DEPTH_TEST);
+	// Initialise our context-like object first.
+	d_gl_context->initialise();
 
-	// Right now the only filled polygons we draw are rendered arrow heads and
-	// we draw both sides of polygons for now to avoid having to close the 3d mesh
-	// used to render the arrow head.
-	// This is the default - just making it explicit.
-	glDisable(GL_CULL_FACE);
+	// If there ever happens to be two clear calls in the one render graph then this
+	// ensures they don't get grouped together (which would render to second clear obsolete).
+	d_gl_clear_buffers_state->set_enable_render_sub_group();
 
-	// FIXME: Enable polygon offset here or in Globe?
-	
+	// Setup the OpenGL clear buffer state and drawable.
+	d_gl_clear_buffers_state->gl_clear_depth();
+	d_gl_clear_buffers_state->gl_clear_color(); // Clear colour initially all zeros.
+	d_gl_clear_buffers->gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// This is what actually does the clear.
 	clear_canvas();
-
 }
 
 
@@ -504,23 +569,34 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 //	(  http://doc.trolltech.com/4.3/opengl-overpainting.html )
 //
 
-	try {
-		clear_canvas();
-		
-		glLoadIdentity();
-		glTranslatef(EYE_X, EYE_Y, EYE_Z);
+	try
+	{
+		// Beginning rendering.
+		d_gl_context->begin_render();
 
-		// Set up our universe coordinate system (the standard geometric one):
-		//   Z points up
-		//   Y points right
-		//   X points out of the screen
-		glRotatef(-90.0, 1.0, 0.0, 0.0);
-		glRotatef(-90.0, 0.0, 0.0, 1.0);
+		// Create an empty render graph - it will get populated as we traverse
+		// the scene to be rendered.
+		GPlatesOpenGL::GLRenderGraph::non_null_ptr_type render_graph =
+				GPlatesOpenGL::GLRenderGraph::create();
+
+		// Initialise the render graph before we ask Globe to do its job.
+		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_render_graph_node =
+				initialise_render_graph(*render_graph);
 
 		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
-		d_globe.paint(viewport_zoom_factor, calculate_scale());
+		// Fill up the render graph with more nodes.
+		d_globe.paint(
+				globe_render_graph_node,
+				viewport_zoom_factor,
+				calculate_scale());
 
-	} catch (const GPlatesGlobal::Exception &e){
+		draw_render_graph(*render_graph);
+
+		// Finished rendering.
+		d_gl_context->end_render();
+	}
+	catch (const GPlatesGlobal::Exception &e)
+	{
 			std::cerr << e << std::endl;
 	}
 
@@ -547,6 +623,13 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 					mouse_pointer_is_on_globe(),
 					press_event->button(),
 					press_event->modifiers());
+
+	emit mouse_pressed(
+		d_mouse_press_info->d_mouse_pointer_pos,
+		d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
+		d_mouse_press_info->d_is_on_globe,
+		d_mouse_press_info->d_button,
+		d_mouse_press_info->d_modifiers);
 
 }
 
@@ -695,11 +778,11 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 
 	// Always fill up all of the available space.
 	update_dimensions();
-	glViewport(0, 0, static_cast<GLsizei>(d_canvas_screen_width), static_cast<GLsizei>(d_canvas_screen_height));
+	d_gl_viewport.gl_viewport(
+			0, 0,
+			static_cast<GLsizei>(d_canvas_screen_width),
+			static_cast<GLsizei>(d_canvas_screen_height));
 	
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-
 	// This is used for the coordinates of the symmetrical clipping planes which bound the
 	// smaller dimension.
 	GLdouble smaller_dim_clipping =
@@ -713,19 +796,18 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	// This is used for the coordinate of the further clipping plane in the depth dimension.
 	GLdouble depth_far_clipping = fabsf(EYE_Z);
 
+	d_gl_projection_transform->get_matrix().gl_load_identity();
+
 	if (d_canvas_screen_width <= d_canvas_screen_height) {
-		glOrtho(-smaller_dim_clipping, smaller_dim_clipping,
+		d_gl_projection_transform->get_matrix().gl_ortho(-smaller_dim_clipping, smaller_dim_clipping,
 			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
 			depth_far_clipping);
 
 	} else {
-		glOrtho(-larger_dim_clipping, larger_dim_clipping,
+		d_gl_projection_transform->get_matrix().gl_ortho(-larger_dim_clipping, larger_dim_clipping,
 			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
 			depth_far_clipping);
 	}
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
 }
 
 
@@ -803,33 +885,78 @@ void
 GPlatesQtWidgets::GlobeCanvas::clear_canvas(
 		const QColor& c) 
 {
-	// Set the colour buffer's clearing colour.
-	glClearColor(c.red(), c.green(), c.blue(), c.alpha());
-
-	// Clear the window to the current clearing colour.
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// Set the clear colour.
+	d_gl_clear_buffers_state->gl_clear_color(c.red(), c.green(), c.blue(), c.alpha());
+	// Apply the clear buffers colour (and depth, etc) to OpenGL and
+	// then clear the buffers.
+	draw(d_gl_clear_buffers, d_gl_clear_buffers_state);
 }
 
 
-// raster display
-void
-GPlatesQtWidgets::GlobeCanvas::toggle_raster_image()
+GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
+GPlatesQtWidgets::GlobeCanvas::initialise_render_graph(
+		GPlatesOpenGL::GLRenderGraph &render_graph)
 {
-	d_globe.toggle_raster_display();
-	update_canvas();
+	// Create a viewport node with the current viewport dimensions.
+	// All children of the viewport node will use this viewport.
+	GPlatesOpenGL::GLViewportNode::non_null_ptr_type viewport_node =
+			GPlatesOpenGL::GLViewportNode::create(d_gl_viewport);
+	// Add it to the render graph root node.
+	render_graph.get_root_node().add_child_node(viewport_node);
+
+	// Set the projection transform on the viewport node.
+	// It doesn't have to been set on it - it's just a convenient location
+	// and viewport and view projection are related.
+	viewport_node->set_transform(d_gl_projection_transform);
+
+	// Create a drawable node to clear the frame buffers.
+	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type clear_buffers_drawable_node =
+			GPlatesOpenGL::GLRenderGraphDrawableNode::create(d_gl_clear_buffers);
+	clear_buffers_drawable_node->set_state_set(d_gl_clear_buffers_state);
+	// Add it to the viewport node.
+	// It will get drawn first because it's the first leaf node that
+	// will be visited in the tree.
+	viewport_node->add_child_node(clear_buffers_drawable_node);
+
+	//
+	// Set up the initial model-view transform.
+	//
+	GPlatesOpenGL::GLTransform::non_null_ptr_type model_view_transform =
+			GPlatesOpenGL::GLTransform::create(GL_MODELVIEW);
+	model_view_transform->get_matrix().gl_translate(EYE_X, EYE_Y, EYE_Z);
+	// Set up our universe coordinate system (the standard geometric one):
+	//   Z points up
+	//   Y points right
+	//   X points out of the screen
+	model_view_transform->get_matrix().gl_rotate(-90.0, 1.0, 0.0, 0.0);
+	model_view_transform->get_matrix().gl_rotate(-90.0, 0.0, 0.0, 1.0);
+
+	// Create an internal node to store the model-view transform.
+	// Only one transform can be stored on a node so just create a new child node.
+	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type model_view_transform_node =
+			GPlatesOpenGL::GLRenderGraphInternalNode::create();
+	model_view_transform_node->set_transform(model_view_transform);
+	// Add it to the viewport node.
+	viewport_node->add_child_node(model_view_transform_node);
+
+	return model_view_transform_node;
 }
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::enable_raster_display()
+GPlatesQtWidgets::GlobeCanvas::draw_render_graph(
+		GPlatesOpenGL::GLRenderGraph &render_graph)
 {
-	d_globe.enable_raster_display();
-}
+	// Cull the render graph according to visibility.
+	GPlatesOpenGL::GLCullVisitor render_graph_culler;
+	render_graph.accept_visitor(render_graph_culler);
 
-void
-GPlatesQtWidgets::GlobeCanvas::disable_raster_display()
-{
-	d_globe.disable_raster_display();
+	// Get the render queue generated by the render graph culler.
+	GPlatesOpenGL::GLRenderQueue::non_null_ptr_type render_queue =
+			render_graph_culler.get_render_queue();
+
+	// Draw the render queue.
+	render_queue->draw(*d_gl_render_target_manager);
 }
 
 
@@ -889,6 +1016,7 @@ GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
 }
 #endif
 
+#if 0
 void
 GPlatesQtWidgets::GlobeCanvas::draw_colour_legend(
 	QPainter *painter,
@@ -962,7 +1090,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_colour_legend(
 	painter->drawText(bar_rect.right()+5, bar_rect.top()+2, max_string);
 
 }
-
+#endif
 
 void
 GPlatesQtWidgets::GlobeCanvas::create_svg_output(
@@ -1054,3 +1182,4 @@ GPlatesQtWidgets::GlobeCanvas::grab_frame_buffer()
 {
 	return grabFrameBuffer();
 }
+

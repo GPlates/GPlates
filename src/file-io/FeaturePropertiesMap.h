@@ -27,13 +27,16 @@
 #ifndef GPLATES_FILEIO_FEATUREPROPERTIESMAP_H
 #define GPLATES_FILEIO_FEATUREPROPERTIESMAP_H
 
-#include <QString>
 #include <map>
-#include "model/FeatureType.h"
+#include <QString>
+
 #include "PropertyCreationUtils.h"
 
-namespace GPlatesFileIO {
+#include "model/FeatureType.h"
+#include "utils/Singleton.h"
 
+namespace GPlatesFileIO
+{
 	/**
 	 * This class encapsulates a mapping from a (fully qualified) feature
 	 * type name to a mapping from the properties allowed in the feature to
@@ -41,44 +44,44 @@ namespace GPlatesFileIO {
 	 *
 	 *   feature type name  ----->  ( property p  ----->  creation_function for p )
 	 */
-	class FeaturePropertiesMap
+	class FeaturePropertiesMap :
+			public GPlatesUtils::Singleton<FeaturePropertiesMap>
 	{
-			typedef std::map<
-					GPlatesModel::FeatureType, 
-					PropertyCreationUtils::PropertyCreatorMap> 
-				FeaturePropertiesMapType;
+		GPLATES_SINGLETON_CONSTRUCTOR_DECL(FeaturePropertiesMap)
 
-		public:
-			typedef FeaturePropertiesMapType::const_iterator const_iterator;
+	private:
 
-			static
-			FeaturePropertiesMap *
-			instance();
+		typedef std::map<
+				GPlatesModel::FeatureType, 
+				PropertyCreationUtils::PropertyCreatorMap> 
+			FeaturePropertiesMapType;
 
+	public:
 
-			const_iterator
-			find(const GPlatesModel::FeatureType &key) const
-			{
-				return d_map.find(key);
-			}
-			
+		typedef FeaturePropertiesMapType::const_iterator const_iterator;
 
-			const_iterator
-			end() const
-			{
-				return d_map.end();
-			}
+		const_iterator
+		find(
+				const GPlatesModel::FeatureType &key) const
+		{
+			return d_map.find(key);
+		}
 
+		const_iterator
+		begin() const
+		{
+			return d_map.begin();
+		}
 
-		private:
-			FeaturePropertiesMapType d_map;
-			static FeaturePropertiesMap *d_instance;
+		const_iterator
+		end() const
+		{
+			return d_map.end();
+		}
 
-			FeaturePropertiesMap();
-			FeaturePropertiesMap(
-					const FeaturePropertiesMap &);
-			FeaturePropertiesMap &
-			operator=(const FeaturePropertiesMap &);
+	private:
+
+		FeaturePropertiesMapType d_map;
 	};
 }
 

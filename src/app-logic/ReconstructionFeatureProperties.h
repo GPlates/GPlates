@@ -29,6 +29,8 @@
 
 #include <boost/optional.hpp>
 
+#include "app-logic/ReconstructionMethodId.h"
+
 #include "model/FeatureVisitor.h"
 #include "model/types.h"
 
@@ -70,6 +72,33 @@ namespace GPlatesAppLogic
 			return d_recon_plate_id;
 		}
 
+		/**
+		 * Returns optional plate id if "gpml:rightPlate" property is found.
+		 */
+		boost::optional<GPlatesModel::integer_plate_id_type>
+		get_right_plate_id() const
+		{
+			return d_right_plate_id;
+		}
+
+		/**
+		 * Returns optional plate id if "gpml:leftPlate" property is found.
+		 */
+		boost::optional<GPlatesModel::integer_plate_id_type>
+		get_left_plate_id() const
+		{
+			return d_left_plate_id;
+		}
+
+		/**
+		 * Returns optional plate id if "gpml:reonstructionMethod" property is found.
+		 */
+		GPlatesAppLogic::ReconstructionMethod
+		get_reconstruction_method() const
+		{
+			return d_recon_method;
+		}
+
 
 		/**
 		 * Returns optional time of appearance if a "gml:validTime" property is found.
@@ -108,6 +137,10 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_appearance;
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_dissappearance;
 
+		GPlatesAppLogic::ReconstructionMethod d_recon_method;
+		boost::optional<GPlatesModel::integer_plate_id_type> d_right_plate_id;
+		boost::optional<GPlatesModel::integer_plate_id_type> d_left_plate_id;
+
 
 		virtual
 		bool
@@ -128,6 +161,10 @@ namespace GPlatesAppLogic
 		void
 		visit_gpml_plate_id(
 				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+
+		void
+		visit_enumeration(
+				const enumeration_type &enumeration);
 	};
 }
 

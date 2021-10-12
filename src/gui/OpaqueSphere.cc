@@ -27,31 +27,41 @@
 
 #include "OpaqueSphere.h"
 
+#include "opengl/GLDrawable.h"
+#include "opengl/GLRenderGraphDrawableNode.h"
+
 
 namespace
 {
 	static const GLdouble RADIUS = 1.0;
 
-	static const GLint NUM_SLICES = 36;
-	static const GLint NUM_STACKS = 18;
+	static const GLint NUM_SLICES = 72;
+	static const GLint NUM_STACKS = 36;
 }
 
 
-GPlatesGui::OpaqueSphere::OpaqueSphere(const Colour &colour)
- : d_colour(colour) {
+GPlatesGui::OpaqueSphere::OpaqueSphere(const Colour &colour) :
+	d_quad(GPlatesOpenGL::GLUQuadric::create()),
+	d_colour(colour)
+{
 
-	d_quad.set_normals(GLU_SMOOTH);
-	d_quad.set_orientation(GLU_OUTSIDE);
-	d_quad.set_generate_texture(GL_FALSE);
-	d_quad.set_draw_style(GLU_FILL);
+	d_quad->set_normals(GLU_NONE);
+	d_quad->set_orientation(GLU_OUTSIDE);
+	d_quad->set_generate_texture(GL_FALSE);
+	d_quad->set_draw_style(GLU_FILL);
 
 }
 
 
 void
-GPlatesGui::OpaqueSphere::paint() {
+GPlatesGui::OpaqueSphere::paint(
+		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node)
+{
+	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type drawable =
+			d_quad->draw_sphere(RADIUS, NUM_SLICES, NUM_STACKS, d_colour);
 
-	glColor3fv(d_colour);
-	d_quad.draw_sphere(RADIUS, NUM_SLICES, NUM_STACKS);
+	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type drawable_node =
+			GPlatesOpenGL::GLRenderGraphDrawableNode::create(drawable);
+
+	render_graph_parent_node->add_child_node(drawable_node);
 }
-

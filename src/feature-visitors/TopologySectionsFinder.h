@@ -40,7 +40,10 @@
 #include <QList>
 #include <QString>
 
+#include "app-logic/Reconstruction.h"
+
 #include "global/types.h"
+
 #include "gui/TopologySectionsContainer.h"
 
 #include "maths/PointOnSphere.h"
@@ -53,10 +56,8 @@
 #include "model/FeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/Model.h"
-#include "model/ReconstructedFeatureGeometry.h"
 #include "model/PropertyValue.h"
 #include "model/PropertyName.h"
-#include "model/Reconstruction.h"
 #include "model/WeakReference.h"
 
 #include "property-values/GeoTimeInstant.h"

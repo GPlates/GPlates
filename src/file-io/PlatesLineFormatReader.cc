@@ -1766,7 +1766,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			GPlatesFileIO::ReadErrorAccumulation &errors)
 	{
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-				new GPlatesFileIO::LineNumberInFile(in.line_number()));
+				new GPlatesFileIO::LineNumber(in.line_number()));
 		errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(source, location, 
 				GPlatesFileIO::ReadErrors::UnknownPlatesDataTypeCode,
 				GPlatesFileIO::ReadErrors::UnclassifiedFeatureCreated));
@@ -1781,7 +1781,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			GPlatesFileIO::ReadErrorAccumulation &errors)
 	{
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-				new GPlatesFileIO::LineNumberInFile(in.line_number()));
+				new GPlatesFileIO::LineNumber(in.line_number()));
 		errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(source, location, 
 				GPlatesFileIO::ReadErrors::AmbiguousPlatesIceShelfCode,
 				GPlatesFileIO::ReadErrors::UnclassifiedFeatureCreated));
@@ -2040,7 +2040,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 		// Add error message.
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-				new GPlatesFileIO::LineNumberInFile(in.line_number()));
+				new GPlatesFileIO::LineNumber(in.line_number()));
 		errors.d_recoverable_errors.push_back(
 				GPlatesFileIO::ReadErrorOccurrence(
 						source, location, error_description, error_result));
@@ -2072,7 +2072,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		if (point_seq.size() < 2)
 		{
 			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-					new GPlatesFileIO::LineNumberInFile(in.line_number()));
+					new GPlatesFileIO::LineNumber(in.line_number()));
 			errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(source, location, 
 					GPlatesFileIO::ReadErrors::AdjacentSkipToPlotterCodes,
 					GPlatesFileIO::ReadErrors::NoGeometryCreatedByMovement));
@@ -2236,12 +2236,14 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 }
 
 
-GPlatesFileIO::File::shared_ref
+void
 GPlatesFileIO::PlatesLineFormatReader::read_file(
-		const FileInfo &fileinfo,
+		const File::Reference &file,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	const FileInfo &fileinfo = file.get_file_info();
+
 	// By placing all changes to the model under the one changeset, we ensure that
 	// feature revision ids don't get changed from what was loaded from file no
 	// matter what we do to the features.
@@ -2259,14 +2261,8 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 
 	boost::shared_ptr<DataSource> source( 
 			new GPlatesFileIO::LocalFileDataSource(filename, DataFormats::PlatesLine));
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection
-			= GPlatesModel::FeatureCollectionHandle::create(
-					model->root(),
-					GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
 
-	// Make sure feature collection gets unloaded when it's no longer needed.
-	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =
-			GPlatesModel::FeatureCollectionHandleUnloader::create(collection);
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection = file.get_feature_collection();
 	
 	LineReader in(input);
 	while (in) {
@@ -2274,12 +2270,10 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 			read_feature(model, collection, in, source, read_errors);
 		} catch (GPlatesFileIO::ReadErrors::Description error) {
 			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-					new GPlatesFileIO::LineNumberInFile(in.line_number()));
+					new GPlatesFileIO::LineNumber(in.line_number()));
 			read_errors.d_recoverable_errors.push_back(GPlatesFileIO::ReadErrorOccurrence(
 					source, location, error, GPlatesFileIO::ReadErrors::FeatureDiscarded));
 		}
 	}
-
-	return File::create_loaded_file(collection_unloader, fileinfo);
 }
 

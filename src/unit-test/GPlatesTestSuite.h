@@ -27,6 +27,7 @@
 
 #include <map>
 #include <boost/test/unit_test.hpp>
+#include <QDebug>
 
 #define ADD_TESTCASE( test_suite_name, test_case_name ) \
 	d_test_cases_map[#test_case_name] = BOOST_CLASS_TEST_CASE( \

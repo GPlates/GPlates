@@ -43,5 +43,3 @@ const char GPlatesGlobal::CopyrightString[] =
 const char GPlatesGlobal::HtmlCopyrightString[] =
 		"@GPLATES_HTML_COPYRIGHT_STRING@";
 
-const char GPlatesGlobal::SourceCodeControlVersionString[] = 
-		"@GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING@";

@@ -36,6 +36,9 @@
 #include "WeakObserverVisitor.h"
 #include "WeakReferenceCallback.h"
 
+#include "utils/SafeBool.h"
+
+
 namespace GPlatesModel
 {
 	/**
@@ -90,7 +93,8 @@ namespace GPlatesModel
 	 */
 	template<typename H>
 	class WeakReference:
-			public WeakObserver<H>
+			public WeakObserver<H>,
+			public GPlatesUtils::SafeBool<WeakReference<H> >
 	{
 
 	public:
@@ -132,9 +136,11 @@ namespace GPlatesModel
 		{  }
 
 		/**
-		 * Converts this WeakReference<H> into a WeakReference<const H>.
+		 * Converts this WeakReference<H> into a WeakReference<const H>, where H is
+		 * non-const. If H is const, this will never be called.
 		 *
-		 * If H is already const, this effectively does nothing useful and returns WeakReference<H>.
+		 * Note: If a callback is attached to this WeakReference<H>, it is not copied
+		 * over to the WeakReference<const H> returned.
 		 */
 		operator WeakReference<const H>() const
 		{
@@ -185,13 +191,16 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Return whether this pointer is valid to be deferenced.
-		 *
-		 * This is equivalent to calling is_valid() on the WeakReference.
+		 * Return whether this pointer is valid to be deferenced. This is equivalent
+		 * to calling is_valid() on the WeakReference.
 		 *
 		 * This function will not throw.
+		 *
+		 * This function is provided for the benefit of the SafeBool base class, which
+		 * provides operator bool().
 		 */
-		operator bool() const
+		bool
+		boolean_test() const
 		{
 			return is_valid();
 		}
@@ -202,6 +211,9 @@ namespace GPlatesModel
 		 * The effect of this operation is that this instance will reference the handle
 		 * which is referenced by @a other (if any).
 		 *
+		 * The callback (if any) registered with the @a other handle is copied across
+		 * to this instance.
+		 *
 		 * This function will not throw.
 		 */
 		WeakReference &
@@ -209,6 +221,7 @@ namespace GPlatesModel
 				const WeakReference &other)
 		{
 			WeakObserver<H>::operator=(other);
+			d_callback = other.d_callback;
 			return *this;
 		}
 

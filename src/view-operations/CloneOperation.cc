@@ -100,6 +100,7 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature()
 
 	// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 	feature_collection_ref->add(new_feature_ptr);
+	d_view_state.get_application_state().reconstruct();
 	// transaction.commit();
 
 #if 0
@@ -126,12 +127,13 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature()
 		new_feature_ref);
 #endif
 
-	//set focus to the new feature 
-	GPlatesModel::FeatureHandle::iterator geo_property_iter =
-			*GPlatesFeatureVisitors::find_first_geometry_property(new_feature_ptr->reference());
-	d_view_state.get_feature_focus().set_focus(
-			new_feature_ptr->reference(),
-			geo_property_iter);
+	// Set focus to the new feature. This might have led to ambiguity in the past,
+	// but now that we indicate creation time in the clicked feature table this should be
+	// less prone to causing an awkward user experience.
+	// Also, focusing the clone after a duplication operation is common behaviour in
+	// vector graphics software.
+	d_view_state.get_feature_focus().set_focus(new_feature_ptr->reference());
+
 	d_view_state.get_feature_focus().announce_modification_of_focused_feature();
 }
 

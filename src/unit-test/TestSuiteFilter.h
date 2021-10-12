@@ -36,7 +36,7 @@ namespace GPlatesUnitTest
 			std::vector<std::string> > FilterData;
 
 	class TestSuiteFilter :
-		public GPlatesUtils::Singleton<TestSuiteFilter>
+			public GPlatesUtils::Singleton<TestSuiteFilter>
 	{
 
 		GPLATES_SINGLETON_CONSTRUCTOR_DEF(TestSuiteFilter)

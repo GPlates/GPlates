@@ -35,14 +35,13 @@
 
 #include "TopologySectionsFinder.h"
 
+#include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionTree.h"
 #include "app-logic/TopologyInternalUtils.h"
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/FeatureRevision.h"
-#include "model/ReconstructedFeatureGeometry.h"
-#include "model/Reconstruction.h"
-#include "model/ReconstructionTree.h"
 #include "model/TopLevelPropertyInline.h"
 
 #include "property-values/Enumeration.h"

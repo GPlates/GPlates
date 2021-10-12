@@ -30,6 +30,13 @@
 #include "CanvasTool.h"
 #include "gui/FeatureTableModel.h"
 
+
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+	class ReconstructGraph;
+}
+
 namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
@@ -65,7 +72,8 @@ namespace GPlatesCanvasTools
 				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
-				GPlatesGui::FeatureFocus &feature_focus);
+				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesAppLogic::ApplicationState &application_state);
 		
 		virtual
 		void
@@ -118,6 +126,11 @@ namespace GPlatesCanvasTools
 		 * application know what the user just clicked on.
 		 */
 		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
+
+		/**
+		 * Used when adding reconstruction geometries to the clicked feature table.
+		 */
+		const GPlatesAppLogic::ReconstructGraph &d_reconstruct_graph;
 
 
 		GPlatesQtWidgets::FeaturePropertiesDialog &

@@ -65,6 +65,7 @@ namespace GPlatesQtWidgets
 {
 	class ModifyGeometryWidget;
 	class MeasureDistanceWidget;
+	class SnapNearbyVerticesWidget;
 	class TopologyToolsWidget;
 	class ViewportWindow;
 
@@ -166,6 +167,18 @@ namespace GPlatesQtWidgets
 			return *d_measure_distance_widget_ptr;
 		}
 
+			
+		void
+		emit_vertex_data_changed_signal(
+			bool should_check_nearby_vertices,
+			double threshold,
+			bool should_use_plate_id,
+			GPlatesModel::integer_plate_id_type plate_id);
+			
+	signals:
+		
+		void
+		vertex_data_changed(bool,double,bool,GPlatesModel::integer_plate_id_type);
 	
 	public slots:
 		
@@ -234,6 +247,12 @@ namespace GPlatesQtWidgets
 			choose_tab(MEASURE_DISTANCE);
 		}
 
+		void
+		enable_move_nearby_vertices_widget(
+			bool enable);
+			
+
+			
 	private:
 		
 		/**
@@ -341,6 +360,12 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		GPlatesQtWidgets::TopologyToolsWidget *d_topology_tools_widget_ptr;
+		
+		/**
+		 * Widget for controls relating to moving nearby vertices
+		 */
+		GPlatesQtWidgets::SnapNearbyVerticesWidget *d_snap_nearby_vertices_widget_ptr;
+		 
 
 		/**
 		 * Widget responsible for the controls in the Measure Distance Tab.

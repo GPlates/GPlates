@@ -1,52 +1,56 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>AssignReconstructionPlateIdsDialog</class>
- <widget class="QDialog" name="AssignReconstructionPlateIdsDialog" >
-  <property name="geometry" >
+ <widget class="QDialog" name="AssignReconstructionPlateIdsDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>712</width>
-    <height>495</height>
+    <width>791</width>
+    <height>517</height>
    </rect>
   </property>
-  <property name="windowTitle" >
-   <string>Dialog</string>
+  <property name="windowTitle">
+   <string>Assign Plate IDs</string>
   </property>
-  <property name="sizeGripEnabled" >
+  <property name="sizeGripEnabled">
    <bool>true</bool>
   </property>
-  <property name="modal" >
+  <property name="modal">
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout" >
+  <layout class="QVBoxLayout">
    <item>
-    <widget class="QStackedWidget" name="stack_widget" >
-     <property name="currentIndex" >
+    <widget class="QStackedWidget" name="stack_widget">
+     <property name="currentIndex">
       <number>2</number>
      </property>
-     <widget class="QWidget" name="partitioning_files" >
-      <layout class="QVBoxLayout" >
+     <widget class="QWidget" name="partitioning_files">
+      <layout class="QVBoxLayout">
+       <property name="margin">
+        <number>0</number>
+       </property>
        <item>
-        <widget class="QGroupBox" name="partitioning_files_group_box" >
-         <property name="title" >
+        <widget class="QGroupBox" name="partitioning_files_group_box">
+         <property name="title">
           <string>Partitioning Polygons</string>
          </property>
-         <layout class="QVBoxLayout" >
+         <layout class="QVBoxLayout">
           <item>
-           <layout class="QHBoxLayout" >
+           <layout class="QHBoxLayout">
             <item>
-             <widget class="QLabel" name="partitioning_files_label" >
-              <property name="text" >
+             <widget class="QLabel" name="partitioning_files_label">
+              <property name="text">
                <string>Specify topological closed plate boundaries (or non-topological static polygons) from the following files:</string>
               </property>
              </widget>
             </item>
             <item>
              <spacer>
-              <property name="orientation" >
+              <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
-              <property name="sizeHint" >
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>40</width>
                 <height>20</height>
@@ -55,83 +59,84 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="push_button_help_partitioning_files" >
-              <property name="toolTip" >
+             <widget class="QPushButton" name="push_button_help_partitioning_files">
+              <property name="toolTip">
                <string>What does this mean?</string>
               </property>
-              <property name="text" >
+              <property name="text">
                <string/>
               </property>
-              <property name="icon" >
-               <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+              <property name="icon">
+               <iconset resource="../qt-resources/qt_widgets.qrc">
+                <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
               </property>
              </widget>
             </item>
            </layout>
           </item>
           <item>
-           <widget class="QTableWidget" name="table_partitioning_files" >
-            <property name="alternatingRowColors" >
+           <widget class="QTableWidget" name="table_partitioning_files">
+            <property name="alternatingRowColors">
              <bool>true</bool>
             </property>
-            <property name="selectionMode" >
+            <property name="selectionMode">
              <enum>QAbstractItemView::NoSelection</enum>
             </property>
-            <property name="selectionBehavior" >
+            <property name="selectionBehavior">
              <enum>QAbstractItemView::SelectRows</enum>
             </property>
-            <property name="horizontalScrollMode" >
+            <property name="horizontalScrollMode">
              <enum>QAbstractItemView::ScrollPerPixel</enum>
             </property>
-            <property name="gridStyle" >
+            <property name="gridStyle">
              <enum>Qt::DashLine</enum>
             </property>
-            <property name="columnCount" >
+            <property name="columnCount">
              <number>2</number>
             </property>
             <column>
-             <property name="text" >
+             <property name="text">
               <string>File Name</string>
              </property>
             </column>
             <column>
-             <property name="text" >
+             <property name="text">
               <string>Select</string>
              </property>
             </column>
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" >
+           <layout class="QHBoxLayout">
             <item>
-             <widget class="QPushButton" name="button_select_all_partitioning_files" >
-              <property name="toolTip" >
+             <widget class="QPushButton" name="button_select_all_partitioning_files">
+              <property name="toolTip">
                <string>Select all files</string>
               </property>
-              <property name="text" >
+              <property name="text">
                <string>&amp;Select All</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="button_clear_all_partitioning_files" >
-              <property name="enabled" >
+             <widget class="QPushButton" name="button_clear_all_partitioning_files">
+              <property name="enabled">
                <bool>true</bool>
               </property>
-              <property name="toolTip" >
+              <property name="toolTip">
                <string>Clear all files</string>
               </property>
-              <property name="text" >
+              <property name="text">
                <string>&amp;Clear All</string>
               </property>
              </widget>
             </item>
             <item>
              <spacer>
-              <property name="orientation" >
+              <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
-              <property name="sizeHint" >
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>40</width>
                 <height>20</height>
@@ -146,29 +151,32 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="partitioned_files" >
-      <layout class="QVBoxLayout" >
+     <widget class="QWidget" name="partitioned_files">
+      <layout class="QVBoxLayout">
+       <property name="margin">
+        <number>0</number>
+       </property>
        <item>
-        <widget class="QGroupBox" name="partitioned_files_group_box" >
-         <property name="title" >
+        <widget class="QGroupBox" name="partitioned_files_group_box">
+         <property name="title">
           <string>Features to Partition</string>
          </property>
-         <layout class="QVBoxLayout" >
+         <layout class="QVBoxLayout">
           <item>
-           <layout class="QHBoxLayout" >
+           <layout class="QHBoxLayout">
             <item>
-             <widget class="QLabel" name="partitioned_files_label" >
-              <property name="text" >
+             <widget class="QLabel" name="partitioned_files_label">
+              <property name="text">
                <string>Specify features to be partitioned:</string>
               </property>
              </widget>
             </item>
             <item>
              <spacer>
-              <property name="orientation" >
+              <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
-              <property name="sizeHint" >
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>40</width>
                 <height>20</height>
@@ -177,83 +185,84 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="push_button_help_partitioned_files" >
-              <property name="toolTip" >
+             <widget class="QPushButton" name="push_button_help_partitioned_files">
+              <property name="toolTip">
                <string>What does this mean?</string>
               </property>
-              <property name="text" >
+              <property name="text">
                <string/>
               </property>
-              <property name="icon" >
-               <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+              <property name="icon">
+               <iconset resource="../qt-resources/qt_widgets.qrc">
+                <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
               </property>
              </widget>
             </item>
            </layout>
           </item>
           <item>
-           <widget class="QTableWidget" name="table_partitioned_files" >
-            <property name="alternatingRowColors" >
+           <widget class="QTableWidget" name="table_partitioned_files">
+            <property name="alternatingRowColors">
              <bool>true</bool>
             </property>
-            <property name="selectionMode" >
+            <property name="selectionMode">
              <enum>QAbstractItemView::NoSelection</enum>
             </property>
-            <property name="selectionBehavior" >
+            <property name="selectionBehavior">
              <enum>QAbstractItemView::SelectRows</enum>
             </property>
-            <property name="horizontalScrollMode" >
+            <property name="horizontalScrollMode">
              <enum>QAbstractItemView::ScrollPerPixel</enum>
             </property>
-            <property name="gridStyle" >
+            <property name="gridStyle">
              <enum>Qt::DashLine</enum>
             </property>
-            <property name="columnCount" >
+            <property name="columnCount">
              <number>2</number>
             </property>
             <column>
-             <property name="text" >
+             <property name="text">
               <string>File Name</string>
              </property>
             </column>
             <column>
-             <property name="text" >
+             <property name="text">
               <string>Select</string>
              </property>
             </column>
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" >
+           <layout class="QHBoxLayout">
             <item>
-             <widget class="QPushButton" name="button_select_all_partitioned_files" >
-              <property name="toolTip" >
+             <widget class="QPushButton" name="button_select_all_partitioned_files">
+              <property name="toolTip">
                <string>Select all files</string>
               </property>
-              <property name="text" >
+              <property name="text">
                <string>&amp;Select All</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="button_clear_all_partitioned_files" >
-              <property name="enabled" >
+             <widget class="QPushButton" name="button_clear_all_partitioned_files">
+              <property name="enabled">
                <bool>true</bool>
               </property>
-              <property name="toolTip" >
+              <property name="toolTip">
                <string>Clear all files</string>
               </property>
-              <property name="text" >
+              <property name="text">
                <string>&amp;Clear All</string>
               </property>
              </widget>
             </item>
             <item>
              <spacer>
-              <property name="orientation" >
+              <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
-              <property name="sizeHint" >
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>40</width>
                 <height>20</height>
@@ -268,35 +277,38 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="general_options" >
-      <layout class="QVBoxLayout" >
+     <widget class="QWidget" name="general_options">
+      <layout class="QVBoxLayout">
+       <property name="margin">
+        <number>0</number>
+       </property>
        <item>
-        <widget class="QGroupBox" name="group_box_reconstruction_time" >
-         <property name="title" >
+        <widget class="QGroupBox" name="group_box_reconstruction_time">
+         <property name="title">
           <string>Reconstruction Time</string>
          </property>
-         <layout class="QVBoxLayout" >
+         <layout class="QVBoxLayout">
           <item>
-           <layout class="QHBoxLayout" >
+           <layout class="QHBoxLayout">
             <item>
-             <widget class="QLabel" name="label_reconstruction_time" >
-              <property name="minimumSize" >
+             <widget class="QLabel" name="label_reconstruction_time">
+              <property name="minimumSize">
                <size>
                 <width>0</width>
                 <height>20</height>
                </size>
               </property>
-              <property name="text" >
+              <property name="text">
                <string>Select the reconstruction time representing the geometry in the feature collections:</string>
               </property>
              </widget>
             </item>
             <item>
              <spacer>
-              <property name="orientation" >
+              <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
-              <property name="sizeHint" >
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>40</width>
                 <height>20</height>
@@ -305,62 +317,63 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="push_button_help_reconstruction_time" >
-              <property name="toolTip" >
+             <widget class="QPushButton" name="push_button_help_reconstruction_time">
+              <property name="toolTip">
                <string>What does this mean?</string>
               </property>
-              <property name="text" >
+              <property name="text">
                <string/>
               </property>
-              <property name="icon" >
-               <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+              <property name="icon">
+               <iconset resource="../qt-resources/qt_widgets.qrc">
+                <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
               </property>
              </widget>
             </item>
            </layout>
           </item>
           <item>
-           <widget class="QRadioButton" name="radio_button_present_day" >
-            <property name="text" >
+           <widget class="QRadioButton" name="radio_button_present_day">
+            <property name="text">
              <string>Present day</string>
             </property>
-            <property name="checked" >
+            <property name="checked">
              <bool>false</bool>
             </property>
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" >
+           <layout class="QHBoxLayout">
             <item>
-             <widget class="QRadioButton" name="radio_button_current_recon_time" >
-              <property name="text" >
+             <widget class="QRadioButton" name="radio_button_current_recon_time">
+              <property name="text">
                <string>Current reconstruction time:</string>
               </property>
-              <property name="checked" >
+              <property name="checked">
                <bool>false</bool>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="label_current_reconstruction_time" >
-              <property name="text" >
-               <string>&lt;current reconstruction time></string>
+             <widget class="QLabel" name="label_current_reconstruction_time">
+              <property name="text">
+               <string>&lt;current reconstruction time&gt;</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="label_ma" >
-              <property name="text" >
+             <widget class="QLabel" name="label_ma">
+              <property name="text">
                <string>Ma</string>
               </property>
              </widget>
             </item>
             <item>
              <spacer>
-              <property name="orientation" >
+              <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
-              <property name="sizeHint" >
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>40</width>
                 <height>20</height>
@@ -371,30 +384,30 @@
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" >
+           <layout class="QHBoxLayout">
             <item>
-             <widget class="QRadioButton" name="radio_button_specify_recon_time" >
-              <property name="text" >
+             <widget class="QRadioButton" name="radio_button_specify_recon_time">
+              <property name="text">
                <string>Specify reconstruction time:</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QDoubleSpinBox" name="double_spin_box_reconstruction_time" />
+             <widget class="QDoubleSpinBox" name="double_spin_box_reconstruction_time"/>
             </item>
             <item>
-             <widget class="QLabel" name="label_ma_spin_box" >
-              <property name="text" >
+             <widget class="QLabel" name="label_ma_spin_box">
+              <property name="text">
                <string>Ma</string>
               </property>
              </widget>
             </item>
             <item>
              <spacer>
-              <property name="orientation" >
+              <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
-              <property name="sizeHint" >
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>40</width>
                 <height>20</height>
@@ -408,26 +421,26 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="partition_options" >
-         <property name="title" >
+        <widget class="QGroupBox" name="partition_options">
+         <property name="title">
           <string>Feature Partitioning</string>
          </property>
-         <layout class="QVBoxLayout" >
+         <layout class="QVBoxLayout">
           <item>
-           <layout class="QHBoxLayout" >
+           <layout class="QHBoxLayout">
             <item>
-             <widget class="QLabel" name="label_partition_options" >
-              <property name="text" >
+             <widget class="QLabel" name="label_partition_options">
+              <property name="text">
                <string>Specify how features should be partitioned:</string>
               </property>
              </widget>
             </item>
             <item>
              <spacer>
-              <property name="orientation" >
+              <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
-              <property name="sizeHint" >
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>40</width>
                 <height>20</height>
@@ -436,37 +449,38 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="push_button_help_partitions_options" >
-              <property name="toolTip" >
+             <widget class="QPushButton" name="push_button_help_partitions_options">
+              <property name="toolTip">
                <string>What does this mean?</string>
               </property>
-              <property name="text" >
+              <property name="text">
                <string/>
               </property>
-              <property name="icon" >
-               <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+              <property name="icon">
+               <iconset resource="../qt-resources/qt_widgets.qrc">
+                <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
               </property>
              </widget>
             </item>
            </layout>
           </item>
           <item>
-           <widget class="QRadioButton" name="radio_button_assign_features" >
-            <property name="text" >
+           <widget class="QRadioButton" name="radio_button_assign_features">
+            <property name="text">
              <string>Copy feature properties from the polygon that most overlaps a feature</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="radio_button_assign_feature_sub_geometries" >
-            <property name="text" >
+           <widget class="QRadioButton" name="radio_button_assign_feature_sub_geometries">
+            <property name="text">
              <string>Copy feature properties from the polygon that most overlaps each geometry in a feature</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="radio_button_partition_features" >
-            <property name="text" >
+           <widget class="QRadioButton" name="radio_button_partition_features">
+            <property name="text">
              <string>Partition (cookie cut) feature geometry into polygons and copy feature properties</string>
             </property>
            </widget>
@@ -475,29 +489,29 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="properties_to_assign" >
-         <property name="title" >
+        <widget class="QGroupBox" name="properties_to_assign">
+         <property name="title">
           <string>Feature Properties</string>
          </property>
-         <layout class="QVBoxLayout" >
-          <property name="rightMargin" >
+         <layout class="QVBoxLayout">
+          <property name="rightMargin">
            <number>9</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" >
+           <layout class="QHBoxLayout">
             <item>
-             <widget class="QLabel" name="label_properties_to_assign" >
-              <property name="text" >
+             <widget class="QLabel" name="label_properties_to_assign">
+              <property name="text">
                <string>Specify the feature properties to copy from a polygon:</string>
               </property>
              </widget>
             </item>
             <item>
              <spacer>
-              <property name="orientation" >
+              <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
-              <property name="sizeHint" >
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>40</width>
                 <height>20</height>
@@ -506,30 +520,31 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="push_button_help_properties_to_assign" >
-              <property name="toolTip" >
+             <widget class="QPushButton" name="push_button_help_properties_to_assign">
+              <property name="toolTip">
                <string>What does this mean?</string>
               </property>
-              <property name="text" >
+              <property name="text">
                <string/>
               </property>
-              <property name="icon" >
-               <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+              <property name="icon">
+               <iconset resource="../qt-resources/qt_widgets.qrc">
+                <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
               </property>
              </widget>
             </item>
            </layout>
           </item>
           <item>
-           <widget class="QRadioButton" name="radio_button_assign_plate_id" >
-            <property name="text" >
+           <widget class="QRadioButton" name="radio_button_assign_plate_id">
+            <property name="text">
              <string>Reconstruction plate id</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="radio_button_assign_time_period" >
-            <property name="text" >
+           <widget class="QRadioButton" name="radio_button_assign_time_period">
+            <property name="text">
              <string>Time of appearance and disappearance</string>
             </property>
            </widget>
@@ -539,10 +554,10 @@
        </item>
        <item>
         <spacer>
-         <property name="orientation" >
+         <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
-         <property name="sizeHint" >
+         <property name="sizeHint" stdset="0">
           <size>
            <width>678</width>
            <height>61</height>
@@ -555,33 +570,33 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" >
+    <layout class="QHBoxLayout">
      <item>
-      <widget class="QPushButton" name="button_prev" >
-       <property name="text" >
+      <widget class="QPushButton" name="button_prev">
+       <property name="text">
         <string>Pre&amp;vious</string>
        </property>
-       <property name="autoDefault" >
+       <property name="autoDefault">
         <bool>false</bool>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="button_next" >
-       <property name="text" >
+      <widget class="QPushButton" name="button_next">
+       <property name="text">
         <string>Ne&amp;xt</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QDialogButtonBox" name="buttonbox" >
-       <property name="focusPolicy" >
+      <widget class="QDialogButtonBox" name="buttonbox">
+       <property name="focusPolicy">
         <enum>Qt::StrongFocus</enum>
        </property>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="standardButtons" >
+       <property name="standardButtons">
         <set>QDialogButtonBox::Cancel</set>
        </property>
       </widget>
@@ -590,6 +605,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc"/>
+ </resources>
  <connections/>
 </ui>

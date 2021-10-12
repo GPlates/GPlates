@@ -81,7 +81,7 @@ namespace GPlatesAppLogic
 		 */
 		classifications_type
 		classify_feature_collection(
-				const GPlatesFileIO::File &file);
+				const GPlatesFileIO::File::Reference &file);
 
 
 		/**

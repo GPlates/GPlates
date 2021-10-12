@@ -75,7 +75,8 @@ namespace GPlatesGui
 		/**
 		 * Get the projection type.
 		 */
-		ProjectionType projection_type() const
+		ProjectionType
+		projection_type() const
 		{
 			return d_projection_type;
 		}

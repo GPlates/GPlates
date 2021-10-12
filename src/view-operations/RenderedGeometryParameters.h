@@ -70,6 +70,7 @@ namespace GPlatesViewOperations
 
 		//! Line width for reconstruction layer.
 		const float POLE_MANIPULATION_LINE_WIDTH_HINT = 1.5f;
+
 	}
 
 	/**
@@ -119,6 +120,10 @@ namespace GPlatesViewOperations
 		 * to indicate, to the user, that an operation is possible.
 		 */
 		const float HIGHLIGHT_LINE_WIDTH_HINT = 2.0f;
+		
+	
+		//! Line width for move-vertex secondary geometries.
+		const float SECONDARY_LINE_WIDTH_HINT = 1.0f;
 
 		/////////////////
 		// Point sizes //
@@ -155,11 +160,12 @@ namespace GPlatesViewOperations
 		 * Colour to be used for rendering points for "split feature" tool.
 		 */
 		const GPlatesGui::Colour SPLIT_FEATURE_START_POINT_COLOUR = 
-			GPlatesGui::Colour::get_green();
+				GPlatesGui::Colour::get_green();
 		const GPlatesGui::Colour SPLIT_FEATURE_MIDDLE_POINT_COLOUR = 
-			GPlatesGui::Colour::get_yellow();
+				GPlatesGui::Colour::get_yellow();
 		const GPlatesGui::Colour SPLIT_FEATURE_END_POINT_COLOUR = 
-			GPlatesGui::Colour::get_red();
+				GPlatesGui::Colour::get_red();
+
 		/**
 		 * Colour to use for rendering those parts of geometry that are not in focus.
 		 */

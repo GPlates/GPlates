@@ -30,8 +30,15 @@
 
 #include <vector>
 
+#include "GmlPoint.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/AssertionFailureException.h"
+
 #include "model/PropertyValue.h"
+
 #include "maths/PointOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
 
@@ -74,11 +81,26 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Create a GmlMultiPoint instance which contains a copy of @a multipoint_.
+		 *
+		 * All points are presumed to have property gml:pos (as opposed to gml:coordinates).
 		 */
 		static
 		const non_null_ptr_type
 		create(
 				const internal_multipoint_type &multipoint_);
+
+		/**
+		 * Create a GmlMultiPoint instance which contains a copy of @a multipoint_.
+		 *
+		 * The property with which each point was specified (gml:pos or gml:coordinates)
+		 * is specified in @a gml_properties_. The size of @a gml_properties_ must be
+		 * the same as @a multipoint_.
+		 */
+		static
+		const non_null_ptr_type
+		create(
+				const internal_multipoint_type &multipoint_,
+				const std::vector<GmlPoint::GmlProperty> &gml_properties_);
 
 		const GmlMultiPoint::non_null_ptr_type
 		clone() const
@@ -116,15 +138,32 @@ namespace GPlatesPropertyValues
 		/**
 		 * Set the GPlatesMaths::MultiPointOnSphere within this instance to @a p.
 		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
+		 * Note: this sets all gml:Points to use gml:pos as their property.
 		 */
 		void
 		set_multipoint(
 				const internal_multipoint_type &p)
 		{
 			d_multipoint = p;
+			fill_gml_properties();
+			update_instance_id();
+		}
+
+		const std::vector<GmlPoint::GmlProperty> &
+		gml_properties() const
+		{
+			return d_gml_properties;
+		}
+
+		void
+		set_gml_properties(
+				const std::vector<GmlPoint::GmlProperty> &gml_properties_)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_multipoint->number_of_points() == gml_properties_.size(),
+					GPLATES_ASSERTION_SOURCE);
+
+			d_gml_properties = gml_properties_;
 			update_instance_id();
 		}
 
@@ -167,11 +206,11 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		GmlMultiPoint(
-				const internal_multipoint_type &multipoint_):
-			PropertyValue(),
-			d_multipoint(multipoint_)
-		{  }
+				const internal_multipoint_type &multipoint_);
 
+		GmlMultiPoint(
+				const internal_multipoint_type &multipoint_,
+				const std::vector<GmlPoint::GmlProperty> &gml_properties_);
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
@@ -179,14 +218,24 @@ namespace GPlatesPropertyValues
 		// Note that this should act exactly the same as the default (auto-generated)
 		// copy-constructor, except it should not be public.
 		GmlMultiPoint(
-				const GmlMultiPoint &other):
+				const GmlMultiPoint &other) :
 			PropertyValue(other), /* share instance id */
-			d_multipoint(other.d_multipoint)
+			d_multipoint(other.d_multipoint),
+			d_gml_properties(other.d_gml_properties)
 		{  }
 
 	private:
 
+		/**
+		 * Fills d_gml_properties with d_multipoint.size() of GmlPoint::POS.
+		 */
+		void
+		fill_gml_properties();
+
 		internal_multipoint_type d_multipoint;
+
+		// It's not the nicest OO, but this vector must be of the same size as d_multipoint.
+		std::vector<GmlPoint::GmlProperty> d_gml_properties;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

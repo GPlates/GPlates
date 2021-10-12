@@ -33,25 +33,20 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
-#include "app-logic/ReconstructionFeatureProperties.h"
+#include "ReconstructedFeatureGeometry.h"
+#include "ReconstructionFeatureProperties.h"
 
 #include "maths/GeometryOnSphere.h"
 
-#include "model/types.h"
 #include "model/FeatureId.h"
+#include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
-#include "model/FeatureCollectionHandle.h"
 #include "model/Model.h"
-#include "model/ReconstructedFeatureGeometry.h"
+#include "model/types.h"
 
 #include "property-values/GpmlTopologicalSection.h"
 
-
-namespace GPlatesModel
-{
-	class Reconstruction;
-}
 
 namespace GPlatesPropertyValues
 {
@@ -61,21 +56,18 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesAppLogic
 {
+	class ReconstructionGeometryCollection;
+
 	/**
 	 * Finds all topological network features (in the features visited)
 	 * that exist at a particular reconstruction time and creates
 	 * @a ResolvedTopologicalNetwork objects for each one and stores them
-	 * in a @a Reconstruction object.
-	 *
-	 * FIXME: Actually currently it creates multiple @a ResolvedTopologicalNetwork
-	 * objects for each topological network feature (one for each triangle in the
-	 * network triangulation). We need to either add something like a new
-	 * @a GeometryOnSphere derived type (such as a composite geometry) or
-	 * change the design of @a ReconstructionGeometry.
+	 * in a @a ReconstructionGeometryCollection object.
 	 *
 	 * @pre the features referenced by any of these topological network features
-	 *      must have already been reconstructed and exist in the @a Reconstruction object
-	 *      passed to constructor of @a TopologyNetworkResolver.
+	 *      must have already been reconstructed and reference the same @a ReconstructionTree
+	 *      object referenced by the @a ReconstructionGeometryCollection object passed into
+	 *      the constructor of @a TopologyNetworkResolver.
 	 */
 	class TopologyNetworkResolver: 
 		public GPlatesModel::FeatureVisitor,
@@ -84,7 +76,7 @@ namespace GPlatesAppLogic
 
 	public:
 		TopologyNetworkResolver(
-				GPlatesModel::Reconstruction &recon);
+				ReconstructionGeometryCollection &reconstruction_geometry_collection);
 
 		virtual
 		~TopologyNetworkResolver() 
@@ -150,7 +142,7 @@ namespace GPlatesAppLogic
 				//! The feature id of the feature referenced by this topological section.
 				GPlatesModel::FeatureId d_source_feature_id;
 				//! The source @a ReconstructedFeatureGeometry.
-				boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type> d_source_rfg;
+				boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> d_source_rfg;
 				//! The segment geometry.
 				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry;
 			};
@@ -163,7 +155,8 @@ namespace GPlatesAppLogic
 		};
 
 
-		GPlatesModel::Reconstruction &d_reconstruction;
+		//! Destination for resolved networks.
+		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
 
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;

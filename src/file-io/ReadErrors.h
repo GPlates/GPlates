@@ -29,6 +29,13 @@
 
 namespace GPlatesFileIO
 {
+	/**
+	 * Please keep these entries in the same order as they appear on the GPlates
+	 * Trac wiki page "ReadErrorMessages".
+	 *
+	 * A corresponding textual description will also need to be added to
+	 * qt-widgets/ReadErrorAccumulationDialog.cc.
+	 */
 	namespace ReadErrors
 	{
 		enum Description
@@ -109,15 +116,16 @@ namespace GPlatesFileIO
 			InvalidShapefilePolyline,
 			InvalidShapefilePolygon,
 			
-			// The following relate to raster files.
+			// The following relate to raster files in general.
 			InsufficientTextureMemory,
 			ErrorGeneratingTexture,
+			UnrecognisedRasterFileType,
+			ErrorReadingRasterFile,
+			ErrorReadingRasterBand,
+			InvalidRegionInRaster,
 
-			// The following relate to GDAL-readable Raster files.
-			ErrorReadingGDALBand,
-
-			// The following relate to QImage-readable image files.
-			ErrorReadingQImageFile,
+			// The following relate to GDAL-readable raster files.
+			ErrorInSystemLibraries,
 
 			// The following relate to time-dependent raster file sets.
 			NoRasterSetsFound,
@@ -161,17 +169,28 @@ namespace GPlatesFileIO
 			IncorrectVersionAttribute,
 			ParseError,
 			UnexpectedNonEmptyAttributeList,
+			DuplicateRasterBandName,
 
 			// The following are specific to GMAP vgp files
 			// FIXME: This is a generic GmapError, we should add more field-specific errors.
 			GmapError,
 			GmapFieldFormatError,
 
+			// The following are specific to regular and categorical GMT CPT files.
+			InvalidRegularCptLine,
+			InvalidCategoricalCptLine,
+			CptSliceNotMonotonicallyIncreasing,
+			ColourModelChangedMidway,
+			NoLinesSuccessfullyParsed,
+			CptFileTypeNotDeduced,
+			UnrecognisedLabel,
+			PatternFillInLine,
+
 			// The following are generic to all local files
 			ErrorOpeningFileForReading,
 			FileIsEmpty,
 			NoFeaturesFoundInFile
-		};
+		}; // enum Description
 
 		enum Result
 		{
@@ -200,6 +219,7 @@ namespace GPlatesFileIO
 			OnlyExteriorRingRead,
 			NoPlateIdLoadedForFile,
 			NoPlateIdLoadedForFeature,
+			NoConjugatePlateIdLoadedForFeature,
 			AttributeIgnored,
 			UnclassifiedShapefileFeatureCreated,
 
@@ -219,9 +239,13 @@ namespace GPlatesFileIO
 			// The following are specific to GMAP vgp files
 			GmapFeatureIgnored,
 
+			// The following are specific to regular and categorical GMT CPT files.
+			CptLineIgnored,
+
 			// The following are generic to all local files
-			FileNotLoaded
-		};
+			FileNotLoaded,
+			NoAction
+		}; // enum Result
 
 
 		/**
@@ -237,7 +261,7 @@ namespace GPlatesFileIO
 			TerminatingError,
 			FailureToBegin
 		};
-	}
+	} // namespace ReadErrors
 }
 
 #endif  // GPLATES_FILEIO_READERRORS_H

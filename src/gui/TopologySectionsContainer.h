@@ -38,6 +38,7 @@
 #include "maths/GeometryOnSphere.h"
 #include "maths/PointOnSphere.h"
 
+#include "property-values/GeoTimeInstant.h"
 #include "property-values/GpmlTopologicalSection.h"
 
 namespace GPlatesGui
@@ -150,6 +151,48 @@ namespace GPlatesGui
 				d_reverse = reverse;
 			}
 
+			/**
+			 * Get the optional time of appearance of this topological section.
+			 *
+			 * Note that this does not affect the time of appearance of the feature
+			 * referenced by this topological section. It's simply a way to restrict
+			 * the appearance time for this topological section even further.
+			 */
+			const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
+			get_begin_time() const
+			{
+				return d_begin_time;
+			}
+
+			//! Set the optional time of appearance of this topological section.
+			void
+			set_begin_time(
+					const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &begin_time)
+			{
+				d_begin_time = begin_time;
+			}
+
+			/**
+			 * Get the optional time of disappearance of this topological section.
+			 *
+			 * Note that this does not affect the time of disappearance of the feature
+			 * referenced by this topological section. It's simply a way to restrict
+			 * the disappearance time for this topological section even further.
+			 */
+			const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
+			get_end_time() const
+			{
+				return d_end_time;
+			}
+
+			//! Set the optional time of disappearance of this topological section.
+			void
+			set_end_time(
+					const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &end_time)
+			{
+				d_end_time = end_time;
+			}
+
 		private:
 			/**
 			 * The gpml:FeatureId of the topological section.
@@ -196,6 +239,16 @@ namespace GPlatesGui
 			 * Whether this topology section should be used in reverse.
 			 */
 			bool d_reverse;
+
+			/**
+			 * Optional time of appearance.
+			 */
+			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_begin_time;
+
+			/**
+			 * Optional time of disappearance.
+			 */
+			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_end_time;
 		};
 		
 		typedef std::vector<TableRow> container_type;

@@ -29,12 +29,20 @@
 #define GPLATES_MODEL_WEAKOBSERVERVISITOR_H
 
 
+namespace GPlatesAppLogic
+{
+	class AgeGridRaster;
+	class MultiPointVectorField;
+	class ReconstructedFeatureGeometry;
+	class ReconstructedVirtualGeomagneticPole;
+	class ResolvedRaster;
+	class ResolvedTopologicalBoundary;
+	class ResolvedTopologicalNetwork;
+}
+
 namespace GPlatesModel
 {
 	class FeatureHandle;
-	class ReconstructedFeatureGeometry;
-	class ResolvedTopologicalBoundary;
-	class ResolvedTopologicalNetwork;
 	template<class H> class WeakReference;
 
 	/**
@@ -74,7 +82,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_reconstructed_feature_geometry(
-				ReconstructedFeatureGeometry &rfg)
+				GPlatesAppLogic::ReconstructedFeatureGeometry &rfg)
 		{  }
 #endif
 
@@ -132,8 +140,44 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
+		visit_age_grid_raster(
+				GPlatesAppLogic::AgeGridRaster &agr)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_multi_point_vector_field(
+				GPlatesAppLogic::MultiPointVectorField &mpvf)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
 		visit_reconstructed_feature_geometry(
-				ReconstructedFeatureGeometry &rfg)
+				GPlatesAppLogic::ReconstructedFeatureGeometry &rfg)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_reconstructed_virtual_geomagnetic_pole(
+				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_resolved_raster(
+				GPlatesAppLogic::ResolvedRaster &rr)
 		{  }
 
 		/**
@@ -142,7 +186,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_resolved_topological_boundary(
-				ResolvedTopologicalBoundary &rtb)
+				GPlatesAppLogic::ResolvedTopologicalBoundary &rtb)
 		{  }
 
 		/**
@@ -151,7 +195,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_resolved_topological_network(
-				ResolvedTopologicalNetwork &rtn)
+				GPlatesAppLogic::ResolvedTopologicalNetwork &rtn)
 		{  }
 
 #if 0

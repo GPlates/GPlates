@@ -27,49 +27,65 @@
 
 #include "FileInfo.h"
 
-
-GPlatesFileIO::File::shared_ref
-GPlatesFileIO::File::create_empty_file(
-		const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref &feature_collection)
-{
-	// Feature collection was not created from a file so use default FileInfo and
-	// unknown file format.
-	const FileInfo file_info;
-	const FeatureCollectionFileFormat::Format file_format = FeatureCollectionFileFormat::UNKNOWN;
-
-	return shared_ref(new File(feature_collection, file_info, file_format));
-}
+#include "model/Model.h"
 
 
-GPlatesFileIO::File::shared_ref
-GPlatesFileIO::File::create_loaded_file(
-		const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref &feature_collection,
-		const FileInfo &file_info)
+GPlatesFileIO::File::non_null_ptr_type
+GPlatesFileIO::File::create_file(
+		const FileInfo &file_info,
+		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection)
 {
 	// Determine the file format from the filename extension.
 	const FeatureCollectionFileFormat::Format file_format =
 			get_feature_collection_file_format(file_info);
 
-	return shared_ref(new File(feature_collection, file_info, file_format));
-}
-
-
-GPlatesFileIO::File::shared_ref
-GPlatesFileIO::File::create_save_file(
-		const File &file,
-		const FileInfo &file_info)
-{
-	// NOTE: We use the file format of the original file and *not* the file format
-	// obtained by looking at the new filename extension.
-	const FeatureCollectionFileFormat::Format file_format = file.get_loaded_file_format();
-
-	// Share the feature collection from the existing file.
-	return shared_ref(new File(file.d_feature_collection, file_info, file_format));
+	return non_null_ptr_type(new File(feature_collection, file_info, file_format));
 }
 
 
 GPlatesFileIO::File::File(
-		const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref &feature_collection,
+		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
+		const FileInfo &file_info,
+		const FeatureCollectionFileFormat::Format file_format) :
+	d_file(new Reference(feature_collection->reference(), file_info, file_format)),
+	d_feature_collection_handle(feature_collection)
+{
+}
+
+
+GPlatesFileIO::File::Reference::non_null_ptr_type
+GPlatesFileIO::File::add_feature_collection_to_model(
+		GPlatesModel::ModelInterface &model)
+{
+	// If we've already added the feature collection handle to the model then
+	// return our internal File which should now contain a weak reference to the
+	// feature collection handle stored in the model.
+	if (!d_feature_collection_handle)
+	{
+		return d_file;
+	}
+
+	// Add the feature collection handle to the model.
+	GPlatesModel::FeatureStoreRootHandle::iterator iter =
+			model->root()->add(d_feature_collection_handle.get());
+
+	// Now that we've added the feature collection handle to the model we should
+	// release our ownership of it.
+	d_feature_collection_handle = boost::none;
+
+	// Get a reference to feature collection handle in the model.
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+			(*iter)->reference();
+
+	// Modify the internal feature collection weak reference.
+	d_file->d_feature_collection = feature_collection_ref;
+
+	return d_file;
+}
+
+
+GPlatesFileIO::File::Reference::Reference(
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 		const FileInfo &file_info,
 		const FeatureCollectionFileFormat::Format file_format) :
 	d_feature_collection(feature_collection),

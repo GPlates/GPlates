@@ -72,6 +72,8 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_gpml_continental_boundary_edge_enumeration);
 	d_map[TemplateTypeParameterType::create_gpml("ContinentalBoundarySideEnumeration")] = 
 		GET_PROP_VAL_NAME(create_gpml_continental_boundary_side_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("ReconstructionMethodEnumeration")] = 
+		GET_PROP_VAL_NAME(create_reconstruction_method_enumeration);
 	d_map[TemplateTypeParameterType::create_gpml("DipSideEnumeration")] = 
 		GET_PROP_VAL_NAME(create_gpml_dip_side_enumeration);
 	d_map[TemplateTypeParameterType::create_gpml("DipSlipEnumeration")] = 
@@ -133,4 +135,11 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_key_value_dictionary);
 	d_map[TemplateTypeParameterType::create_gpml("KeyValueDictionary")] =
 		GET_PROP_VAL_NAME(create_key_value_dictionary);
+
+	d_map[TemplateTypeParameterType::create_gml("GridEnvelope")] =
+		GET_PROP_VAL_NAME(create_grid_envelope);
+	d_map[TemplateTypeParameterType::create_gml("RectifiedGrid")] =
+		GET_PROP_VAL_NAME(create_rectified_grid);
+	d_map[TemplateTypeParameterType::create_gml("File")] =
+		GET_PROP_VAL_NAME(create_file);
 }

@@ -30,6 +30,7 @@
 #include <vector>
 #include <QDialog>
 #include "ApplyReconstructionPoleAdjustmentDialogUi.h"
+#include "app-logic/ReconstructionTree.h"
 #include "model/FeatureHandle.h"
 #include "maths/Rotation.h"
 
@@ -195,11 +196,12 @@ namespace GPlatesQtWidgets
 				const std::vector<ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> &
 						sequence_choices_,
 				const GPlatesMaths::Rotation &adjustment_,
-				const double &pole_time_)
+				const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_)
 		{
 			d_sequence_choices = sequence_choices_;
 			d_adjustment = adjustment_;
-			d_pole_time = pole_time_;
+			d_reconstruction_tree = reconstruction_tree_;
+			d_pole_time = reconstruction_tree_->get_reconstruction_time();
 		}
 
 	public slots:
@@ -232,6 +234,9 @@ namespace GPlatesQtWidgets
 
 		/// The adjustment, compensating for the motion of the fixed plate (if any).
 		boost::optional<GPlatesMaths::Rotation> d_adjustment_rel_fixed;
+
+		//! The tree that reconstructed the features.
+		boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> d_reconstruction_tree;
 
 		double d_pole_time;
 		std::vector<ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> d_sequence_choices;

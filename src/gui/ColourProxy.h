@@ -34,7 +34,9 @@
 #include "Colour.h"
 #include "ColourFilter.h"
 #include "ColourScheme.h"
-#include "model/ReconstructionGeometry.h"
+
+#include "app-logic/ReconstructionGeometry.h"
+
 
 namespace GPlatesGui
 {
@@ -74,7 +76,7 @@ namespace GPlatesGui
 		 */
 		explicit
 		ColourProxy(
-				GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geometry_ptr,
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry_ptr,
 				boost::shared_ptr<ColourFilter> colour_filter_ptr =
 					boost::shared_ptr<ColourFilter>());
 
@@ -97,14 +99,6 @@ namespace GPlatesGui
 		/**
 		 * Get the colour of the ReconstructionGeometry using a particular ColourScheme.
 		 * Always check whether the result is boost::none before dereferencing.
-		 *
-		 * If a colour scheme did not give a colour to the ReconstructionGeometry
-		 * (i.e. returned boost::none), this method will correct the result to being
-		 * Colour::get_olive(). This is because we assume that if you created a
-		 * RenderedGeometry out of a ReconstructionGeometry, you want it shown on
-		 * screen. On the other hand, if this ColourProxy was manually constructed
-		 * with boost::none, boost::none is returned and is not corrected to
-		 * Colour::get_olive().
 		 */
 		boost::optional<Colour>
 		get_colour(
@@ -113,7 +107,6 @@ namespace GPlatesGui
 	private:
 		
 		boost::shared_ptr<ColourProxyImpl> d_impl_ptr;
-		
 	};
 
 	/**
@@ -144,7 +137,7 @@ namespace GPlatesGui
 
 		explicit
 		DeferredColourProxyImpl(
-				GPlatesModel::ReconstructionGeometry::non_null_ptr_type reconstruction_geometry_ptr,
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry_ptr,
 				boost::shared_ptr<ColourFilter> colour_filter_ptr);
 
 		virtual
@@ -154,9 +147,8 @@ namespace GPlatesGui
 
 	private:
 
-		GPlatesModel::ReconstructionGeometry::non_null_ptr_type d_reconstruction_geometry_ptr;
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type d_reconstruction_geometry_ptr;
 		boost::shared_ptr<ColourFilter> d_colour_filter_ptr;
-
 	};
 
 	/**
@@ -179,7 +171,6 @@ namespace GPlatesGui
 	private:
 
 		boost::optional<Colour> d_colour;
-
 	};
 }
 

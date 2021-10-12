@@ -36,7 +36,7 @@
 
 namespace GPlatesUtils
 {
-	template<class T>
+	template<typename T>
 	class DefaultSingletonFactory
 	{
 	public:
@@ -47,23 +47,34 @@ namespace GPlatesUtils
 		}
 	};
 
-	class DefaultInstance
-	{
-	};
+	struct DefaultInstance;
 
 	/**
-	 * Base class for types that are singletons. Subclasses will then have
-	 * a static instance() function that will return a reference to the
-	 * singleton object; this object cannot be copied.
+	 * Base class for types that are singletons. For an explanation of singletons,
+	 * see the Design Patterns book.
+	 * 
+	 * A class T that derives from Singleton<T> will have a static instance()
+	 * function that returns a reference to the one and only instance of T. The
+	 * returned object cannot be copied.
 	 *
-	 * If it should not be possible to independently create objects of
-	 * subclasses, insert the GPLATES_SINGLETON_CONSTRUCTOR_DEF(ClassName)
-	 * macro at the top of the subclass definition. This defines (but does
-	 * not implement) the constructor as protected, and makes
-	 * DefaultSingletonFactory<T> a friend class so that it can
-	 * construct the singleton. Alternatively, use
-	 * GPLATES_SINGLETON_CONSTRUCTOR_IMPL(ClassName) to define and
-	 * implement the constructor as protected, and add the friend statement.
+	 * If T does not have a default constructor, it is necessary to supply the
+	 * type of a factory class as the SingletonFactory template parameter.
+	 *
+	 * If it is desirable to have more than one instance of T, supply the Instance
+	 * template parameter. The class named as the Instance parameter is not
+	 * instantiated or otherwise used; the parameter is merely provided to select,
+	 * at compile time, which of the many instances of T instance() is to return.
+	 *
+	 * If it should not be possible for client code to create instances of T,
+	 * insert the GPLATES_SINGLETON_CONSTRUCTOR_DECL(T) macro at the top of the
+	 * definition of T. This declares (but does not define) the constructor as
+	 * protected, and makes DefaultSingletonFactory<T> a friend class so that it
+	 * can construct an instance of T. The constructor of T will need to be
+	 * defined elsewhere.
+	 *
+	 * Alternatively, use GPLATES_SINGLETON_CONSTRUCTOR_DEF(T) to declare the
+	 * constructor as well as define it with an empty body. (Note the
+	 * distinction between a 'declaration' and a 'definition' in C++.)
 	 *
 	 * It is also possible to obtain a singleton of an existing class T by calling
 	 *
@@ -72,9 +83,9 @@ namespace GPlatesUtils
 	 * Note that this implementation of a singleton is not thread-safe. Define
 	 * GPLATES_SINGLETON_THREADSAFE before including this header if this is required.
 	 */
-	template<class T, class SingletonFactory = DefaultSingletonFactory<T>, class Instance = DefaultInstance>
+	template<typename T, class SingletonFactory = DefaultSingletonFactory<T>, class Instance = DefaultInstance>
 	class Singleton :
-		public boost::noncopyable
+			public boost::noncopyable
 	{
 
 	public:
@@ -87,7 +98,7 @@ namespace GPlatesUtils
 		T&
 		instance()
 		{
-#ifdef GPLATES_SINGLETON_THREADSAFE
+#if defined( GPLATES_SINGLETON_THREADSAFE )
 			QMutexLocker locker;
 #endif
 			if (!s_instance_ptr)
@@ -116,12 +127,12 @@ template<class T, class SingletonFactory, class Instance>
 boost::scoped_ptr<T>
 GPlatesUtils::Singleton<T, SingletonFactory, Instance>::s_instance_ptr(NULL);
 
-#define GPLATES_SINGLETON_CONSTRUCTOR_DEF(T) \
+#define GPLATES_SINGLETON_CONSTRUCTOR_DECL(T) \
 	protected: \
 		T(); \
 		friend class GPlatesUtils::DefaultSingletonFactory<T>;
 
-#define GPLATES_SINGLETON_CONSTRUCTOR_IMPL(T) \
+#define GPLATES_SINGLETON_CONSTRUCTOR_DEF(T) \
 	protected: \
 		T() { } \
 		friend class GPlatesUtils::DefaultSingletonFactory<T>;

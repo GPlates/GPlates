@@ -25,10 +25,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <opengl/OpenGL.h>
+
 #include "Colour.h"
 #include "Map.h"
-#include "gui/MapCanvasPainter.h"
-#include "OpenGL.h"
+#include "MapCanvasPainter.h"
+
 #include "maths/LatLonPoint.h"
 
 
@@ -50,10 +52,12 @@ namespace
 
 GPlatesGui::Map::Map(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
 		ViewportZoom &viewport_zoom,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_collection(&rendered_geometry_collection),
+	d_visual_layers(visual_layers),
 	d_render_settings(render_settings),
 	d_viewport_zoom(viewport_zoom),
 	d_colour_scheme(colour_scheme)
@@ -68,8 +72,15 @@ GPlatesGui::Map::projection()
 }
 
 
+const GPlatesGui::MapProjection &
+GPlatesGui::Map::projection() const
+{
+	return d_projection;
+}
+
+
 GPlatesGui::ProjectionType
-GPlatesGui::Map::projection_type()
+GPlatesGui::Map::projection_type() const
 {
 	return d_projection.projection_type();
 }
@@ -216,12 +227,13 @@ GPlatesGui::Map::paint(
 
 		double inverse_zoom_factor = 1.0 / d_viewport_zoom.zoom_factor();
 		GPlatesGui::MapCanvasPainter map_canvas_painter(
-			*this,
-			d_render_settings,
-			d_text_renderer_ptr,
-			d_update_type,
-			inverse_zoom_factor,
-			d_colour_scheme);
+				*this,
+				d_visual_layers,
+				d_render_settings,
+				d_text_renderer_ptr,
+				d_update_type,
+				inverse_zoom_factor,
+				d_colour_scheme);
 		map_canvas_painter.set_scale(scale);
 		d_rendered_geometry_collection->accept_visitor(map_canvas_painter);
 	}

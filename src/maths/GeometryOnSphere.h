@@ -123,6 +123,14 @@ namespace GPlatesMaths
 		ProximityHitDetail::maybe_null_ptr_type
 		test_proximity(
 				const ProximityCriteria &criteria) const = 0;
+				
+		/**
+		 * Test for a proximity hit, but only on the vertices of the geometry.                                                                     
+		 */
+		virtual
+		ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+				const ProximityCriteria &criteria) const = 0;
 
 		/**
 		 * Accept a ConstGeometryOnSphereVisitor instance.

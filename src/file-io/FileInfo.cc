@@ -31,11 +31,31 @@ const QString
 GPlatesFileIO::FileInfo::get_display_name(
 		bool use_absolute_path_name) const
 {
-	if (use_absolute_path_name) {
+	if (use_absolute_path_name)
+	{
 		return d_file_info.absoluteFilePath();
-	} else {
+	}
+	else
+	{
 		return d_file_info.fileName();
 	}
+}
+
+
+const QString
+GPlatesFileIO::FileInfo::get_file_name_without_extension() const
+{
+	// Special handling for double-barrelled extensions ending in .gz.
+	// We construct the new QFileInfo without the .gz if it ends with .gz.
+	static const QString GZ_EXT = ".gz";
+	QString file_path = d_file_info.filePath();
+	if (file_path.endsWith(GZ_EXT))
+	{
+		file_path = file_path.left(file_path.length() - GZ_EXT.length());
+	}
+	QFileInfo file_info(file_path);
+
+	return file_info.completeBaseName();
 }
 
 

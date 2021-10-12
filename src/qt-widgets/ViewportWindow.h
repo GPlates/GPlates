@@ -96,6 +96,7 @@ namespace GPlatesViewOperations
 {
 	class ActiveGeometryOperation;
 	class CloneOperation;
+	class DeleteFeatureOperation;
 	class FocusedFeatureGeometryManipulator;
 	class GeometryBuilder;
 	class GeometryOperationTarget;
@@ -110,7 +111,6 @@ namespace GPlatesQtWidgets
 	class ColouringDialog;
 	class CreateVGPDialog;
 	class ExportAnimationDialog;
-	class ExportReconstructedFeatureGeometryDialog;
 	class FeaturePropertiesDialog;
 	class ManageFeatureCollectionsDialog;
 	class MeshDialog;
@@ -118,7 +118,6 @@ namespace GPlatesQtWidgets
 	class SaveFileDialog;
 	class SetCameraViewpointDialog;
 	class SetProjectionDialog;
-	class SetRasterSurfaceExtentDialog;
 	class SetVGPVisibilityDialog;
 	class ShapefileAttributeViewerDialog;
 	class SpecifyAnchoredPlateIdDialog;
@@ -138,16 +137,19 @@ namespace GPlatesQtWidgets
 
 		~ViewportWindow();
 
-
 		void
 		load_files(
 				const QStringList &filenames);
 
-
 		void
 		reconstruct_to_time(
 				const double &recon_time);
-		
+
+		GPlatesQtWidgets::ReconstructionViewWidget &
+		reconstruction_view_widget()
+		{
+			return d_reconstruction_view_widget;
+		}
 
 		const GPlatesQtWidgets::ReconstructionViewWidget &
 		reconstruction_view_widget() const
@@ -156,25 +158,32 @@ namespace GPlatesQtWidgets
 		}
 
 		GlobeCanvas &
+		globe_canvas()
+		{
+			return d_reconstruction_view_widget.globe_canvas();
+		}
+
+		const GlobeCanvas &
 		globe_canvas() const
 		{
-			return *d_globe_canvas_ptr;
+			return d_reconstruction_view_widget.globe_canvas();
+		}
+
+		MapView &
+		map_view()
+		{
+			return d_reconstruction_view_widget.map_view();
+		}
+
+		const MapView &
+		map_view() const
+		{
+			return d_reconstruction_view_widget.map_view();
 		}
 
 		void
 		create_svg_file(
 				const QString &filename);
-
-
-		void	
-		change_tab(int i) {
-			tabWidget->setCurrentIndex( i );
-		}
-
-		int
-		get_tab() {
-			return tabWidget->currentIndex();
-		}
 
 
 		GPlatesGui::FeatureTableModel &
@@ -189,7 +198,6 @@ namespace GPlatesQtWidgets
 			return *d_trinket_area_ptr;
 		}
 
-
 		/** Get a pointer to the TopologySectionsContainer */
 		GPlatesGui::TopologySectionsContainer &
 		topology_sections_container()
@@ -199,7 +207,7 @@ namespace GPlatesQtWidgets
 
 		/** Get a pointer to the TaskPanel */
 		GPlatesQtWidgets::TaskPanel *
-		task_panel_ptr()
+		task_panel_ptr() const
 		{
 			return d_task_panel_ptr;
 		}
@@ -220,6 +228,12 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		highlight_first_clicked_feature_table_row() const;
+
+		/**
+		 * Highlights the row of the table that corresponds to the focused feature.
+		 */
+		void
+		highlight_focused_feature_in_table();
 
 		void
 		handle_reconstruction();
@@ -340,12 +354,6 @@ namespace GPlatesQtWidgets
 		}
 
 		void
-		choose_selected_feature_table()
-		{
-			tabWidget->setCurrentWidget(tab_selected);
-		}
-
-		void
 		choose_topology_sections_table()
 		{
 			tabWidget->setCurrentWidget(tab_topology);
@@ -374,16 +382,6 @@ namespace GPlatesQtWidgets
 	
 		void
 		pop_up_animate_dialog();
-
-		void
-		open_raster();
-
-		void
-		open_time_dependent_raster_sequence();
-		
-		// FIXME: Should be a ViewState operation, or /somewhere/ better than this.
-		void
-		delete_focused_feature();
 
 		void
 		update_tools_and_status_message();
@@ -454,28 +452,25 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
-
 		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
 		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
-		boost::scoped_ptr<ExportReconstructedFeatureGeometryDialog> d_export_rfg_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
 		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
-		boost::scoped_ptr<SetRasterSurfaceExtentDialog> d_set_raster_surface_extent_dialog_ptr;
 		boost::scoped_ptr<SetVGPVisibilityDialog> d_set_vgp_visibility_dialog_ptr;
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
 		boost::scoped_ptr<SpecifyTimeIncrementDialog> d_specify_time_increment_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
 
-		boost::shared_ptr<SaveFileDialog> d_export_geometry_snapshot_dialog_ptr;
+		boost::scoped_ptr<QDialog> d_layering_dialog_ptr;
 
-		GlobeCanvas *d_globe_canvas_ptr;
+		boost::shared_ptr<SaveFileDialog> d_export_geometry_snapshot_dialog_ptr;
 
 		boost::scoped_ptr<GPlatesGui::ChooseCanvasTool> d_choose_canvas_tool;
 
@@ -487,7 +482,9 @@ namespace GPlatesQtWidgets
 		// d_geometry_operation_target.
 		boost::scoped_ptr<GPlatesViewOperations::GeometryOperationTarget> d_geometry_operation_target;
 
-		boost::scoped_ptr<GPlatesViewOperations::CloneOperation> d_clone_operation_prt;
+		boost::scoped_ptr<GPlatesViewOperations::CloneOperation> d_clone_operation_ptr;
+
+		boost::scoped_ptr<GPlatesViewOperations::DeleteFeatureOperation> d_delete_feature_operation_ptr;
 
 		boost::scoped_ptr<GPlatesViewOperations::ActiveGeometryOperation> d_active_geometry_operation;
 
@@ -542,12 +539,15 @@ namespace GPlatesQtWidgets
 		 */
 		TaskPanel *d_task_panel_ptr;
 
-
-		//!  map a time value to a raster filename
-		QMap<int,QString> d_time_dependent_raster_map;
-
 		//! The last path used for opening raster files.
 		QString d_open_file_path; 
+
+		/**
+		 * To help users adjust to the new layers system, we'll open up the layers
+		 * dialog the first time (and only the first time) a new layer gets added.
+		 * This variable is true iff that has already happened.
+		 */
+		bool d_layering_dialog_opened_automatically_once;
 
 		/**
 		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
@@ -583,12 +583,8 @@ namespace GPlatesQtWidgets
 		void
 		set_up_dock_context_menus();
 
-		bool
-		load_raster(
-			QString filename);
-
 		void
-		update_time_dependent_raster();
+		set_internal_release_window_title();
 
 	private slots:
 		void
@@ -602,6 +598,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_colouring_dialog();
+
+		void
+		pop_up_layering_dialog();
 
 		void
 		close_all_dialogs();
@@ -629,12 +628,6 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_strings_display();
-
-		void
-		enable_raster_display();
-
-		void
-		pop_up_set_raster_surface_extent_dialog();
 
 		void
 		pop_up_shapefile_attribute_viewer_dialog();
@@ -677,6 +670,20 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_colour_scheme_delegator_changed();
+		
+		void
+		pop_up_import_raster_dialog();
+
+		void
+		pop_up_import_raster_dialog(
+				bool time_dependent_raster);
+
+		void
+		pop_up_import_time_dependent_raster_dialog();
+
+		void
+		handle_visual_layer_added(
+				size_t index);
 
 	protected:
 	
@@ -687,6 +694,23 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		closeEvent(QCloseEvent *close_event);
+
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * GPlates main window.
+		 */
+		void
+		dragEnterEvent(
+				QDragEnterEvent *ev);
+
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * GPlates main window.
+		 */
+		void
+		dropEvent(
+				QDropEvent *ev);
+
 	};
 }
 

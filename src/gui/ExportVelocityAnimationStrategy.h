@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,14 +31,21 @@
 
 #include <QString>
 
+#include "model/FeatureCollectionHandle.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
-
 #include "utils/ExportTemplateFilenameSequence.h"
+
+#include "view-operations/VisibleReconstructedFeatureGeometryExport.h"
 
 #include "gui/ExportAnimationStrategy.h"
 
+namespace GPlatesAppLogic
+{
+	class MultiPointVectorField;
+}
 
 namespace GPlatesGui
 {
@@ -64,11 +71,11 @@ namespace GPlatesGui
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		static const QString 
-			DEFAULT_MESH_VILOCITIES_FILENAME_TEMPLATE;
+			DEFAULT_MESH_VELOCITIES_FILENAME_TEMPLATE;
 		static const QString 
-			MESH_VILOCITIES_FILENAME_TEMPLATE_DESC;
+			MESH_VELOCITIES_FILENAME_TEMPLATE_DESC;
 		static const QString
-			MESH_VILOCITIES_DESC;
+			MESH_VELOCITIES_DESC;
 
 		static
 		const non_null_ptr_type
@@ -76,7 +83,7 @@ namespace GPlatesGui
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const ExportAnimationStrategy::Configuration& cfg=
 					ExportAnimationStrategy::Configuration(
-							DEFAULT_MESH_VILOCITIES_FILENAME_TEMPLATE));
+							DEFAULT_MESH_VELOCITIES_FILENAME_TEMPLATE));
 
 
 		virtual
@@ -105,7 +112,7 @@ namespace GPlatesGui
 		const QString&
 		get_description()
 		{
-			return MESH_VILOCITIES_DESC;
+			return MESH_VELOCITIES_DESC;
 		}
 
 
@@ -129,6 +136,8 @@ namespace GPlatesGui
 				const QString &);
 
 	protected:
+		typedef std::vector<const GPlatesAppLogic::MultiPointVectorField *> vector_field_seq_type;
+
 		/**
 		 * Protected constructor to prevent instantiation on the stack.
 		 * Use the create() method on the individual Strategy subclasses.
@@ -137,8 +146,25 @@ namespace GPlatesGui
 		ExportVelocityAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const QString filename_template);
+
+		void
+		export_velocity_fields_to_file(
+				const vector_field_seq_type &velocity_fields,
+				QString filename);
+
+		
+		QString
+		get_file_name_from_feature_collection_handle(
+				GPlatesModel::FeatureCollectionHandle::weak_ref);
 		
 	private:
+		/**
+		 * The list of currently loaded files that are active.
+		 *
+		 * This code is copied from "gui/ExportReconstructedGeometryAnimationStrategy.h".
+		 */
+		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::files_collection_type d_active_files;
+
 		ExportVelocityAnimationStrategy();
 	};
 }

@@ -91,7 +91,7 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::refresh_display()
 void
 GPlatesQtWidgets::ViewFeatureGeometriesWidget::edit_feature(
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg)
+		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg)
 {
 	d_feature_ref = feature_ref;
 	d_focused_rg = focused_rg;

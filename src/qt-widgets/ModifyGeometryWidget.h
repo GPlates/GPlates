@@ -42,6 +42,7 @@ namespace GPlatesViewOperations
 	class ActiveGeometryOperation;
 	class GeometryBuilder;
 	class GeometryOperationTarget;
+
 }
 
 namespace GPlatesQtWidgets
@@ -98,6 +99,7 @@ namespace GPlatesQtWidgets
 		 * and fills in the table accordingly.
 		 */
 		boost::scoped_ptr<LatLonCoordinatesTable> d_lat_lon_coordinates_table;
+		
 	};
 }
 

@@ -30,6 +30,7 @@
 
 #include "ClickGeometry.h"
 
+#include "app-logic/ApplicationState.h"
 #include "gui/AddClickedGeometriesToFeatureTable.h"
 #include "maths/PointOnSphere.h"
 #include "qt-widgets/FeaturePropertiesDialog.h"
@@ -41,12 +42,14 @@ GPlatesCanvasTools::ClickGeometry::ClickGeometry(
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
 		GPlatesGui::FeatureTableModel &clicked_table_model_,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
-		GPlatesGui::FeatureFocus &feature_focus_):
+		GPlatesGui::FeatureFocus &feature_focus_,
+		GPlatesAppLogic::ApplicationState &application_state_):
 	d_rendered_geom_collection(&rendered_geom_collection),
 	d_view_state_ptr(&view_state_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
 	d_fp_dialog_ptr(&fp_dialog_),
-	d_feature_focus_ptr(&feature_focus_)
+	d_feature_focus_ptr(&feature_focus_),
+	d_reconstruct_graph(application_state_.get_reconstruct_graph())
 {
 }
 
@@ -77,7 +80,8 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 			*d_view_state_ptr,
 			*d_clicked_table_model_ptr,
 			*d_feature_focus_ptr,
-			*d_rendered_geom_collection);
+			*d_rendered_geom_collection,
+			d_reconstruct_graph);
 }
 
 

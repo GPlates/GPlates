@@ -53,6 +53,11 @@ namespace GPlatesGui
 	class FileIOFeedback;
 }
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 
 namespace GPlatesQtWidgets
 {
@@ -73,6 +78,7 @@ namespace GPlatesQtWidgets
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 				GPlatesGui::FileIOFeedback &gui_file_io_feedback,
+				GPlatesPresentation::ViewState& d_view_state,
 				QWidget *parent_ = NULL);
 		
 
@@ -129,21 +135,11 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Causes the file referenced by the state widget to be added or
-		 * removed from the active reconstructable files list, effectively
+		 * removed from the active files list, effectively
 		 * 'showing' or 'hiding' that feature data.
 		 */
 		void
-		set_reconstructable_state_for_file(
-				ManageFeatureCollectionsStateWidget *state_widget_ptr,
-				bool activate);
-
-		/**
-		 * Causes the file referenced by the state widget to be added or
-		 * removed from the active reconstruction files list, meaning
-		 * GPlates will use or ignore any reconstruction tree present.
-		 */
-		void
-		set_reconstruction_state_for_file(
+		set_state_for_file(
 				ManageFeatureCollectionsStateWidget *state_widget_ptr,
 				bool activate);
 	
@@ -184,33 +180,24 @@ namespace GPlatesQtWidgets
 		//       to not be able to connect them at runtime.
 
 		void
-		end_add_feature_collections(
+		handle_file_state_files_added(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_begin,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_files_end);
+				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files);
 
 		void
-		begin_remove_feature_collection(
+		handle_file_state_file_about_to_be_removed(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 		void
-		reconstructable_file_activation(
+		handle_file_state_file_info_changed(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file,
-				bool activation);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 		void
-		reconstruction_file_activation(
+		handle_file_state_file_activation_changed(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file,
-				bool activation);
-
-		void
-		workflow_file_activation(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file,
-				const GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type &workflow_tag,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
 				bool activation);
 
 	protected:
@@ -227,7 +214,7 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		add_row(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it);
 		
 		/**
 		 * Locates the current row of the table used by the given action widget.
@@ -243,7 +230,7 @@ namespace GPlatesQtWidgets
 		 */
 		int
 		find_row(
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it);
 
 		/**
 		 * Removes the row indicated by the given action widget.
@@ -275,6 +262,22 @@ namespace GPlatesQtWidgets
 		set_row_background_colour(
 				int row);
 
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * Manage Feature Collections Dialog.
+		 */
+		void
+		dragEnterEvent(
+				QDragEnterEvent *ev);
+
+		/**
+		 * Reimplementation of drag/drop events so we can handle users dragging files onto
+		 * Manage Feature Collections Dialog.
+		 */
+		void
+		dropEvent(
+				QDropEvent *ev);
+
 	private:
 		/**
 		 * The loaded feature collection files.
@@ -293,6 +296,7 @@ namespace GPlatesQtWidgets
 		 */
 		QPointer<GPlatesGui::FileIOFeedback> d_gui_file_io_feedback_ptr;
 
+		GPlatesPresentation::ViewState& d_view_state;
 
 		/**
 		 * Connect to signals from a @a FeatureCollectionFileState object.

@@ -55,52 +55,34 @@ namespace GPlatesQtWidgets
 		explicit
 		ManageFeatureCollectionsStateWidget(
 				ManageFeatureCollectionsDialog &feature_collections_dialog,
-				GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_it,
-				bool reconstructable_active,
-				bool reconstruction_active,
-				bool enable_reconstructable,
-				bool enable_reconstruction,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
+				bool active,
+				bool enable,
 				QWidget *parent_ = NULL);
 
 		/**
-		 * Updates the reconstructable state of StateWidget by checking/unchecking checkboxes and
+		 * Updates the state of StateWidget by checking/unchecking checkboxes and
 		 * disabling/enabling buttons as necessary.
 		 */
 		void
-		update_reconstructable_state(
+		update_state(
 				bool active,
-				bool enable_reconstructable);
+				bool enable);
 	
-		/**
-		 * Updates the reconstruction state of StateWidget by checking/unchecking checkboxes and
-		 * disabling/enabling buttons as necessary.
-		 */
-		void
-		update_reconstruction_state(
-				bool active,
-				bool enable_reconstruction);
-	
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator
-		get_file_iterator() const
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference
+		get_file_reference() const
 		{
-			return d_file_iterator;
+			return d_file_reference;
 		}
 	
 	private slots:
 		
 		void
-		handle_active_reconstructable_checked(
+		handle_active_checked(
 				bool checked);
 
 		void
-		handle_active_reconstructable_toggled();
-
-		void
-		handle_active_reconstruction_checked(
-				bool checked);
-
-		void
-		handle_active_reconstruction_toggled();
+		handle_active_toggled();
 	
 	private:
 	
@@ -108,20 +90,12 @@ namespace GPlatesQtWidgets
 		 * Reconfigures the button icon, tooltip etc. to indicate state.
 		 */
 		void
-		set_reconstructable_button_properties(
-				bool is_active,
-				bool is_enabled);
-
-		/**
-		 * Reconfigures the button icon, tooltip etc. to indicate state.
-		 */
-		void
-		set_reconstruction_button_properties(
+		set_button_properties(
 				bool is_active,
 				bool is_enabled);
 	
 		ManageFeatureCollectionsDialog &d_feature_collections_dialog;
-		GPlatesAppLogic::FeatureCollectionFileState::file_iterator d_file_iterator;
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference d_file_reference;
 		
 	};
 }

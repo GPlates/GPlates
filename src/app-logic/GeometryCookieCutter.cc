@@ -28,11 +28,10 @@
 
 #include "GeometryCookieCutter.h"
 
+#include "ReconstructionGeometryCollection.h"
 #include "ReconstructionGeometryUtils.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
-
-#include "model/Reconstruction.h"
 
 
 namespace
@@ -65,19 +64,19 @@ namespace
 
 
 GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
-		const GPlatesModel::Reconstruction &reconstruction,
+		const ReconstructionGeometryCollection &reconstruction_geometry_collection,
 		bool partition_using_topological_plate_polygons,
 		bool partition_using_static_polygons) :
-	d_reconstruction_time(reconstruction.get_reconstruction_time())
+	d_reconstruction_time(reconstruction_geometry_collection.get_reconstruction_time())
 {
 	if (partition_using_topological_plate_polygons)
 	{
-		add_partitioning_resolved_topological_boundaries(reconstruction);
+		add_partitioning_resolved_topological_boundaries(reconstruction_geometry_collection);
 	}
 
 	if (partition_using_static_polygons)
 	{
-		add_partitioning_reconstructed_feature_polygons(reconstruction);
+		add_partitioning_reconstructed_feature_polygons(reconstruction_geometry_collection);
 	}
 
 	// Make sure the ReconstructionGeometry objects with the highest plate ids
@@ -185,7 +184,7 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometry(
 }
 
 
-boost::optional<const GPlatesModel::ReconstructionGeometry *>
+boost::optional<const GPlatesAppLogic::ReconstructionGeometry *>
 GPlatesAppLogic::GeometryCookieCutter::partition_point(
 		const GPlatesMaths::PointOnSphere &point) const
 {
@@ -222,13 +221,13 @@ GPlatesAppLogic::GeometryCookieCutter::partition_point(
 
 void
 GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_boundaries(
-		const GPlatesModel::Reconstruction &reconstruction)
+		const ReconstructionGeometryCollection &reconstruction_geometry_collection)
 {
 	// Get all ResolvedTopologicalBoundary objects in the reconstruction.
-	std::vector<const GPlatesModel::ResolvedTopologicalBoundary *> resolved_topological_boundaries;
+	std::vector<const ResolvedTopologicalBoundary *> resolved_topological_boundaries;
 	ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-				reconstruction.geometries().begin(),
-				reconstruction.geometries().end(),
+				reconstruction_geometry_collection.begin(),
+				reconstruction_geometry_collection.end(),
 				resolved_topological_boundaries);
 
 	// Optimisation.
@@ -244,14 +243,14 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_bou
 
 void
 GPlatesAppLogic::GeometryCookieCutter::add_partitioning_reconstructed_feature_polygons(
-		const GPlatesModel::Reconstruction &reconstruction)
+		const ReconstructionGeometryCollection &reconstruction_geometry_collection)
 {
 	// Get all ReconstructedFeatureGeometry objects in the reconstruction.
-	typedef std::vector<const GPlatesModel::ReconstructedFeatureGeometry *> rfg_seq_type;
+	typedef std::vector<const ReconstructedFeatureGeometry *> rfg_seq_type;
 	rfg_seq_type reconstructed_feature_geometries;
 	ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-				reconstruction.geometries().begin(),
-				reconstruction.geometries().end(),
+				reconstruction_geometry_collection.begin(),
+				reconstruction_geometry_collection.end(),
 				reconstructed_feature_geometries);
 
 	// Find the RFGs that contain polygon geometry and add them as partitioning polygon.
@@ -259,7 +258,7 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_reconstructed_feature_po
 	rfg_seq_type::const_iterator rfg_end = reconstructed_feature_geometries.end();
 	for ( ; rfg_iter != rfg_end; ++rfg_iter)
 	{
-		const GPlatesModel::ReconstructedFeatureGeometry *rfg = *rfg_iter;
+		const ReconstructedFeatureGeometry *rfg = *rfg_iter;
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type rfg_geom_on_sphere =
 				rfg->geometry();
 
@@ -290,7 +289,7 @@ GPlatesAppLogic::GeometryCookieCutter::sort_partitioning_reconstructed_feature_p
 
 
 GPlatesAppLogic::GeometryCookieCutter::PartitioningGeometry::PartitioningGeometry(
-		const GPlatesModel::ResolvedTopologicalBoundary *resolved_topological_boundary) :
+		const ResolvedTopologicalBoundary *resolved_topological_boundary) :
 	d_reconstruction_geometry(resolved_topological_boundary),
 	d_polygon_intersections(
 			GPlatesMaths::PolygonIntersections::create(
@@ -300,7 +299,7 @@ GPlatesAppLogic::GeometryCookieCutter::PartitioningGeometry::PartitioningGeometr
 
 
 GPlatesAppLogic::GeometryCookieCutter::PartitioningGeometry::PartitioningGeometry(
-		const GPlatesModel::ReconstructedFeatureGeometry *reconstructed_feature_geometry,
+		const ReconstructedFeatureGeometry *reconstructed_feature_geometry,
 		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon) :
 	d_reconstruction_geometry(reconstructed_feature_geometry),
 	d_polygon_intersections(

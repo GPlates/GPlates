@@ -292,6 +292,17 @@ GPlatesQtWidgets::AdjustmentApplicator::handle_pole_sequence_choice_changed(
 				<< std::endl;
 		return;
 	}
+	if ( ! d_reconstruction_tree) {
+		// Apparently something has gone wrong -- this slot is being invoked when the
+		// boost::optional for the reconstruction tree is boost::none.
+		// Hence, there's nothing we can do.
+		std::cerr << __FILE__
+				<< ", line "
+				<< __LINE__
+				<< ": reconstruction tree is boost::none."
+				<< std::endl;
+		return;
+	}
 
 	// Get the interpolated original pole.
 	GPlatesModel::FeatureHandle::weak_ref chosen_pole_seq = d_sequence_choices.at(index).d_trs;
@@ -318,8 +329,7 @@ GPlatesQtWidgets::AdjustmentApplicator::handle_pole_sequence_choice_changed(
 	unsigned long fixed_plate = d_sequence_choices.at(index).d_fixed_plate;
 	// Of course, the "fixed" plate might be moving relative to some other plate...
 	FiniteRotation motion_of_fixed_plate =
-			d_application_state_ptr->get_current_reconstruction().reconstruction_tree()
-					.get_composed_absolute_rotation(fixed_plate).first;
+			d_reconstruction_tree.get()->get_composed_absolute_rotation(fixed_plate).first;
 	const UnitQuaternion3D &uq = motion_of_fixed_plate.unit_quat();
 	if ( ! represents_identity_rotation(uq)) {
 		// Let's compensate for the motion of the "fixed" ref frame.

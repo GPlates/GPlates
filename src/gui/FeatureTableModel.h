@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,17 +26,31 @@
 #ifndef GPLATES_GUI_FEATURETABLEMODEL_H
 #define GPLATES_GUI_FEATURETABLEMODEL_H
 
+#include <vector>
+#include <boost/optional.hpp>
 #include <QAbstractTableModel>
 #include <QItemSelection>
 #include <QHeaderView>
-#include <vector>
 
-#include "gui/FeatureFocus.h"
-#include "model/ReconstructionGeometry.h"
+#include "app-logic/Layer.h"
+#include "app-logic/ReconstructionGeometry.h"
 
+
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+	class ReconstructGraph;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
 
 namespace GPlatesGui
 {
+	class FeatureFocus;
+
 	/**
 	 * This class is used by Qt to map a FeatureWeakRefSequence to a QTableView.
 	 * 
@@ -63,12 +77,30 @@ namespace GPlatesGui
 	{
 		Q_OBJECT
 	public:
-		typedef std::vector<GPlatesModel::ReconstructionGeometry::non_null_ptr_type>
-				geometry_sequence_type;
+		//! A reconstruction geometry and information associated with it.
+		struct ReconstructionGeometryRow
+		{
+			ReconstructionGeometryRow(
+					GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type
+							reconstruction_geometry_,
+					const GPlatesAppLogic::ReconstructGraph &reconstruct_graph);
+
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry;
+
+			/**
+			 * The reconstruction tree layer that generated the reconstruction tree that was
+			 * used to reconstruct the ReconstructionGeometry.
+			 * This is used to update the ReconstructionGeometry as the reconstruction time changes.
+			 */
+			boost::optional<GPlatesAppLogic::Layer> reconstruction_tree_layer;
+		};
+
+		//! Typedef for a sequence of reconstruction geometry rows.
+		typedef std::vector<ReconstructionGeometryRow> geometry_sequence_type;
 	
 		explicit
 		FeatureTableModel(
-				FeatureFocus &feature_focus,
+				GPlatesPresentation::ViewState &view_state,
 				QObject *parent_ = NULL);
 		
 		/**
@@ -131,6 +163,54 @@ namespace GPlatesGui
 		data(
 				const QModelIndex &idx,
 				int role) const;
+
+		/**
+		 * Even though we're not displaying tree-like data, we should re-implement @a parent()
+		 * and @a index() to inform Views that our data is strictly tabular (even in a tree context)
+		 */
+		virtual
+		QModelIndex
+		parent(
+				const QModelIndex &) const
+		{
+			// Nothing has a parent. We're all orphans!
+			return QModelIndex();
+		}
+
+		/**
+		 * Even though we're not displaying tree-like data, we should re-implement @a parent()
+		 * and @a index() to inform Views that our data is strictly tabular (even in a tree context)
+		 */
+		virtual
+		QModelIndex
+		index(
+				int row,
+				int column,
+				const QModelIndex &parentidx = QModelIndex()) const
+		{
+			// If index is valid, it's one of our nodes which has no children.
+			// Otherwise it refers to the magic root for which we delegate to our superclass.
+			if (parentidx.isValid()) {
+				return QModelIndex();
+			} else {
+				return QAbstractTableModel::index(row, column, parentidx);
+			}
+		}
+
+		virtual
+		bool
+		hasChildren(
+				const QModelIndex &parentidx = QModelIndex()) const
+		{
+			// If index is valid, it's one of our nodes which has no children.
+			// Otherwise it refers to the magic root which definitely should have children.
+			if (parentidx.isValid()) {
+				return false;
+			} else {
+				return true;
+			}
+		}
+
 
 		/**
 		 * Convenience function which will clear() the FeatureWeakRefSequence and notify any
@@ -220,7 +300,7 @@ namespace GPlatesGui
 		set_default_resize_modes(
 				QHeaderView &header);
 
-#if 0  // We don't need this function right now.
+#if 0		// Okay, not as easy to implement right now. Might not be necessary.
 		/**
 		 * Searches the table for the given FeatureHandle::weak_ref.
 		 * If found, returns a QModelIndex that can be used by the
@@ -236,6 +316,13 @@ namespace GPlatesGui
 		get_index_for_feature(
 				GPlatesModel::FeatureHandle::weak_ref feature_ref);
 #endif
+
+		/**
+		 * As @a get_index_for_feature, but looking for a specific geometry in the table.
+		 */
+		QModelIndex
+		get_index_for_geometry(
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry);
 
 	public slots:
 		
@@ -262,6 +349,12 @@ namespace GPlatesGui
 		handle_feature_modified(
 				GPlatesGui::FeatureFocus &feature_focus);
 
+		/**
+		 * Update the internal @a ReconstructionGeometries for the new reconstruction.
+		 */
+		void
+		handle_reconstruction(
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		QModelIndex
 		current_index() {

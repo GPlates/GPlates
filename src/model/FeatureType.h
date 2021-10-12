@@ -28,12 +28,19 @@
 #ifndef GPLATES_MODEL_FEATURETYPE_H
 #define GPLATES_MODEL_FEATURETYPE_H
 
+#include <QString>
+#include <QStringList>
+
 #include "QualifiedXmlName.h"
 
-namespace GPlatesModel {
+#include "utils/Parse.h"
+#include "utils/UnicodeStringUtils.h"
+#include "utils/XmlNamespaces.h"
 
-	class FeatureTypeFactory {
-
+namespace GPlatesModel
+{
+	class FeatureTypeFactory
+	{
 	public:
 
 		static
@@ -49,7 +56,34 @@ namespace GPlatesModel {
 	};
 
 	typedef QualifiedXmlName<FeatureTypeFactory> FeatureType;
+}
 
+namespace GPlatesUtils
+{
+	using GPlatesModel::FeatureType;
+
+	// Specialisation of Parse for FeatureType.
+	template<>
+	struct Parse<FeatureType>
+	{
+		FeatureType
+		operator()(
+				const QString &s)
+		{
+			QStringList tokens = s.split(':');
+			if (tokens.count() == 2)
+			{
+				return FeatureType(
+						*GPlatesUtils::XmlNamespaces::get_namespace_for_standard_alias(
+							GPlatesUtils::make_icu_string_from_qstring(tokens.at(0))),
+						GPlatesUtils::make_icu_string_from_qstring(tokens.at(1)));
+			}
+			else
+			{
+				throw ParseError();
+			}
+		}
+	};
 }
 
 #endif  // GPLATES_MODEL_FEATURETYPE_H

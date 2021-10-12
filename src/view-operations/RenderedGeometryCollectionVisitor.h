@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,16 +31,22 @@
 #include "RenderedGeometryLayerVisitor.h"
 #include "RenderedGeometryCollection.h"
 
+
 namespace GPlatesViewOperations
 {
 	/**
 	 * Interface for visiting a @a RenderedGeometryCollection object and its
 	 * @a RenderedGeometryLayer objects and its @a RenderedGeometry objects in turn.
 	 *
-	 * Visits const objects.
+	 * Visits const @a RenderedGeometryCollection object and its const
+	 * @a RenderedGeometryLayer, and visits its const @a RenderedGeometry objects.
+	 *
+	 * The template parameter @a ForwardReadableRange is the type of the sequence
+	 * of child layer indices used for custom order of visitation.
 	 */
+	template<class ForwardReadableRange = RenderedGeometryCollection::child_layer_index_seq_type>
 	class ConstRenderedGeometryCollectionVisitor :
-		public ConstRenderedGeometryLayerVisitor
+			public ConstRenderedGeometryLayerVisitor
 	{
 	public:
 		/**
@@ -66,6 +72,24 @@ namespace GPlatesViewOperations
 			return rendered_geometry_collection.is_main_layer_active(
 					main_rendered_layer_type);
 		}
+
+		// FIXME: The following virtual function should return a boost::optional of
+		// ForwardReadableRange, to avoid having to deal with memory issues.
+
+		/**
+		 * Returns a sequence of child layer indices used for custom order of
+		 * visitation of child layers for the given main layer.
+		 *
+		 * Default returns NULL, which indicates that the default order of
+		 * visitation (by order of creation) is to be used.
+		 */
+		virtual
+		const ForwardReadableRange *
+		get_custom_child_layers_order(
+				RenderedGeometryCollection::MainLayerType parent_layer)
+		{
+			return NULL;
+		}
 	};
 
 	/**
@@ -74,9 +98,13 @@ namespace GPlatesViewOperations
 	 *
 	 * Visits non-const @a RenderedGeometryCollection object and its non-const
 	 * @a RenderedGeometryLayer but visits its const @a RenderedGeometry objects.
+	 *
+	 * The template parameter @a ForwardReadableRange is the type of the sequence
+	 * of child layer indices used for custom order of visitation.
 	 */
+	template<class ForwardReadableRange = RenderedGeometryCollection::child_layer_index_seq_type>
 	class RenderedGeometryCollectionVisitor :
-		public RenderedGeometryLayerVisitor
+			public RenderedGeometryLayerVisitor
 	{
 	public:
 		/**
@@ -101,6 +129,21 @@ namespace GPlatesViewOperations
 			// Default is to only visit if layer is active.
 			return rendered_geometry_collection.is_main_layer_active(
 					main_rendered_layer_type);
+		}
+
+		/**
+		 * Returns a sequence of child layer indices used for custom order of
+		 * visitation of child layers for the given main layer.
+		 *
+		 * Default returns NULL, which indicates that the default order of
+		 * visitation (by order of creation) is to be used.
+		 */
+		virtual
+		const ForwardReadableRange *
+		get_custom_child_layers_order(
+				RenderedGeometryCollection::MainLayerType parent_layer)
+		{
+			return NULL;
 		}
 	};
 }

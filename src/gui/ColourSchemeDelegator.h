@@ -38,7 +38,7 @@
 #include "model/FeatureCollectionHandle.h"
 #include "utils/non_null_intrusive_ptr.h"
 
-namespace GPlatesModel
+namespace GPlatesAppLogic
 {
 	class ReconstructionGeometry;
 }
@@ -128,7 +128,7 @@ namespace GPlatesGui
 		virtual
 		boost::optional<Colour>
 		get_colour(
-				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
 
 	signals:
 
@@ -150,7 +150,7 @@ namespace GPlatesGui
 		boost::optional<Colour>
 		apply_colour_scheme(
 				const colour_scheme_handle &colour_scheme,
-				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
 
 		/**
 		 * Stores all loaded colour schemes, sorted by category.

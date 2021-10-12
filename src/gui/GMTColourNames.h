@@ -37,11 +37,11 @@ namespace GPlatesGui
 	 * This class maps colour names used by GMT to colours.
 	 */
 	class GMTColourNames :
-		public ColourNameSet,
-		public GPlatesUtils::Singleton<GMTColourNames>
+			public ColourNameSet,
+			public GPlatesUtils::Singleton<GMTColourNames>
 	{
 
-		GPLATES_SINGLETON_CONSTRUCTOR_DEF(GMTColourNames)
+		GPLATES_SINGLETON_CONSTRUCTOR_DECL(GMTColourNames)
 
 	};
 

@@ -67,6 +67,7 @@ namespace
 		{
 			default_fields.insert(i,ShapefileAttributes::default_attributes[i]);
 		}
+		default_fields.insert(ShapefileAttributes::CONJUGATE_PLATE_ID,ShapefileAttributes::default_attributes[ShapefileAttributes::CONJUGATE_PLATE_ID]);		
 	}
 
 	/**
@@ -150,6 +151,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::ShapefileAttributeWidget(
 	{
 		// The map does provide us with default fields for the combo boxes. Use these where we can. 
 		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names);
+		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names);		
 	}
 
 	setup();

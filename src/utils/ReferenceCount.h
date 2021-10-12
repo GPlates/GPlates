@@ -29,9 +29,34 @@
 #include <boost/noncopyable.hpp>
 #include <boost/checked_delete.hpp>
 
+#include "global/GPlatesAssert.h"
+#include "global/IntrusivePointerZeroRefCountException.h"
+
+#include "utils/non_null_intrusive_ptr.h"
+
 
 namespace GPlatesUtils
 {
+	/**
+	 * Forward declaration of base reference count class.
+	 */
+	template <class Derived> class ReferenceCount;
+
+
+	/**
+	 * Creates a non-null shared intrusive pointer to @a reference_count_derived
+	 * which is assumed to derive directly or indirectly from @a ReferenceCount.
+	 *
+	 * @a reference_count_derived must point to an object with non-zero reference count.
+	 *
+	 * @a throws @a IntrusivePointerZeroRefCountException if the reference count is zero.
+	 */
+	template <class U>
+	GPlatesUtils::non_null_intrusive_ptr<U>
+	get_non_null_pointer(
+			U *reference_count_derived);
+
+
 	/**
 	 * Allows incrementing, decrementing and retrieving a reference count.
 	 * Useful for boost::intrusive_ptr.
@@ -144,6 +169,22 @@ namespace GPlatesUtils
 			// not get called.
 			boost::checked_delete( static_cast<const Derived *>(p) );
 		}
+	}
+
+
+	template <class U>
+	GPlatesUtils::non_null_intrusive_ptr<U>
+	get_non_null_pointer(
+			U *reference_count_derived)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::IntrusivePointerZeroRefCountException>(
+				reference_count_derived->get_reference_count() != 0,
+				GPLATES_ASSERTION_SOURCE,
+				reference_count_derived);
+
+		// This instance is already managed by intrusive-pointers, so we can simply return
+		// another intrusive-pointer to this instance.
+		return GPlatesUtils::non_null_intrusive_ptr<U>(reference_count_derived);
 	}
 }
 

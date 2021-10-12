@@ -34,9 +34,9 @@
 #include "GMTFormatGeometryExporter.h"
 #include "GMTFormatHeader.h"
 
-#include "file-io/FileInfo.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
 
-#include "model/ReconstructedFeatureGeometry.h"
+#include "file-io/FileInfo.h"
 
 
 namespace
@@ -76,7 +76,7 @@ namespace
 			file_iter != referenced_files.end();
 			++file_iter)
 		{
-			const GPlatesFileIO::File *file = *file_iter;
+			const GPlatesFileIO::File::Reference *file = *file_iter;
 
 			// Some files might not actually exist yet if the user created a new
 			// feature collection internally and hasn't saved it to file yet.
@@ -155,7 +155,7 @@ GPlatesFileIO::GMTFormatReconstructedFeatureGeometryExport::export_geometries(
 			rfg_iter != feature_geom_group.recon_feature_geoms.end();
 			++rfg_iter)
 		{
-			const GPlatesModel::ReconstructedFeatureGeometry *rfg = *rfg_iter;
+			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 
 			// Print the header lines.
 			gmt_header_printer.print_feature_header_lines(output_stream, header_lines);

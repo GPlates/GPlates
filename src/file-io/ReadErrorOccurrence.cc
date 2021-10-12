@@ -48,11 +48,49 @@ GPlatesFileIO::DataFormats::data_format_to_str(
 		break;
 	case Gmap:
 		str = "GMAP VGP";
-		break;		
+		break;
+	case RasterImage:
+		str = "Raster image";
+		break;
+	case Cpt:
+		str = "GMT CPT";
+		break;
 	case Unspecified:
-		str = "unspecified";
+		str = "Unspecified";
 		break;
 	}
 
 	return str;
 }
+
+
+GPlatesFileIO::ReadErrorOccurrence
+GPlatesFileIO::make_read_error_occurrence(
+		const QString &filename,
+		DataFormats::DataFormat data_format,
+		unsigned long line_num,
+		ReadErrors::Description description,
+		ReadErrors::Result result)
+{
+	return ReadErrorOccurrence(
+			boost::shared_ptr<DataSource>(new LocalFileDataSource(filename, data_format)),
+			boost::shared_ptr<LocationInDataSource>(new LineNumber(line_num)),
+			description,
+			result);
+}
+
+
+GPlatesFileIO::ReadErrorOccurrence
+GPlatesFileIO::make_read_error_occurrence(
+		boost::shared_ptr<DataSource> data_source,
+		unsigned long line_num,
+		ReadErrors::Description description,
+		ReadErrors::Result result)
+{
+	return ReadErrorOccurrence(
+			data_source,
+			boost::shared_ptr<LocationInDataSource>(new LineNumber(line_num)),
+			description,
+			result);
+}
+

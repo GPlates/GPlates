@@ -29,6 +29,7 @@
 #define GPLATES_MATHS_PROXIMITYHITDETAIL_H
 
 #include <boost/intrusive_ptr.hpp>
+#include <boost/optional.hpp>
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -75,8 +76,10 @@ namespace GPlatesMaths
 		 * explicitly, since this class contains members which need to be initialised.
 		 */
 		ProximityHitDetail(
-				const double &closeness_):
-			d_closeness(closeness_)
+				const double &closeness_,
+				const boost::optional<unsigned int> &index_):
+			d_closeness(closeness_),
+			d_index(index_)
 		{  }
 
 		virtual
@@ -89,6 +92,12 @@ namespace GPlatesMaths
 			return d_closeness;
 		}
 
+		const boost::optional<unsigned int> &
+		index() const
+		{
+			return d_index;
+		}
+
 		virtual
 		void
 		accept_visitor(
@@ -99,6 +108,11 @@ namespace GPlatesMaths
 		 * The "closeness" of the hit.
 		 */
 		double d_closeness;
+		
+		/**
+		 * The index of the vertex hit, (for vertex tests)                                                                     
+		 */
+		boost::optional<unsigned int> d_index;
 
 		// This constructor should never be defined, because we don't want/need to allow
 		// copy-construction.

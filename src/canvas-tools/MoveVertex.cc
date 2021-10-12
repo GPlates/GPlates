@@ -42,7 +42,8 @@ GPlatesCanvasTools::MoveVertex::MoveVertex(
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold):
+		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
+		const GPlatesQtWidgets::ViewportWindow *viewport_window):
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_geometry_operation_target(&geometry_operation_target),
 	d_move_vertex_geometry_operation(
@@ -51,7 +52,8 @@ GPlatesCanvasTools::MoveVertex::MoveVertex(
 				active_geometry_operation,
 				&rendered_geometry_collection,
 				choose_canvas_tool,
-				query_proximity_threshold)),
+				query_proximity_threshold,
+				viewport_window)),
 	d_is_in_drag(false)
 {
 }
@@ -121,6 +123,30 @@ GPlatesCanvasTools::MoveVertex::handle_deactivation()
 {
 	// Deactivate our MoveVertexGeometryOperation.
 	d_move_vertex_geometry_operation->deactivate();
+}
+
+void
+GPlatesCanvasTools::MoveVertex::handle_left_press(
+		const GPlatesMaths::PointOnSphere &point_on_sphere, 
+		bool is_on_earth, 
+		double proximity_inclusion_threshold)
+{
+	if (is_on_earth)
+	{
+		d_move_vertex_geometry_operation.get()->left_press(
+			point_on_sphere,
+			proximity_inclusion_threshold);
+	}
+	
+}
+
+void
+GPlatesCanvasTools::MoveVertex::handle_left_click(
+		const GPlatesMaths::PointOnSphere &point_on_sphere, 
+		bool is_on_earth, 
+		double proximity_inclusion_threshold)
+{
+	d_move_vertex_geometry_operation.get()->release_click();
 }
 
 

@@ -28,6 +28,7 @@
 #ifndef GPLATES_GUI_AGECOLOURPALETTES_H
 #define GPLATES_GUI_AGECOLOURPALETTES_H
 
+#include "Colour.h"
 #include "ColourPalette.h"
 
 namespace GPlatesMaths
@@ -38,14 +39,77 @@ namespace GPlatesMaths
 namespace GPlatesGui
 {
 	class Colour;
-	
+
+
+	class AgeColourPalette :
+			public ColourPalette<GPlatesMaths::Real>
+	{
+	public:
+
+		AgeColourPalette(
+				const double default_upper_bound,
+				const double default_lower_bound) :
+			d_upper_bound(default_upper_bound),
+			d_lower_bound(default_lower_bound),
+			d_default_upper_bound(default_upper_bound),
+			d_default_lower_bound(default_lower_bound)
+		{
+		}
+
+		void
+		reset_bounds()
+		{
+			d_upper_bound = d_default_upper_bound;
+			d_lower_bound = d_default_lower_bound;
+		}
+
+		double
+		upper_bound() const
+		{
+			return d_upper_bound;
+		}
+
+		void
+		set_upper_bound(
+				double upper_bound_)
+		{
+			d_upper_bound = upper_bound_;
+		}
+
+		double
+		lower_bound() const
+		{
+			return d_lower_bound;
+		}
+
+		void
+		set_lower_bound(
+				double lower_bound_)
+		{
+			d_lower_bound = lower_bound_;
+		}
+
+	protected:
+
+		double d_upper_bound, d_lower_bound;
+
+	private:
+
+		const double d_default_upper_bound, d_default_lower_bound;
+	};
+
+
 	/**
 	 * DefaultAgeColourPalette maps age to colours using a rainbow of colours.
 	 */
 	class DefaultAgeColourPalette :
-			public ColourPalette<GPlatesMaths::Real>
+			public AgeColourPalette
 	{
 	public:
+
+		static
+		non_null_ptr_type
+		create();
 
 		boost::optional<Colour>
 		get_colour(
@@ -53,9 +117,10 @@ namespace GPlatesGui
 	
 	private:
 		
-		static Colour DISTANT_PAST_COLOUR;
-		static Colour DISTANT_FUTURE_COLOUR;
+		DefaultAgeColourPalette();
 
+		static const double DEFAULT_UPPER_BOUND;
+		static const double DEFAULT_LOWER_BOUND;
 	};
 
 
@@ -63,9 +128,13 @@ namespace GPlatesGui
 	 * MonochromeAgeColourPalette maps age to colours using shades of grey.
 	 */
 	class MonochromeAgeColourPalette :
-			public ColourPalette<GPlatesMaths::Real>
+			public AgeColourPalette
 	{
 	public:
+
+		static
+		non_null_ptr_type
+		create();
 
 		boost::optional<Colour>
 		get_colour(
@@ -73,9 +142,13 @@ namespace GPlatesGui
 
 	private:
 
-		static const int UPPER_BOUND = 650; // Ma
-		static const int LOWER_BOUND = -50;
+		MonochromeAgeColourPalette();
 
+		static const double DEFAULT_UPPER_BOUND;
+		static const double DEFAULT_LOWER_BOUND;
+
+		static const Colour UPPER_COLOUR;
+		static const Colour LOWER_COLOUR;
 	};
 }
 

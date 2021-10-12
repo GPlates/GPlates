@@ -39,7 +39,7 @@ namespace GPlatesViewOperations
 	 * Visits const objects.
 	 */
 	class ConstRenderedGeometryLayerVisitor :
-		public ConstRenderedGeometryVisitor
+			public ConstRenderedGeometryVisitor
 	{
 	public:
 		/**
@@ -71,7 +71,7 @@ namespace GPlatesViewOperations
 	 * const @a RenderedGeometry objects.
 	 */
 	class RenderedGeometryLayerVisitor :
-		public ConstRenderedGeometryVisitor
+			public ConstRenderedGeometryVisitor
 	{
 	public:
 		/**

@@ -81,6 +81,16 @@ namespace GPlatesGui
 		}
 
 	public slots:
+	
+		void
+		handle_press(
+			const GPlatesMaths::PointOnSphere &press_pos_on_globe,
+			const GPlatesMaths::PointOnSphere &oriented_press_pos_on_globe,
+			bool is_on_globe,
+			Qt::MouseButton button,
+			Qt::KeyboardModifiers modifiers);	
+	
+	
 		void
 		handle_click(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,

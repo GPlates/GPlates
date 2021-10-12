@@ -65,9 +65,9 @@ namespace GPlatesFileIO
 	public:
 
 		static
-		const File::shared_ref
+		void
 		read_file(
-				const FileInfo& fileinfo,
+				const GPlatesFileIO::File::Reference &file_ref,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
 
@@ -79,7 +79,7 @@ namespace GPlatesFileIO
 		static
 		void
 		remap_shapefile_attributes(
-			File &file,
+			const GPlatesFileIO::File::Reference &file,
 			GPlatesModel::ModelInterface &model,
 			ReadErrorAccumulation &read_errors);
 

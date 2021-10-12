@@ -90,7 +90,7 @@ namespace GPlatesQtWidgets
 		 * Files corresponding to shapefile feature collections.
 		 * This will make its own copy of the files....
 		 */
-		std::vector<GPlatesFileIO::File *> d_file_vector;
+		std::vector<const GPlatesFileIO::File::Reference *> d_file_vector;
 
 	};
 

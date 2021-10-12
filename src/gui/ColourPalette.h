@@ -28,9 +28,17 @@
 #ifndef GPLATES_GUI_COLOURPALETTE_H
 #define GPLATES_GUI_COLOURPALETTE_H
 
-#include "Colour.h"
-#include "model/types.h"
+#include <boost/intrusive_ptr.hpp>
 #include <boost/optional.hpp>
+
+#include "Colour.h"
+
+#include "model/types.h"
+
+#include "utils/non_null_intrusive_ptr.h"
+#include "utils/ReferenceCount.h"
+#include "utils/Select.h"
+#include "utils/TypeTraits.h"
 
 namespace GPlatesGui 
 {
@@ -49,86 +57,37 @@ namespace GPlatesGui
 	 * If your colour palette can deal with multiple KeyTypes, multiply inherit
 	 * from ColourPalette<KeyType-1>, ColourPalette<KeyType-2> ...
 	 */
-	template <class KeyType>
-	class ColourPalette
+	template<typename KeyType>
+	class ColourPalette :
+			public GPlatesUtils::ReferenceCount<ColourPalette<KeyType> >
 	{
 	public:
+
+		typedef typename GPlatesUtils::TypeTraits<KeyType>::argument_type value_type;
+
+		typedef ColourPalette<KeyType> this_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
+		typedef boost::intrusive_ptr<this_type> maybe_null_ptr_type;
+		typedef boost::intrusive_ptr<const this_type> maybe_null_ptr_to_const_type;
 
 		/**
 		 * Retrieves the Colour associated with the @a value provided.
 		 * @returns boost::none if no Colour is assocated with the value.
+		 *
+		 * Note that the parameter @a value is of type KeyType if KeyType is a
+		 * built-in type, and of type const KeyType & otherwise.
 		 */
 		virtual
 		boost::optional<Colour>
 		get_colour(
-				const KeyType &value) const = 0;
+				value_type value) const = 0;
 
 		//! Destructor
 		virtual
 		~ColourPalette()
 		{
 		}
-
-	};
-
-	/**
-	 * ColourPalette template specialisation for int
-	 */
-	template <>
-	class ColourPalette<int>
-	{
-	public:
-
-		virtual
-		boost::optional<Colour>
-		get_colour(
-				int value) const = 0;
-
-		virtual
-		~ColourPalette()
-		{
-		}
-
-	};
-
-	/**
-	 * ColourPalette template specialisation for double
-	 */
-	template <>
-	class ColourPalette<double>
-	{
-	public:
-
-		virtual
-		boost::optional<Colour>
-		get_colour(
-				double value) const = 0;
-
-		virtual
-		~ColourPalette()
-		{
-		}
-
-	};
-
-	/**
-	 * ColourPalette template specialisation for GPlatesModel::integer_plate_id_type
-	 */
-	template <>
-	class ColourPalette<GPlatesModel::integer_plate_id_type>
-	{
-	public:
-
-		virtual
-		boost::optional<Colour>
-		get_colour(
-				GPlatesModel::integer_plate_id_type value) const = 0;
-
-		virtual
-		~ColourPalette()
-		{
-		}
-
 	};
 }
 
