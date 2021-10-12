@@ -11,6 +11,8 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    ComputationalMeshSolver.cc
+    ComputationalMeshSolver.h
     FeatureCollectionClassifier.cc
     FeatureCollectionClassifier.h
     FromQvariantConverter.cc
@@ -28,6 +30,10 @@ set(srcs
     QueryFeaturePropertiesWidgetPopulator.h
     ShapefileAttributeFinder.cc
     ShapefileAttributeFinder.h
+    TopologyResolver.cc
+    TopologyResolver.h
+    TopologySectionsFinder.cc
+    TopologySectionsFinder.h
     ToQvariantConverter.cc
     ToQvariantConverter.h
     TotalReconstructionSequencePlateIdFinder.cc

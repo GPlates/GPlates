@@ -16,6 +16,8 @@ set(srcs
     EnumerationType.h
     GeoTimeInstant.cc
     GeoTimeInstant.h
+    GmlDataBlock.h
+    GmlDataBlockCoordinateList.h
     GmlLineString.cc
     GmlLineString.h
     GmlMultiPoint.cc
@@ -46,10 +48,16 @@ set(srcs
     GpmlRevisionId.h
     GpmlTimeSample.h
     GpmlTimeWindow.h
+    GpmlTopologicalIntersection.h
+    GpmlTopologicalLineSection.h
+    GpmlTopologicalPoint.h
+    GpmlTopologicalPolygon.h
+    GpmlTopologicalSection.h
     InMemoryRaster.h
     TemplateTypeParameterType.h
     TextContent.h
     UninterpretedPropertyValue.h
+    ValueObjectType.h
     XsBoolean.h
     XsDouble.h
     XsInteger.h

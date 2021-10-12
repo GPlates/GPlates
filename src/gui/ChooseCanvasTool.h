@@ -136,6 +136,12 @@ namespace GPlatesGui
 		void
 		choose_manipulate_pole_tool();
 
+		void
+		choose_build_topology_tool();
+
+		void
+		choose_edit_topology_tool();
+
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt

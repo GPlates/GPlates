@@ -691,4 +691,3 @@ GPlatesGui::AnimationController::recalculate_increment()
 	// a signal back to the GUI.
 }
 
-

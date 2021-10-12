@@ -28,6 +28,11 @@
 #include <QString>
 #include "ExportVelocityAnimationStrategy.h"
 
+#include "app-logic/AppLogicUtils.h"
+#include "app-logic/PlateVelocities.h"
+
+#include "file-io/GpmlOnePointSixOutputVisitor.h"
+
 #include "utils/FloatingPointComparisons.h"
 
 #include "gui/ExportAnimationContext.h"
@@ -39,19 +44,10 @@ namespace
 {
 	QString
 	calculate_output_basename(
-			const QFileInfo &cap_qfileinfo,
-			const QString &output_filename_suffix)
+			const QString &output_filename_prefix,
+			const QFileInfo &cap_qfileinfo)
 	{
-		// Remove any known file suffix from the cap filename.
-		QString cap_basename = cap_qfileinfo.completeBaseName();
-		// This gets a little tricky as we have a .gpml.gz case which QFileInfo can't handle nicely.
-		// A not-unreasonable workaround is to just check for this one instance of a trailing '.gpml'.
-		if (cap_basename.endsWith(".gpml")) {
-			// .gz suffix already removed; just remove the .gpml part.
-			cap_basename = cap_basename.left(cap_basename.lastIndexOf(".gpml"));
-		}
-		
-		return cap_basename + output_filename_suffix;
+		return output_filename_prefix + cap_qfileinfo.fileName();
 	}
 }
 
@@ -73,7 +69,7 @@ GPlatesGui::ExportVelocityAnimationStrategy::ExportVelocityAnimationStrategy(
 	// Set the ExportTemplateFilenameSequence name once here, to a sane default.
 	// Later, we will let the user configure this.
 	// This also sets the iterator to the first filename template.
-	set_template_filename(QString("_velocity_%u_%0.2f.gpml"));
+	set_template_filename(QString("velocity_colat+lon_at_%u_%0.2fMa_on_mesh-"));
 	
 	// Do anything else that we need to do in order to initialise
 	// our velocity export here...
@@ -101,7 +97,7 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 	}
 
 	// Assemble parts of this iteration's filename from the template filename sequence.
-	QString output_filename_suffix = *filename_it++;
+	QString output_filename_prefix = *filename_it++;
 	QDir target_dir = d_export_animation_context_ptr->target_dir();
 
 	// Here's where we would do the actual calculating and exporting of the
@@ -109,21 +105,31 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 	// this frame; all we have to do is the maths and the file-writing (to @a full_filename)
 	//
 	// But for now, we're just going to do nothing.
+	GPlatesAppLogic::PlateVelocitiesHook &plate_velocities =
+			d_export_animation_context_ptr->view_state().plate_velocities_hook();
 	
-	// Iterate over the chosen file_info_iterators.
-	file_info_collection_type::iterator it = d_cap_files.begin();
-	file_info_collection_type::iterator end = d_cap_files.end();
-	for (; it != end; ++it) {
+	// Iterate over the velocity feature collections currently being solved.
+	const unsigned int num_velocity_feature_collections =
+			plate_velocities.get_num_velocity_feature_collections();
+	for (unsigned int velocity_index = 0;
+		velocity_index < num_velocity_feature_collections;
+		++velocity_index)
+	{
+		GPlatesFileIO::FileInfo velocity_file;
+
 		// Get cap file information, work out filenames we will use.
-		QString cap_display_name = (*it)->get_display_name(false /*use_absolute_path_name*/);
-		QString output_basename = calculate_output_basename((*it)->get_qfileinfo(), output_filename_suffix);
+		const QString velocity_filename = plate_velocities.get_velocity_filename(velocity_index);
+		//QString cap_display_name = velocity_filename.fileName();
+		QString output_basename = calculate_output_basename(output_filename_prefix, velocity_filename);
 		QString full_output_filename = target_dir.absoluteFilePath(output_basename);
 
+#if 0
 		// First, the computing (unless this will already have been handled?)
 		// Update the dialog status message.
 		d_export_animation_context_ptr->update_status_message(
 				QObject::tr("Processing file \"%1\"...")
 				.arg(cap_display_name));
+#endif
 
 		// Next, the file writing. Update the dialog status message.
 		d_export_animation_context_ptr->update_status_message(
@@ -131,6 +137,16 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				.arg(output_basename)
 				.arg(frame_index) );
 
+		//
+		// Output the velocity feature collection
+		//
+		GPlatesModel::FeatureCollectionHandle::const_weak_ref velocity_feature_collection =
+				GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
+						plate_velocities.get_velocity_feature_collection(velocity_index));
+		GPlatesFileIO::FileInfo export_file_info(full_output_filename);
+		GPlatesFileIO::GpmlOnePointSixOutputVisitor gpml_writer(export_file_info, false);
+		GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
+				velocity_feature_collection, gpml_writer);
 	}
 	
 	// Normal exit, all good, ask the Context to process the next iteration please.

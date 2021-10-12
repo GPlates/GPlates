@@ -69,7 +69,7 @@ namespace
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			const GPlatesModel::PropertyName &property_name)
 	{
-		const GPlatesPropertyValues::GpmlPlateId *plate_id = NULL;
+		const GPlatesPropertyValues::GpmlPlateId *plate_id;
 		if (GPlatesFeatureVisitors::get_property_value(
 				feature_ref, property_name, plate_id))
 		{
@@ -86,9 +86,13 @@ GPlatesQtWidgets::FeatureSummaryWidget::FeatureSummaryWidget(
 		QWidget *parent_):
 	QWidget(parent_)
 {
+
+//qDebug() << "FSW 0";
 	setupUi(this);
 	clear();
 	setDisabled(true);
+
+//qDebug() << "FSW 1";
 	
 	// Subscribe to focus events. We can discard the FeatureFocus reference afterwards.
 	QObject::connect(&feature_focus,
@@ -103,6 +107,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::FeatureSummaryWidget(
 			this,
 			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
 					GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type)));
+//qDebug() << "FSW 2";
 }
 
 
@@ -151,7 +156,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	static const GPlatesModel::PropertyName name_property_name = 
 		GPlatesModel::PropertyName::create_gml("name");
 
-	const GPlatesPropertyValues::XsString *name = NULL;
+	const GPlatesPropertyValues::XsString *name;
 	if (GPlatesFeatureVisitors::get_property_value(feature_ref, name_property_name, name))
 	{
 		// The feature has one or more name properties. Use the first one for now.
@@ -187,7 +192,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
-	const GPlatesPropertyValues::GmlTimePeriod *time_period = NULL;
+	const GPlatesPropertyValues::GmlTimePeriod *time_period;
 	if (GPlatesFeatureVisitors::get_property_value(
 			feature_ref, valid_time_property_name, time_period))
 	{

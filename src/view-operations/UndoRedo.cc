@@ -487,4 +487,3 @@ GPlatesViewOperations::UndoRedo::CommandId::get_id() const
 {
 	return d_command_id_impl->get_id();
 }
-

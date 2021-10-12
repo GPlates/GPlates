@@ -6,13 +6,13 @@
     <x>0</x>
     <y>0</y>
     <width>724</width>
-    <height>600</height>
+    <height>700</height>
    </rect>
   </property>
   <property name="minimumSize" >
    <size>
     <width>580</width>
-    <height>600</height>
+    <height>700</height>
    </size>
   </property>
   <property name="windowTitle" >
@@ -100,6 +100,12 @@
     <addaction name="action_Show_Raster" />
     <addaction name="action_Set_Raster_Surface_Extent" />
     <addaction name="separator" />
+    <addaction name="action_Show_Point_Features" />
+    <addaction name="action_Show_Line_Features" />
+    <addaction name="action_Show_Polygon_Features" />
+    <addaction name="action_Show_Multipoint_Features" />
+    <addaction name="separator" />
+    <addaction name="action_Show_Arrow_Decorations" />
    </widget>
    <widget class="QMenu" name="menu_View" >
     <property name="title" >
@@ -184,6 +190,8 @@
    <addaction name="action_Insert_Vertex" />
    <addaction name="action_Delete_Vertex" />
    <addaction name="action_Manipulate_Pole" />
+   <addaction name="action_Build_Topology" />
+   <addaction name="action_Edit_Topology" />
   </widget>
   <widget class="QDockWidget" name="dock_search_results" >
    <property name="contextMenuPolicy" >
@@ -738,6 +746,76 @@
     <string>Open &amp;Raster...</string>
    </property>
   </action>
+  <action name="action_Show_Point_Features" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Point Features</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether point features are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Line_Features" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Line Features</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether line features are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Polygon_Features" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Polygon Features</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether polygon features are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Multipoint_Features" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Multipoint Features</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether multipoint features are shown.</string>
+   </property>
+  </action>
+  <action name="action_Show_Arrow_Decorations" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Show Arrow Decorations</string>
+   </property>
+   <property name="toolTip" >
+    <string>A toggle operation which controls whether arrow decorations are shown.</string>
+   </property>
+  </action>
   <action name="action_Show_Raster" >
    <property name="checkable" >
     <bool>true</bool>
@@ -1080,6 +1158,54 @@
    </property>
    <property name="shortcut" >
     <string>P</string>
+   </property>
+  </action>
+  <action name="action_Build_Topology" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset>
+     <normaloff>:/topology_build_35.png</normaloff>:/topology_build_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Build New Topology</string>
+   </property>
+   <property name="iconText" >
+    <string>Build New Topology</string>
+   </property>
+   <property name="toolTip" >
+    <string>Build New Topology</string>
+   </property>
+   <property name="shortcut" >
+    <string>B</string>
+   </property>
+  </action>
+  <action name="action_Edit_Topology" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset>
+     <normaloff>:/topology_edit_35.png</normaloff>:/topology_edit_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Edit Topology</string>
+   </property>
+   <property name="iconText" >
+    <string>Edit Topology</string>
+   </property>
+   <property name="toolTip" >
+    <string>Edit Topology</string>
+   </property>
+   <property name="shortcut" >
+    <string>E</string>
    </property>
   </action>
   <action name="action_Set_Raster_Surface_Extent" >

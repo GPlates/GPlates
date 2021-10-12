@@ -26,9 +26,9 @@
 #include "ReconstructedFeatureGeometryExport.h"
 
 #include "GMTFormatReconstructedFeatureGeometryExport.h"
-#include "ShapefileFormatReconstructedFeatureGeometryExport.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FileFormatNotSupportedException.h"
+#include "ShapefileFormatReconstructedFeatureGeometryExport.h"
 
 
 GPlatesFileIO::ReconstructedFeatureGeometryExport::Format
@@ -77,20 +77,19 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_geometries(
 				reconstruction_anchor_plate_id,
 				reconstruction_time);
 		break;
-
-
+		
 	case SHAPEFILE:
 		ShapefileFormatReconstructedFeatureGeometryExport::export_geometries(
 			feature_geometry_group_seq,
 			file_info,
 			referenced_files,
 			reconstruction_anchor_plate_id,
-			reconstruction_time);
+			reconstruction_time);		
 		break;
-
 
 	default:
 		throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
 				"Chosen export format is not currently supported.");
 	}
 }
+

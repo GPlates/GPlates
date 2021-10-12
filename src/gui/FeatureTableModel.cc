@@ -128,7 +128,7 @@ namespace
 		static const GPlatesModel::PropertyName plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
+		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
 		if (GPlatesFeatureVisitors::get_property_value(
 				feature, plate_id_property_name, recon_plate_id))
 		{
@@ -266,7 +266,7 @@ namespace
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
 		if (weak_ref) {
-			const GPlatesPropertyValues::XsString *name = NULL;
+			const GPlatesPropertyValues::XsString *name;
 			if (GPlatesFeatureVisitors::get_property_value(
 					*weak_ref, name_property_name, name))
 			{
@@ -740,6 +740,9 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 		return;
 	}
 	GPlatesModel::ReconstructionGeometry *rg = d_sequence.at(idx.row()).get();
+
+	// set the current index
+	d_current_index = idx;
 
 	// We use a dynamic cast here (despite the fact that dynamic casts are generally
 	// considered bad form) because we only care about one specific derivation.

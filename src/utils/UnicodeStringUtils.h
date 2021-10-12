@@ -29,8 +29,13 @@
 #define GPLATES_UTILS_UNICODESTRINGUTILS_H
 
 #include <unicode/unistr.h>  // ICU's UnicodeString
+#include <functional>
 #include <QString>
 
+
+#ifndef GPLATES_ICU_BOOL
+#define GPLATES_ICU_BOOL(b) ((b) != 0)
+#endif
 
 namespace GPlatesUtils
 {
@@ -69,6 +74,30 @@ namespace GPlatesUtils
 	const UnicodeString
 	make_icu_string_from_qstring(
 			const QString &qstring);
+}
+
+namespace std
+{
+	/**
+	 * Template specialisation std::less<UnicodeString> to support std::map, etc.
+	 * This is because on Visual Studio we get the following error:
+	 *   "warning C4800: 'UBool' : forcing value to bool 'true' or 'false' (performance warning)"
+	 * and since warnings are treated as errors we get failed compilation.
+	 * This is because "operator<" for UnicodeString returns UBool.
+	 */
+	template<>
+	struct less<UnicodeString>
+		: public binary_function<UnicodeString, UnicodeString, bool>
+	{
+		bool
+		operator()(
+				const UnicodeString &lhs,
+				const UnicodeString &rhs) const
+		{
+			// Solution is to explicitly compare returned UBool with zero.
+			return GPLATES_ICU_BOOL(lhs < rhs);
+		}
+	};
 }
 
 #endif  // GPLATES_UTILS_UNICODESTRINGUTILS_H

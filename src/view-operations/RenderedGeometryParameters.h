@@ -41,6 +41,7 @@ namespace GPlatesViewOperations
 		 * Default point size hint used by most (or all) layers.
 		 */
 		const float DEFAULT_POINT_SIZE_HINT = 4.0f;
+		const float DEFUALT_LINE_WIDTH_HINT = 1.5f;
 
 		//! Point size for reconstruction layer.
 		const float RECONSTRUCTION_POINT_SIZE_HINT = DEFAULT_POINT_SIZE_HINT;

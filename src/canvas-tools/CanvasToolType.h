@@ -48,7 +48,9 @@ namespace GPlatesCanvasTools
 			MOVE_VERTEX,
 			DELETE_VERTEX,
 			INSERT_VERTEX,
-			MANIPULATE_POLE
+			MANIPULATE_POLE,
+			BUILD_TOPOLOGY,
+			EDIT_TOPOLOGY
 		};
 	}
 }

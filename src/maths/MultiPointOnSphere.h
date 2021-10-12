@@ -255,6 +255,16 @@ namespace GPlatesMaths
 		get_non_null_pointer() const;
 
 
+		/**
+		 * Get the collection as a vector 
+		 */ 
+		point_container_type
+		collection() const
+		{
+			return d_points;
+		}
+
+
 		virtual
 		ProximityHitDetail::maybe_null_ptr_type
 		test_proximity(

@@ -71,6 +71,18 @@ namespace GPlatesFeatureVisitors
 				GPlatesModel::FeatureHandle::weak_ref &feature,
 				GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type focused_rfg);
 
+		QString
+		get_first_coordinate()
+		{
+			return first_coord;
+		}
+
+		QString
+		get_last_coordinate()
+		{
+			return last_coord;
+		}
+
 	private:
 		virtual
 		void
@@ -118,7 +130,7 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_constant_value(
 				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
-
+		
 	private:
 		
 		/**
@@ -193,6 +205,12 @@ namespace GPlatesFeatureVisitors
 		 * present-day coordinates.
 		 */
 		geometries_for_property_type d_rfg_geometries;
+
+		/**
+		 * Stores the end point coordinates 
+		 */
+		QString first_coord;
+		QString last_coord;
 
 		/**
 		 * Iterates over d_reconstruction_ptr's RFGs, fills in the d_rfg_geometries table

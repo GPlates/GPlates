@@ -42,6 +42,9 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
+	// FIXME: remove all reference to Globe.
+	class Globe;
+
 	class GlobeRenderedGeometryLayerPainter;
 	class NurbsRenderer;
 
@@ -55,7 +58,9 @@ namespace GPlatesGui
 	{
 	public:
 		GlobeRenderedGeometryCollectionPainter(
-				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection);
+				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				// FIXME: Remove globe hack.
+				GPlatesGui::Globe *globe);
 
 
 		/**
@@ -81,6 +86,9 @@ namespace GPlatesGui
 		const GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 		double d_current_layer_far_depth;
 		double d_depth_range_per_layer;
+
+		// FIXME: Remove this hack.
+		GPlatesGui::Globe *const d_globe;
 
 		//! Parameters that are only available when @a paint is called.
 		struct PaintParams

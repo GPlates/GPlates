@@ -49,9 +49,8 @@ namespace GPlatesFileIO
 			UNKNOWN,           //!< Format, or file extension, is unknown.
 
 			GMT,               //!< '.xy' extension.
-
-			SHAPEFILE		   //!< '.shp' extension.
-
+			
+			SHAPEFILE          //!< '.shp' extension.
 		};
 
 
@@ -146,3 +145,4 @@ namespace GPlatesFileIO
 }
 
 #endif // GPLATES_FILEIO_RECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
+

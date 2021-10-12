@@ -151,6 +151,12 @@ namespace GPlatesGui
 		void
 		update_manipulate_pole_tool();
 
+		void
+		update_build_topology_tool();
+
+		void
+		update_edit_topology_tool();
+
 		/**
 		 * Gets the number of vertices and geometry type of geometry that will
 		 * be targeted if @a next_canvas_tool is chosen as the next canvas tool.

@@ -2,7 +2,7 @@
 999   0.0   0.0     0.0    0.0  999 !
 001   0.0   0.0     0.0    0.0  000 ! FIXED TO MANLE SPIN AXIS (000)
 001 300.0   0.0     0.0    0.0  000 ! FIXED TO MANLE SPIN AXIS (000)
-101   0.0   0.0     0.0    0.0  000 ! rot about X axis ( yellow )
+101   0.0   0.0   -10.0    0.0  000 ! rot about X axis ( yellow )
 101 300.0   0.0     0.0 -900.0  000 ! rot about X
 102   0.0   0.0    90.0    0.0  000 ! rot about Y axis ( red ) 
 102 300.0   0.0    90.0  900.0  000 ! rot about Y cw going fwd in time
@@ -10,3 +10,5 @@
 103 300.0  90.0     0.0  900.0  000 ! rot about Z ccw going fwd in time
 104   0.0   0.0     0.0    0.0  000 ! rot about X axis ( WHITE )
 104 300.0   0.0     0.0  900.0  000 ! rot about X
+105   0.0   0.0   350.0    0.0  000 ! rot about X axis ( purple )
+105 300.0   0.0     0.0 -900.0  000 ! rot about X

@@ -25,20 +25,11 @@
    <item>
     <widget class="QStackedWidget" name="stack" >
      <property name="currentIndex" >
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="page_feature_type" >
       <layout class="QVBoxLayout" >
-       <property name="leftMargin" >
-        <number>0</number>
-       </property>
-       <property name="topMargin" >
-        <number>0</number>
-       </property>
-       <property name="rightMargin" >
-        <number>0</number>
-       </property>
-       <property name="bottomMargin" >
+       <property name="margin" >
         <number>0</number>
        </property>
        <item>
@@ -73,16 +64,7 @@
      </widget>
      <widget class="QWidget" name="page_feature_properties" >
       <layout class="QVBoxLayout" >
-       <property name="leftMargin" >
-        <number>0</number>
-       </property>
-       <property name="topMargin" >
-        <number>0</number>
-       </property>
-       <property name="rightMargin" >
-        <number>0</number>
-       </property>
-       <property name="bottomMargin" >
+       <property name="margin" >
         <number>0</number>
        </property>
        <item>
@@ -146,16 +128,7 @@
      </widget>
      <widget class="QWidget" name="page_feature_collection" >
       <layout class="QVBoxLayout" >
-       <property name="leftMargin" >
-        <number>0</number>
-       </property>
-       <property name="topMargin" >
-        <number>0</number>
-       </property>
-       <property name="rightMargin" >
-        <number>0</number>
-       </property>
-       <property name="bottomMargin" >
+       <property name="margin" >
         <number>0</number>
        </property>
        <item>
@@ -200,6 +173,13 @@
       <widget class="QPushButton" name="button_next" >
        <property name="text" >
         <string>Ne&amp;xt</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_create_and_save" >
+       <property name="text" >
+        <string>Create and Save</string>
        </property>
       </widget>
      </item>

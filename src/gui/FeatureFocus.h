@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,6 +33,13 @@
 #include "model/ReconstructedFeatureGeometry.h"
 
 
+namespace GPlatesQtWidgets
+{
+	// Forward reference to ViewState - you know why.
+	class ViewportWindow;
+}
+
+
 namespace GPlatesGui
 {
 	/**
@@ -47,7 +54,9 @@ namespace GPlatesGui
 		Q_OBJECT
 	public:
 		
-		FeatureFocus()
+		FeatureFocus(
+				GPlatesQtWidgets::ViewportWindow &view_state_):
+			d_view_state_ptr(&view_state_)
 		{  }
 
 		virtual
@@ -76,6 +85,8 @@ namespace GPlatesGui
 		/**
 		 * Accessor for the Reconstructed Feature Geometry (RFG) associated with the
 		 * currently-focused feature (if there is one).
+		 *
+		 * FIXME: See mega fixme comment on @a focus_changed().
 		 */
 		GPlatesModel::ReconstructedFeatureGeometry::maybe_null_ptr_type
 		associated_rfg() const
@@ -84,19 +95,6 @@ namespace GPlatesGui
 		}
 
 	public slots:
-
-		/**
-		 * Change which feature is currently focused.
-		 *
-		 * Will emit focus_changed() to anyone who cares, provided that @a new_feature_ref
-		 * is actually different to the previous feature.
-		 *
-		 * After this slot is invoked, the associated Reconstructed Feature Geometry (RFG)
-		 * pointer will be null.
-		 */
-		void
-		set_focus(
-				GPlatesModel::FeatureHandle::weak_ref new_feature_ref);
 
 		/**
 		 * Change which feature is currently focused, also specifying an associated
@@ -127,6 +125,22 @@ namespace GPlatesGui
 		set_focus(
 				GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
 				GPlatesModel::ReconstructedFeatureGeometry *new_associated_rfg);
+
+		/**
+		 * Change which feature is currently focused, also specifying an associated
+		 * property iterator. This is for the benefit of the TopologySections{Table,Container},
+		 * which doesn't (and shouldn't) know about RFGs.
+		 *
+		 * Will emit focus_changed() to anyone who cares, provided that @a new_feature_ref
+		 * is actually different to the previous feature.
+		 *
+		 * As a stopgap, this also causes a call to @a find_new_associated_rfg to attempt
+		 * to find a suitable RFG given the properties_iterator.
+		 */
+		void
+		set_focus(
+				GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
+				GPlatesModel::FeatureHandle::properties_iterator new_associated_property);
 
 		/**
 		 * Clear the focus.
@@ -201,6 +215,32 @@ namespace GPlatesGui
 		 * cleared.
 		 * 
 		 * Remember to check is_valid()!
+		 *
+		 * BIG FIXME COMMENT HURRAY:
+		 * At this stage (nearing 0.9.5, needing to cram stuff into FeatureFocus),
+		 * I'd really like to overhaul the FeatureFocus signal interface. Specifically,
+		 * focus_changed() and pals should include less and less detail in their parameters.
+		 * Despite this being super-convenient for several slot connection cases (i.e.
+		 * being able to directly connect changed(FH) to do_stuff(FH)), I currently need
+		 * to add the ability to focus a feature with a properties_iterator rather than
+		 * RFG directly. This means we need to do the O(n) lookup of RFG via
+		 * @a find_new_associated_rfg() sometime, and if we need to emit this signal with
+		 * an RFG then our options are limited to:-
+		 *  a) Emit a null RFG ptr focus event first, let client code call
+		 *     @a find_new_associated_rfg() if they really want it (dumb, and causing
+		 *     a spurious focus event...), or
+		 *  b) Let FeatureFocus do the RFG-finding automatically whenever someone refocuses
+		 *     via a properties_iterator rather than explicit RFG. This is likely the best
+		 *     option for now, as only the TopologySectionsTable should be using that
+		 *     set_focus() signature - but I don't like doing that heavy function call
+		 *     on focus change, when it might not be necessary.
+		 * 
+		 * A better way forward would be to get focus listeners to explicitly ask for
+		 * the associated {feature handle, rfg, properties_iterator} when the focus changes,
+		 * if they're interested in that. Then we could do a lazy lookup of the RFG from
+		 * the properties_iterator only if we really need to.
+		 * But that is a big change to the FeatureFocus interface which we don't have time
+		 * for now. -JC
 		 */
 		void
 		focus_changed(
@@ -253,7 +293,14 @@ namespace GPlatesGui
 		 *
 		 * Note that when focused feature changes the associated.
 		 */
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_associated_geometry_property;
+		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_associated_geometry_property_opt;
+
+		/**
+		 * ViewState pointer! Yes!
+		 * ONLY needed so that FeatureFocus can have a stab at finding an RFG automatically
+		 * when given a properties_iterator during @a set_focus().
+		 */
+		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 
 		/**
@@ -263,7 +310,7 @@ namespace GPlatesGui
 		const boost::optional<GPlatesModel::FeatureHandle::properties_iterator> &
 		associated_geometry_property() const
 		{
-			return d_associated_geometry_property;
+			return d_associated_geometry_property_opt;
 		}
 	};
 }

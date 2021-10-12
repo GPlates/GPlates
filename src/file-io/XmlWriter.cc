@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -93,6 +93,18 @@ GPlatesFileIO::XmlWriter::writeEndElement(
 		}
 	}
 	d_writer.writeEndElement();
+}
+
+
+void
+GPlatesFileIO::XmlWriter::writeDecimalPair(
+		const double &val1,
+		const double &val2)
+{
+	writeDecimal(val1);
+	static const QString space(" ");
+	d_writer.writeCharacters(space);
+	writeDecimal(val2);
 }
 
 

@@ -78,6 +78,10 @@ namespace GPlatesFileIO
 			AmbiguousPlatesIceShelfCode,
 			MoreThanOneDistinctPoint,
 
+			// The following are specific to GPlates 8 hydrid PLATES line-format
+			MissingPlatepolygonBoundaryFeature,
+			InvalidPlatepolygonBoundaryFeature,
+
 			// The following apply to ESRI Shapefile import
 			NoLayersFoundInFile,
 			MultipleLayersInFile,

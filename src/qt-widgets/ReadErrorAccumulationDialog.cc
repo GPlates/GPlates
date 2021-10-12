@@ -351,7 +351,6 @@ namespace
 				QT_TR_NOOP("Invalid polygon."),
 				QT_TR_NOOP("An invalid polygon geometry was found.") },
 
-
 		// Errors relating to raster files
 		{ GPlatesFileIO::ReadErrors::InsufficientTextureMemory,
 				QT_TR_NOOP("Insufficient texture memory."),

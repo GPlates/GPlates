@@ -27,11 +27,14 @@
 #define GPLATES_QTWIDGETS_TASKPANEL_H
 
 #include <QWidget>
+#include <QDebug>
 #include "TaskPanelUi.h"
 
 #include "DigitisationWidget.h"
 #include "ReconstructionPoleWidget.h"
 #include "ActionButtonBox.h"
+#include "TopologyToolsWidget.h"
+
 #include "gui/FeatureFocus.h"
 #include "model/ModelInterface.h"
 
@@ -112,7 +115,18 @@ namespace GPlatesQtWidgets
 		{
 			return *d_reconstruction_pole_widget_ptr;
 		}
-	
+
+		/**
+		 * Accessor for the TopologyToolsWidget 
+		 *
+		 * This lets the topology canvas tools interact with the widget in the task panel
+		 */
+		TopologyToolsWidget &
+		topology_tools_widget() const
+		{
+			return *d_topology_tools_widget_ptr;
+		}
+
 		void
 		enable_modify_pole_tab(
 			bool enable);
@@ -143,6 +157,16 @@ namespace GPlatesQtWidgets
 			tabwidget_task_panel->setCurrentWidget(tab_modify_pole);
 		}		
 		
+		void
+		choose_topology_tools_tab()
+		{
+			tabwidget_task_panel->setCurrentWidget(tab_topology_tools);
+		}
+		
+		void
+		enable_topology_tab(
+			bool enable);
+			
 	private:
 		
 		/**
@@ -180,6 +204,13 @@ namespace GPlatesQtWidgets
 		void
 		set_up_modify_pole_tab();
 
+		/**
+		 * Sets up the "Topology Tools" tab in the Extra Creamy Task Panel.
+		 * This adds the special TopologyToolsWidget.
+		 */
+		void
+		set_up_topology_tools_tab();
+
 
 		/**
 		 * Widget responsible for the buttons in the Feature Tab.
@@ -215,7 +246,13 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		GPlatesQtWidgets::ReconstructionPoleWidget *d_reconstruction_pole_widget_ptr;
-		
+
+		/**
+		 * Widget responsible for the controls in the Topology Tools Tab.
+		 * Memory managed by Qt.
+		 */
+		GPlatesQtWidgets::TopologyToolsWidget *d_topology_tools_widget_ptr;
+
 	};
 }
 

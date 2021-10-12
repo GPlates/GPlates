@@ -1043,6 +1043,7 @@ GPlatesFileIO::PropertyCreationUtils::create_piecewise_aggregation(
 		type = find_and_create_one(elem, &create_template_type_parameter_type, VALUE_TYPE);
 
 	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows;
+
 	find_and_create_zero_or_more(elem, &create_time_window, TIME_WINDOW, time_windows);
 
 	return GPlatesPropertyValues::GpmlPiecewiseAggregation::create(time_windows, type);
@@ -1518,6 +1519,158 @@ GPlatesFileIO::PropertyCreationUtils::create_finite_rotation_slerp(
 	return GPlatesPropertyValues::GpmlFiniteRotationSlerp::create(value_type);
 }
 
+GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_topological_polygon(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName 
+		STRUCTURAL_TYPE = 
+			GPlatesModel::PropertyName::create_gpml("TopologicalPolygon"),
+		SECTION = 
+			GPlatesModel::PropertyName::create_gpml("section");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> sections;
+
+	find_and_create_one_or_more(elem, &create_topological_section, SECTION, sections);
+
+	return GPlatesPropertyValues::GpmlTopologicalPolygon::create( sections );
+}
+
+
+GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_topological_section(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName
+		TOPOLOGICAL_LINE_SECTION = 
+			GPlatesModel::PropertyName::create_gpml("TopologicalLineSection"),
+		TOPOLOGICAL_POINT = 
+			GPlatesModel::PropertyName::create_gpml("TopologicalPoint");
+
+	if (parent->number_of_children() > 1) {
+		// Too many children!
+		throw GpmlReaderException(parent, GPlatesFileIO::ReadErrors::TooManyChildrenInElement,
+				EXCEPTION_SOURCE);
+	}
+
+	boost::optional< GPlatesModel::XmlElementNode::non_null_ptr_type > structural_elem;
+
+	structural_elem = parent->get_child_by_name(TOPOLOGICAL_LINE_SECTION);
+	if (structural_elem) {
+		return GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type(
+				create_topological_line_section(parent));
+	}
+
+	structural_elem = parent->get_child_by_name(TOPOLOGICAL_POINT);
+	if (structural_elem) {
+		return GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type(
+				create_topological_point(parent));
+	}
+
+	// Invalid child!
+	throw GpmlReaderException(parent, GPlatesFileIO::ReadErrors::UnrecognisedChildFound,
+			EXCEPTION_SOURCE);
+}
+
+
+GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_topological_line_section(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = 
+			GPlatesModel::PropertyName::create_gpml("TopologicalLineSection"),
+		SOURCE_GEOMETRY = 
+			GPlatesModel::PropertyName::create_gpml("sourceGeometry"),
+		START_INTERSECTION = 
+			GPlatesModel::PropertyName::create_gpml("startIntersection"),
+		END_INTERSECTION = 
+			GPlatesModel::PropertyName::create_gpml("endIntersection"),
+		REVERSE_ORDER = 
+			GPlatesModel::PropertyName::create_gpml("reverseOrder");
+
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type source_geometry = 
+		find_and_create_one(elem, &create_property_delegate, SOURCE_GEOMETRY);
+
+	boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection> start_inter = 
+		find_and_create_optional(elem, &create_topological_intersection, START_INTERSECTION);
+
+	boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection> end_inter = 
+		find_and_create_optional(elem, &create_topological_intersection, END_INTERSECTION);
+
+	bool reverse_order = 
+		find_and_create_one(elem, &create_boolean, REVERSE_ORDER);
+
+	return GPlatesPropertyValues::GpmlTopologicalLineSection::create(
+		source_geometry, 
+		start_inter,
+		end_inter,
+		reverse_order);
+}
+
+GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_topological_point(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = 
+			GPlatesModel::PropertyName::create_gpml("TopologicalPoint"),
+		SOURCE_GEOMETRY = 
+			GPlatesModel::PropertyName::create_gpml("sourceGeometry");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type source_geometry = 
+		find_and_create_one(elem, &create_property_delegate, SOURCE_GEOMETRY);
+
+	return GPlatesPropertyValues::GpmlTopologicalPoint::create(
+		source_geometry);
+}
+
+
+GPlatesPropertyValues::GpmlTopologicalIntersection
+GPlatesFileIO::PropertyCreationUtils::create_topological_intersection(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent)
+{
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = 
+			GPlatesModel::PropertyName::create_gpml("TopologicalIntersection"),
+		INTERSECTION_GEOMETRY =
+			GPlatesModel::PropertyName::create_gpml("intersectionGeometry"),
+		REFERENCE_POINT = 
+			GPlatesModel::PropertyName::create_gpml("referencePoint"),
+		REFERENCE_POINT_PLATE_ID = 
+			GPlatesModel::PropertyName::create_gpml("referencePointPlateId");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type
+		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type intersection_geometry = 
+		find_and_create_one(elem, &create_property_delegate, INTERSECTION_GEOMETRY);
+
+	GPlatesPropertyValues::GmlPoint::non_null_ptr_type reference_point = 
+		find_and_create_one(elem, &create_point, REFERENCE_POINT);
+
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type reference_point_plate_id = 
+		find_and_create_one(elem, &create_property_delegate, REFERENCE_POINT_PLATE_ID);
+
+	return GPlatesPropertyValues::GpmlTopologicalIntersection(
+		intersection_geometry, 
+		reference_point,
+		reference_point_plate_id);
+}
+
+
+
+
 
 GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type
 GPlatesFileIO::PropertyCreationUtils::create_old_plates_header(
@@ -1611,4 +1764,5 @@ GPlatesFileIO::PropertyCreationUtils::create_key_value_dictionary(
 //	find_and_create_one(elem, &create_key_value_dictionary_element, ELEMENTS, elements);
 	return GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements);
 }
+
 

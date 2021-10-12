@@ -38,10 +38,13 @@
 
 
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollectionPainter(
-		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection) :
+		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+		// FIXME: Remove globe hack.
+		GPlatesGui::Globe *globe) :
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_current_layer_far_depth(0),
-	d_depth_range_per_layer(0)
+	d_depth_range_per_layer(0),
+	d_globe(globe)
 {
 }
 
@@ -97,7 +100,9 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 	GlobeRenderedGeometryLayerPainter rendered_geom_layer_painter(
 			rendered_geometry_layer,
 			d_paint_params->d_inverse_viewport_zoom_factor,
-			*d_paint_params->d_nurbs_renderer);
+			*d_paint_params->d_nurbs_renderer,
+			// FIXME: Remove globe hack.
+			d_globe);
 	rendered_geom_layer_painter.paint();
 
 	// We've already visited the rendered geometry layer so don't visit its rendered geometries.

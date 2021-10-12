@@ -63,6 +63,9 @@
 #include "ShapefileAttributeViewerDialog.h"
 #include "ViewportWindowUi.h"
 
+#include "app-logic/PlateVelocities.h"
+#include "app-logic/ReconstructContext.h"
+
 #include "file-io/FeatureCollectionFileFormat.h"
 
 #include "gui/AnimationController.h"
@@ -110,7 +113,7 @@ namespace GPlatesQtWidgets
 		GPlatesModel::Reconstruction &
 		reconstruction() const
 		{
-			return *d_reconstruction_ptr;
+			return *d_reconstruct_context.get_reconstruction();
 		}
 
 		const double &
@@ -143,6 +146,47 @@ namespace GPlatesQtWidgets
 		void
 		create_svg_file(
 				const QString &filename);
+
+
+		void	
+		change_tab(int i) {
+			tabWidget->setCurrentIndex( i );
+		}
+
+		int
+		get_tab() {
+			return tabWidget->currentIndex();
+		}
+
+
+		GPlatesGui::FeatureTableModel &
+		feature_table_model() 
+		{
+			return *d_feature_table_model_ptr;
+		}
+
+		/** Get a pointer to the TopologySectionsContainer */
+		GPlatesGui::TopologySectionsContainer &
+		topology_sections_container()
+		{
+			return *d_topology_sections_container_ptr;	
+		}
+
+		/** Get a pointer to the TaskPanel */
+		GPlatesQtWidgets::TaskPanel *
+		task_panel_ptr()
+		{
+			return d_task_panel_ptr;
+		}
+
+		/** Get a pointer to the GPlatesModel::ModelInterface */
+		GPlatesModel::ModelInterface &
+		model_interface()
+		{
+			return d_model;
+		}
+
+
 
 	public slots:
 		
@@ -224,6 +268,14 @@ namespace GPlatesQtWidgets
 				bool enable = true);
 
 		void
+		enable_build_topology_tool(
+				bool enable = true);
+
+		void
+		enable_edit_topology_tool(
+				bool enable = true);
+
+		void
 		choose_drag_globe_tool();
 
 		void
@@ -257,6 +309,12 @@ namespace GPlatesQtWidgets
 		choose_manipulate_pole_tool();
 
 		void
+		choose_build_topology_tool();
+
+		void
+		choose_edit_topology_tool();
+
+		void
 		enable_or_disable_feature_actions(
 				GPlatesModel::FeatureHandle::weak_ref focused_feature);
 
@@ -273,7 +331,7 @@ namespace GPlatesQtWidgets
 		choose_colour_by_age();
 
 		void
-		choose_clicked_geometry_table()
+		choose_clicked_geometry_table() const
 		{
 			tabWidget->setCurrentWidget(tab_clicked);
 		}
@@ -523,10 +581,25 @@ namespace GPlatesQtWidgets
 			return d_rendered_geom_collection;
 		}
 
+		GPlatesAppLogic::PlateVelocitiesHook &
+		plate_velocities_hook() const
+		{
+			return *d_plate_velocities_hook;
+		}
+
 
 	private:
 		GPlatesModel::ModelInterface d_model;
-		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
+
+		//! Must be declared before 'd_reconstruction_view_widget'.
+		GPlatesViewOperations::RenderedGeometryCollection d_rendered_geom_collection;
+
+		/**
+		 * Is the reconstruction engine/framework.
+		 * Currently must be declared after 'd_rendered_geom_collection' because
+		 * it contains objects created by it.
+		 */
+		GPlatesAppLogic::ReconstructContext d_reconstruct_context;
 
 		//@{
 		// ViewState 
@@ -534,10 +607,14 @@ namespace GPlatesQtWidgets
 		active_files_collection_type d_active_reconstructable_files;
 		active_files_collection_type d_active_reconstruction_files;
 
+
 		//@}
 
-		//! Must be declared before 'd_reconstruction_view_widget'.
-		GPlatesViewOperations::RenderedGeometryCollection d_rendered_geom_collection;
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_comp_mesh_point_layer;
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_comp_mesh_arrow_layer;
+		GPlatesAppLogic::PlateVelocitiesHook::non_null_ptr_type d_plate_velocities_hook;
 
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_recon_root;
@@ -631,7 +708,10 @@ namespace GPlatesQtWidgets
 		update_time_dependent_raster();
 
 		void
-		initialise_rendered_geom_collection();
+		setup_reconstruct_context();
+
+		void
+		setup_rendered_geom_collection();
 
 	private slots:
 		void
@@ -651,6 +731,21 @@ namespace GPlatesQtWidgets
 		
 		void
 		dock_search_results_at_bottom();
+
+		void
+		enable_point_display();
+
+		void
+		enable_line_display();
+
+		void
+		enable_polygon_display();
+
+		void
+		enable_multipoint_display();
+
+		void
+		enable_arrows_display();
 
 		void
 		enable_raster_display();

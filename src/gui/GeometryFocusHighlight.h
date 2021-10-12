@@ -40,6 +40,7 @@ namespace GPlatesViewOperations
 	class RenderedGeometryCollection;
 }
 
+
 namespace GPlatesGui
 {
 	/**
@@ -58,6 +59,15 @@ namespace GPlatesGui
 		virtual
 		~GeometryFocusHighlight()
 		{  }
+
+
+#if 0
+		virtual
+		void
+		visit_polyline_on_sphere(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline);
+#endif
+
 
 	public slots:
 

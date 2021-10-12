@@ -30,7 +30,7 @@
 bool
 GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstructed_feature_geometry(
 		GPlatesModel::ReconstructionGeometry *reconstruction_geom,
-		GPlatesModel::ReconstructedFeatureGeometry **reconstructed_feature_geom)
+		GPlatesModel::ReconstructedFeatureGeometry *&reconstructed_feature_geom)
 {
 	// We use a dynamic cast here (despite the fact that dynamic casts
 	// are generally considered bad form) because we only care about
@@ -40,8 +40,8 @@ GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstructed_feature_geometry
 	// specifically, the double-dispatch of the Visitor pattern --
 	// rather than updating the "if ... else if ..." chain each time a
 	// new derivation is added.)
-	*reconstructed_feature_geom = dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(
+	reconstructed_feature_geom = dynamic_cast<GPlatesModel::ReconstructedFeatureGeometry *>(
 			reconstruction_geom);
 
-	return *reconstructed_feature_geom != NULL;
+	return reconstructed_feature_geom != NULL;
 }

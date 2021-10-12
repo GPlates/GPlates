@@ -40,6 +40,9 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
+	// FIXME: remove all reference to Globe.
+	class Globe;
+
 	class NurbsRenderer;
 
 	/**
@@ -54,11 +57,14 @@ namespace GPlatesGui
 		GlobeRenderedGeometryLayerPainter(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const double &inverse_viewport_zoom_factor,
-				GPlatesGui::NurbsRenderer &nurbs_renderer) :
+				GPlatesGui::NurbsRenderer &nurbs_renderer,
+				// FIXME: Remove globe hack.
+				GPlatesGui::Globe *globe) :
 			d_rendered_geometry_layer(rendered_geometry_layer),
 			d_nurbs_renderer(&nurbs_renderer),
 			d_inverse_zoom_factor(inverse_viewport_zoom_factor),
-			d_draw_opaque_primitives(true)
+			d_draw_opaque_primitives(true),
+			d_globe(globe)
 		{  }
 
 
@@ -102,6 +108,9 @@ namespace GPlatesGui
 
 		//! Is this the first pass (drawing opaque primitives) or second pass (transparent)?
 		bool d_draw_opaque_primitives;
+
+		// FIXME: Remove this hack.
+		GPlatesGui::Globe *const d_globe;
 
 		//! Multiplying factor to get point size of 1.0f to look like one screen-space pixel.
 		static const float POINT_SIZE_ADJUSTMENT;

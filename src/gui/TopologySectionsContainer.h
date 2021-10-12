@@ -29,9 +29,11 @@
 // Some things won't compile on my branch until it gets merged to platepolygon!
 // kill this #define after the merge.
 // kill all the #ifndef NEEDS_PLATEPOLYGON_BRANCH checks after the merge -works-.
-#define NEEDS_PLATEPOLYGON_BRANCH
+
+// #define NEEDS_PLATEPOLYGON_BRANCH
 
 
+#include <QDebug>
 #include <QObject>
 #include <iterator>
 #include <vector>
@@ -40,6 +42,8 @@
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
+#include "maths/GeometryOnSphere.h"
+
 
 #ifndef NEEDS_PLATEPOLYGON_BRANCH
 #include "property-values/GpmlTopologicalSection.h"
@@ -85,7 +89,7 @@ namespace GPlatesGui
 			 * The pointer to the gpml:TopologicalSection property-value that
 			 * this table row represents.
 			 */
-			GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type d_section_ptr;
+			boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> d_section_ptr;
 #endif
 			/**
 			 * The gpml:FeatureId of the topological section.
@@ -105,13 +109,21 @@ namespace GPlatesGui
 			 * later. -JC
 			 */
 			GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
+
+			/**
+			 * As well as the feature reference, another thing to keep track of in the
+			 * table is the geometric property which is to be used for intersections, etc.
+			 * This is particularly important to track if we want to let the user click
+			 * on the table and highlight bits of geometry while building a topology.
+			 */
+			boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_geometry_property_opt;
 			
 			/**
 			 * The point the user clicked on to select the section.
 			 * Used as a reference point to aid the intersection algorithm.
 			 * Coords are present-day.
 			 */
-			GPlatesMaths::LatLonPoint d_click_point;
+			boost::optional<GPlatesMaths::LatLonPoint> d_click_point;
 
 			/**
 			 * Whether this topology section should be used in reverse.
@@ -288,6 +300,12 @@ namespace GPlatesGui
 		move_insertion_point(
 				size_type new_index);
 
+		/**
+		 * The @a focus_feature_at_index(int) signal is emitted.
+		 */
+		void
+		set_focus_feature_at_index( 
+				size_type index );
 
 	public slots:
 
@@ -307,6 +325,7 @@ namespace GPlatesGui
 		 */
 		void
 		clear();
+
 
 
 #if 0	// The following slots were only used to support easier testing before the platepolygon branch merge.
@@ -357,7 +376,7 @@ namespace GPlatesGui
 		 */
 		void
 		insertion_point_moved(
-				TopologySectionsContainer::size_type new_index);
+				GPlatesGui::TopologySectionsContainer::size_type new_index);
 
 		/**
 		 * Emitted whenever a entry has been deleted from the container.
@@ -366,7 +385,7 @@ namespace GPlatesGui
 		 */
 		void
 		entry_removed(
-				TopologySectionsContainer::size_type deleted_index);
+				GPlatesGui::TopologySectionsContainer::size_type deleted_index);
 
 		/**
 		 * Emitted whenever a number of entries have been inserted into the container.
@@ -376,8 +395,8 @@ namespace GPlatesGui
 		 */
 		void
 		entries_inserted(
-				TopologySectionsContainer::size_type inserted_index,
-				TopologySectionsContainer::size_type quantity);
+				GPlatesGui::TopologySectionsContainer::size_type inserted_index,
+				GPlatesGui::TopologySectionsContainer::size_type quantity);
 
 		/**
 		 * Emitted whenever the data from a range of entries has been modified.
@@ -389,10 +408,18 @@ namespace GPlatesGui
 		 */
 		void
 		entries_modified(
-				TopologySectionsContainer::size_type modified_index_begin,
-				TopologySectionsContainer::size_type modified_index_end);
+				GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
+				GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
+
+		/**
+		 * Emitted whenever a feature is focused 
+		 */
+		void
+		focus_feature_at_index(
+				GPlatesGui::TopologySectionsContainer::size_type index);
 		
 	private:
+
 		/**
 		 * The vector of TableRow holding the data to be displayed.
 		 */
@@ -404,6 +431,7 @@ namespace GPlatesGui
 		 * that the special Insertion Point row is in.
 		 */
 		TopologySectionsContainer::size_type d_insertion_point;
+
 		
 	};
 }

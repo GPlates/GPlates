@@ -11,6 +11,10 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    CalculateVelocity.cc
+    CalculateVelocity.h
+    CartesianConvMatrix3D.cc
+    CartesianConvMatrix3D.h
     ConstGeometryOnSphereVisitor.h
     FiniteRotation.cc
     FiniteRotation.h

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -197,11 +197,7 @@ namespace GPlatesFileIO
 		void
 		writeDecimalPair(
 				const double &val1,
-				const double &val2) {
-			writeDecimal(val1);
-			d_writer.writeCharacters(QString(" "));
-			writeDecimal(val2);
-		}
+				const double &val2);
 
 
 		void

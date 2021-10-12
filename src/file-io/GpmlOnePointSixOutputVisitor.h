@@ -74,6 +74,7 @@ namespace GPlatesFileIO
 				const FileInfo &file_info,
 				bool use_gzip);
 
+
 		/**
 		 * Creates a GPML writer for the given QIODevice.
 		 *
@@ -84,6 +85,7 @@ namespace GPlatesFileIO
 		explicit
 		GpmlOnePointSixOutputVisitor(
 				QIODevice *target);
+
 
 		virtual
 		~GpmlOnePointSixOutputVisitor();
@@ -132,6 +134,11 @@ namespace GPlatesFileIO
 		void
 		visit_enumeration(
 				const GPlatesPropertyValues::Enumeration &enumeration);
+
+		virtual
+		void
+		visit_gml_data_block(
+				const GPlatesPropertyValues::GmlDataBlock &gml_data_block);
 
 		virtual
 		void
@@ -250,6 +257,27 @@ namespace GPlatesFileIO
 		void
 		write_gpml_time_window(
 				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window);
+
+		virtual
+		void
+		visit_gpml_topological_polygon(
+			 	const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+
+		virtual
+		void
+		visit_gpml_topological_line_section(
+				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
+
+		virtual
+		void
+		visit_gpml_topological_intersection(
+				const GPlatesPropertyValues::GpmlTopologicalIntersection &gpml_toplogical_intersection);
+
+		virtual
+		void
+		visit_gpml_topological_point(
+				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
+
 
 		virtual
 		void
