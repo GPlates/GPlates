@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,9 +28,11 @@
 
 #include <QWidget>
 #include <boost/optional.hpp>
+
 #include "EditFeaturePropertiesWidgetUi.h"
-#include "qt-widgets/AddPropertyDialog.h"
-#include "qt-widgets/EditWidgetGroupBox.h"
+#include "AddPropertyDialog.h"
+#include "EditWidgetGroupBox.h"
+
 #include "gui/FeatureFocus.h"
 #include "gui/FeaturePropertyTableModel.h"
 #include "model/FeatureHandle.h"
@@ -57,7 +59,11 @@ namespace GPlatesQtWidgets
 
 		virtual
 		~EditFeaturePropertiesWidget()
-		{  }
+		{
+			// The view does not take ownership of the model.
+			// See http://doc.trolltech.com/4.4/qabstractitemview.html#setModel
+			delete d_property_model_ptr;
+		}
 		
 		GPlatesGui::FeaturePropertyTableModel &
 		model()
@@ -136,7 +142,7 @@ namespace GPlatesQtWidgets
 		 * Used to remember which property is being edited by the currently-active
 		 * Edit widget, so that data can be committed when editing is finished.
 		 */
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_selected_property_iterator;
+		boost::optional<GPlatesModel::FeatureHandle::iterator> d_selected_property_iterator;
 	};
 }
 

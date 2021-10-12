@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -30,7 +31,8 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QObject>
-#include <QColor>
+
+#include "global/PointerTraits.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,6 +40,10 @@
 // where possible.
 // This header gets included in a lot of other files and we want to reduce compile times.
 ////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+#include "property-values/GeoTimeInstant.h"
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // FIXME remove this header
 #include "view-operations/RenderedGeometryCollection.h"
@@ -50,16 +56,19 @@ namespace GPlatesAppLogic
 	class FeatureCollectionWorkflow;
 	class PaleomagWorkflow;
 	class PlateVelocityWorkflow;
-	class Reconstruct;
 }
 
 namespace GPlatesGui
 {
 	class Colour;
-	class ColourTable;
-	class ColourTableDelegator;
+	class ColourScheme;
+	class ColourSchemeContainer;
+	class ColourSchemeDelegator;
 	class GeometryFocusHighlight;
 	class FeatureFocus;
+	class MapTransform;
+	class RenderSettings;
+	class ViewportProjection;
 	class ViewportZoom;
 }
 
@@ -77,7 +86,6 @@ namespace GPlatesViewOperations
 {
 	class ReconstructView;
 	class RenderedGeometryCollection;
-	class ViewportProjection;
 }
 
 namespace GPlatesPresentation
@@ -89,6 +97,137 @@ namespace GPlatesPresentation
 		Q_OBJECT
 		
 	public:
+	
+		static const double INITIAL_VGP_DELTA_T;
+
+		/**
+		 *  Stores render settings for VirtualGeomagneticPole features.                                                                     
+		 */
+		class VGPRenderSettings
+		{
+
+
+
+		public:
+			enum VGPVisibilitySetting{
+				ALWAYS_VISIBLE,
+				TIME_WINDOW,
+				DELTA_T_AROUND_AGE
+			};		
+
+			VGPRenderSettings():
+				d_vgp_visibility_setting(DELTA_T_AROUND_AGE),
+				d_vgp_delta_t(INITIAL_VGP_DELTA_T),
+				d_vgp_earliest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_past()),
+				d_vgp_latest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_future()),
+				d_should_draw_circular_error(true)
+				{ }
+
+
+				VGPVisibilitySetting 
+				get_vgp_visibility_setting() const
+				{	
+					return d_vgp_visibility_setting;
+				}
+
+				void
+				set_vgp_visibility_setting(
+				VGPVisibilitySetting setting)
+				{
+					d_vgp_visibility_setting = setting;
+				}
+
+				double
+				get_vgp_delta_t() const
+				{
+					return d_vgp_delta_t;
+				}
+
+				void
+				set_vgp_delta_t(
+				const double &vgp_delta_t)
+				{	
+					d_vgp_delta_t = vgp_delta_t;
+				}
+
+				const 
+				GPlatesPropertyValues::GeoTimeInstant &
+				get_vgp_earliest_time() 
+				{
+					return d_vgp_earliest_time;	
+				};
+
+				const 
+				GPlatesPropertyValues::GeoTimeInstant &
+				get_vgp_latest_time() 
+				{
+					return d_vgp_latest_time;	
+				};
+
+				void
+				set_vgp_earliest_time(
+					const GPlatesPropertyValues::GeoTimeInstant &earliest_time)
+				{	
+					d_vgp_earliest_time = GPlatesPropertyValues::GeoTimeInstant(earliest_time);
+				}
+
+				void
+				set_vgp_latest_time(
+					const GPlatesPropertyValues::GeoTimeInstant &latest_time)
+				{	
+					d_vgp_latest_time = GPlatesPropertyValues::GeoTimeInstant(latest_time);
+				};		
+
+				bool
+				should_draw_circular_error()
+				{
+					return d_should_draw_circular_error;
+				}
+
+				void
+				set_should_draw_circular_error(
+					bool should_draw_circular_error_)
+				{
+					d_should_draw_circular_error = should_draw_circular_error_;
+				}
+
+		private:
+
+			/**
+			 *  enum indicating what sort of VGP visibility we have, one of:
+			 *		ALWAYS_VISIBLE		- all vgps are displayed at all times
+			 *		TIME_WINDOW			- all vgps are displayed between a specified time interval
+			 *		DELTA_T_AROUND_AGE  - vgps are displayed if the reconstruction time is within a time window 
+			 *							  around the VGP's age.                                                                   
+			 */
+			VGPVisibilitySetting d_vgp_visibility_setting;
+
+			/**
+			 *  Delta used for time window around VGP age.                                                                     
+			 */
+			double d_vgp_delta_t;
+
+			/**
+			 *  Begin time used when the TIME_WINDOW VGPVisibilitySetting is selected.                                                                    
+			 */
+			GPlatesPropertyValues::GeoTimeInstant d_vgp_earliest_time;
+
+			/**
+			 *  End time used when the TIME_WINDOW VGPVisibilitySetting is selected.                                                                    
+			 */
+			GPlatesPropertyValues::GeoTimeInstant d_vgp_latest_time;
+
+			/**
+			 * Whether or not we should draw pole errors as circles around the pole location.
+			 * 
+			 * If true, we draw circles (circle size defined by the A95 property).
+			 * If false, we draw ellipses. (ellipse size defined by yet-to-be-calculated properties).                                                                     
+			 */
+			bool d_should_draw_circular_error;
+		};	
+	
+	
+	
 		ViewState(
 				GPlatesAppLogic::ApplicationState &application_state);
 
@@ -126,10 +265,6 @@ namespace GPlatesPresentation
 		///////////////////////////////////
 
 
-		GPlatesAppLogic::Reconstruct &
-		get_reconstruct();
-
-
 		GPlatesViewOperations::RenderedGeometryCollection &
 		get_rendered_geometry_collection();
 
@@ -142,7 +277,7 @@ namespace GPlatesPresentation
 		get_viewport_zoom();
 
 
-		GPlatesViewOperations::ViewportProjection &
+		GPlatesGui::ViewportProjection &
 		get_viewport_projection();
 
 
@@ -150,48 +285,52 @@ namespace GPlatesPresentation
 		get_plate_velocity_workflow() const;
 
 
-		// FIXME: Delete after refactoring
-		//! Colour reconstruction geometry by feature type.
-		void
-		choose_colour_by_feature_type();
+		//! Returns all loaded colour schemes, sorted by category.
+		GPlatesGui::ColourSchemeContainer &
+		get_colour_scheme_container();
 
-		// FIXME: Delete after refactoring
-		//! Colour reconstruction geometry by age.
-		void
-		choose_colour_by_age();
-
-		//! Colour reconstruction geometry with a single colour.
-		void
-		choose_colour_by_single_colour(
-				const QColor &qcolor);
-
-		//! Colour reconstruction geometry by plate ID (default colouring)
-		void
-		choose_colour_by_plate_id_default();
-
-		//! Colour reconstruction geometry by plate ID (regional colouring)
-		void
-		choose_colour_by_plate_id_regional();
-
-		//! Returns the colour last used for the "Single Colour" colouring option
-		QColor
-		get_last_single_colour() const;
 
 		/**
-		 * Returns the colour table.
+		 * Returns the current colour scheme.
 		 *
-		 * When performing colour lookup with the returned colour table
-		 * it will always refer to the latest colour table selected with
-		 * @a choose_colour_by_age for example.
-		 * This is because the returned colour table delegates colour lookup to an
-		 * actual colour table implementation which itself can be switched inside the
+		 * When performing colour lookup with the returned colour scheme
+		 * it will always refer to the latest colour scheme selected.
+		 * This is because the returned colour scheme delegates colour lookup to an
+		 * actual colour scheme implementation which itself can be switched inside the
 		 * delegate.
-		 * 
 		 */
-		GPlatesGui::ColourTable *
-		get_colour_table();
+		GPlatesGlobal::PointerTraits<GPlatesGui::ColourScheme>::non_null_ptr_type
+		get_colour_scheme();
+
+
+		GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
+		get_colour_scheme_delegator();
+
+
+		GPlatesGui::RenderSettings &
+		get_render_settings();
+
+
+		GPlatesGui::MapTransform &
+		get_map_transform();
+
+
+		int
+		get_main_viewport_min_dimension();
+
+
+		void
+		set_main_viewport_min_dimension(
+				int min_dimension);
+
+		VGPRenderSettings &
+		get_vgp_render_settings()
+		{
+			return d_vgp_render_settings;
+		}
 
 	private slots:
+
 		void
 		handle_zoom_change();
 
@@ -205,20 +344,20 @@ namespace GPlatesPresentation
 		// FIXME: remove this when refactored
 		GPlatesQtWidgets::ViewportWindow *d_other_view_state;
 
-		//! Performs the reconstructions.
-		boost::scoped_ptr<GPlatesAppLogic::Reconstruct> d_reconstruct;
-
 		//! Contains all rendered geometries for this view state.
 		boost::scoped_ptr<GPlatesViewOperations::RenderedGeometryCollection> d_rendered_geometry_collection;
 
-		//! Keeps track of the currently selected colour table.
-		boost::scoped_ptr<GPlatesGui::ColourTableDelegator> d_colour_table;
+		//! Holds all loaded colour schemes, sorted by category.
+		boost::scoped_ptr<GPlatesGui::ColourSchemeContainer> d_colour_scheme_container;
+
+		//! Keeps track of the currently selected colour scheme.
+		GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type d_colour_scheme;
 
 		//! The viewport zoom state.
 		boost::scoped_ptr<GPlatesGui::ViewportZoom> d_viewport_zoom;
 
 		//! The viewport projection state.
-		boost::scoped_ptr<GPlatesViewOperations::ViewportProjection> d_viewport_projection;
+		boost::scoped_ptr<GPlatesGui::ViewportProjection> d_viewport_projection;
 
 		/**
 		 * Renders the focused geometry highlighted.
@@ -252,25 +391,32 @@ namespace GPlatesPresentation
 		boost::shared_ptr<GPlatesAppLogic::PaleomagWorkflow> d_paleomag_workflow;
 		boost::shared_ptr<GPlatesAppLogic::FeatureCollectionWorkflow> d_paleomag_unregister;
 
-		//! Performs tasks each time a reconstruction is generated.
 		/**
 		 * Performs tasks each time a reconstruction is generated.
 		 *
-		 * Depends on d_plate_velocity_workflow, d_rendered_geometry_collection, d_colour_table.
+		 * Depends on d_plate_velocity_workflow, d_rendered_geometry_collection.
 		 */
 		boost::scoped_ptr<GPlatesViewOperations::ReconstructView> d_reconstruct_view;
 
-		//! The current choice of colour for the "Single Colour" colouring option
-		QColor d_last_single_colour;
+		//! What gets rendered and what doesn't
+		boost::scoped_ptr<GPlatesGui::RenderSettings> d_render_settings;
+
+		//! Sends signals to transform maps
+		boost::scoped_ptr<GPlatesGui::MapTransform> d_map_transform;
+
+		/**
+		 * The smaller of width or height of the main globe or map attached.
+		 * Used for scaling additional globes and maps.
+		 */
+		int d_main_viewport_min_dimension;
+
+		/**
+		 * Stores render settings for VirtualGeomagneticPole features.                                                                     
+		 */
+		VGPRenderSettings d_vgp_render_settings;
 
 		void
 		connect_to_viewport_zoom();
-
-		void
-		connect_to_file_state();
-
-		void
-		connect_to_file_io();
 
 		void
 		connect_to_feature_focus();

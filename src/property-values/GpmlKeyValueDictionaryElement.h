@@ -7,7 +7,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway.
+ * Copyright (C) 2008, 2010 Geological Survey of Norway.
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,12 +29,16 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLKEYVALUEDICTIONARYELEMENT_H
 #define GPLATES_PROPERTYVALUES_GPMLKEYVALUEDICTIONARYELEMENT_H
 
+#include <iosfwd>
+
 #include "property-values/TemplateTypeParameterType.h"
 #include "property-values/XsString.h"
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
-	class GpmlKeyValueDictionaryElement{
+	class GpmlKeyValueDictionaryElement
+	{
 
 	public:
 
@@ -44,45 +49,62 @@ namespace GPlatesPropertyValues {
 				d_key(key_),
 				d_value(value_),
 				d_value_type(value_type_)
-		{ }
+		{  }
 
 		virtual
-		~GpmlKeyValueDictionaryElement() {  }
+		~GpmlKeyValueDictionaryElement()
+		{  }
 
-
+		const GpmlKeyValueDictionaryElement
+		deep_clone() const;
 
 		const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type
-		key() const {
+		key() const
+		{
 				return d_key;
 		}
 
 		const GPlatesPropertyValues::XsString::non_null_ptr_type
-		key() {
+		key()
+		{
 				return d_key;
 		}		
 
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
-		value() const {
+		value() const
+		{
 				return d_value;
 		}
 
 		const GPlatesModel::PropertyValue::non_null_ptr_type
-		value() {
+		value()
+		{
 				return d_value;
 		}
 
 		const TemplateTypeParameterType &
-		value_type() const {
+		value_type() const
+		{
 			return d_value_type;		
 		}
 
+		bool
+		operator==(
+				const GpmlKeyValueDictionaryElement &other) const;
+
 	private:
 
-		GPlatesPropertyValues::XsString::non_null_ptr_type d_key;
+		XsString::non_null_ptr_type d_key;
 		GPlatesModel::PropertyValue::non_null_ptr_type d_value;
 		TemplateTypeParameterType d_value_type;
 
 	};
+
+
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const GpmlKeyValueDictionaryElement &element);
 
 }
 

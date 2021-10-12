@@ -155,6 +155,16 @@ GPlatesGui::ChooseCanvasTool::choose_insert_vertex_tool()
 }
 
 void
+GPlatesGui::ChooseCanvasTool::choose_split_feature_tool()
+{
+	d_viewport_window->choose_split_feature_tool();
+
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::SPLIT_FEATURE;
+
+	emit chose_canvas_tool(*this, d_most_recent_tool_type);
+}
+
+void
 GPlatesGui::ChooseCanvasTool::choose_delete_vertex_tool()
 {
 	d_viewport_window->choose_delete_vertex_tool();
@@ -215,6 +225,7 @@ d_choose_canvas_tool_method(choose_canvas_tool_method),
 d_first_redo(true)
 {
 }
+
 
 void
 GPlatesGui::ChooseCanvasToolUndoCommand::redo()

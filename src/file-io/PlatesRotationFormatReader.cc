@@ -8,6 +8,8 @@
  *   $Date$
  *
  * Copyright (C) 2007 James Boyden <jboy@jboy.id.au>
+ * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2007 Geological Survey of Norway
  *
  * This file is derived from the source file "PlatesRotationFormatReader.cc",
  * which is part of the ReconTreeViewer software:
@@ -30,17 +32,23 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+
 #include "PlatesRotationFormatReader.h"
 #include "LineReader.h"
+
+#include "model/ChangesetHandle.h"
 #include "model/Model.h"
 #include "model/ModelUtils.h"
+
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/TemplateTypeParameterType.h"
+
 #include "utils/FloatingPointComparisons.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 namespace
@@ -273,6 +281,7 @@ namespace
 		{  }
 
 		boost::intrusive_ptr<GPlatesPropertyValues::GpmlIrregularSampling> d_irregular_sampling;
+		GPlatesModel::FeatureHandle::iterator d_irregular_sampling_iter;
 		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
 		GPlatesModel::integer_plate_id_type d_moving_plate_id;
 	};
@@ -293,7 +302,7 @@ namespace
 
 		// Create a new total reconstruction sequence in the feature collection.
 		FeatureType feature_type = FeatureType::create_gpml("TotalReconstructionSequence");
-		current_total_recon_seq = model->create_feature(feature_type, rotations);
+		current_total_recon_seq = GPlatesModel::FeatureHandle::create(rotations, feature_type);
 
 		GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
 				GpmlFiniteRotationSlerp::create(time_sample.value_type());
@@ -301,23 +310,34 @@ namespace
 				GpmlIrregularSampling::create(time_sample,
 						GPlatesUtils::get_intrusive_ptr(gpml_finite_rotation_slerp),
 						time_sample.value_type());
-		ModelUtils::append_property_value_to_feature(gpml_irregular_sampling,
-				GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"), 
-				current_total_recon_seq);
+
+		// We retain an iterator that points to the property in the model. This is
+		// because we cannot modify the model's copy of the property directly and we
+		// need to modify a copy of the property outside the model. The iterator then
+		// allows us to "set" the property in the feature after we're done with
+		// modifying the property.
+		// Note that the "gpml:totalReconstructionPole" property has to come first
+		// otherwise the PlatesRotationFormatWriter barfs.
+		props_in_current_trs.d_irregular_sampling_iter = current_total_recon_seq->add(
+				TopLevelPropertyInline::create(
+					PropertyName::create_gpml("totalReconstructionPole"),
+					gpml_irregular_sampling));
 		props_in_current_trs.d_irregular_sampling = gpml_irregular_sampling.get();
 
 		GpmlPlateId::non_null_ptr_type fixed_ref_frame =
 				GpmlPlateId::create(fixed_plate_id);
-		ModelUtils::append_property_value_to_feature(fixed_ref_frame,
-				GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame"), 
-				current_total_recon_seq);
+		current_total_recon_seq->add(
+				TopLevelPropertyInline::create(
+					PropertyName::create_gpml("fixedReferenceFrame"),
+					fixed_ref_frame));
 		props_in_current_trs.d_fixed_plate_id = fixed_plate_id;
 
 		GpmlPlateId::non_null_ptr_type moving_ref_frame =
 				GpmlPlateId::create(moving_plate_id);
-		ModelUtils::append_property_value_to_feature(moving_ref_frame,
-				GPlatesModel::PropertyName::create_gpml("movingReferenceFrame"), 
-				current_total_recon_seq);
+		current_total_recon_seq->add(
+				TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("movingReferenceFrame"),
+					moving_ref_frame));
 		props_in_current_trs.d_moving_plate_id = moving_plate_id;
 	}
 
@@ -531,6 +551,13 @@ namespace
 				gpml_irregular_sampling.time_samples().push_back(time_sample);
 			}
 		}
+
+		// Now that we've finished modifying the property, let's set the model's
+		// copy of the property to our modified copy.
+		*(props_in_current_trs.d_irregular_sampling_iter) =
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"),
+					props_in_current_trs.d_irregular_sampling.get());
 	}
 
 
@@ -617,6 +644,13 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	// By placing all changes to the model under the one changeset, we ensure that
+	// feature revision ids don't get changed from what was loaded from file no
+	// matter what we do to the features.
+	GPlatesModel::ChangesetHandle changeset(
+			model.access_model(),
+			"open " + fileinfo.get_qfileinfo().fileName().toStdString());
+
 	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	std::ifstream input(filename.toAscii().constData());
 	if ( ! input) {
@@ -626,7 +660,9 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 	boost::shared_ptr<DataSource> data_source(
 			new LocalFileDataSource(filename, DataFormats::PlatesRotation));
 	GPlatesModel::FeatureCollectionHandle::weak_ref rotations =
-			model->create_feature_collection();
+			GPlatesModel::FeatureCollectionHandle::create(
+					model->root(),
+					GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
 
 	// Make sure feature collection gets unloaded when it's no longer needed.
 	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref rotations_unloader =
@@ -645,3 +681,4 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 
 	return File::create_loaded_file(rotations_unloader, fileinfo);
 }
+

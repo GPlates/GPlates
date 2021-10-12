@@ -29,6 +29,7 @@
 #define GPLATES_MODEL_RECONSTRUCTIONTREE_H
 
 #include <map>  // std::multimap
+#include <vector>
 
 #include "ReconstructionGraph.h"
 #include "utils/non_null_intrusive_ptr.h"
@@ -119,7 +120,7 @@ namespace GPlatesModel
 
 		/**
 		 * Create a new ReconstructionTree instance from the ReconstructionGraph instance
-		 * @a graph, building a tree-structure which has @a root_plate_id as the root.
+		 * @a graph, building a tree-structure which has @a anchor_plate_id_ as the anchor plate.
 		 *
 		 * Note that invoking this function will cause all total reconstruction poles in
 		 * the ReconstructionGraph instance to be transferred to this instance, leaving the
@@ -129,7 +130,7 @@ namespace GPlatesModel
 		const non_null_ptr_type
 		create(
 				ReconstructionGraph &graph,
-				integer_plate_id_type root_plate_id_);
+				integer_plate_id_type anchor_plate_id_);
 
 		/**
 		 * Create a duplicate of this ReconstructionTree instance.
@@ -161,7 +162,7 @@ namespace GPlatesModel
 		 *
 		 * Since the tree is built out of the edges (total reconstruction poles),
 		 * tree-traversal begins by iterating through a collection of edges, each of which
-		 * has a fixed plate ID which is equal to the "root" plate ID of the tree.
+		 * has a fixed plate ID which is equal to the "anchor" plate ID of the tree.
 		 */
 		edge_collection_type::iterator
 		rootmost_edges_begin()
@@ -174,7 +175,7 @@ namespace GPlatesModel
 		 *
 		 * Since the tree is built out of the edges (total reconstruction poles),
 		 * tree-traversal begins by iterating through a collection of edges, each of which
-		 * has a fixed plate ID which is equal to the "root" plate ID of the tree.
+		 * has a fixed plate ID which is equal to the "anchor" plate ID of the tree.
 		 */
 		edge_collection_type::iterator
 		rootmost_edges_end()
@@ -192,7 +193,7 @@ namespace GPlatesModel
 
 		/**
 		 * Get the composed absolute rotation which describes the motion of @a
-		 * moving_plate_id relative to the root plate ID
+		 * moving_plate_id relative to the anchor plate ID
 		 *
 		 * If the motion of @a moving_plate_id is not described by this tree, the identity
 		 * rotation will be returned.
@@ -201,6 +202,35 @@ namespace GPlatesModel
 				ReconstructionCircumstance>
 		get_composed_absolute_rotation(
 				integer_plate_id_type moving_plate_id) const;
+
+		/**
+		 * Returns the plate id of the anchor plate that all rotations are calculated
+		 * relative to.
+		 */
+		integer_plate_id_type
+		get_anchor_plate_id() const
+		{
+			return d_anchor_plate_id;
+		}
+
+		/**
+		 * Return the reconstruction time of this tree.
+		 */
+		const double &
+		get_reconstruction_time() const
+		{
+			return d_graph.reconstruction_time();
+		}
+
+		/**
+		 * Access the features containing the reconstruction features used to
+		 * create this reconstruction tree.
+		 */
+		const std::vector<FeatureHandle::weak_ref> &
+		get_reconstruction_features() const
+		{
+			return d_graph.get_reconstruction_features();
+		}
 
 	private:
 
@@ -217,7 +247,7 @@ namespace GPlatesModel
 
 		edge_collection_type d_rootmost_edges;
 
-		integer_plate_id_type d_root_plate_id;
+		integer_plate_id_type d_anchor_plate_id;
 
 
 
@@ -227,10 +257,10 @@ namespace GPlatesModel
 		 */
 		explicit
 		ReconstructionTree(
-				integer_plate_id_type root_plate_id_,
+				integer_plate_id_type anchor_plate_id_,
 				const double &reconstruction_time_):
 			d_graph(reconstruction_time_),
-			d_root_plate_id(root_plate_id_)
+			d_anchor_plate_id(anchor_plate_id_)
 		{  }
 
 		/**
@@ -252,7 +282,7 @@ namespace GPlatesModel
 			d_graph(other.d_graph),
 			d_edges_by_moving_plate_id(other.d_edges_by_moving_plate_id),
 			d_rootmost_edges(other.d_rootmost_edges),
-			d_root_plate_id(other.d_root_plate_id)
+			d_anchor_plate_id(other.d_anchor_plate_id)
 		{  }
 
 		// This operator should never be defined, because we don't want/need to allow

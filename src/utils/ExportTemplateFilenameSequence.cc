@@ -34,6 +34,14 @@
 #include "utils/AnimationSequenceUtils.h"
 
 
+void
+GPlatesUtils::ExportTemplateFilename::validate_filename_template(
+		const QString &filename_template)
+{
+	ExportTemplateFilenameSequenceImpl::validate_filename_template(filename_template);
+}
+
+
 GPlatesUtils::ExportTemplateFilenameSequence::ExportTemplateFilenameSequence(
 		const QString &filename_template,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,

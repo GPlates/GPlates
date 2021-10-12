@@ -35,7 +35,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesPresentation
@@ -129,7 +129,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * To query the reconstruction.
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		/**
 		 * The stationary plate id.

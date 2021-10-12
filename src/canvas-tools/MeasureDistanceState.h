@@ -2,7 +2,7 @@
 
 /**
  * @file 
- * Contains definition of MeasureDistanceState
+ * Contains the definition of the MeasureDistanceState class.
  *
  * $Revision$
  * $Date$ 

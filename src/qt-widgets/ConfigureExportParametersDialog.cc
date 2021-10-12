@@ -23,149 +23,464 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <map>
 #include <QCheckBox>
 #include <QLabel>
 #include <QFileDialog>
 #include <QDir>
 #include <QFileInfo>
+#include <QColorGroup>
 #include "ConfigureExportParametersDialog.h"
+#include "ExportAnimationDialog.h"
 
+#include "gui/ExportResolvedTopologyAnimationStrategy.h"
+#include "gui/ExportVelocityAnimationStrategy.h"
+#include "gui/ExportReconstructedGeometryAnimationStrategy.h"
+#include "gui/ExportResolvedTopologyAnimationStrategy.h"
+#include "gui/ExportSvgAnimationStrategy.h"
+#include "gui/ExportRasterAnimationStrategy.h"
 
+#include "utils/ExportAnimationStrategyFactory.h"
+
+std::map<GPlatesQtWidgets::ConfigureExportParametersDialog::ExportItemName, QString> 
+		GPlatesQtWidgets::ConfigureExportParametersDialog::d_name_map;
+
+std::map<GPlatesQtWidgets::ConfigureExportParametersDialog::ExportItemType, QString> 
+		GPlatesQtWidgets::ConfigureExportParametersDialog::d_type_map;
+
+std::map<GPlatesQtWidgets::ConfigureExportParametersDialog::ExportItemName, QString> 
+		GPlatesQtWidgets::ConfigureExportParametersDialog::d_desc_map;
+
+bool GPlatesQtWidgets::ConfigureExportParametersDialog::dummy = 
+		GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_name_and_type_map();
 
 GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDialog(
 		GPlatesGui::ExportAnimationContext::non_null_ptr_type export_animation_context_ptr,
 		QWidget *parent_):
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_export_animation_context_ptr(export_animation_context_ptr)
+	QDialog(
+			parent_, 
+			Qt::CustomizeWindowHint | 
+			Qt::WindowTitleHint | 
+			Qt::WindowSystemMenuHint),
+	d_export_animation_context_ptr(
+			export_animation_context_ptr)
 {
 	setupUi(this);
+	initialize_export_item_map();
+	initialize_export_item_list_widget();
+	initialize_item_desc_map();
 
-	// Init widgets to match Context state.
-	lineedit_target_directory->setText(d_export_animation_context_ptr->target_dir().absolutePath());
-	lineedit_target_directory->end(false);
-	label_target_directory_error->setVisible(false);
-	// Kludgy way to do it, yes - but we need something useable for 0.9.5 NOW.
-	checkbox_export_gmt->setChecked(d_export_animation_context_ptr->gmt_exporter_enabled());
-	checkbox_export_shp->setChecked(d_export_animation_context_ptr->shp_exporter_enabled());
-	checkbox_export_svg->setChecked(d_export_animation_context_ptr->svg_exporter_enabled());
-	checkbox_export_velocity->setChecked(d_export_animation_context_ptr->velocity_exporter_enabled());
-	checkbox_export_resolved_topology->setChecked(d_export_animation_context_ptr->resolved_topology_exporter_enabled());
-
-	// Make our private signal/slot connections.
-	// Note that we do not need to listen for enable/disable change events @em from the Context,
-	// because this dialog is the sole source of those changes. Plus we are in a rush.
-	QObject::connect(button_choose_target_directory, SIGNAL(clicked()),
-			this, SLOT(react_choose_target_directory_clicked()));
-	QObject::connect(lineedit_target_directory, SIGNAL(textEdited(const QString &)),
-			this, SLOT(react_lineedit_target_directory_edited(const QString &)));
-
-	QObject::connect(checkbox_export_gmt, SIGNAL(clicked(bool)),
-			this, SLOT(react_export_gmt_checked(bool)));
-	QObject::connect(checkbox_export_shp, SIGNAL(clicked(bool)),
-			this, SLOT(react_export_shp_checked(bool)));
-	QObject::connect(checkbox_export_svg, SIGNAL(clicked(bool)),
-			this, SLOT(react_export_svg_checked(bool)));
-	QObject::connect(checkbox_export_velocity, SIGNAL(clicked(bool)),
-			this, SLOT(react_export_velocity_checked(bool)));
-	QObject::connect(checkbox_export_resolved_topology, SIGNAL(clicked(bool)),
-			this, SLOT(react_export_resolved_topology_checked(bool)));
+	button_add_item->setEnabled(false);
+	
+	QObject::connect(button_add_item, SIGNAL(clicked()),
+		this, SLOT(react_add_item_clicked()));
+	QObject::connect(listWidget_export_items, SIGNAL(itemSelectionChanged()),
+		this, SLOT(react_export_items_selection_changed()));
+	QObject::connect(listWidget_export_items, SIGNAL(itemClicked(QListWidgetItem *)),
+		this, SLOT(react_export_items_selection_changed()));
+	QObject::connect(listWidget_format, SIGNAL(itemSelectionChanged()),
+		this, SLOT(react_format_selection_changed()));
+	QObject::connect(lineEdit_filename, SIGNAL(cursorPositionChanged(int, int)),
+		this, SLOT(react_filename_template_changing()));
+	QObject::connect(lineEdit_filename, SIGNAL(editingFinished()),
+		this, SLOT(react_filename_template_changed()));
 }
 
+bool 
+GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_name_and_type_map()
+{
+	d_name_map[RECONSTRUCTED_GEOMETRIES]=QObject::tr("Reconstructed Geometries");
+	d_name_map[PROJECTED_GEOMETRIES]    =QObject::tr("Projected Geometries");
+	d_name_map[MESH_VILOCITIES]         =QObject::tr("Colat/lon Mesh Velocities");
+	d_name_map[RESOLVED_TOPOLOGIES]     =QObject::tr("Resolved Topologies");
+	d_name_map[RELATIVE_ROTATION]       =QObject::tr("Relative Rotation");
+	d_name_map[EQUIVALENT_ROTATION]     =QObject::tr("Equivalent Rotation");
+	d_name_map[RASTER]				    =QObject::tr("Raster");
+
+	d_type_map[GMT]             =QObject::tr("GMT (*.xy)");
+	d_type_map[GPML]			=QObject::tr("GPML (*.gpml)");
+	d_type_map[SHAPEFILE]		=QObject::tr("Shapefiles (*.shp)");
+	d_type_map[SVG]             =QObject::tr("SVG (*.svg)");
+	d_type_map[CSV_COMMA]       =QObject::tr("CSV file (comma delimited) (*.csv)");
+	d_type_map[CSV_SEMICOLON]   =QObject::tr("CSV file (semicolon delimited) (*.csv)");
+	d_type_map[CSV_TAB]         =QObject::tr("CSV file (tab delimited) (*.csv)");
+	d_type_map[BMP]				=QObject::tr("Windows Bitmap (*.bmp)");
+	d_type_map[JPG]				=QObject::tr("Joint Photographic Experts Group (*.jpg)");
+	d_type_map[JPEG]			=QObject::tr("Joint Photographic Experts Group (*.jpeg)");
+	d_type_map[PNG]				=QObject::tr("Portable Network Graphics (*.png)");
+	d_type_map[PPM]				=QObject::tr("Portable Pixmap (*.ppm)");
+	d_type_map[TIFF]			=QObject::tr("Tagged Image File Format (*.tiff)");
+	d_type_map[XBM]				=QObject::tr("X11 Bitmap (*.xbm)");
+	d_type_map[XPM]				=QObject::tr("X11 Pixmap (*.xpm)");
+
+	return true;
+}
+
+void 
+GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_item_desc_map()
+{
+	d_desc_map[RECONSTRUCTED_GEOMETRIES] = 
+		GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_DESC;
+	d_desc_map[PROJECTED_GEOMETRIES]     =
+		GPlatesGui::ExportSvgAnimationStrategy::PROJECTED_GEOMETRIES_DESC;
+	d_desc_map[MESH_VILOCITIES]          =
+		GPlatesGui::ExportVelocityAnimationStrategy::MESH_VILOCITIES_DESC;
+	d_desc_map[RESOLVED_TOPOLOGIES]      = 
+		GPlatesGui::ExportResolvedTopologyAnimationStrategy::RESOLOVED_TOPOLOGIES_DESC;
+	d_desc_map[RELATIVE_ROTATION]        = 
+		GPlatesGui::ExportRotationAnimationStrategy::RELATIVE_ROTATION_DESC;
+	d_desc_map[EQUIVALENT_ROTATION]      = 
+		GPlatesGui::ExportRotationAnimationStrategy::EQUIVALENT_ROTATION_DESC;
+}
 
 void
-GPlatesQtWidgets::ConfigureExportParametersDialog::react_choose_target_directory_clicked()
+GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_item_list_widget()
 {
-	// Open dirname chooser, set target directory from that.
-	QString new_target = QFileDialog::getExistingDirectory(this, tr("Choose Target Directory"),
-			d_export_animation_context_ptr->target_dir().absolutePath(),
-			QFileDialog::ShowDirsOnly);
-	if (new_target.isEmpty()) {
-		// On "Cancel", the dialog returns the empty string. No change.
+	listWidget_export_items->clear();
+	listWidget_format->clear();
+	export_item_map_type::const_iterator it;
+	for (it=d_export_item_map.begin(); it != d_export_item_map.end(); it++ )
+	{
+		if(all_types_has_been_added((*it).second))
+		{
+			//if all types has been added to export items table,
+			//we don't add this item to export_item_list
+			continue;
+		}
+		QListWidgetItem *item = new ExportItem((*it).first);
+		listWidget_export_items->addItem(item);
+		item->setText(d_name_map[(*it).first]);
+	}
+}
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_item_map()
+{
+	d_export_item_map.clear();
+	export_item_info item_info;
+
+//RECONSTRUCTED_GEOMETRY_GMT
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RECONSTRUCTED_GEOMETRIES_GMT;
+	d_export_item_map[RECONSTRUCTED_GEOMETRIES][GMT]=item_info;
+
+//RECONSTRUCTED_GEOMETRY_SHAPEFILE
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RECONSTRUCTED_GEOMETRIES_SHAPEFILE;
+	d_export_item_map[RECONSTRUCTED_GEOMETRIES][SHAPEFILE]=item_info;
+
+//PROJECTED_GEOMETRIES_SVG
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::PROJECTED_GEOMETRIES_SVG;
+	d_export_item_map[PROJECTED_GEOMETRIES][SVG]=item_info;
+
+//MESH_VILOCITIES_GPML
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::MESH_VILOCITIES_GPML;
+	d_export_item_map[MESH_VILOCITIES][GPML]=item_info;
+
+//RESOLVED_TOPOLOGIES_GMT
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RESOLVED_TOPOLOGIES_GMT;
+	d_export_item_map[RESOLVED_TOPOLOGIES][GMT]=item_info;
+
+//RELATIVE_ROTATION_CSV_COMMA
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RELATIVE_ROTATION_CSV_COMMA;
+	d_export_item_map[RELATIVE_ROTATION][CSV_COMMA]=item_info;
+
+//RELATIVE_ROTATION_CSV_SEMICOLON
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RELATIVE_ROTATION_CSV_SEMICOLON;
+	d_export_item_map[RELATIVE_ROTATION][CSV_SEMICOLON]=item_info;
+
+//RELATIVE_ROTATION_CSV_TAB
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RELATIVE_ROTATION_CSV_TAB;
+	d_export_item_map[RELATIVE_ROTATION][CSV_TAB]=item_info;
+
+//EQUIVALENT_ROTATION_CSV_COMMA
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::EQUIVALENT_ROTATION_CSV_COMMA;
+	d_export_item_map[EQUIVALENT_ROTATION][CSV_COMMA]=item_info;
+
+//EQUIVALENT_ROTATION_CSV_SEMICOLON
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::EQUIVALENT_ROTATION_CSV_SEMICOLON;
+	d_export_item_map[EQUIVALENT_ROTATION][CSV_SEMICOLON]=item_info;
+
+//EQUIVALENT_ROTATION_CSV_TAB
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::EQUIVALENT_ROTATION_CSV_TAB;
+	d_export_item_map[EQUIVALENT_ROTATION][CSV_TAB]=item_info;
+
+//RASTER_BMP
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RASTER_BMP;
+	d_export_item_map[RASTER][BMP]=item_info;
+
+//RASTER_JPG
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RASTER_JPG;
+	d_export_item_map[RASTER][JPG]=item_info;
+
+//RASTER_JPEG
+	item_info.has_been_added = false;
+		item_info.class_id=GPlatesUtils::RASTER_JPEG;
+	d_export_item_map[RASTER][JPEG]=item_info;
+
+//RASTER_PNG
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RASTER_PNG;
+	d_export_item_map[RASTER][PNG]=item_info;
+
+//RASTER_PPM
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RASTER_PPM;
+	d_export_item_map[RASTER][PPM]=item_info;
+
+//RASTER_TIFF
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RASTER_TIFF;
+	d_export_item_map[RASTER][TIFF]=item_info;
+
+//RASTER_XBM
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RASTER_XBM;
+	d_export_item_map[RASTER][XBM]=item_info;
+
+//RASTER_XPM
+	item_info.has_been_added = false;
+	item_info.class_id=GPlatesUtils::RASTER_XPM;
+	d_export_item_map[RASTER][XPM]=item_info;
+}
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::react_format_selection_changed()
+{
+
+	if(!listWidget_export_items->currentItem() || !listWidget_format->currentItem())
+		return;
+	ExportItemName selected_item = get_export_item_name(listWidget_export_items->currentItem());
+	ExportItemType selected_type = get_export_item_type(listWidget_format->currentItem());
+	
+	if(selected_type==INVALID_TYPE||selected_item==INVALID_NAME)
+	{	
+		qWarning()<<"invalid export type or item!";
 		return;
 	}
+	//initialize_export_item_map();
+	if((d_export_item_map[selected_item]).find(selected_type)==
+		(d_export_item_map[selected_item]).end())
+	{
+		qWarning()<<"format widget already invalid!";
+		listWidget_format->clear();
+		return;		
+	}
 
-	// See if this directory passes the validity tests and update Context if so.
-	update_target_directory(new_target);
-
-	// Update our line edit. Happily, this does not trigger
-	// react_lineedit_target_directory_edited(), as that only listens for user edits.
-	// We only muck with the line edit here, so as not to interfere with the
-	// user's typing if they are editing things directly.
-	QDir new_target_dir(new_target);
-	lineedit_target_directory->setText(new_target);
-	lineedit_target_directory->end(false);
-}
-
-
-void
-GPlatesQtWidgets::ConfigureExportParametersDialog::react_lineedit_target_directory_edited(
-		const QString &text)
-{
-	QString new_target = lineedit_target_directory->text();
-	update_target_directory(new_target);
-}
-
-
-void
-GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_gmt_checked(
-		bool enable)
-{
-	d_export_animation_context_ptr->set_gmt_exporter_enabled(enable);
-}
-
-void
-GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_shp_checked(
-		bool enable)
-{
-	d_export_animation_context_ptr->set_shp_exporter_enabled(enable);
-}
-
-void
-GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_svg_checked(
-		bool enable)
-{
-	d_export_animation_context_ptr->set_svg_exporter_enabled(enable);
-}
-
-void
-GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_velocity_checked(
-		bool enable)
-{
-	d_export_animation_context_ptr->set_velocity_exporter_enabled(enable);
-}
-
-void
-GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_resolved_topology_checked(
-		bool enable)
-{
-	d_export_animation_context_ptr->set_resolved_topology_exporter_enabled(enable);
-}
-
-
-void
-GPlatesQtWidgets::ConfigureExportParametersDialog::update_target_directory(
-		const QString &new_target)
-{
-	// Check properties of supplied pathname.
-	QDir new_target_dir(new_target);
-	QFileInfo new_target_fileinfo(new_target);
+	QString filename_template = 
+		GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
+				d_export_item_map[selected_item][selected_type].class_id,
+				*d_export_animation_context_ptr)->get_default_filename_template();
 	
-	// Update the Context if all ok. Show an error label if not.
-	if ( ! new_target_fileinfo.exists()) {
-		label_target_directory_error->setVisible(true);
-		label_target_directory_error->setText(tr("Target directory does not exist."));
-	} else if ( ! new_target_fileinfo.isDir()) {
-		label_target_directory_error->setVisible(true);
-		label_target_directory_error->setText(tr("Target is not a directory."));
-	} else if ( ! new_target_fileinfo.isWritable()) {
-		label_target_directory_error->setVisible(true);
-		label_target_directory_error->setText(tr("Target directory is not writable."));
-	} else {
-		// Great! No major screwups.
-		label_target_directory_error->setVisible(false);
-		// We can update the Context with the new target.
-		d_export_animation_context_ptr->set_target_dir(new_target_dir);
+	button_add_item->setEnabled(true);
+
+	lineEdit_filename->setText(
+			filename_template.toStdString().substr(
+					0, filename_template.toStdString().find_last_of(".")).c_str());
+	
+	label_file_extension->setText(
+			filename_template.toStdString().substr(
+					filename_template.toStdString().find_last_of(".")).c_str());
+
+	label_filename_desc->setText(
+		GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
+		d_export_item_map[selected_item][selected_type].class_id,
+		*d_export_animation_context_ptr)->get_filename_template_desc());
+	QPalette pal=label_filename_desc->palette();
+	pal.setColor(QPalette::WindowText, QColor("black")); 
+	label_filename_desc->setPalette(pal);
+	
+}
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_items_selection_changed()
+{
+	if(!listWidget_export_items->currentItem())
+		return;
+	button_add_item->setEnabled(false);
+	lineEdit_filename->clear();
+	label_file_extension->clear();
+	listWidget_format->clear();
+	
+	ExportItemName selected_item = get_export_item_name(
+			listWidget_export_items->currentItem());
+		
+	export_type_map_type::const_iterator type_it;	
+	export_item_map_type::const_iterator item_it;
+
+
+	//iterate through the map to add available export items.
+	if((item_it=d_export_item_map.find(selected_item)) == d_export_item_map.end())
+	{
+		return;
+	}
+	else
+	{
+		type_it=(*item_it).second.begin();
+		for (; type_it != (*item_it).second.end(); type_it++ )
+		{
+			if((*type_it).second.has_been_added)
+				continue;
+			else
+			{
+				QListWidgetItem *item = new ExportTypeItem((*type_it).first);
+				listWidget_format->addItem(item);
+				item->setText(d_type_map[(*type_it).first]);
+			}
+		}
+		label_export_description->setText(
+				d_desc_map[selected_item]);
 	}
 }
+
+bool
+GPlatesQtWidgets::ConfigureExportParametersDialog::all_types_has_been_added(
+		export_type_map_type type_map)
+{
+	export_type_map_type::iterator type_it;	
+	bool flag=false;
+
+	for (type_it=type_map.begin(); type_it != type_map.end(); type_it++ )
+	{
+		if(!(*type_it).second.has_been_added)
+		{
+			flag=false;
+			break;
+		}
+		else
+		{
+			flag=true;
+			continue;
+		}
+	}
+
+	return flag;
+}
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
+{
+	if(!listWidget_export_items->currentItem() || !listWidget_format->currentItem())
+		return;
+
+	ExportItemName selected_item = get_export_item_name(
+			listWidget_export_items->currentItem());
+	ExportItemType selected_type = get_export_item_type(
+			listWidget_format->currentItem());
+	
+	QString filename_template = lineEdit_filename->text()+label_file_extension->text();		
+	
+	d_export_item_map[selected_item][selected_type].has_been_added=true;
+
+	delete listWidget_format->takeItem(listWidget_format->currentRow());
+	
+	if(listWidget_format->count()==0)
+	{
+		delete listWidget_export_items->takeItem(listWidget_export_items->currentRow());
+	}
+
+	d_export_animation_context_ptr->get_export_dialog()->insert_item(
+			selected_item,
+			selected_type,
+			filename_template);
+}
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::init(
+		ExportAnimationDialog* dialog, 
+		QTableWidget* table)
+{
+	d_export_item_map.clear();
+	
+	initialize_export_item_map();
+	for(int i=0; i<table->rowCount();i++)
+	{
+		d_export_item_map
+			[dialog->get_export_item_name(table->item(i,0))]
+			[dialog->get_export_item_type(table->item(i,1))]
+			.has_been_added=true;
+	}
+	initialize_export_item_list_widget();
+	lineEdit_filename->clear();
+	label_file_extension->clear();
+	label_export_description->clear();
+}
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_changed()
+{
+	ExportItemName selected_item = get_export_item_name(
+			listWidget_export_items->currentItem());
+	ExportItemType selected_type = get_export_item_type(
+			listWidget_format->currentItem());
+
+	if(selected_type==INVALID_TYPE || selected_item==INVALID_NAME)
+		return;
+
+	QString filename_template = lineEdit_filename->text()+label_file_extension->text();
+	
+	boost::shared_ptr<GPlatesUtils::ExportFileNameTemplateValidator> validator=
+		GPlatesUtils::ExportFileNameTemplateValidatorFactory::create_validator(
+				d_export_item_map[selected_item][selected_type].class_id);
+	if(validator->is_valid(filename_template))	
+	{
+		d_filename_template=filename_template;
+		button_add_item->setEnabled(true);
+	}
+	else
+	{
+		label_filename_desc->setText(
+				validator->get_result_report().message());
+		QPalette pal=label_filename_desc->palette();
+		pal.setColor(QPalette::WindowText, QColor("red")); 
+		label_filename_desc->setPalette(pal);
+		//lineEdit_filename->selectAll();
+		button_add_item->setEnabled(false);
+	}
+}
+
+void
+GPlatesQtWidgets::ConfigureExportParametersDialog::react_filename_template_changing()
+{
+	if(!listWidget_export_items->currentItem() || !listWidget_format->currentItem())
+		return;
+	ExportItemName selected_item = get_export_item_name(
+			listWidget_export_items->currentItem());
+	ExportItemType selected_type = get_export_item_type(
+			listWidget_format->currentItem());
+
+	if(selected_type==INVALID_TYPE || selected_item==INVALID_NAME)
+		return;
+	
+	if((d_export_item_map[selected_item]).find(selected_type)==
+		(d_export_item_map[selected_item]).end())
+	{
+		qWarning()<<"invalid selected items!";
+		return;		
+	}
+
+	label_filename_desc->setText(
+			GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
+					d_export_item_map[selected_item][selected_type].class_id,
+					*d_export_animation_context_ptr)->get_filename_template_desc());
+	QPalette pal=label_filename_desc->palette();
+	pal.setColor(QPalette::WindowText, QColor("black")); 
+	label_filename_desc->setPalette(pal);
+	button_add_item->setEnabled(true);
+}
+
+
+
 
 

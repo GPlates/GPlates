@@ -16,9 +16,6 @@ if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
     include (Policies_26)
 endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
 
-# Include compiler options for the C++ programming language.
-include (CompileOptionsCPlusPlus)
-
 #
 # Recurse into source code directory.
 #

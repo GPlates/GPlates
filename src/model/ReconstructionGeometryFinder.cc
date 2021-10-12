@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -40,11 +40,8 @@ namespace
 			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
 			const GPlatesModel::PropertyName &property_name_to_match)
 	{
-		if ( ! rfg.property().is_valid()) {
-			// Nothing we can do here.
-			return false;
-		}
-		return ((*rfg.property())->property_name() == property_name_to_match);
+		return rfg.property().is_still_valid() &&
+			((*rfg.property())->property_name() == property_name_to_match);
 	}
 
 
@@ -54,11 +51,8 @@ namespace
 			const GPlatesModel::ResolvedTopologicalBoundary &rtb,
 			const GPlatesModel::PropertyName &property_name_to_match)
 	{
-		if ( ! rtb.property().is_valid()) {
-			// Nothing we can do here.
-			return false;
-		}
-		return ((*rtb.property())->property_name() == property_name_to_match);
+		return rtb.property().is_still_valid() &&
+			((*rtb.property())->property_name() == property_name_to_match);
 	}
 
 
@@ -68,11 +62,8 @@ namespace
 			const GPlatesModel::ResolvedTopologicalNetwork &rtn,
 			const GPlatesModel::PropertyName &property_name_to_match)
 	{
-		if ( ! rtn.property().is_valid()) {
-			// Nothing we can do here.
-			return false;
-		}
-		return ((*rtn.property())->property_name() == property_name_to_match);
+		return rtn.property().is_still_valid() &&
+			((*rtn.property())->property_name() == property_name_to_match);
 	}
 
 

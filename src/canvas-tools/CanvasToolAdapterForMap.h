@@ -37,6 +37,11 @@
 #include "CanvasTool.h"
 #include "gui/MapCanvasTool.h"
 
+namespace GPlatesGui
+{
+	class MapTransform;
+}
+
 namespace GPlatesQtWidgets
 {
 	class MapCanvas;
@@ -76,7 +81,8 @@ namespace GPlatesCanvasTools
 				CanvasTool *canvas_tool_ptr,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				const GPlatesQtWidgets::ViewportWindow &view_state);
+				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesGui::MapTransform &map_transform_);
 		
 		virtual
 		void
@@ -196,7 +202,8 @@ namespace GPlatesCanvasTools
 				CanvasTool *canvas_tool_ptr,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_);
+				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesGui::MapTransform &map_transform_);
 		
 	private:
 

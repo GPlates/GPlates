@@ -29,8 +29,9 @@
 #include <QWidget>
 #include <QLabel>
 
+#include "PropertyValueNotSupportedException.h"
+
 #include "model/PropertyValue.h"
-#include "qt-widgets/PropertyValueNotSupportedException.h"
 
 
 namespace GPlatesQtWidgets

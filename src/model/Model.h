@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,19 +26,17 @@
 #ifndef GPLATES_MODEL_MODEL_H
 #define GPLATES_MODEL_MODEL_H
 
-#include <boost/intrusive_ptr.hpp>
-#ifdef HAVE_PYTHON
-# include <boost/python.hpp>
-#endif
+#include "WeakReference.h"
 
-#include <vector>
-#include "FeatureStore.h"
-#include "Reconstruction.h"
-#include "types.h"
+#include "global/PointerTraits.h"
 
 
 namespace GPlatesModel
 {
+	class ChangesetHandle;
+	class FeatureStoreRootHandle;
+	class NotificationGuard;
+
 	/**
 	 * The interface to the Model tier of GPlates.
 	 *
@@ -60,130 +58,123 @@ namespace GPlatesModel
 	 */
 	class Model
 	{
+
 	public:
+
 		/**
 		 * Create a new instance of the Model, which contains an empty feature store.
 		 */
 		Model();
 
+		/**
+		 * Destructor.
+		 */
+		~Model();
 
 		/**
-		 * Create a new, empty feature collection in the feature store.
-		 *
-		 * A valid weak reference to the new feature collection will be returned.
+		 * Returns a (non-const) weak-ref to the model's feature store root.
 		 */
-		const FeatureCollectionHandle::weak_ref
-		create_feature_collection();
-
+		const WeakReference<FeatureStoreRootHandle>
+		root();
 
 		/**
-		 * Create a new feature of feature-type @a feature_type within the feature
-		 * collection referenced by @a target_collection.
-		 *
-		 * The feature ID of this feature will be auto-generated.
-		 *
-		 * A valid weak reference to the new feature will be returned.  As a result of this
-		 * function, the feature collection referenced by @a target_collection will be
-		 * modified.
-		 *
-		 * If the feature collection referenced by @a target_collection was already
-		 * deactivated, or the reference @a target collection was already not valid, before
-		 * @a target_collection was passed as a parameter, this function will throw an
-		 * exception.
+		 * Returns a const weak-ref to the model's feature store root.
 		 */
-		const FeatureHandle::weak_ref
-		create_feature(
-				const FeatureType &feature_type,
-				const FeatureCollectionHandle::weak_ref &target_collection);
-
+		const WeakReference<const FeatureStoreRootHandle>
+		root() const;
 
 		/**
-		 * Create a new feature of feature-type @a feature_type, with feature ID
-		 * @a feature_id, within @a target_collection.
-		 *
-		 * A valid weak reference to the new feature will be returned.  As a result of this
-		 * function, the feature collection referenced by @a target_collection will be
-		 * modified.
-		 *
-		 * If the feature collection referenced by @a target_collection was already
-		 * deactivated, or the reference @a target collection was already not valid, before
-		 * @a target_collection was passed as a parameter, this function will throw an
-		 * exception.
+		 * Returns true if there are any NotificationGuard instances currently
+		 * attached to the model.
 		 */
-		const FeatureHandle::weak_ref
-		create_feature(
-				const FeatureType &feature_type,
-				const FeatureId &feature_id,
-				const FeatureCollectionHandle::weak_ref &target_collection);
-
+		bool
+		has_notification_guard() const;
 
 		/**
-		 * Create a new feature of feature-type @a feature_type, with feature ID
-		 * @a feature_id and revision ID @ revision_id, within @a target_collection.
-		 *
-		 * A valid weak reference to the new feature will be returned.  As a result of this
-		 * function, the feature collection referenced by @a target_collection will be
-		 * modified.
-		 *
-		 * If the feature collection referenced by @a target_collection was already
-		 * deactivated, or the reference @a target collection was already not valid, before
-		 * @a target_collection was passed as a parameter, this function will throw an
-		 * exception.
+		 * Returns the current ChangesetHandle registered with this model, or NULL if
+		 * there is no current ChangesetHandle.
 		 */
-		const FeatureHandle::weak_ref
-		create_feature(
-				const FeatureType &feature_type,
-				const FeatureId &feature_id,
-				const RevisionId &revision_id,
-				const FeatureCollectionHandle::weak_ref &target_collection);
-
-
-#if 0
-		/**
-		 * Remove @a collection from the feature store.
-		 *
-		 * As a result of this operation, the feature collection referenced by
-		 * @a collection will become deactivated.
-		 *
-		 * If the feature collection referenced by @a collection was already deactivated,
-		 * or the reference @a collection was already not valid, before @a collection was
-		 * passed as a parameter, this function will throw an exception.
-		 */
-		void
-		remove_feature_collection(
-				const FeatureCollectionHandle::weak_ref &collection);
-
+		ChangesetHandle *
+		current_changeset_handle();
 
 		/**
-		 * Remove @a feature from @a containing_collection.
-		 *
-		 * If @a feature is not actually an element of @a containing_collection, this
-		 * operation will be a no-op.
-		 *
-		 * If @a feature @em is an element of @a containing_collection, @a feature will
-		 * become deactivated, and @a containing_collection will be modified.
-		 *
-		 * If the feature referenced by @a feature was already deactivated, or the
-		 * reference @a feature was already not valid, before @a feature was passed as a
-		 * parameter, this function will throw an exception.
-		 *
-		 * If the feature collection referenced by @a containing_collection was already
-		 * deactivated, or the reference @a containing collection was already not valid,
-		 * before @a containing_collection was passed as a parameter, this function will
-		 * throw an exception.
+		 * Returns the current ChangesetHandle registered with this model, or NULL if
+		 * there is no current ChangesetHandle.
 		 */
-		void
-		remove_feature(
-				const FeatureHandle::weak_ref &feature,
-				const FeatureCollectionHandle::weak_ref &containing_collection);
-#endif
+		const ChangesetHandle *
+		current_changeset_handle() const;
 
 	private:
-		FeatureStore::non_null_ptr_type d_feature_store;
+
+		/**
+		 * Increments the count of NotificationGuard instances attached to the model.
+		 */
+		void
+		increment_notification_guard_count();
+
+		/**
+		 * Decrements the count of NotificationGuard instances attached to the model.
+		 */
+		void
+		decrement_notification_guard_count();
+
+		/**
+		 * Registers the ChangesetHandle with this model. If there is already a
+		 * ChangesetHandle registered with this model, this call has no effect.
+		 */
+		void
+		register_changeset_handle(
+				ChangesetHandle *changeset_handle);
+
+		/**
+		 * Unregisters the ChangesetHandle with this model. This call has no effect
+		 * unless the provided ChangesetHandle is the current ChangesetHandle.
+		 */
+		void
+		unregister_changeset_handle(
+				ChangesetHandle *changeset_handle);
+
+		/**
+		 * A persistent handle to the root of the feature store, which contains all
+		 * loaded feature collections and their features.
+		 */
+		GPlatesGlobal::PointerTraits<FeatureStoreRootHandle>::non_null_ptr_type d_root;
+
+		/**
+		 * The current ChangesetHandle registered with this model. If more than one
+		 * ChangesetHandle tries to register with this model, only the first one is
+		 * considered the current ChangesetHandle.
+		 *
+		 * If there is no current ChangesetHandle, this is a pointer to NULL.
+		 */
+		ChangesetHandle *d_current_changeset_handle;
+
+		/**
+		 * A count of the number of NotificationGuard instances attached to this
+		 * model.
+		 *
+		 * If this number is greater than zero, notifications (or events) will not be
+		 * sent by Handles in this model when they are modified, deactivated
+		 * (conceptually deleted) or reactivated (conceptually undeleted); instead,
+		 * these events are queued up, and will be sent when this number returns to
+		 * zero.
+		 *
+		 * Notifications about a Handle's impending deallocation in the C++ sense are
+		 * always immediately sent, regardless of this number.
+		 *
+		 * Note that if there are multiple notifications from a Handle, all
+		 * notifications of the same type are merged into one notification. If, for
+		 * instance, a NotificationGuard was active when feature F in feature
+		 * collection FC was modified and feature G was added to FC, only one
+		 * modification notification will be sent by FC to its listeners.
+		 */
+		unsigned int d_notification_guard_count;
+
+		friend class ChangesetHandle;
+		friend class NotificationGuard;
+
 	};
 
-
-	void export_Model();
 }
 
 #endif  // GPLATES_MODEL_MODEL_H

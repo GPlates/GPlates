@@ -27,6 +27,7 @@
 
 #include "HTMLColourNames.h"
 
+
 GPlatesGui::HTMLColourNames::HTMLColourNames()
 {
 	insert_colour("aliceblue", 240, 248, 255);
@@ -169,3 +170,4 @@ GPlatesGui::HTMLColourNames::HTMLColourNames()
 	insert_colour("yellow", 255, 255, 0);
 	insert_colour("yellowgreen", 154, 205, 50);
 }
+

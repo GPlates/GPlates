@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -93,7 +93,10 @@ const GPlatesModel::XmlTextNode::non_null_ptr_type
 GPlatesModel::XmlTextNode::create(
 		QXmlStreamReader &reader)
 {
-	QString text = reader.text().toString().trimmed();
+	// We don't trim here because a string that contains an ampersand is broken up
+	// into two nodes for some reason, and if we trim here, the spacing around the
+	// ampersand will not be read in correctly.
+	QString text = reader.text().toString();
 	return non_null_ptr_type(
 			new XmlTextNode(reader.lineNumber(), reader.columnNumber(), text),
 			GPlatesUtils::NullIntrusivePointerHandler());
@@ -367,3 +370,15 @@ GPlatesModel::XmlElementNode::accept_visitor(
 	visitor.visit_element_node(non_null_ptr_type(this,
 			GPlatesUtils::NullIntrusivePointerHandler()));
 }
+
+
+bool
+GPlatesModel::XmlElementNode::operator==(
+		const XmlElementNode &other) const
+{
+	return d_name == other.d_name &&
+		d_attributes == other.d_attributes &&
+		d_children == other.d_children &&
+		d_alias_map == other.d_alias_map;
+}
+

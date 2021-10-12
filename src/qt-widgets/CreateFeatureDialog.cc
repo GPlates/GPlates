@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,6 +26,7 @@
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 #include <map>
+#include <QSet>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QListWidget>
@@ -43,10 +44,10 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/Reconstruct.h"
+#include "app-logic/GeometryUtils.h"
+#include "app-logic/ReconstructUtils.h"
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-#include "gui/GeometricPropertyValueConstructor.h"
 #include "model/types.h"
 #include "model/Model.h"
 #include "model/PropertyName.h"
@@ -54,8 +55,8 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
-#include "utils/UnicodeStringUtils.h"
 #include "presentation/ViewState.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -570,6 +571,46 @@ namespace
 		}
 		return type_item->get_type();
 	}
+
+
+	/**
+	 * Constructs the set used in @a should_offer_conjugate_plate_id_prop().
+	 * Quick and dirty. Replace with proper GPGIM-querying thing.
+	 */
+	const QSet<QString> &
+	build_feature_conjugate_plate_prop_set()
+	{
+		static QSet<QString> set;
+		set << "gpml:Isochron" << "gpml:MidOceanRidge" << "gpml:ContinentalRift" << 
+				"gpml:SubductionZone" << "gpml:OrogenicBelt" << "gpml:Transform" <<
+				"gpml:FractureZone" << "gpml:PassiveContinentalBoundary";
+		return set;
+	}
+
+	/**
+	 * Quick and dirty way to ascertain whether we should present the user
+	 * with a conjugatePlateId property value edit widget. This is based on
+	 * FeatureType. Ideally, we'd be querying an internal GPGIM structure
+	 * for all of these things.
+	 */
+	bool
+	should_offer_conjugate_plate_id_prop(
+			const QListWidget *listwidget_feature_types)
+	{
+		// Build set of feature types that allow conjugate plate id.
+		static const QSet<QString> &conjugate_feature_set =
+				build_feature_conjugate_plate_prop_set();
+		
+		// Get currently selected feature type
+		boost::optional<const GPlatesModel::FeatureType> feature_type_opt =
+				currently_selected_feature_type(listwidget_feature_types);
+		if (feature_type_opt) {
+			QString t = GPlatesUtils::make_qstring_from_icu_string(feature_type_opt->build_aliased_name());
+			return conjugate_feature_set.contains(t);
+		} else {
+			return false;
+		}
+	}
 }
 
 
@@ -583,11 +624,12 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_model_ptr(view_state_.get_application_state().get_model_interface()),
 	d_file_state(view_state_.get_application_state().get_feature_collection_file_state()),
 	d_file_io(view_state_.get_application_state().get_feature_collection_file_io()),
-	d_reconstruct_ptr(&view_state_.get_reconstruct()),
+	d_application_state_ptr(&view_state_.get_application_state()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_creation_type(creation_type),
 	d_geometry_opt_ptr(boost::none),
 	d_plate_id_widget(new EditPlateIdWidget(this)),
+	d_conjugate_plate_id_widget(new EditPlateIdWidget(this)),
 	d_time_period_widget(new EditTimePeriodWidget(this)),
 	d_name_widget(new EditStringWidget(this))
 {
@@ -660,16 +702,27 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties_page()
 	
 	// Reconfigure some accelerator keys that conflict.
 	d_plate_id_widget->label()->setText(tr("Plate &ID:"));
+	d_conjugate_plate_id_widget->label()->setText(tr("C&onjugate ID:"));
+	// Conjugate Plate IDs are optional.
+	d_conjugate_plate_id_widget->set_null_value_permitted(true);
+	d_conjugate_plate_id_widget->reset_widget_to_default_values();
 	// And set the EditStringWidget's label to something suitable for a gml:name property.
 	d_name_widget->label()->setText(tr("&Name:"));
 	d_name_widget->label()->setHidden(false);
 	
 	// Create the edit widgets we'll need, and add them to the Designer-created widgets.
+	QHBoxLayout *plate_id_layout;
+	plate_id_layout = new QHBoxLayout;
+	plate_id_layout->setSpacing(2);
+	plate_id_layout->setMargin(0);
+	plate_id_layout->addWidget(d_plate_id_widget);
+	plate_id_layout->addWidget(d_conjugate_plate_id_widget);
+
 	QVBoxLayout *edit_layout;
 	edit_layout = new QVBoxLayout;
 	edit_layout->setSpacing(0);
 	edit_layout->setMargin(4);
-	edit_layout->addWidget(d_plate_id_widget);
+	edit_layout->addItem(plate_id_layout);
 	edit_layout->addWidget(d_time_period_widget);
 	edit_layout->addWidget(d_name_widget);
 	groupbox_properties->setLayout(edit_layout);
@@ -795,6 +848,8 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 			listwidget_geometry_destinations->setFocus();
 			d_button_create->setEnabled(false);
 			button_create_and_save->setEnabled(false);
+			d_conjugate_plate_id_widget->setVisible(should_offer_conjugate_plate_id_prop(
+					listwidget_feature_types));
 			break;
 
 	case 2:
@@ -836,20 +891,22 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		reject();
 		return;
 	}
-	
-	// Invoke GeometricPropertyValueConstructor.
-	// This will Un-Reconstruct the temporary geometry so that it's coordinates are
+
+	// Un-Reconstruct the temporary geometry so that it's coordinates are
 	// expressed in terms of present day location, given the plate ID that is associated
 	// with it and the current reconstruction time.
-	GPlatesModel::ReconstructionTree &recon_tree = 
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree();
-	GPlatesModel::integer_plate_id_type int_plate_id = 
-			d_plate_id_widget->create_integer_plate_id_from_widget();	
-	// It will also wrap the present-day GeometryOnSphere in a suitable PropertyValue,
-	// possibly including a GpmlConstantValue wrapper.
-	GPlatesGui::GeometricPropertyValueConstructor geometry_constructor;
-	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_value_opt =
-			geometry_constructor.convert(*d_geometry_opt_ptr, recon_tree, int_plate_id,
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
+			GPlatesAppLogic::ReconstructUtils::reconstruct(
+					d_geometry_opt_ptr.get(),
+					d_plate_id_widget->create_integer_plate_id_from_widget(),
+					d_application_state_ptr->get_current_reconstruction().reconstruction_tree(),
+					true /*reverse_reconstruct*/);
+
+	// Create a property value using the present-day GeometryOnSphere and optionally
+	// wrap with a GpmlConstantValue wrapper.
+	const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_value_opt =
+			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
+					present_day_geometry,
 					geom_prop_needs_constant_value);
 	
 	if ( ! geometry_value_opt) {
@@ -891,37 +948,45 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	collection = collection_item->get_file_iterator()->get_feature_collection();
 
 	// Actually create the Feature!
-	GPlatesModel::FeatureHandle::weak_ref feature = d_model_ptr->create_feature(type, collection);
-	
+	GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(collection, type);
 
 	// Add a (possibly ConstantValue-wrapped, see GeometricPropertyValueConstructor)
 	// Geometry Property using present-day geometry.
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			*geometry_value_opt,
-			geom_prop_name,
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				geom_prop_name,
+				*geometry_value_opt));
 
 	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
 	GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
 			d_plate_id_widget->create_property_value_from_widget();
 	GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
 			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type),
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+				GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
+
+	// Add a gpml:conjugatePlateId Property.
+	if ( ! d_conjugate_plate_id_widget->is_null() &&
+			should_offer_conjugate_plate_id_prop(listwidget_feature_types)) {
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+					d_conjugate_plate_id_widget->create_property_value_from_widget()));
+	}
 
 	// Add a gml:validTime Property.
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			d_time_period_widget->create_property_value_from_widget(),
-			GPlatesModel::PropertyName::create_gml("validTime"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("validTime"),
+				d_time_period_widget->create_property_value_from_widget()));
 
 	// Add a gml:name Property.
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			d_name_widget->create_property_value_from_widget(),
-			GPlatesModel::PropertyName::create_gml("name"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("name"),
+				d_name_widget->create_property_value_from_widget()));
 
 	// We've just modified the feature collection so let the feature collection file state
 	// know this so it can reclassify it.
@@ -989,9 +1054,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 	collection = collection_item->get_file_iterator()->get_feature_collection();
 	
 	// Actually create the Feature!
-	GPlatesModel::FeatureHandle::weak_ref feature = 
-		d_model_ptr->create_feature(type, collection);
-	
+	GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(collection, type);
 
 	// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
 	GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
@@ -1000,24 +1063,24 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_topological()
 	GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
 			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
 
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			GPlatesPropertyValues::GpmlConstantValue::create(
-				plate_id_value, 
-				plate_id_value_type),
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+				GPlatesPropertyValues::GpmlConstantValue::create(
+					plate_id_value, 
+					plate_id_value_type)));
 
 	// Add a gml:validTime Property.
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			d_time_period_widget->create_property_value_from_widget(),
-			GPlatesModel::PropertyName::create_gml("validTime"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("validTime"),
+				d_time_period_widget->create_property_value_from_widget()));
 
 	// Add a gml:name Property.
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			d_name_widget->create_property_value_from_widget(),
-			GPlatesModel::PropertyName::create_gml("name"),
-			feature);
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("name"),
+				d_name_widget->create_property_value_from_widget()));
 
 	// We've just modified the feature collection so let the feature collection file state
 	// know this so it can reclassify it.

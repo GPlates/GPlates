@@ -40,6 +40,7 @@
 #include "Real.h"
 #include "HighPrecision.h"
 #include "FunctionDomainException.h"
+#include "MathsUtils.h"
 
 /**
  * Warnings relating to floating point == and != being unsafe have to be
@@ -282,7 +283,7 @@ GPlatesMaths::asin(
 			// two.
 			// FIXME:  We should log that we "corrected" this here.
 			std::cerr << "Corrected asin(" << HighPrecision<Real>(r) << ") to asin(-1)." << std::endl;
-			return Real(-GPlatesMaths::PI_2);
+			return Real(-GPlatesMaths::HALF_PI);
 		}
 	}
 
@@ -302,7 +303,7 @@ GPlatesMaths::asin(
 			// one.  We'll return the asin of one, which is pi on two.
 			// FIXME:  We should log that we "corrected" this here.
 			std::cerr << "Corrected asin(" << HighPrecision<Real>(r) << ") to asin(1)." << std::endl;
-			return Real(GPlatesMaths::PI_2);
+			return Real(GPlatesMaths::HALF_PI);
 		}
 	}
 

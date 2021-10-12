@@ -20,7 +20,7 @@ To compile GPlates, you will need the following programs and libraries
 installed:
 
   • cmake (2.4.8 or newer)
-  • g++ 4.x (see "BUILD.OSX" for instructions on how to install g++)
+  • g++ 4.2 or above (see "BUILD.OSX" for instructions on how to install g++)
   • make
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
@@ -85,15 +85,23 @@ Installing non-system dependencies using Macports
 Here we briefly describe how to install dependencies using Macports (http://www.macports.org).
 For each dependency mentioned below it is recommended to use an installer package listed above
 instead if one exists (ie, for GDAL, Qt and CMake).
-  • Install Macports (http://www.macports.org).
+  • Install Macports (http://www.macports.org) if it's not already installed.
   • Start a new terminal window (by running Applications->Utilities->Terminal in Finder).
   • You may need to set the path to Macports with "export PATH=/opt/local/bin:/opt/local/sbin:$PATH".
   • If you are behind a proxy server you may need to set the "http_proxy" and "FTP_PROXY" shell variables.
     For example, "export http_proxy=http://www-cache.usyd.edu.au:8080".
   • Update Macports with 'sudo port -d selfupdate'.
+    It is important to do this every time you build a new version of GPlates (eg, GPlates 0.9.8
+	introduced a new dependency CGAL which was only recently added to Macports).
     If this doesn't work then you'll need to download the 'ports.tar.gz' tarball by following the
     instructions in http://trac.macports.org/wiki/howto/PortTreeTarball.
     Thanks to Jo Whittaker for pointing this out.
+  • In the following steps, if 'sudo port install ...' appears to hang then try one of the following:
+    • Use 'sudo env http_proxy="$http_proxy" port install ...' instead of 'sudo port install' ...,
+    • Or try manually downloading the port tarball from http://distfiles.macports.org/<portname>/ and copy it to
+      ${prefix}/var/macports/distfiles/<portname>/ where 'prefix' is most likely '/opt/local'.
+      More details can be found in the "Fetch failures" section at http://trac.macports.org/wiki/ProblemHotlist.
+      You may have to do the same for any dependencies that failed to fetch.  Oh the joy !
   • Install CMake with 'sudo port install cmake' if you don't have CMake. Note that the installer
     at "http://www.cmake.org/files/v2.6/cmake-2.6.3-Darwin-universal.dmg" is easier than using Macports.
   • Install Qt4 with 'sudo port install qt4-mac' if you don't have Qt4. Note that the installer
@@ -105,11 +113,5 @@ instead if one exists (ie, for GDAL, Qt and CMake).
   • Install GDAL with 'sudo port install gdal' if you don't have GDAL. Note that the installers
     at "http://www.kyngchaos.com/software:frameworks" are easier than using
     Macports due to the large number of software dependencies required by GDAL.
-  • If 'port install' appears to hang when fetching the port tarball try manually downloading the
-    tarball from http://distfiles.macports.org/<portname>/ and copy it to
-    ${prefix}/var/macports/distfiles/<portname>/ where 'prefix' is most likely '/opt/local'.
-    More details can be found in the "Fetch failures" section at http://trac.macports.org/wiki/ProblemHotlist.
-    You may have to do the same for any dependencies that failed to fetch.
-    Oh the joy !
   • Make sure you don't have multiple installations of the same library.
     For example, /opt/local/include/gdal* and /Library/Frameworks/GDAL.framework.

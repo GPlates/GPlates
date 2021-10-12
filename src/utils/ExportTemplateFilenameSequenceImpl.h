@@ -27,11 +27,15 @@
 #define GPLATES_UTILS_EXPORTTEMPLATEFILENAMESEQUENCEIMPL_H
 
 #include <cstddef>
+#include <utility>
 #include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QDateTime>
 #include <QString>
+
+#include "ExportTemplateFilenameSequenceFormats.h"
 
 #include "model/types.h"
 #include "utils/AnimationSequenceUtils.h"
@@ -53,6 +57,18 @@ namespace GPlatesUtils
 			public boost::noncopyable
 	{
 	public:
+		/**
+		 * Tests for validity of parameters in the filename template.
+		 *
+		 * @throws UnrecognisedFormatString if no format recognised at a '%' char.
+		 * @throws NoFilenameVariation if no formats have filename variation (vary with reconstruction time).
+		 */
+		static
+		void
+		validate_filename_template(
+				const QString &filename_template);
+
+
 		/**
 		 * Constructor.
 		 * @throws NoFilenameVariation if no formats have filename variation.
@@ -106,6 +122,18 @@ namespace GPlatesUtils
 		{
 		public:
 			/**
+			 * Tests for validity of parameters in the filename template.
+			 *
+			 * @throws UnrecognisedFormatString if no format recognised at a '%' char.
+			 * @throws NoFilenameVariation if no formats have filename variation (vary with reconstruction time).
+			 */
+			static
+			void
+			validate_filename_template(
+					const QString &filename_template);
+
+
+			/**
 			 * Searches for format patterns in @a filename_template and replaces
 			 * them with %1, %2, etc while also extracting a derived
 			 * @a ExportTemplateFilename::Format object for each pattern.
@@ -134,6 +162,69 @@ namespace GPlatesUtils
 			extract_formats_from_filename_template();
 
 		private:
+			//! Typedef for a @a Format object and the format string it recognised.
+			typedef std::pair<format_ptr_type, QString> create_format_info_type;
+
+			//! Typedef for a matched format string and the variation of the format that matched it.
+			typedef std::pair<QString, GPlatesUtils::ExportTemplateFilename::Format::Variation>
+					validate_format_info_type;
+
+			//! Utility to help transfer a type with boost::mpl::for_each.
+			template <class Type>
+			struct Wrap
+			{  };
+
+			//! Utility iterated over by boost::mpl::for_each to create a @a Format.
+			class CreateFormat
+			{
+			public:
+				CreateFormat(
+						FormatExtractor *format_extractor) :
+					d_format_extractor(format_extractor)
+				{  }
+
+				const boost::optional<create_format_info_type> &
+				get_format_info() const
+				{
+					return d_format_info;
+				}
+
+				template <class FormatType>
+				void
+				operator()(
+						Wrap<FormatType>);
+
+			private:
+				FormatExtractor *d_format_extractor;
+				boost::optional<create_format_info_type> d_format_info;
+			};
+
+			//! Utility iterated over by boost::mpl::for_each to find a matching format.
+			class ValidateFormat
+			{
+			public:
+				ValidateFormat(
+						const QString &rest_of_filename_template) :
+					d_rest_of_filename_template(rest_of_filename_template)
+				{  }
+
+				const boost::optional<validate_format_info_type> &
+				get_format_info() const
+				{
+					return d_format_info;
+				}
+
+				template <class FormatType>
+				void
+				operator()(
+						Wrap<FormatType>);
+
+			private:
+				QString d_rest_of_filename_template;
+				boost::optional<validate_format_info_type> d_format_info;
+			};
+
+
 			QString &d_filename_template;
 			format_seq_type &d_format_seq;
 
@@ -145,25 +236,44 @@ namespace GPlatesUtils
 
 
 			/**
+			 * Returns a matched format string from @a rest_of_filename_template or
+			 * throws @a UnrecognisedFormatString.
+			 */
+			static
+			validate_format_info_type
+			validate_format(
+					const QString &rest_of_filename_template);
+
+
+			/**
 			 * Creates a format from current position in filename template string
 			 * and returns matching format string.
 			 *
 			 * @throws UnrecognisedFormatString if no format recognised at a '%' char.
 			 */
-			format_ptr_type
-			create_format(
-					QString &format_string);
+			create_format_info_type
+			create_format();
 
 
 			/**
 			 * Returns true if a format of type @a FormatType matches the format string
-			 * beginning at the current position in filename template string.
+			 * beginning at @a rest_of_filename_template.
+			 *
+			 * Returns the matched format string.
 			 */
 			template <class FormatType>
-			bool
+			static
+			boost::optional<QString>
 			match_format(
-					const QString &rest_of_filename_template,
-					QString &format_string);
+					const QString &rest_of_filename_template);
+
+			/**
+			 * Creates a format of type @a FormatType.
+			 */
+			template <class FormatType>
+			format_ptr_type
+			create_format(
+					const QString &format_string);
 
 			//! Handles format object depending on how it varies with reconstruction time and across iterators.
 			void
@@ -183,7 +293,7 @@ namespace GPlatesUtils
 					format_ptr_type format,
 					const QString &format_string);
 
-			//! Throws @a NoFilenameVariation exception is filename template does not vary with reconstruction time.
+			//! Throws @a NoFilenameVariation exception if filename template does not vary with reconstruction time.
 			void
 			check_filename_template_varies_with_reconstruction_time();
 		};

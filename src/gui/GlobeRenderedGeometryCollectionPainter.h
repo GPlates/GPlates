@@ -30,6 +30,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "RenderSettings.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
@@ -59,10 +60,10 @@ namespace GPlatesGui
 	public:
 		GlobeRenderedGeometryCollectionPainter(
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				const RenderSettings &render_settings,
+				RenderSettings &render_settings,
 				TextRenderer::ptr_to_const_type text_renderer_ptr,
-				const GlobeVisibilityTester &visibility_tester);
-
+				const GlobeVisibilityTester &visibility_tester,
+				ColourScheme::non_null_ptr_type colour_scheme);
 
 		/**
 		 * Draw the rendered geometries into the depth range specified by
@@ -77,6 +78,13 @@ namespace GPlatesGui
 				double depth_range_near,
 				double depth_range_far);
 
+		void
+		set_scale(
+				float scale)
+		{
+			d_scale = scale;
+		}
+
 	private:
 		virtual
 		bool
@@ -89,7 +97,7 @@ namespace GPlatesGui
 		double d_depth_range_per_layer;
 
 		//! Rendering flags to determine what gets shown
-		const RenderSettings &d_render_settings;
+		RenderSettings &d_render_settings;
 		
 		//! Used for rendering text on an OpenGL canvas
 		TextRenderer::ptr_to_const_type d_text_renderer_ptr;
@@ -112,12 +120,15 @@ namespace GPlatesGui
 		};
 		boost::optional<PaintParams> d_paint_params;
 
-
-		/**
-		 * Sets the depth range for the next rendered layer.
-		 */
+		//! Sets the depth range for the next rendered layer.
 		void
 		move_to_next_rendered_layer_depth_range_and_set();
+
+		//! For assigning colours to RenderedGeometry
+		ColourScheme::non_null_ptr_type d_colour_scheme;
+
+		//! When rendering globes that are meant to be a scale copy of another
+		float d_scale;
 	};
 }
 

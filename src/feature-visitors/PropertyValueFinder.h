@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,7 +32,7 @@
 #include <utility>
 #include <boost/bind.hpp>
 
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/TopLevelPropertyInline.h"
 #include "model/PropertyName.h"
 #include "model/types.h"
@@ -179,7 +179,7 @@ namespace GPlatesFeatureVisitors
 		virtual
 		bool
 		initialise_pre_property_values(
-				TopLevelPropertyInlineType &top_level_property_inline)
+				typename FeatureVisitorType::top_level_property_inline_type &top_level_property_inline)
 		{
 			const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
 
@@ -199,7 +199,7 @@ namespace GPlatesFeatureVisitors
 		virtual
 		void
 		visit_gpml_constant_value(
-				GpmlConstantValueType &gpml_constant_value)
+				typename FeatureVisitorType::gpml_constant_value_type &gpml_constant_value)
 		{
 			gpml_constant_value.value()->accept_visitor(*this);
 		}
@@ -327,7 +327,7 @@ namespace GPlatesFeatureVisitors
 				visit_property_value_method, \
 				GPlatesModel::ConstFeatureVisitor, \
 				GPlatesModel::FeatureHandle::const_weak_ref, \
-				GPlatesModel::FeatureCollectionHandle::features_const_iterator, \
+				GPlatesModel::FeatureCollectionHandle::const_iterator, \
 				const GPlatesModel::TopLevelPropertyInline, \
 				const GPlatesPropertyValues::GpmlConstantValue) \
 		/* non-const weak_ref/features_iterator for const property-value */ \
@@ -336,18 +336,44 @@ namespace GPlatesFeatureVisitors
 				visit_property_value_method, \
 				GPlatesModel::ConstFeatureVisitor, \
 				GPlatesModel::FeatureHandle::weak_ref, \
-				GPlatesModel::FeatureCollectionHandle::features_iterator, \
+				GPlatesModel::FeatureCollectionHandle::iterator, \
 				const GPlatesModel::TopLevelPropertyInline, \
 				const GPlatesPropertyValues::GpmlConstantValue) \
+
+// FIXME: Currently removing the version that returns a non-const property-value.
+//
+// When using a non-const feature visitor the top-level properties are currently deep cloned in
+// visit_feature_properties() so that changes to the model can be tracked (for JC's unsaved changes).
+// The result is references cannot be kept to the property values because they are released when
+// committed back the model inside visit_feature_properties().
+// The function 'get_property_value()' uses both non-const and const visitors internally to
+// retrieve property values and return them to the caller.
+// And for the non-const visitor the property value raw pointer that 'get_property_value()'
+// returns to its caller is pointing to an object that has been deallocated.
+// The design of 'get_property_value()' itself is ok in that it's returning a raw pointer to
+// the caller with the understanding that the pointer only be used locally by the caller.
+// However the new way of keeping track of changes to the model means that property value
+// references now become invalid immediately after visiting that property value with a
+// non-const visitor which is necessary to track changes to the model.
+// The const visitor does not clone because const property values cannot be modified and
+// so it doesn't exhibit this problem.
+//
+// So this only breaks for the non-const version of 'get_property_value()' so
+// it is disabled to prevent caller's using it.
+// There's currently no code that uses the non-const version.
+//
+#if 0
 		/* non-const weak_ref/features_iterator for non-const property-value */ \
 		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
 				property_value_type, \
 				visit_property_value_method, \
 				GPlatesModel::FeatureVisitor, \
 				GPlatesModel::FeatureHandle::weak_ref, \
-				GPlatesModel::FeatureCollectionHandle::features_iterator, \
+				GPlatesModel::FeatureCollectionHandle::iterator, \
 				GPlatesModel::TopLevelPropertyInline, \
 				GPlatesPropertyValues::GpmlConstantValue) \
+
+#endif
 
 
 	template <class PropertyValueType, class FeatureWeakRefType>

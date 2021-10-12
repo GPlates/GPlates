@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cmath>
+#include <deque>
 #include <vector>
 #include <boost/none.hpp>
 #include <boost/optional.hpp>
@@ -75,13 +76,13 @@ namespace
 	public:
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
 		create_gpml_topological_section(
-				const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
+				const GPlatesModel::FeatureHandle::iterator &geometry_property,
 				bool reverse_order,
-				const boost::optional<GPlatesModel::FeatureHandle::properties_iterator> &start_geometry_property,
-				const boost::optional<GPlatesModel::FeatureHandle::properties_iterator> &end_geometry_property,
+				const boost::optional<GPlatesModel::FeatureHandle::iterator> &start_geometry_property,
+				const boost::optional<GPlatesModel::FeatureHandle::iterator> &end_geometry_property,
 				const boost::optional<GPlatesMaths::PointOnSphere> &present_day_reference_point)
 		{
-			if (!geometry_property.is_valid())
+			if (!geometry_property.is_still_valid())
 			{
 				// Return invalid iterator.
 				return boost::none;
@@ -102,10 +103,10 @@ namespace
 		}
 
 	private:
-		GPlatesModel::FeatureHandle::properties_iterator d_geometry_property;
+		GPlatesModel::FeatureHandle::iterator d_geometry_property;
 		bool d_reverse_order;
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_start_geometry_property;
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_end_geometry_property;
+		boost::optional<GPlatesModel::FeatureHandle::iterator> d_start_geometry_property;
+		boost::optional<GPlatesModel::FeatureHandle::iterator> d_end_geometry_property;
 		boost::optional<GPlatesMaths::PointOnSphere> d_present_day_reference_point;
 
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> d_topological_section;
@@ -128,7 +129,7 @@ namespace
 		{
 			qDebug() << "WARNING: GpmlTopologicalSection not created for gml:MultiPoint.";
 			qDebug() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
-					d_geometry_property.collection_handle_ptr()->feature_id().get());
+					d_geometry_property.handle_weak_ref()->feature_id().get());
 			qDebug() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
 					(*d_geometry_property)->property_name().get_name());
 		}
@@ -249,9 +250,9 @@ namespace
 
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection>
 		create_gpml_topological_intersection(
-				const GPlatesModel::FeatureHandle::properties_iterator &adjacent_geometry_property)
+				const GPlatesModel::FeatureHandle::iterator &adjacent_geometry_property)
 		{
-			if (!adjacent_geometry_property.is_valid())
+			if (!adjacent_geometry_property.is_still_valid())
 			{
 				// Return false.
 				return boost::none;
@@ -268,7 +269,7 @@ namespace
 		}
 
 	private:
-		GPlatesModel::FeatureHandle::properties_iterator d_adjacent_geometry_property;
+		GPlatesModel::FeatureHandle::iterator d_adjacent_geometry_property;
 		GPlatesMaths::PointOnSphere d_reference_point;
 
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection> d_topological_intersection;
@@ -291,7 +292,7 @@ namespace
 		{
 			qDebug() << "WARNING: GpmlTopologicalIntersection not created for gml:Point.";
 			qDebug() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
-					d_adjacent_geometry_property.collection_handle_ptr()->feature_id().get());
+					d_adjacent_geometry_property.handle_weak_ref()->feature_id().get());
 			qDebug() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
 					(*d_adjacent_geometry_property)->property_name().get_name());
 		}
@@ -313,7 +314,7 @@ namespace
 		{
 			qDebug() << "WARNING: GpmlTopologicalIntersection not created for gml:MultiPoint.";
 			qDebug() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
-					d_adjacent_geometry_property.collection_handle_ptr()->feature_id().get());
+					d_adjacent_geometry_property.handle_weak_ref()->feature_id().get());
 			qDebug() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
 					(*d_adjacent_geometry_property)->property_name().get_name());
 		}
@@ -374,7 +375,7 @@ namespace
 			// Feature id of feature used to lookup plate id for reconstructing reference point.
 			// This is the feature that contains the adjacent geometry properties iterator.
 			const GPlatesModel::FeatureId &reference_point_feature_id =
-					d_adjacent_geometry_property.collection_handle_ptr()->feature_id();
+					d_adjacent_geometry_property.handle_weak_ref()->feature_id();
 
 			GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type plate_id_delegate = 
 					GPlatesPropertyValues::GpmlPropertyDelegate::create( 
@@ -528,221 +529,122 @@ namespace
 	};
 
 
+
 	/**
-	 * Retrieves points in a derived @a GeometryOnSphere.
+	 * Determines which polyline route to follow through the intersection graph.
+	 * The route starts at an intersection point and either traverses previous polylines
+	 * or next polylines.
+	 * And the traversal follows polylines partitioned from either the first or second
+	 * section that was intersected.
+	 */
+	enum IntersectionGraphTraversal
+	{
+		PREVIOUS_POLYLINE1,
+		PREVIOUS_POLYLINE2,
+		NEXT_POLYLINE1,
+		NEXT_POLYLINE2
+	};
+
+	/**
+	 * Iterates through the intersection graph starting at @a intersection by
+	 * following the next polyline guided by @a intersection_graph_traversal
+	 * and concatenates the polyline segments into a single segment.
 	 *
-	 * When a @a GeometryOnSphere is visited its points are appended to the
-	 * sequence of points passed into the constructor.
+	 * Returns false if there are no intersected segments after @a intersection.
 	 */
-	class GetGeometryOnSpherePoints :
-			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+	concatenate_partitioned_polylines_starting_at_intersection(
+			const GPlatesMaths::PolylineIntersections::Graph::Intersection *intersection,
+			const IntersectionGraphTraversal intersection_graph_traversal)
 	{
-	public:
-		GetGeometryOnSpherePoints(
-				std::vector<GPlatesMaths::PointOnSphere> &points,
-				bool reverse_points) :
-			d_point_seq(points),
-			d_reverse_points(reverse_points)
-		{  }
+		// Data member pointers to the data members of Graph::Intersection and
+		// Graph::PartitionedPolyline that we will follow to traverse the intersection
+		// graph as requested by the caller.
+		const GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline *
+			GPlatesMaths::PolylineIntersections::Graph::Intersection::*next_partitioned_polyline_ptr = NULL;
+		const GPlatesMaths::PolylineIntersections::Graph::Intersection *
+			GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::*next_intersection_ptr = NULL;
 
-
-		virtual
-		void
-		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		switch (intersection_graph_traversal)
 		{
-			d_point_seq.push_back(*point_on_sphere);
+		case PREVIOUS_POLYLINE1:
+			next_partitioned_polyline_ptr =
+				&GPlatesMaths::PolylineIntersections::Graph::Intersection::prev_partitioned_polyline1;
+			next_intersection_ptr =
+				&GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::prev_intersection;
+			break;
+		case PREVIOUS_POLYLINE2:
+			next_partitioned_polyline_ptr =
+				&GPlatesMaths::PolylineIntersections::Graph::Intersection::prev_partitioned_polyline2,
+			next_intersection_ptr =
+				&GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::prev_intersection;
+			break;
+		case NEXT_POLYLINE1:
+			next_partitioned_polyline_ptr =
+				&GPlatesMaths::PolylineIntersections::Graph::Intersection::next_partitioned_polyline1;
+			next_intersection_ptr =
+				&GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::next_intersection;
+			break;
+		case NEXT_POLYLINE2:
+			next_partitioned_polyline_ptr =
+				&GPlatesMaths::PolylineIntersections::Graph::Intersection::next_partitioned_polyline2;
+			next_intersection_ptr =
+				&GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::next_intersection;
+			break;
 		}
 
-
-		virtual
-		void
-		visit_multi_point_on_sphere(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		// Gather the polyline segments.
+		std::deque<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline_seq;
+		do
 		{
-			if (d_reverse_points)
+			// Get the polyline following the current intersection in the graph.
+			const GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline *
+					next_partitioned_polyline = (intersection->*next_partitioned_polyline_ptr);
+
+			if (!next_partitioned_polyline)
 			{
-				std::reverse_copy(
-						multi_point_on_sphere->begin(),
-						multi_point_on_sphere->end(),
-						std::back_inserter(d_point_seq));
+				break;
+			}
+
+			// We need to push the polylines in the correct order so that when they're
+			// concatenated they are joined end1->start2->end2->start3 etc.
+			if (intersection_graph_traversal == NEXT_POLYLINE1 ||
+				intersection_graph_traversal == NEXT_POLYLINE2)
+			{
+				polyline_seq.push_back(next_partitioned_polyline->polyline);
 			}
 			else
 			{
-				std::copy(
-						multi_point_on_sphere->begin(),
-						multi_point_on_sphere->end(),
-						std::back_inserter(d_point_seq));
+				polyline_seq.push_front(next_partitioned_polyline->polyline);
 			}
+
+			// Move to the following intersection in the graph.
+			intersection = (next_partitioned_polyline->*next_intersection_ptr);
 		}
+		while (intersection);
 
-
-		virtual
-		void
-		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		if (polyline_seq.empty())
 		{
-			if (d_reverse_points)
-			{
-				std::reverse_copy(
-						polygon_on_sphere->vertex_begin(),
-						polygon_on_sphere->vertex_end(),
-						std::back_inserter(d_point_seq));
-			}
-			else
-			{
-				std::copy(
-						polygon_on_sphere->vertex_begin(),
-						polygon_on_sphere->vertex_end(),
-						std::back_inserter(d_point_seq));
-			}
+			return boost::none;
 		}
 
-
-		virtual
-		void
-		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		// If there's only one polyline then there's no need to concatenate.
+		if (polyline_seq.size() == 1)
 		{
-			if (d_reverse_points)
-			{
-				std::reverse_copy(
-						polyline_on_sphere->vertex_begin(),
-						polyline_on_sphere->vertex_end(),
-						std::back_inserter(d_point_seq));
-			}
-			else
-			{
-				std::copy(
-						polyline_on_sphere->vertex_begin(),
-						polyline_on_sphere->vertex_end(),
-						std::back_inserter(d_point_seq));
-			}
+			return polyline_seq.front();
 		}
 
-	private:
-		//! Sequence of points to append to when visiting geometry on spheres.
-		std::vector<GPlatesMaths::PointOnSphere> &d_point_seq;
-
-		//! Whether to reverse the visiting geometry points before appending.
-		bool d_reverse_points;
-	};
-
-
-	/**
-	 * Retrieves the end points in a derived @a GeometryOnSphere.
-	 */
-	class GetGeometryOnSphereEndPoints :
-			private GPlatesMaths::ConstGeometryOnSphereVisitor
-	{
-	public:
-		/**
-		 * Visits @a geometry_on_sphere and returns its start and end points.
-		 */
-		std::pair<
-				GPlatesMaths::PointOnSphere/*start point*/,
-				GPlatesMaths::PointOnSphere/*end point*/>
-		get_geometry_end_points(
-				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
-				bool reverse_points)
-		{
-			d_reverse_points = reverse_points;
-			d_start_point = boost::none;
-			d_end_point = boost::none;
-
-			geometry_on_sphere.accept_visitor(*this);
-
-			// All geometry types should have a start and end point.
-			// If not then it means a new GeometryOnSphere derived was implemented
-			// and this class needs to visit it.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_start_point && d_end_point, GPLATES_ASSERTION_SOURCE);
-
-			return std::make_pair(*d_start_point, *d_end_point);
-		}
-
-	private:
-		//! Start point of visited geometry on sphere.
-		boost::optional<GPlatesMaths::PointOnSphere> d_start_point;
-		//! End point of visited geometry on sphere.
-		boost::optional<GPlatesMaths::PointOnSphere> d_end_point;
-
-		//! Whether to reverse the visiting geometry end points before returning them.
-		bool d_reverse_points;
-
-
-		virtual
-		void
-		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
-		{
-			d_start_point = *point_on_sphere;
-			d_end_point = *point_on_sphere;
-		}
-
-
-		virtual
-		void
-		visit_multi_point_on_sphere(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
-		{
-			if (d_reverse_points)
-			{
-				d_start_point = *--multi_point_on_sphere->end();
-				d_end_point = *multi_point_on_sphere->begin();
-			}
-			else
-			{
-				d_start_point = *multi_point_on_sphere->begin();
-				d_end_point = *--multi_point_on_sphere->end();
-			}
-		}
-
-
-		virtual
-		void
-		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
-		{
-			if (d_reverse_points)
-			{
-				d_start_point = *--polygon_on_sphere->vertex_end();
-				d_end_point = *polygon_on_sphere->vertex_begin();
-			}
-			else
-			{
-				d_start_point = *polygon_on_sphere->vertex_begin();
-				d_end_point = *--polygon_on_sphere->vertex_end();
-			}
-		}
-
-
-		virtual
-		void
-		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
-		{
-			if (d_reverse_points)
-			{
-				d_start_point = *--polyline_on_sphere->vertex_end();
-				d_end_point = *polyline_on_sphere->vertex_begin();
-			}
-			else
-			{
-				d_start_point = *polyline_on_sphere->vertex_begin();
-				d_end_point = *--polyline_on_sphere->vertex_end();
-			}
-		}
-	};
+		return GPlatesMaths::concatenate_polylines(polyline_seq.begin(), polyline_seq.end());
+	}
 }
 
 
 boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_section(
-		const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
+		const GPlatesModel::FeatureHandle::iterator &geometry_property,
 		bool reverse_order,
-		const boost::optional<GPlatesModel::FeatureHandle::properties_iterator> &start_geometry_property,
-		const boost::optional<GPlatesModel::FeatureHandle::properties_iterator> &end_geometry_property,
+		const boost::optional<GPlatesModel::FeatureHandle::iterator> &start_geometry_property,
+		const boost::optional<GPlatesModel::FeatureHandle::iterator> &end_geometry_property,
 		const boost::optional<GPlatesMaths::PointOnSphere> &present_day_reference_point)
 
 {
@@ -759,7 +661,7 @@ GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_section(
 
 boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection>
 GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_intersection(
-		const GPlatesModel::FeatureHandle::properties_iterator &adjacent_geometry_property,
+		const GPlatesModel::FeatureHandle::iterator &adjacent_geometry_property,
 		const GPlatesMaths::PointOnSphere &present_day_reference_point)
 {
 	CreateTopologicalIntersectionPropertyValue create_topological_intersection_property_value(
@@ -772,10 +674,10 @@ GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_intersection(
 
 boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
-		const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
+		const GPlatesModel::FeatureHandle::iterator &geometry_property,
 		const QString &property_value_type)
 {
-	if (!geometry_property.is_valid())
+	if (!geometry_property.is_still_valid())
 	{
 		// Return invalid iterator.
 		return boost::none;
@@ -783,7 +685,7 @@ GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
 
 	// Feature id obtained from geometry property iterator.
 	const GPlatesModel::FeatureId &feature_id =
-			geometry_property.collection_handle_ptr()->feature_id();
+			geometry_property.handle_weak_ref()->feature_id();
 
 	// Property name obtained from geometry property iterator.
 	const QString property_name = GPlatesUtils::make_qstring_from_icu_string(
@@ -841,7 +743,7 @@ GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-		GPlatesModel::Reconstruction *reconstruction)
+		GPlatesModel::Reconstruction &reconstruction)
 {
 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolve_feature_id(
 			geometry_delegate.feature_id());
@@ -858,27 +760,28 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 			property_name_qstring);
 
 	// Find the RFGs, in the reconstruction, for the feature ref and target property.
-	GPlatesModel::ReconstructedFeatureGeometryFinder rfg_finder(property_name, reconstruction); 
+	GPlatesModel::ReconstructedFeatureGeometryFinder rfg_finder(property_name, &reconstruction); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
-	// If we found zero RFGs or more than one RFG then something is wrong so return false.
-	if (rfg_finder.num_rfgs_found() != 1)
+	// If we found no RFG in 'reconstruction' that is reconstructed from
+	// 'geometry_property' then it probably means the reconstruction time is
+	// outside the age range of the feature containing 'geometry_property'.
+	// This is ok - it's not necessarily an error.
+	if (rfg_finder.num_rfgs_found() == 0)
 	{
-		if (rfg_finder.num_rfgs_found() == 0)
-		{
-			qDebug() << "ERROR: No RFG found using property name for feature_id =";
-			qDebug() <<
-				GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
-			qDebug() << "and property name =" << property_name_qstring;
-		}
-		else
-		{
-			qDebug() << "ERROR: More than one RFG found using property name for feature_id =";
-			qDebug() <<
-				GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
-			qDebug() << "and property name =" << property_name_qstring;
-			qDebug() << "ERROR: Unable to determine RFG";
-		}
+		return boost::none;
+	}
+
+	//
+	// However if we found more than one RFG then the feature has multiple geometry
+	// properties with the same name and we cannot determine which one to return.
+	if (rfg_finder.num_rfgs_found() > 1)
+	{
+		qDebug() << "ERROR: More than one RFG found using property name for feature_id =";
+		qDebug() <<
+			GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
+		qDebug() << "and property name =" << property_name_qstring;
+		qDebug() << "ERROR: Unable to determine RFG";
 
 		return boost::none;
 	}
@@ -894,34 +797,37 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 
 boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
-		const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
-		GPlatesModel::Reconstruction *reconstruction)
+		const GPlatesModel::FeatureHandle::iterator &geometry_property,
+		GPlatesModel::Reconstruction &reconstruction)
 {
+	/*
 	if (!geometry_property.is_valid())
 	{
 		return boost::none;
 	}
+	*/
 
 	// Get a reference to the feature containing the geometry property.
 	const GPlatesModel::FeatureHandle::weak_ref &feature_ref =
-			geometry_property.collection_handle_ptr()->reference();
+			geometry_property.handle_weak_ref();
 
 	// Find the RFGs, in the reconstruction, for the feature ref and geometry property.
-	GPlatesModel::ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, reconstruction); 
+	GPlatesModel::ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, &reconstruction); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
-	// If we found no RFG then something is wrong so return false.
-	if (rfg_finder.num_rfgs_found() != 1)
-	{
-		// Since we are searching with a feature properties iterator we can find at most
-		// one RFG and since we didn't find one when must have found zero.
-		qDebug() << "ERROR: No RFG found using feature properties iterator for feature_id =";
-		qDebug() <<
-			GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
-		qDebug() << "and property name ="
-				<< GPlatesUtils::make_qstring_from_icu_string(
-						(*geometry_property)->property_name().get_name());
+	// Because we are searching using a geometry properties iterator we can only
+	// find at most one RFG (unless the geometry got reconstructed twice and hence added to
+	// the Reconstruction twice - in which case this is an programming bug).
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			rfg_finder.num_rfgs_found() <= 1,
+			GPLATES_ASSERTION_SOURCE);
 
+	// If we found no RFG in 'reconstruction' that is reconstructed from
+	// 'geometry_property' then it probably means the reconstruction time is
+	// outside the age range of the feature containing 'geometry_property'.
+	// This is ok - it's not necessarily an error.
+	if (rfg_finder.num_rfgs_found() == 0)
+	{
 		return boost::none;
 	}
 
@@ -939,6 +845,11 @@ GPlatesAppLogic::TopologyInternalUtils::get_finite_rotation(
 		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_plateid_feature,
 		const GPlatesModel::ReconstructionTree &reconstruction_tree)
 {
+	if (!reconstruction_plateid_feature.is_valid())
+	{
+		return boost::none;
+	}
+
 	// Get the plate id from the reference point feature.
 	static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
@@ -1010,74 +921,614 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 {
 	typedef boost::optional<GPlatesMaths::PointOnSphere> optional_intersection_point_type;
 
+	boost::optional<
+		boost::tuple<
+			/*intersection point*/
+			GPlatesMaths::PointOnSphere,
+			/*head_first_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			/*tail_first_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			/*head_second_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			/*tail_second_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> > >
+		intersected_segments = intersect_topological_sections(
+				first_section_polyline,
+				second_section_polyline);
+
+	// If there were no intersections then return the original geometries.
+	if (!intersected_segments)
+	{
+		// Return original geometries.
+		return boost::make_tuple<optional_intersection_point_type>(
+				boost::none,
+				first_section_polyline,
+				second_section_polyline);
+	}
+
+	// It's possible for the intersection to form a T-junction where
+	// one polyline is divided into two (or even a V-junction where
+	// both polylines meet at either of their endpoints).
+	// If that happens then we don't need to test a polyline that is not divided
+	// because it will be the closest segment to the reference point already.
+
+	const GPlatesMaths::PointOnSphere &intersection_point = boost::get<0>(*intersected_segments);
+
+	// We are guaranteed that at least one of head or tail is non-null.
+	const boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &
+			head_first_section = boost::get<1>(*intersected_segments);
+	const boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &
+			tail_first_section = boost::get<2>(*intersected_segments);
+
+	// We are guaranteed that at least one of head or tail is non-null.
+	const boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &
+			head_second_section = boost::get<3>(*intersected_segments);
+	const boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &
+			tail_second_section = boost::get<4>(*intersected_segments);
+
+	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_closest_segment =
+			head_first_section && tail_first_section
+					? find_closest_intersected_segment_to_reference_point(
+							first_section_reference_point,
+							*head_first_section,
+							*tail_first_section)
+					: (head_first_section ? *head_first_section : *tail_first_section);
+
+	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_closest_segment =
+			head_second_section && tail_second_section
+					? find_closest_intersected_segment_to_reference_point(
+							second_section_reference_point,
+							*head_second_section,
+							*tail_second_section)
+					: (head_second_section ? *head_second_section : *tail_second_section);
+
+	return boost::make_tuple(
+			// The single intersection point...
+			intersection_point,
+			first_section_closest_segment,
+			second_section_closest_segment);
+}
+
+
+boost::optional<
+	boost::tuple<
+		/*intersection point*/
+		GPlatesMaths::PointOnSphere,
+		/*head_first_section*/
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+		/*tail_first_section*/
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+		/*head_second_section*/
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+		/*tail_second_section*/
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> > >
+GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_section_geometry,
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type second_section_geometry)
+{
+	// Get the two geometries as polylines if they are intersectable - that is if neither
+	// geometry is a point or a multi-point.
+	boost::optional<
+		std::pair<
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> > polylines_for_intersection =
+				get_polylines_for_intersection(first_section_geometry, second_section_geometry);
+
+	// If the two geometries are not intersectable then return false.
+	if (!polylines_for_intersection)
+	{
+		return boost::none;
+	}
+
+	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_polyline =
+			polylines_for_intersection->first;
+	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_polyline =
+			polylines_for_intersection->second;
+
+	boost::optional<
+		boost::tuple<
+			/*intersection point*/
+			GPlatesMaths::PointOnSphere,
+			/*head_first_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			/*tail_first_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			/*head_second_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			/*tail_second_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> > >
+		intersected_segments = intersect_topological_sections(
+				first_section_polyline,
+				second_section_polyline);
+
+	if (!intersected_segments)
+	{
+		return boost::none;
+	}
+
+	// This helps us convert PolylineOnSphere to GeometryOnSphere in the tuple.
+	const GPlatesMaths::PointOnSphere &intersection = boost::get<0>(*intersected_segments);
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> head_first_section;
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> tail_first_section;
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> head_second_section;
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> tail_second_section;
+	boost::tie(
+			boost::tuples::ignore,
+			head_first_section,
+			tail_first_section,
+			head_second_section,
+			tail_second_section) =
+					*intersected_segments;
+
+	return boost::make_tuple(
+			intersection,
+			head_first_section,
+			tail_first_section,
+			head_second_section,
+			tail_second_section);
+}
+
+
+boost::optional<
+	boost::tuple<
+		/*intersection point*/
+		GPlatesMaths::PointOnSphere,
+		/*head_first_section*/
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+		/*tail_first_section*/
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+		/*head_second_section*/
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+		/*tail_second_section*/
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> > >
+GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_polyline,
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_polyline)
+{
 	// Intersect the two section polylines.
 	boost::shared_ptr<const GPlatesMaths::PolylineIntersections::Graph> intersection_graph =
 			GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
 					*first_section_polyline,
 					*second_section_polyline);
 
-	// If there were no intersections then return the original geometries.
+	// If there were no intersections then return false.
 	if (!intersection_graph)
 	{
-		// Return original geometries.
-		return boost::make_tuple<optional_intersection_point_type>(
-				boost::none,
-				first_section_polyline,
-				second_section_polyline);
+		return boost::none;
 	}
 
-	// FIXME: We currently don't handle more than one intersection.
+	// Produce a warning message if there is more than one intersection.
 	if (intersection_graph->intersections.size() >= 2)
 	{
 		std::cerr << "TopologyInternalUtils::intersect_topological_sections: " << std::endl
 			<< "WARN: num_intersect=" << intersection_graph->intersections.size() << std::endl 
-			<< "WARN: Unable to set boundary feature intersection relations!" << std::endl
+			<< "WARN: Boundary feature intersection relations may not be correct!" << std::endl
 			<< "WARN: Make sure boundary feature's only intersect once." << std::endl
 			<< std::endl;
 		std::cerr << std::endl;
-
-		// Return original geometries.
-		return boost::make_tuple<optional_intersection_point_type>(
-				boost::none,
-				first_section_polyline,
-				second_section_polyline);
 	}
 
 	//
-	// There was a single intersection.
+	// We have at least one intersection - ideally we're only expecting one intersection.
 	//
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!intersection_graph->partitioned_polylines1.empty() &&
-					!intersection_graph->partitioned_polylines2.empty(),
+			!intersection_graph->intersections.empty(),
 			GPLATES_ASSERTION_SOURCE);
 
-	// It's possible for the intersection to form a T-junction where
-	// one polyline is divided into two but the other one is not.
-	// If that happens then we don't need to test the polyline that is not divided
-	// because will be the closest segment to the reference point already.
+	// If even there is more than one intersection we'll just consider the first
+	// intersection.
+	const GPlatesMaths::PolylineIntersections::Graph::Intersection *intersection =
+			intersection_graph->intersections[0].get();
 
-	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_closest_segment =
-			(intersection_graph->partitioned_polylines1.size() == 1)
-					? intersection_graph->partitioned_polylines1[0]->polyline
-					: find_closest_intersected_segment_to_reference_point(
-							first_section_reference_point,
-							intersection_graph->partitioned_polylines1[0]->polyline,
-							intersection_graph->partitioned_polylines1[1]->polyline);
+	// If we have an intersection then we should have at least one segment from each polyline.
+	// This is our guarantee to the caller.
+	// Usually will have two for each but one can happen if intersection is a T or V junction.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			intersection->prev_partitioned_polyline1 || intersection->next_partitioned_polyline1,
+			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			intersection->prev_partitioned_polyline2 || intersection->next_partitioned_polyline2,
+			GPLATES_ASSERTION_SOURCE);
 
-	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_closest_segment =
-			(intersection_graph->partitioned_polylines2.size() == 1)
-					? intersection_graph->partitioned_polylines2[0]->polyline
-					: find_closest_intersected_segment_to_reference_point(
-							second_section_reference_point,
-							intersection_graph->partitioned_polylines2[0]->polyline,
-							intersection_graph->partitioned_polylines2[1]->polyline);
+	// See comment in header file about T-junctions and V-junctions to see why
+	// the returned segments are optional.
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> head_first_section;
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> head_second_section;
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> tail_first_section;
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> tail_second_section;
+
+	//
+	// If there is more than one intersection then only the first intersection is
+	// considered such that this function still divides the two input sections into
+	// (up to) two segments each (instead of several segments each).
+	// It does this by concatenating divided segments (of each section) before or after
+	// the intersection point into a single segment.
+	//
+
+	if (intersection->prev_partitioned_polyline1)
+	{
+		// Concatenate any polylines (from the first section) before the intersection.
+		head_first_section = concatenate_partitioned_polylines_starting_at_intersection(
+				intersection, PREVIOUS_POLYLINE1);
+	}
+
+	if (intersection->prev_partitioned_polyline2)
+	{
+		// Concatenate any polylines (from the second section) before the intersection.
+		head_second_section = concatenate_partitioned_polylines_starting_at_intersection(
+				intersection, PREVIOUS_POLYLINE2);
+	}
+
+	if (intersection->next_partitioned_polyline1)
+	{
+		// Concatenate any polylines (from the first section) after the intersection.
+		tail_first_section = concatenate_partitioned_polylines_starting_at_intersection(
+				intersection, NEXT_POLYLINE1);
+	}
+
+	if (intersection->next_partitioned_polyline2)
+	{
+		// Concatenate any polylines (from the second section) after the intersection.
+		tail_second_section = concatenate_partitioned_polylines_starting_at_intersection(
+				intersection, NEXT_POLYLINE2);
+	}
 
 	return boost::make_tuple(
 			// The single intersection point...
-			intersection_graph->intersections[0]->intersection_point,
-			first_section_closest_segment,
-			second_section_closest_segment);
+			intersection->intersection_point,
+			head_first_section,
+			tail_first_section,
+			head_second_section,
+			tail_second_section);
+}
+
+
+boost::optional<
+	boost::tuple<
+		/*first intersection point*/
+		GPlatesMaths::PointOnSphere,
+		/*optional second intersection point*/
+		boost::optional<GPlatesMaths::PointOnSphere>,
+		/*optional info if two intersections and middle segments form a cycle*/
+		boost::optional<bool>,
+		/*optional head_first_section*/
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+		/*optional middle_first_section*/
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+		/*optional tail_first_section*/
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+		/*optional head_second_section*/
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+		/*optional middle_second_section*/
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+		/*optional tail_second_section*/
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> > >
+GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_two_intersections(
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_section_geometry,
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type second_section_geometry)
+{
+	// Get the two geometries as polylines if they are intersectable - that is if neither
+	// geometry is a point or a multi-point.
+	boost::optional<
+		std::pair<
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> > polylines_for_intersection =
+				get_polylines_for_intersection(first_section_geometry, second_section_geometry);
+
+	// If the two geometries are not intersectable then return false.
+	if (!polylines_for_intersection)
+	{
+		return boost::none;
+	}
+
+	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_polyline =
+			polylines_for_intersection->first;
+	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_polyline =
+			polylines_for_intersection->second;
+
+	boost::optional<
+		boost::tuple<
+			/*first intersection point*/
+			GPlatesMaths::PointOnSphere,
+			/*optional second intersection point*/
+			boost::optional<GPlatesMaths::PointOnSphere>,
+			/*optional info if two intersections and middle segments form a cycle*/
+			boost::optional<bool>,
+			/*optional head_first_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			/*optional middle_first_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			/*optional tail_first_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			/*optional head_second_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			/*optional middle_second_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+			/*optional tail_second_section*/
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> > >
+				intersected_segments = intersect_topological_sections_allowing_two_intersections(
+						first_section_polyline,
+						second_section_polyline);
+
+	if (!intersected_segments)
+	{
+		return boost::none;
+	}
+
+	// This helps us convert PolylineOnSphere to GeometryOnSphere in the tuple.
+	const GPlatesMaths::PointOnSphere &first_intersection = boost::get<0>(*intersected_segments);
+	boost::optional<GPlatesMaths::PointOnSphere> second_intersection;
+	boost::optional<bool> middle_segments_from_a_cycle;
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> head_first_section;
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> middle_first_section;
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> tail_first_section;
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> head_second_section;
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> middle_second_section;
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> tail_second_section;
+	boost::tie(
+			boost::tuples::ignore,
+			second_intersection,
+			middle_segments_from_a_cycle,
+			head_first_section,
+			middle_first_section,
+			tail_first_section,
+			head_second_section,
+			middle_second_section,
+			tail_second_section) =
+					*intersected_segments;
+
+	return boost::make_tuple(
+			first_intersection,
+			second_intersection,
+			middle_segments_from_a_cycle,
+			head_first_section,
+			middle_first_section,
+			tail_first_section,
+			head_second_section,
+			middle_second_section,
+			tail_second_section);
+}
+
+
+boost::optional<
+	boost::tuple<
+		/*first intersection point*/
+		GPlatesMaths::PointOnSphere,
+		/*optional second intersection point*/
+		boost::optional<GPlatesMaths::PointOnSphere>,
+		/*optional info if two intersections and middle segments form a cycle*/
+		boost::optional<bool>,
+		/*optional head_first_section*/
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+		/*optional middle_first_section*/
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+		/*optional tail_first_section*/
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+		/*optional head_second_section*/
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+		/*optional middle_second_section*/
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
+		/*optional tail_second_section*/
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> > >
+GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_two_intersections(
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_polyline,
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_polyline)
+{
+	// Intersect the two section polylines.
+	boost::shared_ptr<const GPlatesMaths::PolylineIntersections::Graph> intersection_graph =
+			GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
+					*first_section_polyline,
+					*second_section_polyline);
+
+	// If there were no intersections then return false.
+	if (!intersection_graph)
+	{
+		return boost::none;
+	}
+
+	// Produce a warning message if there is more than two intersections.
+	if (intersection_graph->intersections.size() >= 3)
+	{
+		std::cerr
+			<< "TopologyInternalUtils::intersect_topological_sections_allowing_two_intersections: "
+			<< std::endl
+			<< "WARN: num_intersect=" << intersection_graph->intersections.size() << std::endl 
+			<< "WARN: Boundary feature intersection relations may not be correct!" << std::endl
+			<< "WARN: Make sure a boundary with exactly two sections only intersects twice."
+			<< std::endl
+			<< std::endl;
+		std::cerr << std::endl;
+	}
+
+	//
+	// We have at least one intersection - ideally we're only expecting one or two intersections.
+	//
+
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!intersection_graph->intersections.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	const GPlatesMaths::PolylineIntersections::Graph::Intersection *first_intersection =
+			intersection_graph->intersections[0].get();
+
+	// If we have an intersection then we should have at least one segment from each polyline.
+	// This is our guarantee to the caller.
+	// Usually will have two for each but one can happen if intersection is a T or V junction.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			first_intersection->prev_partitioned_polyline1 ||
+					first_intersection->next_partitioned_polyline1,
+			GPLATES_ASSERTION_SOURCE);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			first_intersection->prev_partitioned_polyline2 ||
+					first_intersection->next_partitioned_polyline2,
+			GPLATES_ASSERTION_SOURCE);
+
+	// See comment in header file about T-junctions and V-junctions to see why
+	// the returned segments are optional.
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> head_first_section;
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> head_second_section;
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> middle_first_section;
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> middle_second_section;
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> tail_first_section;
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> tail_second_section;
+
+	// If there's only one intersection then there is only head and tail segments -
+	// no middle segments.
+	if (intersection_graph->intersections.size() == 1)
+	{
+		if (first_intersection->prev_partitioned_polyline1)
+		{
+			head_first_section = first_intersection->prev_partitioned_polyline1->polyline;
+		}
+		if (first_intersection->prev_partitioned_polyline2)
+		{
+			head_second_section = first_intersection->prev_partitioned_polyline2->polyline;
+		}
+		if (first_intersection->next_partitioned_polyline1)
+		{
+			tail_first_section = first_intersection->next_partitioned_polyline1->polyline;
+		}
+		if (first_intersection->next_partitioned_polyline2)
+		{
+			tail_second_section = first_intersection->next_partitioned_polyline2->polyline;
+		}
+
+		return boost::make_tuple(
+				// The single intersection point...
+				first_intersection->intersection_point,
+				boost::optional<GPlatesMaths::PointOnSphere>(), // no second intersection point
+				boost::optional<bool>(), // no info about middle segments forming a cycle
+				head_first_section,
+				middle_first_section,
+				tail_first_section,
+				head_second_section,
+				middle_second_section,
+				tail_second_section);
+	}
+
+	//
+	// If we get here then we have two or more intersections.
+	//
+
+	// If even there is more than two intersections we'll just consider the first two
+	// intersections.
+	const GPlatesMaths::PolylineIntersections::Graph::Intersection *
+			second_intersection = intersection_graph->intersections[1].get();
+
+	//
+	// If there are more than two intersections then only the first two intersections are
+	// considered such that this function still divides the two input sections into
+	// (up to) three segments each (instead of several segments each).
+	// It does this by concatenating divided segments (of each section) before the first
+	// intersection point or after the second intersection point into a single segment.
+	//
+
+	// Determine if first intersection point is near the head or tail of each section.
+	// This is necessary in order to find what we are defining as each section's middle segment
+	// (in case there are more than two intersections).
+	//
+	// For example the middle segment could be the segment just after the first intersection
+	// or the segment just before the last intersection depending on the direction of the
+	// section's relative to each other.
+	//
+	// The head of a section ends at the first intersection if it has no previous
+	// intersection when following that section's path through the intersection graph.
+	const bool head_first_section_ends_at_first_intersection =
+			!(first_intersection->prev_partitioned_polyline1 &&
+					first_intersection->prev_partitioned_polyline1->prev_intersection);
+	const bool head_second_section_ends_at_first_intersection =
+			!(first_intersection->prev_partitioned_polyline2 &&
+					first_intersection->prev_partitioned_polyline2->prev_intersection);
+
+	// The middle segments form a cycle if the section directions oppose each other.
+	const bool middle_segments_form_a_cycle =
+			head_first_section_ends_at_first_intersection !=
+					head_second_section_ends_at_first_intersection;
+
+	if (head_first_section_ends_at_first_intersection)
+	{
+		if (first_intersection->prev_partitioned_polyline1)
+		{
+			head_first_section = first_intersection->prev_partitioned_polyline1->polyline;
+		}
+
+		// Since we have two intersections the middle segment should always exist.
+		middle_first_section = first_intersection->next_partitioned_polyline1->polyline;
+
+		if (second_intersection->next_partitioned_polyline1)
+		{
+			// Concatenate any polylines (from the first section) after the second intersection.
+			tail_first_section = concatenate_partitioned_polylines_starting_at_intersection(
+					second_intersection, NEXT_POLYLINE1);
+		}
+	}
+	else
+	{
+		if (second_intersection->prev_partitioned_polyline1)
+		{
+			// Concatenate any polylines (from the first section) before the second intersection.
+			head_first_section = concatenate_partitioned_polylines_starting_at_intersection(
+					second_intersection, PREVIOUS_POLYLINE1);
+		}
+
+		// Since we have two intersections the middle segment should always exist.
+		middle_first_section = second_intersection->next_partitioned_polyline1->polyline;
+
+		if (first_intersection->next_partitioned_polyline1)
+		{
+			tail_first_section = first_intersection->next_partitioned_polyline1->polyline;
+		}
+	}
+
+	if (head_second_section_ends_at_first_intersection)
+	{
+		if (first_intersection->prev_partitioned_polyline2)
+		{
+			head_second_section = first_intersection->prev_partitioned_polyline2->polyline;
+		}
+
+		// Since we have two intersections the middle segment should always exist.
+		middle_second_section = first_intersection->next_partitioned_polyline2->polyline;
+
+		if (second_intersection->next_partitioned_polyline2)
+		{
+			// Concatenate any polylines (from the second section) after the second intersection.
+			tail_second_section = concatenate_partitioned_polylines_starting_at_intersection(
+					second_intersection, NEXT_POLYLINE2);
+		}
+	}
+	else
+	{
+		if (second_intersection->prev_partitioned_polyline2)
+		{
+			// Concatenate any polylines (from the first section) before the second intersection.
+			head_second_section = concatenate_partitioned_polylines_starting_at_intersection(
+					second_intersection, PREVIOUS_POLYLINE2);
+		}
+
+		// Since we have two intersections the middle segment should always exist.
+		middle_second_section = second_intersection->next_partitioned_polyline2->polyline;
+
+		if (first_intersection->next_partitioned_polyline2)
+		{
+			tail_second_section = first_intersection->next_partitioned_polyline2->polyline;
+		}
+	}
+
+	return boost::make_tuple(
+			// First intersection point
+			first_intersection->intersection_point,
+			// Second intersection point
+			boost::optional<GPlatesMaths::PointOnSphere>(second_intersection->intersection_point),
+			boost::optional<bool>(middle_segments_form_a_cycle),
+			head_first_section,
+			middle_first_section,
+			tail_first_section,
+			head_second_section,
+			middle_second_section,
+			tail_second_section);
 }
 
 
@@ -1143,33 +1594,6 @@ GPlatesAppLogic::TopologyInternalUtils::find_closest_intersected_segment_to_refe
 			? first_intersected_segment
 			: second_intersected_segment;
 }
-
-
-void
-GPlatesAppLogic::TopologyInternalUtils::get_geometry_points(
-		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
-		std::vector<GPlatesMaths::PointOnSphere> &points,
-		bool reverse_points)
-{
-	GetGeometryOnSpherePoints get_geometry_on_sphere_points(points, reverse_points);
-
-	geometry_on_sphere.accept_visitor(get_geometry_on_sphere_points);
-}
-
-
-std::pair<
-		GPlatesMaths::PointOnSphere/*start point*/,
-		GPlatesMaths::PointOnSphere/*end point*/>
-GPlatesAppLogic::TopologyInternalUtils::get_geometry_end_points(
-		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
-		bool reverse_points)
-{
-	GetGeometryOnSphereEndPoints get_geometry_on_sphere_end_points;
-
-	return get_geometry_on_sphere_end_points.get_geometry_end_points(
-			geometry_on_sphere, reverse_points);
-}
-
 
 bool
 GPlatesAppLogic::TopologyInternalUtils::include_only_reconstructed_feature_geometries(

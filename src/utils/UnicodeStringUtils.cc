@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,7 @@
 
 #include <vector>
 #include <unicode/schriter.h>  // ICU's StringCharacterIterator
+#include <iostream>
 
 #include "UnicodeStringUtils.h"
 
@@ -130,6 +131,14 @@ GPlatesUtils::make_qstring_from_icu_string(
 	}
 
 	return qstring;
+}
+
+
+const std::string
+GPlatesUtils::make_std_string_from_icu_string(
+		const UnicodeString &icu_string)
+{
+	return make_qstring_from_icu_string(icu_string).toStdString();
 }
 
 

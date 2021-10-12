@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -53,7 +53,7 @@ namespace GPlatesModel
 	 * implementation.
 	 */
 	class ReconstructionTreePopulator:
-			public FeatureVisitor
+			public FeatureVisitorThatGuaranteesNotToModify
 	{
 	public:
 

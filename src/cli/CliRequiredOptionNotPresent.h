@@ -27,6 +27,7 @@
 #define GPLATES_CLI_CLIREQUIREDOPTIONNOTPRESENT_H
 
 #include <string>
+#include <boost/optional.hpp>
 
 #include "global/GPlatesException.h"
 
@@ -41,15 +42,13 @@ namespace GPlatesCli
 			public GPlatesGlobal::Exception
 	{
 	public:
-		/**
-		 * Instantiate an exception for a file named @a filename.
-		 */
-		explicit
 		RequiredOptionNotPresent(
 				const GPlatesUtils::CallStack::Trace &exception_source,
-				const char *option_):
+				const char *option_,
+				boost::optional<std::string> message_ = boost::none):
 			Exception(exception_source),
-			d_option(option_)
+			d_option(option_),
+			d_message(message_)
 		{  }
 
 		/**
@@ -59,6 +58,15 @@ namespace GPlatesCli
 		option() const
 		{
 			return d_option;
+		}
+
+		/**
+		 * Return the optional message explaining why option is required.
+		 */
+		boost::optional<std::string>
+		message() const
+		{
+			return d_message;
 		}
 
 	protected:
@@ -77,6 +85,13 @@ namespace GPlatesCli
 			write_string_message(
 					os,
 					std::string("Option '") + d_option + "' is required and was not found.");
+
+			if (d_message)
+			{
+				write_string_message(
+						os,
+						std::string("\nReason: '") + *d_message + "'");
+			}
 		}
 
 	private:
@@ -84,6 +99,11 @@ namespace GPlatesCli
 		 * The option that was required but not present.
 		 */
 		std::string d_option;
+
+		/**
+		 * Optional message explaining why option is required.
+		 */
+		boost::optional<std::string> d_message;
 	};
 }
 

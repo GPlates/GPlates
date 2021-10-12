@@ -31,7 +31,7 @@
 #include "RenderedGeometryVisitor.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"
-#include "gui/Colour.h"
+#include "gui/ColourProxy.h"
 
 
 namespace GPlatesViewOperations
@@ -45,7 +45,7 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::Vector3D &arrow_direction,
 				float arrowhead_projected_size,
 				float min_ratio_arrowhead_to_arrowline,
-				const GPlatesGui::Colour &colour,
+				const GPlatesGui::ColourProxy &colour,
 				float arrowline_width_hint) :
 			d_start_position(start),
 			d_arrow_direction(arrow_direction),
@@ -132,7 +132,7 @@ namespace GPlatesViewOperations
 		}
 
 
-		const GPlatesGui::Colour &
+		const GPlatesGui::ColourProxy &
 		get_colour() const
 		{
 			return d_colour;
@@ -151,7 +151,7 @@ namespace GPlatesViewOperations
 		const GPlatesMaths::Vector3D d_arrow_direction;
 		const float d_arrowhead_projected_size;
 		const float d_min_ratio_arrowhead_to_arrowline;
-		const GPlatesGui::Colour d_colour;
+		const GPlatesGui::ColourProxy d_colour;
 		const float d_arrowline_width_hint;
 	};
 }

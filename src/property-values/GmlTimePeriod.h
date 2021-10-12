@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -50,22 +50,19 @@ namespace GPlatesPropertyValues
 	class GmlTimePeriod:
 			public GPlatesModel::PropertyValue
 	{
+
 	public:
+
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod> non_null_ptr_to_const_type;
 
 		virtual
 		~GmlTimePeriod()
@@ -88,19 +85,23 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				GmlTimeInstant::non_null_ptr_type begin_,
-				GmlTimeInstant::non_null_ptr_type end_) {
-			GmlTimePeriod::non_null_ptr_type ptr(new GmlTimePeriod(begin_, end_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+				GmlTimeInstant::non_null_ptr_type end_)
+		{
+			GmlTimePeriod::non_null_ptr_type ptr(new GmlTimePeriod(begin_, end_));
 			return ptr;
 		}
 
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GmlTimePeriod(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		const GmlTimePeriod::non_null_ptr_type
+		clone() const
+		{
+			GmlTimePeriod::non_null_ptr_type dup(new GmlTimePeriod(*this));
 			return dup;
 		}
+
+		const GmlTimePeriod::non_null_ptr_type
+		deep_clone() const;
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Return the "begin" attribute of this GmlTimePeriod instance.
@@ -109,7 +110,8 @@ namespace GPlatesPropertyValues
 		 * be later than the "end" attribute.
 		 */
 		const GmlTimeInstant::non_null_ptr_to_const_type
-		begin() const {
+		begin() const
+		{
 			return d_begin;
 		}
 
@@ -131,7 +133,8 @@ namespace GPlatesPropertyValues
 		 * be later than the "end" attribute.
 		 */
 		const GmlTimeInstant::non_null_ptr_type
-		begin() {
+		begin()
+		{
 			return d_begin;
 		}
 
@@ -147,8 +150,10 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_begin(
-				GmlTimeInstant::non_null_ptr_type b) {
+				GmlTimeInstant::non_null_ptr_type b)
+		{
 			d_begin = b;
+			update_instance_id();
 		}
 
 		/**
@@ -158,7 +163,8 @@ namespace GPlatesPropertyValues
 		 * be earlier than the "begin" attribute.
 		 */
 		const GmlTimeInstant::non_null_ptr_to_const_type
-		end() const {
+		end() const
+		{
 			return d_end;
 		}
 
@@ -180,7 +186,8 @@ namespace GPlatesPropertyValues
 		 * be earlier than the "begin" attribute.
 		 */
 		const GmlTimeInstant::non_null_ptr_type
-		end() {
+		end()
+		{
 			return d_end;
 		}
 
@@ -196,8 +203,10 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_end(
-				GmlTimeInstant::non_null_ptr_type e) {
+				GmlTimeInstant::non_null_ptr_type e)
+		{
 			d_end = e;
+			update_instance_id();
 		}
 
 		/**
@@ -210,7 +219,8 @@ namespace GPlatesPropertyValues
 		 */
 		bool
 		contains(
-				const GeoTimeInstant &geo_time) const {
+				const GeoTimeInstant &geo_time) const
+		{
 			return (begin()->time_position().is_earlier_than_or_coincident_with(geo_time) &&
 					geo_time.is_earlier_than_or_coincident_with(end()->time_position()));
 		}
@@ -224,7 +234,8 @@ namespace GPlatesPropertyValues
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gml_time_period(*this);
 		}
 
@@ -237,9 +248,15 @@ namespace GPlatesPropertyValues
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gml_time_period(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -260,10 +277,15 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlTimePeriod(
 				const GmlTimePeriod &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_begin(other.d_begin),
 			d_end(other.d_end)
 		{  }
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
 
 	private:
 

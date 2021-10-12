@@ -34,10 +34,11 @@
 
 #include "TotalReconstructionPolesDialog.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "gui/CsvExport.h"
-#include "model/ReconstructionTreeEdge.h"
 #include "presentation/ViewState.h"
+#include "model/ReconstructionTreeEdge.h"
+#include "maths/MathsUtils.h"
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -148,7 +149,7 @@ namespace {
 			QString lat_string = locale_.toString(llp.latitude(),'f',2);
 			QString lon_string = locale_.toString(llp.longitude(),'f',2);
 
-			const double &angle = radiansToDegrees(params.angle).dval();
+			const double &angle = GPlatesMaths::convert_rad_to_deg(params.angle).dval();
 			
 			QString angle_string = locale_.toString(angle,'f',2);
 	
@@ -217,7 +218,7 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
-	d_reconstruct_ptr(&view_state.get_reconstruct())
+	d_application_state_ptr(&view_state.get_application_state())
 {
 	setupUi(this);
 
@@ -266,8 +267,8 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 	tree_circuit_header->resizeSection(2,270);
 	tree_circuit_header->resizeSection(3,270);
 
-	set_time(d_reconstruct_ptr->get_current_reconstruction_time());
-	set_plate(d_reconstruct_ptr->get_current_anchored_plate_id());
+	set_time(d_application_state_ptr->get_current_reconstruction_time());
+	set_plate(d_application_state_ptr->get_current_anchored_plate_id());
 
 	QObject::connect(button_export_relative_rotations,SIGNAL(clicked()),this,SLOT(export_relative()));
 	QObject::connect(button_export_equiv_rotations,SIGNAL(clicked()),this,SLOT(export_equivalent()));
@@ -308,10 +309,10 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table()
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
+			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
+			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
 
 
 	for(it = it_begin; it != it_end ; ++it)
@@ -363,7 +364,7 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table()
 			longitude_item->setFlags(Qt::ItemIsEnabled);
 			table_equivalent->setItem(num_row,ColumnNames::LONGITUDE,longitude_item);
 
-			const double &angle = radiansToDegrees(params.angle).dval();
+			const double &angle = GPlatesMaths::convert_rad_to_deg(params.angle).dval();
 			
 			QString angle_string = locale_.toString(angle);
 			QTableWidgetItem* angle_item = new QTableWidgetItem(angle_string);
@@ -384,10 +385,10 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table()
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
+			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
+			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
 
 
 	for(it = it_begin; it != it_end ; ++it)
@@ -438,7 +439,7 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table()
 			longitude_item->setFlags(Qt::ItemIsEnabled);
 			table_relative->setItem(num_row,ColumnNames::LONGITUDE,longitude_item);
 
-			const double &angle = radiansToDegrees(params.angle).dval();
+			const double &angle = convert_rad_to_deg(params.angle).dval();
 			
 			QString angle_string = locale_.toString(angle);
 			QTableWidgetItem* angle_item = new QTableWidgetItem(angle_string);
@@ -466,7 +467,7 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_reconstruction_tree()
 	tree_reconstruction->clear();
 
 	GPlatesModel::ReconstructionTree& tree =
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree();
+			d_application_state_ptr->get_current_reconstruction().reconstruction_tree();
 
 	std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator it;
 	std::vector<GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::iterator it_begin = 
@@ -501,10 +502,10 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree()
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it;
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_begin = 
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
+			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_begin();
 	std::multimap<GPlatesModel::integer_plate_id_type,
 		GPlatesModel::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it_end = 
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
+			d_application_state_ptr->get_current_reconstruction().reconstruction_tree().edge_map_end();
 
 
 	for(it = it_begin; it != it_end ; ++it)
@@ -545,8 +546,8 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree()
 void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::update()
 {
-	set_time(d_reconstruct_ptr->get_current_reconstruction_time());
-	set_plate(d_reconstruct_ptr->get_current_anchored_plate_id());
+	set_time(d_application_state_ptr->get_current_reconstruction_time());
+	set_plate(d_application_state_ptr->get_current_anchored_plate_id());
 	fill_equivalent_table();
 	fill_relative_table();
 	fill_reconstruction_tree();

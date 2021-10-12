@@ -8,6 +8,8 @@
  *   $Date$
  *
  * Copyright (C) 2007 James Boyden <jboy@jboy.id.au>
+ * Copyright (C) 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2007 Geological Survey of Norway
  *
  * This file is derived from the header file "PlatesRotationFormatReader.hh",
  * which is part of the ReconTreeViewer software:

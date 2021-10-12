@@ -34,12 +34,21 @@ set(srcs
     AssignReconstructionPlateIdsDialog.h
     AssignReconstructionPlateIdsDialogUi.ui
     BuildTopologyWidgetUi.ui
+    CalculateReconstructionPoleDialog.cc
+    CalculateReconstructionPoleDialog.h
+    CalculateReconstructionPoleDialogUi.ui
+    ColouringDialog.cc
+    ColouringDialog.h
+    ColouringDialogUi.ui
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
+    CreateVGPDialog.cc
+    CreateVGPDialog.h
+    CreateVGPDialogUi.ui
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
@@ -107,6 +116,8 @@ set(srcs
     FeatureSummaryWidget.cc
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
+    GlobeAndMapWidget.cc
+    GlobeAndMapWidget.h
     GlobeCanvas.cc
     GlobeCanvas.h
     GMenuButton.cc
@@ -120,6 +131,9 @@ set(srcs
     InformationDialogUi.ui
     InsertionPointWidget.h
     InsertionPointWidgetUi.ui
+    InsertVGPReconstructionPoleDialog.cc
+    InsertVGPReconstructionPoleDialog.h
+    InsertVGPReconstructionPoleDialogUi.ui
     InvalidPropertyValueException.h
     LatLonCoordinatesTable.cc
     LatLonCoordinatesTable.h
@@ -143,10 +157,21 @@ set(srcs
     MeasureDistanceWidget.cc
     MeasureDistanceWidget.h
     MeasureDistanceWidgetUi.ui
+    MeshDialog.cc
+    MeshDialog.h
+    MeshDialogUi.ui
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui
+    ModifyReconstructionPoleWidget.cc
+    ModifyReconstructionPoleWidget.h
+    ModifyReconstructionPoleWidgetUi.ui
     NoActiveEditWidgetException.h
+    PoleSequenceTableWidget.cc
+    PoleSequenceTableWidget.h
+    PoleSequenceTableWidgetUi.ui
+    ProgressDialog.h
+    ProgressDialogUi.ui
     ProjectionControlWidget.cc
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui
@@ -175,6 +200,9 @@ set(srcs
     SetRasterSurfaceExtentDialog.cc
     SetRasterSurfaceExtentDialog.h
     SetRasterSurfaceExtentDialogUi.ui
+    SetVGPVisibilityDialog.cc
+    SetVGPVisibilityDialog.h
+    SetVGPVisibilityDialogUi.ui
     ShapefileAttributeMapperDialog.cc
     ShapefileAttributeMapperDialog.h
     ShapefileAttributeMapperDialogUi.ui
@@ -206,7 +234,11 @@ set(srcs
     TotalReconstructionPolesDialog.cc
     TotalReconstructionPolesDialog.h
     TotalReconstructionPolesDialogUi.ui
+    TrinketIcon.cc
+    TrinketIcon.h
     UninitialisedEditWidgetException.h
+    UnsavedChangesWarningDialog.h
+    UnsavedChangesWarningDialogUi.ui
     ViewFeatureGeometriesWidget.cc
     ViewFeatureGeometriesWidget.h
     ViewFeatureGeometriesWidgetUi.ui
@@ -235,6 +267,6 @@ set(target_name qt-widgets)
 # - groups files in Visual Studio IDE according to type.
 GPLATES_GENERATE_TARGET_SOURCES(${target_name} target_srcs ${srcs})
 
-add_library(${target_name} ${target_srcs})
+add_library(${target_name} STATIC ${target_srcs})
 
 GPLATES_POST_ADD_TARGET(${target_name} target_srcs)

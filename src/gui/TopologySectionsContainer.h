@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  *
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,7 +31,7 @@
 #include <iterator>
 #include <vector>
 
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
@@ -94,7 +94,7 @@ namespace GPlatesGui
 			 * topological section - the reverse flag is usually always false in this case.
 			 */
 			TableRow(
-					const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
+					const GPlatesModel::FeatureHandle::iterator &geometry_property,
 					const boost::optional<GPlatesMaths::PointOnSphere> &click_point = boost::none,
 					bool reverse_order = false);
 
@@ -114,7 +114,7 @@ namespace GPlatesGui
 			}
 
 			//! Get the geometry property iterator.
-			const GPlatesModel::FeatureHandle::properties_iterator &
+			const GPlatesModel::FeatureHandle::iterator &
 			get_geometry_property() const
 			{
 				return d_geometry_property;
@@ -183,7 +183,7 @@ namespace GPlatesGui
 			 * NOTE: 'd_geometry_property' must be declared/initialised after 'd_feature_ref'
 			 * since it uses it when constructed.
 			 */
-			GPlatesModel::FeatureHandle::properties_iterator d_geometry_property;
+			GPlatesModel::FeatureHandle::iterator d_geometry_property;
 
 			/**
 			 * The point the user clicked on to select the section.

@@ -30,7 +30,9 @@
 
 #include <list>
 #include <vector>
+#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 
 #include "GreatCircleArc.h"
 #include "PointOnSphere.h"
@@ -46,7 +48,8 @@ namespace GPlatesMaths {
 		 * Contains the results of intersecting two geometries in a form where
 		 * the resulting partitioned polylines from each geometry can be traversed and queried.
 		 */
-		class Graph
+		class Graph :
+				public boost::noncopyable
 		{
 		public:
 			class Intersection;
@@ -84,14 +87,17 @@ namespace GPlatesMaths {
 			/**
 			 * A section of one of the two original intersected geometries;
 			 */
-			class PartitionedPolyline
+			class PartitionedPolyline :
+					public boost::noncopyable
 			{
 			public:
 				PartitionedPolyline(
 						PolylineOnSphere::non_null_ptr_to_const_type polyline_,
 						bool is_overlapping_);
 
-				//! The actual partitioned polyline geometry.
+				/**
+				 * The actual partitioned polyline geometry.
+				 */
 				PolylineOnSphere::non_null_ptr_to_const_type polyline;
 
 				/**
@@ -121,7 +127,7 @@ namespace GPlatesMaths {
 				 * possible for the first polyline to start with a non-NULL
 				 * intersection (for example a T-junction).
 				 */
-				intersection_ptr_to_const_type prev_intersection;
+				const Intersection *prev_intersection;
 
 				/**
 				 * The next intersection if there is one.
@@ -132,42 +138,47 @@ namespace GPlatesMaths {
 				 * possible for the last polyline to end with a non-NULL
 				 * intersection (for example a T-junction).
 				 */
-				intersection_ptr_to_const_type next_intersection;
+				const Intersection *next_intersection;
 			};
 
 			/**
 			 * A point of intersection of the two original intersected geometries;
 			 */
-			class Intersection
+			class Intersection :
+					public boost::noncopyable
 			{
 			public:
 				Intersection(
 						const PointOnSphere &intersection_point_);
 
-				//! The point of intersection.
+				/**
+				 * The point of intersection.
+				 */
 				PointOnSphere intersection_point;
 
 				/**
 				 * The previous partitioned polyline from the first original geometry.
 				 * If NULL or false then this intersection is a T-junction.
 				 */
-				partitioned_polyline_ptr_to_const_type prev_partitioned_polyline1;
+				const PartitionedPolyline *prev_partitioned_polyline1;
+
 				/**
 				 * The next partitioned polyline from the first original geometry.
 				 * If NULL or false then this intersection is a T-junction.
 				 */
-				partitioned_polyline_ptr_to_const_type next_partitioned_polyline1;
+				const PartitionedPolyline *next_partitioned_polyline1;
 
 				/**
 				 * The previous partitioned polyline from the second original geometry.
 				 * If NULL or false then this intersection is a T-junction.
 				 */
-				partitioned_polyline_ptr_to_const_type prev_partitioned_polyline2;
+				const PartitionedPolyline *prev_partitioned_polyline2;
+
 				/**
 				 * The next partitioned polyline from the second original geometry.
 				 * If NULL or false then this intersection is a T-junction.
 				 */
-				partitioned_polyline_ptr_to_const_type next_partitioned_polyline2;
+				const PartitionedPolyline *next_partitioned_polyline2;
 			};
 
 

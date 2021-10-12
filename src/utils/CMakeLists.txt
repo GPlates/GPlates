@@ -15,6 +15,13 @@ set(srcs
     AnimationSequenceUtils.h
     CallStackTracker.cc
     CallStackTracker.h
+    CommandLineParser.cc
+    CommandLineParser.h
+    ExportAnimationStrategyExporterID.h
+    ExportAnimationStrategyFactory.cc
+    ExportAnimationStrategyFactory.h
+    ExportFileNameTemplateValidator.cc
+    ExportFileNameTemplateValidator.h
     ExportTemplateFilenameSequence.cc
     ExportTemplateFilenameSequence.h
     ExportTemplateFilenameSequenceFormats.cc
@@ -27,7 +34,6 @@ set(srcs
     IdStringSet.cc
     IdStringSet.h
     LatLonAreaSampling.h
-    MathUtils.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
@@ -35,6 +41,7 @@ set(srcs
     Profile.cc
     Profile.h
     ReferenceCount.h
+    ScopeGuard.h
     Singleton.h
     SmartNodeLinkedList.h
     StringFormattingUtils.cc
@@ -74,6 +81,6 @@ set(target_name utils)
 # - groups files in Visual Studio IDE according to type.
 GPLATES_GENERATE_TARGET_SOURCES(${target_name} target_srcs ${srcs})
 
-add_library(${target_name} ${target_srcs})
+add_library(${target_name} STATIC ${target_srcs})
 
 GPLATES_POST_ADD_TARGET(${target_name} target_srcs)

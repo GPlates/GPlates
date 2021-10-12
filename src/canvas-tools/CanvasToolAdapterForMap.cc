@@ -61,8 +61,12 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::CanvasToolAdapterForMap (
 		CanvasTool *canvas_tool_ptr,
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
 		GPlatesQtWidgets::MapView &map_view_,
-		const GPlatesQtWidgets::ViewportWindow &view_state_) :
-	MapCanvasTool(map_canvas_, map_view_),
+		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesGui::MapTransform &map_transform_) :
+	MapCanvasTool(
+			map_canvas_,
+			map_view_,
+			map_transform_),
 	d_canvas_tool_ptr(canvas_tool_ptr),
 	d_status_bar_listener(&view_state_)
 {
@@ -75,14 +79,16 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::create(
 		CanvasTool *canvas_tool_ptr,
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
 		GPlatesQtWidgets::MapView &map_view_,
-		const GPlatesQtWidgets::ViewportWindow &view_state) 
+		const GPlatesQtWidgets::ViewportWindow &view_state,
+		GPlatesGui::MapTransform &map_transform_) 
 {
 	CanvasToolAdapterForMap::non_null_ptr_type ptr(
 			new CanvasToolAdapterForMap(
 				canvas_tool_ptr,
 				map_canvas_,
 				map_view_,
-				view_state),
+				view_state,
+				map_transform_),
 			GPlatesUtils::NullIntrusivePointerHandler());
 	return ptr;
 }
@@ -119,7 +125,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_left_click(
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> point_on_sphere =
-			qpointf_to_point_on_sphere(click_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(click_point_on_scene, map_canvas().map().projection());
 		if (point_on_sphere)
 		{
 			d_canvas_tool_ptr->handle_left_click(
@@ -148,11 +154,11 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_left_drag(
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> initial_point_on_sphere =
-			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().map().projection());
 		if (initial_point_on_sphere)
 		{
 			boost::optional<GPlatesMaths::PointOnSphere> current_point_on_sphere =
-				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().projection());
+				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().map().projection());
 			if (current_point_on_sphere)
 			{
 				d_canvas_tool_ptr->handle_left_drag(
@@ -186,11 +192,11 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_left_release_after_drag(
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> initial_point_on_sphere =
-			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().map().projection());
 		if (initial_point_on_sphere)
 		{
 			boost::optional<GPlatesMaths::PointOnSphere> current_point_on_sphere =
-				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().projection());
+				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().map().projection());
 			if (current_point_on_sphere)
 			{
 				d_canvas_tool_ptr->handle_left_release_after_drag(
@@ -221,7 +227,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_left_click(
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> point_on_sphere =
-			qpointf_to_point_on_sphere(click_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(click_point_on_scene, map_canvas().map().projection());
 		if (point_on_sphere)
 		{
 			d_canvas_tool_ptr->handle_shift_left_click(
@@ -250,11 +256,11 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_left_drag(
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> initial_point_on_sphere =
-			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().map().projection());
 		if (initial_point_on_sphere)
 		{
 			boost::optional<GPlatesMaths::PointOnSphere> current_point_on_sphere =
-				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().projection());
+				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().map().projection());
 			if (current_point_on_sphere)
 			{
 				d_canvas_tool_ptr->handle_shift_left_drag(
@@ -287,11 +293,11 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_left_release_after_dra
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> initial_point_on_sphere =
-			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().map().projection());
 		if (initial_point_on_sphere)
 		{
 			boost::optional<GPlatesMaths::PointOnSphere> current_point_on_sphere =
-				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().projection());
+				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().map().projection());
 			if (current_point_on_sphere)
 			{
 				d_canvas_tool_ptr->handle_shift_left_release_after_drag(
@@ -322,7 +328,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_ctrl_left_click(
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> point_on_sphere =
-			qpointf_to_point_on_sphere(click_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(click_point_on_scene, map_canvas().map().projection());
 		if (point_on_sphere)
 		{
 			d_canvas_tool_ptr->handle_ctrl_left_click(
@@ -351,11 +357,11 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_ctrl_left_drag(
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> initial_point_on_sphere =
-			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().map().projection());
 		if (initial_point_on_sphere)
 		{
 			boost::optional<GPlatesMaths::PointOnSphere> current_point_on_sphere =
-				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().projection());
+				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().map().projection());
 			if (current_point_on_sphere)
 			{
 				if (d_canvas_tool_ptr->handle_ctrl_left_drag(
@@ -397,11 +403,11 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_ctrl_left_release_after_drag
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> initial_point_on_sphere =
-			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().map().projection());
 		if (initial_point_on_sphere)
 		{
 			boost::optional<GPlatesMaths::PointOnSphere> current_point_on_sphere =
-				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().projection());
+				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().map().projection());
 			if (current_point_on_sphere)
 			{
 				if (d_canvas_tool_ptr->handle_ctrl_left_release_after_drag(
@@ -440,7 +446,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_ctrl_left_click(
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> point_on_sphere =
-			qpointf_to_point_on_sphere(click_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(click_point_on_scene, map_canvas().map().projection());
 		if (point_on_sphere)
 		{
 			d_canvas_tool_ptr->handle_shift_ctrl_left_click(
@@ -469,11 +475,11 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_ctrl_left_drag(
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> initial_point_on_sphere =
-			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(initial_point_on_scene, map_canvas().map().projection());
 		if (initial_point_on_sphere)
 		{
 			boost::optional<GPlatesMaths::PointOnSphere> current_point_on_sphere =
-				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().projection());
+				qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().map().projection());
 			if (current_point_on_sphere)
 			{
 				if (d_canvas_tool_ptr->handle_shift_ctrl_left_drag(
@@ -514,7 +520,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_move_without_drag(
 		}
 
 		boost::optional<GPlatesMaths::PointOnSphere> point_on_sphere =
-			qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().projection());
+			qpointf_to_point_on_sphere(current_point_on_scene, map_canvas().map().projection());
 		if (point_on_sphere)
 		{
 			d_canvas_tool_ptr->handle_move_without_drag(

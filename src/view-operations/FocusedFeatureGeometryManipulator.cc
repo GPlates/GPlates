@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,7 +29,7 @@
 
 #include "UndoRedo.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructUtils.h"
 
@@ -128,7 +128,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::FocusedFeatureGeometry
 		GPlatesPresentation::ViewState &view_state) :
 d_focused_feature_geom_builder(&focused_feature_geom_builder),
 d_feature_focus(&view_state.get_feature_focus()),
-d_reconstruct(&view_state.get_reconstruct()),
+d_application_state(&view_state.get_application_state()),
 d_ignore_geom_builder_update(false),
 d_block_infinite_signal_slot_loop_depth(0)
 {
@@ -316,8 +316,10 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 
 		// Since we can have multiple geometry properties per feature we make sure we
 		// set the geometry that the user actually clicked on.
-		GPlatesModel::TopLevelProperty &geom_top_level_prop = **d_focused_geometry->property();
-		geometry_setter.set_geometry(&geom_top_level_prop);
+		GPlatesModel::FeatureHandle::iterator iter = d_focused_geometry->property();
+		GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->deep_clone();
+		geometry_setter.set_geometry(geom_top_level_prop_clone.get());
+		*iter = geom_top_level_prop_clone;
 
 		// Announce that we've modified the focused feature.
 		d_feature_focus->announce_modification_of_focused_feature();
@@ -337,7 +339,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
 	{
 		// Get current reconstruction tree.
 		GPlatesModel::ReconstructionTree &recon_tree =
-				d_reconstruct->get_current_reconstruction().reconstruction_tree();
+				d_application_state->get_current_reconstruction().reconstruction_tree();
 
 		geometry_on_sphere = GPlatesAppLogic::ReconstructUtils::reconstruct(
 				geometry_on_sphere, plate_id, recon_tree, reverse_reconstruct);

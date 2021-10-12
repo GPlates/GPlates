@@ -36,9 +36,9 @@
 
 namespace GPlatesAppLogic
 {
+	class ApplicationState;
 	class FeatureCollectionFileState;
 	class FeatureCollectionFileIO;
-	class Reconstruct;
 }
 
 namespace GPlatesPresentation
@@ -157,7 +157,7 @@ namespace GPlatesQtWidgets
 		 * The reconstruction generator is used to access the reconstruction tree to
 		 * perform reverse reconstruction of the temporary geometry (once we know the plate id).
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		/**
 		 * Used to popup dialogs in the main window.
@@ -179,9 +179,14 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry_opt_ptr;
 
 		/**
-		 * The custom edit widget for GpmlPlateId. Memory managed by Qt.
+		 * The custom edit widget for reconstruction. Memory managed by Qt.
 		 */
 		EditPlateIdWidget *d_plate_id_widget;
+
+		/**
+		 * The custom edit widget for conjugate plate id. Memory managed by Qt.
+		 */
+		EditPlateIdWidget *d_conjugate_plate_id_widget;
 
 		/**
 		 * The custom edit widget for GmlTimePeriod. Memory managed by Qt.

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,12 +25,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "ModelUtils.h"
-#include "Model.h"
-#include "DummyTransactionHandle.h"
-#include "FeatureHandle.h"
-#include "FeatureRevision.h"
+#include <algorithm>
 
+#include "Model.h"
+#include "ModelUtils.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlTimePeriod.h"
@@ -40,99 +41,6 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
-
-
-const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
-GPlatesModel::ModelUtils::append_property_value_to_feature(
-		PropertyValue::non_null_ptr_type property_value,
-		const PropertyName &property_name,
-		const FeatureHandle::weak_ref &feature)
-{
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	TopLevelPropertyInline::non_null_ptr_type top_level_property =
-			TopLevelPropertyInline::create(property_name, property_value, xml_attributes);
-
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature->append_top_level_property(top_level_property, transaction);
-	transaction.commit();
-
-	return top_level_property;
-}
-
-
-const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
-GPlatesModel::ModelUtils::append_property_value_to_feature(
-		PropertyValue::non_null_ptr_type property_value,
-		const PropertyName &property_name,
-		const UnicodeString &attribute_name_string,
-		const UnicodeString &attribute_value_string,
-		const FeatureHandle::weak_ref &feature)
-{
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	// FIXME: xml_attribute_name is not always GPML!
-	XmlAttributeName xml_attribute_name =
-		XmlAttributeName::create_gpml(
-				GPlatesUtils::make_qstring_from_icu_string(attribute_name_string));
-	XmlAttributeValue xml_attribute_value(attribute_value_string);
-	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-	TopLevelPropertyInline::non_null_ptr_type top_level_property =
-			TopLevelPropertyInline::create(property_name, property_value, xml_attributes);
-
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature->append_top_level_property(top_level_property, transaction);
-	transaction.commit();
-
-	return top_level_property;
-}
-
-
-const GPlatesModel::TopLevelProperty::non_null_ptr_type
-GPlatesModel::ModelUtils::append_property_value_to_feature(
-		TopLevelProperty::non_null_ptr_type top_level_property,
-		const FeatureHandle::weak_ref &feature)
-{
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature->append_top_level_property(top_level_property, transaction);
-	transaction.commit();
-
-	return top_level_property;
-}
-
-
-void
-GPlatesModel::ModelUtils::remove_property_value_from_feature(
-		FeatureHandle::properties_iterator properties_iterator,
-		const FeatureHandle::weak_ref &feature)
-{
-	DummyTransactionHandle transaction(__FILE__, __LINE__);
-	feature->remove_top_level_property(properties_iterator, transaction);
-	transaction.commit();
-}
-
-
-void
-GPlatesModel::ModelUtils::remove_property_values_from_feature(
-		const PropertyName &property_name,
-		const FeatureHandle::weak_ref &feature)
-{
-	FeatureHandle::properties_iterator feature_properties_iter = feature->properties_begin();
-	FeatureHandle::properties_iterator feature_properties_end = feature->properties_end();
-	while (feature_properties_iter != feature_properties_end)
-	{
-		// Increment iterator before we remove property.
-		// I don't think this is currently necessary but it doesn't hurt.
-		FeatureHandle::properties_iterator current_feature_properties_iter =
-				feature_properties_iter;
-		++feature_properties_iter;
-
-		if (current_feature_properties_iter.is_valid() &&
-			(*current_feature_properties_iter)->property_name() == property_name)
-		{
-			remove_property_value_from_feature(
-					current_feature_properties_iter, feature);
-		}
-	}
-}
 
 
 const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
@@ -252,29 +160,53 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 		const std::vector<TotalReconstructionPoleData> &five_tuples)
 {
 	FeatureType feature_type = FeatureType::create_gpml("TotalReconstructionSequence");
-	FeatureHandle::weak_ref feature =
-			model->create_feature(feature_type, target_collection);
+	FeatureHandle::weak_ref feature = FeatureHandle::create(target_collection, feature_type);
 
 	TopLevelProperty::non_null_ptr_type total_reconstruction_pole_container =
 			create_total_reconstruction_pole(five_tuples);
 
-	DummyTransactionHandle pc1(__FILE__, __LINE__);
-	feature->append_top_level_property(total_reconstruction_pole_container, pc1);
-	pc1.commit();
+	// DummyTransactionHandle pc1(__FILE__, __LINE__);
+	feature->add(total_reconstruction_pole_container);
+	// pc1.commit();
 
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type fixed_ref_frame(
 			GPlatesPropertyValues::GpmlPlateId::create(fixed_plate_id));
-	ModelUtils::append_property_value_to_feature(
-			fixed_ref_frame,
-			PropertyName::create_gpml("fixedReferenceFrame"), 
-			feature);
+	feature->add(
+			TopLevelPropertyInline::create(
+				PropertyName::create_gpml("fixedReferenceFrame"),
+				fixed_ref_frame));
 
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type moving_ref_frame(
 			GPlatesPropertyValues::GpmlPlateId::create(moving_plate_id));
-	ModelUtils::append_property_value_to_feature(
-			moving_ref_frame,
-			PropertyName::create_gpml("movingReferenceFrame"), 
-			feature);
+	feature->add(
+			TopLevelPropertyInline::create(
+				PropertyName::create_gpml("movingReferenceFrame"),
+				moving_ref_frame));
 
 	return feature;
 }
+
+bool
+GPlatesModel::ModelUtils::remove_feature(
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref,
+	GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+
+	GPlatesModel::FeatureCollectionHandle::iterator
+		feature_iter = feature_collection_ref->begin();
+	GPlatesModel::FeatureCollectionHandle::iterator 
+		feature_end = feature_collection_ref->end();
+
+	for (; feature_iter != feature_end; ++feature_iter) 
+	{
+		if(feature_ref.handle_ptr() == (*feature_iter).get()) 
+		{
+			// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
+			feature_collection_ref->remove(feature_iter);
+			// transaction.commit();
+			return true;
+		}
+	}
+	return false;
+}
+

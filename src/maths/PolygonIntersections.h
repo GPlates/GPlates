@@ -108,7 +108,7 @@ namespace GPlatesMaths
 		partition_geometry(
 				const GeometryOnSphere::non_null_ptr_to_const_type &geometry_to_be_partitioned,
 				partitioned_geometry_seq_type &partitioned_geometries_inside,
-				partitioned_geometry_seq_type &partitioned_geometries_outside);
+				partitioned_geometry_seq_type &partitioned_geometries_outside) const;
 
 
 		/**
@@ -119,7 +119,7 @@ namespace GPlatesMaths
 		partition_polyline(
 				const PolylineOnSphere::non_null_ptr_to_const_type &polyline_to_be_partitioned,
 				partitioned_polyline_seq_type &partitioned_polylines_inside,
-				partitioned_polyline_seq_type &partitioned_polylines_outside);
+				partitioned_polyline_seq_type &partitioned_polylines_outside) const;
 
 
 		/**
@@ -141,7 +141,7 @@ namespace GPlatesMaths
 		partition_polygon(
 				const PolygonOnSphere::non_null_ptr_to_const_type &polygon_to_be_partitioned,
 				partitioned_polyline_seq_type &partitioned_polylines_inside,
-				partitioned_polyline_seq_type &partitioned_polylines_outside);
+				partitioned_polyline_seq_type &partitioned_polylines_outside) const;
 
 
 		/**
@@ -150,7 +150,7 @@ namespace GPlatesMaths
 		 */
 		Result
 		partition_point(
-				const PointOnSphere &point_to_be_partitioned);
+				const PointOnSphere &point_to_be_partitioned) const;
 
 
 		/**
@@ -164,7 +164,7 @@ namespace GPlatesMaths
 		partition_multipoint(
 				const MultiPointOnSphere::non_null_ptr_to_const_type &multipoint_to_be_partitioned,
 				boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_inside,
-				boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_outside);
+				boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &partitioned_multipoint_outside) const;
 
 	private:
 		PolygonOnSphere::non_null_ptr_to_const_type d_partitioning_polygon;
@@ -181,7 +181,7 @@ namespace GPlatesMaths
 		Result
 		partition_polyline_or_polygon_fully_inside_or_outside(
 				const GPlatesMaths::PointOnSphere &arbitrary_point_on_geometry1,
-				const GPlatesMaths::PointOnSphere &arbitrary_point_on_geometry2);
+				const GPlatesMaths::PointOnSphere &arbitrary_point_on_geometry2) const;
 
 		/**
 		 * Determines which partitioned polylines are inside/outside the
@@ -191,7 +191,7 @@ namespace GPlatesMaths
 		partition_intersecting_geometry(
 				const GPlatesMaths::PolylineIntersections::Graph &partitioned_polylines_graph,
 				partitioned_polyline_seq_type &partitioned_polylines_inside,
-				partitioned_polyline_seq_type &partitioned_polylines_outside);
+				partitioned_polyline_seq_type &partitioned_polylines_outside) const;
 
 		bool
 		is_gca_inside_partitioning_polygon(

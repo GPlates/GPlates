@@ -27,14 +27,16 @@
 #define GPLATES_QTWIDGETS_QUERYFEATUREPROPERTIESWIDGET_H
 
 #include <QWidget>
+
 #include "QueryFeaturePropertiesWidgetUi.h"
+
 #include "gui/FeatureFocus.h"
 #include "model/FeatureHandle.h"
 
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesPresentation
@@ -86,6 +88,9 @@ namespace GPlatesQtWidgets
 		QTreeWidget &
 		property_tree() const;
 
+		void
+		load_data_if_necessary();
+		
 	public slots:
 
 		/**
@@ -111,7 +116,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * This is the view state which is used to obtain the reconstruction root.
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		/**
 		 * This is the feature we are displaying. Make sure to check this ref is_valid()!
@@ -122,6 +127,8 @@ namespace GPlatesQtWidgets
 		 * The @a ReconstructionGeometry associated with the feature that is in focus.
 		 */
 		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type d_focused_rg;
+
+		bool d_need_load_data;
 	};
 }
 

@@ -11,11 +11,17 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    CliAssignPlateIdsCommand.cc
+    CliAssignPlateIdsCommand.h
     CliCommand.h
     CliCommandDispatcher.cc
     CliCommandDispatcher.h
-    CliConvertToGpmlCommand.cc
-    CliConvertToGpmlCommand.h
+    CliCommandRegistry.h
+    CliConvertFileFormatCommand.cc
+    CliConvertFileFormatCommand.h
+    CliFeatureCollectionFileIO.cc
+    CliFeatureCollectionFileIO.h
+    CliInvalidOptionValue.h
     CliReconstructCommand.cc
     CliReconstructCommand.h
     CliRequiredOptionNotPresent.h
@@ -33,6 +39,6 @@ set(target_name cli)
 # - groups files in Visual Studio IDE according to type.
 GPLATES_GENERATE_TARGET_SOURCES(${target_name} target_srcs ${srcs})
 
-add_library(${target_name} ${target_srcs})
+add_library(${target_name} STATIC ${target_srcs})
 
 GPLATES_POST_ADD_TARGET(${target_name} target_srcs)

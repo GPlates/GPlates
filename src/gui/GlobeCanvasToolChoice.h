@@ -29,7 +29,6 @@
 #include <boost/noncopyable.hpp>
 #include <QObject>
 
-#include "gui/ColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "GlobeCanvasTool.h"
 #include "FeatureTableModel.h"
@@ -46,7 +45,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 	class FeaturePropertiesDialog;
 	class DigitisationWidget;
-	class ReconstructionPoleWidget;
+	class ModifyReconstructionPoleWidget;
 	class TopologyToolsWidget;
 }
 
@@ -103,7 +102,7 @@ namespace GPlatesGui
 				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
+				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget,
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state);
@@ -176,6 +175,12 @@ namespace GPlatesGui
 		choose_insert_vertex_tool()
 		{
 			change_tool_if_necessary(d_insert_vertex_tool_ptr);
+		}
+
+		void
+		choose_split_feature_tool()
+		{
+			change_tool_if_necessary(d_split_feature_tool_ptr);
 		}
 
 		void
@@ -252,6 +257,11 @@ namespace GPlatesGui
 		 * This is the InsertVertex tool which the user may choose.
 		 */
 		GlobeCanvasTool::non_null_ptr_type d_insert_vertex_tool_ptr;
+
+		/**
+		 * This is the SplitFeature tool which the user may choose.
+		 */
+		GlobeCanvasTool::non_null_ptr_type d_split_feature_tool_ptr;
 
 		/**
 		 * This is the ManipulatePole tool which the user may choose.

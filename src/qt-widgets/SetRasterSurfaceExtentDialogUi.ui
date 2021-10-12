@@ -15,8 +15,8 @@
   <property name="windowIcon" >
    <iconset resource="../qt-resources/qt_widgets.qrc" >:/GPlates-icon-160x160-opaque.png</iconset>
   </property>
-  <layout class="QGridLayout" >
-   <item row="0" column="0" >
+  <layout class="QVBoxLayout" >
+   <item>
     <layout class="QHBoxLayout" >
      <item>
       <widget class="QLabel" name="label_description" >
@@ -49,7 +49,7 @@
      </item>
     </layout>
    </item>
-   <item row="1" column="0" >
+   <item>
     <layout class="QHBoxLayout" >
      <item>
       <widget class="QLabel" name="label_tab_message" >
@@ -73,7 +73,7 @@
      </item>
     </layout>
    </item>
-   <item row="2" column="0" >
+   <item>
     <spacer>
      <property name="orientation" >
       <enum>Qt::Vertical</enum>
@@ -86,81 +86,7 @@
      </property>
     </spacer>
    </item>
-   <item row="3" column="0" >
-    <layout class="QHBoxLayout" >
-     <item>
-      <widget class="QLabel" name="label_upper_left" >
-       <property name="text" >
-        <string>Lower left:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer>
-       <property name="orientation" >
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" >
-        <size>
-         <width>31</width>
-         <height>23</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" >
-       <item>
-        <widget class="QLabel" name="label_lower_left_latitude" >
-         <property name="text" >
-          <string>Latitude</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QDoubleSpinBox" name="spinbox_lower_left_latitude" >
-         <property name="decimals" >
-          <number>4</number>
-         </property>
-         <property name="minimum" >
-          <double>-90.000000000000000</double>
-         </property>
-         <property name="maximum" >
-          <double>90.000000000000000</double>
-         </property>
-         <property name="value" >
-          <double>-90.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_lower_left_longitude" >
-         <property name="text" >
-          <string>Longitude</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QDoubleSpinBox" name="spinbox_lower_left_longitude" >
-         <property name="decimals" >
-          <number>4</number>
-         </property>
-         <property name="minimum" >
-          <double>-360.000000000000000</double>
-         </property>
-         <property name="maximum" >
-          <double>360.000000000000000</double>
-         </property>
-         <property name="value" >
-          <double>-180.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-    </layout>
-   </item>
-   <item row="4" column="0" >
+   <item>
     <layout class="QHBoxLayout" >
      <item>
       <widget class="QLabel" name="label_lower_right" >
@@ -234,7 +160,81 @@
      </item>
     </layout>
    </item>
-   <item row="5" column="0" >
+   <item>
+    <layout class="QHBoxLayout" >
+     <item>
+      <widget class="QLabel" name="label_upper_left" >
+       <property name="text" >
+        <string>Lower left:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer>
+       <property name="orientation" >
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" >
+        <size>
+         <width>31</width>
+         <height>23</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" >
+       <item>
+        <widget class="QLabel" name="label_lower_left_latitude" >
+         <property name="text" >
+          <string>Latitude</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QDoubleSpinBox" name="spinbox_lower_left_latitude" >
+         <property name="decimals" >
+          <number>4</number>
+         </property>
+         <property name="minimum" >
+          <double>-90.000000000000000</double>
+         </property>
+         <property name="maximum" >
+          <double>90.000000000000000</double>
+         </property>
+         <property name="value" >
+          <double>-90.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_lower_left_longitude" >
+         <property name="text" >
+          <string>Longitude</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QDoubleSpinBox" name="spinbox_lower_left_longitude" >
+         <property name="decimals" >
+          <number>4</number>
+         </property>
+         <property name="minimum" >
+          <double>-360.000000000000000</double>
+         </property>
+         <property name="maximum" >
+          <double>360.000000000000000</double>
+         </property>
+         <property name="value" >
+          <double>-180.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+   <item>
     <layout class="QHBoxLayout" >
      <item>
       <spacer>
@@ -258,7 +258,7 @@
         </size>
        </property>
        <property name="text" >
-        <string>Reset fields to  (-90,-180) , (90,180)</string>
+        <string>&amp;Reset fields to  (-90,-180) , (90,180)</string>
        </property>
        <property name="autoDefault" >
         <bool>false</bool>
@@ -267,7 +267,7 @@
      </item>
     </layout>
    </item>
-   <item row="6" column="0" >
+   <item>
     <spacer>
      <property name="orientation" >
       <enum>Qt::Vertical</enum>
@@ -280,7 +280,7 @@
      </property>
     </spacer>
    </item>
-   <item row="7" column="0" >
+   <item>
     <layout class="QHBoxLayout" >
      <item>
       <spacer>

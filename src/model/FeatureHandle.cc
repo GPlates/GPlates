@@ -2,12 +2,12 @@
 
 /**
  * \file 
- * Contains the definitions of the member functions of the class FeatureHandle.
+ * Contains the implementation of the FeatureHandle class.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,19 +25,191 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-
 #include "FeatureHandle.h"
-#include "ConstFeatureVisitor.h"
-#include "FeatureVisitor.h"
-#include "WeakObserverVisitor.h"
-#include "FeatureHandleWeakRefBackInserter.h"
+
+#include "ChangesetHandle.h"
+#include "FeatureCollectionHandle.h"
 
 
-GPlatesModel::FeatureHandle::~FeatureHandle()
+namespace
 {
-	weak_observer_unsubscribe_forward(d_first_const_weak_observer);
-	weak_observer_unsubscribe_forward(d_first_weak_observer);
+	bool
+	new_child_equals_existing(
+			const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &new_child,
+			const boost::intrusive_ptr<GPlatesModel::TopLevelProperty> &existing_child)
+	{
+		// Assume existing_child != NULL.
+		return *new_child == *existing_child;
+	}
+}
+
+
+const GPlatesModel::FeatureHandle::non_null_ptr_type
+GPlatesModel::FeatureHandle::create(
+		const FeatureType &feature_type_,
+		const FeatureId &feature_id_,
+		const RevisionId &revision_id_)
+{
+	return non_null_ptr_type(
+			new FeatureHandle(
+				feature_type_,
+				feature_id_,
+				revision_type::create(revision_id_)));
+}
+
+
+const GPlatesModel::FeatureHandle::weak_ref
+GPlatesModel::FeatureHandle::create(
+		const WeakReference<FeatureCollectionHandle> &feature_collection,
+		const FeatureType &feature_type_,
+		const FeatureId &feature_id_,
+		const RevisionId &revision_id_)
+{
+	non_null_ptr_type feature = create(
+			feature_type_,
+			feature_id_,
+			revision_id_);
+	FeatureCollectionHandle::iterator iter = feature_collection->add(feature);
+	
+	return (*iter)->reference();
+}
+
+
+const GPlatesModel::FeatureHandle::non_null_ptr_type
+GPlatesModel::FeatureHandle::clone() const
+{
+	return non_null_ptr_type(
+			new FeatureHandle(
+				d_feature_type,
+				FeatureId(),
+				current_revision()->clone()));
+}
+
+
+const GPlatesModel::FeatureHandle::weak_ref
+GPlatesModel::FeatureHandle::clone(
+		const WeakReference<FeatureCollectionHandle> &feature_collection) const
+{
+	non_null_ptr_type feature = clone();
+	FeatureCollectionHandle::iterator iter = feature_collection->add(feature);
+
+	return (*iter)->reference();
+}
+
+
+const GPlatesModel::FeatureHandle::non_null_ptr_type
+GPlatesModel::FeatureHandle::clone(
+		const property_predicate_type &clone_properties_predicate) const
+{
+	return non_null_ptr_type(
+			new FeatureHandle(
+				d_feature_type,
+				FeatureId(),
+				current_revision()->clone(
+					clone_properties_predicate)));
+}
+
+
+const GPlatesModel::FeatureHandle::weak_ref
+GPlatesModel::FeatureHandle::clone(
+		const WeakReference<FeatureCollectionHandle> &feature_collection,
+		const property_predicate_type &clone_properties_predicate) const
+{
+	non_null_ptr_type feature = clone(clone_properties_predicate);
+	FeatureCollectionHandle::iterator iter = feature_collection->add(feature);
+
+	return (*iter)->reference();
+}
+
+
+GPlatesModel::FeatureHandle::iterator
+GPlatesModel::FeatureHandle::add(
+		GPlatesGlobal::PointerTraits<TopLevelProperty>::non_null_ptr_type new_child)
+{
+	ChangesetHandle changeset(model_ptr());
+
+	ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
+	// changeset_ptr must be non-NULL because we created one at the top of the
+	// function. But changeset_ptr might not point to our changeset.
+	if (!changeset_ptr->has_handle(this))
+	{
+		current_revision()->update_revision_id();
+	}
+
+	return BasicHandle<FeatureHandle>::add(new_child);
+}
+
+
+void
+GPlatesModel::FeatureHandle::remove(
+		const_iterator iter)
+{
+	ChangesetHandle changeset(model_ptr());
+
+	ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
+	// changeset_ptr must be non-NULL because we created one at the top of the
+	// function. But changeset_ptr might not point to our changeset.
+	if (!changeset_ptr->has_handle(this))
+	{
+		current_revision()->update_revision_id();
+	}
+
+	BasicHandle<FeatureHandle>::remove(iter);
+}
+
+
+void
+GPlatesModel::FeatureHandle::set(
+		iterator iter,
+		child_type::non_null_ptr_to_const_type new_child)
+{
+	ChangesetHandle changeset(model_ptr());
+
+	const boost::intrusive_ptr<child_type> &existing_child = current_revision()->get(iter.index());
+	if (existing_child && !new_child_equals_existing(new_child, existing_child))
+	{
+		current_revision()->set(iter.index(), new_child->deep_clone());
+
+		notify_listeners_of_modification(false, true);
+
+		ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
+		if (changeset_ptr)
+		{
+			if (!changeset_ptr->has_handle(this))
+			{
+				current_revision()->update_revision_id();
+			}
+			changeset_ptr->add_handle(this);
+		}
+	}
+}
+
+
+void
+GPlatesModel::FeatureHandle::remove_properties_by_name(
+		const PropertyName &property_name)
+{
+	for (iterator iter = begin(); iter != end(); ++iter)
+	{
+		if ((*iter)->property_name() == property_name)
+		{
+			remove(iter);
+		}
+	}
+}
+
+
+const GPlatesModel::FeatureType &
+GPlatesModel::FeatureHandle::feature_type() const
+{
+	return d_feature_type;
+}
+
+
+const GPlatesModel::FeatureId &
+GPlatesModel::FeatureHandle::feature_id() const
+{
+	return d_feature_id;
 }
 
 
@@ -48,98 +220,16 @@ GPlatesModel::FeatureHandle::revision_id() const
 }
 
 
-const GPlatesModel::FeatureHandle::properties_iterator
-GPlatesModel::FeatureHandle::append_top_level_property(
-		TopLevelProperty::non_null_ptr_type new_top_level_property,
-		DummyTransactionHandle &transaction)
-{
-	container_size_type new_index =
-			current_revision()->append_top_level_property(new_top_level_property, transaction);
-	return properties_iterator::create_for_index(*this, new_index);
-}
-
-
-void
-GPlatesModel::FeatureHandle::remove_top_level_property(
-		properties_const_iterator iter,
-		DummyTransactionHandle &transaction)
-{
-	current_revision()->remove_top_level_property(iter.index(), transaction);
-}
-
-
-void
-GPlatesModel::FeatureHandle::remove_top_level_property(
-		properties_iterator iter,
-		DummyTransactionHandle &transaction)
-{
-	current_revision()->remove_top_level_property(iter.index(), transaction);
-}
-
-
-void
-GPlatesModel::FeatureHandle::apply_weak_observer_visitor(
-		WeakObserverVisitor<FeatureHandle> &visitor)
-{
-	weak_observer_type *curr = first_weak_observer();
-	while (curr != NULL) {
-		curr->accept_weak_observer_visitor(visitor);
-		curr = curr->next_link_ptr();
-	}
-}
-
-
-GPlatesModel::FeatureHandle::FeatureHandle(
-		const FeatureType &feature_type_,
-		const FeatureId &feature_id_):
-	d_current_revision(FeatureRevision::create()),
-	d_feature_type(feature_type_),
-	d_feature_id(feature_id_),
-	d_first_const_weak_observer(NULL),
-	d_first_weak_observer(NULL),
-	d_last_const_weak_observer(NULL),
-	d_last_weak_observer(NULL),
-	d_feature_collection_handle_ptr(NULL)
-{
-	d_feature_id.set_back_ref_target(*this);
-}
-
-
 GPlatesModel::FeatureHandle::FeatureHandle(
 		const FeatureType &feature_type_,
 		const FeatureId &feature_id_,
-		const RevisionId &revision_id_):
-	d_current_revision(FeatureRevision::create(revision_id_)),
+		GPlatesGlobal::PointerTraits<revision_type>::non_null_ptr_type revision_) :
+	BasicHandle<FeatureHandle>(
+			this,
+			revision_),
 	d_feature_type(feature_type_),
-	d_feature_id(feature_id_),
-	d_first_const_weak_observer(NULL),
-	d_first_weak_observer(NULL),
-	d_last_const_weak_observer(NULL),
-	d_last_weak_observer(NULL),
-	d_feature_collection_handle_ptr(NULL)
-{
-	d_feature_id.set_back_ref_target(*this);
-
-#if 0
-	// Verify that the back-ref logic is working properly.
-	std::vector<FeatureHandle::weak_ref> back_ref_targets;
-	d_feature_id.find_back_ref_targets(append_as_weak_refs(back_ref_targets));
-	std::cout << "Num back-ref targets found: " << back_ref_targets.size() << std::endl;
-#endif
-}
-
-
-GPlatesModel::FeatureHandle::FeatureHandle(
-		const FeatureHandle &other):
-	GPlatesUtils::ReferenceCount<FeatureHandle>(),
-	d_current_revision(other.d_current_revision),
-	d_feature_type(other.d_feature_type),
-	d_feature_id(FeatureId()),
-	d_first_const_weak_observer(NULL),
-	d_first_weak_observer(NULL),
-	d_last_const_weak_observer(NULL),
-	d_last_weak_observer(NULL),
-	d_feature_collection_handle_ptr(NULL)
+	d_feature_id(feature_id_)
 {
 	d_feature_id.set_back_ref_target(*this);
 }
+

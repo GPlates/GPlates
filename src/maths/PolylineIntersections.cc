@@ -1479,8 +1479,8 @@ namespace {
 
 		// If there's a previous intersection then link it and the partitioned polyline.
 		if (!graph_intersections.empty()) {
-			graph_intersections.back()->next_partitioned_polyline1 = partitioned_polyline;
-			partitioned_polyline->prev_intersection = graph_intersections.back();
+			graph_intersections.back()->next_partitioned_polyline1 = partitioned_polyline.get();
+			partitioned_polyline->prev_intersection = graph_intersections.back().get();
 		}
 	}
 
@@ -1499,8 +1499,8 @@ namespace {
 		if (!graph_partitioned_polylines1.empty()) {
 
 			// Link the current intersection and the previous partitioned polyline.
-			intersection->prev_partitioned_polyline1 = graph_partitioned_polylines1.back();
-			graph_partitioned_polylines1.back()->next_intersection = intersection;
+			intersection->prev_partitioned_polyline1 = graph_partitioned_polylines1.back().get();
+			graph_partitioned_polylines1.back()->next_intersection = intersection.get();
 		}
 		
 		// Keep track of intersections so they can be shared with arc sequence 2 later.
@@ -1534,8 +1534,8 @@ namespace {
 
 		// If there's a previous intersection then link it and the partitioned polyline.
 		if (!graph_intersections.empty()) {
-			graph_intersections.back()->next_partitioned_polyline2 = partitioned_polyline;
-			partitioned_polyline->prev_intersection = graph_intersections.back();
+			graph_intersections.back()->next_partitioned_polyline2 = partitioned_polyline.get();
+			partitioned_polyline->prev_intersection = graph_intersections.back().get();
 		}
 	}
 
@@ -1556,8 +1556,8 @@ namespace {
 		if (!graph_partitioned_polylines2.empty()) {
 
 			// Link the current intersection and the previous partitioned polyline.
-			intersection->prev_partitioned_polyline2 = graph_partitioned_polylines2.back();
-			graph_partitioned_polylines2.back()->next_intersection = intersection;
+			intersection->prev_partitioned_polyline2 = graph_partitioned_polylines2.back().get();
+			graph_partitioned_polylines2.back()->next_intersection = intersection.get();
 		}
 
 		// Add the intersection to the graph.
@@ -1960,14 +1960,20 @@ GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::PartitionedPoly
 		PolylineOnSphere::non_null_ptr_to_const_type polyline_,
 		bool is_overlapping_) :
 	polyline(polyline_),
-	is_overlapping(is_overlapping_)
+	is_overlapping(is_overlapping_),
+	prev_intersection(NULL),
+	next_intersection(NULL)
 {
 }
 
 
 GPlatesMaths::PolylineIntersections::Graph::Intersection::Intersection(
 		const PointOnSphere &intersection_point_) :
-	intersection_point(intersection_point_)
+	intersection_point(intersection_point_),
+	prev_partitioned_polyline1(NULL),
+	next_partitioned_polyline1(NULL),
+	prev_partitioned_polyline2(NULL),
+	next_partitioned_polyline2(NULL)
 {
 }
 

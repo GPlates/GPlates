@@ -35,44 +35,50 @@
 
 #include "presentation/ViewState.h"
 
+const QString 
+GPlatesGui::ExportSvgAnimationStrategy::DEFAULT_PROJECTED_GEOMETRIES_FILENAME_TEMPLATE
+		="snapshot_%u_%0.2f.svg";
+const QString 
+GPlatesGui::ExportSvgAnimationStrategy::PROJECTED_GEOMETRIES_FILENAME_TEMPLATE_DESC
+		=FORMAT_CODE_DESC;
+const QString 
+GPlatesGui::ExportSvgAnimationStrategy::PROJECTED_GEOMETRIES_DESC
+		="Export projected geometries data.";
+
 
 const GPlatesGui::ExportSvgAnimationStrategy::non_null_ptr_type
 GPlatesGui::ExportSvgAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context)
+		GPlatesGui::ExportAnimationContext &export_animation_context,
+		const ExportAnimationStrategy::Configuration &cfg)
 {
-	return non_null_ptr_type(new ExportSvgAnimationStrategy(export_animation_context),
+	ExportSvgAnimationStrategy* ptr= 
+			new ExportSvgAnimationStrategy(
+					export_animation_context,
+					cfg.filename_template());
+	ptr->d_class_id="PROJECTED_GEOMETRIES_SVG";
+	return non_null_ptr_type(
+			ptr,
 			GPlatesUtils::NullIntrusivePointerHandler());
 }
 
-
 GPlatesGui::ExportSvgAnimationStrategy::ExportSvgAnimationStrategy(
-		GPlatesGui::ExportAnimationContext &export_animation_context):
+		GPlatesGui::ExportAnimationContext &export_animation_context,
+		const QString &filename_template):
 	ExportAnimationStrategy(export_animation_context)
 {
-	// Set the ExportTemplateFilenameSequence name once here, to a sane default.
-	// Later, we will let the user configure this.
-	set_template_filename(QString("snapshot_%u_%0.2f.svg"));
+	set_template_filename(filename_template);
 }
-
 
 bool
 GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
-	// Get the iterator for the next filename.
-	if (!d_filename_iterator_opt || !d_filename_sequence_opt) {
-		d_export_animation_context_ptr->update_status_message(
-				QObject::tr("Error in export iteration - not properly initialised!"));
+	if(!check_filename_sequence())
+	{
 		return false;
 	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = *d_filename_iterator_opt;
-
-	// Doublecheck that the iterator is valid.
-	if (filename_it == d_filename_sequence_opt->end()) {
-		d_export_animation_context_ptr->update_status_message(
-				QObject::tr("Error in filename sequence - not enough filenames supplied!"));
-		return false;
-	}
+	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+		*d_filename_iterator_opt;
 
 	// Figure out a filename from the template filename sequence.
 	QString basename = *filename_it++;
@@ -93,6 +99,16 @@ GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 	
 	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;
+}
+const QString&
+GPlatesGui::ExportSvgAnimationStrategy::get_default_filename_template()
+{
+	return DEFAULT_PROJECTED_GEOMETRIES_FILENAME_TEMPLATE;
+}
+const QString&
+GPlatesGui::ExportSvgAnimationStrategy::get_filename_template_desc()
+{
+	return PROJECTED_GEOMETRIES_FILENAME_TEMPLATE_DESC;
 }
 
 

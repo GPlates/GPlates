@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -41,7 +42,7 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PointOnSphere.h"
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/PropertyName.h"
 

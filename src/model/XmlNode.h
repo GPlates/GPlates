@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -312,6 +312,9 @@ namespace GPlatesModel {
 		accept_visitor(
 				XmlNodeVisitor &visitor);
 
+		bool
+		operator==(
+				const XmlElementNode &other) const;
 
 	private:
 		PropertyName d_name;

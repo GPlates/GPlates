@@ -1,3 +1,4 @@
+/* $Id$ */
 
 /**
  * \file 
@@ -6,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,6 +31,7 @@
 #include <vector>
 
 #include "GmlDataBlockCoordinateList.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
 
 
@@ -44,20 +46,15 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlDataBlock,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlDataBlock>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlDataBlock,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlDataBlock> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock> non_null_ptr_to_const_type;
 
 		/**
 		 * The type of the sequence of GmlDataBlockCoordinateList instances.
@@ -73,19 +70,21 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create()
 		{
-			non_null_ptr_type ptr(new GmlDataBlock,
-					GPlatesUtils::NullIntrusivePointerHandler());
+			non_null_ptr_type ptr(new GmlDataBlock);
 			return ptr;
 		}
 
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GmlDataBlock::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GmlDataBlock(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			GmlDataBlock::non_null_ptr_type dup(new GmlDataBlock(*this));
 			return dup;
 		}
+
+		const GmlDataBlock::non_null_ptr_type
+		deep_clone() const;
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		bool
 		is_empty() const
@@ -106,10 +105,18 @@ namespace GPlatesPropertyValues
 		}
 
 		void
+		tuple_list_clear()
+		{
+			d_tuple_list.clear();
+			update_instance_id();
+		}
+
+		void
 		tuple_list_push_back(
 				const GmlDataBlockCoordinateList::non_null_ptr_to_const_type &elem)
 		{
 			d_tuple_list.push_back(elem);
+			update_instance_id();
 		}
 
 		/**
@@ -121,7 +128,8 @@ namespace GPlatesPropertyValues
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gml_data_block(*this);
 		}
 
@@ -134,9 +142,15 @@ namespace GPlatesPropertyValues
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gml_data_block(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -153,7 +167,7 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlDataBlock(
 				const GmlDataBlock &other):
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_tuple_list(other.d_tuple_list)
 		{  }
 

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,10 +29,12 @@
 #define GPLATES_PROPERTYVALUES_GPMLPROPERTYDELEGATE_H
 
 #include "TemplateTypeParameterType.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 #include "model/FeatureId.h"
 #include "model/PropertyName.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -40,12 +42,15 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlPropertyDelegate, visit_gpml_property_delegate)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlPropertyDelegate:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
+
 		/**
 		 * A convenience typedef for boost::intrusive_ptr<GpmlPropertyDelegate>.
 		 */
@@ -60,25 +65,20 @@ namespace GPlatesPropertyValues {
 
 		/**
 		 * A convenience typedef for 
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate,
-				GPlatesUtils::NullIntrusivePointerHandler> 
-				non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPropertyDelegate,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPropertyDelegate>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPropertyDelegate,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPropertyDelegate> non_null_ptr_to_const_type;
 
 
 		virtual
-		~GpmlPropertyDelegate() {  }
+		~GpmlPropertyDelegate()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -90,36 +90,47 @@ namespace GPlatesPropertyValues {
 		create(
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::PropertyName &property_,
-				const TemplateTypeParameterType &value_type_) {
+				const TemplateTypeParameterType &value_type_)
+		{
 			non_null_ptr_type ptr(
-					new GpmlPropertyDelegate(feature_, property_, value_type_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GpmlPropertyDelegate(feature_, property_, value_type_));
 			return ptr;
 		}
 
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
-					new GpmlPropertyDelegate(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		const GpmlPropertyDelegate::non_null_ptr_type
+		clone() const
+		{
+			GpmlPropertyDelegate::non_null_ptr_type dup(new GpmlPropertyDelegate(*this));
 			return dup;
 		}
 
+		const GpmlPropertyDelegate::non_null_ptr_type
+		deep_clone() const
+		{
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular clone will suffice.
+			return clone();
+		}
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
+
 		const GPlatesModel::FeatureId
-		feature_id() const {
+		feature_id() const
+		{
 			return d_feature;
 		}
 
 		const GPlatesModel::PropertyName
-		target_property() const {
+		target_property() const
+		{
 			return d_property;
 		}
 
 		// Note that no "setter" is provided:  The value type of a GpmlPropertyDelegate
 		// instance should never be changed.
 		const TemplateTypeParameterType &
-		value_type() const {
+		value_type() const
+		{
 			return d_value_type;
 		}
 
@@ -132,7 +143,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_property_delegate(*this);
 		}
 
@@ -145,9 +157,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_property_delegate(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -170,7 +188,7 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlPropertyDelegate(
 				const GpmlPropertyDelegate &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_feature(other.d_feature),
 			d_property(other.d_property),
 			d_value_type(other.d_value_type)

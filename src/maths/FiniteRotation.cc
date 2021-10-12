@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,6 +33,7 @@
 #include "HighPrecision.h"
 #include "UnitVector3D.h"
 #include "Vector3D.h"
+#include "MathsUtils.h"
 #include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
 #include "PolylineOnSphere.h"
@@ -41,7 +42,7 @@
 #include "GreatCircleArc.h"
 #include "GreatCircle.h"
 #include "SmallCircle.h"
-#include "LatLonPointConversions.h"
+#include "LatLonPoint.h"
 #include "InvalidOperationException.h"
 #include "IndeterminateResultException.h"
 #include "ConstGeometryOnSphereVisitor.h"
@@ -543,10 +544,44 @@ GPlatesMaths::operator<<(
 		 << " (which is antipodal to "
 		 << make_lat_lon_point(antip)
 		 << "); angle = "
-		 << radiansToDegrees(params.angle)
+		 << convert_rad_to_deg(params.angle)
 		 << " deg)";
 	}
 	os << ")";
 
 	return os;
 }
+
+
+namespace
+{
+	template<class T>
+	bool
+	opt_eq(
+			const boost::optional<T> &opt1,
+			const boost::optional<T> &opt2)
+	{
+		if (opt1)
+		{
+			if (!opt2)
+			{
+				return false;
+			}
+			return *opt1 == *opt2;
+		}
+		else
+		{
+			return !opt2;
+		}
+	}
+}
+
+
+bool
+GPlatesMaths::FiniteRotation::operator==(
+		const FiniteRotation &other) const
+{
+	return d_unit_quat == other.d_unit_quat &&
+		opt_eq(d_axis_hint, other.d_axis_hint);
+}
+

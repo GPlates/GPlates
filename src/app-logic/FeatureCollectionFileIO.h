@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,7 +29,6 @@
 #include <list>
 #include <vector>
 #include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -52,6 +51,12 @@ namespace GPlatesFileIO
 
 namespace GPlatesAppLogic
 {
+	/**
+	 * Handles feature collection file loading/saving.
+	 *
+	 * Loaded files are then added to @a FeatureCollectionFileState for access
+	 * by other objects in the application.
+	 */
 	class FeatureCollectionFileIO :
 			public QObject,
 			private boost::noncopyable
@@ -63,54 +68,6 @@ namespace GPlatesAppLogic
 		FeatureCollectionFileIO(
 				GPlatesModel::ModelInterface &model,
 				GPlatesAppLogic::FeatureCollectionFileState &file_state);
-
-
-		/**
-		 * Gives the opportunity to modify loaded/reloaded feature collections
-		 * before they are passed to @a FeatureCollectionFileState where they are
-		 * then distributed to feature collection workflows.
-		 */
-		class ModifyFilter
-		{
-		public:
-			virtual
-			~ModifyFilter()
-			{  }
-
-			//! Typedef for a sequence of file shared refs.
-			typedef std::vector<GPlatesFileIO::File::shared_ref> file_seq_type;
-
-			/**
-			 * Modify the loaded (or reloaded) feature collections in place.
-			 *
-			 * Reloaded feature collections are included in this because they are
-			 * feature collections that have been modified outside of GPlates and
-			 * hence should be considered a newly loaded feature collection.
-			 *
-			 * The default is not to modify any feature collections.
-			 */
-			virtual
-			void
-			modify_loaded_files(
-					const file_seq_type &loaded_or_reloaded_files)
-			{
-			}
-		};
-
-
-		/**
-		 * Install a @a ModifyFilter to modify feature collections as they are
-		 * loaded (or reloaded).
-		 *
-		 * Reloaded files are included in this because they are files that have been
-		 * modified outside of GPlates and hence should be considered a newly loaded file.
-		 *
-		 * If this method is never called then the default behaviour is that
-		 * no loaded (or reloaded) feature collections are modified.
-		 */
-		void
-		set_modify_filter(
-				const boost::shared_ptr<ModifyFilter> &modify_filter);
 
 
 		/**
@@ -171,13 +128,32 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Creates a file named @a file_info, saves @a feature_collection to the file and
+		 * registers the file with FeatureCollectionFileState.
+		 *
+		 * This method is useful when you want to save a feature collection that was not
+		 * originally loaded from a file - and you want the new file to appear in the
+		 * list of loaded files maintained by FeatureCollectionFileState.
+		 */
+		GPlatesAppLogic::FeatureCollectionFileState::file_iterator
+		create_file(
+				const GPlatesFileIO::FileInfo &file_info,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
+					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
+
+
+		/**
 		 * Write the feature collection associated to a file described by @a file_info.
+		 *
+		 * NOTE: this differs from @a create_file in that it only saves the feature collection
+		 * to the file and doesn't register with FeatureCollectionFileState.
 		 */
 		static
 		void
 		save_file(
 				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
 					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
 
@@ -216,11 +192,6 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
 
-		/**
-		 * Filter used to modify feature collections as they are loaded (or reloaded).
-		 */
-		boost::shared_ptr<ModifyFilter> d_modify_filter;
-
 
 		file_seq_type
 		read_feature_collections(
@@ -229,14 +200,6 @@ namespace GPlatesAppLogic
 		const GPlatesFileIO::File::shared_ref
 		read_feature_collection(
 				const GPlatesFileIO::FileInfo &file_info);
-
-		void
-		modify_feature_collections(
-				const file_seq_type &files);
-
-		void
-		modify_feature_collection(
-				const GPlatesFileIO::File::shared_ref &file);
 
 		void
 		emit_handle_read_errors_signal(

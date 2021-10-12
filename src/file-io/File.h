@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -150,8 +150,7 @@ namespace GPlatesFileIO
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref
 		get_feature_collection() const
 		{
-			return GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
-					d_feature_collection->get_feature_collection());
+			return d_feature_collection->get_feature_collection();
 		}
 
 
@@ -177,8 +176,7 @@ namespace GPlatesFileIO
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref
 		get_const_feature_collection() const
 		{
-			return GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
-					d_feature_collection->get_feature_collection());
+			return d_feature_collection->get_feature_collection();
 		}
 
 

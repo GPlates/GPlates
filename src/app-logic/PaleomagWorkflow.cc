@@ -5,7 +5,8 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2009, 2010 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,18 +34,17 @@
 #include "PaleomagUtils.h"
 
 #include "feature-visitors/GeometryFinder.h"
-#include "gui/ColourTable.h"
-#include "model/ConstFeatureVisitor.h"
+#include "gui/ColourProxy.h"
+#include "model/FeatureVisitor.h"
 #include "model/ModelInterface.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "property-values/GpmlPlateId.h"
 
 namespace
 {
-	const GPlatesGui::Colour 
+	const GPlatesGui::ColourProxy
 	get_colour_from_feature(
-		const GPlatesModel::FeatureCollectionHandle::features_iterator feature_iterator,
-		const GPlatesGui::ColourTable &colour_table)
+		const GPlatesModel::FeatureCollectionHandle::iterator feature_iterator)
 	{
 		GPlatesModel::PropertyName vgp_name = 
 			GPlatesModel::PropertyName::create_gpml("polePosition");
@@ -64,7 +64,7 @@ namespace
 
 		if (!finder.has_found_geometries())
 		{
-			return GPlatesGui::Colour::get_olive();
+			return GPlatesGui::ColourProxy(boost::none);
 		}
 		
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
@@ -74,30 +74,33 @@ namespace
 		static const GPlatesModel::PropertyName plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 		boost::optional<GPlatesModel::integer_plate_id_type> optional_plate_id;
-		if (GPlatesFeatureVisitors::get_property_value((*feature_iterator)->reference(),								plate_id_property_name,plate_id))
+		if (GPlatesFeatureVisitors::get_property_value((*feature_iterator)->reference(), plate_id_property_name,plate_id))
 		{
 			optional_plate_id.reset(plate_id->value());
 		}
 
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rfg = 
 			GPlatesModel::ReconstructedFeatureGeometry::create(
-			geometry,
-			**feature_iterator,
-			(*feature_iterator)->properties_begin(),
-			optional_plate_id,
-			boost::none);	
+				geometry,
+				**feature_iterator,
+				(*feature_iterator)->begin(),
+				optional_plate_id,
+				boost::none);
 
-		GPlatesGui::ColourTable::const_iterator colour =
-			colour_table.lookup(*rfg);
-
-		if (colour == colour_table.end())
-		{
-			// Anything not in the table uses the 'Olive' colour.
-			colour = &GPlatesGui::Colour::get_olive();
-		}
-
-		return *colour;
+		return GPlatesGui::ColourProxy(rfg);
 	}
+}
+
+int
+GPlatesAppLogic::PaleomagWorkflow::s_instance_number = 0;
+
+GPlatesAppLogic::FeatureCollectionWorkflow::tag_type
+GPlatesAppLogic::PaleomagWorkflow::get_tag() const
+{
+	// FIXME: We're only doing this because each ViewState wants to have its own workflow instances
+	QString id;
+	id.setNum(d_instance_number);
+	return QString("PaleomagWorkflow").append(id);
 }
 
 bool
@@ -173,17 +176,16 @@ GPlatesAppLogic::PaleomagWorkflow::set_file_active(
 void
 GPlatesAppLogic::PaleomagWorkflow::draw_paleomag_features(
 		GPlatesModel::Reconstruction &reconstruction,
-		const double &reconstruction_time,
-		const GPlatesGui::ColourTable &colour_table)
+		const double &reconstruction_time)
 {
-	//FIXME: make this extract the a95 and/or dm and dp properties from
-	// the paleomag feature(s), and render this on the globe as a circle/ellipse. 
 	
 	// Later we may also want to render the sample site and/or vgp in particular
 	// styles (e.g. stick an arrow on the sample site; stick a box around the vgp,
 	// make sites only visible, poles only visible etc.) 
 	// In that case we would override the default reconstructed geometry rendering.
 	
+	d_paleomag_layer->set_active();	
+	d_paleomag_layer->clear_rendered_geometries();	
 	
 	// Return if there are no paleomag feature collections.
 	if (d_paleomag_feature_collection_infos.empty())
@@ -191,9 +193,6 @@ GPlatesAppLogic::PaleomagWorkflow::draw_paleomag_features(
 		return;
 	}
 
-	d_paleomag_layer->set_active();	
-	d_paleomag_layer->clear_rendered_geometries();
-	
 	// Iterate over all our velocity field feature collections and solve velocities.
 	paleomag_feature_collection_info_seq_type::iterator paleomag_feature_collection_iter;
 	for (paleomag_feature_collection_iter = d_paleomag_feature_collection_infos.begin();
@@ -212,40 +211,34 @@ GPlatesAppLogic::PaleomagWorkflow::draw_paleomag_features(
 		if (paleomag_feature_collection.is_valid())
 		{
 
-			GPlatesModel::FeatureCollectionHandle::features_iterator iter =
-				paleomag_feature_collection->features_begin();	
+			GPlatesModel::FeatureCollectionHandle::iterator iter =
+				paleomag_feature_collection->begin();	
 
-			GPlatesModel::FeatureCollectionHandle::features_iterator end =
-				paleomag_feature_collection->features_end();								
+			GPlatesModel::FeatureCollectionHandle::iterator end =
+				paleomag_feature_collection->end();								
 
 
 
 
 			for ( ; iter != end; ++iter)
 			{
-				// Check that it's ok to dereference the iterators.
-				if (iter.is_valid())
-				{
-					boost::optional<const double> optional_time =
-						boost::optional<const double>(reconstruction_time);
-					boost::optional<GPlatesMaths::Rotation> additional_rotation;
+				boost::optional<GPlatesMaths::Rotation> additional_rotation;
 
-					const GPlatesGui::Colour colour =
-						get_colour_from_feature(iter,colour_table);
+				const GPlatesGui::ColourProxy colour = get_colour_from_feature(iter);
 
-					PaleomagUtils::VgpRenderer vgp_renderer(
-						reconstruction,
-						optional_time,
-						additional_rotation, 
-						d_paleomag_layer,
-						colour,
-						false /* render_as_ellipse = false */);
+				PaleomagUtils::VgpRenderer vgp_renderer(
+					reconstruction,
+					additional_rotation, 
+					d_paleomag_layer,
+					colour,
+					d_view_state_ptr,
+					true /* should add geometries to reconstruction */
+					);
 
-					vgp_renderer.visit_feature(iter);
-				}
+				vgp_renderer.visit_feature(iter);
 			}
-		}
 		
+		}
 	}
 	
 }

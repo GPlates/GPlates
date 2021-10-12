@@ -121,6 +121,33 @@ namespace GPlatesCli
 		typedef boost::shared_ptr<Command> command_ptr_type;
 		typedef std::map<std::string, command_ptr_type > command_map_type;
 
+		/**
+		 * Utility class that adds a command of type CommandType.
+		 */
+		class AddCommand
+		{
+		public:
+			AddCommand(
+					command_map_type &command_map);
+
+			template <typename T>
+			struct Wrap
+			{ };
+
+			/**
+			 * The @a Wrap type means we can transport the CommandType without creating
+			 * an instance of it.
+			 */
+			template <class CommandType>
+			void
+			operator()(
+					Wrap<CommandType>);
+
+		private:
+			command_map_type &d_command_map;
+		};
+
+
 		command_map_type d_command_map;
 
 

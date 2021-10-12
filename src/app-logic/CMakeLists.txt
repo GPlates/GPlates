@@ -33,26 +33,51 @@ set(srcs
     FeatureCollectionFileStateImplDecls.h
     FeatureCollectionWorkflow.cc
     FeatureCollectionWorkflow.h
+    GenericPartitionFeatureTask.cc
+    GenericPartitionFeatureTask.h
+    GeometryCookieCutter.cc
+    GeometryCookieCutter.h
+    GeometryUtils.cc
+    GeometryUtils.h
+    LayerTask.h
+    LayerTaskRegistry.cc
+    LayerTaskRegistry.h
+    LayerTaskTypes.cc
+    LayerTaskTypes.h
+    MeshGenerator.cc
+    MeshGenerator.h
     PaleomagUtils.cc
     PaleomagUtils.h
     PaleomagWorkflow.cc
     PaleomagWorkflow.h
+    PartitionFeatureTask.cc
+    PartitionFeatureTask.h
+    PartitionFeatureUtils.cc
+    PartitionFeatureUtils.h
     PlateVelocityUtils.cc
     PlateVelocityUtils.h
     PlateVelocityWorkflow.cc
     PlateVelocityWorkflow.h
-    Reconstruct.cc
-    Reconstruct.h
     ReconstructedFeatureGeometryPopulator.cc
     ReconstructedFeatureGeometryPopulator.h
+    ReconstructGraph.cc
+    ReconstructGraph.h
+    ReconstructGraphImpl.cc
+    ReconstructGraphImpl.h
     ReconstructionActivationStrategy.cc
     ReconstructionActivationStrategy.h
     ReconstructionFeatureProperties.cc
     ReconstructionFeatureProperties.h
     ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
+    ReconstructionLayerTask.cc
+    ReconstructionLayerTask.h
+    ReconstructLayerTask.cc
+    ReconstructLayerTask.h
     ReconstructUtils.cc
     ReconstructUtils.h
+    TopologyBoundaryIntersections.cc
+    TopologyBoundaryIntersections.h
     TopologyBoundaryResolver.cc
     TopologyBoundaryResolver.h
     TopologyInternalUtils.cc
@@ -61,6 +86,8 @@ set(srcs
     TopologyNetworkResolver.h
     TopologyUtils.cc
     TopologyUtils.h
+    VgpPartitionFeatureTask.cc
+    VgpPartitionFeatureTask.h
 )
 
 
@@ -78,6 +105,6 @@ set(target_name app-logic)
 # - groups files in Visual Studio IDE according to type.
 GPLATES_GENERATE_TARGET_SOURCES(${target_name} target_srcs ${srcs})
 
-add_library(${target_name} ${target_srcs})
+add_library(${target_name} STATIC ${target_srcs})
 
 GPLATES_POST_ADD_TARGET(${target_name} target_srcs)

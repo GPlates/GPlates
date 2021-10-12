@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,6 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedFeatureGeometryFinder.h"
 
 
@@ -36,11 +37,9 @@ namespace
 			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
 			const GPlatesModel::PropertyName &property_name_to_match)
 	{
-		if ( ! rfg.property().is_valid()) {
-			// Nothing we can do here.
-			return false;
-		}
-		return ((*rfg.property())->property_name() == property_name_to_match);
+		const GPlatesModel::FeatureHandle::iterator &iter = rfg.property();
+		return iter.is_still_valid() &&
+			((*iter)->property_name() == property_name_to_match);
 	}
 
 
@@ -48,13 +47,11 @@ namespace
 	bool
 	properties_iterator_matches(
 			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
-			const GPlatesModel::FeatureHandle::properties_iterator &properties_iterator_to_match)
+			const GPlatesModel::FeatureHandle::iterator &properties_iterator_to_match)
 	{
-		if ( ! rfg.property().is_valid()) {
-			// Nothing we can do here.
-			return false;
-		}
-		return (rfg.property() == properties_iterator_to_match);
+		const GPlatesModel::FeatureHandle::iterator &iter = rfg.property();
+		return iter.is_still_valid() &&
+			(iter == properties_iterator_to_match);
 	}
 
 

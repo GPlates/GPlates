@@ -94,7 +94,7 @@ ENDIF (OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_RESULT)
 include(BundleUtilities)
 fixup_bundle("@STAGING_AREA_FOR_CPACK@/@GPLATES_MAIN_TARGET@.app"
 	"@GPLATES_QT_PLUGINS_ABSOLUTE@"
-	"@GPLATES_QT_PLUGIN_PATHS_ABSOLUTE@")
+	"@GPLATES_QT_PLUGIN_PATHS_ABSOLUTE@;/usr/local/lib;/usr/lib;/opt/local/lib")
 
 # Copy the "qt.conf" file to the 'Resources' directory of the app bundle.
 # This is where Qt looks for it.

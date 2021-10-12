@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2005, 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2005, 2006, 2007, 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -766,6 +766,13 @@ namespace GPlatesMaths
 				const real_t &closeness_inclusion_threshold,
 				const real_t &latitude_exclusion_threshold,
 				real_t &closeness) const;
+
+		bool
+		operator==(
+				const PolygonOnSphere &other) const
+		{
+			return d_seq == other.d_seq;
+		}
 
 	private:
 

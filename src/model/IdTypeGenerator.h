@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -98,11 +98,16 @@ namespace GPlatesModel
 			BackRef(
 					back_ref_target_type &target,
 					shared_iterator_type &sh_iter):
-				d_target_ptr(&target),
-				d_node_for_back_ref_registration(this)
+				d_target_ptr(&target)
 			{
+				// For some reason, VS2008 is giving us warning C4355 ('this'
+				// used in base member initializer list) - which makes no sense.
+				// That's why we initialise it here.
+				d_node_for_back_ref_registration.reset(
+						new back_ref_list_type::Node(this));
+
 				// Register this BackRef as a back-reference for this ID.
-				sh_iter.back_refs().append(d_node_for_back_ref_registration);
+				sh_iter.back_refs().append(*d_node_for_back_ref_registration);
 			}
 
 			virtual
@@ -125,7 +130,7 @@ namespace GPlatesModel
 			back_ref_list_type::Node &
 			node() const
 			{
-				return d_node_for_back_ref_registration;
+				return *d_node_for_back_ref_registration;
 			}
 
 		private:
@@ -149,7 +154,7 @@ namespace GPlatesModel
 			 * list of back-references for the ID.  Thus, the lifetime of the Node must
 			 * be the same as the lifetime of this BackRef instance.
 			 */
-			mutable back_ref_list_type::Node d_node_for_back_ref_registration;
+			boost::scoped_ptr<back_ref_list_type::Node> d_node_for_back_ref_registration;
 
 			// Disallow copy-construction.
 			BackRef(

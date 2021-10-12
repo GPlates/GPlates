@@ -1,0 +1,120 @@
+GPlates 0.9.9
+=============
+
+Changes since 0.9.8:
+
+ * Added new Paleomagnetic functionality:
+   * Ability to create a Virtual Geomeomagnetic Pole (VGP) feature by
+     manually entering its parameters/attributes (such as pole position),
+   * Ability to generate a total rotation pole that can be manually
+     inserted into a rotation file to make adjustments between
+     the VGP and the geographic pole,
+   * Ability to specify when Virtual Geomeomagnetic Pole features are
+     displayed (using a user-specified age range or time window).
+ * Colouring improvements:
+   * Ability to preview the effects of each colouring option,
+   * Ability to load colour tables from GMT CPT files for user-defined colouring,
+   * Ability to change colouring globally or per feature collection.
+ * Added ability to split a feature into two features.
+ * Added ability to delete a feature.
+ * Added ability to clone a feature.
+ * Added ability to clone geometry for input to a digitisation tool.
+ * Added support for "unsaved changes" to feature collections:
+   * Feature collections with unsaved changes are highlighted red in the
+     "Manage Feature Collections" dialog,
+   * New feature collections not yet saved are highlighted orange,
+   * "unsaved changes" and "file error" icons appear at the bottom-right
+     of GPlates when necessary,
+   * Exiting GPlates brings up a dialog with options to save unsaved changes.
+ * Export functionality improvements:
+   * Combined time-sequence export and single-snapshot export into one,
+   * Added export of the globe view as image(s),
+   * Added two rotation exports ("Equivalent" and "Relative" that export
+     total rotation poles for each plate id relative to the anchor plate,
+     for "Equivalent", and relative to the next plate in the circuit,
+     for "Relative"),
+   * Added ability to control export filenames by editing the filename template.
+ * Improvements to cookie-cutting and assigning plate ids:
+   * Can cookie-cut using regular features containing static polygon geometry
+     in addition to using topological closed plate boundary features,
+   * Can assign time of appearance/disappearance in addition to plate ids.
+ * Added option to rotate daughter/children plates in the
+   "Modify Reconstruction Pole" tool.
+ * Can generate CitcomS 3.1 meshes inside GPlates.
+ * Added conjugate plate id to the "Create Feature" dialog for those features
+   requiring one.
+ * Topological closed plate boundary improvements including:
+   * Automated reversal of topological line sections,
+   * Can add same topological line section multiple times to a boundary.
+ * Added support for feature ids in Shapefiles (allows features referenced by
+   topological closed plate boundaries to be exported/imported as shapefiles).
+ * Can read/write 4-digit plate id from/to PLATES line format files.
+ * Added assign plate ids command to command-line version of GPlates and
+   improved flexibility of file conversion and reconstruct command-line options.
+ * Root of time-dependent raster filenames can vary, for example,
+   "imageA" and "imageB" in "imageA-0.jpg" and "imageB-1.jpg".
+ * Added multipoint support to PLATES line format (eg, hotspots).
+ * Added unit test framework.
+
+
+GPlates 0.9.8
+=============
+
+Changes since 0.9.7.1:
+
+ * The new 0.9.8 release of GPlates can use a loaded topological plate polygon
+   data set to "cookie-cut" a feature collection and assign Plate IDs to the
+   data based on which plate polygon intersects them. This enables users to load
+   data files that do not have Plate ID or reconstruction time information, and
+   then manipulate that data with the loaded reconstruction model.
+   
+ * Support for virtual geomagnetic pole data is ongoing. As a special preview of
+   GPlates paleo-mag functionality, GPlates is now able to import data from the
+   IAGA Global Paleomagnetic Database created by Mike McElhinny and Jo Lock,
+   later maintained by Sergei Pisarevsky. GPlates can then assign Plate IDs from
+   a topological plate polygon data set and then display the reconstructed
+   virtual geomagnetic pole locations on the globe. The database is available
+   online here: http://www.ngu.no/geodynamics/gpmdb/ . In future releases, full
+   editing capabilities and support for a wide range of data (such as the MagIC
+   database) will be forthcoming.
+   
+ * Small circle arcs can be rendered by GPlates to indicate the error bounds of
+   virtual geomagnetic poles.
+   
+ * Development on new colouring options has started. GPlates' default Plate ID
+   colouring scheme has been tweaked, and a new colour by Plate ID region
+   colouring scheme has been created.
+   
+ * The Modify Reconstruction Pole tool can now constrain the latitude of the
+   pole manipulation while interactively making adjustments.
+   
+ * The topological capabilities of GPlates are undergoing constant improvement
+   and expansion. As a consequence of these ongoing developments, GPlates now
+   links with CGAL, the Computational Geometry Algorithms Library. This will
+   enable many impressive extensions to the topology tools in the future.
+
+
+GPlates 0.9.7.1
+===============
+
+Changes since 0.9.5:
+
+ * GPlates can now utilise a full screen mode, which is available by pressing
+   F11. This mode is ideal for presenting data and animations using GPlates. It
+   makes the user interface more minimalistic, granting a greater amount of
+   screen space to the main view. This is especially useful on low-resolution
+   devices such as projectors.
+   
+ * A new Measure Distance Tool has been implemented, allowing precise
+   measurement of the distance between any two chosen points. It also interacts
+   with the digitisation and feature-selecting tools, to enable easy inspection
+   of the distances along polyline geometries and polyline segments.
+   
+ * Exporting the Total Reconstruction Poles table to CSV can now be done with a
+   choice of delimiters, and more closely adheres to the CSV specifications.
+   
+ * The previous 0.9.6 release involved the integration of the plate polygon
+   closure workflow into the main stable branch of GPlates. With 0.9.7.1,
+   additional work has gone into improving the user experience and making the
+   topology algorithms more intelligent, and enables the export of geometry
+   sub-segments involved in topologies.

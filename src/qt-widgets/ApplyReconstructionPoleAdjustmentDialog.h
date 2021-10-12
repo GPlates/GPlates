@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -35,7 +36,7 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruct;
+	class ApplicationState;
 }
 
 namespace GPlatesMaths
@@ -128,6 +129,12 @@ namespace GPlatesQtWidgets
 		set_adjustment(
 				const GPlatesMaths::Rotation &adjustment_);
 
+		QString
+		get_comment_line()
+		{
+			return line_comment->text();
+		}
+
 #if 0
 	public slots:
 		void
@@ -217,7 +224,7 @@ namespace GPlatesQtWidgets
 		have_reconstructed();
 
 	private:
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		ApplyReconstructionPoleAdjustmentDialog *d_dialog_ptr;
 		// The adjustment as calculated interactively, relative to the stationary plate.

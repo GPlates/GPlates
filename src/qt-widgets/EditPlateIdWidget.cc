@@ -32,13 +32,16 @@
 
 GPlatesQtWidgets::EditPlateIdWidget::EditPlateIdWidget(
 		QWidget *parent_):
-	AbstractEditWidget(parent_)
+	AbstractEditWidget(parent_),
+	d_null_value_permitted(false)
 {
 	setupUi(this);
 	reset_widget_to_default_values();
 	
 	QObject::connect(spinbox_plate_id, SIGNAL(valueChanged(int)),
 			this, SLOT(set_dirty()));
+	QObject::connect(button_set_to_null, SIGNAL(clicked()),
+			this, SLOT(nullify()));
 
 	label_plate_id->setHidden(false);
 	declare_default_label(label_plate_id);
@@ -50,7 +53,8 @@ void
 GPlatesQtWidgets::EditPlateIdWidget::reset_widget_to_default_values()
 {
 	d_plate_id_ptr = NULL;
-	spinbox_plate_id->setValue(0);
+	spinbox_plate_id->setValue( d_null_value_permitted? -1 : 0 );
+	button_set_to_null->setVisible(d_null_value_permitted);
 	set_clean();
 }
 
@@ -68,6 +72,10 @@ GPlatesQtWidgets::EditPlateIdWidget::update_widget_from_plate_id(
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesQtWidgets::EditPlateIdWidget::create_property_value_from_widget() const
 {
+	if (is_null()) {
+		throw UninitialisedEditWidgetException(GPLATES_EXCEPTION_SOURCE);
+	}
+
 	return GPlatesPropertyValues::GpmlPlateId::create(
 			spinbox_plate_id->value());
 }
@@ -76,6 +84,10 @@ GPlatesQtWidgets::EditPlateIdWidget::create_property_value_from_widget() const
 GPlatesModel::integer_plate_id_type
 GPlatesQtWidgets::EditPlateIdWidget::create_integer_plate_id_from_widget() const
 {
+	if (is_null()) {
+		throw UninitialisedEditWidgetException(GPLATES_EXCEPTION_SOURCE);
+	}
+
 	return static_cast<GPlatesModel::integer_plate_id_type>(spinbox_plate_id->value());
 }
 
@@ -83,6 +95,10 @@ GPlatesQtWidgets::EditPlateIdWidget::create_integer_plate_id_from_widget() const
 bool
 GPlatesQtWidgets::EditPlateIdWidget::update_property_value_from_widget()
 {
+	if (is_null()) {
+		throw UninitialisedEditWidgetException(GPLATES_EXCEPTION_SOURCE);
+	}
+
 	if (d_plate_id_ptr.get() != NULL) {
 		if (is_dirty()) {
 			d_plate_id_ptr->set_value(spinbox_plate_id->value());
@@ -94,5 +110,19 @@ GPlatesQtWidgets::EditPlateIdWidget::update_property_value_from_widget()
 	} else {
 		throw UninitialisedEditWidgetException(GPLATES_EXCEPTION_SOURCE);
 	}
+}
+
+
+bool
+GPlatesQtWidgets::EditPlateIdWidget::is_null() const
+{
+	return (spinbox_plate_id->value() == -1);
+}
+
+void
+GPlatesQtWidgets::EditPlateIdWidget::set_null(
+		bool should_nullify)
+{
+	spinbox_plate_id->setValue( should_nullify? -1 : 0 );
 }
 

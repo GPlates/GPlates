@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,11 +28,32 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLINTERPOLATIONFUNCTION_H
 #define GPLATES_PROPERTYVALUES_GPMLINTERPOLATIONFUNCTION_H
 
-#include "model/PropertyValue.h"
 #include "TemplateTypeParameterType.h"
 
+#include "model/PropertyValue.h"
+#include "utils/UnicodeStringUtils.h"
 
-namespace GPlatesPropertyValues {
+
+// This macro is used to define the virtual function 'deep_clone_as_interp_func' inside a class
+// which derives from InterpolationFunction.  The function definition is exactly identical in every
+// InterpolationFunction derivation, but the function must be defined in each derived class (rather
+// than in the base) because it invokes the non-virtual member function 'deep_clone' of that
+// specific derived class.
+// (This function 'deep_clone' cannot be moved into the base class, because (i) its return type is
+// the type of the derived class, and (ii) it must perform different actions in different classes.)
+// To define the function, invoke the macro in the class definition.  The macro invocation will
+// expand to a definition of the function.
+#define DEFINE_FUNCTION_DEEP_CLONE_AS_INTERP_FUNC()  \
+		virtual  \
+		const GpmlInterpolationFunction::non_null_ptr_type  \
+		deep_clone_as_interp_func() const  \
+		{  \
+			return deep_clone();  \
+		}
+
+
+namespace GPlatesPropertyValues
+{
 
 	/**
 	 * This is an abstract class, because it derives from class PropertyValue, which contains
@@ -40,7 +61,8 @@ namespace GPlatesPropertyValues {
 	 * not override with non-pure-virtual definitions.
 	 */
 	class GpmlInterpolationFunction:
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
@@ -58,20 +80,15 @@ namespace GPlatesPropertyValues {
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlInterpolationFunction> non_null_ptr_to_const_type;
 
 		/**
 		 * Construct a GpmlInterpolationFunction instance.
@@ -98,19 +115,30 @@ namespace GPlatesPropertyValues {
 		 */
 		GpmlInterpolationFunction(
 				const GpmlInterpolationFunction &other) :
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_value_type(other.d_value_type)
 		{  }
 
 		virtual
-		~GpmlInterpolationFunction() {  }
+		~GpmlInterpolationFunction()
+		{  }
+
+		virtual
+		const GpmlInterpolationFunction::non_null_ptr_type
+		deep_clone_as_interp_func() const = 0;
 
 		// Note that no "setter" is provided:  The value type of a
 		// GpmlInterpolationFunction instance should never be changed.
 		const TemplateTypeParameterType &
-		value_type() const {
+		value_type() const
+		{
 			return d_value_type;
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	private:
 

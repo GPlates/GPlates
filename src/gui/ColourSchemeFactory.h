@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,64 +28,79 @@
 #ifndef GPLATES_GUI_COLOURSCHEMEFACTORY_H
 #define GPLATES_GUI_COLOURSCHEMEFACTORY_H
 
-#include "GenericColourScheme.h"
-#include "PlateIdColourPalettes.h"
-#include "model/types.h"
-#include "app-logic/ReconstructionGeometryUtils.h"
+#include "Colour.h"
+#include "ColourScheme.h"
 
-#include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
-
-namespace
+namespace GPlatesAppLogic
 {
-	class PlateIdPropertyExtractor
-	{
-	public:
-		
-		typedef GPlatesModel::integer_plate_id_type return_type;
+	class ApplicationState;
+}
 
-		boost::optional<return_type>
-		operator()(
-				const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const
-		{
-			GPlatesModel::integer_plate_id_type plate_id;
-			if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(
-						&reconstruction_geometry, plate_id))
-			{
-				return boost::none;
-			}
-			else
-			{
-				return boost::optional<return_type>(plate_id);
-			}
-		}
-	};
+namespace GPlatesMaths
+{
+	class Real;
 }
 
 namespace GPlatesGui
 {
-	typedef GenericColourScheme<PlateIdPropertyExtractor> PlateIdColourScheme;
+	template<class T> class ColourPalette;
 
-	class ColourSchemeFactory
+	namespace ColourSchemeFactory
 	{
-	public:
+		/**
+		 * Creates a colour scheme that colours all geometries with the given @a colour.
+		 */
+		ColourScheme::non_null_ptr_type
+		create_single_colour_scheme(
+				const Colour &colour);
 
-		static
-		boost::shared_ptr<ColourScheme>
-		create_default_plate_id_colour_scheme()
-		{
-			return boost::shared_ptr<ColourScheme>(
-					new PlateIdColourScheme(new DefaultPlateIdColourPalette()));
-		}
+		/**
+		 * Creates the default plate id colour scheme; this colour scheme aims to
+		 * give nearby plates vastly different colours.
+		 */
+		ColourScheme::non_null_ptr_type
+		create_default_plate_id_colour_scheme();
 
-		static
-		boost::shared_ptr<ColourScheme>
-		create_regional_plate_id_colour_scheme()
-		{
-			return boost::shared_ptr<ColourScheme>(
-					new PlateIdColourScheme(new RegionalPlateIdColourPalette()));
-		}
-	};
+		/**
+		 * Creates the regional plate id colour scheme; this colour scheme aims to
+		 * give plates in the same region (i.e. sharing the same leading digit) a
+		 * different shade of the same colour.
+		 */
+		ColourScheme::non_null_ptr_type
+		create_regional_plate_id_colour_scheme();
+
+		/**
+		 * Creates a colour scheme that colours geometries by their age based on the
+		 * current reconstruction time, using default (rainbow-like) colours.
+		 */
+		ColourScheme::non_null_ptr_type
+		create_default_age_colour_scheme(
+				const GPlatesAppLogic::ApplicationState &application_state);
+
+		/**
+		 * Creates a colour scheme that colours geometries by their age based on the
+		 * current reconstruction time, using shades of grey.
+		 */
+		ColourScheme::non_null_ptr_type
+		create_monochrome_age_colour_scheme(
+				const GPlatesAppLogic::ApplicationState &application_state);
+
+		/**
+		 * Creates a colour scheme that colours geometries by their age based on the
+		 * current reconstruction time, using the provided @a palette.
+		 */
+		ColourScheme::non_null_ptr_type
+		create_custom_age_colour_scheme(
+				const GPlatesAppLogic::ApplicationState &application_state,
+				ColourPalette<GPlatesMaths::Real> *palette);
+
+		/**
+		 * Creates a colour scheme that colours geometries by their underlying feature type.
+		 */
+		ColourScheme::non_null_ptr_type
+		create_default_feature_colour_scheme();
+		
+	}
 }
 
 #endif  /* GPLATES_GUI_COLOURSCHEMEFACTORY_H */

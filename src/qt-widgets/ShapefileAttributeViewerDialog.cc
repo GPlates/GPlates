@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -45,9 +46,9 @@ namespace
 			return false;
 		}
 			
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator
-				iter = feature_collection->features_begin(),
-				end = feature_collection->features_end();
+		GPlatesModel::FeatureCollectionHandle::const_iterator
+				iter = feature_collection->begin(),
+				end = feature_collection->end();
 
 		for (; iter != end ; ++iter)
 		{
@@ -179,9 +180,9 @@ namespace
 
 		if (feature_collection.is_valid())
 		{
-			GPlatesModel::FeatureCollectionHandle::features_iterator
-				iter = feature_collection->features_begin(),
-				end = feature_collection->features_end();
+			GPlatesModel::FeatureCollectionHandle::iterator
+				iter = feature_collection->begin(),
+				end = feature_collection->end();
 
 			// Run over the feature collection to find the number of features, and hence 
 			// the number of rows required. (Assuming that every feature will have shapefile attributes). 
@@ -192,7 +193,7 @@ namespace
 
 			table_widget->setRowCount(num_rows);
 
-			iter = feature_collection->features_begin();
+			iter = feature_collection->begin();
 
 			fill_header_from_feature((*iter)->reference(),table_widget);
 

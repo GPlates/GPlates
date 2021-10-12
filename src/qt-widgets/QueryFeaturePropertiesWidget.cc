@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,27 +22,29 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #include <QLocale>
 #include "QueryFeaturePropertiesWidget.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "gui/FeatureFocus.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "feature-visitors/QueryFeaturePropertiesWidgetPopulator.h"
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
+#include "presentation/ViewState.h"
 #include "property-values/GpmlPlateId.h"
 #include "utils/UnicodeStringUtils.h"
-#include "presentation/ViewState.h"
 
 
 GPlatesQtWidgets::QueryFeaturePropertiesWidget::QueryFeaturePropertiesWidget(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_reconstruct_ptr(&view_state_.get_reconstruct())
+	d_application_state_ptr(&view_state_.get_application_state()),
+	d_need_load_data(false)
 {
 	setupUi(this);
 
@@ -56,8 +58,8 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::QueryFeaturePropertiesWidget(
 	field_Root_Plate_ID->setMaximumSize(50, 27);
 	field_Recon_Time->setMaximumSize(50, 27);
 
-	QObject::connect(d_reconstruct_ptr,
-			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+	QObject::connect(d_application_state_ptr,
+			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
 			this,
 			SLOT(refresh_display()));
 }
@@ -167,15 +169,15 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 		set_plate_id(recon_plate_id->value());
 
 		GPlatesModel::integer_plate_id_type root_plate_id =
-				d_reconstruct_ptr->get_current_anchored_plate_id();
+				d_application_state_ptr->get_current_anchored_plate_id();
 		set_root_plate_id(root_plate_id);
 		set_reconstruction_time(
-				d_reconstruct_ptr->get_current_reconstruction_time());
+				d_application_state_ptr->get_current_reconstruction_time());
 
 		// Now let's use the reconstruction plate ID of the feature to find the appropriate 
 		// absolute rotation in the reconstruction tree.
 		GPlatesModel::ReconstructionTree &recon_tree =
-				d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree();
+				d_application_state_ptr->get_current_reconstruction().reconstruction_tree();
 		std::pair<GPlatesMaths::FiniteRotation,
 				GPlatesModel::ReconstructionTree::ReconstructionCircumstance>
 				absolute_rotation =
@@ -209,7 +211,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 			set_euler_pole(euler_pole_as_string);
 
-			const double &angle = radiansToDegrees(params.angle).dval();
+			const double &angle = GPlatesMaths::convert_rad_to_deg(params.angle).dval();
 			set_angle(angle);
 		}
 	}
@@ -218,6 +220,31 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 
 	GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(
 			property_tree());
-	populator.populate(d_feature_ref, d_focused_rg);
+
+	if(this->isVisible())
+	{
+		GPlatesModel::FeatureHandle::const_weak_ref const_feature = d_feature_ref;
+		populator.populate(const_feature, d_focused_rg);
+		d_need_load_data = false;
+	}
+	else
+	{
+		d_need_load_data = true;
+	}
+
 }
+void
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::load_data_if_necessary()
+{
+	if(d_need_load_data)
+	{
+		GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator 
+			populator(property_tree());
+		GPlatesModel::FeatureHandle::const_weak_ref const_feature = d_feature_ref;
+		populator.populate(const_feature, d_focused_rg);
+		d_need_load_data = false;
+	}
+	return;
+}
+
 

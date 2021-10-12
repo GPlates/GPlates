@@ -5,7 +5,8 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -28,10 +29,10 @@
 
 #include "ApplyReconstructionPoleAdjustmentDialog.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "feature-visitors/TotalReconstructionSequenceRotationInterpolater.h"
 #include "feature-visitors/TotalReconstructionSequenceRotationInserter.h"
-#include "utils/MathUtils.h"
+#include "maths/MathsUtils.h"
 #include "presentation/ViewState.h"
 
 
@@ -43,7 +44,7 @@ GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::fill_in_fields_for_ro
 		const GPlatesMaths::Rotation &r)
 {
 	double rot_angle_in_rads = r.angle().dval();
-	double rot_angle_in_degs = GPlatesUtils::convert_rad_to_deg(rot_angle_in_rads);
+	double rot_angle_in_degs = GPlatesMaths::convert_rad_to_deg(rot_angle_in_rads);
 	angle_ptr->setValue(rot_angle_in_degs);
 
 	if (r.angle() != 0.0) {
@@ -130,7 +131,7 @@ namespace
 			lon_field_ptr->setText(locale_.toString(llp.longitude(), 'f', 2));
 
 			double rot_angle_in_rads = params.angle.dval();
-			double rot_angle_in_degs = GPlatesUtils::convert_rad_to_deg(rot_angle_in_rads);
+			double rot_angle_in_degs = GPlatesMaths::convert_rad_to_deg(rot_angle_in_rads);
 			angle_ptr->setValue(rot_angle_in_degs);
 		}
 	}
@@ -256,7 +257,7 @@ GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::populate_pole_sequenc
 GPlatesQtWidgets::AdjustmentApplicator::AdjustmentApplicator(
 		GPlatesPresentation::ViewState &view_state,
 		ApplyReconstructionPoleAdjustmentDialog &dialog) :
-	d_reconstruct_ptr(&view_state.get_reconstruct()),
+	d_application_state_ptr(&view_state.get_application_state()),
 	d_dialog_ptr(&dialog),
 	d_pole_time(0.0)
 {
@@ -317,7 +318,7 @@ GPlatesQtWidgets::AdjustmentApplicator::handle_pole_sequence_choice_changed(
 	unsigned long fixed_plate = d_sequence_choices.at(index).d_fixed_plate;
 	// Of course, the "fixed" plate might be moving relative to some other plate...
 	FiniteRotation motion_of_fixed_plate =
-			d_reconstruct_ptr->get_current_reconstruction().reconstruction_tree()
+			d_application_state_ptr->get_current_reconstruction().reconstruction_tree()
 					.get_composed_absolute_rotation(fixed_plate).first;
 	const UnitQuaternion3D &uq = motion_of_fixed_plate.unit_quat();
 	if ( ! represents_identity_rotation(uq)) {
@@ -372,9 +373,10 @@ GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 
 	GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter inserter(
 			d_pole_time,
-			*d_adjustment_rel_fixed);
+			*d_adjustment_rel_fixed,
+			d_dialog_ptr->get_comment_line());
 	inserter.visit_feature(chosen_pole_seq);
 
-	d_reconstruct_ptr->reconstruct();
+	d_application_state_ptr->reconstruct();
 	emit have_reconstructed();
 }

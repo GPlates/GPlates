@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -45,8 +45,9 @@
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/XsString.h"
 
+#include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/PolylineOnSphere.h"
-#include "maths/LatLonPointConversions.h"
 
 
 void
@@ -216,7 +217,7 @@ GPlatesFileIO::GpmlOnePointFiveOutputVisitor::visit_gpml_finite_rotation(
 			GPlatesMaths::real_t angle_in_radians =
 					::GPlatesPropertyValues::calculate_angle(gpml_finite_rotation);
 			double angle_in_degrees =
-					::GPlatesMaths::degreesToRadians(angle_in_radians).dval();
+					::GPlatesMaths::convert_deg_to_rad(angle_in_radians).dval();
 			d_output.write_line_of_single_decimal_content(angle_in_degrees);
 		}
 	}

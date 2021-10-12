@@ -6,6 +6,7 @@
  *   $Date: 2008-08-15 02:13:48 -0700 (Fri, 15 Aug 2008) $
  * 
  * Copyright (C) 2008, 2009 California Institute of Technology
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -73,7 +74,7 @@ namespace GPlatesPropertyValues
 namespace GPlatesFeatureVisitors
 {
 	class TopologySectionsFinder :
-			public GPlatesModel::FeatureVisitor,
+			public GPlatesModel::ConstFeatureVisitor,
 			private boost::noncopyable
 	{
 	public:
@@ -87,36 +88,36 @@ namespace GPlatesFeatureVisitors
 		virtual
 		bool
 		initialise_pre_feature_properties(
-				GPlatesModel::FeatureHandle &feature_handle);
+				const GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
 		void
 		visit_gpml_constant_value(
-			GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
 
 		virtual
 		void
 		visit_gpml_piecewise_aggregation(
-			GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation);
+				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation);
 
 		void
 		process_gpml_time_window(
-			GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window);
+				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window);
 
 		virtual
 		void
 		visit_gpml_topological_polygon(
-		 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+		 		const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
 
 		virtual
 		void
 		visit_gpml_topological_line_section(
-			GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
+				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
 
 		virtual
 		void
 		visit_gpml_topological_point(
-			GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
+				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
 
 		void
 		report();

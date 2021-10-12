@@ -2,14 +2,14 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of the class TopLevelProperty.
  *
  * Most recent change:
  *   $Date$
  * 
  * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *  (under the name "PropertyContainer.h")
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *  (under the name "TopLevelProperty.h")
  *
  * This file is part of GPlates.
@@ -32,10 +32,13 @@
 #define GPLATES_MODEL_TOPLEVELPROPERTY_H
 
 #include <map>
+#include <iosfwd>
 
 #include "PropertyName.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
+#include "types.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -43,8 +46,11 @@
 
 namespace GPlatesModel
 {
-	class ConstFeatureVisitor;
-	class FeatureVisitor;
+	// Forward declarations.
+	class FeatureHandle;
+	template<class H> class FeatureVisitorBase;
+	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
+	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
 
 	/**
 	 * This abstract base class (ABC) represents the top-level property of a feature.
@@ -74,6 +80,11 @@ namespace GPlatesModel
 				GPlatesUtils::NullIntrusivePointerHandler>
 				non_null_ptr_to_const_type;
 
+		/**
+		 * The type of the container of XML attributes.
+		 */
+		typedef std::map<XmlAttributeName, XmlAttributeValue> xml_attributes_type;
+
 		virtual
 		~TopLevelProperty()
 		{  }
@@ -88,7 +99,7 @@ namespace GPlatesModel
 		 */
 		TopLevelProperty(
 				const PropertyName &property_name_,
-				const std::map<XmlAttributeName, XmlAttributeValue> &xml_attributes_):
+				const xml_attributes_type &xml_attributes_):
 			d_property_name(property_name_),
 			d_xml_attributes(xml_attributes_)
 		{  }
@@ -120,10 +131,32 @@ namespace GPlatesModel
 
 		/**
 		 * Create a duplicate of this TopLevelProperty instance.
+		 *
+		 * Note that this will @em not duplicate any property values contained within it.
+		 * As a result, the new (duplicate) instance will "contain" (reference by pointer)
+		 * the same property values as the original.  (The pointer @em values are copied,
+		 * not the pointer @em targets.)  Until the automatic Bubble-Up revisioning system
+		 * is fully operational, this is probably @em not what you want, when you're cloning
+		 * a feature:  If a property value is modified in the original, the duplicate will
+		 * now also contain a modified property value...
+		 *
+		 * Compare with @a deep_clone, which @em does duplicate any property values
+		 * contained within.
 		 */
 		virtual
 		const non_null_ptr_type
 		clone() const = 0;
+
+		/**
+		 * Create a duplicate of this TopLevelProperty instance, plus any property values
+		 * which it might contain.
+		 *
+		 * Until the automatic Bubble-Up revisioning system is fully operational, this is
+		 * the function you should call, when you're cloning a feature.
+		 */
+		virtual
+		const non_null_ptr_type
+		deep_clone() const = 0;
 
 		// Note that no "setter" is provided:  The property name of a TopLevelProperty
 		// instance should never be changed.
@@ -136,7 +169,7 @@ namespace GPlatesModel
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
-		const std::map<XmlAttributeName, XmlAttributeValue> &
+		const xml_attributes_type &
 		xml_attributes() const
 		{
 			return d_xml_attributes;
@@ -145,7 +178,7 @@ namespace GPlatesModel
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
-		std::map<XmlAttributeName, XmlAttributeValue> &
+		xml_attributes_type &
 		xml_attributes()
 		{
 			return d_xml_attributes;
@@ -173,9 +206,25 @@ namespace GPlatesModel
 		accept_visitor(
 				FeatureVisitor &visitor) = 0;
 
+		/**
+		 * Prints the contents of this TopLevelProperty to the stream @a os.
+		 *
+		 * Note: This function is not called operator<< because operator<< needs to
+		 * be a non-member operator, but we would like polymorphic behaviour.
+		 */
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const = 0;
+
+		virtual
+		bool
+		operator==(
+				const TopLevelProperty &other) const = 0;
+
 	private:
 		PropertyName d_property_name;
-		std::map<XmlAttributeName, XmlAttributeValue> d_xml_attributes;
+		xml_attributes_type d_xml_attributes;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
@@ -186,6 +235,11 @@ namespace GPlatesModel
 				const TopLevelProperty &);
 
 	};
+
+	std::ostream &
+	operator<<(
+			std::ostream & os,
+			const TopLevelProperty &top_level_prop);
 
 }
 

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -48,29 +48,24 @@ namespace GPlatesPropertyValues
 	class GmlLineString:
 			public GPlatesModel::PropertyValue
 	{
+
 	public:
+
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlLineString,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlLineString>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlLineString,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlLineString> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlLineString,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlLineString>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlLineString,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlLineString> non_null_ptr_to_const_type;
 
 		/**
 		 * A convenience typedef for the internal polyline representation.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				internal_polyline_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> internal_polyline_type;
 
 		virtual
 		~GmlLineString()
@@ -84,17 +79,22 @@ namespace GPlatesPropertyValues
 		create(
 				const internal_polyline_type &polyline_);
 
-		/**
-		 * Create a duplicate of this PropertyValue instance.
-		 */
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GmlLineString::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(new GmlLineString(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			GmlLineString::non_null_ptr_type dup(new GmlLineString(*this));
 			return dup;
 		}
+
+		const GmlLineString::non_null_ptr_type
+		deep_clone() const
+		{
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular 'clone' will suffice.
+			return clone();
+		}
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Access the GPlatesMaths::PolylineOnSphere which encodes the geometry of this
@@ -124,6 +124,7 @@ namespace GPlatesPropertyValues
 				const internal_polyline_type &p)
 		{
 			d_polyline = p;
+			update_instance_id();
 		}
 
 		/**
@@ -154,6 +155,11 @@ namespace GPlatesPropertyValues
 			visitor.visit_gml_line_string(*this);
 		}
 
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
+
 	protected:
 
 		// This constructor should not be public, because we don't want to allow
@@ -173,7 +179,7 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlLineString(
 				const GmlLineString &other):
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_polyline(other.d_polyline)
 		{  }
 

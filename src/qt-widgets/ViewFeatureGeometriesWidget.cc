@@ -25,24 +25,24 @@
 
 #include "ViewFeatureGeometriesWidget.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "feature-visitors/ViewFeatureGeometriesWidgetPopulator.h"
-#include "utils/UnicodeStringUtils.h"
 #include "presentation/ViewState.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 GPlatesQtWidgets::ViewFeatureGeometriesWidget::ViewFeatureGeometriesWidget(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_reconstruct_ptr(&view_state_.get_reconstruct()),
+	d_application_state_ptr(&view_state_.get_application_state()),
 	d_feature_focus_ptr(&view_state_.get_feature_focus())
 {
 	setupUi(this);
 	reset();
 	
-	QObject::connect(d_reconstruct_ptr,
-			SIGNAL(reconstructed(GPlatesAppLogic::Reconstruct &, bool, bool)),
+	QObject::connect(d_application_state_ptr,
+			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
 			this,
 			SLOT(refresh_display()));
 }
@@ -70,11 +70,11 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::refresh_display()
 	//PROFILE_BEGIN(populate, "ViewFeatureGeometriesWidgetPopulator");
 
 	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
-			d_reconstruct_ptr->get_current_reconstruction(), *tree_geometry);
+			d_application_state_ptr->get_current_reconstruction(), *tree_geometry);
 	populator.populate(d_feature_ref, d_focused_rg);
 	
-	double time = d_reconstruct_ptr->get_current_reconstruction_time();
-	unsigned long root = d_reconstruct_ptr->get_current_anchored_plate_id();
+	double time = d_application_state_ptr->get_current_reconstruction_time();
+	unsigned long root = d_application_state_ptr->get_current_anchored_plate_id();
 
 	//PROFILE_END(populate);
 	

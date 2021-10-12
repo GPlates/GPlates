@@ -34,11 +34,6 @@
 #include "gui/TopologyTools.h"
 
 
-namespace GPlatesAppLogic
-{
-	class Reconstruct;
-}
-
 namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
@@ -152,11 +147,6 @@ namespace GPlatesCanvasTools
 		 * activated.
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
-
-		/**
-		 * This is the view state which is used to obtain the reconstruction root.
-		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
 
 		/**
 		 *

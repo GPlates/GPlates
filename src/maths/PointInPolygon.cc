@@ -27,7 +27,7 @@
 
 #include "PointInPolygon.h"
 
-#include "LatLonPointConversions.h"
+#include "LatLonPoint.h"
 #include "PointOnSphere.h"
 
 #include "global/AssertionFailureException.h"

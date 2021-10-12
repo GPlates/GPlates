@@ -4,10 +4,14 @@
     <file>GPlates-logo-transparent.png</file>
     <file>africa_blank_35.png</file>
     <file>africa_vertices_35.png</file>
+    <file>blank_16.png</file>
     <file>click_geometry_35.png</file>
+    <file>clone_geometry_22.png</file>
+	<file>clone_feature_22.png</file>
     <file>digitise_multipoint_35.png</file>
     <file>digitise_polygon_35.png</file>
     <file>digitise_polyline_35.png</file>
+    <file>discard_changes_22.png</file>
     <file>drag_globe_35.png</file>
     <file>drag_plate_35.png</file>
     <file>edit_feature_35.png</file>
@@ -17,11 +21,14 @@
     <file>gnome_applets_screenshooter_16.png</file>
     <file>gnome_application_exit_16.png</file>
     <file>gnome_dialog_error_16.png</file>
+    <file>gnome_dialog_error_22.png</file>
     <file>gnome_dialog_warning_16.png</file>
+    <file>gnome_dialog_warning_22.png</file>
     <file>gnome_document_properties_22.png</file>
     <file>gnome_edit_delete_22.png</file>
     <file>gnome_edit_find_16.png</file>
     <file>gnome_edit_find_22.png</file>
+    <file>gnome_emblem_new_16.png</file>
     <file>gnome_folder_16.png</file>
     <file>gnome_go_bottom_22.png</file>
     <file>gnome_go_top_22.png</file>
@@ -83,6 +90,7 @@
     <file>seek_end_22.png</file>
     <file>select_plate_35.png</file>
     <file>spin_globe_35.png</file>
+    <file>split_geometry_35.png</file>
     <file>tango_document_save_22.png</file>
     <file>tango_emblem_unreadable_22.png</file>
     <file>tango_go_bottom_22.png</file>
@@ -92,6 +100,8 @@
     <file>topology_blank_35.png</file>
     <file>topology_build_35.png</file>
     <file>topology_edit_35.png</file>
+    <file>unsaved_changes_red_disk_bang_22.png</file>
+    <file>unsaved_changes_red_disk_question_22.png</file>
     <file>zoom_globe_35.png</file>
 </qresource>
 </RCC>

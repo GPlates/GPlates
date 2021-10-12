@@ -46,6 +46,8 @@ set(srcs
     PanMap.h
     ReorientGlobe.cc
     ReorientGlobe.h
+    SplitFeature.cc
+    SplitFeature.h
     ZoomGlobe.cc
     ZoomGlobe.h
     ZoomMap.cc
@@ -67,6 +69,6 @@ set(target_name canvas-tools)
 # - groups files in Visual Studio IDE according to type.
 GPLATES_GENERATE_TARGET_SOURCES(${target_name} target_srcs ${srcs})
 
-add_library(${target_name} ${target_srcs})
+add_library(${target_name} STATIC ${target_srcs})
 
 GPLATES_POST_ADD_TARGET(${target_name} target_srcs)

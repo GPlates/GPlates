@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,16 +33,17 @@
 #include "XsString.h"
 #include "TemplateTypeParameterType.h"
 #include "model/FeatureVisitor.h"
-#include "model/ConstFeatureVisitor.h"
 
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	// Since all the members of this class are of type boost::intrusive_ptr or
 	// TemplateTypeParameterType (which wraps an StringSet::SharedIterator instance which
 	// points to a pre-allocated node in a StringSet), none of the construction,
 	// copy-construction or copy-assignment operations for this class should throw.
-	class GpmlTimeSample {
+	class GpmlTimeSample
+	{
 
 	public:
 
@@ -68,8 +69,12 @@ namespace GPlatesPropertyValues {
 			d_is_disabled(other.d_is_disabled)
 		{  }
 
+		const GpmlTimeSample
+		deep_clone() const;
+
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
-		value() const {
+		value() const
+		{
 			return d_value;
 		}
 
@@ -85,18 +90,21 @@ namespace GPlatesPropertyValues {
 		// (This overload is provided to allow the referenced PropertyValue instance to
 		// accept a FeatureVisitor instance.)
 		const GPlatesModel::PropertyValue::non_null_ptr_type
-		value() {
+		value()
+		{
 			return d_value;
 		}
 
 		void
 		set_value(
-				GPlatesModel::PropertyValue::non_null_ptr_type v) {
+				GPlatesModel::PropertyValue::non_null_ptr_type v)
+		{
 			d_value = v;
 		}
 
 		const GmlTimeInstant::non_null_ptr_to_const_type
-		valid_time() const {
+		valid_time() const
+		{
 			return d_valid_time;
 		}
 
@@ -112,18 +120,21 @@ namespace GPlatesPropertyValues {
 		// (This overload is provided to allow the referenced GmlTimeInstant instance to
 		// accept a FeatureVisitor instance.)
 		const GmlTimeInstant::non_null_ptr_type
-		valid_time() {
+		valid_time()
+		{
 			return d_valid_time;
 		}
 
 		void
 		set_valid_time(
-				GmlTimeInstant::non_null_ptr_type vt) {
+				GmlTimeInstant::non_null_ptr_type vt)
+		{
 			d_valid_time = vt;
 		}
 
 		const boost::intrusive_ptr<const XsString>
-		description() const {
+		description() const
+		{
 			return d_description;
 		}
 
@@ -139,20 +150,23 @@ namespace GPlatesPropertyValues {
 		// (This overload is provided to allow the referenced XsString instance to accept a
 		// FeatureVisitor instance.)
 		const boost::intrusive_ptr<XsString>
-		description() {
+		description()
+		{
 			return d_description;
 		}
 
 		void
 		set_description(
-				boost::intrusive_ptr<XsString> d) {
+				boost::intrusive_ptr<XsString> d)
+		{
 			d_description = d;
 		}
 
 		// Note that no "setter" is provided:  The value type of a GpmlTimeSample instance
 		// should never be changed.
 		const TemplateTypeParameterType &
-		value_type() const {
+		value_type() const
+		{
 			return d_value_type;
 		}
 
@@ -174,6 +188,10 @@ namespace GPlatesPropertyValues {
 		{
 			d_is_disabled = is_disabled_;
 		}
+
+		bool
+		operator==(
+				const GpmlTimeSample &other) const;
 
 	private:
 

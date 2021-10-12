@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,6 @@
 #include "PlateVelocityUtils.h"
 
 #include "AppLogicUtils.h"
-#include "Reconstruct.h"
 #include "TopologyUtils.h"
 
 #include "feature-visitors/ComputationalMeshSolver.h"
@@ -39,7 +38,7 @@
 #include "maths/CalculateVelocity.h"
 
 #include "model/FeatureType.h"
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/Model.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
@@ -174,8 +173,9 @@ namespace
 					GPlatesModel::FeatureType::create_gpml("VelocityField");
 
 			// Create a new velocity field feature adding it to the new collection.
-			return d_model->create_feature(
-					velocity_field_feature_type, d_velocity_field_feature_collection);
+			return GPlatesModel::FeatureHandle::create(
+					d_velocity_field_feature_collection,
+					velocity_field_feature_type);
 		}
 
 
@@ -195,10 +195,10 @@ namespace
 					GPlatesPropertyValues::GmlMultiPoint::create(
 							gml_multi_point.multipoint());
 
-			GPlatesModel::ModelUtils::append_property_value_to_feature(
-					domain_set_gml_multi_point,
-					domain_set_prop_name,
-					d_velocity_field_feature);
+			d_velocity_field_feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+						domain_set_prop_name,
+						domain_set_gml_multi_point));
 		}
 	};
 
@@ -297,7 +297,7 @@ GPlatesAppLogic::PlateVelocityUtils::create_velocity_field_feature_collection(
 
 	// Create a new feature collection to store our velocity field features.
 	GPlatesModel::FeatureCollectionHandle::weak_ref velocity_field_feature_collection =
-			model->create_feature_collection();
+			GPlatesModel::FeatureCollectionHandle::create(model->root());
 
 	const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref
 			velocity_field_feature_collection_unloader =
@@ -390,7 +390,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
 
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 			velocity_field_feature_collection,
-			velocity_solver);
+			static_cast<GPlatesModel::FeatureVisitor &>(velocity_solver));
 }
 
 

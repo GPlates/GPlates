@@ -473,17 +473,17 @@ namespace GPlatesMaths
 		 * @a invalid_points is a return-parameter; if the
 		 * construction-parameters are found to be invalid due to
 		 * antipodal adjacent points, the value of this return-parameter
-		 * will be set to the pair of iterator of type ForwardIter which
+		 * will be set to the pair of iterator of type PointForwardIter which
 		 * point to the guilty points.  If no adjacent points are found
 		 * to be antipodal, this parameter will not be modified.
 		 */
-		template<typename ForwardIter>
+		template<typename PointForwardIter>
 		static
 		ConstructionParameterValidity
 		evaluate_construction_parameter_validity(
-				ForwardIter begin,
-				ForwardIter end,
-				std::pair<ForwardIter, ForwardIter> &invalid_points);
+				PointForwardIter begin,
+				PointForwardIter end,
+				std::pair<PointForwardIter, PointForwardIter> &invalid_points);
 
 		/**
 		 * Evaluate the validity of the construction-parameters.
@@ -552,11 +552,12 @@ namespace GPlatesMaths
 		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
-		template<typename ForwardIter>
+		template<typename PointForwardIter>
 		static
 		const non_null_ptr_to_const_type
 		create_on_heap(
-				ForwardIter begin, ForwardIter end);
+				PointForwardIter begin,
+				PointForwardIter end);
 
 		/**
 		 * Create a new PolylineOnSphere instance on the heap from the sequence of points
@@ -849,13 +850,13 @@ namespace GPlatesMaths
 		 * This function is strongly exception-safe and
 		 * exception-neutral.
 		 */
-		template<typename ForwardIter>
+		template<typename PointForwardIter>
 		static
 		void
 		generate_segments_and_swap(
 				PolylineOnSphere &poly,
-				ForwardIter begin,
-				ForwardIter end);
+				PointForwardIter begin,
+				PointForwardIter end);
 
 		/**
 		 * Attempt to create a line-segment defined by the points @a p1 and @a p2; append
@@ -958,12 +959,23 @@ namespace GPlatesMaths
 			const PolylineOnSphere &poly2);
 
 
-	template<typename ForwardIter>
+	/**
+	 * Concatenates multiple polylines into a single polyline by joining
+	 * the tail of one polyline to the head of the next, etc.
+	 */
+	template <typename PolylineForwardIter>
+	PolylineOnSphere::non_null_ptr_to_const_type
+	concatenate_polylines(
+			PolylineForwardIter begin,
+			PolylineForwardIter end);
+
+
+	template<typename PointForwardIter>
 	PolylineOnSphere::ConstructionParameterValidity
 	PolylineOnSphere::evaluate_construction_parameter_validity(
-			ForwardIter begin,
-			ForwardIter end,
-			std::pair<ForwardIter, ForwardIter> &invalid_points)
+			PointForwardIter begin,
+			PointForwardIter end,
+			std::pair<PointForwardIter, PointForwardIter> &invalid_points)
 	{
 		const unsigned num_points = count_distinct_adjacent_points(begin, end);
 		if (num_points < s_min_num_collection_points) {
@@ -972,8 +984,8 @@ namespace GPlatesMaths
 			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
-		ForwardIter prev;
-		ForwardIter iter = begin;
+		PointForwardIter prev;
+		PointForwardIter iter = begin;
 		for (prev = iter++ ; iter != end; prev = iter++) {
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
@@ -1012,10 +1024,11 @@ namespace GPlatesMaths
 		return VALID;
 	}
 
-	template<typename ForwardIter>
+	template<typename PointForwardIter>
 	const PolylineOnSphere::non_null_ptr_to_const_type
 	PolylineOnSphere::create_on_heap(
-			ForwardIter begin, ForwardIter end)
+			PointForwardIter begin,
+			PointForwardIter end)
 	{
 		PolylineOnSphere::non_null_ptr_type ptr(new PolylineOnSphere(),
 				GPlatesUtils::NullIntrusivePointerHandler());
@@ -1067,14 +1080,14 @@ namespace GPlatesMaths
 	};
 
 
-	template<typename ForwardIter>
+	template<typename PointForwardIter>
 	void
 	PolylineOnSphere::generate_segments_and_swap(
 			PolylineOnSphere &poly,
-			ForwardIter begin,
-			ForwardIter end)
+			PointForwardIter begin,
+			PointForwardIter end)
 	{
-		std::pair<ForwardIter, ForwardIter> invalid_points;
+		std::pair<PointForwardIter, PointForwardIter> invalid_points;
 		ConstructionParameterValidity v =
 				evaluate_construction_parameter_validity(begin, end, invalid_points);
 		if (v != VALID) {
@@ -1091,14 +1104,44 @@ namespace GPlatesMaths
 		const seq_type::size_type num_points = std::distance(begin, end);
 		tmp_seq.reserve(num_points - 1);
 
-		ForwardIter prev;
-		ForwardIter iter = begin;
+		PointForwardIter prev;
+		PointForwardIter iter = begin;
 		for (prev = iter++ ; iter != end; prev = iter++) {
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
 			create_segment_and_append_to_seq(tmp_seq, p1, p2);
 		}
 		poly.d_seq.swap(tmp_seq);
+	}
+
+
+	template <typename PolylineForwardIter>
+	PolylineOnSphere::non_null_ptr_to_const_type
+	concatenate_polylines(
+			PolylineForwardIter polylines_begin,
+			PolylineForwardIter polylines_end)
+	{
+		unsigned int num_total_points = 0;
+
+		// Calculate total number of points in all polylines.
+		PolylineForwardIter polylines_iter = polylines_begin;
+		for ( ; polylines_iter != polylines_end; ++polylines_iter)
+		{
+			num_total_points += (*polylines_iter)->number_of_vertices();
+		}
+
+		// Add all polyline points to a single point vector.
+		std::vector<PointOnSphere> all_points;
+		all_points.reserve(num_total_points);
+		for (polylines_iter = polylines_begin ; polylines_iter != polylines_end; ++polylines_iter)
+		{
+			all_points.insert(all_points.end(),
+					(*polylines_iter)->vertex_begin(),
+					(*polylines_iter)->vertex_end());
+		}
+
+		// Create the final concatenated polyline.
+		return PolylineOnSphere::create_on_heap(all_points.begin(), all_points.end());
 	}
 
 

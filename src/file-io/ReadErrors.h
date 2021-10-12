@@ -77,6 +77,8 @@ namespace GPlatesFileIO
 			AdjacentSkipToPlotterCodes,
 			AmbiguousPlatesIceShelfCode,
 			MoreThanOneDistinctPoint,
+			NoValidGeometriesInPlatesFeature,
+			InvalidMultipointGeometry,
 
 			// The following are specific to GPlates 8 hydrid PLATES line-format
 			MissingPlatepolygonBoundaryFeature,
@@ -101,6 +103,7 @@ namespace GPlatesFileIO
 			UnrecognisedShapefileFeatureType,
 			InvalidShapefileAgeOfAppearance,
 			InvalidShapefileAgeOfDisappearance,
+			InvalidShapefileConjugatePlateIdNumber,
 			InvalidShapefilePoint,
 			InvalidShapefileMultiPoint,
 			InvalidShapefilePolyline,
@@ -218,6 +221,21 @@ namespace GPlatesFileIO
 
 			// The following are generic to all local files
 			FileNotLoaded
+		};
+
+
+		/**
+		 * Enumeration of possible error categories, for a simple way to report how
+		 * severe an accumulation of errors is (ReadErrorAccumulation::most_severe_error_type()).
+		 * Order from least severe to most severe.
+		 */
+		enum Severity
+		{
+			NothingWrong = 0,
+			Warning,
+			RecoverableError,
+			TerminatingError,
+			FailureToBegin
 		};
 	}
 }

@@ -64,12 +64,29 @@ namespace GPlatesGui
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<ExportReconstructedGeometryAnimationStrategy,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
+		static const QString 
+				DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE;
+		static const QString 
+				DEFAULT_RECONSTRUCTED_GEOMETRIES_SHP_FILENAME_TEMPLATE;
+		static const QString
+				RECONSTRUCTED_GEOMETRIES_FILENAME_TEMPLATE_DESC;
+		static const QString 
+				RECONSTRUCTED_GEOMETRIES_DESC;
+			
+		enum FileFormat
+		{
+			SHAPEFILE,
+			GMT
+		};
 
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::ExportAnimationContext &export_animation_context);
+				GPlatesGui::ExportAnimationContext &export_animation_context,
+				FileFormat format=GMT,
+				const ExportAnimationStrategy::Configuration& cfg=
+					ExportAnimationStrategy::Configuration(
+							DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE));
 
 
 		virtual
@@ -86,6 +103,24 @@ namespace GPlatesGui
 		do_export_iteration(
 				std::size_t frame_index);
 
+		virtual
+		const QString&
+				get_default_filename_template();
+
+		virtual
+		const QString&
+		get_filename_template_desc()
+		{
+			return RECONSTRUCTED_GEOMETRIES_FILENAME_TEMPLATE_DESC;
+		}
+
+		virtual
+		const QString&
+		get_description()
+		{
+			return RECONSTRUCTED_GEOMETRIES_DESC;
+		}
+
 	protected:
 		/**
 		 * Protected constructor to prevent instantiation on the stack.
@@ -93,7 +128,8 @@ namespace GPlatesGui
 		 */
 		explicit
 		ExportReconstructedGeometryAnimationStrategy(
-				GPlatesGui::ExportAnimationContext &export_animation_context);
+				GPlatesGui::ExportAnimationContext &export_animation_context,
+				const QString &filename_template);
 		
 	private:
 		
@@ -103,6 +139,8 @@ namespace GPlatesGui
 		 */
 		GPlatesViewOperations::VisibleReconstructedFeatureGeometryExport::files_collection_type
 				d_active_reconstructable_files;
+		ExportReconstructedGeometryAnimationStrategy();
+		FileFormat d_file_format;
 	};
 }
 

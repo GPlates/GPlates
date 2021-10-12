@@ -28,7 +28,6 @@
 
 #include <QObject>
 
-#include "gui/ColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "MapCanvasTool.h"
 #include "FeatureTableModel.h"
@@ -36,6 +35,7 @@
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
+	class MapTransform;
 	class TopologySectionsContainer;
 }
 
@@ -46,7 +46,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 	class FeaturePropertiesDialog;
 	class DigitisationWidget;
-	class ReconstructionPoleWidget;
+	class ModifyReconstructionPoleWidget;
 	class TopologyToolsWidget;
 }
 
@@ -78,6 +78,7 @@ namespace GPlatesGui
 		Q_OBJECT
 
 	public:
+
 		/**
 		 * Construct a MapCanvasToolChoice instance.
 		 *
@@ -96,10 +97,11 @@ namespace GPlatesGui
 				FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
+				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget,
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
-				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state);
+				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
+				GPlatesGui::MapTransform &map_transform_);
 
 		~MapCanvasToolChoice()
 		{  }
@@ -155,6 +157,12 @@ namespace GPlatesGui
 
 		void
 		choose_insert_vertex_tool()
+		{
+			change_tool_if_necessary(d_insert_vertex_tool_ptr);
+		}
+
+		void
+		choose_split_feature_tool()
 		{
 			change_tool_if_necessary(d_insert_vertex_tool_ptr);
 		}

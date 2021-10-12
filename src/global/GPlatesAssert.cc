@@ -29,12 +29,14 @@
 #include <iostream>
 
 #include "GPlatesAssert.h"
+#include "AbortException.h"
 
 
 void
 GPlatesGlobal::Abort(
 		const GPlatesUtils::CallStack::Trace &abort_location)
 {
+#ifdef GPLATES_DEBUG
 	// Push the location of the caller onto the call stack writing out the
 	// call stack trace.
 	GPlatesUtils::CallStackTracker call_stack_tracker(abort_location);
@@ -42,4 +44,7 @@ GPlatesGlobal::Abort(
 	GPlatesUtils::CallStack::instance().write_call_stack_trace(std::cerr);
 
 	std::abort();
+#else
+	throw AbortException(abort_location);
+#endif
 }

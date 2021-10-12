@@ -45,6 +45,9 @@ namespace GPlatesGui
 	 * avoids duplication of code, e.g. without this use of the strategy pattern,
 	 * two different ColourSchemes that colour by plate id would both need to
 	 * implement code to extract the plate id.
+	 *
+	 * If your colour palette can deal with multiple KeyTypes, multiply inherit
+	 * from ColourPalette<KeyType-1>, ColourPalette<KeyType-2> ...
 	 */
 	template <class KeyType>
 	class ColourPalette

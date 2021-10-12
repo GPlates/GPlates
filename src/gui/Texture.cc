@@ -33,7 +33,7 @@
 #include <QObject>
 #include <QString>
 
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 
 #include "OpenGLBadAllocException.h"
@@ -251,9 +251,6 @@ namespace{
 
 }
 
-
-
-
 GPlatesGui::Texture::~Texture()
 {
 	if (d_image_data != NULL){
@@ -330,6 +327,8 @@ GPlatesGui::Texture::generate_test_texture()
 
 	delete[] d_image_data;
 	d_image_data = NULL;
+
+	emit texture_changed();
 }
 
 
@@ -345,8 +344,10 @@ GPlatesGui::Texture::paint()
 	if(d_enabled){
 
 		glEnable(GL_TEXTURE_2D);
-		
 		glBindTexture(GL_TEXTURE_2D, d_texture_name);
+
+		// When the globe is cloned, this doesn't get set
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
 		if (d_should_be_remapped)
 		{
@@ -402,10 +403,21 @@ GPlatesGui::Texture::paint()
 	}
 }
 
+
+void
+GPlatesGui::Texture::set_enabled(
+		bool enabled)
+{
+	d_enabled = enabled;
+	emit texture_changed();
+}
+
+
 void
 GPlatesGui::Texture::toggle()
 {
 	d_enabled = !d_enabled;
+	emit texture_changed();
 }
 
 
@@ -441,6 +453,10 @@ GPlatesGui::Texture::generate_raster(
 	check_glu_errors(error,d_texture_name);
 
 	check_gl_errors(d_texture_name);
+
+	d_is_loaded = true;
+
+	emit texture_changed();
 }
 
 
@@ -481,6 +497,10 @@ GPlatesGui::Texture::generate_raster(
 	check_glu_errors(error,d_texture_name);
 
 	check_gl_errors(d_texture_name);
+	
+	d_is_loaded = true;
+
+	emit texture_changed();
 }
 
 
@@ -581,7 +601,7 @@ void
 GPlatesGui::Texture::remap_texture()
 {
 	// Check that a texture already exists. 
-	if (!texture_is_loaded()) return;
+	if (!d_is_loaded) return;
 
 	clear_gl_errors();
 
@@ -632,8 +652,10 @@ GPlatesGui::Texture::set_extent(
 {
 	d_extent = rect;
 	d_should_be_remapped = true;
+	emit texture_changed();
 }
 
+/*
 bool
 GPlatesGui::Texture::texture_is_loaded()
 {
@@ -655,3 +677,5 @@ GPlatesGui::Texture::texture_is_loaded()
 
 	return true;
 }
+*/
+

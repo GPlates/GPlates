@@ -40,7 +40,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/types.h"
 
 #include "utils/LatLonAreaSampling.h"

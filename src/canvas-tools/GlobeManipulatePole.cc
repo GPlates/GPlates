@@ -26,7 +26,7 @@
  */
 
 #include "GlobeManipulatePole.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "view-operations/RenderedGeometryCollection.h"
@@ -37,7 +37,7 @@ GPlatesCanvasTools::GlobeManipulatePole::GlobeManipulatePole(
 		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 		const GPlatesQtWidgets::ViewportWindow &view_state_,
-		GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget):
+		GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget):
 	GlobeCanvasTool(globe_, globe_canvas_),
 	d_rendered_geom_collection(&rendered_geom_collection),
 	d_view_state_ptr(&view_state_),

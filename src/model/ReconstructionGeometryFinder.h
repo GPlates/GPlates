@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,6 +28,7 @@
 
 #include <vector>
 #include <boost/optional.hpp>
+
 #include "FeatureHandle.h"
 #include "PropertyName.h"
 #include "WeakObserverVisitor.h"

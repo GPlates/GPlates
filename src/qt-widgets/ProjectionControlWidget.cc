@@ -24,18 +24,16 @@
  */
 
 #include "ProjectionControlWidget.h"
-
 #include "MapCanvas.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
-
-#include "view-operations/ViewportProjection.h"
+#include "gui/ViewportProjection.h"
 
 #include <QVariant>
 
 GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
-		GPlatesViewOperations::ViewportProjection &viewport_projection,
+		GPlatesGui::ViewportProjection &viewport_projection,
 		QWidget *parent_ = NULL):
 	QWidget(parent_),
 	d_viewport_projection(viewport_projection)
@@ -61,8 +59,8 @@ GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
 	// Listen for projection changes that may occur from some
 	// other source, and update the combobox appropriately.
 	QObject::connect(
-			&d_viewport_projection, SIGNAL(projection_type_changed(const GPlatesViewOperations::ViewportProjection &)),
-			this, SLOT(handle_projection_type_changed(const GPlatesViewOperations::ViewportProjection &)));
+			&d_viewport_projection, SIGNAL(projection_type_changed(const GPlatesGui::ViewportProjection &)),
+			this, SLOT(handle_projection_type_changed(const GPlatesGui::ViewportProjection &)));
 }
 
 
@@ -88,7 +86,7 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_combobox_changed(
 
 void
 GPlatesQtWidgets::ProjectionControlWidget::handle_projection_type_changed(
-		const GPlatesViewOperations::ViewportProjection &viewport_projection)
+		const GPlatesGui::ViewportProjection &viewport_projection)
 {
 	QVariant selected_projection_qv(viewport_projection.get_projection_type());
 	

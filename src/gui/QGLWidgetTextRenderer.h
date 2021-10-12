@@ -64,7 +64,8 @@ namespace GPlatesGui
 				int y,
 				const QString &string,
 				const GPlatesGui::Colour &colour,
-				const QFont &font) const;
+				const QFont &font = QFont(),
+				float scale = 1.0f) const;
 
 		/**
 		 * Renders @a string at position (@a x , @a y , @a z ) in scene coordinates
@@ -80,7 +81,8 @@ namespace GPlatesGui
 				const GPlatesGui::Colour &colour,
 				int x_offset = 0,
 				int y_offset = 0,
-				const QFont &font = QFont()) const;
+				const QFont &font = QFont(),
+				float scale = 1.0f) const;
 
 	private:
 

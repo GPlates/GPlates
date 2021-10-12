@@ -11,11 +11,12 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
-    ConstFeatureVisitor.cc
-    ConstFeatureVisitor.h
+    BasicHandle.cc
+    BasicHandle.h
+    BasicRevision.h
+    ChangesetHandle.cc
+    ChangesetHandle.h
     ConstReconstructionGeometryVisitor.h
-    DummyTransactionHandle.cc
-    DummyTransactionHandle.h
     FeatureCollectionHandle.cc
     FeatureCollectionHandle.h
     FeatureCollectionHandleUnloader.h
@@ -27,7 +28,6 @@ set(srcs
     FeatureId.h
     FeatureRevision.cc
     FeatureRevision.h
-    FeatureStore.h
     FeatureStoreRootHandle.cc
     FeatureStoreRootHandle.h
     FeatureStoreRootRevision.cc
@@ -35,6 +35,7 @@ set(srcs
     FeatureType.h
     FeatureVisitor.cc
     FeatureVisitor.h
+    HandleTraits.h
     IdTypeGenerator.h
     Model.cc
     Model.h
@@ -42,9 +43,11 @@ set(srcs
     ModelInterface.h
     ModelUtils.cc
     ModelUtils.h
+    NotificationGuard.cc
+    NotificationGuard.h
     PropertyName.h
+    PropertyValue.cc
     PropertyValue.h
-    PropertyValueContainer.h
     QualifiedXmlName.h
     ReconstructedFeatureGeometry.cc
     ReconstructedFeatureGeometry.h
@@ -69,19 +72,25 @@ set(srcs
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
     ResolvedTopologicalNetworkImpl.h
+    RevisionAwareIterator.cc
     RevisionAwareIterator.h
     RevisionId.h
     StringContentTypeGenerator.h
     StringSetSingletons.cc
     StringSetSingletons.h
+    TopLevelProperty.cc
     TopLevelProperty.h
     TopLevelPropertyInline.cc
     TopLevelPropertyInline.h
+    TopLevelPropertyRef.cc
+    TopLevelPropertyRef.h
     types.h
     WeakObserver.h
-    WeakObserverVisitor.cc
+    WeakObserverPublisher.h
     WeakObserverVisitor.h
     WeakReference.h
+    WeakReferenceCallback.h
+    WeakReferenceVisitors.h
     XmlAttributeName.h
     XmlAttributeValue.h
     XmlNode.cc
@@ -103,6 +112,6 @@ set(target_name model)
 # - groups files in Visual Studio IDE according to type.
 GPLATES_GENERATE_TARGET_SOURCES(${target_name} target_srcs ${srcs})
 
-add_library(${target_name} ${target_srcs})
+add_library(${target_name} STATIC ${target_srcs})
 
 GPLATES_POST_ADD_TARGET(${target_name} target_srcs)

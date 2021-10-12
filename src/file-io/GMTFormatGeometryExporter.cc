@@ -32,7 +32,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/Real.h"
 #include "utils/StringFormattingUtils.h"
 

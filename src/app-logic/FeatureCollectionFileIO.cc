@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -39,24 +39,13 @@
 
 #include "model/Model.h"
 
-#include "qt-widgets/ShapefilePropertyMapper.h"
-
 
 GPlatesAppLogic::FeatureCollectionFileIO::FeatureCollectionFileIO(
 		GPlatesModel::ModelInterface &model,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state) :
 	d_model(model),
-	d_file_state(file_state),
-	d_modify_filter(new ModifyFilter()/*default filter does not modify*/)
+	d_file_state(file_state)
 {
-}
-
-
-void
-GPlatesAppLogic::FeatureCollectionFileIO::set_modify_filter(
-		const boost::shared_ptr<ModifyFilter> &modify_filter)
-{
-	d_modify_filter = modify_filter;
 }
 
 
@@ -66,9 +55,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_files(
 {
 	// Read all the files before we add them to the application state.
 	const file_seq_type loaded_files = read_feature_collections(filenames);
-
-	// See if any loaded feature collections should be modified.
-	modify_feature_collections(loaded_files);
 
 	// Add files to the application state in one call.
 	//
@@ -92,9 +78,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_file(
 	// Read the feature collection from file_info.
 	const GPlatesFileIO::File::shared_ref loaded_file = read_feature_collection(file_info);
 
-	// See if loaded feature collection should be modified.
-	modify_feature_collection(loaded_file);
-
 	d_file_state.add_file(loaded_file);
 }
 
@@ -106,9 +89,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::reload_file(
 	// Read the feature collection from file.
 	const GPlatesFileIO::File::shared_ref reloaded_file = read_feature_collection(
 			file->get_file_info());
-
-	// See if loaded feature collection should be modified.
-	modify_feature_collection(reloaded_file);
 
 	// Replace old file with reloaded file.
 	// This will emit signals for anyone interested.
@@ -131,14 +111,19 @@ GPlatesAppLogic::FeatureCollectionFileIO::unload_file(
 void
 GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
 {
+	// The following check is commented out because it fails in certain circumstances
+	// on newer versions of Windows. We'll just try and open the file for writing
+	// and throw an exception if it fails.
+#if 0
 	if (!GPlatesFileIO::is_writable(file_info))
 	{
 		throw GPlatesFileIO::ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
 				file_info.get_qfileinfo().filePath());
 	}
+#endif
 
 	if (!feature_collection.is_valid())
 	{
@@ -156,7 +141,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 			feature_collection, *feature_collection_writer);
 
-	feature_collection->set_contains_unsaved_changes(false);
+	feature_collection->clear_unsaved_changes();
 }
 
 
@@ -164,7 +149,7 @@ GPlatesAppLogic::FeatureCollectionFileState::file_iterator
 GPlatesAppLogic::FeatureCollectionFileIO::create_empty_file()
 {
 	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-			d_model->create_feature_collection();
+			GPlatesModel::FeatureCollectionHandle::create(d_model->root());
 
 	// Make sure feature collection gets unloaded when it's no longer needed.
 	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref feature_collection_unloader =
@@ -176,6 +161,28 @@ GPlatesAppLogic::FeatureCollectionFileIO::create_empty_file()
 	// The file contains no features yet so it won't get classified when we add it (actually
 	// I think at the moment it will get classified as reconstructable since it contains
 	// no reconstruction features - but this way of classifying could easily change).
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_file_it =
+			d_file_state.add_file(file);
+
+	return new_file_it;
+}
+
+
+GPlatesAppLogic::FeatureCollectionFileState::file_iterator
+GPlatesAppLogic::FeatureCollectionFileIO::create_file(
+		const GPlatesFileIO::FileInfo &file_info,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		GPlatesFileIO::FeatureCollectionWriteFormat::Format format)
+{
+	// Make sure feature collection gets unloaded when it's no longer needed.
+	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref feature_collection_unloader =
+			GPlatesModel::FeatureCollectionHandleUnloader::create(feature_collection);
+
+	GPlatesFileIO::File::shared_ref file = GPlatesFileIO::File::create_loaded_file(
+			feature_collection_unloader, file_info);
+
+	save_file(file_info, feature_collection, format);
+
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator new_file_it =
 			d_file_state.add_file(file);
 
@@ -222,6 +229,12 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collections(
 		const GPlatesFileIO::File::shared_ref file = GPlatesFileIO::read_feature_collection(
 				file_info, d_model, read_errors);
 
+		// Files that have been freshly loaded from disk are by definition, clean.
+		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref = file->get_feature_collection();
+		if (feature_collection_ref.is_valid()) {
+			feature_collection_ref->clear_unsaved_changes();
+		}
+
 		files.push_back(file);
 	}
 
@@ -242,28 +255,15 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collection(
 	const GPlatesFileIO::File::shared_ref file = GPlatesFileIO::read_feature_collection(
 			file_info, d_model, read_errors);
 
+	// Files that have been freshly loaded from disk are by definition, clean.
+	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref = file->get_feature_collection();
+	if (feature_collection_ref.is_valid()) {
+		feature_collection_ref->clear_unsaved_changes();
+	}
+
 	emit_handle_read_errors_signal(read_errors);
 
 	return file;
-}
-
-
-void
-GPlatesAppLogic::FeatureCollectionFileIO::modify_feature_collections(
-		const file_seq_type &files)
-{
-	d_modify_filter->modify_loaded_files(files);
-}
-
-
-void
-GPlatesAppLogic::FeatureCollectionFileIO::modify_feature_collection(
-		const GPlatesFileIO::File::shared_ref &file)
-{
-	// Create a vector with one file so we can reuse 'modify_feature_collections()'.
-	const file_seq_type file_seq(1, file);
-
-	modify_feature_collections(file_seq);
 }
 
 

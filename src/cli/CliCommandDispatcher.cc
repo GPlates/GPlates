@@ -23,16 +23,37 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
 #include <string>
 #include <vector>
+#include <boost/mpl/for_each.hpp>
+#include <boost/mpl/lambda.hpp>
 #include <QString>
 
 #include "CliCommandDispatcher.h"
 
-#include "CliReconstructCommand.h"
-#include "CliConvertToGpmlCommand.h"
+#include "CliCommandRegistry.h"
+#include "CliInvalidOptionValue.h"
+#include "CliRequiredOptionNotPresent.h"
 
 #include "global/PreconditionViolationError.h"
+
+
+GPlatesCli::CommandDispatcher::AddCommand::AddCommand(
+		command_map_type &command_map) :
+	d_command_map(command_map)
+{
+}
+
+
+template <class CommandType>
+void
+GPlatesCli::CommandDispatcher::AddCommand::operator()(
+		Wrap<CommandType>)
+{
+	command_ptr_type command(new CommandType());
+	d_command_map[command->get_command_name()] = command;
+}
 
 
 GPlatesCli::CommandDispatcher::CommandDispatcher()
@@ -41,13 +62,14 @@ GPlatesCli::CommandDispatcher::CommandDispatcher()
 	// Each new command type must be instantiated here and added to the map.
 	//
 
-	// Add ReconstructCommand.
-	command_ptr_type reconstruct_cmd(new ReconstructCommand());
-	d_command_map[reconstruct_cmd->get_command_name()] = reconstruct_cmd;
+	// A utility functor used to add the registered command types to the
+	// command dispatcher.
+	AddCommand add_command(d_command_map);
 
-	// Add ConvertToGpmlCommand.
-	command_ptr_type convert_to_gpml_cmd(new ConvertToGpmlCommand());
-	d_command_map[convert_to_gpml_cmd->get_command_name()] = convert_to_gpml_cmd;
+	// Iterate over the command types (actual class types stored in a boost::mpl::vector)
+	// and call the functor to add them to the command dispatcher.
+	boost::mpl::for_each< CommandTypes::command_types, AddCommand::Wrap<boost::mpl::_1> >(
+			boost::ref(add_command));
 }
 
 
@@ -119,8 +141,23 @@ GPlatesCli::CommandDispatcher::run(
 		throw GPlatesGlobal::PreconditionViolationError(GPLATES_EXCEPTION_SOURCE);
 	}
 
-	// Get the command to run.
-	return cmd->run(vm);
+	try
+	{
+		// Get the command to run.
+		return cmd->run(vm);
+	}
+	catch(RequiredOptionNotPresent &exc)
+	{
+		std::cerr << exc << std::endl;
+		return 1; // Zero is success
+	}
+	catch(InvalidOptionValue &exc)
+	{
+		std::cerr << exc << std::endl;
+		return 1; // Zero is success
+	}
+
+	return 0; // Zero is success
 }
 
 

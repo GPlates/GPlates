@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -45,7 +45,7 @@
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/XsString.h"
 #include "utils/UnicodeStringUtils.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -146,11 +146,10 @@ namespace
 		if (weak_ref)
 		{
 			// See if type derived from ReconstructionGeometry has a plate id.
-			GPlatesModel::integer_plate_id_type plate_id = 0;
-			if (GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(
-					geometry, plate_id))
-			{
-				return QVariant(static_cast<quint32>(plate_id));
+			boost::optional<GPlatesModel::integer_plate_id_type> found_plate_id =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id(geometry);
+			if (found_plate_id) {
+				return QVariant(static_cast<quint32>(*found_plate_id));
 			}
 			else
 			{
@@ -444,12 +443,12 @@ namespace
 
 
 	template <typename ReconstructionGeometryPointer>
-	const boost::optional<GPlatesModel::FeatureHandle::properties_iterator>
+	const boost::optional<GPlatesModel::FeatureHandle::iterator>
 	get_geometry_property_if_valid(
 			ReconstructionGeometryPointer geometry)
 	{
 		// See if type derived from ReconstructionGeometry has a valid geometry property.
-		GPlatesModel::FeatureHandle::properties_iterator geometry_property;
+		GPlatesModel::FeatureHandle::iterator geometry_property;
 		if (!GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
 				geometry, geometry_property))
 		{
@@ -458,7 +457,7 @@ namespace
 			return boost::none;
 		}
 
-		return boost::optional<GPlatesModel::FeatureHandle::properties_iterator>(
+		return boost::optional<GPlatesModel::FeatureHandle::iterator>(
 				geometry_property);
 	}
 
@@ -467,7 +466,7 @@ namespace
 	get_present_day_geometry(
 			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> property =
+		boost::optional<GPlatesModel::FeatureHandle::iterator> property =
 				get_geometry_property_if_valid(geometry);
 		if (property) {
 			GPlatesFeatureVisitors::GeometryFinder geometry_finder;
@@ -486,7 +485,7 @@ namespace
 	get_clicked_geometry_property(
 			GPlatesModel::ReconstructionGeometry::non_null_ptr_type geometry)
 	{
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> property =
+		boost::optional<GPlatesModel::FeatureHandle::iterator> property =
 				get_geometry_property_if_valid(geometry);
 		if (property) {
 			return QVariant(GPlatesUtils::make_qstring_from_icu_string(
@@ -739,7 +738,7 @@ GPlatesGui::FeatureTableModel::handle_selection_change(
 		// found and we start drawing RFGs from different reconstruction times.
 		// FIXME: A better solution might be to store geometry property iterators in the
 		// table rather than reconstruction geometries.
-		boost::optional<GPlatesModel::FeatureHandle::properties_iterator> rg_geom_property =
+		boost::optional<GPlatesModel::FeatureHandle::iterator> rg_geom_property =
 				get_geometry_property_if_valid(rg);
 		if (rg_geom_property)
 		{

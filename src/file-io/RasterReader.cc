@@ -7,7 +7,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 Geological Survey of Norway
+ * Copyright (C) 2008, 2010 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,7 +33,6 @@
 #include "gui/OpenGLBadAllocException.h"
 #include "gui/OpenGLException.h"
 #include "gui/Texture.h"
-#include "utils/MathUtils.h"
 
 #include "ErrorOpeningFileForReadingException.h"
 #include "GdalReader.h"
@@ -79,69 +79,89 @@ namespace{
 	}
 
 
+/*
+ * We use this macro to compare the return value of 'fread' (the number of objects read) with the
+ * number of objects expected, and return (after closing the file to avoid a resource leak) if the
+ * two numbers don't match.
+ *
+ * We weren't initially making this comparison, but now G++ 4.4.1 complains if we don't:
+ *   RasterReader.cc: In function 'void<unnamed>::load_tga_file(const QString&,
+ *     GPlatesPropertyValues::InMemoryRaster&, GPlatesFileIO::ReadErrorAccumulation&)':
+ *   RasterReader.cc:103: error: ignoring return value of 'size_t fread(void*, size_t, size_t,
+ *     FILE*)', declared with attribute warn_unused_result
+ *
+ * The behaviour of returning without complaining was chosen because this is how the existing code
+ * in this function was handling error conditions.
+ *
+ * FIXME:  We should report to the user that there was an error reading their file (and what the
+ * problem was) rather than silently dropping the file.
+ */
+#define FREAD_OR_RETURN(obj_ptr, obj_size, num_objs, stream) \
+		if (fread((obj_ptr), (obj_size), (num_objs), (stream)) != (num_objs)) { \
+			fclose(stream); \
+			return; \
+		}
+
+
 	void
 	load_tga_file(
-		const QString &filename,
-		GPlatesPropertyValues::InMemoryRaster &raster,
-		GPlatesFileIO::ReadErrorAccumulation &read_errors)
+			const QString &filename,
+			GPlatesPropertyValues::InMemoryRaster &raster,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
-
 		unsigned char temp_char;
 		unsigned char type;
 		unsigned short temp_short;
 		unsigned short width, height;
 		unsigned char bpp;
 
-		int size;
-
 		FILE *tga_file;
-
-		if (!(tga_file = fopen (filename.toStdString().c_str(), "rb")))
-			return;
-
-		// skip over some header data
-		fread (&temp_char, sizeof (unsigned char), 1, tga_file);
-		fread (&temp_char, sizeof (unsigned char), 1, tga_file);
-
-		// get the type, and make sure it's RGB
-		fread (&type, sizeof (unsigned char), 1, tga_file);
-
-		if (type != 2) return;
-
-		// skip over some more header data
-		fread (&temp_short,sizeof(unsigned short),1,tga_file);
-		fread (&temp_short,sizeof(unsigned short),1,tga_file);
-		fread (&temp_char, sizeof (unsigned char), 1, tga_file);
-		fread (&temp_short,sizeof(unsigned short),1,tga_file);
-		fread (&temp_short,sizeof(unsigned short),1,tga_file);
-
-		// read the width, height, and bits-per-pixel.
-		fread(&width,sizeof(unsigned short),1,tga_file);
-		fread(&height,sizeof(unsigned short),1,tga_file);
-		fread(&bpp,sizeof(unsigned char),1,tga_file);
-
-		fread(&temp_char,sizeof(unsigned char),1,tga_file);
-
-		if (bpp != 24){
+		if ( ! (tga_file = fopen(filename.toStdString().c_str(), "rb"))) {
 			return;
 		}
 
-		size = width * height; 
+		// skip over some header data
+		FREAD_OR_RETURN(&temp_char, sizeof (unsigned char), 1, tga_file)
+		FREAD_OR_RETURN(&temp_char, sizeof (unsigned char), 1, tga_file)
+
+		// get the type, and make sure it's RGB
+		FREAD_OR_RETURN(&type, sizeof (unsigned char), 1, tga_file)
+
+		if (type != 2) {
+			fclose(tga_file);
+			return;
+		}
+
+		// skip over some more header data
+		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
+		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
+		FREAD_OR_RETURN(&temp_char, sizeof(unsigned char), 1, tga_file)
+		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
+		FREAD_OR_RETURN(&temp_short, sizeof(unsigned short), 1, tga_file)
+
+		// read the width, height, and bits-per-pixel.
+		FREAD_OR_RETURN(&width, sizeof(unsigned short), 1, tga_file)
+		FREAD_OR_RETURN(&height, sizeof(unsigned short), 1, tga_file)
+		FREAD_OR_RETURN(&bpp, sizeof(unsigned char), 1, tga_file)
+
+		FREAD_OR_RETURN(&temp_char, sizeof(unsigned char), 1, tga_file)
+
+		if (bpp != 24) {
+			fclose(tga_file);
+			return;
+		}
+
+		size_t size = width * height; 
 
 		std::vector<GLubyte> image_data_vector(size*3);
 
-		int num_read = fread(&image_data_vector[0],sizeof (unsigned char),size*3,tga_file);
+		FREAD_OR_RETURN(&image_data_vector[0], sizeof(unsigned char), size*3, tga_file)
 
 		fclose (tga_file);
 
-		if (num_read != size*3){
-			return;
-		}
-
 		// change BGR to RGB
 		GLubyte temp;
-		for (int i = 0; i < size * 3; i += 3)
-		{
+		for (size_t i = 0; i < size * 3; i += 3) {
 			temp = image_data_vector[i];
 			image_data_vector[i] = image_data_vector[i + 2];
 			image_data_vector[i + 2] = temp;
@@ -153,10 +173,7 @@ namespace{
 
 		QSize image_size = QSize(width,height);
 
-		raster.generate_raster(image_data_vector,
-								  image_size,
-								  format);
-
+		raster.generate_raster(image_data_vector, image_size, format);
 		raster.set_enabled(true);
 	}
 
@@ -319,6 +336,9 @@ GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(
 					raster_map.insert(time,directory_path+QDir::separator()+*it);
 					have_found_suitable_file = true;
 				}
+#if 0				
+// This demands that all file roots are the same, and complains if different roots
+// exist in the folder.
 				else if(accepted_file_root.compare(potential_file_root) == 0)
 				// We already have a suitable file, make sure that our new file has the same root.
 				{
@@ -333,6 +353,19 @@ GPlatesFileIO::RasterReader::populate_time_dependent_raster_map(
 							GPlatesFileIO::ReadErrors::MultipleRasterSetsFound,
 							GPlatesFileIO::ReadErrors::OnlyFirstRasterSetLoaded));
 				}
+#else
+// This accepts any file root, so that file roots in the same numerical sequence can be different.
+// For example, the files
+//	imageA-0.jpg
+//	imageB-1.jpg
+//	imageC-2.jpg
+// ...
+// would be accepted.
+				else
+				{
+					raster_map.insert(time,directory_path+QDir::separator()+*it);			
+				}
+#endif
 			}
 		}
 #if 0

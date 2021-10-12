@@ -36,7 +36,8 @@
 
 #include "maths/GenericVectorOps3D.h"
 #include "maths/GreatCircleArc.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
@@ -73,15 +74,18 @@ GPlatesGui::NurbsRenderer::NurbsRenderer()
 		 "Not enough memory for OpenGL to create new NURBS renderer.");
 	}
 
-#if !defined(__APPLE__) || (MAC_OSX_MAJOR_VERSION >= 10 && MAC_OSX_MINOR_VERSION > 4)
+#if !defined(__APPLE__) || \
+	(MAC_OSX_MAJOR_VERSION >= 10 && MAC_OSX_MINOR_VERSION >= 5) || \
+	(CXX_MAJOR_VERSION >= 4 && CXX_MINOR_VERSION >= 2)
 	// All non apple platforms use this path.
-	// Also Mac OSX version 10.5 and greater use this code path.
+	// Also MacOS X using OS X version 10.5 and greater (or g++ 4.2 and greater)
+	// use this code path.
 	gluNurbsCallback(d_nurbs_ptr, GLU_ERROR, &NurbsError);
 #else
 	// A few OS X platforms need this instead - could be OS X 10.4 or
 	// gcc 4.0.0 or PowerPC Macs ?
 	// Update: it seems after many installations on different Macs that
-	// Mac OSX versions 10.4 require this code path.
+	// Mac OSX versions 10.4 using the default compiler g++ 4.0 require this code path.
 	gluNurbsCallback(d_nurbs_ptr, GLU_ERROR,
 		reinterpret_cast< GLvoid (__CONVENTION__ *)(...) >(&NurbsError));
 #endif
@@ -306,19 +310,19 @@ GPlatesGui::NurbsRenderer::draw_small_circle_arc(
 	GPlatesMaths::UnitVector3D uv_point_on_arc = first_point_on_arc.position_vector();
 
 	double remaining_radians = arc_length_in_radians.dval();
-	while (remaining_radians > GPlatesMaths::PI_2)
+	while (remaining_radians > GPlatesMaths::HALF_PI)
 	{
 		draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(uv_centre,
 																	uv_point_on_arc,
-																	GPlatesMaths::PI_2);
+																	GPlatesMaths::HALF_PI);
 		
 		GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(
 			uv_centre,
-			GPlatesMaths::PI_2);
+			GPlatesMaths::HALF_PI);
 			
 		uv_point_on_arc = rot*uv_point_on_arc;
 		
-		remaining_radians -= GPlatesMaths::PI_2;		
+		remaining_radians -= GPlatesMaths::HALF_PI;		
 	}
 
 	draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -50,32 +50,29 @@ namespace GPlatesPropertyValues
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlPolygon,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlPolygon>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPolygon,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPolygon> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon> non_null_ptr_to_const_type;
 
 		/**
 		 * A convenience typedef for the ring representation used internally.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				ring_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere> ring_type;
 		
 		/**
 		 * Typedef for a sequence of rings -- used to hold the interior ring definition.
 		 */
 		typedef std::vector<ring_type> ring_sequence_type;
+
+		/**
+		 * Typedef for a const iterator over the ring_sequence_type.
+		 */
 		typedef ring_sequence_type::const_iterator ring_const_iterator;
 
 		virtual
@@ -98,8 +95,7 @@ namespace GPlatesPropertyValues
 			// can be changed.  Hence, it is safe to store a pointer to the instance
 			// which was passed into this 'create' function.
 			GmlPolygon::non_null_ptr_type polygon_ptr(
-					new GmlPolygon(exterior_ring),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GmlPolygon(exterior_ring));
 			return polygon_ptr;
 		}
 
@@ -131,23 +127,26 @@ namespace GPlatesPropertyValues
 			// can be changed.  Hence, it is safe to store a pointer to the instance
 			// which was passed into this 'create' function.
 			GmlPolygon::non_null_ptr_type polygon_ptr(
-					new GmlPolygon(exterior_ring, interior_ring_collection),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new GmlPolygon(exterior_ring, interior_ring_collection));
 			return polygon_ptr;
 		}
 
-		/**
-		 * Create a duplicate of this PropertyValue instance.
-		 */
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GmlPolygon::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
-					new GmlPolygon(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			GmlPolygon::non_null_ptr_type dup(new GmlPolygon(*this));
 			return dup;
 		}
+
+		const GmlPolygon::non_null_ptr_type
+		deep_clone() const
+		{
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular clone will suffice.
+			return clone();
+		}
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Access the GPlatesMaths::PolygonOnSphere which encodes the exterior geometry of
@@ -177,6 +176,7 @@ namespace GPlatesPropertyValues
 				const ring_type &r)
 		{
 			d_exterior = r;
+			update_instance_id();
 		}
 		
 		/**
@@ -211,6 +211,7 @@ namespace GPlatesPropertyValues
 				const ring_type &r)
 		{
 			d_interiors.push_back(r);
+			update_instance_id();
 		}
 		
 		
@@ -225,6 +226,7 @@ namespace GPlatesPropertyValues
 		clear_interiors()
 		{
 			d_interiors.clear();
+			update_instance_id();
 		}
 		
 
@@ -255,6 +257,11 @@ namespace GPlatesPropertyValues
 		{
 			visitor.visit_gml_polygon(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -291,7 +298,7 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlPolygon(
 				const GmlPolygon &other):
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_exterior(other.d_exterior),
 			d_interiors(other.d_interiors)
 		{  }

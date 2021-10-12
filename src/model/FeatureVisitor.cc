@@ -2,12 +2,12 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains template specialisations for the templated FeatureVisitor class.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,58 +25,58 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-#include <boost/none.hpp>
-
 #include "FeatureVisitor.h"
-#include "TopLevelPropertyInline.h"
 
-
-GPlatesModel::FeatureVisitor::~FeatureVisitor()
-{  }
-
-
-void
-GPlatesModel::FeatureVisitor::visit_feature_properties(
-		FeatureHandle &feature_handle)
+namespace GPlatesModel
 {
-	FeatureHandle::properties_iterator iter = feature_handle.properties_begin();
-	FeatureHandle::properties_iterator end = feature_handle.properties_end();
-	for ( ; iter != end; ++iter) {
-		if (iter.is_valid()) {
-			d_current_top_level_propiter = iter;
-			d_current_top_level_propname = (*iter)->property_name();
-			(*iter)->accept_visitor(*this);
-			d_current_top_level_propiter = boost::none;
-			d_current_top_level_propname = boost::none;
-		}
+
+	template<>
+	void
+	FeatureVisitorBase<FeatureHandle>::visit_feature_property(
+			const feature_iterator_type &feature_iterator)
+	{
+		// Note that if you dereference a feature children iterator, you get a
+		// TopLevelProperty::non_null_ptr_to_const_type. To modify properties in a
+		// feature, you need to make a deep clone of the property, modify the clone
+		// and then call set on the feature.
+		TopLevelProperty::non_null_ptr_type prop_clone = (*feature_iterator)->deep_clone();
+		prop_clone->accept_visitor(*this);
+		*feature_iterator = prop_clone;
 	}
-}
 
 
-void
-GPlatesModel::FeatureVisitor::visit_property_values(
-		TopLevelPropertyInline &top_level_property_inline)
-{
-	TopLevelPropertyInline::const_iterator iter = top_level_property_inline.begin();
-	TopLevelPropertyInline::const_iterator end = top_level_property_inline.end();
-	for ( ; iter != end; ++iter) {
-		(*iter)->accept_visitor(*this);
+	template<>
+	void
+	FeatureVisitorBase<const FeatureHandle>::visit_feature_property(
+			const feature_iterator_type &feature_iterator)
+	{
+		(*feature_iterator)->accept_visitor(*this);
 	}
+
 }
 
 
 void
-GPlatesModel::FeatureVisitor::log_invalid_weak_ref(
-		const FeatureHandle::weak_ref &feature_weak_ref)
+GPlatesModel::FeatureVisitorThatGuaranteesNotToModify::visit_feature_property(
+		const feature_iterator_type &feature_iterator)
 {
-	std::cerr << "invalid weak-ref not dereferenced." << std::endl;
+	TopLevelProperty::non_null_ptr_to_const_type const_prop = *feature_iterator;
+
+	// HACK: This is the hack that this whole class is built upon (to avoid cloning properties).
+	// Cast away the const from the TopLevelProperty.
+	// The class derived from this class guarantees that they won't modify the property values.
+	// The derived class just wants non-const references.
+	// Note that for FeatureVisitor (which is non-const) the property value references are
+	// not valid after visitation because the cloned property is set in the model (which does
+	// another clone) and so the first clone (that the references reference) is destroyed
+	// making the references invalid.
+	// So why would the derived class want non-const reference if they're not going
+	// to modify the property values ?
+	// This is probably because they want a non-const reference to the feature being
+	// visited - presumably to pass to other objects that will later modify the feature
+	// (after this visitor has finished visiting all property values and returned).
+	TopLevelProperty *prop = const_cast<TopLevelProperty *>(const_prop.get());
+
+	prop->accept_visitor(*this);
 }
 
-
-void
-GPlatesModel::FeatureVisitor::log_invalid_iterator(
-		const FeatureCollectionHandle::features_iterator &iterator)
-{
-	std::cerr << "invalid iterator not dereferenced." << std::endl;
-}

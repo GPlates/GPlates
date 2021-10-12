@@ -26,9 +26,9 @@
    <property name="geometry" >
     <rect>
      <x>48</x>
-     <y>25</y>
+     <y>27</y>
      <width>676</width>
-     <height>517</height>
+     <height>513</height>
     </rect>
    </property>
   </widget>
@@ -38,7 +38,7 @@
      <x>0</x>
      <y>0</y>
      <width>724</width>
-     <height>25</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help" >
@@ -75,10 +75,10 @@
     <addaction name="action_Specify_Anchored_Plate_ID" />
     <addaction name="action_View_Reconstruction_Poles" />
     <addaction name="separator" />
-    <addaction name="action_Export_Animation" />
-    <addaction name="action_Export_Reconstruction" />
+    <addaction name="action_Export" />
     <addaction name="separator" />
     <addaction name="action_Assign_Plate_IDs" />
+    <addaction name="action_Generate_Mesh_Cap" />
    </widget>
    <widget class="QMenu" name="menu_Edit" >
     <property name="title" >
@@ -93,72 +93,15 @@
     <addaction name="action_Delete_Feature" />
     <addaction name="separator" />
     <addaction name="action_Clear_Selection" />
+    <addaction name="separator" />
+    <addaction name="action_Clone_Geometry" />
+    <addaction name="action_Clone_Feature" />
    </widget>
    <widget class="QMenu" name="menu_Layers" >
     <property name="title" >
      <string>&amp;Layers</string>
     </property>
-    <widget class="QMenu" name="menu_Colour_Geometries_By" >
-     <property name="title" >
-      <string>Geometry &amp;Colours</string>
-     </property>
-     <widget class="QMenu" name="menu_Single_Colour" >
-      <property name="title" >
-       <string>&amp;Single Colour</string>
-      </property>
-      <addaction name="action_Colour_By_Single_Colour_Red" />
-      <addaction name="action_Colour_By_Single_Colour_Green" />
-      <addaction name="action_Colour_By_Single_Colour_Blue" />
-      <addaction name="action_Colour_By_Single_Colour_Yellow" />
-      <addaction name="action_Colour_By_Single_Colour_White" />
-      <addaction name="separator" />
-      <addaction name="action_Colour_By_Single_Colour_Customise" />
-     </widget>
-     <widget class="QMenu" name="menu_Plate_ID" >
-      <property name="title" >
-       <string>&amp;Plate ID</string>
-      </property>
-      <addaction name="action_Colour_By_Plate_ID_Default" />
-      <addaction name="action_Colour_By_Plate_ID_Regional" />
-      <addaction name="action_Colour_By_Plate_ID_CPT" />
-      <addaction name="action_Colour_By_Plate_ID_Customise" />
-     </widget>
-     <widget class="QMenu" name="menu_Feature_Type" >
-      <property name="title" >
-       <string>Feature &amp;Type</string>
-      </property>
-      <addaction name="action_Colour_By_Feature_Type_Default" />
-      <addaction name="action_Colour_By_Feature_Type_CPT" />
-      <addaction name="separator" />
-      <addaction name="action_Colour_By_Feature_Type_Customise" />
-     </widget>
-     <widget class="QMenu" name="menu_Feature_Age" >
-      <property name="title" >
-       <string>Feature &amp;Age</string>
-      </property>
-      <addaction name="action_Colour_By_Feature_Age_Default" />
-      <addaction name="action_Colour_By_Feature_Age_CPT" />
-      <addaction name="separator" />
-      <addaction name="action_Colour_By_Feature_Age_Customise" />
-     </widget>
-     <widget class="QMenu" name="menu_Feature_Collection" >
-      <property name="title" >
-       <string>Feature &amp;Collection</string>
-      </property>
-      <addaction name="action_Colour_By_Feature_Collection_Default" />
-      <addaction name="action_Colour_By_Feature_Collection_CPT" />
-      <addaction name="separator" />
-      <addaction name="action_Colour_By_Feature_Collection_Customise" />
-     </widget>
-     <addaction name="menu_Plate_ID" />
-     <addaction name="menu_Single_Colour" />
-     <addaction name="action_Colour_By_Feature_Type" />
-     <addaction name="menu_Feature_Type" />
-     <addaction name="action_Colour_By_Age" />
-     <addaction name="menu_Feature_Age" />
-     <addaction name="menu_Feature_Collection" />
-    </widget>
-    <addaction name="menu_Colour_Geometries_By" />
+    <addaction name="action_Manage_Colouring" />
     <addaction name="separator" />
     <addaction name="action_Show_Raster" />
     <addaction name="action_Set_Raster_Surface_Extent" />
@@ -208,13 +151,19 @@
     <addaction name="menu_Move_Camera" />
     <addaction name="menu_Rotate_Camera" />
     <addaction name="menu_Camera_Zoom" />
-    <addaction name="separator" />
-    <addaction name="action_Export_Geometry_Snapshot" />
    </widget>
    <widget class="QMenu" name="menu_Tools" >
     <property name="title" >
      <string>&amp;Tools</string>
     </property>
+   </widget>
+   <widget class="QMenu" name="menu_Paleomagnetism" >
+    <property name="title" >
+     <string>&amp;Palaeomagnetism</string>
+    </property>
+    <addaction name="action_Create_VGP" />
+    <addaction name="action_Calculate_Reconstruction_Pole" />
+    <addaction name="action_Set_VGP_Visibility" />
    </widget>
    <addaction name="menu_File" />
    <addaction name="menu_Edit" />
@@ -222,15 +171,16 @@
    <addaction name="menu_Reconstruction" />
    <addaction name="menu_Layers" />
    <addaction name="menu_Tools" />
+   <addaction name="menu_Paleomagnetism" />
    <addaction name="menu_Help" />
   </widget>
   <widget class="QStatusBar" name="statusbar" >
    <property name="geometry" >
     <rect>
      <x>0</x>
-     <y>678</y>
+     <y>676</y>
      <width>724</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
   </widget>
@@ -238,9 +188,9 @@
    <property name="geometry" >
     <rect>
      <x>0</x>
-     <y>25</y>
+     <y>27</y>
      <width>48</width>
-     <height>653</height>
+     <height>649</height>
     </rect>
    </property>
    <property name="contextMenuPolicy" >
@@ -278,6 +228,7 @@
    <addaction name="action_Move_Vertex" />
    <addaction name="action_Insert_Vertex" />
    <addaction name="action_Delete_Vertex" />
+   <addaction name="action_Split_Feature" />
    <addaction name="action_Manipulate_Pole" />
    <addaction name="action_Build_Topology" />
    <addaction name="action_Edit_Topology" />
@@ -286,7 +237,7 @@
    <property name="geometry" >
     <rect>
      <x>48</x>
-     <y>548</y>
+     <y>546</y>
      <width>676</width>
      <height>130</height>
     </rect>
@@ -351,7 +302,7 @@
           <x>0</x>
           <y>0</y>
           <width>649</width>
-          <height>103</height>
+          <height>101</height>
          </rect>
         </property>
         <attribute name="title" >
@@ -393,8 +344,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>649</width>
-          <height>103</height>
+          <width>1680</width>
+          <height>420</height>
          </rect>
         </property>
         <attribute name="title" >
@@ -424,8 +375,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>649</width>
-          <height>103</height>
+          <width>1680</width>
+          <height>420</height>
          </rect>
         </property>
         <attribute name="title" >
@@ -946,22 +897,6 @@
     <string>Open &amp;Time-dependent Raster Sequence...</string>
    </property>
   </action>
-  <action name="action_Colour_By_Feature_Type" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>Feature &amp;Type</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Age" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>Feature &amp;Age</string>
-   </property>
-  </action>
   <action name="action_Digitise_New_Polyline" >
    <property name="checkable" >
     <bool>true</bool>
@@ -1050,6 +985,24 @@
    </property>
    <property name="text" >
     <string>Clear Se&amp;lection</string>
+   </property>
+  </action>
+  <action name="action_Clone_Geometry" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/clone_geometry_22.png</normaloff>:/clone_geometry_22.png</iconset>
+   </property>
+   <property name="text" >
+    <string>C&amp;lone Geometry</string>
+   </property>
+  </action>
+  <action name="action_Clone_Feature" >
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/clone_feature_22.png</normaloff>:/clone_feature_22.png</iconset>
+   </property>
+   <property name="text" >
+    <string>C&amp;lone Feature</string>
    </property>
   </action>
   <action name="action_Information_Dock_At_Bottom" >
@@ -1383,14 +1336,19 @@
     <string>&amp;Assign Plate IDs...</string>
    </property>
   </action>
+  <action name="action_Generate_Mesh_Cap" >
+   <property name="text" >
+    <string>&amp;Generate Mesh Cap...</string>
+   </property>
+  </action>
   <action name="action_Export_Reconstruction" >
    <property name="text" >
     <string>E&amp;xport Reconstruction Geometries...</string>
    </property>
   </action>
-  <action name="action_Export_Animation" >
+  <action name="action_Export" >
    <property name="text" >
-    <string>&amp;Export Animation...</string>
+    <string>&amp;Export...</string>
    </property>
   </action>
   <action name="action_Set_Projection" >
@@ -1471,156 +1429,36 @@
     <string>A toggle operation which controls whether text is shown.</string>
    </property>
   </action>
-  <action name="action_Colour_By_Single_Colour_Red" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
+  <action name="action_Manage_Colouring" >
    <property name="text" >
-    <string>&amp;Red</string>
+    <string>Manage &amp;Colouring</string>
    </property>
   </action>
-  <action name="action_Colour_By_Single_Colour_Green" >
+  <action name="action_Split_Feature" >
    <property name="checkable" >
     <bool>true</bool>
    </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/split_geometry_35.png</normaloff>:/split_geometry_35.png</iconset>
+   </property>
    <property name="text" >
-    <string>&amp;Green</string>
+    <string>&amp;Split Feature</string>
    </property>
   </action>
-  <action name="action_Colour_By_Single_Colour_Blue" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
+  <action name="action_Create_VGP" >
    <property name="text" >
-    <string>&amp;Blue</string>
+    <string>&amp;Create VGP...</string>
    </property>
   </action>
-  <action name="action_Colour_By_Single_Colour_Yellow" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
+  <action name="action_Calculate_Reconstruction_Pole" >
    <property name="text" >
-    <string>&amp;Yellow</string>
+    <string>Calculate &amp;Reconstruction Pole...</string>
    </property>
   </action>
-  <action name="action_Colour_By_Single_Colour_White" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
+  <action name="action_Set_VGP_Visibility" >
    <property name="text" >
-    <string>&amp;White</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Single_Colour_Customise" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Customise...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Plate_ID_Default" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Default</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Plate_ID_Regional" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>Group by &amp;Region</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Plate_ID_Customise" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Customise...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Plate_ID_CPT" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>CPT &amp;File...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Type_Default" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Default</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Type_Customise" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Customise...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Type_CPT" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>CPT &amp;File...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Age_Default" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Default</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Age_Customise" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Customise...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Age_CPT" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>CPT &amp;File...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Collection_Default" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Default</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Collection_CPT" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>CPT &amp;File...</string>
-   </property>
-  </action>
-  <action name="action_Colour_By_Feature_Collection_Customise" >
-   <property name="checkable" >
-    <bool>true</bool>
-   </property>
-   <property name="text" >
-    <string>&amp;Customise...</string>
+    <string>Set VGP &amp;Visibility...</string>
    </property>
   </action>
  </widget>

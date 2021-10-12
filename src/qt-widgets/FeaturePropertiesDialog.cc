@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -106,7 +106,8 @@ GPlatesQtWidgets::FeaturePropertiesDialog::refresh_display()
 	
 	// Update our text fields at the top.
 	lineedit_feature_type->setText(
-			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->feature_type().build_aliased_name()));
+			GPlatesUtils::make_qstring_from_icu_string(
+				d_feature_ref->feature_type().build_aliased_name()));
 	
 	// Update our tabbed sub-widgets.
 	d_query_feature_properties_widget->display_feature(d_feature_ref, d_focused_rg);
@@ -119,6 +120,7 @@ void
 GPlatesQtWidgets::FeaturePropertiesDialog::choose_query_widget_and_open()
 {
 	tabwidget_query_edit->setCurrentWidget(d_query_feature_properties_widget);
+	d_query_feature_properties_widget->load_data_if_necessary();
 	pop_up();
 }
 
@@ -169,6 +171,10 @@ GPlatesQtWidgets::FeaturePropertiesDialog::handle_tab_change(
 		int index)
 {
 	const QIcon icon = tabwidget_query_edit->tabIcon(index);
+	if(index == 0)
+	{
+		d_query_feature_properties_widget->load_data_if_necessary();
+	}
 	setWindowIcon(icon);
 }
 

@@ -39,7 +39,7 @@
 #include "gui/MapProjection.h"
 
 
-namespace GPlatesViewOperations
+namespace GPlatesGui
 {
 	class ViewportProjection;
 }
@@ -58,7 +58,7 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		ProjectionControlWidget(
-				GPlatesViewOperations::ViewportProjection &viewport_projection,
+				GPlatesGui::ViewportProjection &viewport_projection,
 				QWidget *parent_);
 
 	private slots:
@@ -70,7 +70,7 @@ namespace GPlatesQtWidgets
 	public slots:
 		void
 		handle_projection_type_changed(
-				const GPlatesViewOperations::ViewportProjection &);
+				const GPlatesGui::ViewportProjection &);
 				
 		void
 		show_label(
@@ -78,7 +78,7 @@ namespace GPlatesQtWidgets
 
 	private:
 
-		GPlatesViewOperations::ViewportProjection &d_viewport_projection;
+		GPlatesGui::ViewportProjection &d_viewport_projection;
 		
 	};
 }

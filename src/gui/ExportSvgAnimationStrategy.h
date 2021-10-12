@@ -39,7 +39,6 @@
 
 #include "gui/ExportAnimationStrategy.h"
 
-
 namespace GPlatesGui
 {
 	// Forward declaration to avoid spaghetti
@@ -63,17 +62,25 @@ namespace GPlatesGui
 		typedef GPlatesUtils::non_null_intrusive_ptr<ExportSvgAnimationStrategy,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
+		static const QString 
+			DEFAULT_PROJECTED_GEOMETRIES_FILENAME_TEMPLATE;
+		static const QString 
+			PROJECTED_GEOMETRIES_FILENAME_TEMPLATE_DESC;
+		static const QString
+			PROJECTED_GEOMETRIES_DESC;
+
 
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::ExportAnimationContext &export_animation_context);
-
+				GPlatesGui::ExportAnimationContext &export_animation_context,
+				const ExportAnimationStrategy::Configuration& cfg=
+					ExportAnimationStrategy::Configuration(
+							DEFAULT_PROJECTED_GEOMETRIES_FILENAME_TEMPLATE));
 
 		virtual
 		~ExportSvgAnimationStrategy()
 		{  }
-
 
 		/**
 		 * Does one frame of export. Called by the ExportAnimationContext.
@@ -84,6 +91,21 @@ namespace GPlatesGui
 		do_export_iteration(
 				std::size_t frame_index);
 
+		virtual
+		const QString&
+				get_default_filename_template();
+
+		virtual
+		const QString&
+		get_filename_template_desc();
+
+		virtual
+		const QString&
+				get_description()
+		{
+			return PROJECTED_GEOMETRIES_DESC;
+		}
+
 	protected:
 		/**
 		 * Protected constructor to prevent instantiation on the stack.
@@ -91,13 +113,15 @@ namespace GPlatesGui
 		 */
 		explicit
 		ExportSvgAnimationStrategy(
-				GPlatesGui::ExportAnimationContext &export_animation_context);
+				GPlatesGui::ExportAnimationContext &export_animation_context,
+				const QString &filename_template);
 		
 	private:
+		ExportSvgAnimationStrategy();
 	};
 }
 
-
 #endif //GPLATES_GUI_EXPORTSVGANIMATIONSTRATEGY_H
+
 
 

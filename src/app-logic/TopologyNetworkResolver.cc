@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date: 2008-08-15 02:13:48 -0700 (Fri, 15 Aug 2008) $
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  * Copyright (C) 2008, 2009 California Institute of Technology 
  *
  * This file is part of GPlates.
@@ -29,6 +29,7 @@
 #include <QDebug>
 
 #include "CgalUtils.h"
+#include "GeometryUtils.h"
 #include "ReconstructionGeometryUtils.h"
 #include "TopologyInternalUtils.h"
 #include "TopologyNetworkResolver.h"
@@ -57,10 +58,9 @@
 
 
 GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
-			const double &recon_time,
 			GPlatesModel::Reconstruction &recon) :
-	d_recon_ptr(&recon),
-	d_reconstruction_params(recon_time)
+	d_reconstruction(recon),
+	d_reconstruction_params(recon.get_reconstruction_time())
 {  
 	d_num_topologies = 0;
 }
@@ -71,6 +71,12 @@ GPlatesAppLogic::TopologyNetworkResolver::initialise_pre_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Make sure only processing topology networks.
+	//
+	// FIXME: Do this check based on feature properties rather than feature type.
+	// So if something looks like a TCPB (because it has a topology polygon property)
+	// then treat it like one. For this to happen we first need TopologicalNetwork to
+	// use a property type different than TopologicalPolygon.
+	//
 	static QString type("TopologicalNetwork");
 	if ( type != GPlatesUtils::make_qstring_from_icu_string(
 			feature_handle.feature_type().get_name() ) ) 
@@ -214,7 +220,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_section_reconstruct
 	// Get the reconstructed geometry of the topological section's delegate.
 	boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
-					geometry_delegate, d_recon_ptr);
+					geometry_delegate, d_reconstruction);
 
 	if (!source_rfg)
 	{
@@ -262,12 +268,11 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 		// Get the node feature reference.
 		const GPlatesModel::FeatureHandle::weak_ref node_feature_ref =
 				(*section.d_source_rfg)->get_feature_ref();
-		const GPlatesModel::FeatureHandle::const_weak_ref node_feature_const_ref(
-				GPlatesModel::FeatureHandle::get_const_weak_ref(node_feature_ref));
+		const GPlatesModel::FeatureHandle::const_weak_ref node_feature_const_ref(node_feature_ref);
 
 		// Get the section geometry.
 		std::vector<GPlatesMaths::PointOnSphere> node_points;
-		TopologyInternalUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_points(
 				*section.d_geometry.get(), node_points);
 
 		// Create a subsegment structure that'll get used when
@@ -286,8 +291,8 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 	const GPlatesModel::ResolvedTopologicalNetworkImpl::non_null_ptr_type network =
 			GPlatesModel::ResolvedTopologicalNetworkImpl::create(
 					delaunay_triangulation,
-					*current_top_level_propiter()->collection_handle_ptr(),
-					*current_top_level_propiter(),
+					*(current_top_level_propiter()->handle_weak_ref()),
+					*(current_top_level_propiter()),
 					output_nodes.begin(),
 					output_nodes.end(),
 					d_reconstruction_params.get_recon_plate_id(),
@@ -326,11 +331,11 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 		GPlatesModel::ResolvedTopologicalNetwork::non_null_ptr_type rtn_ptr =
 			GPlatesModel::ResolvedTopologicalNetwork::create(
 				resolved_topology_network_triangle,
-				*current_top_level_propiter()->collection_handle_ptr()->reference(),
+				*current_top_level_propiter()->handle_weak_ref(),
 				network);
 
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rtn_ptr, d_recon_ptr);
+				rtn_ptr, d_reconstruction);
 	}
 }
 

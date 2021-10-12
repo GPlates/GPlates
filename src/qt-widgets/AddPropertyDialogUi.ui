@@ -9,7 +9,7 @@
     <x>0</x>
     <y>0</y>
     <width>465</width>
-    <height>114</height>
+    <height>127</height>
    </rect>
   </property>
   <property name="sizePolicy" >
@@ -22,7 +22,8 @@
    <string>Add Property</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_gtk_edit_16.png</iconset>
+   <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <normaloff>:/gnome_gtk_edit_16.png</normaloff>:/gnome_gtk_edit_16.png</iconset>
   </property>
   <property name="sizeGripEnabled" >
    <bool>true</bool>
@@ -33,7 +34,7 @@
      <item row="0" column="0" >
       <widget class="QLabel" name="label_4" >
        <property name="text" >
-        <string>&amp;Name:</string>
+        <string>Property &amp;Name:</string>
        </property>
        <property name="alignment" >
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -51,8 +52,11 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="toolTip" >
+        <string>Click here to select the property you wish to add. This will automatically set the type of property to add as well.</string>
+       </property>
        <property name="editable" >
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -77,6 +81,9 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="toolTip" >
+        <string>What kind of value should be contained in the new property. In most cases, you can leave this on the default suggestion.</string>
+       </property>
        <property name="editable" >
         <bool>false</bool>
        </property>
@@ -97,7 +104,7 @@
    <item>
     <widget class="QDialogButtonBox" name="buttonBox" >
      <property name="standardButtons" >
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::NoButton|QDialogButtonBox::Ok</set>
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
     </widget>
    </item>

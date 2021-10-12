@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,13 +26,12 @@
 #ifndef GPLATES_MODEL_MODELUTILS_H
 #define GPLATES_MODEL_MODELUTILS_H
 
-#include "ModelInterface.h"
-#include "FeatureCollectionHandle.h"
 #include "FeatureHandle.h"
-#include "TopLevelPropertyInline.h"
-#include "DummyTransactionHandle.h"
+#include "FeatureCollectionHandle.h"
+#include "ModelInterface.h"
 #include "PropertyName.h"
 #include "PropertyValue.h"
+#include "TopLevelPropertyInline.h"
 
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlLineString.h"
@@ -42,10 +41,18 @@
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/TemplateTypeParameterType.h"
 
+#include "app-logic/FeatureCollectionFileState.h"
+
+#include "global/InvalidFeatureCollectionException.h"
+#include "global/InvalidParametersException.h"
+
+
 namespace GPlatesModel
 {
 	namespace ModelUtils
 	{
+		// Note: Consider adding functions as member functions in one of the Handle classes instead.
+
 		struct TotalReconstructionPoleData
 		{
 			double time;
@@ -54,54 +61,6 @@ namespace GPlatesModel
 			double rotation_angle;
 			const char *comment;
 		};
-
-
-		const TopLevelPropertyInline::non_null_ptr_type
-		append_property_value_to_feature(
-				PropertyValue::non_null_ptr_type property_value,
-				const PropertyName &property_name,
-				const FeatureHandle::weak_ref &feature);
-
-
-		const TopLevelPropertyInline::non_null_ptr_type
-		append_property_value_to_feature(
-				PropertyValue::non_null_ptr_type property_value,
-				const PropertyName &property_name,
-				const UnicodeString &attribute_name_string,
-				const UnicodeString &attribute_value_string,
-				const FeatureHandle::weak_ref &feature);
-
-
-		template< typename AttributeIterator >
-		const TopLevelPropertyInline::non_null_ptr_type
-		append_property_value_to_feature(
-				PropertyValue::non_null_ptr_type property_value,
-				const PropertyName &property_name,
-				const AttributeIterator &attributes_begin,
-				const AttributeIterator &attributes_end,
-				const FeatureHandle::weak_ref &feature);
-
-
-		const TopLevelProperty::non_null_ptr_type
-		append_property_value_to_feature(
-				TopLevelProperty::non_null_ptr_type top_level_property,
-				const FeatureHandle::weak_ref &feature);
-
-
-		void
-		remove_property_value_from_feature(
-				FeatureHandle::properties_iterator properties_iterator,
-				const FeatureHandle::weak_ref &feature);
-
-
-		/**
-		 * Removes all property values from @a feature that have
-		 * the property name @a property_name.
-		 */
-		void
-		remove_property_values_from_feature(
-				const PropertyName &property_name,
-				const FeatureHandle::weak_ref &feature);
 
 
 		const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
@@ -143,30 +102,14 @@ namespace GPlatesModel
 				unsigned long fixed_plate_id,
 				unsigned long moving_plate_id,
 				const std::vector<TotalReconstructionPoleData> &five_tuples);
-	}
 
-
-	template< typename AttributeIterator >
-	const TopLevelPropertyInline::non_null_ptr_type
-	ModelUtils::append_property_value_to_feature(
-			PropertyValue::non_null_ptr_type property_value,
-			const PropertyName &property_name,
-			const AttributeIterator &attributes_begin,
-			const AttributeIterator &attributes_end,
-			const FeatureHandle::weak_ref &feature)
-	{
-		std::map<XmlAttributeName, XmlAttributeValue> xml_attributes(
-				attributes_begin, attributes_end);
 		
-		TopLevelPropertyInline::non_null_ptr_type top_level_property =
-				TopLevelPropertyInline::create(property_name, property_value, xml_attributes);
-
-		DummyTransactionHandle transaction(__FILE__, __LINE__);
-		feature->append_top_level_property(top_level_property, transaction);
-		transaction.commit();
-
-		return top_level_property;
+		bool
+		remove_feature(
+				GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref,
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
 	}
+
 }
 
 #endif  // GPLATES_MODEL_MODELUTILS_H

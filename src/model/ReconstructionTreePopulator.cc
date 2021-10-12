@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -38,7 +38,7 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 
-
+/*
 namespace
 {
 	// This useful little function is used to obtain the iterator before the supplied iterator.
@@ -53,7 +53,7 @@ namespace
 		return --t;
 	}
 }
-
+*/
 
 GPlatesModel::ReconstructionTreePopulator::ReconstructionTreePopulator(
 		const double &recon_time,
@@ -98,7 +98,8 @@ GPlatesModel::ReconstructionTreePopulator::finalise_post_feature_properties(
 	d_graph_ptr->insert_total_reconstruction_pole(
 			*(d_accumulator->d_fixed_ref_frame),
 			*(d_accumulator->d_moving_ref_frame),
-			*(d_accumulator->d_finite_rotation));
+			*(d_accumulator->d_finite_rotation),
+			feature_handle.reference());
 
 	d_accumulator = boost::none;
 }

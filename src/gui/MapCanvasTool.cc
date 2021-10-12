@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,7 +27,8 @@
 #include <cmath_ext.h>
 
 #include "maths/types.h"
-#include "utils/MathUtils.h"
+#include "maths/Real.h"
+#include "maths/MathsUtils.h"
 #include "MapCanvasTool.h"
 
 namespace
@@ -49,12 +51,12 @@ namespace
 		if (!is_strictly_negative(cross))
 		{
 			//qDebug() << "Cross greater-than or equal to 0";
-			return GPlatesUtils::convert_rad_to_deg(acos(cosangle.dval()));
+			return GPlatesMaths::convert_rad_to_deg(acos(cosangle.dval()));
 		}
 		else
 		{
 			//qDebug() << "Cross less than 0";
-			return (-1.0 * GPlatesUtils::convert_rad_to_deg(acos(cosangle.dval())));
+			return (-1.0 * GPlatesMaths::convert_rad_to_deg(acos(cosangle.dval())));
 		}
 
 	}
@@ -81,7 +83,7 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag(
 
 	double angle = angle_between_vectors(previous_vector,current_vector);
 
-	if (std::isnan(angle)) {
+	if (GPlatesMaths::is_nan(angle)) {
 #if 0
 		qDebug() << "isnan";
 		qDebug() << "previous: " << previous_vector;
@@ -98,7 +100,7 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag(
 	// the centre of the view. 
 	// Ideally I want this to rotate about the centre of the view, but without 
 	// re-centring the map each time. 
-	map_view().rotate(angle);
+	map_transform().rotate_maps(angle);
 
 #if 0
 	qDebug();

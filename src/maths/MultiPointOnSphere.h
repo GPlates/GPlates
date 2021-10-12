@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -388,6 +388,13 @@ namespace GPlatesMaths
 				const PointOnSphere &test_point,
 				const real_t &closeness_inclusion_threshold,
 				real_t &closeness) const;
+
+		bool
+		operator==(
+				const MultiPointOnSphere &other) const
+		{
+			return d_points == other.d_points;
+		}
 
 	private:
 

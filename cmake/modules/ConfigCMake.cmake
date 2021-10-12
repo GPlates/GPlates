@@ -41,6 +41,12 @@ endif (EXISTS "${CMAKE_BINARY_DIR}/cmake/ConfigUser.cmake")
 # Do any needed processing of the configuration variables #
 ###########################################################
 
+# Disable pre-compiled headers if showing include headers.
+# The only reason to show include headers is to use 'list_external_includes.py' script to generates pch header.
+if (GPLATES_SHOW_INCLUDES)
+    set(GPLATES_USE_PCH false)
+endif (GPLATES_SHOW_INCLUDES)
+
 # Convert GPLATES_BINARY_INSTALL_EXTRAS to absolute paths.
 # Should already be full paths (eg, this can convert
 # "~/sample-data" to "/Users/gplates/sample-data").

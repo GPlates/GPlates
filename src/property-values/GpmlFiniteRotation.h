@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -50,24 +50,20 @@ namespace GPlatesPropertyValues
 	class GpmlFiniteRotation:
 			public GPlatesModel::PropertyValue
 	{
+
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation> non_null_ptr_to_const_type;
 
 		virtual
 		~GpmlFiniteRotation()
@@ -137,18 +133,22 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create_zero_rotation();
 
-		/**
-		 * Create a duplicate of this PropertyValue instance.
-		 */
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GpmlFiniteRotation::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
-					new GpmlFiniteRotation(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			GpmlFiniteRotation::non_null_ptr_type dup(new GpmlFiniteRotation(*this));
 			return dup;
 		}
+
+		const GpmlFiniteRotation::non_null_ptr_type
+		deep_clone() const
+		{
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular clone will suffice.
+			return clone();
+		}
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Return whether this GpmlFiniteRotation instance represents a "zero" rotation.
@@ -181,6 +181,7 @@ namespace GPlatesPropertyValues
 				const GPlatesMaths::FiniteRotation &fr)
 		{
 			d_finite_rotation = fr;
+			update_instance_id();
 		}
 
 		/**
@@ -211,6 +212,11 @@ namespace GPlatesPropertyValues
 			visitor.visit_gpml_finite_rotation(*this);
 		}
 
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
+
 	protected:
 
 		// This constructor should not be public, because we don't want to allow
@@ -230,7 +236,7 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlFiniteRotation(
 				const GpmlFiniteRotation &other):
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_finite_rotation(other.d_finite_rotation)
 		{  }
 

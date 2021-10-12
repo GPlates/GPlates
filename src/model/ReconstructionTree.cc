@@ -55,14 +55,14 @@ namespace
 const GPlatesModel::ReconstructionTree::non_null_ptr_type
 GPlatesModel::ReconstructionTree::create(
 		ReconstructionGraph &graph,
-		integer_plate_id_type root_plate_id_)
+		integer_plate_id_type anchor_plate_id_)
 {
 
 	//std::cerr << std::endl << "Starting new tree... " << std::endl;
 	// FIXME:  This function is very, very exception-unsafe.
 
 	ReconstructionTree::non_null_ptr_type tree(
-			new ReconstructionTree(root_plate_id_, graph.reconstruction_time()),
+			new ReconstructionTree(anchor_plate_id_, graph.reconstruction_time()),
 			GPlatesUtils::NullIntrusivePointerHandler());
 
 	// We *could* do this recursively, but to minimise the chance that pathological input data
@@ -71,7 +71,7 @@ GPlatesModel::ReconstructionTree::create(
 	std::deque<edge_ref_type> edges_to_be_processed;
 
 	edge_refs_by_plate_id_map_range_type root_edge_range =
-			graph.find_edges_whose_fixed_plate_id_match(root_plate_id_);
+			graph.find_edges_whose_fixed_plate_id_match(anchor_plate_id_);
 
 	// Note that this if-statement is not strictly necessary (ie, the code would still function
 	// correctly without it, iterating over empty ranges), but we might want to notify the user
@@ -135,7 +135,7 @@ GPlatesModel::ReconstructionTree::create(
 		// Have we already processed edges whose moving plate ID is the same as the moving
 		// plate ID of the edge being processed?
 		if ((moving_plate_id_edge_range.first != moving_plate_id_edge_range.second) ||
-			(moving_plate_id_of_edge_being_processed == root_plate_id_)){
+			(moving_plate_id_of_edge_being_processed == anchor_plate_id_)){
 			// There is already an edge leading to the moving plate ID.  (Actually, at
 			// least one, but we'll assume that it's only one, since this block of code
 			// should ensure that it's never more than one.)  We don't need another
@@ -283,7 +283,7 @@ GPlatesModel::ReconstructionTree::get_composed_absolute_rotation(
 
 	// If the moving plate ID is the root of the reconstruction tree, return the identity
 	// rotation.
-	if (moving_plate_id == d_root_plate_id) {
+	if (moving_plate_id == d_anchor_plate_id) {
 		return std::make_pair(
 				FiniteRotation::create(UnitQuaternion3D::create_identity_rotation(),
 						boost::none),

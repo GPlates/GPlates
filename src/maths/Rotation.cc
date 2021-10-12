@@ -31,7 +31,8 @@
 
 #include "Rotation.h"
 #include "Vector3D.h"
-#include "maths/ConstGeometryOnSphereVisitor.h"
+#include "ConstGeometryOnSphereVisitor.h"
+#include "MathsUtils.h"
 #include "InvalidOperationException.h"
 
 

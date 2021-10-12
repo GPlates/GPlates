@@ -6,7 +6,8 @@
  * Most recent change:
  *   $Date: 2008-07-11 19:36:59 -0700 (Fri, 11 Jul 2008) $
  * 
- * Copyright (C) 2008, 2009 California Institute of Technology
+ * Copyright (C) 2008, 2009, 2010 California Institute of Technology
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,32 +32,30 @@
 #include "GpmlPropertyDelegate.h"
 
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class GpmlTopologicalPoint:
-			public GpmlTopologicalSection {
+			public GpmlTopologicalSection
+	{
 
 	public:
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPoint,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPoint>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPoint,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPoint> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPoint,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPoint>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPoint,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPoint> non_null_ptr_to_const_type;
 
 		virtual
-		~GpmlTopologicalPoint() {  }
+		~GpmlTopologicalPoint()
+		{  }
 
 		// This creation function is here purely for the simple, hard-coded construction of
 		// features.  It may not be necessary or appropriate later on when we're doing
@@ -70,19 +69,24 @@ namespace GPlatesPropertyValues {
 		{
 			non_null_ptr_type ptr(
 				new GpmlTopologicalPoint(
-					source_geometry),
-				GPlatesUtils::NullIntrusivePointerHandler());
+					source_geometry));
 			return ptr;
 		}
 
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
-					new GpmlTopologicalPoint(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		const GpmlTopologicalPoint::non_null_ptr_type
+		clone() const
+		{
+			GpmlTopologicalPoint::non_null_ptr_type dup(
+					new GpmlTopologicalPoint(*this));
 			return dup;
 		}
+
+		const GpmlTopologicalPoint::non_null_ptr_type
+		deep_clone() const;
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_TOPO_SECTION()
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -93,7 +97,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_topological_point(*this);
 		}
 
@@ -106,21 +111,25 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_topological_point(*this);
 		}
 
 
 		// access to d_source_geometry
 		GpmlPropertyDelegate::non_null_ptr_type
-		get_source_geometry() const {
+		get_source_geometry() const
+		{
 			return d_source_geometry;
 		}
 
 		void
 		set_source_geometry(
-				GpmlPropertyDelegate::non_null_ptr_type intersection_geom) {
+				GpmlPropertyDelegate::non_null_ptr_type intersection_geom)
+		{
 			d_source_geometry = intersection_geom;
+			update_instance_id();
 		} 
 
 	protected:
@@ -141,9 +150,15 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		GpmlTopologicalPoint(
 				const GpmlTopologicalPoint &other) :
-			GpmlTopologicalSection(other)
+			GpmlTopologicalSection(other),
+			d_source_geometry(other.d_source_geometry) // will get overwritten in deep_clone() later.
 		{  }
 #endif
+
+		virtual
+		bool
+		directly_modifiable_fields_equal(
+				const PropertyValue &other) const;
 
 	private:
 
@@ -155,6 +170,7 @@ namespace GPlatesPropertyValues {
 		operator=(const GpmlTopologicalPoint &);
 
 		GpmlPropertyDelegate::non_null_ptr_type d_source_geometry;
+
 	};
 
 }

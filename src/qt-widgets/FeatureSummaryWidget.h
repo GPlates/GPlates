@@ -29,8 +29,11 @@
 #include <QWidget>
 #include "FeatureSummaryWidgetUi.h"
 
+#include "app-logic/FeatureCollectionFileState.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
+#include "presentation/ViewState.h"
+
 
 // An effort to reduce the dependency spaghetti currently plaguing the GUI.
 namespace GPlatesGui
@@ -50,7 +53,7 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		FeatureSummaryWidget(
-				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesPresentation::ViewState &view_state_,
 				QWidget *parent_ = NULL);
 					
 	public slots:
@@ -66,6 +69,12 @@ namespace GPlatesQtWidgets
 
 		void
 		hide_plate_id_fields_as_appropriate();
+
+		/**
+		 * The loaded feature collection files.
+		 * We need this to look up file names from FeatureHandle weakrefs.
+		 */
+		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
 	
 	};
 }

@@ -113,13 +113,19 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 			choose_canvas_tool) 
 	),
 	d_feature_summary_widget_ptr(
-		new FeatureSummaryWidget(view_state_.get_feature_focus())
+		new FeatureSummaryWidget(view_state_)
 	)
 {
 	setupUi(this);
 
 	setup_widgets();
 	setup_connections();
+}
+
+GPlatesQtWidgets::TopologyToolsWidget::~TopologyToolsWidget()
+{
+	// This pointer isn't owned by anyone else
+	delete d_topology_tools_ptr;
 }
 
 void

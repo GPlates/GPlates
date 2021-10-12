@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -39,6 +39,7 @@
 
 #include "AppLogicUtils.h"
 #include "CgalUtils.h"
+#include "GeometryUtils.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -169,14 +170,12 @@ namespace GPlatesAppLogic
 
 void
 GPlatesAppLogic::TopologyUtils::resolve_topologies(
-		const double &reconstruction_time,
 		GPlatesModel::Reconstruction &reconstruction,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				topological_features_collection)
 {
 	// Visit topological boundary features.
-	TopologyBoundaryResolver topology_boundary_resolver(
-			reconstruction_time, reconstruction);
+	TopologyBoundaryResolver topology_boundary_resolver(reconstruction);
 
 	AppLogicUtils::visit_feature_collections(
 		topological_features_collection.begin(),
@@ -184,8 +183,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topologies(
 		topology_boundary_resolver);
 
 	// Visit topological network features.
-	TopologyNetworkResolver topology_network_resolver(
-			reconstruction_time, reconstruction);
+	TopologyNetworkResolver topology_network_resolver(reconstruction);
 
 	AppLogicUtils::visit_feature_collections(
 		topological_features_collection.begin(),
@@ -518,7 +516,7 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolati
 
 			// Get the node's geometry points.
 			std::vector<GPlatesMaths::PointOnSphere> node_points;
-			TopologyInternalUtils::get_geometry_points(
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(
 					*node.get_geometry(), node_points);
 
 			// Get the feature referenced by the node.

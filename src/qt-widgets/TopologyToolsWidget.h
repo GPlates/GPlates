@@ -81,6 +81,8 @@ namespace GPlatesQtWidgets
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				QWidget *parent_ = NULL);
 
+		~TopologyToolsWidget();
+
 	public slots:
 		
 		void 

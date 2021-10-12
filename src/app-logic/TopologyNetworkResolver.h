@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date: 2008-08-15 02:13:48 -0700 (Fri, 15 Aug 2008) $
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  * Copyright (C) 2008, 2009 California Institute of Technology 
  *
  * This file is part of GPlates.
@@ -38,7 +38,6 @@
 #include "maths/GeometryOnSphere.h"
 
 #include "model/types.h"
-#include "model/ConstFeatureVisitor.h"
 #include "model/FeatureId.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
@@ -85,7 +84,6 @@ namespace GPlatesAppLogic
 
 	public:
 		TopologyNetworkResolver(
-				const double &recon_time,
 				GPlatesModel::Reconstruction &recon);
 
 		virtual
@@ -165,7 +163,7 @@ namespace GPlatesAppLogic
 		};
 
 
-		GPlatesModel::Reconstruction *d_recon_ptr;
+		GPlatesModel::Reconstruction &d_reconstruction;
 
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,8 +25,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
+
 #include "GmlPoint.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 
 
@@ -44,8 +46,7 @@ GPlatesPropertyValues::GmlPoint::create(
 	PointOnSphere p = make_point_on_sphere(llp);
 
 	non_null_ptr_type point_ptr(
-			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector())),
-			GPlatesUtils::NullIntrusivePointerHandler());
+			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector())));
 	return point_ptr;
 }
 
@@ -57,7 +58,15 @@ GPlatesPropertyValues::GmlPoint::create(
 	using namespace ::GPlatesMaths;
 
 	GmlPoint::non_null_ptr_type point_ptr(
-			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector())),
-			GPlatesUtils::NullIntrusivePointerHandler());
+			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector())));
 	return point_ptr;
 }
+
+
+std::ostream &
+GPlatesPropertyValues::GmlPoint::print_to(
+		std::ostream &os) const
+{
+	return os << *d_point;
+}
+

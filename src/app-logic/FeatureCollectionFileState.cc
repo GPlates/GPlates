@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -95,7 +95,8 @@ namespace GPlatesAppLogic
 					bool used_by_higher_priority_workflow)
 			{
 				// We're interested in a file if it contains features that are displayable.
-				return ClassifyFeatureCollection::found_geometry_feature(classification);
+				return ClassifyFeatureCollection::found_geometry_feature(classification) &&
+					!used_by_higher_priority_workflow;
 			}
 
 			virtual
@@ -207,6 +208,21 @@ namespace GPlatesAppLogic
 				// the file has been activated/deactivated.
 			}
 		};
+	}
+
+
+}
+
+
+namespace
+{
+	inline
+	bool
+	feature_collection_contains_feature(
+			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+	{
+		return feature_ref->parent_ptr() == feature_collection_ref.handle_ptr();
 	}
 }
 
@@ -829,4 +845,29 @@ GPlatesAppLogic::FeatureCollectionFileState::emit_activation_signal(
 	{
 		emit workflow_file_activation(*this, file_iter, workflow_tag, new_active_state);
 	}
+}
+
+
+boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref>
+GPlatesAppLogic::get_feature_collection_containing_feature(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state_ref,
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator_range it_range =
+		file_state_ref.get_loaded_files();
+
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator it = it_range.begin;
+	GPlatesAppLogic::FeatureCollectionFileState::file_iterator end = it_range.end;
+
+	for (; it != end; ++it) 
+	{
+		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+			it->get_feature_collection();
+
+		if (feature_collection_contains_feature(feature_collection_ref, feature_ref)) 
+		{
+			return feature_collection_ref;
+		}
+	}
+	return boost::none;
 }

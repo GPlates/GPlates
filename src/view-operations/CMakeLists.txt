@@ -14,12 +14,15 @@ set(srcs
     ActiveGeometryOperation.h
     AddPointGeometryOperation.cc
     AddPointGeometryOperation.h
+    CloneOperation.cc
+    CloneOperation.h
     DeleteVertexGeometryOperation.cc
     DeleteVertexGeometryOperation.h
     FocusedFeatureGeometryManipulator.cc
     FocusedFeatureGeometryManipulator.h
     GeometryBuilder.cc
     GeometryBuilder.h
+    GeometryBuilderUndoCommands.cc
     GeometryBuilderUndoCommands.h
     GeometryOperation.cc
     GeometryOperation.h
@@ -66,9 +69,12 @@ set(srcs
     RenderedString.h
     RenderReconstructionGeometries.cc
     RenderReconstructionGeometries.h
+    SplitFeatureGeometryOperation.cc
+    SplitFeatureGeometryOperation.h
+    SplitFeatureUndoCommand.cc
+    SplitFeatureUndoCommand.h
     UndoRedo.cc
     UndoRedo.h
-    ViewportProjection.h
     VisibleReconstructedFeatureGeometryExport.cc
     VisibleReconstructedFeatureGeometryExport.h
 )
@@ -88,6 +94,6 @@ set(target_name view-operations)
 # - groups files in Visual Studio IDE according to type.
 GPLATES_GENERATE_TARGET_SOURCES(${target_name} target_srcs ${srcs})
 
-add_library(${target_name} ${target_srcs})
+add_library(${target_name} STATIC ${target_srcs})
 
 GPLATES_POST_ADD_TARGET(${target_name} target_srcs)

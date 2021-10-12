@@ -57,6 +57,14 @@ bool
 GPlatesFileIO::is_writable(
 		const QFileInfo &file_info)
 {
+	// NOTE: This is known to not work correctly on Windows Vista and above when
+	// saving to the Desktop and certain other directories (in particular, those
+	// that the user can write to, but does not explicitly own). The test on
+	// Windows should probably be on the fileName() not the path(). However, if
+	// you are writing to a file, just try and open the file for writing, and if
+	// it fails, then throw an exception (instead of explicitly checking whether
+	// the file can be written to).
+	
 	QFileInfo dir(file_info.path());
 	return dir.permission(QFile::WriteUser);
 }

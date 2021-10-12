@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -52,7 +53,6 @@
 #include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
-#include "model/DummyTransactionHandle.h"
 
 
 namespace GPlatesFileIO
@@ -270,6 +270,8 @@ namespace GPlatesFileIO
 		std::pair<QString,QString> d_feature_creation_pair;
 #endif
 		QString d_feature_type;
+		
+		boost::optional<UnicodeString> d_feature_id;
 
 		/// The total number of geometries, including those from multi-geometries, in the file.
 		unsigned d_total_geometries;

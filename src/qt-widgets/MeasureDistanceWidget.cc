@@ -2,7 +2,7 @@
 
 /**
  * @file 
- * Contains implementation of MeasureDistanceWidget
+ * Contains the implementation of the MeasureDistanceWidget class.
  *
  * $Revision$
  * $Date$ 
@@ -28,7 +28,7 @@
 #include <QString>
 
 #include "MeasureDistanceWidget.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/types.h"
 #include "canvas-tools/MeasureDistanceState.h"
 

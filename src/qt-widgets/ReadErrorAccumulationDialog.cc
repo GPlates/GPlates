@@ -133,6 +133,12 @@ namespace
 		{ GPlatesFileIO::ReadErrors::MoreThanOneDistinctPoint,
 				QT_TR_NOOP("More than one point"),
 				QT_TR_NOOP("A single distinct point was expected, but more were encountered.") },
+		{ GPlatesFileIO::ReadErrors::NoValidGeometriesInPlatesFeature,
+				QT_TR_NOOP("No valid geometries found in feature"),
+				QT_TR_NOOP("This might be caused by all geometry points having pen-down ('3') codes.") },
+		{ GPlatesFileIO::ReadErrors::InvalidMultipointGeometry,
+				QT_TR_NOOP("Invalid multipoint geometry"),
+				QT_TR_NOOP("A geometry expected to be a multipoint had an invalid geometry.") },				
 		
 		// Error descriptions for PLATES rotation-format files:
 		{ GPlatesFileIO::ReadErrors::CommentMovingPlateIdAfterNonCommentSequence,
@@ -338,6 +344,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::InvalidShapefileAgeOfDisappearance,
 				QT_TR_NOOP("Invalid age of disappearance."),
 				QT_TR_NOOP("An invalid age of disappearance was found.") },
+		{ GPlatesFileIO::ReadErrors::InvalidShapefileConjugatePlateIdNumber,
+				QT_TR_NOOP("Invalid conjugate Plate-id."),
+				QT_TR_NOOP("An invalid conjugate Plate-id was found.") },
 		{ GPlatesFileIO::ReadErrors::InvalidShapefilePoint,
 				QT_TR_NOOP("Invalid point."),
 				QT_TR_NOOP("An invalid point geometry was found.") },

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -51,20 +51,15 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlPoint,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlPoint>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPoint,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPoint> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPoint,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPoint>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPoint,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPoint> non_null_ptr_to_const_type;
 
 		virtual
 		~GmlPoint()
@@ -97,17 +92,35 @@ namespace GPlatesPropertyValues
 				const GPlatesMaths::PointOnSphere &p);
 
 		/**
-		 * Create a duplicate of this PropertyValue instance.
+		 * Create a GmlPoint instance from a non-null-intrusive-pointer to a
+		 * GPlatesMaths::PointOnSphere.
 		 */
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		static
+		const non_null_ptr_type
+		create(
+				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p)
+		{
+			GmlPoint::non_null_ptr_type point_ptr(
+					new GmlPoint(p));
+			return point_ptr;
+		}
+
+		const GmlPoint::non_null_ptr_type
 		clone() const
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
-					new GmlPoint(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			GmlPoint::non_null_ptr_type dup(new GmlPoint(*this));
 			return dup;
 		}
+
+		const GmlPoint::non_null_ptr_type
+		deep_clone() const
+		{
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular clone will suffice.
+			return clone();
+		}
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Access the GPlatesMaths::PointOnSphere which encodes the geometry of this
@@ -119,8 +132,7 @@ namespace GPlatesPropertyValues
 		 * GPlatesMaths::PointOnSphere within this instance, set a new value using the
 		 * function @a set_point below.
 		 */
-		const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler>
+		const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
 		point() const
 		{
 			return d_point;
@@ -135,10 +147,10 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_point(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere,
-						GPlatesUtils::NullIntrusivePointerHandler> p)
+				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p)
 		{
 			d_point = p;
+			update_instance_id();
 		}
 
 		/**
@@ -169,14 +181,18 @@ namespace GPlatesPropertyValues
 			visitor.visit_gml_point(*this);
 		}
 
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
+
 	protected:
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		explicit
 		GmlPoint(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere,
-						GPlatesUtils::NullIntrusivePointerHandler> point_):
+				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> point_):
 			PropertyValue(),
 			d_point(point_)
 		{  }
@@ -189,14 +205,13 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlPoint(
 				const GmlPoint &other):
-			PropertyValue(),
+			PropertyValue(other), /* share instance id */
 			d_point(other.d_point)
 		{  }
 
 	private:
 
-		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> d_point;
+		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> d_point;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

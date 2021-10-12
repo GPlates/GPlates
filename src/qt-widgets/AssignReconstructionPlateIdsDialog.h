@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <boost/cast.hpp>
+#include <QPushButton>
 
 #include "AssignReconstructionPlateIdsDialogUi.h"
 
@@ -38,6 +39,7 @@
 
 #include "file-io/File.h"
 
+#include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 
 
@@ -46,7 +48,6 @@ namespace GPlatesAppLogic
 	class ApplicationState;
 	class AssignPlateIds;
 	class FeatureCollectionFileState;
-	class Reconstruct;
 }
 
 namespace GPlatesGui
@@ -74,41 +75,12 @@ namespace GPlatesQtWidgets
 				QWidget *parent_ = NULL);
 
 
-		//! Typedef for a sequence of file shared refs.
-		typedef std::vector<GPlatesFileIO::File::shared_ref> file_seq_type;
-
-
 		/**
-		 * Opens a modal dialog listing the files in @a newly_loaded_feature_collection_files and
-		 * allows user to choose which feature collection files get assigned plate ids.
-		 *
-		 * Only those features in the files that have no 'gpml:reconstructionPlateId'
-		 * property will have plate ids assigned.
-		 *
-		 * @pre It is assumed that features of type TopologicalClosedPlateBoundary have
-		 * already been loaded (as they are required to cookie cut the input features) -
-		 * if none are loaded then no plate ids will get assigned.
+		 * Opens a modal dialog allowing user to choose partitioning polygon files and
+		 * the files contained features to be partitioned by those polygons.
 		 */
 		void
-		assign_plate_ids_to_newly_loaded_feature_collections(
-				const file_seq_type &newly_loaded_feature_collection_files,
-				bool pop_up_message_box_if_no_plate_boundaries);
-
-		/**
-		 * Opens a modal dialog listing all active feature collection files (excluding
-		 * reconstruction files - used for rotations) and allows user to choose
-		 * which files get reassigned plate ids.
-		 *
-		 * Any features that already have a 'gpml:reconstructionPlateId' property
-		 * will have plate ids reassigned.
-		 *
-		 * @pre It is assumed that features of type TopologicalClosedPlateBoundary have
-		 * already been loaded (as they are required to cookie cut the input features) -
-		 * if none are loaded then no plate ids will get reassigned.
-		 */
-		void
-		reassign_reconstruction_plate_ids(
-				bool pop_up_message_box_if_no_plate_boundaries);
+		exec_partition_features_dialog();
 
 	public slots:
 		void
@@ -122,15 +94,36 @@ namespace GPlatesQtWidgets
 		clear();
 
 		void
-		react_cell_changed(
+		handle_prev();
+
+		void
+		handle_next();
+
+		void
+		handle_page_change(
+				int page);
+
+		void
+		react_cell_changed_partitioning_files(
 				int row,
 				int column);
 
 		void
-		react_clear_all();
+		react_cell_changed_partitioned_files(
+				int row,
+				int column);
 
 		void
-		react_select_all();
+		react_clear_all_partitioning_files();
+
+		void
+		react_clear_all_partitioned_files();
+
+		void
+		react_select_all_partitioning_files();
+
+		void
+		react_select_all_partitioned_files();
 
 		void
 		react_reconstruction_time_radio_button(
@@ -141,7 +134,11 @@ namespace GPlatesQtWidgets
 				double reconstruction_time);
 
 		void
-		react_assign_plate_id_options_radio_button(
+		react_partition_options_radio_button(
+				bool checked);
+
+		void
+		react_feature_properties_options_radio_button(
 				bool checked);
 
 	private:
@@ -166,6 +163,10 @@ namespace GPlatesQtWidgets
 		//! Typedef for a sequence of file pointers.
 		typedef std::vector<GPlatesFileIO::File *> file_ptr_seq_type;
 
+		//! Typedef for a sequence of feature collection weak refs.
+		typedef std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+				feature_collection_seq_type;
+
 		/**
 		 * These should match the table columns set up in the UI designer.
 		 */
@@ -185,21 +186,41 @@ namespace GPlatesQtWidgets
 			USER_SPECIFIED_RECONSTRUCTION_TIME
 		};
 
-		GPlatesQtWidgets::InformationDialog *d_help_feature_collections_dialog;
-		GPlatesQtWidgets::InformationDialog *d_help_reconstruction_time_dialog;
-		GPlatesQtWidgets::InformationDialog *d_help_assign_plate_id_options_dialog;
+		struct FileStateCollection
+		{
+			FileStateCollection() :
+				table_widget(NULL)
+			{  }
 
-		GPlatesModel::ModelInterface d_model;
+			QTableWidget *table_widget; // Needs to be initialised after setupUi()
+			file_state_seq_type file_state_seq;
+		};
+
+
+		GPlatesQtWidgets::InformationDialog *d_help_partitioning_files_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_partitioned_files_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_reconstruction_time_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_partition_options_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_properties_to_assign_dialog;
+		
+		/**
+		 * Button added to buttonbox for 'Apply' button that partitions the features.
+		 */
+		QPushButton *d_button_create;
+
 		GPlatesAppLogic::FeatureCollectionFileState &d_feature_collection_file_state;
-		GPlatesAppLogic::Reconstruct &d_reconstruct;
+		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesGui::FeatureFocus &d_feature_focus;
 
 		/**
-		 * Keeps track of which files are enabled by the user in the GUI.
+		 * Keeps track of which partitioning files are enabled by the user in the GUI.
 		 */
-		file_state_seq_type d_file_state_seq;
+		FileStateCollection d_partitioning_file_state_seq;
 
-		bool d_only_assign_to_features_with_no_reconstruction_plate_id;
+		/**
+		 * Keeps track of which partitioned files are enabled by the user in the GUI.
+		 */
+		FileStateCollection d_partitioned_file_state_seq;
 
 		/**
 		 * Which reconstruction time the user has chosen.
@@ -216,46 +237,78 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType d_assign_plate_id_method;
 
+		//! Whether to copy plate ids from the partitioning polygons or not.
+		bool d_assign_plate_ids;
 
-		bool
-		check_for_plate_boundaries(
-				bool pop_up_message_box_if_no_plate_boundaries);
+		//! Whether to copy time periods from the partitioning polygons or not.
+		bool d_assign_time_periods;
 
-		void
-		pop_up_no_plate_boundaries_message_box();
-
-		void
-		pop_up_no_files_selected_message_box();
 
 		void
-		get_files_to_assign_plate_ids(
-				file_ptr_seq_type &files_to_assign_plate_ids,
-				const file_seq_type &newly_loaded_feature_collection_files);
+		set_up_button_box();
 
 		void
-		get_files_to_reassign_plate_ids(
-				file_ptr_seq_type &files_to_assign_plate_ids);
+		set_up_partitioning_files_page();
 
 		void
-		query_user_and_assign_plate_ids(
-				const file_ptr_seq_type &files_to_assign_plate_ids);
+		set_up_partitioned_files_page();
+
+		void
+		set_up_general_options_page();
+
+
+		void
+		pop_up_no_partitioning_polygon_features_found_message_box();
+
+		void
+		pop_up_no_partitioned_files_selected_message_box();
 
 		void
 		initialise_file_list(
-				const file_ptr_seq_type &file_list);
+				FileStateCollection &file_state_collection,
+				const file_ptr_seq_type &files);
 
 		void
-		clear_rows();
+		clear_rows(
+				FileStateCollection &file_state_collection);
 
 		void
 		add_row(
+				FileStateCollection &file_state_collection,
 				GPlatesFileIO::File *file);
+
+		void
+		react_cell_changed(
+				FileStateCollection &file_state_collection,
+				int row,
+				int column);
+
+		void
+		react_select_all(
+				FileStateCollection &file_state_collection);
+
+		void
+		react_clear_all(
+				FileStateCollection &file_state_collection);
+
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+		get_active_reconstruction_files();
+
+		file_ptr_seq_type
+		get_loaded_files();
+
+		feature_collection_seq_type
+		get_selected_feature_collections(
+				FileStateCollection &file_state_collection);
+
+		bool
+		partition_features();
 
 		GPlatesAppLogic::AssignPlateIds::non_null_ptr_type
 		create_plate_id_assigner();
 
 		bool
-		assign_plate_ids(
+		partition_features(
 				GPlatesAppLogic::AssignPlateIds &plate_id_assigner);
 	};
 }

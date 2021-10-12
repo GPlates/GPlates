@@ -39,6 +39,7 @@
 #include <memory>
 #include <boost/scoped_ptr.hpp>
 #include <QtCore/QTimer>
+#include <QPointer>
 #include <QCloseEvent>
 #include <QStringList>
 #include <QUndoGroup>
@@ -80,6 +81,9 @@ namespace GPlatesGui
 	class MapCanvasToolChoice;
 	class TopologySectionsTable;
 	class TopologySectionsContainer;
+	class TrinketArea;
+	class UnsavedChangesTracker;
+	class FileIOFeedback;
 }
 
 namespace GPlatesPresentation
@@ -91,6 +95,7 @@ namespace GPlatesPresentation
 namespace GPlatesViewOperations
 {
 	class ActiveGeometryOperation;
+	class CloneOperation;
 	class FocusedFeatureGeometryManipulator;
 	class GeometryBuilder;
 	class GeometryOperationTarget;
@@ -101,14 +106,20 @@ namespace GPlatesQtWidgets
 	class AboutDialog;
 	class AnimateDialog;
 	class AssignReconstructionPlateIdsDialog;
+	class CalculateReconstructionPoleDialog;
+	class ColouringDialog;
+	class CreateVGPDialog;
 	class ExportAnimationDialog;
 	class ExportReconstructedFeatureGeometryDialog;
 	class FeaturePropertiesDialog;
 	class ManageFeatureCollectionsDialog;
+	class MeshDialog;
 	class ReadErrorAccumulationDialog;
+	class SaveFileDialog;
 	class SetCameraViewpointDialog;
 	class SetProjectionDialog;
 	class SetRasterSurfaceExtentDialog;
+	class SetVGPVisibilityDialog;
 	class ShapefileAttributeViewerDialog;
 	class SpecifyAnchoredPlateIdDialog;
 	class SpecifyTimeIncrementDialog;
@@ -134,9 +145,8 @@ namespace GPlatesQtWidgets
 
 
 		void
-		reconstruct_to_time_with_root(
-				double recon_time,
-				unsigned long recon_root);
+		reconstruct_to_time(
+				const double &recon_time);
 		
 
 		const GPlatesQtWidgets::ReconstructionViewWidget &
@@ -150,9 +160,6 @@ namespace GPlatesQtWidgets
 		{
 			return *d_globe_canvas_ptr;
 		}
-
-		void
-		create_svg_file();
 
 		void
 		create_svg_file(
@@ -176,6 +183,13 @@ namespace GPlatesQtWidgets
 			return *d_feature_table_model_ptr;
 		}
 
+		GPlatesGui::TrinketArea &
+		trinket_area() 
+		{
+			return *d_trinket_area_ptr;
+		}
+
+
 		/** Get a pointer to the TopologySectionsContainer */
 		GPlatesGui::TopologySectionsContainer &
 		topology_sections_container()
@@ -189,7 +203,6 @@ namespace GPlatesQtWidgets
 		{
 			return d_task_panel_ptr;
 		}
-
 
 
 	public slots:
@@ -252,6 +265,10 @@ namespace GPlatesQtWidgets
 				bool enable = true);
 
 		void
+			enable_split_feature_tool(
+			bool enable = true);
+
+		void
 		enable_manipulate_pole_tool(
 				bool enable = true);
 
@@ -298,6 +315,9 @@ namespace GPlatesQtWidgets
 		choose_insert_vertex_tool();
 
 		void
+		choose_split_feature_tool();
+
+		void
 		choose_manipulate_pole_tool();
 
 		void
@@ -312,45 +332,6 @@ namespace GPlatesQtWidgets
 		void
 		enable_or_disable_feature_actions(
 				GPlatesGui::FeatureFocus &feature_focus);
-
-		/**
-		 * Uncheck all colouring menu items, and then check @a checked_action
-		 */
-		void
-		change_checked_colouring_action(
-				QAction *action);
-		
-		// FIXME: Delete after refactoring
-		void	
-		choose_colour_by_feature_type();
-
-		// FIXME: Delete after refactoring
-		void
-		choose_colour_by_age();
-		
-		void
-		choose_colour_by_single_colour_red();
-
-		void
-		choose_colour_by_single_colour_blue();
-
-		void
-		choose_colour_by_single_colour_green();
-
-		void
-		choose_colour_by_single_colour_yellow();
-
-		void
-		choose_colour_by_single_colour_white();
-
-		void
-		choose_colour_by_single_colour_customise();
-
-		void
-		choose_colour_by_plate_id_default();
-
-		void
-		choose_colour_by_plate_id_regional();
 
 		void
 		choose_clicked_geometry_table() const
@@ -375,22 +356,19 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_manage_feature_collections_dialog();
-
+#if 0
 		void
-		pop_up_export_geometry_snapshot_dialog()
-		{
-			create_svg_file();
-		}
-
+		pop_up_export_geometry_snapshot_dialog();
+#endif
 		void
 		pop_up_export_animation_dialog();
 
 		void
 		pop_up_assign_reconstruction_plate_ids_dialog();
-
+#if 0
 		void
 		pop_up_export_reconstruction_dialog();
-
+#endif
 		void
 		pop_up_total_reconstruction_poles_dialog();
 	
@@ -416,6 +394,12 @@ namespace GPlatesQtWidgets
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 				const GPlatesFileIO::ReadErrorAccumulation &new_read_errors);
 
+		/**
+		 * Add secret menu filled with actions aid GUI-related debugging.
+		 * Triggered from gplates_main and commandline switch --debug-gui.
+		 */
+		void
+		install_gui_debug_menu();
 
 	private:
 		//! Returns the application state.
@@ -444,22 +428,52 @@ namespace GPlatesQtWidgets
 		GPlatesGui::AnimationController d_animation_controller;
 		GPlatesGui::FullScreenMode d_full_screen_mode;
 
+		//! Manages the icons in the status bar
+		boost::scoped_ptr<GPlatesGui::TrinketArea> d_trinket_area_ptr;
+
+		/**
+		 * Tracks changes to saved/unsaved status of files and manages user notification of same.
+		 *
+		 * QPointer is a guarded pointer which will be set to null when the QObject it points to
+		 * gets deleted; The UnsavedChangesTracker is parented to ViewportWindow, so the Qt
+		 * object system handles cleanup, and so that I have easier access to it via GuiDebug.
+		 */
+		QPointer<GPlatesGui::UnsavedChangesTracker> d_unsaved_changes_tracker_ptr;
+
+		/**
+		 * Wraps file loading and saving, opening dialogs appropriately for filenames and error feedback.
+		 * Can later provide save/load progress reports to progress bars in GUI.
+		 *
+		 * QPointer is a guarded pointer which will be set to null when the QObject it points to
+		 * gets deleted; The FileIOFeedback is parented to ViewportWindow, so the Qt
+		 * object system handles cleanup, and so that I have easier access to it via GuiDebug.
+		 */
+		QPointer<GPlatesGui::FileIOFeedback> d_file_io_feedback_ptr;
+
 		ReconstructionViewWidget d_reconstruction_view_widget;
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
+
+		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
+		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
+		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
 		boost::scoped_ptr<ExportReconstructedFeatureGeometryDialog> d_export_rfg_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
+		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
 		boost::scoped_ptr<SetRasterSurfaceExtentDialog> d_set_raster_surface_extent_dialog_ptr;
+		boost::scoped_ptr<SetVGPVisibilityDialog> d_set_vgp_visibility_dialog_ptr;
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
 		boost::scoped_ptr<SpecifyTimeIncrementDialog> d_specify_time_increment_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
+
+		boost::shared_ptr<SaveFileDialog> d_export_geometry_snapshot_dialog_ptr;
 
 		GlobeCanvas *d_globe_canvas_ptr;
 
@@ -472,6 +486,8 @@ namespace GPlatesQtWidgets
 		// Depends on d_digitise_geometry_builder, d_focused_feature_geometry_builder,
 		// d_geometry_operation_target.
 		boost::scoped_ptr<GPlatesViewOperations::GeometryOperationTarget> d_geometry_operation_target;
+
+		boost::scoped_ptr<GPlatesViewOperations::CloneOperation> d_clone_operation_prt;
 
 		boost::scoped_ptr<GPlatesViewOperations::ActiveGeometryOperation> d_active_geometry_operation;
 
@@ -574,9 +590,6 @@ namespace GPlatesQtWidgets
 		void
 		update_time_dependent_raster();
 
-		void
-		set_modify_feature_collections_filter();
-
 	private slots:
 		void
 		pop_up_specify_anchored_plate_id_dialog();
@@ -586,6 +599,9 @@ namespace GPlatesQtWidgets
 		
 		void
 		pop_up_about_dialog();
+
+		void
+		pop_up_colouring_dialog();
 
 		void
 		close_all_dialogs();
@@ -647,11 +663,20 @@ namespace GPlatesQtWidgets
 		void
 		pop_up_set_projection_dialog();
 		
-		/**
-		 * A secret action triggerable with Ctrl+Shift+? to aid GUI-related debugging.
-		 */
 		void
-		handle_gui_debug_action();
+		pop_up_create_vgp_dialog();
+		
+		void
+		generate_mesh_cap();
+
+		void
+		pop_up_calculate_reconstruction_pole_dialog();
+
+		void
+		pop_up_set_vgp_visibility_dialog();
+
+		void
+		handle_colour_scheme_delegator_changed();
 
 	protected:
 	

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -91,9 +91,9 @@ namespace
 			}
 
 			// Iterate through the feature handles in the current feature collection.
-			GPlatesModel::FeatureCollectionHandle::features_const_iterator features_iter;
-			for (features_iter = feature_collection_handle->features_begin();
-				features_iter != feature_collection_handle->features_end();
+			GPlatesModel::FeatureCollectionHandle::const_iterator features_iter;
+			for (features_iter = feature_collection_handle->begin();
+				features_iter != feature_collection_handle->end();
 				++features_iter)
 			{
 				const GPlatesModel::FeatureHandle *feature_handle_ptr = (*features_iter).get();
@@ -184,7 +184,7 @@ GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::group_rfgs_with_their_fea
 
 	// Sort in preparation for grouping RFGs by feature.
 	std::sort(rfgs_sorted_by_feature.begin(), rfgs_sorted_by_feature.end(),
-			bind(&GPlatesModel::ReconstructedFeatureGeometry::feature_handle_ptr, _1) <
+		boost::lambda::bind(&GPlatesModel::ReconstructedFeatureGeometry::feature_handle_ptr, _1) <
 					boost::lambda::bind(
 							&GPlatesModel::ReconstructedFeatureGeometry::feature_handle_ptr, _2));
 
@@ -204,8 +204,7 @@ GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::group_rfgs_with_their_fea
 		{
 			// Start a new group.
 			const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
-					GPlatesModel::FeatureHandle::get_const_weak_ref(
-							rfg->get_feature_ref());
+					rfg->get_feature_ref();
 
 			grouped_rfgs_seq.push_back(FeatureGeometryGroup(feature_ref));
 

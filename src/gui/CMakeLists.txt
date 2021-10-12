@@ -11,26 +11,32 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
-    AbstractWindow.h
     AddClickedGeometriesToFeatureTable.cc
     AddClickedGeometriesToFeatureTable.h
-    AgeColourTable.cc
-    AgeColourTable.h
+    AgeColourPalettes.cc
+    AgeColourPalettes.h
     AnimationController.cc
     AnimationController.h
     ChooseCanvasTool.cc
     ChooseCanvasTool.h
     Colour.cc
     Colour.h
+    ColourFilter.h
     ColourNameSet.cc
     ColourNameSet.h
     ColourPalette.h
+    ColourProxy.cc
+    ColourProxy.h
     ColourScheme.h
+    ColourSchemeContainer.cc
+    ColourSchemeContainer.h
+    ColourSchemeDelegator.cc
+    ColourSchemeDelegator.h
+    ColourSchemeFactory.cc
     ColourSchemeFactory.h
+    ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
-    ColourTable.h
-    ColourTableDelegator.h
     CsvExport.cc
     CsvExport.h
     EnableCanvasTool.cc
@@ -39,16 +45,20 @@ set(srcs
     ExportAnimationContext.h
     ExportAnimationStrategy.cc
     ExportAnimationStrategy.h
+    ExportRasterAnimationStrategy.cc
+    ExportRasterAnimationStrategy.h
     ExportReconstructedGeometryAnimationStrategy.cc
     ExportReconstructedGeometryAnimationStrategy.h
     ExportResolvedTopologyAnimationStrategy.cc
     ExportResolvedTopologyAnimationStrategy.h
+    ExportRotationAnimationStrategy.cc
+    ExportRotationAnimationStrategy.h
     ExportSvgAnimationStrategy.cc
     ExportSvgAnimationStrategy.h
     ExportVelocityAnimationStrategy.cc
     ExportVelocityAnimationStrategy.h
-    FeatureColourTable.cc
-    FeatureColourTable.h
+    FeatureColourPalette.cc
+    FeatureColourPalette.h
     FeatureFocus.cc
     FeatureFocus.h
     FeaturePropertyTableModel.cc
@@ -56,14 +66,14 @@ set(srcs
     FeatureTableModel.cc
     FeatureTableModel.h
     FeatureWeakRefSequence.h
+    FileIOFeedback.cc
+    FileIOFeedback.h
     FullScreenMode.cc
     FullScreenMode.h
     GenericColourScheme.h
     GenericContinuousColourPalette.cc
     GenericContinuousColourPalette.h
     GenericDiscreteColourPalette.h
-    GeometricPropertyValueConstructor.cc
-    GeometricPropertyValueConstructor.h
     GeometryFocusHighlight.cc
     GeometryFocusHighlight.h
     Globe.cc
@@ -87,10 +97,14 @@ set(srcs
     GPlatesQApplication.h
     GPlatesQtMsgHandler.cc
     GPlatesQtMsgHandler.h
+    GuiDebug.cc
+    GuiDebug.h
     GuiException.h
     HTMLColourNames.cc
     HTMLColourNames.h
     Interface.h
+    Map.cc
+    Map.h
     MapCanvasPainter.cc
     MapCanvasPainter.h
     MapCanvasTool.cc
@@ -101,8 +115,8 @@ set(srcs
     MapCanvasToolChoice.h
     MapProjection.cc
     MapProjection.h
-    ModifyLoadedFeatureCollectionsFilter.cc
-    ModifyLoadedFeatureCollectionsFilter.h
+    MapTransform.cc
+    MapTransform.h
     NurbsRenderer.cc
     NurbsRenderer.h
     OpaqueSphere.cc
@@ -138,7 +152,11 @@ set(srcs
     TopologyTools.h
     TreeWidgetBuilder.cc
     TreeWidgetBuilder.h
-    Viewport.h
+    TrinketArea.cc
+    TrinketArea.h
+    UnsavedChangesTracker.cc
+    UnsavedChangesTracker.h
+    ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h
 )
@@ -158,6 +176,6 @@ set(target_name gui)
 # - groups files in Visual Studio IDE according to type.
 GPLATES_GENERATE_TARGET_SOURCES(${target_name} target_srcs ${srcs})
 
-add_library(${target_name} ${target_srcs})
+add_library(${target_name} STATIC ${target_srcs})
 
 GPLATES_POST_ADD_TARGET(${target_name} target_srcs)

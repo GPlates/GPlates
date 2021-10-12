@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains definition of MeasureDistanceWidget
+ * Contains the definition of the MeasureDistanceWidget class.
  *
  * $Revision$
  * $Date$ 

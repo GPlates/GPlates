@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,45 @@
 
 #ifndef GPLATES_FILEIO_PROPERTYMAPPER_H
 #define GPLATES_FILEIO_PROPERTYMAPPER_H
+
+namespace ShapefileAttributes {
+	enum ModelProperties {
+
+		PLATEID = 0,	
+		FEATURE_TYPE,
+		BEGIN,
+		END,
+		NAME,
+		DESCRIPTION,
+		FEATURE_ID,
+		CONJUGATE_PLATE_ID,
+		
+		NUM_PROPERTIES
+	};
+
+	static const QString model_properties[] = {
+		"ReconstructionPlateId",
+		"FeatureType",
+		"Begin",
+		"End",
+		"Name",
+		"Description",
+		"FeatureId",
+		"ConjugatePlateId"
+	};
+	
+	static const QString default_attributes[] = {
+		"PLATEID1",
+		"TYPE",
+		"FROMAGE",
+		"TOAGE",
+		"NAME",
+		"DESCR",
+		"FEATURE_ID",
+		"PLATEID2"
+	};
+
+}
 
 namespace GPlatesFileIO
 {

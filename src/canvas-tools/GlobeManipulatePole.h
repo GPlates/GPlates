@@ -27,7 +27,7 @@
 #define GPLATES_CANVASTOOLS_GLOBEMANIPULATEPOLE_H
 
 #include "gui/GlobeCanvasTool.h"
-#include "qt-widgets/ReconstructionPoleWidget.h"
+#include "qt-widgets/ModifyReconstructionPoleWidget.h"
 
 
 namespace GPlatesQtWidgets
@@ -70,7 +70,7 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 				const GPlatesQtWidgets::ViewportWindow &view_state,
-				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget)
+				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget)
 		{
 			return GlobeManipulatePole::non_null_ptr_type(
 					new GlobeManipulatePole(
@@ -148,7 +148,7 @@ namespace GPlatesCanvasTools
 				GPlatesGui::Globe &globe,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
 				const GPlatesQtWidgets::ViewportWindow &view_state,
-				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget);
+				GPlatesQtWidgets::ModifyReconstructionPoleWidget &pole_widget);
 
 
 		const GPlatesQtWidgets::ViewportWindow &
@@ -169,10 +169,10 @@ namespace GPlatesCanvasTools
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
-		 * This is the Reconstruction Pole widget in the Task Panel.
+		 * This is the Modify Reconstruction Pole widget in the Task Panel.
 		 * It accumulates the rotation adjustment for us, as well as other book-keeping.
 		 */
-		GPlatesQtWidgets::ReconstructionPoleWidget *d_pole_widget_ptr;
+		GPlatesQtWidgets::ModifyReconstructionPoleWidget *d_pole_widget_ptr;
 
 		/**
 		 * Whether or not this pole-manipulation tool is currently in the midst of a

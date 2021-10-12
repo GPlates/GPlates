@@ -74,20 +74,20 @@ GPlatesQtWidgets::EditOldPlatesHeaderWidget::reset_widget_to_default_values()
 {
 	d_old_plates_header_ptr = NULL;
 	// Line 1
-	spinbox_region_number->setValue(0);
-	spinbox_reference_number->setValue(0);
-	spinbox_string_number->setValue(0);
+	spinbox_region_number->setValue(99);
+	spinbox_reference_number->setValue(99);
+	spinbox_string_number->setValue(9999);
 	lineedit_geographic_description->setText("");
 	
 	// Line 2
-	spinbox_plate_id_number->setValue(0);
-	doublespinbox_age_of_appearance->setValue(0);
-	doublespinbox_age_of_disappearance->setValue(0);
-	lineedit_data_type_code->setText(0);
+	spinbox_plate_id_number->setValue(999);
+	doublespinbox_age_of_appearance->setValue(999.0);
+	doublespinbox_age_of_disappearance->setValue(-999.0);
+	lineedit_data_type_code->setText("XX");
 	spinbox_data_type_code_number->setValue(0);
 	lineedit_data_type_code_number_additional->setText("");
-	spinbox_conjugate_plate_id_number->setValue(0);
-	spinbox_colour_code->setValue(0);
+	spinbox_conjugate_plate_id_number->setValue(999);
+	spinbox_colour_code->setValue(1);
 	label_number_of_points->setText(QString::number(0));
 	
 	set_clean();

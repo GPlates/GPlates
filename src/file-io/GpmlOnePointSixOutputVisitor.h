@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,7 +32,7 @@
 #include <QProcess>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "XmlWriter.h"
 #include "FileInfo.h"
@@ -284,7 +284,6 @@ namespace GPlatesFileIO
 				const GPlatesPropertyValues::XsString &xs_string);
 
 	private:
-		static const ExternalProgram *s_gzip_program;
 
 		void
 		write_gpml_key_value_dictionary_element(

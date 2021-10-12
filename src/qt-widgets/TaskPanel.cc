@@ -35,7 +35,7 @@
 #include "FeatureSummaryWidget.h"
 #include "MeasureDistanceWidget.h"
 #include "ModifyGeometryWidget.h"
-#include "ReconstructionPoleWidget.h"
+#include "ModifyReconstructionPoleWidget.h"
 #include "TopologyToolsWidget.h"
 
 #include "gui/FeatureFocus.h"
@@ -123,7 +123,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 			digitise_geometry_builder, view_state, viewport_window, choose_canvas_tool)),
 	d_modify_geometry_widget_ptr(new ModifyGeometryWidget(
 			geometry_operation_target, active_geometry_operation)),
-	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(
+	d_modify_reconstruction_pole_widget_ptr(new ModifyReconstructionPoleWidget(
 			view_state, viewport_window)),
 	d_topology_tools_widget_ptr( new TopologyToolsWidget(
 			view_state, viewport_window, choose_canvas_tool)),
@@ -140,7 +140,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	
 	// Set up the EX-TREME Task Panel's tabs. Please ensure this order matches the
 	// enumeration set up in the class declaration.
-	set_up_feature_tab(view_state.get_feature_focus());
+	set_up_feature_tab(view_state);
 	set_up_digitisation_tab();
 	set_up_modify_geometry_tab();
 	set_up_modify_pole_tab();
@@ -176,7 +176,7 @@ GPlatesQtWidgets::TaskPanel::set_up_ui()
 
 void
 GPlatesQtWidgets::TaskPanel::set_up_feature_tab(
-		GPlatesGui::FeatureFocus &feature_focus)
+		GPlatesPresentation::ViewState &view_state)
 {
 	// Set up the layout to be used by the Feature tab.
 	QWidget *page = add_page_with_title(d_stacked_widget_ptr, tr("Current Feature"));
@@ -184,7 +184,7 @@ GPlatesQtWidgets::TaskPanel::set_up_feature_tab(
 	
 	// Add a summary of the currently-focused Feature.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
-	lay->addWidget(new FeatureSummaryWidget(feature_focus, this));
+	lay->addWidget(new FeatureSummaryWidget(view_state, this));
 	
 	// Action Buttons; these are added by ViewportWindow via
 	// TaskPanel::feature_action_button_box().add_action().
@@ -244,11 +244,11 @@ GPlatesQtWidgets::TaskPanel::set_up_modify_pole_tab()
 	QLayout *lay = add_default_layout(
 			add_page_with_title(d_stacked_widget_ptr, tr("Reconstruction Pole")));
 	
-	// Add the main ReconstructionPoleWidget.
+	// Add the main ModifyReconstructionPoleWidget.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
 	// We cannot set this parent widget in the TaskPanel initialiser list because
 	// setupUi() has not been called yet.
-	lay->addWidget(d_reconstruction_pole_widget_ptr);
+	lay->addWidget(d_modify_reconstruction_pole_widget_ptr);
 
 	// After the main widget and anything else we might want to cram in there,
 	// a spacer to eat up remaining space and push all the widgets to the top
@@ -264,7 +264,7 @@ GPlatesQtWidgets::TaskPanel::set_up_topology_tools_tab()
 	QLayout *lay = add_default_layout(
 			add_page_with_title(d_stacked_widget_ptr, tr("Topology Tools")));
 	
-	// Add the main ReconstructionPoleWidget.
+	// Add the main ModifyReconstructionPoleWidget.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
 	// We cannot set this parent widget in the TaskPanel initialiser list because
 	// setupUi() has not been called yet.
@@ -283,7 +283,7 @@ GPlatesQtWidgets::TaskPanel::set_up_measure_distance_tab()
 	QLayout *lay = add_default_layout(
 			add_page_with_title(d_stacked_widget_ptr, tr("Measure Distance")));
 	
-	// Add the main ReconstructionPoleWidget.
+	// Add the main ModifyReconstructionPoleWidget.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
 	// We cannot set this parent widget in the TaskPanel initialiser list because
 	// setupUi() has not been called yet.

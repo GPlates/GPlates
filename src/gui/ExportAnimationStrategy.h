@@ -37,9 +37,17 @@
 
 #include "utils/ExportTemplateFilenameSequence.h"
 
+#define FORMAT_CODE_DESC \
+	" -- %n  the \"number\" (index + 1) of the frame -- will lie in the inclusive range [1, N]," \
+	"and will be padded to the width of the decimal integer representation of N. \n"	\
+	" -- %u  the index of the frame -- will lie in the inclusive range [0, (N - 1)], "	\
+	"and will be padded to the width of the decimal integer representation of (N - 1).\n"  \
+	" -- %f  the reconstruction-time instant of the frame, in printf-style %f format.  \n"	\
+	" -- %d  the reconstruction-time instant of the frame, rounded to the closest integer, in printf-style %d format." ;
 
 namespace GPlatesGui
 {
+
 	// Forward declaration to avoid spaghetti
 	class ExportAnimationContext;
 
@@ -59,12 +67,32 @@ namespace GPlatesGui
 		typedef GPlatesUtils::non_null_intrusive_ptr<ExportAnimationStrategy,
 				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
-
-
+		static const QString dummy_desc;
+		
 		virtual
 		~ExportAnimationStrategy()
 		{  }
 
+		class Configuration
+		{
+		public:
+
+			explicit
+			Configuration(
+					const QString& filename)
+			{
+				d_filename_template = filename;
+			}
+
+			const QString&
+			filename_template() const
+			{
+				return d_filename_template;
+			}
+
+		private:
+			QString d_filename_template;
+		};
 
 		/**
 		 * Sets the internal ExportTemplateFilenameSequence.
@@ -74,7 +102,6 @@ namespace GPlatesGui
 		set_template_filename(
 				const QString &filename);
 
-
 		/**
 		 * Does one frame of export. Called by the ExportAnimationContext.
 		 * @param frame_index - the frame we are to export this round, indexed from 0.
@@ -83,6 +110,18 @@ namespace GPlatesGui
 		bool
 		do_export_iteration(
 				std::size_t frame_index) = 0;
+
+		virtual
+		const QString&
+		get_default_filename_template() = 0;
+
+		virtual
+		const QString&
+		get_filename_template_desc() = 0;
+
+		virtual 
+		const QString&
+		get_description() = 0;
 
 
 		/**
@@ -106,6 +145,15 @@ namespace GPlatesGui
 				bool export_successful)
 		{  }
 
+		virtual
+		bool
+		check_filename_sequence();
+		
+		const QString&
+		class_id()
+		{
+			return d_class_id;
+		}
 
 	protected:
 		/**
@@ -127,11 +175,12 @@ namespace GPlatesGui
 		 */
 		boost::optional<GPlatesUtils::ExportTemplateFilenameSequence> d_filename_sequence_opt;
 		boost::optional<GPlatesUtils::ExportTemplateFilenameSequence::const_iterator> d_filename_iterator_opt;
+		QString d_class_id;
+		Configuration d_cfg;
 		
 	};
 }
-
-
 #endif //GPLATES_GUI_EXPORTANIMATIONSTRATEGY_H
+
 
 

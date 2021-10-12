@@ -26,7 +26,7 @@
 #ifndef GPLATES_VIEW_OPERATIONS_RECONSTRUCTVIEW_H
 #define GPLATES_VIEW_OPERATIONS_RECONSTRUCTVIEW_H
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 
 
 namespace GPlatesAppLogic
@@ -54,18 +54,16 @@ namespace GPlatesViewOperations
 	 * some view related tasks such as rendering RFGs.
 	 */
 	class ReconstructView :
-			public GPlatesAppLogic::Reconstruct::Hook
+			public GPlatesAppLogic::ApplicationState::ReconstructHook
 	{
 	public:
 		ReconstructView(
 				GPlatesAppLogic::PlateVelocityWorkflow &plate_velocity_workflow,
 				GPlatesAppLogic::PaleomagWorkflow &paleomag_workflow,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				const GPlatesGui::ColourTable &colour_table) :
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection) :
 			d_plate_velocity_workflow(plate_velocity_workflow),
 			d_paleomag_workflow(paleomag_workflow),
-			d_rendered_geom_collection(rendered_geom_collection),
-			d_colour_table(colour_table)
+			d_rendered_geom_collection(rendered_geom_collection)
 		{  }
 
 
@@ -88,7 +86,6 @@ namespace GPlatesViewOperations
 		GPlatesAppLogic::PlateVelocityWorkflow &d_plate_velocity_workflow;
 		GPlatesAppLogic::PaleomagWorkflow &d_paleomag_workflow;
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
-		const GPlatesGui::ColourTable &d_colour_table;
 	};
 }
 

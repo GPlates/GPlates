@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,11 +25,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
 #include <boost/none.hpp>
 
 #include "GpmlFiniteRotation.h"
 #include "GmlPoint.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
 
@@ -39,8 +41,7 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 		const GPlatesMaths::FiniteRotation &finite_rotation)
 {
 	non_null_ptr_type gpml_finite_rotation(
-			new GpmlFiniteRotation(finite_rotation),
-			GPlatesUtils::NullIntrusivePointerHandler());
+			new GpmlFiniteRotation(finite_rotation));
 
 	return gpml_finite_rotation;
 }
@@ -60,7 +61,7 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 	GPlatesMaths::FiniteRotation fr =
 			GPlatesMaths::FiniteRotation::create(
 					p,
-					GPlatesMaths::degreesToRadians(gml_angle_in_degrees));
+					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees));
 
 	return create(fr);
 }
@@ -74,7 +75,7 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 	GPlatesMaths::FiniteRotation fr =
 			GPlatesMaths::FiniteRotation::create(
 					*gpml_euler_pole->point(),
-					GPlatesMaths::degreesToRadians(gml_angle_in_degrees->quantity()));
+					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees->quantity()));
 
 	return create(fr);
 }
@@ -89,8 +90,7 @@ GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation()
 			UnitQuaternion3D::create_identity_rotation(),
 			boost::none);
 
-	non_null_ptr_type finite_rotation_ptr(new GpmlFiniteRotation(fr),
-			GPlatesUtils::NullIntrusivePointerHandler());
+	non_null_ptr_type finite_rotation_ptr(new GpmlFiniteRotation(fr));
 	return finite_rotation_ptr;
 }
 
@@ -128,5 +128,14 @@ GPlatesPropertyValues::calculate_angle(
 	UnitQuaternion3D::RotationParams rp =
 			fr.finite_rotation().unit_quat().get_rotation_params(
 					fr.finite_rotation().axis_hint());
-	return GPlatesMaths::radiansToDegrees(rp.angle);
+	return GPlatesMaths::convert_rad_to_deg(rp.angle);
 }
+
+
+std::ostream &
+GPlatesPropertyValues::GpmlFiniteRotation::print_to(
+		std::ostream &os) const
+{
+	return os << d_finite_rotation;
+}
+

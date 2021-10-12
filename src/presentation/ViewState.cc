@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -26,46 +27,41 @@
 #include "ViewState.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/PaleomagWorkflow.h"
 #include "app-logic/PlateVelocityWorkflow.h"
-#include "app-logic/Reconstruct.h"
 
-#include "gui/AgeColourTable.h"
-#include "gui/ColourSchemeFactory.h"
-#include "gui/ColourTableDelegator.h"
-#include "gui/FeatureColourTable.h"
+#include "gui/ColourSchemeContainer.h"
+#include "gui/ColourSchemeDelegator.h"
 #include "gui/FeatureFocus.h"
 #include "gui/GeometryFocusHighlight.h"
-#include "gui/SingleColourScheme.h"
+#include "gui/MapTransform.h"
+#include "gui/RenderSettings.h"
+#include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
 #include "view-operations/ReconstructView.h"
 #include "view-operations/RenderedGeometryCollection.h"
-#include "view-operations/ViewportProjection.h"
 
+const double GPlatesPresentation::ViewState::INITIAL_VGP_DELTA_T = 5.;
 
 GPlatesPresentation::ViewState::ViewState(
 		GPlatesAppLogic::ApplicationState &application_state) :
 	d_application_state(application_state),
 	d_other_view_state(NULL), // FIXME: remove this when refactored
-	d_reconstruct(
-			new GPlatesAppLogic::Reconstruct(
-					application_state.get_model_interface(),
-					application_state.get_feature_collection_file_state())),
 	d_rendered_geometry_collection(
 			new GPlatesViewOperations::RenderedGeometryCollection()),
-	d_colour_table(
-			new GPlatesGui::ColourTableDelegator(
-					GPlatesGui::ColourSchemeFactory::create_default_plate_id_colour_scheme())),
+	d_colour_scheme_container(
+			new GPlatesGui::ColourSchemeContainer(*this)),
+	d_colour_scheme(
+			new GPlatesGui::ColourSchemeDelegator(*d_colour_scheme_container)),
 	d_viewport_zoom(
 			new GPlatesGui::ViewportZoom()),
 	d_viewport_projection(
-			new GPlatesViewOperations::ViewportProjection(GPlatesGui::ORTHOGRAPHIC)),
+			new GPlatesGui::ViewportProjection(GPlatesGui::ORTHOGRAPHIC)),
 	d_geometry_focus_highlight(
 			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection)),
 	d_feature_focus(
-			new GPlatesGui::FeatureFocus(application_state, *d_reconstruct)),
+			new GPlatesGui::FeatureFocus(application_state)),
 	d_comp_mesh_point_layer(
 			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
 					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
@@ -87,26 +83,24 @@ GPlatesPresentation::ViewState::ViewState(
 					application_state.get_feature_collection_file_state())),
 	d_paleomag_workflow(
 			new GPlatesAppLogic::PaleomagWorkflow(
-					application_state, d_paleomag_layer)),
+					application_state, this, d_paleomag_layer)),
 	d_paleomag_unregister(
 			GPlatesAppLogic::FeatureCollectionWorkflow::register_and_create_auto_unregister_handle(
 					d_paleomag_workflow.get(),
 					application_state.get_feature_collection_file_state())),
 	d_reconstruct_view(
 			new GPlatesViewOperations::ReconstructView(
-					*d_plate_velocity_workflow, *d_paleomag_workflow,*d_rendered_geometry_collection, *d_colour_table)),
-	d_last_single_colour(Qt::white)
+					*d_plate_velocity_workflow, *d_paleomag_workflow,*d_rendered_geometry_collection)),
+	d_render_settings(
+			new GPlatesGui::RenderSettings()),
+	d_map_transform(
+			new GPlatesGui::MapTransform()),
+	d_main_viewport_min_dimension(0)
 {
 	// Call the operations in ReconstructView whenever a reconstruction is generated.
-	d_reconstruct->set_reconstruction_hook(d_reconstruct_view.get());
+	get_application_state().set_reconstruction_hook(d_reconstruct_view.get());
 
 	connect_to_viewport_zoom();
-
-	// Connect to signals from FeatureCollectionFileState.
-	connect_to_file_state();
-
-	// Connect to signals from FeatureCollectionFileIO.
-	connect_to_file_io();
 
 	// Connect to signals from FeatureFocus.
 	connect_to_feature_focus();
@@ -126,13 +120,6 @@ GPlatesAppLogic::ApplicationState &
 GPlatesPresentation::ViewState::get_application_state()
 {
 	return d_application_state;
-}
-
-
-GPlatesAppLogic::Reconstruct &
-GPlatesPresentation::ViewState::get_reconstruct()
-{
-	return *d_reconstruct;
 }
 
 
@@ -157,7 +144,7 @@ GPlatesPresentation::ViewState::get_viewport_zoom()
 }
 
 
-GPlatesViewOperations::ViewportProjection &
+GPlatesGui::ViewportProjection &
 GPlatesPresentation::ViewState::get_viewport_projection()
 {
 	return *d_viewport_projection;
@@ -171,59 +158,53 @@ GPlatesPresentation::ViewState::get_plate_velocity_workflow() const
 }
 
 
-void
-GPlatesPresentation::ViewState::choose_colour_by_feature_type()
+GPlatesGui::ColourSchemeContainer &
+GPlatesPresentation::ViewState::get_colour_scheme_container()
 {
-	d_colour_table->set_target_colour_table(GPlatesGui::FeatureColourTable::Instance());
+	return *d_colour_scheme_container;
+}
+
+
+GPlatesGlobal::PointerTraits<GPlatesGui::ColourScheme>::non_null_ptr_type
+GPlatesPresentation::ViewState::get_colour_scheme()
+{
+	return d_colour_scheme;
+}
+
+
+GPlatesGlobal::PointerTraits<GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
+GPlatesPresentation::ViewState::get_colour_scheme_delegator()
+{
+	return d_colour_scheme;
+}
+
+
+GPlatesGui::RenderSettings &
+GPlatesPresentation::ViewState::get_render_settings()
+{
+	return *d_render_settings;
+}
+
+
+GPlatesGui::MapTransform &
+GPlatesPresentation::ViewState::get_map_transform()
+{
+	return *d_map_transform;
+}
+
+
+int
+GPlatesPresentation::ViewState::get_main_viewport_min_dimension()
+{
+	return d_main_viewport_min_dimension;
 }
 
 
 void
-GPlatesPresentation::ViewState::choose_colour_by_age()
+GPlatesPresentation::ViewState::set_main_viewport_min_dimension(
+		int min_dimension)
 {
-	GPlatesGui::AgeColourTable::Instance()->set_reconstruct_state(get_reconstruct());
-	d_colour_table->set_target_colour_table(GPlatesGui::AgeColourTable::Instance());
-}
-
-
-void
-GPlatesPresentation::ViewState::choose_colour_by_single_colour(
-		const QColor &qcolor)
-{
-	boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme(
-			new GPlatesGui::SingleColourScheme(qcolor));
-	d_colour_table->set_colour_scheme(colour_scheme);
-	d_last_single_colour = qcolor;
-}
-
-
-void
-GPlatesPresentation::ViewState::choose_colour_by_plate_id_default()
-{
-	d_colour_table->set_colour_scheme(
-			GPlatesGui::ColourSchemeFactory::create_default_plate_id_colour_scheme());
-}
-
-
-void
-GPlatesPresentation::ViewState::choose_colour_by_plate_id_regional()
-{
-	d_colour_table->set_colour_scheme(
-			GPlatesGui::ColourSchemeFactory::create_regional_plate_id_colour_scheme());
-}
-
-
-QColor
-GPlatesPresentation::ViewState::get_last_single_colour() const
-{
-	return d_last_single_colour;
-}
-
-
-GPlatesGui::ColourTable *
-GPlatesPresentation::ViewState::get_colour_table()
-{
-	return d_colour_table.get();
+	d_main_viewport_min_dimension = min_dimension;
 }
 
 
@@ -263,6 +244,8 @@ GPlatesPresentation::ViewState::setup_rendered_geometry_collection()
 			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER);
+	orthogonal_main_layers.set(
+			GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
 	d_rendered_geometry_collection->set_orthogonal_main_layers(orthogonal_main_layers);
 }
@@ -278,31 +261,6 @@ GPlatesPresentation::ViewState::connect_to_viewport_zoom()
 
 
 void
-GPlatesPresentation::ViewState::connect_to_file_state()
-{
-	QObject::connect(
-			&d_application_state.get_feature_collection_file_state(),
-			SIGNAL(file_state_changed(
-					GPlatesAppLogic::FeatureCollectionFileState &)),
-			d_reconstruct.get(),
-			SLOT(reconstruct()));
-}
-
-
-void
-GPlatesPresentation::ViewState::connect_to_file_io()
-{
-	QObject::connect(
-			&d_application_state.get_feature_collection_file_io(),
-			SIGNAL(remapped_shapefile_attributes(
-					GPlatesAppLogic::FeatureCollectionFileIO &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_iterator)),
-			d_reconstruct.get(),
-			SLOT(reconstruct()));
-}
-
-
-void
 GPlatesPresentation::ViewState::connect_to_feature_focus()
 {
 	// If the focused feature is modified, we may need to reconstruct to update the view.
@@ -312,7 +270,7 @@ GPlatesPresentation::ViewState::connect_to_feature_focus()
 	QObject::connect(
 			&get_feature_focus(),
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
-			&get_reconstruct(),
+			&get_application_state(),
 			SLOT(reconstruct()));
 
 	// Connect the geometry-focus highlight to the feature focus.

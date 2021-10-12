@@ -26,13 +26,18 @@
 #ifndef GPLATES_QTWIDGETS_CONFIGUREEXPORTPARAMETERSDIALOG_H
 #define GPLATES_QTWIDGETS_CONFIGUREEXPORTPARAMETERSDIALOG_H
 
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+#include <QDebug>
 #include <QDialog>
 #include <QDir>
+#include <QTableWidget>
+#include <QString>
 #include "ConfigureExportParametersDialogUi.h"
 
-
 #include "gui/ExportAnimationContext.h"
-
+#include "utils/ExportFileNameTemplateValidator.h"
+#include "utils/ExportAnimationStrategyExporterID.h"
 
 namespace GPlatesQtWidgets
 {
@@ -50,49 +55,125 @@ namespace GPlatesQtWidgets
 
 		virtual
 		~ConfigureExportParametersDialog()
-		{  }
+		{ }
 	
-	
+		friend class ExportAnimationDialog;
+
+		typedef struct {
+			bool has_been_added;
+			GPlatesUtils::Exporter_ID class_id;
+		} export_item_info;
+
+		enum ExportItemName
+		{
+			RECONSTRUCTED_GEOMETRIES,
+			PROJECTED_GEOMETRIES,
+			MESH_VILOCITIES,
+			RESOLVED_TOPOLOGIES,
+			RELATIVE_ROTATION,
+			EQUIVALENT_ROTATION,
+			RASTER,
+			INVALID_NAME=999
+		};
+
+		enum ExportItemType
+		{
+			GMT,
+			SHAPEFILE,
+			SVG,
+			GPML,
+			CSV_COMMA,
+			CSV_SEMICOLON,
+			CSV_TAB,
+			BMP,
+			JPG,
+			JPEG,
+			PNG,
+			PPM,
+			TIFF,
+			XBM,
+			XPM,
+			INVALID_TYPE=999
+		};
+
+		typedef std::map<ExportItemType, export_item_info> export_type_map_type;
+		typedef std::map<ExportItemName, export_type_map_type > export_item_map_type;
+
+		void
+		init(
+				ExportAnimationDialog*,
+				QTableWidget*);
+
 	private slots:
+		void
+		react_add_item_clicked();
 
 		void
-		react_choose_target_directory_clicked();
+		react_export_items_selection_changed();
 
 		void
-		react_lineedit_target_directory_edited(
-				const QString &text);
+		react_format_selection_changed();
 
 		void
-		react_export_gmt_checked(
-				bool enable);
-
+		react_filename_template_changed();
+		
 		void
-		react_export_shp_checked(
-				bool enable);
-
-		void
-		react_export_svg_checked(
-				bool enable);
-
-		void
-		react_export_velocity_checked(
-				bool enable);
-
-		void
-		react_export_resolved_topology_checked(
-				bool enable);
-
-	private:
+		react_filename_template_changing();
 	
-		/**
-		 * Fills the target directory line edit (might be unnecessary depending on
-		 * how this was triggered, but never mind that), checks validity, and updates
-		 * the Context if we have a valid directory.
-		 */
+	private:
 		void
-		update_target_directory(
-				const QString &new_target);
+		initialize_export_item_map();
 
+		void
+		initialize_export_item_list_widget();
+		
+		static 
+		bool
+		initialize_item_name_and_type_map();
+
+		static 
+		void
+		initialize_item_desc_map();
+
+		bool
+		all_types_has_been_added(
+				export_type_map_type type_map);
+		
+		inline
+		ExportItemName 
+		get_export_item_name(
+				QListWidgetItem* widget_item)
+		{
+			if(ExportItem* item = dynamic_cast<ExportItem*> (widget_item))
+			{
+				return item->itemname_id();
+			}
+			else
+			{
+				qWarning()
+					<<"Unexpected pointer type found in GPlatesQtWidgets::"
+					"ConfigureExportParametersDialog::react_format_selection_changed()";
+				return INVALID_NAME;
+			}
+		};
+
+		inline
+		ExportItemType
+		get_export_item_type(
+				QListWidgetItem* widget_item)
+		{
+			if(ExportTypeItem* item = dynamic_cast<ExportTypeItem*> (widget_item))
+			{
+				return item->itemtype_id();
+			}
+			else
+			{
+				qWarning()
+					<<"Unexpected pointer type found in GPlatesQtWidgets::"
+					"ConfigureExportParametersDialog::react_format_selection_changed()";
+				return INVALID_TYPE;
+			}
+		}
 
 		/**
 		 * The ExportAnimationContext is the Context role of the Strategy pattern
@@ -101,6 +182,54 @@ namespace GPlatesQtWidgets
 		 * It keeps all the actual export parameters.
 		 */
 		GPlatesGui::ExportAnimationContext::non_null_ptr_type d_export_animation_context_ptr;
+
+		static std::map<ExportItemName, QString> d_name_map;
+		static std::map<ExportItemType, QString> d_type_map;
+		static std::map<ExportItemName, QString> d_desc_map;
+
+		class ExportItem :
+			public QListWidgetItem
+		{
+		public:
+			ExportItem(
+					ExportItemName item_id):
+				d_id(item_id)
+			{ }
+
+			ExportItemName
+					itemname_id()
+			{
+				return d_id;
+			}
+
+		private:
+			ExportItemName d_id;
+		};
+
+		class ExportTypeItem :
+			public QListWidgetItem
+		{
+		public:
+			ExportTypeItem(
+					ExportItemType type_id):
+				d_id(type_id)
+			{ }
+
+			ExportItemType
+					itemtype_id()
+			{
+				return d_id;
+			}
+
+		private:
+			ExportItemType d_id;
+		};
+
+		export_item_map_type d_export_item_map;
+		QString d_filename_template;
+
+		static bool dummy;
+
 
 	};
 }

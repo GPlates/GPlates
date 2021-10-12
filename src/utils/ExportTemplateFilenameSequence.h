@@ -42,9 +42,6 @@ namespace GPlatesUtils
 {
 	namespace ExportTemplateFilename
 	{
-		//! Exception when begin and end reconstruction times are equal.
-		class BeginEndTimesEqual;
-
 		//! Exception when reconstruction time increment is zero.
 		class TimeIncrementZero;
 
@@ -62,6 +59,38 @@ namespace GPlatesUtils
 		 * that have filename variation (vary with reconstruction frame/time).
 		 */
 		class NoFilenameVariation;
+
+
+		/**
+		 * Tests for validity of parameters in the filename template.
+		 *
+		 * You'll need to test validity with a try/catch block to trap the two
+		 * exceptions that can be thrown by this function.
+		 *
+		 * @param filename_template is a string containing the filename template.
+		 *
+		 * @throws UnrecognisedFormatString if no format recognised at a '%' char.
+		 * @throws NoFilenameVariation if no formats have filename variation (vary with reconstruction time).
+		 */
+		void
+		validate_filename_template(
+				const QString &filename_template);
+
+
+		/**
+		 * Format string reserved for use by the client.
+		 *
+		 * If this format string is found in the filename template it will not
+		 * be expanded. It is then up to the client to expand this *after*
+		 * the export template filename iterator is dereferenced (dereferencing
+		 * is when the various format strings are expanded). The client is free
+		 * to use and interpret this format string for their own purpose.
+		 *
+		 * An example is exporting resolved plate polygon boundaries where
+		 * this format string is replaced with several different strings for the
+		 * various boundary types being exported.
+		 */
+		const QString PLACEHOLDER_FORMAT_STRING = "%P";
 	}
 
 
@@ -134,18 +163,12 @@ namespace GPlatesUtils
 		 * @throws UnrecognisedFormatString if no format recognised at a '%' char.
 		 * @throws NoFilenameVariation if no formats have filename variation (vary with reconstruction time).
 		 *
-		 * Note that this class originally threw @a BeginEndTimesEqual if begin/end reconstruction times
-		 * were equal - JC has removed this behaviour after incorporating the AnimationSequenceUtils code.
 		 * Having a begin time equal to the end time may seem a little silly, but it should still work
 		 * as a legal time range - only one frame will be written.
 		 *
 		 * @a TimeIncrementZero could still be thrown in principle, although the UI restricts the increment
 		 * to a minimum of 0.01 M. @a IncorrectTimeIncrementSign is similarly possible, though restricted
 		 * through the UI and AnimationSequenceUtils.
-		 *
-		 * @a UnrecognisedFormatString and @a NoFilenameVariation are not yet needed as the user currently
-		 * has no way of modifying the output filename template - this will change in the future, and will
-		 * need to be caught for user feedback.
 		 */
 		ExportTemplateFilenameSequence(
 				const QString &filename_template,
@@ -260,24 +283,6 @@ namespace GPlatesUtils
 
 	namespace ExportTemplateFilename
 	{
-		class BeginEndTimesEqual : public GPlatesGlobal::Exception
-		{
-		public:
-			explicit
-			BeginEndTimesEqual(
-					const GPlatesUtils::CallStack::Trace &src) :
-				Exception(src)
-			{  }
-
-		protected:
-			virtual
-			const char *
-			exception_name() const
-			{
-				return "ExportTemplateFilename::BeginEndTimesEqual";
-			}
-		};
-
 		class TimeIncrementZero : public GPlatesGlobal::Exception
 		{
 		public:

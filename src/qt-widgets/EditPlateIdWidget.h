@@ -65,7 +65,65 @@ namespace GPlatesQtWidgets
 		virtual
 		bool
 		update_property_value_from_widget();
+
+
+		/* Unique to EditPlateIdWidget is the ability to hold a 'None' or null value.
+		 * This has been done for CreateFeatureDialog's sake, to prototype an interface
+		 * which allows a spinbox for conjugate plate IDs to be present but not mandatory.
+		 * This has possible applications for a more generic interface which could
+		 * go in AbstractEditWidget, but we'd need to hammer out how it would look.
+		 */
+		
+		virtual
+		bool
+		supports_null_value() const
+		{
+			return true;
+		}
+		
+		virtual
+		bool
+		permits_null_value() const
+		{
+			return d_null_value_permitted;
+		}
+		
+		virtual
+		void
+		set_null_value_permitted(
+				bool null_permitted)
+		{
+			d_null_value_permitted = null_permitted;
+			if (d_null_value_permitted) {
+				spinbox_plate_id->setSpecialValueText(tr("None"));
+				spinbox_plate_id->setMinimum(-1);
+			} else {
+				spinbox_plate_id->setSpecialValueText("");
+				spinbox_plate_id->setMinimum(0);
+			}
+			button_set_to_null->setVisible(d_null_value_permitted);
+		}
+		
+		virtual
+		bool
+		is_null() const;
+
+		virtual
+		void
+		set_null(
+				bool should_nullify);
 	
+	private slots:
+	
+		/**
+		 * Triggered from button.
+		 */
+		void
+		nullify()
+		{
+			set_null(true);
+		}
+		
 	private:
 
 		/**
@@ -83,6 +141,12 @@ namespace GPlatesQtWidgets
 		 */
 		boost::intrusive_ptr<GPlatesPropertyValues::GpmlPlateId> d_plate_id_ptr;
 
+
+		/**
+		 * Whether we will allow the user to effectively select 'None' as the plate ID.
+		 */
+		bool d_null_value_permitted;
+		
 	};
 }
 

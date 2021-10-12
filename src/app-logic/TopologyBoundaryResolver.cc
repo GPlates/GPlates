@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date: 2008-08-15 02:13:48 -0700 (Fri, 15 Aug 2008) $
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  * Copyright (C) 2008, 2009 California Institute of Technology 
  *
  * This file is part of GPlates.
@@ -30,6 +30,7 @@
 
 #include "TopologyBoundaryResolver.h"
 
+#include "GeometryUtils.h"
 #include "ReconstructionGeometryUtils.h"
 #include "TopologyInternalUtils.h"
 
@@ -59,14 +60,18 @@
 
 // Create a ReconstructedFeatureGeometry for the rotated reference points in each
 // topological polygon.
+// NOTE: This is no longer needed since the rotated reference points are no longer
+// used to choose which partitioned segments contribute to the plate boundary as
+// so the user no longer needs to see these points on the globe.
+#if 0
 #define CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS
+#endif
 
 
 GPlatesAppLogic::TopologyBoundaryResolver::TopologyBoundaryResolver(
-			const double &recon_time,
 			GPlatesModel::Reconstruction &recon) :
-	d_recon_ptr(&recon),
-	d_reconstruction_params(recon_time)
+	d_reconstruction(recon),
+	d_reconstruction_params(recon.get_reconstruction_time())
 {  
 	d_num_topologies = 0;
 }
@@ -77,6 +82,12 @@ GPlatesAppLogic::TopologyBoundaryResolver::initialise_pre_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// super short-cut for features without boundary list properties
+	//
+	// FIXME: Do this check based on feature properties rather than feature type.
+	// So if something looks like a TCPB (because it has a topology polygon property)
+	// then treat it like one. For this to happen we first need TopologicalNetwork to
+	// use a property type different than TopologicalPolygon.
+	//
 	static QString type("TopologicalClosedPlateBoundary");
 	if ( type != GPlatesUtils::make_qstring_from_icu_string(
 			feature_handle.feature_type().get_name() ) ) 
@@ -165,6 +176,12 @@ GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_polygon(
 	process_topological_section_intersections();
 
 	//
+	// Now iterate over the intersection results and assign boundary segments to
+	// each section.
+	//
+	assign_boundary_segments();
+
+	//
 	// Now create the ResolvedTopologicalBoundary.
 	//
 	create_resolved_topology_boundary();
@@ -197,14 +214,18 @@ GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_line_section(
 	const GPlatesModel::FeatureId source_feature_id =
 			gpml_toplogical_line_section.get_source_geometry()->feature_id();
 
-	ResolvedBoundary::Section section(source_feature_id);
+	boost::optional<ResolvedBoundary::Section> section =
+			record_topological_section_reconstructed_geometry(
+					source_feature_id,
+					*gpml_toplogical_line_section.get_source_geometry());
+	if (!section)
+	{
+		// Return without adding topological section to the list of boundary sections.
+		return;
+	}
 
-	record_topological_section_reconstructed_geometry(
-			section,
-			*gpml_toplogical_line_section.get_source_geometry());
-	
 	// Set reverse flag.
-	section.d_use_reverse = gpml_toplogical_line_section.get_reverse_order();
+	section->d_use_reverse = gpml_toplogical_line_section.get_reverse_order();
 
 	// Record start intersection information.
 	if (gpml_toplogical_line_section.get_start_intersection())
@@ -212,7 +233,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_line_section(
 		const GPlatesMaths::PointOnSphere reference_point =
 				*gpml_toplogical_line_section.get_start_intersection()->reference_point()->point();
 
-		section.d_start_intersection = ResolvedBoundary::Intersection(reference_point);
+		section->d_start_intersection = ResolvedBoundary::Intersection(reference_point);
 	}
 
 	// Record end intersection information.
@@ -221,11 +242,11 @@ GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_line_section(
 		const GPlatesMaths::PointOnSphere reference_point =
 				*gpml_toplogical_line_section.get_end_intersection()->reference_point()->point();
 
-		section.d_end_intersection = ResolvedBoundary::Intersection(reference_point);
+		section->d_end_intersection = ResolvedBoundary::Intersection(reference_point);
 	}
 
 	// Add to internal sequence.
-	d_resolved_boundary.d_sections.push_back(section);
+	d_resolved_boundary.d_sections.push_back(*section);
 }
 
 
@@ -236,43 +257,51 @@ GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_point(
 	const GPlatesModel::FeatureId source_feature_id =
 			gpml_toplogical_point.get_source_geometry()->feature_id();
 
-	ResolvedBoundary::Section section(source_feature_id);
-
-	record_topological_section_reconstructed_geometry(
-			section,
-			*gpml_toplogical_point.get_source_geometry());
+	boost::optional<ResolvedBoundary::Section> section =
+			record_topological_section_reconstructed_geometry(
+					source_feature_id,
+					*gpml_toplogical_point.get_source_geometry());
+	if (!section)
+	{
+		// Return without adding topological section to the list of boundary sections.
+		return;
+	}
 
 	// No other information to collect since this topological section is a point and
 	// hence cannot intersect with neighbouring sections.
 
 	// Add to internal sequence.
-	d_resolved_boundary.d_sections.push_back(section);
+	d_resolved_boundary.d_sections.push_back(*section);
 }
 
 
-void
+boost::optional<GPlatesAppLogic::TopologyBoundaryResolver::ResolvedBoundary::Section>
 GPlatesAppLogic::TopologyBoundaryResolver::record_topological_section_reconstructed_geometry(
-		ResolvedBoundary::Section &section,
+		const GPlatesModel::FeatureId &source_feature_id,
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
 {
 	// Get the reconstructed geometry of the topological section's delegate.
 	boost::optional<GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
-					geometry_delegate, d_recon_ptr);
+					geometry_delegate, d_reconstruction);
 
+	// If no RFG was found then it's possible that the current reconstruction time is
+	// outside the age range of the feature this section is referencing.
+	// This is ok - it's not necessarily an error.
+	// We just won't add it to the list of boundary sections. This means either:
+	//  - rubber banding will occur between the two sections adjacent to this section
+	//    since this section is now missing, or
+	//  - one of the adjacent sections did not exist until just now (because of its age range)
+	//    and now it is popping in to replace the current section which is disappearing (an
+	//    example of this is a bunch of sections that are mid-ocean ridge features that do not
+	//    overlap in time and represent different geometries, from isochrons, of the same ridge).
 	if (!source_rfg)
 	{
-		qDebug() << "ERROR: Failed to retrieve GpmlTopologicalSection "
-				"reconstructed feature geometry - skipping line section.";
-		debug_output_topological_section_feature_id(section.d_source_feature_id);
-		return;
+		return boost::none;
 	}
 
-	// Store the RFG.
-	section.d_source_rfg = source_rfg;
-
-	// Store the RFG's unclipped geometry.
-	section.d_subsegment_geom = (*source_rfg)->geometry();
+	// Store the feature id and RFG.
+	return ResolvedBoundary::Section(source_feature_id, *source_rfg);
 }
 
 
@@ -281,13 +310,8 @@ GPlatesAppLogic::TopologyBoundaryResolver::validate_topological_section_intersec
 {
 	// Iterate over our internal sequence of sections that we built up by
 	// visiting the topological sections of a topological polygon.
-	ResolvedBoundary::section_seq_type::const_iterator section_iter =
-			d_resolved_boundary.d_sections.begin();
-	const ResolvedBoundary::section_seq_type::const_iterator section_end =
-			d_resolved_boundary.d_sections.end();
-	for (std::size_t section_index = 0;
-		section_iter != section_end;
-		++section_iter, ++section_index)
+	const std::size_t num_sections = d_resolved_boundary.d_sections.size();
+	for (std::size_t section_index = 0; section_index < num_sections; ++section_index)
 	{
 		validate_topological_section_intersection(section_index);
 	}
@@ -348,13 +372,30 @@ GPlatesAppLogic::TopologyBoundaryResolver::process_topological_section_intersect
 {
 	// Iterate over our internal sequence of sections that we built up by
 	// visiting the topological sections of a topological polygon.
-	ResolvedBoundary::section_seq_type::const_iterator section_iter =
-			d_resolved_boundary.d_sections.begin();
-	const ResolvedBoundary::section_seq_type::const_iterator section_end =
-			d_resolved_boundary.d_sections.end();
-	for (std::size_t section_index = 0;
-		section_iter != section_end;
-		++section_iter, ++section_index)
+	const std::size_t num_sections = d_resolved_boundary.d_sections.size();
+
+	// If there's only one section then don't try to intersect it with itself.
+	if (num_sections < 2)
+	{
+		return;
+	}
+
+	// Special case treatment when there are exactly two sections.
+	// In this case the two sections can intersect twice to form a closed polygon.
+	// This is the only case where two adjacent sections are allowed to intersect twice.
+	if (num_sections == 2)
+	{
+		// NOTE: We use index 1 instead of 0 to match similar code in the topology builder tool.
+		// This makes a difference if the user builds a topology with two sections that only
+		// intersect once (not something the user should be building) and means that the
+		// same topology will be creating here as in the builder.
+		process_topological_section_intersection(1/*section_index*/, true/*two_sections*/);
+		return;
+	}
+
+	// Iterate over the sections and process intersections between each section
+	// and its previous neighbour.
+	for (std::size_t section_index = 0; section_index < num_sections; ++section_index)
 	{
 		process_topological_section_intersection(section_index);
 	}
@@ -363,136 +404,95 @@ GPlatesAppLogic::TopologyBoundaryResolver::process_topological_section_intersect
 
 void
 GPlatesAppLogic::TopologyBoundaryResolver::process_topological_section_intersection(
-		const std::size_t current_section_index)
+		const std::size_t current_section_index,
+		const bool two_sections)
 {
+	//
+	// Intersect the current section with the previous section.
+	//
+
 	const std::size_t num_sections = d_resolved_boundary.d_sections.size();
 
 	ResolvedBoundary::Section &current_section =
 			d_resolved_boundary.d_sections[current_section_index];
 
-	if (current_section.d_start_intersection)
+	//
+	// NOTE: We don't get the start intersection geometry from the GpmlTopologicalIntersection
+	// - instead we get the geometry from the previous section in the topological polygon's
+	// list of sections whose valid time ranges include the current reconstruction time.
+	//
+
+	const std::size_t prev_section_index = (current_section_index == 0)
+			? num_sections - 1
+			: current_section_index - 1;
+
+	ResolvedBoundary::Section &prev_section =
+			d_resolved_boundary.d_sections[prev_section_index];
+
+	// If both sections refer to the same geometry then don't intersect.
+	// This can happen when the same geometry is added more than once to the topology
+	// when it forms different parts of the plate polygon boundary - normally there
+	// are other geometries in between but when building topologies it's possible to
+	// add the geometry as first section, then add another geometry as second section,
+	// then add the first geometry again as the third section and then add another
+	// geometry as the fourth section - before the fourth section is added the
+	// first and third sections are adjacent and they are the same geometry - and if
+	// the topology build/edit tool creates the topology when only three sections are
+	// added then we have to deal with it here in the boundary resolver.
+	if (prev_section.d_source_rfg.get() == current_section.d_source_rfg.get())
 	{
-		//
-		// NOTE: We don't get the start intersection geometry from the GpmlTopologicalIntersection
-		// - instead we get the geometry from the previous section in the topological polygon's
-		// list of sections.
-		//
-		// This assumes that the start intersection geometry is that of the previous section's
-		// which is currently the case.
-		//
-		// By doing this we minimise the number of polyline intersection tests to the number
-		// of topological sections in the topological polygon rather than twice this number
-		// - and this helps speed up the code since approximately 60% of the cpu time spent
-		// resolving topologies is spent in the polyline intersection code.
-		//
+		return;
+	}
 
-		const std::size_t prev_section_index = (current_section_index == 0)
-				? num_sections - 1
-				: current_section_index - 1;
-
-		ResolvedBoundary::Section &prev_section =
-				d_resolved_boundary.d_sections[prev_section_index];
-
-		if (!prev_section.d_end_intersection)
-		{
-			// The previous section did not have an end intersection which means the
-			// topological polygon was not created in a valid state.
-			// We'll just handle this by ignoring the intersection and keeping the
-			// current section geometries as they are.
-			qDebug() << "ERROR: Expected previous GpmlTopologicalSection to have "
-					"end intersection - ignoring intersection.";
-			debug_output_topological_section_feature_id(prev_section.d_source_feature_id);
-			return;
-		}
-
-		// If we were unable to retrieve the reconstructed geometries for the
-		// previous and current sections then we can't do an intersection.
-		if (!prev_section.d_subsegment_geom)
-		{
-			qDebug() << "ERROR: Don't have topological section geometry for intersection - "
-					"ignoring intersection.";
-			debug_output_topological_section_feature_id(prev_section.d_source_feature_id);
-			return;
-		}
-		if (!current_section.d_subsegment_geom)
-		{
-			qDebug() << "ERROR: Don't have topological section geometry for intersection - "
-					"ignoring intersection.";
-			debug_output_topological_section_feature_id(current_section.d_source_feature_id);
-			return;
-		}
-
-		// Get the rotation used to rotate the previous section's reference point.
-		// NOTE: we use the section itself as the reference feature rather than the
-		// feature stored in the gpml:endIntersection.
-		const boost::optional<GPlatesMaths::FiniteRotation> prev_section_rotation =
-				TopologyInternalUtils::get_finite_rotation(
-						(*prev_section.d_source_rfg)->get_feature_ref(),
-						d_recon_ptr->reconstruction_tree());
-		if (prev_section_rotation)
-		{
-			// Reconstruct the reference point.
-			prev_section.d_end_intersection->d_reconstructed_reference_point =
-					*prev_section_rotation * prev_section.d_end_intersection->d_reference_point;
-		}
-		else
-		{
-			qDebug() << "ERROR: No 'reconstructionPlateId' rotation found - using unrotated point.";
-			debug_output_topological_section_feature_id(prev_section.d_source_feature_id);
-			// No rotation was found so just use the unrotated point.
-			prev_section.d_end_intersection->d_reconstructed_reference_point =
-					prev_section.d_end_intersection->d_reference_point;
-		}
-
-		// Get the rotation used to rotate the next section's reference point.
-		// NOTE: we use the section itself as the reference feature rather than the
-		// feature stored in the gpml:startIntersection.
-		const boost::optional<GPlatesMaths::FiniteRotation> current_section_rotation =
-				TopologyInternalUtils::get_finite_rotation(
-						(*current_section.d_source_rfg)->get_feature_ref(),
-						d_recon_ptr->reconstruction_tree());
-		if (current_section_rotation)
-		{
-			// Reconstruct the reference point.
-			current_section.d_start_intersection->d_reconstructed_reference_point =
-					*current_section_rotation * current_section.d_start_intersection->d_reference_point;
-		}
-		else
-		{
-			qDebug() << "ERROR: No 'reconstructionPlateId' rotation found - using unrotated point.";
-			debug_output_topological_section_feature_id(current_section.d_source_feature_id);
-			// No rotation was found so just use the unrotated point.
-			current_section.d_start_intersection->d_reconstructed_reference_point =
-					current_section.d_start_intersection->d_reference_point;
-		}
-
-		// Intersect the previous section with the current section and find the intersected
-		// segments that are closest to the respective rotated reference points.
-		boost::tuple<
-				boost::optional<GPlatesMaths::PointOnSphere>/*intersection point*/, 
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type/*first_section_closest_segment*/,
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type/*second_section_closest_segment*/>
-			closest_segments =
-				TopologyInternalUtils::intersect_topological_sections(
-						prev_section.d_subsegment_geom.get(),
-						*prev_section.d_end_intersection->d_reconstructed_reference_point,
-						current_section.d_subsegment_geom.get(),
-						*current_section.d_start_intersection->d_reconstructed_reference_point);
-
-		// Store the closest intersected segments back into the sequence of sections.
-		// The current segment might even get clipped again when it intersects with the next
-		// section (which would happen when we visit the next topological section).
-		prev_section.d_subsegment_geom = boost::get<1>(closest_segments);
-		current_section.d_subsegment_geom = boost::get<2>(closest_segments);
+	//
+	// Process the actual intersection.
+	//
+	if (two_sections)
+	{
+		current_section.d_intersection_results.
+				intersect_with_previous_section_allowing_two_intersections(
+						prev_section.d_intersection_results);
+	}
+	else
+	{
+		current_section.d_intersection_results.intersect_with_previous_section(
+				prev_section.d_intersection_results,
+				prev_section.d_use_reverse);
 	}
 
 	// NOTE: We don't need to look at the end intersection because the next topological
 	// section that we visit will have this current section as its start intersection and
-	// hence the intersection of the current section and the next section will be taken care of.
-	//
-	// This assumes that the next section's start intersection will refer to the
-	// current section if the current section's end intersection refers to the next section.
-	// Like a doubly-linked list. This should be true with the current topology tools.
+	// hence the intersection of this current section and its next section will be
+	// taken care of during that visit.
+}
+
+
+void
+GPlatesAppLogic::TopologyBoundaryResolver::assign_boundary_segments()
+{
+	// Make sure all the boundary segments have been found.
+	// It is an error in the code (not in the data) if this is not the case.
+	const std::size_t num_sections = d_resolved_boundary.d_sections.size();
+	for (std::size_t section_index = 0; section_index < num_sections; ++section_index)
+	{
+		assign_boundary_segment(section_index);
+	}
+}
+
+
+void
+GPlatesAppLogic::TopologyBoundaryResolver::assign_boundary_segment(
+		const std::size_t section_index)
+{
+	ResolvedBoundary::Section &section = d_resolved_boundary.d_sections[section_index];
+
+	// See if the reverse flag has been set by intersection processing - this
+	// happens if the visible section intersected both its neighbours otherwise it just
+	// returns the flag we passed it.
+	section.d_use_reverse = section.d_intersection_results.get_reverse_flag(section.d_use_reverse);
+
+	section.d_final_boundary_segment_unreversed_geom =
+			section.d_intersection_results.get_unreversed_boundary_segment(section.d_use_reverse);
 }
 
 
@@ -522,30 +522,33 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 	{
 		const ResolvedBoundary::Section &section = *section_iter;
 
-		// If we were unable to retrieve the reconstructed section geometry then
-		// skip the current section - it will not be part of the polygon boundary.
-		if (!section.d_source_rfg || !section.d_subsegment_geom)
+		// It's possible for a valid segment to not contribute to the boundary
+		// of the plate polygon. This can happen if it contributes zero-length
+		// to the plate boundary which happens when both its neighbouring
+		// boundary sections intersect it at the same point.
+		if (!section.d_final_boundary_segment_unreversed_geom)
 		{
 			continue;
 		}
 
 		// Get the subsegment feature reference.
 		const GPlatesModel::FeatureHandle::weak_ref subsegment_feature_ref =
-				(*section.d_source_rfg)->get_feature_ref();
-		const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_const_ref(
-				GPlatesModel::FeatureHandle::get_const_weak_ref(subsegment_feature_ref));
+				section.d_source_rfg->get_feature_ref();
+		const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_const_ref(subsegment_feature_ref);
 
 		// Create a subsegment structure that'll get used when
 		// creating the resolved topological geometry.
 		const GPlatesModel::ResolvedTopologicalBoundary::SubSegment output_subsegment(
-				section.d_subsegment_geom.get(),
+				section.d_final_boundary_segment_unreversed_geom.get(),
 				subsegment_feature_const_ref,
 				section.d_use_reverse);
 		output_subsegments.push_back(output_subsegment);
 
 		// Append the subsegment geometry to the plate polygon points.
-		TopologyInternalUtils::get_geometry_points(
-				*section.d_subsegment_geom.get(), polygon_points, section.d_use_reverse);
+		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+				*section.d_final_boundary_segment_unreversed_geom.get(),
+				polygon_points,
+				section.d_use_reverse);
 
 #if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
 		// If there are any intersections then record the rotated reference points
@@ -589,15 +592,15 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 	GPlatesModel::ResolvedTopologicalBoundary::non_null_ptr_type rtg_ptr =
 		GPlatesModel::ResolvedTopologicalBoundary::create(
 			*plate_polygon,
-			*current_top_level_propiter()->collection_handle_ptr(),
-			*current_top_level_propiter(),
+			*(current_top_level_propiter()->handle_weak_ref()),
+			*(current_top_level_propiter()),
 			output_subsegments.begin(),
 			output_subsegments.end(),
 			d_reconstruction_params.get_recon_plate_id(),
 			d_reconstruction_params.get_time_of_appearance());
 
 	ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-			rtg_ptr, d_recon_ptr);
+			rtg_ptr, d_reconstruction);
 
 #if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
 	//
@@ -611,11 +614,11 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 		GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_type rotated_reference_points_rfg =
 			GPlatesModel::ReconstructedFeatureGeometry::create(
 				rotated_reference_points_geom,
-				*current_top_level_propiter()->collection_handle_ptr(),
-				*current_top_level_propiter());
+				*(current_top_level_propiter()->handle_weak_ref()),
+				*(current_top_level_propiter()));
 
 		ReconstructionGeometryUtils::add_reconstruction_geometry_to_reconstruction(
-				rotated_reference_points_rfg, d_recon_ptr);
+				rotated_reference_points_rfg, d_reconstruction);
 	}
 #endif // if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
 }

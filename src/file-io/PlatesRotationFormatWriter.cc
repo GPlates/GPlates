@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,8 +26,11 @@
  */
 
 #include "PlatesRotationFormatWriter.h"
+
 #include <ostream>
 #include <vector>
+#include <unicode/ustream.h>
+#include <boost/none.hpp>
 
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
@@ -41,14 +44,13 @@
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/XsString.h"
 
+#include "maths/MathsUtils.h"
 #include "maths/Real.h"
 #include "maths/PolylineOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/UnitQuaternion3D.h"
+
 #include "utils/StringFormattingUtils.h"
-#include "utils/MathUtils.h"
-#include <unicode/ustream.h>
-#include <boost/none.hpp>
 
 
 namespace
@@ -80,6 +82,20 @@ namespace
 			<< " !"
 			<< comment
 			<< std::endl;
+	}
+}
+
+
+GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatWriter(
+		const FileInfo &file_info)
+{
+	d_output.reset(new std::ofstream(file_info.get_qfileinfo().filePath().toStdString().c_str()));
+
+	// Check whether the file could be opened for writing.
+	if (!(*d_output))
+	{
+		throw ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
+				file_info.get_qfileinfo().filePath());
 	}
 }
 
@@ -125,7 +141,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 				GPlatesMaths::make_lat_lon_point(GPlatesMaths::PointOnSphere(rot_params.axis));
 
 			print_rotation_line_details(os, moving_plate_id_or_comment, *(iter->time),
-					pole.latitude(), pole.longitude(), GPlatesUtils::convert_rad_to_deg(rot_params.angle.dval()),
+					pole.latitude(), pole.longitude(), GPlatesMaths::convert_rad_to_deg(rot_params.angle.dval()),
 					*fixed_plate_id, str_comment);
 		}
 	}
@@ -169,7 +185,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::finalise_post_feature_properties(
 {
 	// Print reconstruction poles when we can.
 	if (d_accum.have_sufficient_info_for_output()) {
-		d_accum.print_rotation_lines(d_output);
+		d_accum.print_rotation_lines(d_output.get());
 	}
 }
 

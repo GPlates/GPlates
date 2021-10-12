@@ -28,6 +28,9 @@
 #ifndef GPLATES_GUI_CSVEXPORT_H
 #define GPLATES_GUI_CSVEXPORT_H
 
+#include <iostream>
+#include <fstream>
+#include <QTableWidget>
 namespace GPlatesGui {
 
 	/**
@@ -36,6 +39,7 @@ namespace GPlatesGui {
 	class CsvExport
 	{
 	public:
+		typedef std::vector<QString> LineDataType;
 		/**
 		 * This struct is used to specify what variant of CSV to write.
 		 */
@@ -48,7 +52,7 @@ namespace GPlatesGui {
 			//       quote character
 			//       how to escape quote character
 		};
-
+			
 		/**
 		 * Export the contents of the QTableWidget table to the file filename in csv form. 
 		 */
@@ -59,6 +63,21 @@ namespace GPlatesGui {
 				const ExportOptions &options,
 				const QTableWidget &table);
 
+		
+		static
+		void
+		export_line(
+				std::ofstream &os,
+				const ExportOptions &options,
+				const LineDataType &line_data);
+
+		static
+		void
+		export_data(
+				const QString &filename,
+				const ExportOptions &options,
+				const std::vector<LineDataType> &data);
+	
 	};
 
 }

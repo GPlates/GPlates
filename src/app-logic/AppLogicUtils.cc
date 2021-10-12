@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,7 +27,6 @@
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
-#include "model/ConstFeatureVisitor.h"
 
 
 void
@@ -38,10 +37,10 @@ GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 	// Before we dereference the weak_ref be sure that it's valid to dereference.
 	if (feature_collection.is_valid())
 	{
-		GPlatesModel::FeatureCollectionHandle::features_iterator iter =
-				feature_collection->features_begin();
-		GPlatesModel::FeatureCollectionHandle::features_iterator end =
-				feature_collection->features_end();
+		GPlatesModel::FeatureCollectionHandle::iterator iter =
+				feature_collection->begin();
+		GPlatesModel::FeatureCollectionHandle::iterator end =
+				feature_collection->end();
 		for ( ; iter != end; ++iter)
 		{
 			// 'visit_feature' method checks for valid iterator.
@@ -59,10 +58,10 @@ GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 	// Before we dereference the weak_ref be sure that it's valid to dereference.
 	if (feature_collection.is_valid())
 	{
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator iter =
-				feature_collection->features_begin();
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator end =
-				feature_collection->features_end();
+		GPlatesModel::FeatureCollectionHandle::const_iterator iter =
+				feature_collection->begin();
+		GPlatesModel::FeatureCollectionHandle::const_iterator end =
+				feature_collection->end();
 		for ( ; iter != end; ++iter)
 		{
 			// 'visit_feature' method checks for valid iterator.
@@ -80,12 +79,11 @@ GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 	// Before we dereference the weak_ref be sure that it's valid to dereference.
 	if (feature_collection.is_valid())
 	{
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref const_feature_collection =
-				GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(feature_collection);
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator iter =
-				const_feature_collection->features_begin();
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator end =
-				const_feature_collection->features_end();
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref const_feature_collection = feature_collection;
+		GPlatesModel::FeatureCollectionHandle::const_iterator iter =
+				const_feature_collection->begin();
+		GPlatesModel::FeatureCollectionHandle::const_iterator end =
+				const_feature_collection->end();
 		for ( ; iter != end; ++iter)
 		{
 			// 'visit_feature' method checks for valid iterator.

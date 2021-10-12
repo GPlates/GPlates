@@ -2,12 +2,12 @@
 
 /**
  * \file 
- * Contains the definitions of the member functions of the class FeatureRevision.
+ * Contains the implementation of the FeatureRevision class.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,27 +26,76 @@
  */
 
 #include "FeatureRevision.h"
-#include "DummyTransactionHandle.h"
 
 
-GPlatesModel::container_size_type
-GPlatesModel::FeatureRevision::append_top_level_property(
-		TopLevelProperty::non_null_ptr_type new_top_level_property,
-		DummyTransactionHandle &transaction)
+const GPlatesModel::FeatureRevision::non_null_ptr_type
+GPlatesModel::FeatureRevision::create(
+		const RevisionId &revision_id_)
 {
-	// FIXME:  Use the TransactionHandle properly to perform revisioning.
-	d_properties.push_back(get_intrusive_ptr(new_top_level_property));
-	return (size() - 1);
+	return non_null_ptr_type(
+			new FeatureRevision(
+				revision_id_));
+}
+
+
+const GPlatesModel::FeatureRevision::non_null_ptr_type
+GPlatesModel::FeatureRevision::clone() const
+{
+	return non_null_ptr_type(
+			new FeatureRevision(
+				*this));
+}
+
+
+const GPlatesModel::FeatureRevision::non_null_ptr_type
+GPlatesModel::FeatureRevision::clone(
+		const property_predicate_type &clone_properties_predicate) const
+{
+	return non_null_ptr_type(
+			new FeatureRevision(
+				*this,
+				clone_properties_predicate));
+}
+
+
+const GPlatesModel::RevisionId &
+GPlatesModel::FeatureRevision::revision_id() const
+{
+	return d_revision_id;
 }
 
 
 void
-GPlatesModel::FeatureRevision::remove_top_level_property(
-		container_size_type index,
-		DummyTransactionHandle &transaction)
+GPlatesModel::FeatureRevision::update_revision_id()
 {
-	// FIXME:  Use the TransactionHandle properly to perform revisioning.
-	if (index < size()) {
-		d_properties[index] = NULL;
-	}
+	d_revision_id = RevisionId();
 }
+
+
+GPlatesModel::FeatureRevision::FeatureRevision(
+		const RevisionId &revision_id_) :
+	d_revision_id(revision_id_)
+{
+}
+
+
+GPlatesModel::FeatureRevision::FeatureRevision(
+		const this_type &other) :
+	BasicRevision<FeatureHandle>(other),
+	GPlatesUtils::ReferenceCount<FeatureRevision>(),
+	d_revision_id() /* new revision ID if we clone a feature */
+{
+}
+
+
+GPlatesModel::FeatureRevision::FeatureRevision(
+		const this_type &other,
+		const property_predicate_type &clone_properties_predicate) :
+	BasicRevision<FeatureHandle>(
+			other,
+			clone_properties_predicate),
+	GPlatesUtils::ReferenceCount<FeatureRevision>(),
+	d_revision_id() /* new revision ID if we clone a feature */
+{
+}
+

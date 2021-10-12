@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -118,22 +118,21 @@ namespace GPlatesAppLogic
 		bool
 		get_geometry_property_iterator(
 				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::FeatureHandle::properties_iterator &properties_iterator);
+				GPlatesModel::FeatureHandle::iterator &properties_iterator);
 
 
 		/**
 		 * Visits a @a ReconstructionGeometry to get a plate id (the plate id could be
 		 * a reconstruction plate id in @a ReconstructedFeatureGeometry or a plate id
 		 * to assign to other features in @a ResolvedTopologicalBoundary).
-		 * Returns false if derived type of reconstruction geometry has no plate id.
+		 * Returns boost::none if derived type of reconstruction geometry has no plate id.
 		 * NOTE: @a reconstruction_geom_ptr can be anything that acts like a const or
 		 * non-const pointer to a @a ReconstructionGeometry.
 		 */
 		template <typename ReconstructionGeometryPointer>
-		bool
+		const boost::optional<GPlatesModel::integer_plate_id_type>
 		get_plate_id(
-				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::integer_plate_id_type &plate_id);
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
 
 		/**
@@ -156,7 +155,7 @@ namespace GPlatesAppLogic
 		void
 		add_reconstruction_geometry_to_reconstruction(
 				GPlatesModel::ReconstructionGeometry::non_null_ptr_type recon_geom,
-				GPlatesModel::Reconstruction *reconstruction);
+				GPlatesModel::Reconstruction &reconstruction);
 
 
 		////////////////////
@@ -415,7 +414,7 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 				public GPlatesModel::ConstReconstructionGeometryVisitor
 		{
 		public:
-			const boost::optional<GPlatesModel::FeatureHandle::properties_iterator> &
+			const boost::optional<GPlatesModel::FeatureHandle::iterator> &
 			get_property() const
 			{
 				return d_property;
@@ -446,7 +445,7 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 			}
 
 		private:
-			boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_property;
+			boost::optional<GPlatesModel::FeatureHandle::iterator> d_property;
 		};
 
 
@@ -454,14 +453,14 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 		bool
 		get_geometry_property_iterator(
 				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::FeatureHandle::properties_iterator &properties_iterator)
+				GPlatesModel::FeatureHandle::iterator &properties_iterator)
 		{
 			GetGeometryProperty get_geometry_property_visitor;
 			reconstruction_geom_ptr->accept_visitor(get_geometry_property_visitor);
 
-			const boost::optional<GPlatesModel::FeatureHandle::properties_iterator> &property_opt =
+			const boost::optional<GPlatesModel::FeatureHandle::iterator> &property_opt =
 					get_geometry_property_visitor.get_property();
-			if (!property_opt || !property_opt->is_valid())
+			if (!property_opt || !property_opt->is_still_valid())
 			{
 				return false;
 			}
@@ -512,24 +511,13 @@ DECLARE_RECONSTRUCTION_GEOMETRY_DERIVED_TYPE_FINDER(GPlatesModel::ResolvedTopolo
 
 
 		template <typename ReconstructionGeometryPointer>
-		bool
+		const boost::optional<GPlatesModel::integer_plate_id_type>
 		get_plate_id(
-				ReconstructionGeometryPointer reconstruction_geom_ptr,
-				GPlatesModel::integer_plate_id_type &plate_id)
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
 		{
 			GetPlateId get_plate_id_visitor;
 			reconstruction_geom_ptr->accept_visitor(get_plate_id_visitor);
-
-			const boost::optional<GPlatesModel::integer_plate_id_type> &plate_id_opt =
-					get_plate_id_visitor.get_plate_id();
-			if (!plate_id_opt)
-			{
-				return false;
-			}
-
-			plate_id = *plate_id_opt;
-
-			return true;
+			return get_plate_id_visitor.get_plate_id();
 		}
 
 

@@ -32,7 +32,7 @@
 #include "StructurePropertyCreatorMap.h"
 #include "GpmlReaderUtils.h"
 #include "utils/UnicodeStringUtils.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -93,6 +93,27 @@ namespace
 			out = tmp;
 		}
 		return success;
+	}
+
+
+	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
+	get_xml_attributes_from_child(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+			const GPlatesModel::PropertyName &prop_name)
+	{
+		GPlatesModel::XmlElementNode::named_child_const_iterator
+			iter = elem->get_next_child_by_name(prop_name, elem->children_begin());
+
+		if (iter.first == elem->children_end())
+		{
+			// We didn't find the property, return empty map.
+			return std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>();
+		}
+
+		GPlatesModel::XmlElementNode::non_null_ptr_type target = *iter.second;
+		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> result(
+				target->attributes_begin(), target->attributes_end());
+		return result;
 	}
 
 
@@ -277,7 +298,7 @@ namespace
 
 
 	QString
-	create_string(
+	create_string_without_trimming(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
 	{
 		TextExtractionVisitor visitor;
@@ -290,8 +311,16 @@ namespace
 			throw GpmlReaderException(elem, GPlatesFileIO::ReadErrors::InvalidString,
 					EXCEPTION_SOURCE);
 		}
-		// Trim everything:
-		return visitor.get_text().trimmed();
+
+		return visitor.get_text();
+	}
+
+
+	QString
+	create_string(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
+	{
+		return create_string_without_trimming(elem).trimmed();
 	}
 
 
@@ -904,10 +933,10 @@ GPlatesFileIO::PropertyCreationUtils::create_time_instant(
 	GPlatesPropertyValues::GeoTimeInstant
 		time = find_and_create_one(elem, &create_geo_time_instant, TIME_POSITION);
 
-	// FIXME: The xml_attrs should be read from the timePosition property.
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-		xml_attrs(elem->attributes_begin(), elem->attributes_end());
-	return GPlatesPropertyValues::GmlTimeInstant::create(time, xml_attrs);
+	// The XML attributes are read from the timePosition property, not the TimeInstant property.
+	return GPlatesPropertyValues::GmlTimeInstant::create(
+			time,
+			get_xml_attributes_from_child(elem, TIME_POSITION));
 }
 
 
@@ -968,7 +997,7 @@ GPlatesFileIO::PropertyCreationUtils::create_time_sample(
 		VALUE_TYPE = GPlatesModel::PropertyName::create_gpml("valueType"),
 		VALUE = GPlatesModel::PropertyName::create_gpml("value"),
 		VALID_TIME = GPlatesModel::PropertyName::create_gpml("validTime"),
-		DESCRIPTION = GPlatesModel::PropertyName::create_gpml("description"),
+		DESCRIPTION = GPlatesModel::PropertyName::create_gml("description"),
 		IS_DISABLED = GPlatesModel::PropertyName::create_gpml("isDisabled");
 
 	GPlatesModel::XmlElementNode::non_null_ptr_type 
@@ -981,7 +1010,7 @@ GPlatesFileIO::PropertyCreationUtils::create_time_sample(
 	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
 		valid_time = find_and_create_one(elem, &create_time_instant, VALID_TIME);
 	boost::optional<QString>
-		description = find_and_create_optional(elem, &create_string, DESCRIPTION);
+		description = find_and_create_optional(elem, &create_string_without_trimming, DESCRIPTION);
 	boost::optional<bool>
 		is_disabled = find_and_create_optional(elem, &create_boolean, IS_DISABLED);
 

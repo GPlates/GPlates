@@ -12,7 +12,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2006, 2007, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -38,10 +38,8 @@
 
 #include "model/Model.h"
 #include "model/ModelInterface.h"
-#include "model/FeatureStore.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureCollectionRevision.h"
-#include "model/DummyTransactionHandle.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
 #include "model/ModelUtils.h"
@@ -60,7 +58,7 @@
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsString.h"
@@ -83,7 +81,7 @@ create_isochron(
 {
 	GPlatesModel::FeatureType feature_type = GPlatesModel::FeatureType::create_gpml("Isochron");
 	GPlatesModel::FeatureHandle::weak_ref feature_handle =
-			model->create_feature(feature_type, target_collection);
+			GPlatesModel::FeatureHandle::create(target_collection, feature_type);
 
 	const std::vector<double> coords_vector(coords, coords + num_coords);
 
@@ -91,11 +89,12 @@ create_isochron(
 	// "gpml:reconstructionPlateId" property.
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type recon_plate_id =
 			GPlatesPropertyValues::GpmlPlateId::create(plate_id);
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			GPlatesModel::ModelUtils::create_gpml_constant_value(recon_plate_id, 
-				GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId")),
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"), 
-			feature_handle);
+	feature_handle->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+				GPlatesModel::ModelUtils::create_gpml_constant_value(
+					recon_plate_id, 
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));
 
 	std::list<GPlatesMaths::PointOnSphere> points;
 	GPlatesMaths::populate_point_on_sphere_sequence(points, coords_vector);
@@ -110,29 +109,34 @@ create_isochron(
 					gml_orientable_curve, 
 					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
 
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			property_value, 
-			GPlatesModel::PropertyName::create_gpml("centerLineOf"), feature_handle);
+	feature_handle->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gpml("centerLineOf"),
+				property_value));
 
 	GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_valid_time =
 			GPlatesModel::ModelUtils::create_gml_time_period(
 					geo_time_instant_begin, geo_time_instant_end);
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gml_valid_time, 
-			GPlatesModel::PropertyName::create_gml("validTime"), feature_handle);
+	feature_handle->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("validTime"),
+				gml_valid_time));
 
 	GPlatesPropertyValues::XsString::non_null_ptr_type gml_description = 
 			GPlatesPropertyValues::XsString::create(geographic_description);
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gml_description, 
-			GPlatesModel::PropertyName::create_gml("description"), feature_handle);
+	feature_handle->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("description"),
+				gml_description));
 
 	GPlatesPropertyValues::XsString::non_null_ptr_type gml_name =
 			GPlatesPropertyValues::XsString::create(name);
-	GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gml_name, 
-			GPlatesModel::PropertyName::create_gml("name"), 
-			"codeSpace", codespace_of_name, feature_handle);
+	feature_handle->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gml("name"),
+				gml_name, 
+				"codeSpace",
+				codespace_of_name));
 
 	return feature_handle;
 }
@@ -256,9 +260,9 @@ populate_feature_store(
 #endif
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref isochrons =
-			model->create_feature_collection();
+			GPlatesModel::FeatureCollectionHandle::create(model->root());
 	GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs =
-			model->create_feature_collection();
+			GPlatesModel::FeatureCollectionHandle::create(model->root());
 
 	static const unsigned long plate_id1 = 501;
 	// lon, lat, lon, lat... is how GML likes it.
@@ -411,8 +415,8 @@ populate_feature_store(
 
 void
 output_as_gpml(
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator begin,
-		GPlatesModel::FeatureCollectionHandle::features_const_iterator end)
+		GPlatesModel::FeatureCollectionHandle::const_iterator begin,
+		GPlatesModel::FeatureCollectionHandle::const_iterator end)
 {
 	QFile standard_output;
 	standard_output.open(stdout, QIODevice::WriteOnly);
@@ -426,10 +430,10 @@ output_as_gpml(
 
 void
 output_reconstructions(
-		GPlatesModel::FeatureCollectionHandle::features_iterator isochrons_begin,
-		GPlatesModel::FeatureCollectionHandle::features_iterator isochrons_end,
-		GPlatesModel::FeatureCollectionHandle::features_iterator total_recon_seqs_begin,
-		GPlatesModel::FeatureCollectionHandle::features_iterator total_recon_seqs_end)
+		GPlatesModel::FeatureCollectionHandle::iterator isochrons_begin,
+		GPlatesModel::FeatureCollectionHandle::iterator isochrons_end,
+		GPlatesModel::FeatureCollectionHandle::iterator total_recon_seqs_begin,
+		GPlatesModel::FeatureCollectionHandle::iterator total_recon_seqs_end)
 {
 	static const double recon_times_to_test[] = {
 		0.0,
@@ -451,7 +455,7 @@ output_reconstructions(
 
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
 
-		GPlatesModel::FeatureCollectionHandle::features_iterator iter1 =
+		GPlatesModel::FeatureCollectionHandle::iterator iter1 =
 				total_recon_seqs_begin;
 		for ( ; iter1 != total_recon_seqs_end; ++iter1) {
 			rtp.visit_feature(iter1);
@@ -459,17 +463,14 @@ output_reconstructions(
 
 		std::cout << "\n--> Building tree, root node: 501\n";
 		GPlatesModel::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(501);
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> empty_vector;
 		GPlatesModel::Reconstruction::non_null_ptr_type reconstruction =
-				GPlatesModel::Reconstruction::create(tree, empty_vector);
+				GPlatesModel::Reconstruction::create(tree);
 
 		traverse_recon_tree(reconstruction->reconstruction_tree());
 
-		GPlatesAppLogic::ReconstructedFeatureGeometryPopulator rfgp(recon_time, 501,
-				*reconstruction,
-				reconstruction->reconstruction_tree());
+		GPlatesAppLogic::ReconstructedFeatureGeometryPopulator rfgp(*reconstruction);
 
-		GPlatesModel::FeatureCollectionHandle::features_iterator iter2 = isochrons_begin;
+		GPlatesModel::FeatureCollectionHandle::iterator iter2 = isochrons_begin;
 		for ( ; iter2 != isochrons_end; ++iter2) {
 			rfgp.visit_feature(iter2);
 		}
@@ -543,13 +544,11 @@ main(int argc, char *argv[])
 					::populate_feature_store(model);
 
 	GPlatesModel::FeatureCollectionHandle::const_weak_ref isochrons =
-			GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
-					isochrons_and_total_recon_seqs.first);
+			isochrons_and_total_recon_seqs.first;
 	GPlatesModel::FeatureCollectionHandle::const_weak_ref total_recon_seqs =
-			GPlatesModel::FeatureCollectionHandle::get_const_weak_ref(
-					isochrons_and_total_recon_seqs.second);
+			isochrons_and_total_recon_seqs.second;
 
-	::output_as_gpml(isochrons->features_begin(), isochrons->features_end());
+	::output_as_gpml(isochrons->begin(), isochrons->end());
 //	::output_reconstructions(isochrons->features_begin(), isochrons->features_end(),
 //			total_recon_seqs->features_begin(), total_recon_seqs->features_end());
 
@@ -569,7 +568,7 @@ main(int argc, char *argv[])
 
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref features =
 				file->get_const_feature_collection();
-		::output_as_gpml(features->features_begin(), features->features_end());
+		::output_as_gpml(features->begin(), features->end());
 
 #if 0
 		QFile file(filename);

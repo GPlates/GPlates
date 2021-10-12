@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Contains implementation of MeasureDistanceState
+ * Contains the implementation of the MeasureDistanceState class.
  *
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,11 +26,14 @@
  */
 
 #include "MeasureDistanceState.h"
+
+#include "maths/MathsUtils.h"
+
 #include "view-operations/GeometryBuilder.h"
 #include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/GeometryType.h"
 #include "view-operations/RenderedGeometryLayer.h"
-#include "utils/MathUtils.h"
+
 
 namespace
 {
@@ -314,7 +317,7 @@ void
 GPlatesCanvasTools::MeasureDistanceState::set_radius(
 		real_t radius)
 {
-	if (!GPlatesUtils::are_almost_exactly_equal(radius.dval(), d_radius.dval()))
+	if (!GPlatesMaths::are_almost_exactly_equal(radius.dval(), d_radius.dval()))
 	{
 		d_radius = radius;
 		emit_quick_measure_updated();

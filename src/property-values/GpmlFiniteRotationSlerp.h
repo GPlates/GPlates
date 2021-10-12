@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -46,20 +46,15 @@ namespace GPlatesPropertyValues {
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp> non_null_ptr_to_const_type;
 
 		virtual
 		~GpmlFiniteRotationSlerp() {  }
@@ -73,19 +68,27 @@ namespace GPlatesPropertyValues {
 		const non_null_ptr_type
 		create(
 				const TemplateTypeParameterType &value_type_) {
-			non_null_ptr_type ptr(new GpmlFiniteRotationSlerp(value_type_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			non_null_ptr_type ptr(new GpmlFiniteRotationSlerp(value_type_));
 			return ptr;
 		}
 
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GpmlFiniteRotationSlerp::non_null_ptr_type
 		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(
-					new GpmlFiniteRotationSlerp(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			GpmlFiniteRotationSlerp::non_null_ptr_type dup(new GpmlFiniteRotationSlerp(*this));
 			return dup;
 		}
+
+		const GpmlFiniteRotationSlerp::non_null_ptr_type
+		deep_clone() const
+		{
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular clone will suffice.
+			return clone();
+		}
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_INTERP_FUNC()
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

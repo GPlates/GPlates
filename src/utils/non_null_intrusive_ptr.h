@@ -30,6 +30,7 @@
 #include <iosfwd>               // for std::basic_ostream
 #include <boost/intrusive_ptr.hpp>
 
+#include "NullIntrusivePointerHandler.h"
 
 namespace GPlatesUtils
 {
@@ -52,7 +53,7 @@ struct UnhandledNullPointerException {  };
 //  The object is responsible for destroying itself.
 //
 
-template<class T, class H> class non_null_intrusive_ptr
+template<class T, class H = NullIntrusivePointerHandler> class non_null_intrusive_ptr
 {
 private:
 
@@ -63,7 +64,7 @@ public:
     typedef T element_type;
     typedef H null_handler_type;
 
-    non_null_intrusive_ptr(T * p, H const & handle_null, bool add_ref = true): p_(p)
+    non_null_intrusive_ptr(T * p, H const & handle_null = H(), bool add_ref = true): p_(p)
     {
         if(p_ == 0) {
             // Give 'handle_null' a chance to handle the situation.

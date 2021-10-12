@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -50,7 +50,7 @@
 #include "property-values/GmlPolygon.h"
 #include "property-values/GpmlConstantValue.h"
 
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
@@ -269,7 +269,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate(
 		// This serves two purposes:
 		//   1) highlights to the user which geometry (of the feature) is in focus.
 		//   2) serves a dramatic optimisation for large number of geometries in feature.
-		GPlatesModel::FeatureHandle::properties_iterator focused_geometry_property;
+		GPlatesModel::FeatureHandle::iterator focused_geometry_property;
 		if (GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
 				focused_rg, focused_geometry_property))
 		{
@@ -702,7 +702,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::populate_rfg_geome
 
 boost::optional<const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::get_reconstructed_geometry_for_property(
-		const GPlatesModel::FeatureHandle::properties_iterator property)
+		const GPlatesModel::FeatureHandle::iterator property)
 {
 	geometries_for_property_const_iterator it = d_rfg_geometries.begin();
 	geometries_for_property_const_iterator end = d_rfg_geometries.end();

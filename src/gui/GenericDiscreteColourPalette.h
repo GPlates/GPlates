@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date: 2009-11-19 14:54:25 +1100 (Thu, 19 Nov 2009) $
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,8 +28,12 @@
 #ifndef GPLATES_GUI_GENERICDISCRETECOLOURPALETTE_H
 #define GPLATES_GUI_GENERICDISCRETECOLOURPALETTE_H
 
-#include "DiscreteColourPalette.h"
 #include <map>
+#include <boost/optional.hpp>
+
+#include "Colour.h"
+#include "DiscreteColourPalette.h"
+
 
 namespace GPlatesGui
 {
@@ -37,30 +41,18 @@ namespace GPlatesGui
 	/**
 	 * GenericDiscreteColourPalette is a discrete colour palette that maps
 	 * arbitrary values (of one type) to a colour.
+	 *
+	 * The primary design consideration for this class is that it should act as a
+	 * data structure for the in-memory representation of a "categorical" CPT file.
+	 *
+	 * A description of a "categorical" CPT file can be found at
+	 * http://gmt.soest.hawaii.edu/gmt/doc/gmt/html/GMT_Docs/node68.html
 	 */
-	template <class T>
+	template<class T>
 	class GenericDiscreteColourPalette :
 		public DiscreteColourPalette<T>
 	{
 	public:
-
-		/**
-		 * Constructs an instance of GenericContinuousColourPalette
-		 */
-		GenericContinuousColourPalette()
-		{
-		}
-
-		/**
-		 * Constructs an instance of GenericContinuousColourPalette
-		 * @param mapping A mapping of values to colours.
-		 */
-		explicit
-		GenericContinuousColourPalette(
-				const std::map<T, Colour> &mapping) :
-			d_mapping(mapping)
-		{
-		}
 
 		/**
 		 * Retrieves a Colour based on the @a value given.
@@ -70,14 +62,32 @@ namespace GPlatesGui
 		get_colour(
 			const T &value) const
 		{
-			std::map<T, Colour>::iterator iter = d_mapping.find(value);
+			if (d_mapping.empty())
+			{
+				return d_nan_colour;
+			}
+
+			// Return background colour if before first value.
+			if (value < d_mapping.begin()->first)
+			{
+				return d_background_colour;
+			}
+
+			// Return foreground colour if after last value.
+			if (value > d_mapping.rbegin()->first)
+			{
+				return d_foreground_colour;
+			}
+
+			// Else try and find the value in the map, else return NaN colour.
+			std::map<T, Colour>::const_iterator iter = d_mapping.find(value);
 			if (iter == d_mapping.end())
 			{
-				return boost::none;
+				return d_nan_colour;
 			}
 			else
 			{
-				return boost::optional<Colour>(iter->second);
+				return iter->second;
 			}
 		}
 
@@ -90,15 +100,35 @@ namespace GPlatesGui
 		}
 
 		void
-		remove_mapping(
-				const T &value)
+		set_background_colour(
+				const Colour &colour)
 		{
-			d_mapping.erase(value);
+			d_background_colour = colour;
+		}
+
+		void
+		set_foreground_colour(
+				const Colour &colour)
+		{
+			d_foreground_colour = colour;
+		}
+
+		void
+		set_nan_colour(
+				const Colour &colour)
+		{
+			d_nan_colour = colour;
 		}
 
 	private:
 
 		std::map<T, Colour> d_mapping;
+
+		boost::optional<Colour> d_background_colour;
+
+		boost::optional<Colour> d_foreground_colour;
+
+		boost::optional<Colour> d_nan_colour;
 
 	};
 }

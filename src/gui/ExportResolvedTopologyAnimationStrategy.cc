@@ -28,8 +28,8 @@
 #include <QString>
 #include "ExportResolvedTopologyAnimationStrategy.h"
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/AppLogicUtils.h"
-#include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
@@ -37,6 +37,7 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/GMTFormatGeometryExporter.h"
 #include "file-io/GMTFormatHeader.h"
+#include "file-io/PlatesLineFormatHeaderVisitor.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
@@ -46,6 +47,8 @@
 
 #include "model/ResolvedTopologicalBoundary.h"
 
+#include "presentation/ViewState.h"
+
 #include "property-values/Enumeration.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GpmlConstantValue.h"
@@ -54,10 +57,9 @@
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/XsString.h"
 
+#include "utils/ExportTemplateFilenameSequence.h"
 #include "utils/FloatingPointComparisons.h"
 #include "utils/UnicodeStringUtils.h"
-
-#include "presentation/ViewState.h"
 
 
 namespace
@@ -238,26 +240,26 @@ namespace
 		GMTOldFeatureIdStyleHeader(
 				const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 		{
-			static const GPlatesModel::PropertyName old_plates_header_property_name =
-				GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
-			const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header = NULL;
-			if (!GPlatesFeatureVisitors::get_property_value(
+			// Get an OldPlatesHeader that contains attributes that are updated
+			// with GPlates properties where available.
+			GPlatesFileIO::OldPlatesHeader old_plates_header;
+			GPlatesFileIO::PlatesLineFormatHeaderVisitor plates_header_visitor;
+			plates_header_visitor.get_old_plates_header(
 					feature,
-					old_plates_header_property_name,
-					old_plates_header))
-			{
-				// We only generate a header if the feature has an GpmlOldPlatesHeader property.
-				return;
-			}
+					old_plates_header,
+					false/*append_feature_id_to_geographic_description*/);
+
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type gpml_old_plates_header =
+					old_plates_header.create_gpml_old_plates_header();
 
 			QString name;
-			if (!get_feature_name(name, feature, old_plates_header))
+			if (!get_feature_name(name, feature, gpml_old_plates_header.get()))
 			{
 				return;
 			}
 
 			const QString old_feature_id =
-					QString(old_plates_header->old_feature_id().c_str());
+					QString(gpml_old_plates_header->old_feature_id().c_str());
 
 			d_header_line = ' ' + name + ';' + old_feature_id;
 		}
@@ -875,17 +877,18 @@ namespace
 	}
 }
 
+const QString 
+GPlatesGui::ExportResolvedTopologyAnimationStrategy::
+	DEFAULT_RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE
+		="Polygons.%P.%d.xy";
 
-/**
- * This string gets inserted into template filename sequence and later replaced
- * with the different strings used to differentiate the types of export.
- *
- * NOTE: we cannot use "%1", etc as a placeholder since the class
- * ExportTemplateFilenameSequence uses that in its implementation when
- * it expands the various modifiers (like "%d").
- */
-const QString
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_string("<placeholder>");
+const QString 
+GPlatesGui::ExportResolvedTopologyAnimationStrategy::
+	RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE_DESC
+		=FORMAT_CODE_DESC;
+
+const QString GPlatesGui::ExportResolvedTopologyAnimationStrategy::RESOLOVED_TOPOLOGIES_DESC 
+		="Export resolved topologies.";
 
 const QString
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_platepolygons("platepolygons");
@@ -908,39 +911,44 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::s_placeholder_right_subduct
 
 const GPlatesGui::ExportResolvedTopologyAnimationStrategy::non_null_ptr_type
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context)
+		GPlatesGui::ExportAnimationContext &export_animation_context,
+		const ExportAnimationStrategy::Configuration& cfg)
 {
-	return non_null_ptr_type(new ExportResolvedTopologyAnimationStrategy(export_animation_context),
+	ExportResolvedTopologyAnimationStrategy * ptr = 
+			new ExportResolvedTopologyAnimationStrategy(
+					export_animation_context,
+					cfg.filename_template());
+		
+	ptr->d_class_id = "RESOLVED_TOPOLOGIES_GMT";
+
+	return non_null_ptr_type(
+			ptr,
 			GPlatesUtils::NullIntrusivePointerHandler());
 }
 
 
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::ExportResolvedTopologyAnimationStrategy(
-		GPlatesGui::ExportAnimationContext &export_animation_context):
+		GPlatesGui::ExportAnimationContext &export_animation_context,
+		const QString &filename_template):
 	ExportAnimationStrategy(export_animation_context)
 {
-	// Set the ExportTemplateFilenameSequence name once here, to a sane default.
-	// Later, we will let the user configure this.
-	// This also sets the iterator to the first filename template.
-	set_template_filename(QString("Polygons.xy"));
-	
-	// Do anything else that we need to do in order to initialise
-	// our resolved topology export here...
-	
+		set_template_filename(filename_template);
 }
-
 
 void
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
 		const QString &filename)
 {
-	// We want "Polygons" to look like "Polygons.<placeholder>.<age>" as that
+	// We want "Polygons" to look like "Polygons.%P.%d" as that
 	// is what is expected by the workflow (external to GPlates) that uses
 	// this export.
-	// The 's_placeholder_string' string will get replaced for each type of export
+	// The '%P' placeholder string will get replaced for each type of export
 	// in 'do_export_iteration()'.
 	// The "%d" tells ExportTemplateFilenameSequence to insert the reconstruction time.
-	const QString suffix = "." + s_placeholder_string + ".%d";
+	const QString suffix =
+			"." +
+			GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING +
+			".%d";
 
 	const QString modified_template_filename =
 			append_suffix_to_template_filebasename(filename, suffix);
@@ -954,20 +962,12 @@ bool
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
-	// Get the iterator for the next filename.
-	if (!d_filename_iterator_opt || !d_filename_sequence_opt) {
-		d_export_animation_context_ptr->update_status_message(
-				QObject::tr("Error in export iteration - not properly initialised!"));
+	if(!check_filename_sequence())
+	{
 		return false;
 	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = *d_filename_iterator_opt;
-
-	// Doublecheck that the iterator is valid.
-	if (filename_it == d_filename_sequence_opt->end()) {
-		d_export_animation_context_ptr->update_status_message(
-				QObject::tr("Error in filename sequence - not enough filenames supplied!"));
-		return false;
-	}
+	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+		*d_filename_iterator_opt;
 
 	// Assemble parts of this iteration's filename from the template filename sequence.
 	QString output_filebasename = *filename_it++;
@@ -978,11 +978,11 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 	// this frame; all we have to do is the maths and the file-writing (to @a full_filename)
 	//
 
-	GPlatesAppLogic::Reconstruct &reconstruct =
-			d_export_animation_context_ptr->view_state().get_reconstruct();
+	GPlatesAppLogic::ApplicationState &application_state =
+			d_export_animation_context_ptr->view_state().get_application_state();
 
-	GPlatesModel::Reconstruction &reconstruction = reconstruct.get_current_reconstruction();
-	const double &reconstruction_time = reconstruct.get_current_reconstruction_time();
+	GPlatesModel::Reconstruction &reconstruction = application_state.get_current_reconstruction();
+	const double &reconstruction_time = application_state.get_current_reconstruction_time();
 
 	// Find any ResolvedTopologicalBoundary objects in the reconstruction.
 	resolved_geom_seq_type resolved_geom_seq;
@@ -1024,32 +1024,50 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
 	// For exporting all platepolygons to a single file.
 	GMTFeatureExporter all_platepolygons_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_platepolygons));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_platepolygons));
 
 	// For exporting all subsegments of all platepolygons to a single file.
 	GMTFeatureExporter all_sub_segments_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_lines));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_lines));
 
 	// For exporting all ridge/transform subsegments of all platepolygons to a single file.
 	GMTFeatureExporter ridge_transform_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_ridge_transforms));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_ridge_transforms));
 
 	// For exporting all subduction zone subsegments of all platepolygons to a single file.
 	GMTFeatureExporter subduction_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_subductions));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_subductions));
 
 	// For exporting all left subduction zone subsegments of all platepolygons to a single file.
 	GMTFeatureExporter subduction_left_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_left_subductions));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_left_subductions));
 
 	// For exporting all right subduction zone subsegments of all platepolygons to a single file.
 	GMTFeatureExporter subduction_right_exporter(
 			get_full_output_filename(
-					target_dir, filebasename, s_placeholder_string, s_placeholder_right_subductions));
+					target_dir,
+					filebasename,
+					GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					s_placeholder_right_subductions));
 
 	// Iterate over the RTGs.
 	resolved_geom_seq_type::const_iterator resolved_seq_iter = resolved_geom_seq.begin();
@@ -1060,12 +1078,12 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
 
 		// Feature handle reference to platepolygon feature.
 		const GPlatesModel::FeatureHandle::const_weak_ref platepolygon_feature_ref =
-				GPlatesModel::FeatureHandle::get_const_weak_ref(
-						resolved_geom->feature_handle_ptr()->reference());
+				resolved_geom->feature_handle_ptr()->reference();
 
 		export_platepolygon(
 				*resolved_geom, platepolygon_feature_ref, all_platepolygons_exporter,
-				target_dir, filebasename, s_placeholder_string);
+				target_dir, filebasename,
+				GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING);
 
 		export_sub_segments(
 				*resolved_geom, platepolygon_feature_ref, recon_time,
@@ -1073,3 +1091,11 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
 				subduction_left_exporter, subduction_right_exporter);
 	}
 }
+
+
+const QString&
+GPlatesGui::ExportResolvedTopologyAnimationStrategy::get_default_filename_template()
+{
+	return DEFAULT_RESOLOVED_TOPOLOGIES_FILENAME_TEMPLATE;
+}
+

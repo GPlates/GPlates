@@ -4,27 +4,48 @@ foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
 
+# We need to use static libraries for boost because we need to link to the main 
+#funtion in the unit test framework statically. Otherwise, the g++ cannot find the 
+#main entrance when linking gplates-unit-test executable. 
+SET (Boost_USE_STATIC_LIBS ON)
+
 # The Boost package is a special case - it is mostly just headers with some object libraries.
 # We don't specify the REQUIRE option like the above packages because:
-# - it fails if the COMPONENTS libraries are not found (we currently only use program_options), and
-# - we only need the program_options boost library for the command-line version of GPLates (gplates-cli), and
-# - since boost is mostly just headers we can still compile the GUI version of GPlates
-#   (which currently only uses boost headers).
-find_package("Boost" 1.33.1 COMPONENTS program_options thread)
+# - it fails if the COMPONENTS libraries are not found, and
+# - we only need the unit_test_framework boost library for the unit-test version of GPLates (gplates-unit-test), and
+# - since boost is mostly just headers we can still compile the GUI version of GPlates.
+find_package("Boost" 1.33.1 COMPONENTS program_options unit_test_framework)
 # However we do need to find the boost include directory to locate the headers.
 if (NOT Boost_INCLUDE_DIR)
-	message(FATAL_ERROR, "Boost include path not found.")
+	message(FATAL_ERROR "Boost include path not found - please make sure boost is installed.")
 endif (NOT Boost_INCLUDE_DIR)
-# If the boost program_options library is not found then we will only disable the 'gplates-cli' target.
-if (Boost_PROGRAM_OPTIONS_FOUND)
-	set(ADD_GPLATES_CLI_TARGET TRUE)
-else (Boost_PROGRAM_OPTIONS_FOUND)
-	message("Warning: boost program_options library not found so GPlates command-line executable gplates-cli will not be available (the GUI version 'gplates' will be available though).")
-endif (Boost_PROGRAM_OPTIONS_FOUND)
-# We currently require the boost thread library since it's used by CGAL.
-if (NOT Boost_THREAD_FOUND)
-	message(FATAL_ERROR, "Boost 'thread' library not found (required by CGAL).")
-endif (NOT Boost_THREAD_FOUND)
+
+# The program_options library is now required for GPlates (both the GUI and command-line versions).
+if (NOT Boost_PROGRAM_OPTIONS_FOUND)
+	message(FATAL_ERROR "Boost program_options library not found - please make sure it is installed.")
+endif (NOT Boost_PROGRAM_OPTIONS_FOUND)
+
+# Add a target to build the command-line version of GPlates.
+set(ADD_GPLATES_CLI_TARGET TRUE)
+
+if (Boost_UNIT_TEST_FRAMEWORK_FOUND)
+    set(ADD_UNIT_TEST_TARGET TRUE)
+else (Boost_UNIT_TEST_FRAMEWORK_FOUND)
+	# Only print status message if this is not a public release.
+	# Because it'll only confuse users (because gplate-unit-test is not part of public release).
+	if (NOT GPLATES_PUBLIC_RELEASE)
+		message(STATUS "Warning: boost unit_test_framework not found so GPlates unit-test executable gplates-unit-test will not be available.")
+	endif (NOT GPLATES_PUBLIC_RELEASE)
+endif (Boost_UNIT_TEST_FRAMEWORK_FOUND)
+
+# Mac OS 10.4 produced alot of "error: template with C linkage" errors when using -isystem for 'src/system-fixes' directory.
+# Mac OS 10.5 was fine though - could just be the g++ compiler version (was 4.0.0 on OS 10.4 and 4.0.1 on OS 10.5).
+# Just disable on all Macs for now.
+# Moved this from "CompileOptionsCPlusPlus.cmake" to here because it is used in the following included cmake scripts.
+# TODO: Sort out why "-isystem" seems to fail on some compilers (this is what the "SYSTEM" cmake variable produces for gcc).
+if (NOT APPLE)
+	set(SYSTEM_INCLUDE_FLAG SYSTEM)
+endif (NOT APPLE)
 
 # Tell Qt that we use QtXML.
 # NOTE: subdirectory 'CMakeList.txt' files will also see our QT_USE_* variables.
@@ -39,13 +60,16 @@ SET(ICU_USE_I18N 1)
 SET(ICU_USE_IO 1)
 include (${ICU_USE_FILE})
 
-# The WIN32 inclusion is a temporary hack - will be removed soon.
-if(WIN32)
 # Include CGAL.
-if (CGAL_FOUND)
-	include(${CGAL_USE_FILE})
-endif (CGAL_FOUND)
-endif(WIN32)
+include(${CGAL_USE_FILE})
+
+# Include compiler options for the C++ programming language.
+# NOTE: We do this after all dependency packages have been found because we are going to modify the
+# compiler/linker flags without overriding them (by appending to them).
+# Previously this was included before the packages but now that we use CGAL (which sets the compiler flags
+# to be the same as when the CGAL library was built) it's easiest if we just append our own flags after
+# CGAL has overridden the flags.
+include (CompileOptionsCPlusPlus)
 
 # Some useful utilities.
 include (Util)
@@ -77,6 +101,11 @@ if (ADD_GPLATES_CLI_TARGET)
 		gplates_cli_main.cc)
 endif (ADD_GPLATES_CLI_TARGET)
 
+if (ADD_UNIT_TEST_TARGET)
+    set(GPlates_unit_test_SRCS
+	    gplates_unit_test_main.cc)
+endif (ADD_UNIT_TEST_TARGET)
+
 # N.B.  The order in which some of these subdirectories are
 # specified is significant.  For example, model must come before
 # feature-visitors.  (This stops weird "undefined reference to 
@@ -89,10 +118,16 @@ set(app_LIBS
 	app-logic file-io feature-visitors property-values model)
 set(util_LIBS
 	maths utils global)
+
 if (ADD_GPLATES_CLI_TARGET)
 	set(cli_LIBS
 		cli)
 endif (ADD_GPLATES_CLI_TARGET)
+
+if (ADD_UNIT_TEST_TARGET)
+set(unit_test_LIBS
+    unit-test)
+endif (ADD_UNIT_TEST_TARGET)
 
 # Libraries used by the GUI version of GPlates.
 set(GPlates_LIBS
@@ -110,6 +145,14 @@ if (ADD_GPLATES_CLI_TARGET)
 	set(GPlates_cli_LIBS
 		${cli_LIBS} ${app_LIBS} ${util_LIBS})
 endif (ADD_GPLATES_CLI_TARGET)
+
+# Libraries used by the GPlates unit test application.
+# This currently includes all GPlates internal libraries
+# in case any of them need to be tested.
+if (ADD_UNIT_TEST_TARGET)
+	set(GPlates_unit_test_LIBS
+		${unit_test_LIBS} ${GPlates_LIBS})
+endif (ADD_UNIT_TEST_TARGET)
 
 # Visual Studio and Borland compilers use autolinking for the Boost libraries
 # (where pragma in header file brings in the library).
@@ -137,10 +180,6 @@ set(external_INCLUDE_DIRS
 	${GPlates_SOURCE_DIR}/src/system-fixes	# A fixed boost library file lives here.
 	${Boost_INCLUDE_DIR}
 	${PROJ4_INCLUDE_DIR})
-# The WIN32 exclusion is a temporary hack - will be removed soon.
-if(NOT WIN32)
-set(external_INCLUDE_DIRS ${external_INCLUDE_DIRS} ${CGAL_INCLUDE_DIR})
-endif(NOT WIN32)
 	
 # Internal include directories:
 set(internal_INCLUDE_DIRS
@@ -151,7 +190,7 @@ set(internal_INCLUDE_DIRS
 	
 # All the GPlates subdirectories.
 set(ALL_GPlates_src_subdirs
-	${gui_LIBS} ${presentation_LIBS} ${cli_LIBS} ${app_LIBS} ${util_LIBS})
+	${gui_LIBS} ${presentation_LIBS} ${cli_LIBS} ${app_LIBS} ${util_LIBS} ${unit_test_LIBS})
 
 # Recurse into subdirectories - CMake continues processing this file when it returns.
 # NOTE: any variables set after 'add_subdirectory' will not be visible in the subdirectory 'CMakeList.txt' files.
@@ -188,6 +227,10 @@ if (ADD_GPLATES_CLI_TARGET)
 	GPLATES_GENERATE_TARGET_SOURCES(gplates-cli target_GPlates_cli_SRCS ${GPlates_cli_SRCS})
 endif (ADD_GPLATES_CLI_TARGET)
 
+if (ADD_UNIT_TEST_TARGET)
+	GPLATES_GENERATE_TARGET_SOURCES(gplates-unit-test target_GPlates_unit_test_SRCS ${GPlates_unit_test_SRCS})
+endif (ADD_UNIT_TEST_TARGET)
+
 #
 # Set the platform-dependent icon file.
 #
@@ -201,16 +244,35 @@ endif (APPLE)
 #
 # Add executable target(s).
 #
+# NOTE: On MacOS X some libraries referenced by these executable targets do not have
+# their full path specified in the executables themselves. When this happens
+# the error "dyld: Library not loaded:" error is generated when trying to
+# run the executable. An example is CGAL installed via Macports.
+# GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET() creates a post-build command
+# that looks at a built executable target and does these fixups.
+#
+message(STATUS "Adding executable for GPlates application.")
 add_executable(gplates
 	${target_GPlates_SRCS}
 	${GPlates_ICON})
+GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates TRUE)
 
 # The "EXCLUDE_FROM_ALL" flag means you have to type 'make gplates-no-gui' to build this target -
 # it is not built by default.
 add_executable(gplates-no-gui EXCLUDE_FROM_ALL ${target_GPlates_no_gui_SRCS})
+GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-no-gui FALSE)
+
 if (ADD_GPLATES_CLI_TARGET)
+    message(STATUS "Adding executable for GPlates command line application.")
 	add_executable(gplates-cli EXCLUDE_FROM_ALL ${target_GPlates_cli_SRCS})
+	GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-cli FALSE)
 endif (ADD_GPLATES_CLI_TARGET)
+
+if (ADD_UNIT_TEST_TARGET)
+    message(STATUS "Adding executable for GPlates unit test application.")
+	add_executable(gplates-unit-test EXCLUDE_FROM_ALL ${target_GPlates_unit_test_SRCS})
+	GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-unit-test FALSE)
+endif (ADD_UNIT_TEST_TARGET)
 
 # Referenced in "Package.cmake" so it knows which executable to package up.
 set(GPLATES_MAIN_TARGET gplates)
@@ -243,6 +305,12 @@ if (APPLE)
 		PROPERTIES MACOSX_BUNDLE_COPYRIGHT "${GPLATES_COPYRIGHT_STRING}")
 endif (APPLE)
 
+# NOTE: Even though Qt and ICU includes are taken care of by including QT_USE_FILE and ICU_USE_FILE
+# their libraries still have to be explicitly listed at each 'target_link_libraries()' call.
+# CGAL also uses a CGAL_USE_FILE but it differs from QT and ICU in that it uses the deprecated
+# 'link_libraries()' to link it's library to all targets (it's not physically deprecated, just
+# advised not to use). See http://www.cmake.org/pipermail/cmake/2009-April/028439.html
+#	for a description of the difference between 'link_libraries' and 'target_link_libraries'.
 set(dependency_LIBS
 	${GDAL_LIBRARY}
 	${ICU_LIBRARIES}
@@ -250,10 +318,6 @@ set(dependency_LIBS
 	${OPENGL_LIBRARIES}
 	${PROJ4_LIBRARY}
 	)
-# The WIN32 exclusion is a temporary hack - will be removed soon.
-if(NOT WIN32)
-set(dependency_LIBS ${dependency_LIBS} ${CGAL_LIBRARY})
-endif(NOT WIN32)
 # Visual Studio and Borland compilers use autolinking for the Boost libraries
 # (where pragma in header file brings in the library).
 if (NOT WIN32)
@@ -270,6 +334,10 @@ target_link_libraries(gplates-no-gui ${GPlates_LIBS} ${dependency_LIBS} ${GPlate
 if (ADD_GPLATES_CLI_TARGET)
 	target_link_libraries(gplates-cli ${GPlates_cli_LIBS} ${dependency_LIBS} ${GPlates_cli_LIBS})
 endif (ADD_GPLATES_CLI_TARGET)
+
+if (ADD_UNIT_TEST_TARGET)
+	target_link_libraries(gplates-unit-test ${GPlates_unit_test_LIBS} ${dependency_LIBS} ${GPlates_unit_test_LIBS})
+endif (ADD_UNIT_TEST_TARGET)
 
 # Current binary directory must be included first for g++ pre-compiled headers.
 # There's a '_pch.h' file in current source and current binary directory however the '_pch.h.gch' pre-compiled header
@@ -291,6 +359,10 @@ GPLATES_POST_ADD_TARGET(gplates-no-gui target_GPlates_no_gui_SRCS)
 if (ADD_GPLATES_CLI_TARGET)
 	GPLATES_POST_ADD_TARGET(gplates-cli target_GPlates_cli_SRCS)
 endif (ADD_GPLATES_CLI_TARGET)
+
+if (ADD_UNIT_TEST_TARGET)
+	GPLATES_POST_ADD_TARGET(gplates-unit-test target_GPlates_unit_test_SRCS)
+endif (ADD_UNIT_TEST_TARGET)
 
 if (APPLE)
     install(TARGETS gplates

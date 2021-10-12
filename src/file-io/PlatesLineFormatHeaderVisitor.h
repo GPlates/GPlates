@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,7 +30,7 @@
 #include <boost/optional.hpp>
 #include <unicode/unistr.h>
 
-#include "model/ConstFeatureVisitor.h"
+#include "model/FeatureVisitor.h"
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
 #include "property-values/GmlTimeInstant.h"
@@ -92,6 +92,13 @@ namespace GPlatesFileIO
 			colour_code(1),
 			number_of_points(1)
 		{ }
+
+
+		/**
+		 * Creates a GpmlOldPlatesHeader property value from 'this'.
+		 */
+		GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type
+		create_gpml_old_plates_header();
 	};
 
 	/**
@@ -114,8 +121,9 @@ namespace GPlatesFileIO
 		virtual
 			bool
 			get_old_plates_header(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			OldPlatesHeader& old_plates_header);
+					const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+					OldPlatesHeader& old_plates_header,
+					bool append_feature_id_to_geographic_description = true);
 
 	private:
 		virtual

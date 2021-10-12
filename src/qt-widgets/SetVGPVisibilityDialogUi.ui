@@ -1,0 +1,167 @@
+<ui version="4.0" >
+ <class>SetVGPVisibilityDialog</class>
+ <widget class="QDialog" name="SetVGPVisibilityDialog" >
+  <property name="windowModality" >
+   <enum>Qt::NonModal</enum>
+  </property>
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>416</width>
+    <height>222</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Set VGP Visibility</string>
+  </property>
+  <layout class="QGridLayout" >
+   <item row="0" column="0" colspan="3" >
+    <widget class="QLabel" name="label_description" >
+     <property name="text" >
+      <string>Choose visibility settings for Virtual Geomagnetic Pole features:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="3" >
+    <spacer>
+     <property name="orientation" >
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" >
+      <size>
+       <width>374</width>
+       <height>16</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="2" column="0" colspan="3" >
+    <layout class="QGridLayout" >
+     <item row="0" column="0" colspan="2" >
+      <widget class="QRadioButton" name="radiobutton_always_visible" >
+       <property name="text" >
+        <string>Show all VGPs at all times</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0" colspan="2" >
+      <widget class="QRadioButton" name="radiobutton_time_window" >
+       <property name="text" >
+        <string>Show all VGPs at times between</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2" colspan="2" >
+      <widget class="QDoubleSpinBox" name="spinbox_begin" >
+       <property name="maximum" >
+        <double>1000.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="5" >
+      <widget class="QCheckBox" name="checkbox_past" >
+       <property name="text" >
+        <string>Use distant past</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0" colspan="2" >
+      <widget class="QLabel" name="label" >
+       <property name="layoutDirection" >
+        <enum>Qt::RightToLeft</enum>
+       </property>
+       <property name="text" >
+        <string>and</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2" colspan="2" >
+      <widget class="QDoubleSpinBox" name="spinbox_end" >
+       <property name="maximum" >
+        <double>1000.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="4" >
+      <widget class="QLabel" name="label_2" >
+       <property name="text" >
+        <string>Ma</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="5" >
+      <widget class="QCheckBox" name="checkbox_future" >
+       <property name="text" >
+        <string>Use distant future</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0" >
+      <widget class="QRadioButton" name="radiobutton_delta_t_around_age" >
+       <property name="text" >
+        <string>Show VGPs at times within </string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1" colspan="2" >
+      <widget class="QDoubleSpinBox" name="spinbox_delta" >
+       <property name="maximum" >
+        <double>1000.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="3" colspan="3" >
+      <widget class="QLabel" name="label_3" >
+       <property name="text" >
+        <string>My of VGP's age</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="3" column="0" colspan="3" >
+    <spacer>
+     <property name="orientation" >
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" >
+      <size>
+       <width>374</width>
+       <height>16</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="4" column="0" >
+    <spacer>
+     <property name="orientation" >
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" >
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="4" column="1" >
+    <widget class="QPushButton" name="button_cancel" >
+     <property name="text" >
+      <string>&amp;Cancel</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="2" >
+    <widget class="QPushButton" name="button_apply" >
+     <property name="text" >
+      <string>&amp;Apply</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

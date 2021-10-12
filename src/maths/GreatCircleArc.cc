@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,6 +33,30 @@
 #include "FiniteRotation.h"
 #include "IndeterminateResultException.h"
 #include "IndeterminateArcRotationAxisException.h"
+
+
+namespace
+{
+	template<class T>
+	bool
+	opt_eq(
+			const boost::optional<T> &opt1,
+			const boost::optional<T> &opt2)
+	{
+		if (opt1)
+		{
+			if (!opt2)
+			{
+				return false;
+			}
+			return *opt1 == *opt2;
+		}
+		else
+		{
+			return !opt2;
+		}
+	}
+}
 
 
 GPlatesMaths::GreatCircleArc::ConstructionParameterValidity
@@ -419,3 +443,16 @@ GPlatesMaths::arcs_are_undirected_equivalent(
 		(points_are_coincident(arc1_start, arc2_end) &&
 		 points_are_coincident(arc1_end, arc2_start)));
 }
+
+
+bool
+GPlatesMaths::GreatCircleArc::operator==(
+		const GreatCircleArc &other) const
+{
+	return d_start_point == other.d_start_point &&
+		d_end_point == other.d_end_point &&
+		d_dot_of_endpoints == other.d_dot_of_endpoints &&
+		d_is_zero_length == other.d_is_zero_length &&
+		opt_eq(d_rot_axis, other.d_rot_axis);
+}
+

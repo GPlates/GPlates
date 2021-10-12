@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,54 +37,62 @@
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::XsInteger, visit_xs_integer)
 
-namespace GPlatesPropertyValues {
+namespace GPlatesPropertyValues
+{
 
 	class XsInteger :
-			public GPlatesModel::PropertyValue {
+			public GPlatesModel::PropertyValue
+	{
 
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsIntger,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<XsIntger>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<XsInteger,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<XsInteger> non_null_ptr_type;
 
 		/**
 		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsInteger,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * GPlatesUtils::non_null_intrusive_ptr<const XsInteger>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const XsInteger,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const XsInteger> non_null_ptr_to_const_type;
 
 		virtual
-		~XsInteger() {  }
+		~XsInteger()
+		{  }
 
 		static
 		const non_null_ptr_type
 		create(
-				int value) {
-			XsInteger::non_null_ptr_type ptr(new XsInteger(value),
-					GPlatesUtils::NullIntrusivePointerHandler());
+				int value)
+		{
+			XsInteger::non_null_ptr_type ptr(new XsInteger(value));
 			return ptr;
 		}
 
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone() const {
-			GPlatesModel::PropertyValue::non_null_ptr_type dup(new XsInteger(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
+		const XsInteger::non_null_ptr_type
+		clone() const
+		{
+			XsInteger::non_null_ptr_type dup(new XsInteger(*this));
 			return dup;
 		}
+
+		const XsInteger::non_null_ptr_type
+		deep_clone() const
+		{
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular clone will suffice.
+			return clone();
+		}
+
+		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Accesses the int contained within this XsInteger.
 		 */
 		int
-		value() const {
+		value() const
+		{
 			return d_value;
 		}
 
@@ -97,8 +105,10 @@ namespace GPlatesPropertyValues {
 		 */
 		void
 		set_value(
-				const int &i) {
+				const int &i)
+		{
 			d_value = i;
+			update_instance_id();
 		}
 
 
@@ -111,7 +121,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_xs_integer(*this);
 		}
 
@@ -124,9 +135,15 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_xs_integer(*this);
 		}
+
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
 
@@ -146,7 +163,7 @@ namespace GPlatesPropertyValues {
 		// copy-constructor, except it should not be public.
 		XsInteger(
 				const XsInteger &other) :
-			PropertyValue(other),
+			PropertyValue(other), /* share instance id */
 			d_value(other.d_value)
 		{  }
 

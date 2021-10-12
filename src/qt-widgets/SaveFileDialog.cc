@@ -31,10 +31,10 @@ namespace
 {
 	QString
 	get_output_filters(
-			const std::vector<std::pair<QString, QString> > &filters)
+			const GPlatesQtWidgets::SaveFileDialog::filter_list_type &filters)
 	{
 		QStringList file_filters;
-		typedef std::vector<std::pair<QString, QString> >::const_iterator iterator_type;
+		typedef GPlatesQtWidgets::SaveFileDialog::filter_list_type::const_iterator iterator_type;
 		for (iterator_type iter = filters.begin(); iter != filters.end(); ++iter)
 		{
 			file_filters << iter->first;
@@ -73,7 +73,7 @@ boost::shared_ptr<GPlatesQtWidgets::SaveFileDialog>
 GPlatesQtWidgets::SaveFileDialog::get_save_file_dialog(
 		QWidget *parent,
 		const QString &caption,
-		const std::vector<std::pair<QString, QString> > &filters,
+		const filter_list_type &filters,
 		unsigned int default_filter)
 {
 #ifdef __WINDOWS__
@@ -96,7 +96,7 @@ GPlatesQtWidgets::SaveFileDialog::get_save_file_dialog(
 GPlatesQtWidgets::WindowsSaveFileDialog::WindowsSaveFileDialog(
 		QWidget *parent_,
 		const QString &caption,
-		const std::vector<std::pair<QString, QString> > &filters,
+		const filter_list_type &filters,
 		unsigned int default_filter) :
 	d_parent_ptr(parent_),
 	d_caption(caption)
@@ -127,13 +127,13 @@ GPlatesQtWidgets::WindowsSaveFileDialog::get_file_name()
 
 void
 GPlatesQtWidgets::WindowsSaveFileDialog::set_filters(
-		const std::vector<std::pair<QString, QString> > &filters,
+		const filter_list_type &filters,
 		unsigned int default_filter)
 {
 	d_filter_map_ext_to_text.clear();
 
 	// store the filters in a map for quick reference
-	typedef std::vector<std::pair<QString, QString> >::const_iterator iterator_type;
+	typedef filter_list_type::const_iterator iterator_type;
 	for (iterator_type iter = filters.begin(); iter != filters.end(); ++iter)
 	{
 		d_filter_map_ext_to_text.insert(std::make_pair(iter->second, iter->first));
@@ -151,12 +151,12 @@ GPlatesQtWidgets::WindowsSaveFileDialog::set_filters(
 
 void
 GPlatesQtWidgets::WindowsSaveFileDialog::set_filters(
-		const std::vector<std::pair<QString, QString> > &filters)
+		const filter_list_type &filters)
 {
 	d_filter_map_ext_to_text.clear();
 
 	// store the filters in a map for quick reference
-	typedef std::vector<std::pair<QString, QString> >::const_iterator iterator_type;
+	typedef filter_list_type::const_iterator iterator_type;
 	for (iterator_type iter = filters.begin(); iter != filters.end(); ++iter)
 	{
 		d_filter_map_ext_to_text.insert(std::make_pair(iter->second, iter->first));
@@ -201,7 +201,7 @@ GPlatesQtWidgets::WindowsSaveFileDialog::select_file(
 GPlatesQtWidgets::OtherSaveFileDialog::OtherSaveFileDialog(
 		QWidget *parent_,
 		const QString &caption,
-		const std::vector<std::pair<QString, QString> > &filters,
+		const filter_list_type &filters,
 		unsigned int default_filter) :
 	d_file_dialog_ptr(new QFileDialog(
 				parent_,
@@ -248,14 +248,14 @@ GPlatesQtWidgets::OtherSaveFileDialog::handle_filter_changed()
 
 void
 GPlatesQtWidgets::OtherSaveFileDialog::set_filters(
-		const std::vector<std::pair<QString, QString> > &filters,
+		const filter_list_type &filters,
 		unsigned int default_filter)
 {
 	// tell the QFileDialog what the filter is
 	d_file_dialog_ptr->setFilter(get_output_filters(filters));
 
 	// store the filters in a map for quick reference
-	typedef std::vector<std::pair<QString, QString> >::const_iterator iterator_type;
+	typedef filter_list_type::const_iterator iterator_type;
 	for (iterator_type iter = filters.begin(); iter != filters.end(); ++iter)
 	{
 		d_filter_map_text_to_ext.insert(std::make_pair(iter->first, iter->second));
@@ -274,7 +274,7 @@ GPlatesQtWidgets::OtherSaveFileDialog::set_filters(
 
 void
 GPlatesQtWidgets::OtherSaveFileDialog::set_filters(
-		const std::vector<std::pair<QString, QString> > &filters)
+		const filter_list_type &filters)
 {
 	// we need to save the selected filter before we set the new filter
 	// because it will change it once we call setFilter()
@@ -284,7 +284,7 @@ GPlatesQtWidgets::OtherSaveFileDialog::set_filters(
 	d_file_dialog_ptr->setFilter(get_output_filters(filters));
 
 	// store the filters in a map for quick reference
-	typedef std::vector<std::pair<QString, QString> >::const_iterator iterator_type;
+	typedef filter_list_type::const_iterator iterator_type;
 	for (iterator_type iter = filters.begin(); iter != filters.end(); ++iter)
 	{
 		d_filter_map_text_to_ext.insert(std::make_pair(iter->first, iter->second));
@@ -329,6 +329,15 @@ GPlatesQtWidgets::OtherSaveFileDialog::select_file(
 		const QString &file_path)
 {
 	d_file_dialog_ptr->selectFile(file_path);
+
+	// If the file does not exist, on Ubuntu 8.04 at least, the file name field in the
+	// dialog box has a backslash at the front, which means that if the user just clicks
+	// ok, the save operation is most likely going to fail, because GPlates will attempt
+	// to save the file in the root directory. Selecting the file again with just the
+	// file name seems to solve this problem.
+	QStringList tokens = file_path.split("/");
+	d_file_dialog_ptr->selectFile(tokens.last());
+
 	QString file_ext = get_file_extension(file_path);
 	d_file_dialog_ptr->selectFilter(d_filter_map_ext_to_text[file_ext]);
 	d_file_dialog_ptr->setDefaultSuffix(file_ext);

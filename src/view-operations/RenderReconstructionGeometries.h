@@ -52,8 +52,7 @@ namespace GPlatesViewOperations
 	void
 	render_reconstruction_geometries(
 			GPlatesModel::Reconstruction &reconstruction,
-			RenderedGeometryCollection &rendered_geom_collection,
-			const GPlatesGui::ColourTable &colour_table);
+			RenderedGeometryCollection &rendered_geom_collection);
 }
 
 #endif // GPLATES_VIEW_OPERATIONS_RENDERRECONSTRUCTIONGEOMETRIES_H

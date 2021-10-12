@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,7 +37,6 @@
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
-	class Reconstruct;
 }
 
 
@@ -56,8 +55,7 @@ namespace GPlatesGui
 	public:
 		
 		FeatureFocus(
-				GPlatesAppLogic::ApplicationState &application_state,
-				GPlatesAppLogic::Reconstruct &reconstruct);
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		virtual
 		~FeatureFocus()
@@ -99,9 +97,9 @@ namespace GPlatesGui
 		 * Accessor for the geometry property used by the most recent RFG associated with the
 		 * currently-focused feature (if there is one).
 		 *
-		 * NOTE: Remember to check 'is_valid()' on returned properties iterator.
+		 * NOTE: Remember to check 'is_still_valid()' on returned properties iterator.
 		 */
-		const GPlatesModel::FeatureHandle::properties_iterator &
+		const GPlatesModel::FeatureHandle::iterator &
 		associated_geometry_property() const
 		{
 			return d_associated_geometry_property;
@@ -152,7 +150,7 @@ namespace GPlatesGui
 		void
 		set_focus(
 				GPlatesModel::FeatureHandle::weak_ref new_feature_ref,
-				GPlatesModel::FeatureHandle::properties_iterator new_associated_property);
+				GPlatesModel::FeatureHandle::iterator new_associated_property);
 
 		/**
 		 * Clear the focus.
@@ -207,7 +205,7 @@ namespace GPlatesGui
 		 */
 		void
 		handle_reconstruction(
-				GPlatesAppLogic::Reconstruct &reconstructer);
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		/**
 		 * FIXME: This is a temporary hack to stop highlighting the focused feature if
@@ -273,14 +271,14 @@ namespace GPlatesGui
 		 *
 		 * Note that when focused feature changes the associated.
 		 */
-		GPlatesModel::FeatureHandle::properties_iterator d_associated_geometry_property;
+		GPlatesModel::FeatureHandle::iterator d_associated_geometry_property;
 
 		/**
 		 * Manages reconstruction generation.
 		 * ONLY needed so that FeatureFocus can have a stab at finding an RFG automatically
 		 * when given a properties_iterator during @a set_focus().
 		 */
-		GPlatesAppLogic::Reconstruct *d_reconstruct_ptr;
+		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
 
 		/**
 		 * Find the new associated ReconstructionGeometry for the currently-focused feature (if any).

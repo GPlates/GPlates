@@ -36,6 +36,20 @@
 #include "model/ReconstructionTree.h"
 
 
+int
+GPlatesAppLogic::PlateVelocityWorkflow::s_instance_number = 0;
+
+
+GPlatesAppLogic::FeatureCollectionWorkflow::tag_type
+GPlatesAppLogic::PlateVelocityWorkflow::get_tag() const
+{
+	// FIXME: We're only doing this because each ViewState wants to have its own workflow instances
+	QString id;
+	id.setNum(d_instance_number);
+	return QString("PlateVelocityWorkflow").append(id);
+}
+
+
 bool
 GPlatesAppLogic::PlateVelocityWorkflow::add_file(
 		FeatureCollectionFileState::file_iterator file_iter,
@@ -151,9 +165,9 @@ GPlatesAppLogic::PlateVelocityWorkflow::solve_velocities(
 	//
 	GPlatesModel::ReconstructionTree::non_null_ptr_type reconstruction_tree_2_ptr = 
 			GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-					reconstruction_features_collection,
 					reconstruction_time_2,
-					reconstruction_anchored_plate_id);
+					reconstruction_anchored_plate_id,
+					reconstruction_features_collection);
 
 	// Our two reconstruction trees.
 	GPlatesModel::ReconstructionTree &reconstruction_tree_1 =

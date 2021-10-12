@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -39,7 +39,6 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonIntersections.h"
 
-
 #include "model/FeatureCollectionHandle.h"
 
 
@@ -69,7 +68,6 @@ namespace GPlatesAppLogic
 		 */
 		void
 		resolve_topologies(
-				const double &reconstruction_time,
 				GPlatesModel::Reconstruction &reconstruction,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						topological_features_collection);

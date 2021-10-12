@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -48,6 +48,9 @@ namespace GPlatesGui
 			boost::optional<Colour>
 			get_colour(
 					const GPlatesModel::ReconstructionGeometry &reconstruction_geometry) const;
+
+			boost::optional<Colour>
+			get_colour() const;
 
 		private:
 			boost::optional<Colour> d_colour;

@@ -7,7 +7,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2009, 2010 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -39,6 +40,7 @@
 #include "ReadErrorAccumulation.h"
 #include "ReadErrors.h"
 
+#include "model/ChangesetHandle.h"
 #include "model/Model.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
@@ -48,9 +50,12 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
 
+#include "utils/UnicodeStringUtils.h"
+
+
 namespace
 {
-	// The initial time-of-apperance, time-of-disappearance will be set to be the
+	// The initial time-of-apperance, time-of-disappearance may be set to be the
 	// sample age +/- DELTA_AGE.
 	// 
 	// DELTA_AGE is in My.
@@ -67,9 +72,9 @@ namespace
 		float vgp_latitude;
 		float vgp_longitude;
 		float dp;
-		float dm;
-		float age;
 		boost::optional<GPlatesModel::integer_plate_id_type> plate_id;
+		float age;
+
 	};
 	
 	void
@@ -86,13 +91,14 @@ namespace
 		qDebug() << "	" << "Site longitude:	" << vgp.site_longitude;
 		qDebug() << "	" << "VGP latitude:		" << vgp.vgp_latitude;
 		qDebug() << "	" << "VGP longitude:	" << vgp.vgp_longitude;
-		qDebug() << "	" << "dp:				" << vgp.dp;
-		qDebug() << "	" << "dm:				" << vgp.dm;
-		qDebug() << "	" << "age:				" << vgp.age;
+		//qDebug() << "	" << "dp:				" << vgp.dp;
+		//qDebug() << "	" << "dm:				" << vgp.dm;
 		if (vgp.plate_id)
 		{
 			qDebug() << "	" << "plate id:			" << *vgp.plate_id;
-		}
+		}		
+		qDebug() << "	" << "age:				" << vgp.age;
+
 	}
 	
 	void
@@ -102,10 +108,10 @@ namespace
 	{
 		GPlatesPropertyValues::XsString::non_null_ptr_type gml_name = 
 			GPlatesPropertyValues::XsString::create(UnicodeString(description.toStdString().c_str()));
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gml_name, 
-			GPlatesModel::PropertyName::create_gml("name"), 
-			feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gml("name"),
+					gml_name));
 	}	
 	
 	void
@@ -125,8 +131,10 @@ namespace
 			gml_point, 
 			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
 
-		GPlatesModel::ModelUtils::append_property_value_to_feature(property_value,
-			GPlatesModel::PropertyName::create_gpml("averageSampleSitePosition"), feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("averageSampleSitePosition"),
+					property_value));
 	}
 	
 	void
@@ -136,10 +144,10 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_inclination = 
 			GPlatesPropertyValues::XsDouble::create(inclination);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_inclination, 
-			GPlatesModel::PropertyName::create_gpml("averageInclination"), 
-			feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("averageInclination"),
+					gpml_inclination));
 	}	
 	
 	void
@@ -149,10 +157,10 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_declination = 
 			GPlatesPropertyValues::XsDouble::create(declination);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_declination, 
-			GPlatesModel::PropertyName::create_gpml("averageDeclination"), 
-			feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("averageDeclination"),
+					gpml_declination));
 	}	
 	
 	void
@@ -162,11 +170,11 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_a95 = 
 			GPlatesPropertyValues::XsDouble::create(a95);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_a95, 
-			//FIXME: Temporary name until role of a95/alpha95 is clarified.
-			GPlatesModel::PropertyName::create_gpml("poleA95"), 
-			feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					//FIXME: Temporary name until role of a95/alpha95 is clarified.
+					GPlatesModel::PropertyName::create_gpml("poleA95"),
+					gpml_a95));
 	}
 	
 	void
@@ -176,28 +184,25 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_age = 
 			GPlatesPropertyValues::XsDouble::create(age);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_age, 
-			GPlatesModel::PropertyName::create_gpml("averageAge"), 
-			feature);
-			
-		// In addition to setting the paleomag-specific age, we will set 
-		// time of appearance and disappearance based on an interval around 
-		// the sample age. Here I'm setting it to +/- 10My around the sample
-		// age. We may later want to control this globally (e.g. set all paleomag
-		// features to be visible for all times, or set them all to be visible
-		// +/- x years from their sample age. 
-		
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("averageAge"),
+					gpml_age));
+ 
+// VGP visibilty is now set via the UI, and we no longer need to
+// provide a begin/end time for the feature. 
+#if 0
 		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin(age+DELTA_AGE);
 		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end(age-DELTA_AGE);
 
 		GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_valid_time = 
 			GPlatesModel::ModelUtils::create_gml_time_period(geo_time_instant_begin,
 			geo_time_instant_end);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(gml_valid_time, 
-			GPlatesModel::PropertyName::create_gml("validTime"),
-			feature);			
-		
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gml("validTime"),
+					gml_valid_time));
+#endif
 	}
 	
 	void
@@ -216,13 +221,12 @@ namespace
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
 			GPlatesModel::ModelUtils::create_gpml_constant_value(
 				gml_point, 
-				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));			
-			
-	
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			property_value, 
-			GPlatesModel::PropertyName::create_gpml("polePosition"), 
-			feature);		
+				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
+
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("polePosition"),
+					property_value));
 	}
  
 	void
@@ -232,11 +236,12 @@ namespace
 	{
 		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type gpml_plate_id = 
 			GPlatesPropertyValues::GpmlPlateId::create(plate_id);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId")),
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-			feature);	
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+					GPlatesModel::ModelUtils::create_gpml_constant_value(
+						gpml_plate_id,
+						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));
 	}
 	
 	void
@@ -246,10 +251,10 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_dm = 
 			GPlatesPropertyValues::XsDouble::create(dm);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_dm, 
-			GPlatesModel::PropertyName::create_gpml("poleDm"), 
-			feature);	
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("poleDm"),
+					gpml_dm));
 	}
 	
 	void
@@ -259,10 +264,10 @@ namespace
 	{
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type gpml_dp = 
 			GPlatesPropertyValues::XsDouble::create(dp);
-		GPlatesModel::ModelUtils::append_property_value_to_feature(
-			gpml_dp, 
-			GPlatesModel::PropertyName::create_gpml("poleDp"), 
-			feature);
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("poleDp"),
+					gpml_dp));
 	}	
  
 	void
@@ -275,19 +280,18 @@ namespace
 			GPlatesModel::FeatureType::create_gpml("VirtualGeomagneticPole");
 
 		GPlatesModel::FeatureHandle::weak_ref feature =
-			model->create_feature(feature_type,collection);
+			GPlatesModel::FeatureHandle::create(collection, feature_type);
 			
-		append_name_to_feature(feature,vgp.header);
-		
-		append_site_geometry_to_feature(feature,vgp.site_latitude,vgp.site_longitude);
-			
+		// Many of the following "append_" functions don't save us so much space/code now,
+		// and could be directly replaced by their "feature->add(...)" functions. 
+		append_name_to_feature(feature,vgp.header);	
+		append_site_geometry_to_feature(feature,vgp.site_latitude,vgp.site_longitude);		
 		append_inclination_to_feature(feature,vgp.inclination);
 		append_declination_to_feature(feature,vgp.declination);
 		append_a95_to_feature(feature,vgp.a95);
 		append_vgp_position_to_feature(feature,vgp.vgp_latitude,vgp.vgp_longitude);
 		append_age_to_feature(feature,vgp.age);
-		append_dm_to_feature(feature,vgp.dm);
-		append_dp_to_feature(feature,vgp.dp);
+
 		if (vgp.plate_id)
 		{
 			append_plate_id_to_feature(feature,*vgp.plate_id);
@@ -442,7 +446,8 @@ namespace
 		next_line = input.readLine();
 		++line_number;
 
-		// Line 8, dp (semi-major axis), degrees.
+		// Line 8 was formerly interpreted as dp , the semi-major axis (degrees).
+		// Currently the content of this field is not used.
 		boost::optional<float> dp = check_format_and_return_value(next_line);
 		if (!dp)
 		{
@@ -453,13 +458,26 @@ namespace
 		next_line = input.readLine();
 		++line_number;
 
-		// Line 9, dm (semi-minor axis), degrees.
-		boost::optional<float> dm = check_format_and_return_value(next_line);
-		if (!dm)
+		// Line 9 (formerly dm) will now be interpreted as plate_id
+		boost::optional<float> plate_id = check_format_and_return_value(next_line);
+		if (!plate_id)
 		{
 			throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;
-		}		
-		vgp.dm = *dm;
+		}
+		float plate_id_as_float = *plate_id;
+		if ((GPlatesMaths::Real(plate_id_as_float) !=
+			GPlatesMaths::Real(std::floor(plate_id_as_float))))
+		{
+			// We did find a plate id, but it's not an integer.
+			// Should we round it and use it, or complain?
+			// Let's complain.
+			throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;
+		}
+		// The plate id is an integer.
+		// Now, we'll cast it to an integer type for the rest of GPlates.
+		GPlatesModel::integer_plate_id_type plate_id_as_integer =
+			static_cast<GPlatesModel::integer_plate_id_type>(plate_id_as_float);
+		vgp.plate_id = plate_id_as_integer;
 		
 		next_line = input.readLine();
 		++line_number;
@@ -472,37 +490,6 @@ namespace
 		}
 		vgp.age = *age;
 		last_good_position = input.pos();
-		
-		// Line 11, plate id. This is optional. 
-		next_line = input.readLine();
-		++line_number;
-		
-		boost::optional<float> plate_id = check_format_and_return_value(next_line);
-		if (!plate_id)
-		{
-			// No plate id field; that's ok, but to keep track of line numbers for
-			// error-reporting, reset the line number and text stream.
-			--line_number;
-			input.seek(last_good_position);
-			vgp.plate_id = boost::none;
-		}
-		else {
-			// We have a plate id field.
-			float plate_id_as_float = *plate_id;
-			if ((GPlatesMaths::Real(plate_id_as_float) !=
-					GPlatesMaths::Real(std::floor(plate_id_as_float))))
-			{
-				// We did find a plate id, but it's not an integer.
-				// Should we round it and use it, or complain?
-				// Let's complain.
-				throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;
-			}
-			// The plate id is an integer.
-			// Now, we'll cast it to an integer type for the rest of GPlates.
-			GPlatesModel::integer_plate_id_type plate_id_as_integer =
-					static_cast<GPlatesModel::integer_plate_id_type>(plate_id_as_float);
-			vgp.plate_id = plate_id_as_integer;
-		}
 
 		// If we've come this far, we should have enough information to create the feature.
 
@@ -520,6 +507,13 @@ GPlatesFileIO::GmapReader::read_file(
 	GPlatesModel::ModelInterface &model,
 	ReadErrorAccumulation &read_errors)
 {
+	// By placing all changes to the model under the one changeset, we ensure that
+	// feature revision ids don't get changed from what was loaded from file no
+	// matter what we do to the features.
+	GPlatesModel::ChangesetHandle changeset(
+			model.access_model(),
+			"open " + fileinfo.get_qfileinfo().fileName().toStdString());
+
 	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	
 	QFile file(filename);
@@ -532,8 +526,10 @@ GPlatesFileIO::GmapReader::read_file(
 
 	boost::shared_ptr<DataSource> source( 
 		new GPlatesFileIO::LocalFileDataSource(filename, DataFormats::Gmap));
-	GPlatesModel::FeatureCollectionHandle::weak_ref collection
-		= model->create_feature_collection();
+	GPlatesModel::FeatureCollectionHandle::weak_ref collection =
+		GPlatesModel::FeatureCollectionHandle::create(
+				model->root(),
+				GPlatesUtils::make_icu_string_from_qstring(fileinfo.get_display_name(true)));
 
 	// Make sure feature collection gets unloaded when it's no longer needed.
 	GPlatesModel::FeatureCollectionHandleUnloader::shared_ref collection_unloader =
@@ -546,10 +542,12 @@ GPlatesFileIO::GmapReader::read_file(
 		QString header_line = input.readLine();
 		if (line_is_header(header_line))
 		{
-			try {
+			try
+			{
 				read_feature(model, collection, header_line, input, source, line_number, read_errors);
 			} 
-			catch (GPlatesFileIO::ReadErrors::Description error) {
+			catch (GPlatesFileIO::ReadErrors::Description error)
+			{
 				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
 					new GPlatesFileIO::LineNumberInFile(line_number));
 				read_errors.d_recoverable_errors.push_back(GPlatesFileIO::ReadErrorOccurrence(
@@ -558,7 +556,7 @@ GPlatesFileIO::GmapReader::read_file(
 		}
 		line_number++;
 	}
-	if (collection->features_begin() == collection->features_end())
+	if (collection->begin() == collection->end())
 	{
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
 			new GPlatesFileIO::LineNumberInFile(0));
@@ -569,4 +567,3 @@ GPlatesFileIO::GmapReader::read_file(
 	return File::create_loaded_file(collection_unloader, fileinfo);
 }
 
- 

@@ -28,8 +28,8 @@
 #include "GlobeCanvas.h"
 #include "InformationDialog.h"
 #include "SetRasterSurfaceExtentDialog.h"
-#include "ViewportWindow.h"
 
+#include "gui/Texture.h"
 #include "property-values/InMemoryRaster.h"
 
 const float DEFAULT_LOWER_LEFT_LAT = -90.;
@@ -80,10 +80,10 @@ const QString GPlatesQtWidgets::SetRasterSurfaceExtentDialog::s_help_dialog_text
 		"</body></html>\n");
 
 GPlatesQtWidgets::SetRasterSurfaceExtentDialog::SetRasterSurfaceExtentDialog(
-		ViewportWindow &viewport_window, 
+		GPlatesGui::Texture &texture, 
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
-	d_viewport_window_ptr(&viewport_window),
+	d_texture(texture),
 	d_extent(DEFAULT_LOWER_LEFT_LON,
 				DEFAULT_LOWER_LEFT_LAT,
 				DEFAULT_UPPER_RIGHT_LON-DEFAULT_LOWER_LEFT_LON,
@@ -92,11 +92,32 @@ GPlatesQtWidgets::SetRasterSurfaceExtentDialog::SetRasterSurfaceExtentDialog(
 {
 	setupUi(this);
 
-	QObject::connect(button_help,SIGNAL(clicked()),d_help_dialog,SLOT(show()));
-	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(handle_cancel()));
-	QObject::connect(button_default_fields,SIGNAL(clicked()),this,SLOT(handle_reset_to_default_fields()));
+	QObject::connect(
+			button_help,
+			SIGNAL(clicked()),
+			d_help_dialog.get(),
+			SLOT(show()));
+	QObject::connect(
+			button_cancel,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_cancel()));
+	QObject::connect(
+			button_default_fields,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_reset_to_default_fields()));
+	QObject::connect(
+			this,
+			SIGNAL(finished(int)),
+			this,
+			SLOT(close_help_dialog(int)));
 }
 
+GPlatesQtWidgets::SetRasterSurfaceExtentDialog::~SetRasterSurfaceExtentDialog()
+{
+	d_help_dialog->reject();
+}
 
 void
 GPlatesQtWidgets::SetRasterSurfaceExtentDialog::accept()
@@ -114,14 +135,20 @@ GPlatesQtWidgets::SetRasterSurfaceExtentDialog::accept()
 		// that texture immediately afterwards with another one. 
 		// The time taken to re-map is small though, at least in comparison
 		// with file input. 
-		d_viewport_window_ptr->globe_canvas().globe().texture().set_extent(d_extent);
+		d_texture.set_extent(d_extent);
 		done(QDialog::Accepted);
 	}
-	else {
+	else
+	{
 		// Don't close the dialog, and do something to inform the user.	
 	};
 }
 
+void
+GPlatesQtWidgets::SetRasterSurfaceExtentDialog::close_help_dialog(int)
+{
+	d_help_dialog->hide();
+}
 
 void
 GPlatesQtWidgets::SetRasterSurfaceExtentDialog::handle_cancel()

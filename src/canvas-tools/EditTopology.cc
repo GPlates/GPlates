@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date: 2009-02-06 15:36:27 -0800 (Fri, 06 Feb 2009) $
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  * Copyright (C) 2008, 2009 California Institute of Technology 
  *
  * This file is part of GPlates.
@@ -31,21 +31,21 @@
 
 #include "EditTopology.h"
 
-#include "app-logic/Reconstruct.h"
+#include "app-logic/ApplicationState.h"
 #include "app-logic/TopologyInternalUtils.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "global/InternalInconsistencyException.h"
 #include "gui/AddClickedGeometriesToFeatureTable.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
+#include "presentation/ViewState.h"
 #include "property-values/XsString.h"
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/TopologyToolsWidget.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "utils/UnicodeStringUtils.h"
 #include "utils/GeometryCreationUtils.h"
-#include "presentation/ViewState.h"
 
 
 GPlatesCanvasTools::EditTopology::EditTopology(
@@ -58,7 +58,6 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget):
 	GlobeCanvasTool(globe_, globe_canvas_),
 	d_rendered_geom_collection(&view_state_.get_rendered_geometry_collection()),
-	d_reconstruct_ptr(&view_state_.get_reconstruct()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
 	d_topology_sections_container_ptr(&topology_sections_container),
@@ -85,6 +84,12 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 	// else check type 
 
 	// Check feature type via qstrings 
+	//
+	// FIXME: Do this check based on feature properties rather than feature type.
+	// So if something looks like a TCPB (because it has a topology polygon property)
+	// then treat it like one. For this to happen we first need TopologicalNetwork to
+	// use a property type different than TopologicalPolygon.
+	//
 	static const QString topology_boundary_type_name ("TopologicalClosedPlateBoundary");
 	static const QString topology_network_type_name ("TopologicalNetwork");
 	QString feature_type_name = GPlatesUtils::make_qstring_from_icu_string(

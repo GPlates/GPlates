@@ -2,12 +2,12 @@
 
 /**
  * \file 
- * Contains the definition of the class FeatureHandle.
+ * Contains the definition of the FeatureHandle class.
  *
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,27 +28,20 @@
 #ifndef GPLATES_MODEL_FEATUREHANDLE_H
 #define GPLATES_MODEL_FEATUREHANDLE_H
 
-#include "FeatureRevision.h"
+#include <boost/function.hpp>
+#include <boost/scoped_ptr.hpp>
+
+#include "BasicHandle.h"
 #include "FeatureId.h"
+#include "FeatureRevision.h"
 #include "FeatureType.h"
-#include "RevisionAwareIterator.h"
-#include "WeakReference.h"
+#include "RevisionId.h"
 
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
+#include "global/PointerTraits.h"
 #include "utils/ReferenceCount.h"
-
 
 namespace GPlatesModel
 {
-	// Forward declaration to avoid circularity of headers.
-	template<class T> class WeakObserverVisitor;
-	class DummyTransactionHandle;
-	class FeatureCollectionHandle;
-	class FeatureVisitor;
-	class ConstFeatureVisitor;
-
-
 	/**
 	 * A feature handle acts as a persistent handle to the revisioned content of a conceptual
 	 * feature.
@@ -80,423 +73,212 @@ namespace GPlatesModel
 	 * feature type and the feature ID.
 	 */
 	class FeatureHandle :
+			public BasicHandle<FeatureHandle>,
 			public GPlatesUtils::ReferenceCount<FeatureHandle>
 	{
-	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<FeatureHandle,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FeatureHandle,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const FeatureHandle,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const FeatureHandle,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+	public:
 
 		/**
 		 * The type of this class.
-		 *
-		 * This definition is used for template magic.
 		 */
 		typedef FeatureHandle this_type;
 
 		/**
-		 * The type which contains the revisioning component of a feature.
+		 * Typedef for a function that accepts a pointer to a property and returns a boolean.
+		 */
+		typedef boost::function<bool (const GPlatesGlobal::PointerTraits<const TopLevelProperty>::non_null_ptr_type &)>
+			property_predicate_type;
+
+		/**
+		 * Creates a new FeatureHandle instance with @a feature_type_ and optional
+		 * @a feature_id_ and @a revision_id_.
 		 *
-		 * This typedef is used by the RevisionAwareIterator.
-		 */
-		typedef FeatureRevision revision_component_type;
-
-		/**
-		 * The type used for const-iterating over the collection of top-level properties.
-		 */
-		typedef RevisionAwareIterator<const FeatureHandle,
-				const revision_component_type::top_level_property_collection_type,
-				boost::intrusive_ptr<const TopLevelProperty> >
-				properties_const_iterator;
-
-		/**
-		 * The type used for (non-const) iterating over the collection of top-level
-		 * properties.
-		 */
-		typedef RevisionAwareIterator<FeatureHandle,
-				revision_component_type::top_level_property_collection_type,
-				boost::intrusive_ptr<TopLevelProperty> >
-				properties_iterator;
-
-		/**
-		 * The base type of all const weak observers of instances of this class.
-		 */
-		typedef WeakObserver<const FeatureHandle> const_weak_observer_type;
-
-		/**
-		 * The base type of all (non-const) weak observers of instances of this class.
-		 */
-		typedef WeakObserver<FeatureHandle> weak_observer_type;
-
-		/**
-		 * The type used for a weak-ref to a const feature handle.
-		 */
-		typedef WeakReference<const FeatureHandle> const_weak_ref;
-
-		/**
-		 * The type used for a weak-ref to a (non-const) feature handle.
-		 */
-		typedef WeakReference<FeatureHandle> weak_ref;
-
-		/**
-		 * Translate the non-const iterator @a iter to the equivalent const-iterator.
-		 */
-		static
-		const properties_const_iterator
-		get_const_iterator(
-				const properties_iterator &iter)
-		{
-			if (iter.collection_handle_ptr() == NULL) {
-				return properties_const_iterator();
-			}
-			return properties_const_iterator::create_for_index(
-					*(iter.collection_handle_ptr()), iter.index());
-		}
-
-		/**
-		 * Translate the non-const weak-ref @a ref to the equivalent const-weak-ref.
-		 */
-		static
-		const const_weak_ref
-		get_const_weak_ref(
-				const weak_ref &ref)
-		{
-			if (ref.handle_ptr() == NULL) {
-				return const_weak_ref();
-			}
-			return const_weak_ref(*(ref.handle_ptr()));
-		}
-
-		/**
-		 * Destructor.
-		 *
-		 * Unsubscribes all weak observers.
-		 */
-		~FeatureHandle();
-
-		/**
-		 * Create a new FeatureHandle instance with feature type @a feature_type_ and
-		 * feature ID @a feature_id_.
+		 * This new FeatureHandle instance is not in the model. It is the
+		 * responsibility of the caller to add it to a FeatureCollectionHandle if
+		 * that is desired.
 		 */
 		static
 		const non_null_ptr_type
 		create(
 				const FeatureType &feature_type_,
-				const FeatureId &feature_id_)
-		{
-			non_null_ptr_type ptr(new FeatureHandle(feature_type_, feature_id_),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
-		}
+				const FeatureId &feature_id_ = FeatureId(),
+				const RevisionId &revision_id_ = RevisionId());
 
 		/**
-		 * Create a new FeatureHandle instance with feature type @a feature_type_, feature
-		 * ID @a feature_id_ and revision ID @a revision_id_.
+		 * Creates a new FeatureHandle instance with @a feature_type_ and optional
+		 * @a feature_id_ and @a revision_id_.
+		 *
+		 * This new FeatureHandle instance is added to @a feature_collection and a
+		 * weak-ref to the new instance is returned.
 		 */
 		static
-		const non_null_ptr_type
+		const weak_ref
 		create(
+				const WeakReference<FeatureCollectionHandle> &feature_collection,
 				const FeatureType &feature_type_,
-				const FeatureId &feature_id_,
-				const RevisionId &revision_id_)
-		{
-			non_null_ptr_type ptr(new FeatureHandle(feature_type_, feature_id_, revision_id_),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
-		}
-
+				const FeatureId &feature_id_ = FeatureId(),
+				const RevisionId &revision_id_ = RevisionId());
 
 		/**
-		 * Create a duplicate of this FeatureHandle instance.
+		 * Makes a clone of this feature.
 		 *
-		 * Note that this will perform a "shallow copy".
+		 * The returned feature has a new feature ID
+		 * and revision. The clone shares property objects with this feature, but
+		 * that is fine, because property objects in the model are immutable; if a
+		 * property were to be changed in this feature, the clone would point to the
+		 * old property object, while this feature would point to the new property
+		 * object. Hence, there is no need for a "deep clone" method.
+		 *
+		 * The new feature is not in a feature collection. The caller of this function
+		 * is responsible for placing the feature in a feature collection, if that is
+		 * desired.
 		 */
 		const non_null_ptr_type
-		clone() const
-		{
-			non_null_ptr_type dup(new FeatureHandle(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
-		}
+		clone() const;
 
 		/**
-		 * Return a const-weak-ref to this FeatureHandle instance.
-		 */
-		const const_weak_ref
-		reference() const
-		{
-			const_weak_ref ref(*this);
-			return ref;
-		}
-
-		/**
-		 * Return a (non-const) weak-ref to this FeatureHandle instance.
+		 * Makes a clone of this feature.
+		 *
+		 * The returned feature has a new feature ID and revision.
+		 * The clone shares property objects with this feature, but
+		 * that is fine, because property objects in the model are immutable; if a
+		 * property were to be changed in this feature, the clone would point to the
+		 * old property object, while this feature would point to the new property
+		 * object. Hence, there is no need for a "deep clone" method.
+		 *
+		 * The new feature is added to @a feature_collection and a weak_ref to the
+		 * new feature is returned.
 		 */
 		const weak_ref
-		reference()
-		{
-			weak_ref ref(*this);
-			return ref;
-		}
+		clone(
+				const WeakReference<FeatureCollectionHandle> &feature_collection) const;
 
 		/**
-		 * Return the feature type of this feature.
+		 * Makes a clone of this feature (but only the property values for which
+		 * the given predicate @a clone_properties_predicate returns true).
 		 *
-		 * Note that no "setter" is provided:  The feature type of a feature should never
-		 * be changed.
+		 * The returned feature has a new feature ID and revision.
+		 * The clone shares property objects with this feature, but
+		 * that is fine, because property objects in the model are immutable; if a
+		 * property were to be changed in this feature, the clone would point to the
+		 * old property object, while this feature would point to the new property
+		 * object. Hence, there is no need for a "deep clone" method.
+		 *
+		 * The new feature is not in a feature collection. The caller of this function
+		 * is responsible for placing the feature in a feature collection, if that is
+		 * desired.
+		 */
+		const non_null_ptr_type
+		clone(
+				const property_predicate_type &clone_properties_predicate) const;
+
+		/**
+		 * Makes a clone of this feature (but only the property values for which
+		 * the given predicate @a clone_properties_predicate returns true).
+		 *
+		 * The returned feature has a new feature ID and revision.
+		 * The clone shares property objects with this feature, but
+		 * that is fine, because property objects in the model are immutable; if a
+		 * property were to be changed in this feature, the clone would point to the
+		 * old property object, while this feature would point to the new property
+		 * object. Hence, there is no need for a "deep clone" method.
+		 *
+		 * The new feature is added to @a feature_collection and a weak_ref to the
+		 * new feature is returned.
+		 */
+		const weak_ref
+		clone(
+				const WeakReference<FeatureCollectionHandle> &feature_collection,
+				const property_predicate_type &clone_properties_predicate) const;
+
+		/**
+		 * @see BasicHandle<FeatureHandle>::add.
+		 *
+		 * A new revision ID is generated if this Handle is not already present in the
+		 * current changeset.
+		 */
+		iterator
+		add(
+				GPlatesGlobal::PointerTraits<TopLevelProperty>::non_null_ptr_type new_child);
+
+		/**
+		 * @see BasicHandle<FeatureHandle>::remove.
+		 *
+		 * A new revision ID is generated if this Handle is not already present in the
+		 * current changeset.
+		 */
+		void
+		remove(
+				const_iterator iter);
+
+		/**
+		 * Changes the child pointed to by iterator @a iter into @a new_child.
+		 */
+		void
+		set(
+				iterator iter,
+				child_type::non_null_ptr_to_const_type new_child);
+
+		/**
+		 * Removes all children properties that have the given @a property_name.
+		 */
+		void
+		remove_properties_by_name(
+				const PropertyName &property_name);
+
+		/**
+		 * Returns the feature type of this feature.
+		 *
+		 * No "setter" method is provided because the feature type of a feature
+		 * should never be changed.
 		 */
 		const FeatureType &
-		feature_type() const
-		{
-			return d_feature_type;
-		}
+		feature_type() const;
 
 		/**
-		 * Return the feature ID of this feature.
+		 * Returns the feature ID of this feature.
 		 *
-		 * Note that no "setter" is provided:  The feature ID of a feature should never be
-		 * changed.
+		 * No "setter" method is provided because the feature ID of a feature should
+		 * never be changed.
 		 */
 		const FeatureId &
-		feature_id() const
-		{
-			return d_feature_id;
-		}
+		feature_id() const;
 
 		/**
-		 * Return the revision ID of the current revision.
+		 * Returns the revision ID of the current revision of this feature.
 		 *
-		 * Note that no "setter" is provided:  The revision ID of a revision should never
-		 * be changed.
+		 * No "setter" method is provided because the revision ID should never be
+		 * manually changed.
 		 */
 		const RevisionId &
 		revision_id() const;
 
-		/**
-		 * Return the "begin" const-iterator to iterate over the collection of top-level
-		 * properties.
-		 */
-		const properties_const_iterator
-		properties_begin() const
-		{
-			return properties_const_iterator::create_begin(*this);
-		}
-
-		/**
-		 * Return the "begin" iterator to iterate over the collection of top-level
-		 * properties.
-		 */
-		const properties_iterator
-		properties_begin()
-		{
-			return properties_iterator::create_begin(*this);
-		}
-
-		/**
-		 * Return the "end" const-iterator used during iteration over the collection of
-		 * top-level properties.
-		 */
-		const properties_const_iterator
-		properties_end() const
-		{
-			return properties_const_iterator::create_end(*this);
-		}
-
-		/**
-		 * Return the "end" iterator used during iteration over the collection of top-level
-		 * properties.
-		 */
-		const properties_iterator
-		properties_end()
-		{
-			return properties_iterator::create_end(*this);
-		}
-
-		/**
-		 * Append @a new_top_level_property to the collection.
-		 *
-		 * An iterator is returned which points to the new element in the collection.
-		 *
-		 * After the TopLevelProperty has been appended, the "end" iterator will have
-		 * advanced -- the length of the sequence will have increased by 1, so what was the
-		 * iterator to the last element of the sequence (the "back" of the container), will
-		 * now be the iterator to the second-last element of the sequence; what was the
-		 * "end" iterator will now be the iterator to the last element of the sequence.
-		 */
-		const properties_iterator
-		append_top_level_property(
-				TopLevelProperty::non_null_ptr_type new_top_level_property,
-				DummyTransactionHandle &transaction);
-
-		/**
-		 * Remove the top-level property indicated by @a iter in the collection.
-		 *
-		 * The results of this operation are only defined if @a iter is before @a end.
-		 *
-		 * The "end" iterator will not be changed by this operation -- the length of the
-		 * sequence will not change, only a top-level-property-slot will become NULL.
-		 */
-		void
-		remove_top_level_property(
-				properties_const_iterator iter,
-				DummyTransactionHandle &transaction);
-
-		/**
-		 * Remove the top-level property indicated by @a iter in the collection.
-		 *
-		 * The results of this operation are only defined if @a iter is before @a end.
-		 *
-		 * The "end" iterator will not be changed by this operation -- the length of the
-		 * sequence will not change, only a top-level-property-slot will become NULL.
-		 */
-		void
-		remove_top_level_property(
-				properties_iterator iter,
-				DummyTransactionHandle &transaction);
-
-		/**
-		 * Access the current revision of this feature.
-		 *
-		 * Client code should not need to access the revision directly!
-		 *
-		 * This is the overloading of this function for const FeatureHandle instances; it
-		 * returns a pointer to a const FeatureRevision instance.
-		 */
-		const FeatureRevision::non_null_ptr_to_const_type
-		current_revision() const
-		{
-			return d_current_revision;
-		}
-
-		/**
-		 * Access the current revision of this feature.
-		 *
-		 * Client code should not need to access the revision directly!
-		 *
-		 * This is the overloading of this function for non-const FeatureHandle instances;
-		 * it returns a C++ reference to a pointer to a non-const FeatureRevision instance.
-		 *
-		 * Note that, because the copy-assignment operator of FeatureRevision is private,
-		 * the FeatureRevision referenced by the return-value of this function cannot be
-		 * assigned-to, which means that this function does not provide a means to directly
-		 * switch the FeatureRevision within this FeatureHandle instance.  (This
-		 * restriction is intentional.)
-		 *
-		 * To switch the FeatureRevision within this FeatureHandle instance, use the
-		 * function @a set_current_revision below.
-		 */
-		const FeatureRevision::non_null_ptr_type
-		current_revision()
-		{
-			return d_current_revision;
-		}
-
-		/**
-		 * Set the current revision of this feature to @a rev.
-		 *
-		 * Client code should not use this function!
-		 */
-		void
-		set_current_revision(
-				FeatureRevision::non_null_ptr_type rev)
-		{
-			d_current_revision = rev;
-		}
-
-		/**
-		 * Set the pointer to the FeatureCollectionHandle which contains this feature.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function should only be invoked by a FeatureCollectionRevision instance
-		 * when it has appended or removed a feature.  This is part of the mechanism which
-		 * tracks whether a feature collection contains unsaved changes, and (later) part
-		 * of the Bubble-Up mechanism.
-		 */
-		void
-		set_feature_collection_handle_ptr(
-				FeatureCollectionHandle *new_ptr)
-		{
-			d_feature_collection_handle_ptr = new_ptr;
-		}
-
-		/**
-		 * Apply the supplied WeakObserverVisitor to all weak observers of this instance.
-		 */
-		void
-		apply_weak_observer_visitor(
-				WeakObserverVisitor<FeatureHandle> &visitor);
-
-		/**
-		 * Access the first const weak observer of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by WeakObserver.
-		 */
-		const_weak_observer_type *&
-		first_const_weak_observer() const
-		{
-			return d_first_const_weak_observer;
-		}
-
-		/**
-		 * Access the first weak observer of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by WeakObserver.
-		 */
-		weak_observer_type *&
-		first_weak_observer()
-		{
-			return d_first_weak_observer;
-		}
-
-		/**
-		 * Access the last const weak observer of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by WeakObserver.
-		 */
-		const_weak_observer_type *&
-		last_const_weak_observer() const
-		{
-			return d_last_const_weak_observer;
-		}
-
-		/**
-		 * Access the last weak observer of this instance.
-		 *
-		 * Client code should not use this function!
-		 *
-		 * This function is used by WeakObserver.
-		 */
-		weak_observer_type *&
-		last_weak_observer()
-		{
-			return d_last_weak_observer;
-		}
-
 	private:
 
 		/**
-		 * The current revision of this feature.
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of this type on the stack.
 		 */
-		FeatureRevision::non_null_ptr_type d_current_revision;
+		FeatureHandle(
+				const FeatureType &feature_type_,
+				const FeatureId &feature_id_, 
+				GPlatesGlobal::PointerTraits<revision_type>::non_null_ptr_type revision_);
+
+		/**
+		 * This constructor should not be defined, because we don't want to be able
+		 * to copy construct one of these objects.
+		 */
+		FeatureHandle(
+				const this_type &other);
+
+		/**
+		 * This should not be defined, because we don't want to be able to copy
+		 * one of these objects.
+		 */
+		this_type &
+		operator=(
+				const this_type &);
 
 		/**
 		 * The type of this feature.
@@ -504,192 +286,19 @@ namespace GPlatesModel
 		FeatureType d_feature_type;
 
 		/**
-		 * The unique feature ID of this feature instance.
+		 * The unique feature ID of this feature.
 		 */
 		FeatureId d_feature_id;
 
-		/**
-		 * The first const weak observer of this instance.
-		 */
-		mutable const_weak_observer_type *d_first_const_weak_observer;
-
-		/**
-		 * The first weak observer of this instance.
-		 */
-		mutable weak_observer_type *d_first_weak_observer;
-
-		/**
-		 * The last const weak observer of this instance.
-		 */
-		mutable const_weak_observer_type *d_last_const_weak_observer;
-
-		/**
-		 * The last weak observer of this instance.
-		 */
-		mutable weak_observer_type *d_last_weak_observer;
-
-		/**
-		 * The feature collection which contains this feature.
-		 *
-		 * Note that this should be held via a (regular, raw) pointer rather than a
-		 * ref-counting pointer (or any other type of smart pointer) because:
-		 *  -# The feature collection instance conceptually manages the instance of this
-		 * class, not the other way around.
-		 *  -# A feature collection instance will outlive the features it contains; thus,
-		 * it doesn't make sense for a feature collection to have its memory managed by its
-		 * contained features.
-		 *  -# Class FeatureCollectionHandle contains a ref-counting pointer to class
-		 * FeatureCollectionRevision, which contains a vector which contains ref-counting
-		 * pointers to class FeatureHandle, and we don't want to set up a ref-counting loop
-		 * (which would lead to memory leaks).
-		 */
-		FeatureCollectionHandle *d_feature_collection_handle_ptr;
-
-		/**
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 */
-		FeatureHandle(
-				const FeatureType &feature_type_,
-				const FeatureId &feature_id_);
-
-		/**
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 */
-		FeatureHandle(
-				const FeatureType &feature_type_,
-				const FeatureId &feature_id_,
-				const RevisionId &revision_id_);
-
-		/**
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 *
-		 * This ctor should only be invoked by the 'clone' member function, which will
-		 * create a duplicate instance and return a new non_null_intrusive_ptr reference to
-		 * the new duplicate.  Since initially the only reference to the new duplicate will
-		 * be the one returned by the 'clone' function, *before* the new intrusive-pointer
-		 * is created, the ref-count of the new FeatureHandle instance should be zero.
-		 *
-		 * Note that this ctor should act exactly the same as the default (auto-generated)
-		 * copy-ctor, except that it should initialise the ref-count to zero, and it will
-		 * generate a new unique feature ID.
-		 */
-		FeatureHandle(
-				const FeatureHandle &other);
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive-pointer to another.
-		FeatureHandle &
-		operator=(
-				const FeatureHandle &);
 	};
 
-	/**
-	 * Get the first weak observer of the publisher pointed-to by @a publisher_ptr.
-	 *
-	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
-	 *
-	 * This function is used by the WeakObserver template class when subscribing and
-	 * unsubscribing weak observers from the publisher.  This function mimics the Boost
-	 * intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
-	 *
-	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
-	 * WeakObserver<const T> (since those two template instantiations are considered completely
-	 * different types in C++, which, for the first time ever, is actually what we want).  The
-	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
-	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
-	 * will not.
-	 */
-	inline
-	WeakObserver<const FeatureHandle> *&
-	weak_observer_get_first(
-			const FeatureHandle *publisher_ptr,
-			const WeakObserver<const FeatureHandle> *)
-	{
-		return publisher_ptr->first_const_weak_observer();
-	}
-
-
-	/**
-	 * Get the last weak observer of the publisher pointed-to by @a publisher_ptr.
-	 *
-	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
-	 *
-	 * This function is used by the WeakObserver template class when subscribing and
-	 * unsubscribing weak observers from the publisher.  This style of function mimics the
-	 * Boost intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
-	 *
-	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
-	 * WeakObserver<const T> (since those two template instantiations are considered completely
-	 * different types in C++, which, for the first time ever, is actually what we want).  The
-	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
-	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
-	 * will not.
-	 */
-	inline
-	WeakObserver<const FeatureHandle> *&
-	weak_observer_get_last(
-			const FeatureHandle *publisher_ptr,
-			const WeakObserver<const FeatureHandle> *)
-	{
-		return publisher_ptr->last_const_weak_observer();
-	}
-
-
-	/**
-	 * Get the first weak observer of the publisher pointed-to by @a publisher_ptr.
-	 *
-	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
-	 *
-	 * This function is used by the WeakObserver template class when subscribing and
-	 * unsubscribing weak observers from the publisher.  This function mimics the Boost
-	 * intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
-	 *
-	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
-	 * WeakObserver<const T> (since those two template instantiations are considered completely
-	 * different types in C++, which, for the first time ever, is actually what we want).  The
-	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
-	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
-	 * will not.
-	 */
-	inline
-	WeakObserver<FeatureHandle> *&
-	weak_observer_get_first(
-			FeatureHandle *publisher_ptr,
-			const WeakObserver<FeatureHandle> *)
-	{
-		return publisher_ptr->first_weak_observer();
-	}
-
-
-	/**
-	 * Get the last weak observer of the publisher pointed-to by @a publisher_ptr.
-	 *
-	 * It is assumed that @a publisher_ptr is a non-NULL pointer which is valid to dereference.
-	 *
-	 * This function is used by the WeakObserver template class when subscribing and
-	 * unsubscribing weak observers from the publisher.  This style of function mimics the
-	 * Boost intrusive_ptr functions @a intrusive_ptr_add_ref and @a intrusive_ptr_release.
-	 *
-	 * The second parameter is used to enable strictly-typed overloads for WeakObserver<T> vs
-	 * WeakObserver<const T> (since those two template instantiations are considered completely
-	 * different types in C++, which, for the first time ever, is actually what we want).  The
-	 * actual argument to the second parameter doesn't matter -- It's not used at all -- as
-	 * long as it's of the correct type:  The @a this pointer will suffice; the NULL pointer
-	 * will not.
-	 */
-	inline
-	WeakObserver<FeatureHandle> *&
-	weak_observer_get_last(
-			FeatureHandle *publisher_ptr,
-			const WeakObserver<FeatureHandle> *)
-	{
-		return publisher_ptr->last_weak_observer();
-	}
 }
+
+// This include is not necessary for this header to function, but it would be
+// convenient if client code could include this header and be able to use
+// iterator or const_iterator without having to separately include the
+// following header. It isn't placed above with the other includes because of
+// cyclic dependencies.
+#include "RevisionAwareIterator.h"
 
 #endif  // GPLATES_MODEL_FEATUREHANDLE_H

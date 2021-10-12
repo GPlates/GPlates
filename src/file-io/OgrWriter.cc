@@ -35,7 +35,7 @@
 #include "OgrWriter.h"
 #include "OgrException.h"
 #include "feature-visitors/ToQvariantConverter.h"
-#include "maths/LatLonPointConversions.h"
+#include "maths/LatLonPoint.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 
@@ -180,7 +180,7 @@ namespace{
 
 			if (num_attributes_in_layer != num_attributes_in_dictionary)
 			{
-				qDebug() << "Mismatch in number of fields.";
+				qDebug() << "OGR Writer: Mismatch in number of fields.";
 			}
 
 			element_iterator_type 
@@ -196,7 +196,7 @@ namespace{
 				if (QString::compare(model_string,layer_string) != 0)
 				{
 					// FIXME: Think of something suitable to do here. 
-					qDebug() << "Mismatch in field names.";
+					qDebug() << "Mismatch in field names: model: " << model_string << ", layer : " << layer_string;
 				}
 
 				QVariant value_variant = get_qvariant_from_element(*iter);
@@ -208,25 +208,38 @@ namespace{
 				if (layer_type != model_type)
 				{
 					// FIXME: Think of something suitable to do here. 
-					qDebug() << "Mismatch in field types.";
+					qDebug() << "OGR Writer: Mismatch in field types.";
 				}
 
 				// FIXME: Check that it's possible to represent the variants in the required forms.
+				// The various QVariant .toXXX functions will return 0/0.0/empty-string if the 
+				// QVariant could not be converted to the requested form, but we should 
+				// warn the user if this happens.
+				bool ok;
 				switch(layer_type)
 				{
 				case OFTInteger:
-					ogr_feature->SetField(count,value_variant.toInt());
+					{			
+						int value = value_variant.toInt(&ok);
+						if (ok)
+						{
+							ogr_feature->SetField(count,value);					
+						}
+					}
 					break;
 				case OFTReal:
-					ogr_feature->SetField(count,value_variant.toDouble());
+					{
+						double value = value_variant.toDouble(&ok);
+						if (ok)
+						{
+							ogr_feature->SetField(count,value);					
+						}
+					}
 					break;
 				case OFTString:
+				default:
 					ogr_feature->SetField(count,value_variant.toString().toStdString().c_str());
 					break;
-				default:
-					// Handle anything else as a string. 
-					ogr_feature->SetField(count,value_variant.toString().toStdString().c_str());
-					
 				}
 
 			}
