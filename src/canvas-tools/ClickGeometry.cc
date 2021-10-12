@@ -31,16 +31,58 @@
 #include "ClickGeometry.h"
 
 #include "gui/ProximityTests.h"
+#include "global/InternalInconsistencyException.h"
+#include "model/FeatureHandle.h"
+#include "model/ReconstructedFeatureGeometry.h"
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/FeaturePropertiesDialog.h"
-#include "gui/RenderedGeometryLayers.h"
-#include "model/FeatureHandle.h"
-#include "model/ReconstructedFeatureGeometry.h"
-#include "global/InternalInconsistencyException.h"
+#include "view-operations/RenderedGeometryCollection.h"
 
 
-	
+const GPlatesCanvasTools::ClickGeometry::non_null_ptr_type
+GPlatesCanvasTools::ClickGeometry::create(
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		GPlatesGui::Globe &globe,
+		GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+		const GPlatesQtWidgets::ViewportWindow &view_state,
+		GPlatesGui::FeatureTableModel &clicked_table_model,
+		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
+		GPlatesGui::FeatureFocus &feature_focus,
+		GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight)
+{
+	return ClickGeometry::non_null_ptr_type(
+			new ClickGeometry(
+					rendered_geom_collection,
+					globe,
+					globe_canvas,
+					view_state,
+					clicked_table_model,
+					fp_dialog,
+					feature_focus,
+					geometry_focus_highlight),
+			GPlatesUtils::NullIntrusivePointerHandler());
+}
+
+GPlatesCanvasTools::ClickGeometry::ClickGeometry(
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		GPlatesGui::Globe &globe_,
+		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesGui::FeatureTableModel &clicked_table_model_,
+		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
+		GPlatesGui::FeatureFocus &feature_focus_,
+		GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight_):
+	CanvasTool(globe_, globe_canvas_),
+	d_rendered_geom_collection(&rendered_geom_collection),
+	d_view_state_ptr(&view_state_),
+	d_clicked_table_model_ptr(&clicked_table_model_),
+	d_fp_dialog_ptr(&fp_dialog_),
+	d_feature_focus_ptr(&feature_focus_),
+	d_geometry_focus_highlight(&geometry_focus_highlight_)
+{
+}
+
 void
 GPlatesCanvasTools::ClickGeometry::handle_activation()
 {
@@ -50,8 +92,14 @@ GPlatesCanvasTools::ClickGeometry::handle_activation()
 			" Shift+click to query immediately."
 			" Ctrl+drag to re-orient the globe."));
 
-	d_layers_ptr->show_only_geometry_focus_layer();
-	globe_canvas().update_canvas();
+	// Activate the geometry focus hightlight layer.
+	d_rendered_geom_collection->set_main_layer_active(
+			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
+
+	// We explicitly draw the focused geometry (if any) because currently it only
+	// gets drawn when the feature is given focus which may not happen when switching
+	// tools.
+	d_geometry_focus_highlight->draw_focused_geometry();
 }
 
 

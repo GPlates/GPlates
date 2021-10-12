@@ -36,13 +36,17 @@
 #include <QObject>
 #include <QString>
 
-#include "ManageFeatureCollectionsActionWidget.h"
+#include "ApplicationState.h"
+#include "file-io/FeatureCollectionFileFormat.h"
 
 #include "ManageFeatureCollectionsDialogUi.h"
+
 
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
+	class ManageFeatureCollectionsActionWidget;
+	class ManageFeatureCollectionsStateWidget;
 	
 
 	class ManageFeatureCollectionsDialog:
@@ -60,16 +64,30 @@ namespace GPlatesQtWidgets
 		
 		/**
 		 * Updates the contents of the table to match the current ApplicationState.
+		 * This clears the table completely, and adds a new row for each loaded file.
 		 */
 		void
 		update();
+		
+		/**
+		 * Updates the ManageFeatureCollectionStateWidgets in the current table,
+		 * based on whether the referenced files are currently active or not.
+		 *
+		 * This does not clear the table or add rows - it is not supposed to handle
+		 * addition or removal of files, only changes in file 'active' state (triggered
+		 * by clicking on the StateWidgets), as in this situation it is undesirable
+		 * to clear and re-build the table.
+		 */
+		void
+		update_state();
+		
 		
 		/**
 		 * Initiates editing of the file configuration. 
 		 */
 		void
 		edit_configuration(
-			ManageFeatureCollectionsActionWidget *action_widget_ptr);
+				ManageFeatureCollectionsActionWidget *action_widget_ptr);
 
 		/**
 		 * Causes the file referenced by the action widget to be saved with its
@@ -101,12 +119,39 @@ namespace GPlatesQtWidgets
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
 
 		/**
+		 * Unloads and re-loads the file referenced by the action widget.
+		 */
+		void
+		reload_file(
+				ManageFeatureCollectionsActionWidget *action_widget_ptr);
+
+		/**
 		 * Causes the file referenced by the action widget to be unloaded,
 		 * and removed from the table. No user interaction is necessary.
 		 */
 		void
 		unload_file(
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
+
+		/**
+		 * Causes the file referenced by the state widget to be added or
+		 * removed from the active reconstructable files list, effectively
+		 * 'showing' or 'hiding' that feature data.
+		 */
+		void
+		set_reconstructable_state_for_file(
+				ManageFeatureCollectionsStateWidget *state_widget_ptr,
+				bool desired_state);
+
+		/**
+		 * Causes the file referenced by the state widget to be added or
+		 * removed from the active reconstruction files list, meaning
+		 * GPlates will use or ignore any reconstruction tree present.
+		 */
+		void
+		set_reconstruction_state_for_file(
+				ManageFeatureCollectionsStateWidget *state_widget_ptr,
+				bool desired_state);
 	
 	public slots:
 	
@@ -116,7 +161,7 @@ namespace GPlatesQtWidgets
 		void
 		save_all()
 		{  }	// FIXME: This should invoke a call on AppState or ViewportWindow etc.
-	
+			
 	protected:
 	
 		/**
@@ -129,7 +174,7 @@ namespace GPlatesQtWidgets
 		 * Adds a row to the table, creating a ManageFeatureCollectionsActionWidget to
 		 * store the FileInfo and the buttons used to interact with the file.
 		 */
-		ManageFeatureCollectionsActionWidget *
+		void
 		add_row(
 				GPlatesAppState::ApplicationState::file_info_iterator file_it);
 		
@@ -147,7 +192,14 @@ namespace GPlatesQtWidgets
 		void
 		remove_row(
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
-	
+
+		/**
+		 * Get format for writing to feature collection file.
+		 */
+		GPlatesFileIO::FeatureCollectionWriteFormat::Format
+			get_feature_collection_write_format(
+			const GPlatesFileIO::FileInfo& file_info);
+
 	private:
 		
 		/**

@@ -29,12 +29,17 @@
 #define GPLATES_FILEIO_PLATESLINEFORMATWRITER_H
 
 #include <iosfwd>
-#include <boost/optional.hpp>
+#include <vector>
+#include <boost/scoped_ptr.hpp>
+#include <QFile>
+#include <QTextStream>
+
 #include "FileInfo.h"
+#include "FeatureWriter.h"
+#include "PlatesLineFormatHeaderVisitor.h"
+
 #include "model/ConstFeatureVisitor.h"
 #include "model/PropertyName.h"
-#include "property-values/GmlTimeInstant.h"
-#include "property-values/GpmlOldPlatesHeader.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -43,13 +48,16 @@
 
 namespace GPlatesFileIO
 {
+	struct OldPlatesHeader;
+
 	class PlatesLineFormatWriter:
-			public GPlatesModel::ConstFeatureVisitor
+			public FeatureWriter,
+			private GPlatesModel::ConstFeatureVisitor
 	{
 	public:
 
 		/**
-		 * @pre file_info.is_writable() is true.
+		 * @pre is_writable(file_info) is true.
 		 */
 		explicit
 		PlatesLineFormatWriter(
@@ -57,9 +65,18 @@ namespace GPlatesFileIO
 
 		virtual
 		~PlatesLineFormatWriter()
-		{
-			delete d_output;
-		}
+		{ }
+
+		/**
+		* Writes a feature in PLATES4 line format.
+		*
+		* @param feature_handle feature to write
+		*/
+		virtual
+			void
+			write_feature(const GPlatesModel::FeatureHandle& feature_handle);
+
+	private:
 
 		virtual
 		void
@@ -97,162 +114,64 @@ namespace GPlatesFileIO
 				const GPlatesPropertyValues::GmlPolygon &gml_polygon);
 
 		virtual
+			void
+			visit_gpml_constant_value(
+			const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+
 		void
-		visit_gml_time_instant(
-				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
+			print_header_lines(
+			const OldPlatesHeader &old_plates_header);
 
-		virtual
-		void
-		visit_gml_time_period(
-				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
+		//! Accumulates feature geometry(s) when visiting a feature.
+		class FeatureAccumulator
+		{
+		public:
+			typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries_type;
+			typedef geometries_type::const_iterator geometries_const_iterator_type;
 
-		virtual
-		void
-		visit_gpml_constant_value(
-				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value);
+			void add_geometry(GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry)
+			{
+				d_feature_geometries.push_back(geometry);
+			}
 
-		virtual
-		void
-		visit_gpml_finite_rotation(
-				const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
+			bool have_geometry() const
+			{
+				return !d_feature_geometries.empty();
+			}
 
-		virtual
-		void
-		visit_gpml_finite_rotation_slerp(
-				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
-
-		virtual
-		void
-		visit_gpml_irregular_sampling(
-				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
-
-		virtual
-		void
-		visit_gpml_old_plates_header(
-				const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
-
-		virtual
-		void
-		visit_gpml_plate_id(
-				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
-
-		virtual
-		void
-		visit_xs_string(
-				const GPlatesPropertyValues::XsString &xs_string);
-
-	private:
-
-		struct PlatesLineFormatAccumulator {
-
-			struct OldPlatesHeader {
-				unsigned region_number;
-				unsigned reference_number;
-				unsigned string_number;
-				UnicodeString geographic_description;
-				GPlatesModel::integer_plate_id_type plate_id_number;
-				double age_of_appearance;
-				double age_of_disappearance;
-				UnicodeString data_type_code;
-				unsigned data_type_code_number;
-				UnicodeString data_type_code_number_additional;
-				GPlatesModel::integer_plate_id_type conjugate_plate_id_number;
-				unsigned colour_code;
-				unsigned number_of_points;
-
-				OldPlatesHeader(
-						unsigned int region_number_,
-						unsigned int reference_number_,
-						unsigned int string_number_,
-						const UnicodeString &geographic_description_,
-						GPlatesModel::integer_plate_id_type plate_id_number_,
-						double age_of_appearance_,
-						double age_of_disappearance_,
-						const UnicodeString &data_type_code_,
-						unsigned int data_type_code_number_,
-						const UnicodeString &data_type_code_number_additional_,
-						GPlatesModel::integer_plate_id_type conjugate_plate_id_number_,
-						unsigned int colour_code_,
-						unsigned int number_of_points_):
-					region_number(region_number_),
-					reference_number(reference_number_),
-					string_number(string_number_),
-					geographic_description(geographic_description_),
-					plate_id_number(plate_id_number_),
-					age_of_appearance(age_of_appearance_),
-					age_of_disappearance(age_of_disappearance_),
-					data_type_code(data_type_code_),
-					data_type_code_number(data_type_code_number_),
-					data_type_code_number_additional(data_type_code_number_additional_),
-					conjugate_plate_id_number(conjugate_plate_id_number_),
-					colour_code(colour_code_),
-					number_of_points(number_of_points_)
-				{ }
-
-				/**
-				 * Default constructor for an OldPlatesHeader.
-				 *
-				 * The hard-coded default values used here were chosen for their
-				 * ability to alert the user to their invalidity (e.g., there is
-				 * no '999' plate id, nor 'XX' data type in the PLATES4 format).
-				 */
-				OldPlatesHeader() : 
-					region_number(0),
-					reference_number(0),
-					string_number(0),
-					geographic_description("This header contains only default values."),
-					plate_id_number(999),
-					age_of_appearance(999.0),
-					age_of_disappearance(-999.0),
-					data_type_code("XX"),
-					data_type_code_number(0),
-					data_type_code_number_additional(""),
-					conjugate_plate_id_number(999),
-					colour_code(1),
-					number_of_points(1)
-				{ }
-			};
-
-			boost::optional<OldPlatesHeader> old_plates_header;
-
-			boost::optional<UnicodeString> feature_type;
-			boost::optional<UnicodeString> feature_id;
-
-			boost::optional<GPlatesModel::integer_plate_id_type> plate_id;
-			boost::optional<GPlatesModel::integer_plate_id_type> conj_plate_id;
-			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_appearance;
-			boost::optional<GPlatesPropertyValues::GeoTimeInstant> age_of_disappearance;
+			//@{
 			/**
-			 * These four boost::optionals are used to store the geometry encountered
-			 * during the visitor's traversal of properties.
-			 */
-			boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> 
-					multi_point;
-			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
-					polygon;
-			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> 
-					polyline;
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
-					point;
+			* Begin/end of geometry sequence.
+			* Dereference to get 'GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type'.
+			*/
+			geometries_const_iterator_type geometries_begin() const
+			{
+				return d_feature_geometries.begin();
+			}
+			geometries_const_iterator_type geometries_end() const
+			{
+				return d_feature_geometries.end();
+			}
+			//@}
 
-			boost::optional<GPlatesModel::PropertyName> current_propname;
+			//! Clear accumulation when starting on a new feature.
+			void clear()
+			{
+				d_feature_geometries.clear();
+			}
 
-			/**
-			 * Test whether the accumulator has acquired enough information to
-			 * be able to print a meaningful entry in a PLATES4 file.
-			 */
-			bool 
-			have_sufficient_info_for_output() const;
-
+		private:
+			//! Stores geometries encountered while traversing a feature.
+			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_feature_geometries;
 		};
-	   	
-		PlatesLineFormatAccumulator d_accum;
-		std::ostream *d_output;
 
-		void
-		print_header_lines(
-				std::ostream *os, 
-				const PlatesLineFormatAccumulator::OldPlatesHeader &old_plates_header);
+		//! Stores geometries encountered while traversing a feature.
+		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_feature_geometries;
+	   	
+		boost::scoped_ptr<QFile> d_output_file;
+		boost::scoped_ptr<QTextStream> d_output_stream;
+		FeatureAccumulator d_feature_accumulator;
+		PlatesLineFormatHeaderVisitor d_feature_header;
 	};
 }
 

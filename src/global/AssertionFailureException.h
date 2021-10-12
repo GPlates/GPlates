@@ -52,7 +52,7 @@ namespace GPlatesGlobal
 		 * FIXME: Ideally, we'd be tracking the call stack etc, and also supplying
 		 * some sort of function object that might be used to do damage control
 		 * for the program should such an exception be thrown. For example, the
-		 * DigitisationWidgetUndoCommands have a few exceptional 'should never
+		 * DigitisationStateUndoCommands have a few exceptional 'should never
 		 * ever reach here' states. The 'recovery' function of those exceptions
 		 * might be to clear the digitisation widget and wipe the undo stack clean,
 		 * restoring the widget to a known sane state, and then alerting the user.

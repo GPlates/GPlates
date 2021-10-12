@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, Geological Survey of Norway
+ * Copyright (C) 2008 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -66,8 +66,7 @@ namespace GPlatesPropertyValues
 		void
 		generate_raster(
 				std::vector<unsigned_byte_type> &data,
-				int width,
-				int height,
+				QSize &size,
 				ColourFormat format) = 0;
 
 
@@ -78,10 +77,8 @@ namespace GPlatesPropertyValues
 		void
 		generate_raster(
 				unsigned_byte_type *data,
-				int width,
-				int height,
+				QSize &size,
 				ColourFormat format) = 0;
-
 
 		/**
 		 * For a raster representing "scientific" data as opposed to an RGB image, this

@@ -85,6 +85,14 @@ namespace
 
 
 void
+GPlatesFileIO::PlatesRotationFormatWriter::write_feature(
+	const GPlatesModel::FeatureHandle& feature_handle)
+{
+	feature_handle.accept_visitor(*this);
+}
+
+
+void
 GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::print_rotation_lines(
 		std::ostream *os)
 {
@@ -138,7 +146,6 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::have
 	// The only thing we can do without is the comment.
 	return moving_plate_id && fixed_plate_id && ! reconstruction_poles.empty();
 }
-
 
 void
 GPlatesFileIO::PlatesRotationFormatWriter::visit_feature_handle(

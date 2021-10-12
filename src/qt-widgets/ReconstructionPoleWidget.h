@@ -35,7 +35,13 @@
 #include "gui/SimpleGlobeOrientation.h"
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
+#include "view-operations/RenderedGeometryCollection.h"
 
+
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryFactory;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -54,8 +60,9 @@ namespace GPlatesQtWidgets
 		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 				geometry_collection_type;
 
-		explicit
 		ReconstructionPoleWidget(
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
 				ViewportWindow &view_state,
 				QWidget *parent_ = NULL);
 
@@ -101,17 +108,10 @@ namespace GPlatesQtWidgets
 				double new_time);
 
 		void
-		activate()
-		{
-			d_is_active = true;
-			draw_initial_geometries_at_activation();
-		}
+		activate();
 
 		void
-		deactivate()
-		{
-			d_is_active = false;
-		}
+		deactivate();
 
 	protected:
 
@@ -168,6 +168,27 @@ namespace GPlatesQtWidgets
 		clear_and_reset_after_reconstruction();
 
 	private:
+		/**
+		 * Used to draw rendered geometries.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
+
+		/**
+		 * Used to create @a RenderedGeometry objects.
+		 */
+		GPlatesViewOperations::RenderedGeometryFactory *d_rendered_geom_factory;
+
+		/**
+		 * Rendered geometry layer to render initial geometries.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_initial_geom_layer_ptr;
+
+		/**
+		 * Rendered geometry layer to render dragged geometries.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_dragged_geom_layer_ptr;
 
 		ViewportWindow *d_view_state_ptr;
 
@@ -228,6 +249,12 @@ namespace GPlatesQtWidgets
 		 * dragging?
 		 */
 		geometry_collection_type d_initial_geometries;
+
+		void
+		make_signal_slot_connections();
+
+		void
+		create_child_rendered_layers();
 	};
 }
 

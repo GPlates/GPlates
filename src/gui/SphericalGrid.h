@@ -29,6 +29,7 @@
 #define GPLATES_GUI_SPHERICALGRID_H
 
 #include "NurbsRenderer.h"
+#include "utils/VirtualProxy.h"
 
 
 namespace GPlatesGui
@@ -58,7 +59,8 @@ namespace GPlatesGui
 				const Colour &colour);
 
 	private:
-		NurbsRenderer d_nurbs;
+		// Delay creation of NurbsRenderer object until it's used.
+		GPlatesUtils::VirtualProxy<NurbsRenderer> d_nurbs;
 
 		unsigned d_num_circles_lat;
 		unsigned d_num_circles_lon;

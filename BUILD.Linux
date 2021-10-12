@@ -20,27 +20,26 @@ Package dependencies
 Firstly, you should ensure that you have installed all the packages which are
 dependencies for compilation.
 
+See "DEPS.Linux" for more information on installing dependencies.
+
 Commands to execute
 
  1. Change your working directory (if not already) into the base directory of
     the GPlates source code.
  2. Configure and compile the program:
 
-	./configure && make
+	cmake .
+    make
 
     * If you wish to install GPlates to a location other than the default
-      ("/usr/local"), specify the "--prefix" argument to ./configure. For more
-      information, see the Installing GPlates step below.
+      ("/usr/local"), specify the "-DCMAKE_INSTALL_PREFIX:STRING" argument to "cmake".
+      For more information, see the Installing GPlates step below.
 
 The GPlates executable
 
 The GPlates executable will be called "gplates", located in the "src"
-directory. Important note: While it is possible to run "src/gplates" directly
-from the source tree (thanks to libtool magic), the actual executable is
-located in "src/.libs/", so an attempt to move the executable somewhere else
-for execution will probably fail (thanks to libtool magic). If you want to do
-more than test GPlates from the source directory, you will need to install it
-on your system.
+directory. If you want to do more than test GPlates from the source directory,
+you will need to install it on your system.
 
 Installing GPlates
 
@@ -48,16 +47,17 @@ The command
 
 	make install
 
-Will copy the relevant executables and shared libraries to the default
-location, "/usr/local". The GPlates executable will be installed as "/usr/local
-/bin/gplates". Note that you will need to be root to install software to "/usr/
-local". On Ubuntu systems, this is accomplished by prefixing the command with
+Will copy the "gplates" executable to the default location, "/usr/local".
+The GPlates executable will be installed as "/usr/local/bin/gplates".
+Note that you will need to be root to install software to "/usr/local".
+On Ubuntu systems, this is accomplished by prefixing the command with
 "sudo", i.e. "sudo make install".
 
-If you wish to install to a different location, use the "--prefix" argument to
-"./configure". For example:
+If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:STRING" argument to
+"cmake". For example:
 
-	./configure --prefix $HOME/usr && make
+	cmake -DCMAKE_INSTALL_PREFIX:STRING=$HOME/usr .
+    make
 	make install
 
 This will install GPlates in your home directory as "~/usr/bin/gplates".

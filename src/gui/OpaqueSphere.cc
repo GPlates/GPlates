@@ -38,20 +38,20 @@ namespace
 
 
 GPlatesGui::OpaqueSphere::OpaqueSphere(const Colour &colour)
- : _colour(colour) {
+ : d_colour(colour) {
 
-	_quad.setNormals(GLU_SMOOTH);
-	_quad.setOrientation(GLU_OUTSIDE);
-	_quad.setGenerateTexture(GL_FALSE);
-	_quad.setDrawStyle(GLU_FILL);
+	d_quad.set_normals(GLU_SMOOTH);
+	d_quad.set_orientation(GLU_OUTSIDE);
+	d_quad.set_generate_texture(GL_FALSE);
+	d_quad.set_draw_style(GLU_FILL);
 
 }
 
 
 void
-GPlatesGui::OpaqueSphere::Paint() {
+GPlatesGui::OpaqueSphere::paint() {
 
-	glColor3fv(_colour);
-	_quad.drawSphere(RADIUS, NUM_SLICES, NUM_STACKS);
+	glColor3fv(d_colour);
+	d_quad.draw_sphere(RADIUS, NUM_SLICES, NUM_STACKS);
 }
 

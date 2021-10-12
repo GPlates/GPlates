@@ -104,6 +104,7 @@ namespace GPlatesFileIO
 			
 			// The following relate to raster files.
 			InsufficientTextureMemory,
+			ErrorGeneratingTexture,
 
 			// The following relate to GDAL-readable Raster files.
 			ErrorReadingGDALBand,

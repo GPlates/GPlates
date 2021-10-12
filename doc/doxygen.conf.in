@@ -372,7 +372,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = ../src/feature-visitors ../src/file-io ../src/model ../src/property-values ../src/utils
+INPUT                  = @DOXYGEN_INPUT@
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -1042,7 +1042,7 @@ DOT_IMAGE_FORMAT       = png
 # The tag DOT_PATH can be used to specify the path where the dot tool can be 
 # found. If left blank, it is assumed the dot tool can be found on the path.
 
-DOT_PATH               = 
+DOT_PATH               = @DOT_PATH@
 
 # The DOTFILE_DIRS tag can be used to specify one or more directories that 
 # contain dot files that are included in the documentation (see the 

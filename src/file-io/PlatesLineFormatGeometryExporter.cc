@@ -146,7 +146,9 @@ void
 GPlatesFileIO::PlatesLineFormatGeometryExporter::export_geometry(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr)
 {
+#if 0
 	qDebug(Q_FUNC_INFO);
+#endif
 	// Write the coordinate list of the geometry.
 	geometry_ptr->accept_visitor(*this);
 	// Write the final terminating point.
@@ -158,7 +160,9 @@ void
 GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_point_on_sphere(
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
+#if 0
 	qDebug(Q_FUNC_INFO);
+#endif
 	// Skip-to then draw-to the same location, producing a point.
 	print_plates_coordinate_line(*d_stream_ptr, *point_on_sphere, PenPositions::PEN_SKIP_TO_POINT,
 			d_reverse_coordinate_order);
@@ -171,7 +175,9 @@ void
 GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
+#if 0
 	qDebug(Q_FUNC_INFO);
+#endif
 	// Write out each point of the polygon.
 	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_on_sphere->vertex_begin();
 	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_on_sphere->vertex_end();
@@ -201,7 +207,9 @@ void
 GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_polyline_on_sphere(
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {
+#if 0
 	qDebug(Q_FUNC_INFO);
+#endif
 	// Write out each point of the polyline.
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = polyline_on_sphere->vertex_begin();
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = polyline_on_sphere->vertex_end();

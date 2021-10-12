@@ -28,6 +28,9 @@
 #ifndef GPLATES_GUI_PLATESCOLOURTABLE_H
 #define GPLATES_GUI_PLATESCOLOURTABLE_H
 
+#include <boost/scoped_ptr.hpp>
+#include <vector>
+
 #include "Colour.h"
 #include "model/types.h"
 #include "model/Model.h"
@@ -44,7 +47,8 @@ namespace GPlatesGui
 			Instance();
 
 			virtual
-			~PlatesColourTable();
+			~PlatesColourTable()
+			{  }
 
 			ColourTable::const_iterator
 			end() const
@@ -67,7 +71,17 @@ namespace GPlatesGui
 			/**
 			 * The singleton instance.
 			 */
-			static PlatesColourTable *d_instance;
+			static boost::scoped_ptr<PlatesColourTable> d_instance;
+
+			/**
+			 * Typedef for sequence of @a Colour objects.
+			 */
+			typedef std::vector<Colour> colour_seq_type;
+
+			/**
+			 * Typedef for sequence of @a Colour pointers.
+			 */
+			typedef std::vector<const Colour *> colour_ptr_seq_type;
 
 			/**
 			 * A mapping of Plate ID (aka "rid_t", for "rotation
@@ -86,7 +100,7 @@ namespace GPlatesGui
 			 * _highest_known_rid + 1 (since, for example, an index
 			 * of 3 requires an array of at least 3 + 1 == 4).
 			 */
-			Colour **d_id_table;
+			colour_ptr_seq_type d_id_table;
 
 			/**
 			 * The highest Plate ID (aka "rid_t", for "rotation
@@ -102,7 +116,24 @@ namespace GPlatesGui
 			 * ID -> Colour mapping (that's what @a _id_table is
 			 * for); it just holds the Colour objects.
 			 */
-			Colour *d_colours;
+			colour_seq_type d_colours;
+
+			struct MappingPair
+			{
+				GPlatesModel::integer_plate_id_type id;
+				Colour colour;
+			};
+
+			void
+			populate(
+					const MappingPair array[],
+					size_t array_len);
+
+			static
+			GPlatesModel::integer_plate_id_type
+			getHighestID(
+					const MappingPair array[],
+					size_t array_len);
 	};
 }
 

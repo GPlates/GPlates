@@ -28,10 +28,14 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLKEYVALUEDICTIONARY_H
 #define GPLATES_PROPERTYVALUES_GPMLKEYVALUEDICTIONARY_H
 
+#include <vector>
+
 #include "model/PropertyValue.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 
 namespace GPlatesPropertyValues {
+
+	class GpmlKeyValueDictionaryElement;
 
 	class GpmlKeyValueDictionary :
 			public GPlatesModel::PropertyValue {

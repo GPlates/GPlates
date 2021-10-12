@@ -31,7 +31,7 @@
 // We're building on a UNIX-y system, and can thus expect "global/config.h".
 
 // On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
-// The "configure" script should have determined which one to use.
+// The "CMake" script should have determined which one to use.
 #include "global/config.h"
 #ifdef HAVE_GDAL_OGRSF_FRMTS_H
 #include <gdal/gdal_priv.h>
@@ -43,10 +43,8 @@
 #include <gdal_priv.h>
 #endif  // HAVE_CONFIG_H
 
-
-#ifdef _MSC_VER
-#define isnan _isnan
-#endif
+// Use this header instead of <cmath> if you want to use 'std::isnan'.
+#include <cmath_ext.h>
 
 #include <QtOpenGL/qgl.h>
 #include <QColor>
@@ -147,7 +145,7 @@ namespace{
 			for ( ; it != it_end ; ++it)
 			{
 				data = *it;
-				if (isnan(data)){
+				if (std::isnan(data)){
 					std::cerr << "NaN detected" << std::endl;
 					colour = Qt::black;
 				}
@@ -365,8 +363,8 @@ GPlatesFileIO::GdalReader::read_file(
 #if 0
 	display_gdal_band_info(gdal_band_ptr);
 #endif
-	int width = gdal_band_ptr->GetXSize();
-	int height = gdal_band_ptr->GetYSize();
+
+	QSize size(gdal_band_ptr->GetXSize(),gdal_band_ptr->GetYSize());
 
 	std::vector<GLubyte> image_RGB;
 
@@ -402,7 +400,7 @@ GPlatesFileIO::GdalReader::read_file(
 	raster.set_min(colour_min);
 	raster.set_max(colour_max);
 	raster.set_corresponds_to_data(true);
-	raster.generate_raster(image_RGB,width,height,
+	raster.generate_raster(image_RGB,size,
 		GPlatesPropertyValues::InMemoryRaster::RgbaFormat);
 	raster.set_enabled(true);
 

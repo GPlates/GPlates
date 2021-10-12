@@ -36,39 +36,58 @@
 #include <vector>
 #include <string>
 #include <list>
+#include <boost/scoped_ptr.hpp>
 #include <QtCore/QTimer>
 #include <QCloseEvent>
 #include <QStringList>
 #include <QUndoGroup>
 
-#include "ApplicationState.h"
-#include "ViewportWindowUi.h"
-#include "GlobeCanvas.h"
-#include "ReconstructionViewWidget.h"
-#include "SpecifyFixedPlateDialog.h"
-#include "SetCameraViewpointDialog.h"
-#include "AnimateDialog.h"
 #include "AboutDialog.h"
-#include "LicenseDialog.h"
+#include "AnimateDialog.h"
+#include "ApplicationState.h"
 #include "FeaturePropertiesDialog.h"
-#include "ReadErrorAccumulationDialog.h"
+#include "GlobeCanvas.h"
+#include "LicenseDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
-#include "EulerPoleDialog.h"
+#include "ReadErrorAccumulationDialog.h"
+#include "ReconstructionViewWidget.h"
+#include "SetCameraViewpointDialog.h"
+#include "SetRasterSurfaceExtentDialog.h"
+#include "SpecifyFixedPlateDialog.h"
 #include "TaskPanel.h"
+#include "TotalReconstructionPolesDialog.h"
+#include "ShapefileAttributeViewerDialog.h"
+#include "ViewportWindowUi.h"
 
+#include "file-io/FeatureCollectionFileFormat.h"
+
+#include "gui/ColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
-#include "gui/ColourTable.h"
+#include "gui/ChooseCanvasTool.h"
+
+#include "maths/GeometryOnSphere.h"
 
 #include "model/ModelInterface.h"
 
-#include "maths/GeometryOnSphere.h"
+
+#include "view-operations/GeometryBuilder.h"
+#include "view-operations/GeometryOperationRenderParameters.h"
+#include "view-operations/FocusedFeatureGeometryManipulator.h"
+#include "view-operations/GeometryBuilderToolTarget.h"
+#include "view-operations/RenderedGeometryCollection.h"
 
 
 namespace GPlatesGui
 {
 	class CanvasToolAdapter;
 	class CanvasToolChoice;
+	class ChooseCanvasTool;
+}
+
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryFactory;
 }
 
 namespace GPlatesQtWidgets
@@ -81,7 +100,9 @@ namespace GPlatesQtWidgets
 		
 	public:
 		ViewportWindow();
-		
+
+		~ViewportWindow();
+
 		GPlatesModel::Reconstruction &
 		reconstruction() const
 		{
@@ -206,13 +227,13 @@ namespace GPlatesQtWidgets
 		}
 
 		void
-		pop_up_euler_pole_dialog();
+		pop_up_total_reconstruction_poles_dialog();
 	
 		void
-		open_global_raster();
+		open_raster();
 
 		void
-		open_time_dependent_global_raster_set();
+		open_time_dependent_raster_sequence();
 		
 		// FIXME: Should be a ViewState operation, or /somewhere/ better than this.
 		void
@@ -246,6 +267,23 @@ namespace GPlatesQtWidgets
 		load_files(
 				const QStringList &file_names);
 
+		/**
+		 * Given a file_info_iterator, reloads the data for that file from disk,
+		 * replacing the FeatureCollection associated with that file_info_iterator.
+		 */
+		void
+		reload_file(
+				file_info_iterator file_it);
+
+		/**
+		 * Creates a fresh, empty, FeatureCollection. Associates a 'dummy'
+		 * FileInfo for it, and registers it with ApplicationState so that
+		 * the FeatureCollection can be reconstructed and saved via
+		 * the ManageFeatureCollectionsDialog.
+		 */
+		GPlatesAppState::ApplicationState::file_info_iterator
+		create_empty_reconstructable_file();
+
 
 		/**
 		 * Write the feature collection associated to @a file_info to the file
@@ -253,7 +291,9 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		save_file(
-				const GPlatesFileIO::FileInfo &file_info);
+				const GPlatesFileIO::FileInfo &file_info,
+				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
+					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
 
 
 		/**
@@ -265,7 +305,9 @@ namespace GPlatesQtWidgets
 		void
 		save_file_as(
 				const GPlatesFileIO::FileInfo &file_info,
-				file_info_iterator features_to_save);
+				file_info_iterator features_to_save,
+				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
+					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
 
 
 		/**
@@ -278,7 +320,9 @@ namespace GPlatesQtWidgets
 		GPlatesFileIO::FileInfo
 		save_file_copy(
 				const GPlatesFileIO::FileInfo &file_info,
-				file_info_iterator features_to_save);
+				file_info_iterator features_to_save,
+				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
+					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
 
 
 		/**
@@ -297,9 +341,49 @@ namespace GPlatesQtWidgets
 		deactivate_loaded_file(
 				file_info_iterator loaded_file);
 
+		/**
+		 * Tests if the @a loaded_file is active, either as reconstructable features
+		 * or an active reconstruction tree.
+		 */
 		bool
 		is_file_active(
 				file_info_iterator loaded_file);
+
+		/**
+		 * Tests if the @a loaded_file is active and being used for reconstructable
+		 * feature data.
+		 */
+		bool
+		is_file_active_reconstructable(
+				file_info_iterator loaded_file);
+
+		/**
+		 * Tests if the @a loaded_file is active and being used for reconstruction
+		 * tree data.
+		 */
+		bool
+		is_file_active_reconstruction(
+				file_info_iterator loaded_file);
+		
+		/**
+		 * Temporarily shows or hides a feature collection by adding or removing
+		 * it from the list of active reconstructable files. This does not
+		 * un-load the file.
+		 */
+		void
+		set_file_active_reconstructable(
+				file_info_iterator file_it,
+				bool activate);
+
+		/**
+		 * Temporarily enables or disables a reconstruction tree by adding or
+		 * removing it from the list of active reconstruction files. This does not
+		 * un-load the file.
+		 */
+		void
+		set_file_active_reconstruction(
+				file_info_iterator file_it,
+				bool activate);
 			
 		/**
 		 * Temporary method for initiating shapefile attribute remapping. 
@@ -309,6 +393,61 @@ namespace GPlatesQtWidgets
 			GPlatesFileIO::FileInfo &file_info);
 
 	private:
+		GPlatesModel::ModelInterface *d_model_ptr;
+		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
+
+		//@{
+		// ViewState 
+
+		active_files_collection_type d_active_reconstructable_files;
+		active_files_collection_type d_active_reconstruction_files;
+
+		//@}
+
+		//! Must be declared before 'd_reconstruction_view_widget'.
+		GPlatesViewOperations::RenderedGeometryCollection d_rendered_geom_collection;
+
+		double d_recon_time;
+		GPlatesModel::integer_plate_id_type d_recon_root;
+		ReconstructionViewWidget d_reconstruction_view_widget;
+		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
+
+		AboutDialog d_about_dialog;
+		AnimateDialog d_animate_dialog;
+		TotalReconstructionPolesDialog d_total_reconstruction_poles_dialog;
+		FeaturePropertiesDialog d_feature_properties_dialog;	// Depends on FeatureFocus.
+		LicenseDialog d_license_dialog;
+		ManageFeatureCollectionsDialog d_manage_feature_collections_dialog;
+		ReadErrorAccumulationDialog d_read_errors_dialog;
+		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
+		SetRasterSurfaceExtentDialog d_set_raster_surface_extent_dialog;
+		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
+
+		bool d_animate_dialog_has_been_shown;
+		GlobeCanvas *d_canvas_ptr;
+		boost::scoped_ptr<GPlatesGui::CanvasToolChoice> d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
+		boost::scoped_ptr<GPlatesGui::CanvasToolAdapter> d_canvas_tool_adapter_ptr;
+		boost::scoped_ptr<GPlatesGui::ChooseCanvasTool> d_choose_canvas_tool;
+		GPlatesViewOperations::GeometryBuilder d_digitise_geometry_builder;
+		GPlatesViewOperations::GeometryBuilder d_focused_feature_geometry_builder;
+		GPlatesViewOperations::GeometryOperationRenderParameters d_geom_operation_render_parameters;
+		GPlatesViewOperations::GeometryBuilderToolTarget d_geom_builder_tool_target;
+		GPlatesViewOperations::FocusedFeatureGeometryManipulator d_focused_feature_geom_manipulator;
+
+		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
+		ShapefileAttributeViewerDialog d_shapefile_attribute_viewer_dialog;
+
+		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
+
+		//  map a time value to a raster filename
+		QMap<int,QString> d_time_dependent_raster_map;
+
+		// The last path used for opening raster files.
+		QString d_open_file_path; 
+
+		// The current colour table in use. Do not access this directly, use
+		// get_colour_table() instead.
+		GPlatesGui::ColourTable *d_colour_table_ptr;
 	
 		/**
 		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
@@ -331,50 +470,13 @@ namespace GPlatesQtWidgets
 		void
 		set_up_dock_context_menus();
 
-
-		GPlatesModel::ModelInterface *d_model_ptr;
-		GPlatesModel::Reconstruction::non_null_ptr_type d_reconstruction_ptr;
-
-		//@{
-		// ViewState 
-
-		active_files_collection_type d_active_reconstructable_files;
-		active_files_collection_type d_active_reconstruction_files;
-		
-		QUndoGroup d_undo_group;
-
-		//@}
-
-		double d_recon_time;
-		GPlatesModel::integer_plate_id_type d_recon_root;
-		ReconstructionViewWidget d_reconstruction_view_widget;
-		GPlatesGui::FeatureFocus d_feature_focus;	// Might be in ViewState.
-		SpecifyFixedPlateDialog d_specify_fixed_plate_dialog;
-		SetCameraViewpointDialog d_set_camera_viewpoint_dialog;
-		AnimateDialog d_animate_dialog;
-		AboutDialog d_about_dialog;
-		LicenseDialog d_license_dialog;
-		FeaturePropertiesDialog d_feature_properties_dialog;	// Depends on FeatureFocus.
-		ReadErrorAccumulationDialog d_read_errors_dialog;
-		ManageFeatureCollectionsDialog d_manage_feature_collections_dialog;
-		bool d_animate_dialog_has_been_shown;
-		GlobeCanvas *d_canvas_ptr;
-		GPlatesGui::CanvasToolAdapter *d_canvas_tool_adapter_ptr;
-		GPlatesGui::CanvasToolChoice *d_canvas_tool_choice_ptr;		// Depends on FeatureFocus, because QueryFeature does. Also depends on DigitisationWidget.
-		EulerPoleDialog d_euler_pole_dialog;
-		TaskPanel *d_task_panel_ptr;	// Depends on FeatureFocus and the Model d_model_ptr.
-
-		GPlatesGui::FeatureTableModel *d_feature_table_model_ptr;	// The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.
-
-		//  map a time value to a raster filename
-		QMap<int,QString> d_time_dependent_raster_map;
-
-		// The last path used for opening raster files.
-		QString d_open_file_path; 
-
-		// The current colour table in use. Do not access this directly, use
-		// get_colour_table() instead.
-		GPlatesGui::ColourTable *d_colour_table_ptr;
+		/**
+		 * Returns rendered geometry factory.
+		 *
+		 * Since this is canvas-specific it could be moved to a base Canvas interface.
+		 */
+		GPlatesViewOperations::RenderedGeometryFactory &
+		get_rendered_geometry_factory();
 
 		void
 		uncheck_all_tools();
@@ -383,12 +485,14 @@ namespace GPlatesQtWidgets
 		uncheck_all_colouring_tools();
 
 		bool
-		load_global_raster(
+		load_raster(
 			QString filename);
 
 		void
 		update_time_dependent_raster();
 
+		void
+		initialise_rendered_geom_collection();
 
 	private slots:
 		void
@@ -414,6 +518,12 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_raster_display();
+
+		void
+		pop_up_set_raster_surface_extent_dialog();
+
+		void
+		pop_up_shapefile_attribute_viewer_dialog();
 
 	protected:
 	

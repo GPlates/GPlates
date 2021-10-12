@@ -26,6 +26,7 @@
 #ifndef GPLATES_GUI_CANVASTOOLADAPTER_H
 #define GPLATES_GUI_CANVASTOOLADAPTER_H
 
+#include <boost/noncopyable.hpp>
 #include <QObject>
 #include <Qt>
 
@@ -33,6 +34,11 @@
 namespace GPlatesMaths
 {
 	class PointOnSphere;
+}
+
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryCollection;
 }
 
 namespace GPlatesGui
@@ -49,7 +55,8 @@ namespace GPlatesGui
 	 * invokes the appropriate handler function of the current choice of CanvasTool.
 	 */
 	class CanvasToolAdapter:
-			public QObject
+			public QObject,
+			private boost::noncopyable
 	{
 		Q_OBJECT
 
@@ -59,7 +66,7 @@ namespace GPlatesGui
 		 */
 		CanvasToolAdapter(
 				const CanvasToolChoice &canvas_tool_choice_):
-			d_canvas_tool_choice_ptr(&canvas_tool_choice_)
+		d_canvas_tool_choice_ptr(&canvas_tool_choice_)
 		{  }
 
 		~CanvasToolAdapter()
@@ -106,17 +113,6 @@ namespace GPlatesGui
 
 	private:
 		const CanvasToolChoice *d_canvas_tool_choice_ptr;
-
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		CanvasToolAdapter(
-				const CanvasToolAdapter &);
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		CanvasToolAdapter &
-		operator=(
-				const CanvasToolAdapter &);
 	};
 }
 

@@ -57,7 +57,9 @@ namespace GPlatesQtWidgets
 			QStringList &field_names,
 			QMap<QString,QString> &model_to_attribute_map);
 
+
 	public slots:
+
 
 		/**
 		 * Use the current state of the combo boxes to build up the 

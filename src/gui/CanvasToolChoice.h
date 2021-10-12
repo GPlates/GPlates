@@ -26,12 +26,18 @@
 #ifndef GPLATES_GUI_CANVASTOOLCHOICE_H
 #define GPLATES_GUI_CANVASTOOLCHOICE_H
 
+#include <boost/noncopyable.hpp>
 #include <QObject>
 
+#include "gui/ColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "CanvasTool.h"
 #include "FeatureTableModel.h"
 
+namespace GPlatesGui
+{
+	class ChooseCanvasTool;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -42,9 +48,18 @@ namespace GPlatesQtWidgets
 	class ReconstructionPoleWidget;
 }
 
+namespace GPlatesViewOperations
+{
+	class GeometryOperationRenderParameters;
+	class GeometryBuilderToolTarget;
+	class QueryProximityThreshold;
+	class RenderedGeometryCollection;
+	class RenderedGeometryFactory;
+}
+
 namespace GPlatesGui
 {
-	class RenderedGeometryLayers;
+	class GeometryFocusHighlight;
 
 	/**
 	 * This class contains the current choice of CanvasTool.
@@ -54,7 +69,8 @@ namespace GPlatesGui
 	 * This serves the role of the Context class in the State Pattern in Gamma et al.
 	 */
 	class CanvasToolChoice:
-			public QObject
+			public QObject,
+			private boost::noncopyable
 	{
 		Q_OBJECT
 
@@ -66,15 +82,20 @@ namespace GPlatesGui
 		 * instantiated by this class.
 		 */
 		CanvasToolChoice(
-				Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				RenderedGeometryLayers &layers,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
+				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
+				const GPlatesViewOperations::GeometryOperationRenderParameters &geom_operation_render_parameters,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
+				Globe &globe,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const GPlatesQtWidgets::ViewportWindow &view_state,
 				FeatureTableModel &clicked_table_model,
-				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
+				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesQtWidgets::DigitisationWidget &digitisation_widget_,
-				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_);
+				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget,
+				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
 		~CanvasToolChoice()
 		{  }
@@ -190,17 +211,6 @@ namespace GPlatesGui
 		 * The current choice of CanvasTool.
 		 */
 		CanvasTool::non_null_ptr_type d_tool_choice_ptr;
-
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		CanvasToolChoice(
-				const CanvasToolChoice &);
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		CanvasToolChoice &
-		operator=(
-				const CanvasToolChoice &);
 
 		void
 		change_tool_if_necessary(

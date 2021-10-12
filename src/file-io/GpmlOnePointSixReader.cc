@@ -440,17 +440,15 @@ void
 GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		FileInfo &fileinfo,
 		GPlatesModel::ModelInterface &model,
-		ReadErrorAccumulation &read_errors)
+		ReadErrorAccumulation &read_errors,
+		bool use_gzip)
 {
-	// Quickly peek at the file to find out what format it is.
-	FileInfo::FileMagic magic = fileinfo.identify_by_magic_number();
-	
 	QString filename(fileinfo.get_qfileinfo().filePath());
 	QXmlStreamReader reader;
 
 	QProcess input_process;
 	QFile input_file(filename);
-	if (magic == FileInfo::GZIP) {
+	if (use_gzip) {
 		// gzipped, assuming gzipped GPML.
 		// Set up the gzip process.
 		input_process.setStandardInputFile(filename);
@@ -464,9 +462,6 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		reader.setDevice(&input_process);
 
 	} else {
-		// Not gzipped, probably XML (although if the magic number doesn't match
-		// XML, we should attempt to read it as XML anyway because to reach this
-		// point, the user has specified a filename matching a GPML extension)
 	
 		if ( ! input_file.open(QIODevice::ReadOnly | QIODevice::Text)) 
 		{

@@ -24,8 +24,24 @@
  */
 
 #include <boost/none.hpp>
-#include "GeometryFocusHighlight.h"
 
+#include "GeometryFocusHighlight.h"
+#include "gui/ColourTable.h"
+#include "view-operations/RenderedGeometryCollection.h"
+#include "view-operations/RenderedGeometryFactory.h"
+#include "view-operations/RenderedGeometryLayer.h"
+
+
+GPlatesGui::GeometryFocusHighlight::GeometryFocusHighlight(
+		GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection):
+d_rendered_geom_factory(&rendered_geom_factory),
+d_rendered_geom_collection(&rendered_geom_collection),
+d_highlight_layer_ptr(
+		rendered_geom_collection.get_main_rendered_layer(
+				GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER))
+{
+}
 
 void
 GPlatesGui::GeometryFocusHighlight::set_focus(
@@ -36,6 +52,11 @@ GPlatesGui::GeometryFocusHighlight::set_focus(
 		// No change, so nothing to do.
 		return;
 	}
+
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
 	// Else, presumably the focused geometry has changed.
 	d_feature = feature_ref;
 	d_focused_geometry = focused_geometry;
@@ -46,14 +67,28 @@ GPlatesGui::GeometryFocusHighlight::set_focus(
 void
 GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 {
-	d_highlight_layer_ptr->clear();
-	if (d_focused_geometry) {
-		GPlatesGui::PlatesColourTable::const_iterator white = &GPlatesGui::Colour::WHITE;
-		GPlatesGui::RenderedGeometry rendered_geometry =
-				GPlatesGui::RenderedGeometry(d_focused_geometry->geometry(), white);
-		d_highlight_layer_ptr->push_back(rendered_geometry);
-	} else {
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
+	// Activate our layer.
+	d_highlight_layer_ptr->set_active();
+
+	// Clear all geometries from layer before adding them.
+	d_highlight_layer_ptr->clear_rendered_geometries();
+
+	if (d_focused_geometry)
+	{
+		const GPlatesGui::Colour &white = GPlatesGui::Colour::WHITE;
+
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				d_rendered_geom_factory->create_rendered_geometry_on_sphere(
+						d_focused_geometry->geometry(), white);
+
+		d_highlight_layer_ptr->add_rendered_geometry(rendered_geometry);
+	}
+	else
+	{
 		// No focused geometry, so nothing to draw.
 	}
-	emit canvas_should_update();
 }

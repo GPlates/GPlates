@@ -44,7 +44,8 @@ namespace GPlatesFileIO
 		read_file(
 				FileInfo &fileinfo,
 				GPlatesModel::ModelInterface &model,
-				ReadErrorAccumulation &read_errors);
+				ReadErrorAccumulation &read_errors,
+				bool use_gzip = false);
 		
 		static const ExternalProgram s_gunzip_program;
 	};

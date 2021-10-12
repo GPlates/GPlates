@@ -33,8 +33,9 @@
 namespace
 {
 	// Handle GLU quadric errors
-	GLvoid
-	QuadricError() {
+	GLvoid __CONVENTION__
+	QuadricError()
+	{
 
 		// XXX: Not sure if glGetError returns GLU error codes as well
 		// as GL codes.
@@ -48,10 +49,11 @@ namespace
 }
 
 
-GPlatesGui::Quadrics::Quadrics() {
+GPlatesGui::Quadrics::Quadrics()
+{
 
-	_q = gluNewQuadric();
-	if (_q == 0) {
+	d_quadric = gluNewQuadric();
+	if (d_quadric == 0) {
 
 		// not enough memory to allocate object
 		throw OpenGLBadAllocException(
@@ -61,12 +63,13 @@ GPlatesGui::Quadrics::Quadrics() {
 	// On Mac OS X, the compiler complained, so it was changed to this.
 	// Update: Fixed the prototype of the QuadricError callback function 
 	// and removed the varargs ellipsis from the cast type.
-	gluQuadricCallback(_q, GLU_ERROR,
-#if defined(__APPLE__)
-			// Assume compilation on OS X.
-			reinterpret_cast< GLvoid (__CONVENTION__ *)(...) >(&QuadricError));
+#if 1
+	gluQuadricCallback(d_quadric, GLU_ERROR, &QuadricError);
 #else
-			reinterpret_cast< GLvoid (__CONVENTION__ *)() >(&QuadricError));
+	// A few OS X platforms need this instead - could be OS X 10.4 or
+	// gcc 4.0.0 or PowerPC Macs ?
+	gluQuadricCallback(d_quadric, GLU_ERROR,
+		reinterpret_cast< GLvoid (__CONVENTION__ *)(...) >(&QuadricError));
 #endif
 
 }

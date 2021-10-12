@@ -33,6 +33,11 @@
 #include "gui/FeatureTableModel.h"
 
 
+namespace GPlatesGui
+{
+	class GeometryFocusHighlight;
+}
+
 namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
@@ -40,9 +45,9 @@ namespace GPlatesQtWidgets
 	class FeaturePropertiesDialog;
 }
 
-namespace GPlatesGui
+namespace GPlatesViewOperations
 {
-	class RenderedGeometryLayers;
+	class RenderedGeometryCollection;
 }
 
 namespace GPlatesCanvasTools
@@ -75,20 +80,14 @@ namespace GPlatesCanvasTools
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesGui::RenderedGeometryLayers &layers,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesGui::Globe &globe,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model,
-				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
-				GPlatesGui::FeatureFocus &feature_focus)
-		{
-			ClickGeometry::non_null_ptr_type ptr(
-					new ClickGeometry(globe_, globe_canvas_, layers, view_state_,
-							clicked_table_model, fp_dialog_, feature_focus),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
-		}
+				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
+				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
 		
 		virtual
@@ -119,22 +118,15 @@ namespace GPlatesCanvasTools
 	protected:
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		explicit
 		ClickGeometry(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesGui::RenderedGeometryLayers &layers,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::FeatureTableModel &clicked_table_model_,
-				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
-				GPlatesGui::FeatureFocus &feature_focus):
-			CanvasTool(globe_, globe_canvas_),
-			d_layers_ptr(&layers),
-			d_view_state_ptr(&view_state_),
-			d_clicked_table_model_ptr(&clicked_table_model_),
-			d_fp_dialog_ptr(&fp_dialog_),
-			d_feature_focus_ptr(&feature_focus)
-		{  }
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesGui::Globe &globe,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesGui::FeatureTableModel &clicked_table_model,
+				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
+				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesGui::GeometryFocusHighlight &geometry_focus_highlight);
 
 		const GPlatesQtWidgets::ViewportWindow &
 		view_state() const
@@ -160,7 +152,7 @@ namespace GPlatesCanvasTools
 		 * We need to change which canvas-tool layer is shown when this canvas-tool is
 		 * activated.
 		 */
-		GPlatesGui::RenderedGeometryLayers *d_layers_ptr;
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
 
 		/**
 		 * This is the view state which is used to obtain the reconstruction root.
@@ -187,17 +179,11 @@ namespace GPlatesCanvasTools
 		 * application know what the user just clicked on.
 		 */
 		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
-		
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		ClickGeometry(
-				const ClickGeometry &);
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		ClickGeometry &
-		operator=(
-				const ClickGeometry &);
+		/**
+		 * Used to draw the focused geometry explicitly (if currently in focus).
+		 */
+		GPlatesGui::GeometryFocusHighlight *d_geometry_focus_highlight;
 	};
 }
 

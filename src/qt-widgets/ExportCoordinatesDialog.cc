@@ -33,11 +33,15 @@
 #include <QClipboard>
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
+#include <memory>
 
 #include "ExportCoordinatesDialog.h"
 
 #include "InformationDialog.h"
+#include "global/GPlatesAssert.h"
+#include "global/AssertionFailureException.h"
 #include "file-io/PlatesLineFormatGeometryExporter.h"
+#include "file-io/GMTFormatGeometryExporter.h"
 
 
 namespace
@@ -47,20 +51,6 @@ namespace
 	 * It is a boost::optional because creation of geometry may fail for various reasons.
 	 */
 	typedef boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_opt_ptr_type;
-
-	/**
-	 * Enumeration for the possible formats to export to.
-	 * The order of these should match the setup of the @a combobox_format
-	 * as set up in the designer.
-	 *
-	 * FIXME: When we implement the writers, we will probably want to associate
-	 * information with these enums; this would be a good point to include the
-	 * combobox text so we can set it up in code.
-	 */
-	enum OutputFormat
-	{
-		PLATES4, GMT, WKT, CSV
-	};
 }
 
 
@@ -87,9 +77,8 @@ GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
 	setupUi(this);
 	
 	// Disable some things we're not going to implement just yet.
-	combobox_format->removeItem(3);
-	combobox_format->removeItem(2);
-	combobox_format->removeItem(1);
+	combobox_format->removeItem(CSV);
+	combobox_format->removeItem(WKT);
 	
 	// What happens when the user selects a format?
 	QObject::connect(combobox_format, SIGNAL(currentIndexChanged(int)),
@@ -118,8 +107,8 @@ GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
 	
 	// Select the default output format, to ensure that any currently-displayed
 	// widgets will be initialised to the appropriate defaults.
-	combobox_format->setCurrentIndex(0);
-	handle_format_selection(0);
+	combobox_format->setCurrentIndex(PLATES4);
+	handle_format_selection(PLATES4);
 }
 
 
@@ -152,20 +141,25 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_format_selection(
 	switch (format)
 	{
 	case PLATES4:
-			// Set some default options to match what the format prescribes.
-			combobox_coordinate_order->setCurrentIndex(0);
-			checkbox_polygon_terminating_point->setChecked(true);
-			break;
-			
+		// Set some default options to match what the format prescribes.
+		combobox_coordinate_order->setCurrentIndex(LAT_LON);
+		checkbox_polygon_terminating_point->setChecked(true);
+		break;
+
 	case GMT:
-			break;
+		// Set some default options to match what the format prescribes.
+		// Default order for GMT is (lon,lat) which is opposite of PLATES4.
+		combobox_coordinate_order->setCurrentIndex(LON_LAT);
+		checkbox_polygon_terminating_point->setChecked(true);
+		break;
+
 	case WKT:
-			break;
+		break;
 	case CSV:
-			break;
+		break;
 	default:
-			// Can't possibly happen, because we set up each possible combobox state, right?
-			return;
+		// Can't possibly happen, because we set up each possible combobox state, right?
+		return;
 	}
 }
 
@@ -193,7 +187,6 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_export()
 	// What output has the user requested?
 	OutputFormat format = OutputFormat(combobox_format->currentIndex());
 		
-	// FIXME: Set up a text stream, either to file or a QBuffer.
 	if (radiobutton_to_file->isChecked()) {
 		// Get filename.
 		QString filename = lineedit_filename->text();
@@ -214,44 +207,18 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_export()
 		}
 		
 		QTextStream text_stream(&file);
-		// FIXME: It would be awesome if we could arrange this switch -before- we
-		// open the file, to avoid clobbering the user's file needlessly.
-		switch (format)
-		{
-		case PLATES4:
-				{	// Braces used to avoid "jump to case label crosses initialization" errors.
-					GPlatesFileIO::PlatesLineFormatGeometryExporter exporter(text_stream,
-							(combobox_coordinate_order->currentIndex() != 0),
-							checkbox_polygon_terminating_point->isChecked());
-					exporter.export_geometry(*d_geometry_opt_ptr);
-					break;
-				}
-		default:
-				QMessageBox::critical(this, tr("Unsupported output format"),
-						tr("Sorry, writing in the selected format is currently not supported."));
-				return;
-		}
-		
+
+		// Create geometry exporter and export geometry.
+		export_geometry(format, text_stream);
+
 	} else {
 		// Create a byte array for the clipboard data.
 		QByteArray array;
 		
 		QTextStream text_stream(&array);
-		switch (format)
-		{
-		case PLATES4:
-				{	// Braces used to avoid "jump to case label crosses initialization" errors.
-					GPlatesFileIO::PlatesLineFormatGeometryExporter exporter(text_stream,
-							(combobox_coordinate_order->currentIndex() != 0),
-							checkbox_polygon_terminating_point->isChecked());
-					exporter.export_geometry(*d_geometry_opt_ptr);
-					break;
-				}
-		default:
-				QMessageBox::critical(this, tr("Unsupported output format"),
-						tr("Sorry, writing in the selected format is currently not supported."));
-				return;
-		}
+
+		// Create geometry exporter and export geometry.
+		export_geometry(format, text_stream);
 		
 		// Create mime data and assign to the clipboard.
 		// FIXME: Use text/csv for CSV, and I don't know what for the others.
@@ -259,10 +226,50 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_export()
 		mime->setData("text/plain", array);
 		QApplication::clipboard()->setMimeData(mime, QClipboard::Clipboard);
 	}
-	// FIXME: Delegate writing to the output stream to some writer depending
-	// on the desired output format. (GeometryOnSphere visitor)
 	
 	// If we reach here, everything has been exported successfully and we can close the dialog.
 	accept();
 }
 
+void
+GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry(
+	OutputFormat format, QTextStream& text_stream)
+{
+	std::auto_ptr<GPlatesFileIO::GeometryExporter> geometry_exporter;
+
+	// FIXME: It would be awesome if we could arrange this switch -before- we
+	// open the file, to avoid clobbering the user's file needlessly.
+
+	// Create the geometry exporter based on 'format'.
+	switch (format)
+	{
+	case PLATES4:
+		geometry_exporter.reset(
+			new GPlatesFileIO::PlatesLineFormatGeometryExporter(
+			text_stream,
+			(combobox_coordinate_order->currentIndex() != LAT_LON),
+			checkbox_polygon_terminating_point->isChecked()));
+		break;
+
+	case GMT:
+		geometry_exporter.reset(
+			new GPlatesFileIO::GMTFormatGeometryExporter(
+			text_stream,
+			// Default coordinate order for GMT is (lon, lat).
+			(combobox_coordinate_order->currentIndex() != LON_LAT),
+			checkbox_polygon_terminating_point->isChecked()));
+		break;
+
+	default:
+		QMessageBox::critical(this, tr("Unsupported output format"),
+			tr("Sorry, writing in the selected format is currently not supported."));
+		return;
+	}
+
+	// Make sure we created a geometry exporter.
+	GPlatesGlobal::Assert(geometry_exporter.get() != NULL,
+		GPlatesGlobal::AssertionFailureException(__FILE__, __LINE__));
+
+	// Export the geometry.
+	geometry_exporter->export_geometry(*d_geometry_opt_ptr);
+}

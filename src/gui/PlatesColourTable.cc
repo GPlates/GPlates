@@ -31,19 +31,12 @@
 GPlatesGui::PlatesColourTable *
 GPlatesGui::PlatesColourTable::Instance()
 {
-	if (d_instance == NULL) {
+	if (!d_instance) {
 
 		// create a new instance
-		d_instance = new PlatesColourTable();
+		d_instance.reset(new PlatesColourTable());
 	}
-	return d_instance;
-}
-
-
-GPlatesGui::PlatesColourTable::~PlatesColourTable()
-{
-	delete[] d_id_table;
-	delete[] d_colours;
+	return d_instance.get();
 }
 
 
@@ -75,58 +68,10 @@ GPlatesGui::PlatesColourTable::lookup(
 }
 
 
-namespace
-{
-	using namespace GPlatesGui;
-
-	struct MappingPair
-	{
-		GPlatesModel::integer_plate_id_type id;
-		Colour colour;
-	};
-
-	GPlatesModel::integer_plate_id_type
-	getHighestID(
-			const MappingPair array[],
-			size_t array_len)
-	{
-
-		GPlatesModel::integer_plate_id_type highest_so_far = 0;
-		for (size_t i = 0; i < array_len; i++) {
-
-			if (array[i].id > highest_so_far) {
-				
-				highest_so_far = array[i].id;
-			}
-		}
-		return highest_so_far;
-	}
-
-
-	void
-	populate(
-			Colour *id_table[],
-			Colour colours[],
-			const MappingPair array[],
-			size_t array_len)
-	{
-		for (size_t array_idx = 0; array_idx < array_len; ++array_idx) {
-
-			// convert the ID into an index into the 'ID table'.
-			size_t id_table_idx =
-			 static_cast< size_t >(array[array_idx].id);
-
-			colours[array_idx] = array[array_idx].colour;
-			id_table[id_table_idx] = &(colours[array_idx]);
-		}
-	}
-}
-
-
 GPlatesGui::PlatesColourTable::PlatesColourTable():
 		d_highest_known_rid(0) /* no default ctor, so must initialise now */
 {
-	const MappingPair MappingArray[] = {
+	const MappingPair mapping_array[] = {
 
 		{ 101, Colour::YELLOW },
 		{ 102, Colour::RED },
@@ -439,11 +384,11 @@ GPlatesGui::PlatesColourTable::PlatesColourTable():
 
 
 	size_t len_mapping_array =
-			sizeof(MappingArray) / sizeof(MappingArray[0]);
+			sizeof(mapping_array) / sizeof(mapping_array[0]);
 
 	// First pass is to discover the highest rotation ID.
-	// [We won't assume that the 'MappingArray' is sorted.]
-	d_highest_known_rid = getHighestID(MappingArray, len_mapping_array);
+	// [We won't assume that the 'mapping_array' is sorted.]
+	d_highest_known_rid = getHighestID(mapping_array, len_mapping_array);
 
 	// Allocate the arrays.
 	// FIXME: make this code use auto_ptrs to avoid possible mem-leaks.
@@ -454,21 +399,48 @@ GPlatesGui::PlatesColourTable::PlatesColourTable():
 	 */
 	size_t lend_id_table =
 			static_cast< size_t >(d_highest_known_rid + 1);
-	// This next line looks like it's trying to be clever or cryptic, but
-	// that's actually the only valid syntax.
-	d_id_table = new Colour *[lend_id_table];
-	for (size_t j = 0; j < lend_id_table; j++) {
+	d_id_table.resize(lend_id_table);
 
-		// set the pointer to NULL.  [C++ does not do this for us.]
-		d_id_table[j] = NULL;
-	}
-
-	d_colours = new Colour[len_mapping_array];
+	d_colours.resize(len_mapping_array);
 
 	// Second pass is to populate the two arrays.
-	populate(d_id_table, d_colours, MappingArray, len_mapping_array);
+	populate(mapping_array, len_mapping_array);
 }
 
 
-GPlatesGui::PlatesColourTable *
-GPlatesGui::PlatesColourTable::d_instance = NULL;
+void
+GPlatesGui::PlatesColourTable::populate(
+		const MappingPair array[],
+		size_t array_len)
+{
+	for (size_t array_idx = 0; array_idx < array_len; ++array_idx) {
+
+		// convert the ID into an index into the 'ID table'.
+		size_t id_table_idx =
+		 static_cast< size_t >(array[array_idx].id);
+
+		d_colours[array_idx] = array[array_idx].colour;
+		d_id_table[id_table_idx] = &d_colours[array_idx];
+	}
+}
+
+GPlatesModel::integer_plate_id_type
+GPlatesGui::PlatesColourTable::getHighestID(
+		const MappingPair array[],
+		size_t array_len)
+{
+
+	GPlatesModel::integer_plate_id_type highest_so_far = 0;
+	for (size_t i = 0; i < array_len; i++) {
+
+		if (array[i].id > highest_so_far) {
+			
+			highest_so_far = array[i].id;
+		}
+	}
+	return highest_so_far;
+}
+
+
+boost::scoped_ptr<GPlatesGui::PlatesColourTable>
+GPlatesGui::PlatesColourTable::d_instance;

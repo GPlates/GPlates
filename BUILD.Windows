@@ -8,14 +8,15 @@ Table of Contents
 	2. Visual C++ Express Edition
 	3. Note before starting
 	4. Library and binary dependencies
-		1. Qt
-		2. Python
+        1. CMake
+		2. Qt
 		3. Boost
 		4. ICU
 		5. GDAL
 		6. gzip
-	5. Building GPlates via the IDE	
-	6. Building GPlates via the Command Line (MSVC2005+ only)
+    5. Creating Visual Studio solution and project files with CMake
+	6. Building GPlates via the IDE	
+	7. Building GPlates via the Command Line (MSVC2005+ only)
 
 Introduction
 
@@ -60,6 +61,10 @@ Library dependencies
 
 The following libraries and binaries are required to build GPlates. 
 
+CMake
+
+  1. Get and install cmake-2.6.2-win32-x86.exe from: http://www.cmake.org/
+
 Qt
 
  1. Download qt-win-opensource-src-4.3.4.zip from: http://trolltech.com/
@@ -70,26 +75,11 @@ Qt
  5. In VC access Tools, Options, Projects, Directories and add the following Qt 
     directories: 
       * Executable files: \bin 
-      * Library files: \lib 
-      * Include files: \include, \include\Qt, \include\QtCore, \include\QtGui, 
-        \include\QtSvg 
-
-Python
-
-  1. Get and install python-2.5.1.msi from: http://www.python.org/download/ 
-  2. In VC access Tools, Options, Projects, Directories and add the following 
-     Python directories: 
-       * Library files: \libs 
-       * Include files: \include 
 
 Boost
 
   1. Get and install boost_1_34_1_setup.exe from: http://www.boost-consulting.com/
      products/free 
-  2. In VC access Tools, Options, Projects, Directories and add the following 
-     Boost directories: 
-       * Library files: \lib 
-       * Include files: \ 
 
 ICU
 
@@ -98,17 +88,11 @@ ICU
   2. In VC access Tools, Options, Projects, Directories and add the following 
      ICU directories: 
        * Executable files: \bin 
-       * Library files: \lib 
-       * Include files: \include 
 
 GDAL
 
   1. Get and install FWTools210.exe from http://home.gdal.org/fwtools/ 
-  2. In VC access Tools, Options, Projects, Directories and add the following 
-     FWTools directories: 
-       * Library files: \lib 
-       * Include files: \include 
-  3. Add a path to the location of the FWTools dll files: 
+  2. Add a path to the location of the FWTools dll files: 
        * From the desktop, or from within Windows Explorer, right-click on 
          MyComputer, and select Properties. 
        * Windows Vista: If you can't see a 'My Computer' icon on the desktop: 
@@ -155,18 +139,48 @@ gzip
          should be separated by semi-colons. 
        * Select OK, followed by OK, and Apply. 
 
+Creating Visual Studio solution and project files with CMake
+
+  1.  Edit the 'CMAKE_INCLUDE_PATH' environment variable to refer to the include paths for
+      Boost, GDAL and ICU packages you've installed.
+      For example add the following to 'CMAKE_INCLUDE_PATH':
+         "C:/Libraries/Boost"
+         "C:/Libraries/icu/include"
+         "C:/Libraries/FWTools/include"
+      The corresponding library directories will be found relative to these include directories.
+      If, for some reason, the include directories are found but not the libraries then you can
+      edit 'CMAKE_LIBRARY_PATH' in a similar manner to 'CMAKE_INCLUDE_PATH'.
+  2.  The Gzip package should be found automatically if it's installed in
+      'C:/Program Files/GnuWin32/' otherwise you'll need to tell CMake where it is by editing
+      either the 'CMAKE_PROGRAM_PATH' variable or 'PATH' environment variable.
+  3.  Run the CMake program ('CMakeSetup.exe'). CMake 2.4.8 and above is fine.
+          Vista NOTE: You need to elevate permissions on 'CMakeSetup.exe' by
+          right-click->properties->compatibility(tab)->check "run this program as an administrator".
+  4.  Set the 'source' directory to the root GPlates source directory (the one that has
+      'src' as a sub-directory).
+  5.  Set the 'build' directory to be the same as the 'source' directory.
+  6.  Click 'configure'.
+  6.  Specify 'Visual Studio 2005'.
+  7.  Once configuration finished you should get no popup messages.
+      If you do then most likely the 'CMAKE_INCLUDE_PATH' environment variable is not referring
+      to the correct locations.
+  8.  Even if no popup messages occurred the 'OK' will still be greyed out so you'll need
+      to click 'configure' once more.
+  9.  Click 'OK'.
+  10. The CMake GUI closes and you should have a 'gplates.sln' file in your root GPlates directory.
+
 Building GPlates via the IDE
 
-  1. Open GPlates.vcproj with the VS IDE. 
-  2. Rebuild All from the Build menu. 
+  1. Open GPlates.sln with the VS IDE.
+  2. Select 'release' build from the "Build->Configuration Manager..." menu.
+  3. Rebuild All from the Build menu.
 
 Building GPlates via the Command Line (MSVC2005+ only)
 
-  1. Add paths configured in Tools, Options, Projects, Directories in the IDE to the 
-     appropriate environment variables: 
-       * LIB: for Library file paths 
-       * INCLUDE: for Include file paths 
+  1. Add paths configured in Tools, Options, Projects, Directories in the IDE to the
+     appropriate environment variables:
        * PATH: for Executable file paths 
   2. Run the Visual Studio 2005 Command Prompt. 
-  3. Change to the msvc8\ directory in GPlates and run build_debug.bat 
- 
+  3. Go to the root GPlates build directory. 
+  4. Type the following on the command-line to build a release version of GPlates:
+       vcbuild gplates.sln "Release|Win32"

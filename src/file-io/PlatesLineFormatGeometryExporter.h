@@ -29,7 +29,9 @@
 #define GPLATES_FILEIO_PLATESLINEFORMATGEOMETRYEXPORTER_H
 
 #include <QTextStream>
+#include <boost/noncopyable.hpp>
 
+#include "GeometryExporter.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
 // FIXME: For now, I'm defining this visitor as part of the GPlatesFileIO
@@ -47,7 +49,9 @@ namespace GPlatesFileIO
 	 * pattern structure.
 	 */
 	class PlatesLineFormatGeometryExporter :
-			public GPlatesMaths::ConstGeometryOnSphereVisitor
+			public GPlatesMaths::ConstGeometryOnSphereVisitor,
+			public GPlatesFileIO::GeometryExporter,
+			private boost::noncopyable
 	{
 	public:
 		PlatesLineFormatGeometryExporter(
@@ -89,12 +93,6 @@ namespace GPlatesFileIO
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
 
 	private:
-
-		// This operator should never be defined, because we don't want to allow
-		// copy-assignment.
-		PlatesLineFormatGeometryExporter &
-		operator=(
-				const PlatesLineFormatGeometryExporter &);
 		
 		/**
 		 * The QTextStream we write to.

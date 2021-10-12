@@ -201,12 +201,12 @@ following significant aspects of GPlates functionality:
    + project files for the MS Visual Studio compilers (MSVC 7.1 and MSVC 8)
    + a new PLATES4 line-format parser for the new Model
    + additional implementation of the new Model component
- * Hamish Ivey-Law:
+ * Hamish Ivey-Law
    + PLATES4 line-format writer
    + PLATES4 rotation-format writer
    + OpenGL enhancements
    + command-line argument handling
- * Robin Watson:
+ * Robin Watson
    + ESRI Shapefile parser
    + testing and debugging on Microsoft Windows
 
@@ -332,4 +332,71 @@ following significant aspects of GPlates functionality:
    + the ability to choose between different feature colouring schemes (by
      feature-type, by feature age and by a single user-specified colour), in
      addition to the existing colouring by plate ID
+
+
+GPlates 0.9.3.1
+===============
+
+Released 2008-10-19, GPlates 0.9.3.1 contained a minor bugfix to GPlates 0.9.3
+to fix a bug which was noticed after 0.9.3 was uploaded, but before any release
+announcement had been made.  The bug was related to the mapping of Shapefile
+attributes.  There were no other changes from 0.9.3.
+
+GPlates 0.9.3.1 compiled and ran on Linux, Windows XP and Windows Vista.
+
+
+GPlates 0.9.4
+=============
+
+Released 2008-12-19, GPlates 0.9.4 contained several significant developments
+of the GPlates 0.9.3.1 functionality and GUI.
+
+GPlates 0.9.4 was created (Oct 2008 - Dec 2008) by:
+ * James Boyden [technical lead]
+ * John Cannon (University of Sydney)
+ * James Clark
+ * Mark Turner
+ * Robin Watson
+under the direction of:
+ * Dietmar Müller
+ * Trond Torsvik
+ * Mike Gurnis
+funded by grants from:
+ * The AuScope National Collaborative Research InfraStructure (NCRIS) Program
+ * The Norwegian Research Council
+ * Statoil-Hydro
+ * The Gordon and Betty Moore Foundation
+
+GPlates 0.9.4 compiled and ran on Linux, Windows XP, Windows Vista and MacOS X.
+
+In particular, the following developers were primarily responsible for the
+following significant aspects of GPlates functionality:
+ * John Cannon
+   + CMake-based build system (replacing both the
+     Autoconf/Automake/Libtool-based build system for Linux and the project
+     files for the MS Visual Studio compilers, and enabling compilation on
+     MacOS X)
+   + GPlates on OS X (porting and testing the software, and coordinating the
+     beta trial)
+   + GMT export of feature collection data files and digitised geometries
+   + interactive manipulation of feature geometries and digitised geometries
+     by dragging vertices
+ * James Clark
+   + enhancements to the Manage Feature Collections dialog (reload files from
+     disk; categorise and enable/disable feature collections by reconstructable
+     feature or reconstruction feature without unloading or reloading files)
+   + various improvements to the main-window user-interface
+ * Robin Watson
+   + the ability to specify extents for rasters, for rasters which do not cover
+     the entire surface of the globe.
+   + the ability to edit Shapefile attributes in the Feature Properties dialog
+   + a tabular (spreadsheet) display of all Shapefile attributes in a file
+
+The following GPlates users took part in the beta trial of GPlates on OS X:
+ * Christian Heine
+ * Bob Kopp
+ * Patrice Rey
+ * Maria Seton
+ * Jo Whittaker
+ * Florian Wobbe
 

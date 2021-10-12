@@ -30,10 +30,7 @@
 #include <QString>
 #include <QFileInfo>
 #include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
-#include "model/ConstFeatureVisitor.h"
 #include "model/FeatureCollectionHandle.h"
-#include "FileFormat.h"
 
 namespace GPlatesFileIO {
 	
@@ -55,19 +52,46 @@ namespace GPlatesFileIO {
 			NL, CRNL, CR 
 		};
 
-		// FIXME: Factor this into FileFormat, perhaps. Or maybe not, since we can only
-		// really detect 'XML' and 'GZIP' instead of 'GPML' and 'GPML.GZ'.
-		// See FileInfo::identify_by_magic_number();
-		enum FileMagic
-		{
-			UNKNOWN, XML, GZIP
-		};
-
+		/**
+		 * Construct a FileInfo for the given file_name.
+		 * The file_name does not have to exist.
+		 *
+		 * No FeatureCollection is assigned to the FileInfo yet,
+		 * use set_feature_collection() to do so.
+		 */
 		explicit
 		FileInfo(
 				QString file_name):
 			d_file_info(file_name)
 		{ }
+
+		/**
+		 * Construct a FileInfo without any file associated with
+		 * it. This may seem a little weird, but is necessary
+		 * to handle the concept of the user creating a new "empty"
+		 * FeatureCollection within GPlates, and enabling it to
+		 * show up in the list of active reconstructable files
+		 * (so that it can be displayed on the globe, and saved via
+		 * the ManageFeatureCollections dialog).
+		 *
+		 * No FeatureCollection is assigned to the FileInfo yet,
+		 * use set_feature_collection() to do so.
+		 */
+		FileInfo():
+			d_file_info()
+		{ }
+
+
+		/**
+		 * Returns a string that can be used by the GUI to identify
+		 * this file. Usually, this will simply be the file name -
+		 * however, if a FileInfo has been created without any file
+		 * association (e.g. a blank FeatureCollection created during
+		 * digitisation), it will simply return "New Feature Collection".
+		 */
+		QString
+		get_display_name(
+				bool use_absolute_path_name) const;
 
 
 		const QFileInfo &
@@ -102,27 +126,6 @@ namespace GPlatesFileIO {
 			d_feature_collection = feature_collection;
 		}
 
-
-		boost::shared_ptr< GPlatesModel::ConstFeatureVisitor >
-		get_writer() const;
-
-
-		bool
-		is_writable() const
-		{
-			QFileInfo dir(get_qfileinfo().path());
-			return dir.permission(QFile::WriteUser);
-		}
-		
-		/**
-		 * Briefly opens the file for reading, and attempts to identify the
-		 * format of the file by it's magic number.
-		 *
-		 * This function can and will throw ErrorOpeningFileForReadingException.
-		 */
-		FileMagic
-		identify_by_magic_number() const;
-
 	private:
 #if 0
 		FileInfo(
@@ -139,6 +142,26 @@ namespace GPlatesFileIO {
 		//LineEndingStyle d_line_ending;
 		boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref> d_feature_collection;
 	};
+
+	//@{
+	/**
+	 * Returns 'true' if specified file is writable.
+	 *
+	 * @param file_info file to test for writability.
+	 */
+	bool
+		is_writable(
+		const QFileInfo& file_info);
+
+	inline
+		bool
+		is_writable(
+		const GPlatesFileIO::FileInfo& file_info)
+	{
+		return is_writable(file_info.get_qfileinfo());
+	}
+	//@}
+
 }
 
 #endif // GPLATES_FILEIO_FILEINFO_H

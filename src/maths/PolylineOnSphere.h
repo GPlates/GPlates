@@ -32,7 +32,7 @@
 #define GPLATES_MATHS_POLYLINEONSPHERE_H
 
 #include <vector>
-#include <iterator>  // std::iterator, std::bidirectional_iterator_tag
+#include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
 #include <algorithm>  // std::swap
 #include <utility>  // std::pair
 
@@ -461,6 +461,42 @@ namespace GPlatesMaths
 		 * What this actually means in plain(er) English is that you
 		 * can use this function to check whether you would be able to
 		 * construct a polyline instance from a given set of parameters
+		 * (ie, your collection of points in the range @a begin / @a end).
+		 *
+		 * If you pass this function what turns out to be invalid
+		 * construction-parameters, it will politely return an error
+		 * diagnostic.  If you were to pass these same invalid
+		 * parameters to the creation functions down below, you would
+		 * get an exception thrown back at you.
+		 *
+		 * It's not terribly difficult to obtain a collection which
+		 * qualifias as valid parameters (no antipodal adjacent points;
+		 * at least two distinct points in the collection -- nothing
+		 * particularly unreasonable) but the creation functions are
+		 * fairly unsympathetic if your parameters @em do turn out to
+		 * be invalid.
+		 *
+		 * @a invalid_points is a return-parameter; if the
+		 * construction-parameters are found to be invalid due to
+		 * antipodal adjacent points, the value of this return-parameter
+		 * will be set to the pair of iterator of type ForwardIter which
+		 * point to the guilty points.  If no adjacent points are found
+		 * to be antipodal, this parameter will not be modified.
+		 */
+		template<typename ForwardIter>
+		static
+		ConstructionParameterValidity
+		evaluate_construction_parameter_validity(
+				ForwardIter begin,
+				ForwardIter end,
+				std::pair<ForwardIter, ForwardIter> &invalid_points);
+
+		/**
+		 * Evaluate the validity of the construction-parameters.
+		 *
+		 * What this actually means in plain(er) English is that you
+		 * can use this function to check whether you would be able to
+		 * construct a polyline instance from a given set of parameters
 		 * (ie, your collection of points in @a coll).
 		 *
 		 * If you pass this function what turns out to be invalid
@@ -492,7 +528,11 @@ namespace GPlatesMaths
 		evaluate_construction_parameter_validity(
 				const C &coll,
 				std::pair<typename C::const_iterator, typename C::const_iterator> &
-						invalid_points);
+						invalid_points)
+		{
+			return evaluate_construction_parameter_validity(
+					coll.begin(), coll.end(), invalid_points);
+		}
 
 
 		/**
@@ -513,6 +553,19 @@ namespace GPlatesMaths
 
 		/**
 		 * Create a new PolylineOnSphere instance on the heap from the sequence of points
+		 * delimited by the forward iterators @a begin and @a end and return
+		 * an intrusive_ptr which points to the newly-created instance.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		template<typename ForwardIter>
+		static
+		const non_null_ptr_to_const_type
+		create_on_heap(
+				ForwardIter begin, ForwardIter end);
+
+		/**
+		 * Create a new PolylineOnSphere instance on the heap from the sequence of points
 		 * @a coll, and return an intrusive_ptr which points to the newly-created instance.
 		 *
 		 * @a coll should be a sequential STL container (list, vector, ...) of
@@ -524,7 +577,10 @@ namespace GPlatesMaths
 		static
 		const non_null_ptr_to_const_type
 		create_on_heap(
-				const C &coll);
+				const C &coll)
+		{
+			return create_on_heap(coll.begin(), coll.end());
+		}
 
 
 		/**
@@ -790,22 +846,22 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Generate a sequence of polyline segments from the collection
-		 * of points @a coll, using the points to define the endpoints
-		 * and vertices of the segments, then swap this new sequence of
-		 * segments into the polyline @a poly, discarding any sequence
-		 * of segments which may have been there before.
+		 * Generate a sequence of polyline segments from the sequence
+		 * of points in the range @a begin / @a end, using the points to
+		 * define the endpoints and vertices of the segments, then swap this
+		 * new sequence of segments into the polyline @a poly, discarding
+		 * any sequence of segments which may have been there before.
 		 *
 		 * This function is strongly exception-safe and
 		 * exception-neutral.
 		 */
-		template<typename C>
+		template<typename ForwardIter>
 		static
 		void
 		generate_segments_and_swap(
 				PolylineOnSphere &poly,
-				const C &coll);
-
+				ForwardIter begin,
+				ForwardIter end);
 
 		/**
 		 * Attempt to create a line-segment defined by the points @a p1 and @a p2; append
@@ -908,20 +964,22 @@ namespace GPlatesMaths
 			const PolylineOnSphere &poly2);
 
 
-	template<typename C>
+	template<typename ForwardIter>
 	PolylineOnSphere::ConstructionParameterValidity
 	PolylineOnSphere::evaluate_construction_parameter_validity(
-			const C &coll,
-			std::pair<typename C::const_iterator, typename C::const_iterator> &invalid_points)
+			ForwardIter begin,
+			ForwardIter end,
+			std::pair<ForwardIter, ForwardIter> &invalid_points)
 	{
-		typename C::size_type num_points = count_distinct_adjacent_points(coll);
+		const unsigned num_points = count_distinct_adjacent_points(begin, end);
 		if (num_points < s_min_num_collection_points) {
 			// The collection does not contain enough distinct points to create even
 			// one line-segment.
 			return INVALID_INSUFFICIENT_DISTINCT_POINTS;
 		}
 
-		typename C::const_iterator prev, iter = coll.begin(), end = coll.end();
+		ForwardIter prev;
+		ForwardIter iter = begin;
 		for (prev = iter++ ; iter != end; prev = iter++) {
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
@@ -960,15 +1018,14 @@ namespace GPlatesMaths
 		return VALID;
 	}
 
-
-	template<typename C>
+	template<typename ForwardIter>
 	const PolylineOnSphere::non_null_ptr_to_const_type
 	PolylineOnSphere::create_on_heap(
-			const C &coll)
+			ForwardIter begin, ForwardIter end)
 	{
 		PolylineOnSphere::non_null_ptr_type ptr(new PolylineOnSphere(),
 				GPlatesUtils::NullIntrusivePointerHandler());
-		generate_segments_and_swap(*ptr, coll);
+		generate_segments_and_swap(*ptr, begin, end);
 		return ptr;
 	}
 
@@ -1034,15 +1091,16 @@ namespace GPlatesMaths
 	};
 
 
-	template<typename C>
+	template<typename ForwardIter>
 	void
 	PolylineOnSphere::generate_segments_and_swap(
 			PolylineOnSphere &poly,
-			const C &coll)
+			ForwardIter begin,
+			ForwardIter end)
 	{
-		std::pair<typename C::const_iterator, typename C::const_iterator> invalid_points;
+		std::pair<ForwardIter, ForwardIter> invalid_points;
 		ConstructionParameterValidity v =
-				evaluate_construction_parameter_validity(coll, invalid_points);
+				evaluate_construction_parameter_validity(begin, end, invalid_points);
 		if (v != VALID) {
 			throw InvalidPointsForPolylineConstructionError(v, __FILE__, __LINE__);
 		}
@@ -1054,9 +1112,11 @@ namespace GPlatesMaths
 		// the number of vertices in the polyline, counting the begin-point and end-point
 		// of the polyline as vertices) is one greater than the number of segments in the
 		// polyline.
-		tmp_seq.reserve(coll.size() - 1);
+		const seq_type::size_type num_points = std::distance(begin, end);
+		tmp_seq.reserve(num_points - 1);
 
-		typename C::const_iterator prev, iter = coll.begin(), end = coll.end();
+		ForwardIter prev;
+		ForwardIter iter = begin;
 		for (prev = iter++ ; iter != end; prev = iter++) {
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;

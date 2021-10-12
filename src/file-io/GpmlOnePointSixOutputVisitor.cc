@@ -62,6 +62,7 @@
 #include "property-values/GpmlHotSpotTrailMark.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlKeyValueDictionary.h"
+#include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlMeasure.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
@@ -344,6 +345,13 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::GpmlOnePointSixOutputVisitor(
 	start_writing_document(d_output);
 }
 
+
+void
+	GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_feature(
+	const GPlatesModel::FeatureHandle& feature_handle)
+{
+	feature_handle.accept_visitor(*this);
+}
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::start_writing_document(
@@ -1079,4 +1087,3 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_gpml_key_value_dictionary_ele
 		d_output.writeEndElement();
 	d_output.writeEndElement();
 }
-

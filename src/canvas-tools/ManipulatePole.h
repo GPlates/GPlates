@@ -35,9 +35,9 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 }
 
-namespace GPlatesGui
+namespace GPlatesViewOperations
 {
-	class RenderedGeometryLayers;
+	class RenderedGeometryCollection;
 }
 
 namespace GPlatesCanvasTools
@@ -66,17 +66,20 @@ namespace GPlatesCanvasTools
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesGui::RenderedGeometryLayers &layers,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_)
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesGui::Globe &globe,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget)
 		{
-			ManipulatePole::non_null_ptr_type ptr(
-					new ManipulatePole(globe_, globe_canvas_, layers, view_state_,
-							pole_widget_),
+			return ManipulatePole::non_null_ptr_type(
+					new ManipulatePole(
+							rendered_geom_collection,
+							globe,
+							globe_canvas,
+							view_state,
+							pole_widget),
 					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
 		}
 		
 		
@@ -140,13 +143,12 @@ namespace GPlatesCanvasTools
 	protected:
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		explicit
 		ManipulatePole(
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesGui::RenderedGeometryLayers &layers,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget_);
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesGui::Globe &globe,
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesQtWidgets::ReconstructionPoleWidget &pole_widget);
 
 
 		const GPlatesQtWidgets::ViewportWindow &
@@ -162,7 +164,7 @@ namespace GPlatesCanvasTools
 		 * We need to change which canvas-tool layer is shown when this canvas-tool is
 		 * activated.
 		 */
-		GPlatesGui::RenderedGeometryLayers *d_layers_ptr;
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
 
 		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
@@ -177,18 +179,6 @@ namespace GPlatesCanvasTools
 		 * pole-manipulating drag.
 		 */
 		bool d_is_in_drag;
-			
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		ManipulatePole(
-				const ManipulatePole &);
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		ManipulatePole &
-		operator=(
-				const ManipulatePole &);
-		
 	};
 }
 

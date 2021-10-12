@@ -41,8 +41,7 @@
 
 
 GPlatesQtWidgets::ShapefileAttributeMapperDialog::ShapefileAttributeMapperDialog(
-		QWidget *parent_
-):
+		QWidget *parent_):
 	QDialog(parent_)
 {
 	setupUi(this);

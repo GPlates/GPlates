@@ -35,8 +35,23 @@
 #include "gui/FeatureFocus.h"
 #include "model/ModelInterface.h"
 
+
+namespace GPlatesGui
+{
+	class ChooseCanvasTool;
+}
+
+namespace GPlatesViewOperations
+{
+	class GeometryBuilder;
+	class GeometryBuilderToolTarget;
+	class RenderedGeometryCollection;
+	class RenderedGeometryFactory;
+}
+
 namespace GPlatesQtWidgets
 {
+	class MoveVertexWidget;
 	class ViewportWindow;
 
 	/**
@@ -53,7 +68,12 @@ namespace GPlatesQtWidgets
 		TaskPanel(
 				GPlatesGui::FeatureFocus &feature_focus_,
 				GPlatesModel::ModelInterface &model_interface,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesViewOperations::RenderedGeometryFactory &rendered_geom_factory,
+				GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
+				GPlatesViewOperations::GeometryBuilderToolTarget &geom_builder_tool_target,
 				ViewportWindow &view_state_,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				QWidget *parent_ = NULL);
 		
 		/**
@@ -106,6 +126,12 @@ namespace GPlatesQtWidgets
 		{
 			tabwidget_task_panel->setCurrentWidget(tab_digitisation);
 		}		
+		
+		void
+		choose_move_vertex_tab()
+		{
+			tabwidget_task_panel->setCurrentWidget(tab_move_vertex);
+		}		
 
 		void
 		choose_modify_pole_tab()
@@ -132,6 +158,15 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_up_digitisation_tab();
+
+
+		/**
+		 * Sets up the "Move Vertex" tab in the eXtreme Task Panel.
+		 * This connects all the QToolButtons in the "Digitisation" tab to QActions,
+		 * and adds the special MoveVertexWidget.
+		 */
+		void
+		set_up_move_vertex_tab();
 
 
 		/**
@@ -164,6 +199,12 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		GPlatesQtWidgets::DigitisationWidget *d_digitisation_widget_ptr;
+
+		/**
+		 * Widget responsible for the controls in the Move Vertex Tab.
+		 * Memory managed by Qt.
+		 */
+		GPlatesQtWidgets::MoveVertexWidget *d_move_vertex_widget_ptr;
 
 		/**
 		 * Widget responsible for the controls in the Modify Pole Tab.

@@ -55,6 +55,12 @@ namespace GPlatesQtWidgets
 				GPlatesAppState::ApplicationState::file_info_iterator file_it,
 				QWidget *parent_ = NULL);
 		
+		/**
+		 * Enables and disables buttons according to various criteria.
+		 */
+		void
+		update_state();
+		
 		GPlatesAppState::ApplicationState::file_info_iterator
 		get_file_info_iterator() const
 		{
@@ -78,6 +84,9 @@ namespace GPlatesQtWidgets
 		void
 		save_copy();
 		
+		void
+		reload();
+
 		void
 		unload();
 	

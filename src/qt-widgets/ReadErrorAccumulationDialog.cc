@@ -356,6 +356,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::InsufficientTextureMemory,
 				QT_TR_NOOP("Insufficient texture memory."),
 				QT_TR_NOOP("There was insufficient memory to load the requested raster.") },
+		{ GPlatesFileIO::ReadErrors::ErrorGeneratingTexture,
+				QT_TR_NOOP("Error generating texture."),
+				QT_TR_NOOP("There was an error generating an openGL texture.") },
 
 		// Errors relating to GDAL-readable Raster files
 		{ GPlatesFileIO::ReadErrors::ErrorReadingGDALBand,

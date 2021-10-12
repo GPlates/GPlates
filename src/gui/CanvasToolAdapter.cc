@@ -28,6 +28,7 @@
 #include "CanvasToolAdapter.h"
 #include "CanvasToolChoice.h"
 
+#include "view-operations/RenderedGeometryCollection.h"
 
 namespace
 {
@@ -49,6 +50,14 @@ GPlatesGui::CanvasToolAdapter::handle_click(
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block. This is so we can do multiple changes
+	// without redrawing canvas after each change.
+	// This should ideally be located at the highest level to capture one
+	// user GUI interaction - the user performs an action and we update canvas once.
+	// But since these guards can be nested it's probably a good idea to have it here too.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
 	switch (button) {
 	case Qt::LeftButton:
 		switch (modifiers) {
@@ -100,6 +109,14 @@ GPlatesGui::CanvasToolAdapter::handle_drag(
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block. This is so we can do multiple changes
+	// without redrawing canvas after each change.
+	// This should ideally be located at the highest level to capture one
+	// user GUI interaction - the user performs an action and we update canvas once.
+	// But since these guards can be nested it's probably a good idea to have it here too.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
 	switch (button) {
 	case Qt::LeftButton:
 		switch (modifiers) {
@@ -165,6 +182,14 @@ GPlatesGui::CanvasToolAdapter::handle_release_after_drag(
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block. This is so we can do multiple changes
+	// without redrawing canvas after each change.
+	// This should ideally be located at the highest level to capture one
+	// user GUI interaction - the user performs an action and we update canvas once.
+	// But since these guards can be nested it's probably a good idea to have it here too.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
 	switch (button) {
 	case Qt::LeftButton:
 		switch (modifiers) {
