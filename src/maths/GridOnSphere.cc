@@ -102,11 +102,11 @@ GPlatesMaths::GridOnSphere::Create(const PointOnSphere &origin,
 	 */
 	real_t delta_along_lat =
 	 calcDeltaAlongLat(origin.position_vector(), next_along_lat.position_vector(),
-	                   line_of_lat.axisvector());
+	                   line_of_lat.axis_vector());
 
 	real_t delta_along_lon =
 	 calcDelta(origin.position_vector(), next_along_lon.position_vector(),
-	           line_of_lon.axisvector());
+	           line_of_lon.axis_vector());
 
 	return GridOnSphere(line_of_lat, line_of_lon, origin,
 	                    delta_along_lat, delta_along_lon);
@@ -259,7 +259,7 @@ GPlatesMaths::GridOnSphere::resolve(index_t x, index_t y) const {
 	 * of longitude, ie. about the axis of the great circle of longitude).
 	 */
 	PointOnSphere rot_orig =
-	 rotate_point_about_axis(_origin, _line_of_lon.axisvector(),
+	 rotate_point_about_axis(_origin, _line_of_lon.axis_vector(),
 	  y * _delta_along_lon);
 
 	/*
@@ -267,7 +267,7 @@ GPlatesMaths::GridOnSphere::resolve(index_t x, index_t y) const {
 	 * (about the axis of the small circle of latitude).
 	 */
 	return
-	 rotate_point_about_axis(rot_orig, _line_of_lat.axisvector(),
+	 rotate_point_about_axis(rot_orig, _line_of_lat.axis_vector(),
 	  x * _delta_along_lat);
 }
 

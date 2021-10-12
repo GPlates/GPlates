@@ -32,9 +32,13 @@
 
 #include "OpenGL.h"
 
+#include "gui/NurbsRenderer.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryUtils.h"
+
+
 
 
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollectionPainter(
@@ -74,6 +78,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint(
 
 	// Draw the layers.
 	d_rendered_geometry_collection.accept_visitor(*this);
+
 
 	// Re-enable writes to the depth buffer.
 	// This is might have been turned off when rendering the individual layers.

@@ -43,8 +43,6 @@
 #include <QSizePolicy>
 
 #include "gui/GlobeVisibilityTester.h"
-#include "gui/ProximityTests.h"
-#include "gui/PlatesColourTable.h"
 #include "gui/QGLWidgetTextRenderer.h"
 #include "gui/SvgExport.h"
 #include "gui/Texture.h"
@@ -55,10 +53,12 @@
 
 #include "global/GPlatesException.h"
 #include "model/FeatureHandle.h"
+
+#include "presentation/ViewState.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
-#include "presentation/ViewState.h"
 
 
 /**
@@ -840,6 +840,24 @@ GPlatesQtWidgets::GlobeCanvas::disable_arrows_display()
 	d_globe.disable_arrows_display();
 }
 
+// strings display
+void
+GPlatesQtWidgets::GlobeCanvas::toggle_strings_display()
+{
+	d_globe.toggle_strings_display();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::enable_strings_display()
+{
+	d_globe.enable_strings_display();
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::disable_strings_display()
+{
+	d_globe.disable_strings_display();
+}
 
 
 #if 0

@@ -44,7 +44,7 @@
 
 namespace GPlatesModel
 {
-	class ResolvedTopologicalGeometry;
+	class ResolvedTopologicalBoundary;
 }
 
 namespace GPlatesGui
@@ -151,7 +151,7 @@ namespace GPlatesGui
 		static const QString s_placeholder_right_subductions;
 
 		//! Typedef for a sequence of resolved topological geometries.
-		typedef std::vector<const GPlatesModel::ResolvedTopologicalGeometry *> resolved_geom_seq_type;
+		typedef std::vector<const GPlatesModel::ResolvedTopologicalBoundary *> resolved_geom_seq_type;
 
 
 		/**

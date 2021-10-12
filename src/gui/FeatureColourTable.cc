@@ -48,6 +48,8 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 {
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary") ] =
 			GPlatesGui::Colour::get_black();
+	d_colours[ GPlatesModel::FeatureType::create_gpml("TopologicalNetwork") ] =
+			GPlatesGui::Colour::get_olive();
 
 	// Reconstruction features.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence") ] = 
@@ -71,7 +73,7 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 		
 	// Abstract Geological Plane & Contact features.
 	d_colours[ GPlatesModel::FeatureType::create_gpml("GeologicalPlane") ] =
-			GPlatesGui::Colour::get_fuschia();
+			GPlatesGui::Colour::get_fuchsia();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("FoldPlane") ] =
 			GPlatesGui::Colour::get_lime();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Fault") ] =
@@ -105,7 +107,7 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Topography") ] =
 			GPlatesGui::Colour::get_purple();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Gravimetry") ] =
-			GPlatesGui::Colour::get_fuschia();
+			GPlatesGui::Colour::get_fuchsia();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Magnetics") ] =
 			GPlatesGui::Colour::get_lime();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("GlobalElevation") ] =
@@ -137,7 +139,7 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 	d_colours[ GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIndentification") ] = 
 			GPlatesGui::Colour::get_purple();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("MagneticAnomalyShipTrack") ] = 
-			GPlatesGui::Colour::get_fuschia();
+			GPlatesGui::Colour::get_fuchsia();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("FractureZoneIdentification") ] = 
 			GPlatesGui::Colour::get_lime();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Suture") ] = 
@@ -167,7 +169,7 @@ GPlatesGui::FeatureColourTable::FeatureColourTable()
 	d_colours[ GPlatesModel::FeatureType::create_gpml("ContinentalFragment") ] =
 			GPlatesGui::Colour::get_purple();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("GeologicalLineation") ] =
-			GPlatesGui::Colour::get_fuschia();
+			GPlatesGui::Colour::get_fuchsia();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("PseudoFault") ] =
 			GPlatesGui::Colour::get_lime();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature") ] =

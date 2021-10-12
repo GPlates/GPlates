@@ -126,16 +126,6 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
 				bool is_on_globe);
 
-	public slots:
-
-	signals:
-
-		void
-		sorted_hits_updated();
-
-		void
-		no_hits_found();
-
 	protected:
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
@@ -205,7 +195,6 @@ namespace GPlatesCanvasTools
 		BuildTopology &
 		operator=(
 				const BuildTopology &);
-		
 	};
 }
 

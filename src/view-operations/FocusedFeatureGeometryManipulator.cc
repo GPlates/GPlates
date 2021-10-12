@@ -31,9 +31,14 @@
 
 #include "app-logic/Reconstruct.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ReconstructUtils.h"
+
 #include "feature-visitors/GeometrySetter.h"
+
 #include "maths/ConstGeometryOnSphereVisitor.h"
+
 #include "model/ReconstructionTree.h"
+
 #include "presentation/ViewState.h"
 
 
@@ -41,105 +46,6 @@ namespace GPlatesViewOperations
 {
 	namespace
 	{
-		/**
-		 * Visitor a @a GeometryOnSphere and generates a new one that
-		 * is reverse-reconstructed to present day.
-		 */
-		class Reconstruct :
-			private GPlatesMaths::ConstGeometryOnSphereVisitor
-		{
-		public:
-			Reconstruct(
-					const GPlatesModel::integer_plate_id_type plate_id,
-					GPlatesModel::ReconstructionTree &recon_tree,
-					bool reverse_reconstruct) :
-			d_plate_id(plate_id),
-			d_recon_tree(recon_tree),
-			d_reverse_reconstruct(reverse_reconstruct)
-			{
-			}
-
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-			reconstruct(
-					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry)
-			{
-				geometry->accept_visitor(*this);
-
-				return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(
-						d_reverse_reconstructed_geom.get(),
-						GPlatesUtils::NullIntrusivePointerHandler());
-			}
-
-		private:
-			virtual
-			void
-			visit_multi_point_on_sphere(
-					GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
-			{
-				d_reverse_reconstructed_geom = reconstruct(multi_point_on_sphere).get();
-			}
-
-			virtual
-			void
-			visit_point_on_sphere(
-					GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
-			{
-				d_reverse_reconstructed_geom = reconstruct(point_on_sphere).get();
-			}
-
-			virtual
-			void
-			visit_polygon_on_sphere(
-					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
-			{
-				d_reverse_reconstructed_geom = reconstruct(polygon_on_sphere).get();
-			}
-
-			virtual
-			void
-			visit_polyline_on_sphere(
-					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
-			{
-				d_reverse_reconstructed_geom = reconstruct(polyline_on_sphere).get();
-			}
-
-		private:
-			const GPlatesModel::integer_plate_id_type d_plate_id;
-			GPlatesModel::ReconstructionTree &d_recon_tree;
-			bool d_reverse_reconstruct;
-			GPlatesMaths::GeometryOnSphere::maybe_null_ptr_to_const_type d_reverse_reconstructed_geom;
-
-			/**
-			 * Apply a reverse reconstruction to the given temporary geometry, so that the
-			 * coordinates are set to present-day location given the supplied plate id and
-			 * current reconstruction tree.
-			 *
-			 * @a G should be a non_null_ptr_to_const_type of some suitable GeometryOnSphere
-			 * derivation, with an implementation of FiniteRotation::operator*() available.
-			 */
-			template <class G>
-			G
-			reconstruct(
-					G geometry)
-			{
-				// Get the composed absolute rotation needed to bring a thing on that plate
-				// in the present day to this time.
-				GPlatesMaths::FiniteRotation rotation =
-						d_recon_tree.get_composed_absolute_rotation(d_plate_id).first;
-
-				// Are we reversing reconstruction back to present day ?
-				if (d_reverse_reconstruct)
-				{
-					rotation = GPlatesMaths::get_reverse(rotation);
-				}
-				
-				// Apply the reverse rotation.
-				G present_day_geometry = rotation * geometry;
-				
-				return present_day_geometry;
-			}
-		};
-
 		/**
 		 * Visitor gets a sequence of @a PointOnSphere objects from a @a GeometryOnSphere
 		 * derived object and sets the geometry in a @a GeometryBuilder.
@@ -265,12 +171,10 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::connect_to_feature_foc
 	QObject::connect(
 		d_feature_focus,
 		SIGNAL(focus_changed(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+				GPlatesGui::FeatureFocus &)),
 		this,
 		SLOT(set_focus(
-				GPlatesModel::FeatureHandle::weak_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+				GPlatesGui::FeatureFocus &)));
 }
 
 void
@@ -324,8 +228,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::move_point_in_current_
 
 void
 GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry)
+		GPlatesGui::FeatureFocus &feature_focus)
 {
 	// Stop infinite loop from happening where we update geometry builder with feature
 	// which updates feature with geometry builder in a continuous loop.
@@ -346,14 +249,14 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
 	// Set these data member variables first because when we call operations
 	// on GeometryBuilder then 'this' object will receive signals from it
 	// and use these variables.
-	d_feature = feature_ref;
+	d_feature = feature_focus.focused_feature();
 
-	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalGeometry's,
+	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
 	// for instance, reference regular feature geometries).
 	GPlatesModel::ReconstructedFeatureGeometry *focused_rfg = NULL;
-	if (focused_geometry &&
+	if (feature_focus.associated_reconstruction_geometry() &&
 		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type(
-				focused_geometry, focused_rfg))
+				feature_focus.associated_reconstruction_geometry(), focused_rfg))
 	{
 		d_focused_geometry = focused_rfg;
 	}
@@ -436,8 +339,8 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
 		GPlatesModel::ReconstructionTree &recon_tree =
 				d_reconstruct->get_current_reconstruction().reconstruction_tree();
 
-		geometry_on_sphere = Reconstruct(
-			plate_id, recon_tree, reverse_reconstruct).reconstruct(geometry_on_sphere);
+		geometry_on_sphere = GPlatesAppLogic::ReconstructUtils::reconstruct(
+				geometry_on_sphere, plate_id, recon_tree, reverse_reconstruct);
 	}
 
 	// If feature wasn't reconstructed then we'll be returning the geometry passed in.

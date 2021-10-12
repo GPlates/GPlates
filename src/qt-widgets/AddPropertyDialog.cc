@@ -284,7 +284,7 @@ GPlatesQtWidgets::AddPropertyDialog::AddPropertyDialog(
 		GPlatesQtWidgets::EditFeaturePropertiesWidget &edit_widget,
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
-	QDialog(parent_),
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_edit_feature_properties_widget_ptr(&edit_widget),
 	d_edit_widget_group_box_ptr(new GPlatesQtWidgets::EditWidgetGroupBox(view_state_, this))
 {

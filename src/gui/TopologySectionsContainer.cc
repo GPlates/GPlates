@@ -25,6 +25,8 @@
 
 #include "TopologySectionsContainer.h"
 
+#include "app-logic/TopologyInternalUtils.h"
+
 
 GPlatesGui::TopologySectionsContainer::TopologySectionsContainer():
 	d_insertion_point(0)
@@ -56,7 +58,11 @@ GPlatesGui::TopologySectionsContainer::insert(
 	// Which will naturally bump the insertion point down one row.
 	move_insertion_point(insertion_point() + 1);
 	// Emit signals
-	emit entries_inserted(index, 1);
+	emit entries_inserted(
+			index,
+			1,
+			d_container.begin() + index,
+			d_container.begin() + index + 1);
 }
 
 
@@ -71,7 +77,7 @@ GPlatesGui::TopologySectionsContainer::update_at(
 
 	d_container.at(index) = entry;
 	// Emit signals.
-	emit entries_modified(index, index);
+	emit entry_modified(index);
 }
 
 
@@ -105,8 +111,16 @@ void
 GPlatesGui::TopologySectionsContainer::move_insertion_point(
 		size_type new_index)
 {
-	if (new_index > d_container.size()) {
-		new_index = d_container.size();
+	// Note: It is possible to leave the new insertion index as the size
+	// of the container but it's also equivalent to having it as index zero.
+	// This is because the topology sections form a polygon and hence form
+	// a cycle so it only matters where the sections are relative to each other
+	// in the cycle.
+	// But to make clients work easier we will set the insertion point to zero
+	// in this case so that the insertion point always points to an existing
+	// section in the container (rather than one past the last element).
+	if (new_index == d_container.size()) {
+		new_index = 0;
 	}
 	
 	if (new_index != d_insertion_point) {
@@ -138,15 +152,91 @@ GPlatesGui::TopologySectionsContainer::clear()
 }
 
 void
-GPlatesGui::TopologySectionsContainer::update()
-{
-	emit update_table_sig();
-}
-
-void
 GPlatesGui::TopologySectionsContainer::set_focus_feature_at_index( 
 		size_type index )
 {
 	// Emit signals.
 	emit focus_feature_at_index( index );
+}
+
+
+namespace
+{
+	/**
+	 * "Resolves" the target of a PropertyDelegate to a FeatureHandle::properties_iterator.
+	 * Ideally, a PropertyDelegate would be able to uniquely identify a particular property,
+	 * regardless of how many times that property appears inside a Feature or how many
+	 * in-line properties (an idea which is now deprecated) that property might have.
+	 *
+	 * In reality, we need a way to go from FeatureId+PropertyName to a properties_iterator,
+	 * and we need one now. This function exists to grab the first properties_iterator belonging
+	 * to the FeatureHandle (which in turn can be resolved with the @a resolve_feature_id
+	 * function above) which matches the supplied PropertyName.
+	 *
+	 * It returns an invalid iterator if no match is found.
+	 */
+	GPlatesModel::FeatureHandle::properties_iterator
+	find_properties_iterator(
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+			const GPlatesModel::PropertyName &property_name)
+	{
+		if ( ! feature_ref.is_valid())
+		{
+			// Return invalid properties iterator.
+			return GPlatesModel::FeatureHandle::properties_iterator();
+		}
+
+		// Iterate through the top level properties; look for the first name that matches.
+		GPlatesModel::FeatureHandle::properties_iterator it = feature_ref->properties_begin();
+		GPlatesModel::FeatureHandle::properties_iterator end = feature_ref->properties_end();
+		for ( ; it != end; ++it)
+		{
+			// Elements of this properties vector can be NULL pointers.  (See the comment in
+			// "model/FeatureRevision.h" for more details.)
+			if (it.is_valid() && (*it)->property_name() == property_name)
+			{
+				return it;
+			}
+		}
+
+		// No match.
+		// Return invalid properties iterator.
+		return GPlatesModel::FeatureHandle::properties_iterator();
+	}
+}
+
+
+GPlatesGui::TopologySectionsContainer::TableRow::TableRow(
+		const GPlatesModel::FeatureId &feature_id,
+		const GPlatesModel::PropertyName &geometry_property_name,
+		bool reverse_order,
+		const boost::optional<GPlatesMaths::PointOnSphere> &click_point) :
+	d_feature_id(feature_id),
+	d_feature_ref(
+			GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(feature_id)),
+	// NOTE: 'd_geometry_property' must be declared/initialised after 'd_feature_ref'
+	// since it is initialised from it.
+	d_geometry_property(
+			find_properties_iterator(d_feature_ref, geometry_property_name)),
+	d_present_day_click_point(click_point),
+	d_reverse(reverse_order)
+{
+}
+
+GPlatesGui::TopologySectionsContainer::TableRow::TableRow(
+		const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
+		const boost::optional<GPlatesMaths::PointOnSphere> &click_point,
+		bool reverse_order) :
+	d_feature_id(
+			geometry_property.is_valid()
+					? geometry_property.collection_handle_ptr()->feature_id()
+					: GPlatesModel::FeatureId()),
+	d_feature_ref(
+			geometry_property.is_valid()
+					? geometry_property.collection_handle_ptr()->reference()
+					: GPlatesModel::FeatureHandle::weak_ref()),
+	d_geometry_property(geometry_property),
+	d_present_day_click_point(click_point),
+	d_reverse(reverse_order)
+{
 }

@@ -32,13 +32,9 @@
 
 #include "RenderedGeometryCollection.h"
 #include "RenderedGeometryLayer.h"
+#include "maths/ProximityCriteria.h"
 #include "maths/ProximityHitDetail.h"
 
-
-namespace GPlatesMaths
-{
-	class ProximityCriteria;
-}
 
 namespace GPlatesViewOperations
 {
@@ -75,8 +71,8 @@ namespace GPlatesViewOperations
 	bool
 	test_proximity(
 			sorted_rendered_geometry_proximity_hits_type &sorted_proximity_hits,
-			const RenderedGeometryLayer &,
-			const GPlatesMaths::ProximityCriteria &);
+			const GPlatesMaths::ProximityCriteria &,
+			const RenderedGeometryLayer &);
 
 	/**
 	 * Performs hit detection on the @a RenderedGeometry objects in the specified
@@ -96,8 +92,9 @@ namespace GPlatesViewOperations
 	test_proximity(
 			sorted_rendered_geometry_proximity_hits_type &sorted_proximity_hits,
 			const RenderedGeometryCollection &rendered_geom_collection,
-			const RenderedGeometryCollection::main_layers_update_type main_layers_to_test,
 			const GPlatesMaths::ProximityCriteria &,
+			const RenderedGeometryCollection::main_layers_update_type main_layers_to_test =
+						RenderedGeometryCollection::ALL_MAIN_LAYERS,
 			bool only_if_main_layer_active = true);
 
 	/**
@@ -118,8 +115,8 @@ namespace GPlatesViewOperations
 	test_proximity(
 			sorted_rendered_geometry_proximity_hits_type &sorted_proximity_hits,
 			const RenderedGeometryCollection &rendered_geom_collection,
-			const RenderedGeometryCollection::MainLayerType main_layer_to_test,
 			const GPlatesMaths::ProximityCriteria &proximity_criteria,
+			const RenderedGeometryCollection::MainLayerType main_layer_to_test,
 			bool only_if_main_layer_active = true);
 }
 

@@ -46,7 +46,7 @@ namespace
 		GPlatesMaths::real_t cosangle = (v1.x()*v2.x() + v1.y()*v2.y())/(len1*len2);
 		GPlatesMaths::real_t cross = v1.x()*v2.y() - v2.x()*v1.y();
 
-		if ( ! isNegative(cross))
+		if (!is_strictly_negative(cross))
 		{
 			//qDebug() << "Cross greater-than or equal to 0";
 			return GPlatesUtils::convert_rad_to_deg(acos(cosangle.dval()));

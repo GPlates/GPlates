@@ -29,12 +29,15 @@
 
 namespace GPlatesViewOperations
 {
+	class RenderedEllipse;
 	class RenderedPointOnSphere;
 	class RenderedMultiPointOnSphere;
 	class RenderedPolylineOnSphere;
 	class RenderedPolygonOnSphere;
 	class RenderedDirectionArrow;
 	class RenderedReconstructionGeometry;
+	class RenderedSmallCircle;
+	class RenderedSmallCircleArc;	
 	class RenderedString;
 
 	/**
@@ -49,6 +52,12 @@ namespace GPlatesViewOperations
 	public:
 		virtual
 		~ConstRenderedGeometryVisitor()
+		{  }
+
+		virtual
+		void
+		visit_rendered_ellipse(
+				const GPlatesViewOperations::RenderedEllipse &)
 		{  }
 
 		virtual
@@ -86,6 +95,20 @@ namespace GPlatesViewOperations
 		visit_rendered_reconstruction_geometry(
 				const RenderedReconstructionGeometry &)
 		{  }
+		
+		
+		virtual
+		void
+		visit_rendered_small_circle(
+				const RenderedSmallCircle &)
+		{  }
+		
+		virtual
+		void
+		visit_rendered_small_circle_arc(
+			const RenderedSmallCircleArc &)
+		{  }		
+		
 
 		virtual
 		void

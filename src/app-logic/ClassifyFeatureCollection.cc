@@ -25,17 +25,75 @@
 
 #include "ClassifyFeatureCollection.h"
 
-#include "feature-visitors/FeatureCollectionClassifier.h"
+#include "AppLogicUtils.h"
+
+#include "feature-visitors/FeatureClassifier.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
+
+
+namespace
+{
+	/**
+	 * Used to test a single ClassificationType from a classifications_type.
+	 */
+	class Classify
+	{
+	public:
+		Classify(
+				GPlatesAppLogic::ClassifyFeatureCollection::ClassificationType classification_) :
+			classification(classification_)
+		{  }
+
+		bool
+		operator()(
+				const GPlatesAppLogic::ClassifyFeatureCollection::classifications_type &
+						classifications) const
+		{
+			return classifications.test(classification);
+		}
+
+	private:
+		GPlatesAppLogic::ClassifyFeatureCollection::ClassificationType classification;
+	};
+
+
+	/**
+	 * Extracts and returns the feature classification from @a classifier.
+	 */
+	GPlatesAppLogic::ClassifyFeatureCollection::classifications_type
+	get_classification(
+			const GPlatesFeatureVisitors::FeatureClassifier &classifier)
+	{
+		GPlatesAppLogic::ClassifyFeatureCollection::classifications_type classifications;
+
+		// Check if the feature collection contains reconstructable features.
+		if (classifier.reconstructable_feature_count() > 0)
+		{
+			classifications.set(GPlatesAppLogic::ClassifyFeatureCollection::RECONSTRUCTABLE);
+		}
+
+		// Check if the feature collection contains reconstruction features.
+		if (classifier.reconstruction_feature_count() > 0)
+		{
+			classifications.set(GPlatesAppLogic::ClassifyFeatureCollection::RECONSTRUCTION);
+		}
+
+		// Check if the feature collection contains instantaneous features.
+		if (classifier.instantaneous_feature_count() > 0)
+		{
+			classifications.set(GPlatesAppLogic::ClassifyFeatureCollection::INSTANTANEOUS);
+		}
+
+		return classifications;
+	}
+}
 
 
 GPlatesAppLogic::ClassifyFeatureCollection::classifications_type
 GPlatesAppLogic::ClassifyFeatureCollection::classify_feature_collection(
 		const GPlatesFileIO::File &file)
 {
-	GPlatesFeatureVisitors::FeatureCollectionClassifier classifier;
-
 	// First try classifying by the file type.
 	// This is because certain file types are known to contain only one type of feature.
 	const GPlatesFileIO::FeatureCollectionFileFormat::Format file_format =
@@ -79,37 +137,72 @@ GPlatesAppLogic::ClassifyFeatureCollection::classifications_type
 GPlatesAppLogic::ClassifyFeatureCollection::classify_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 {
-	classifications_type classifications;
-	GPlatesFeatureVisitors::FeatureCollectionClassifier classifier;
+	GPlatesFeatureVisitors::FeatureClassifier classifier;
 
-	classifier.scan_feature_collection(feature_collection);
-	
-	// Check if the feature collection contains reconstructable features.
-	//
-	// We have to be a little cautious in testing for reconstructable
-	// features, as if we don't enable them for reconstruction,
-	// GPlates just won't bother displaying them. So the present
-	// behaviour sets the reconstructable flag IFF (there are
-	// reconstructable features OR there is no rotation data present).
-	// Having 0 on both counts means that Something Is Amiss and
-	// we should not rule out 'reconstructable' as an option.
-	if (classifier.reconstructable_feature_count() > 0 ||
-		classifier.reconstruction_feature_count() == 0)
-	{
-		classifications.set(RECONSTRUCTABLE);
-	}
+	// Visit the feature collection with the classifier.
+	AppLogicUtils::visit_feature_collection(feature_collection, classifier);
 
-	// Check if the file_it contains reconstruction features.
-	//
-	// In testing for reconstruction features, we can be a little
-	// more relaxed, because the set of features which make up
-	// a reconstruction tree are smaller and easier to identify.
-	// In this case, if we can't identify them, it would be pointless
-	// attempting to reconstruct data with them anyway.
-	if (classifier.reconstruction_feature_count() > 0)
-	{
-		classifications.set(RECONSTRUCTION);
-	}
+	// Get the classifications from the classifier.
+	const classifications_type classifications = get_classification(classifier);
 
 	return classifications;
+}
+
+
+bool
+GPlatesAppLogic::ClassifyFeatureCollection::find_classified_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &found_features,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		ClassificationType classification)
+{
+	return find_classified_features(
+			found_features,
+			feature_collection,
+			Classify(classification));
+}
+
+
+bool
+GPlatesAppLogic::ClassifyFeatureCollection::find_classified_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &found_features,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		const classification_predicate_type &classification_predicate)
+{
+	if (!feature_collection.is_valid())
+	{
+		return false;
+	}
+
+	GPlatesFeatureVisitors::FeatureClassifier feature_classifier;
+	bool found = false;
+
+	// Iterate through the features in the feature collection.
+	GPlatesModel::FeatureCollectionHandle::features_iterator feature_iter =
+			feature_collection->features_begin();
+	GPlatesModel::FeatureCollectionHandle::features_iterator feature_end =
+			feature_collection->features_end();
+	for ( ; feature_iter != feature_end; ++feature_iter)
+	{
+		// Reset the classifier and visit a new feature to be classified.
+		feature_classifier.reset();
+		if (feature_classifier.visit_feature(feature_iter))
+		{
+			// Get the classifications from the classifier.
+			const classifications_type classifications = get_classification(feature_classifier);
+
+			// If the feature has the required classification then add it to the caller's sequence.
+			if (classification_predicate(classifications))
+			{
+				// We've already checked that the feature iterator is valid when we called
+				// 'visit_feature()' above.
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref =
+						(*feature_iter)->reference();
+
+				found_features.push_back(feature_ref);
+				found = true;
+			}
+		}
+	}
+
+	return found;
 }

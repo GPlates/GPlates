@@ -32,7 +32,6 @@
 #include "DigitisationWidget.h"
 #include "ReconstructionPoleWidget.h"
 #include "ActionButtonBox.h"
-#include "TopologyToolsWidget.h"
 
 #include "gui/FeatureFocus.h"
 #include "model/ModelInterface.h"
@@ -64,6 +63,7 @@ namespace GPlatesQtWidgets
 {
 	class ModifyGeometryWidget;
 	class MeasureDistanceWidget;
+	class TopologyToolsWidget;
 	class ViewportWindow;
 
 	/**

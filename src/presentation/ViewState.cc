@@ -23,21 +23,21 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-
 #include "ViewState.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
+#include "app-logic/PaleomagWorkflow.h"
 #include "app-logic/PlateVelocityWorkflow.h"
 #include "app-logic/Reconstruct.h"
 
 #include "gui/AgeColourTable.h"
+#include "gui/ColourSchemeFactory.h"
 #include "gui/ColourTableDelegator.h"
 #include "gui/FeatureColourTable.h"
 #include "gui/FeatureFocus.h"
 #include "gui/GeometryFocusHighlight.h"
-#include "gui/PlatesColourTable.h"
-#include "gui/SingleColourTable.h"
+#include "gui/SingleColourScheme.h"
 #include "gui/ViewportZoom.h"
 
 #include "view-operations/ReconstructView.h"
@@ -57,7 +57,7 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesViewOperations::RenderedGeometryCollection()),
 	d_colour_table(
 			new GPlatesGui::ColourTableDelegator(
-					GPlatesGui::PlatesColourTable::Instance())),
+					GPlatesGui::ColourSchemeFactory::create_default_plate_id_colour_scheme())),
 	d_viewport_zoom(
 			new GPlatesGui::ViewportZoom()),
 	d_viewport_projection(
@@ -74,6 +74,10 @@ GPlatesPresentation::ViewState::ViewState(
 			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
 					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
 					0.175f)),
+	d_paleomag_layer(
+			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
+					GPlatesViewOperations::RenderedGeometryCollection::PALEOMAG_LAYER,
+					0.175f)),					
 	d_plate_velocity_workflow(
 			new GPlatesAppLogic::PlateVelocityWorkflow(
 					application_state, d_comp_mesh_point_layer, d_comp_mesh_arrow_layer)),
@@ -81,9 +85,17 @@ GPlatesPresentation::ViewState::ViewState(
 			GPlatesAppLogic::FeatureCollectionWorkflow::register_and_create_auto_unregister_handle(
 					d_plate_velocity_workflow.get(),
 					application_state.get_feature_collection_file_state())),
+	d_paleomag_workflow(
+			new GPlatesAppLogic::PaleomagWorkflow(
+					application_state, d_paleomag_layer)),
+	d_paleomag_unregister(
+			GPlatesAppLogic::FeatureCollectionWorkflow::register_and_create_auto_unregister_handle(
+					d_paleomag_workflow.get(),
+					application_state.get_feature_collection_file_state())),
 	d_reconstruct_view(
 			new GPlatesViewOperations::ReconstructView(
-					*d_plate_velocity_workflow, *d_rendered_geometry_collection, *d_colour_table))
+					*d_plate_velocity_workflow, *d_paleomag_workflow,*d_rendered_geometry_collection, *d_colour_table)),
+	d_last_single_colour(Qt::white)
 {
 	// Call the operations in ReconstructView whenever a reconstruction is generated.
 	d_reconstruct->set_reconstruction_hook(d_reconstruct_view.get());
@@ -160,22 +172,6 @@ GPlatesPresentation::ViewState::get_plate_velocity_workflow() const
 
 
 void
-GPlatesPresentation::ViewState::choose_colour_by_plate_id()
-{
-	d_colour_table->set_target_colour_table(GPlatesGui::PlatesColourTable::Instance());
-}
-
-
-void
-GPlatesPresentation::ViewState::choose_colour_by_single_colour(
-		const GPlatesGui::Colour &colour)
-{
-	GPlatesGui::SingleColourTable::Instance()->set_colour(colour);
-	d_colour_table->set_target_colour_table(GPlatesGui::SingleColourTable::Instance());
-}
-
-
-void
 GPlatesPresentation::ViewState::choose_colour_by_feature_type()
 {
 	d_colour_table->set_target_colour_table(GPlatesGui::FeatureColourTable::Instance());
@@ -187,6 +183,40 @@ GPlatesPresentation::ViewState::choose_colour_by_age()
 {
 	GPlatesGui::AgeColourTable::Instance()->set_reconstruct_state(get_reconstruct());
 	d_colour_table->set_target_colour_table(GPlatesGui::AgeColourTable::Instance());
+}
+
+
+void
+GPlatesPresentation::ViewState::choose_colour_by_single_colour(
+		const QColor &qcolor)
+{
+	boost::shared_ptr<GPlatesGui::ColourScheme> colour_scheme(
+			new GPlatesGui::SingleColourScheme(qcolor));
+	d_colour_table->set_colour_scheme(colour_scheme);
+	d_last_single_colour = qcolor;
+}
+
+
+void
+GPlatesPresentation::ViewState::choose_colour_by_plate_id_default()
+{
+	d_colour_table->set_colour_scheme(
+			GPlatesGui::ColourSchemeFactory::create_default_plate_id_colour_scheme());
+}
+
+
+void
+GPlatesPresentation::ViewState::choose_colour_by_plate_id_regional()
+{
+	d_colour_table->set_colour_scheme(
+			GPlatesGui::ColourSchemeFactory::create_regional_plate_id_colour_scheme());
+}
+
+
+QColor
+GPlatesPresentation::ViewState::get_last_single_colour() const
+{
+	return d_last_single_colour;
 }
 
 
@@ -213,6 +243,13 @@ GPlatesPresentation::ViewState::setup_rendered_geometry_collection()
 
 	d_rendered_geometry_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
+		
+	d_rendered_geometry_collection->set_main_layer_active(
+		GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_TOOL_LAYER);	
+		
+	d_rendered_geometry_collection->set_main_layer_active(
+		GPlatesViewOperations::RenderedGeometryCollection::PALEOMAG_LAYER);			
+			
 
 	// Activate the main rendered layer.
 	// Specify which main rendered layers are orthogonal to each other - when
@@ -274,8 +311,7 @@ GPlatesPresentation::ViewState::connect_to_feature_focus()
 	// GeometryFocusHighlight below.
 	QObject::connect(
 			&get_feature_focus(),
-			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			&get_reconstruct(),
 			SLOT(reconstruct()));
 
@@ -283,20 +319,16 @@ GPlatesPresentation::ViewState::connect_to_feature_focus()
 	QObject::connect(
 			&get_feature_focus(),
 			SIGNAL(focus_changed(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+					GPlatesGui::FeatureFocus &)),
 			d_geometry_focus_highlight.get(),
 			SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+					GPlatesGui::FeatureFocus &)));
 
 	QObject::connect(
 			&get_feature_focus(),
 			SIGNAL(focused_feature_modified(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+					GPlatesGui::FeatureFocus &)),
 			d_geometry_focus_highlight.get(),
 			SLOT(set_focus(
-					GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+					GPlatesGui::FeatureFocus &)));
 }

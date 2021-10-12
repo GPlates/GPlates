@@ -520,6 +520,31 @@ namespace
 
 		return map;
 	}
+	
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_virtual_geomagnetic_pole_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
+
+		map[ PropertyName::create_gpml("averageSampleSitePosition") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("polePosition") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);			
+		map[ PropertyName::create_gpml("averageInclination") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("averageDeclination") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);	
+		map[ PropertyName::create_gpml("poleA95") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("poleDp") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("poleDm") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("averageAge") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
+
+		return map;
+	}	
 
 
 	const PropertyCreationUtils::PropertyCreatorMap
@@ -832,6 +857,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 	// Topological features.
 	d_map[ FeatureType::create_gpml("TopologicalClosedPlateBoundary") ] =
 		get_topological_closed_plate_boundary_properties();
+	d_map[ FeatureType::create_gpml("TopologicalNetwork") ] =
+		get_topological_closed_plate_boundary_properties();
 
 	// Reconstruction features.
 	d_map[ FeatureType::create_gpml("TotalReconstructionSequence") ] = 
@@ -958,6 +985,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_geological_lineation_properties();
 	d_map[ FeatureType::create_gpml("PseudoFault") ] =
 		get_pseudo_fault_properties();
+	d_map[FeatureType::create_gpml("VirtualGeomagneticPole") ] =
+		get_virtual_geomagnetic_pole_properties();
 	d_map[ FeatureType::create_gpml("UnclassifiedFeature") ] =
 		get_unclassified_feature_properties();
 

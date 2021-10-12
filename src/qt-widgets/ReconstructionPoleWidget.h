@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -36,11 +36,17 @@
 #include "model/FeatureHandle.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "view-operations/RenderedGeometryCollection.h"
+#include "maths/PointOnSphere.h"
 
 
 namespace GPlatesAppLogic
 {
 	class Reconstruct;
+}
+
+namespace GPlatesGui
+{
+	class FeatureFocus;
 }
 
 namespace GPlatesPresentation
@@ -62,7 +68,10 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 	public:
 
-		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		// FIXME: This typedef has been changed to include an RFG pointer.
+		// This is part of the paleomag workarounds.
+		typedef std::vector<std::pair<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
+			GPlatesModel::ReconstructedFeatureGeometry::non_null_ptr_to_const_type> >
 				geometry_collection_type;
 
 		ReconstructionPoleWidget(
@@ -103,9 +112,12 @@ namespace GPlatesQtWidgets
 		reset_adjustment();
 
 		void
+		change_constrain_latitude_checkbox_state(
+				int new_checkbox_state);
+
+		void
 		set_focus(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry);
+				GPlatesGui::FeatureFocus &feature_focus);
 
 		void
 		handle_reconstruction();
@@ -205,6 +217,18 @@ namespace GPlatesQtWidgets
 		// This is technically a memory leak, but since the ReconstructionPoleWidget will
 		// never be deleted...
 		AdjustmentApplicator *d_applicator_ptr;
+
+		/**
+		 * Whether or not the latitude of the dragging motion should be constrained.
+		 */
+		bool d_should_constrain_latitude;
+
+		/**
+		 * The start-point of a latitude-constraining drag.
+		 *
+		 * This data member is used @em only by latitude-constraining drags.
+		 */
+		boost::optional<GPlatesMaths::PointOnSphere> d_drag_start;
 
 		/**
 		 * Whether or not this dialog is currently active.

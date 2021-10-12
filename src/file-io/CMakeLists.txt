@@ -37,6 +37,8 @@ set(srcs
     GdalReader.cc
     GdalReader.h
     GeometryExporter.h
+    GmapReader.cc
+    GmapReader.h
     GMTFormatGeometryExporter.cc
     GMTFormatGeometryExporter.h
     GMTFormatHeader.cc
@@ -57,6 +59,8 @@ set(srcs
     OgrException.h
     OgrWriter.cc
     OgrWriter.h
+    PlatesFormatUtils.cc
+    PlatesFormatUtils.h
     PlatesLineFormatGeometryExporter.cc
     PlatesLineFormatGeometryExporter.h
     PlatesLineFormatHeaderVisitor.cc

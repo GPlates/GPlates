@@ -30,6 +30,9 @@ set(srcs
     ApplyReconstructionPoleAdjustmentDialog.cc
     ApplyReconstructionPoleAdjustmentDialog.h
     ApplyReconstructionPoleAdjustmentDialogUi.ui
+    AssignReconstructionPlateIdsDialog.cc
+    AssignReconstructionPlateIdsDialog.h
+    AssignReconstructionPlateIdsDialogUi.ui
     BuildTopologyWidgetUi.ui
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
@@ -160,6 +163,8 @@ set(srcs
     ReconstructionViewWidget.cc
     ReconstructionViewWidget.h
     ReconstructionViewWidgetUi.ui
+    SaveFileDialog.cc
+    SaveFileDialog.h
     SceneView.h
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h

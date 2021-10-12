@@ -38,9 +38,8 @@
 #include <QString>
 
 #include "ManageFeatureCollectionsDialogUi.h"
-
+#include "SaveFileDialog.h"
 #include "app-logic/FeatureCollectionFileState.h"
-
 #include "file-io/FeatureCollectionFileFormat.h"
 
 
@@ -289,10 +288,19 @@ namespace GPlatesQtWidgets
 		QString d_open_file_path;
 		
 		/**
+		 * Displays save file as dialog box.
+		 */
+		boost::shared_ptr<SaveFileDialog> d_save_file_as_dialog_ptr;
+
+		/**
+		 * Displays save file copy dialog box.
+		 */
+		boost::shared_ptr<SaveFileDialog> d_save_file_copy_dialog_ptr;
+		
+		/**
 		 * Controls whether Save File dialogs include a Compressed GPML option.
 		 */
 		bool d_gzip_available;
-
 
 		/**
 		 * Connect to signals from a @a FeatureCollectionFileState object.

@@ -30,7 +30,7 @@ GPlatesQtWidgets::InformationDialog::InformationDialog(
 		const QString &text_data,
 		const QString &text_title,
 		QWidget *parent_):
-	QDialog(parent_)
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 {
 	setupUi(this);
 	text_information->setText(text_data);

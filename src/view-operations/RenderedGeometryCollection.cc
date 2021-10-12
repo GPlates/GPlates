@@ -24,17 +24,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
-#include <boost/noncopyable.hpp>
-#include <list>
-
-#include <QDebug>
-
 #include "RenderedGeometryCollection.h"
 #include "RenderedGeometryCollectionVisitor.h"
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "utils/Singleton.h"
 
+#include <boost/bind.hpp>
+#include <boost/noncopyable.hpp>
+#include <list>
+#include <QDebug>
 
 namespace GPlatesViewOperations
 {
@@ -44,23 +43,16 @@ namespace GPlatesViewOperations
 		 * Singleton instance to keep track of @a RenderedGeometryCollection objects.
 		 */
 		class RenderedGeometryCollectionManager :
-			private boost::noncopyable
+			public GPlatesUtils::Singleton<RenderedGeometryCollectionManager>
 		{
+
+			GPLATES_SINGLETON_CONSTRUCTOR_IMPL(RenderedGeometryCollectionManager)
+
 		public:
 			/**
 			 * Typedef for sequence of @a RenderedGeometryCollection pointers.
 			 */
 			typedef std::list<RenderedGeometryCollection *> collection_seq_type;
-
-			/**
-			 * Singleton instance.
-			 */
-			static
-			RenderedGeometryCollectionManager &
-			instance()
-			{
-				return s_instance;
-			}
 
 			void
 			register_collection(
@@ -83,15 +75,8 @@ namespace GPlatesViewOperations
 			}
 
 		private:
-			RenderedGeometryCollectionManager()
-			{  }
-
-			static RenderedGeometryCollectionManager s_instance;
-
 			collection_seq_type d_registered_collections;
 		};
-
-		RenderedGeometryCollectionManager RenderedGeometryCollectionManager::s_instance;
 	}
 
 }

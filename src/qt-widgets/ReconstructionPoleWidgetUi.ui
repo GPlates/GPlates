@@ -6,7 +6,7 @@
     <x>0</x>
     <y>0</y>
     <width>181</width>
-    <height>335</height>
+    <height>390</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -45,6 +45,47 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupbox_constraints" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Minimum" hsizetype="Preferred" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="title" >
+      <string>Constraints</string>
+     </property>
+     <layout class="QVBoxLayout" >
+      <property name="leftMargin" >
+       <number>6</number>
+      </property>
+      <property name="topMargin" >
+       <number>3</number>
+      </property>
+      <property name="rightMargin" >
+       <number>6</number>
+      </property>
+      <property name="bottomMargin" >
+       <number>3</number>
+      </property>
+      <item>
+       <layout class="QVBoxLayout" >
+        <property name="topMargin" >
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QCheckBox" name="checkbox_constrain_latitude" >
+          <property name="text" >
+           <string>&amp;Constrain Latitude</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <widget class="QGroupBox" name="groupbox_adjustment" >

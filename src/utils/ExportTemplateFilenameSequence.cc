@@ -50,8 +50,8 @@ GPlatesUtils::ExportTemplateFilenameSequence::ExportTemplateFilenameSequence(
 
 	// The sign of the reconstruction time increment should match the sign of
 	// end minus begin reconstruction times.
-	if (isPositive(reconstruction_time_increment) !=
-		isPositive(end_reconstruction_time - begin_reconstruction_time))
+	if (is_strictly_positive(reconstruction_time_increment) !=
+		is_strictly_positive(end_reconstruction_time - begin_reconstruction_time))
 	{
 		throw ExportTemplateFilename::IncorrectTimeIncrementSign(GPLATES_EXCEPTION_SOURCE);
 	}

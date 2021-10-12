@@ -36,6 +36,7 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
 #include "maths/GeometryOnSphere.h"
+#include "maths/PointOnSphere.h"
 
 #include "property-values/GpmlTopologicalSection.h"
 
@@ -65,20 +66,91 @@ namespace GPlatesGui
 		 * row of data in the table (not counting the 'insertion point'
 		 * special row).
 		 *
-		 * Note: If there is any other data you want to pack here, it
-		 * should be easy to do. The only members which are accessed by
-		 * the table are d_feature_id, d_feature_ref, and d_reverse.
-		 *
-		 * However, if you change things you will have to update (or
-		 * discard) the @a insert_test_data() method defined below.
+		 * This is the minimum information needed to display in the topological
+		 * sections table GUI and to allow the topology tools to identify the
+		 * type of topology sections it's dealing with.
 		 */
-		struct TableRow
+		class TableRow
 		{
+		public:
 			/**
-			 * The pointer to the gpml:TopologicalSection property-value that
-			 * this table row represents.
+			 * Construct using information from a GpmlTopologicalSection.
+			 *
+			 * For point sections this will include a geometry property delegate.
+			 * For line sections this will include a geometry property delegate,
+			 *    possibly start/end intersections and a reverse geometry flag.
 			 */
-			boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> d_section_ptr;
+			TableRow(
+					const GPlatesModel::FeatureId &feature_id,
+					const GPlatesModel::PropertyName &geometry_property_name,
+					bool reverse_order = false,
+					const boost::optional<GPlatesMaths::PointOnSphere> &click_point = boost::none);
+
+
+			/**
+			 * Construct using information from a clicked geometry.
+			 *
+			 * This is used when the user clicks on a geometry and wants to add it as a
+			 * topological section - the reverse flag is usually always false in this case.
+			 */
+			TableRow(
+					const GPlatesModel::FeatureHandle::properties_iterator &geometry_property,
+					const boost::optional<GPlatesMaths::PointOnSphere> &click_point = boost::none,
+					bool reverse_order = false);
+
+
+			//! Get the feature id.
+			const GPlatesModel::FeatureId &
+			get_feature_id() const
+			{
+				return d_feature_id;
+			}
+
+			//! Get the feature reference.
+			const GPlatesModel::FeatureHandle::weak_ref &
+			get_feature_ref() const
+			{
+				return d_feature_ref;
+			}
+
+			//! Get the geometry property iterator.
+			const GPlatesModel::FeatureHandle::properties_iterator &
+			get_geometry_property() const
+			{
+				return d_geometry_property;
+			}
+
+			//! Set the present day click point.
+			const boost::optional<GPlatesMaths::PointOnSphere> &
+			get_present_day_click_point() const
+			{
+				return d_present_day_click_point;
+			}
+
+			//! Set the present day click point.
+			void
+			set_present_day_click_point(
+					const boost::optional<GPlatesMaths::PointOnSphere> &present_day_click_point)
+			{
+				d_present_day_click_point = present_day_click_point;
+			}
+
+			//! Get the reverse order of section points.
+			bool
+			get_reverse() const
+			{
+				return d_reverse;
+			}
+
+			//! Set the reverse order of section points.
+			void
+			set_reverse(
+					bool reverse)
+			{
+				d_reverse = reverse;
+			}
+
+		private:
 			/**
 			 * The gpml:FeatureId of the topological section.
 			 * Remember, we may be in a position where this does not resolve to a
@@ -92,6 +164,8 @@ namespace GPlatesGui
 			 * to a FeatureHandle::non_null_ptr_type, to make it easier to fill in the table
 			 * data.
 			 *
+			 * NOTE: remember to check 'is_valid()'.
+			 *
 			 * Mental Note: I have put this here in the struct rather than passed to the
 			 * render_xxx methods to allow better decoupling of data and Qt-specific stuff
 			 * later. -JC
@@ -103,15 +177,20 @@ namespace GPlatesGui
 			 * table is the geometric property which is to be used for intersections, etc.
 			 * This is particularly important to track if we want to let the user click
 			 * on the table and highlight bits of geometry while building a topology.
+			 *
+			 * NOTE: remember to check 'is_valid()'.
+			 *
+			 * NOTE: 'd_geometry_property' must be declared/initialised after 'd_feature_ref'
+			 * since it uses it when constructed.
 			 */
-			boost::optional<GPlatesModel::FeatureHandle::properties_iterator> d_geometry_property_opt;
-			
+			GPlatesModel::FeatureHandle::properties_iterator d_geometry_property;
+
 			/**
 			 * The point the user clicked on to select the section.
 			 * Used as a reference point to aid the intersection algorithm.
 			 * Coords are present-day.
 			 */
-			boost::optional<GPlatesMaths::LatLonPoint> d_click_point;
+			boost::optional<GPlatesMaths::PointOnSphere> d_present_day_click_point;
 
 			/**
 			 * Whether this topology section should be used in reverse.
@@ -226,7 +305,7 @@ namespace GPlatesGui
 				I end_it)
 		{
 			// All new entries get inserted at the insertion point.
-			size_type index = insertion_point();
+			const size_type index = insertion_point();
 			// Use STL vector::insert with two input iterators for probably-fast
 			// insert (depending on iterator capability)
 			d_container.insert(d_container.begin() + index, begin_it, end_it);
@@ -235,7 +314,14 @@ namespace GPlatesGui
 			// ... because inserting will naturally bump the insertion point down n rows.
 			move_insertion_point(insertion_point() + quantity);
 			// ... and we need to emit appropriate signals.
-			emit entries_inserted(index, quantity);
+			// Adding iterator range for caller's convenience since caller may want
+			// an iterator but should not assume a random access iterator (we can however
+			// since this is our implementation).
+			emit entries_inserted(
+					index,
+					quantity,
+					d_container.begin() + index/*original insertion point*/,
+					d_container.begin() + index + quantity);
 		}
 		
 		
@@ -249,7 +335,7 @@ namespace GPlatesGui
 		 *
 		 * The supplied TableRow struct is copied.
 		 *
-		 * The @a entries_modified() signal is emitted.
+		 * The @a entry_modified() signal is emitted.
 		 */
 		void
 		update_at(
@@ -273,6 +359,9 @@ namespace GPlatesGui
 
 		/**
 		 * Returns the current index associated with the Insertion Point.
+		 *
+		 * The insertion points always refers to an existing @a TableRow and
+		 * can be used in @a at.
 		 */
 		size_type
 		insertion_point() const;
@@ -315,14 +404,6 @@ namespace GPlatesGui
 		clear();
 
 
-		/**
-		 * Updates the container data 
-		 *
-		 * The @a update_table() signal is emitted.
-		 */
-		void
-		update();
-
 
 #if 0	// The following slots were only used to support easier testing before the platepolygon branch merge.
 		// they should go away once everything works fine.
@@ -332,11 +413,11 @@ namespace GPlatesGui
 		insert_test_data()
 		{
 			GPlatesModel::FeatureHandle::weak_ref null_ref;
-			TopologySectionsContainer::TableRow trow1 = { GPlatesModel::FeatureId("GPlates-af5b7ca8-0a8a-4ad0-8741-0b81661f6634"), null_ref, GPlatesMaths::LatLonPoint(51.0,52.0), false };
-			TopologySectionsContainer::TableRow trow2 = { GPlatesModel::FeatureId("GPlates-80dee8d2-7ce8-4193-b34f-d54975989e78"), null_ref, GPlatesMaths::LatLonPoint(51.0,52.0), true };
-			TopologySectionsContainer::TableRow trow3 = { GPlatesModel::FeatureId("GPlates-9a93bb0d-ffa3-4672-880b-842c3cca671a"), null_ref, GPlatesMaths::LatLonPoint(51.0,52.0), false };
-			TopologySectionsContainer::TableRow trow4 = { GPlatesModel::FeatureId("GPlates-e50dc893-b535-491b-996c-edaaa45ad108"), null_ref, GPlatesMaths::LatLonPoint(51.0,52.0), true };
-			TopologySectionsContainer::TableRow trow5 = { GPlatesModel::FeatureId("GPlates-4d53a360-65cc-45c2-addd-34d057798cde"), null_ref, GPlatesMaths::LatLonPoint(51.0,52.0), true };
+			TopologySectionsContainer::TableRow trow1 = { GPlatesModel::FeatureId("GPlates-af5b7ca8-0a8a-4ad0-8741-0b81661f6634"), null_ref, GPlatesMaths::PointOnSphere::north_pole, false };
+			TopologySectionsContainer::TableRow trow2 = { GPlatesModel::FeatureId("GPlates-80dee8d2-7ce8-4193-b34f-d54975989e78"), null_ref, GPlatesMaths::PointOnSphere::north_pole, true };
+			TopologySectionsContainer::TableRow trow3 = { GPlatesModel::FeatureId("GPlates-9a93bb0d-ffa3-4672-880b-842c3cca671a"), null_ref, GPlatesMaths::PointOnSphere::north_pole, false };
+			TopologySectionsContainer::TableRow trow4 = { GPlatesModel::FeatureId("GPlates-e50dc893-b535-491b-996c-edaaa45ad108"), null_ref, GPlatesMaths::PointOnSphere::north_pole, true };
+			TopologySectionsContainer::TableRow trow5 = { GPlatesModel::FeatureId("GPlates-4d53a360-65cc-45c2-addd-34d057798cde"), null_ref, GPlatesMaths::PointOnSphere::north_pole, true };
 			insert(trow1);
 			insert(trow2);
 			insert(trow3);
@@ -367,11 +448,11 @@ namespace GPlatesGui
 		void
 		cleared();
 
-		void
-		update_table_sig();
-
 		/**
 		 * Emitted whenever the insertion point changes location.
+		 *
+		 * The new index always refers to an existing @a TableRow and can be used
+		 * in @a at.
 		 */
 		void
 		insertion_point_moved(
@@ -395,20 +476,17 @@ namespace GPlatesGui
 		void
 		entries_inserted(
 				GPlatesGui::TopologySectionsContainer::size_type inserted_index,
-				GPlatesGui::TopologySectionsContainer::size_type quantity);
+				GPlatesGui::TopologySectionsContainer::size_type quantity,
+				GPlatesGui::TopologySectionsContainer::const_iterator inserted_begin,
+				GPlatesGui::TopologySectionsContainer::const_iterator inserted_end);
 
 		/**
-		 * Emitted whenever the data from a range of entries has been modified.
+		 * Emitted whenever the data in an entry has been modified.
 		 * The table does not change size, and the insertion point has not moved.
-		 *
-		 * @a modified_index_begin and @a modified_index_end specify the range
-		 * of entries affected; it is an inclusive range, and @a begin may equal
-		 * @a end.
 		 */
 		void
-		entries_modified(
-				GPlatesGui::TopologySectionsContainer::size_type modified_index_begin,
-				GPlatesGui::TopologySectionsContainer::size_type modified_index_end);
+		entry_modified(
+				GPlatesGui::TopologySectionsContainer::size_type modified_index);
 
 		/**
 		 * Emitted whenever a feature is focused 

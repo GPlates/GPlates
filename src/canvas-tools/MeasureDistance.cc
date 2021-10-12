@@ -284,8 +284,8 @@ GPlatesCanvasTools::MeasureDistance::handle_move_without_drag(
 		std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
 		if (GPlatesViewOperations::test_proximity(
 					sorted_hits,
-					*d_main_layer_ptr,
-					proximity_criteria))
+					proximity_criteria,
+					*d_main_layer_ptr))
 		{
 			// a close hit found
 			const GPlatesViewOperations::RenderedGeometryProximityHit &closest_hit = sorted_hits.front();

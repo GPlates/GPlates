@@ -47,6 +47,8 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
+	class ChooseCanvasTool;
+
 	/**
 	 * Used for enabling/disabling a canvas tool.
 	 */
@@ -59,7 +61,8 @@ namespace GPlatesGui
 		EnableCanvasTool(
 			GPlatesQtWidgets::ViewportWindow &viewport_window,
 			const GPlatesGui::FeatureFocus &feature_focus,
-			const GPlatesViewOperations::GeometryOperationTarget &geom_operation_target);
+			const GPlatesViewOperations::GeometryOperationTarget &geom_operation_target,
+			const GPlatesGui::ChooseCanvasTool &choose_canvas_tool);
 
 		/**
 		 * Call when the @a ViewportWindow passed into constructor is fully constructed.
@@ -79,8 +82,7 @@ namespace GPlatesGui
 		 */
 		void
 		feature_focus_changed(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_geometry);
+				GPlatesGui::FeatureFocus &feature_focus);
 
 		/**
 		 * Geometry builder modifications have stopped.
@@ -96,6 +98,13 @@ namespace GPlatesGui
 				GPlatesViewOperations::GeometryOperationTarget &,
 				GPlatesViewOperations::GeometryBuilder *);
 
+		/**
+		 * The @a ChooseCanvasTool chose/switched to a canvas tool.
+		 */
+		void
+		chose_canvas_tool(
+				GPlatesGui::ChooseCanvasTool &,
+				GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type);
 	private:
 		/**
 		 * Used to do the actual enabling/disabling of canvas tool.
@@ -111,6 +120,11 @@ namespace GPlatesGui
 		 * Is true if a feature is currently in focus.
 		 */
 		bool d_feature_geom_is_in_focus;
+
+		/**
+		 * The currently active canvas tool.
+		 */
+		GPlatesCanvasTools::CanvasToolType::Value d_current_canvas_tool_type;
 
 		/**
 		 * The geometry operation target knows which @a GeometryBuilder will be
@@ -129,6 +143,10 @@ namespace GPlatesGui
 		void
 		connect_to_geometry_operation_target(
 				const GPlatesViewOperations::GeometryOperationTarget &);
+
+		void
+		connect_to_choose_canvas_tool(
+				const GPlatesGui::ChooseCanvasTool &);
 
 		/**
 		 * We've received new information so update our enabling/disabling of canvas tools.

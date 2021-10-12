@@ -32,7 +32,6 @@
 #include <QPaintEngine>
 #include <QPainter>
 
-#include "gui/PlatesColourTable.h"
 #include "gui/MapCanvasPainter.h"
 #include "gui/MapProjection.h"
 #include "MapCanvas.h"
@@ -53,8 +52,10 @@ namespace
 }
 
 GPlatesQtWidgets::MapCanvas::MapCanvas(
-	GPlatesViewOperations::RenderedGeometryCollection &collection):
-	d_rendered_geometry_collection(&collection)
+	GPlatesViewOperations::RenderedGeometryCollection &collection,
+	GPlatesGui::ViewportZoom &viewport_zoom_):
+		d_rendered_geometry_collection(&collection),
+		d_viewport_zoom(viewport_zoom_)
 {
 
 	// Give the scene a nice big rectangle.
@@ -214,15 +215,23 @@ GPlatesQtWidgets::MapCanvas::drawItems(
 	const QStyleOptionGraphicsItem options[], 
 	QWidget *widget)
 {
-	set_opengl_flags();
-	
-	GPlatesGui::MapCanvasPainter map_canvas_painter(
-		*this,
-		d_render_settings,
-		d_text_renderer_ptr,
-		d_update_type);	
-	
-	d_rendered_geometry_collection->accept_visitor(map_canvas_painter);
+	try{
+		set_opengl_flags();
+
+		double inverse_zoom_factor = 1.0/d_viewport_zoom.zoom_factor();
+
+		GPlatesGui::MapCanvasPainter map_canvas_painter(
+			*this,
+			d_render_settings,
+			d_text_renderer_ptr,
+			d_update_type,
+			inverse_zoom_factor);
+
+		d_rendered_geometry_collection->accept_visitor(map_canvas_painter);
+	}
+	catch (const GPlatesGlobal::Exception &e){
+		std::cerr << e << std::endl;
+	}
 }
 
 #if 0

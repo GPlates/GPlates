@@ -27,8 +27,8 @@
 #define GPLATES_MODEL_CONSTRECONSTRUCTIONGEOMETRYVISITOR_H
 
 #include "ReconstructedFeatureGeometry.h"
-#include "ResolvedTopologicalGeometry.h"
-#include "TemporaryGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalNetwork.h"
 
 
 namespace GPlatesModel
@@ -78,8 +78,8 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
-		visit_resolved_topological_geometry(
-				ResolvedTopologicalGeometry::non_null_ptr_to_const_type rtg)
+		visit_resolved_topological_boundary(
+				ResolvedTopologicalBoundary::non_null_ptr_to_const_type rtb)
 		{  }
 
 		/**
@@ -87,8 +87,8 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
-		visit_temporary_geometry(
-				TemporaryGeometry::non_null_ptr_to_const_type tg)
+		visit_resolved_topological_network(
+				ResolvedTopologicalNetwork::non_null_ptr_to_const_type rtb)
 		{  }
 
 	private:

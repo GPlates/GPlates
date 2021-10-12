@@ -16,6 +16,8 @@ set(srcs
     CartesianConvMatrix3D.cc
     CartesianConvMatrix3D.h
     ConstGeometryOnSphereVisitor.h
+    EllipseGenerator.cc
+    EllipseGenerator.h
     FiniteRotation.cc
     FiniteRotation.h
     FiniteRotationSnapshotTable.h
@@ -47,13 +49,19 @@ set(srcs
     MultiPointOnSphere.cc
     MultiPointOnSphere.h
     MultiPointProximityHitDetail.h
+    PointInPolygon.cc
+    PointInPolygon.h
     PointLiesOnGreatCircleArc.cc
     PointLiesOnGreatCircleArc.h
     PointOnSphere.cc
     PointOnSphere.h
     PointProximityHitDetail.h
+    PolygonIntersections.cc
+    PolygonIntersections.h
     PolygonOnSphere.cc
     PolygonOnSphere.h
+    PolygonOrientation.cc
+    PolygonOrientation.h
     PolygonProximityHitDetail.h
     PolylineEquivalencePredicates.h
     PolylineIntersections.cc

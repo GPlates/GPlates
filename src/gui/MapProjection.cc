@@ -28,7 +28,7 @@
 #include <iostream>
 #include <limits> // epsilon
 #include <cmath_ext.h> // fabs, isinf
-#include <float.h>
+// #include <float.h>
 
 #include <QDebug>
 #include <QString>
@@ -38,6 +38,7 @@
 #include "maths/GreatCircle.h"
 #include "maths/Real.h"
 #include "utils/MathUtils.h"
+
 #include "MapProjection.h"
 
 #ifdef _MSC_VER

@@ -260,8 +260,7 @@ namespace GPlatesGui
 		 */
 		void
 		handle_feature_modified(
-				GPlatesModel::FeatureHandle::weak_ref modified_feature_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type);
+				GPlatesGui::FeatureFocus &feature_focus);
 
 
 		QModelIndex

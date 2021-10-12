@@ -41,6 +41,7 @@
 #include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Reconstruct.h"
 #include "global/AssertionFailureException.h"
@@ -578,7 +579,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		FeatureType creation_type,
 		QWidget *parent_):
-	QDialog(parent_),
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_model_ptr(view_state_.get_application_state().get_model_interface()),
 	d_file_state(view_state_.get_application_state().get_feature_collection_file_state()),
 	d_file_io(view_state_.get_application_state().get_feature_collection_file_io()),

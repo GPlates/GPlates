@@ -93,17 +93,13 @@ GPlatesQtWidgets::FeatureSummaryWidget::FeatureSummaryWidget(
 	
 	// Subscribe to focus events. We can discard the FeatureFocus reference afterwards.
 	QObject::connect(&feature_focus,
-			SIGNAL(focus_changed(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+			SLOT(display_feature(GPlatesGui::FeatureFocus &)));
 	QObject::connect(&feature_focus,
-			SIGNAL(focused_feature_modified(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)),
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(display_feature(GPlatesModel::FeatureHandle::weak_ref,
-					GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type)));
+			SLOT(display_feature(GPlatesGui::FeatureFocus &)));
 }
 
 
@@ -128,9 +124,12 @@ GPlatesQtWidgets::FeatureSummaryWidget::clear()
 
 void
 GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg)
+		GPlatesGui::FeatureFocus &feature_focus)
 {
+	const GPlatesModel::FeatureHandle::weak_ref feature_ref = feature_focus.focused_feature();
+	const GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type associated_rg =
+			feature_focus.associated_reconstruction_geometry();
+
 	// Clear the fields first, then fill in those that we have data for.
 	clear();
 	// Always check your weak_refs!

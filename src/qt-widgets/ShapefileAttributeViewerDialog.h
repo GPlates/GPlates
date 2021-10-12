@@ -51,7 +51,7 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		ShapefileAttributeViewerDialog(
-			ViewportWindow &viewport_window,
+			GPlatesAppLogic::FeatureCollectionFileState &file_state,
 			QWidget *parent_= NULL);
 		
 		virtual
@@ -70,6 +70,10 @@ namespace GPlatesQtWidgets
 		
 		void
 		update_table();
+
+		void	
+		connect_feature_collection_file_state_signals(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
 	private slots:
 		/**

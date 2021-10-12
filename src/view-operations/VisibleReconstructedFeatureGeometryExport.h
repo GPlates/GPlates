@@ -47,8 +47,6 @@ namespace GPlatesViewOperations
 		 * Collects visible @a ReconstructedFeatureGeometry objects from
 		 * @a reconstruction that are displayed using @a rendered_geom_collection
 		 * and exports to a file depending on the file extension of @a filename.
-		 * Only those @a ReconstructionFeatureGeometry objects that are visible in
-		 * the RECONSTRUCTION_LAYER of @a rendered_geom_collection are exported.
 		 *
 		 * @param reconstructable_files used to determine which files the RFGs came from.
 		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.

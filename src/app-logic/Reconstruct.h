@@ -36,11 +36,6 @@
 #include "model/types.h"
 
 
-namespace GPlatesFeatureVisitors
-{
-	class TopologyResolver;
-}
-
 namespace GPlatesAppLogic
 {
 	class FeatureCollectionFileState;
@@ -83,9 +78,6 @@ namespace GPlatesAppLogic
 			 * Called after a reconstruction is created.
 			 *
 			 * The created reconstruction is passed as @a reconstruction.
-			 *
-			 * FIXME: When TopologyResolver is divided into two parts (see comment inside
-			 * Reconstruct::create_reconstruction) remove it from argument list.
 			 */
 			virtual
 			void
@@ -97,8 +89,7 @@ namespace GPlatesAppLogic
 					const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 							reconstructable_features_collection,
 					const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-							reconstruction_features_collection,
-					GPlatesFeatureVisitors::TopologyResolver &topology_resolver)
+							reconstruction_features_collection)
 			{  }
 		};
 
@@ -153,6 +144,36 @@ namespace GPlatesAppLogic
 		get_current_reconstruction()
 		{
 			return *d_reconstruction;
+		}
+
+
+		/**
+		 * The const overload of @a get_current_reconstruction.
+		 */
+		const GPlatesModel::Reconstruction &
+		get_current_reconstruction() const
+		{
+			return *d_reconstruction;
+		}
+
+
+		/**
+		 * Returns the reconstruction as a non-null shared pointer to non-const.
+		 */
+		GPlatesModel::Reconstruction::non_null_ptr_type
+		get_current_reconstruction_non_null_ptr()
+		{
+			return d_reconstruction;
+		}
+
+
+		/**
+		 * Returns the reconstruction as a non-null shared pointer to const.
+		 */
+		GPlatesModel::Reconstruction::non_null_ptr_to_const_type
+		get_current_reconstruction_non_null_ptr() const
+		{
+			return d_reconstruction;
 		}
 
 

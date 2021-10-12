@@ -12,6 +12,8 @@ include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
     AbstractWindow.h
+    AddClickedGeometriesToFeatureTable.cc
+    AddClickedGeometriesToFeatureTable.h
     AgeColourTable.cc
     AgeColourTable.h
     AnimationController.cc
@@ -20,6 +22,11 @@ set(srcs
     ChooseCanvasTool.h
     Colour.cc
     Colour.h
+    ColourNameSet.cc
+    ColourNameSet.h
+    ColourPalette.h
+    ColourScheme.h
+    ColourSchemeFactory.h
     ColourSpectrum.cc
     ColourSpectrum.h
     ColourTable.h
@@ -51,6 +58,10 @@ set(srcs
     FeatureWeakRefSequence.h
     FullScreenMode.cc
     FullScreenMode.h
+    GenericColourScheme.h
+    GenericContinuousColourPalette.cc
+    GenericContinuousColourPalette.h
+    GenericDiscreteColourPalette.h
     GeometricPropertyValueConstructor.cc
     GeometricPropertyValueConstructor.h
     GeometryFocusHighlight.cc
@@ -70,11 +81,15 @@ set(srcs
     GlobeRenderedGeometryLayerPainter.h
     GlobeVisibilityTester.cc
     GlobeVisibilityTester.h
+    GMTColourNames.cc
+    GMTColourNames.h
     GPlatesQApplication.cc
     GPlatesQApplication.h
     GPlatesQtMsgHandler.cc
     GPlatesQtMsgHandler.h
     GuiException.h
+    HTMLColourNames.cc
+    HTMLColourNames.h
     Interface.h
     MapCanvasPainter.cc
     MapCanvasPainter.h
@@ -86,6 +101,8 @@ set(srcs
     MapCanvasToolChoice.h
     MapProjection.cc
     MapProjection.h
+    ModifyLoadedFeatureCollectionsFilter.cc
+    ModifyLoadedFeatureCollectionsFilter.h
     NurbsRenderer.cc
     NurbsRenderer.h
     OpaqueSphere.cc
@@ -93,11 +110,9 @@ set(srcs
     OpenGL.h
     OpenGLBadAllocException.h
     OpenGLException.h
-    PlatesColourTable.cc
-    PlatesColourTable.h
+    PlateIdColourPalettes.cc
+    PlateIdColourPalettes.h
     ProjectionException.h
-    ProximityTests.cc
-    ProximityTests.h
     QGLWidgetTextRenderer.cc
     QGLWidgetTextRenderer.h
     Quadrics.cc
@@ -106,14 +121,12 @@ set(srcs
     RenderSettings.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
-    SingleColourTable.cc
-    SingleColourTable.h
+    SingleColourScheme.cc
+    SingleColourScheme.h
     SphericalGrid.cc
     SphericalGrid.h
     SvgExport.cc
     SvgExport.h
-    TemporaryGeometryFocus.cc
-    TemporaryGeometryFocus.h
     TextRenderer.h
     Texture.cc
     Texture.h

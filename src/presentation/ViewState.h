@@ -30,6 +30,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QObject>
+#include <QColor>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -47,6 +48,7 @@ namespace GPlatesAppLogic
 	class ApplicationState;
 	class FeatureCollectionFileIO;
 	class FeatureCollectionWorkflow;
+	class PaleomagWorkflow;
 	class PlateVelocityWorkflow;
 	class Reconstruct;
 }
@@ -148,22 +150,32 @@ namespace GPlatesPresentation
 		get_plate_velocity_workflow() const;
 
 
-		//! Colour reconstruction geometry by plate id.
-		void
-		choose_colour_by_plate_id();
-
-		//! Colour reconstruction geometry with a single colour.
-		void
-		choose_colour_by_single_colour(
-				const GPlatesGui::Colour &colour);
-
+		// FIXME: Delete after refactoring
 		//! Colour reconstruction geometry by feature type.
 		void
 		choose_colour_by_feature_type();
 
+		// FIXME: Delete after refactoring
 		//! Colour reconstruction geometry by age.
 		void
 		choose_colour_by_age();
+
+		//! Colour reconstruction geometry with a single colour.
+		void
+		choose_colour_by_single_colour(
+				const QColor &qcolor);
+
+		//! Colour reconstruction geometry by plate ID (default colouring)
+		void
+		choose_colour_by_plate_id_default();
+
+		//! Colour reconstruction geometry by plate ID (regional colouring)
+		void
+		choose_colour_by_plate_id_regional();
+
+		//! Returns the colour last used for the "Single Colour" colouring option
+		QColor
+		get_last_single_colour() const;
 
 		/**
 		 * Returns the colour table.
@@ -208,10 +220,18 @@ namespace GPlatesPresentation
 		//! The viewport projection state.
 		boost::scoped_ptr<GPlatesViewOperations::ViewportProjection> d_viewport_projection;
 
-		//! Renders the focused geometry highlighted.
+		/**
+		 * Renders the focused geometry highlighted.
+		 *
+		 * Depends on d_rendered_geometry_collection.
+		 */
 		boost::scoped_ptr<GPlatesGui::GeometryFocusHighlight> d_geometry_focus_highlight;
 
-		//! Tracks the currently focused feature (if any).
+		/**
+		 * Tracks the currently focused feature (if any).
+		 *
+		 * Depends on d_reconstruct.
+		 */
 		boost::scoped_ptr<GPlatesGui::FeatureFocus> d_feature_focus;
 
 		// FIXME: remove these 
@@ -219,6 +239,9 @@ namespace GPlatesPresentation
 			d_comp_mesh_point_layer;
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_comp_mesh_arrow_layer;
+			
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_paleomag_layer;
 
 		//! Feature collection workflow for calculating plate velocities - pointer owns workflow.
 		boost::scoped_ptr<GPlatesAppLogic::PlateVelocityWorkflow> d_plate_velocity_workflow;
@@ -226,9 +249,19 @@ namespace GPlatesPresentation
 		//! This shared pointer only unregisters the plate velocity workflow - doesn't own it.
 		boost::shared_ptr<GPlatesAppLogic::FeatureCollectionWorkflow> d_plate_velocity_unregister;
 
+		boost::shared_ptr<GPlatesAppLogic::PaleomagWorkflow> d_paleomag_workflow;
+		boost::shared_ptr<GPlatesAppLogic::FeatureCollectionWorkflow> d_paleomag_unregister;
+
 		//! Performs tasks each time a reconstruction is generated.
+		/**
+		 * Performs tasks each time a reconstruction is generated.
+		 *
+		 * Depends on d_plate_velocity_workflow, d_rendered_geometry_collection, d_colour_table.
+		 */
 		boost::scoped_ptr<GPlatesViewOperations::ReconstructView> d_reconstruct_view;
 
+		//! The current choice of colour for the "Single Colour" colouring option
+		QColor d_last_single_colour;
 
 		void
 		connect_to_viewport_zoom();

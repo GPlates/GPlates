@@ -26,13 +26,11 @@
 #ifndef GPLATES_QTWIDGETS_EXPORTRECONSTRUCTIONDIALOG_H
 #define GPLATES_QTWIDGETS_EXPORTRECONSTRUCTIONDIALOG_H
 
-#include <QObject>
 #include <QWidget>
-#include <QFileDialog>
 
+#include "SaveFileDialog.h"
 #include "model/types.h"
 #include "view-operations/VisibleReconstructedFeatureGeometryExport.h"
-
 
 namespace GPlatesModel
 {
@@ -52,9 +50,9 @@ namespace GPlatesQtWidgets
 	 * It is here because it uses Qt widgets (file save dialog) and can be
 	 * turned into a dialog if more input from user is needed.
 	 */
-	class ExportReconstructedFeatureGeometryDialog: public QObject
+	class ExportReconstructedFeatureGeometryDialog
 	{
-		Q_OBJECT
+
 	public:
 		ExportReconstructedFeatureGeometryDialog(
 				QWidget *parent_ = NULL);
@@ -62,7 +60,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * Requests input from user and exports @a reconstruction to a file.
 		 * Only those @a ReconstructionFeatureGeometry objects that are visible in
-		 * the RECONSTRUCTION_LAYER of @a rendered_geom_collection are exported.
+		 * @a rendered_geom_collection are exported.
 		 */
 		void
 		export_visible_reconstructed_feature_geometries(
@@ -73,22 +71,10 @@ namespace GPlatesQtWidgets
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
 
-
-	private slots:
-
-		void
-		handle_filter_changed();
-
 	private:
 
-		/**
-		 * A QFileDialog instance that we use for specifying the destination file.
-		 * We keep it as a member so that it will remember where the user last
-		 * saved to, for convenience.
-		 *
-		 * Memory managed by Qt.
-		 */
-		QFileDialog *d_export_file_dialog;
+		boost::shared_ptr<SaveFileDialog> d_save_file_dialog_ptr;
+
 	};
 }
 

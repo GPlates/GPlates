@@ -64,7 +64,7 @@ GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::fill_in_fields_for_ro
 
 GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::ApplyReconstructionPoleAdjustmentDialog(
 		QWidget *parent_):
-	QDialog(parent_)
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 {
 	setupUi(this);
 

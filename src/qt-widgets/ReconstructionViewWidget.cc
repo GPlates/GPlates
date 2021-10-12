@@ -45,9 +45,10 @@
 
 #include "maths/PointOnSphere.h"
 #include "maths/LatLonPointConversions.h"
+#include "presentation/ViewState.h"
+#include "qt-widgets/TaskPanel.h"
 #include "utils/FloatingPointComparisons.h"
 #include "view-operations/ViewportProjection.h"
-#include "presentation/ViewState.h"
 
 
 namespace
@@ -173,7 +174,8 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Create the GlobeCanvas.
 	d_globe_canvas_ptr = new GlobeCanvas(view_state, this);
 	// Create the MapCanvas.
-	d_map_canvas_ptr = new MapCanvas(view_state.get_rendered_geometry_collection());
+	d_map_canvas_ptr = new MapCanvas(view_state.get_rendered_geometry_collection(),
+							view_state.get_viewport_zoom());
 	// Create the ZoomSliderWidget for the right-hand side.
 	d_zoom_slider_widget = new ZoomSliderWidget(view_state.get_viewport_zoom(), this);
 
@@ -275,6 +277,10 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	QObject::connect(
 			&vprojection, SIGNAL(projection_type_changed(const GPlatesViewOperations::ViewportProjection &)),
 			this, SLOT(change_projection(const GPlatesViewOperations::ViewportProjection &)));
+			
+	QObject::connect(
+			&vprojection, SIGNAL(central_meridian_changed(const GPlatesViewOperations::ViewportProjection &)),
+			this, SLOT(change_projection(const GPlatesViewOperations::ViewportProjection &))); 
 
 	QObject::connect(this,SIGNAL(update_tools_and_status_message()),
 			&viewport_window,SLOT(update_tools_and_status_message()));
@@ -581,6 +587,9 @@ GPlatesQtWidgets::ReconstructionViewWidget::change_projection(
 	// Update the map canvas' projection
 	d_map_canvas_ptr->set_projection_type(
 		view_projection.get_projection_type());
+		
+	d_map_canvas_ptr->set_central_meridian(
+		view_projection.get_central_meridian());		
 
 	switch(view_projection.get_projection_type())
 	{
@@ -719,6 +728,19 @@ GPlatesQtWidgets::ReconstructionViewWidget::disable_arrows_display()
 	d_active_view_ptr->update_canvas();	
 }
 
+void
+GPlatesQtWidgets::ReconstructionViewWidget::enable_strings_display()
+{
+	d_globe_canvas_ptr->enable_strings_display();
+	d_map_canvas_ptr->enable_strings_display();
+	d_active_view_ptr->update_canvas();	
+}
 
-
+void
+GPlatesQtWidgets::ReconstructionViewWidget::disable_strings_display()
+{
+	d_globe_canvas_ptr->disable_strings_display();
+	d_map_canvas_ptr->disable_strings_display();
+	d_active_view_ptr->update_canvas();	
+}
 

@@ -46,6 +46,20 @@ namespace
 
 	inline
 	bool
+	properties_iterator_matches(
+			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
+			const GPlatesModel::FeatureHandle::properties_iterator &properties_iterator_to_match)
+	{
+		if ( ! rfg.property().is_valid()) {
+			// Nothing we can do here.
+			return false;
+		}
+		return (rfg.property() == properties_iterator_to_match);
+	}
+
+
+	inline
+	bool
 	reconstruction_matches(
 			const GPlatesModel::ReconstructedFeatureGeometry &rfg,
 			const GPlatesModel::Reconstruction *reconstruction_to_match)
@@ -71,6 +85,20 @@ GPlatesModel::ReconstructedFeatureGeometryFinder::visit_reconstructed_feature_ge
 		// A property-name-to-match was supplied, so limit the results to those RFGs which
 		// were reconstructed from a geometry with that property name.
 		if (property_name_matches(rfg, *d_property_name_to_match)) {
+			d_found_rfgs.push_back(rfg.get_non_null_pointer());
+		}
+	} else if (d_properties_iterator_to_match && d_reconstruction_to_match) {
+		// Both a properties-iterator-to-match and a Reconstruction-to-match were supplied, so
+		// limit the results to those RFGs which are contained within that Reconstruction
+		// and were reconstructed from a geometry with that properties iterator.
+		if (properties_iterator_matches(rfg, *d_properties_iterator_to_match) &&
+				reconstruction_matches(rfg, d_reconstruction_to_match)) {
+			d_found_rfgs.push_back(rfg.get_non_null_pointer());
+		}
+	} else if (d_properties_iterator_to_match) {
+		// A properties-iterator-to-match was supplied, so limit the results to those RFGs which
+		// were reconstructed from a geometry with that properties iterator.
+		if (properties_iterator_matches(rfg, *d_properties_iterator_to_match)) {
 			d_found_rfgs.push_back(rfg.get_non_null_pointer());
 		}
 	} else if (d_reconstruction_to_match) {

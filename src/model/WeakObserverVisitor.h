@@ -34,7 +34,8 @@ namespace GPlatesModel
 	// Forward declaration to avoid circularity of headers.
 	class FeatureHandle;
 	class ReconstructedFeatureGeometry;
-	class ResolvedTopologicalGeometry;
+	class ResolvedTopologicalBoundary;
+	class ResolvedTopologicalNetwork;
 	template<class H> class WeakReference;
 
 
@@ -149,8 +150,17 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
-		visit_resolved_topological_geometry(
-				ResolvedTopologicalGeometry &rtg)
+		visit_resolved_topological_boundary(
+				ResolvedTopologicalBoundary &rtb)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_resolved_topological_network(
+				ResolvedTopologicalNetwork &rtn)
 		{  }
 
 #if 0

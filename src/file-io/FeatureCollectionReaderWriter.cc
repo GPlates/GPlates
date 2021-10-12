@@ -28,6 +28,7 @@
 #include "ErrorOpeningFileForReadingException.h"
 #include "ErrorOpeningFileForWritingException.h"
 #include "FileFormatNotSupportedException.h"
+#include "GmapReader.h"
 #include "GMTFormatWriter.h"
 #include "GpmlOnePointSixOutputVisitor.h"
 #include "GpmlOnePointSixReader.h"
@@ -260,7 +261,11 @@ GPlatesFileIO::read_feature_collection(
 		case FeatureCollectionFileFormat::SHAPEFILE:
 			return ShapefileReader::read_file(file_info, model, read_errors);
 
+		case FeatureCollectionFileFormat::GMAP:
+			return GmapReader::read_file(file_info,model,read_errors);
+
 		case FeatureCollectionFileFormat::GMT:
+		
 		case FeatureCollectionFileFormat::UNKNOWN:
 		default:
 			throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,

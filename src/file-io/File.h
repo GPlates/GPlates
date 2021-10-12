@@ -209,7 +209,7 @@ namespace GPlatesFileIO
 		 * This is so the file format accurately reflects the feature collection (see
 		 * comment below about modifying FileInfo for more detail).
 		 */
-		const FeatureCollectionFileFormat::Format
+		FeatureCollectionFileFormat::Format
 		get_loaded_file_format() const
 		{
 			return d_loaded_file_format;
@@ -255,7 +255,7 @@ namespace GPlatesFileIO
 		/**
 		 * Constructor.
 		 *
-		 * Is private so that only to create is via @a create_loaded_file or @a create_save_file.
+		 * Is private so that only way to create is via @a create_loaded_file or @a create_save_file.
 		 */
 		File(
 				const GPlatesModel::FeatureCollectionHandleUnloader::shared_ref &feature_collection,

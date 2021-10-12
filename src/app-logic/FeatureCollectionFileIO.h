@@ -66,13 +66,64 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Gives the opportunity to modify loaded/reloaded feature collections
+		 * before they are passed to @a FeatureCollectionFileState where they are
+		 * then distributed to feature collection workflows.
+		 */
+		class ModifyFilter
+		{
+		public:
+			virtual
+			~ModifyFilter()
+			{  }
+
+			//! Typedef for a sequence of file shared refs.
+			typedef std::vector<GPlatesFileIO::File::shared_ref> file_seq_type;
+
+			/**
+			 * Modify the loaded (or reloaded) feature collections in place.
+			 *
+			 * Reloaded feature collections are included in this because they are
+			 * feature collections that have been modified outside of GPlates and
+			 * hence should be considered a newly loaded feature collection.
+			 *
+			 * The default is not to modify any feature collections.
+			 */
+			virtual
+			void
+			modify_loaded_files(
+					const file_seq_type &loaded_or_reloaded_files)
+			{
+			}
+		};
+
+
+		/**
+		 * Install a @a ModifyFilter to modify feature collections as they are
+		 * loaded (or reloaded).
+		 *
+		 * Reloaded files are included in this because they are files that have been
+		 * modified outside of GPlates and hence should be considered a newly loaded file.
+		 *
+		 * If this method is never called then the default behaviour is that
+		 * no loaded (or reloaded) feature collections are modified.
+		 */
+		void
+		set_modify_filter(
+				const boost::shared_ptr<ModifyFilter> &modify_filter);
+
+
+		/**
 		 * Loads feature collections from multiple files named @a file_names and adds them
 		 * to the application state.
 		 *
 		 * NOTE: if you are loading multiple files in one group then use this method
 		 * instead of multiple calls to @a load_file so that the application state
-		 * sends one notification instead of multiple notifications which is beneficial
-		 * if some files in the group depend on each other.
+		 * sends one notification instead of multiple notifications which is needed in
+		 * some cases where the files in the group depend on each other - an example is
+		 * topological boundary features which get resolved after the notification and
+		 * require any referenced features to be loaded into the model (and they might
+		 * be in other files in the group).
 		 */
 		void
 		load_files(
@@ -165,16 +216,27 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
 
+		/**
+		 * Filter used to modify feature collections as they are loaded (or reloaded).
+		 */
+		boost::shared_ptr<ModifyFilter> d_modify_filter;
+
 
 		file_seq_type
 		read_feature_collections(
 				const QStringList &filenames);
 
-
 		const GPlatesFileIO::File::shared_ref
 		read_feature_collection(
 				const GPlatesFileIO::FileInfo &file_info);
 
+		void
+		modify_feature_collections(
+				const file_seq_type &files);
+
+		void
+		modify_feature_collection(
+				const GPlatesFileIO::File::shared_ref &file);
 
 		void
 		emit_handle_read_errors_signal(

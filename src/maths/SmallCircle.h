@@ -57,8 +57,8 @@ namespace GPlatesMaths
 			 */
 			SmallCircle (const UnitVector3D &axis,
 			             const PointOnSphere &p)
-				: _axis (axis),
-				  _cos_colat(dot(axis, p.position_vector())) {
+				: d_axis (axis),
+				  d_cos_colat(dot(axis, p.position_vector())) {
 
 				AssertInvariantHolds ();
 			}
@@ -81,7 +81,7 @@ namespace GPlatesMaths
 			 */
 			SmallCircle (const UnitVector3D &axis,
 			             const real_t &cos_colat)
-				: _axis (axis), _cos_colat (cos_colat) {
+				: d_axis (axis), d_cos_colat (cos_colat) {
 
 				AssertInvariantHolds ();
 			}
@@ -94,19 +94,19 @@ namespace GPlatesMaths
 			 * FIXME: s/axisvector/axis/
 			 */
 			UnitVector3D
-			axisvector() const { return _axis; }
+			axis_vector() const { return d_axis; }
 
 			/**
 			 * FIXME: Remove this.
 			 */
 			UnitVector3D
-			normal () const { return axisvector(); }
+			normal () const { return axis_vector(); }
 
 			real_t
-			colatitude () const { return acos (_cos_colat); }
+			colatitude () const { return acos (d_cos_colat); }
 
 			real_t
-			cosColatitude () const { return _cos_colat; }
+			cos_colatitude () const { return d_cos_colat; }
 
 			/**
 			 * Evaluate whether the point @a pt lies on this
@@ -116,7 +116,7 @@ namespace GPlatesMaths
 			contains (const PointOnSphere &pt) const {
 
 				real_t dp = dot(normal(), pt.position_vector());
-				return (dp == _cos_colat);
+				return (dp == d_cos_colat);
 			}
 
 			/**
@@ -141,9 +141,9 @@ namespace GPlatesMaths
 
 		private:
 
-			UnitVector3D _axis;
+			UnitVector3D d_axis;
 
-			real_t _cos_colat;
+			real_t d_cos_colat;
 
 	};
 }

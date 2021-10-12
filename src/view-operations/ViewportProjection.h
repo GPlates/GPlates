@@ -46,7 +46,8 @@ namespace GPlatesViewOperations
 		explicit
 		ViewportProjection(
 				GPlatesGui::ProjectionType projection_type) :
-			d_projection_type(projection_type)
+			d_projection_type(projection_type),
+			d_central_meridian(0.)
 		{  }
 
 

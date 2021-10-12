@@ -26,6 +26,8 @@
 #ifndef GPLATES_GUI_GPLATESQTMSGHANDLER_H
 #define GPLATES_GUI_GPLATESQTMSGHANDLER_H
 
+#include "utils/Singleton.h"
+
 #include <boost/scoped_ptr.hpp>
 #include <QFile>
 #include <QString>
@@ -38,8 +40,12 @@ namespace GPlatesGui
 	/**
 	 * A Qt message handler to log qDebug, qWarning, qFatal, etc messages to a file.
 	 */
-	class GPlatesQtMsgHandler
+	class GPlatesQtMsgHandler :
+		public GPlatesUtils::Singleton<GPlatesQtMsgHandler>
 	{
+
+		GPLATES_SINGLETON_CONSTRUCTOR_DEF(GPlatesQtMsgHandler)
+
 	public:
 		~GPlatesQtMsgHandler();
 
@@ -91,26 +97,8 @@ namespace GPlatesGui
 		boost::scoped_ptr<QTextStream> d_log_stream;
 
 		//
-		// Static methods
-		//
-
-		//! Singleton instance.
-		static
-		GPlatesQtMsgHandler &
-		instance()
-		{
-			// Singleton instance.
-			static GPlatesQtMsgHandler s_msg_handler;
-
-			return s_msg_handler;
-		}
-
-		//
 		// Instance methods
 		//
-
-		//! Singleton constructor is private.
-		GPlatesQtMsgHandler();
 
 		/**
 		 * Handler method for Qt messages.

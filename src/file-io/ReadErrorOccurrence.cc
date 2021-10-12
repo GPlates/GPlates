@@ -46,6 +46,9 @@ GPlatesFileIO::DataFormats::data_format_to_str(
 	case Shapefile:
 		str = "ESRI Shapefile";
 		break;
+	case Gmap:
+		str = "GMAP VGP";
+		break;		
 	case Unspecified:
 		str = "unspecified";
 		break;

@@ -29,7 +29,7 @@
 #include "ManageFeatureCollectionsDialog.h"
 
 #include "app-logic/ClassifyFeatureCollection.h"
-#include "feature-visitors/FeatureCollectionClassifier.h"
+#include "feature-visitors/FeatureClassifier.h"
 
 #include "ManageFeatureCollectionsStateWidget.h"
 

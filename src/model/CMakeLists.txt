@@ -50,8 +50,6 @@ set(srcs
     ReconstructedFeatureGeometry.h
     ReconstructedFeatureGeometryFinder.cc
     ReconstructedFeatureGeometryFinder.h
-    ReconstructedFeatureGeometryPopulator.cc
-    ReconstructedFeatureGeometryPopulator.h
     Reconstruction.cc
     Reconstruction.h
     ReconstructionGeometry.h
@@ -66,15 +64,16 @@ set(srcs
     ReconstructionTreeEdge.h
     ReconstructionTreePopulator.cc
     ReconstructionTreePopulator.h
-    ResolvedTopologicalGeometry.cc
-    ResolvedTopologicalGeometry.h
+    ResolvedTopologicalBoundary.cc
+    ResolvedTopologicalBoundary.h
+    ResolvedTopologicalNetwork.cc
+    ResolvedTopologicalNetwork.h
+    ResolvedTopologicalNetworkImpl.h
     RevisionAwareIterator.h
     RevisionId.h
     StringContentTypeGenerator.h
     StringSetSingletons.cc
     StringSetSingletons.h
-    TemporaryGeometry.cc
-    TemporaryGeometry.h
     TopLevelProperty.h
     TopLevelPropertyInline.cc
     TopLevelPropertyInline.h

@@ -24,7 +24,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <boost/bind.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
 
 #include "RenderedGeometryUtils.h"
 
@@ -112,6 +115,32 @@ namespace GPlatesViewOperations
 			private:
 				reconstruction_geom_seq_type &d_reconstruction_geom_seq;
 			};
+
+
+			/**
+			 * Removes duplicate @a ReconstructionGeometry objects from an unsorted sequence.
+			 */
+			void
+			remove_duplicates(
+					reconstruction_geom_seq_type &reconstruction_geom_seq)
+			{
+				using boost::lambda::_1;
+				using boost::lambda::_2;
+
+				std::sort(
+						reconstruction_geom_seq.begin(),
+						reconstruction_geom_seq.end(),
+						boost::lambda::bind(&GPlatesModel::ReconstructionGeometry::non_null_ptr_type::get, _1) <
+								boost::lambda::bind(&GPlatesModel::ReconstructionGeometry::non_null_ptr_type::get, _2));
+
+				reconstruction_geom_seq.erase(
+						std::unique(
+								reconstruction_geom_seq.begin(),
+								reconstruction_geom_seq.end(),
+								boost::lambda::bind(&GPlatesModel::ReconstructionGeometry::non_null_ptr_type::get, _1) ==
+										boost::lambda::bind(&GPlatesModel::ReconstructionGeometry::non_null_ptr_type::get, _2)),
+						reconstruction_geom_seq.end());
+			}
 		}
 	}
 }
@@ -203,7 +232,7 @@ GPlatesViewOperations::RenderedGeometryUtils::deactivate_rendered_geometry_layer
 
 
 bool
-GPlatesViewOperations::RenderedGeometryUtils::get_reconstruction_geometries(
+GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
 		reconstruction_geom_seq_type &reconstruction_geom_seq,
 		const RenderedGeometryCollection &rendered_geom_collection,
 		RenderedGeometryCollection::MainLayerType main_layer_type,
@@ -212,14 +241,14 @@ GPlatesViewOperations::RenderedGeometryUtils::get_reconstruction_geometries(
 	RenderedGeometryCollection::main_layers_update_type main_layers;
 	main_layers.set(main_layer_type);
 
-	return get_reconstruction_geometries(
+	return get_unique_reconstruction_geometries(
 			reconstruction_geom_seq, rendered_geom_collection,
 			main_layers, only_if_main_layer_active);
 }
 
 
 bool
-GPlatesViewOperations::RenderedGeometryUtils::get_reconstruction_geometries(
+GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
 		reconstruction_geom_seq_type &reconstruction_geom_seq,
 		const RenderedGeometryCollection &rendered_geom_collection,
 		RenderedGeometryCollection::main_layers_update_type main_layers,
@@ -233,6 +262,38 @@ GPlatesViewOperations::RenderedGeometryUtils::get_reconstruction_geometries(
 			only_if_main_layer_active);
 
 	collect_recon_geoms_visitor.call_function(rendered_geom_collection);
+
+	// Remove any duplicate reconstruction geometries.
+	remove_duplicates(reconstruction_geom_seq);
+
+	return !reconstruction_geom_seq.empty();
+}
+
+
+bool
+GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
+		reconstruction_geom_seq_type &reconstruction_geom_seq,
+		const GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type &
+				sorted_rendered_geometry_hits)
+{
+	CollectReconstructionGeometries collect_recon_geoms(reconstruction_geom_seq);
+
+	GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type::const_iterator sorted_iter;
+	for (sorted_iter = sorted_rendered_geometry_hits.begin();
+		sorted_iter != sorted_rendered_geometry_hits.end();
+		++sorted_iter)
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_geom =
+			sorted_iter->d_rendered_geom_layer->get_rendered_geometry(
+			sorted_iter->d_rendered_geom_index);
+
+		// If rendered geometry contains a reconstruction geometry then it'll be added
+		// 'reconstruction_geom_seq'.
+		rendered_geom.accept_visitor(collect_recon_geoms);
+	}
+
+	// Remove any duplicate reconstruction geometries.
+	remove_duplicates(reconstruction_geom_seq);
 
 	return !reconstruction_geom_seq.empty();
 }

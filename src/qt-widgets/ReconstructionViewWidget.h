@@ -196,6 +196,12 @@ namespace GPlatesQtWidgets
 		void
 		disable_arrows_display();
 
+		void
+		enable_strings_display();
+		
+		void
+		disable_strings_display();
+
 	public slots:
 		void
 		activate_time_spinbox();

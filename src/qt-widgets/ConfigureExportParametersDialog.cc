@@ -35,7 +35,7 @@
 GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDialog(
 		GPlatesGui::ExportAnimationContext::non_null_ptr_type export_animation_context_ptr,
 		QWidget *parent_):
-	QDialog(parent_),
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_export_animation_context_ptr(export_animation_context_ptr)
 {
 	setupUi(this);

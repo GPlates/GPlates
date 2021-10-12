@@ -37,7 +37,7 @@
 
 #include "app-logic/ClassifyFeatureCollection.h"
 
-#include "feature-visitors/FeatureCollectionClassifier.h"
+#include "feature-visitors/FeatureClassifier.h"
 
 
 namespace Decls = GPlatesAppLogic::FeatureCollectionFileStateDecls;
@@ -94,10 +94,8 @@ namespace GPlatesAppLogic
 					const ClassifyFeatureCollection::classifications_type &classification,
 					bool used_by_higher_priority_workflow)
 			{
-				// We're interested in a file if it contains reconstructable features *and*
-				// it's *not* being used by a higher priority workflow.
-				return classification.test(ClassifyFeatureCollection::RECONSTRUCTABLE) &&
-						!used_by_higher_priority_workflow;
+				// We're interested in a file if it contains features that are displayable.
+				return ClassifyFeatureCollection::found_geometry_feature(classification);
 			}
 
 			virtual
@@ -115,8 +113,8 @@ namespace GPlatesAppLogic
 					GPlatesFileIO::File &/*old_file*/,
 					const ClassifyFeatureCollection::classifications_type &new_classification)
 			{
-				// We're interested in a file if it contains reconstructable features.
-				return new_classification.test(ClassifyFeatureCollection::RECONSTRUCTABLE);
+				// We're interested in a file if it contains features that are displayable.
+				return ClassifyFeatureCollection::found_geometry_feature(new_classification);
 			}
 
 			virtual
@@ -238,6 +236,51 @@ GPlatesAppLogic::FeatureCollectionFileState::get_loaded_files()
 }
 
 
+void
+GPlatesAppLogic::FeatureCollectionFileState::get_active_files(
+		std::vector<file_iterator> &active_files,
+		const workflow_tag_seq_type &workflow_tags_minus_reconstructable_reconstruction,
+		bool include_reconstructable_workflow,
+		bool include_reconstruction_workflow)
+{
+	// Get a list of all workflow tags including the reconstructable and reconstruction tags.
+	workflow_tag_seq_type workflow_tags(workflow_tags_minus_reconstructable_reconstruction);
+	if (include_reconstructable_workflow)
+	{
+		workflow_tags.push_back(Decls::RECONSTRUCTABLE_WORKFLOW_TAG);
+	}
+	if (include_reconstruction_workflow)
+	{
+		workflow_tags.push_back(Decls::RECONSTRUCTION_WORKFLOW_TAG);
+	}
+
+	const file_iterator_range loaded_files = get_loaded_files();
+
+	// Iterate over all loaded files and see if they are active with
+	// any workflow specified by the caller.
+	for (file_iterator file_iter = loaded_files.begin;
+		file_iter != loaded_files.end;
+		++file_iter)
+	{
+		workflow_tag_seq_type::const_iterator workflow_tag_iter = workflow_tags.begin();
+		workflow_tag_seq_type::const_iterator workflow_tag_end = workflow_tags.end();
+		for ( ; workflow_tag_iter != workflow_tag_end; ++workflow_tag_iter)
+		{
+			const workflow_tag_type &workflow_tag = *workflow_tag_iter;
+
+			if (is_file_active_workflow(file_iter, workflow_tag))
+			{
+				// Add to the caller's list.
+				active_files.push_back(file_iter);
+
+				// Continue on to the next file.
+				break;
+			}
+		}
+	}
+}
+
+
 GPlatesAppLogic::FeatureCollectionFileState::active_file_iterator_range
 GPlatesAppLogic::FeatureCollectionFileState::get_active_reconstructable_files()
 {
@@ -286,6 +329,8 @@ GPlatesAppLogic::FeatureCollectionFileState::register_workflow(
 
 	d_workflow_manager->register_workflow(workflow, activation_strategy);
 	d_active_lists_manager->register_workflow(workflow);
+	// Add to list of registered workflow tags.
+	d_registered_workflow_seq.push_back(workflow->get_tag());
 }
 
 
@@ -297,6 +342,10 @@ GPlatesAppLogic::FeatureCollectionFileState::unregister_workflow(
 	d_active_lists_manager->unregister_workflow(workflow);
 
 	const workflow_tag_type workflow_tag = workflow->get_tag();
+
+	// Remove from the list of registered workflow tags.
+	d_registered_workflow_seq.remove(workflow_tag);
+
 
 	// Iterate through all loaded files and remove the workflow's tag from the active states
 	// if it is currently in them.
@@ -313,6 +362,13 @@ GPlatesAppLogic::FeatureCollectionFileState::unregister_workflow(
 			file_node.file_node_state().active_state().remove_tag(workflow_tag);
 		}
 	}
+}
+
+
+const GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_seq_type &
+GPlatesAppLogic::FeatureCollectionFileState::get_registered_workflow_tags() const
+{
+	return d_registered_workflow_seq;
 }
 
 
@@ -348,22 +404,20 @@ std::vector<GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type>
 GPlatesAppLogic::FeatureCollectionFileState::get_workflow_tags(
 		file_iterator file_iter) const
 {
-	typedef std::vector<workflow_tag_type> workflow_tag_seq_type;
-
-	workflow_tag_seq_type workflow_tags =
+	std::vector<workflow_tag_type> workflow_tags =
 			file_iter.get_file_node()->file_node_state().active_state().get_tags();
 
 	// Remove the reconstructable and reconstruction workflow tags since
 	// the client is not aware of those (they are just used internally).
 	// When the client wants to do something with those workflows it
 	// uses API methods specific to those workflows.
-	workflow_tag_seq_type::iterator reconstructable_tag_iter = std::find(
+	std::vector<workflow_tag_type>::iterator reconstructable_tag_iter = std::find(
 			workflow_tags.begin(), workflow_tags.end(), Decls::RECONSTRUCTABLE_WORKFLOW_TAG);
 	if (reconstructable_tag_iter != workflow_tags.end())
 	{
 		workflow_tags.erase(reconstructable_tag_iter);
 	}
-	workflow_tag_seq_type::iterator reconstruction_tag_iter = std::find(
+	std::vector<workflow_tag_type>::iterator reconstruction_tag_iter = std::find(
 			workflow_tags.begin(), workflow_tags.end(), Decls::RECONSTRUCTION_WORKFLOW_TAG);
 	if (reconstruction_tag_iter != workflow_tags.end())
 	{
@@ -503,6 +557,8 @@ GPlatesAppLogic::FeatureCollectionFileState::reset_file(
 		file_iterator file_iter,
 		const GPlatesFileIO::File::shared_ref &new_file)
 {
+	emit begin_reset_feature_collection(*this, file_iter);
+
 	change_file_internal(file_iter, new_file);
 
 	emit end_reset_feature_collection(*this, file_iter);
@@ -518,6 +574,8 @@ GPlatesAppLogic::FeatureCollectionFileState::reclassify_feature_collection(
 	// Here we are classifying presumably because the feature collection has been modified
 	// outside our control.
 	//
+
+	emit begin_reclassify_feature_collection(*this, file_iter);
 
 	// We haven't actually changed the file itself but we can reuse functionality
 	// if we pretend we have a new file and set it to the existing file.

@@ -47,6 +47,18 @@ namespace GPlatesPropertyValues {
 
 	public:
 		/**
+		 * A convenience typedef for boost::intrusive_ptr<GpmlPropertyDelegate>.
+		 */
+		typedef boost::intrusive_ptr<GpmlPropertyDelegate>
+				maybe_null_ptr_type;
+
+		/**
+		 * A convenience typedef for boost::intrusive_ptr<const GpmlPropertyDelegate>.
+		 */
+		typedef boost::intrusive_ptr<const GpmlPropertyDelegate>
+				maybe_null_ptr_to_const_type;
+
+		/**
 		 * A convenience typedef for 
 		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate,
 		 * GPlatesUtils::NullIntrusivePointerHandler>.

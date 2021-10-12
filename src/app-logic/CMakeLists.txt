@@ -15,6 +15,10 @@ set(srcs
     ApplicationState.h
     AppLogicUtils.cc
     AppLogicUtils.h
+    AssignPlateIds.cc
+    AssignPlateIds.h
+    CgalUtils.cc
+    CgalUtils.h
     ClassifyFeatureCollection.cc
     ClassifyFeatureCollection.h
     FeatureCollectionActivationStrategy.cc
@@ -29,17 +33,34 @@ set(srcs
     FeatureCollectionFileStateImplDecls.h
     FeatureCollectionWorkflow.cc
     FeatureCollectionWorkflow.h
+    PaleomagUtils.cc
+    PaleomagUtils.h
+    PaleomagWorkflow.cc
+    PaleomagWorkflow.h
     PlateVelocityUtils.cc
     PlateVelocityUtils.h
     PlateVelocityWorkflow.cc
     PlateVelocityWorkflow.h
     Reconstruct.cc
     Reconstruct.h
+    ReconstructedFeatureGeometryPopulator.cc
+    ReconstructedFeatureGeometryPopulator.h
     ReconstructionActivationStrategy.cc
     ReconstructionActivationStrategy.h
+    ReconstructionFeatureProperties.cc
+    ReconstructionFeatureProperties.h
+    ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
     ReconstructUtils.cc
     ReconstructUtils.h
+    TopologyBoundaryResolver.cc
+    TopologyBoundaryResolver.h
+    TopologyInternalUtils.cc
+    TopologyInternalUtils.h
+    TopologyNetworkResolver.cc
+    TopologyNetworkResolver.h
+    TopologyUtils.cc
+    TopologyUtils.h
 )
 
 

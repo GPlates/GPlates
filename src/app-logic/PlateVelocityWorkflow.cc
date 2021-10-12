@@ -32,6 +32,7 @@
 #include "ReconstructUtils.h"
 
 #include "model/ModelInterface.h"
+#include "model/Reconstruction.h"
 #include "model/ReconstructionTree.h"
 
 
@@ -120,8 +121,7 @@ GPlatesAppLogic::PlateVelocityWorkflow::solve_velocities(
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				reconstruction_features_collection,
-		GPlatesFeatureVisitors::TopologyResolver &topology_resolver)
+				reconstruction_features_collection)
 {
 	/*
 	 * FIXME: Presentation code should not be in here (this is app logic code).
@@ -181,12 +181,12 @@ GPlatesAppLogic::PlateVelocityWorkflow::solve_velocities(
 
 		PlateVelocityUtils::solve_velocities(
 			velocity_field_feature_collection,
+			reconstruction,
 			reconstruction_tree_1,
 			reconstruction_tree_2,
 			reconstruction_time_1,
 			reconstruction_time_2,
 			reconstruction_anchored_plate_id,
-			topology_resolver,
 			d_comp_mesh_point_layer,
 			d_comp_mesh_arrow_layer);
 	}

@@ -63,17 +63,6 @@ namespace GPlatesModel
 		}
 
 
-		/**
-		 * Constructor - created object is not copyable - use @a create if want ability to copy.
-		 *
-		 * Destructor will unload feature collection if it is valid.
-		 */
-		FeatureCollectionHandleUnloader(
-				const FeatureCollectionHandle::weak_ref &feature_collection) :
-			d_feature_collection(feature_collection)
-		{  }
-
-
 		~FeatureCollectionHandleUnloader()
 		{
 			unload_feature_collection();
@@ -91,6 +80,19 @@ namespace GPlatesModel
 
 	private:
 		FeatureCollectionHandle::weak_ref d_feature_collection;
+
+
+		/**
+		 * Constructor - created object is not copyable - use @a create if want ability to copy.
+		 *
+		 * Is private so that only way to create is via @a create.
+		 *
+		 * Destructor will unload feature collection if it is valid.
+		 */
+		FeatureCollectionHandleUnloader(
+				const FeatureCollectionHandle::weak_ref &feature_collection) :
+			d_feature_collection(feature_collection)
+		{  }
 
 
 		void

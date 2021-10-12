@@ -39,16 +39,32 @@
 
 #include "ComputationalMeshSolver.h"
 
+#include "app-logic/PlateVelocityUtils.h"
+#include "app-logic/TopologyUtils.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "file-io/GpmlOnePointSixOutputVisitor.h"
+#include "file-io/FileInfo.h"
 
+#include "gui/ColourSchemeFactory.h"
+
+#include "maths/PolylineOnSphere.h"
+#include "maths/MultiPointOnSphere.h"
+#include "maths/LatLonPointConversions.h"
+#include "maths/ProximityCriteria.h"
+#include "maths/PolylineIntersections.h"
+#include "maths/CalculateVelocity.h"
+#include "maths/CartesianConvMatrix3D.h"
+
+#include "model/FeatureHandle.h"
 #include "model/FeatureHandleWeakRefBackInserter.h"
+#include "model/ModelUtils.h"
 #include "model/ReconstructedFeatureGeometry.h"
 #include "model/Reconstruction.h"
 #include "model/ReconstructionTree.h"
-#include "model/FeatureHandle.h"
+#include "model/ResolvedTopologicalBoundary.h"
 #include "model/TopLevelPropertyInline.h"
-#include "model/ModelUtils.h"
 
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlLineString.h"
@@ -72,19 +88,6 @@
 #include "property-values/GmlDataBlock.h"
 #include "property-values/GmlDataBlockCoordinateList.h"
 
-#include "maths/PolylineOnSphere.h"
-#include "maths/MultiPointOnSphere.h"
-#include "maths/LatLonPointConversions.h"
-#include "maths/ProximityCriteria.h"
-#include "maths/PolylineIntersections.h"
-#include "maths/CalculateVelocity.h"
-
-#include "file-io/GpmlOnePointSixOutputVisitor.h"
-#include "file-io/FileInfo.h"
-
-#include "gui/ProximityTests.h"
-#include "gui/PlatesColourTable.h"
-
 #include "utils/UnicodeStringUtils.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
@@ -92,23 +95,29 @@
 
 
 GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
+			GPlatesModel::Reconstruction &reconstruction,
 			const double &recon_time,
-			const double &recon_time_2,
 			unsigned long root_plate_id,
 			//GPlatesModel::Reconstruction &recon,
 			GPlatesModel::ReconstructionTree &recon_tree,
 			GPlatesModel::ReconstructionTree &recon_tree_2,
-			GPlatesFeatureVisitors::TopologyResolver &topo_resolver,
+			const GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type &
+					resolved_boundaries_for_partitioning_geometry_query,
+			const GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type &
+					resolved_networks_for_velocity_interpolation,
 			//reconstruction_geometries_type &reconstructed_geometries,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type point_layer,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type arrow_layer,
 			bool should_keep_features_without_recon_plate_id):
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_root_plate_id(GPlatesModel::integer_plate_id_type(root_plate_id)),
-	//d_recon_ptr(&recon),
+	d_recon_ptr(&reconstruction),
 	d_recon_tree_ptr(&recon_tree),
 	d_recon_tree_2_ptr(&recon_tree_2),
-	d_topology_resolver_ptr(&topo_resolver),
+	d_resolved_boundaries_for_partitioning_geometry_query(
+			resolved_boundaries_for_partitioning_geometry_query),
+	d_resolved_networks_for_velocity_interpolation(
+			resolved_networks_for_velocity_interpolation),
 	//d_reconstruction_geometries_to_populate(&reconstructed_geometries),
 	d_rendered_point_layer(point_layer),
 	d_rendered_arrow_layer(arrow_layer),
@@ -117,9 +126,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::ComputationalMeshSolver(
 	d_num_features = 0;
 	d_num_meshes = 0;
 	d_num_points = 0;
-	d_num_points_on_multiple_plates = 0;
-
-	d_colour_table_ptr = GPlatesGui::PlatesColourTable::Instance();
 }
 
 
@@ -342,10 +348,75 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_multi_point(
 	}
 }
 
-
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::process_point(
 	const GPlatesMaths::PointOnSphere &point )
+{
+	//
+	// First see if point is inside any topological networks.
+	//
+
+	boost::optional< std::vector<double> > interpolated_velocity_scalars =
+			GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks(
+					d_resolved_networks_for_velocity_interpolation,
+					point);
+
+	if (interpolated_velocity_scalars)
+	{
+		const GPlatesMaths::VectorColatitudeLongitude velocity_colat_lon =
+				GPlatesAppLogic::PlateVelocityUtils::convert_velocity_scalars_to_colatitude_longitude(
+						*interpolated_velocity_scalars);
+
+		process_point_in_network(point, velocity_colat_lon);
+		return;
+	}
+
+
+	//
+	// Next see if point is inside any topological boundaries.
+	//
+
+	// Get a list of all resolved topological boundaries that contain 'point'.
+	GPlatesAppLogic::TopologyUtils::resolved_topological_boundary_seq_type
+			resolved_topological_boundaries_containing_point;
+	GPlatesAppLogic::TopologyUtils::find_resolved_topology_boundaries_containing_point(
+			resolved_topological_boundaries_containing_point,
+			point,
+			d_resolved_boundaries_for_partitioning_geometry_query);
+
+	if (!resolved_topological_boundaries_containing_point.empty())
+	{
+		process_point_in_plate_polygon(
+				point, resolved_topological_boundaries_containing_point);
+		return;
+	}
+}
+
+
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_network(
+		const GPlatesMaths::PointOnSphere &point, 
+		const GPlatesMaths::VectorColatitudeLongitude &velocity_colat_lon)
+{
+	const double &colat_v = velocity_colat_lon.get_vector_colatitude().dval();
+	const double &lon_v = velocity_colat_lon.get_vector_longitude().dval();
+
+	// save the data in the lists 
+	d_velocity_colat_values.push_back( colat_v );
+	d_velocity_lon_values.push_back( lon_v );
+
+	const GPlatesMaths::Vector3D velocity_vector =
+			GPlatesMaths::convert_vector_from_colat_lon_to_xyz(point, velocity_colat_lon);
+
+	render_velocity(point, velocity_vector, GPlatesGui::Colour::get_black());
+}
+
+
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_plate_polygon(
+		const GPlatesMaths::PointOnSphere &point,
+		GPlatesAppLogic::TopologyUtils::resolved_topological_boundary_seq_type
+				resolved_topological_boundaries_containing_point)
 {
 
 #ifdef DEBUG
@@ -353,53 +424,12 @@ GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 std::cout << "ComputationalMeshSolver::process_point: " << llp << std::endl;
 #endif
 
-	std::vector<GPlatesModel::FeatureId> feature_ids;
-	std::vector<GPlatesModel::FeatureId>::iterator iter;
-
-	std::list<GPlatesModel::integer_plate_id_type> recon_plate_ids;
-	std::list<GPlatesModel::integer_plate_id_type>::iterator p_iter;
-
-	// Locate the point
-	feature_ids = d_topology_resolver_ptr->locate_point( point );
-
-#ifdef DEBUG
-// FIXME
-std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.size() << " plates." << std::endl;
-#endif
-
-	// loop over feature ids 
-	for (iter = feature_ids.begin(); iter != feature_ids.end(); ++iter)
+	const boost::optional<GPlatesModel::integer_plate_id_type> recon_plate_id_opt =
+			GPlatesAppLogic::TopologyUtils::
+					find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
+							resolved_topological_boundaries_containing_point);
+	if (!recon_plate_id_opt)
 	{
-		GPlatesModel::FeatureId feature_id = *iter;
-
-		// Get a vector of FeatureHandle weak_refs for this Feature ID
-		std::vector<GPlatesModel::FeatureHandle::weak_ref> back_refs;	
-		feature_id.find_back_ref_targets( append_as_weak_refs( back_refs ) );
-
-		// Double check vector
-		if ( back_refs.size() == 0 )
-		{
-			continue; // to next feature id 
-		}
-
-	 	// else , get the first ref on the list		
-	 	GPlatesModel::FeatureHandle::weak_ref feature_ref = back_refs.front();
-
-		// Get all the reconstructionPlateId for this point 
-		const GPlatesModel::PropertyName property_name =
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-
-		if ( GPlatesFeatureVisitors::get_property_value(
-				feature_ref, property_name, recon_plate_id ) )
-		{
-			// The feature has a reconstruction plate ID.
-			recon_plate_ids.push_back( recon_plate_id->value() );
-		}
-	}
-
-	if ( recon_plate_ids.empty() ) {
 		// FIXME: do not paint the point any color ; leave it ?
 		// save the data 
 		d_velocity_colat_values.push_back( 0 );
@@ -407,83 +437,35 @@ std::cout << "ComputationalMeshSolver::process_point: found in " << feature_ids.
 		return; 
 	}
 
-	// update the stats
-	if ( recon_plate_ids.size() > 1) { 
-		d_num_points_on_multiple_plates += 1;
-	}
-
-	// sort the plate ids
-	recon_plate_ids.sort();
-	recon_plate_ids.reverse();
-
-#ifdef DEBUG
-// FIXME: remove this diagnostic 
-std::cout << "plate ids: (";
-for ( p_iter = recon_plate_ids.begin(); p_iter != recon_plate_ids.end(); ++p_iter)
-{
-	std::cout << *p_iter << ", ";
-}
-std::cout << ")" << std::endl;
-#endif
-
-	// get the highest numeric id 
-	GPlatesModel::integer_plate_id_type plate_id = recon_plate_ids.front();
-		
+	const GPlatesModel::integer_plate_id_type recon_plate_id = *recon_plate_id_opt;
 
 	// get the color for the highest numeric id 
-	GPlatesGui::ColourTable::const_iterator colour = d_colour_table_ptr->end();
-	colour = d_colour_table_ptr->lookup_by_plate_id( plate_id ); 
-	if (colour == d_colour_table_ptr->end()) { 
-		colour = &GPlatesGui::Colour::get_olive(); 
-	}
-
-
-	// Create a RenderedGeometry using the reconstructed geometry.
-	const GPlatesViewOperations::RenderedGeometry rendered_geom =
-		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-			point.clone_as_geometry(),
-			*colour,
-			GPlatesViewOperations::GeometryOperationParameters::REGULAR_POINT_SIZE_HINT,
-			GPlatesViewOperations::GeometryOperationParameters::LINE_WIDTH_HINT);
-
-	// Add to the rendered layer.
-	d_rendered_point_layer->add_rendered_geometry(rendered_geom);
-
-	// get the finite rotation for this palte id
-	GPlatesMaths::FiniteRotation fr_t1 = 
-		d_recon_tree_ptr->get_composed_absolute_rotation( plate_id ).first;
-
-	GPlatesMaths::FiniteRotation fr_t2 = 
-		d_recon_tree_2_ptr->get_composed_absolute_rotation( plate_id ).first;
-
-
-	GPlatesMaths::Vector3D vector_xyz = 
-		GPlatesMaths::calculate_velocity_vector( point, fr_t1, fr_t2 );
-
-	std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t > velocity_pair = 
-		GPlatesMaths::calculate_vector_components_colat_lon( point, vector_xyz);
+	const boost::optional<GPlatesGui::Colour> plate_id_colour_opt =
+			d_colour_palette.get_colour(recon_plate_id);
+	const GPlatesGui::Colour &plate_id_colour = plate_id_colour_opt
+			? *plate_id_colour_opt
+			: GPlatesGui::Colour::get_olive();
 
 	// compute the velocity for this point
-	GPlatesMaths::real_t colat_v = velocity_pair.first;	
-	GPlatesMaths::real_t lon_v   = velocity_pair.second;
+	const GPlatesMaths::Vector3D vector_xyz =
+			GPlatesAppLogic::PlateVelocityUtils::calc_velocity_vector(
+					point, *d_recon_tree_ptr, *d_recon_tree_2_ptr, recon_plate_id);
+
+	const GPlatesMaths::VectorColatitudeLongitude velocity_colat_lon = 
+			GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, vector_xyz);
+
 #ifdef DEBUG
-	std::cout << "colat_v = " << colat_v << " ; " << "lon_v = " << lon_v << " ; " << std::endl;
+	std::cout
+			<< "colat_v = " << velocity_colat_lon.get_vector_colatitude()
+			<< " ; "
+			<< "lon_v = " << velocity_colat_lon.get_vector_longitude() << " ; " << std::endl;
 #endif
 
 	// save the data 
-	d_velocity_colat_values.push_back( colat_v.dval() );
-	d_velocity_lon_values.push_back( lon_v.dval() );
+	d_velocity_colat_values.push_back( velocity_colat_lon.get_vector_colatitude().dval() );
+	d_velocity_lon_values.push_back( velocity_colat_lon.get_vector_longitude().dval() );
 
-	// Create a RenderedGeometry using the vector
-	const GPlatesViewOperations::RenderedGeometry rendered_vector =
-		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
-			point,
-			vector_xyz,
-			0.05f,
-			*colour);
-
-	// Add to the rendered layer.
-	d_rendered_arrow_layer->add_rendered_geometry( rendered_vector );
+	render_velocity(point, vector_xyz, plate_id_colour);
 }
 
 
@@ -548,6 +530,34 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::visit_gml_data_block(
 #endif
 
 
+void
+GPlatesFeatureVisitors::ComputationalMeshSolver::render_velocity(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesMaths::Vector3D &velocity,
+		const GPlatesGui::Colour &colour)
+{
+	// Create a RenderedGeometry using the reconstructed geometry.
+	const GPlatesViewOperations::RenderedGeometry rendered_point =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
+					point,
+					colour,
+					GPlatesViewOperations::GeometryOperationParameters::REGULAR_POINT_SIZE_HINT);
+
+	// Add to the rendered layer.
+	d_rendered_point_layer->add_rendered_geometry(rendered_point);
+
+	// Create a RenderedGeometry using the vector
+	const GPlatesViewOperations::RenderedGeometry rendered_vector =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+					point,
+					velocity,
+					0.05f,
+					colour);
+
+	// Add to the rendered layer.
+	d_rendered_arrow_layer->add_rendered_geometry( rendered_vector );
+}
+
 
 void
 GPlatesFeatureVisitors::ComputationalMeshSolver::report()
@@ -557,7 +567,6 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::report()
 	std::cout << "number features visited = " << d_num_features << std::endl;
 	std::cout << "number meshes visited = " << d_num_meshes << std::endl;
 	std::cout << "number points visited = " << d_num_points << std::endl;
-	std::cout << "number points on multiple plates = " << d_num_points_on_multiple_plates << std::endl;
 	std::cout << "-------------------------------------------------------------" << std::endl;
 
 }

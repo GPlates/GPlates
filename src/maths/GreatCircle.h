@@ -48,7 +48,7 @@ namespace GPlatesMaths
 			explicit
 			GreatCircle(
 			 const UnitVector3D &axis) :
-			 _axis(axis) { }
+			 d_axis(axis) { }
 
 			/**
 			 * Create a great circle, given two points on it.
@@ -72,7 +72,7 @@ namespace GPlatesMaths
 			 * FIXME: s/axisvector/axis/
 			 */
 			UnitVector3D
-			axisvector() const { return _axis; }
+			axis_vector() const { return d_axis; }
 
 
 			/**
@@ -81,7 +81,7 @@ namespace GPlatesMaths
 			UnitVector3D
 			normal() const {
 				
-				return axisvector();
+				return axis_vector();
 			}
 
 
@@ -94,7 +94,7 @@ namespace GPlatesMaths
 			 const PointOnSphere &pt) const {
 
 				return
-				 perpendicular(axisvector(), pt.position_vector());
+				 perpendicular(axis_vector(), pt.position_vector());
 			}
 
 #if 0  // No longer needed
@@ -122,10 +122,10 @@ namespace GPlatesMaths
 			 * FIXME: This should be moved into "UnitVector.h",
 			 * gaining an extra const char * 'invoked_by' param.
 			 */
-			static UnitVector3D calcNormal(const UnitVector3D &u1,
+			static UnitVector3D calc_normal(const UnitVector3D &u1,
 			                               const UnitVector3D &u2);
 
-			UnitVector3D _axis;
+			UnitVector3D d_axis;
 
 	};
 
@@ -137,7 +137,7 @@ namespace GPlatesMaths
 	}
 
 	inline bool
-	areEquivalent (const GreatCircle &a, const GreatCircle &b)
+	are_equivalent (const GreatCircle &a, const GreatCircle &b)
 	{
 		// faster than two vector comparisons and a vector negation...
 		return collinear(a.normal(), b.normal());

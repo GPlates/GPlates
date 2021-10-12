@@ -92,6 +92,9 @@ namespace GPlatesMaths
 
 	Vector3D
 	operator*(const CartesianConvMatrix3D &ccm, const Vector3D &v);
+
+	Vector3D
+	inverse_multiply(const CartesianConvMatrix3D &ccm, const Vector3D &v);
 }
 
 #endif  // _GPLATES_MATHS_CARTESIANCONVMATRIX3D_H_

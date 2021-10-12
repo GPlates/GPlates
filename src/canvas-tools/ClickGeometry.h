@@ -85,11 +85,6 @@ namespace GPlatesCanvasTools
 				bool is_on_earth,
 				double proximity_inclusion_threshold);
 
-#if 0
-		void
-		no_hits_found();
-#endif
-
 	private:
 
 		/**
@@ -124,14 +119,6 @@ namespace GPlatesCanvasTools
 		 */
 		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
 
-		void
-		handle_left_click(
-				const GPlatesMaths::PointOnSphere &point_on_sphere,
-				double proximity_inclusion_threshold,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
-				GPlatesGui::FeatureTableModel &clicked_table_model,
-				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection);
 
 		GPlatesQtWidgets::FeaturePropertiesDialog &
 		fp_dialog() const

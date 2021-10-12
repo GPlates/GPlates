@@ -44,7 +44,7 @@
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/PolygonOnSphere.h"
 
-#include "model/ResolvedTopologicalGeometry.h"
+#include "model/ResolvedTopologicalBoundary.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/GeoTimeInstant.h"
@@ -288,7 +288,7 @@ namespace
 		GMTReferencePlatePolygonHeader(
 				const GPlatesModel::FeatureHandle::const_weak_ref &source_feature,
 				const GPlatesModel::FeatureHandle::const_weak_ref &platepolygon_feature,
-				const GPlatesModel::ResolvedTopologicalGeometry::SubSegment &sub_segment,
+				const GPlatesModel::ResolvedTopologicalBoundary::SubSegment &sub_segment,
 				const SubSegmentType sub_segment_type)
 		{
 			static const GPlatesModel::PropertyName old_plates_header_property_name =
@@ -477,7 +477,7 @@ namespace
 
 		SubSegmentType
 		get_sub_segment_feature_type(
-				const GPlatesModel::ResolvedTopologicalGeometry::SubSegment &sub_segment)
+				const GPlatesModel::ResolvedTopologicalBoundary::SubSegment &sub_segment)
 		{
 			d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
 
@@ -680,7 +680,7 @@ namespace
 	 */
 	SubSegmentType
 	get_sub_segment_type(
-			const GPlatesModel::ResolvedTopologicalGeometry::SubSegment &sub_segment,
+			const GPlatesModel::ResolvedTopologicalBoundary::SubSegment &sub_segment,
 			const double &recon_time)
 	{
 		return DetermineSubSegmentFeatureType(recon_time).get_sub_segment_feature_type(sub_segment);
@@ -732,7 +732,7 @@ namespace
 
 	void
 	export_individual_platepolygon_file(
-			const GPlatesModel::ResolvedTopologicalGeometry &resolved_geom,
+			const GPlatesModel::ResolvedTopologicalBoundary &resolved_geom,
 			const GMTOldFeatureIdStyleHeader &platepolygon_header,
 			const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &platepolygon_geom,
 			const QDir &target_dir,
@@ -756,7 +756,7 @@ namespace
 
 	void
 	export_platepolygon(
-			const GPlatesModel::ResolvedTopologicalGeometry &resolved_geom,
+			const GPlatesModel::ResolvedTopologicalBoundary &resolved_geom,
 			const GPlatesModel::FeatureHandle::const_weak_ref &platepolygon_feature_ref,
 			GMTFeatureExporter &all_platepolygons_exporter,
 			const QDir &target_dir,
@@ -786,7 +786,7 @@ namespace
 
 	void
 	export_sub_segment(
-			const GPlatesModel::ResolvedTopologicalGeometry::SubSegment &sub_segment,
+			const GPlatesModel::ResolvedTopologicalBoundary::SubSegment &sub_segment,
 			const GPlatesModel::FeatureHandle::const_weak_ref &platepolygon_feature_ref,
 			const double &recon_time,
 			GMTFeatureExporter &ridge_transform_exporter,
@@ -838,7 +838,7 @@ namespace
 
 	void
 	export_sub_segments(
-			const GPlatesModel::ResolvedTopologicalGeometry &resolved_geom,
+			const GPlatesModel::ResolvedTopologicalBoundary &resolved_geom,
 			const GPlatesModel::FeatureHandle::const_weak_ref &platepolygon_feature_ref,
 			const double &recon_time,
 			GMTFeatureExporter &all_sub_segments_exporter,
@@ -849,13 +849,13 @@ namespace
 	{
 		// Iterate over the subsegments contained in the current resolved topological geometry
 		// and write each to GMT format file.
-		GPlatesModel::ResolvedTopologicalGeometry::sub_segment_const_iterator sub_segment_iter =
+		GPlatesModel::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_iter =
 				resolved_geom.sub_segment_begin();
-		GPlatesModel::ResolvedTopologicalGeometry::sub_segment_const_iterator sub_segment_end =
+		GPlatesModel::ResolvedTopologicalBoundary::sub_segment_const_iterator sub_segment_end =
 				resolved_geom.sub_segment_end();
 		for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
 		{
-			const GPlatesModel::ResolvedTopologicalGeometry::SubSegment &sub_segment =
+			const GPlatesModel::ResolvedTopologicalBoundary::SubSegment &sub_segment =
 					*sub_segment_iter;
 
 			// The file with all subsegments (regardless of type) uses a different
@@ -984,7 +984,7 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 	GPlatesModel::Reconstruction &reconstruction = reconstruct.get_current_reconstruction();
 	const double &reconstruction_time = reconstruct.get_current_reconstruction_time();
 
-	// Find any ResolvedTopologicalGeometry objects in the reconstruction.
+	// Find any ResolvedTopologicalBoundary objects in the reconstruction.
 	resolved_geom_seq_type resolved_geom_seq;
 	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
 				reconstruction.geometries().begin(),
@@ -1056,7 +1056,7 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
 	resolved_geom_seq_type::const_iterator resolved_seq_end = resolved_geom_seq.end();
 	for ( ; resolved_seq_iter != resolved_seq_end; ++resolved_seq_iter)
 	{
-		const GPlatesModel::ResolvedTopologicalGeometry *resolved_geom = *resolved_seq_iter;
+		const GPlatesModel::ResolvedTopologicalBoundary *resolved_geom = *resolved_seq_iter;
 
 		// Feature handle reference to platepolygon feature.
 		const GPlatesModel::FeatureHandle::const_weak_ref platepolygon_feature_ref =

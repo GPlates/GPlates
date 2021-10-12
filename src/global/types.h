@@ -73,6 +73,7 @@ namespace GPlatesGlobal
 	enum TopologyTypes
 	{
 		PLATEPOLYGON,
+		NETWORK,
 		DEFORMING_ZONE,
 		UNKNOWN_TOPOLOGY
 	};

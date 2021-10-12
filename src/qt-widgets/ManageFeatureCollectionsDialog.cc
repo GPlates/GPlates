@@ -75,6 +75,7 @@ namespace
 		static const QString format_gpml(QObject::tr("GPlates Markup Language"));
 		static const QString format_gpml_gz(QObject::tr("Compressed GPML"));
 		static const QString format_gmt(QObject::tr("GMT xy"));
+		static const QString format_gmap(QObject::tr("GMAP VGP"));
 		static const QString format_unknown(QObject::tr(""));
 		
 		switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
@@ -96,6 +97,9 @@ namespace
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
 			return format_gmt;
+			
+		case GPlatesFileIO::FeatureCollectionFileFormat::GMAP:
+			return format_gmap;
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:
 		default:
@@ -103,149 +107,167 @@ namespace
 		}
 	}
 	
-	QString
+	std::vector<std::pair<QString, QString> >
 	get_output_filters_for_file(
 			GPlatesAppLogic::FeatureCollectionFileState &file_state,
 			GPlatesAppLogic::FeatureCollectionFileState::file_iterator file_iter,
 			bool has_gzip)
 	{
+		using std::make_pair;
+
 		// Appropriate filters for available output formats.
-		// Note that since we cannot write Shapefiles yet, we use PLATES4 line format as
-		// the default when the user clicks "Save a Copy" etc on shapefiles.
 		static const QString filter_gmt(QObject::tr("GMT xy (*.xy)"));
+		static const QString filter_gmt_ext(QObject::tr("xy"));
 		static const QString filter_line(QObject::tr("PLATES4 line (*.dat *.pla)"));
+		static const QString filter_line_ext(QObject::tr("dat"));
 		static const QString filter_rotation(QObject::tr("PLATES4 rotation (*.rot)"));
+		static const QString filter_rotation_ext(QObject::tr("rot"));
 		static const QString filter_shapefile(QObject::tr("ESRI shapefile (*.shp)"));
+		static const QString filter_shapefile_ext(QObject::tr("shp"));
 		static const QString filter_gpml(QObject::tr("GPlates Markup Language (*.gpml)"));
+		static const QString filter_gpml_ext(QObject::tr("gpml"));
 		static const QString filter_gpml_gz(QObject::tr("Compressed GPML (*.gpml.gz)"));
+		static const QString filter_gpml_gz_ext(QObject::tr("gpml.gz"));
 		static const QString filter_all(QObject::tr("All files (*)"));
+		static const QString filter_all_ext(QObject::tr(""));
 		
 		// Determine whether file contains reconstructable and/or reconstruction features.
 		const GPlatesAppLogic::ClassifyFeatureCollection::classifications_type classification =
 				file_state.get_feature_collection_classification(file_iter);
-		const bool has_reconstructable_features = classification.test(
-				GPlatesAppLogic::ClassifyFeatureCollection::RECONSTRUCTABLE);
-		const bool has_reconstruction_features = classification.test(
-				GPlatesAppLogic::ClassifyFeatureCollection::RECONSTRUCTION);
+		const bool has_features_with_geometry =
+				GPlatesAppLogic::ClassifyFeatureCollection::found_geometry_feature(classification);
+		const bool has_reconstruction_features =
+				GPlatesAppLogic::ClassifyFeatureCollection::found_reconstruction_feature(classification);
+
+		std::vector<std::pair<QString, QString> > filters;
 		
 		// Build the list of filters depending on the original file format.
 		switch ( file_iter->get_loaded_file_format() )
 		{
 		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
 			{
-				QStringList filters;
-				filters << filter_gmt;
-				if (has_gzip) {
-					filters << filter_gpml_gz;
+				filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
+				if (has_gzip)
+				{
+					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
 				}
-				filters << filter_gpml;
-				filters << filter_line;
-				filters << filter_shapefile;
-				filters << filter_all;
-				return filters.join(";;");
-
+				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
+				filters.push_back(make_pair(filter_line, filter_line_ext));
+				filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
+				filters.push_back(make_pair(filter_all, filter_all_ext));
 			}
 			break;
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
 			{
-				QStringList filters;
-				filters << filter_line;
-				if (has_gzip) {
-					filters << filter_gpml_gz;
+				filters.push_back(make_pair(filter_line, filter_line_ext));
+				if (has_gzip)
+				{
+					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
 				}
-				filters << filter_gpml;
-				filters << filter_gmt;
-				filters << filter_shapefile;
-				filters << filter_all;
-				return filters.join(";;");
-
+				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
+				filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
+				filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
+				filters.push_back(make_pair(filter_all, filter_all_ext));
 			}
 			break;
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
 			{
-				QStringList filters;
-				filters << filter_rotation;
-				if (has_gzip) {
-					filters << filter_gpml_gz;
+				filters.push_back(make_pair(filter_rotation, filter_rotation_ext));
+				if (has_gzip)
+				{
+					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
 				}
-				filters << filter_gpml;
-				filters << filter_all;
-				return filters.join(";;");
-
+				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
+				filters.push_back(make_pair(filter_all, filter_all_ext));
 			}
 			break;
 			
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 			{
-				// No shapefile writing support yet! Write shapefiles to PLATES4 line files by default.
-				QStringList filters;
-				filters << filter_shapefile;
-				filters << filter_line;
-				if (has_gzip) {
-					filters << filter_gpml_gz;
+				filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
+				filters.push_back(make_pair(filter_line, filter_line_ext));
+				if (has_gzip)
+				{
+					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
 				}
-				filters << filter_gpml;
-				filters << filter_gmt;
-				filters << filter_all;
-				return filters.join(";;");
-
+				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
+				filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
+				filters.push_back(make_pair(filter_all, filter_all_ext));
 			}
 			break;
-
+		case GPlatesFileIO::FeatureCollectionFileFormat::GMAP:
+			{
+#if 0			
+				// Disable any kind of export from GMAP data. 
+				break;
+#else			
+				// No GMAP writing yet. (Ever?).
+				// Offer gmpl/gpml_gz export.
+				// 
+				// (Probably not useful to export these in shapefile or plates formats
+				// for example - users would get the geometries but nothing else).
+				filters.push_back(make_pair(filter_gpml, filter_gpml_ext));
+				if (has_gzip)
+				{
+					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext));
+				}
+				break;
+#endif
+			}
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
 		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:
 		default: // If no file extension then use same options as GMPL.
 			{
-				QStringList filters;
-				filters << filter_gpml;			// Save uncompressed by default, same as original
-				if (has_gzip) {
-					filters << filter_gpml_gz;	// Option to change to compressed version.
+				filters.push_back(make_pair(filter_gpml, filter_gpml_ext)); // Save uncompressed by default, same as original
+				if (has_gzip)
+				{
+					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext)); // Option to change to compressed version.
 				}
-				if (has_reconstructable_features) {
+				if (has_features_with_geometry)
+				{
 					// Only offer to save in line-only formats if feature collection
 					// actually has reconstructable features in it!
-					filters << filter_gmt;
-					filters << filter_line;
-					filters << filter_shapefile;
+					filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
+					filters.push_back(make_pair(filter_line, filter_line_ext));
+					filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
 				}
-				if (has_reconstruction_features) {
+				if (has_reconstruction_features)
+				{
 					// Only offer to save as PLATES4 .rot if feature collection
 					// actually has rotations in it!
-					filters << filter_rotation;
+					filters.push_back(make_pair(filter_rotation, filter_rotation_ext));
 				}
-				filters << filter_all;
-				return filters.join(";;");
-
+				filters.push_back(make_pair(filter_all, filter_all_ext));
 			}
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
 			{
-				QStringList filters;
-				if (has_gzip) {
-					filters << filter_gpml_gz;	// Save compressed by default, assuming we can.
+				if (has_gzip)
+				{
+					filters.push_back(make_pair(filter_gpml_gz, filter_gpml_gz_ext)); // Save compressed by default, assuming we can.
 				}
-				filters << filter_gpml;			// Option to change to uncompressed version.
-				if (has_reconstructable_features) {
+				filters.push_back(make_pair(filter_gpml, filter_gpml_ext)); // Option to change to uncompressed version.
+				if (has_features_with_geometry)
+				{
 					// Only offer to save in line-only formats if feature collection
 					// actually has reconstructable features in it!
-					filters << filter_gmt;
-					filters << filter_line;
-					filters << filter_shapefile;
+					filters.push_back(make_pair(filter_gmt, filter_gmt_ext));
+					filters.push_back(make_pair(filter_line, filter_line_ext));
+					filters.push_back(make_pair(filter_shapefile, filter_shapefile_ext));
 				}
-				if (has_reconstruction_features) {
+				if (has_reconstruction_features)
+				{
 					// Only offer to save as PLATES4 .rot if feature collection
 					// actually has rotations in it!
-					filters << filter_rotation;
+					filters.push_back(make_pair(filter_rotation, filter_rotation_ext));
 				}
-				filters << filter_all;
-				return filters.join(";;");
-			
+				filters.push_back(make_pair(filter_all, filter_all_ext));
 			}
 			break;
 		}
 
-		return filter_all;
+		return filters;
 	}
 
 
@@ -274,10 +296,20 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 		QWidget *parent_):
-	QDialog(parent_),
+	QDialog(parent_, Qt::Window),
 	d_file_state(file_state),
 	d_feature_collection_file_io(&feature_collection_file_io),
 	d_open_file_path(""),
+	d_save_file_as_dialog_ptr(
+			SaveFileDialog::get_save_file_dialog(
+				parent_,
+				"Save File As",
+				std::vector<std::pair<QString, QString> >())),
+	d_save_file_copy_dialog_ptr(
+			SaveFileDialog::get_save_file_dialog(
+				parent_,
+				"Save a copy of the file with a different name",
+				std::vector<std::pair<QString, QString> >())),
 	d_gzip_available(false)
 {
 	setupUi(this);
@@ -371,17 +403,26 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_as(
 {
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file =
 			action_widget_ptr->get_file_info_iterator();
-	
-	QString filename = QFileDialog::getSaveFileName(
-			parentWidget(),
-			tr("Save File As"),
-			file->get_file_info().get_qfileinfo().path(),
-			get_output_filters_for_file(d_file_state, file, d_gzip_available));
 
-	if ( filename.isEmpty() ) {
+	d_save_file_as_dialog_ptr->set_filters(
+			get_output_filters_for_file(
+				d_file_state,
+				file,
+				d_gzip_available));
+	QString file_path = file->get_file_info().get_qfileinfo().filePath();
+	if (file_path != "")
+	{
+		d_save_file_as_dialog_ptr->select_file(file_path);
+	}
+	boost::optional<QString> filename_opt = d_save_file_as_dialog_ptr->get_file_name();
+
+	if (!filename_opt)
+	{
 		return;
 	}
-		
+	
+	QString &filename = *filename_opt;
+
 	// Make a new FileInfo object to tell save_file() what the new name should be.
 	// This also copies any other info stored in the FileInfo.
 	GPlatesFileIO::FileInfo new_fileinfo = GPlatesFileIO::create_copy_with_new_filename(
@@ -419,14 +460,25 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_file_copy(
 	GPlatesAppLogic::FeatureCollectionFileState::file_iterator file =
 			action_widget_ptr->get_file_info_iterator();
 	
-	QString filename = QFileDialog::getSaveFileName(parentWidget(),
-			tr("Save a copy of the file with a different name"),
-			file->get_file_info().get_qfileinfo().path(),
-			get_output_filters_for_file(d_file_state, file, d_gzip_available));
-	if ( filename.isEmpty() ) {
+	d_save_file_copy_dialog_ptr->set_filters(
+			get_output_filters_for_file(
+				d_file_state,
+				file,
+				d_gzip_available));
+	QString file_path = file->get_file_info().get_qfileinfo().filePath();
+	if (file_path != "")
+	{
+		d_save_file_copy_dialog_ptr->select_file(file_path);
+	}
+	boost::optional<QString> filename_opt = d_save_file_copy_dialog_ptr->get_file_name();
+
+	if (!filename_opt)
+	{
 		return;
 	}
-		
+	
+	QString &filename = *filename_opt;
+
 	// Make a new FileInfo object to tell save_file() what the copy name should be.
 	// This also copies any other info stored in the FileInfo.
 	GPlatesFileIO::FileInfo new_fileinfo = GPlatesFileIO::create_copy_with_new_filename(
@@ -482,25 +534,21 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_reconstructable_state_for_
 	//
 	// FIXME: When the GUI supports workflows (in FeatureCollectionFileState) then
 	// remove this code.
+	if (d_file_state.is_reconstructable_workflow_using_file(file_it))
+	{
+		d_file_state.set_file_active_reconstructable(file_it, activate);
+	}
 	typedef std::vector<GPlatesAppLogic::FeatureCollectionFileState::workflow_tag_type>
 			workflow_seq_type;
 	const workflow_seq_type workflow_tags = d_file_state.get_workflow_tags(file_it);
-	if (workflow_tags.empty())
+	// FIXME: HACK: We're hijacking the set reconstructable active button to set all
+	// the workflows active instead - we're relying on the fact that the reconstructable
+	// workflow will not be interested in this file if any other workflow is.
+	workflow_seq_type::const_iterator tags_iter = workflow_tags.begin();
+	const workflow_seq_type::const_iterator tag_end = workflow_tags.end();
+	for ( ; tags_iter != tag_end; ++tags_iter )
 	{
-		// File will only be activated if it contains reconstructable features.
-		d_file_state.set_file_active_reconstructable(file_it, activate);
-	}
-	else
-	{
-		// FIXME: HACK: We're hijacking the set reconstructable active button to set all
-		// the workflows active instead - we're relying on the fact that the reconstructable
-		// workflow will not be interested in this file if any other workflow is.
-		workflow_seq_type::const_iterator tags_iter = workflow_tags.begin();
-		const workflow_seq_type::const_iterator tag_end = workflow_tags.end();
-		for ( ; tags_iter != tag_end; ++tags_iter )
-		{
-			d_file_state.set_file_active_workflow(file_it, *tags_iter, activate);
-		}
+		d_file_state.set_file_active_workflow(file_it, *tags_iter, activate);
 	}
 #else
 	// File will only be activated if it contains reconstructable features.
@@ -526,11 +574,12 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::open_files()
 {
 	static const QString filters = tr(
-			"All loadable files (*.dat *.pla *.rot *.shp *.gpml *.gpml.gz);;"
+			"All loadable files (*.dat *.pla *.rot *.shp *.gpml *.gpml.gz *.vgp);;"
 			"PLATES4 line (*.dat *.pla);;"
 			"PLATES4 rotation (*.rot);;"
 			"ESRI shapefile (*.shp);;"
 			"GPlates Markup Language (*.gpml *.gpml.gz);;"
+			"GMAP VGP file (*.vgp);;"
 			"All files (*)" );
 	
 	QStringList filenames = QFileDialog::getOpenFileNames(parentWidget(),
@@ -918,6 +967,11 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::open_files(
 		const QStringList &filenames)
 {
+	if (filenames.isEmpty())
+	{
+		return;
+	}
+
 	try_catch_file_load(
 			boost::bind(
 					&GPlatesAppLogic::FeatureCollectionFileIO::load_files,

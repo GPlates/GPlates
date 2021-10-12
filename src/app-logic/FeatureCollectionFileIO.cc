@@ -46,8 +46,17 @@ GPlatesAppLogic::FeatureCollectionFileIO::FeatureCollectionFileIO(
 		GPlatesModel::ModelInterface &model,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state) :
 	d_model(model),
-	d_file_state(file_state)
+	d_file_state(file_state),
+	d_modify_filter(new ModifyFilter()/*default filter does not modify*/)
 {
+}
+
+
+void
+GPlatesAppLogic::FeatureCollectionFileIO::set_modify_filter(
+		const boost::shared_ptr<ModifyFilter> &modify_filter)
+{
+	d_modify_filter = modify_filter;
 }
 
 
@@ -56,10 +65,21 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_files(
 		const QStringList &filenames)
 {
 	// Read all the files before we add them to the application state.
-	const file_seq_type files = read_feature_collections(filenames);
+	const file_seq_type loaded_files = read_feature_collections(filenames);
+
+	// See if any loaded feature collections should be modified.
+	modify_feature_collections(loaded_files);
 
 	// Add files to the application state in one call.
-	d_file_state.add_files(files);
+	//
+	// NOTE: It is important to load multiple files in one group here rather than
+	// reuse load_file() for each file because the application state will then send
+	// only one notification instead of multiple notifications which is needed in
+	// some cases where the files in the group depend on each other - an example is
+	// topological boundary features which get resolved after the notification and
+	// require any referenced features to be loaded into the model (and they might
+	// be in other files in the group).
+	d_file_state.add_files(loaded_files);
 }
 
 
@@ -67,12 +87,15 @@ void
 GPlatesAppLogic::FeatureCollectionFileIO::load_file(
 		const QString &filename)
 {
-	GPlatesFileIO::FileInfo file_info(filename);
+	const GPlatesFileIO::FileInfo file_info(filename);
 
 	// Read the feature collection from file_info.
-	const GPlatesFileIO::File::shared_ref file = read_feature_collection(file_info);
+	const GPlatesFileIO::File::shared_ref loaded_file = read_feature_collection(file_info);
 
-	d_file_state.add_file(file);
+	// See if loaded feature collection should be modified.
+	modify_feature_collection(loaded_file);
+
+	d_file_state.add_file(loaded_file);
 }
 
 
@@ -83,6 +106,9 @@ GPlatesAppLogic::FeatureCollectionFileIO::reload_file(
 	// Read the feature collection from file.
 	const GPlatesFileIO::File::shared_ref reloaded_file = read_feature_collection(
 			file->get_file_info());
+
+	// See if loaded feature collection should be modified.
+	modify_feature_collection(reloaded_file);
 
 	// Replace old file with reloaded file.
 	// This will emit signals for anyone interested.
@@ -219,6 +245,25 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collection(
 	emit_handle_read_errors_signal(read_errors);
 
 	return file;
+}
+
+
+void
+GPlatesAppLogic::FeatureCollectionFileIO::modify_feature_collections(
+		const file_seq_type &files)
+{
+	d_modify_filter->modify_loaded_files(files);
+}
+
+
+void
+GPlatesAppLogic::FeatureCollectionFileIO::modify_feature_collection(
+		const GPlatesFileIO::File::shared_ref &file)
+{
+	// Create a vector with one file so we can reuse 'modify_feature_collections()'.
+	const file_seq_type file_seq(1, file);
+
+	modify_feature_collections(file_seq);
 }
 
 

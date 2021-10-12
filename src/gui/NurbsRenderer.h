@@ -38,12 +38,26 @@
 namespace GPlatesMaths
 {
 	class GreatCircleArc;
+	class LatLonPoint;
 	class PointOnSphere;
 	class UnitVector3D;
 }
 
 namespace GPlatesGui
 {
+	/**
+	 *  We need different sampling tolerances for great circles and small circles.
+	 *  Great circles will always appear quite big in GPlates, because we can't zoom
+	 *  the globe out beyond 100%, so a sampling tolerance of 25 is OK; the curves will
+	 *  still appear smooth.
+	 *
+	 *  For small circles this can make the circle appear to have jagged edges.
+	 *  (Small circles are, after all, small).
+	 *  So we use a lower sampling tolerance to ensure a smooth appearance.
+	 */
+	static const double GREAT_CIRCLE_SAMPLING_TOLERANCE = 25.;
+	static const double SMALL_CIRCLE_SAMPLING_TOLERANCE = 5.;
+
 	/**
 	 * A wrapper around the GLU nurbs renderer type.
 	 *
@@ -118,6 +132,41 @@ namespace GPlatesGui
 			draw_great_circle_arc(
 					const GPlatesMaths::PointOnSphere &start,
 					const GPlatesMaths::PointOnSphere &end);
+					
+					
+			/**
+			 *  Draw a small circle centred at @a centre with radius @a radius_in_degrees 
+			 *  degrees of arc.                                                                     
+			 */
+			void
+			draw_small_circle(
+					const GPlatesMaths::PointOnSphere &centre,
+					const GPlatesMaths::Real &radius_in_radians);
+					
+			/**
+			*  Draw a small circle centred determined by @a axis and with 
+			*  radius determined by @a cos_colatitude .
+			*/
+			void
+			draw_small_circle(
+					const GPlatesMaths::UnitVector3D &axis,
+					const GPlatesMaths::Real &cos_colatitude);					
+				
+			/**
+			 *  Draw a small circle arc with
+			 *		@a centre the centre of the small circle.
+			 *      @a first_point_on_circle the start point of the arc, and 
+			 *		@a degrees_of_arc the length of the arc in degrees.
+			 *	The arc will be drawn anti-clockwise around the centre of the small circle when 
+			 *	looking down onto the surface of globe.                                             
+			 */	
+			void
+			draw_small_circle_arc(
+					const GPlatesMaths::PointOnSphere &centre,
+					const GPlatesMaths::PointOnSphere &first_point_on_circle,
+					const GPlatesMaths::Real &arc_length_in_radians);
+					
+			
 
 		private:
 			/**
@@ -136,6 +185,12 @@ namespace GPlatesGui
 			draw_great_circle_arc_smaller_than_ninety_degrees(
 					const GPlatesMaths::UnitVector3D &start_pt,
 					const GPlatesMaths::UnitVector3D &end_pt);
+					
+			void
+			draw_small_circle_arc_smaller_than_or_equal_to_ninety_degrees(
+					const GPlatesMaths::UnitVector3D &centre_pt,
+					const GPlatesMaths::UnitVector3D &start_pt, 
+					const GPlatesMaths::Real &arc_length_in_radians);
 	};
 }
 

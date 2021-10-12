@@ -25,12 +25,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <map>
 #include <vector>
 #include <iterator>  /* std::distance */
 #include <algorithm>  /* std::find */
 #include "PolylineIntersections.h"
 #include "UnableToIntersectEquivalentGreatCirclesException.h"
 #include "UnableToExtendPointlikeArcException.h"
+
+#include "global/GPlatesAssert.h"
 
 
 namespace {
@@ -52,6 +55,7 @@ namespace {
 	}
 
 
+	using GPlatesMaths::PolylineIntersections::Graph;
 	using GPlatesMaths::PointOnSphere;
 	using GPlatesMaths::PolylineOnSphere;
 	using GPlatesMaths::GreatCircleArc;
@@ -107,6 +111,32 @@ namespace {
 	};
 
 	typedef std::list< IntersectionNode > IntersectionNodeList;
+
+	/**
+	 * Used to compare list iterators so they can be used in a std::map.
+	 */
+	struct IntersectionNodeMapIteratorCompare
+	{
+		bool
+		operator()(
+				const IntersectionNodeList::iterator &lhs,
+				const IntersectionNodeList::iterator &rhs) const
+		{
+			return &*lhs < &*rhs;
+		}
+	};
+
+	/**
+	 * Typedef for a map to look up Graph intersections given a
+	 * intersection node list iterator.
+	 *
+	 * This is used to share intersections between arcs in the first and
+	 * second arc sequences.
+	 */
+	typedef std::map<
+			IntersectionNodeList::iterator,
+			Graph::intersection_ptr_type,
+			IntersectionNodeMapIteratorCompare> intersection_node_map_type;
 
 
 	/**
@@ -1394,179 +1424,149 @@ namespace {
 
 
 	/**
-	 * Generate sequences of polyline arcs between points of intersection,
-	 * appending "begin" and "end" iterators for the sequences to @a begins
-	 * and @a ends, respectively.
-	 *
-	 * Make sure overlapping arcs appear only once in the resulting
-	 * sequences (this is what @a overlap_arcs_in_2 is used for).
+	 * Given the sequence of non-intersecting arcs delimited by the
+	 * iterators @a begin and @a end, create and return a partitioned polyline1.
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
-	 * will be destroyed anyway if an exception is thrown), but it *is*
-	 * exception-neutral.
+	 * the enclosing function, and hence will be destroyed anyway if
+	 * an exception is thrown), but it *is* exception-neutral.
 	 */
+	PolylineOnSphere::non_null_ptr_to_const_type
+	create_polyline_from_arc_seq(
+	 const ArcList::iterator &begin,
+	 const ArcList::iterator &end) {
+
+		ArcList::iterator arc_seq_iter = begin;
+		ArcList::iterator arc_seq_end = end;
+
+		std::vector< PointOnSphere >::size_type num_arcs =
+		 std::distance(arc_seq_iter, arc_seq_end);
+
+		std::vector< PointOnSphere > points;
+		points.reserve(num_arcs + 1);
+
+		points.push_back(arc_seq_iter->start_point());
+		for ( ; arc_seq_iter != arc_seq_end; ++arc_seq_iter) {
+
+			points.push_back(arc_seq_iter->end_point());
+		}
+
+		return PolylineOnSphere::create_on_heap(points);
+	}
+
+
 	void
-	generate_polyline_arc_seqs(
-	 std::vector< ArcList::iterator > &begins,
-	 std::vector< ArcList::iterator > &ends,
-	 ArcList &arcs1,
-	 ArcList &arcs2,
-	 IntersectionNodeList &inter_nodes,
-	 std::list< ArcList::iterator > &overlap_arcs_in_2) {
+	add_partitioned_polyline1_to_graph(
+		ArcList::iterator arc_seq_begin,
+		ArcList::iterator arc_seq_end,
+		std::list< ArcList::iterator > &overlap_arcs_in_1,
+		Graph::intersection_ptr_seq_type &graph_intersections,
+		Graph::partitioned_polyline_ptr_seq_type &graph_partitioned_polylines1)
+	{
+		// Create a partitioned polyline1.
+		PolylineOnSphere::non_null_ptr_to_const_type polyline1 =
+				create_polyline_from_arc_seq(arc_seq_begin, arc_seq_end);
 
-		begins.reserve(2 * (inter_nodes.size() + 1));
-		ends.reserve(2 * (inter_nodes.size() + 1));
+		// All arcs between arc_seq_begin and arc_seq_end should be either overlapping
+		// or not. So we can choose any arc - choose the first one.
+		const bool is_overlapping = list_contains_elem(overlap_arcs_in_1, arc_seq_begin);
 
-		// 'arcs1.begin()' is always going to be the beginning of a
-		// polyline arc sequence...
-		begins.push_back(arcs1.begin());
+		// Add the partitioned polyline1 to the graph.
+		Graph::partitioned_polyline_ptr_type partitioned_polyline(
+				new Graph::PartitionedPolyline(polyline1, is_overlapping));
+		graph_partitioned_polylines1.push_back(partitioned_polyline);
 
-		// Pre-increment 'iter' because 'arcs1.begin()' has already
-		// been handled.
-		ArcList::iterator
-		 iter = ++(arcs1.begin()),
-		 end = arcs1.end();
-		for ( ; iter != end; ++iter) {
-
-			ArcListIterEqualsFirstAfterOnArcs1 predicate(iter);
-			if (std::find_if(inter_nodes.begin(), inter_nodes.end(),
-					  predicate) != inter_nodes.end()) {
-
-				// The arc pointed-at by 'iter' is the first
-				// arc after an intersection.  Hence, it is
-				// both the "end" of the previous sequence and
-				// the "begin" of the next.
-				ends.push_back(iter);
-				begins.push_back(iter);
-			}
-			// Else, no intersections here.
-		}
-
-		// 'arcs1.end()' is always going to be the end of a polyline
-		// arc sequence.
-		ends.push_back(arcs1.end());
-
-		// When this is true, we should drop (ie, not append to 'ends')
-		// the next end of a sequence we find, because it was the end
-		// of an overlap arc whose "begin" was also dropped.
-		bool drop_next_end = false;
-
-		// Does 'arcs2.begin()' point to an overlap arc?  Remember,
-		// we're dropping all overlap arcs which appear in 'arcs2'.
-		if (list_contains_elem(overlap_arcs_in_2, arcs2.begin())) {
-
-			// It points to an overlap arc.
-			drop_next_end = true;
-
-		} else {
-
-			// It was not an overlap arc, which means it's the
-			// beginning of a polyline arc sequence.
-			begins.push_back(arcs2.begin());
-		}
-
-		// Pre-increment 'iter' because 'arcs2.begin()' has already
-		// been handled.
-		iter = ++(arcs2.begin());
-		end = arcs2.end();
-		for ( ; iter != end; ++iter) {
-
-			ArcListIterEqualsFirstAfterOnArcs2 predicate(iter);
-			if (std::find_if(inter_nodes.begin(), inter_nodes.end(),
-					  predicate) != inter_nodes.end()) {
-
-				/*
-				 * The arc pointed-at by 'iter' is the first
-				 * arc after an intersection.  Hence, it is
-				 * both the "end" of the previous sequence and
-				 * the "begin" of the next...  UNLESS the arc
-				 * pointed-at by 'iter' is an arc of overlap,
-				 * in which case we should drop it.
-				 *
-				 * We also need to check whether the previous
-				 * arc was dropped, for the same reason.
-				 */
-
-				if (drop_next_end) {
-
-					// The previous arc was an arc of
-					// overlap, so its "begin" was dropped,
-					// and now its "end" will be dropped
-					// too.
-					drop_next_end = false;
-
-				} else {
-
-					ends.push_back(iter);
-				}
-
-				if (list_contains_elem(overlap_arcs_in_2,
-						        iter)) {
-
-					// 'iter' points to an overlap arc.
-					drop_next_end = true;
-
-				} else {
-
-					begins.push_back(iter);
-				}
-			}
-			// Else, no intersections here.
-		}
-
-		// 'arcs2.end()' is always going to be the end of a polyline
-		// arc sequence, UNLESS 'drop_next_end' is true, in which case,
-		// we do nothing.
-		if ( ! drop_next_end) {
-
-			ends.push_back(arcs2.end());
+		// If there's a previous intersection then link it and the partitioned polyline.
+		if (!graph_intersections.empty()) {
+			graph_intersections.back()->next_partitioned_polyline1 = partitioned_polyline;
+			partitioned_polyline->prev_intersection = graph_intersections.back();
 		}
 	}
 
 
-	/**
-	 * Given the sequences of non-intersecting arcs delimited by the
-	 * iterators in @a begins and @a ends, create partitioned polylines and
-	 * append them to @a partitioned_polys.
-	 *
-	 * This function does not attempt to be strongly exception-safe (since
-	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
-	 * will be destroyed anyway if an exception is thrown), but it *is*
-	 * exception-neutral.
-	 */
 	void
-	generate_polylines_from_arc_seqs(
-	 std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polys,
-	 std::vector< ArcList::iterator > &begins,
-	 std::vector< ArcList::iterator > &ends) {
+	add_intersection1_to_graph(
+		Graph::intersection_ptr_seq_type &graph_intersections1,
+		Graph::partitioned_polyline_ptr_seq_type &graph_partitioned_polylines1,
+		intersection_node_map_type &intersection_node_map,
+		IntersectionNodeList::iterator inter_node_iter)
+	{
+		// Create an intersection.
+		Graph::intersection_ptr_type intersection(
+				new Graph::Intersection(inter_node_iter->d_point));
 
-		std::vector< ArcList::iterator >::iterator
-		 begins_iter = begins.begin(),
-		 begins_end = begins.end(),
-		 ends_iter = ends.begin(),
-		 ends_end = ends.end();
-		for ( ; begins_iter != begins_end; ++begins_iter, ++ends_iter) {
+		if (!graph_partitioned_polylines1.empty()) {
 
-			ArcList::iterator arc_seq_iter = *begins_iter;
-			ArcList::iterator arc_seq_end = *ends_iter;
-
-			std::vector< PointOnSphere >::size_type num_arcs =
-			 std::distance(arc_seq_iter, arc_seq_end);
-
-			std::vector< PointOnSphere > points;
-			points.reserve(num_arcs + 1);
-
-			points.push_back(arc_seq_iter->start_point());
-			for ( ; arc_seq_iter != arc_seq_end; ++arc_seq_iter) {
-
-				points.push_back(arc_seq_iter->end_point());
-			}
-
-			partitioned_polys.push_back(PolylineOnSphere::create_on_heap(points));
+			// Link the current intersection and the previous partitioned polyline.
+			intersection->prev_partitioned_polyline1 = graph_partitioned_polylines1.back();
+			graph_partitioned_polylines1.back()->next_intersection = intersection;
 		}
+		
+		// Keep track of intersections so they can be shared with arc sequence 2 later.
+		intersection_node_map[inter_node_iter] = intersection;
+
+		// Add the intersection to the graph.
+		graph_intersections1.push_back(intersection);
+	}
+
+
+	void
+	add_partitioned_polyline2_to_graph(
+		ArcList::iterator arc_seq_begin,
+		ArcList::iterator arc_seq_end,
+		std::list< ArcList::iterator > &overlap_arcs_in_2,
+		Graph::intersection_ptr_seq_type &graph_intersections,
+		Graph::partitioned_polyline_ptr_seq_type &graph_partitioned_polylines2)
+	{
+		// Create a partitioned polyline2.
+		PolylineOnSphere::non_null_ptr_to_const_type polyline2 =
+				create_polyline_from_arc_seq(arc_seq_begin, arc_seq_end);
+
+		// All arcs between arc_seq_begin and arc_seq_end should be either overlapping
+		// or not. So we can choose any arc - choose the first one.
+		const bool is_overlapping = list_contains_elem(overlap_arcs_in_2, arc_seq_begin);
+
+		// Add the partitioned polyline2 to the graph.
+		Graph::partitioned_polyline_ptr_type partitioned_polyline(
+				new Graph::PartitionedPolyline(polyline2, is_overlapping));
+		graph_partitioned_polylines2.push_back(partitioned_polyline);
+
+		// If there's a previous intersection then link it and the partitioned polyline.
+		if (!graph_intersections.empty()) {
+			graph_intersections.back()->next_partitioned_polyline2 = partitioned_polyline;
+			partitioned_polyline->prev_intersection = graph_intersections.back();
+		}
+	}
+
+
+	void
+	add_intersection2_into_graph(
+		Graph::intersection_ptr_seq_type &graph_intersections2,
+		Graph::partitioned_polyline_ptr_seq_type &graph_partitioned_polylines2,
+		intersection_node_map_type &intersection_node_map,
+		IntersectionNodeList::iterator inter_node_iter)
+	{
+		// Share the intersection created when processing arc sequence 1.
+		Graph::intersection_ptr_type intersection =
+				intersection_node_map[inter_node_iter];
+
+		graph_intersections2.push_back(intersection);
+
+		if (!graph_partitioned_polylines2.empty()) {
+
+			// Link the current intersection and the previous partitioned polyline.
+			intersection->prev_partitioned_polyline2 = graph_partitioned_polylines2.back();
+			graph_partitioned_polylines2.back()->next_intersection = intersection;
+		}
+
+		// Add the intersection to the graph.
+		//
+		// This is actually just a temporary list of intersections for arc sequence 2
+		// so that we can link the next partitioned polyline2 to this intersection.
+		// It doesn't end up getting added to the final graph because intersections
+		// are shared and this list ends up being a replica of the list of arc sequence 1.
+		graph_intersections2.push_back(intersection);
 	}
 
 
@@ -1574,8 +1574,8 @@ namespace {
 	 * Having partitioned the lists of arcs @a arcs1 and @a arcs2,
 	 * calculated all the intersection nodes in @a inter_nodes and kept
 	 * track of overlap arcs in @a overlap_arcs_in_2, now we finally
-	 * construct the partitioned polylines, populating the list
-	 * @a partitioned_polys.
+	 * construct the partitioned polylines, and populate the output graph
+	 * with them and the intersection ponts.
 	 *
 	 * It is assumed that this function is only invoked when intersections
 	 * have been found, which will mean that @a inter_nodes is not empty.
@@ -1586,200 +1586,360 @@ namespace {
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
-	void
-	generate_partitioned_polylines(
+	boost::shared_ptr<const Graph>
+	generate_partitioned_polyline_graph(
 	 ArcList &arcs1,
 	 ArcList &arcs2,
 	 IntersectionNodeList &inter_nodes,
-	 std::list< ArcList::iterator > &overlap_arcs_in_2,
-	 std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polys) {
+	 std::list< ArcList::iterator > &overlap_arcs_in_1,
+	 std::list< ArcList::iterator > &overlap_arcs_in_2) {
+
+		ArcList::iterator arc_seq_begin;
+		ArcList::iterator arc_seq_end;
+
+		IntersectionNodeList::iterator inter_node_iter;
+
+		// We create Graph::Intersection's when processing the first sequence of arcs
+		// but since intersections are shared with the second sequence we need to look
+		// up the ones created for the first sequence when we process the second sequence.
+		intersection_node_map_type intersection_node_map;
+
+		//
+		// Process the first great circle arc sequence
+		//
+
+		Graph::intersection_ptr_seq_type graph_intersections1;
+		Graph::partitioned_polyline_ptr_seq_type graph_partitioned_polylines1;
+
+		// 'arcs1.begin()' is always going to be the beginning of a
+		// polyline arc sequence...
+		arc_seq_begin = arcs1.begin();
+
+		// See if there's an intersection at the start of the first arc of the first arc sequence.
+		inter_node_iter = std::find_if(inter_nodes.begin(), inter_nodes.end(),
+				ArcListIterEqualsFirstAfterOnArcs1(arc_seq_begin));
+		if (inter_node_iter != inter_nodes.end()) {
+
+			add_intersection1_to_graph(
+					graph_intersections1, graph_partitioned_polylines1,
+					intersection_node_map, inter_node_iter);
+		}
+
+		// Pre-increment 'iter' because 'arcs1.begin()' has already
+		// been handled.
+		ArcList::iterator
+		 iter = ++(arcs1.begin()),
+		 end = arcs1.end();
+		for ( ; iter != end; ++iter) {
+
+			// See if there's an intersection at the start of the current arc.
+			inter_node_iter = std::find_if(inter_nodes.begin(), inter_nodes.end(),
+					ArcListIterEqualsFirstAfterOnArcs1(iter));
+			if (inter_node_iter != inter_nodes.end()) {
+
+				// The arc pointed-at by 'iter' is the first
+				// arc after an intersection.  Hence, it is
+				// both the "end" of the previous sequence and
+				// the "begin" of the next.
+				arc_seq_end = iter;
+
+				add_partitioned_polyline1_to_graph(
+					arc_seq_begin, arc_seq_end, overlap_arcs_in_1,
+					graph_intersections1, graph_partitioned_polylines1);
+
+				add_intersection1_to_graph(
+						graph_intersections1, graph_partitioned_polylines1,
+						intersection_node_map, inter_node_iter);
+
+				arc_seq_begin = iter;
+
+			}
+			// Else, no intersections here.
+		}
+
+		// 'arcs1.end()' is always going to be the end of a polyline
+		// arc sequence.
+		arc_seq_end = arcs1.end();
+
+		add_partitioned_polyline1_to_graph(
+			arc_seq_begin, arc_seq_end, overlap_arcs_in_1,
+			graph_intersections1, graph_partitioned_polylines1);
+
+		// See if there's an intersection at the end of the last arc of the first arc sequence.
+		inter_node_iter = std::find_if(inter_nodes.begin(), inter_nodes.end(),
+				ArcListIterEqualsFirstAfterOnArcs1(arc_seq_end));
+		if (inter_node_iter != inter_nodes.end()) {
+
+			add_intersection1_to_graph(
+					graph_intersections1, graph_partitioned_polylines1,
+					intersection_node_map, inter_node_iter);
+		}
+
+		//
+		// Now process the second great circle arc sequence
+		//
+
+		Graph::intersection_ptr_seq_type graph_intersections2;
+		Graph::partitioned_polyline_ptr_seq_type graph_partitioned_polylines2;
+
+		// 'arcs2.begin()' is always going to be the beginning of a
+		// polyline arc sequence...
+		arc_seq_begin = arcs2.begin();
+
+		// See if there's an intersection at the start of the first arc of the second arc sequence.
+		inter_node_iter = std::find_if(inter_nodes.begin(), inter_nodes.end(),
+				ArcListIterEqualsFirstAfterOnArcs2(arc_seq_begin));
+		if (inter_node_iter != inter_nodes.end()) {
+
+			add_intersection2_into_graph(
+					graph_intersections2, graph_partitioned_polylines2,
+					intersection_node_map, inter_node_iter);
+		}
+
+		// Pre-increment 'iter' because 'arcs2.begin()' has already
+		// been handled.
+		iter = ++(arcs2.begin());
+		end = arcs2.end();
+		for ( ; iter != end; ++iter) {
+
+			// See if there's an intersection at the start of the current arc.
+			inter_node_iter = std::find_if(inter_nodes.begin(), inter_nodes.end(),
+					ArcListIterEqualsFirstAfterOnArcs2(iter));
+			if (inter_node_iter != inter_nodes.end()) {
+
+				// The arc pointed-at by 'iter' is the first
+				// arc after an intersection.  Hence, it is
+				// both the "end" of the previous sequence and
+				// the "begin" of the next.
+				arc_seq_end = iter;
+
+				add_partitioned_polyline2_to_graph(
+					arc_seq_begin, arc_seq_end, overlap_arcs_in_2,
+					graph_intersections2, graph_partitioned_polylines2);
+
+				add_intersection2_into_graph(
+						graph_intersections2, graph_partitioned_polylines2,
+						intersection_node_map, inter_node_iter);
+
+				arc_seq_begin = iter;
+
+			}
+			// Else, no intersections here.
+		}
+
+		// 'arcs2.end()' is always going to be the end of a polyline
+		// arc sequence.
+		arc_seq_end = arcs2.end();
+
+		add_partitioned_polyline2_to_graph(
+			arc_seq_begin, arc_seq_end, overlap_arcs_in_2,
+			graph_intersections2, graph_partitioned_polylines2);
+
+		// See if there's an intersection at the end of the last arc of the second arc sequence.
+		inter_node_iter = std::find_if(inter_nodes.begin(), inter_nodes.end(),
+				ArcListIterEqualsFirstAfterOnArcs2(arc_seq_end));
+		if (inter_node_iter != inter_nodes.end()) {
+
+			add_intersection2_into_graph(
+					graph_intersections2, graph_partitioned_polylines2,
+					intersection_node_map, inter_node_iter);
+		}
 
 		/*
-		 * We need two vectors here, because 'ends[i]' won't always
-		 * equal 'begins[i+1]'.  There will be discontinuities:  at
-		 * least one discontinuity at the change-over from 'arcs1' to
-		 * 'arcs2'; possibly others due to overlaps being dropped.
-		 *
-		 * (We *could* get by with one collection instead of two (all
-		 * the odd elements could be those of 'begins', while all the
-		 * even elements would be those of 'ends', say), but I feel
-		 * that using two seperate collections makes the code clearer.)
+		 * Gather the intersection results and return them in a single Graph object.
 		 */
-		std::vector< ArcList::iterator > begins;
-		std::vector< ArcList::iterator > ends;
 
-		generate_polyline_arc_seqs(begins, ends, arcs1, arcs2,
-		 inter_nodes, overlap_arcs_in_2);
-
-		generate_polylines_from_arc_seqs(partitioned_polys, begins,
-		 ends);
+		// NOTE: We ignore 'graph_intersections2' since it is the same as 'graph_intersections1'.
+		return boost::shared_ptr<const Graph>(new Graph(
+				graph_intersections1,
+				graph_partitioned_polylines1,
+				graph_partitioned_polylines2));
 	}
 
 
 	/**
-	 * Populate the list @a intersection_points from the intersection nodes
-	 * contained in @a inter_nodes.
+	 * Find all points of intersection (with one exception; see
+	 * below) of @a polyline1 and @a polyline2, and append them to
+	 * 'intersections' in the returned @a Graph object; partition
+	 * @a polyline1 and @a polyline2 at these points of intersection,
+	 * and store these new, non-intersecting polylines in
+	 * 'partitioned_polylines1' and 'partitioned_polylines2' in the
+	 * returned @a Graph object; return false if no intersections found.
 	 *
-	 * This function does not attempt to be strongly exception-safe (since
-	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
-	 * will be destroyed anyway if an exception is thrown), but it *is*
-	 * exception-neutral.
+	 * The "one exception" mentioned above is this:  If the
+	 * polylines touch endpoint-to-endpoint, this will not be
+	 * counted as an intersection.
 	 */
-	void
-	populate_intersection_points(
-	 const IntersectionNodeList &inter_nodes,
-	 std::list< PointOnSphere > &intersection_points) {
+	template <typename GreatCircleArcForwardIter1, typename GreatCircleArcForwardIter2>
+	boost::shared_ptr<const Graph>
+	partition_intersecting_geometries(
+	 GreatCircleArcForwardIter1 line_geometry1_begin,
+	 GreatCircleArcForwardIter1 line_geometry1_end,
+	 GreatCircleArcForwardIter2 line_geometry2_begin,
+	 GreatCircleArcForwardIter2 line_geometry2_end) {
 
-		IntersectionNodeList::const_iterator
-		 iter = inter_nodes.begin(),
-		 end = inter_nodes.end();
-		for ( ; iter != end; ++iter) {
+		std::list< IntersectionNode > inter_nodes;
 
-			intersection_points.push_back(iter->d_point);
-		}
-	}
+		std::list< GreatCircleArc >
+		 line_geometry1_arcs(line_geometry1_begin, line_geometry1_end),
+		 line_geometry2_arcs(line_geometry2_begin, line_geometry2_end);
 
-}
+		/*
+		 * Firstly, let's filter out any zero-length arcs in each list, since
+		 * these contribute nothing useful, and with them out of the way, we
+		 * can assume that all arcs have determinate rotation axes.
+		 */
+		line_geometry1_arcs.remove_if(GPlatesMaths::ArcHasIndeterminateRotationAxis());
+		line_geometry2_arcs.remove_if(GPlatesMaths::ArcHasIndeterminateRotationAxis());
 
-
-std::list< PointOnSphere >::size_type
-GPlatesMaths::PolylineIntersections::partition_intersecting_polylines(
- const PolylineOnSphere &polyline1,
- const PolylineOnSphere &polyline2,
- std::list< PointOnSphere > &intersection_points,
- std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polylines) {
-
-	std::list< IntersectionNode > inter_nodes;
-
-	std::list< GreatCircleArc >
-	 polyline1_arcs(polyline1.begin(), polyline1.end()),
-	 polyline2_arcs(polyline2.begin(), polyline2.end());
-
-	/*
-	 * Firstly, let's filter out any zero-length arcs in each list, since
-	 * these contribute nothing useful, and with them out of the way, we
-	 * can assume that all arcs have determinate rotation axes.
-	 */
-	polyline1_arcs.remove_if(ArcHasIndeterminateRotationAxis());
-	polyline2_arcs.remove_if(ArcHasIndeterminateRotationAxis());
-
-	/*
-	 * An overlap is caused when a non-trivial linear extent of an arc in
-	 * the first polyline coincides with a non-trivial linear extent of an
-	 * arc in the second polyline.
-	 *
-	 * Observe also that since the polylines are assumed to be
-	 * non-self-intersecting, we can assume that an arc of overlap will
-	 * never be re-intersected or re-overlapped at a later time, and thus
-	 * that there is no danger of an arc of overlap being subdivided at a
-	 * later time.
-	 *
-	 * (Additionally, since we're using lists for everything (and functions
-	 * like 'splice_point_into_arc' are providing guarantees that they
-	 * won't invalidate iterators), there's no danger of iterators being
-	 * invalidated, so we can store and compare iterators instead of
-	 * storing and comparing the arcs directly.)
-	 *
-	 * However, since it's possible for a polyline to be partitioned by an
-	 * overlap in such a way that the arclist-iterator steps back to an arc
-	 * before the arc of overlap, it's possible for an arc of overlap to be
-	 * re-encountered on a later iteration.  Hence, we'll keep track of the
-	 * arcs of overlap for each polyline.
-	 */
-	std::list< std::list< GreatCircleArc >::iterator > overlap_arcs_in_1;
-	std::list< std::list< GreatCircleArc >::iterator > overlap_arcs_in_2;
-
-	std::list< GreatCircleArc >::iterator
-	 iter_outer = polyline1_arcs.begin(),
-	 end_outer = polyline1_arcs.end();
-	for ( ; iter_outer != end_outer; ++iter_outer) {
-
-		if (list_contains_elem(overlap_arcs_in_1, iter_outer)) {
-
-			/*
-			 * 'iter_outer' points to an arc which has already been
-			 * determined to be an arc of overlap.
-			 *
-			 * Since we're assuming the polylines are
-			 * non-self-intersecting, we can assume that an arc of
-			 * overlap will never be re-intersected or
-			 * re-overlapped.
-			 *
-			 * Hence, there is no reason to continue with this arc.
-			 */
-			continue;
-		}
+		/*
+		 * An overlap is caused when a non-trivial linear extent of an arc in
+		 * the first polyline coincides with a non-trivial linear extent of an
+		 * arc in the second polyline.
+		 *
+		 * Observe also that since the polylines are assumed to be
+		 * non-self-intersecting, we can assume that an arc of overlap will
+		 * never be re-intersected or re-overlapped at a later time, and thus
+		 * that there is no danger of an arc of overlap being subdivided at a
+		 * later time.
+		 *
+		 * (Additionally, since we're using lists for everything (and functions
+		 * like 'splice_point_into_arc' are providing guarantees that they
+		 * won't invalidate iterators), there's no danger of iterators being
+		 * invalidated, so we can store and compare iterators instead of
+		 * storing and comparing the arcs directly.)
+		 *
+		 * However, since it's possible for a polyline to be partitioned by an
+		 * overlap in such a way that the arclist-iterator steps back to an arc
+		 * before the arc of overlap, it's possible for an arc of overlap to be
+		 * re-encountered on a later iteration.  Hence, we'll keep track of the
+		 * arcs of overlap for each polyline.
+		 */
+		std::list< std::list< GreatCircleArc >::iterator > overlap_arcs_in_1;
+		std::list< std::list< GreatCircleArc >::iterator > overlap_arcs_in_2;
 
 		std::list< GreatCircleArc >::iterator
-		 iter_inner = polyline2_arcs.begin(),
-		 end_inner = polyline2_arcs.end();
-		for ( ; iter_inner != end_inner; ++iter_inner) {
+		 iter_outer = line_geometry1_arcs.begin(),
+		 end_outer = line_geometry1_arcs.end();
+		for ( ; iter_outer != end_outer; ++iter_outer) {
 
-			if (list_contains_elem(overlap_arcs_in_2, iter_inner)) {
+			if (list_contains_elem(overlap_arcs_in_1, iter_outer)) {
 
 				/*
-				 * 'iter_inner' points to an arc which has
-				 * already been determined to be an arc of
-				 * overlap.
+				 * 'iter_outer' points to an arc which has already been
+				 * determined to be an arc of overlap.
 				 *
 				 * Since we're assuming the polylines are
-				 * non-self-intersecting, we can assume that an
-				 * arc of overlap will never be re-intersected
-				 * or re-overlapped.
+				 * non-self-intersecting, we can assume that an arc of
+				 * overlap will never be re-intersected or
+				 * re-overlapped.
 				 *
-				 * Hence, there is no reason to continue with
-				 * this arc.
+				 * Hence, there is no reason to continue with this arc.
 				 */
 				continue;
 			}
 
-			const GreatCircleArc &arc1 = *iter_outer;
-			const GreatCircleArc &arc2 = *iter_inner;
+			std::list< GreatCircleArc >::iterator
+			 iter_inner = line_geometry2_arcs.begin(),
+			 end_inner = line_geometry2_arcs.end();
+			for ( ; iter_inner != end_inner; ++iter_inner) {
 
-			// Inexpensively eliminate the no-hopers.
-			if ( ! arcs_are_near_each_other(arc1, arc2)) {
+				if (list_contains_elem(overlap_arcs_in_2, iter_inner)) {
 
-				// There's no chance the arcs could touch.
-				continue;
+					/*
+					 * 'iter_inner' points to an arc which has
+					 * already been determined to be an arc of
+					 * overlap.
+					 *
+					 * Since we're assuming the polylines are
+					 * non-self-intersecting, we can assume that an
+					 * arc of overlap will never be re-intersected
+					 * or re-overlapped.
+					 *
+					 * Hence, there is no reason to continue with
+					 * this arc.
+					 */
+					continue;
+				}
+
+				const GreatCircleArc &arc1 = *iter_outer;
+				const GreatCircleArc &arc2 = *iter_inner;
+
+				// Inexpensively eliminate the no-hopers.
+				if ( ! arcs_are_near_each_other(arc1, arc2)) {
+
+					// There's no chance the arcs could touch.
+					continue;
+				}
+				// Else, there's a chance the arcs might overlap or
+				// intersect.
+				handle_possible_overlap_or_intersection(line_geometry1_arcs,
+				 line_geometry2_arcs, iter_outer, iter_inner, inter_nodes,
+				 overlap_arcs_in_1, overlap_arcs_in_2);
 			}
-			// Else, there's a chance the arcs might overlap or
-			// intersect.
-			handle_possible_overlap_or_intersection(polyline1_arcs,
-			 polyline2_arcs, iter_outer, iter_inner, inter_nodes,
-			 overlap_arcs_in_1, overlap_arcs_in_2);
 		}
-	}
 
-	std::list< PointOnSphere >::size_type num_intersections_found =
-	 inter_nodes.size();
-	if (num_intersections_found != 0) {
+		std::list< PointOnSphere >::size_type num_intersections_found = inter_nodes.size();
+		if (num_intersections_found == 0) {
 
-		std::list< PointOnSphere > tmp_intersection_points;
-		std::list< PolylineOnSphere::non_null_ptr_to_const_type > tmp_partitioned_polylines;
-
-		generate_partitioned_polylines(polyline1_arcs, polyline2_arcs,
-		 inter_nodes, overlap_arcs_in_2, tmp_partitioned_polylines);
-		populate_intersection_points(inter_nodes,
-		 tmp_intersection_points);
+			// Return false since no intersections found.
+			return boost::shared_ptr<const Graph>();
+		}
 
 		/*
-		 * Now we take the final, program-state-modifying step:
-		 * modifying the contents of 'intersection_points' and
-		 * 'partitioned_polylines'.
-		 *
-		 * Neither of these two splice operations will throw
-		 * (see Josuttis99, section 6.10.8), so there is no chance we
-		 * could violate our guarantee of strong exception safety.
+		 * Build an intersection graph to return to the caller.
 		 */
-		intersection_points.splice(intersection_points.end(),
-		 tmp_intersection_points);
-		partitioned_polylines.splice(partitioned_polylines.end(),
-		 tmp_partitioned_polylines);
+		return generate_partitioned_polyline_graph(
+			line_geometry1_arcs, line_geometry2_arcs,
+			inter_nodes,
+			overlap_arcs_in_1, overlap_arcs_in_2);
 	}
-	return num_intersections_found;
+
 }
 
+
+boost::shared_ptr<const GPlatesMaths::PolylineIntersections::Graph>
+GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
+ const PolylineOnSphere &polyline1,
+ const PolylineOnSphere &polyline2)
+{
+	return ::partition_intersecting_geometries(
+			polyline1.begin(), polyline1.end(),
+			polyline2.begin(), polyline2.end());
+}
+
+
+boost::shared_ptr<const GPlatesMaths::PolylineIntersections::Graph>
+GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
+ const PolygonOnSphere &polygon1,
+ const PolygonOnSphere &polygon2)
+{
+	return ::partition_intersecting_geometries(
+			polygon1.begin(), polygon1.end(),
+			polygon2.begin(), polygon2.end());
+}
+
+
+boost::shared_ptr<const GPlatesMaths::PolylineIntersections::Graph>
+GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
+ const PolylineOnSphere &polyline,
+ const PolygonOnSphere &polygon)
+{
+	return ::partition_intersecting_geometries(
+			polyline.begin(), polyline.end(),
+			polygon.begin(), polygon.end());
+}
+
+
+boost::shared_ptr<const GPlatesMaths::PolylineIntersections::Graph>
+GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
+ const PolygonOnSphere &polygon,
+ const PolylineOnSphere &polyline)
+{
+	return ::partition_intersecting_geometries(
+			polygon.begin(), polygon.end(),
+			polyline.begin(), polyline.end());
+}
 
 
 
@@ -1789,113 +1949,37 @@ GPlatesMaths::PolylineIntersections::polyline_set_is_self_intersecting(
  std::list< PointOnSphere > &intersection_points,
  std::list< GreatCircleArc > &overlap_segments) {
 
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
 	// FIXME:  This is a dummy implementation.
 	return false;
 }
 
 
-
-std::pair<
-	std::list< PolylineOnSphere::non_null_ptr_to_const_type >,
-	std::list< PolylineOnSphere::non_null_ptr_to_const_type >
->
-GPlatesMaths::PolylineIntersections::identify_partitioned_polylines(
-	const PolylineOnSphere &polyline1,
-	const PolylineOnSphere &polyline2,
-	std::list< PointOnSphere > &intersection_points,
-	std::list< PolylineOnSphere::non_null_ptr_to_const_type > &partitioned_polylines)
+GPlatesMaths::PolylineIntersections::Graph::PartitionedPolyline::PartitionedPolyline(
+		PolylineOnSphere::non_null_ptr_to_const_type polyline_,
+		bool is_overlapping_) :
+	polyline(polyline_),
+	is_overlapping(is_overlapping_)
 {
-
-	std::list< PolylineOnSphere::non_null_ptr_to_const_type > from_polyline1;
-	std::list< PolylineOnSphere::non_null_ptr_to_const_type > from_polyline2;
-
-	// Iterate over the polyline_list to determine
-	// where each resultant polyline came from : 
-	// polyline1 or polyline2
-
-	std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator beg =
-		partitioned_polylines.begin();
-
-	std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator end =
-		partitioned_polylines.end();
-
-	std::list<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>::iterator iter;
-
-	for (iter = beg; iter != end; ++iter)
-	{
-		// determine which original polyline (1 or 2) 
-		// the iter polyline came from by 
-		// comparing begin and end vertices :
-
-#if 0
-std::cout << "----" << std::endl;
-std::cout << "IDENTIFY: llp( *( (*iter)->vertex_begin() ) )          = " 
-<< GPlatesMaths::make_lat_lon_point( *( (*iter)->vertex_begin() ) )
-<< std::endl;
-std::cout << "IDENTIFY: llp( *( --( (*iter)->vertex_end() ) ) )      = " 
-<< GPlatesMaths::make_lat_lon_point( *( --( (*iter)->vertex_end() ) ) )
-<< std::endl;
-std::cout << "----" << std::endl;
-#endif
-
-
-		if ( *( (*iter)->vertex_begin() ) == *( polyline1.vertex_begin() ) ) 
-		{
-#if 0
-std::cout << "        : llp( *polyline1.vertex_begin() )             = " 
-<< GPlatesMaths::make_lat_lon_point( *( polyline1.vertex_begin() ) )
-<< std::endl;
-#endif
-			// iter is the HEAD part of polyline1
-			from_polyline1.push_front( *iter );
-
-			continue; // to next iter 
-		}
-		
-		if ( *( --(*iter)->vertex_end()) == *( --( polyline1.vertex_end() ) ) ) 
-		{
-#if 0
-std::cout << "        : llp( *( --( polyline1.vertex_end() ) ) )      = " 
-<< GPlatesMaths::make_lat_lon_point( *( --( polyline1.vertex_end() ) ) )
-<< std::endl;
-#endif
-			// iter is the TAIL part of polyline1
-			from_polyline1.push_back( *iter );
-
-			continue; // to next iter 
-		}
-
-
-		if ( *( (*iter)->vertex_begin()) == *( polyline2.vertex_begin() ) ) 
-		{
-#if 0
-std::cout << "        : llp( *polyline2.vertex_begin() )             = " 
-<< GPlatesMaths::make_lat_lon_point( *( polyline2.vertex_begin() ) )
-<< std::endl;
-#endif
-			// iter is the HEAD part of polyline2
-			from_polyline2.push_front( *iter );
-
-			continue; // to next iter 
-		}
-
-		if ( *( --(*iter)->vertex_end()) == *( --( polyline2.vertex_end() ) ) ) 
-		{
-#if 0
-std::cout << "        : llp( *( --( polyline2.vertex_end() ) ) )      = " 
-<< GPlatesMaths::make_lat_lon_point( *( --( polyline2.vertex_end() ) ) )
-<< std::endl;
-#endif
-			// iter is the TAIL part of polyline1
-			from_polyline2.push_back( *iter );
-
-			continue; // to next iter
-		}
-
-	}
-
-	return std::make_pair( from_polyline1, from_polyline2 );
-
 }
 
 
+GPlatesMaths::PolylineIntersections::Graph::Intersection::Intersection(
+		const PointOnSphere &intersection_point_) :
+	intersection_point(intersection_point_)
+{
+}
+
+
+GPlatesMaths::PolylineIntersections::Graph::Graph(
+		const intersection_ptr_seq_type &intersections_,
+		const partitioned_polyline_ptr_seq_type &partitioned_polylines1_,
+		const partitioned_polyline_ptr_seq_type &partitioned_polylines2_)
+{
+	// Need to do this to convert elements from
+	// boost::shared_ptr<ElementType> to boost::shared_ptr<const ElementType>.
+	intersections.assign(intersections_.begin(), intersections_.end());
+ 	partitioned_polylines1.assign(partitioned_polylines1_.begin(), partitioned_polylines1_.end());
+ 	partitioned_polylines2.assign(partitioned_polylines2_.begin(), partitioned_polylines2_.end());
+}

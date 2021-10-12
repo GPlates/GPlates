@@ -87,10 +87,28 @@ namespace GPlatesModel
 		/**
 		 * Access the reconstructed geometries.
 		 */
+		const geometry_collection_type &
+		geometries() const
+		{
+			return d_geometries;
+		}
+
+		/**
+		 * Access the reconstructed geometries.
+		 */
 		geometry_collection_type &
 		geometries()
 		{
 			return d_geometries;
+		}
+
+		/**
+		 * Access the reconstruction tree.
+		 */
+		const ReconstructionTree &
+		reconstruction_tree() const
+		{
+			return *d_reconstruction_tree_ptr;
 		}
 
 		/**

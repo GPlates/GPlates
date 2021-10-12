@@ -45,11 +45,6 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
-namespace GPlatesFeatureVisitors
-{
-	class TopologyResolver;
-}
-
 namespace GPlatesModel
 {
 	class Reconstruction;
@@ -192,8 +187,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type reconstruction_anchored_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstruction_features_collection,
-				GPlatesFeatureVisitors::TopologyResolver &topology_resolver);
+						reconstruction_features_collection);
 
 	private:
 		/**

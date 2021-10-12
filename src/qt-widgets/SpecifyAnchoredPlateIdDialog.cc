@@ -29,7 +29,7 @@
 GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::SpecifyAnchoredPlateIdDialog(
 		unsigned long init_value,
 		QWidget *parent_):
-	QDialog(parent_),
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
 	d_value(init_value)
 {
 	setupUi(this);

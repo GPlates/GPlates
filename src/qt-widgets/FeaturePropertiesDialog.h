@@ -67,8 +67,7 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		display_feature(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesModel::ReconstructionGeometry::maybe_null_ptr_type focused_rg);
+				GPlatesGui::FeatureFocus &feature_focus);
 		
 		/**
 		 * Update the current display from whatever feature the dialog

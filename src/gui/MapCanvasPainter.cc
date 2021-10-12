@@ -1,11 +1,11 @@
-/* $Id: MapCanvasPainter.cc 4818 2009-02-13 10:05:30Z rwatson $ */
+/* $Id$ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2009-02-13 11:05:30 +0100 (fr, 13 feb 2009) $
+ *   $Date$
  * 
  * Copyright (C) 2009 The Geological Survey of Norway
  *
@@ -35,7 +35,7 @@
 
 #include "gui/MapCanvasPainter.h"
 #include "gui/MapProjection.h"
-#include "gui/PlatesColourTable.h"
+#include "maths/EllipseGenerator.h"
 #include "maths/GreatCircle.h"
 #include "maths/LatLonPointConversions.h"
 #include "maths/MultiPointOnSphere.h"
@@ -43,16 +43,27 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineIntersections.h"
 #include "maths/PolylineOnSphere.h"
+#include "maths/Rotation.h"
+#include "view-operations/RenderedDirectionArrow.h"
+#include "view-operations/RenderedEllipse.h"
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
 #include "view-operations/RenderedPolygonOnSphere.h"
+#include "view-operations/RenderedSmallCircle.h"
+#include "view-operations/RenderedSmallCircleArc.h"
 #include "view-operations/RenderedString.h"
 
 int GPlatesGui::MapCanvasPainter::s_num_vertices_drawn = 0;
 
-const float GPlatesGui::MapCanvasPainter::POINT_SIZE_ADJUSTMENT = 1.5f;
-const float GPlatesGui::MapCanvasPainter::LINE_SIZE_ADJUSTMENT = 1.5f;
+const float GPlatesGui::MapCanvasPainter::POINT_SIZE_ADJUSTMENT = 1.0f;
+const float GPlatesGui::MapCanvasPainter::LINE_WIDTH_ADJUSTMENT = 1.0f;
+const double TWO_PI = 2.*GPlatesMaths::PI;
+
+// Variables for drawing velocity arrows.
+const float GLOBE_TO_MAP_FACTOR = 180.;
+const float MAP_VELOCITY_SCALE_FACTOR = 3.0;
+const double ARROWHEAD_BASE_HEIGHT_RATIO = 0.5;
 
 // Threshold in degrees for breaking up arcs into smaller arcs.
 const double RADIAN_STEP = GPlatesMaths::PI/72.0;
@@ -64,12 +75,91 @@ const double DOT_PRODUCT_THRESHOLD = 5.4e-7;
 // Threshold in scene space for breaking up lines into smaller lines. 
 const double SCREEN_THRESHOLD = 5.;
 
+// Number of segments for drawing small-circles, small-circle-arcs, ellipses.
+const unsigned int NUM_SEGMENTS = 256; 
+
+// Angular increment for drawing small-circles, small-circle-arcs, ellipses.
+const double ANGLE_INCREMENT = 2.*GPlatesMaths::PI/NUM_SEGMENTS;
+
 namespace
 {
 	using namespace GPlatesMaths;
 
 	struct CoincidentGreatCirclesException{};
 
+
+	void
+	draw_filled_triangle(
+		const QPointF &v1,
+		const QPointF &v2,
+		const QPointF &v3)
+	{
+		glBegin(GL_TRIANGLES);
+		glVertex2d(v1.x(),v1.y());
+		glVertex2d(v2.x(),v2.y());
+		glVertex2d(v3.x(),v3.y());
+		glEnd();
+	}
+
+	QPointF
+	get_scene_coords_from_llp(
+		const LatLonPoint &llp,
+		const GPlatesGui::MapProjection &projection)
+	{
+		double lat = llp.latitude();
+		double lon = llp.longitude();
+		projection.forward_transform(lon,lat);
+		return QPointF(lon,lat);		
+	}
+#if 1
+	/**
+	 * Returns the map coordinates (in the coordinate frame of the QGraphicsScene MapCanvas) of the 
+	 * point-on-sphere @a pos, using the map projection @a projection.
+	 */
+	QPointF
+	get_scene_coords_from_pos(
+		const PointOnSphere &pos,
+		const GPlatesGui::MapProjection &projection)
+	{
+		LatLonPoint llp = make_lat_lon_point(pos);
+		double lat = llp.latitude();
+		double lon = llp.longitude();
+		projection.forward_transform(lon,lat);
+		return QPointF(lon,lat);
+	}
+#else
+	/**
+	* Returns the map coordinates (in the coordinate frame of the QGraphicsScene MapCanvas) of the 
+	* point-on-sphere @a pos, using the map projection @a projection.
+	*/
+	QPointF
+	get_scene_coords_from_pos(
+		const PointOnSphere &pos,
+		const GPlatesGui::MapProjection &projection)
+	{
+		double lat,lon;
+		projection.forward_transform(pos,lon,lat);
+		return QPointF(lon,lat);
+	}
+#endif
+
+	void
+	display_vertex(
+		const PointOnSphere &point)
+	{
+		std::cerr << "Vertex: " << point.position_vector() << std::endl;
+	}
+
+	void
+	display_vertex(
+		const PointOnSphere &point,
+		const GPlatesGui::MapProjection &projection)
+	{
+		std::cerr << "Vertex: " << point.position_vector() << std::endl;
+		qDebug() << get_scene_coords_from_pos(point,projection);
+		qDebug();
+	}
+	
 	double
 	distance_between_qpointfs(
 		const QPointF &p1,
@@ -79,6 +169,37 @@ namespace
 
 		return sqrt(difference.x()*difference.x() + difference.y()*difference.y());
 	}
+
+	void
+	draw_arrowhead(
+		const QPointF &start_qpoint,
+		const QPointF &end_qpoint,
+		const double arrowhead_size)
+	{
+		// A vector in the direction start_point->end_point. This will be the direction of the arrowhead.
+		QPointF distance_vector = end_qpoint - start_qpoint;
+
+		// The length of the distance vector
+		real_t d = sqrt(distance_vector.x()*distance_vector.x() + distance_vector.y()*distance_vector.y());
+		if (d == 0.)
+		{ 
+			return;
+		}
+
+		// Unit vector in the direction of the arrowhead, then scaled up to the arrowhead size.
+		distance_vector*= (arrowhead_size/d.dval());
+
+		// A vector perpendicular to the arrow direction, for forming the base of the triangle.
+		QPointF perpendicular_vector(-distance_vector.y(),distance_vector.x());
+
+		QPointF base_qpoint = end_qpoint - distance_vector;
+		QPointF corner1 = base_qpoint + perpendicular_vector*ARROWHEAD_BASE_HEIGHT_RATIO;
+		QPointF corner2 = base_qpoint - perpendicular_vector*ARROWHEAD_BASE_HEIGHT_RATIO;
+
+		draw_filled_triangle(end_qpoint,corner1,corner2);
+
+	}
+
 
 	double
 	angle_between_vectors(
@@ -105,8 +226,8 @@ namespace
 		const GreatCircle &great_circle)
 	{
 
-		real_t d1 = dot(point1.position_vector(),great_circle.axisvector());
-		real_t d2 = dot(point2.position_vector(),great_circle.axisvector());
+		real_t d1 = dot(point1.position_vector(),great_circle.axis_vector());
+		real_t d2 = dot(point2.position_vector(),great_circle.axis_vector());
 		bool sign1 = d1 > 0;
 		bool sign2 = d2 > 0; 
 
@@ -117,7 +238,7 @@ namespace
 			std::cerr << "Crossing or touching boundary circle" << std::endl;
 		}
 #endif
-		return ((sign1 != sign2) || (d1 < DOT_PRODUCT_THRESHOLD) || (d2 < DOT_PRODUCT_THRESHOLD));
+		return ((sign1 != sign2) || (abs(d1) < DOT_PRODUCT_THRESHOLD) || (abs(d2) < DOT_PRODUCT_THRESHOLD));
 	}
 
 	bool
@@ -127,8 +248,8 @@ namespace
 		const GreatCircle &great_circle,
 		const PointOnSphere &central_pos)
 	{
-		real_t x1 = dot(point1.position_vector(),great_circle.axisvector());
-		real_t x2 = dot(point2.position_vector(),great_circle.axisvector());
+		real_t x1 = dot(point1.position_vector(),great_circle.axis_vector());
+		real_t x2 = dot(point2.position_vector(),great_circle.axis_vector());
 
 		real_t y1 = dot(point1.position_vector(),central_pos.position_vector());
 		real_t y2 = dot(point2.position_vector(),central_pos.position_vector());
@@ -152,7 +273,7 @@ namespace
 		const GreatCircle &great_circle,
 		const PointOnSphere &front_point)
 	{
-		return ((dot(point.position_vector(),great_circle.axisvector()) < DOT_PRODUCT_THRESHOLD)&&
+		return ((abs(dot(point.position_vector(),great_circle.axis_vector())) < DOT_PRODUCT_THRESHOLD)&&
 				 (dot(point.position_vector(),front_point.position_vector()) < 0));
 	}
 
@@ -164,7 +285,7 @@ namespace
 		const PointOnSphere &point,
 		const GreatCircle &great_circle)
 	{
-		return  (dot(point.position_vector(),great_circle.axisvector()) <  DOT_PRODUCT_THRESHOLD);
+		return  (abs(dot(point.position_vector(),great_circle.axis_vector())) <  DOT_PRODUCT_THRESHOLD);
 	}
 	 
 	// This is largely taken from the function in 
@@ -174,11 +295,11 @@ namespace
 		const GreatCircle &circle1,
 		const GreatCircle &circle2)
 	{
-		if (collinear(circle1.axisvector(),circle2.axisvector()))
+		if (collinear(circle1.axis_vector(),circle2.axis_vector()))
 		{
 			throw CoincidentGreatCirclesException();
 		}
-		Vector3D v = cross(circle1.axisvector(), circle2.axisvector());
+		Vector3D v = cross(circle1.axis_vector(), circle2.axis_vector());
 		UnitVector3D normalised_v = v.get_normalisation();
 
 		PointOnSphere inter_point1(normalised_v);
@@ -187,6 +308,10 @@ namespace
 		return std::make_pair(inter_point1, inter_point2);		
 	}
 
+	/**
+	 * Returns the intersection point (point-on-sphere) of the great circle arc between
+	 * @a point1 and  @point2 with the great circle @a circle.                                                                     
+	 */
 	PointOnSphere
 	calculate_intersection_of_segment_with_great_circle(
 		const PointOnSphere &point1,
@@ -225,37 +350,7 @@ namespace
 		}
 
 	}
-#if 1
-	/**
-	 * Returns the map coordinates (in the coordinate frame of the QGraphicsScene MapCanvas) of the 
-	 * point-on-sphere @a pos, using the map projection @a projection.
-	 */
-	QPointF
-	get_scene_coords_from_pos(
-		const PointOnSphere &pos,
-		const GPlatesGui::MapProjection &projection)
-	{
-		LatLonPoint llp = make_lat_lon_point(pos);
-		double lat = llp.latitude();
-		double lon = llp.longitude();
-		projection.forward_transform(lon,lat);
-		return QPointF(lon,lat);
-	}
-#else
-	/**
-	* Returns the map coordinates (in the coordinate frame of the QGraphicsScene MapCanvas) of the 
-	* point-on-sphere @a pos, using the map projection @a projection.
-	*/
-	QPointF
-		get_scene_coords_from_pos(
-		const PointOnSphere &pos,
-		const GPlatesGui::MapProjection &projection)
-	{
-		double lat,lon;
-		projection.forward_transform(pos,lon,lat);
-		return QPointF(lon,lat);
-	}
-#endif
+
 
 	inline
 	void
@@ -478,17 +573,27 @@ namespace
 		glEnd();
 	}
 	
+	/**
+	 * Draw the great-circle-arc between @a start_point_on_sphere and @a end_point_on_sphere on the map.
+	 *
+	 * This will check, and correct for, edge conditions     
+	 *
+	 * Note that this function should not used for general polyline/polygon drawing, as it would 
+	 * project each vertex (except for the first and last vertices) in the polyline/polygon twice.                                                                
+	 */
 	void
 	draw_segment(
 		const PointOnSphere &start_point_on_sphere,
 		const PointOnSphere &end_point_on_sphere,
 		const GPlatesGui::MapProjection &projection,
 		const GreatCircle &great_circle,
-		const PointOnSphere &central_pos)
+		const PointOnSphere &central_pos,
+		const boost::optional<double> &arrowhead_size = boost::none)
 	{
 
 		glBegin(GL_LINES);
 			QPointF start_qpoint = get_scene_coords_from_pos(start_point_on_sphere,projection);
+			QPointF last_start_qpoint = start_qpoint;
 			glVertex2d(start_qpoint.x(),start_qpoint.y());
 
 			QPointF end_qpoint = get_scene_coords_from_pos(end_point_on_sphere,projection);
@@ -584,6 +689,10 @@ namespace
 						glEnd();
 						glBegin(GL_LINES);
 						glVertex2d(-intersection_qpoint.x(),intersection_qpoint.y());
+						// Set our new start-point in case we need to
+						// draw an arrowhead.
+						last_start_qpoint.setX(-intersection_qpoint.x());
+						last_start_qpoint.setY(intersection_qpoint.y());
 					}
 				}
 			} // if (segment_crosses_great_circle)
@@ -593,8 +702,19 @@ namespace
 			// So either way, we need to draw a line to the second point. 
 			glVertex2d(end_qpoint.x(),end_qpoint.y());
 		glEnd();
+
+		if(arrowhead_size)
+		{
+			draw_arrowhead(last_start_qpoint,end_qpoint,*arrowhead_size);
+		}		
+		
 	}
 
+	/**
+	 * Draw the great-circle-arc between @a start_point_on_sphere and @a end_point_on_sphere on the map.
+	 *
+	 * This does not check for edge conditions. 
+	 */
 	void
 	draw_segment_without_edge_checking(
 		const PointOnSphere &pos1,
@@ -603,7 +723,7 @@ namespace
 		const GreatCircle &great_circle,
 		const PointOnSphere &central_pos)
 	{
-		// A quick implementation without any checks for edge-crossing yet. 
+		// A quick implementation without any checks for edge-crossing. 
 		glBegin(GL_LINES);
 			QPointF p1 = get_scene_coords_from_pos(pos1,projection);
 			glVertex2d(p1.x(),p1.y());
@@ -613,7 +733,10 @@ namespace
 		glEnd();
 	}
 
-
+	/**
+	 *  Draw a curved line on the map by splitting the arc into smaller segments, so 
+	 *  that each segment is no longer than SCREEN_THRESHOLD screen pixels.                                                                    
+	 */
 	template< typename GeometryIterator >
 	void
 	draw_arc(
@@ -622,8 +745,7 @@ namespace
 		const GreatCircle &great_circle,
 		const PointOnSphere &central_pos)
 	{
-		// Draw a curved line on the map by splitting the arc into smaller segments, so 
-		// that each segment is no longer than SCREEN_THRESHOLD screen pixels.
+
 		GPlatesMaths::Vector3D start_pt = GPlatesMaths::Vector3D(iter.start_point().position_vector());
 		GPlatesMaths::Vector3D end_pt = GPlatesMaths::Vector3D(iter.end_point().position_vector());
 
@@ -665,6 +787,101 @@ namespace
 		draw_segment(segment_start_pos,iter.end_point(),projection,great_circle,central_pos);
 
 	}
+	
+	void
+	draw_small_circle(
+		const GPlatesViewOperations::RenderedSmallCircle &rendered_small_circle,
+		const GPlatesGui::MapProjection &projection)
+	{
+		// FIXME: make this zoom dependent.	
+
+		GreatCircle great_circle = projection.boundary_great_circle();
+		LatLonPoint central_llp = projection.central_llp();
+		PointOnSphere central_pos = make_point_on_sphere(central_llp);	
+		
+		PointOnSphere centre = rendered_small_circle.get_centre();		
+
+		UnitVector3D axis = generate_perpendicular(centre.position_vector());
+		// Get a point on the small circle by rotating the centre point by the radius angle.
+		Rotation rot_from_centre = Rotation::create(axis, rendered_small_circle.get_radius_in_radians());
+		 					
+		PointOnSphere start_point = rot_from_centre*centre;
+			
+		Rotation rot = Rotation::create(centre.position_vector(),ANGLE_INCREMENT);
+		
+		for (unsigned int i = 0; i < NUM_SEGMENTS ; ++i)
+		{
+			PointOnSphere end_point = rot*start_point;
+			draw_segment(start_point,end_point,projection,great_circle,central_pos);
+			start_point = end_point;
+		}
+	}	
+	
+	void
+	draw_small_circle_arc(
+			const GPlatesViewOperations::RenderedSmallCircleArc &rendered_small_circle_arc,
+			const GPlatesGui::MapProjection &projection)
+	{
+		GreatCircle great_circle = projection.boundary_great_circle();
+		LatLonPoint central_llp = projection.central_llp();
+		PointOnSphere central_pos = make_point_on_sphere(central_llp);	
+		
+		PointOnSphere centre = rendered_small_circle_arc.get_centre();
+		PointOnSphere start_point = rendered_small_circle_arc.get_start_point();
+		const double arc_length = rendered_small_circle_arc.get_arc_length_in_radians().dval();
+
+		const double delta_angle = arc_length/NUM_SEGMENTS;
+
+		Rotation rot = Rotation::create(centre.position_vector(),delta_angle);
+
+		for (double angle = 0; angle < arc_length ; angle += delta_angle)
+		{
+			PointOnSphere end_point = rot*start_point;
+			draw_segment(start_point,end_point,projection,great_circle,central_pos);
+			start_point = end_point;
+		}		
+		
+	}
+	
+	void
+	draw_ellipse(
+			const GPlatesViewOperations::RenderedEllipse &rendered_ellipse,
+			const GPlatesGui::MapProjection &projection,
+			const double &inverse_zoom_factor)
+	{
+	
+		if ((rendered_ellipse.get_semi_major_axis_radians() == 0.)
+			|| (rendered_ellipse.get_semi_minor_axis_radians() == 0.))
+		{
+			return;	
+		}		
+	
+		// See comments in the GlobeRenderedGeometryLayerPainter for possibilities
+		// of making the number of steps zoom-dependent.
+			
+		GreatCircle great_circle = projection.boundary_great_circle();
+		LatLonPoint central_llp = projection.central_llp();
+		PointOnSphere central_pos = make_point_on_sphere(central_llp);		
+	
+		GPlatesMaths::EllipseGenerator ellipse_generator(
+			rendered_ellipse.get_centre(),
+			rendered_ellipse.get_semi_major_axis_radians(),
+			rendered_ellipse.get_semi_minor_axis_radians(),
+			rendered_ellipse.get_axis());
+			
+		GPlatesMaths::UnitVector3D uv = ellipse_generator.get_point_on_ellipse(0);
+		PointOnSphere previous_pos = PointOnSphere(uv);
+
+		for (double angle = ANGLE_INCREMENT ; angle < TWO_PI ; angle += ANGLE_INCREMENT)
+		{
+			uv = ellipse_generator.get_point_on_ellipse(angle);
+			PointOnSphere pos(uv);
+			draw_segment(previous_pos,pos,projection,great_circle,central_pos);
+			previous_pos = pos;
+		}
+
+	}
+	
 #if 0
 	template< typename GeometryIterator >
 	void
@@ -713,22 +930,6 @@ namespace
 	}
 #endif
 
-	void
-	display_vertex(
-		const PointOnSphere &point)
-	{
-		std::cerr << "Vertex: " << point.position_vector() << std::endl;
-	}
-	
-	void
-	display_vertex(
-		const PointOnSphere &point,
-		const GPlatesGui::MapProjection &projection)
-	{
-		std::cerr << "Vertex: " << point.position_vector() << std::endl;
-		qDebug() << get_scene_coords_from_pos(point,projection);
-		qDebug();
-	}	
 
 }
 
@@ -805,7 +1006,8 @@ GPlatesGui::MapCanvasPainter::visit_rendered_polygon_on_sphere(
 
 	const GPlatesGui::Colour colour = rendered_polygon_on_sphere.get_colour();
 
-	glColor3fv(colour);
+	glColor3fv(rendered_polygon_on_sphere.get_colour());
+	glLineWidth(rendered_polygon_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);
 
 	draw_geometry(iter,end,d_canvas_ptr->projection());
 
@@ -828,8 +1030,9 @@ GPlatesGui::MapCanvasPainter::visit_rendered_polyline_on_sphere(
 
 	const GPlatesGui::Colour colour = rendered_polyline_on_sphere.get_colour();
 
-	glColor3fv(colour);
-
+	glColor3fv(rendered_polyline_on_sphere.get_colour());
+	glLineWidth(rendered_polyline_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT);
+	
 	draw_geometry(iter,end,d_canvas_ptr->projection());
 
 }
@@ -849,3 +1052,91 @@ GPlatesGui::MapCanvasPainter::visit_rendered_string(
 	}
 }
 
+void
+GPlatesGui::MapCanvasPainter::visit_rendered_small_circle(
+		const GPlatesViewOperations::RenderedSmallCircle &rendered_small_circle)
+{
+	glColor3fv(rendered_small_circle.get_colour());
+	glLineWidth(rendered_small_circle.get_line_width_hint());
+	draw_small_circle(rendered_small_circle,d_canvas_ptr->projection());
+}
+
+void
+GPlatesGui::MapCanvasPainter::visit_rendered_small_circle_arc(
+	const GPlatesViewOperations::RenderedSmallCircleArc &rendered_small_circle_arc)
+{
+	glColor3fv(rendered_small_circle_arc.get_colour());
+	glLineWidth(rendered_small_circle_arc.get_line_width_hint());	
+	draw_small_circle_arc(rendered_small_circle_arc,d_canvas_ptr->projection());
+}
+
+void
+GPlatesGui::MapCanvasPainter::visit_rendered_ellipse(
+	const GPlatesViewOperations::RenderedEllipse &rendered_ellipse)
+{
+	glColor3fv(rendered_ellipse.get_colour());
+	glLineWidth(rendered_ellipse.get_line_width_hint());	
+	draw_ellipse(rendered_ellipse,
+				d_canvas_ptr->projection(),
+				d_inverse_zoom_factor);
+}
+
+void
+GPlatesGui::MapCanvasPainter::visit_rendered_direction_arrow(
+	const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow)
+{
+	if (!d_render_settings.show_arrows)
+	{
+		return;
+	}
+
+	const GPlatesMaths::PointOnSphere start_point_on_sphere =
+		rendered_direction_arrow.get_start_position();
+
+	const GPlatesMaths::Vector3D start_vector(start_point_on_sphere.position_vector());
+
+	// Calculate position from start point along tangent direction to
+	// end point off the globe. The length of the arrow in world space
+	// is inversely proportional to the zoom or magnification.
+	const GPlatesMaths::Vector3D end_vector = GPlatesMaths::Vector3D(start_vector) +
+		d_inverse_zoom_factor * rendered_direction_arrow.get_arrow_direction() * MAP_VELOCITY_SCALE_FACTOR;
+
+	const GPlatesMaths::Vector3D arrowline = end_vector -start_vector;
+	const double arrowline_length = arrowline.magnitude().dval();
+
+	// This will project the end point on the surface. 
+	const GPlatesMaths::UnitVector3D normalised_end = end_vector.get_normalisation();
+
+	const GPlatesMaths::PointOnSphere end_point_on_sphere =
+		GPlatesMaths::PointOnSphere(normalised_end);
+
+	glColor3fv(rendered_direction_arrow.get_colour());
+	glLineWidth(rendered_direction_arrow.get_arrowline_width_hint()* LINE_WIDTH_ADJUSTMENT);
+
+
+	boost::optional<double> arrowhead_size;
+	arrowhead_size.reset( 
+		d_inverse_zoom_factor*rendered_direction_arrow.get_arrowhead_projected_size()*GLOBE_TO_MAP_FACTOR);
+
+	const float min_ratio_arrowhead_to_arrowline = 
+		rendered_direction_arrow.get_min_ratio_arrowhead_to_arrowline()*GLOBE_TO_MAP_FACTOR;
+
+	// We want to keep the projected arrowhead size constant regardless of the
+	// the length of the arrowline, except...
+	//
+	// ...if the ratio of arrowhead size to arrowline length is large enough then
+	// we need to start scaling the arrowhead size by the arrowline length so
+	// that the arrowhead disappears as the arrowline disappears.
+	if (arrowhead_size > min_ratio_arrowhead_to_arrowline * arrowline_length)
+	{
+		arrowhead_size = min_ratio_arrowhead_to_arrowline * arrowline_length;
+	}
+
+	GPlatesMaths::GreatCircle great_circle = d_canvas_ptr->projection().boundary_great_circle();
+	GPlatesMaths::LatLonPoint central_llp = d_canvas_ptr->projection().central_llp();
+	GPlatesMaths::PointOnSphere central_pos = GPlatesMaths::make_point_on_sphere(central_llp);
+
+	draw_segment(start_point_on_sphere,end_point_on_sphere,d_canvas_ptr->projection(),
+			great_circle,central_pos,arrowhead_size);
+
+}

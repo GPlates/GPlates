@@ -46,8 +46,8 @@ using namespace GPlatesGlobal;
 GPlatesMaths::Vector3D
 GPlatesMaths::calculate_velocity_vector(
 	const PointOnSphere &point, 
-	FiniteRotation &fr_t1,
-	FiniteRotation &fr_t2)
+	const FiniteRotation &fr_t1,
+	const FiniteRotation &fr_t2)
 {
 
 	static const real_t radius_of_earth = 6.378e8;  // in centimetres.
@@ -77,10 +77,10 @@ GPlatesMaths::calculate_velocity_vector(
 }
 
 
-std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t >
-GPlatesMaths::calculate_vector_components_colat_lon(
+GPlatesMaths::VectorColatitudeLongitude
+GPlatesMaths::convert_vector_from_xyz_to_colat_lon(
 	const GPlatesMaths::PointOnSphere &point, 
-	Vector3D &vector_xyz)
+	const Vector3D &vector_xyz)
 {
 	// Matrix to convert between different Cartesian representations.
 	CartesianConvMatrix3D ccm(point);
@@ -91,7 +91,49 @@ GPlatesMaths::calculate_vector_components_colat_lon(
 	real_t colat = -vector_ned.x();
 	real_t lon =    vector_ned.y();
 
-	return std::make_pair(colat, lon);
+	return VectorColatitudeLongitude(colat, lon);
 }
+
+
+GPlatesMaths::Vector3D
+GPlatesMaths::convert_vector_from_colat_lon_to_xyz(
+	const PointOnSphere &point, 
+	const VectorColatitudeLongitude &vector_colat_lon)
+{
+	// Create a new vector 3d from the components.
+	GPlatesMaths::CartesianConvMatrix3D ccm(point);
+	GPlatesMaths::Vector3D vector_ned(
+			-vector_colat_lon.get_vector_colatitude(),
+			vector_colat_lon.get_vector_longitude(),
+			0);
+	return inverse_multiply( ccm , vector_ned );
+}
+
+
+std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t >
+GPlatesMaths::calculate_vector_components_magnitude_angle(
+	const GPlatesMaths::PointOnSphere &point, 
+	const Vector3D &vector_xyz)
+{
+	// Matrix to convert between different Cartesian representations.
+	CartesianConvMatrix3D ccm(point);
+
+	// Cartesian (n, e, d) 
+	Vector3D vector_ned = ccm * vector_xyz;
+
+	// real_t colat = -vector_ned.x();
+	real_t lat   =  vector_ned.x();
+	real_t lon   =  vector_ned.y();
+
+	real_t angle = atan2( lat , lon );
+
+	real_t magnitude = vector_ned.magnitude();
+
+	return std::make_pair(magnitude, angle);
+}
+
+
+
+
 
 

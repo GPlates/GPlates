@@ -35,9 +35,6 @@
 #include "FeatureHandle.h"
 #include "FeatureRevision.h"
 #include "FeatureVisitor.h"
-#include "ReconstructionGraph.h"
-#include "ReconstructionTreePopulator.h"
-#include "ReconstructedFeatureGeometryPopulator.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"

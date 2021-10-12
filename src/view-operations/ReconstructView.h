@@ -31,6 +31,7 @@
 
 namespace GPlatesAppLogic
 {
+	class PaleomagWorkflow;
 	class PlateVelocityWorkflow;
 }
 
@@ -58,9 +59,11 @@ namespace GPlatesViewOperations
 	public:
 		ReconstructView(
 				GPlatesAppLogic::PlateVelocityWorkflow &plate_velocity_workflow,
+				GPlatesAppLogic::PaleomagWorkflow &paleomag_workflow,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesGui::ColourTable &colour_table) :
 			d_plate_velocity_workflow(plate_velocity_workflow),
+			d_paleomag_workflow(paleomag_workflow),
 			d_rendered_geom_collection(rendered_geom_collection),
 			d_colour_table(colour_table)
 		{  }
@@ -79,11 +82,11 @@ namespace GPlatesViewOperations
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						reconstructable_features_collection,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstruction_features_collection,
-				GPlatesFeatureVisitors::TopologyResolver &topology_resolver);
+						reconstruction_features_collection);
 
 	private:
 		GPlatesAppLogic::PlateVelocityWorkflow &d_plate_velocity_workflow;
+		GPlatesAppLogic::PaleomagWorkflow &d_paleomag_workflow;
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 		const GPlatesGui::ColourTable &d_colour_table;
 	};

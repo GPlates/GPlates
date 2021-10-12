@@ -28,7 +28,6 @@
 #include <QDebug>
 
 #include "Globe.h"
-#include "PlatesColourTable.h"
 #include "Texture.h"
 
 #include "view-operations/RenderedGeometryCollection.h"

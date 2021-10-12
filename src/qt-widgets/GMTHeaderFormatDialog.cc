@@ -28,7 +28,7 @@
 
 GPlatesQtWidgets::GMTHeaderFormatDialog::GMTHeaderFormatDialog(
 		QWidget *parent_):
-	QDialog(parent_),
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
 	d_header_format(GPlatesFileIO::FeatureCollectionWriteFormat::GMT_WITH_PLATES4_STYLE_HEADER)
 {
 	setupUi(this);

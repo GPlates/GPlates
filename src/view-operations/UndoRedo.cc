@@ -134,19 +134,12 @@ namespace GPlatesViewOperations
 		 */
 		class NullCommandIdImpl :
 			public CommandIdImpl,
-			private boost::noncopyable
+			public GPlatesUtils::Singleton<NullCommandIdImpl>
 		{
-		public:
-			static
-			NullCommandIdImpl &
-			instance()
-			{
-				// Defining locally avoids problem with undefined initialisation
-				// order of non-local static variables.
-				static NullCommandIdImpl s_instance;
-				return s_instance;
-			}
 
+			GPLATES_SINGLETON_CONSTRUCTOR_IMPL(NullCommandIdImpl)
+
+		public:
 			static
 			void
 			null_destroy(
@@ -160,10 +153,6 @@ namespace GPlatesViewOperations
 				// -1 is used to indicate to Qt that commands won't have their ids compared.
 				return -1;
 			}
-
-		private:
-			NullCommandIdImpl()
-			{  }
 		};
 
 		/**
@@ -289,20 +278,6 @@ namespace GPlatesViewOperations
 			UndoRedo::CommandId d_command_id;
 		};
 	}
-}
-
-boost::scoped_ptr<GPlatesViewOperations::UndoRedo>
-GPlatesViewOperations::UndoRedo::s_instance;
-
-GPlatesViewOperations::UndoRedo &
-GPlatesViewOperations::UndoRedo::instance()
-{
-	if (!s_instance)
-	{
-		s_instance.reset(new UndoRedo());
-	}
-
-	return *s_instance;
 }
 
 GPlatesViewOperations::UndoRedo::UndoRedo() :

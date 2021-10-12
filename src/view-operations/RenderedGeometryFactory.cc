@@ -26,11 +26,14 @@
 
 #include "RenderedGeometryFactory.h"
 #include "RenderedDirectionArrow.h"
+#include "RenderedEllipse.h"
 #include "RenderedMultiPointOnSphere.h"
 #include "RenderedPointOnSphere.h"
 #include "RenderedPolygonOnSphere.h"
 #include "RenderedPolylineOnSphere.h"
 #include "RenderedReconstructionGeometry.h"
+#include "RenderedSmallCircle.h"
+#include "RenderedSmallCircleArc.h"
 #include "RenderedString.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
@@ -269,6 +272,62 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_g
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedReconstructionGeometry(
 			reconstruction_geom, rendered_geom));
 
+	return RenderedGeometry(rendered_geom_impl);
+}
+
+#if 0
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_small_circle(
+		GPlatesMaths::SmallCircle::non_null_ptr_to_const_type small_circle,
+		const GPlatesGui::Colour &colour,
+		const float line_width_hint)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedSmallCircle(
+		small_circle, colour, line_width_hint));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+#endif
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_small_circle(
+	const GPlatesMaths::PointOnSphere &centre,
+	const GPlatesMaths::Real &radius_in_radians,
+	const GPlatesGui::Colour &colour,
+	const float line_width_hint)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedSmallCircle(
+		centre, radius_in_radians, colour, line_width_hint));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_small_circle_arc(
+	const GPlatesMaths::PointOnSphere &centre,
+	const GPlatesMaths::PointOnSphere &start_point,
+	const GPlatesMaths::Real &arc_length_in_radians,
+	const GPlatesGui::Colour &colour,
+	const float line_width_hint)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedSmallCircleArc(
+		centre, start_point, arc_length_in_radians, colour, line_width_hint));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_ellipse(
+	const GPlatesMaths::PointOnSphere &centre,
+	const GPlatesMaths::Real &semi_major_axis_radians,
+	const GPlatesMaths::Real &semi_minor_axis_radians,
+	const GPlatesMaths::GreatCircle &axis,
+	const GPlatesGui::Colour &colour,
+	float line_width_hint)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedEllipse(
+		centre,semi_major_axis_radians,semi_minor_axis_radians,axis,colour,line_width_hint));
+		
 	return RenderedGeometry(rendered_geom_impl);
 }
 

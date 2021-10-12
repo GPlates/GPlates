@@ -42,7 +42,7 @@
 
 GPlatesQtWidgets::ShapefileAttributeMapperDialog::ShapefileAttributeMapperDialog(
 		QWidget *parent_):
-	QDialog(parent_)
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 {
 	setupUi(this);
 

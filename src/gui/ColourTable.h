@@ -2,7 +2,7 @@
 
 /**
  * @file 
- * File specific comments.
+ * Contains the definition of the ColourTable class.
  *
  * Most recent change:
  *   $Date$
@@ -38,15 +38,24 @@ namespace GPlatesModel
 
 namespace GPlatesGui
 {
+	/**
+	 * This class assigns colours to ReconstructionGeometry instances.
+	 */
 	class ColourTable
 	{
 	public:
+		//! A typedef for Colour *
 		typedef const Colour *const_iterator;
 
+		//! Destructor
 		virtual
 		~ColourTable()
 		{  }
-   
+
+		/**
+		 * The value returned by lookup() if the ReconstructionGeometry instance if
+		 * it does not have the necessary parameters.
+		 */
 		const_iterator
 		end() const
 		{
