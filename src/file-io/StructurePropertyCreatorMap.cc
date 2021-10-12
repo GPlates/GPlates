@@ -82,8 +82,8 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_gpml_slip_component_enumeration);
 	d_map[TemplateTypeParameterType::create_gpml("StrikeSlipEnumeration")] = 
 		GET_PROP_VAL_NAME(create_gpml_strike_slip_enumeration);
-	d_map[TemplateTypeParameterType::create_gpml("SubductionSideEnumeration")] = 
-		GET_PROP_VAL_NAME(create_gpml_subduction_side_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("SubductionPolarityEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_subduction_polarity_enumeration);
 
 	d_map[TemplateTypeParameterType::create_gml("TimeInstant")] = 
 		GET_PROP_VAL_NAME(create_time_instant);

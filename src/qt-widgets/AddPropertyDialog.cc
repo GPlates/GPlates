@@ -80,6 +80,7 @@ namespace
 		{ "gpml:centerLineOf", "gml:LineString", true, false }, // TimeDependentPropertyValue<> _Geometry
 		{ "gpml:conjugatePlateId", "gpml:plateId", false, true },	// half-way support for Isochron.
 		{ "gpml:continentalSide", "gpml:ContinentalBoundarySideEnumeration", false, false }, // Enumeration
+		{ "gpml:depthList", "gpml:depthList", false, false },
 		{ "gml:description", "xs:string", false, true },
 		{ "gpml:dipAngle", "gpml:angle", false, false },
 		{ "gpml:dipSide", "gpml:DipSideEnumeration", false, false }, // Enumeration
@@ -112,7 +113,7 @@ namespace
 	//	{ "gpml:rightUnit", "gpml:FeatureReference", false, false }, // FeatureReference<AbstractRockUnit>
 	//	{ "gpml:shipTrack", "gpml:FeatureReference", false, false }, // FeatureReference<MagneticAnomalyShipTrack>
 		{ "gpml:strikeSlip", "gpml:StrikeSlipEnumeration", false, false },
-		{ "gpml:subductingSlab", "gpml:SubductionSideEnumeration", true, false }, // TimeDependentPropertyValue<>
+		{ "gpml:subductionPolarity", "gpml:SubductionPolarityEnumeration", true, false }, // TimeDependentPropertyValue<>
 	//	{ "gpml:totalReconstructionPole", "gpml:FiniteRotation", true, false }, // For TotalReconstructionSequence. IrregularSampling<FiniteRotation>
 	//	{ "gpml:type", "gpml:AbsoluteReferenceFrameEnumeration", false, false }, // Enumeration. For AbsoluteReferenceFrame.
 		{ "gpml:unclassifiedGeometry", "gml:MultiPoint", true, false },	// _Geometry

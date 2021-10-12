@@ -329,6 +329,13 @@ namespace
 	}
 
 	UnicodeString
+	get_data_type_code_for_slab(
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
+	{
+		return "SL";
+	}
+
+	UnicodeString
 	get_data_type_code_for_suture(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
@@ -371,29 +378,29 @@ namespace
 		// First test to see if subduction zone is subducting on left or right of geometry.
 		//
 
-		static const GPlatesModel::PropertyName subducting_slab_property_name = 
-			GPlatesModel::PropertyName::create_gpml("subductingSlab");
+		static const GPlatesModel::PropertyName subduction_polarity_property_name = 
+			GPlatesModel::PropertyName::create_gpml("subductionPolarity");
 
-		const GPlatesPropertyValues::Enumeration *subducting_slab_property_value = NULL;
+		const GPlatesPropertyValues::Enumeration *subduction_polarity_property_value = NULL;
 		if (GPlatesFeatureVisitors::get_property_value(
-				feature, subducting_slab_property_name, subducting_slab_property_value))
+				feature, subduction_polarity_property_name, subduction_polarity_property_value))
 		{
-			static GPlatesPropertyValues::EnumerationType subducting_slab_enumeration_type(
-				"gpml:SubductionSideEnumeration");
-			static GPlatesPropertyValues::EnumerationContent subducting_slab_enumeration_value_left(
+			static GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type(
+				"gpml:SubductionPolarityEnumeration");
+			static GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_left(
 				"Left");
-			static GPlatesPropertyValues::EnumerationContent subducting_slab_enumeration_value_right(
+			static GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_right(
 				"Right");
 
-			if (subducting_slab_enumeration_type.is_equal_to(subducting_slab_property_value->type()))
+			if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_property_value->type()))
 			{
-				if (subducting_slab_enumeration_value_left.is_equal_to(
-						subducting_slab_property_value->value()))
+				if (subduction_polarity_enumeration_value_left.is_equal_to(
+						subduction_polarity_property_value->value()))
 				{
 					return "sL";
 				}
-				if (subducting_slab_enumeration_value_right.is_equal_to(
-						subducting_slab_property_value->value()))
+				if (subduction_polarity_enumeration_value_right.is_equal_to(
+						subduction_polarity_property_value->value()))
 				{
 					return "sR";
 				}
@@ -517,6 +524,8 @@ namespace
 					get_data_type_code_for_ridge_segment;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Seamount")] = 
 					get_data_type_code_for_seamount;
+			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Slab")] = 
+					get_data_type_code_for_slab;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Suture")] = 
 					get_data_type_code_for_suture;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("TerraneBoundary")] = 

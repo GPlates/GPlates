@@ -163,26 +163,50 @@ namespace
 		std::vector<CapDiamond> d_cap_diamonds; 
 	};
 
+	/*
+	* The order of points sequence is important for the compatibility with Citcoms.
+	*    1-------4
+	*    | | | | |      
+	*    | | | | |
+	*	 2-------3
+	* The order is: start with edge (1-2), save points on each vertical line until edge(4-3)
+	*/   
 	void 
 	Mesh::CapDiamond::get_points(
 			int resolution,
 			std::vector<GPlatesMaths::PointOnSphere> &points)
 	{
 		//PROFILE_FUNC();
-		points.push_back(d_vertex_1);
-		points.push_back(d_vertex_2);
-		points.push_back(d_vertex_3);
-		points.push_back(d_vertex_4);
-		
-		divide_arc_evenly(resolution);
+		divide_arc_evenly( resolution );
 		find_intersections();
+
+		points.push_back(d_vertex_1);
+		points.insert(
+				points.end(), 
+				d_points_on_edge_1_2.begin(), 
+				d_points_on_edge_1_2.end());
+		points.push_back(d_vertex_2);
 		
-		points.insert(points.end(),d_points_on_edge_1_2.begin(),d_points_on_edge_1_2.end());
-		points.insert(points.end(),d_points_on_edge_2_3.begin(),d_points_on_edge_2_3.end());
-		points.insert(points.end(),d_points_on_edge_3_4.begin(),d_points_on_edge_3_4.end());
-		points.insert(points.end(),d_points_on_edge_4_1.begin(),d_points_on_edge_4_1.end());
+		for(int i = 0; i < resolution -1 ; i++)
+		{
+			points.push_back(
+					d_points_on_edge_4_1[ resolution - i - 2 ] );
 		
-		points.insert(points.end(),d_intersections.begin(),d_intersections.end());
+			for(int j = 0; j < resolution - 1 ; j++)
+			{
+				int p = i + j * ( resolution - 1 );
+				points.push_back( d_intersections[ p ] );
+			}
+			points.push_back(
+					d_points_on_edge_2_3[ i ] );
+		}
+		
+		points.push_back( d_vertex_4 );
+		points.insert(
+				points.end(),
+				d_points_on_edge_3_4.rbegin(),
+				d_points_on_edge_3_4.rend() );
+		points.push_back( d_vertex_3 );
 	}
 
 	void 

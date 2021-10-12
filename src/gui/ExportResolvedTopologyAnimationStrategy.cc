@@ -490,8 +490,8 @@ namespace
 
 			// We just visited 'feature' looking for:
 			// - a feature type of "SubductionZone",
-			// - a property named "subductingSlab",
-			// - a property type of "gpml:SubductionSideEnumeration".
+			// - a property named "subductionPolarity",
+			// - a property type of "gpml:SubductionPolarityEnumeration".
 			// - an enumeration value other than "Unknown".
 			//
 			// If we didn't find this information then look for the "sL" and "sR"
@@ -502,11 +502,17 @@ namespace
 				get_sub_segment_feature_type_from_old_plates_header(feature);
 			}
 
+			# if 0
+			// NOTE: do not call this function;
+			// The sL or sR property is set by the feature, and should not change
+			// for any sub-segment
+			//
 			// Check if the sub_segment is being used in reverse in the polygon boundary
 			if (sub_segment.get_use_reverse())
 			{
 				reverse_orientation();
 			}
+			#endif
 
 			return d_sub_segment_type;
 		}
@@ -544,16 +550,16 @@ namespace
 		initialise_pre_property_values(
 				const GPlatesModel::TopLevelPropertyInline &)
 		{
-			static const GPlatesModel::PropertyName subducting_slab_property_name =
-					GPlatesModel::PropertyName::create_gpml("subductingSlab");
+			static const GPlatesModel::PropertyName subduction_polarity_property_name =
+					GPlatesModel::PropertyName::create_gpml("subductionPolarity");
 
-			// Only interested in detecting the "subductingSlab" property.
-			// If something is not a subducting slab then it is considering a ridge/transform.
-			return current_top_level_propname() == subducting_slab_property_name;
+			// Only interested in detecting the "subductionPolarity" property.
+			// If something is not a subduction zone then it is considering a ridge/transform.
+			return current_top_level_propname() == subduction_polarity_property_name;
 		}
 
 
-		// Need this since "SubductionSideEnumeration" is in a time-dependent property value.
+		// Need this since "SubductionPolarityEnumeration" is in a time-dependent property value.
 		virtual
 		void
 		visit_gpml_constant_value(
@@ -563,7 +569,7 @@ namespace
 		}
 
 
-		// Need this since "SubductionSideEnumeration" is in a time-dependent property value.
+		// Need this since "SubductionPolarityEnumeration" is in a time-dependent property value.
 		virtual
 		void
 		visit_gpml_irregular_sampling(
@@ -583,7 +589,7 @@ namespace
 		}
 
 
-		// Need this since "SubductionSideEnumeration" is in a time-dependent property value.
+		// Need this since "SubductionPolarityEnumeration" is in a time-dependent property value.
 		virtual
 		void
 		visit_gpml_piecewise_aggregation(
@@ -609,9 +615,9 @@ namespace
 		visit_enumeration(
 				const GPlatesPropertyValues::Enumeration &enumeration)
 		{
-			static const GPlatesPropertyValues::EnumerationType subduction_side_enumeration_type(
-					"gpml:SubductionSideEnumeration");
-			if (!subduction_side_enumeration_type.is_equal_to(enumeration.type()))
+			static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type(
+					"gpml:SubductionPolarityEnumeration");
+			if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.type()))
 			{
 				return;
 			}
@@ -945,6 +951,9 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
 	// The '%P' placeholder string will get replaced for each type of export
 	// in 'do_export_iteration()'.
 	// The "%d" tells ExportTemplateFilenameSequence to insert the reconstruction time.
+#if 0
+	//The placeholders, %P and %d", have been taken care by "export" dialog.
+	//So there is no need to add them here again.
 	const QString suffix =
 			"." +
 			GPlatesUtils::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING +
@@ -953,8 +962,10 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
 	const QString modified_template_filename =
 			append_suffix_to_template_filebasename(filename, suffix);
 
+#endif
 	// Call base class method to actually set the template filename.
-	ExportAnimationStrategy::set_template_filename(modified_template_filename);
+	//ExportAnimationStrategy::set_template_filename(modified_template_filename);
+	ExportAnimationStrategy::set_template_filename(filename);
 }
 
 

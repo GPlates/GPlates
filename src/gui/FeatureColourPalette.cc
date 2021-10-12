@@ -135,6 +135,8 @@ GPlatesGui::FeatureColourPalette::FeatureColourPalette()
 			GPlatesGui::Colour::get_navy();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Seamount") ] =
 			GPlatesGui::Colour::get_teal();
+	d_colours[ GPlatesModel::FeatureType::create_gpml("Slab") ] =
+			GPlatesGui::Colour::get_red();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("Volcano") ] =
 			GPlatesGui::Colour::get_aqua();
 	d_colours[ GPlatesModel::FeatureType::create_gpml("AseismicRidge") ] =

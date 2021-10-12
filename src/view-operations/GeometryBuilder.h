@@ -196,6 +196,24 @@ namespace GPlatesViewOperations
 		//////////////////////////////////////////////////////////////////////////
 
 		/**
+		 * Returns true if there are any internal geometries in this builder.
+		 */
+		bool
+		has_geometry() const
+		{
+			return get_num_geometries() > 0;
+		}
+
+		/**
+		 * The number of internal geometries.
+		 *
+		 * There can be more than one geometry for things such as GML multi-curve
+		 * but since that's not currently implemented we have at most one geometry.
+		 */
+		unsigned int
+		get_num_geometries() const;
+
+		/**
 		 * The type of geometry we're trying to build.
 		 *
 		 * This is not necessarily the type of the current geometry ( see
@@ -208,6 +226,9 @@ namespace GPlatesViewOperations
 		 * The actual type of the geometry at the current geometry index.
 		 *
 		 * This may differ from the type set in @a set_geometry_type_to_build.
+		 *
+		 * @throws PreconditionViolationError if there's currently no geometry in this builder.
+		 * Check first with @a has_geometry if you're unsure.
 		 */
 		GeometryType::Value
 		get_actual_type_of_current_geometry() const;
@@ -216,19 +237,13 @@ namespace GPlatesViewOperations
 		 * The actual type of the geometry at the specified geometry index.
 		 *
 		 * This may differ from the type set in @a set_geometry_type_to_build.
+		 *
+		 * @throws PreconditionViolationError if there's currently no geometry in this builder
+		 * at index @a geom_index.
 		 */
 		GeometryType::Value
 		get_actual_type_of_geometry(
 				GeometryIndex geom_index) const;
-
-		/**
-		 * The number of internal geometries.
-		 *
-		 * There can be more than one geometry for things such as GML multi-curve
-		 * but since that's not currently implemented we have at most one geometry.
-		 */
-		unsigned int
-		get_num_geometries() const;
 
 		/**
 		 * The current geometry that operations are being directed at.
@@ -245,12 +260,17 @@ namespace GPlatesViewOperations
 	
 		/**
 		 * Number of points/vertices in the current geometry.
+		 *
+		 * Returns zero if there's currently no geometry in this builder.
 		 */
 		unsigned int
 		get_num_points_in_current_geometry() const;
 	
 		/**
 		 * Number of points/vertices in the geometry at index @a geom_index.
+		 *
+		 * @throws PreconditionViolationError if there's currently no geometry in this builder
+		 * at index @a geom_index.
 		 */
 		unsigned int
 		get_num_points_in_geometry(
@@ -259,6 +279,9 @@ namespace GPlatesViewOperations
 		/**
 		 * Begin iterator to GPlatesMaths::PointOnSphere points/vertices
 		 * of geometry at index @a geom_index.
+		 *
+		 * @throws PreconditionViolationError if there's currently no geometry in this builder
+		 * at index @a geom_index.
 		 */
 		point_const_iterator_type
 		get_geometry_point_begin(
@@ -267,6 +290,9 @@ namespace GPlatesViewOperations
 		/**
 		 * End iterator to GPlatesMaths::PointOnSphere points/vertices
 		 * of geometry at index @a geom_index.
+		 *
+		 * @throws PreconditionViolationError if there's currently no geometry in this builder
+		 * at index @a geom_index.
 		 */
 		point_const_iterator_type
 		get_geometry_point_end(
@@ -275,6 +301,9 @@ namespace GPlatesViewOperations
 		/**
 		 * Returns point/vertex of geometry at index @a geom_index and
 		 * point at index @a point_index within that geometry.
+		 *
+		 * @throws PreconditionViolationError if there's currently no geometry in this builder
+		 * at index @a geom_index or if there's no point at index @a point_index.
 		 */
 		const GPlatesMaths::PointOnSphere &
 		get_geometry_point(
@@ -286,7 +315,7 @@ namespace GPlatesViewOperations
 		//////////////////////////////////////////////////////////////////////////
 
 		/**
-		 * Returns geometry built.
+		 * Returns geometry built or NULL if no geometries currently in this builder.
 		 *
 		 * Currently the build operations prevent more than one internal geometry
 		 * from being built even though the interface currently supports

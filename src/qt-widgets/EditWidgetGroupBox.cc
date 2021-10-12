@@ -158,7 +158,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map() const
 	map["gpml:ContinentalBoundaryCrustEnumeration"] = d_edit_enumeration_widget_ptr;
 	map["gpml:ContinentalBoundaryEdgeEnumeration"] = d_edit_enumeration_widget_ptr;
 	map["gpml:ContinentalBoundarySideEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gpml:SubductionSideEnumeration"] = d_edit_enumeration_widget_ptr;
+	map["gpml:SubductionPolarityEnumeration"] = d_edit_enumeration_widget_ptr;
 	map["gpml:StrikeSlipEnumeration"] = d_edit_enumeration_widget_ptr;
 	map["gpml:DipSlipEnumeration"] = d_edit_enumeration_widget_ptr;
 	map["gpml:DipSideEnumeration"] = d_edit_enumeration_widget_ptr;

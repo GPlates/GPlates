@@ -34,8 +34,10 @@
 
 #include "maths/PointOnSphere.h"
 
-#include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
 
 namespace GPlatesViewOperations
 {
@@ -589,6 +591,12 @@ GPlatesViewOperations::GeometryBuilder::visit_undo_operation(
 	remove_geometry(geom_index_to_remove);
 }
 
+unsigned int
+GPlatesViewOperations::GeometryBuilder::get_num_geometries() const
+{
+	return d_geometry_builder_seq.size();
+}
+
 GPlatesViewOperations::GeometryType::Value
 GPlatesViewOperations::GeometryBuilder::get_actual_type_of_current_geometry() const
 {
@@ -601,14 +609,9 @@ GPlatesViewOperations::GeometryType::Value
 GPlatesViewOperations::GeometryBuilder::get_actual_type_of_geometry(
 		GeometryIndex geom_index) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			geom_index < d_geometry_builder_seq.size(),
 			GPLATES_ASSERTION_SOURCE);
-
-	if (d_geometry_builder_seq.empty())
-	{
-		return GeometryType::NONE;
-	}
 
 	const InternalGeometryBuilder &geometry = get_current_geometry_builder();
 
@@ -635,22 +638,16 @@ GPlatesViewOperations::GeometryBuilder::get_geometry_on_sphere()
 	return geometry.update(), geometry.get_geometry_on_sphere();
 }
 
-unsigned int
-GPlatesViewOperations::GeometryBuilder::get_num_geometries() const
-{
-	return d_geometry_builder_seq.size();
-}
-
 const GPlatesMaths::PointOnSphere&
 GPlatesViewOperations::GeometryBuilder::get_geometry_point(
 		GeometryIndex geom_index,
 		PointIndex point_index) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			geom_index < d_geometry_builder_seq.size(),
 			GPLATES_ASSERTION_SOURCE);
 
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			point_index < d_geometry_builder_seq[geom_index]->get_point_seq_const().size(),
 			GPLATES_ASSERTION_SOURCE);
 
@@ -661,7 +658,7 @@ GPlatesViewOperations::GeometryBuilder::point_const_iterator_type
 GPlatesViewOperations::GeometryBuilder::get_geometry_point_begin(
 		GeometryIndex geom_index) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			geom_index < d_geometry_builder_seq.size(),
 			GPLATES_ASSERTION_SOURCE);
 
@@ -672,7 +669,7 @@ GPlatesViewOperations::GeometryBuilder::point_const_iterator_type
 GPlatesViewOperations::GeometryBuilder::get_geometry_point_end(
 		GeometryIndex geom_index) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			geom_index < d_geometry_builder_seq.size(),
 			GPLATES_ASSERTION_SOURCE);
 
@@ -696,7 +693,7 @@ unsigned int
 GPlatesViewOperations::GeometryBuilder::get_num_points_in_geometry(
 		GeometryIndex geom_index) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			geom_index < d_geometry_builder_seq.size(),
 			GPLATES_ASSERTION_SOURCE);
 
