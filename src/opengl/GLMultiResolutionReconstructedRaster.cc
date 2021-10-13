@@ -81,10 +81,17 @@ namespace
 	/**
 	 * Vertex used to render where texture coordinates are tex-gen'ed from the (x,y,z).
 	 */
-	struct Vertex
+	struct ColourVertex
 	{
 		//! Vertex position.
 		GLfloat x, y, z;
+
+		/**
+		 * Vertex colour - currently just white to hopefully avoid problem on
+		 * Intel 82852/82855 GM/GME graphics chipset where colour of last rendered vertex
+		 * (or drawable) is modulated with reconstructed raster.
+		 */
+		GPlatesGui::rgba8_t colour;
 	};
 
 
@@ -975,12 +982,14 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::render_tile_to_scene(
 	texture_transform_state->gl_load_matrix(texture_matrix);
 	state_set->add_state_set(texture_transform_state);
 
-
-	// Enable alpha-blending in case texture has partial transparency.
-	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
-			GPlatesOpenGL::GLBlendState::create();
-	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	state_set->add_state_set(blend_state);
+	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
+	// might not be rendering directly to the final render target and hence we don't
+	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
+	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
+	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
+	// which is not what we want - we want (A*R,A*G,A*B,A*A).
+	// Currently we are rendering to the final render target but when we reconstruct
+	// rasters in the map view (later) we will render to an intermediate render target.
 
 #if 0
 	GLPolygonState::non_null_ptr_type polygon_state = GLPolygonState::create();
@@ -1773,10 +1782,12 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::generate_polygon_mesh(
 	PROFILE_END(cgal_refine_triangulation);
 
 	// The vertices of the vertex array for the polygon.
-	std::vector<Vertex> vertex_array_data;
+	std::vector<ColourVertex> vertex_array_data;
 	std::vector<GPlatesMaths::UnitVector3D> mesh_points;
 	// The triangles indices.
 	std::vector<GLuint> vertex_element_array_data;
+	// Colour white.
+	const GPlatesGui::rgba8_t white(255, 255, 255, 255);
 
 	// Iterate over the mesh triangles and collect the triangles belonging to the domain.
 	typedef std::map<CDT::Vertex_handle, std::size_t/*vertex index*/> mesh_map_type;
@@ -1810,7 +1821,10 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::generate_polygon_mesh(
 
 				mesh_points.push_back(point3d);
 
-				const Vertex vertex = { point3d.x().dval(), point3d.y().dval(), point3d.z().dval() };
+				const ColourVertex vertex =
+				{
+					point3d.x().dval(), point3d.y().dval(), point3d.z().dval(), white
+				};
 				vertex_array_data.push_back(vertex);
 			}
 			vertex_element_array_data.push_back(mesh_vertex_index);
@@ -1835,7 +1849,9 @@ GPlatesOpenGL::GLMultiResolutionReconstructedRaster::generate_polygon_mesh(
 	polygon->vertex_array = GLVertexArray::create(vertex_array_data);
 	// We only have (x,y,z) coordinates in our vertex array.
 	polygon->vertex_array->gl_enable_client_state(GL_VERTEX_ARRAY);
-	polygon->vertex_array->gl_vertex_pointer(3, GL_FLOAT, sizeof(Vertex), 0);
+	polygon->vertex_array->gl_vertex_pointer(3, GL_FLOAT, sizeof(ColourVertex), 0);
+	polygon->vertex_array->gl_enable_client_state(GL_COLOR_ARRAY);
+	polygon->vertex_array->gl_color_pointer(4, GL_UNSIGNED_BYTE, sizeof(ColourVertex), 3 * sizeof(GLfloat));
 
 	polygon->vertex_element_array_data.swap(vertex_element_array_data);
 

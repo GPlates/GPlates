@@ -100,9 +100,13 @@ GPlatesAppLogic::ReconstructGraph::remove_layer(
 	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(layer.get_impl());
 
 	// Remove the layer.
-	// This will be the last owning reference to the layer and so it will get destroyed
-	// upon returning from this method.
 	d_layers.remove(layer_impl);
+
+	// We have the last owning reference to the layer and so it will get destroyed here.
+	layer_impl.reset();
+
+	// Let clients know a layer has been removed.
+	emit layer_removed(*this);
 }
 
 

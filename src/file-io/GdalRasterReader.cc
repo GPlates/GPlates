@@ -29,6 +29,21 @@
 #include <cstring> // for strcmp
 #include <boost/bind.hpp>
 
+#ifdef HAVE_CONFIG_H
+// Include config header so we know whether (and how) to include "gdal_version.h"
+// which contains the version of GDAL we're compiling against.
+#include "global/config.h"
+#ifdef HAVE_GDAL_VERSION_H
+#if defined(HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX)
+#include <GDAL/gdal_version.h>
+#elif defined(HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX)
+#include <gdal/gdal_version.h>
+#else
+#include <gdal_version.h>
+#endif
+#endif
+#endif
+
 #include "GdalRasterReader.h"
 
 #include "GdalUtils.h"
@@ -349,9 +364,35 @@ GPlatesFileIO::GDALRasterReader::GDALRasterReader(
 	d_filename(filename),
 	d_dataset(GdalUtils::gdal_open(filename, read_errors)),
 	d_proxy_handle_function(proxy_handle_function),
-	d_flip(d_dataset
-			&& std::strcmp(d_dataset->GetDriver()->GetDescription(), "GMT") != 0)
-{  }
+	d_flip(false)
+{
+	// Prior to 1st Dec 2009 there was a bug in GDAL that incorrectly flipped (in y-direction)
+	// non-GMT-style GRDs. So GDAL releases after this date do not need any flipping
+	// (GMT-style or non-GMT-style).
+	// The ticket http://trac.osgeo.org/gdal/ticket/2654 describes the bug and refers
+	// to the changeset http://trac.osgeo.org/gdal/changeset/18151 that fixes it.
+	//
+	// We noticed that some Windows FWTools releases (that include GDAL) define
+	//   GDAL_VERSION_MAJOR 1
+	//   GDAL_VERSION_MINOR 7
+	//   GDAL_VERSION_REV   0
+	//   GDAL_VERSION_BUILD 0
+	// for FWTools versions 2.4.5, 2.4.6 and 2.4.7 but only 2.4.7 has the bug fix included so
+	// we can't use those defines.
+	// Instead we use the 'GDAL_RELEASE_DATE' define and compare against the date when
+	// the bug was fixed in GDAL (1st Dec 2009 or 20091201).
+
+	// 'GDAL_RELEASE_DATE' is defined in the GDAL 'gdal_version.h' if it exists.
+	// If the 'gdal_version.h' file does not exist then we are looking at an old version
+	// of GDAL which does not have the bug fix (and hence we need to flip non-GMT-style GRDs).
+#if !defined(GDAL_RELEASE_DATE) || (GDAL_RELEASE_DATE < 20091201)
+	if (d_dataset &&
+		std::strcmp(d_dataset->GetDriver()->GetDescription(), "GMT") != 0)
+	{
+		d_flip = true;
+	}
+#endif
+}
 
 
 GPlatesFileIO::GDALRasterReader::~GDALRasterReader()

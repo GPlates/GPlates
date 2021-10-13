@@ -32,6 +32,7 @@
 #include <stack>
 #include <bitset>
 #include <boost/any.hpp>
+#include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -610,6 +611,7 @@ namespace GPlatesViewOperations
 		 * keep track of the nested call depth.
 		 */
 		int d_update_collection_depth;
+		boost::mutex d_update_collection_depth_mutex;
 
 		/**
 		 * Is true if an update to rendered geometry collection occurred

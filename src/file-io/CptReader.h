@@ -189,7 +189,7 @@ namespace GPlatesFileIO
 		 */
 		bool
 		in_h_range(
-				int value);
+				double value);
 
 
 		/**
@@ -206,7 +206,7 @@ namespace GPlatesFileIO
 		 */
 		GPlatesGui::Colour
 		make_hsv_colour(
-				int h, double s, double v);
+				double h, double s, double v);
 
 
 		/**
@@ -284,7 +284,7 @@ namespace GPlatesFileIO
 
 		struct HSVColourSpecification
 		{
-			typedef boost::tuple<int, double, double> components_type;
+			typedef boost::tuple<double, double, double> components_type;
 
 			static
 			inline

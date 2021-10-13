@@ -35,6 +35,11 @@
 
 #include "global/CompilerWarnings.h"
 
+// suppress bogus warning when compiling with gcc 4.3
+#if (__GNUC__ == 4 && __GNUC_MINOR__ == 3)
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif 
+
 //PUSH_GCC_WARNINGS
 //DISABLE_GCC_WARNING("-Wshadow")
 //DISABLE_GCC_WARNING("-Wold-style-cast")

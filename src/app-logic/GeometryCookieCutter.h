@@ -82,7 +82,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Finds reconstructed polygon geometries to partition other geometry with.
 		 *
-		 * If @a partition_using_topological_plate_polygons is true then all
+		 * If @a resolved_topological_boundaries_collection is true then all
 		 * @a ResolvedTopologicalBoundary objects found are used to partition geometry.
 		 *
 		 * If @a partition_using_static_polygons is true then all @a ReconstructedFeatureGeometry
@@ -92,9 +92,9 @@ namespace GPlatesAppLogic
 		 * Both flags can be true (but probably not useful).
 		 */
 		GeometryCookieCutter(
-				const ReconstructionGeometryCollection &reconstruction_geometry_collection,
-				bool partition_using_topological_plate_polygons = true,
-				bool partition_using_static_polygons = false);
+				const ReconstructionGeometryCollection &reconstructed_geometries_collection,
+				boost::optional<const ReconstructionGeometryCollection &> resolved_topological_boundaries_collection,
+				bool partition_using_static_polygons);
 
 
 		/**
@@ -185,12 +185,11 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Adds all @a ResolvedTopologicalBoundary objects in @a reconstruction
-		 * as partitioning geometries.
+		 * Adds all @a ResolvedTopologicalBoundary objects as partitioning geometries.
 		 */
 		void
 		add_partitioning_resolved_topological_boundaries(
-				const ReconstructionGeometryCollection &reconstruction_geometry_collection);
+				const ReconstructionGeometryCollection &resolved_topological_boundaries_collection);
 
 		/**
 		 * Adds all @a ReconstructedFeatureGeometry objects in @a reconstruction, that have

@@ -27,6 +27,13 @@
 /* Define to 1 if you have the <gdal/ogrsf_frmts.h> header file. */
 #cmakedefine HAVE_GDAL_OGRSF_FRMTS_H
 
+/* Define if have a "gdal_version.h" header file. */
+#cmakedefine HAVE_GDAL_VERSION_H
+/* Define if have a "gdal_version.h" header file and it's prefixed by "gdal/" */
+#cmakedefine HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX
+/* Define if have a "gdal_version.h" header file and it's prefixed by "GDAL/" */
+#cmakedefine HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX
+
 /* define if the compiler supports IEEE math library */
 #cmakedefine HAVE_IEEE_MATH
 

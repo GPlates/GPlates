@@ -7,16 +7,30 @@ foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
 
-# The Boost package is a special case - it is mostly just headers with some object libraries.
-# We don't specify the REQUIRE option like the above packages because:
-# - it fails if the COMPONENTS libraries are not found, and
-# - we only need the unit_test_framework boost library for the unit-test version of GPLates (gplates-unit-test), and
-# - since boost is mostly just headers we can still compile the GUI version of GPlates.
-set(boost_components program_options unit_test_framework)
+# The following Boost libraries are both required and dynamically linked.
+set(Boost_USE_STATIC_LIBS FALSE)
+set(boost_components program_options thread)
 if(GPLATES_HAS_PYTHON)
 	set(boost_components ${boost_components} python)
 endif(GPLATES_HAS_PYTHON)
-find_package("Boost" 1.34.1 COMPONENTS ${boost_components})
+find_package("Boost" 1.34.1 REQUIRED ${boost_components})
+
+# Check that each of the above libraries was found, because even though it is
+# required, if Boost is found but not the libraries, the CMake scripts will
+# happily continue on their merry way.
+foreach(boost_component ${boost_components})
+	string(TOUPPER ${boost_component} boost_component_uppercase)
+	if(NOT Boost_${boost_component_uppercase}_FOUND)
+		message(FATAL_ERROR "Boost ${boost_component} library not found - please make sure it is installed.")
+	endif(NOT Boost_${boost_component_uppercase}_FOUND)
+endforeach(boost_component)
+
+# The Boost unit test framework is optional, because we only need it for the
+# unit-test version of GPlates and it is possible to compile the GUI version
+# of GPlates without it, and it is statically linked, because it contains the
+# main() function.
+set(Boost_USE_STATIC_LIBS TRUE)
+find_package("Boost" 1.34.1 COMPONENTS unit_test_framework)
 
 # However we do need to find the boost include directory to locate the headers.
 if (NOT Boost_INCLUDE_DIR)
@@ -30,11 +44,6 @@ if (NOT ImageMagick_INCLUDE_DIRS)
 	message(FATAL_ERROR "ImageMagick include path not found - please make sure ImageMagick is installed.")
 endif (NOT ImageMagick_INCLUDE_DIRS)
 
-# The program_options library is now required for GPlates (both the GUI and command-line versions).
-if (NOT Boost_PROGRAM_OPTIONS_FOUND)
-	message(FATAL_ERROR "Boost program_options library not found - please make sure it is installed.")
-endif (NOT Boost_PROGRAM_OPTIONS_FOUND)
-
 if (Boost_UNIT_TEST_FRAMEWORK_FOUND)
     set(ADD_UNIT_TEST_TARGET TRUE)
 else (Boost_UNIT_TEST_FRAMEWORK_FOUND)
@@ -44,12 +53,6 @@ else (Boost_UNIT_TEST_FRAMEWORK_FOUND)
 		message(STATUS "Warning: boost unit_test_framework not found so GPlates unit-test executable gplates-unit-test will not be available.")
 	endif (NOT GPLATES_PUBLIC_RELEASE)
 endif (Boost_UNIT_TEST_FRAMEWORK_FOUND)
-
-if(GPLATES_HAS_PYTHON)
-	if (NOT Boost_PYTHON_FOUND)
-		message(FATAL_ERROR "Boost Python library not found - please make sure it is installed.")
-	endif (NOT Boost_PYTHON_FOUND)
-endif(GPLATES_HAS_PYTHON)
 
 # Add a target to build the command-line version of GPlates.
 set(ADD_GPLATES_CLI_TARGET TRUE)

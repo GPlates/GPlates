@@ -318,6 +318,14 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::Layer layer);
 
 		/**
+		 * Emitted after an existing layer has been removed inside @a remove_layer.
+		 * To work out which layer was removed, also listen to @a layer_about_to_be_removed.
+		 */
+		void
+		layer_removed(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph);
+
+		/**
 		 * Emitted when layer @a layer has been activated or deactivated.
 		 */
 		void

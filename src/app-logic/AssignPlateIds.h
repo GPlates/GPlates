@@ -29,6 +29,8 @@
 
 #include <bitset>
 #include <vector>
+#include <boost/optional.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "GeometryCookieCutter.h"
@@ -250,14 +252,26 @@ namespace GPlatesAppLogic
 		feature_property_flags_type d_feature_property_types_to_assign;
 
 		/**
-		 * Contains the reconstructed polygons used for cookie-cutting.
+		 * Reconstruction tree used to reconstruct 
 		 */
-		ReconstructionGeometryCollection::non_null_ptr_type d_reconstruction_geometry_collection;
+		ReconstructionTree::non_null_ptr_type d_reconstruction_tree;
+
+		/**
+		 * Contains the reconstructed static polygons used for cookie-cutting.
+		 *
+		 * Can also contain the topological section geometries referenced by topological polygons.
+		 */
+		ReconstructionGeometryCollection::non_null_ptr_type d_reconstructed_geometries_collection;
+
+		/**
+		 * Contains the resolved topological polygons used for cookie-cutting.
+		 */
+		boost::optional<ReconstructionGeometryCollection::non_null_ptr_type> d_resolved_topological_boundaries_collection;
 
 		/**
 		 * Used to cookie cut geometries to find partitioning polygons.
 		 */
-		GeometryCookieCutter d_geometry_cookie_cutter;
+		boost::scoped_ptr<GeometryCookieCutter> d_geometry_cookie_cutter;
 
 		//! Tasks that do the actual assigning of properties like plate id.
 		std::vector< boost::shared_ptr<PartitionFeatureTask> > d_partition_feature_tasks;

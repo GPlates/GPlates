@@ -506,7 +506,7 @@
     <string>&amp;Query Feature</string>
    </property>
    <property name="toolTip">
-    <string>Query Feature  Ctrl+Y</string>
+    <string>Query Feature  Ctrl+R</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+R</string>
@@ -1508,7 +1508,7 @@
   </action>
   <action name="action_Manage_Small_Circles">
    <property name="text">
-    <string>Manage &amp;Small Circles...</string>
+    <string>Manage &amp;Small Circles</string>
    </property>
   </action>
   <action name="action_Choose_Background_Colour">

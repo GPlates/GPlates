@@ -352,6 +352,7 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 		d_visual_layer = visual_layer;
 		d_row = row;
 
+		details_widget->updateGeometry();
 		right_widget->updateGeometry();
 	}
 }

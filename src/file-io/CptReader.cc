@@ -103,9 +103,9 @@ GPlatesFileIO::CptReaderInternals::make_rgb_colour(
 
 bool
 GPlatesFileIO::CptReaderInternals::in_h_range(
-		int value)
+		double value)
 {
-	return 0 <= value && value <= 360;
+	return 0.0 <= value && value <= 360.0;
 }
 
 
@@ -113,14 +113,13 @@ bool
 GPlatesFileIO::CptReaderInternals::in_sv_range(
 		double value)
 {
-	return GPlatesMaths::Real(0.0) <= GPlatesMaths::Real(value) && 
-		GPlatesMaths::Real(value) <= GPlatesMaths::Real(1.0);
+	return 0.0 <= value && value <= 1.0;
 }
 
 
 GPlatesGui::Colour
 GPlatesFileIO::CptReaderInternals::make_hsv_colour(
-		int h, double s, double v)
+		double h, double s, double v)
 {
 	if (in_h_range(h) && in_sv_range(s) && in_sv_range(v))
 	{

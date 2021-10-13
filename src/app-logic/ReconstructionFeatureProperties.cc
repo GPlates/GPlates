@@ -51,6 +51,8 @@ GPlatesAppLogic::ReconstructionFeatureProperties::initialise_pre_feature_propert
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	d_feature_is_defined_at_recon_time = true;
+
+	d_recon_plate_id = boost::none;
 	d_time_of_appearance = boost::none;
 	d_time_of_dissappearance = boost::none;
 
@@ -69,7 +71,7 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gml_time_period(
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
-	// Note that we're going to assume boost::nonethat we're in a property...
+	// Note that we're going to assume that we're in a property...
 	if (current_top_level_propname() == valid_time_property_name)
 	{
 		// This time period is the "valid time" time period.

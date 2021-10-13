@@ -151,6 +151,7 @@ namespace
 		{ "Basin", "outlineOf" },
 		{ "Basin", "unclassifiedGeometry" },
 		{ "Bathymetry", "outlineOf" },
+		{ "Bathymetry", "unclassifiedGeometry" },
 		{ "ClosedContinentalBoundary", "boundary" },
 		{ "ClosedPlateBoundary", "boundary" },
 		{ "Coastline", "centerLineOf" },

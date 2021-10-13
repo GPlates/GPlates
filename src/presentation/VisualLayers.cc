@@ -216,6 +216,13 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 					GPlatesAppLogic::Layer)));
 	QObject::connect(
 			reconstruct_graph,
+			SIGNAL(layer_removed(
+					GPlatesAppLogic::ReconstructGraph &)),
+			this,
+			SLOT(handle_layer_removed(
+					GPlatesAppLogic::ReconstructGraph &)));
+	QObject::connect(
+			reconstruct_graph,
 			SIGNAL(layer_activation_changed(
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer,
@@ -261,13 +268,10 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 	GPlatesAppLogic::FeatureCollectionFileState *file_state = &d_application_state.get_feature_collection_file_state();
 	QObject::connect(
 			file_state,
-			SIGNAL(file_state_file_info_changed(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
-			this,
-			SLOT(handle_file_state_file_info_changed(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
+			SIGNAL(file_state_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &)),
+			SLOT(handle_file_state_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &)));
 }
 
 
@@ -317,6 +321,16 @@ GPlatesPresentation::VisualLayers::handle_layer_about_to_be_removed(
 {
 	remove_layer(layer);
 
+	// Note that @a refresh_all_layers is called from @a handle_layer_removed, not
+	// here, because we need to wait for the layer to be actually removed first
+	// before causing any refreshes to occur.
+}
+
+
+void
+GPlatesPresentation::VisualLayers::handle_layer_removed(
+		GPlatesAppLogic::ReconstructGraph &reconstruct_graph)
+{
 	// We need to refresh all layers now in case other layers were referencing the
 	// layer that just got removed.
 	refresh_all_layers();
@@ -536,13 +550,13 @@ GPlatesPresentation::VisualLayers::handle_layer_removed_input_connection(
 
 
 void
-GPlatesPresentation::VisualLayers::handle_file_state_file_info_changed(
-		GPlatesAppLogic::FeatureCollectionFileState &file_state,
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
+GPlatesPresentation::VisualLayers::handle_file_state_changed(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state)
 {
-	// When the file info for a file has changed, we need to get all the layers to
-	// refresh themselves, not just the layer corresponding to the file that has
-	// been modified - because other layers could be using that file as input.
+	// When the file info for a loaded file has changed, or a loaded file is
+	// unloaded, we need to get all the layers to refresh themselves, not just the
+	// layer(s) corresponding to the file so modified - because other layers could
+	// be using that file as input.
 	refresh_all_layers();
 }
 

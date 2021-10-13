@@ -21,7 +21,7 @@ set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the int
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION_MAJOR "1")
 set(GPLATES_PACKAGE_VERSION_MINOR "0")
-set(GPLATES_PACKAGE_VERSION_PATCH "0")
+set(GPLATES_PACKAGE_VERSION_PATCH "1")
 
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION_MAJOR}.${GPLATES_PACKAGE_VERSION_MINOR}.${GPLATES_PACKAGE_VERSION_PATCH}")
@@ -31,9 +31,9 @@ set(GPLATES_VERSION_STRING "${GPLATES_PACKAGE_NAME} ${GPLATES_PACKAGE_VERSION}")
 
 # The GPlates copyright - string version to be used in a source file.
 set(GPLATES_COPYRIGHT_STRING "")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2010 The University of Sydney, Australia\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2004-2010 California Institute of Technology\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2010 The Geological Survey of Norway\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2011 The University of Sydney, Australia\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2004-2011 California Institute of Technology\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2011 The Geological Survey of Norway\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}The GPlates source code also contains code derived from:\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * ReconTreeViewer (James Boyden)\\n")
@@ -48,9 +48,9 @@ set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}environment, the Inksca
 # The GPlates copyright for html.
 set(GPLATES_HTML_COPYRIGHT_STRING "")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<html><body>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2010 The University of Sydney, Australia<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2004-2010 California Institute of Technology<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2010 The Geological Survey of Norway<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2011 The University of Sydney, Australia<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2004-2011 California Institute of Technology<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2011 The Geological Survey of Norway<br />\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<br />\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates source code also contains code derived from: <ul>\\n")
@@ -69,7 +69,7 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # This is manually set when making GPlates *public* releases.
 # However, when making internal releases or just an ordinary developer build, leave it
 # empty; if it is empty, the revision number is automatically populated for you on build.
-set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "10566")
+set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "11087")
 
 # List the Qt plugins used by GPlates.
 # This is needed for packaging standalone versions of GPlates for a binary installer.
