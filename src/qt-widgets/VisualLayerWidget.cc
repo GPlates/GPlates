@@ -490,7 +490,10 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 			// Update the layers option widget.
 			if (layer_options_expanded && d_current_layer_options_widget)
 			{
-				d_current_layer_options_widget->set_data(d_visual_layer);
+				// Need to set the data to that of the visual layer that this VisualLayerWidget will
+				// be referencing (note that the reference is not set until the end of this method).
+				d_current_layer_options_widget->set_data(visual_layer);
+
 				d_current_layer_options_widget->updateGeometry();
 				layer_options_widget->updateGeometry();
 			}

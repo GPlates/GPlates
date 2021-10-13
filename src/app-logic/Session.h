@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -109,6 +109,9 @@ namespace GPlatesAppLogic
 		 * operates w.r.t. people loading/saving prior sessions.
 		 *
 		 * Changes in Layer configuration should also not affect equality.
+		 * This is because we are only testing for equality to see which
+		 * Session Menu labels should be added, or merely refreshed and
+		 * "bumped" to the top.
 		 */
 		bool
 		operator==(
@@ -138,7 +141,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The session version corresponding to the current build of GPlates.
 		 */
-		static const int LATEST_SESSION_VERSION = 1;
+		static const int LATEST_SESSION_VERSION = 2;
 
 		/*
 		 * Avoid putting heavy STL member data here, this class gets passed

@@ -194,8 +194,11 @@ GPlatesModel::XmlElementNode::create(
 			}
 
 		// FIXME: Fix these catch clauses.
+		} catch (std::exception &exc) {
+			qWarning() << "GPlatesModel::XmlElementNode::create: " << exc.what();
+			throw;
 		} catch (const char *ex) {
-			std::cerr << "Caught exception: " << ex << std::endl;
+			qWarning() << "GPlatesModel::XmlElementNode::create: " << ex;
 			throw;
 		} catch (...) {
 			throw;

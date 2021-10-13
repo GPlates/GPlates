@@ -128,7 +128,7 @@ namespace GPlatesPresentation
 			d_show_delaunay_triangulation(false),
 			d_show_constrained_triangulation(false),
 			d_show_mesh_triangulation(true),
-			d_show_segment_velocity(true)
+			d_show_segment_velocity(false)
 		{  }
 
 	private:

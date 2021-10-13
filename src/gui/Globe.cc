@@ -137,16 +137,50 @@ void
 GPlatesGui::Globe::paint(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &viewport_zoom_factor,
-		float scale)
+		float scale,
+		const GPlatesOpenGL::GLTransform &projection_transform_include_half_globe,
+		const GPlatesOpenGL::GLTransform &projection_transform_include_full_globe,
+		const GPlatesOpenGL::GLTransform &projection_transform_include_stars)
 {
 	// Set up the globe orientation transform.
 	GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type globe_orientation_transform =
 			get_globe_orientation_transform();
 	renderer.push_transform(*globe_orientation_transform);
 
+	// Render stars.
+	//
+	// NOTE: We draw the stars first so they don't appear in front of the globe.
+	//
+	// NOTE: We also *disable* depth testing and depth writes because we are using a different
+	// projection transform and the depth buffer values depend on the projection transform
+	// so we don't want to mix them up with depth buffer values written with a different
+	// projection transform later below.
+	renderer.push_state_set(get_rendered_layer_state(GL_FALSE, GL_FALSE));
+	renderer.push_transform(projection_transform_include_stars);
+	d_stars.paint(renderer);
+	renderer.pop_transform();
+	renderer.pop_state_set();
+
 	// Determine whether the globe is transparent or not.
 	rgba8_t background_colour = Colour::to_rgba8(d_view_state.get_background_colour());
 	bool transparent = (background_colour.alpha != 255);
+
+	// If the globe is transparent then use a projection transform that has a far clip plane that
+	// includes the full globe.
+	// Otherwise use one that includes only the visible front half of the globe since 
+	//
+	// NOTE: Using a far clip plane that does *not* include the rear of the globe is important
+	// because the raster rendering code then does not generate raster tiles for the rear of the
+	// globe (which are not visible - if globe is opaque) and hence is noticeably faster.
+	//
+	// NOTE: We also use the same projection transform for the remainder of the rendering
+	// so that depth buffering works - if we mixed different projection transform then the
+	// depth buffer values written would be affected and hence couldn't be compared to each other
+	// rendering the depth test undefined.
+	renderer.push_transform(
+			transparent
+			? projection_transform_include_full_globe
+			: projection_transform_include_half_globe);
 
 	// Set up common state.
 	d_rendered_geom_collection_painter.set_scale(scale);
@@ -157,20 +191,14 @@ GPlatesGui::Globe::paint(
 		// onto the depth buffer, set the depth function to be the reverse of the usual
 		// and then render everything in reverse order.
 		renderer.push_state_set(get_rendered_layer_state(GL_TRUE, GL_TRUE));
+
 		d_black_sphere.paint(
 				renderer,
 				d_globe_orientation_ptr->rotation_axis(),
 				GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle()).dval());
+
 		renderer.pop_state_set();
-	}
 
-	// Render stars.
-	renderer.push_state_set(get_rendered_layer_state(GL_FALSE));
-	d_stars.paint(renderer);
-	renderer.pop_state_set();
-
-	if (transparent)
-	{
 		// Set the depth func to GL_GREATER.
 		GPlatesOpenGL::GLDepthTestState::non_null_ptr_type depth_test_state =
 			GPlatesOpenGL::GLDepthTestState::create();
@@ -216,6 +244,8 @@ GPlatesGui::Globe::paint(
 	renderer.push_state_set(get_rendered_layer_state());
 	d_grid.paint(renderer);
 	renderer.pop_state_set();
+
+	renderer.pop_transform(); // projection transform
 
 	renderer.pop_transform(); // 'globe_orientation_transform'
 }

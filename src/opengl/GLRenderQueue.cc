@@ -28,6 +28,7 @@
 #include "GLRenderQueue.h"
 #include "GLRenderTarget.h"
 #include "GLRenderTargetManager.h"
+#include "GLUtils.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -105,4 +106,7 @@ GPlatesOpenGL::GLRenderQueue::draw(
 		current_render_target->unbind();
 		initial_render_target->bind();
 	}
+
+	// Check there are no OpenGL errors.
+	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }

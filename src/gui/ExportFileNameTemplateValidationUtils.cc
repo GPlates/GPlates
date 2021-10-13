@@ -64,6 +64,12 @@ GPlatesGui::ExportFileNameTemplateValidationUtils::is_valid_template_filename_se
 		filename_template_validation_message = os.str().c_str();
 		return false;
 	}
+	catch (std::exception &exc)
+	{
+		filename_template_validation_message =
+				QString("Error validating file name template: %1)").arg(exc.what());
+		throw;
+	}
 	catch (...)
 	{
 		filename_template_validation_message =

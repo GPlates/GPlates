@@ -143,18 +143,11 @@ namespace GPlatesAppLogic
 				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy);
 
 		/**
-		 * Adds a reconstruct layer proxy used to reconstruct the topological boundary sections.
+		 * Sets the current reconstruct layer proxies used to reconstruct the topological boundary sections.
 		 */
 		void
-		add_topological_sections_layer_proxy(
-				const ReconstructLayerProxy::non_null_ptr_type &topological_sections_layer_proxy);
-
-		/**
-		 * Removes a reconstruct layer proxy used to reconstruct the topological boundary sections.
-		 */
-		void
-		remove_topological_sections_layer_proxy(
-				const ReconstructLayerProxy::non_null_ptr_type &topological_sections_layer_proxy);
+		set_current_topological_sections_layer_proxies(
+				const std::vector<ReconstructLayerProxy::non_null_ptr_type> &topological_sections_layer_proxies);
 
 		/**
 		 * Add to the list of feature collections containing topological close plate polygon features.

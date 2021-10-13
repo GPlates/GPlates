@@ -106,11 +106,12 @@ GPlatesFileIO::GMTFormatWriter::finalise_post_feature_properties(
 	std::vector<QString> header_lines;
 
 	// Delegate formating of feature header.
-	const bool valid_header = d_feature_header->get_feature_header_lines(
-		feature_handle.reference(), header_lines);
+	d_feature_header->get_feature_header_lines(feature_handle.reference(), header_lines);
 	
-	// If we have a valid header and at least one geometry then we can output for the current feature.
-	if (valid_header && d_feature_accumulator.have_geometry())
+	// If we have at least one geometry then we can output for the current feature.
+	// We write out even if there's no header lines (because not enough property information).
+	// This is because the user might still like to output the feature to a file.
+	if (d_feature_accumulator.have_geometry())
 	{
 		// For each GeometryOnSphere write out a header and the geometry data.
 		for(

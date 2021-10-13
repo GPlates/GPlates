@@ -348,18 +348,10 @@ namespace GPlatesAppLogic
 			 */
 			Layer(
 					const boost::shared_ptr<LayerTask> &layer_task,
-					ReconstructGraph &reconstruct_graph);
+					ReconstructGraph &reconstruct_graph,
+					bool auto_created = false);
 
 			~Layer();
-
-			/**
-			 * Updates the layer task.
-			 */
-			void
-			update_layer_task(
-					const GPlatesAppLogic::Layer &layer_handle /* handle used by clients */,
-					Reconstruction &reconstruction,
-					GPlatesModel::integer_plate_id_type anchored_plate_id);
 
 			/**
 			 * Activates (or deactivates) this layer.
@@ -380,6 +372,20 @@ namespace GPlatesAppLogic
 			is_active() const
 			{
 				return d_active;
+			}
+
+			//! Returns true if this layer was auto-created (when a file was loaded).
+			bool
+			get_auto_created() const
+			{
+				return d_auto_created;
+			}
+
+			void
+			set_auto_created(
+					bool auto_created = true)
+			{
+				d_auto_created = auto_created;
 			}
 
 			void
@@ -436,6 +442,7 @@ namespace GPlatesAppLogic
 			LayerInputConnections d_input_data;
 			boost::shared_ptr<Data> d_output_data;
 			bool d_active;
+			bool d_auto_created;
 		};
 
 		/**

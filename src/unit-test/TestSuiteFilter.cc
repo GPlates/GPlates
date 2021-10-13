@@ -79,9 +79,14 @@ GPlatesUnitTest::TestSuiteFilter::is_empty(
 			return d_filter.at(depth).empty();
 		}
 	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "Exception caught in GPlatesUnitTest::TestSuiteFilter::is_empty(unsigned depth): " << exc.what();
+		return true;
+	}
 	catch(...)
 	{
-		qWarning() << "Unexpected exception caught in GPlatesUnitTest::TestSuiteFilter::is_empty(unsigned depth)!!";
+		qWarning() << "Exception caught in GPlatesUnitTest::TestSuiteFilter::is_empty(unsigned depth): unknown error!!";
 		return true;
 	}
 }

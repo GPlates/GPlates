@@ -86,6 +86,12 @@ namespace GPlatesGui
 		debug_set_all_files_clean();
 
 		/**
+		 * So I can fix the documentation.
+		 */
+		void
+		debug_menu_structure();
+
+		/**
 		 * To use when fonts aren't behaving.
 		 */
 		void

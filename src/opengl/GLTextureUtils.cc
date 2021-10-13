@@ -246,6 +246,47 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture(
 }
 
 
+GPlatesOpenGL::GLTexture::shared_ptr_type
+GPlatesOpenGL::GLTextureUtils::create_z_clip_texture(
+		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager)
+{
+	GLTexture::shared_ptr_type z_clip_texture = GLTexture::create(texture_resource_manager);
+
+	// Bind the texture so its the current texture.
+	// Here we actually make a direct OpenGL call to bind the texture to the currently
+	// active texture unit. It doesn't matter what the current texture unit is because
+	// the only reason we're binding the texture object is so we can set its state =
+	// so that subsequent binds of this texture object, when we render the scene graph,
+	// will set that state to OpenGL.
+	z_clip_texture->gl_bind_texture(GL_TEXTURE_2D);
+
+	//
+	// We *must* use nearest neighbour filtering otherwise the clip texture won't work.
+	// We are relying on the hard transition from white to black to clip for us.
+	//
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+	//
+	// The clip texture is a 2x1 image where the one texel is white and the other black.
+	// We will use the alpha channel for alpha-testing (to discard clipped regions).
+	//
+	const GPlatesGui::rgba8_t mask_zero(0, 0, 0, 0);
+	const GPlatesGui::rgba8_t mask_one(255, 255, 255, 255);
+	const GPlatesGui::rgba8_t mask_image[2] = { mask_zero, mask_one };
+
+	// Create the texture and load the data into it.
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
+
+	// Check there are no OpenGL errors.
+	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+
+	return z_clip_texture;
+}
+
+
 const GPlatesOpenGL::GLMatrix &
 GPlatesOpenGL::GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform()
 {

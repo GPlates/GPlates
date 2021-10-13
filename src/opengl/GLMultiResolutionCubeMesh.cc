@@ -28,7 +28,6 @@
 
 #include "GLMultiResolutionCubeMesh.h"
 
-#include "GLTextureUtils.h"
 #include "GLUtils.h"
 #include "GLVertexArrayDrawable.h"
 
@@ -46,7 +45,6 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::GLMultiResolutionCubeMesh(
 	d_texture_resource_manager(texture_resource_manager),
 	d_vertex_buffer_resource_manager(vertex_buffer_resource_manager),
 	d_xy_clip_texture(GLTextureUtils::create_xy_clip_texture(texture_resource_manager)),
-	d_xy_clip_texture_transform(GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform()),
 	d_mesh_cube_quad_tree(mesh_cube_quad_tree_type::create())
 {
 	create_mesh_drawables();

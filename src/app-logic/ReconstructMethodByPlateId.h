@@ -93,6 +93,7 @@ namespace GPlatesAppLogic
 		reconstruct_feature(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref,
+				const ReconstructHandle::type &reconstruct_handle,
 				const ReconstructParams &reconstruct_params,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time);

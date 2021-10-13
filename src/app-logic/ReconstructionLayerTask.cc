@@ -102,11 +102,8 @@ GPlatesAppLogic::ReconstructionLayerTask::modified_input_file(
 
 void
 GPlatesAppLogic::ReconstructionLayerTask::update(
-		const Layer &layer_handle /* the layer invoking this */,
-		const double &reconstruction_time,
-		GPlatesModel::integer_plate_id_type anchored_plate_id,
-		const ReconstructionLayerProxy::non_null_ptr_type &/*default_reconstruction_layer_proxy*/)
+		const Reconstruction::non_null_ptr_type &reconstruction)
 {
-	d_reconstruction_layer_proxy->set_current_reconstruction_time(reconstruction_time);
-	d_reconstruction_layer_proxy->set_current_anchor_plate_id(anchored_plate_id);
+	d_reconstruction_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
+	d_reconstruction_layer_proxy->set_current_anchor_plate_id(reconstruction->get_anchor_plate_id());
 }

@@ -32,7 +32,6 @@
 #include "app-logic/SessionManagement.h"
 
 #include "gui/FileIOFeedback.h"
-#include "gui/UnsavedChangesTracker.h"
 
 
 namespace
@@ -58,12 +57,10 @@ namespace
 GPlatesGui::SessionMenu::SessionMenu(
 		GPlatesAppLogic::ApplicationState &app_state_,
 		GPlatesGui::FileIOFeedback &file_io_feedback_,
-		GPlatesGui::UnsavedChangesTracker &unsaved_changes_tracker_,
 		QObject *parent_):
 	QObject(parent_),
 	d_session_management_ptr(&(app_state_.get_session_management())),
 	d_file_io_feedback_ptr(&file_io_feedback_),
-	d_unsaved_changes_tracker_ptr(&unsaved_changes_tracker_),
 	d_no_sessions_action(new QAction(tr("<No sessions to load>"), d_menu_ptr)),
 	d_recent_session_action_group(NULL)
 {  }
@@ -150,9 +147,7 @@ void
 GPlatesGui::SessionMenu::open_previous_session(
 		int session_slot_to_load)
 {
-	if (d_unsaved_changes_tracker_ptr->replace_session_event_hook()) {
-		d_file_io_feedback_ptr->open_previous_session(session_slot_to_load);
-	}
+	d_file_io_feedback_ptr->open_previous_session(session_slot_to_load);
 }
 
 

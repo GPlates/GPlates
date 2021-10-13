@@ -34,6 +34,8 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
+#include "model/NotificationGuard.h"
+
 
 void
 GPlatesViewOperations::CloneOperation::clone_focused_geometry()
@@ -89,6 +91,11 @@ void
 GPlatesViewOperations::CloneOperation::clone_focused_feature(
 		GPlatesModel::FeatureCollectionHandle::weak_ref target_feature_collection)
 {
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many as we incrementally modify the feature below.
+	GPlatesModel::NotificationGuard model_notification_guard(
+			d_view_state.get_application_state().get_model_interface().access_model());
+
 	GPlatesModel::FeatureHandle::weak_ref feature_ref = 
 			d_view_state.get_feature_focus().focused_feature();
 
@@ -106,6 +113,12 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature(
 
 	// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 	target_feature_collection->add(new_feature_ptr);
+		
+	// Release the model notification guard now that we've finished modifying the feature.
+	// Provided there are no nested guards this should notify model observers.
+	// We want any observers to see the changes before do a new reconstruction.
+	model_notification_guard.release_guard();
+
 	d_view_state.get_application_state().reconstruct();
 	// transaction.commit();
 

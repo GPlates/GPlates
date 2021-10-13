@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -63,6 +63,18 @@ namespace
 			common = common_base_dir(common, dir);
 		}
 		return QFileInfo(common).fileName();
+	}
+
+
+	/**
+	 * Removes any "" entries from a QStringList, to avoid potential bugs with incorrectly saved Sessions.
+	 */
+	QStringList
+	strip_empty_entries(
+			QStringList list)
+	{
+		list.removeAll("");
+		return list;
 	}
 }
 
@@ -182,7 +194,7 @@ GPlatesAppLogic::Session::unserialise_from_prefs_map(
 	int version = map.value("version").toInt();
 
 	QDateTime time = map.value("time").toDateTime();
-	QStringList loaded_files = map.value("loaded_files").toStringList();
+	QStringList loaded_files = strip_empty_entries(map.value("loaded_files").toStringList());
 	LayersStateType layers_state;
 	layers_state.setContent(map.value("layers_state").toString());
 

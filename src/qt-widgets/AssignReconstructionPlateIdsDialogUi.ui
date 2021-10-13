@@ -419,7 +419,11 @@
              <number>6</number>
             </property>
             <item>
-             <widget class="QDoubleSpinBox" name="double_spin_box_reconstruction_time"/>
+             <widget class="QDoubleSpinBox" name="double_spin_box_reconstruction_time">
+              <property name="maximum">
+               <double>10000.000000000000000</double>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QLabel" name="label_ma_spin_box">

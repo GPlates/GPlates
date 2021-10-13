@@ -343,9 +343,14 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon
 	    d_reconstructed_feature_geometries.push_back(seed_point_rfg);
 
 	}
-	catch(...)
+	catch (std::exception &exc)
+	{
+		qWarning() << exc.what();
+	}
+	catch (...)
 	{
 		// We failed creating a seed_point rfg for whatever reason.
+		qWarning() << "GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon_plate_id: Unknown error";
 	}
 
 }
@@ -432,9 +437,14 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 		    d_reconstructed_feature_geometries.push_back(rf_ptr);
 
 		}
+		catch (std::exception &exc)
+		{
+			qWarning() << exc.what();
+		}
 		catch(...)
 		{
 			// We failed creating a flowline for whatever reason. 
+			qWarning() << "GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry: Unknown error";
 		}
 
 }

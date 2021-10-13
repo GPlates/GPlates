@@ -39,8 +39,8 @@ GPlatesGui::ExportAnimationStrategy::ExportAnimationStrategy(
 	d_export_animation_context_ptr(&export_animation_context),
 	d_filename_sequence_opt(boost::none),
 	d_filename_iterator_opt(boost::none)
-{
-}
+{  }
+
 
 void
 GPlatesGui::ExportAnimationStrategy::set_template_filename(
@@ -48,10 +48,10 @@ GPlatesGui::ExportAnimationStrategy::set_template_filename(
 {
 	d_filename_sequence_opt = GPlatesFileIO::ExportTemplateFilenameSequence(filename,
 			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
-			d_export_animation_context_ptr->animation_controller().start_time(),
-			d_export_animation_context_ptr->animation_controller().end_time(),
-			d_export_animation_context_ptr->animation_controller().raw_time_increment(),
-			d_export_animation_context_ptr->animation_controller().should_finish_exactly_on_end_time());
+			d_export_animation_context_ptr->get_sequence().actual_start_time,
+			d_export_animation_context_ptr->get_sequence().actual_end_time,
+			d_export_animation_context_ptr->get_sequence().raw_time_increment,
+			d_export_animation_context_ptr->get_sequence().should_finish_exactly_on_end_time);
 	d_filename_iterator_opt = d_filename_sequence_opt->begin();
 }
 

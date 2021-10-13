@@ -59,6 +59,8 @@
 #include "property-values/RawRasterUtils.h"
 #include "property-values/XsString.h"
 
+#include "utils/Profile.h"
+
 #include "view-operations/RenderedArrowedPolyline.h"
 #include "view-operations/RenderedCrossSymbol.h"
 #include "view-operations/RenderedDirectionArrow.h"
@@ -164,6 +166,8 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 		GPlatesOpenGL::GLRenderer &renderer)
 {
+	//PROFILE_FUNC();
+
 	//
 	// Primitives *on* the sphere include those that don't map exactly to the sphere because
 	// of their finite tessellation level but are nonetheless considered as spherical geometries.

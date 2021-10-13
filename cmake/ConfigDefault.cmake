@@ -21,7 +21,7 @@ set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the int
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION_MAJOR "1")
 set(GPLATES_PACKAGE_VERSION_MINOR "1")
-set(GPLATES_PACKAGE_VERSION_PATCH "0")
+set(GPLATES_PACKAGE_VERSION_PATCH "1")
 
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION_MAJOR}.${GPLATES_PACKAGE_VERSION_MINOR}.${GPLATES_PACKAGE_VERSION_PATCH}")
@@ -69,7 +69,7 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # This is manually set when making GPlates *public* releases.
 # However, when making internal releases or just an ordinary developer build, leave it
 # empty; if it is empty, the revision number is automatically populated for you on build.
-set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "11643")
+set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "11903")
 
 # List the Qt plugins used by GPlates.
 # This is needed for packaging standalone versions of GPlates for a binary installer.

@@ -58,15 +58,27 @@ namespace GPlatesModel
 
 	public:
 
+		explicit
 		NotificationGuard(
 				Model *model_ptr);
 
 		~NotificationGuard();
 
+
+		/**
+		 * Releases this guard early.
+		 *
+		 * If this is the first time 'this' guard is released then any queued notifications
+		 * are delivered here instead of in the destructor (if 'this' is the top-level object
+		 * in any nesting of notification guard objects).
+		 */
+		void
+		release_guard();
+
 	private:
 
 		Model *d_model_ptr;
-
+		bool d_guard_released;
 	};
 }
 

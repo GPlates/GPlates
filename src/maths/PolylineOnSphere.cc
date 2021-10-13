@@ -56,6 +56,7 @@ namespace GPlatesMaths
 		struct CachedCalculations :
 				public GPlatesUtils::ReferenceCount<CachedCalculations>
 		{
+			boost::optional<UnitVector3D> centroid;
 			boost::optional<BoundingSmallCircle> bounding_small_circle;
 		};
 	}
@@ -273,11 +274,27 @@ GPlatesMaths::PolylineOnSphere::create_segment_and_append_to_seq(
 const GPlatesMaths::UnitVector3D &
 GPlatesMaths::PolylineOnSphere::get_centroid() const
 {
-	// We use the centroid for the centre of the bounding small circle.
-	// Getting it from there avoids having to store it twice.
-	// There's extra calculations required to generate the bounding small circle but
-	// generally if the client wants the centroid they also want the bounding small circle.
-	return get_bounding_small_circle().get_centre();
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolylineOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the centroid if it's not cached.
+	if (!d_cached_calculations->centroid)
+	{
+		// The centroid is also the bounding small circle centre so see if that's been generated.
+		if (d_cached_calculations->bounding_small_circle)
+		{
+			d_cached_calculations->centroid =
+					d_cached_calculations->bounding_small_circle->get_centre();
+		}
+		else
+		{
+			d_cached_calculations->centroid = Centroid::calculate_points_centroid(*this);
+		}
+	}
+
+	return d_cached_calculations->centroid.get();
 }
 
 
@@ -293,8 +310,7 @@ GPlatesMaths::PolylineOnSphere::get_bounding_small_circle() const
 	if (!d_cached_calculations->bounding_small_circle)
 	{
 		// The centroid will be the bounding small circle centre.
-		BoundingSmallCircleBuilder bounding_small_circle_builder(
-				Centroid::calculate_points_centroid(*this));
+		BoundingSmallCircleBuilder bounding_small_circle_builder(get_centroid());
 		// Add the polyline great-circle-arc sections to define the bounds.
 		bounding_small_circle_builder.add(*this);
 

@@ -17,9 +17,9 @@
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
-      <widget class="QCheckBox" name="mesh_checkbox">
+      <widget class="QCheckBox" name="triangulation_checkbox">
        <property name="text">
-        <string>Show Mesh Triangulation (in color)</string>
+        <string>Show Delaunay Triangulation (in black)</string>
        </property>
       </widget>
      </item>
@@ -31,16 +31,16 @@
       </widget>
      </item>
      <item>
-      <widget class="QCheckBox" name="triangulation_checkbox">
+      <widget class="QCheckBox" name="mesh_checkbox">
        <property name="text">
-        <string>Show Delaunay Triangulation (in black)</string>
+        <string>Show Mesh Triangulation (in color)</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QCheckBox" name="segment_velocity_checkbox">
        <property name="text">
-        <string>Show Segment Velocities (white arrows)</string>
+        <string>Show Source Segment Velocities (white arrows)</string>
        </property>
       </widget>
      </item>

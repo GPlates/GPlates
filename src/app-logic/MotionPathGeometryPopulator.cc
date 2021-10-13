@@ -164,9 +164,14 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 		d_reconstructed_feature_geometries.push_back(seed_point_rfg);
 
 	}
+	catch (std::exception &exc)
+	{
+		qWarning() << exc.what();
+	}
 	catch(...)
 	{
 		// We failed creating a seed_point rfg for whatever reason.
+		qWarning() << "GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point: Unknown error";
 	}
 
 
@@ -225,9 +230,14 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 		d_reconstructed_feature_geometries.push_back(seed_point_rfg);
 
 	}
+	catch (std::exception &exc)
+	{
+		qWarning() << exc.what();
+	}
 	catch(...)
 	{
 		// We failed creating a seed_point rfg for whatever reason.
+		qWarning() << "GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point: Unknown error";
 	}
 
 	if (d_motion_track_property_finder.can_process_motion_path())
@@ -291,9 +301,14 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 		d_reconstructed_feature_geometries.push_back(mtrg_ptr);
 
 	}
+	catch (std::exception &exc)
+	{
+		qWarning() << exc.what();
+	}
 	catch(...)
 	{
 		// We failed creating a motion track for whatever reason. 
+		qWarning() << "GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry: Unknown error";
 	}
 
 }

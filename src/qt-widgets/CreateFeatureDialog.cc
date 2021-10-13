@@ -67,6 +67,7 @@
 #include "model/GPGIMInfo.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
+#include "model/NotificationGuard.h"
 
 #include "presentation/ViewState.h"
 
@@ -743,10 +744,14 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 		d_listwidget_geometry_destinations->setFocus();
 		d_button_create->setEnabled(false);
 		button_create_and_save->setEnabled(false);
+		// Make sure it's null (or "None") because it's accessed even when it's not visible.
+		d_conjugate_plate_id_widget->set_null(true);
 		d_conjugate_plate_id_widget->setVisible(
 			d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
 			should_offer_conjugate_plate_id_prop(
 			d_choose_feature_type_widget));
+		// Make sure it's unchecked because it's accessed even when it's not visible.
+		d_create_conjugate_isochron_checkbox->setChecked(false);
 		d_create_conjugate_isochron_checkbox->setVisible(
 			should_offer_create_conjugate_isochron_checkbox(
 			d_choose_feature_type_widget));
@@ -800,6 +805,11 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 
 	try
 	{
+		// We want to merge model events across this scope so that only one model event
+		// is generated instead of many as we incrementally modify the feature below.
+		GPlatesModel::NotificationGuard model_notification_guard(
+				d_application_state_ptr->get_model_interface().access_model());
+
 		// Get the FeatureCollection the user has selected.
 		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> collection_file_iter =
 			d_choose_feature_collection_widget->get_file_reference();
@@ -809,17 +819,6 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		// Actually create the Feature!
 		GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(collection, type);
 
-
-
-		// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
-		GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
-				d_plate_id_widget->create_property_value_from_widget();
-		GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
-				GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-					GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
 
 		// If we are using half stage rotation, add right and left plate id.
 		if (GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION == d_recon_method)
@@ -840,6 +839,18 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 					GPlatesModel::TopLevelPropertyInline::create(
 							GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
 							recon_method_value));
+		}
+		else // Not using a half-stage rotation...
+		{
+			// Add a (ConstantValue-wrapped) gpml:reconstructionPlateId Property.
+			GPlatesModel::PropertyValue::non_null_ptr_type plate_id_value =
+					d_plate_id_widget->create_property_value_from_widget();
+			GPlatesPropertyValues::TemplateTypeParameterType plate_id_value_type =
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId");
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+						GPlatesPropertyValues::GpmlConstantValue::create(plate_id_value, plate_id_value_type)));
 		}
 
 		// Add a gpml:conjugatePlateId Property.
@@ -891,10 +902,14 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 				d_application_state_ptr
 				);
 		}
-
-		// Ensure a layer gets created for the new feature.
-		d_application_state_ptr->update_layers(collection_file_iter.first);
 		
+		// Release the model notification guard now that we've finished modifying the feature.
+		// Provided there are no nested guards this should notify model observers.
+		// We want any observers to see the changes before we emit signals because we don't
+		// know whose listening on those signals and they may be expecting model observers to
+		// be up-to-date with the modified model.
+		model_notification_guard.release_guard();
+
 		emit feature_created(feature);
 
 		// If the user got into digitisation mode because they clicked the

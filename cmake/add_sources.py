@@ -15,11 +15,11 @@ __description__ = "Finds all source files '.cc', '.h', '.ui' and '.qrc' in subdi
                   "corresponding 'CMakeLists.txt' files.\n"
 
 GPLATES_SUB_DIRECTORIES = [
-	'api',
-	'app-logic',
+    'api',
+    'app-logic',
     'canvas-tools',
-	'cli',
-	'data-mining',
+    'cli',
+    'data-mining',
     'feature-visitors',
     'file-io',
     'global',
@@ -29,10 +29,9 @@ GPLATES_SUB_DIRECTORIES = [
     'opengl',
     'property-values',
     'presentation',
-    'python-ext',
     'qt-resources',
     'qt-widgets',
-	'unit-test',
+    'unit-test',
     'utils',
     'view-operations'
 ]

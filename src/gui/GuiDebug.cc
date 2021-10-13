@@ -30,6 +30,7 @@
 #include <QDebug>
 #include <QMenuBar>
 #include <QMenu>
+#include <QAction>
 #include <QMetaMethod>
 #include <QDesktopServices>
 #include <boost/foreach.hpp>
@@ -116,6 +117,42 @@ namespace
 		// Tearable menus are delicious.
 		submenu->setTearOffEnabled(true);
 		add_slots_to_menu(object, prefix, submenu);
+	}
+	
+	
+	/**
+	 * Recursively print out our menu structure.
+	 */
+	void
+	print_menu_structure(
+			QWidget *menu,
+			QString prefix = "* ",
+			QString indentation = "")
+	{
+		Q_FOREACH(QAction *action, menu->actions()) {
+			QString shortcut = "";
+			if ( ! action->shortcut().isEmpty()) {
+				shortcut = QString(" [ %1 ]").arg(action->shortcut().toString());
+			}
+			QString flags = "";
+			if ( ! action->isVisible()) {
+				flags += " (Hidden)";
+			}
+			if ( ! action->isEnabled()) {
+				flags += " (Disabled)";
+			}
+			qDebug() << QString("%1%2%3%4%5")
+					.arg(indentation)
+					.arg(prefix)
+					.arg(action->text())
+					.arg(shortcut)
+					.arg(flags)
+					.toUtf8().data();
+			// Recurse into submenus - but not into our own Debug menu, that'd be a bit much.
+			if (action->menu() && ! action->text().endsWith("Debug")) {
+				print_menu_structure(action->menu(), prefix, QString(indentation).append("  "));
+			}
+		}
 	}
 }
 
@@ -227,6 +264,13 @@ GPlatesGui::GuiDebug::debug_set_all_files_clean()
 			feature_collection_ref->clear_unsaved_changes();
 		}
 	}
+}
+
+
+void
+GPlatesGui::GuiDebug::debug_menu_structure()
+{
+	print_menu_structure(d_viewport_window_ptr->menuBar());
 }
 
 

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -403,12 +403,24 @@ void
 GPlatesGui::FileIOFeedback::open_previous_session(
 		int session_slot_to_load)
 {
-	GPlatesAppLogic::SessionManagement &sm = app_state().get_session_management();
-	try_catch_file_load_with_feedback(
-			boost::bind(
-					&GPlatesAppLogic::SessionManagement::load_previous_session,
-					&sm,
-					session_slot_to_load));
+	// If loading a new session would scrap some existing changes, warn the user about it first.
+	// This is much the same situation as quitting GPlates without having saved.
+	bool load_ok = unsaved_changes_tracker().replace_session_event_hook();
+	if (load_ok) {
+		GPlatesAppLogic::SessionManagement &sm = app_state().get_session_management();
+		
+		// Unload all empty-filename feature collections, triggering the removal of their layer info,
+		// so that the Session we record as being the user's previous session is self-consistent.
+		sm.unload_all_unnamed_files();
+		
+		// Load the new session.
+		try_catch_file_load_with_feedback(
+				boost::bind(
+						&GPlatesAppLogic::SessionManagement::load_previous_session,
+						&sm,
+						session_slot_to_load));
+
+	}
 }
 
 

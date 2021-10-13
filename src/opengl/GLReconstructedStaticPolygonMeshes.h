@@ -122,7 +122,7 @@ namespace GPlatesOpenGL
 			typedef GPlatesUtils::non_null_intrusive_ptr<const PresentDayPolygonMeshMembership> non_null_ptr_to_const_type;
 
 
-			//! Initially no polygon meshes are in the membership set.
+			//! Initially no polygon meshes are in the membership set to false.
 			static
 			non_null_ptr_type
 			create(
@@ -131,10 +131,21 @@ namespace GPlatesOpenGL
 				return non_null_ptr_type(new PresentDayPolygonMeshMembership(num_polygon_meshes));
 			}
 
+			//! Used to directly set the polygon meshes membership.
+			static
+			non_null_ptr_type
+			create(
+					const boost::dynamic_bitset<> &polygon_meshes_membership)
+			{
+				return non_null_ptr_type(new PresentDayPolygonMeshMembership(polygon_meshes_membership));
+			}
+
 
 			/**
 			 * Returns a bitset that can be indexed by @a present_day_polygon_mesh_handle_type
-			 * to test for membership. Or it can be compared against another bitset.
+			 * to test for membership.
+			 *
+			 * Or it can be compared against another bitset of the same size (ie, same total number of polygon meshes).
 			 */
 			const boost::dynamic_bitset<> &
 			get_polygon_meshes_membership() const
@@ -160,6 +171,13 @@ namespace GPlatesOpenGL
 			PresentDayPolygonMeshMembership(
 					unsigned int num_polygon_meshes) :
 				d_polygon_meshes_membership(num_polygon_meshes)
+			{  }
+
+			//! Constructor sets flags to match @a polygon_meshes_membership.
+			explicit
+			PresentDayPolygonMeshMembership(
+					const boost::dynamic_bitset<> &polygon_meshes_membership) :
+				d_polygon_meshes_membership(polygon_meshes_membership)
 			{  }
 		};
 
@@ -286,7 +304,11 @@ namespace GPlatesOpenGL
 					const GLTransform::non_null_ptr_to_const_type &finite_rotation,
 					unsigned int num_polygon_meshes) :
 				d_finite_rotation(finite_rotation),
-				d_present_day_polygon_meshes(
+				d_visible_present_day_polygon_meshes_for_active_reconstructions(
+						PresentDayPolygonMeshMembership::create(num_polygon_meshes)),
+				d_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions(
+						PresentDayPolygonMeshMembership::create(num_polygon_meshes)),
+				d_all_present_day_polygon_meshes_for_active_reconstructions(
 						PresentDayPolygonMeshMembership::create(num_polygon_meshes))
 			{  }
 
@@ -300,32 +322,211 @@ namespace GPlatesOpenGL
 			}
 
 			/**
-			 * Returns those polygon meshes that are reconstructed by this transform group.
+			 * Returns those polygon meshes that are reconstructed by this transform group *and*
+			 * are visible in the view frustum of the transform state passed into
+			 * @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
 			 */
 			const PresentDayPolygonMeshMembership &
-			get_present_day_polygon_meshes() const
+			get_visible_present_day_polygon_meshes_for_active_reconstructions() const
 			{
-				return *d_present_day_polygon_meshes;
+				return *d_visible_present_day_polygon_meshes_for_active_reconstructions;
+			}
+
+			/**
+			 * Returns those polygon meshes that are reconstructed by this transform group *and*
+			 * are visible in the view frustum of the transform state passed into
+			 * @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
+			 *
+			 * NOTE: This includes reconstructing features that are not active (or not defined)
+			 * for the current reconstruction time.
+			 *
+			 * NOTE: The returned membership will be empty if 'GLReconstructedStaticPolygonMeshes::update()'
+			 * is called without the 'active_or_inactive_reconstructions_spatial_partition' argument.
+			 */
+			const PresentDayPolygonMeshMembership &
+			get_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions() const
+			{
+				return *d_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions;
+			}
+
+			/**
+			 * Returns *all* (visible and invisible) polygon meshes reconstructed by this transform group.
+			 *
+			 * NOTE: Polygons *outside the current view frustum are also returned in this method.
+			 *
+			 * NOTE: The returned membership will contain only visible polygons if 'GLReconstructedStaticPolygonMeshes::update()'
+			 * is called without the 'active_or_inactive_reconstructions_spatial_partition' argument.
+			 */
+			const PresentDayPolygonMeshMembership &
+			get_all_present_day_polygon_meshes_for_active_reconstructions() const
+			{
+				return *d_all_present_day_polygon_meshes_for_active_reconstructions;
 			}
 
 			/**
 			 * Adds the specified polygon mesh to this transform group.
 			 */
 			void
-			add_present_day_polygon_mesh(
+			add_visible_present_day_polygon_mesh_for_active_reconstruction(
 					present_day_polygon_mesh_handle_type present_day_polygon_mesh_handle)
 			{
-				d_present_day_polygon_meshes->add_present_day_polygon_mesh(present_day_polygon_mesh_handle);
+				d_visible_present_day_polygon_meshes_for_active_reconstructions->add_present_day_polygon_mesh(present_day_polygon_mesh_handle);
+			}
+
+			/**
+			 * Adds the specified polygon mesh to this transform group.
+			 *
+			 * NOTE: This includes reconstructing features that are not active (or not defined)
+			 * for the current reconstruction time.
+			 */
+			void
+			add_visible_present_day_polygon_mesh_for_active_or_inactive_reconstruction(
+					present_day_polygon_mesh_handle_type present_day_polygon_mesh_handle)
+			{
+				d_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions->add_present_day_polygon_mesh(present_day_polygon_mesh_handle);
+			}
+
+			/**
+			 * Adds the specified polygon mesh to this transform group.
+			 *
+			 * The specified polygon can be visible or invisible for the current view transform.
+			 */
+			void
+			add_all_present_day_polygon_mesh_for_active_reconstruction(
+					present_day_polygon_mesh_handle_type present_day_polygon_mesh_handle)
+			{
+				d_all_present_day_polygon_meshes_for_active_reconstructions->add_present_day_polygon_mesh(present_day_polygon_mesh_handle);
 			}
 
 		private:
 			GLTransform::non_null_ptr_to_const_type d_finite_rotation;
-			PresentDayPolygonMeshMembership::non_null_ptr_type d_present_day_polygon_meshes;
+			PresentDayPolygonMeshMembership::non_null_ptr_type d_visible_present_day_polygon_meshes_for_active_reconstructions;
+			PresentDayPolygonMeshMembership::non_null_ptr_type d_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions;
+			PresentDayPolygonMeshMembership::non_null_ptr_type d_all_present_day_polygon_meshes_for_active_reconstructions;
 		};
 
 		//! Typedef for a sequence of reconstructed polygon mesh transform groups.
 		typedef std::vector<ReconstructedPolygonMeshTransformGroup>
 				reconstructed_polygon_mesh_transform_group_seq_type;
+
+		/**
+		 * Contains all reconstructed polygon meshes for all transforms.
+		 */
+		class ReconstructedPolygonMeshTransformsGroups :
+				public GPlatesUtils::ReferenceCount<ReconstructedPolygonMeshTransformsGroups>
+		{
+		public:
+			typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructedPolygonMeshTransformsGroups> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const ReconstructedPolygonMeshTransformsGroups> non_null_ptr_to_const_type;
+
+
+			//! Initially no polygon meshes are in the membership set.
+			static
+			non_null_ptr_type
+			create(
+					const reconstructed_polygon_mesh_transform_group_seq_type &transform_groups,
+					unsigned int num_polygon_meshes)
+			{
+				return non_null_ptr_type(new ReconstructedPolygonMeshTransformsGroups(transform_groups, num_polygon_meshes));
+			}
+
+
+			/**
+			 * Returns the sequence of transforms groups for the reconstructed polygon meshes.
+			 */
+			const reconstructed_polygon_mesh_transform_group_seq_type &
+			get_transform_groups() const
+			{
+				return d_transform_groups;
+			}
+
+			/**
+			 * Returns the visible present-day polygon meshes for *all* transform groups.
+			 *
+			 * Visibility is defined by the view frustum of the transform state passed into
+			 * @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
+			 */
+			const PresentDayPolygonMeshMembership &
+			get_visible_present_day_polygon_meshes_for_active_reconstructions() const
+			{
+				return *d_visible_present_day_polygon_meshes_for_active_reconstructions;
+			}
+
+			/**
+			 * Returns the visible present-day polygon meshes for *all* transform groups.
+			 *
+			 * Visibility is defined by the view frustum of the transform state passed into
+			 * @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
+			 *
+			 * NOTE: This includes reconstructing features that are not active (or not defined)
+			 * for the current reconstruction time.
+			 *
+			 * NOTE: The returned membership will be empty if 'GLReconstructedStaticPolygonMeshes::update()'
+			 * is called without the 'active_or_inactive_reconstructions_spatial_partition' argument.
+			 */
+			const PresentDayPolygonMeshMembership &
+			get_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions() const
+			{
+				return *d_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions;
+			}
+
+			/**
+			 * Returns *all* (visible and invisible) present-day polygon meshes for *all* transform groups.
+			 *
+			 * NOTE: Polygons *outside the current view frustum are also returned in this method.
+			 *
+			 * NOTE: The returned membership will contain only visible polygons if 'GLReconstructedStaticPolygonMeshes::update()'
+			 * is called without the 'active_or_inactive_reconstructions_spatial_partition' argument.
+			 */
+			const PresentDayPolygonMeshMembership &
+			get_all_present_day_polygon_meshes_for_active_reconstructions() const
+			{
+				return *d_all_present_day_polygon_meshes_for_active_reconstructions;
+			}
+
+		private:
+			reconstructed_polygon_mesh_transform_group_seq_type d_transform_groups;
+
+			PresentDayPolygonMeshMembership::non_null_ptr_type d_visible_present_day_polygon_meshes_for_active_reconstructions;
+			PresentDayPolygonMeshMembership::non_null_ptr_type d_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions;
+			PresentDayPolygonMeshMembership::non_null_ptr_type d_all_present_day_polygon_meshes_for_active_reconstructions;
+
+			/**
+			 * Constructor sets present day polygon meshes flags to union of flags of @a transform_groups.
+			 */
+			ReconstructedPolygonMeshTransformsGroups(
+					const reconstructed_polygon_mesh_transform_group_seq_type &transform_groups,
+					unsigned int num_polygon_meshes) :
+				d_transform_groups(transform_groups),
+				d_visible_present_day_polygon_meshes_for_active_reconstructions(
+						gather_visible_present_day_polygon_mesh_memberships_for_active_reconstructions(
+								transform_groups, num_polygon_meshes)),
+				d_visible_present_day_polygon_meshes_for_active_or_inactive_reconstructions(
+						gather_visible_present_day_polygon_mesh_memberships_for_active_or_inactive_reconstructions(
+								transform_groups, num_polygon_meshes)),
+				d_all_present_day_polygon_meshes_for_active_reconstructions(
+						gather_all_present_day_polygon_mesh_memberships_for_active_reconstructions(
+								transform_groups, num_polygon_meshes))
+			{  }
+
+			static
+			PresentDayPolygonMeshMembership::non_null_ptr_type
+			gather_visible_present_day_polygon_mesh_memberships_for_active_reconstructions(
+					const reconstructed_polygon_mesh_transform_group_seq_type &transform_groups,
+					unsigned int num_polygon_meshes);
+
+			static
+			PresentDayPolygonMeshMembership::non_null_ptr_type
+			gather_visible_present_day_polygon_mesh_memberships_for_active_or_inactive_reconstructions(
+					const reconstructed_polygon_mesh_transform_group_seq_type &transform_groups,
+					unsigned int num_polygon_meshes);
+
+			static
+			PresentDayPolygonMeshMembership::non_null_ptr_type
+			gather_all_present_day_polygon_mesh_memberships_for_active_reconstructions(
+					const reconstructed_polygon_mesh_transform_group_seq_type &transform_groups,
+					unsigned int num_polygon_meshes);
+		};
 
 
 		/**
@@ -351,6 +552,8 @@ namespace GPlatesOpenGL
 		 *        These should also be indexable by ReconstructContext::Reconstruction.
 		 * @param reconstructions_spatial_partition is the initial reconstructed feature geometries
 		 *        for the current reconstruction time - it will get updated via @a update.
+		 *
+		 * NOTE: Use @a update to specify any *inactive* reconstructions (eg, when have an age grid).
 		 */
 		static
 		non_null_ptr_type
@@ -414,24 +617,34 @@ namespace GPlatesOpenGL
 		 * @a GLReconstructedStaticPolygonMeshes object should be created instead of continuing
 		 * to use 'this' one.
 		 *
-		 * NOTE: Since some polygon features might be inactive at the current reconstruction time
-		 * not every present day polygons will be represented by a reconstructed feature geometry.
+		 * NOTE: With @a reconstructions_spatial_partition since some polygon features might be
+		 * inactive at the current reconstruction time not every present day polygons will be
+		 * represented by a reconstructed feature geometry.
+		 *
+		 * NOTE: If @a active_or_inactive_reconstructions_spatial_partition is specified then it
+		 * represents features that have been reconstructed even if they are inactive (or not
+		 * defined at the current reconstruction time).
+		 *
+		 * @a active_or_inactive_reconstructions_spatial_partition is optional since it's only needed
+		 * when reconstructing raster with the aid of an age grid (because the age grid determines
+		 * when to mask off oceanic raster, not the begin time of the reconstructing polygons).
 		 */
 		void
 		update(
-				const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition);
+				const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition,
+				boost::optional<reconstructions_spatial_partition_type::non_null_ptr_to_const_type>
+						active_or_inactive_reconstructions_spatial_partition = boost::none);
 
 
 		/**
-		 * Returns the visible reconstructed feature geometries grouped by finite rotation transforms
+		 * Returns the reconstructed feature geometries grouped by finite rotation transforms
 		 * along with the present day OpenGL polygon meshes.
 		 *
 		 * The visibility is determined by the view frustum that is in turn determined by the
 		 * specified transform state.
 		 */
-		void
-		get_visible_reconstructed_polygon_meshes(
-				reconstructed_polygon_mesh_transform_group_seq_type &reconstructed_polygon_mesh_transform_groups,
+		ReconstructedPolygonMeshTransformsGroups::non_null_ptr_to_const_type
+		get_reconstructed_polygon_meshes(
 				const GLTransformState &transform_state);
 
 	private:
@@ -492,6 +705,17 @@ namespace GPlatesOpenGL
 		 */
 		reconstructions_spatial_partition_type::non_null_ptr_to_const_type d_reconstructions_spatial_partition;
 
+		/**
+		 * The reconstructed feature geometries for the current reconstruction time even if
+		 * the features (that they were reconstructed from) are no active (or not defined) at
+		 * the reconstruction time.
+		 *
+		 * This is optional since it's not needed by clients in all situations (only needed when
+		 * reconstructing raster *with* the aid of an age grid).
+		 */
+		boost::optional<reconstructions_spatial_partition_type::non_null_ptr_to_const_type>
+				d_active_or_inactive_reconstructions_spatial_partition;
+
 
 		//! Constructor.
 		GLReconstructedStaticPolygonMeshes(
@@ -505,31 +729,34 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Get the reconstructions that are visible in the view frustum for the specified
-		 * spatial partition node.
+		 * Get the reconstructions for the specified spatial partition node.
 		 */
 		void
-		get_visible_reconstructed_polygon_meshes(
+		get_reconstructed_polygon_meshes_from_quad_tree(
 				reconstructed_polygon_mesh_transform_group_seq_type &reconstructed_polygon_mesh_transform_groups,
 				reconstructed_polygon_mesh_transform_group_map_type &reconstructed_polygon_mesh_transform_group_map,
 				unsigned int num_polygon_meshes,
 				const reconstructions_spatial_partition_type::const_node_reference_type &reconstructions_quad_tree_node,
+				const reconstructions_spatial_partition_type::const_node_reference_type &active_or_inactive_reconstructions_quad_tree_node,
 				const cube_subdivision_loose_bounds_cache_type::node_reference_type &loose_bounds_quad_tree_node,
+				const bool cull_invisible_reconstructions,
+				bool visible,
 				const GLFrustum &frustum_planes,
 				boost::uint32_t frustum_plane_mask);
 
 
 		/**
-		 * Adds a sequence of polygon meshes belonging to the cube root or to a quad tree node
-		 * that are visible in the view frustum when reconstructed.
+		 * Adds a sequence of polygon meshes belonging to the cube root or to a quad tree node.
 		 */
 		void
-		add_visible_reconstructed_polygon_meshes(
+		add_reconstructed_polygon_meshes(
 				reconstructed_polygon_mesh_transform_group_seq_type &reconstructed_polygon_mesh_transform_groups,
 				reconstructed_polygon_mesh_transform_group_map_type &reconstructed_polygon_mesh_transform_group_map,
 				unsigned int num_polygon_meshes,
 				const reconstructions_spatial_partition_type::element_const_iterator &begin_reconstructions,
-				const reconstructions_spatial_partition_type::element_const_iterator &end_reconstructions);
+				const reconstructions_spatial_partition_type::element_const_iterator &end_reconstructions,
+				bool active_reconstructions_only,
+				bool visible);
 
 
 		/**

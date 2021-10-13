@@ -18,6 +18,7 @@ set(srcs
     CommandLineParser.cc
     CommandLineParser.h
     CopyConst.h
+    Counter64.h
     DeferredCallEvent.cc
     DeferredCallEvent.h
     Filter.h
@@ -31,6 +32,7 @@ set(srcs
     IdStringSet.cc
     IdStringSet.h
     IntrusiveSinglyLinkedList.h
+    KeyValueCache.h
     LatLonAreaSampling.h
     Mapper.h
     non_null_intrusive_ptr.h

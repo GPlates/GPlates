@@ -90,7 +90,8 @@ namespace GPlatesAppLogic
 		 */
 		void
 		load_layers_state(
-				const GPlatesAppLogic::Session::LayersStateType &dom);
+				const GPlatesAppLogic::Session::LayersStateType &dom,
+				int session_version);
 
 	public slots:
 

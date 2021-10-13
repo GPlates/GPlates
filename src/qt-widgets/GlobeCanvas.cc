@@ -209,8 +209,9 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
 	d_gl_model_view_transform(GPlatesOpenGL::GLTransform::create(GL_MODELVIEW)),
-	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
-	d_gl_projection_transform_svg(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_projection_transform_include_half_globe(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_projection_transform_include_full_globe(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_projection_transform_include_stars(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_persistent_objects(
 			GPlatesGui::PersistentOpenGLObjects::create(
 					d_gl_context, view_state.get_application_state())),
@@ -266,8 +267,9 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
 	d_gl_model_view_transform(GPlatesOpenGL::GLTransform::create(GL_MODELVIEW)),
-	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
-	d_gl_projection_transform_svg(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_projection_transform_include_half_globe(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_projection_transform_include_full_globe(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_projection_transform_include_stars(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_persistent_objects(
 			// Attempt to share OpenGL resources across contexts.
 			// This will depend on whether the two 'GLContext's share any state.
@@ -497,8 +499,8 @@ GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 		renderer->add_drawable(d_gl_clear_buffers);
 		renderer->pop_state_set();
 
-		// NOTE: We're pushing 'd_gl_projection_transform_svg' not 'd_gl_projection_transform'.
-		renderer->push_transform(*d_gl_projection_transform_svg);
+		// NOTE: We're pushing 'd_gl_projection_transform_include_half_globe' not 'd_gl_projection_transform_include_full_globe'.
+		renderer->push_transform(*d_gl_projection_transform_include_half_globe);
 		renderer->push_transform(*d_gl_model_view_transform);
 
 		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
@@ -510,7 +512,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 				calculate_scale());
 
 		renderer->pop_transform(); // 'd_gl_model_view_transform'
-		renderer->pop_transform(); // 'd_gl_projection_transform_svg'
+		renderer->pop_transform(); // 'd_gl_projection_transform_include_half_globe'
 
 		// Pop the viewport state set.
 		renderer->pop_state_set();
@@ -633,6 +635,8 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 
 	try
 	{
+		//PROFILE_BLOCK("GlobeCanvas::paintGL");
+
 		// Beginning rendering.
 		d_gl_context->begin_render();
 
@@ -666,7 +670,10 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		renderer->add_drawable(d_gl_clear_buffers);
 		renderer->pop_state_set();
 
-		renderer->push_transform(*d_gl_projection_transform);
+		// NOTE: We only push the model-view transform here.
+		// The projection transform is pushed inside the globe renderer.
+		// This is because there are two projection transforms (with differing far clip planes)
+		// and the choice is determined by the globe renderer.
 		renderer->push_transform(*d_gl_model_view_transform);
 
 		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
@@ -675,10 +682,12 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		d_globe.paint(
 				*renderer,
 				viewport_zoom_factor,
-				scale);
+				scale,
+				*d_gl_projection_transform_include_half_globe,
+				*d_gl_projection_transform_include_full_globe,
+				*d_gl_projection_transform_include_stars);
 
 		renderer->pop_transform(); // 'd_gl_model_view_transform'
-		renderer->pop_transform(); // 'd_gl_projection_transform'
 
 		// Pop the viewport state set.
 		renderer->pop_state_set();
@@ -908,10 +917,23 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	// The solution is to set the far clip plane to pass through the globe centre
 	// (effectively doing the equivalent of the opaque disc but in the transformation
 	// pipeline instead of the rasterisation pipeline).
+	//
+	// NOTE: We also use the far clip plane that passes through the globe's centre for
+	// regular OpenGL rendering when the globe is opaque (when the background colour's alpha
+	// is not transparent) because the projection transform is used by the raster rendering code
+	// to find the view frustum and this frustum is used to determine which raster tiles need
+	// rendering. By limiting the far clip plane to only what is visible we avoid generating
+	// raster tiles for the rear of the globe when they are not visible.
+	//
+	// So the regular far clip plane is used for everything except the stars and when
+	// the globe is transparent (and both of these off turned off by default).
+	// And both of these are also not used for SVG rendering.
 	static const GLdouble depth_near_clipping = 3.5;
-	static const GLdouble depth_far_clipping = 15;
+	static const GLdouble depth_far_clipping_include_stars = 15;
 	// The 0.0001 is there just so that the circumference of the globe doesn't get clipped.
-	static const GLdouble depth_far_clipping_svg = fabsf(EYE_Z - 0.0001);
+	static const GLdouble depth_far_clipping_include_half_globe = fabsf(EYE_Z - 0.0001);
+	// The 0.0001 is there just so that the tip of the rear of the globe doesn't get clipped.
+	static const GLdouble depth_far_clipping_include_full_globe = fabsf(2 * EYE_Z - 0.0001);
 
 	// Always fill up all of the available space.
 	update_dimensions();
@@ -930,8 +952,9 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	GLdouble dim_ratio = d_larger_dim / d_smaller_dim;
 	GLdouble larger_dim_clipping = smaller_dim_clipping * dim_ratio;
 
-	d_gl_projection_transform->get_matrix().gl_load_identity();
-	d_gl_projection_transform_svg->get_matrix().gl_load_identity();
+	d_gl_projection_transform_include_half_globe->get_matrix().gl_load_identity();
+	d_gl_projection_transform_include_full_globe->get_matrix().gl_load_identity();
+	d_gl_projection_transform_include_stars->get_matrix().gl_load_identity();
 
 	//
 	// Note that the coordinate system, as set up in initialise_render_graph() is:
@@ -949,22 +972,37 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 
 	if (d_canvas_screen_width <= d_canvas_screen_height)
 	{
-		d_gl_projection_transform->get_matrix().gl_ortho(-smaller_dim_clipping, smaller_dim_clipping,
+		d_gl_projection_transform_include_half_globe->get_matrix().gl_ortho(
+			-smaller_dim_clipping, smaller_dim_clipping,
 			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
-			depth_far_clipping);
-		d_gl_projection_transform_svg->get_matrix().gl_ortho(-smaller_dim_clipping, smaller_dim_clipping,
-			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
-			depth_far_clipping_svg);
+			depth_far_clipping_include_half_globe);
 
+		d_gl_projection_transform_include_full_globe->get_matrix().gl_ortho(
+			-smaller_dim_clipping, smaller_dim_clipping,
+			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
+			depth_far_clipping_include_full_globe);
+
+		d_gl_projection_transform_include_stars->get_matrix().gl_ortho(
+			-smaller_dim_clipping, smaller_dim_clipping,
+			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
+			depth_far_clipping_include_stars);
 	}
 	else
 	{
-		d_gl_projection_transform->get_matrix().gl_ortho(-larger_dim_clipping, larger_dim_clipping,
+		d_gl_projection_transform_include_half_globe->get_matrix().gl_ortho(
+			-larger_dim_clipping, larger_dim_clipping,
 			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
-			depth_far_clipping);
-		d_gl_projection_transform_svg->get_matrix().gl_ortho(-larger_dim_clipping, larger_dim_clipping,
+			depth_far_clipping_include_half_globe);
+
+		d_gl_projection_transform_include_full_globe->get_matrix().gl_ortho(
+			-larger_dim_clipping, larger_dim_clipping,
 			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
-			depth_far_clipping_svg);
+			depth_far_clipping_include_full_globe);
+
+		d_gl_projection_transform_include_stars->get_matrix().gl_ortho(
+			-larger_dim_clipping, larger_dim_clipping,
+			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
+			depth_far_clipping_include_stars);
 	}
 }
 

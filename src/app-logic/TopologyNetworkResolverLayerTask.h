@@ -84,6 +84,12 @@ namespace GPlatesAppLogic
 
 		virtual
 		void
+		activate(
+				bool active);
+
+
+		virtual
+		void
 		add_input_file_connection(
 				const QString &input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
@@ -117,10 +123,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		update(
-				const Layer &layer_handle /* the layer invoking this */,
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchored_plate_id,
-				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy);
+				const Reconstruction::non_null_ptr_type &reconstruction);
 
 
 		virtual
@@ -140,7 +143,6 @@ namespace GPlatesAppLogic
 
 	private:
 		static const QString TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME;
-		static const QString TOPOLOGICAL_SECTION_FEATURES_CHANNEL_NAME;
 
 		LayerTaskParams d_layer_task_params;
 

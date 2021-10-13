@@ -275,7 +275,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesGui::SessionMenu(
 				get_application_state(),
 				*d_file_io_feedback_ptr,
-				*d_unsaved_changes_tracker_ptr,
 				this)),
 	d_dock_state_ptr(
 			new GPlatesGui::DockState(
@@ -1559,15 +1558,21 @@ GPlatesQtWidgets::ViewportWindow::handle_load_symbol_file()
 		    get_view_state().get_last_open_directory(),
 		    QObject::tr("Symbol file (*.sym)"));
 
-    try{
-	GPlatesFileIO::SymbolFileReader::read_file(
-		filename,
-		get_view_state().get_feature_type_symbol_map());
+    try
+	{
+		GPlatesFileIO::SymbolFileReader::read_file(
+			filename,
+			get_view_state().get_feature_type_symbol_map());
     }
-    catch(...)
-    {
+	catch (std::exception &exc)
+	{
+		qWarning() << "Failed to load symbol file: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "Failed to load symbol file: unknown error";
+    }
 
-    }
     get_application_state().reconstruct();
 }
 
@@ -2100,10 +2105,14 @@ GPlatesQtWidgets::ViewportWindow::create_svg_file(
 	try{
 		d_reconstruction_view_widget_ptr->active_view().create_svg_output(filename);
 	}
-	catch(...)
+	catch (std::exception &exc)
 	{
-		std::cerr << "Caught exception creating SVG output." << std::endl;
+		qWarning() << "Caught exception creating SVG output: " << exc.what();
 	}
+	catch (...)
+	{
+		qWarning() << "Caught exception creating SVG output: unknown error";
+    }
 }
 
 
@@ -2124,23 +2133,36 @@ void
 GPlatesQtWidgets::ViewportWindow::closeEvent(
 		QCloseEvent *close_event)
 {
+	// FIXME: Refactor the code below into some app-logic type thing,
+	//        and then merely call it from here (checking the bool return value naturally)
+
+	// STEP 1: UNSAVED CHANGES WARNING
+	
+	// Check for unsaved changes and potentially give the user a chance to save/abort/etc.
+	bool close_ok = d_unsaved_changes_tracker_ptr->close_event_hook();
+	if ( ! close_ok) {
+		// User is Not OK with quitting GPlates at this point.
+		close_event->ignore();
+		return;
+	}
+
+	// STEP 2: RECORDING SESSION DETAILS
+	
+	// Unload all empty-filename feature collections, triggering the removal of their layer info,
+	// so that the Session we record as being the user's previous session is self-consistent.
+	get_application_state().get_session_management().unload_all_unnamed_files();
 	// Remember the current set of loaded files for next time.
 	get_application_state().get_session_management().close_event_hook();
 
-	// Check for unsaved changes and potentially give the user a chance to save/abort/etc.
-	bool close_ok = d_unsaved_changes_tracker_ptr->close_event_hook();
-	if (close_ok) {
-		// User is OK with quitting GPlates at this point.
-		close_event->accept();
-		// If we decide to accept the close event, we should also tidy up after ourselves.
-		close_all_dialogs();
-		// Make sure we really do quit - stray dialogs not caught by @a close_all_dialogs()
-		// (e.g. PyQt windows) will keep GPlates open.
-		QCoreApplication::quit();
-	} else {
-		// User is Not OK with quitting GPlates at this point.
-		close_event->ignore();
-	}
+	// STEP 3: FINAL TIDY-UP BEFORE QUITTING
+
+	// User is OK with quitting GPlates at this point.
+	close_event->accept();
+	// If we decide to accept the close event, we should also tidy up after ourselves.
+	close_all_dialogs();
+	// Make sure we really do quit - stray dialogs not caught by @a close_all_dialogs()
+	// (e.g. PyQt windows) will keep GPlates open.
+	QCoreApplication::quit();
 }
 
 
@@ -2671,10 +2693,6 @@ GPlatesQtWidgets::ViewportWindow::clone_feature_with_dialog()
 	{
 		d_clone_operation_ptr->clone_focused_feature(
 				dialog_result->first.get_file().get_feature_collection());
-		if (dialog_result->second)
-		{
-			get_application_state().update_layers(dialog_result->first);
-		}
 	}
 }
 

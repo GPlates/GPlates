@@ -72,6 +72,8 @@ DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <CGAL/interpolation_functions.h>
 #include <CGAL/Interpolation_gradient_fitting_traits_2.h>
 #include <CGAL/sibson_gradient_fitting.h>
+#include <CGAL/centroid.h>
+#include <CGAL/barycenter.h>
 POP_MSVC_WARNINGS
 
 //POP_GCC_WARNINGS
@@ -379,6 +381,12 @@ namespace GPlatesAppLogic
 				PointOnSphereForwardIterator points_begin,
 				PointOnSphereForwardIterator points_end)
 		{
+			// If no points then nothing to insert.
+			if (points_begin == points_end)
+			{
+				return;
+			}
+
 			std::vector<cgal_point_2_type> cgal_points;
 
 			// Loop over the points and convert them.
@@ -403,6 +411,12 @@ namespace GPlatesAppLogic
 				PointOnSphereForwardIterator points_end,
 				bool constrain_begin_and_end_points)
 		{
+			// If no points then nothing to insert.
+			if (points_begin == points_end)
+			{
+				return;
+			}
+
 
 			//qDebug() << "insert_points_into_constrained_delaunay_triangulation_2";
 			//qDebug() << "Constrain begin and end?" << constrain_begin_and_end_points;
@@ -497,8 +511,14 @@ namespace GPlatesAppLogic
 						//qDebug() << "before constrained_delaunay_triangulation_2.insert_constraint(v1,v2)";
 						constrained_delaunay_triangulation_2.insert_constraint(v1, v2);
 					}
+					catch (std::exception &exc)
+					{
+						qWarning() << exc.what();
+						continue;
+					}
 					catch (...)
 					{
+						qWarning() << "insert_points_into_constrained_delaunay_triangulation_2: Unknown error";
 						//qDebug() << "constrained_delaunay_triangulation_2.insert_constraint(v1,v2) failed!";
 						continue; // to next vertex ?
 					}
@@ -518,6 +538,12 @@ namespace GPlatesAppLogic
 				PointOnSphereForwardIterator points_end,
 				bool constrain_all_points)
 		{
+			// If no points then nothing to insert.
+			if (points_begin == points_end)
+			{
+				return;
+			}
+
 			//qDebug() << "insert_scattered_points_into_constrained_delaunay_triangulation_2";
 			//qDebug() << "Constrain all points? " << constrain_all_points;
 
@@ -574,8 +600,14 @@ namespace GPlatesAppLogic
 							//qDebug() << "before insert_constraint: v1 != v2";
 							constrained_delaunay_triangulation_2.insert_constraint(v1, v2);
 						}
+						catch (std::exception &exc)
+						{
+							qWarning() << exc.what();
+							continue;
+						}
 						catch (...)
 						{
+							qWarning() << "insert_points_into_constrained_delaunay_triangulation_2: Unknown error";
 							//qDebug() << "constrained_delaunay_triangulation_2.insert_constraint(v1,v2) failed!";
 							continue; // to next vertex ?
 						}
@@ -595,6 +627,12 @@ namespace GPlatesAppLogic
 				PointOnSphereForwardIterator points_begin,
 				PointOnSphereForwardIterator points_end)
 		{
+			// If no points then nothing to insert.
+			if (points_begin == points_end)
+			{
+				return;
+			}
+
 			//qDebug() << "insert_seed_points_into_constrained_mesh: ";
 			std::vector<cgal_point_2_type> seed_points;
 
@@ -631,6 +669,12 @@ If false, the mesh domain is the union of the bounded components including no se
 				PointOnSphereForwardIterator points_begin,
 				PointOnSphereForwardIterator points_end)
 		{
+			// If no points then nothing to insert.
+			if (points_begin == points_end)
+			{
+				return;
+			}
+
 			std::vector<cgal_point_3_type> cgal_points;
 
 			// Loop over the points and convert them.

@@ -192,6 +192,7 @@ namespace GPlatesAppLogic
 				property_iterator,
 				feature_geometry_ptr,
 				boost::none,
+				boost::none,
 				boost::none),
 			d_feature_geometry(feature_geometry_ptr),
 			d_present_day_seed_point(present_day_seed_point),

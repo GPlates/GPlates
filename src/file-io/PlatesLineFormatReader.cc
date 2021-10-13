@@ -2058,11 +2058,17 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			throw GPlatesFileIO::ReadErrors::NoValidGeometriesInPlatesFeature;
 		}
 
-		try {
+		try
+		{
 			creation_function(model, collection, old_plates_header, geometry_seq);
-		} catch (GPlatesGlobal::Exception &e) {
-			std::cerr << "Caught exception: " << e << std::endl;
-			std::cerr << "FIXME:  We really should report this properly!" << std::endl;
+		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "PlatesLineFormatReader.cc:create_feature_with_geometries: " << exc.what();
+		}
+		catch (...)
+		{
+			qWarning() << "PlatesLineFormatReader.cc:create_feature_with_geometries: Unknown error";
 		}
 	}
 

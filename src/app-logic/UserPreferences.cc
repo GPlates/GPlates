@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -96,6 +96,11 @@ namespace
 #else
 			return "scripts/";
 #endif
+
+		} else if (key == "paths/default_export_dir") {
+			// Get the platform-specific "Documents" dir. 
+			//   Linux and OSX: ~/Documents/
+			return QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation);
 
 		} else {
 			// No such magic key exists.

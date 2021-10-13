@@ -116,6 +116,13 @@ namespace GPlatesGui
 
 			}
 		}
+		catch (std::exception &exc)
+		{
+			QString message = QObject::tr("Error writing to file '%1': %2")
+					.arg(file_info.filePath()).arg(exc.what());
+			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
+					QMessageBox::Ok, QMessageBox::Ok);					
+		}
 		catch(...)
 		{
 			QString message = QObject::tr("An error occurred while writing to file '%1'")
@@ -170,7 +177,16 @@ namespace GPlatesGui
 				export_line(os,options,*it);
 			}
 
-		}catch(...)
+		}
+		catch (std::exception &exc)
+		{
+			os.close();
+			QString message = QObject::tr("Error writing to file '%1': %2")
+					.arg(file_info.filePath()).arg(exc.what());
+			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
+					QMessageBox::Ok, QMessageBox::Ok);					
+		}
+		catch(...)
 		{
 			os.close();
 			QString message = QObject::tr("An error occurred while writing to file '%1'")

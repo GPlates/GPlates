@@ -59,7 +59,7 @@ namespace GPlatesUtils
 			bool should_finish_exactly_on_end_time;
 			
 			size_type duration_in_frames;
-         double duration_in_ma;
+			double duration_in_ma;
 			bool includes_remainder_frame;
 			double remainder_frame_length;
 			double actual_start_time;

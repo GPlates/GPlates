@@ -52,6 +52,8 @@ namespace GPlatesFileIO
 			UNKNOWN,           //!< Format, or file extension, is unknown.
 
 			GMT,               //!< '.xy' extension.
+
+			OGRGMT,            //!< '.gmt' extension (and using OGR style gmt format).
 			
 			SHAPEFILE          //!< '.shp' extension.
 		};

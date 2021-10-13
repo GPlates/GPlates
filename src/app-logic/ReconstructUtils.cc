@@ -288,7 +288,7 @@ GPlatesAppLogic::ReconstructUtils::has_reconstructable_features(
 }
 
 
-void
+GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructUtils::reconstruct(
 		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
 		const double &reconstruction_time,
@@ -302,12 +302,12 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 	// reconstructable feature requires.
 	ReconstructContext reconstruct_context(
 			reconstruct_method_registry,
-			reconstruct_params,
 			reconstructable_features_collection);
 
 	// Reconstruct the reconstructable features.
-	reconstruct_context.reconstruct(
+	return reconstruct_context.reconstruct(
 			reconstructed_feature_geometries,
+			reconstruct_params,
 			reconstruction_tree_creator,
 			reconstruction_time);
 }

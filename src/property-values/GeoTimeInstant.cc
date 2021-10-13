@@ -142,6 +142,44 @@ GPlatesPropertyValues::GeoTimeInstant::is_coincident_with(
 }
 
 
+bool
+GPlatesPropertyValues::GeoTimeInstant::operator<(
+		const GeoTimeInstant &other) const
+{
+	if (d_type != other.d_type) {
+		// Since the types aren't the same, the geo-times can't be coincident, so in this
+		// block we're comparing strictly for "earlier-than-ness".
+		//
+		// We can compare the two geo-time instants purely by their time-position types.
+		if (other.d_type == TimePositionTypes::DistantFuture) {
+			// This geo-time must be either "distant past" or "real"; thus, 'this' is
+			// earlier than 'other'.
+			return true;
+		}
+		if (d_type == TimePositionTypes::DistantPast) {
+			// The other geo-time must be either "real" or "distant future"; thus,
+			// 'other' is later than 'this'.
+			return true;
+		}
+		return false;
+	} else if (d_type != TimePositionTypes::Real) {
+		// Both types are either "distant past" or "distant future"; either way, neither
+		// geo-time is either earlier than the other.
+		return false;
+	} else {
+		// Both types are "real"; hence, the geo-times must be compared by "value".
+		// Don't forget that, since positive numbers indicate time instants in the
+		// past, the larger the number, the further in the past.
+		// NOTE: By using the epsilon comparison we satisfy:
+		//   !(x < y) && !(y < x)
+		// ...for two values that are within epsilon of each other and hence satisfy the
+		// equivalence relation and so can be used to find elements in a std::map for example.
+		const double diff = d_value - other.d_value;
+		return diff > GPlatesMaths::GEO_TIMES_EPSILON;
+	}
+}
+
+
 std::ostream &
 GPlatesPropertyValues::operator<<(
 		std::ostream &o,

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -106,6 +106,20 @@ namespace GPlatesAppLogic
 		unload_all_files();
 
 		/**
+		 * Clear out all feature collections which do not correspond to a file on disk,
+		 * i.e. New Feature Collections or those with an empty filename.
+		 *
+		 * This is called in situations where a session is about to be saved but an
+		 * Unsaved Changes dialog might be triggered. If the user wishes to discard their
+		 * unnamed temporary feature collections, we should first unload them from the
+		 * model to trigger the appropriate auto-created-layer removal, so that the
+		 * logical state of the ReconstructionGraph @em matches the state we would be
+		 * re-loading from a stored session.
+		 */
+		void
+		unload_all_unnamed_files();
+
+		/**
 		 * GPlates is closing and we are to remember the current loaded file set
 		 * (if that is what the user wants us to do in this situation).
 		 */
@@ -133,6 +147,12 @@ namespace GPlatesAppLogic
 
 	private:
 
+		/**
+		 * Clear the current session so there's no files loaded and
+		 * no auto-created or user-created layers left.
+		 */
+		void
+		clear_session();
 
 		void
 		store_recent_session_list(

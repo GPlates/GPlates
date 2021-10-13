@@ -450,20 +450,22 @@ GPlatesGui::register_default_export_animation_types(
 					ExportResolvedTopologyAnimationStrategy>,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
+#if 0 // Not yet supported...
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
 				ExportAnimationType::RESOLVED_TOPOLOGIES,
 					ExportAnimationType::OGRGMT),
-		ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
-				new ExportResolvedTopologyAnimationStrategy::Configuration(
-					"Polygons.%P.%d.gmt",
-					ExportResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
-					default_resolved_topological_boundary_export_options)),
-		&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
-		&create_export_options_widget<
-			GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
-			ExportResolvedTopologyAnimationStrategy>,
-		&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
+					new ExportResolvedTopologyAnimationStrategy::Configuration(
+							"Polygons.%P.%d.gmt",
+							ExportResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
+							default_resolved_topological_boundary_export_options)),
+			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
+			&create_export_options_widget<
+					GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
+					ExportResolvedTopologyAnimationStrategy>,
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+#endif
 
 
 

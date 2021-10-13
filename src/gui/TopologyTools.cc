@@ -30,6 +30,7 @@
 #include <limits>
 #include <map>
 
+#include <boost/foreach.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/construct.hpp>
@@ -57,6 +58,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/GeometryUtils.h"
+#include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructedFeatureGeometryFinder.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionFeatureProperties.h"
@@ -88,6 +90,7 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/ModelUtils.h"
+#include "model/NotificationGuard.h"
 
 #include "presentation/ReconstructionGeometryRenderer.h"
 #include "presentation/ViewState.h"
@@ -917,22 +920,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 		return false;
 	}
 
-	// Find the RFGs, referencing the focused feature and the focused geometry property.
-	GPlatesAppLogic::ReconstructedFeatureGeometryFinder rfg_finder(
-			d_feature_focus_ptr->associated_geometry_property(),
-			d_feature_focus_ptr->associated_reconstruction_geometry()->reconstruction_tree().get()); 
-	rfg_finder.find_rfgs_of_feature(d_feature_focus_ptr->focused_feature());
-
-	// If there is more than one RFG for the focused geometry property then we won't allow
-	// it to be added - this is because the topology resolved won't know which RFG to use.
-	if (rfg_finder.num_rfgs_found() > 1)
-	{
-		qWarning() <<
-			"Cannot add to topology - the focused feature has multiple RFGs for the "
-			"focused geometry property - could be a flowline which is not currently supported.";
-		return false;
-	}
-
+#if 0
 	// Currently we cannot handle a feature that contains more than one geometry property.
 	// This is because a topology geometry is referenced using a property delegate and
 	// this means a feature id and a property name. So to uniquely reference a geometry
@@ -955,7 +943,6 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 	GPlatesFeatureVisitors::GeometryTypeFinder geometry_type_finder;
 	geometry_type_finder.visit_feature(d_feature_focus_ptr->focused_feature());
 
-#if 0
 // NOTE: MULTIPLE GEOM FIXME
 	if (geometry_type_finder.has_found_multiple_geometries_of_the_same_type())
 	{
@@ -984,18 +971,22 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 	{
 		return true;
 	}
-	
-	// else, it's in one of the sequences already; don't let it in again 
-	return false;
-
-#if 0
-	// FIXME: the above return is just a super short cut ; 
-	// FIXME: we might want to fix the code below 
 
 	//
 	// The focused feature is already in the topology.
+	//
+
+	// If the focused feature is in the topology *interior* then return false since it
+	// can only be added once to the interior.
+	// FIXME: We really should be using enums instead of 0 or 1 for the sequence numbers and
+	// call it SequenceType is better.
+	if (found_sequence_num == 1)
+	{
+		return false;
+	}
+
 	// It is possible to have the focused feature geometry occur more than
-	// once in the topology under certain conditions:
+	// once in the topology *boundary* under certain conditions:
 	// - it must be separated from itself by other geometry sections, or
 	// - there must be no contiguous sequence of more than two of the focused
 	//   feature geometry *and* it can only be inserted before itself, not after.
@@ -1016,19 +1007,19 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 
 	// For two or less sections in the topology it doesn't make sense for them
 	// to be the same geometry - the user has no reason to do this.
-	if (d_section_info_seqs[d_found_sequence_num].size() <= 2)
+	if (d_boundary_section_info_seq.size() <= 2)
 	{
 		return false;
 	}
 
 	// Get the current insertion point 
 	const section_info_seq_type::size_type insert_section_index =
-			d_topology_sections_container_ptr->insertion_point();
+			d_boundary_sections_container_ptr->insertion_point();
 
 	// Make sure that we don't create a contiguous sequence of three sections with the
 	// same geometry when we insert the focused feature geometry.
 	if (std::find(found_indices.begin(), found_indices.end(),
-			static_cast<int>(get_prev_index(insert_section_index, d_section_info_seqs[d_found_sequence_num])))
+			static_cast<int>(get_prev_index(insert_section_index, d_boundary_section_info_seq)))
 				!= found_indices.end())
 	{
 		// Cannot insert same geometry after itself.
@@ -1038,7 +1029,7 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 				static_cast<int>(insert_section_index)) != found_indices.end())
 	{
 		if (std::find(found_indices.begin(), found_indices.end(),
-				static_cast<int>(get_next_index(insert_section_index, d_section_info_seqs[d_found_sequence_num])))
+				static_cast<int>(get_next_index(insert_section_index, d_boundary_section_info_seq)))
 					!= found_indices.end())
 		{
 			// We'd be inserting in front of two sections with same geometry - not allowed.
@@ -1047,7 +1038,6 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 	}
 
 	return true;
-#endif
 }
 
 
@@ -1562,17 +1552,6 @@ GPlatesGui::TopologyTools::handle_apply()
 	// and attach it to the topology feature reference.
 	convert_topology_to_feature_property(d_topology_feature_ref);
 
-	// The topology feature has been modified so that it now behaves as a topological feature.
-	// Create any new layers required so the topological feature can be processed.
-	const boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference> file_ref =
-			GPlatesAppLogic::get_file_reference_containing_feature(
-				d_application_state_ptr->get_feature_collection_file_state(),
-				d_topology_feature_ref);
-
-	if(file_ref)
-	{
-		d_application_state_ptr->update_layers(*file_ref);
-	}
 	// Now that we're finished building/editing the topology switch to the
 	// tool used to choose a feature - this will allow the user to select
 	// another topology for editing or do something else altogether.
@@ -2213,6 +2192,18 @@ GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 	// We're going to repopulate it.
 	d_visible_boundary_section_seq.clear();
 
+	// Generate RFGs for all active ReconstructLayer's.
+	// This is needed because we are about to search the topological section features for
+	// their RFGs and if we don't generate the RFGs then they might not be found.
+	//
+	// The RFGs - we'll keep them active until we've finished searching for RFGs below.
+	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+	std::vector<GPlatesAppLogic::ReconstructHandle::type> reconstruct_handles;
+	GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
+			reconstructed_feature_geometries,
+			reconstruct_handles,
+			d_application_state_ptr->get_current_reconstruction());
+
 	// Get the reconstruction tree output of the default reconstruction tree layer.
 	// FIXME: Later on the user will be able to explicitly connect reconstruction tree layers
 	// as input to other layers - when that happens we'll need to handle non-default trees too.
@@ -2235,7 +2226,8 @@ GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 		const boost::optional<VisibleSection> visible_section =
 				section_info.reconstruct_section_info_from_table_row(
 						section_index,
-						*reconstruction_tree);
+						reconstruction_tree,
+						reconstruct_handles);
 
 		if (!visible_section)
 		{
@@ -2254,6 +2246,18 @@ GPlatesGui::TopologyTools::reconstruct_interior_sections()
 	// Clear the list of currently visible sections.
 	// We're going to repopulate it.
 	d_visible_interior_section_seq.clear();
+
+	// Generate RFGs for all active ReconstructLayer's.
+	// This is needed because we are about to search the topological section features for
+	// their RFGs and if we don't generate the RFGs then they might not be found.
+	//
+	// The RFGs - we'll keep them active until we've finished searching for RFGs below.
+	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+	std::vector<GPlatesAppLogic::ReconstructHandle::type> reconstruct_handles;
+	GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
+			reconstructed_feature_geometries,
+			reconstruct_handles,
+			d_application_state_ptr->get_current_reconstruction());
 
 	// Get the reconstruction tree output of the default reconstruction tree layer.
 	// FIXME: Later on the user will be able to explicitly connect reconstruction tree layers
@@ -2277,7 +2281,8 @@ GPlatesGui::TopologyTools::reconstruct_interior_sections()
 		const boost::optional<VisibleSection> visible_section =
 				section_info.reconstruct_section_info_from_table_row(
 						section_index,
-						*reconstruction_tree);
+						reconstruction_tree,
+						reconstruct_handles);
 
 		if (!visible_section)
 		{
@@ -2452,36 +2457,43 @@ GPlatesGui::TopologyTools::determine_boundary_segment_reversals()
 	// of reverse flags to see which minimised the rubber-banding distance).
 	// The rubber banding distance is the distance from the tail of one section to the
 	// head of the next section - added up over the visible sections in a sequence.
-	const std::vector< std::vector<section_info_seq_type::size_type> > reverse_section_subsets =
+	const std::vector< std::vector<section_info_seq_type::size_type> > reverse_visible_section_subsets =
 			find_reverse_section_subsets();
 
 	// Iterate over the section sequences.
 	std::size_t reverse_section_subset_index;
 	for (reverse_section_subset_index = 0;
-		reverse_section_subset_index < reverse_section_subsets.size();
+		reverse_section_subset_index < reverse_visible_section_subsets.size();
 		++reverse_section_subset_index)
 	{
-		const std::vector<visible_section_seq_type::size_type> &reverse_section_subset =
-				reverse_section_subsets[reverse_section_subset_index];
+		const std::vector<visible_section_seq_type::size_type> &reverse_visible_section_subset =
+				reverse_visible_section_subsets[reverse_section_subset_index];
 
 		// Get a vector of flags that determine whether to flip the reverse flag of
-		// each section or not.
+		// each visible section or not.
 		const std::vector<bool> flip_reverse_order_seq =
-				find_flip_reverse_order_flags(reverse_section_subset);
+				find_flip_reverse_order_flags(reverse_visible_section_subset);
 
 		// Now that we've calculated which reverse flags needed to be flipped
 		// we can go and flip them.
 		std::size_t reverse_section_indices_index;
 		for (reverse_section_indices_index = 0;
-			reverse_section_indices_index < reverse_section_subset.size();
+			reverse_section_indices_index < reverse_visible_section_subset.size();
 			++reverse_section_indices_index)
 		{
-			const section_info_seq_type::size_type reverse_section_index =
-					reverse_section_subset[reverse_section_indices_index];
-
 			if (flip_reverse_order_seq[reverse_section_indices_index])
 			{
-				flip_reverse_flag(reverse_section_index);
+				const visible_section_seq_type::size_type reverse_visible_section_index =
+						reverse_visible_section_subset[reverse_section_indices_index];
+
+				// NOTE: Need to call the overload of 'flip_reverse_flag' that accepts a
+				// 'VisibleSection' instead of a section index because there can be a mismatch
+				// between visible section indices and regular section indices - for example,
+				// if a section is not visible.
+				VisibleSection &reverse_visible_section =
+						d_visible_boundary_section_seq[reverse_visible_section_index];
+
+				flip_reverse_flag(reverse_visible_section);
 			}
 		}
 	}
@@ -3125,6 +3137,18 @@ GPlatesGui::TopologyTools::flip_reverse_flag(
 }
 
 
+void
+GPlatesGui::TopologyTools::flip_reverse_flag(
+		VisibleSection &visible_section_info)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			visible_section_info.d_section_info_index < d_boundary_section_info_seq.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	flip_reverse_flag(visible_section_info.d_section_info_index);
+}
+
+
 std::pair<
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
@@ -3313,6 +3337,11 @@ GPlatesGui::TopologyTools::convert_topology_to_feature_property(
 	// double check for non existant features
 	if ( ! feature_ref.is_valid() ) { return; }
 
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many as we incrementally modify the feature below.
+	GPlatesModel::NotificationGuard model_notification_guard(
+			d_application_state_ptr->get_model_interface().access_model());
+
 	// 
 	// We're interested in the "boundary" property.
 	//
@@ -3368,7 +3397,10 @@ GPlatesGui::TopologyTools::convert_topology_to_feature_property(
 					interior_property_value));
 	}
 
-	// Set the ball rolling again ...
+	// Do a new reconstruction since the feature has changed.
+	// But first release the model notification guard so other observers can adjust to the
+	// modified feature first.
+	model_notification_guard.release_guard();
 	d_application_state_ptr->reconstruct(); 
 }
 
@@ -3728,13 +3760,15 @@ GPlatesGui::TopologyTools::VisibleSection::VisibleSection(
 boost::optional<GPlatesGui::TopologyTools::VisibleSection>
 GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 		std::size_t section_index,
-		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree) const
+		const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+		const std::vector<GPlatesAppLogic::ReconstructHandle::type> &reconstruct_handles) const
 {
 	// Find the RFG, in the current Reconstruction, for the current topological section.
 	boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> section_rfg =
 			GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 					d_table_row.get_geometry_property(),
-					reconstruction_tree);
+					reconstruction_tree,
+					reconstruct_handles);
 
 	// If no RFG was found then either:
 	// - the feature id could not be resolved (feature not loaded or loaded twice), or

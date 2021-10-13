@@ -61,15 +61,6 @@ namespace GPlatesFileIO
 			{
 				switch (export_format)
 				{
-				case GMT:
-					GMTFormatReconstructedFeatureGeometryExport::export_geometries(
-						grouped_recon_geoms_seq,
-						filename,
-						referenced_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time);
-					break;
-
 				case SHAPEFILE:
 					OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 						grouped_recon_geoms_seq,
@@ -77,6 +68,24 @@ namespace GPlatesFileIO
 						referenced_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time);		
+					break;
+
+				case OGRGMT:
+					OgrFormatReconstructedFeatureGeometryExport::export_geometries(
+						grouped_recon_geoms_seq,
+						filename,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time);		
+					break;
+
+				case GMT:
+					GMTFormatReconstructedFeatureGeometryExport::export_geometries(
+						grouped_recon_geoms_seq,
+						filename,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time);
 					break;
 
 				default:

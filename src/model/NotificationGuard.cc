@@ -31,7 +31,8 @@
 
 GPlatesModel::NotificationGuard::NotificationGuard(
 		Model *model_ptr) :
-	d_model_ptr(model_ptr)
+	d_model_ptr(model_ptr),
+	d_guard_released(false)
 {
 	model_ptr->increment_notification_guard_count();
 }
@@ -39,6 +40,17 @@ GPlatesModel::NotificationGuard::NotificationGuard(
 
 GPlatesModel::NotificationGuard::~NotificationGuard()
 {
-	d_model_ptr->decrement_notification_guard_count();
+	release_guard();
 }
 
+
+void
+GPlatesModel::NotificationGuard::release_guard()
+{
+	if (!d_guard_released)
+	{
+		d_model_ptr->decrement_notification_guard_count();
+
+		d_guard_released = true;
+	}
+}

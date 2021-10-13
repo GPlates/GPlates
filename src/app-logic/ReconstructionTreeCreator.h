@@ -106,6 +106,22 @@ namespace GPlatesAppLogic
 		ReconstructionTree::non_null_ptr_to_const_type
 		get_reconstruction_tree() const;
 
+
+		/**
+		 * Changes the default reconstruction time.
+		 */
+		void
+		set_default_reconstruction_time(
+				const double &reconstruction_time);
+
+
+		/**
+		 * Changes the default anchor plate id.
+		 */
+		void
+		set_default_anchor_plate_id(
+				GPlatesModel::integer_plate_id_type anchor_plate_id);
+
 	private:
 		GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeCreatorImpl> d_impl;
 	};
@@ -177,6 +193,20 @@ namespace GPlatesAppLogic
 		virtual
 		ReconstructionTree::non_null_ptr_to_const_type
 		get_reconstruction_tree_default_reconstruction_time_and_anchored_plate_id() = 0;
+
+
+		//! Changes the default reconstruction time.
+		virtual
+		void
+		set_default_reconstruction_time(
+				const double &reconstruction_time) = 0;
+
+
+		//! Changes the default anchor plate id.
+		virtual
+		void
+		set_default_anchor_plate_id(
+				GPlatesModel::integer_plate_id_type anchor_plate_id) = 0;
 	};
 }
 

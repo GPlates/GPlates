@@ -574,7 +574,7 @@ GPlatesFileIO::ShapefileReader::ShapefileReader():
 
 GPlatesFileIO::ShapefileReader::~ShapefileReader()
 {
-	try {
+	try{
 		if(d_data_source_ptr){OGRDataSource::DestroyDataSource(d_data_source_ptr);
 		}
 	}
@@ -1272,14 +1272,27 @@ GPlatesFileIO::ShapefileReader::handle_point(
 					add_attributes_to_feature(feature,read_errors,source,location);
 					d_loaded_geometries++;
 				}
-				catch (...)
+				catch (std::exception &exc)
 				{
+					qWarning() << exc.what();
+
 					read_errors.d_recoverable_errors.push_back(
 						GPlatesFileIO::ReadErrorOccurrence(
-							source,
-							location,
-							GPlatesFileIO::ReadErrors::InvalidShapefilePoint,
-							GPlatesFileIO::ReadErrors::GeometryIgnored));
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::InvalidShapefilePoint,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
+				}
+				catch (...)
+				{
+					qWarning() << "GPlatesFileIO::ShapefileReader::handle_point: Unknown error";
+
+					read_errors.d_recoverable_errors.push_back(
+						GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::InvalidShapefilePoint,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
 				}
 			}
 			d_total_geometries++;
@@ -1321,8 +1334,19 @@ GPlatesFileIO::ShapefileReader::handle_multi_point(
 				add_attributes_to_feature(feature,read_errors,source,location);
 				d_loaded_geometries++;
 			}
+			catch (std::exception &exc)
+			{
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_point: " << exc.what();
+				read_errors.d_recoverable_errors.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::InvalidShapefileMultiPoint,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
+			}
 			catch(...)
 			{
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_point: Unknown error";
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 						source,
@@ -1375,14 +1399,27 @@ GPlatesFileIO::ShapefileReader::handle_linestring(
 		add_attributes_to_feature(feature,read_errors,source,location);
 		d_loaded_geometries++;
 	}
-	catch (...)
+	catch (std::exception &exc)
 	{
+		qWarning() << "GPlatesFileIO::ShapefileReader::handle_linestring: " << exc.what();
+
 		read_errors.d_recoverable_errors.push_back(
 			GPlatesFileIO::ReadErrorOccurrence(
-				source,
-				location,
-				GPlatesFileIO::ReadErrors::InvalidShapefilePolyline,
-				GPlatesFileIO::ReadErrors::GeometryIgnored));
+			source,
+			location,
+			GPlatesFileIO::ReadErrors::InvalidShapefilePolyline,
+			GPlatesFileIO::ReadErrors::GeometryIgnored));
+	}
+	catch (...)
+	{
+		qWarning() << "GPlatesFileIO::ShapefileReader::handle_linestring: Unknown error";
+
+		read_errors.d_recoverable_errors.push_back(
+			GPlatesFileIO::ReadErrorOccurrence(
+			source,
+			location,
+			GPlatesFileIO::ReadErrors::InvalidShapefilePolyline,
+			GPlatesFileIO::ReadErrors::GeometryIgnored));
 	}
 
 }
@@ -1446,8 +1483,21 @@ GPlatesFileIO::ShapefileReader::handle_multi_linestring(
 				add_polyline_geometry_to_feature(feature,feature_points);
 				d_loaded_geometries++;
 			}
+			catch (std::exception &exc)
+			{
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_linestring: " << exc.what();
+
+				read_errors.d_recoverable_errors.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::InvalidShapefilePolyline,
+					GPlatesFileIO::ReadErrors::GeometryIgnored));
+			}
 			catch (...)
 			{
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_linestring: Unknown error";
+
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 					source,
@@ -1484,8 +1534,21 @@ GPlatesFileIO::ShapefileReader::handle_polygon(
 			d_loaded_geometries++;
 			d_loaded_geometries++;
 		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: " << exc.what();
+
+			read_errors.d_recoverable_errors.push_back(
+				GPlatesFileIO::ReadErrorOccurrence(
+				source,
+				location,
+				GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+				GPlatesFileIO::ReadErrors::GeometryIgnored));
+		}
 		catch (...)
 		{
+			qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: Unknown error";
+
 			read_errors.d_recoverable_errors.push_back(
 				GPlatesFileIO::ReadErrorOccurrence(
 				source,
@@ -1511,12 +1574,26 @@ GPlatesFileIO::ShapefileReader::handle_polygon(
 		add_ring_to_points_list(ring,feature_points,read_errors,source,location);
 
 		if (!feature_points.empty()){
-			try {
+			try
+			{
 				add_polygon_geometry_to_feature(feature,feature_points);
 				d_loaded_geometries++;
 			}
+			catch (std::exception &exc)
+			{
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: " << exc.what();
+
+				read_errors.d_recoverable_errors.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+					GPlatesFileIO::ReadErrors::GeometryIgnored));
+			}
 			catch (...)
 			{
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: Unknown error";
+
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 					source,
@@ -1557,18 +1634,32 @@ GPlatesFileIO::ShapefileReader::handle_multi_polygon(
 		add_ring_to_points_list(ring,feature_points,read_errors,source,location);
 
 		if (!feature_points.empty()){
-			try {	
+			try
+			{	
 				add_polygon_geometry_to_feature(feature,feature_points);
 				d_loaded_geometries++;
 			}
+			catch (std::exception &exc)
+			{
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: " << exc.what();
+
+				read_errors.d_recoverable_errors.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+					GPlatesFileIO::ReadErrors::GeometryIgnored));
+			}
 			catch (...)
 			{
-					read_errors.d_recoverable_errors.push_back(
-						GPlatesFileIO::ReadErrorOccurrence(
-							source,
-							location,
-							GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
-							GPlatesFileIO::ReadErrors::GeometryIgnored));
+				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: Unknown error";
+
+				read_errors.d_recoverable_errors.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+					GPlatesFileIO::ReadErrors::GeometryIgnored));
 			}
 		}
 
@@ -1584,12 +1675,26 @@ GPlatesFileIO::ShapefileReader::handle_multi_polygon(
 			add_ring_to_points_list(ring,feature_points,read_errors,source,location);
 
 			if (!feature_points.empty()){
-				try {
+				try
+				{
 					add_polygon_geometry_to_feature(feature,feature_points);
 					d_loaded_geometries++;
 				}
+				catch (std::exception &exc)
+				{
+					qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: " << exc.what();
+
+					read_errors.d_recoverable_errors.push_back(
+						GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
+				}
 				catch (...)
 				{
+					qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: Unknown error";
+
 					read_errors.d_recoverable_errors.push_back(
 						GPlatesFileIO::ReadErrorOccurrence(
 						source,

@@ -84,6 +84,7 @@ GPlatesQtWidgets::ConfigureTextOverlayDialog::populate(
 	text_overlay_groupbox->setChecked(settings.is_enabled());
 
 	text_lineedit->setText(settings.get_text());
+	spinbox_decimal_places->setValue(settings.get_decimal_places());
 	d_font_button->set_font(settings.get_font());
 	d_colour_button->set_colour(settings.get_colour());
 	anchor_combobox->setCurrentIndex(static_cast<int>(settings.get_anchor()));
@@ -100,6 +101,7 @@ GPlatesQtWidgets::ConfigureTextOverlayDialog::save(
 	settings.set_enabled(text_overlay_groupbox->isChecked());
 
 	settings.set_text(text_lineedit->text());
+	settings.set_decimal_places(spinbox_decimal_places->value());
 	settings.set_font(d_font_button->get_font());
 	settings.set_colour(d_colour_button->get_colour());
 	settings.set_anchor(static_cast<GPlatesGui::TextOverlaySettings::Anchor>(anchor_combobox->currentIndex()));

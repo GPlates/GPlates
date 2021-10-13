@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,8 @@
 #define GPLATES_GUI_ANIMATIONCONTROLLER_H
 
 #include <QTimer>
+
+#include "utils/AnimationSequenceUtils.h"
 
 namespace GPlatesAppLogic
 {
@@ -170,10 +172,20 @@ namespace GPlatesGui
 		 * @a end_time(); otherwise, the last frame will be whatever multiple of
 		 * the increment would be closest to the end time but still fit inside the
 		 * animation range.
+		 *
+		 * See also: GPlatesUtils::AnimationSequence::calculate_sequence() and
+		 * GPlatesUtils::AnimationSequence::calculate_time_for_frame().
 		 */
 		double
 		calculate_time_for_frame(
 				GPlatesGui::AnimationController::frame_index_type frame) const;
+
+		/**
+		 * Returns complete information about the configured animation sequence.
+		 */
+		GPlatesUtils::AnimationSequence::SequenceInfo
+		get_sequence() const;
+
 
 		bool
 		should_finish_exactly_on_end_time() const;

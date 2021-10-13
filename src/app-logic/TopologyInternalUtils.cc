@@ -743,9 +743,8 @@ GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-		const boost::optional<const ReconstructionTree &> &reconstruction_tree,
-		const boost::optional<const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &> &
-				restrict_reconstructed_feature_geometries)
+		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree,
+		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolve_feature_id(
 			geometry_delegate.feature_id());
@@ -762,38 +761,8 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 			property_name_qstring);
 
 	// Find the RFGs, optionally in the reconstruction_tree, for the feature ref and target property.
-	ReconstructedFeatureGeometryFinder rfg_finder(
-			property_name,
-			reconstruction_tree ? &reconstruction_tree.get() : NULL); 
+	ReconstructedFeatureGeometryFinder rfg_finder(property_name, reconstruction_tree, reconstruct_handles); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
-
-	// Put found RFGs in a vector so two code paths (if/else) can generate results in same way.
-	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> found_rfgs;
-	if (restrict_reconstructed_feature_geometries)
-	{
-		// Search the found RFGs for those contained in 'restrict_reconstructed_feature_geometries'.
-		for (ReconstructedFeatureGeometryFinder::const_iterator found_rfg_iter = rfg_finder.found_rfgs_begin();
-			found_rfg_iter != rfg_finder.found_rfgs_end();
-			++found_rfg_iter)
-		{
-			const ReconstructedFeatureGeometry::non_null_ptr_type &found_rfg = *found_rfg_iter;
-
-			if (std::find(
-					restrict_reconstructed_feature_geometries->begin(),
-					restrict_reconstructed_feature_geometries->end(),
-					found_rfg) != restrict_reconstructed_feature_geometries->end())
-			{
-				found_rfgs.push_back(found_rfg);
-			}
-		}
-	}
-	else
-	{
-		found_rfgs.insert(
-				found_rfgs.end(),
-				rfg_finder.found_rfgs_begin(),
-				rfg_finder.found_rfgs_end());
-	}
 
 // FIXME: MULTIPLE GEOM
 
@@ -801,9 +770,9 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	// 'geometry_property' then it probably means the reconstruction time is
 	// outside the age range of the feature containing 'geometry_property'.
 	// This is ok - it's not necessarily an error.
-	if (found_rfgs.size() == 0)
+	if (rfg_finder.num_rfgs_found() == 0)
 	{ 
-		int num = found_rfgs.size();
+		int num = rfg_finder.num_rfgs_found();
 		qDebug() << "ERROR: " << num << "Reconstruction Feature Geometries (RFGs) found for:";
 		qDebug() << "  feature id =" 
 			<< GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
@@ -816,13 +785,14 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
         }
         qDebug() << "  property name =" << property_name_qstring;
         qDebug() << "  Unable to use any RFG.";
+
         return boost::none;
     }
-    else if (found_rfgs.size() > 1)
+    else if (rfg_finder.num_rfgs_found() > 1)
     {
         // We should only return boost::none for the case == 0, as above.
         // For the case >1 we return the rfg_finder.found_rfgs_begin() as normally
-        int num = found_rfgs.size();
+        int num = rfg_finder.num_rfgs_found();
         qDebug() << "WARNING: " << num << "Reconstruction Feature Geometries (RFGs) found for:";
         qDebug() << "  feature id =" 
 			<< GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
@@ -838,14 +808,15 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
     }
 
 	// Return the first RFG found.
-	return found_rfgs.front();
+	return *rfg_finder.found_rfgs_begin();
 }
 
 
 boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property,
-		const ReconstructionTree &reconstruction_tree)
+		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	/*
 	if (!geometry_property.is_valid())
@@ -859,15 +830,8 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 			geometry_property.handle_weak_ref();
 
 	// Find the RFGs, referencing 'reconstruction_tree', for the feature ref and geometry property.
-	ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, &reconstruction_tree); 
+	ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, reconstruction_tree, reconstruct_handles); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
-
-	// Because we are searching using a geometry properties iterator we can only
-	// find at most one RFG (unless the geometry got reconstructed twice and hence added to
-	// the Reconstruction twice - in which case this is an programming bug).
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			rfg_finder.num_rfgs_found() <= 1,
-			GPLATES_ASSERTION_SOURCE);
 
 	// If we found no RFG (referencing 'reconstruction_tree') that is reconstructed from
 	// 'geometry_property' then it probably means the reconstruction time is
@@ -875,15 +839,21 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	// This is ok - it's not necessarily an error.
 	if (rfg_finder.num_rfgs_found() == 0)
 	{
+		qDebug() <<
+			"WARNING: TopologyInternalUtils::find_reconstructed_feature_geometry: "
+			"Found no Reconstruction Feature Geometries (RFGs) - ignoring.";
+
 		return boost::none;
 	}
+	else if (rfg_finder.num_rfgs_found() > 1)
+	{
+		qDebug() <<
+			"WARNING: TopologyInternalUtils::find_reconstructed_feature_geometry: "
+			"Found more than one Reconstruction Feature Geometry (RFG) - using the first one found.";
+	}
 
-	// Get the only RFG found.
-	const ReconstructedFeatureGeometry::non_null_ptr_type &rfg =
-			*rfg_finder.found_rfgs_begin();
-
-	// Return the RFG.
-	return rfg;
+	// Return the first RFG found.
+	return *rfg_finder.found_rfgs_begin();
 }
 
 

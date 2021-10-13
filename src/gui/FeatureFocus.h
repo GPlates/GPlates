@@ -29,19 +29,20 @@
 #include <boost/optional.hpp>
 #include <QObject>
 
-#include "app-logic/Layer.h"
 #include "app-logic/ReconstructionGeometry.h"
-#include "app-logic/ReconstructionTree.h"
-#include "app-logic/FeatureCollectionFileState.h"
+
 #include "model/FeatureHandle.h"
 
 
-namespace GPlatesAppLogic
+namespace GPlatesPresentation
 {
-	class ApplicationState;
-	class Reconstruction;
+	class ViewState;
 }
 
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryCollection;
+}
 
 namespace GPlatesGui
 {
@@ -57,8 +58,9 @@ namespace GPlatesGui
 		Q_OBJECT
 	public:
 		
+		explicit
 		FeatureFocus(
-				GPlatesAppLogic::ApplicationState &application_state);
+				GPlatesPresentation::ViewState &view_state);
 
 		virtual
 		~FeatureFocus()
@@ -85,10 +87,7 @@ namespace GPlatesGui
 		}
 
 		/**
-		 * Accessor for the @a ReconstructGeometry associated with the
-		 * currently-focused feature (if there is one).
-		 *
-		 * NOTE: Remember to do boolean check on returned reconstruction geometry.
+		 * Accessor for the @a ReconstructGeometry associated with the currently-focused feature (if there is one).
 		 */
 		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type
 		associated_reconstruction_geometry() const
@@ -204,12 +203,12 @@ namespace GPlatesGui
 		announce_deletion_of_focused_feature();
 
 		/**
-		 * Notification of a new reconstruction - we use this to find a new associated
-		 * reconstruction geometry for the focused feature (if any).
+		 * Notification of an update to the rendered geometry collection - we use this to find a
+		 * new associated reconstruction geometry for the focused feature (if any) - the
+		 * rendered geometry collection contains only the visible geometries.
 		 */
 		void
-		handle_reconstruction(
-				GPlatesAppLogic::ApplicationState &application_state);
+		handle_rendered_geometry_collection_update();
 
 	signals:
 
@@ -255,8 +254,7 @@ namespace GPlatesGui
 		/**
 		 * The ReconstructionGeometry associated with the currently-focused feature.
 		 *
-		 * Note that there may not be a RG associated with the currently-focused feature,
-		 * in which case this would be a null pointer.
+		 * Note that there may not be a RG associated with the currently-focused feature.
 		 */
 		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_associated_reconstruction_geometry;
 
@@ -267,27 +265,26 @@ namespace GPlatesGui
 		GPlatesModel::FeatureHandle::iterator d_associated_geometry_property;
 
 		/**
-		 * Manages reconstruction generation.
-		 * ONLY needed so that FeatureFocus can have a stab at finding an RFG automatically
-		 * when given a properties_iterator during @a set_focus().
+		 * Used to find the visible reconstruction geometries as a short-list for searching
+		 * for the focused feature geometry because we don't want to pick up any old
+		 * or invisible reconstruction geometries.
 		 */
-		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
+		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 
 		/**
 		 * Find the new associated ReconstructionGeometry for the currently-focused feature (if any).
 		 *
-		 * When the reconstruction is re-calculated, it will be populated with all-new
+		 * When the rendered geometry collection is re-calculated, it will reference back to all-new
 		 * RGs.  The old RGs will be meaningless (but due to the power of intrusive-ptrs,
 		 * the associated RG currently referenced by this class will still exist).
 		 *
 		 * This function is used to iterate through the reconstruction geometries in the
-		 * supplied Reconstruction and find the new RG (if there is one) which corresponds
-		 * to the current associated RG; if a new RG is found, it will be assigned to be
-		 * the associated RG.
+		 * referenced by the rendered geometry collection and find the new RG (if there is one)
+		 * which corresponds to the current associated RG; if a new RG is found, it will be
+		 * assigned to be the associated RG.
 		 */
 		void
-		find_new_associated_reconstruction_geometry(
-				const GPlatesAppLogic::Reconstruction &reconstruction);
+		find_new_associated_reconstruction_geometry();
 	};
 }
 

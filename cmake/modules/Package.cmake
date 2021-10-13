@@ -274,28 +274,12 @@ IF (APPLE)
 	#   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate,
 	#   not including the extension. For example, cmake-2.6.1-Linux-i686.
 	#
-	SET(GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION "${GPLATES_PACKAGE_VERSION}")
-	# Add the Subversion version number to the package filename if this is a non-public release.
-	# A non-public release has an empty 'GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING' variable in 'ConfigDefault.cmake'.
-	IF (NOT "${GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING}")
-		# Get the location, inside the staging area location, to copy the application bundle to.
-		EXECUTE_PROCESS(
-				COMMAND svnversion ${CMAKE_SOURCE_DIR}
-				RESULT_VARIABLE SVN_VERSION_RESULT
-				OUTPUT_VARIABLE SVN_VERSION_OUTPUT
-				OUTPUT_STRIP_TRAILING_WHITESPACE
-			   )
-
-		IF (SVN_VERSION_RESULT)
-			MESSAGE(STATUS "Unable to determine svn version number for non-public release - ignoring.")
-		ELSE (SVN_VERSION_RESULT)
-			SET(GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION "${GPLATES_PACKAGE_VERSION}_r${SVN_VERSION_OUTPUT}")
-		ENDIF (SVN_VERSION_RESULT)
-	ENDIF (NOT "${GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING}")
-
-	# Finally set the actual package filename.
-	SET(CPACK_PACKAGE_FILE_NAME "${GPLATES_PACKAGE_NAME}-${GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
-	MESSAGE(STATUS "Package name: ${CPACK_PACKAGE_FILE_NAME}")
+	# NOTE: This is the default package name for public releases and we will alter it in PackageOSX.cmake
+	# to add the SVN version number for non-public releases - has to be done in PackageOSX.cmake because
+	# that cmake file gets executed when we type 'make package' whereas here we might pick up an old
+	# SVN version number if the source code changed but none of the cmake scripts have changed (and hence
+	# cmake didn't run this script again).
+	SET(CPACK_PACKAGE_FILE_NAME "${GPLATES_PACKAGE_NAME}-${GPLATES_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 
 	#   CPACK_GENERATOR - List of CPack generators to use. If not
 	#   specified, CPack will create a set of options (e.g.,
@@ -384,8 +368,6 @@ IF (APPLE)
 	# Set some configure variables that will be used by the following "CONFIGURE_FILE()" commands.
 	SET(BUILT_BUNDLE "${EXECUTABLE_OUTPUT_PATH}/${GPLATES_MAIN_TARGET}.app")
 	SET(PACKAGE_CPACK_CONFIG "${GPLATES_BINARY_DISTRIBUTION_DIR}/Package.cpack")
-	SET(OSX_GET_BUNDLE_STAGING_AREA_LOCATION_SHELL_SCRIPT
-		"${GPLATES_BINARY_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh")
 	SET(OSX_COPY_BUNDLE_TO_CPACK_STAGING_AREA_SHELL_SCRIPT
 		"${GPLATES_BINARY_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh")
 	SET(OSX_CREATE_INSTALLER_FROM_STANDALONE_BUNDLE_SHELL_SCRIPT
@@ -404,17 +386,12 @@ IF (APPLE)
 			${GPLATES_QT_PLUGIN_PATHS_ABSOLUTE} ${QT_PLUGINS_DIR}/${qtplugin_path})
 	ENDFOREACH (qtplugin)
 
-	# Configure the CPack configuration file.
-	CONFIGURE_FILE("${GPLATES_SOURCE_DISTRIBUTION_DIR}/Package.cpack.in"
-		"${GPLATES_BINARY_DISTRIBUTION_DIR}/Package.cpack" IMMEDIATE)
-
 	# Set executable permissions on template shell scripts.
 	# When these files are checked out from Subversion they should already have execute permission
 	# but sometimes they don't (eg, if source code was archived on a Windows machine and transferred to a Mac).
 	# When the shell scripts get created by configure_file it should copy the file permissions.
 	EXECUTE_PROCESS(
 			COMMAND chmod +x
-			"${GPLATES_SOURCE_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh.in"
 			"${GPLATES_SOURCE_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh.in"
 			"${GPLATES_SOURCE_DISTRIBUTION_DIR}/CreateInstallerFromStandaloneBundle.sh.in"
 			RESULT_VARIABLE EXECUTE_CHMOD_RESULT
@@ -427,10 +404,6 @@ IF (APPLE)
 			"${OSX_CREATE_INSTALLER_FROM_STANDALONE_BUNDLE_SHELL_SCRIPT}.")
 			MESSAGE("You will need to set their execute permissions manually.")
 	ENDIF (EXECUTE_CHMOD_RESULT)
-
-	# Configure the shell scripts.
-	CONFIGURE_FILE("${GPLATES_SOURCE_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh.in"
-		"${GPLATES_BINARY_DISTRIBUTION_DIR}/GetBundleStagingAreaLocation.sh" @ONLY IMMEDIATE)
 
 	CONFIGURE_FILE("${GPLATES_SOURCE_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh.in"
 		"${GPLATES_BINARY_DISTRIBUTION_DIR}/CopyBundleToCPackStagingArea.sh" @ONLY IMMEDIATE)

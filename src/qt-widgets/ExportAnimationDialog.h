@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -178,9 +178,9 @@ namespace GPlatesQtWidgets
 		}
 
 		void
-		set_time_to_view_time()
+		set_snapshot_time_to_view_time()
 		{
-			spinBox_single_time->setValue(view_time());		
+			widget_snapshot_time->setValue(view_time());		
 		}
 
 		/**
@@ -205,10 +205,7 @@ namespace GPlatesQtWidgets
 		react_remove_export_clicked();
 
 		void
-		react_remove_all_clicked();
-
-		void
-		react_add_all_clicked();
+		handle_export_selection_changed();
 
 	private:
 		/**

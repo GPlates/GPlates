@@ -154,7 +154,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::GLAgeGridMaskSource(
 	d_age_grid_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(200)),
 	// These textures don't really need a cache as we don't reuse their contents but it's
 	// easy to manage them with a cache.
-	d_intermediate_render_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(1)),
+	d_intermediate_render_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create()),
 	d_clear_buffers_state(GLClearBuffersState::create()),
 	d_clear_buffers(GLClearBuffers::create()),
 	d_mask_alpha_channel_state(GLMaskBuffersState::create()),
@@ -565,30 +565,27 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_mask(
 	//
 
 	// Simply allocate a new texture from the texture cache and fill it with data.
-	GPlatesUtils::ObjectCache<GLTexture>::volatile_object_ptr_type volatile_intermediate_texture =
-			d_intermediate_render_texture_cache->allocate_volatile_object();
-	GLTexture::shared_ptr_type intermediate_texture = volatile_intermediate_texture->get_cached_object();
+	// Get an unused tile texture from the cache if there is one.
+	boost::optional< boost::shared_ptr<GLTexture> > intermediate_texture =
+			d_intermediate_render_texture_cache->allocate_object();
 	if (!intermediate_texture)
 	{
-		intermediate_texture = volatile_intermediate_texture->recycle_an_unused_object();
-		if (!intermediate_texture)
-		{
-			intermediate_texture = volatile_intermediate_texture->set_cached_object(
-					GLTexture::create_as_auto_ptr(d_texture_resource_manager));
+		// No unused texture so create a new one...
+		intermediate_texture = d_intermediate_render_texture_cache->allocate_object(
+				GLTexture::create_as_auto_ptr(d_texture_resource_manager));
 
-			// The texture was just allocated so we need to create it in OpenGL.
-			create_tile_texture(intermediate_texture);
-		}
+		// The texture was just allocated so we need to create it in OpenGL.
+		create_tile_texture(intermediate_texture.get());
 	}
 
 	// Render the high and low byte textures to the intermediate texture.
 	render_age_grid_intermediate_mask(
-			intermediate_texture, high_byte_age_texture, low_byte_age_texture, renderer);
+			intermediate_texture.get(), high_byte_age_texture, low_byte_age_texture, renderer);
 
 
 	// Create a state set that binds the intermediate texture to texture unit 0.
 	GLBindTextureState::non_null_ptr_type bind_age_grid_intermediate_texture = GLBindTextureState::create();
-	bind_age_grid_intermediate_texture->gl_bind_texture(GL_TEXTURE_2D, intermediate_texture);
+	bind_age_grid_intermediate_texture->gl_bind_texture(GL_TEXTURE_2D, intermediate_texture.get());
 
 	GLCompositeStateSet::non_null_ptr_type state_set = GLCompositeStateSet::create();
 

@@ -133,6 +133,7 @@ GPlatesOpenGL::GLRenderOperationsTarget::draw(
 	// If the render target has changed then bind the new render target.
 	if (current_render_target != previous_render_target)
 	{
+		//PROFILE_BLOCK("GLRenderOperationsTarget::draw: unbind/bind");
 		previous_render_target->unbind();
 		current_render_target->bind();
 	}
@@ -157,6 +158,8 @@ GPlatesOpenGL::GLRenderOperationsTarget::draw(
 
 	// The current drawable.
 	boost::optional<GLDrawable::non_null_ptr_to_const_type> current_drawable;
+
+	//PROFILE_BEGIN(profile_render_to_target, "GLRenderOperationsTarget::draw: render to target");
 
 	// Iterate through the render groups - the order of iteration will follow
 	// the integer render group numbers which is what we want.
@@ -209,10 +212,14 @@ GPlatesOpenGL::GLRenderOperationsTarget::draw(
 					current_drawable = drawable;
 				}
 
+				//PROFILE_BLOCK("GLRenderOperationsTarget::draw: draw drawable");
+
 				drawable->draw();
 			}
 		}
 	}
+
+	//PROFILE_END(profile_render_to_target);
 
 	// Change the state to the root of the state graph to effectively restore the
 	// OpenGL state to the default state.
@@ -226,9 +233,6 @@ GPlatesOpenGL::GLRenderOperationsTarget::draw(
 
 	// Finished rendering to the render target.
 	current_render_target->end_render_to_target();
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 	return current_render_target;
 }

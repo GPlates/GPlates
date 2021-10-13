@@ -204,12 +204,9 @@ GPlatesAppLogic::CoRegistrationLayerTask::remove_input_layer_proxy_connection(
 
 void
 GPlatesAppLogic::CoRegistrationLayerTask::update(
-		const Layer &layer_handle /* the layer invoking this */,
-		const double &reconstruction_time,
-		GPlatesModel::integer_plate_id_type anchored_plate_id,
-		const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy)
+		const Reconstruction::non_null_ptr_type &reconstruction)
 {
-	d_coregistration_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+	d_coregistration_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
 
 	// If the layer task params have been modified then update our reconstruct layer proxy.
 	if (d_layer_task_params.d_set_cfg_table_called)
@@ -228,14 +225,14 @@ GPlatesAppLogic::CoRegistrationLayerTask::update(
 	if (d_using_default_reconstruction_layer_proxy)
 	{
 		// Avoid setting it every update unless it's actually a different layer.
-		if (default_reconstruction_layer_proxy != d_default_reconstruction_layer_proxy)
+		if (reconstruction->get_default_reconstruction_layer_output() != d_default_reconstruction_layer_proxy)
 		{
 			d_coregistration_layer_proxy->set_current_reconstruction_layer_proxy(
-					default_reconstruction_layer_proxy);
+					reconstruction->get_default_reconstruction_layer_output());
 		}
 	}
 
-	d_default_reconstruction_layer_proxy = default_reconstruction_layer_proxy;
+	d_default_reconstruction_layer_proxy = reconstruction->get_default_reconstruction_layer_output();
 
 
 	//

@@ -48,6 +48,7 @@ set(srcs
     Layer.h
     LayerInputChannelType.h
     LayerProxy.h
+    LayerProxyUtils.cc
     LayerProxyUtils.h
     LayerProxyVisitor.h
     LayerTask.cc
@@ -92,6 +93,7 @@ set(srcs
     ReconstructGraph.h
     ReconstructGraphImpl.cc
     ReconstructGraphImpl.h
+    ReconstructHandle.h
     Reconstruction.cc
     Reconstruction.h
     ReconstructionFeatureProperties.cc
@@ -179,8 +181,6 @@ set(srcs
     VelocityFieldCalculatorLayerTask.h
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h
-    VGPRenderSettings.cc
-    VGPRenderSettings.h
 )
 
 

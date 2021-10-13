@@ -190,7 +190,7 @@ namespace GPlatesFileIO
 		void
 		writeDecimal(
 				double val) {
-			d_writer.writeCharacters(QString::number(val));
+			d_writer.writeCharacters(QString::number(val, 'g', 17));
 		}
 
 

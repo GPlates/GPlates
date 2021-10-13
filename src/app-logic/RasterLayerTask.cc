@@ -446,12 +446,9 @@ GPlatesAppLogic::RasterLayerTask::remove_input_layer_proxy_connection(
 
 void
 GPlatesAppLogic::RasterLayerTask::update(
-		const Layer &layer_handle /* the layer invoking this */,
-		const double &reconstruction_time,
-		GPlatesModel::integer_plate_id_type anchored_plate_id,
-		const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy)
+		const Reconstruction::non_null_ptr_type &reconstruction)
 {
-	d_raster_layer_proxy->set_current_reconstruction_time(reconstruction_time);
+	d_raster_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
 
 	// If the layer task params have been modified then update our raster layer proxy.
 	if (d_layer_task_params.d_set_band_name_called)

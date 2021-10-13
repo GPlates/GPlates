@@ -29,6 +29,7 @@
 #define GPLATES_PROPERTYVALUES_GEOTIMEINSTANT_H
 
 #include <iosfwd>
+#include <boost/operators.hpp>
 
 
 namespace GPlatesPropertyValues
@@ -42,7 +43,9 @@ namespace GPlatesPropertyValues
 	 *  - time-instants in the "distant past";
 	 *  - time-instants in the "distant future".
 	 */
-	class GeoTimeInstant
+	class GeoTimeInstant :
+			public boost::less_than_comparable<GeoTimeInstant>,
+			public boost::equality_comparable<GeoTimeInstant>
 	{
 		/*
 		 * Implementation note:
@@ -237,6 +240,29 @@ namespace GPlatesPropertyValues
 		is_coincident_with(
 				const GeoTimeInstant &other) const;
 
+
+		/**
+		 * Equality comparison operator.
+		 */
+		bool
+		operator==(
+				const GeoTimeInstant &rhs) const
+		{
+			return is_coincident_with(rhs);
+		}
+
+
+		/**
+		 * Less than comparison operator.
+		 *
+		 * NOTE: This is *not* implemented by delegating to @a is_earlier_than_or_coincident_with
+		 * because it is not a strict weak ordering "if x < y then !(y < x)" and so cannot be
+		 * used in std::map for example.
+		 */
+		bool
+		operator<(
+				const GeoTimeInstant &rhs) const;
+
 	private:
 
 		TimePositionTypes::TimePositionType d_type;
@@ -259,16 +285,6 @@ namespace GPlatesPropertyValues
 		{  }
 
 	};
-
-
-	inline
-	bool
-	operator==(
-			const GeoTimeInstant &g1,
-			const GeoTimeInstant &g2)
-	{
-		return g1.is_coincident_with(g2);
-	}
 
 
 	std::ostream &

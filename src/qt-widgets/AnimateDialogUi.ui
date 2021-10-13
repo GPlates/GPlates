@@ -339,6 +339,9 @@
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="widget_current_time">
+          <property name="decimals">
+           <number>4</number>
+          </property>
           <property name="maximum">
            <double>1000000.000000000000000</double>
           </property>

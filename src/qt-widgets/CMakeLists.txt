@@ -359,7 +359,6 @@ set(srcs
     TopologyBoundaryResolverLayerOptionsWidget.cc
     TopologyBoundaryResolverLayerOptionsWidget.h
     TopologyBoundaryResolverLayerOptionsWidgetUi.ui
-
     TopologyNetworkPropertiesWidget.cc
     TopologyNetworkPropertiesWidget.h
     TopologyNetworkPropertiesWidgetUi.ui

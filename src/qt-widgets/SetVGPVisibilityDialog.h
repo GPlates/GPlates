@@ -46,7 +46,8 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	/**
-	 * Dialog to view and modify the ViewState's VGPRenderSettings.
+	 * Dialog to view and modify the ViewState's VGP parameters (currently handles both
+	 * app-logic and visual parameters).
 	 */
 	class SetVGPVisibilityDialog :
 			public QDialog,

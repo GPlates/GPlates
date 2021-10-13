@@ -78,8 +78,14 @@ GPlatesQtWidgets::ChooseFeatureCollectionDialog::get_file_reference(
 		{
 			return d_choose_widget->get_file_reference();
 		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "GPlatesQtWidgets::ChooseFeatureCollectionDialog::get_file_reference: " << exc.what();
+			return boost::none;
+		}
 		catch (...)
 		{
+			qWarning() << "GPlatesQtWidgets::ChooseFeatureCollectionDialog::get_file_reference: unknown error";
 			return boost::none;
 		}
 	}
@@ -103,8 +109,14 @@ GPlatesQtWidgets::ChooseFeatureCollectionDialog::get_file_reference(
 		{
 			return d_choose_widget->get_file_reference();
 		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "GPlatesQtWidgets::ChooseFeatureCollectionDialog::get_file_reference: " << exc.what();
+			return boost::none;
+		}
 		catch (...)
 		{
+			qWarning() << "GPlatesQtWidgets::ChooseFeatureCollectionDialog::get_file_reference: unknown error";
 			return boost::none;
 		}
 	}
