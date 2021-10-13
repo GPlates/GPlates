@@ -324,6 +324,26 @@ namespace GPlatesMaths
 			d_root_element = root_element;
 		}
 
+
+		/**
+		 * Returns true if there are any elements currently in this cube quad tree (including the root element).
+		 */
+		bool
+		empty() const
+		{
+			return d_quad_tree_node_pool.empty() && !d_root_element;
+		}
+
+
+		/**
+		 * Returns the number of elements currently in this cube quad tree (including the root element).
+		 */
+		unsigned int
+		size() const
+		{
+			return d_quad_tree_node_pool.size() + (d_root_element ? 1 : 0);
+		}
+
 		/**
 		 * Clears the entire cube quad tree including the root element.
 		 *
@@ -334,12 +354,16 @@ namespace GPlatesMaths
 		void
 		clear()
 		{
-			remove_quad_tree_root_node(CubeCoordinateFrame::POSITIVE_X);
-			remove_quad_tree_root_node(CubeCoordinateFrame::NEGATIVE_X);
-			remove_quad_tree_root_node(CubeCoordinateFrame::POSITIVE_Y);
-			remove_quad_tree_root_node(CubeCoordinateFrame::NEGATIVE_Y);
-			remove_quad_tree_root_node(CubeCoordinateFrame::POSITIVE_Z);
-			remove_quad_tree_root_node(CubeCoordinateFrame::NEGATIVE_Z);
+			// Clear the quad tree root pointers.
+			for (unsigned int cube_face = 0; cube_face < CubeCoordinateFrame::NUM_FACES; ++cube_face)
+			{
+				d_quad_trees[cube_face].root_node = typename Node::ptr_type();
+			}
+
+			// Clear the elements by clearing the object pool containing them.
+			d_quad_tree_node_pool.clear();
+
+			// Clear the root element.
 			d_root_element = boost::none;
 		}
 

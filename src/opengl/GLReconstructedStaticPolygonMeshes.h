@@ -33,13 +33,10 @@
 #include <boost/optional.hpp>
 #include <boost/ref.hpp>
 
+#include "GLCompiledDrawState.h"
 #include "GLCubeSubdivisionCache.h"
-#include "GLDrawable.h"
 #include "GLTransform.h"
-#include "GLTransformState.h"
 #include "GLVertexArray.h"
-#include "GLVertexBufferResource.h"
-#include "GLVertexElementArray.h"
 
 #include "app-logic/ReconstructContext.h"
 #include "app-logic/ReconstructMethodFiniteRotation.h"
@@ -49,13 +46,15 @@
 #include "maths/PolygonMesh.h"
 
 #include "utils/ReferenceCount.h"
+#include "utils/SubjectObserverToken.h"
 
 
 namespace GPlatesOpenGL
 {
+	class GLRenderer;
+
 	/**
-	 * A raster that is reconstructed by mapping it onto a set of present-day static polygons and
-	 * reconstructing the polygons (and hence partitioned pieces of the raster).
+	 * Reconstructed static polygons used to reconstruct a raster.
 	 */
 	class GLReconstructedStaticPolygonMeshes :
 			public GPlatesUtils::ReferenceCount<GLReconstructedStaticPolygonMeshes>
@@ -80,33 +79,6 @@ namespace GPlatesOpenGL
 		//! Typedef for a spatial partition of reconstructed feature geometries.
 		typedef GPlatesMaths::CubeQuadTreePartition<GPlatesAppLogic::ReconstructContext::Reconstruction>
 				reconstructions_spatial_partition_type;
-
-		/**
-		 * Typedef for a @a GLCubeSubvision cache of projection transforms of quad tree nodes.
-		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
-				true/*CacheProjectionTransform*/>
-						cube_subdivision_projection_transforms_cache_type;
-
-		/**
-		 * Typedef for a @a GLCubeSubvision cache of loose bounds of quad tree nodes.
-		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
-				false/*CacheProjectionTransform*/,
-				false/*CacheBounds*/,
-				true/*CacheLooseBounds*/>
-						cube_subdivision_loose_bounds_cache_type;
-
-		/**
-		 * Typedef for a @a GLCubeSubvision cache of bounding polygons of quad tree nodes.
-		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
-				false/*CacheProjectionTransform*/,
-				false/*CacheBounds*/,
-				false/*CacheLooseBounds*/,
-				true/*CacheBoundingPolygon*/>
-						cube_subdivision_bounding_polygons_cache_type;
-
 
 		/**
 		 * Represents the boolean membership state of present day polygon meshes.
@@ -323,7 +295,7 @@ namespace GPlatesOpenGL
 
 			/**
 			 * Returns those polygon meshes that are reconstructed by this transform group *and*
-			 * are visible in the view frustum of the transform state passed into
+			 * are visible in the view frustum of the transform stack passed into
 			 * @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
 			 */
 			const PresentDayPolygonMeshMembership &
@@ -334,7 +306,7 @@ namespace GPlatesOpenGL
 
 			/**
 			 * Returns those polygon meshes that are reconstructed by this transform group *and*
-			 * are visible in the view frustum of the transform state passed into
+			 * are visible in the view frustum of the transform stack passed into
 			 * @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
 			 *
 			 * NOTE: This includes reconstructing features that are not active (or not defined)
@@ -443,7 +415,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns the visible present-day polygon meshes for *all* transform groups.
 			 *
-			 * Visibility is defined by the view frustum of the transform state passed into
+			 * Visibility is defined by the view frustum of the transform stack passed into
 			 * @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
 			 */
 			const PresentDayPolygonMeshMembership &
@@ -455,7 +427,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns the visible present-day polygon meshes for *all* transform groups.
 			 *
-			 * Visibility is defined by the view frustum of the transform state passed into
+			 * Visibility is defined by the view frustum of the transform stack passed into
 			 * @a GLReconstructedStaticPolygonMeshes::get_visible_reconstructed_polygon_meshes.
 			 *
 			 * NOTE: This includes reconstructing features that are not active (or not defined)
@@ -538,7 +510,7 @@ namespace GPlatesOpenGL
 		 *
 		 * This sequence can be indexed by @a present_day_polygon_mesh_handle_type.
 		 */
-		typedef std::vector<boost::optional<GLDrawable::non_null_ptr_to_const_type> >
+		typedef std::vector<boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> >
 				present_day_polygon_mesh_drawables_seq_type;
 
 
@@ -558,23 +530,28 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
+				GLRenderer &renderer,
 				const polygon_mesh_seq_type &polygon_meshes,
 				const geometries_seq_type &present_day_geometries,
-				const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition,
-				const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &cube_subdivision_projection_transforms_cache,
-				const cube_subdivision_loose_bounds_cache_type::non_null_ptr_type &cube_subdivision_loose_bounds_cache,
-				const cube_subdivision_bounding_polygons_cache_type::non_null_ptr_type &cube_subdivision_bounding_polygons_cache,
-				const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager)
+				const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition)
 		{
 			return non_null_ptr_type(
 					new GLReconstructedStaticPolygonMeshes(
+							renderer,
 							polygon_meshes,
 							present_day_geometries,
-							reconstructions_spatial_partition,
-							cube_subdivision_projection_transforms_cache,
-							cube_subdivision_loose_bounds_cache,
-							cube_subdivision_bounding_polygons_cache,
-							vertex_buffer_resource_manager));
+							reconstructions_spatial_partition));
+		}
+
+
+		/**
+		 * Returns a subject token that clients can observe to see if they need to update themselves
+		 * (such as any cached data that depends on us) by getting reconstructed polygon meshes from us.
+		 */
+		const GPlatesUtils::SubjectToken &
+		get_subject_token() const
+		{
+			return d_subject_token;
 		}
 
 
@@ -641,13 +618,24 @@ namespace GPlatesOpenGL
 		 * along with the present day OpenGL polygon meshes.
 		 *
 		 * The visibility is determined by the view frustum that is in turn determined by the
-		 * specified transform state.
+		 * specified transform stack.
 		 */
 		ReconstructedPolygonMeshTransformsGroups::non_null_ptr_to_const_type
 		get_reconstructed_polygon_meshes(
-				const GLTransformState &transform_state);
+				GLRenderer &renderer);
 
 	private:
+		/**
+		 * Typedef for a @a GLCubeSubvision cache.
+		 */
+		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
+				true/*CacheProjectionTransform*/, false/*CacheLooseProjectionTransform*/,
+				true/*CacheFrustum*/, false/*CacheLooseFrustum*/,
+				true/*CacheBoundingPolygon*/, false/*CacheLooseBoundingPolygon*/,
+				false/*CacheBounds*/, true/*CacheLooseBounds*/>
+						cube_subdivision_cache_type;
+
+
 		/**
 		 * Typedef for mapping finite rotations to a group of reconstructed polygon meshes.
 		 *
@@ -661,34 +649,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Used to retrieve projection transforms and frustums during cube quad tree visitation.
-		 */
-		cube_subdivision_projection_transforms_cache_type::non_null_ptr_type d_cube_subdivision_projection_transforms_cache;
-
-		/**
-		 * Used to retrieve loose bounds during cube quad tree visitation.
-		 */
-		cube_subdivision_loose_bounds_cache_type::non_null_ptr_type d_cube_subdivision_loose_bounds_cache;
-
-		/**
-		 * Used to retrieve bounding small circles (from bounding polygons) during cube quad tree visitation.
-		 */
-		cube_subdivision_bounding_polygons_cache_type::non_null_ptr_type d_cube_subdivision_bounding_polygons_cache;
-
-		/**
-		 * Used for creating vertex arrays and vertex element arrays for the polygon meshes.
-		 */
-		GLVertexBufferResourceManager::shared_ptr_type d_vertex_buffer_resource_manager;
-
-		/**
 		 * All polygon mesh drawables share a single vertex array.
 		 */
 		GLVertexArray::shared_ptr_type d_polygon_meshes_vertex_array;
-
-		/**
-		 * All polygon mesh drawables share a single vertex element array.
-		 */
-		GLVertexElementArray::shared_ptr_type d_polygon_meshes_vertex_element_array;
 
 		/**
 		 * The OpenGL drawables representing each present day polygon mesh.
@@ -716,16 +679,18 @@ namespace GPlatesOpenGL
 		boost::optional<reconstructions_spatial_partition_type::non_null_ptr_to_const_type>
 				d_active_or_inactive_reconstructions_spatial_partition;
 
+		/**
+		 * Used to inform clients that we have been updated.
+		 */
+		GPlatesUtils::SubjectToken d_subject_token;
+
 
 		//! Constructor.
 		GLReconstructedStaticPolygonMeshes(
+				GLRenderer &renderer,
 				const polygon_mesh_seq_type &polygon_meshes,
 				const geometries_seq_type &present_day_geometries,
-				const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition,
-				const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &cube_subdivision_projection_transforms_cache,
-				const cube_subdivision_loose_bounds_cache_type::non_null_ptr_type &cube_subdivision_loose_bounds_cache,
-				const cube_subdivision_bounding_polygons_cache_type::non_null_ptr_type &cube_subdivision_bounding_polygons_cache,
-				const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager);
+				const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition);
 
 
 		/**
@@ -738,7 +703,8 @@ namespace GPlatesOpenGL
 				unsigned int num_polygon_meshes,
 				const reconstructions_spatial_partition_type::const_node_reference_type &reconstructions_quad_tree_node,
 				const reconstructions_spatial_partition_type::const_node_reference_type &active_or_inactive_reconstructions_quad_tree_node,
-				const cube_subdivision_loose_bounds_cache_type::node_reference_type &loose_bounds_quad_tree_node,
+				cube_subdivision_cache_type &cube_subdivision_cache,
+				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_quad_tree_node,
 				const bool cull_invisible_reconstructions,
 				bool visible,
 				const GLFrustum &frustum_planes,
@@ -760,11 +726,11 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Creates the vertex array and vertex element array of the polygon meshes and
-		 * wraps each individual polygon mesh in a drawable.
+		 * Creates the vertex array of the polygon meshes and wraps each individual polygon mesh in a drawable.
 		 */
 		void
 		create_polygon_mesh_drawables(
+				GLRenderer &renderer,
 				const polygon_mesh_seq_type &polygon_meshes);
 
 		/**
@@ -784,8 +750,8 @@ namespace GPlatesOpenGL
 				const boost::optional<const GPlatesMaths::BoundingSmallCircle &> &polygon_mesh_bounding_small_circle,
 				const std::vector<unsigned int> &polygon_mesh_parent_triangle_indices,
 				PresentDayPolygonMeshesNodeIntersections::intersection_partition_type::node_type &intersections_quad_tree_node,
-				const cube_subdivision_projection_transforms_cache_type::node_reference_type &projection_transforms_cache_node,
-				const cube_subdivision_bounding_polygons_cache_type::node_reference_type &bounding_polygons_cache_node,
+				cube_subdivision_cache_type &cube_subdivision_cache,
+				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_quad_tree_node,
 				unsigned int current_depth);
 	};
 }

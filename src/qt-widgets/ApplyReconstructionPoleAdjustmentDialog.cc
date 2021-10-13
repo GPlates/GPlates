@@ -33,6 +33,7 @@
 #include "feature-visitors/TotalReconstructionSequenceRotationInterpolater.h"
 #include "feature-visitors/TotalReconstructionSequenceRotationInserter.h"
 #include "maths/MathsUtils.h"
+#include "model/NotificationGuard.h"
 #include "presentation/ViewState.h"
 
 
@@ -381,12 +382,21 @@ GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 		return;
 	}
 
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many as we incrementally modify the feature below.
+	GPlatesModel::NotificationGuard model_notification_guard(
+			d_application_state_ptr->get_model_interface().access_model());
+
 	GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter inserter(
 			d_pole_time,
 			*d_adjustment_rel_fixed,
 			d_dialog_ptr->get_comment_line());
 	inserter.visit_feature(chosen_pole_seq);
 
-	d_application_state_ptr->reconstruct();
+	// We release the model notification guard which will cause a reconstruction to occur
+	// because we modified the model.
+	// Note that we do this before emitting the 'have_reconstructed' signal.
+	model_notification_guard.release_guard();
+
 	emit have_reconstructed();
 }

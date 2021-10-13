@@ -29,6 +29,9 @@
 
 #include <vector>
 #include <boost/cast.hpp>
+#include <boost/optional.hpp>
+#include <boost/weak_ptr.hpp>
+#include <QButtonGroup>
 #include <QPushButton>
 
 #include "AssignReconstructionPlateIdsDialogUi.h"
@@ -41,6 +44,8 @@
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
+
+#include "presentation/VisualLayer.h"
 
 
 namespace GPlatesAppLogic
@@ -58,6 +63,7 @@ namespace GPlatesGui
 namespace GPlatesPresentation
 {
 	class ViewState;
+	class VisualLayers;
 }
 
 namespace GPlatesQtWidgets
@@ -104,26 +110,26 @@ namespace GPlatesQtWidgets
 				int page);
 
 		void
-		react_cell_changed_partitioning_files(
-				int row,
-				int column);
-
-		void
 		react_cell_changed_partitioned_files(
 				int row,
 				int column);
 
 		void
-		react_clear_all_partitioning_files();
-
-		void
 		react_clear_all_partitioned_files();
 
 		void
-		react_select_all_partitioning_files();
+		react_select_all_partitioned_files();
 
 		void
-		react_select_all_partitioned_files();
+		react_cell_changed_partitioning_layers(
+				int row,
+				int column);
+
+		void
+		react_clear_all_partitioning_layers();
+
+		void
+		react_select_all_partitioning_layers();
 
 		void
 		react_reconstruction_time_radio_button(
@@ -132,6 +138,9 @@ namespace GPlatesQtWidgets
 		void
 		react_spin_box_reconstruction_time_changed(
 				double reconstruction_time);
+
+		void
+		react_respect_feature_time_period_check_box_changed();
 
 		void
 		react_partition_options_radio_button(
@@ -149,41 +158,25 @@ namespace GPlatesQtWidgets
 		{
 		public:
 			//! Files are disabled by default - user will need to enable them.
+			explicit
 			FileState(
-					const GPlatesFileIO::File::Reference &file_) :
+					GPlatesFileIO::File::Reference &file_) :
 				file(&file_),
 				enabled(false)
 			{  }
 
-				const GPlatesFileIO::File::Reference *file;
+			GPlatesFileIO::File::Reference *file;
 			bool enabled;
 		};
 		typedef std::vector<FileState> file_state_seq_type;
 
-		//! Typedef for a sequence of file pointers.
-		typedef std::vector<const GPlatesFileIO::File::Reference *> file_ptr_seq_type;
-
-		//! Typedef for a sequence of feature collection weak refs.
-		typedef std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-				feature_collection_seq_type;
-
 		/**
 		 * These should match the table columns set up in the UI designer.
 		 */
-		enum ColumnName
+		enum FileColumnName
 		{
 			FILENAME_COLUMN,
 			ENABLE_FILE_COLUMN
-		};
-
-		/**
-		 * The user's choice of reconstruction time.
-		 */
-		enum ReconstructionTimeType
-		{
-			PRESENT_DAY_RECONSTRUCTION_TIME,
-			CURRENT_RECONSTRUCTION_TIME,
-			USER_SPECIFIED_RECONSTRUCTION_TIME
 		};
 
 		struct FileStateCollection
@@ -196,12 +189,74 @@ namespace GPlatesQtWidgets
 			file_state_seq_type file_state_seq;
 		};
 
+		//! Typedef for a sequence of file pointers.
+		typedef std::vector<GPlatesFileIO::File::Reference *> file_ptr_seq_type;
 
-		GPlatesQtWidgets::InformationDialog *d_help_partitioning_files_dialog;
+		//! Typedef for a sequence of feature collection weak refs.
+		typedef std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+				feature_collection_seq_type;
+
+		//! Typedef for a layer pointer.
+		typedef boost::weak_ptr<GPlatesPresentation::VisualLayer> layer_ptr_type;
+
+		/**
+		 * Keeps track of which layers are enabled/disabled by the user.
+		 */
+		class LayerState
+		{
+		public:
+			//! Layers are disabled by default - user will need to enable them.
+			explicit
+			LayerState(
+					const layer_ptr_type &layer_) :
+				layer(layer_),
+				enabled(false)
+			{  }
+
+			layer_ptr_type layer;
+			bool enabled;
+		};
+		typedef std::vector<LayerState> layer_state_seq_type;
+
+		/**
+		 * These should match the table columns set up in the UI designer.
+		 */
+		enum LayerColumnName
+		{
+			LAYER_NAME_COLUMN,
+			ENABLE_LAYER_COLUMN
+		};
+
+		struct LayerStateCollection
+		{
+			LayerStateCollection() :
+				table_widget(NULL)
+			{  }
+
+			QTableWidget *table_widget; // Needs to be initialised after setupUi()
+			layer_state_seq_type layer_state_seq;
+		};
+
+		//! Typedef for a sequence of visual layers.
+		typedef std::vector<layer_ptr_type> layer_ptr_seq_type;
+
+		/**
+		 * The user's choice of reconstruction time.
+		 */
+		enum ReconstructionTimeType
+		{
+			PRESENT_DAY_RECONSTRUCTION_TIME,
+			CURRENT_RECONSTRUCTION_TIME,
+			USER_SPECIFIED_RECONSTRUCTION_TIME
+		};
+
+
+		GPlatesQtWidgets::InformationDialog *d_help_partitioning_layer_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_partitioned_files_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_reconstruction_time_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_partition_options_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_properties_to_assign_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_respect_feature_time_period;
 		
 		/**
 		 * Button added to buttonbox for 'Apply' button that partitions the features.
@@ -213,9 +268,19 @@ namespace GPlatesQtWidgets
 		GPlatesGui::FeatureFocus &d_feature_focus;
 
 		/**
-		 * Keeps track of which partitioning files are enabled by the user in the GUI.
+		 * The user selects a layer to be the polygon partitioning layer.
 		 */
-		FileStateCollection d_partitioning_file_state_seq;
+		GPlatesPresentation::VisualLayers &d_visual_layers;
+
+		/**
+		 * Used to obtain the layer type names.
+		 */
+		GPlatesPresentation::VisualLayerRegistry &d_visual_layer_registry;
+
+		/**
+		 * Keeps track of which partitioning layers are enabled by the user in the GUI.
+		 */
+		LayerStateCollection d_partitioning_layer_state_seq;
 
 		/**
 		 * Keeps track of which partitioned files are enabled by the user in the GUI.
@@ -233,6 +298,14 @@ namespace GPlatesQtWidgets
 		double d_spin_box_reconstruction_time;
 
 		/**
+		 * Determines if features are only partitioned if the reconstruction time is within
+		 * the time period over which the features are defined.
+		 *
+		 * This may not apply to some feature types (eg, virtual geomagnetic poles).
+		 */
+		bool d_respect_feature_time_period;
+
+		/**
 		 * How to assign plate ids to features.
 		 */
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType d_assign_plate_id_method;
@@ -248,7 +321,7 @@ namespace GPlatesQtWidgets
 		set_up_button_box();
 
 		void
-		set_up_partitioning_files_page();
+		set_up_partitioning_layers_page();
 
 		void
 		set_up_partitioned_files_page();
@@ -256,9 +329,11 @@ namespace GPlatesQtWidgets
 		void
 		set_up_general_options_page();
 
+		void
+		pop_up_no_partitioning_layers_found_or_selected_message_box();
 
 		void
-		pop_up_no_partitioning_polygon_features_found_message_box();
+		pop_up_no_partitioning_polygons_found_message_box();
 
 		void
 		pop_up_no_partitioned_files_selected_message_box();
@@ -269,42 +344,46 @@ namespace GPlatesQtWidgets
 				const file_ptr_seq_type &files);
 
 		void
-		clear_rows(
+		clear_file_rows(
 				FileStateCollection &file_state_collection);
 
 		void
-		add_row(
+		add_file_row(
 				FileStateCollection &file_state_collection,
-				const GPlatesFileIO::File::Reference &file);
+				GPlatesFileIO::File::Reference &file);
 
 		void
-		react_cell_changed(
-				FileStateCollection &file_state_collection,
-				int row,
-				int column);
+		initialise_layer_list(
+				LayerStateCollection &layer_state_collection,
+				const layer_ptr_seq_type &layers);
 
 		void
-		react_select_all(
-				FileStateCollection &file_state_collection);
+		clear_layer_rows(
+				LayerStateCollection &layer_state_collection);
 
 		void
-		react_clear_all(
-				FileStateCollection &file_state_collection);
-
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-		get_default_reconstruction_feature_collections();
+		add_layer_row(
+				LayerStateCollection &layer_state_collection,
+				const layer_ptr_type &visual_layer);
 
 		file_ptr_seq_type
 		get_loaded_files();
+
+		layer_ptr_seq_type
+		get_possible_partitioning_layers();
 
 		feature_collection_seq_type
 		get_selected_feature_collections(
 				FileStateCollection &file_state_collection);
 
+		layer_ptr_seq_type
+		get_selected_layers(
+				LayerStateCollection &layer_state_collection);
+
 		bool
 		partition_features();
 
-		GPlatesAppLogic::AssignPlateIds::non_null_ptr_type
+		boost::optional<GPlatesAppLogic::AssignPlateIds::non_null_ptr_type>
 		create_plate_id_assigner();
 
 		bool

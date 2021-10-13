@@ -71,10 +71,10 @@ namespace GPlatesAppLogic
 		 */
 		explicit
 		ReconstructedFeatureGeometryFinder(
-				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none,
-				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles_to_match = boost::none):
-			d_reconstruction_tree_to_match(reconstruction_tree_to_match),
-			d_reconstruct_handles_to_match(reconstruct_handles_to_match)
+				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles_to_match = boost::none,
+				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none) :
+			d_reconstruct_handles_to_match(reconstruct_handles_to_match),
+			d_reconstruction_tree_to_match(reconstruction_tree_to_match)
 		{  }
 
 		/**
@@ -89,11 +89,11 @@ namespace GPlatesAppLogic
 		explicit
 		ReconstructedFeatureGeometryFinder(
 				const GPlatesModel::PropertyName &property_name_to_match,
-				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none,
-				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles_to_match = boost::none):
+				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles_to_match = boost::none,
+				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none) :
 			d_property_name_to_match(property_name_to_match),
-			d_reconstruction_tree_to_match(reconstruction_tree_to_match),
-			d_reconstruct_handles_to_match(reconstruct_handles_to_match)
+			d_reconstruct_handles_to_match(reconstruct_handles_to_match),
+			d_reconstruction_tree_to_match(reconstruction_tree_to_match)
 		{  }
 
 		/**
@@ -112,11 +112,11 @@ namespace GPlatesAppLogic
 		explicit
 		ReconstructedFeatureGeometryFinder(
 				const GPlatesModel::FeatureHandle::iterator &properties_iterator_to_match,
-				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none,
-				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles_to_match = boost::none):
+				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles_to_match = boost::none,
+				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none) :
 			d_properties_iterator_to_match(properties_iterator_to_match),
-			d_reconstruction_tree_to_match(reconstruction_tree_to_match),
-			d_reconstruct_handles_to_match(reconstruct_handles_to_match)
+			d_reconstruct_handles_to_match(reconstruct_handles_to_match),
+			d_reconstruction_tree_to_match(reconstruction_tree_to_match)
 		{  }
 
 		/**
@@ -202,8 +202,8 @@ namespace GPlatesAppLogic
 	private:
 		boost::optional<GPlatesModel::PropertyName> d_property_name_to_match;
 		boost::optional<GPlatesModel::FeatureHandle::iterator> d_properties_iterator_to_match;
-		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> d_reconstruction_tree_to_match;
 		boost::optional<std::vector<ReconstructHandle::type> > d_reconstruct_handles_to_match;
+		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> d_reconstruction_tree_to_match;
 
 		rfg_container_type d_found_rfgs;
 	};

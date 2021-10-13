@@ -148,6 +148,9 @@ namespace GPlatesGui
 		void
 		choose_measure_distance_tool();
 
+		void
+		choose_create_small_circle_tool();
+
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt

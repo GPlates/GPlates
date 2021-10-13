@@ -32,5 +32,5 @@ void
 GPlatesGlobal::AssertionFailureException::write_message(
 		std::ostream &os) const
 {
-	os << "Assertion failure: " << " in " << d_filename << ":" << d_line_num << std::endl;
+	os << "Assertion failure";
 }

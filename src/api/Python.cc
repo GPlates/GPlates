@@ -39,21 +39,42 @@ void export_feature_collection();
 // presentation directory.
 void export_instance();
 
+void export_style();
+
 // qt-widgets directory.
 void export_main_window();
 
+void export_co_registration();
+
+void export_functions();
+
+void export_colour();
+void export_feature();
+void export_topology_tools();
+
 BOOST_PYTHON_MODULE(pygplates)
 {
+#ifdef GPLATES_PYTHON_EMBEDDING
 	// api directory.
 	export_console_reader();
 	export_console_writer();
-	export_feature_collection();
-
+	
 	// presentation directory.
 	export_instance();
 
 	// qt-widgets directory.
 	export_main_window();
+
+	export_style();
+	
+	//export_topology_tools();
+
+#endif	
+	export_feature_collection();
+	export_feature();
+	//export_co_registration();
+	export_functions();
+	export_colour();
 }
 
 #else

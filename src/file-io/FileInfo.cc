@@ -59,24 +59,12 @@ GPlatesFileIO::FileInfo::get_file_name_without_extension() const
 }
 
 
-GPlatesFileIO::FileInfo
-GPlatesFileIO::create_copy_with_new_filename(
-		const QString &filename,
-		const FileInfo &other_file_info)
-{
-	FileInfo file_info(filename);
-
-	file_info.set_model_to_shapefile_map(
-			other_file_info.get_model_to_shapefile_map());
-
-	return file_info;
-}
-
 
 bool
 GPlatesFileIO::is_writable(
-		const QFileInfo &file_info)
+		const QString &filename)
 {
+#if 0
 	// NOTE: This is known to not work correctly on Windows Vista and above when
 	// saving to the Desktop and certain other directories (in particular, those
 	// that the user can write to, but does not explicitly own). The test on
@@ -87,4 +75,21 @@ GPlatesFileIO::is_writable(
 	
 	QFileInfo dir(file_info.path());
 	return dir.permission(QFile::WriteUser);
+#else
+	QFile file(filename);
+	bool exists = file.exists();
+	bool can_open = file.open(QIODevice::WriteOnly | QIODevice::Append);
+	if (can_open)
+	{
+		file.close();
+
+		// Clean up: file.open() creates the file if it doesn't exist.
+		if (!exists)
+		{
+			file.remove();
+		}
+	}
+
+	return can_open;
+#endif
 }

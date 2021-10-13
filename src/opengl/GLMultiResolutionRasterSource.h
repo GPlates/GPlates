@@ -27,7 +27,8 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONRASTERSOURCE_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONRASTERSOURCE_H
 
-#include "GLRenderer.h"
+#include <boost/shared_ptr.hpp>
+
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
 
@@ -38,6 +39,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLRenderer;
+
 	/**
 	 * Interface for an arbitrary dimension source of RGBA data that's used as input
 	 * to a @a GLMultiResolutionRaster.
@@ -51,6 +54,11 @@ namespace GPlatesOpenGL
 
 		//! A convenience typedef for a shared pointer to a const @a GLMultiResolutionRasterSource.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLMultiResolutionRasterSource> non_null_ptr_to_const_type;
+
+		/**
+		 * Typedef for an opaque tile cache handle.
+		 */
+		typedef boost::shared_ptr<void> cache_handle_type;
 
 
 		/**
@@ -100,13 +108,69 @@ namespace GPlatesOpenGL
 		get_tile_texel_dimension() const = 0;
 
 
+		////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// A NOTE REGARDING MIPMAPPING:
+		//
+		// ORIGINAL COMMENT:
+		// If the auto-generate mipmaps OpenGL extension is supported then have mipmaps generated
+		// automatically for us and specify a mipmap minification filter,
+		// otherwise don't use mipmaps (and instead specify a non-mipmap minification filter).
+		// A lot of cards have support for this extension.
+		//
+		// UPDATED COMMENT:
+		// Generating mipmaps is causing problems when the input source is an age grid mask.
+		// This is probably because that input is not a regularly loaded texture (loaded from CPU).
+		// Instead it is a texture that's been rendered to by the GPU (via a render target).
+		// In this case the auto generation of mipmaps is probably a little less clear since it
+		// interacts with other specifications on mipmap rendering such as the frame buffer object
+		// extension (used by GPlates where possible for render targets) which has its own
+		// mipmap support.
+		// Best to avoid auto generation of mipmaps - we don't really need it anyway since
+		// our texture already matches pretty closely texel-to-pixel (texture -> viewport) since
+		// we have our own mipmapped raster tiles via proxied rasters. Also we turn on anisotropic
+		// filtering which will reduce any aliasing near the horizon of the globe.
+		// Turning off auto-mipmap-generation will also give us a small speed boost.
+		//
+		// if (GLEW_SGIS_generate_mipmap)
+		// {
+		// 	// Mipmaps will be generated automatically when the level 0 image is modified.
+		// 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
+		// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+		// }
+		// else
+		// {
+		// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		// }
+		//
+		////////////////////////////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Returns the texture internal format for the target textures passed to @a load_tile
+		 * (to store a tile's texture data).
+		 *
+		 * This is the 'internalformat' parameter of GLTexture::gl_tex_image_2D for example.
+		 *
+		 * Class @a GLMultiResolutionRaster (the client of this interface) uses this texture format
+		 * for rendering to a render-target (after loading data into it with @a load_tile).
+		 *
+		 * NOTE: The filtering mode is expected to be set to 'nearest' in all cases.
+		 * Currently 'nearest' fits best with the georeferencing information of rasters.
+		 * And also earlier hardware, that supports floating-point textures, does not implement
+		 * bilinear filtering (any linear filtering will need to be emulated in a pixel shader).
+		 */
+		virtual
+		GLint
+		get_target_texture_internal_format() const = 0;
+
+
 		/**
 		 * Loads RGBA8 data into @a target_texture using the specified tile offsets
 		 * and level.
 		 *
 		 * The caller must ensure that @a target_texture has been created in OpenGL -
-		 * in other words, not only allocated by also created using glTexImage2D
-		 * (you can pass NULL to glTexImage2D to create without loading image data).
+		 * in other words, not only allocated by also created using gl_tex_image_2D
+		 * (you can pass NULL to gl_tex_image_2D to create without loading image data).
 		 *
 		 * @a renderer is provided in case the data needs to be rendered into the texture.
 		 * @a render_target_usage dictates the render target usage if @a target_texture
@@ -150,7 +214,7 @@ namespace GPlatesOpenGL
 		 * Level 3: 0.625 * 0.625
 		 */
 		virtual
-		void
+		cache_handle_type
 		load_tile(
 				unsigned int level,
 				unsigned int texel_x_offset,
@@ -158,8 +222,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer,
-				GLRenderer::RenderTargetUsageType render_target_usage) = 0;
+				GLRenderer &renderer) = 0;
 
 	protected:
 		GLMultiResolutionRasterSource()

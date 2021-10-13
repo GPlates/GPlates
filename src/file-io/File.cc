@@ -33,21 +33,28 @@
 GPlatesFileIO::File::non_null_ptr_type
 GPlatesFileIO::File::create_file(
 		const FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection)
+		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
+		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration)
 {
-	// Determine the file format from the filename extension.
-	const FeatureCollectionFileFormat::Format file_format =
-			get_feature_collection_file_format(file_info);
+	return non_null_ptr_type(new File(feature_collection, file_info, file_configuration));
+}
 
-	return non_null_ptr_type(new File(feature_collection, file_info, file_format));
+
+GPlatesFileIO::File::Reference::non_null_ptr_type
+GPlatesFileIO::File::create_file_reference(
+		const FileInfo &file_info,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration)
+{
+	return File::Reference::non_null_ptr_type(new File::Reference(feature_collection, file_info, file_configuration));
 }
 
 
 GPlatesFileIO::File::File(
 		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
 		const FileInfo &file_info,
-		const FeatureCollectionFileFormat::Format file_format) :
-	d_file(new Reference(feature_collection->reference(), file_info, file_format)),
+		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration) :
+	d_file(new Reference(feature_collection->reference(), file_info, file_configuration)),
 	d_feature_collection_handle(feature_collection)
 {
 }
@@ -87,9 +94,9 @@ GPlatesFileIO::File::add_feature_collection_to_model(
 GPlatesFileIO::File::Reference::Reference(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 		const FileInfo &file_info,
-		const FeatureCollectionFileFormat::Format file_format) :
+		boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration) :
 	d_feature_collection(feature_collection),
 	d_file_info(file_info),
-	d_loaded_file_format(file_format)
+	d_file_configuration(file_configuration)
 {
 }

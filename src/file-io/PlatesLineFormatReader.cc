@@ -28,7 +28,6 @@
 
 #include "PlatesLineFormatReader.h"
 
-#include <fstream>
 #include <sstream>
 #include <string>
 #include <list>
@@ -36,6 +35,7 @@
 #include <boost/bind.hpp>
 
 #include <QDebug>
+#include <QFile>
 
 #include "ReadErrors.h"
 #include "LineReader.h"
@@ -344,19 +344,19 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			// else, process this boundary node
 
 			// convert type
-			GPlatesGlobal::FeatureTypes feature_type(GPlatesGlobal::UNKNOWN_FEATURE);
+			//GPlatesGlobal::FeatureTypes feature_type(GPlatesGlobal::UNKNOWN_FEATURE);
 
 			switch ( type )
 			{
 				case GPlatesGlobal::POINT_FEATURE:
-					feature_type = GPlatesGlobal::POINT_FEATURE;
+					//feature_type = GPlatesGlobal::POINT_FEATURE;
 					// Fill the vector of GpmlTopologicalSection::non_null_ptr_type
 					topo_section_ptrs_vector.push_back( 
 						create_gpml_topological_point( old_fid ) );
 					break;
 
 				case GPlatesGlobal::LINE_FEATURE:
-					feature_type = GPlatesGlobal::LINE_FEATURE;
+					//feature_type = GPlatesGlobal::LINE_FEATURE;
 					// Fill the vector of GpmlTopologicalSection::non_null_ptr_type
 					topo_section_ptrs_vector.push_back( 
 						create_gpml_topological_line_section( old_fid, use_reverse ) );
@@ -703,8 +703,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					PolylineOnSphere::create_on_heap(points);
 			GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 					GPlatesPropertyValues::GmlLineString::create(polyline);
+
 			GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type gml_orientable_curve =
 					GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
+
 			GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
 					GPlatesModel::ModelUtils::create_gpml_constant_value(
 							gml_orientable_curve, 
@@ -2325,7 +2327,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 void
 GPlatesFileIO::PlatesLineFormatReader::read_file(
-		const File::Reference &file,
+		File::Reference &file,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
@@ -2341,8 +2343,10 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
 
 	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
-	std::ifstream input(filename.toAscii().constData());
-	if ( ! input) {
+	// Open the file for reading.
+	QFile input(filename);
+	if (!input.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 

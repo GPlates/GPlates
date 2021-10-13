@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -33,8 +33,8 @@
 #include "VisualLayers.h"
 
 #include "api/Sleeper.h"
-
 #include "app-logic/ApplicationState.h"
+#include "app-logic/UserPreferences.h"
 
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
@@ -49,6 +49,7 @@
 #include "gui/GeometryFocusHighlight.h"
 #include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
+#include "gui/PythonManager.h"
 #include "gui/RasterColourPalette.h"
 #include "gui/RenderSettings.h"
 #include "gui/Symbol.h"
@@ -96,7 +97,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_viewport_zoom(
 			new GPlatesGui::ViewportZoom()),
 	d_viewport_projection(
-			new GPlatesGui::ViewportProjection(GPlatesGui::ORTHOGRAPHIC)),
+			new GPlatesGui::ViewportProjection(GPlatesGui::MapProjection::ORTHOGRAPHIC)),
 	d_geometry_focus_highlight(
 			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection,d_feature_type_symbol_map)),
 	d_feature_focus(
@@ -115,7 +116,7 @@ GPlatesPresentation::ViewState::ViewState(
 				*d_viewport_zoom)),
 	d_main_viewport_dimensions(0, 0),
 	d_last_open_directory(QDir::currentPath()),
-	d_show_stars(false),
+	d_show_stars(false),	// Overriden by UserPreferences: view/show_stars
 	d_background_colour(
 			new GPlatesGui::Colour(get_default_background_colour())),
 	d_graticule_settings(
@@ -127,9 +128,11 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::TextOverlaySettings()),
 	d_export_animation_registry(
 			new GPlatesGui::ExportAnimationRegistry()),
-	d_sleeper(
-			new GPlatesApi::Sleeper())
+	d_python_manager_ptr(GPlatesGui::PythonManager::instance())
 {
+	// Override a few defaults to the user's taste.
+	initialise_from_user_preferences();
+
 	connect_to_viewport_zoom();
 
 	// Connect to signals from FeatureFocus.
@@ -180,6 +183,15 @@ GPlatesPresentation::ViewState::ViewState(
 	register_default_export_animation_types(
 			*d_export_animation_registry);
 
+}
+
+
+void
+GPlatesPresentation::ViewState::initialise_from_user_preferences()
+{
+	const GPlatesAppLogic::UserPreferences &prefs = get_application_state().get_user_preferences();
+	
+	d_show_stars = prefs.get_value("view/show_stars").toBool();
 }
 
 
@@ -355,6 +367,8 @@ GPlatesPresentation::ViewState::setup_rendered_geometry_collection()
 			GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER);
 	orthogonal_main_layers.set(
 			GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+	orthogonal_main_layers.set(
+			GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_LAYER);
 
 	d_rendered_geometry_collection->set_orthogonal_main_layers(orthogonal_main_layers);
 }
@@ -427,6 +441,10 @@ GPlatesPresentation::ViewState::set_show_stars(
 		bool show_stars)
 {
 	d_show_stars = show_stars;
+
+	// If the user changes the "Show Stars" setting, we remember it for next time.
+	GPlatesAppLogic::UserPreferences &prefs = get_application_state().get_user_preferences();
+	prefs.set_value("view/show_stars", d_show_stars);
 }
 
 

@@ -46,6 +46,8 @@ namespace GPlatesQtWidgets
 				GPlatesGlobal::PreconditionViolationError(exception_source)
 			{  }
 			
+			~NoActiveEditWidgetException() throw(){}
+			
 			const char *
 			exception_name() const
 			{

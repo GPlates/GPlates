@@ -37,6 +37,7 @@
 namespace GPlatesAppLogic
 {
 	class FeatureCollectionFileIO;
+	class ReconstructMethodRegistry;
 }
 
 namespace GPlatesQtWidgets
@@ -51,6 +52,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ChooseFeatureCollectionDialog(
+				const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry,
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileIO &file_io,
 				QWidget *parent_ = NULL);
@@ -78,6 +80,20 @@ namespace GPlatesQtWidgets
 		boost::optional<std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> >
 		get_file_reference(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &initial);
+
+		/**
+		 * Overloaded version of get_file_reference which does not require an initial feature collection
+		 * or file_reference.
+		 *
+		 * Returns an iterator to the file selected by the user, and a boolean value
+		 * indicating whether the iterator points to a file that was newly created.
+		 *
+		 * If the user chose to create a new feature collection, a new feature
+		 * collection is created and an iterator to that new feature collection is
+		 * returned.
+		 */
+		boost::optional<std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> >
+		get_file_reference();
 
 	private:
 

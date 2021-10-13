@@ -28,6 +28,7 @@
 #include <ostream>
 #include <sstream>
 #include <iostream>
+#include <QDebug>
 
 #include "UnitVector3D.h"
 #include "HighPrecision.h"
@@ -71,17 +72,21 @@ GPlatesMaths::UnitVector3D::UnitVector3D(
 	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
 	if (std::fabs(mag_sqrd.dval() - 1.0) > 1.0e-13) {
 		double mag = std::sqrt(mag_sqrd.dval());
-		std::cerr << "Renormalising unit-vector (current deviation from 1.0 = "
-				<< HighPrecision<double>(mag - 1.0) << ")" << std::endl;
+#if 0
+		qWarning() << "Renormalising unit-vector (current deviation from 1.0 = "
+				<< HighPrecision<double>(mag - 1.0) << ")";
+#endif
 
 		double one_on_mag = 1.0 / mag;
 		d_x = d_x * one_on_mag;
 		d_y = d_y * one_on_mag;
 		d_z = d_z * one_on_mag;
 
+#if 0
 		mag = std::sqrt(((d_x * d_x) + (d_y * d_y) + (d_z * d_z)).dval());
-		std::cerr << "After renormalisation, deviation from 1.0 = "
-				<< HighPrecision<double>(mag - 1.0) << std::endl;
+		qWarning() << "After renormalisation, deviation from 1.0 = "
+				<< HighPrecision<double>(mag - 1.0);
+#endif
 	}
 }
 

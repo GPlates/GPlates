@@ -47,8 +47,13 @@ namespace GPlatesPresentation
 	{
 	public:
 
-		explicit
-		Application();
+		static
+		Application*
+		instance()
+		{
+			static Application* inst = new Application();
+			return inst;
+		}
 
 		GPlatesAppLogic::ApplicationState &
 		get_application_state()
@@ -69,11 +74,19 @@ namespace GPlatesPresentation
 		}
 
 	private:
-
+		Application();
+		Application(const Application&);
 		GPlatesAppLogic::ApplicationState d_application_state;
 		GPlatesPresentation::ViewState d_view_state;
 		GPlatesQtWidgets::ViewportWindow d_viewport_window;
 	};
+
+	inline
+	double
+	current_time()
+	{
+		return Application::instance()->get_application_state().get_current_reconstruction_time();
+	}
 }
 
 #endif  // GPLATES_PRESENTATION_APPLICATION_H

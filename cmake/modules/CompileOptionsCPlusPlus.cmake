@@ -131,16 +131,19 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     else(APPLE)
         # Use a list instead of a string so we can have multiple lines (instead of one giant line).
         set(warnings_flags_list
-            -W -Wall -ansi -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
+            -W -Wall -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
             -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
-            -Woverloaded-virtual -Wno-long-long -Wold-style-cast
-            -isystem /usr/include/qt4 -fno-strict-aliasing)
-    endif(APPLE)
+            -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
+ 	
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem /usr/include/qt4")
+   endif(APPLE)
     # Convert the semi-colon separated list 'warnings_flags_list' to the string 'warnings_flags' 
     # (otherwise semi-colons will appear on the compiler command-line).
     foreach(warning ${warnings_flags_list})
         set(warnings_flags "${warnings_flags} ${warning}")
     endforeach(warning ${warnings_flags_list})
+	
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ansi -fno-strict-aliasing")
 
     # Flags common to all build types.
     if (GPLATES_PUBLIC_RELEASE)

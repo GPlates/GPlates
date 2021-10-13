@@ -45,7 +45,7 @@ namespace GPlatesGui
 
 		explicit
 		ViewportProjection(
-				GPlatesGui::ProjectionType projection_type) :
+				GPlatesGui::MapProjection::Type projection_type) :
 			d_projection_type(projection_type),
 			d_central_meridian(0.)
 		{  }
@@ -54,7 +54,7 @@ namespace GPlatesGui
 		//! Set projection type and notify any listeners.
 		void
 		set_projection_type(
-				GPlatesGui::ProjectionType projection_type)
+				GPlatesGui::MapProjection::Type projection_type)
 		{
 			d_projection_type = projection_type;
 
@@ -73,7 +73,7 @@ namespace GPlatesGui
 		}
 
 
-		GPlatesGui::ProjectionType
+		GPlatesGui::MapProjection::Type
 		get_projection_type() const
 		{
 			return d_projection_type;
@@ -97,7 +97,7 @@ namespace GPlatesGui
 				const GPlatesGui::ViewportProjection &viewport_projection);
 
 	private:
-		GPlatesGui::ProjectionType d_projection_type;
+		GPlatesGui::MapProjection::Type d_projection_type;
 		double d_central_meridian;
 	};
 }

@@ -31,9 +31,8 @@
 
 #include "GLIntersect.h"
 #include "GLRenderer.h"
-#include "GLTransformState.h"
+#include "GLProjectionUtils.h"
 #include "GLVertex.h"
-#include "GLVertexArrayDrawable.h"
 
 #include "app-logic/GeometryUtils.h"
 
@@ -48,23 +47,14 @@
 
 
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::GLReconstructedStaticPolygonMeshes(
+		GLRenderer &renderer,
 		const polygon_mesh_seq_type &polygon_meshes,
 		const geometries_seq_type &present_day_geometries,
-		const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition,
-		const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &cube_subdivision_projection_transforms_cache,
-		const cube_subdivision_loose_bounds_cache_type::non_null_ptr_type &cube_subdivision_loose_bounds_cache,
-		const cube_subdivision_bounding_polygons_cache_type::non_null_ptr_type &cube_subdivision_bounding_polygons_cache,
-		const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager) :
-	d_cube_subdivision_projection_transforms_cache(cube_subdivision_projection_transforms_cache),
-	d_cube_subdivision_loose_bounds_cache(cube_subdivision_loose_bounds_cache),
-	d_cube_subdivision_bounding_polygons_cache(cube_subdivision_bounding_polygons_cache),
-	d_vertex_buffer_resource_manager(vertex_buffer_resource_manager),
+		const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition) :
 	d_present_day_polygon_meshes_node_intersections(polygon_meshes.size()),
 	d_reconstructions_spatial_partition(reconstructions_spatial_partition)
 {
-	//PROFILE_FUNC();
-
-	create_polygon_mesh_drawables(polygon_meshes);
+	create_polygon_mesh_drawables(renderer, polygon_meshes);
 
 	find_present_day_polygon_mesh_node_intersections(present_day_geometries, polygon_meshes);
 }
@@ -78,12 +68,15 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::update(
 {
 	d_reconstructions_spatial_partition = reconstructions_spatial_partition;
 	d_active_or_inactive_reconstructions_spatial_partition = active_or_inactive_reconstructions_spatial_partition;
+
+	// Let clients know that we have changed.
+	d_subject_token.invalidate();
 }
 
 
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::ReconstructedPolygonMeshTransformsGroups::non_null_ptr_to_const_type
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_meshes(
-		const GLTransformState &transform_state)
+		GLRenderer &renderer)
 {
 	PROFILE_FUNC();
 
@@ -92,7 +85,6 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 	//
 
 	reconstructed_polygon_mesh_transform_group_seq_type reconstructed_polygon_mesh_transform_groups;
-
 	// Keep track of which reconstructed polygon mesh transform groups are associated with
 	// which finite rotations.
 	reconstructed_polygon_mesh_transform_group_map_type reconstructed_polygon_mesh_transform_group_map;
@@ -105,6 +97,13 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 	// active-or-inactive reconstructions.
 	const bool cull_invisible_reconstructions = !d_active_or_inactive_reconstructions_spatial_partition;
 
+	// Create a subdivision cube quad tree traversal.
+	// No caching is required since we're only visiting each subdivision node once.
+	cube_subdivision_cache_type::non_null_ptr_type
+			cube_subdivision_cache =
+					cube_subdivision_cache_type::create(
+							GPlatesOpenGL::GLCubeSubdivision::create());
+
 	// Add any reconstructed polygons that exist in the root of the reconstructions cube quad tree.
 	// These are the ones that were too big to fit into any loose cube face.
 	add_reconstructed_polygon_meshes(
@@ -114,7 +113,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 			d_reconstructions_spatial_partition->begin_root_elements(),
 			d_reconstructions_spatial_partition->end_root_elements(),
 			true/*active_reconstructions_only*/,
-			// At the root level everthing is considered visible...
+			// At the root level everything is considered visible...
 			true/*visible*/);
 	if (d_active_or_inactive_reconstructions_spatial_partition)
 	{
@@ -129,8 +128,11 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 				true/*visible*/);
 	}
 
-	// Get the view frustum planes.
-	const GLFrustum &frustum_planes = transform_state.get_current_frustum_planes_in_model_space();
+	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
+	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+
+	// First get the view frustum planes.
+	const GLFrustum frustum_planes(model_view_transform, projection_transform);
 
 	// Traverse reconstructed feature geometries of the quad trees of the cube faces.
 	for (unsigned int face = 0; face < 6; ++face)
@@ -162,9 +164,9 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 		}
 
 		// Get the loose bounds quad tree root node.
-		const cube_subdivision_loose_bounds_cache_type::node_reference_type
-				loose_bounds_quad_tree_root =
-						d_cube_subdivision_loose_bounds_cache->get_quad_tree_root_node(cube_face);
+		const cube_subdivision_cache_type::node_reference_type
+				cube_subdivision_cache_quad_tree_root =
+						cube_subdivision_cache->get_quad_tree_root_node(cube_face);
 
 		get_reconstructed_polygon_meshes_from_quad_tree(
 				reconstructed_polygon_mesh_transform_groups,
@@ -172,7 +174,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 				num_polygon_meshes,
 				reconstructions_quad_tree_root,
 				active_or_inactive_reconstructions_quad_tree_root,
-				loose_bounds_quad_tree_root,
+				*cube_subdivision_cache,
+				cube_subdivision_cache_quad_tree_root,
 				cull_invisible_reconstructions,
 				true/*visible*/,
 				frustum_planes,
@@ -180,8 +183,25 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 				GLFrustum::ALL_PLANES_ACTIVE_MASK);
 	}
 
+	// Re-order the transform groups sorted by transform (the same order as 'reconstructed_polygon_mesh_transform_group_map').
+	// This is only being done to retain ordering by plate id (the most common transform) so that
+	// users can get a consistent ordering when the reconstructed polygons overlap.
+	reconstructed_polygon_mesh_transform_group_seq_type sorted_reconstructed_polygon_mesh_transform_groups;
+	sorted_reconstructed_polygon_mesh_transform_groups.reserve(reconstructed_polygon_mesh_transform_groups.size());
+	BOOST_FOREACH(
+			const reconstructed_polygon_mesh_transform_group_map_type::value_type &transform_group_value,
+			reconstructed_polygon_mesh_transform_group_map)
+	{
+		const reconstructed_polygon_mesh_transform_group_seq_type::size_type transform_group_index =
+				transform_group_value.second;
+		const ReconstructedPolygonMeshTransformGroup &transform_group =
+			reconstructed_polygon_mesh_transform_groups[transform_group_index];
+
+		sorted_reconstructed_polygon_mesh_transform_groups.push_back(transform_group);
+	}
+
 	return ReconstructedPolygonMeshTransformsGroups::create(
-			reconstructed_polygon_mesh_transform_groups,
+			sorted_reconstructed_polygon_mesh_transform_groups,
 			num_polygon_meshes);
 }
 
@@ -193,7 +213,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 		unsigned int num_polygon_meshes,
 		const reconstructions_spatial_partition_type::const_node_reference_type &reconstructions_quad_tree_node,
 		const reconstructions_spatial_partition_type::const_node_reference_type &active_or_inactive_reconstructions_quad_tree_node,
-		const cube_subdivision_loose_bounds_cache_type::node_reference_type &loose_bounds_quad_tree_node,
+		cube_subdivision_cache_type &cube_subdivision_cache,
+		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_quad_tree_node,
 		const bool cull_invisible_reconstructions,
 		bool visible,
 		const GLFrustum &frustum_planes,
@@ -205,12 +226,9 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 	// to test visibility.
 	if (visible && (frustum_plane_mask != 0))
 	{
-		boost::shared_ptr<const cube_subdivision_loose_bounds_cache_type::element_type>
-				loose_bounds_cached_element =
-						d_cube_subdivision_loose_bounds_cache->get_cached_element(
-								loose_bounds_quad_tree_node);
-		const GLIntersect::OrientedBoundingBox &quad_tree_node_loose_bounds =
-				loose_bounds_cached_element->get_loose_oriented_bounding_box();
+		const GLIntersect::OrientedBoundingBox quad_tree_node_loose_bounds =
+				cube_subdivision_cache.get_loose_oriented_bounding_box(
+						cube_subdivision_cache_quad_tree_node);
 
 		// See if the current quad tree node intersects the view frustum.
 		// Use the static quad tree node's bounding box.
@@ -230,12 +248,14 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 			// The current quad sub-tree at this node is not visible in the view frustum.
 			visible = false;
 		}
-
-		// Update the frustum plane mask so we only test against those planes that
-		// the current quad tree render node intersects. The node is entirely inside
-		// the planes with a zero bit and so its child nodes are also entirely inside
-		// those planes too and so they won't need to test against them.
-		frustum_plane_mask = out_frustum_plane_mask.get();
+		else
+		{
+			// Update the frustum plane mask so we only test against those planes that
+			// the current quad tree render node intersects. The node is entirely inside
+			// the planes with a zero bit and so its child nodes are also entirely inside
+			// those planes too and so they won't need to test against them.
+			frustum_plane_mask = out_frustum_plane_mask.get();
+		}
 	}
 
 	// Add the polygon meshes of the current quad tree node to the visible list.
@@ -294,10 +314,10 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 			}
 
 			// Get the loose bounds child quad tree node.
-			const cube_subdivision_loose_bounds_cache_type::node_reference_type
-					child_loose_bounds_quad_tree_node =
-							d_cube_subdivision_loose_bounds_cache->get_child_node(
-									loose_bounds_quad_tree_node,
+			const cube_subdivision_cache_type::node_reference_type
+					child_cube_subdivision_cache_quad_tree_node =
+							cube_subdivision_cache.get_child_node(
+									cube_subdivision_cache_quad_tree_node,
 									child_u_offset,
 									child_v_offset);
 
@@ -307,7 +327,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 					num_polygon_meshes,
 					child_reconstructions_quad_tree_node,
 					child_active_or_inactive_reconstructions_quad_tree_node,
-					child_loose_bounds_quad_tree_node,
+					cube_subdivision_cache,
+					child_cube_subdivision_cache_quad_tree_node,
 					cull_invisible_reconstructions,
 					visible,
 					frustum_planes,
@@ -327,6 +348,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_mes
 		bool active_reconstructions_only,
 		bool visible)
 {
+	//PROFILE_FUNC();
+
 	// Iterate over the sequence of reconstructions.
 	for (reconstructions_spatial_partition_type::element_const_iterator reconstructions_iter = begin_reconstructions;
 		reconstructions_iter != end_reconstructions;
@@ -343,7 +366,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_mes
 
 		// This is the drawable for the present day polygon mesh that corresponds to the
 		// current reconstructed feature geometry.
-		const boost::optional<GLDrawable::non_null_ptr_to_const_type> &present_day_polygon_mesh_drawable =
+		const boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> &present_day_polygon_mesh_drawable =
 				d_present_day_polygon_mesh_drawables[present_day_geometry_index];
 		if (!present_day_polygon_mesh_drawable)
 		{
@@ -384,13 +407,13 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_mes
 								reconstructed_polygon_mesh_transform_groups.size()));
 
 		// If we successfully inserted a new transform group then we need to create it.
-		// Because we only inserted it's index into the client's sequence.
+		// Because we only inserted its index into the client's sequence.
 		if (inserted.second)
 		{
 			// Convert the finite rotation from a unit quaternion to a matrix so we can feed it to OpenGL.
 			const GPlatesMaths::UnitQuaternion3D &quat_rotation =
 					reconstruct_method_finite_rotation->get_finite_rotation().unit_quat();
-			GLTransform::non_null_ptr_type rotation_transform = GLTransform::create(GL_MODELVIEW, quat_rotation);
+			GLTransform::non_null_ptr_type rotation_transform = GLTransform::create(quat_rotation);
 
 			// Add a new transform group to the client's sequence.
 			reconstructed_polygon_mesh_transform_groups.push_back(
@@ -430,6 +453,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_mes
 
 void
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables(
+		GLRenderer &renderer,
 		const polygon_mesh_seq_type &polygon_meshes)
 {
 	PROFILE_FUNC();
@@ -485,26 +509,16 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 		}
 	}
 
-	// If we don't have any polygon meshes for some reason then just return.
-	if (all_polygon_meshes_vertices.empty() || all_polygon_meshes_indices.empty())
-	{
-		return;
-	}
-
 	// Create a single OpenGL vertex array to contain the vertices of *all* polygon meshes.
-	d_polygon_meshes_vertex_array = GLVertexArray::create(
-			all_polygon_meshes_vertices,
-			GLArray::USAGE_STATIC,
-			d_vertex_buffer_resource_manager);
-
-	// Create a single OpenGL vertex array to contain the vertex indices of *all* polygon meshes.
-	// Note that this vertex element array is never used to draw - it just contains the indices.
-	// Each polygon mesh drawable will creates its own vertex element array that shares the
-	// indices of this array.
-	d_polygon_meshes_vertex_element_array = GLVertexElementArray::create(
-					all_polygon_meshes_indices,
-					GLArray::USAGE_STATIC,
-					d_vertex_buffer_resource_manager);
+	d_polygon_meshes_vertex_array = GLVertexArray::create(renderer);
+	// Store the vertices/indices in a new vertex buffer and vertex element buffer that is then
+	// bound to the vertex array.
+	// If we don't have any polygon meshes for some reason then just don't store them in the vertex array.
+	if (!all_polygon_meshes_vertices.empty() && !all_polygon_meshes_indices.empty())
+	{
+		set_vertex_array_data(
+				renderer, *d_polygon_meshes_vertex_array, all_polygon_meshes_vertices, all_polygon_meshes_indices);
+	}
 
 
 	// The polygon mesh drawables must map to the input polygon meshes.
@@ -522,33 +536,25 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 			const boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> &polygon_mesh_opt,
 			polygon_meshes)
 	{
-		boost::optional<GLDrawable::non_null_ptr_to_const_type> polygon_mesh_drawable;
+		boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> polygon_mesh_drawable;
 
 		// There might be no polygon mesh for the current slot.
 		if (polygon_mesh_opt)
 		{
 			const GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type &polygon_mesh = polygon_mesh_opt.get();
 
-			// Create a vertex element array that shares the same indices as the other polygon meshes.
-			const GLVertexElementArray::shared_ptr_type polygon_mesh_vertex_element_array =
-					GLVertexElementArray::create(
-							d_polygon_meshes_vertex_element_array->get_array_data(),
-							GL_UNSIGNED_INT);
-
 			// Specify what to draw for the current polygon mesh.
 			const GLuint num_vertices_in_polygon_mesh = polygon_mesh->get_vertices().size();
 			const GLuint num_triangles_in_polygon_mesh = polygon_mesh->get_triangles().size();
-			polygon_mesh_vertex_element_array->gl_draw_range_elements_EXT(
+			polygon_mesh_drawable = compile_vertex_array_draw_state(
+					renderer,
+					*d_polygon_meshes_vertex_array,
 					GL_TRIANGLES,
 					polygon_mesh_base_vertex_index/*start*/,
 					polygon_mesh_base_vertex_index + num_vertices_in_polygon_mesh - 1/*end*/,
 					3 * num_triangles_in_polygon_mesh/*count*/,
+					GL_UNSIGNED_INT,
 					sizeof(GLuint) * 3 * polygon_mesh_base_triangle_index/*indices_offset*/);
-
-			// Create the drawable.
-			polygon_mesh_drawable = GLVertexArrayDrawable::create(
-							d_polygon_meshes_vertex_array,
-							polygon_mesh_vertex_element_array);
 
 			// Update the base vertex index for the next polygon mesh.
 			polygon_mesh_base_vertex_index += num_vertices_in_polygon_mesh;
@@ -576,6 +582,13 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			present_day_geometries.size() == polygon_meshes.size(),
 			GPLATES_ASSERTION_SOURCE);
+
+	// Create a subdivision cube quad tree cache since we could be visiting each subdivision node more than once.
+	cube_subdivision_cache_type::non_null_ptr_type
+			cube_subdivision_cache =
+					cube_subdivision_cache_type::create(
+							GPlatesOpenGL::GLCubeSubdivision::create(),
+							1024/*max_num_cached_elements*/);
 
 	// Iterate over the present day polygon meshes.
 	const unsigned int num_polygon_meshes = polygon_meshes.size();
@@ -619,15 +632,10 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 					intersections_quad_tree_root_node =
 							d_present_day_polygon_meshes_node_intersections.get_or_create_quad_tree_root_node(cube_face);
 
-			// Get the projection transforms quad tree root node.
-			const cube_subdivision_projection_transforms_cache_type::node_reference_type
-					projection_transforms_cache_root_node =
-							d_cube_subdivision_projection_transforms_cache->get_quad_tree_root_node(cube_face);
-
-			// Get the bounding polygons quad tree root node.
-			const cube_subdivision_bounding_polygons_cache_type::node_reference_type
-					bounding_polygons_cache_root_node =
-							d_cube_subdivision_bounding_polygons_cache->get_quad_tree_root_node(cube_face);
+			// Get the subdivision cache quad tree root node.
+			const cube_subdivision_cache_type::node_reference_type
+					cube_subdivision_cache_root_node =
+							cube_subdivision_cache->get_quad_tree_root_node(cube_face);
 
 			// Recursively generate an intersections quad tree for the current cube face.
 			find_present_day_polygon_mesh_node_intersections(
@@ -637,8 +645,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 					polygon_mesh_bounding_small_circle,
 					polygon_mesh_triangle_indices,
 					intersections_quad_tree_root_node,
-					projection_transforms_cache_root_node,
-					bounding_polygons_cache_root_node,
+					*cube_subdivision_cache,
+					cube_subdivision_cache_root_node,
 					0/*current_depth*/);
 		}
 	}
@@ -653,8 +661,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 		const boost::optional<const GPlatesMaths::BoundingSmallCircle &> &polygon_mesh_bounding_small_circle,
 		const std::vector<unsigned int> &polygon_mesh_parent_triangle_indices,
 		PresentDayPolygonMeshesNodeIntersections::intersection_partition_type::node_type &intersections_quad_tree_node,
-		const cube_subdivision_projection_transforms_cache_type::node_reference_type &projection_transforms_cache_node,
-		const cube_subdivision_bounding_polygons_cache_type::node_reference_type &bounding_polygons_cache_node,
+		cube_subdivision_cache_type &cube_subdivision_cache,
+		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_quad_tree_node,
 		unsigned int current_depth)
 {
 	//
@@ -668,12 +676,9 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 	if (polygon_mesh_bounding_small_circle)
 	{
 		// Get the bounding polygon for the current cube quad tree node.
-		boost::shared_ptr<const cube_subdivision_bounding_polygons_cache_type::element_type>
-				bounding_polygons_cached_element =
-						d_cube_subdivision_bounding_polygons_cache->get_cached_element(
-								bounding_polygons_cache_node);
-		const GPlatesMaths::BoundingSmallCircle &node_bounding_small_circle =
-				bounding_polygons_cached_element->get_bounding_polygon()->get_bounding_small_circle();
+		const GPlatesMaths::BoundingSmallCircle node_bounding_small_circle =
+				cube_subdivision_cache.get_bounding_polygon(cube_subdivision_cache_quad_tree_node)
+						->get_bounding_small_circle();
 
 		if (!intersect(polygon_mesh_bounding_small_circle.get(), node_bounding_small_circle))
 		{
@@ -688,11 +693,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 	//
 
 	// Get the frustum for the current cube quad tree node.
-	boost::shared_ptr<const cube_subdivision_projection_transforms_cache_type::element_type>
-			projection_transforms_cached_element =
-					d_cube_subdivision_projection_transforms_cache->get_cached_element(
-							projection_transforms_cache_node);
-	const GLFrustum &quad_tree_node_frustum = projection_transforms_cached_element->get_frustum();
+	const GLFrustum quad_tree_node_frustum =
+			cube_subdivision_cache.get_frustum(cube_subdivision_cache_quad_tree_node);
 
 	//
 	// Find the triangles (from the parent triangles subset) of the current polygon mesh
@@ -761,10 +763,6 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 		return;
 	}
 
-	// Release our cached element before we traverse the child nodes otherwise the cache
-	// will continue to grow as we recurse.
-	projection_transforms_cached_element.reset();
-
 	//
 	// Iterate over the child quad tree nodes.
 	//
@@ -781,19 +779,11 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 									child_x_offset,
 									child_y_offset);
 
-			// Get the projection transforms child quad tree node.
-			const cube_subdivision_projection_transforms_cache_type::node_reference_type
-					child_projection_transforms_cache_node =
-							d_cube_subdivision_projection_transforms_cache->get_child_node(
-									projection_transforms_cache_node,
-									child_x_offset,
-									child_y_offset);
-
-			// Get the bounding polygons child quad tree node.
-			const cube_subdivision_bounding_polygons_cache_type::node_reference_type
-					child_bounding_polygons_cache_node =
-							d_cube_subdivision_bounding_polygons_cache->get_child_node(
-									bounding_polygons_cache_node,
+			// Get the subdivision cache child quad tree node.
+			const cube_subdivision_cache_type::node_reference_type
+					child_cube_subdivision_cache_quad_tree_node =
+							cube_subdivision_cache.get_child_node(
+									cube_subdivision_cache_quad_tree_node,
 									child_x_offset,
 									child_y_offset);
 
@@ -805,8 +795,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 					polygon_mesh_bounding_small_circle,
 					polygon_mesh_triangle_indices,
 					child_intersections_quad_tree_node,
-					child_projection_transforms_cache_node,
-					child_bounding_polygons_cache_node,
+					cube_subdivision_cache,
+					child_cube_subdivision_cache_quad_tree_node,
 					current_depth + 1);
 		}
 	}

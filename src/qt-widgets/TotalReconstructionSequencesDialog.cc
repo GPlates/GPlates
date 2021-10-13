@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -26,7 +27,6 @@
  */
 
 #include <vector>
-
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QTableWidget>
@@ -34,9 +34,12 @@
 #include <QMessageBox>
 #include <QDebug>
 
+#include "CreateTotalReconstructionSequenceDialog.h"
+#include "EditTotalReconstructionSequenceDialog.h"
 #include "TotalReconstructionSequencesDialog.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructUtils.h"
 #include "presentation/ViewState.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
@@ -59,6 +62,19 @@ namespace ColumnNames
 		COLSPAN = 0,  // The first column, when used for column-spanning text.
 		ICON = 0, TIME, LATITUDE, LONGITUDE, ANGLE, COMMENT,
 		NUMCOLS  // This should always be last.
+	};
+}
+
+namespace UserItemTypes
+{
+	/**
+	 * A type to describe what sort of data the QTreeWidgetItem represents - file, sequence, or pole.                                                                    
+	 */
+	enum UserItemType
+	{
+		FILE_ITEM_TYPE = 1000, /* 1000 is the minimum value for custom types. */
+		SEQUENCE_ITEM_TYPE,
+		POLE_ITEM_TYPE
 	};
 }
 
@@ -277,6 +293,7 @@ namespace GPlatesQtWidgets
 		boost::shared_ptr<PlateIdFilteringPredicate> d_filtering_predicate_ptr;
 		file_sequence_type d_files;
 	};
+
 }
 
 
@@ -425,7 +442,12 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::TotalReconstructionSequenc
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
 	d_file_state_ptr(&file_state),
-	d_search_index_ptr(new TotalReconstructionSequencesSearchIndex())
+	d_search_index_ptr(new TotalReconstructionSequencesSearchIndex()),
+	d_current_item(0),
+	d_current_trs_was_expanded(false),
+        d_app_state(view_state.get_application_state()),
+        d_create_trs_dialog_ptr(NULL),
+        d_edit_trs_dialog_ptr(NULL)
 {
 	setupUi(this);
 
@@ -438,6 +460,10 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::TotalReconstructionSequenc
 	make_signal_slot_connections();
 }
 
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::~TotalReconstructionSequencesDialog()
+{
+
+}
 
 namespace
 {
@@ -607,7 +633,7 @@ namespace
 				irreg_sampling->time_samples().end();
 		for ( ; iter != end; ++iter) {
 			// First, append a new tree-widget-item for this TimeSample.
-			QTreeWidgetItem *item_for_pole = new QTreeWidgetItem(parent_item_for_sequence, 0);
+			QTreeWidgetItem *item_for_pole = new QTreeWidgetItem(parent_item_for_sequence, UserItemTypes::POLE_ITEM_TYPE);
 
 #if 0
 			// Display an icon if the pole is disabled.
@@ -656,7 +682,8 @@ namespace
 	fill_tree_widget_items_for_features(
 			QTreeWidgetItem *parent_item_for_filename,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &fc,
-			GPlatesQtWidgets::TotalReconstructionSequencesSearchIndex::File *file)
+			GPlatesQtWidgets::TotalReconstructionSequencesSearchIndex::File *file,
+			GPlatesQtWidgets::tree_item_to_feature_map_type &tree_item_to_feature_map)
 	{
 		using namespace GPlatesFeatureVisitors;
 
@@ -720,7 +747,7 @@ namespace
 					.arg(end_time_as_str)
 					.arg(begin_time_as_str);
 
-			QTreeWidgetItem *item = new QTreeWidgetItem(parent_item_for_filename, 0);
+			QTreeWidgetItem *item = new QTreeWidgetItem(parent_item_for_filename, UserItemTypes::SEQUENCE_ITEM_TYPE);
 			item->setFirstColumnSpanned(true);
 			item->setText(ColumnNames::COLSPAN, feature_descr);
 
@@ -728,9 +755,37 @@ namespace
 					file->append_new_sequence(
 							moving_plate_id, fixed_plate_id, item);
 
+			// Store in the map.
+			tree_item_to_feature_map.insert(std::make_pair(item,(*iter)->reference()));
+
 			// Now print the poles in this sequence.
 			fill_tree_widget_items_for_poles(item, (*iter)->reference(), seq);
 		}
+	}
+
+	/**
+	 * A reverse look up in the tree_item_to_feature_map.
+	 *
+	 * Returns the iterator for the map element which has value @a feature_weak_ref.
+	 *
+	 * This won't be very efficient, but we don't need to use this very often - each
+	 * time we've finished editing a TRS in the tree. 
+	 */
+	GPlatesQtWidgets::tree_item_to_feature_map_type::const_iterator
+	reverse_lookup(
+		const GPlatesQtWidgets::tree_item_to_feature_map_type &tree_item_to_feature_map,
+		const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref)
+	{
+		GPlatesQtWidgets::tree_item_to_feature_map_type::const_iterator it =
+			tree_item_to_feature_map.begin();
+		for (; it != tree_item_to_feature_map.end() ; ++it)
+		{
+			if (it->second == feature_weak_ref)
+			{
+				return it;
+			}
+		}
+		return tree_item_to_feature_map.end();
 	}
 }
 
@@ -739,6 +794,8 @@ void
 GPlatesQtWidgets::TotalReconstructionSequencesDialog::update()
 {
 	using namespace GPlatesAppLogic;
+
+	d_tree_item_to_feature_map.clear();
 
 	d_search_index_ptr->clear();
 	treewidget_seqs->clear();
@@ -753,16 +810,20 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::update()
 		if (ReconstructUtils::has_reconstruction_features(fc)) {
 			// This feature collection contains reconstruction features.
 			// Add a top-level QTreeWidgetItem for the filename.
-			QTreeWidgetItem *item = new QTreeWidgetItem(treewidget_seqs, 0);
+			QTreeWidgetItem *item = new QTreeWidgetItem(treewidget_seqs, UserItemTypes::FILE_ITEM_TYPE);
 			item->setFirstColumnSpanned(true);
 			QString filename = iter->get_file().get_file_info().get_display_name(false);
 			item->setText(ColumnNames::COLSPAN, filename);
 
 			TotalReconstructionSequencesSearchIndex::File *file =
 					d_search_index_ptr->append_new_file(filename, item);
-			fill_tree_widget_items_for_features(item, fc, file);
+			fill_tree_widget_items_for_features(item, fc, file,d_tree_item_to_feature_map);
 		}
 	}
+
+	// Sort the tree by moving plate id anytime we update. This means the tree elements may have a different
+	// order from that in the corresponding rotation file. 
+	treewidget_seqs->sortItems(ColumnNames::COLSPAN,Qt::AscendingOrder);
 }
 
 
@@ -817,7 +878,43 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::handle_current_item_change
 		QTreeWidgetItem *current,
 		QTreeWidgetItem *previous)
 {
+	if (current == 0)
+	{
+		return;
+	}
 	//qDebug() << "Current item changed from" << previous << "to" << current;
+	//qDebug() << "Current type: " << current->type();
+
+	QTreeWidgetItem *current_item = current;
+	if (current_item->type() == UserItemTypes::POLE_ITEM_TYPE)
+	{
+		current_item = current_item->parent();
+	}
+
+	tree_item_to_feature_map_type::iterator iter = d_tree_item_to_feature_map.find(current_item);
+
+	if (iter == d_tree_item_to_feature_map.end())
+	{
+		return;
+	}	
+
+	GPlatesModel::FeatureHandle::weak_ref feature_ref = iter->second;
+	if (!feature_ref.is_valid())
+	{
+		button_Edit_Sequence->setEnabled(false);
+		button_Delete_Sequence->setEnabled(false);
+		return;
+	}
+
+	bool disabled_sequence = GPlatesAppLogic::TRSUtils::one_of_trs_plate_ids_is_999(feature_ref);
+
+	button_Edit_Sequence->setEnabled(
+			((current->type() == UserItemTypes::SEQUENCE_ITEM_TYPE)||
+			(current->type() == UserItemTypes::POLE_ITEM_TYPE))  && 
+			!disabled_sequence);
+
+	button_Delete_Sequence->setEnabled
+		(current->type() == UserItemTypes::SEQUENCE_ITEM_TYPE);
 }
 
 
@@ -835,6 +932,21 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::make_signal_slot_connectio
 			SIGNAL(clicked()),
 			this,
 			SLOT(reset_filter()));
+	connect(
+			button_Edit_Sequence,
+			SIGNAL(clicked()),
+			this,
+			SLOT(edit_sequence()));
+	connect(
+			button_New_Sequence,
+			SIGNAL(clicked()),
+			this,
+			SLOT(create_new_sequence()));
+	connect(
+			button_Delete_Sequence,
+			SIGNAL(clicked()),
+			this,
+			SLOT(delete_sequence()));
 
 	// Pressing Enter in a line-edit widget.
 	connect(
@@ -849,5 +961,185 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::make_signal_slot_connectio
 			SIGNAL(currentItemChanged(QTreeWidgetItem *, QTreeWidgetItem *)),
 			this,
 			SLOT(handle_current_item_changed(QTreeWidgetItem *, QTreeWidgetItem *)));
+
+	// Listen for feature collection changes so that we can update the tree.
+	connect(
+		&(d_app_state.get_feature_collection_file_state()),
+		SIGNAL(file_state_changed(GPlatesAppLogic::FeatureCollectionFileState &)),
+		this,
+		SLOT(handle_feature_collection_file_state_changed()));
 }
 
+void
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::edit_sequence()
+{
+	QTreeWidgetItem *current_item = treewidget_seqs->currentItem();
+
+	int user_item_type = current_item->type();
+
+	// The current item should be of type SEQUENCE_ITEM_TYPE or POLE_ITEM_TYPE
+	if ((user_item_type != UserItemTypes::SEQUENCE_ITEM_TYPE) &&
+		(user_item_type != UserItemTypes::POLE_ITEM_TYPE))
+	{
+		return;
+	}
+
+	
+	if (user_item_type == UserItemTypes::POLE_ITEM_TYPE)
+	{
+		current_item = current_item->parent();
+	}
+
+	tree_item_to_feature_map_type::iterator iter = d_tree_item_to_feature_map.find(current_item);
+
+	if (iter == d_tree_item_to_feature_map.end())
+	{
+		return;
+	}
+
+	// Save the current item
+	d_current_item = current_item;
+
+	GPlatesModel::FeatureHandle::weak_ref feature_ref = iter->second;
+
+	if (!feature_ref.is_valid())
+	{
+		return;
+	}
+
+    d_edit_trs_dialog_ptr.reset(
+             new EditTotalReconstructionSequenceDialog(feature_ref,*this,this));
+
+	d_current_trs_was_expanded = current_item->isExpanded();
+
+	// The edit TRS dialog is modal.
+    d_edit_trs_dialog_ptr->exec();
+
+}
+
+void
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::update_edited_feature()
+{
+	tree_item_to_feature_map_type::const_iterator it = 
+		d_tree_item_to_feature_map.find(d_current_item);
+
+	if (it == d_tree_item_to_feature_map.end())
+	{
+		return;
+	}
+
+	GPlatesModel::FeatureHandle::weak_ref trs_feature = it->second;
+
+	update();
+
+	it = reverse_lookup(d_tree_item_to_feature_map,trs_feature);
+
+	if (it == d_tree_item_to_feature_map.end())
+	{
+		return;
+	}
+
+	treewidget_seqs->setCurrentItem(it->first);
+
+	if (d_current_trs_was_expanded)
+	{
+		treewidget_seqs->expandItem(it->first);
+	}
+
+	// Store the current item so that subsequent updates will work. 
+	d_current_item = it->first;
+
+
+	// The plate ids might have changed; sort the tree.
+	treewidget_seqs->sortItems(ColumnNames::COLSPAN,Qt::AscendingOrder);
+	treewidget_seqs->scrollToItem(d_current_item);
+}
+
+void
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::create_new_sequence()
+{
+
+        d_create_trs_dialog_ptr.reset(
+                new CreateTotalReconstructionSequenceDialog(*this,d_app_state,this));
+        d_create_trs_dialog_ptr->init();
+        if (d_create_trs_dialog_ptr->exec())
+        {
+            update();
+            // The plate ids might have changed; sort the tree.
+            // FIXME: we should do this separately per collection.
+            treewidget_seqs->sortItems(ColumnNames::COLSPAN,Qt::AscendingOrder);
+
+			boost::optional<GPlatesModel::FeatureHandle::weak_ref> new_feature = d_create_trs_dialog_ptr->created_feature();
+			if (new_feature)
+			{
+				tree_item_to_feature_map_type::const_iterator it = 
+					reverse_lookup(d_tree_item_to_feature_map,*new_feature);
+				if (it != d_tree_item_to_feature_map.end())
+				{
+					treewidget_seqs->scrollToItem(it->first);
+					treewidget_seqs->expandItem(it->first);
+				}
+
+			}
+
+        };
+
+}
+
+void
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::delete_sequence()
+{
+	QTreeWidgetItem *current_item = treewidget_seqs->currentItem();
+
+	int user_item_type = current_item->type();
+
+	// The current item should be of type SEQUENCE_ITEM_TYPE or POLE_ITEM_TYPE
+	if ((user_item_type != UserItemTypes::SEQUENCE_ITEM_TYPE) &&
+		(user_item_type != UserItemTypes::POLE_ITEM_TYPE))
+	{
+		return;
+	}
+
+
+	if (user_item_type == UserItemTypes::POLE_ITEM_TYPE)
+	{
+		current_item = current_item->parent();
+	}
+
+	tree_item_to_feature_map_type::iterator iter = d_tree_item_to_feature_map.find(current_item);
+
+	if (iter == d_tree_item_to_feature_map.end())
+	{
+		return;
+	}
+
+	d_current_item = 0;
+
+	GPlatesModel::FeatureHandle::weak_ref feature_ref = iter->second;
+
+	if (feature_ref)
+	{
+		QString summary_string = GPlatesAppLogic::TRSUtils::build_trs_summary_string_from_trs_feature(feature_ref);
+
+		QString message = tr("Are you sure you want to delete the total reconstruction sequence\n(") + summary_string + tr(")?");
+		if (QMessageBox::question(
+			this,
+			tr("Delete Total Reconstruction Sequence"),
+			message,
+			QMessageBox::Yes | QMessageBox::No,
+			QMessageBox::No) == QMessageBox::Yes)
+		{
+			feature_ref->remove_from_parent();
+			d_app_state.reconstruct();
+			update();
+		}
+
+	}
+}
+
+void
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::handle_feature_collection_file_state_changed()
+{
+	// FIXME: store the state of expanded files/sequences etc so we can restore them after the update.
+	update();
+}

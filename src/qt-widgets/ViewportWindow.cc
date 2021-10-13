@@ -6,7 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 The University of Sydney, Australia
- * Copyright (C) 2007, 2008, 2009, 2010 Geological Survey of Norway
+ * Copyright (C) 2007, 2008, 2009, 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -71,6 +71,7 @@
 #include "CreateVGPDialog.h"
 #include "DigitisationWidget.h"
 #include "DockWidget.h"
+#include "DrawStyleDialog.h"
 #include "ExportAnimationDialog.h"
 #include "FeaturePropertiesDialog.h"
 #include "GlobeCanvas.h"
@@ -78,6 +79,7 @@
 #include "ImportRasterDialog.h"
 #include "InformationDialog.h"
 #include "ManageFeatureCollectionsDialog.h"
+#include "ManageFeatureCollectionsEditConfigurations.h"
 #include "MapView.h"
 #include "MeshDialog.h"
 #include "PreferencesDialog.h"
@@ -85,12 +87,12 @@
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ReconstructionViewWidget.h"
+#include "DrawStyleDialog.h"
 #include "SaveFileDialog.h"
 #include "SetCameraViewpointDialog.h"
 #include "SetProjectionDialog.h"
 #include "ShapefileAttributeViewerDialog.h"
 #include "ShapefilePropertyMapper.h"
-#include "SmallCircleManager.h"
 #include "SpecifyAnchoredPlateIdDialog.h"
 #include "SymbolManagerDialog.h"
 #include "TaskPanel.h"
@@ -101,6 +103,7 @@
 #include "api/DeferredApiCall.h"
 #include "api/PythonInterpreterLocker.h"
 #include "api/PythonUtils.h"
+#include "api/Sleeper.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/AppLogicUtils.h"
@@ -133,6 +136,7 @@
 #include "gui/AddClickedGeometriesToFeatureTable.h"
 #include "gui/ChooseCanvasTool.h"
 #include "gui/DockState.h"
+#include "gui/Dialogs.h"
 #include "gui/EnableCanvasTool.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
@@ -171,8 +175,12 @@
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ShapefilePropertyMapper.h"
 
+#include "utils/ComponentManager.h"
 #include "utils/DeferredCallEvent.h"
+#include "utils/ExternalSyncController.h"
 #include "utils/Profile.h"
+#include "utils/ComponentManager.h"
+#include "gui/PythonManager.h"
 
 #include "view-operations/ActiveGeometryOperation.h"
 #include "view-operations/CloneOperation.h"
@@ -280,6 +288,12 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesGui::DockState(
 				*this,
 				this)),
+	d_dialogs_ptr(
+			new GPlatesGui::Dialogs(
+				get_application_state(),
+				get_view_state(),
+				*this,
+				this)),
 	d_info_dock_ptr(NULL),
 	d_reconstruction_view_widget_ptr(
 			new ReconstructionViewWidget(
@@ -294,6 +308,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_application_state(), get_view_state(), this)),
 	d_calculate_reconstruction_pole_dialog_ptr(NULL),
 	d_colouring_dialog_ptr(NULL),
+	d_draw_style_dialog_ptr(NULL),
 	d_connect_wfs_dialog_ptr(NULL),
 	d_create_vgp_dialog_ptr(NULL),
 	d_export_animation_dialog_ptr(NULL),
@@ -309,12 +324,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_view_state(),
 				this)),
 	d_mesh_dialog_ptr(NULL),
-	d_python_console_dialog_ptr(
-			new PythonConsoleDialog(
-				get_application_state(),
-				get_view_state(),
-				this,
-				this)),
 	d_read_errors_dialog_ptr(
 			new ReadErrorAccumulationDialog(this)),
 	d_set_camera_viewpoint_dialog_ptr(NULL),
@@ -323,7 +332,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new ShapefileAttributeViewerDialog(
 				get_application_state().get_feature_collection_file_state(),
 				this)),
-	d_small_circle_manager_ptr(NULL),
 	d_specify_anchored_plate_id_dialog_ptr(
 			new SpecifyAnchoredPlateIdDialog(
 				this)),
@@ -389,7 +397,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_inside_update_undo_action_tooltip(false),
 	d_inside_update_redo_action_tooltip(false),
 	d_import_menu_ptr(NULL), // Needs to be set up after call to setupUi.
-	d_utilities_menu_ptr(NULL) // Needs to be set up after call to setupUi.
+	d_utilities_menu_ptr(NULL), // Needs to be set up after call to setupUi.
+	d_external_sync_controller_ptr(NULL)
 {
 	setupUi(this);
 
@@ -399,6 +408,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// some of this state so just get the ViewportWindow reference from ViewState -
 	// the method will eventually get removed when the state has been moved over.
 	get_view_state().set_other_view_state(*this);
+
+	// Register the default edit configurations for those file formats that have configurations.
+	ManageFeatureCollections::register_default_edit_configurations(
+			*d_manage_feature_collections_dialog_ptr,
+			get_application_state().get_model_interface());
 
 	// Initialise the Shapefile property mapper before we start reading.
 	// FIXME: Not sure where this should go since it involves qt widgets (logical place is
@@ -510,7 +524,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new GPlatesGui::TopologySectionsTable(
 					*table_widget_topology_sections,
 					*d_topology_boundary_sections_container_ptr, 
-					*d_topology_interior_sections_container_ptr, 
+					*d_topology_interior_sections_container_ptr,
+					get_application_state(),
 					get_view_state().get_feature_focus()));
 
 	// If the focused feature is modified, we may need to update the ShapefileAttributeViewerDialog.
@@ -634,6 +649,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				status_bar_callback,
 				rendered_geom_collection,
 				*d_measure_distance_state_ptr);
+	GPlatesCanvasTools::CreateSmallCircle::non_null_ptr_type create_small_circle_tool =
+		GPlatesCanvasTools::CreateSmallCircle::create(
+				status_bar_callback,
+				rendered_geom_collection,
+				d_task_panel_ptr->small_circle_widget());
 
 	// Set up the Map and Globe Canvas Tools Choices.
 	d_globe_canvas_tool_choice_ptr.reset(
@@ -653,7 +673,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				manipulate_pole_tool,
 				build_topology_tool,
 				edit_topology_tool,
-				measure_distance_tool));
+				measure_distance_tool,
+				create_small_circle_tool));
 	d_map_canvas_tool_choice_ptr.reset(
 			new GPlatesGui::MapCanvasToolChoice(
 				map_canvas,
@@ -672,7 +693,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				manipulate_pole_tool,
 				build_topology_tool,
 				edit_topology_tool,
-				measure_distance_tool));
+				measure_distance_tool,
+				create_small_circle_tool));
 
 	// Set up the Map and Globe Canvas Tool Adapters for handling globe click and drag events.
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
@@ -734,14 +756,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SIGNAL(layer_added(size_t)),
 			this,
 			SLOT(handle_visual_layer_added(size_t)));
-
-	// We display the last line from the Python console dialog in the status bar.
-	QObject::connect(
-			d_python_console_dialog_ptr.get(),
-			SIGNAL(text_changed()),
-			this,
-			SLOT(handle_python_console_text_changed()));
-
+	
 	set_internal_release_window_title();
 }
 
@@ -884,9 +899,8 @@ GPlatesQtWidgets::ViewportWindow::connect_edit_menu_actions()
 	menu_Edit->insertAction(action_Clear_Placeholder, clear_action_ptr);
 	menu_Edit->removeAction(action_Clear_Placeholder);
 	// ----
-	// Preferences is beta functionality and not on a menu anywhere yet.
 	QObject::connect(action_Preferences, SIGNAL(triggered()),
-			this, SLOT(pop_up_preferences_dialog()));
+			&(dialogs().preferences_dialog()), SLOT(pop_up()));
 }
 
 
@@ -948,16 +962,22 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 void
 GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 {
+	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+	{
 	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
 			this, SLOT(pop_up_colouring_dialog()));
+	}
+	else
+	{
+		QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
+				this, SLOT(pop_up_draw_style_dialog()));
+	}
 	// ----
 	QObject::connect(action_Load_Symbol, SIGNAL(triggered()),
 			this, SLOT(handle_load_symbol_file()));
 	QObject::connect(action_Unload_Symbol, SIGNAL(triggered()),
 			this, SLOT(handle_unload_symbol_file()));
 	// ----
-	QObject::connect(action_Manage_Small_Circles, SIGNAL(triggered()),
-			this, SLOT(pop_up_small_circle_manager()));
 	QObject::connect(action_View_Total_Reconstruction_Sequences, SIGNAL(triggered()),
 			this, SLOT(pop_up_total_reconstruction_sequences_dialog()));
 	QObject::connect(action_View_Shapefile_Attributes, SIGNAL(triggered()),
@@ -1005,14 +1025,20 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 {
 	QObject::connect(action_Calculate_Reconstruction_Pole, SIGNAL(triggered()),
 			this, SLOT(pop_up_calculate_reconstruction_pole_dialog()));
-	d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
-			menu_Utilities,
-			action_Open_Python_Console,
-			get_application_state().get_python_execution_thread(),
-			this);
-	// ----
-	QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
-			this, SLOT(pop_up_python_console()));
+	if(GPlatesUtils::ComponentManager::instance().is_enabled(
+			GPlatesUtils::ComponentManager::Component::python()))
+	{
+#if !defined(GPLATES_NO_PYTHON)
+		d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
+				menu_Utilities,
+				action_Open_Python_Console,
+				get_view_state().get_python_manager(),
+				this);
+#endif
+		// ----
+		QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
+				this, SLOT(pop_up_python_console()));
+	}
 }
 
 
@@ -1075,6 +1101,9 @@ GPlatesQtWidgets::ViewportWindow::connect_tools_menu_actions()
 			this, SLOT(handle_build_topology_triggered()));
 	QObject::connect(action_Edit_Topology, SIGNAL(triggered()),
 			this, SLOT(handle_edit_topology_triggered()));
+
+	QObject::connect(action_Create_Small_Circle, SIGNAL(triggered()),
+			this, SLOT(handle_create_small_circle_triggered()));
 }
 
 
@@ -1088,11 +1117,15 @@ GPlatesQtWidgets::ViewportWindow::connect_window_menu_actions()
 	// ----
 	QObject::connect(action_Show_Layers, SIGNAL(triggered(bool)),
 			this, SLOT(set_visual_layers_dialog_visibility(bool)));
+
 	QAction *action_show_bottom_panel = d_info_dock_ptr->toggleViewAction();
 	action_show_bottom_panel->setText(tr("Show &Bottom Panel"));
 	action_show_bottom_panel->setObjectName("action_Show_Bottom_Panel");
 	menu_Window->insertAction(action_Show_Bottom_Panel_Placeholder, action_show_bottom_panel);
 	menu_Window->removeAction(action_Show_Bottom_Panel_Placeholder);
+
+	QObject::connect(action_Log_Dialog, SIGNAL(triggered()),
+			&dialogs(), SLOT(lazy_pop_up_log_dialog()));
 	// ----
 	QObject::connect(action_Full_Screen, SIGNAL(triggered(bool)),
 			&d_full_screen_mode, SLOT(toggle_full_screen(bool)));
@@ -1135,6 +1168,25 @@ const GPlatesQtWidgets::MapView &
 GPlatesQtWidgets::ViewportWindow::map_view() const
 {
 	return d_reconstruction_view_widget_ptr->map_view();
+}
+
+
+GPlatesGui::Dialogs &
+GPlatesQtWidgets::ViewportWindow::dialogs() const
+{
+	return *d_dialogs_ptr;
+}
+
+
+GPlatesQtWidgets::DrawStyleDialog*
+GPlatesQtWidgets::ViewportWindow::draw_style_dialog()
+{
+	if(!d_draw_style_dialog_ptr)
+	{
+
+		d_draw_style_dialog_ptr = new GPlatesQtWidgets::DrawStyleDialog(get_view_state(), this);
+	}
+	return d_draw_style_dialog_ptr;
 }
 
 
@@ -1470,19 +1522,6 @@ GPlatesQtWidgets::ViewportWindow::pop_up_animate_dialog()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_preferences_dialog()
-{
-	if (!d_preferences_dialog_ptr)
-	{
-		d_preferences_dialog_ptr.reset(new PreferencesDialog(this));
-	}
-
-	// PreferencesDialog is modal and should not need the 'raise' hack other dialogs use.
-	d_preferences_dialog_ptr->exec();
-}
-
-
-void
 GPlatesQtWidgets::ViewportWindow::pop_up_about_dialog()
 {
 	if (!d_about_dialog_ptr)
@@ -1546,6 +1585,14 @@ GPlatesQtWidgets::ViewportWindow::pop_up_colouring_dialog()
 	}
 
 	QtWidgetUtils::pop_up_dialog(d_colouring_dialog_ptr.get());
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_draw_style_dialog()
+{
+	draw_style_dialog()->init_catagory_table();
+	QtWidgetUtils::pop_up_dialog(draw_style_dialog());
 }
 
 
@@ -1749,6 +1796,12 @@ GPlatesQtWidgets::ViewportWindow::enable_measure_distance_tool(
 	action_Measure_Distance->setEnabled(enable);
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::enable_create_small_circle_tool(
+	bool enable)
+{
+	action_Create_Small_Circle->setEnabled(enable);
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_drag_globe_triggered()
@@ -2022,6 +2075,24 @@ GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::handle_create_small_circle_triggered()
+{
+	d_choose_canvas_tool->choose_create_small_circle_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::CREATE_SMALL_CIRCLE;
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_create_small_circle_tool()
+{
+	action_Create_Small_Circle->setChecked(true);
+	d_globe_canvas_tool_choice_ptr->choose_create_small_circle_tool();
+	d_map_canvas_tool_choice_ptr->choose_create_small_circle_tool();
+
+	d_task_panel_ptr->choose_small_circle_tab();
+}
+
 
 void
 GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
@@ -2117,19 +2188,6 @@ GPlatesQtWidgets::ViewportWindow::create_svg_file(
 
 
 void
-GPlatesQtWidgets::ViewportWindow::close_all_dialogs()
-{
-	BOOST_FOREACH(QObject *obj, children())
-	{
-		QDialog *dialog = dynamic_cast<QDialog *>(obj);
-		if (dialog)
-		{
-			dialog->reject();
-		}
-	}
-}
-
-void
 GPlatesQtWidgets::ViewportWindow::closeEvent(
 		QCloseEvent *close_event)
 {
@@ -2159,7 +2217,7 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(
 	// User is OK with quitting GPlates at this point.
 	close_event->accept();
 	// If we decide to accept the close event, we should also tidy up after ourselves.
-	close_all_dialogs();
+	dialogs().close_all_dialogs();
 	// Make sure we really do quit - stray dialogs not caught by @a close_all_dialogs()
 	// (e.g. PyQt windows) will keep GPlates open.
 	QCoreApplication::quit();
@@ -2403,14 +2461,13 @@ GPlatesQtWidgets::ViewportWindow::generate_mesh_cap()
 {
 	if (!d_mesh_dialog_ptr)
 	{
-		d_mesh_dialog_ptr.reset(
-				new MeshDialog(
+		d_mesh_dialog_ptr = new MeshDialog(
 				get_view_state(),
 				*d_manage_feature_collections_dialog_ptr,
-				this));
+				this);
 	}
 
-	QtWidgetUtils::pop_up_dialog(d_mesh_dialog_ptr.get());
+	QtWidgetUtils::pop_up_dialog(d_mesh_dialog_ptr);
 }
 
 void
@@ -2585,20 +2642,6 @@ GPlatesQtWidgets::ViewportWindow::open_new_window()
 	}
 }
 
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_small_circle_manager()
-{
-	if (!d_small_circle_manager_ptr)
-	{
-		d_small_circle_manager_ptr.reset(
-			new SmallCircleManager(
-				get_view_state().get_rendered_geometry_collection(),
-				get_application_state(),
-				this));
-	}
-
-	QtWidgetUtils::pop_up_dialog(d_small_circle_manager_ptr.get());
-}
 
 void
 GPlatesQtWidgets::ViewportWindow::status_message(
@@ -2670,6 +2713,7 @@ GPlatesQtWidgets::ViewportWindow::clone_feature_with_dialog()
 	{
 		d_choose_feature_collection_dialog_ptr.reset(
 				new ChooseFeatureCollectionDialog(
+					get_application_state().get_reconstruct_method_registry(),
 					get_application_state().get_feature_collection_file_state(),
 					get_application_state().get_feature_collection_file_io(),
 					this));
@@ -2735,19 +2779,7 @@ GPlatesQtWidgets::ViewportWindow::open_online_documentation()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_python_console()
 {
-	// Note: this dialog is constructed in the ViewportWindow constructor.
-	QtWidgetUtils::pop_up_dialog(d_python_console_dialog_ptr.get());
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_python_console_text_changed()
-{
-	QString line = d_python_console_dialog_ptr->get_last_non_blank_line();
-	if (!line.isEmpty())
-	{
-		status_message(tr("Last Python output: ") + line);
-	}
+	d_view_state.get_python_manager().pop_up_python_console();
 }
 
 
@@ -2755,64 +2787,26 @@ void
 GPlatesQtWidgets::ViewportWindow::showEvent(
 		QShowEvent *ev)
 {
-#if !defined(GPLATES_NO_PYTHON)
-	// We defer this so that we can guarantee that the user interface is ready
-	// before we start running Python scripts.
-	GPlatesUtils::DeferCall<void>::defer_call(
-			boost::bind(
-				&GPlatesApi::PythonUtils::run_startup_scripts,
-				get_application_state().get_python_execution_thread(),
-				boost::ref(get_application_state().get_user_preferences())));
-#endif
-
 	// We wait until the main window is visible before checking our status messages and
 	// View-dependent menu items are configured appropriately; this is largely because of
 	// the definition of ReconstructionViewWidget::globe_is_active().
 	update_tools_and_status_message();
 }
 
-
-#if !defined(GPLATES_NO_PYTHON)
-namespace
-{
-	void
-	status_message(
-			GPlatesQtWidgets::ViewportWindow &viewport_window,
-			const boost::python::object &obj)
-	{
-		GPlatesApi::PythonInterpreterLocker interpreter_locker;
-		viewport_window.status_message(GPlatesApi::PythonUtils::stringify_object(obj, "utf-8")); // FIXME: hard coded codec
-	}
-
-#if 0
-	void
-	status_message2(
-			GPlatesQtWidgets::ViewportWindow &viewport_window,
-			const GPlatesQtWidgets::ViewportWindow &,
-			const boost::python::object &obj)
-	{
-		GPlatesApi::PythonInterpreterLocker interpreter_locker;
-		viewport_window.status_message(GPlatesApi::PythonUtils::stringify_object(obj, "utf-8")); // FIXME: hard coded codec
-	}
-#endif
-}
-
-
 void
-export_main_window()
+GPlatesQtWidgets::ViewportWindow::enable_external_syncing(
+	bool gplates_is_master)
 {
-	using namespace boost::python;
-	using namespace GPlatesApi::DeferredApiCall;
+	if (!d_external_sync_controller_ptr)
+	{
+		d_external_sync_controller_ptr.reset(
+			new GPlatesUtils::ExternalSyncController(
+			gplates_is_master,
+			this,
+			&get_view_state()));
 
-	class_<GPlatesQtWidgets::ViewportWindow, boost::noncopyable>("MainWindow", no_init /* scripts cannot create more of these! */)
-		.def("set_status_message",
-				GPLATES_DEFERRED_API_CALL(&::status_message, ArgReferenceWrappings<ref>()))
-#if 0
-		// This is an example of how to supply more than one parameter to ArgReferenceWrappings.
-		.def("set_status_message2",
-				GPLATES_DEFERRED_API_CALL(&::status_message2, (ArgReferenceWrappings<ref, cref>()) ))
-#endif
-		;
+
+	}
+	d_external_sync_controller_ptr->enable_external_syncing();
+
 }
-#endif
-

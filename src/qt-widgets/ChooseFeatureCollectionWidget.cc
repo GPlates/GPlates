@@ -31,7 +31,10 @@
 
 #include "ChooseFeatureCollectionWidget.h"
 
+
 #include "app-logic/FeatureCollectionFileIO.h"
+
+#include "file-io/FeatureCollectionFileFormatClassify.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -94,6 +97,25 @@ namespace
 		boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference> d_file_ref;
 	};
 
+	bool
+	collection_is_of_allowed_type(
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
+		const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry,
+		const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::classifications_type> &allowed_types)
+	{
+		if (allowed_types)
+		{
+			GPlatesFileIO::FeatureCollectionFileFormat::classifications_type type_of_collection =
+				GPlatesFileIO::FeatureCollectionFileFormat::classify(
+					feature_collection_ref,reconstruct_method_registry);
+
+			return GPlatesFileIO::FeatureCollectionFileFormat::intersect(type_of_collection,*allowed_types);
+		}
+		else
+		{
+			return true;
+		}
+	}
 
 	/**
 	 * Fill the list with currently loaded FeatureCollections we can add the feature to.
@@ -101,7 +123,9 @@ namespace
 	void
 	populate_feature_collections_list(
 			QListWidget &list_widget,
-			GPlatesAppLogic::FeatureCollectionFileState &state)
+			GPlatesAppLogic::FeatureCollectionFileState &state,
+			const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::classifications_type> &allowed_collection_types,
+			const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry)
 	{
 		list_widget.clear();
 
@@ -131,7 +155,8 @@ namespace
 			}
 			
 			// We are only interested in loaded files which have valid FeatureCollections.
-			if (collection_opt.is_valid()) {
+			if (collection_opt.is_valid() && 
+				collection_is_of_allowed_type(collection_opt,reconstruct_method_registry,allowed_collection_types)) {
 				list_widget.addItem(new FeatureCollectionItem(file_ref, label));
 			}
 		}
@@ -148,12 +173,16 @@ namespace
 
 
 GPlatesQtWidgets::ChooseFeatureCollectionWidget::ChooseFeatureCollectionWidget(
+		const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesAppLogic::FeatureCollectionFileIO &file_io,
-		QWidget *parent_) :
+		QWidget *parent_,
+		const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::classifications_type> &collection_types) :
 	QGroupBox(parent_),
 	d_file_state(file_state),
-	d_file_io(file_io)
+	d_file_io(file_io),
+	d_allowed_collection_types(collection_types),
+	d_reconstruct_method_registry(reconstruct_method_registry)
 {
 	setupUi(this);
 
@@ -169,7 +198,11 @@ GPlatesQtWidgets::ChooseFeatureCollectionWidget::ChooseFeatureCollectionWidget(
 void
 GPlatesQtWidgets::ChooseFeatureCollectionWidget::initialise()
 {
-	populate_feature_collections_list(*listwidget_feature_collections, d_file_state);
+	populate_feature_collections_list(
+		*listwidget_feature_collections, 
+		d_file_state, 
+		d_allowed_collection_types,
+		d_reconstruct_method_registry);
 }
 
 

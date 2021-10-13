@@ -19,6 +19,8 @@ set(srcs
     CanvasToolsTestSuite.h
     CoregTest.cc
     CoregTest.h
+    CptPaletteTest.cc
+    CptPaletteTest.h
     DataAssociationDataTableTest.cc
     DataAssociationDataTableTest.h
     DataMiningTestSuite.cc

@@ -97,6 +97,17 @@ namespace GPlatesMaths
 
 
 		/**
+		 * This constructor creates a child node of the specified parent *quad tree node* location.
+		 *
+		 * @throws PreconditionViolationError if @a parent_location is the root of the cube.
+		 */
+		CubeQuadTreeLocation(
+				const CubeQuadTreeLocation &parent_location,
+				unsigned int child_x_offset,
+				unsigned int child_y_offset);
+
+
+		/**
 		 * This constructor places the location at a specific node in one of the six quad trees.
 		 *
 		 * @a x_node_offset and @a y_node_offset are in the range [0, 2^quad_tree_depth).
@@ -118,18 +129,6 @@ namespace GPlatesMaths
 				const NodeLocation &node_location) :
 			d_node_location(node_location)
 		{  }
-
-
-		/**
-		 * This constructor creates a child node of the specified parent *quad tree node* location.
-		 *
-		 * @throws PreconditionViolationError if @a parent_location is the root of the cube.
-		 */
-		explicit
-		CubeQuadTreeLocation(
-				const CubeQuadTreeLocation &parent_location,
-				unsigned int child_x_offset,
-				unsigned int child_y_offset);
 
 
 		/**

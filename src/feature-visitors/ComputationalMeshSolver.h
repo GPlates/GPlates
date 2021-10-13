@@ -131,6 +131,7 @@ namespace GPlatesFeatureVisitors
 						resolved_boundaries_for_partitioning_geometry_query,
 				const GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type &
 						resolved_networks_for_velocity_interpolation,
+				const GPlatesAppLogic::GeometryCookieCutter &resolved_networks_interior_polygons_query,
 				bool should_keep_features_without_recon_plate_id = true);
 
 		virtual
@@ -223,6 +224,11 @@ namespace GPlatesFeatureVisitors
 		GPlatesAppLogic::TopologyUtils::resolved_networks_for_interpolation_query_type
 				d_resolved_networks_for_velocity_interpolation;
 
+		/**
+		 * Used to determine if points are inside the interior polygons of topological networks.
+		 */
+		const GPlatesAppLogic::GeometryCookieCutter &d_resolved_networks_interior_polygons_query;
+
 		boost::optional<ReconstructedFeatureGeometryAccumulator> d_accumulator;
 		bool d_should_keep_features_without_recon_plate_id;
 
@@ -281,7 +287,8 @@ namespace GPlatesFeatureVisitors
 		process_point_in_static_polygon(
 				const GPlatesMaths::PointOnSphere &point,
 				boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
-				const GPlatesAppLogic::ReconstructionGeometry *reconstructed_static_polygon_containing_point);
+				const GPlatesAppLogic::ReconstructionGeometry *reconstructed_static_polygon_containing_point,
+				const GPlatesAppLogic::MultiPointVectorField::CodomainElement::Reason reason);
 	};
 }
 

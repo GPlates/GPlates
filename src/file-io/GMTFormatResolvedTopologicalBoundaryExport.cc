@@ -36,6 +36,7 @@
 #include "GMTFormatHeader.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
 
 #include "file-io/FileInfo.h"
 
@@ -112,6 +113,20 @@ namespace GPlatesFileIO
 			// 
 			// Functions to look for specific property values in a feature
 			//
+
+			/**
+			 * Looks for "<gpml:identity>" property in feature
+			 * otherwise returns false.
+			 */
+			bool
+			get_feature_id(
+					QString &id,
+					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+			{
+				const GPlatesModel::FeatureId &feature_id = feature->feature_id();
+				id.append( GPlatesUtils::make_qstring_from_icu_string( feature_id.get() ) );
+				return true;
+			}
 
 
 			/**
@@ -233,9 +248,6 @@ namespace GPlatesFileIO
 					QString &depth,
 					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 			{
-				// Look for a property with property name "gml:name" and use its value
-				// to help generate the header line. If that property doesn't exist
-				// then use the geographic description in the old plates header instead.
 				static const GPlatesModel::PropertyName property_name =
 					GPlatesModel::PropertyName::create_gpml("subductionZoneDepth");
 				const GPlatesPropertyValues::XsDouble *property_value = NULL;
@@ -249,6 +261,29 @@ namespace GPlatesFileIO
 				QString d_as_str( GPlatesUtils::formatted_double_to_string(d, 6, 1).c_str() );
 				depth = d_as_str;
 
+				return true;
+			}
+
+			/**
+			 * Looks for "gpml:rheaFault" property in feature 
+			 * otherwise returns false.
+			 */
+			bool
+			get_feature_rhea_fault(
+					QString &rhea_fault,
+					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+			{
+				static const GPlatesModel::PropertyName property_name =
+					GPlatesModel::PropertyName::create_gpml("rheaFault");
+				const GPlatesPropertyValues::XsString *property_value = NULL;
+				if (!GPlatesFeatureVisitors::get_property_value(
+						feature, property_name, property_value))
+				{
+					rhea_fault = "Unknown";
+					return false;
+				}
+
+				rhea_fault = GPlatesUtils::make_qstring_from_icu_string(property_value->value().get());
 				return true;
 			}
 
@@ -443,7 +478,7 @@ namespace GPlatesFileIO
 			/**
 			 * Formats an export GMT header:
 			 *
-			 * ">sL # name: Trenched_on NAP_PAC_1 # ... # polygon: NAM # use_reverse: no"
+			 * ">sL # name: Trenched_on NAP_PAC_1 # ... # polygon: NAM # use_reverse: no # identity: GPlates-blah-blah-blah"
 			 */
 			class PlatePolygonSubSegmentHeader :
 					public GMTExportHeader
@@ -452,7 +487,7 @@ namespace GPlatesFileIO
 				PlatePolygonSubSegmentHeader(
 						const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 						const GPlatesModel::FeatureHandle::const_weak_ref &platepolygon_feature,
-						const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment,
+						const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment,
 						const SubSegmentType sub_segment_type)
 				{
 					d_header_line = "> ";
@@ -509,6 +544,14 @@ namespace GPlatesFileIO
 					}
 					else { d_header_line.append( unk ); }
 
+					QString rhea_fault;
+					d_header_line.append( " # rheaFault: " );
+					if ( get_feature_rhea_fault(rhea_fault, feature) )
+					{
+						d_header_line.append( rhea_fault );
+					}
+					else { d_header_line.append( unk ); }
+
 
 					// Plate Polygon name 
 					QString platepolygon_feature_name;
@@ -522,6 +565,14 @@ namespace GPlatesFileIO
 
 					d_header_line.append( " # use_reverse: ");
 					d_header_line.append( sub_segment.get_use_reverse() ? "yes" : "no");
+
+
+					// Feature id 
+					QString id;
+					if (!get_feature_id( id, feature) ) { id = unk; }
+					d_header_line.append( " # identity: ");
+					d_header_line.append( id );
+
 				}
 
 
@@ -542,6 +593,7 @@ namespace GPlatesFileIO
 
 			/**
 			 * Formats GMT header for Slab Polygon Sub Segments
+			 * ">sL # name: Trenched_on NAP_PAC_1 # ... # polygon: NAM # use_reverse: no # identity: GPlates-blah-blah-blah"
 			 */
 			class SlabPolygonSubSegmentHeader :
 					public GMTExportHeader
@@ -550,7 +602,7 @@ namespace GPlatesFileIO
 				SlabPolygonSubSegmentHeader(
 						const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 						const GPlatesModel::FeatureHandle::const_weak_ref &platepolygon_feature,
-						const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment,
+						const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment,
 						const SubSegmentType sub_segment_type)
 				{
 					d_header_line = "> ";
@@ -622,6 +674,13 @@ namespace GPlatesFileIO
 
 					d_header_line.append( " # polygon: ");
 					d_header_line.append( platepolygon_feature_name );
+
+					// Feature id 
+					QString id;
+					if (!get_feature_id( id, feature) ) { id = unk; }
+					d_header_line.append( " # identity: ");
+					d_header_line.append( id );
+
 				}
 
 				virtual
@@ -812,7 +871,7 @@ namespace GPlatesFileIO
 
 void
 GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
-		const resolved_geom_seq_type &resolved_topological_boundaries,
+		const resolved_geom_seq_type &resolved_topological_geometries,
 		ResolvedTopologicalBoundaryExportImpl::ResolvedTopologicalBoundaryExportType export_type,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
@@ -839,17 +898,34 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 	// Used to write in GMT format.
 	GMTFeatureExporter geom_exporter(output_file);
 
-	// Iterate through the reconstructed geometries and write to output.
+	// Iterate through the resolved topological geometries and write to output.
 	resolved_geom_seq_type::const_iterator resolved_geom_iter;
-	for (resolved_geom_iter = resolved_topological_boundaries.begin();
-		resolved_geom_iter != resolved_topological_boundaries.end();
+	for (resolved_geom_iter = resolved_topological_geometries.begin();
+		resolved_geom_iter != resolved_topological_geometries.end();
 		++resolved_geom_iter)
 	{
-		const GPlatesAppLogic::ResolvedTopologicalBoundary *resolved_geom = *resolved_geom_iter;
+		const GPlatesAppLogic::ReconstructionGeometry *resolved_geom = *resolved_geom_iter;
 
-		const GPlatesModel::FeatureHandle::weak_ref &feature_ref =
-				resolved_geom->get_feature_ref();
-		if (!feature_ref.is_valid())
+		// Get the resolved boundary subsegments.
+		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment> &> boundary_sub_segments =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
+		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
+		if (!boundary_sub_segments)
+		{
+			continue;
+		}
+
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_polygon(resolved_geom);
+		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
+		if (!boundary_polygon)
+		{
+			continue;
+		}
+
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(resolved_geom);
+		if (!feature_ref || !feature_ref->is_valid())
 		{
 			continue;
 		}
@@ -859,13 +935,13 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 		switch (export_type)
 		{
 		case PLATE_POLYGON_EXPORT_TYPE:
-			gmt_export_header.reset(new GMTOldFeatureIdStyleHeader(feature_ref));
+			gmt_export_header.reset(new GMTOldFeatureIdStyleHeader(feature_ref.get()));
 			break;
 		case SLAB_POLYGON_EXPORT_TYPE:
-			gmt_export_header.reset(new SlabPolygonStyleHeader(feature_ref));
+			gmt_export_header.reset(new SlabPolygonStyleHeader(feature_ref.get()));
 			break;
 		case NETWORK_POLYGON_EXPORT_TYPE:
-			gmt_export_header.reset(new NetworkBoundaryStyleHeader(feature_ref));
+			gmt_export_header.reset(new NetworkBoundaryStyleHeader(feature_ref.get()));
 			break;
 		default:
 			// Shouldn't get here.
@@ -876,7 +952,7 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 		// Write out the resolved topological boundary.
 		geom_exporter.print_gmt_header_and_geometry(
 				*gmt_export_header,
-				resolved_geom->resolved_topology_geometry());
+				boundary_polygon.get());
 	}
 }
 
@@ -918,21 +994,22 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 	{
 		const SubSegmentGroup &sub_segment_group = *sub_segment_group_iter;
 
-		// The topological plate polygon feature.
-		const GPlatesModel::FeatureHandle::weak_ref resolved_geom_feature_ref =
-				sub_segment_group.resolved_topological_boundary->get_feature_ref();
-		if (!resolved_geom_feature_ref.is_valid())
+		// The topological geometry feature.
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> resolved_geom_feature_ref =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
+						sub_segment_group.resolved_topological_geometry);
+		if (!resolved_geom_feature_ref || !resolved_geom_feature_ref->is_valid())
 		{
 			continue;
 		}
 
-		// Iterate through the subsegment geometries of the current resolved topological boundary.
-		sub_segment_seq_type::const_iterator sub_segment_iter;
+		// Iterate through the subsegment geometries of the current resolved topological geometry.
+		sub_segment_ptr_seq_type::const_iterator sub_segment_iter;
 		for (sub_segment_iter = sub_segment_group.sub_segments.begin();
 			sub_segment_iter != sub_segment_group.sub_segments.end();
 			++sub_segment_iter)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment *sub_segment = *sub_segment_iter;
+			const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment *sub_segment = *sub_segment_iter;
 
 			// The subsegment feature.
 			const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_ref =
@@ -956,7 +1033,7 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 				gmt_export_header.reset(
 						new PlatePolygonSubSegmentHeader(
 								subsegment_feature_ref,
-								resolved_geom_feature_ref,
+								resolved_geom_feature_ref.get(),
 								*sub_segment,
 								get_sub_segment_type(*sub_segment, reconstruction_time)));
 				break;
@@ -964,7 +1041,7 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 				gmt_export_header.reset(
 						new SlabPolygonSubSegmentHeader(
 								subsegment_feature_ref,
-								resolved_geom_feature_ref,
+								resolved_geom_feature_ref.get(),
 								*sub_segment,
 								get_slab_sub_segment_type(*sub_segment, reconstruction_time)));
 				break;

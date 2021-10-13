@@ -25,6 +25,7 @@
 
 #include <cmath>
 #include <limits>
+#include <boost/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/scoped_array.hpp>
@@ -39,19 +40,14 @@
 
 #include "GLMultiResolutionRaster.h"
 
-#include "GLBindTextureState.h"
-#include "GLBlendState.h"
-#include "GLCompositeStateSet.h"
 #include "GLContext.h"
-#include "GLFragmentTestStates.h"
+#include "GLFrustum.h"
 #include "GLIntersect.h"
-#include "GLMaskBuffersState.h"
+#include "GLProjectionUtils.h"
 #include "GLRenderer.h"
-#include "GLTextureEnvironmentState.h"
-#include "GLTransformState.h"
+#include "GLShaderProgramUtils.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
-#include "GLVertexArrayDrawable.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -60,35 +56,51 @@
 
 #include "utils/Profile.h"
 
+
 namespace
 {
 	//! The inverse of log(2.0).
 	const float INVERSE_LOG2 = 1.0 / std::log(2.0);
+
+	//! Fragment shader source code to render raster.
+	const char *RENDER_RASTER_FRAGMENT_SHADER_SOURCE =
+			"uniform sampler2D raster_texture_sampler;\n"
+
+			"void main (void)\n"
+			"{\n"
+
+			"   gl_FragColor = texture2D(raster_texture_sampler, gl_TexCoord[0].st);\n"
+
+			"}\n";
 }
 
 
 GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type
 GPlatesOpenGL::GLMultiResolutionRaster::create(
+		GLRenderer &renderer,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
-		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-		const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager,
+		FixedPointTextureFilterType fixed_point_texture_filter,
+		bool cache_entire_raster_level_of_detail_pyramid,
 		RasterScanlineOrderType raster_scanline_order)
 {
-	return non_null_ptr_type(new GLMultiResolutionRaster(
-			georeferencing,
-			raster_source,
-			texture_resource_manager,
-			vertex_buffer_resource_manager,
-			raster_scanline_order));
+	return non_null_ptr_type(
+			new GLMultiResolutionRaster(
+					renderer,
+					georeferencing,
+					raster_source,
+					fixed_point_texture_filter,
+					cache_entire_raster_level_of_detail_pyramid,
+					raster_scanline_order));
 }
 
 
 GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
+		GLRenderer &renderer,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
-		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-		const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager,
+		FixedPointTextureFilterType fixed_point_texture_filter,
+		bool cache_entire_raster_level_of_detail_pyramid,
 		RasterScanlineOrderType raster_scanline_order) :
 	d_georeferencing(georeferencing),
 	d_raster_source(raster_source),
@@ -96,140 +108,71 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	d_raster_width(raster_source->get_raster_width()),
 	d_raster_height(raster_source->get_raster_height()),
 	d_raster_scanline_order(raster_scanline_order),
+	d_fixed_point_texture_filter(fixed_point_texture_filter),
 	d_tile_texel_dimension(raster_source->get_tile_texel_dimension()),
 	// The parentheses around min are to prevent the windows min macros
 	// from stuffing numeric_limits' min.
 	d_max_highest_resolution_texel_size_on_unit_sphere((std::numeric_limits<float>::min)()),
-	d_texture_resource_manager(texture_resource_manager),
-	d_vertex_buffer_resource_manager(vertex_buffer_resource_manager),
-	// FIXME: Change the max number cached textures to a value that reflects
-	// the tile dimensions and the viewport dimensions - the latter will vary so
-	// we'll need to have the ability to change the max number cached textures dynamically
-	// or perhaps just support the maximum screen resolution of any monitor (not a good idea).
-	// For now it's 200 which is about 50Mb...
-	d_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(200)),
-	// FIXME: Change the max number of cached vertex arrays to a value that reflects the
-	// memory used to stored vertices for a tile - should also balance memory used for
-	// textures with memory used for vertices.
-	// For now it's 400 which is about 9Mb...
-	d_vertex_array_cache(GPlatesUtils::ObjectCache<GLVertexArray>::create(400))
+	// Start with small size cache and just let the cache grow in size as needed if caching enabled...
+	d_tile_texture_cache(tile_texture_cache_type::create(2/* GPU pipeline breathing room in case caching disabled*/)),
+	// Start with smallest size cache and just let the cache grow in size as needed...
+	d_tile_vertices_cache(tile_vertices_cache_type::create())
 {
 	// Create the levels of details and within each one create an oriented bounding box
 	// tree (used to quickly find visible tiles) where the drawable tiles are in the
 	// leaf nodes of the OBB tree.
 	initialise_level_of_detail_pyramid();
-}
 
-
-void
-GPlatesOpenGL::GLMultiResolutionRaster::render(
-		GLRenderer &renderer,
-		float level_of_detail_bias)
-{
-	// Get the tiles visible in the view frustum of the render target in 'renderer'.
-	std::vector<tile_handle_type> visible_tiles;
-	get_visible_tiles(renderer.get_transform_state(), visible_tiles, level_of_detail_bias);
-
-	render(renderer, visible_tiles);
-}
-
-
-void
-GPlatesOpenGL::GLMultiResolutionRaster::render(
-		GLRenderer &renderer,
-		const std::vector<tile_handle_type> &tiles)
-{
-	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
-			GPlatesOpenGL::GLCompositeStateSet::create();
-
-	// Enable texturing and set the texture function on texture unit 0.
-	GPlatesOpenGL::GLTextureEnvironmentState::non_null_ptr_type tex_env_state =
-			GPlatesOpenGL::GLTextureEnvironmentState::create();
-	tex_env_state->gl_enable_texture_2D(GL_TRUE).gl_tex_env_mode(GL_REPLACE);
-	state_set->add_state_set(tex_env_state);
-
-	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
-	// might not be rendering directly to the final render target and hence we don't
-	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
-	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
-	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
-	// which is not what we want - we want (A*R,A*G,A*B,A*A).
-	// Currently we are rendering to the final render target but when we reconstruct
-	// rasters in the map view (later) we will render to an intermediate render target.
-
-	renderer.push_state_set(state_set);
-
-	// Create a render operation for each visible tile.
-	BOOST_FOREACH(GLMultiResolutionRaster::tile_handle_type tile_handle, tiles)
+	// If the client has requested the entire level-of-detail pyramid be cached.
+	// This does not consume memory until each individual tile is requested.
+	// For example, if all level 0 tiles are accessed but none of the other levels then memory
+	// will only be used for the level 0 tiles.
+	if (cache_entire_raster_level_of_detail_pyramid)
 	{
-		Tile tile = get_tile(tile_handle, renderer);
-
-		// Create a state set that binds the tile texture to texture unit 0.
-		GLBindTextureState::non_null_ptr_type bind_tile_texture = GLBindTextureState::create();
-		bind_tile_texture->gl_bind_texture(GL_TEXTURE_2D, tile.get_texture());
-
-		// Push the state set onto the state graph.
-		renderer.push_state_set(bind_tile_texture);
-
-		// Add the drawable to the current render target.
-		renderer.add_drawable(tile.get_drawable());
-
-		// Pop the state set.
-		renderer.pop_state_set();
+		// This effectively disables any recycling that would otherwise happen in the cache.
+		d_tile_texture_cache->set_min_num_objects(d_tiles.size());
+		d_tile_vertices_cache->set_min_num_objects(d_tiles.size());
 	}
 
-	renderer.pop_state_set();
+	// If the source raster is floating-point (ie, not coloured as fixed-point for visual display)
+	// then use a shader program instead of the fixed-function pipeline.
+	if (GLTexture::is_format_floating_point(d_raster_source->get_target_texture_internal_format()))
+	{
+		// If shader programs are supported then use them to render the raster tile.
+		//
+		// If floating-point textures are supported then shader programs should also be supported.
+		// If they are not for some reason (pretty unlikely) then revert to using the fixed-function pipeline.
+		//
+		// NOTE: The reason for doing this (instead of just using the fixed-function pipeline always)
+		// is to prevent clamping (to [0,1] range) of floating-point textures.
+		// The raster texture might be rendered as floating-point (if we're being used for
+		// data analysis instead of visualisation). The programmable pipeline has no clamping by default
+		// whereas the fixed-function pipeline does (both clamping at the fragment output and internal
+		// clamping in the texture environment stages). This clamping can be controlled by the
+		// 'GL_ARB_color_buffer_float' extension (which means we could use the fixed-function pipeline
+		// always) but that extension is not available on Mac OSX 10.5 (Leopard) on any hardware
+		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's
+		// available (and all platforms that support GL_ARB_texture_float should also support shaders).
+		d_render_floating_point_raster_program_object =
+				GLShaderProgramUtils::compile_and_link_fragment_program(
+						renderer,
+						RENDER_RASTER_FRAGMENT_SHADER_SOURCE);
+	}
 }
 
 
 float
-GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
-		const GLTransformState &transform_state,
-		std::vector<tile_handle_type> &visible_tiles,
-		float level_of_detail_bias) const
-{
-	// There should be levels of detail.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!d_level_of_detail_pyramid.empty(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Get the level-of-detail based on the size of viewport pixels projected onto the globe.
-	float level_of_detail_factor;
-	const unsigned int level_of_detail =
-			get_level_of_detail(transform_state, level_of_detail_bias, level_of_detail_factor);
-	const LevelOfDetail &lod = *d_level_of_detail_pyramid[level_of_detail];
-
-	//
-	// Traverse the OBB tree of the level-of-detail and gather of list of tiles that
-	// are visible in the view frustum (as defined by 'transform_state').
-	//
-
-	// First get the view frustum planes.
-	const GLFrustum &frustum_planes = transform_state.get_current_frustum_planes_in_model_space();
-	// There are six frustum planes initially active.
-	const boost::uint32_t frustum_plane_mask = GLFrustum::ALL_PLANES_ACTIVE_MASK;
-
-	// Get the root OBB tree node of the level-of-detail.
-	const LevelOfDetail::OBBTreeNode &lod_root_obb_tree_node =
-			lod.get_obb_tree_node(lod.obb_tree_root_node_index);
-
-	// Recursively traverse the OBB tree to find visible tiles.
-	get_visible_tiles(frustum_planes, frustum_plane_mask, lod, lod_root_obb_tree_node, visible_tiles);
-
-	return level_of_detail_factor;
-}
-
-
-unsigned int
 GPlatesOpenGL::GLMultiResolutionRaster::get_level_of_detail(
-		const GLTransformState &transform_state,
-		float level_of_detail_bias,
-		float &level_of_detail_factor) const
+		const GLMatrix &model_view_transform,
+		const GLMatrix &projection_transform,
+		const GLViewport &viewport,
+		float level_of_detail_bias) const
 {
 	// Get the minimum size of a pixel in the current viewport when projected
 	// onto the unit sphere (in model space).
 	const double min_pixel_size_on_unit_sphere =
-			transform_state.get_min_pixel_size_on_unit_sphere();
+			GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
+					viewport, model_view_transform, projection_transform);
 
 	// Calculate the level-of-detail.
 	// This is the equivalent of:
@@ -238,39 +181,89 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_level_of_detail(
 	//
 	// ...where 't0' is the texel size of the *highest* resolution level-of-detail and
 	// 't' is the projected size of a pixel of the viewport. And 'lod_bias' is used
-	// by clients to allow a the largest texel in a drawn texture to be larger than
+	// by clients to allow the largest texel in a drawn texture to be larger than
 	// a pixel in the viewport (which can result in blockiness in places in the rendered scene).
 	//
 	// Note: we return the un-clamped floating-point level-of-detail so clients of this class
 	// can see if they need a higher resolution render-texture, for example, to render
-	// our raster into - so in that case they'd keep increasing their render-target
-	// resolution or decreasing their render target view frustum until the level-of-detail
-	// became negative.
-	level_of_detail_factor = level_of_detail_bias + INVERSE_LOG2 *
+	// our raster into - so in that case they'd increase their render-target resolution or
+	// decrease their render target view frustum until the level-of-detail was zero.
+	return level_of_detail_bias + INVERSE_LOG2 *
 			(std::log(min_pixel_size_on_unit_sphere) -
 					std::log(d_max_highest_resolution_texel_size_on_unit_sphere));
+}
 
+
+float
+GPlatesOpenGL::GLMultiResolutionRaster::get_viewport_dimension_scale(
+		const GLMatrix &model_view_transform,
+		const GLMatrix &projection_transform,
+		const GLViewport &viewport,
+		float level_of_detail) const
+{
+	const float current_level_of_detail = get_level_of_detail(model_view_transform, projection_transform, viewport);
+
+	// new_viewport_dimension = viewport_dimension * pow(2, (get_level_of_detail - lod))
+	return std::pow(2.0f, current_level_of_detail - level_of_detail);
+}
+
+
+unsigned int
+GPlatesOpenGL::GLMultiResolutionRaster::clamp_level_of_detail(
+		float level_of_detail_float) const
+{
 	// Truncate level-of-detail factor and clamp to the range of our levels of details.
-	int level_of_detail = static_cast<int>(level_of_detail_factor);
+	int level_of_detail = static_cast<int>(level_of_detail_float);
 	// Clamp to highest resolution level of detail.
 	if (level_of_detail < 0)
 	{
-		// LOD bias aside, if we get here then even the highest resolution level-of-detail did not
-		// have enough resolution for the current viewport and projection but it'll have to do
-		// since its the highest resolution we have to offer.
+		// If we get here then even the highest resolution level-of-detail did not have enough
+		// resolution for the specified level of detail but it'll have to do since its the
+		// highest resolution we have to offer.
 		// This is where the user will start to see magnification of the raster.
 		level_of_detail = 0;
 	}
 	// Clamp to lowest resolution level of detail.
 	if (level_of_detail >= boost::numeric_cast<int>(d_level_of_detail_pyramid.size()))
 	{
-		// LOD bias aside, if we get there then even our lowest resolution level of detail
-		// had too much resolution - but this is pretty unlikely for all but the very
+		// If we get there then even our lowest resolution level of detail had too much resolution
+		// for the specified level of detail - but this is pretty unlikely for all but the very
 		// smallest of viewports.
 		level_of_detail = d_level_of_detail_pyramid.size() - 1;
 	}
 
 	return level_of_detail;
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
+		std::vector<tile_handle_type> &visible_tiles,
+		const GLMatrix &model_view_transform,
+		const GLMatrix &projection_transform,
+		unsigned int level_of_detail) const
+{
+	// There should be levels of detail and the specified level of detail should be in range.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_level_of_detail_pyramid.empty() &&
+				level_of_detail < d_level_of_detail_pyramid.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	const LevelOfDetail &lod = *d_level_of_detail_pyramid[level_of_detail];
+
+	//
+	// Traverse the OBB tree of the level-of-detail and gather of list of tiles that
+	// are visible in the view frustum.
+	//
+
+	// First get the view frustum planes.
+	const GLFrustum frustum_planes(model_view_transform, projection_transform);
+
+	// Get the root OBB tree node of the level-of-detail.
+	const LevelOfDetail::OBBTreeNode &lod_root_obb_tree_node = lod.get_obb_tree_node(lod.obb_tree_root_node_index);
+
+	// Recursively traverse the OBB tree to find visible tiles.
+	get_visible_tiles(frustum_planes, GLFrustum::ALL_PLANES_ACTIVE_MASK, lod, lod_root_obb_tree_node, visible_tiles);
 }
 
 
@@ -331,6 +324,135 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 }
 
 
+bool
+GPlatesOpenGL::GLMultiResolutionRaster::render(
+		GLRenderer &renderer,
+		cache_handle_type &cache_handle,
+		bool cache_tile_textures,
+		float level_of_detail_bias)
+{
+	const GLViewport &viewport = renderer.gl_get_viewport();
+	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
+	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+
+	// Get the tiles visible in the view frustum of the render target in 'renderer'.
+	std::vector<tile_handle_type> visible_tiles;
+	get_visible_tiles(visible_tiles, model_view_transform, projection_transform, viewport, level_of_detail_bias);
+
+	// Return early if there are no tiles to render.
+	if (visible_tiles.empty())
+	{
+		cache_handle = cache_handle_type();
+		return false;
+	}
+
+	return render(renderer, visible_tiles, cache_handle, cache_tile_textures);
+}
+
+
+bool
+GPlatesOpenGL::GLMultiResolutionRaster::render(
+		GLRenderer &renderer,
+		unsigned int level_of_detail,
+		cache_handle_type &cache_handle,
+		bool cache_tile_textures)
+{
+	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
+	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+
+	// Get the tiles visible in the view frustum of the render target in 'renderer'.
+	std::vector<tile_handle_type> visible_tiles;
+	get_visible_tiles(visible_tiles, model_view_transform, projection_transform, level_of_detail);
+
+	// Return early if there are no tiles to render.
+	if (visible_tiles.empty())
+	{
+		cache_handle = cache_handle_type();
+		return false;
+	}
+
+	return render(renderer, visible_tiles, cache_handle, cache_tile_textures);
+}
+
+
+bool
+GPlatesOpenGL::GLMultiResolutionRaster::render(
+		GLRenderer &renderer,
+		const std::vector<tile_handle_type> &tiles,
+		cache_handle_type &cache_handle,
+		bool cache_tile_textures)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Use shader program (if supported), otherwise the fixed-function pipeline.
+	// A valid shader program means we have a floating-point source raster.
+	if (d_render_floating_point_raster_program_object)
+	{
+		// Bind the shader program.
+		renderer.gl_bind_program_object(d_render_floating_point_raster_program_object.get());
+		// Set the raster texture sampler to texture unit 0.
+		d_render_floating_point_raster_program_object.get()->gl_uniform1i(renderer, "raster_texture_sampler", 0/*texture unit*/);
+	}
+	else // Fixed function...
+	{
+		// Use the fixed-function pipeline (available on all hardware) to render raster.
+		// Enable texturing and set the texture function on texture unit 0.
+		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	}
+
+	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
+	// might not be rendering directly to the final render target and hence we don't
+	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
+	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
+	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
+	// which is not what we want - we want (A*R,A*G,A*B,A*A).
+
+	// The cached view is a sequence of tiles for the caller to keep alive until the next frame.
+	boost::shared_ptr<std::vector<ClientCacheTile> > cached_tiles(new std::vector<ClientCacheTile>());
+	cached_tiles->reserve(tiles.size());
+
+	// Render each tile.
+	BOOST_FOREACH(GLMultiResolutionRaster::tile_handle_type tile_handle, tiles)
+	{
+		const Tile tile = get_tile(tile_handle, renderer);
+
+		// Bind the tile texture to texture unit 0.
+		renderer.gl_bind_texture(tile.tile_texture->texture, GL_TEXTURE0, GL_TEXTURE_2D);
+
+		// Bind the current tile.
+		tile.tile_vertices->vertex_array->gl_bind(renderer);
+
+		const unsigned int num_vertices =
+				tile.tile_vertices->vertex_buffer->get_buffer()->get_buffer_size() / sizeof(vertex_type);
+		const unsigned int num_indices =
+				tile.tile_vertices->vertex_element_buffer->get_buffer()->get_buffer_size() / sizeof(vertex_element_type);
+
+		// Draw the current tile.
+		tile.tile_vertices->vertex_array->gl_draw_range_elements(
+				renderer,
+				GL_TRIANGLES,
+				0/*start*/,
+				num_vertices - 1/*end*/,
+				num_indices/*count*/,
+				GLVertexElementTraits<vertex_element_type>::type,
+				0 /*indices_offset*/);
+
+		// The caller will cache this tile to keep it from being prematurely recycled by our caches.
+		//
+		// Note that none of this has any effect if the client specified the entire level-of-detail
+		// pyramid be cached (in the 'create()' method) in which case it'll get cached regardless.
+		cached_tiles->push_back(ClientCacheTile(tile, cache_tile_textures));
+	}
+
+	// Return cached tiles to the caller.
+	cache_handle = cached_tiles;
+
+	return !tiles.empty();
+}
+
+
 GPlatesOpenGL::GLMultiResolutionRaster::Tile
 GPlatesOpenGL::GLMultiResolutionRaster::get_tile(
 		tile_handle_type tile_handle,
@@ -343,53 +465,55 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile(
 	const LevelOfDetailTile &lod_tile = *d_tiles[tile_handle];
 
 	// Get the texture for the tile.
-	GLTexture::shared_ptr_to_const_type texture =
-			get_tile_texture(lod_tile, renderer);
+	tile_texture_cache_type::object_shared_ptr_type tile_texture = get_tile_texture(renderer, lod_tile);
 
 	// Get the vertices for the tile.
-	GLVertexArray::shared_ptr_to_const_type vertex_array = get_tile_vertex_array(lod_tile);
+	tile_vertices_cache_type::object_shared_ptr_type tile_vertices = get_tile_vertices(renderer, lod_tile);
 
 	// Return the tile to the caller.
 	// Each tile has its own vertices and texture but shares the same triangles (vertex indices).
-	return Tile(vertex_array, lod_tile.vertex_element_array, texture);
+	return Tile(tile_vertices, tile_texture);
 }
 
 
-GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
+GPlatesOpenGL::GLMultiResolutionRaster::tile_texture_cache_type::object_shared_ptr_type
 GPlatesOpenGL::GLMultiResolutionRaster::get_tile_texture(
-		const LevelOfDetailTile &lod_tile,
-		GLRenderer &renderer)
+		GLRenderer &renderer,
+		const LevelOfDetailTile &lod_tile)
 {
 	// See if we've previously created our tile texture and
 	// see if it hasn't been recycled by the texture cache.
-	boost::shared_ptr<GLTexture> tile_texture = lod_tile.texture->get_cached_object();
+	tile_texture_cache_type::object_shared_ptr_type tile_texture = lod_tile.tile_texture->get_cached_object();
 	if (!tile_texture)
 	{
-		tile_texture = lod_tile.texture->recycle_an_unused_object();
+		tile_texture = lod_tile.tile_texture->recycle_an_unused_object();
 		if (!tile_texture)
 		{
-			tile_texture = lod_tile.texture->set_cached_object(
-					GLTexture::create_as_auto_ptr(d_texture_resource_manager));
+			// Create a new tile texture.
+			tile_texture = lod_tile.tile_texture->set_cached_object(
+					std::auto_ptr<TileTexture>(new TileTexture(renderer)),
+					// Called whenever tile texture is returned to the cache...
+					boost::bind(&TileTexture::returned_to_cache, _1));
 
 			// The texture was just allocated so we need to create it in OpenGL.
-			create_tile_texture(tile_texture);
+			create_texture(renderer, tile_texture->texture);
+
+			//qDebug() << "GLMultiResolutionRaster: " << d_tile_texture_cache->get_current_num_objects_in_use();
 		}
 
 		load_raster_data_into_tile_texture(
 				lod_tile,
-				tile_texture,
+				*tile_texture,
 				renderer);
-
-		return tile_texture;
 	}
-
 	// Our texture wasn't recycled but see if it's still valid in case the source
 	// raster changed the data underneath us.
-	if (!d_raster_source->get_subject_token().is_observer_up_to_date(lod_tile.source_texture_observer_token))
+	else if (!d_raster_source->get_subject_token().is_observer_up_to_date(lod_tile.source_texture_observer_token))
 	{
 		// Load the data into the texture.
 		load_raster_data_into_tile_texture(
-				lod_tile, tile_texture,
+				lod_tile,
+				*tile_texture,
 				renderer);
 	}
 
@@ -400,24 +524,21 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_texture(
 void
 GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 		const LevelOfDetailTile &lod_tile,
-		const GLTexture::shared_ptr_type &texture,
+		TileTexture &tile_texture,
 		GLRenderer &renderer)
 {
 	PROFILE_FUNC();
 
 	// Get our source to load data into the texture.
-	// We specify 'parallel' render target usage because we are not rendering to
-	// the current texture more than once per frame and hence it does not need to be
-	// rendered in serial.
-	d_raster_source->load_tile(
-			lod_tile.lod_level,
-			lod_tile.u_lod_texel_offset,
-			lod_tile.v_lod_texel_offset,
-			lod_tile.num_u_lod_texels,
-			lod_tile.num_v_lod_texels,
-			texture,
-			renderer,
-			GLRenderer::RENDER_TARGET_USAGE_PARALLEL);
+	tile_texture.source_cache_handle =
+			d_raster_source->load_tile(
+					lod_tile.lod_level,
+					lod_tile.u_lod_texel_offset,
+					lod_tile.v_lod_texel_offset,
+					lod_tile.num_u_lod_texels,
+					lod_tile.num_v_lod_texels,
+					tile_texture.texture,
+					renderer);
 
 	// This tile texture is now update-to-date.
 	d_raster_source->get_subject_token().update_observer(lod_tile.source_texture_observer_token);
@@ -428,28 +549,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 void
-GPlatesOpenGL::GLMultiResolutionRaster::create_tile_texture(
+GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
+		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture)
 {
-	//
-	// NOTE: Direct calls to OpenGL are made below.
-	//
-	// Below we make direct calls to OpenGL once we've bound the texture.
-	// This is in contrast to storing OpenGL commands in the render graph to be
-	// executed later. The reason for this is the calls we make affect the
-	// bound texture object's state and not the general OpenGL state. Texture object's
-	// are one of those places in OpenGL where you can set state and then subsequent
-	// binds of that texture object will set all that state into OpenGL.
-	//
+	const GLint internal_format = d_raster_source->get_target_texture_internal_format();
 
-	// Bind the texture so its the current texture.
-	// Here we actually make a direct OpenGL call to bind the texture to the currently
-	// active texture unit. It doesn't matter what the current texture unit is because
-	// the only reason we're binding the texture object is so we can set its state =
-	// so that subsequent binds of this texture object, when we render the scene graph,
-	// will set that state to OpenGL.
-	texture->gl_bind_texture(GL_TEXTURE_2D);
-
+#if 0
 	// If the auto-generate mipmaps OpenGL extension is supported then have mipmaps generated
 	// automatically for us and specify a mipmap minification filter,
 	// otherwise don't use mipmaps (and instead specify a non-mipmap minification filter).
@@ -467,7 +573,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_tile_texture(
 	// we have our own mipmapped raster tiles via proxied rasters. Also we turn on anisotropic
 	// filtering which will reduce any aliasing near the horizon of the globe.
 	// Turning off auto-mipmap-generation will also give us a small speed boost.
-#if 0
 	if (GLEW_SGIS_generate_mipmap)
 	{
 		// Mipmaps will be generated automatically when the level 0 image is modified.
@@ -479,28 +584,48 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_tile_texture(
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	}
 #else
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 #endif
 
 	// No mipmap filter for the GL_TEXTURE_MAG_FILTER filter regardless.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Specify anisotropic filtering if it's supported since rasters near the north or
 	// south pole will exhibit squashing along the longitude, but not the latitude, direction.
 	// Regular isotropic filtering will just reduce texel resolution equally along both
 	// directions and reduce the visual sharpness that we want to retain in the latitude direction.
-	if (GLEW_EXT_texture_filter_anisotropic)
+	//
+	// NOTE: We don't enable anisotropic filtering for floating-point textures since earlier
+	// hardware (that supports floating-point textures) only supports nearest filtering.
+	if (!GLTexture::is_format_floating_point(internal_format) &&
+		GLEW_EXT_texture_filter_anisotropic &&
+		d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_ANISOTROPIC)
 	{
-		const GLfloat anisotropy = GLContext::get_texture_parameters().gl_texture_max_anisotropy_EXT;
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+		const GLfloat anisotropy = GLContext::get_parameters().texture.gl_texture_max_anisotropy;
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	// Clamp texture coordinates to centre of edge texels -
+	// it's easier for hardware to implement - and doesn't affect our calculations.
+	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	{
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	else
+	{
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	}
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
 	// We'll be getting our raster source to load image data into the texture.
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+	//
+	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
+	// just use values that are compatible with all internal formats to avoid a possible error.
+	texture->gl_tex_image_2D(
+			renderer, GL_TEXTURE_2D, 0,
+			internal_format,
 			d_tile_texel_dimension, d_tile_texel_dimension,
 			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
@@ -511,32 +636,44 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_tile_texture(
 ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
-GPlatesOpenGL::GLVertexArray::shared_ptr_to_const_type
-GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertex_array(
+GPlatesOpenGL::GLMultiResolutionRaster::tile_vertices_cache_type::object_shared_ptr_type
+GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertices(
+		GLRenderer &renderer,
 		const LevelOfDetailTile &lod_tile)
 {
 	// See if we've previously created our tile vertices and
-	// see if they haven't been recycled by the vertex array cache.
-	boost::shared_ptr<GLVertexArray> tile_vertices = lod_tile.vertex_array->get_cached_object();
+	// see if they haven't been recycled by the tile vertices cache.
+	tile_vertices_cache_type::object_shared_ptr_type tile_vertices = lod_tile.tile_vertices->get_cached_object();
 	if (!tile_vertices)
 	{
-		tile_vertices = lod_tile.vertex_array->recycle_an_unused_object();
+		tile_vertices = lod_tile.tile_vertices->recycle_an_unused_object();
 		if (!tile_vertices)
 		{
-			tile_vertices = lod_tile.vertex_array->set_cached_object(
-					// The vertex data is reused but not every frame
-					// so it's neither static nor streaming (but dynamic).
-					GLVertexArray::create_as_auto_ptr(
-							GLArray::USAGE_DYNAMIC, d_vertex_buffer_resource_manager));
+			tile_vertices = lod_tile.tile_vertices->set_cached_object(
+					std::auto_ptr<TileVertices>(new TileVertices(renderer)));
 
-			// Vertex array was not recycled.
-			load_vertices_into_tile_vertex_array(lod_tile, tile_vertices, false);
+			// Bind the new vertex buffer to the new vertex array.
+			// This only needs to be done once since the vertex buffer and vertex array
+			// are always created together.
+			bind_vertex_buffer_to_vertex_array<vertex_type>(
+					renderer, *tile_vertices->vertex_array, tile_vertices->vertex_buffer);
 		}
-		else
-		{
-			// Vertex array was recycled.
-			load_vertices_into_tile_vertex_array(lod_tile, tile_vertices, true);
-		}
+
+		// Get the vertex indices for this tile.
+		// Since most tiles can share these indices we store them in a map keyed on
+		// the number of vertices in each dimension.
+		tile_vertices->vertex_element_buffer =
+				get_vertex_element_buffer(renderer, lod_tile.x_num_vertices, lod_tile.y_num_vertices);
+
+		// Bind the vertex element buffer for the current tile to the vertex array.
+		// We have to do this each time we recycle (or create) a tile since the previous vertex
+		// elements (indices) may not be appropriate for the current tile (due to partial boundary tiles).
+		//
+		// When we draw the vertex array it will use this vertex element buffer.
+		tile_vertices->vertex_array->set_vertex_element_buffer(renderer, tile_vertices->vertex_element_buffer);
+
+		// Load the tile vertices.
+		load_vertices_into_tile_vertex_buffer(renderer, lod_tile, *tile_vertices);
 	}
 
 	return tile_vertices;
@@ -544,10 +681,10 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertex_array(
 
 
 void
-GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_array(
+GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
+		GLRenderer &renderer,
 		const LevelOfDetailTile &lod_tile,
-		const GLVertexArray::shared_ptr_type &vertex_array,
-		bool vertex_array_was_recycled)
+		TileVertices &tile_vertices)
 {
 	PROFILE_FUNC();
 
@@ -556,8 +693,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_array(
 			lod_tile.x_num_vertices * lod_tile.y_num_vertices;
 
 	// Allocate memory for the vertex array.
-	std::vector<GLTexturedVertex> vertex_array_data;
-	vertex_array_data.reserve(num_vertices_in_tile);
+	std::vector<vertex_type> vertex_buffer_data;
+	vertex_buffer_data.reserve(num_vertices_in_tile);
 
 	//
 	// Initialise the vertices
@@ -605,16 +742,18 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_array(
 			const double u = lod_tile.u_start + i * u_increment_per_quad;
 
 			// Add the vertex.
-			const GLTexturedVertex vertex(vertex_position.position_vector(), u, v);
-			vertex_array_data.push_back(vertex);
+			const vertex_type vertex(vertex_position.position_vector(), u, v);
+			vertex_buffer_data.push_back(vertex);
 		}
 	}
 
-	// Set the vertex array.
-	// If the vertex array was not recycled then it was created for the first time and
-	// we need to set the vertex array pointers and enable the appropriate client state.
-	// We don't need to do this for a recycled vertex array because it's already been done.
-	vertex_array->set_array_data(vertex_array_data, !vertex_array_was_recycled);
+	// Copy vertices into the vertex buffer.
+	tile_vertices.vertex_buffer->get_buffer()->gl_buffer_data(
+			renderer,
+			GLBuffer::TARGET_ARRAY_BUFFER,
+			vertex_buffer_data,
+			// We update the vertex buffer occasionally (ie, dynamic)...
+			GLBuffer::USAGE_DYNAMIC_DRAW);
 }
 
 
@@ -1051,12 +1190,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail_tile(
 	const unsigned int x_num_vertices = num_vertices_along_tile_edges.first;
 	const unsigned int y_num_vertices = num_vertices_along_tile_edges.second;
 
-	// Get the vertex indices for this tile.
-	// Since most tiles can share these indices we store them in a map keyed on
-	// the number of vertices in each dimension.
-	GLVertexElementArray::shared_ptr_to_const_type vertex_element_array =
-			get_vertex_element_array(x_num_vertices, y_num_vertices);
-
 	// Create the level-of-detail tile now that we have all the information we need.
 	LevelOfDetailTile::non_null_ptr_type lod_tile = LevelOfDetailTile::create(
 			lod_level,
@@ -1067,9 +1200,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail_tile(
 			v_start, v_end,
 			u_lod_texel_offset, v_lod_texel_offset,
 			num_u_texels, num_v_texels,
-			vertex_element_array,
-			*d_vertex_array_cache,
-			*d_texture_cache);
+			*d_tile_vertices_cache,
+			*d_tile_texture_cache);
 
 	// Add the tile to the sequence of all tiles.
 	const tile_handle_type tile_handle = d_tiles.size();
@@ -1200,7 +1332,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::calculate_num_vertices_along_tile_edges(
 			}
 		}
 	}
-
+#if 0
 	// Convert from dot product to angle.
 	const GPlatesMaths::real_t x_tile_max_spanned_angle_in_radians = 2 * acos(x_tile_min_half_span);
 	const GPlatesMaths::real_t y_tile_max_spanned_angle_in_radians = 2 * acos(y_tile_min_half_span);
@@ -1212,7 +1344,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::calculate_num_vertices_along_tile_edges(
 	const GPlatesMaths::real_t y_num_quads_based_on_distance_real =
 			GPlatesMaths::convert_rad_to_deg(y_tile_max_spanned_angle_in_radians) /
 					MAX_ANGLE_IN_DEGREES_BETWEEN_VERTICES;
-
+#endif
 	// Determine the number of quads along each tile edge based on the texel resolution.
 	const unsigned int x_num_quads_based_on_texels = num_u_texels / NUM_TEXELS_PER_VERTEX;
 	const unsigned int y_num_quads_based_on_texels = num_v_texels / NUM_TEXELS_PER_VERTEX;
@@ -1337,7 +1469,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::calc_max_texel_size_on_unit_sphere(
 			const double x_plus_one_texel = x +
 					((i == 0) ? texel_size_in_pixels : -texel_size_in_pixels);
 
-			// Sample point one texel in x direction.
+			// Sample plus one texel in x direction.
 			const GPlatesMaths::PointOnSphere sample_point_plus_one_texel_x =
 					convert_pixel_coord_to_geographic_coord(x_plus_one_texel, y);
 
@@ -1352,7 +1484,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::calc_max_texel_size_on_unit_sphere(
 				min_dot_product_texel_size = dot_product_texel_size_x;
 			}
 
-			// Sample point one texel in y direction.
+			// Sample plus one texel in y direction.
 			const GPlatesMaths::PointOnSphere sample_point_plus_one_texel_y =
 					convert_pixel_coord_to_geographic_coord(x, y_plus_one_texel);
 
@@ -1421,8 +1553,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_oriented_bounding_box_builder(
 }
 
 
-GPlatesOpenGL::GLVertexElementArray::shared_ptr_to_const_type
-GPlatesOpenGL::GLMultiResolutionRaster::get_vertex_element_array(
+GPlatesOpenGL::GLVertexElementBuffer::shared_ptr_to_const_type
+GPlatesOpenGL::GLMultiResolutionRaster::get_vertex_element_buffer(
+		GLRenderer &renderer,
 		const unsigned int num_vertices_along_tile_x_edge,
 		const unsigned int num_vertices_along_tile_y_edge)
 {
@@ -1431,20 +1564,20 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_vertex_element_array(
 			num_vertices_along_tile_x_edge > 1 && num_vertices_along_tile_y_edge > 1,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Lookup our map of vertex element arrays to see if we've already created one
+	// Lookup our map of vertex element buffers to see if we've already created one
 	// with the specified vertex dimensions.
-	vertex_element_array_map_type::const_iterator vertex_element_array_iter =
-			d_vertex_element_arrays.find(
-					vertex_element_array_map_type::key_type(
+	vertex_element_buffer_map_type::const_iterator vertex_element_buffer_iter =
+			d_vertex_element_buffers.find(
+					vertex_element_buffer_map_type::key_type(
 							num_vertices_along_tile_x_edge,
 							num_vertices_along_tile_y_edge));
-	if (vertex_element_array_iter != d_vertex_element_arrays.end())
+	if (vertex_element_buffer_iter != d_vertex_element_buffers.end())
 	{
-		return vertex_element_array_iter->second;
+		return vertex_element_buffer_iter->second;
 	}
 
 	//
-	// We haven't already created a vertex element array with the specified vertex dimensions
+	// We haven't already created a vertex element buffer with the specified vertex dimensions
 	// so create a new one.
 	//
 
@@ -1468,14 +1601,14 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_vertex_element_array(
 	// more than 65535 vertices per tile - we're probably using about a thousand
 	// per tile so should be no problem.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			num_vertices_per_tile < (1 << (8 * sizeof(GLushort))),
+			num_vertices_per_tile < (1 << (8 * sizeof(vertex_element_type))),
 			GPLATES_ASSERTION_SOURCE);
 
 	// The array to store the vertex indices.
-	boost::scoped_array<GLushort> vertex_element_array_data(new GLushort[num_indices_per_tile]);
+	boost::scoped_array<vertex_element_type> buffer_data(new vertex_element_type[num_indices_per_tile]);
 
 	// Initialise the vertex indices.
-	GLushort *indices = vertex_element_array_data.get();
+	vertex_element_type *indices = buffer_data.get();
 	for (unsigned int y = 0; y < num_quads_along_tile_y_edge; ++y)
 	{
 		for (unsigned int x = 0; x < num_quads_along_tile_x_edge; ++x)
@@ -1505,27 +1638,25 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_vertex_element_array(
 		}
 	}
 
-	// Create a vertex element array and set the index data array.
-	GLVertexElementArray::shared_ptr_type vertex_element_array =
-			GLVertexElementArray::create(
-					vertex_element_array_data.get(), num_indices_per_tile,
-					GLArray::USAGE_STATIC, d_vertex_buffer_resource_manager);
-
-	// Tell it what to draw when the time comes to draw.
-	vertex_element_array->gl_draw_range_elements_EXT(
-			GL_TRIANGLES,
-			0/*start*/,
-			num_vertices_per_tile - 1/*end*/,
-			num_indices_per_tile/*count*/,
-			0 /*indices_offset*/);
+	// Set up the vertex element buffer.
+	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer);
+	vertex_element_buffer_data->gl_buffer_data(
+			renderer,
+			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
+			num_indices_per_tile * sizeof(vertex_element_type),
+			buffer_data.get(),
+			// Indices written to buffer only once...
+			GLBuffer::USAGE_STATIC_DRAW);
+	GLVertexElementBuffer::shared_ptr_type vertex_element_buffer =
+			GLVertexElementBuffer::create(renderer, vertex_element_buffer_data);
 
 	// Add to our map of vertex element arrays.
-	const vertex_element_array_map_type::key_type vertex_dimensions(
+	const vertex_element_buffer_map_type::key_type vertex_dimensions(
 			num_vertices_along_tile_x_edge, num_vertices_along_tile_y_edge);
-	d_vertex_element_arrays.insert(vertex_element_array_map_type::value_type(
-			vertex_dimensions, vertex_element_array));
+	d_vertex_element_buffers.insert(vertex_element_buffer_map_type::value_type(
+			vertex_dimensions, vertex_element_buffer));
 
-	return vertex_element_array;
+	return vertex_element_buffer;
 }
 
 
@@ -1585,16 +1716,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::convert_pixel_coord_to_geographic_coord(
 }
 
 
-GPlatesOpenGL::GLMultiResolutionRaster::Tile::Tile(
-		const GLVertexArray::shared_ptr_to_const_type &vertex_array,
-		const GLVertexElementArray::shared_ptr_to_const_type &vertex_element_array,
-		const GLTexture::shared_ptr_to_const_type &texture) :
-	d_drawable(GLVertexArrayDrawable::create(vertex_array, vertex_element_array)),
-	d_texture(texture)
-{
-}
-
-
 GPlatesOpenGL::GLMultiResolutionRaster::LevelOfDetailTile::LevelOfDetailTile(
 		unsigned int lod_level_,
 		unsigned int x_geo_start_,
@@ -1611,9 +1732,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::LevelOfDetailTile::LevelOfDetailTile(
 		unsigned int v_lod_texel_offset_,
 		unsigned int num_u_lod_texels_,
 		unsigned int num_v_lod_texels_,
-		const GLVertexElementArray::shared_ptr_to_const_type &vertex_element_array_,
-		GPlatesUtils::ObjectCache<GLVertexArray> &vertex_array_cache_,
-		GPlatesUtils::ObjectCache<GLTexture> &texture_cache_) :
+		tile_vertices_cache_type &tile_vertices_cache_,
+		tile_texture_cache_type &tile_texture_cache_) :
 	lod_level(lod_level_),
 	x_geo_start(x_geo_start_),
 	x_geo_end(x_geo_end_),
@@ -1629,9 +1749,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::LevelOfDetailTile::LevelOfDetailTile(
 	v_lod_texel_offset(v_lod_texel_offset_),
 	num_u_lod_texels(num_u_lod_texels_),
 	num_v_lod_texels(num_v_lod_texels_),
-	vertex_element_array(vertex_element_array_),
-	vertex_array(vertex_array_cache_.allocate_volatile_object()),
-	texture(texture_cache_.allocate_volatile_object())
+	tile_vertices(tile_vertices_cache_.allocate_volatile_object()),
+	tile_texture(tile_texture_cache_.allocate_volatile_object())
 {
 }
 

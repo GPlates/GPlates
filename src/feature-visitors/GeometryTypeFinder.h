@@ -185,12 +185,20 @@ namespace GPlatesFeatureVisitors
 
 
 		void
-		clear_found_geometries()
+		clear()
 		{
 			d_num_point_geometries_found = 0;
 			d_num_multi_point_geometries_found = 0;
 			d_num_polyline_geometries_found = 0;
 			d_num_polygon_geometries_found = 0;
+			d_points_list.clear();
+		}
+
+		//
+		std::vector<GPlatesMaths::PointOnSphere>
+		get_points()
+		{
+			return d_points_list;
 		}
 
 	private:
@@ -199,6 +207,8 @@ namespace GPlatesFeatureVisitors
 		int d_num_multi_point_geometries_found;
 		int d_num_polyline_geometries_found;
 		int d_num_polygon_geometries_found;
+
+		std::vector<GPlatesMaths::PointOnSphere> d_points_list;
 	};
 
 	/**
@@ -209,6 +219,10 @@ namespace GPlatesFeatureVisitors
 	boost::optional<GPlatesModel::FeatureHandle::iterator>
 	find_first_geometry_property(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
+	boost::optional<GPlatesModel::FeatureHandle::iterator>
+	find_first_geometry_property(
+			GPlatesModel::FeatureHandle& feature_ref);
 
 	/**
 	 * Determine if the given property contains a geometry.

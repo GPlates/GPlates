@@ -33,6 +33,7 @@
 #include "Layer.h"
 #include "LayerTask.h"
 #include "LayerTaskRegistry.h"
+#include "LogModel.h"
 #include "ReconstructGraph.h"
 #include "ReconstructMethodRegistry.h"
 #include "ReconstructUtils.h"
@@ -40,9 +41,7 @@
 #include "SessionManagement.h"
 #include "UserPreferences.h"
 
-#include "api/PythonExecutionThread.h"
-#include "api/PythonInterpreterLocker.h"
-#include "api/PythonRunner.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -78,14 +77,19 @@ namespace
 GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_feature_collection_file_state(
 			new FeatureCollectionFileState(d_model)),
+	d_feature_collection_file_format_registry(
+			new GPlatesFileIO::FeatureCollectionFileFormat::Registry()),
 	d_feature_collection_file_io(
 			new FeatureCollectionFileIO(
-					d_model, *d_feature_collection_file_state)),
+					d_model,
+					*d_feature_collection_file_format_registry,
+					*d_feature_collection_file_state)),
 	d_serialization_ptr(new Serialization(*this)),
 	d_session_management_ptr(new SessionManagement(*this)),
-	d_user_preferences_ptr(new UserPreferences()),
+	d_user_preferences_ptr(new UserPreferences(NULL)),
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
 	d_layer_task_registry(new LayerTaskRegistry()),
+	d_log_model(new LogModel(NULL)),
 	d_reconstruct_graph(new ReconstructGraph(*d_layer_task_registry)),
 	d_update_default_reconstruction_tree_layer(true),
 	d_reconstruction_time(0.0),
@@ -95,10 +99,12 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 			Reconstruction::create(d_reconstruction_time, d_anchored_plate_id)),
 	d_scoped_reconstruct_nesting_count(0),
 	d_reconstruct_on_scope_exit(false),
-	d_python_runner(NULL),
-	d_python_execution_thread(NULL),
-	d_suppress_auto_layer_creation(false)
+	d_suppress_auto_layer_creation(false),
+	d_callback_feature_store(d_model->root())
 {
+	// Register the default file formats for reading and/or writing feature collections.
+	register_default_file_formats(*d_feature_collection_file_format_registry, d_model);
+
 	// Register default reconstruct method types with the reconstruct method registry.
 	register_default_reconstruct_method_types(*d_reconstruct_method_registry);
 
@@ -107,28 +113,8 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 
 	mediate_signal_slot_connections();
 
-#if !defined(GPLATES_NO_PYTHON)
-	using namespace boost::python;
-
-	// Hold references to the main module and its namespace for easy access from
-	// all parts of GPlates.
-	GPlatesApi::PythonInterpreterLocker interpreter_locker;
-	try
-	{
-		d_python_main_module = import("__main__");
-		d_python_main_namespace = d_python_main_module.attr("__dict__");
-	}
-	catch (const error_already_set &)
-	{
-		PyErr_Print();
-	}
-#endif
-
-	// These two must be set up after d_python_main_module and
-	// d_python_main_namespace have been set.
-	d_python_runner = new GPlatesApi::PythonRunner(*this, this);
-	d_python_execution_thread = new GPlatesApi::PythonExecutionThread(*this, this);
-	d_python_execution_thread->start(QThread::IdlePriority);
+	// Register a model callback so we can reconstruct whenever the feature store is modified.
+	d_callback_feature_store.attach_callback(new ReconstructWhenFeatureStoreIsModified(*this));
 }
 
 
@@ -151,11 +137,6 @@ GPlatesAppLogic::ApplicationState::~ApplicationState()
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
 
-	// Stop the Python execution thread.
-	static const int WAIT_TIME = 1000 /* milliseconds */;
-	d_python_execution_thread->quit_event_loop();
-	d_python_execution_thread->wait(WAIT_TIME);
-	d_python_execution_thread->terminate();
 }
 
 
@@ -278,6 +259,11 @@ GPlatesAppLogic::ApplicationState::get_feature_collection_file_state()
 	return *d_feature_collection_file_state;
 }
 
+GPlatesFileIO::FeatureCollectionFileFormat::Registry &
+GPlatesAppLogic::ApplicationState::get_feature_collection_file_format_registry()
+{
+	return *d_feature_collection_file_format_registry;
+}
 
 GPlatesAppLogic::FeatureCollectionFileIO &
 GPlatesAppLogic::ApplicationState::get_feature_collection_file_io()
@@ -321,6 +307,13 @@ GPlatesAppLogic::ApplicationState::get_layer_task_registry()
 }
 
 
+GPlatesAppLogic::LogModel &
+GPlatesAppLogic::ApplicationState::get_log_model()
+{
+	return *d_log_model;
+}
+
+
 GPlatesAppLogic::ReconstructGraph &
 GPlatesAppLogic::ApplicationState::get_reconstruct_graph()
 {
@@ -352,21 +345,6 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 			SLOT(handle_file_state_file_about_to_be_removed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
-
-	//
-	// Perform a new reconstruction whenever shapefile attributes are modified.
-	//
-	// FIXME: This should be handled by listening for model modification events on the
-	// feature collections of currently loaded files (since remapping shapefile attributes
-	// modifies the model).
-	//
-	QObject::connect(
-			&get_feature_collection_file_io(),
-			SIGNAL(remapped_shapefile_attributes(
-					GPlatesAppLogic::FeatureCollectionFileIO &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
-			this,
-			SLOT(reconstruct()));
 
 	//
 	// Perform a new reconstruction whenever layers are modified.

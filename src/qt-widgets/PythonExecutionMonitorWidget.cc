@@ -28,20 +28,16 @@
 #include <QApplication>
 
 #include "PythonExecutionMonitorWidget.h"
-
 #include "QtWidgetUtils.h"
 
 #include "api/PythonExecutionThread.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 GPlatesQtWidgets::PythonExecutionMonitorWidget::PythonExecutionMonitorWidget(
 		GPlatesApi::PythonExecutionThread *python_execution_thread,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_python_execution_thread(python_execution_thread)
-#if 0
-
-#endif
 {
 	setupUi(this);
 
@@ -135,4 +131,4 @@ GPlatesQtWidgets::PythonExecutionMonitorWidget::reposition()
 {
 	move(parentWidget()->width() - width(), parentWidget()->height() - height());
 }
-
+#endif //GPLATES_NO_PYTHON

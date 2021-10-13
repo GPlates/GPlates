@@ -150,6 +150,39 @@ namespace GPlatesAppLogic
 				const ReconstructParams &reconstruct_params,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time) = 0;
+
+
+		/**
+		 * Reconstructs the specified geometry from present day to the specified reconstruction time -
+		 * unless @a reverse_reconstruct is true in which case the geometry is assumed to be
+		 * the reconstructed geometry (at the reconstruction time) and the returned geometry will
+		 * then be the present day geometry.
+		 *
+		 * NOTE: The specified feature is called @a reconstruction_properties since its geometry(s)
+		 * is not reconstructed - it is only used as a source of properties that determine how
+		 * to perform the reconstruction (for example, a reconstruction plate ID).
+		 *
+		 * This is mainly useful when you have a feature and are modifying its geometry at some
+		 * reconstruction time (not present day). After each modification the geometry needs to be
+		 * reverse reconstructed to present day before it can be attached back onto the feature
+		 * because feature's typically store present day geometry in their geometry properties.
+		 *
+		 * Note that @a reconstruction_tree_creator can be used to get reconstruction trees at times
+		 * other than @a reconstruction_time.
+		 * This is useful for reconstructing flowlines since the function might be hooked up
+		 * to a reconstruction tree cache.
+		 * NOTE: Calling 'set_default_reconstruction_time()' or 'set_default_anchor_plate_id'
+		 * can result in a thrown exception. These defaults are managed by the caller and
+		 * should not be altered.
+		 */
+		virtual
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reconstruct_geometry(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				bool reverse_reconstruct) = 0;
 	};
 }
 

@@ -54,7 +54,8 @@ namespace GPlatesFileIO
 
 		OgrGeometryExporter(
 			QString &filename,
-			bool multiple_geometries);
+			bool multiple_geometries,
+			bool wrap_to_dateline = true);
 
 		virtual
 			~OgrGeometryExporter();

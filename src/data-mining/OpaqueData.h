@@ -56,6 +56,32 @@ namespace GPlatesDataMining
 			double ,
 			QString
 		 > OpaqueData;
+
+
+	class is_empty_visitor
+		: public boost::static_visitor<bool>
+	{
+	public:
+
+		inline
+		bool operator()(
+				const empty_data_type) const
+		{
+			return true;
+		}
+
+		template<class type>
+		bool operator()(const type) const
+		{
+			return false;
+		}
+	};
+
+	inline
+	bool is_empty_opaque(const OpaqueData& data)
+	{
+		return boost::apply_visitor(is_empty_visitor(), data);
+	}
 }
 
 #endif

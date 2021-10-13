@@ -33,10 +33,7 @@
 
 #include "GlobeRenderedGeometryLayerPainter.h"
 
-#include "opengl/GLEnterOrLeaveStateSet.h"
-#include "opengl/GLStateSet.h"
 #include "opengl/GLRenderer.h"
-#include "opengl/GLUNurbsRenderer.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryLayer.h"
@@ -63,20 +60,27 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 {  }
 
 
-void
+GPlatesGui::GlobeRenderedGeometryCollectionPainter::cache_handle_type
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint(
 		GPlatesOpenGL::GLRenderer &renderer,
-		const double &viewport_zoom_factor,
-		const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer)
+		const double &viewport_zoom_factor)
 {
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_globe_state_scope(renderer);
+
 	// Initialise our paint parameters so our visit methods can access them.
-	d_paint_params = PaintParams(renderer, viewport_zoom_factor, nurbs_renderer);
+	d_paint_params = PaintParams(renderer, viewport_zoom_factor);
 
 	// Draw the layers.
 	d_rendered_geometry_collection.accept_visitor(*this);
 
+	// Get the cache handle for all the rendered layers.
+	const cache_handle_type cache_handle = d_paint_params->d_cache_handle;
+
 	// These parameters are only used for the duration of this 'paint()' method.
 	d_paint_params = boost::none;
+
+	return cache_handle;
 }
 
 
@@ -95,17 +99,11 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 		return false;
 	}
 
-	// Create a state set that ensures this rendered layer will form a render sub group
-	// that will not get reordered with other layers by the renderer (to minimise state changes).
-	GPlatesOpenGL::GLStateSet::non_null_ptr_type state_set = GPlatesOpenGL::GLStateSet::create();
-	state_set->set_enable_render_sub_group();
-
 	// Draw the current rendered geometry layer.
 	GlobeRenderedGeometryLayerPainter rendered_geom_layer_painter(
 			rendered_geometry_layer,
 			d_persistent_opengl_objects,
 			d_paint_params->d_inverse_viewport_zoom_factor,
-			d_paint_params->d_nurbs_renderer,
 			d_render_settings,
 			d_text_renderer_ptr,
 			d_visibility_tester,
@@ -113,9 +111,11 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 	rendered_geom_layer_painter.set_scale(d_scale);
 
 	// Paint the layer.
-	d_paint_params->d_renderer->push_state_set(state_set);
-	rendered_geom_layer_painter.paint(*d_paint_params->d_renderer);
-	d_paint_params->d_renderer->pop_state_set();
+	const cache_handle_type layer_cache =
+			rendered_geom_layer_painter.paint(*d_paint_params->d_renderer, d_layer_painter);
+
+	// Cache the layer's painting.
+	d_paint_params->d_cache_handle->push_back(layer_cache);
 
 	// We've already visited the rendered geometry layer so don't visit its rendered geometries.
 	return false;

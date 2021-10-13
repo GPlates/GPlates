@@ -47,13 +47,14 @@
 
 GPlatesFileIO::OgrGeometryExporter::OgrGeometryExporter(
 	QString &filename,
-	bool multiple_geometries):
+	bool multiple_geometries,
+	bool wrap_to_dateline):
 	d_filename(filename),
 	d_multiple_geometries(multiple_geometries),
 	d_ogr_writer(0)
 {
 	try{
-		d_ogr_writer = new OgrWriter(d_filename,multiple_geometries);
+		d_ogr_writer = new OgrWriter(d_filename,multiple_geometries,wrap_to_dateline);
 	}
 	catch (std::exception &exc)
 	{

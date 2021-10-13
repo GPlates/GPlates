@@ -27,6 +27,7 @@
 #define GPLATES_OPENGL_GLCUBESUBDIVISIONCACHE_H
 
 #include <boost/mpl/if.hpp>
+#include <boost/optional.hpp>
 
 #include "GLCubeSubdivision.h"
 
@@ -49,151 +50,66 @@ namespace GPlatesOpenGL
 	{
 		struct NoProjectionTransform
 		{
-			NoProjectionTransform(
-					const GLCubeSubdivision &cube_subdivision,
-					GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-					unsigned int level_of_detail,
-					unsigned int tile_u_offset,
-					unsigned int tile_v_offset)
-			{  }
 		};
-
 		struct ProjectionTransform
 		{
-			ProjectionTransform(
-					const GLCubeSubdivision &cube_subdivision,
-					GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-					unsigned int level_of_detail,
-					unsigned int tile_u_offset,
-					unsigned int tile_v_offset) :
-				projection_transform(
-						cube_subdivision.get_projection_transform(
-								level_of_detail, tile_u_offset, tile_v_offset)),
-				frustum(
-						cube_subdivision.get_view_transform(cube_face)->get_matrix(),
-						projection_transform->get_matrix())
-			{  }
-
-			//! The projection transform.
-			GLTransform::non_null_ptr_to_const_type projection_transform;
-			//! The view frustum - since it's dependent on projection we might as well cache it too at a little extra cost.
-			GLFrustum frustum;
+			boost::optional<GLTransform::non_null_ptr_to_const_type> projection_transform;
 		};
 
-
-		struct NoOrientedBoundingBox
+		struct NoLooseProjectionTransform
 		{
-			NoOrientedBoundingBox(
-					const GLCubeSubdivision &cube_subdivision,
-					GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-					unsigned int level_of_detail,
-					unsigned int tile_u_offset,
-					unsigned int tile_v_offset)
-			{  }
 		};
-
-		struct OrientedBoundingBox
+		struct LooseProjectionTransform
 		{
-			OrientedBoundingBox(
-					const GLCubeSubdivision &cube_subdivision,
-					GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-					unsigned int level_of_detail,
-					unsigned int tile_u_offset,
-					unsigned int tile_v_offset) :
-				oriented_bounding_box(
-						cube_subdivision.get_oriented_bounding_box(
-								cube_face, level_of_detail, tile_u_offset, tile_v_offset))
-			{  }
-
-			//! The oriented box bounding the current cube subdivision tile.
-			GLIntersect::OrientedBoundingBox oriented_bounding_box;
+			boost::optional<GLTransform::non_null_ptr_to_const_type> loose_projection_transform;
 		};
 
-
-		struct NoLooseOrientedBoundingBox
+		struct NoFrustum
 		{
-			NoLooseOrientedBoundingBox(
-					const GLCubeSubdivision &cube_subdivision,
-					GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-					unsigned int level_of_detail,
-					unsigned int tile_u_offset,
-					unsigned int tile_v_offset)
-			{  }
 		};
-
-		struct LooseOrientedBoundingBox
+		struct Frustum
 		{
-			LooseOrientedBoundingBox(
-					const GLCubeSubdivision &cube_subdivision,
-					GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-					unsigned int level_of_detail,
-					unsigned int tile_u_offset,
-					unsigned int tile_v_offset) :
-				oriented_bounding_box(
-						cube_subdivision.get_loose_oriented_bounding_box(
-								cube_face, level_of_detail, tile_u_offset, tile_v_offset))
-			{  }
-
-			//! The loose oriented box bounding the current cube subdivision tile.
-			GLIntersect::OrientedBoundingBox oriented_bounding_box;
+			boost::optional<GLFrustum> frustum;
 		};
 
+		struct NoLooseFrustum
+		{
+		};
+		struct LooseFrustum
+		{
+			boost::optional<GLFrustum> loose_frustum;
+		};
 
 		struct NoBoundingPolygon
 		{
-			NoBoundingPolygon(
-					const GLCubeSubdivision &cube_subdivision,
-					GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-					unsigned int level_of_detail,
-					unsigned int tile_u_offset,
-					unsigned int tile_v_offset)
-			{  }
 		};
-
 		struct BoundingPolygon
 		{
-			BoundingPolygon(
-					const GLCubeSubdivision &cube_subdivision,
-					GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-					unsigned int level_of_detail,
-					unsigned int tile_u_offset,
-					unsigned int tile_v_offset) :
-				bounding_polygon(
-						cube_subdivision.get_bounding_polygon(
-								cube_face, level_of_detail, tile_u_offset, tile_v_offset))
-			{  }
-
-			//! The polygon boundary of the current cube subdivision tile.
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type bounding_polygon;
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> bounding_polygon;
 		};
-
 
 		struct NoLooseBoundingPolygon
 		{
-			NoLooseBoundingPolygon(
-					const GLCubeSubdivision &cube_subdivision,
-					GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-					unsigned int level_of_detail,
-					unsigned int tile_u_offset,
-					unsigned int tile_v_offset)
-			{  }
 		};
-
 		struct LooseBoundingPolygon
 		{
-			LooseBoundingPolygon(
-					const GLCubeSubdivision &cube_subdivision,
-					GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-					unsigned int level_of_detail,
-					unsigned int tile_u_offset,
-					unsigned int tile_v_offset) :
-				loose_bounding_polygon(
-						cube_subdivision.get_loose_bounding_polygon(
-								cube_face, level_of_detail, tile_u_offset, tile_v_offset))
-			{  }
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> loose_bounding_polygon;
+		};
 
-			//! The polygon boundary of the loose bounds of the current cube subdivision tile.
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type loose_bounding_polygon;
+		struct NoOrientedBoundingBox
+		{
+		};
+		struct OrientedBoundingBox
+		{
+			boost::optional<GLIntersect::OrientedBoundingBox> oriented_bounding_box;
+		};
+
+		struct NoLooseOrientedBoundingBox
+		{
+		};
+		struct LooseOrientedBoundingBox
+		{
+			boost::optional<GLIntersect::OrientedBoundingBox> loose_oriented_bounding_box;
 		};
 	}
 
@@ -208,25 +124,26 @@ namespace GPlatesOpenGL
 	 *
 	 * The boolean template parameters determine what aspects of class @a GLCubeSubdivision are cached.
 	 */
-	template <bool CacheProjectionTransform, bool CacheBounds = false, bool CacheLooseBounds = false,
-			bool CacheBoundingPolygon = false, bool CacheLooseBoundingPolygon = false>
+	template <
+		bool CacheProjectionTransform = false, bool CacheLooseProjectionTransform = false,
+		bool CacheFrustum = false, bool CacheLooseFrustum = false,
+		bool CacheBoundingPolygon = false, bool CacheLooseBoundingPolygon = false,
+		bool CacheBounds = false, bool CacheLooseBounds = false>
 	class GLCubeSubdivisionCache :
 			public GPlatesUtils::ReferenceCount<
 					GLCubeSubdivisionCache<
-							CacheProjectionTransform,
-							CacheBounds,
-							CacheLooseBounds,
-							CacheBoundingPolygon,
-							CacheLooseBoundingPolygon> >
+							CacheProjectionTransform, CacheLooseProjectionTransform,
+							CacheFrustum, CacheLooseFrustum,
+							CacheBoundingPolygon, CacheLooseBoundingPolygon,
+							CacheBounds, CacheLooseBounds> >
 	{
 	public:
 		//! Typedef for this class type.
 		typedef GLCubeSubdivisionCache<
-				CacheProjectionTransform,
-				CacheBounds,
-				CacheLooseBounds,
-				CacheBoundingPolygon,
-				CacheLooseBoundingPolygon>
+				CacheProjectionTransform, CacheLooseProjectionTransform,
+				CacheFrustum, CacheLooseFrustum,
+				CacheBoundingPolygon, CacheLooseBoundingPolygon,
+				CacheBounds, CacheLooseBounds>
 						subdivision_cache_type;
 
 		//! A convenience typedef for a shared pointer to a non-const @a GLCubeSubdivisionCache.
@@ -239,108 +156,46 @@ namespace GPlatesOpenGL
 		/**
 		 * Creates a @a GLCubeSubdivisionCache object that caches the queries obtained
 		 * from @a cube_subdivision.
+		 *
+		 * The default value for @a max_num_cached_elements effectively means no caching.
+		 * This is useful if each node in the subdivision hierarchy is visited only once
+		 * (in which case caching is of no benefit).
+		 * In this case this class effectively becomes a traverser of @a GLCubeSubdivision.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				const GLCubeSubdivision::non_null_ptr_to_const_type &cube_subdivision,
-				unsigned int max_num_cached_elements)
+				unsigned int max_num_cached_elements = 1)
 		{
 			return non_null_ptr_type(new subdivision_cache_type(cube_subdivision, max_num_cached_elements));
 		}
 
 
+	private:
 		/**
 		 * The composite element that is cached in the cube subdivision.
 		 */
-		template <class ProjectionTransformPolicy, class BoundsPolicy, class LooseBoundsPolicy,
-				class BoundingPolygonPolicy, class LooseBoundingPolygonPolicy>
+		template <
+				class ProjectionTransformPolicy, class LooseProjectionTransformPolicy,
+				class FrustumPolicy, class LooseFrustumPolicy,
+				class BoundingPolygonPolicy, class LooseBoundingPolygonPolicy,
+				class BoundsPolicy, class LooseBoundsPolicy>
 		class Element :
-				private ProjectionTransformPolicy,
-				private BoundsPolicy,
-				private LooseBoundsPolicy,
-				private BoundingPolygonPolicy,
-				private LooseBoundingPolygonPolicy
+				public ProjectionTransformPolicy, public LooseProjectionTransformPolicy,
+				public FrustumPolicy, public LooseFrustumPolicy,
+				public BoundingPolygonPolicy, public LooseBoundingPolygonPolicy,
+				public BoundsPolicy, public LooseBoundsPolicy
 		{
 		public:
-			Element(
-					const GLCubeSubdivision &cube_subdivision,
-					GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-					unsigned int level_of_detail,
-					unsigned int tile_u_offset,
-					unsigned int tile_v_offset) :
-				ProjectionTransformPolicy(cube_subdivision, cube_face, level_of_detail, tile_u_offset, tile_v_offset),
-				BoundsPolicy(cube_subdivision, cube_face, level_of_detail, tile_u_offset, tile_v_offset),
-				LooseBoundsPolicy(cube_subdivision, cube_face, level_of_detail, tile_u_offset, tile_v_offset),
-				BoundingPolygonPolicy(cube_subdivision, cube_face, level_of_detail, tile_u_offset, tile_v_offset),
-				LooseBoundingPolygonPolicy(cube_subdivision, cube_face, level_of_detail, tile_u_offset, tile_v_offset)
-			{   }
-
-			/**
-			 * Returns the projection transform of this cached element.
-			 *
-			 * NOTE: Only *compiles* if 'CacheProjectionTransform' is true.
-			 */
-			const GLTransform::non_null_ptr_to_const_type &
-			get_projection_transform() const
-			{
-				return ProjectionTransformPolicy::projection_transform;
-			}
-
-			/**
-			 * Returns the view frustum of this cached element.
-			 *
-			 * NOTE: Only *compiles* if 'CacheProjectionTransform' is true.
-			 */
-			const GLFrustum &
-			get_frustum() const
-			{
-				return ProjectionTransformPolicy::frustum;
-			}
-
-			/**
-			 * Returns the oriented bounding box of this cached element.
-			 *
-			 * NOTE: Only *compiles* if 'CacheBounds' is true.
-			 */
-			const GLIntersect::OrientedBoundingBox &
-			get_oriented_bounding_box() const
-			{
-				return BoundsPolicy::oriented_bounding_box;
-			}
-
-			/**
-			 * Returns the loose oriented bounding box of this cached element.
-			 *
-			 * NOTE: Only *compiles* if 'CacheLooseBounds' is true.
-			 */
-			const GLIntersect::OrientedBoundingBox &
-			get_loose_oriented_bounding_box() const
-			{
-				return LooseBoundsPolicy::oriented_bounding_box;
-			}
-
-			/**
-			 * Returns the polygon boundary of this cached element.
-			 *
-			 * NOTE: Only *compiles* if 'CacheBoundingPolygon' is true.
-			 */
-			const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &
-			get_bounding_polygon() const
-			{
-				return BoundingPolygonPolicy::bounding_polygon;
-			}
-
-			/**
-			 * Returns the polygon loose boundary of this cached element.
-			 *
-			 * NOTE: Only *compiles* if 'CacheLooseBoundingPolygon' is true.
-			 */
-			const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &
-			get_loose_bounding_polygon() const
-			{
-				return BoundingPolygonPolicy::loose_bounding_polygon;
-			}
+			typedef ProjectionTransformPolicy projection_transform_policy_type;
+			typedef LooseProjectionTransformPolicy loose_projection_transform_policy_type;
+			typedef FrustumPolicy frustum_policy_type;
+			typedef LooseFrustumPolicy loose_frustum_policy_type;
+			typedef BoundingPolygonPolicy bounding_polygon_policy_type;
+			typedef LooseBoundingPolygonPolicy loose_bounding_polygon_policy_type;
+			typedef BoundsPolicy bounds_policy_type;
+			typedef LooseBoundsPolicy loose_bounds_policy_type;
 		};
 
 
@@ -349,22 +204,30 @@ namespace GPlatesOpenGL
 				typename boost::mpl::if_c<CacheProjectionTransform,
 						Implementation::ProjectionTransform,
 						Implementation::NoProjectionTransform>::type,
-				typename boost::mpl::if_c<CacheBounds,
-						Implementation::OrientedBoundingBox,
-						Implementation::NoOrientedBoundingBox>::type,
-				typename boost::mpl::if_c<CacheLooseBounds,
-						Implementation::LooseOrientedBoundingBox,
-						Implementation::NoLooseOrientedBoundingBox>::type,
+				typename boost::mpl::if_c<CacheLooseProjectionTransform,
+						Implementation::LooseProjectionTransform,
+						Implementation::NoLooseProjectionTransform>::type,
+				typename boost::mpl::if_c<CacheFrustum,
+						Implementation::Frustum,
+						Implementation::NoFrustum>::type,
+				typename boost::mpl::if_c<CacheLooseFrustum,
+						Implementation::LooseFrustum,
+						Implementation::NoLooseFrustum>::type,
 				typename boost::mpl::if_c<CacheBoundingPolygon,
 						Implementation::BoundingPolygon,
 						Implementation::NoBoundingPolygon>::type,
 				typename boost::mpl::if_c<CacheLooseBoundingPolygon,
 						Implementation::LooseBoundingPolygon,
-						Implementation::NoLooseBoundingPolygon>::type
+						Implementation::NoLooseBoundingPolygon>::type,
+				typename boost::mpl::if_c<CacheBounds,
+						Implementation::OrientedBoundingBox,
+						Implementation::NoOrientedBoundingBox>::type,
+				typename boost::mpl::if_c<CacheLooseBounds,
+						Implementation::LooseOrientedBoundingBox,
+						Implementation::NoLooseOrientedBoundingBox>::type
 				> element_type;
 
 
-	private:
 		//! Typedef for an object cache of @a element_type.
 		typedef GPlatesUtils::ObjectCache<element_type> element_cache_type;
 
@@ -440,21 +303,14 @@ namespace GPlatesOpenGL
 
 			// Make friend so can construct.
 			friend class GLCubeSubdivisionCache<
-					CacheProjectionTransform, CacheBounds, CacheLooseBounds, CacheBoundingPolygon, CacheLooseBoundingPolygon>;
+					CacheProjectionTransform, CacheLooseProjectionTransform,
+					CacheFrustum, CacheLooseFrustum,
+					CacheBoundingPolygon, CacheLooseBoundingPolygon,
+					CacheBounds, CacheLooseBounds>;
 		};
 
 		//! Typedef for a reference to a cube quad tree node.
 		typedef NodeReference node_reference_type;
-
-
-		/**
-		 * Returns the texel dimension of any tile at any subdivision level and uv offset.
-		 */
-		std::size_t
-		get_tile_texel_dimension() const
-		{
-			return d_cube_subdivision->get_tile_texel_dimension();
-		}
 
 
 		/**
@@ -514,59 +370,210 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the cached element for the specified cube quad tree node reference.
-		 *
-		 * The returned element cannot be recycled until the returned shared_ptr (and any copies)
-		 * are destroyed.
-		 */
-		boost::shared_ptr<const element_type>
-		get_cached_element(
-				const node_reference_type &node)
-		{
-			volatile_element_type &volatile_element = *node.d_node->get_element();
-
-			boost::shared_ptr<element_type> element = volatile_element.get_cached_object();
-			if (!element)
-			{
-				element = volatile_element.recycle_an_unused_object();
-				if (element)
-				{
-					// Assign recycled element to a new cached value.
-					*element = element_type(
-							*d_cube_subdivision,
-							node.d_cube_face,
-							node.d_level_of_detail,
-							node.d_tile_u_offset,
-							node.d_tile_v_offset);
-				}
-				else
-				{
-					// Create a new element and set it in the cache.
-					element = volatile_element.set_cached_object(
-							std::auto_ptr<element_type>(new element_type(
-									*d_cube_subdivision,
-									node.d_cube_face,
-									node.d_level_of_detail,
-									node.d_tile_u_offset,
-									node.d_tile_v_offset)));
-				}
-			}
-
-			return element;
-		}
-
-
-		/**
-		 * Returns the view transform for the specified face.
+		 * Returns the view transform of this cached element.
 		 *
 		 * Note that this is not cached like the projection transforms because it is
 		 * constant across each cube face (so we only need to store six transforms).
 		 */
 		GLTransform::non_null_ptr_to_const_type
 		get_view_transform(
-				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face) const
+				const node_reference_type &node) const
 		{
-			return d_view_transforms[cube_face];
+			return d_view_transforms[node.get_cube_face()];
+		}
+
+
+		/**
+		 * Returns the projection transform of this cached element.
+		 *
+		 * NOTE: Only *compiles* if 'CacheProjectionTransform' is true.
+		 */
+		GLTransform::non_null_ptr_to_const_type
+		get_projection_transform(
+				const node_reference_type &node)
+		{
+			boost::optional<GLTransform::non_null_ptr_to_const_type> &projection_transform_opt =
+					get_cached_element(node)->element_type::projection_transform_policy_type::projection_transform;
+			// Calculate if not cached yet.
+			if (!projection_transform_opt)
+			{
+				projection_transform_opt = d_cube_subdivision->get_projection_transform(
+								node.get_level_of_detail(),
+								node.get_tile_u_offset(),
+								node.get_tile_v_offset());
+			}
+
+			return projection_transform_opt.get();
+		}
+
+		/**
+		 * Returns the loose projection transform of this cached element.
+		 *
+		 * NOTE: Only *compiles* if 'CacheLooseProjectionTransform' is true.
+		 */
+		GLTransform::non_null_ptr_to_const_type
+		get_loose_projection_transform(
+				const node_reference_type &node)
+		{
+			boost::optional<GLTransform::non_null_ptr_to_const_type> &loose_projection_transform_opt =
+					get_cached_element(node)->element_type::loose_projection_transform_policy_type::loose_projection_transform;
+			// Calculate if not cached yet.
+			if (!loose_projection_transform_opt)
+			{
+				loose_projection_transform_opt = d_cube_subdivision->get_loose_projection_transform(
+								node.get_level_of_detail(),
+								node.get_tile_u_offset(),
+								node.get_tile_v_offset());
+			}
+
+			return loose_projection_transform_opt.get();
+		}
+
+
+		/**
+		 * Returns the view frustum of this cached element.
+		 *
+		 * NOTE: Only *compiles* if 'CacheFrustum' is true.
+		 */
+		GLFrustum
+		get_frustum(
+				const node_reference_type &node)
+		{
+			boost::optional<GLFrustum> &frustum_opt =
+					get_cached_element(node)->element_type::frustum_policy_type::frustum;
+			// Calculate if not cached yet.
+			if (!frustum_opt)
+			{
+				frustum_opt = d_cube_subdivision->get_frustum(
+								node.get_cube_face(),
+								node.get_level_of_detail(),
+								node.get_tile_u_offset(),
+								node.get_tile_v_offset());
+			}
+
+			return frustum_opt.get();
+		}
+
+		/**
+		 * Returns the loose view frustum of this cached element.
+		 *
+		 * NOTE: Only *compiles* if 'CacheLooseFrustum' is true.
+		 */
+		GLFrustum
+		get_loose_frustum(
+				const node_reference_type &node)
+		{
+			boost::optional<GLFrustum> &loose_frustum_opt =
+					get_cached_element(node)->element_type::loose_frustum_policy_type::loose_frustum;
+			// Calculate if not cached yet.
+			if (!loose_frustum_opt)
+			{
+				loose_frustum_opt = d_cube_subdivision->get_loose_frustum(
+								node.get_cube_face(),
+								node.get_level_of_detail(),
+								node.get_tile_u_offset(),
+								node.get_tile_v_offset());
+			}
+
+			return loose_frustum_opt.get();
+		}
+
+
+		/**
+		 * Returns the polygon boundary of this cached element.
+		 *
+		 * NOTE: Only *compiles* if 'CacheBoundingPolygon' is true.
+		 */
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+		get_bounding_polygon(
+				const node_reference_type &node)
+		{
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &bounding_polygon_opt =
+					get_cached_element(node)->element_type::bounding_polygon_policy_type::bounding_polygon;
+			// Calculate if not cached yet.
+			if (!bounding_polygon_opt)
+			{
+				bounding_polygon_opt = d_cube_subdivision->get_bounding_polygon(
+								node.get_cube_face(),
+								node.get_level_of_detail(),
+								node.get_tile_u_offset(),
+								node.get_tile_v_offset());
+			}
+
+			return bounding_polygon_opt.get();
+		}
+
+		/**
+		 * Returns the loose polygon boundary of this cached element.
+		 *
+		 * NOTE: Only *compiles* if 'CacheLooseBoundingPolygon' is true.
+		 */
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+		get_loose_bounding_polygon(
+				const node_reference_type &node)
+		{
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &loose_bounding_polygon_opt =
+					get_cached_element(node)->element_type::loose_bounding_polygon_policy_type::loose_bounding_polygon;
+			// Calculate if not cached yet.
+			if (!loose_bounding_polygon_opt)
+			{
+				loose_bounding_polygon_opt = d_cube_subdivision->get_loose_bounding_polygon(
+								node.get_cube_face(),
+								node.get_level_of_detail(),
+								node.get_tile_u_offset(),
+								node.get_tile_v_offset());
+			}
+
+			return loose_bounding_polygon_opt.get();
+		}
+
+
+		/**
+		 * Returns the oriented bounding box of this cached element.
+		 *
+		 * NOTE: Only *compiles* if 'CacheBounds' is true.
+		 */
+		GLIntersect::OrientedBoundingBox
+		get_oriented_bounding_box(
+				const node_reference_type &node)
+		{
+			boost::optional<GLIntersect::OrientedBoundingBox> &oriented_bounding_box_opt =
+					get_cached_element(node)->element_type::bounds_policy_type::oriented_bounding_box;
+			// Calculate if not cached yet.
+			if (!oriented_bounding_box_opt)
+			{
+				oriented_bounding_box_opt = d_cube_subdivision->get_oriented_bounding_box(
+								node.get_cube_face(),
+								node.get_level_of_detail(),
+								node.get_tile_u_offset(),
+								node.get_tile_v_offset());
+			}
+
+			return oriented_bounding_box_opt.get();
+		}
+
+		/**
+		 * Returns the loose oriented bounding box of this cached element.
+		 *
+		 * NOTE: Only *compiles* if 'CacheLooseBounds' is true.
+		 */
+		GLIntersect::OrientedBoundingBox
+		get_loose_oriented_bounding_box(
+				const node_reference_type &node)
+		{
+			boost::optional<GLIntersect::OrientedBoundingBox> &loose_oriented_bounding_box_opt =
+					get_cached_element(node)->element_type::loose_bounds_policy_type::loose_oriented_bounding_box;
+			// Calculate if not cached yet.
+			if (!loose_oriented_bounding_box_opt)
+			{
+				loose_oriented_bounding_box_opt = d_cube_subdivision->get_loose_oriented_bounding_box(
+								node.get_cube_face(),
+								node.get_level_of_detail(),
+								node.get_tile_u_offset(),
+								node.get_tile_v_offset());
+			}
+
+			return loose_oriented_bounding_box_opt.get();
 		}
 
 	private:
@@ -605,6 +612,39 @@ namespace GPlatesOpenGL
 						cube_subdivision->get_view_transform(
 								static_cast<GPlatesMaths::CubeCoordinateFrame::CubeFaceType>(cube_face)));
 			}
+		}
+
+
+		/**
+		 * Returns the cached element for the specified cube quad tree node reference.
+		 *
+		 * The returned element cannot be recycled until the returned shared_ptr (and any copies)
+		 * are destroyed.
+		 */
+		boost::shared_ptr<element_type>
+		get_cached_element(
+				const node_reference_type &node)
+		{
+			volatile_element_type &volatile_element = *node.d_node->get_element();
+
+			boost::shared_ptr<element_type> element = volatile_element.get_cached_object();
+			if (!element)
+			{
+				element = volatile_element.recycle_an_unused_object();
+				if (element)
+				{
+					// Assign recycled element to a new cached value.
+					*element = element_type();
+				}
+				else
+				{
+					// Create a new element and set it in the cache.
+					element = volatile_element.set_cached_object(
+							std::auto_ptr<element_type>(new element_type()));
+				}
+			}
+
+			return element;
 		}
 	};
 }

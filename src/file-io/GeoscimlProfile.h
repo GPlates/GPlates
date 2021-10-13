@@ -28,6 +28,7 @@
 #ifndef GPLATES_FILEIO_GEOSCIMLPROFILE_H
 #define GPLATES_FILEIO_GEOSCIMLPROFILE_H
 
+#include <QObject>
 #include <QString>
 #include <QXmlItem>
 
@@ -37,9 +38,12 @@
 namespace GPlatesFileIO
 {
 	class GeoscimlProfile :
-		public ArbitraryXmlProfile
+			public ArbitraryXmlProfile
 	{
+		Q_OBJECT
+
 	public:
+
 		GeoscimlProfile()
 		{
 			init();
@@ -54,13 +58,22 @@ namespace GPlatesFileIO
 		
 		void
 		populate(
-				const File::Reference& xml_file);
+				File::Reference& xml_file);
 
 		void
 		populate(
 				QByteArray& xml_data,
 				GPlatesModel::FeatureCollectionHandle::weak_ref fch);
 				
+		// check for features, return the number 
+		int 
+		count_features(
+				QByteArray& xml_data);
+
+	public slots:
+
+		void cancel(); // will cancel read process
+
 	protected:
 		inline
 		void
@@ -68,6 +81,10 @@ namespace GPlatesFileIO
 		{ }
 		GeoscimlProfile(
 					const GeoscimlProfile&);
+
+	private:
+		bool d_cancel;
+
 	};
 }
 

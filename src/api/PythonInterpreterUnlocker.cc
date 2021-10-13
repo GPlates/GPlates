@@ -22,18 +22,15 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include "PythonInterpreterUnlocker.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::PythonInterpreterUnlocker::PythonInterpreterUnlocker(
 		bool save_thread_)
-#if !defined(GPLATES_NO_PYTHON)
 	: d_thread_state(NULL)
-#endif
 {
 	if (save_thread_)
 	{
@@ -44,38 +41,32 @@ GPlatesApi::PythonInterpreterUnlocker::PythonInterpreterUnlocker(
 
 GPlatesApi::PythonInterpreterUnlocker::~PythonInterpreterUnlocker()
 {
-#if !defined(GPLATES_NO_PYTHON)
 	if (d_thread_state != NULL)
 	{
 		restore_thread();
 	}
-#endif
 }
 
 
 void
 GPlatesApi::PythonInterpreterUnlocker::save_thread()
 {
-#if !defined(GPLATES_NO_PYTHON)
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_thread_state == NULL,
 			GPLATES_ASSERTION_SOURCE);
 
 	d_thread_state = PyEval_SaveThread();
-#endif
 }
 
 
 void
 GPlatesApi::PythonInterpreterUnlocker::restore_thread()
 {
-#if !defined(GPLATES_NO_PYTHON)
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_thread_state != NULL,
 			GPLATES_ASSERTION_SOURCE);
 
 	PyEval_RestoreThread(d_thread_state);
 	d_thread_state = NULL;
-#endif
 }
-
+#endif //GPLATES_NO_PYTHON

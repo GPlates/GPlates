@@ -144,8 +144,8 @@ namespace
 		
 		// Error descriptions for PLATES rotation-format files:
 		{ GPlatesFileIO::ReadErrors::CommentMovingPlateIdAfterNonCommentSequence,
-				QT_TR_NOOP("Moving plate ID will be changed"),
-				QT_TR_NOOP("GPlates will need to change the moving plate ID from 999 to some other value.") },
+				QT_TR_NOOP("Detected commented-out pole within a sequence"),
+				QT_TR_NOOP("The commented-out pole has the same fixed plate ID as the previous pole.") },
 		{ GPlatesFileIO::ReadErrors::ErrorReadingFixedPlateId,
 				QT_TR_NOOP("Error reading fixed plate ID"),
 				QT_TR_NOOP("Error reading the fixed plate ID.") },
@@ -469,7 +469,7 @@ namespace
 		{ GPlatesFileIO::ReadErrors::ExclMarkInsertedAtCommentStart,
 				QT_TR_NOOP("An exclamation mark was inserted to start the comment.") },
 		{ GPlatesFileIO::ReadErrors::MovingPlateIdChangedToMatchEarlierSequence,
-				QT_TR_NOOP("The moving plate ID of the pole was changed to match the earlier sequence.") },
+				QT_TR_NOOP("GPlates disabled the pole as expected and then continued the sequence.") },
 		{ GPlatesFileIO::ReadErrors::NewOverlappingSequenceBegun,
 				QT_TR_NOOP("A new sequence was begun which overlaps.") },
 		{ GPlatesFileIO::ReadErrors::PoleDiscarded,

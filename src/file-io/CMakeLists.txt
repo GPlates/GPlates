@@ -35,10 +35,13 @@ set(srcs
     ExportTemplateFilenameSequenceImpl.h
     ExternalProgram.cc
     ExternalProgram.h
-    FeatureCollectionFileFormat.cc
     FeatureCollectionFileFormat.h
-    FeatureCollectionReaderWriter.cc
-    FeatureCollectionReaderWriter.h
+    FeatureCollectionFileFormatClassify.cc
+    FeatureCollectionFileFormatClassify.h
+    FeatureCollectionFileFormatConfiguration.h
+    FeatureCollectionFileFormatConfigurations.h
+    FeatureCollectionFileFormatRegistry.cc
+    FeatureCollectionFileFormatRegistry.h
     FeaturePropertiesMap.cc
     FeaturePropertiesMap.h
     File.cc
@@ -92,8 +95,8 @@ set(srcs
     GsmlPropertyHandlers.h
     LineReader.cc
     LineReader.h
-    MipmappedRasterFormat.cc
-    MipmappedRasterFormat.h
+    LogToFileHandler.cc
+    LogToFileHandler.h
     MipmappedRasterFormatReader.h
     MipmappedRasterFormatWriter.h
     OgrException.h
@@ -132,6 +135,10 @@ set(srcs
     RasterBandReader.h
     RasterBandReaderHandle.cc
     RasterBandReaderHandle.h
+    RasterFileCache.h
+    RasterFileCacheFormat.cc
+    RasterFileCacheFormat.h
+    RasterFileCacheFormatReader.h
     RasterReader.cc
     RasterReader.h
     ReadErrorAccumulation.h
@@ -160,6 +167,7 @@ set(srcs
     ShapefileXmlReader.h
     ShapefileXmlWriter.cc
     ShapefileXmlWriter.h
+    SourceRasterFileCacheFormatReader.h
     StructurePropertyCreatorMap.cc
     StructurePropertyCreatorMap.h
     SymbolFileReader.cc

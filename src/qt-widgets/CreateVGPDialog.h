@@ -34,7 +34,6 @@
 #include "app-logic/FeatureCollectionFileState.h"
 
 #include "model/FeatureCollectionHandle.h"
-#include "model/FeatureHandle.h"
 #include "model/ModelInterface.h"
 
 namespace GPlatesAppLogic
@@ -81,10 +80,10 @@ namespace GPlatesQtWidgets
 	signals:
 
 		void
-		feature_created(
-			GPlatesModel::FeatureHandle::weak_ref feature);
+		feature_created();
 
 
+		// FIXME: Not sure if this signal is required any more. 
 		void
 		feature_collection_created(
 			GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection,

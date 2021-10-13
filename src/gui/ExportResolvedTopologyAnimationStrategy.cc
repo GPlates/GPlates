@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iterator>
+#include <algorithm>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QFileInfo>
@@ -122,17 +124,38 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 	GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
 	GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
 			reconstruction_geom_seq,
-			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection());
+			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
+			// Don't want to export a duplicate resolved topology if one is currently in focus...
+			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
-	// Get any ReconstructionGeometry objects that are of type ResolvedTopologicalBoundary.
-	resolved_geom_seq_type resolved_geom_seq;
+	// Get any ReconstructionGeometry objects that are of type ResolvedTopologicalBoundary or
+	// ResolvedTopologicalNetwork since both these types have topological boundaries.
+	resolved_geom_seq_type resolved_topological_geometries;
+
+	// Get the ResolvedTopologicalBoundary objects...
+	std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_topological_boundaries;
 	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
 			reconstruction_geom_seq.begin(),
 			reconstruction_geom_seq.end(),
-			resolved_geom_seq);
+			resolved_topological_boundaries);
+	std::copy(
+			resolved_topological_boundaries.begin(),
+			resolved_topological_boundaries.end(),
+			std::back_inserter(resolved_topological_geometries));
+
+	// Get the ResolvedTopologicalNetwork objects...
+	std::vector<const GPlatesAppLogic::ResolvedTopologicalNetwork *> resolved_topological_networks;
+	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+			reconstruction_geom_seq.begin(),
+			reconstruction_geom_seq.end(),
+			resolved_topological_networks);
+	std::copy(
+			resolved_topological_networks.begin(),
+			resolved_topological_networks.end(),
+			std::back_inserter(resolved_topological_geometries));
 
 	// Export the various files.
-	export_files(resolved_geom_seq, reconstruction_time, output_filebasename);
+	export_files(resolved_topological_geometries, reconstruction_time, output_filebasename);
 	
 	// Normal exit, all good, ask the Context to process the next iteration please.
 	return true;
@@ -166,7 +189,10 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
 			filebasename,
 			GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
 			d_configuration->output_options,
-			GPlatesFileIO::ResolvedTopologicalBoundaryExport::get_export_file_format(filebasename),
+			GPlatesFileIO::ResolvedTopologicalBoundaryExport::get_export_file_format(
+					filebasename,
+					d_export_animation_context_ptr->view_state().get_application_state()
+							.get_feature_collection_file_format_registry()),
 			resolved_geom_seq,
 			d_loaded_files,
 			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),

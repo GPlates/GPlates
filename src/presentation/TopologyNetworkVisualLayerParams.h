@@ -27,7 +27,7 @@
 #define GPLATES_PRESENTATION_TOPOLOGYNETWORKVISUALLAYERPARAMS_H
 
 #include "VisualLayerParams.h"
-
+#include "gui/DrawStyleManager.h"
 
 namespace GPlatesPresentation
 {
@@ -129,7 +129,9 @@ namespace GPlatesPresentation
 			d_show_constrained_triangulation(false),
 			d_show_mesh_triangulation(true),
 			d_show_segment_velocity(false)
-		{  }
+		{ 
+			d_style = GPlatesGui::DrawStyleManager::instance()->default_style();
+		}
 
 	private:
 

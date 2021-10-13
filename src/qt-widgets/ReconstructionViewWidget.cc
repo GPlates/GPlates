@@ -322,7 +322,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::handle_projection_type_changed(
 		const GPlatesGui::ViewportProjection &viewport_projection)
 {
 	// Reset the mouse coords label if projection changed.
-	if (viewport_projection.get_projection_type() == GPlatesGui::ORTHOGRAPHIC)
+	if (viewport_projection.get_projection_type() == GPlatesGui::MapProjection::ORTHOGRAPHIC)
 	{
 		d_label_mouse_coords->setText(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_GLOBE);
 	}
@@ -637,6 +637,27 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 	}
 
 	d_label_camera_coords->setText(position_as_string);
+
+	if (map_is_active())
+	{
+		if (llp)
+		{
+			emit send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
+		}
+	}
+	else if (globe_is_active())
+	{
+		boost::optional<GPlatesMaths::Rotation> rotation = active_view().orientation();
+		if (rotation)
+		{
+			emit send_orientation_to_stdout(*rotation);
+#if 0
+			// For now, continue to emit llp as well. 
+			emit send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
+#endif
+		}
+	}
+
 }
 
 

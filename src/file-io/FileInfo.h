@@ -28,24 +28,12 @@
 #define GPLATES_FILEIO_FILEINFO_H
 
 #include <QFileInfo>
-#include <QMap>
 #include <QString>
-
-#include "model/FeatureCollectionHandle.h"
 
 
 namespace GPlatesFileIO
 {
 	class FileInfo;
-
-
-	/**
-	 * Creates a copy of @a other but with a different filename.
-	 */
-	FileInfo
-	create_copy_with_new_filename(
-			const QString &filename,
-			const FileInfo &other);
 
 
 	/**
@@ -56,21 +44,29 @@ namespace GPlatesFileIO
 			const FileInfo &file_info);
 
 
-	//@{
 	/**
-	 * Returns 'true' if specified file is writable.
+	 * This function attempts to open the file for writing.
 	 *
-	 * @param file_info file to test for writability.
+	 * If the file already exists it is left unchanged.
+	 * If the file does not exist then this function will *not* leave behind an empty file upon returning.
+	 */
+	bool
+	is_writable(
+			const QString &filename);
+
+	/**
+	 * An overload of @a is_writable.
 	 */
 	bool
 	is_writable(
 			const QFileInfo &file_info);
 
-
+	/**
+	 * An overload of @a is_writable.
+	 */
 	bool
 	is_writable(
 			const FileInfo &file_info);
-	//@}
 
 
 	/**
@@ -137,42 +133,8 @@ namespace GPlatesFileIO
 			return d_file_info;
 		}
 
-
-		/**
-		 * Get the model-to-shapefile mapping.
-		 *
-		 * This is currently stored here - however it could be stored
-		 * in @a File (not sure which is better just yet since this
-		 * @a FileInfo is stored inside a @a File anyway).
-		 */
-		const QMap< QString,QString >& 
-		get_model_to_shapefile_map() const
-		{
-			return d_model_to_shapefile_map;
-		}
-
-
-		/**
-		 * Set the model-to-shapefile mapping.
-		 *
-		 * This is currently stored here - however it could be stored
-		 * in @a File (not sure which is better just yet since this
-		 * @a FileInfo is stored inside a @a File anyway).
-		 */
-		void
-		set_model_to_shapefile_map(
-			QMap< QString, QString > model_to_shapefile_map) const
-		{
-			d_model_to_shapefile_map = model_to_shapefile_map;
-		}
-
 	private:
 		QFileInfo d_file_info;
-
-		/**
-		 * A map of model property names to shapefile attributes names.                                                                     
-		 */
-		mutable QMap< QString,QString > d_model_to_shapefile_map;
 	};
 
 
@@ -184,6 +146,13 @@ namespace GPlatesFileIO
 		return file_info.get_qfileinfo().exists();
 	}
 
+	inline
+	bool
+	is_writable(
+			const QFileInfo &file_info)
+	{
+		return is_writable(file_info.filePath());
+	}
 
 	inline
 	bool

@@ -37,20 +37,31 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
-#include "file-io/FileInfo.h"
-#include "file-io/ExternalProgram.h"
-#include "file-io/FeatureCollectionFileFormat.h"
+
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
+#include "file-io/ExternalProgram.h"
+#include "file-io/FeatureCollectionFileFormat.h"
+#include "file-io/FeatureCollectionFileFormatConfiguration.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/FileFormatNotSupportedException.h"
+#include "file-io/FileInfo.h"
 #include "file-io/OgrException.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
+
 #include "gui/FileIOFeedback.h"
+
 #include "model/FeatureCollectionHandle.h"
+
 #include "presentation/ViewState.h"
+
 #include "ManageFeatureCollectionsActionWidget.h"
+#include "ManageFeatureCollectionsEditConfigurations.h"
 
 #include "ManageFeatureCollectionsDialog.h"
 
@@ -74,53 +85,44 @@ namespace
 	}
 	
 	/**
-	 * Returns a text string that identifies the file format for a file.
+	 * Returns the file format for a file if it was identified, otherwise returns boost::none.
+	 */
+	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format>
+	get_format_for_file(
+			GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
+	{
+		// Determine the file format from the filename.
+		const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format =
+				file_format_registry.get_file_format(
+						file.get_file().get_file_info().get_qfileinfo());
+
+		// Note that we don't throw a 'FileFormatNotSupportedException' exception here since
+		// it's possible for generic XML data to now be loaded into GPlates and it seems the
+		// filename extension could be anything.
+
+		return file_format;
+	}
+	
+	/**
+	 * Returns the file format for a file.
 	 * Used to set the 'FORMAT' column in the table.
 	 */
-	const QString &
-	get_format_for_file(
-			const QFileInfo &qfileinfo)
+	QString
+	get_format_description_for_file(
+			boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format,
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
 	{
-		static const QString format_line(QObject::tr("PLATES4 line"));
-		static const QString format_rotation(QObject::tr("PLATES4 rotation"));
-		static const QString format_shapefile(QObject::tr("ESRI shapefile"));
-		static const QString format_ogrgmt(QObject::tr("OGR GMT"));
-		static const QString format_gpml(QObject::tr("GPlates Markup Language"));
-		static const QString format_gpmlz(QObject::tr("Compressed GPML"));
-		static const QString format_gmt(QObject::tr("GMT xy"));
-		static const QString format_gmap(QObject::tr("GMAP VGP"));
-		static const QString format_unknown(QObject::tr(""));
-		
-		switch ( GPlatesFileIO::get_feature_collection_file_format(qfileinfo) )
+		if (!file_format)
 		{
-		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_LINE:
-			return format_line;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::PLATES4_ROTATION:
-			return format_rotation;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
-			return format_shapefile;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::OGRGMT:
-			return format_ogrgmt;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
-			return format_gpml;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPMLZ:
-			return format_gpmlz;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
-			return format_gmt;
-			
-		case GPlatesFileIO::FeatureCollectionFileFormat::GMAP:
-			return format_gmap;
-
-		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:
-		default:
-			return format_unknown;
+			// Could not find a read or write format for the specified file so return an
+			// empty format string to indicate an unknown file format.
+			return QObject::tr("");
 		}
+
+		return QObject::tr(
+				file_format_registry.get_short_description(file_format.get())
+						.toAscii().constData());
 	}
 
 
@@ -179,6 +181,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 		GPlatesPresentation::ViewState &view_state, 
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
+	d_file_format_registry(view_state.get_application_state().get_feature_collection_file_format_registry()),
 	d_file_state(file_state),
 	d_feature_collection_file_io(&feature_collection_file_io),
 	d_gui_file_io_feedback_ptr(&gui_file_io_feedback),
@@ -218,20 +221,11 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::update()
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::register_edit_configuration(
+		GPlatesFileIO::FeatureCollectionFileFormat::Format file_format,
+		const ManageFeatureCollections::EditConfiguration::shared_ptr_type &edit_configuration_ptr)
 {
-	clear_rows();
-
-	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
-			d_file_state.get_loaded_files();
-	BOOST_FOREACH(
-			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
-			loaded_files)
-	{
-		add_row(file_ref);
-	}
-
-	highlight_unsaved_changes();
+	d_edit_configurations[file_format] = edit_configuration_ptr;
 }
 
 
@@ -239,17 +233,50 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::edit_configuration(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
-	// The "edit configuration" method only makes sense for shapefiles 
-	// (until there is some sort of equivalent requirement for other types of 
-	// feature collection), and as such, only shapefiles have the "edit configuration" 
-	// icon enabled in the ManageFeatureCollectionsActionWidget. 
-	//  
-	// For shapefiles, "edit configuration" translates to "re-map shapefile attributes to model properties". 
-	// 
-	GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref =
-			action_widget_ptr->get_file_reference();
+	GPlatesAppLogic::FeatureCollectionFileState::file_reference file = action_widget_ptr->get_file_reference();
 
-	d_feature_collection_file_io->remap_shapefile_attributes(file_ref);
+	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format_opt =
+			get_format_for_file(file, d_file_format_registry);
+
+	// The edit configuration button (in the action widget) should only be enabled we have
+	// identified a file format for the file.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			file_format_opt,
+			GPLATES_ASSERTION_SOURCE);
+	const GPlatesFileIO::FeatureCollectionFileFormat::Format file_format = file_format_opt.get();
+
+	// The edit configuration button (in the action widget) should only be enabled we have an
+	// edit configuration (ability to edit the file configuration).
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_edit_configurations.find(file_format) != d_edit_configurations.end(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Get the file configuration from the file if it has one otherwise use the default configuration
+	// associated with its file format.
+	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+			file_configuration = file.get_file().get_file_configuration();
+	if (!file_configuration)
+	{
+		file_configuration = d_file_format_registry.get_default_configuration(file_format);
+	}
+
+	// If there's no default configuration then return early without editing.
+	if (!file_configuration)
+	{
+		qWarning() << "ERROR: Unable to edit file configuration because the file format has no default configuration.";
+		return;
+	}
+
+	// The user can now edit the file configuration.
+	file_configuration =
+			d_edit_configurations[file_format]->edit_configuration(
+					file.get_file(),
+					file_configuration.get(),
+					parentWidget());
+
+	// Store the (potentially) updated file configuration back in the file.
+	// NOTE: This will trigger a signal that will call our 'handle_file_state_file_info_changed' method.
+	file.set_file_info(file.get_file().get_file_info(), file_configuration);
 }
 
 
@@ -324,8 +351,10 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_files_added(
 			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
 			new_files)
 	{
-		add_row(file_ref);
+		add_row(file_ref, false/*should_highlight_unsaved_changes*/);
 	}
+
+	highlight_unsaved_changes();
 }
 
 
@@ -348,8 +377,18 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_file_info_ch
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref)
 {
-	// Row text needs to be updated.
-	update();
+	// Find the existing row for the specified file.
+	const int row = find_row(file_ref);
+	if (row == table_feature_collections->rowCount())
+	{
+		// We should assert here but printing a warning instead.
+		qWarning() << "Internal Error: Unable to find renamed file in ManageFeatureCollectionsDialog.";
+		return;
+	}
+
+	// Row text needs to be updated to reflect a new filename and a new default file configuration
+	// if the file's format needs a file configuration.
+	update_row(row, file_ref);
 }
 
 
@@ -398,12 +437,33 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::clear_rows()
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
+		bool should_highlight_unsaved_changes)
 {
-	const GPlatesFileIO::FileInfo &file_info = file.get_file().get_file_info();
+	// Add blank row.
+	const int row = table_feature_collections->rowCount();
+	table_feature_collections->insertRow(row);
+	
+	// Add action buttons widget.
+	ManageFeatureCollectionsActionWidget *action_widget_ptr =
+			new ManageFeatureCollectionsActionWidget(
+					*this,
+					file,
+					this);
+	table_feature_collections->setCellWidget(row, ColumnNames::ACTIONS, action_widget_ptr);
 
+	update_row(row, file, should_highlight_unsaved_changes);
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_row(
+		int row,
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
+		bool should_highlight_unsaved_changes)
+{
 	// Obtain information from the FileInfo
-	const QFileInfo &qfileinfo = file_info.get_qfileinfo();
+	const GPlatesFileIO::FileInfo &file_info = file.get_file().get_file_info();
 
 	// Some files might not actually exist yet if the user created a new
 	// feature collection internally and hasn't saved it to file yet.
@@ -417,39 +477,45 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 		// The file doesn't exist so give it a filename to indicate this.
 		display_name = "New Feature Collection";
 	}
-	
-	QString filename_str = qfileinfo.fileName();
-	QString filepath_str = QDir::toNativeSeparators(qfileinfo.path());
-	QString format_str = get_format_for_file(qfileinfo);
 
-	// Add blank row.
-	int row = table_feature_collections->rowCount();
-	table_feature_collections->insertRow(row);
+	// Determine the file format of the file if possible.
+	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format =
+			get_format_for_file(file, d_file_format_registry);
+
+	QString format_str = get_format_description_for_file(file_format, d_file_format_registry);
+	QString filename_str = file_info.get_qfileinfo().fileName();
+	QString filepath_str = QDir::toNativeSeparators(file_info.get_qfileinfo().path());
 	
-	// Add filename item.
+	// Set the filename item.
 	QTableWidgetItem *filename_item = new QTableWidgetItem(display_name);
 	filename_item->setToolTip(tr("Location: %1").arg(filepath_str));
 	filename_item->setFlags(Qt::ItemIsEnabled);
 	table_feature_collections->setItem(row, ColumnNames::FILENAME, filename_item);
 
-	// Add file format item.
+	// Set the file format item.
 	QTableWidgetItem *format_item = new QTableWidgetItem(format_str);
 	format_item->setFlags(Qt::ItemIsEnabled);
 	table_feature_collections->setItem(row, ColumnNames::FORMAT, format_item);
 	
-	// Add action buttons widget.
-	ManageFeatureCollectionsActionWidget *action_widget_ptr =
-			new ManageFeatureCollectionsActionWidget(*this, file, this);
-	table_feature_collections->setCellWidget(row, ColumnNames::ACTIONS, action_widget_ptr);
-	
-	// Enable the edit_configuration button if we have a shapefile. 
-	if (format_str == "ESRI shapefile")
+	// Update the action buttons widget.
+	ManageFeatureCollectionsActionWidget *action_widget = get_action_widget(table_feature_collections, row);
+	if (action_widget)
 	{
-		action_widget_ptr->enable_edit_configuration_button();
+		// If we have an edit configuration for the current file format then we can enable the
+		// edit configuration button in the action widget.
+		const bool enable_edit_configuration =
+				file_format &&
+					(d_edit_configurations.find(file_format.get()) != d_edit_configurations.end());
+
+		action_widget->update(d_file_format_registry, file_info, file_format, enable_edit_configuration);
 	}
 
-	// A bit inefficient, but highlight everything now that we have a new row.
-	highlight_unsaved_changes();
+	// This might be false if many rows are being added in which case the unsaved changes
+	// will be highlighted by the caller once *all* rows have been added.
+	if (should_highlight_unsaved_changes)
+	{
+		highlight_unsaved_changes();
+	}
 }
 
 

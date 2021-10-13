@@ -40,11 +40,11 @@
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
 
-#include "global/python.h"
-
+#include "model/FeatureStoreRootHandle.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/types.h"
+#include "model/WeakReferenceCallback.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // NOTE: Please use forward declarations (and boost::scoped_ptr) instead of including headers
@@ -52,10 +52,13 @@
 // This header gets included in a lot of other files and we want to reduce compile times.
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace GPlatesApi
+
+namespace GPlatesFileIO
 {
-	class PythonRunner;
-	class PythonExecutionThread;
+	namespace FeatureCollectionFileFormat
+	{
+		class Registry;
+	}
 }
 
 namespace GPlatesAppLogic
@@ -63,6 +66,7 @@ namespace GPlatesAppLogic
 	class FeatureCollectionFileIO;
 	class LayerTask;
 	class LayerTaskRegistry;
+	class LogModel;
 	class ReconstructGraph;
 	class ReconstructMethodRegistry;
 	class Serialization;
@@ -116,6 +120,12 @@ namespace GPlatesAppLogic
 		get_feature_collection_file_state();
 
 		/**
+		 * Handling file formats for reading and/or writing feature collection files.
+		 */
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry &
+		get_feature_collection_file_format_registry();
+
+		/**
 		 * Handling reading/writing feature collection files and notification of read errors.
 		 */
 		FeatureCollectionFileIO &
@@ -138,6 +148,7 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesAppLogic::UserPreferences &
 		get_user_preferences();
+		
 
 		/**
 		 * Returns the registry of various ways to reconstruct a feature
@@ -153,6 +164,12 @@ namespace GPlatesAppLogic
 		 */
 		LayerTaskRegistry &
 		get_layer_task_registry();
+
+		/**
+		 * The Log Model is a Qt Model/View class that does the back-end work for the LogDialog.
+		 */
+		LogModel &
+		get_log_model();
 
 		/**
 		 * Returns the reconstruct graph containing the connected layer tasks.
@@ -183,39 +200,6 @@ namespace GPlatesAppLogic
 		{
 			return d_update_default_reconstruction_tree_layer;
 		}
-
-#if !defined(GPLATES_NO_PYTHON)
-		const boost::python::object &
-		get_python_main_module() const
-		{
-			return d_python_main_module;
-		}
-
-		const boost::python::object &
-		get_python_main_namespace() const
-		{
-			return d_python_main_namespace;
-		}
-#endif
-
-		/**
-		 * Returns an object that runs Python on the main thread.
-		 */
-		GPlatesApi::PythonRunner *
-		get_python_runner() const
-		{
-			return d_python_runner;
-		}
-
-		/**
-		 * Returns a thread on which Python code can be run off the main thread.
-		 */
-		GPlatesApi::PythonExecutionThread *
-		get_python_execution_thread()
-		{
-			return d_python_execution_thread;
-		}
-
 
 		/**
 		 * Suppress the normal auto-creation of layers upon file load in handle_file_state_files_added(),
@@ -366,6 +350,33 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 	private:
+		/**
+		 * The model callback that notifies us when the feature store is modified so that
+		 * we can do a reconstruction.
+		 */
+		struct ReconstructWhenFeatureStoreIsModified :
+				public GPlatesModel::WeakReferenceCallback<const GPlatesModel::FeatureStoreRootHandle>
+		{
+			explicit
+			ReconstructWhenFeatureStoreIsModified(
+					ApplicationState &application_state) :
+				d_application_state(&application_state)
+			{  }
+
+			void
+			publisher_modified(
+					const modified_event_type &event)
+			{
+				// Perform a reconstruction every time the model (feature store) is modified.
+				// We'll need to put model notification guards in the appropriate places to
+				// avoid excessive reconstructions.
+				d_application_state->reconstruct();
+			}
+
+			ApplicationState *d_application_state;
+		};
+
+
 		//! The model store.
 		GPlatesModel::ModelInterface d_model;
 
@@ -377,6 +388,13 @@ namespace GPlatesAppLogic
 		 * Central access point and notification of loaded files.
 		 */
 		boost::scoped_ptr<FeatureCollectionFileState> d_feature_collection_file_state;
+
+		/**
+		 * A registry of the file formats for reading/writing feature collections.
+		 *
+		 * NOTE: This must be declared *before* @a d_feature_collection_file_io.
+		 */
+		boost::scoped_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry> d_feature_collection_file_format_registry;
 
 		/**
 		 * All file reading/writing goes through here.
@@ -397,6 +415,11 @@ namespace GPlatesAppLogic
 		 * The layer task registry is used to create layer tasks.
 		 */
 		boost::scoped_ptr<LayerTaskRegistry> d_layer_task_registry;
+		
+		/**
+		 * The Log Model is a Qt Model/View class that does the back-end work for the LogDialog.
+		 */
+		boost::scoped_ptr<LogModel> d_log_model;
 
 		/**
 		 * The reconstruct graph connects the inputs/outputs of layer tasks to each other and
@@ -407,7 +430,7 @@ namespace GPlatesAppLogic
 		 * NOTE: This must be declared after @a d_layer_task_registry since it uses it.
 		 */
 		boost::scoped_ptr<ReconstructGraph> d_reconstruct_graph;
-
+		
 		/**
 		 * If true, changes the default reconstruction tree layer upon loading a rotation file.
 		 */
@@ -442,38 +465,21 @@ namespace GPlatesAppLogic
 		 */
 		bool d_reconstruct_on_scope_exit;
 
-#if !defined(GPLATES_NO_PYTHON)
-		/**
-		 * The "__main__" Python module.
-		 */
-		boost::python::object d_python_main_module;
-
-		/**
-		 * The "__dict__" attribute of the "__main__" Python module.
-		 * This is useful for passing into exec() and eval() for context.
-		 */
-		boost::python::object d_python_main_namespace;
-#endif
-
-		/**
-		 * Runs Python code on the main thread.
-		 *
-		 * Memory managed by Qt.
-		 */
-		GPlatesApi::PythonRunner *d_python_runner;
-
-		/**
-		 * The thread on which Python is executed, off the main thread.
-		 *
-		 * Memory is managed by Qt.
-		 */
-		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
-
 		/**
 		 * Suppress the normal auto-creation of layers upon file load in handle_file_state_files_added(),
 		 * which would normally be triggered by a call to FeatureCollectionFileIO::load_files().
 		 */
 		bool d_suppress_auto_layer_creation;
+
+		/**
+		 * Keep a weak reference to the feature store root handle just for our callback.
+		 *
+		 * Only we have access to this weak ref and we make sure the client doesn't have
+		 * access to it. This is because any copies of this weak reference also get
+		 * copies of the callback thus allowing it to get called more than once per modification.
+		 */
+		GPlatesModel::FeatureStoreRootHandle::const_weak_ref d_callback_feature_store;
+
 
 		/**
 		 * Make signal/slot connections that coordinate the application logic structure

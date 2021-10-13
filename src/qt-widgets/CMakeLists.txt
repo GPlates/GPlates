@@ -75,6 +75,8 @@ set(srcs
     ConfigureTextOverlayDialog.cc
     ConfigureTextOverlayDialog.h
     ConfigureTextOverlayDialogUi.ui
+    ConfigValueEditorWidget.cc
+    ConfigValueEditorWidget.h
     ConnectWFSDialog.cc
     ConnectWFSDialog.h
     ConnectWFSDialogUi.ui
@@ -89,14 +91,26 @@ set(srcs
     CreateSmallCircleDialog.cc
     CreateSmallCircleDialog.h
     CreateSmallCircleDialogUi.ui
+    CreateSmallCircleFeatureDialog.cc
+    CreateSmallCircleFeatureDialog.h
+    CreateSmallCircleFeatureDialogUi.ui
+    CreateTotalReconstructionSequenceDialog.cc
+    CreateTotalReconstructionSequenceDialog.h
+    CreateTotalReconstructionSequenceDialogUi.ui
     CreateVGPDialog.cc
     CreateVGPDialog.h
     CreateVGPDialogUi.ui
+    DatelineWrapOptionsWidget.cc
+    DatelineWrapOptionsWidget.h
+    DatelineWrapOptionsWidgetUi.ui
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
     DockWidget.cc
     DockWidget.h
+    DrawStyleDialog.cc
+    DrawStyleDialog.h
+    DrawStyleDialogUi.ui
     EditAffineTransformGeoreferencingWidget.cc
     EditAffineTransformGeoreferencingWidget.h
     EditAffineTransformGeoreferencingWidgetUi.ui
@@ -153,6 +167,12 @@ set(srcs
     EditTimeSequenceWidget.h
     EditTimeSequenceWidgetUi.ui
     EditTopologyWidgetUi.ui
+    EditTotalReconstructionSequenceDialog.cc
+    EditTotalReconstructionSequenceDialog.h
+    EditTotalReconstructionSequenceDialogUi.ui
+    EditTotalReconstructionSequenceWidget.cc
+    EditTotalReconstructionSequenceWidget.h
+    EditTotalReconstructionSequenceWidgetUi.ui
     EditWidgetChooser.cc
     EditWidgetChooser.h
     EditWidgetGroupBox.cc
@@ -196,9 +216,11 @@ set(srcs
     GMenuButton.cc
     GMenuButton.h
     GMenuButtonUi.ui
-    GMTHeaderFormatDialog.cc
-    GMTHeaderFormatDialog.h
-    GMTHeaderFormatDialogUi.ui
+    GMTFileFormatConfigurationDialog.cc
+    GMTFileFormatConfigurationDialog.h
+    GMTFileFormatConfigurationDialogUi.ui
+    GPlatesDialog.cc
+    GPlatesDialog.h
     ImportRasterDialog.cc
     ImportRasterDialog.h
     InformationDialog.cc
@@ -219,12 +241,17 @@ set(srcs
     LicenseDialog.h
     LinkWidget.cc
     LinkWidget.h
+    LogDialog.cc
+    LogDialog.h
+    LogDialogUi.ui
     ManageFeatureCollectionsActionWidget.cc
     ManageFeatureCollectionsActionWidget.h
     ManageFeatureCollectionsActionWidgetUi.ui
     ManageFeatureCollectionsDialog.cc
     ManageFeatureCollectionsDialog.h
     ManageFeatureCollectionsDialogUi.ui
+    ManageFeatureCollectionsEditConfigurations.cc
+    ManageFeatureCollectionsEditConfigurations.h
     MapCanvas.cc
     MapCanvas.h
     MapView.cc
@@ -255,18 +282,34 @@ set(srcs
     PreferencesDialog.cc
     PreferencesDialog.h
     PreferencesDialogUi.ui
+    PreferencesPaneFiles.cc
+    PreferencesPaneFiles.h
+    PreferencesPaneFilesUi.ui
+    PreferencesPaneNetwork.cc
+    PreferencesPaneNetwork.h
+    PreferencesPaneNetworkUi.ui
+    PreferencesPanePython.cc
+    PreferencesPanePython.h
+    PreferencesPanePythonUi.ui
+    PreferencesPaneView.cc
+    PreferencesPaneView.h
+    PreferencesPaneViewUi.ui
     ProgressDialog.h
     ProgressDialogUi.ui
     ProjectionControlWidget.cc
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui
     PropertyValueNotSupportedException.h
+    PythonArgumentWidget.h
     PythonConsoleDialog.cc
     PythonConsoleDialog.h
     PythonConsoleDialogUi.ui
     PythonExecutionMonitorWidget.cc
     PythonExecutionMonitorWidget.h
     PythonExecutionMonitorWidgetUi.ui
+    PythonInitFailedDialog.cc
+    PythonInitFailedDialog.h
+    PythonInitFailedDialogUi.ui
     PythonReadlineDialog.cc
     PythonReadlineDialog.h
     PythonReadlineDialogUi.ui
@@ -333,11 +376,14 @@ set(srcs
     ShapefileAttributeWidget.cc
     ShapefileAttributeWidget.h
     ShapefileAttributeWidgetUi.ui
+    ShapefileFileFormatConfigurationDialog.cc
+    ShapefileFileFormatConfigurationDialog.h
+    ShapefileFileFormatConfigurationDialogUi.ui
     ShapefilePropertyMapper.cc
     ShapefilePropertyMapper.h
-    SmallCircleManager.cc
-    SmallCircleManager.h
-    SmallCircleManagerUi.ui
+    SmallCircleWidget.cc
+    SmallCircleWidget.h
+    SmallCircleWidgetUi.ui
     SnapNearbyVerticesWidget.cc
     SnapNearbyVerticesWidget.h
     SnapNearbyVerticesWidgetUi.ui

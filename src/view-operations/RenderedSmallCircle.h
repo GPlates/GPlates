@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009, 2010 Geological Survey of Norway
+ * Copyright (C) 2009, 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -29,7 +29,12 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
+
+#include "maths/SmallCircle.h"
+
 #include "gui/ColourProxy.h"
+#include "maths/ProximityCriteria.h"
+#include "maths/SmallCircleProximityHitDetail.h"
 
 
 namespace GPlatesViewOperations
@@ -40,12 +45,10 @@ namespace GPlatesViewOperations
 	public:
 
 		RenderedSmallCircle(
-			const GPlatesMaths::PointOnSphere &centre,
-			const GPlatesMaths::Real &radius_in_radians,
-			const GPlatesGui::ColourProxy &colour,
+				const GPlatesMaths::SmallCircle &small_circle,
+				const GPlatesGui::ColourProxy &colour,
 			float line_width_hint) :
-			d_centre(centre),
-			d_radius_in_radians(radius_in_radians),
+			d_small_circle(small_circle),
 			d_colour(colour),
 			d_line_width_hint(line_width_hint)
 		{  }		
@@ -64,22 +67,46 @@ namespace GPlatesViewOperations
 		test_proximity(
 				const GPlatesMaths::ProximityCriteria &criteria) const
 		{
-			// FIXME: We'll probably want to perform proximity tests on small circles
-			// further down the line. 
-			return NULL;
+			/**
+			 * See PointOnSphere class for a discussion of the idea of closeness of two points.
+			 * We can use a similar measure here based on the dot-product of the test point and
+			 * the point on the small circle which lies closest to that test point. 
+			 *
+			 * To do this we need to determine the point on the small circle closest to the test point.
+			 * We could do this by forming the great circle passing through the small circle centre and the
+			 * test point, and work out the intersect of this with the small circle, and then we'd have to
+			 * determine which of the two intercept points lies closest to the test point.
+			 * 
+			 * Alternatively we can determine the angle between the test point and the centre, 
+			 * and subtract the angle-radius of the small circle, and take the cosine of the result.
+			 */
+			GPlatesMaths::Real test_point_to_centre_cos_angle = GPlatesMaths::dot(
+					criteria.test_point().position_vector(),
+					d_small_circle.axis_vector());
+
+			GPlatesMaths::Real angle = GPlatesMaths::acos(test_point_to_centre_cos_angle);
+
+			GPlatesMaths::Real difference = d_small_circle.colatitude() - angle;
+			
+			GPlatesMaths::Real closeness = GPlatesMaths::cos(difference);
+
+			if (closeness.dval() > criteria.closeness_inclusion_threshold())
+			{
+				return make_maybe_null_ptr(GPlatesMaths::SmallCircleProximityHitDetail::create(
+					closeness.dval()));
+			}
+			else
+			{
+				return GPlatesMaths::ProximityHitDetail::null;
+			}
+
 		}
 		
 		
-		const GPlatesMaths::PointOnSphere &
-		get_centre() const
+		const GPlatesMaths::SmallCircle &
+		get_small_circle() const
 		{
-			return d_centre;
-		}
-		
-		GPlatesMaths::Real
-		get_radius_in_radians() const
-		{
-			return d_radius_in_radians;
+			return d_small_circle;
 		}
 
 		const GPlatesGui::ColourProxy &
@@ -96,8 +123,7 @@ namespace GPlatesViewOperations
 
 	private:
 
-		GPlatesMaths::PointOnSphere d_centre;
-		GPlatesMaths::Real d_radius_in_radians;
+		GPlatesMaths::SmallCircle d_small_circle;
 
 		GPlatesGui::ColourProxy d_colour;
 		float d_line_width_hint;

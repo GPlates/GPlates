@@ -57,18 +57,22 @@ void
 GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_feature_geometries(
 		const QString &filename,
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		const files_collection_type &active_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool export_single_output_file,
-		bool export_per_input_file)
+		bool export_per_input_file,
+		bool wrap_to_dateline)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
 	// of the RenderedGeometryCollection.
 	RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
 	RenderedGeometryUtils::get_unique_reconstruction_geometries(
 			reconstruction_geom_seq,
-			rendered_geom_collection);
+			rendered_geom_collection,
+			// Don't want to export a duplicate reconstructed geometry if one is currently in focus...
+			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedFeatureGeometry.
 	reconstructed_feature_geom_seq_type reconstruct_feature_geom_seq;
@@ -80,13 +84,14 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the RFGs to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
 			filename,
-			GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(filename),
+			GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(filename, file_format_registry),
 			reconstruct_feature_geom_seq,
 			active_files,
 			reconstruction_anchor_plate_id,
 			reconstruction_time,
 			export_single_output_file,
-			export_per_input_file);
+			export_per_input_file,
+			wrap_to_dateline);
 }
 
 
@@ -94,18 +99,22 @@ void
 GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_flowlines(
 	const QString &filename,
 	const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+	const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 	const files_collection_type &active_files,
 	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 	const double &reconstruction_time,
 	bool export_single_output_file,
-	bool export_per_input_file)
+	bool export_per_input_file,
+	bool wrap_to_dateline)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
 	// of the RenderedGeometryCollection.
 	RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
 	RenderedGeometryUtils::get_unique_reconstruction_geometries(
 		reconstruction_geom_seq,
-		rendered_geom_collection);
+		rendered_geom_collection,
+		// Don't want to export a duplicate reconstructed flowline if one is currently in focus...
+		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedFlowline.
 	reconstructed_flowline_seq_type reconstructed_flowline_seq;
@@ -117,31 +126,36 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the flowlines to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedFlowlineExport::export_reconstructed_flowlines(
 		filename,
-		GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(filename),
+		GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(filename, file_format_registry),
 		reconstructed_flowline_seq,
 		active_files,
 		reconstruction_anchor_plate_id,
 		reconstruction_time,
 		export_single_output_file,
-		export_per_input_file);
+		export_per_input_file,
+		wrap_to_dateline);
 }
 
 void
 GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_motion_paths(
 	const QString &filename,
 	const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+	const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 	const files_collection_type &active_files,
 	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 	const double &reconstruction_time,
 	bool export_single_output_file,
-	bool export_per_input_file)
+	bool export_per_input_file,
+	bool wrap_to_dateline)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
 	// of the RenderedGeometryCollection.
 	RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
 	RenderedGeometryUtils::get_unique_reconstruction_geometries(
 		reconstruction_geom_seq,
-		rendered_geom_collection);
+		rendered_geom_collection,
+		// Don't want to export a duplicate reconstructed motion path if one is currently in focus...
+		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
 	// Get any ReconstructionGeometry objects that are of type ReconstructedMotionPath.
 	reconstructed_motion_path_seq_type reconstructed_motion_path_seq;
@@ -153,11 +167,12 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the flowlines to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 		filename,
-		GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(filename),
+		GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(filename, file_format_registry),
 		reconstructed_motion_path_seq,
 		active_files,
 		reconstruction_anchor_plate_id,
 		reconstruction_time,
 		export_single_output_file,
-		export_per_input_file);
+		export_per_input_file,
+		wrap_to_dateline);
 }

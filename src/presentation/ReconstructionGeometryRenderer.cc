@@ -45,6 +45,7 @@
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
 #include "app-logic/ReconstructedMotionPath.h"
+#include "app-logic/ReconstructedSmallCircle.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
 #include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
@@ -54,6 +55,7 @@
 #include "data-mining/DataTable.h"
 
 #include "gui/Colour.h"
+#include "gui/DrawStyleManager.h"
 #include "gui/PlateIdColourPalettes.h"
 
 #include "maths/CalculateVelocity.h"
@@ -63,6 +65,7 @@
 #include "presentation/VelocityFieldCalculatorVisualLayerParams.h"
 
 #include "utils/Profile.h"
+#include "utils/ComponentManager.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
@@ -111,23 +114,41 @@ namespace
 			const GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams &render_params,
 			const boost::optional<GPlatesGui::Colour> &colour,
 			const boost::optional<GPlatesMaths::Rotation> &rotation = boost::none,
-			const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none)
+			const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none,
+			const GPlatesGui::DrawStyle style = GPlatesGui::DrawStyle())
 	{
 
 		boost::optional<GPlatesGui::Symbol> symbol = get_symbol(
 				feature_type_symbol_map, reconstruction_geometry);
+		//symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, 10, true);
 
 		// Create a RenderedGeometry for drawing the reconstructed geometry.
 		// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
 		// using ColourProxy.
-		GPlatesViewOperations::RenderedGeometry rendered_geom =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-						rotation ? rotation.get() * geometry : geometry,
-						colour ? colour.get() : GPlatesGui::ColourProxy(reconstruction_geometry),
-						render_params.reconstruction_point_size_hint,
-						render_params.reconstruction_line_width_hint,
-						render_params.fill_polygons,
-						symbol);
+		GPlatesViewOperations::RenderedGeometry rendered_geom;
+		if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+		{
+			rendered_geom =
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+					rotation ? rotation.get() * geometry : geometry,
+					colour ? colour : style.colour,
+					render_params.reconstruction_point_size_hint,
+					render_params.reconstruction_line_width_hint,
+					render_params.fill_polygons,
+					symbol);
+		}
+		else
+		{
+			rendered_geom =
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+					rotation ? rotation.get() * geometry : geometry,
+					colour ? colour.get() : GPlatesGui::ColourProxy(reconstruction_geometry),
+					render_params.reconstruction_point_size_hint,
+					render_params.reconstruction_line_width_hint,
+					render_params.fill_polygons,
+					symbol);
+		}
+		
 
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
 		// a RenderedGeometry associated with it.
@@ -172,6 +193,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		const RasterVisualLayerParams &params)
 {
 	d_render_params.raster_colour_palette = params.get_colour_palette();
+	d_render_params.raster_modulate_colour = params.get_modulate_colour();
 }
 
 
@@ -216,11 +238,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 		const RenderParams &render_params,
 		const boost::optional<GPlatesGui::Colour> &colour,
 		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment,
-		const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map) :
+		const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map,
+		const GPlatesGui::StyleAdapter* sa) :
 	d_render_params(render_params),
 	d_colour(colour),
 	d_reconstruction_adjustment(reconstruction_adjustment),
-	d_feature_type_symbol_map(feature_type_symbol_map)
+	d_feature_type_symbol_map(feature_type_symbol_map),
+	d_style_adapter(sa)
 {
 }
 
@@ -248,6 +272,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::end_render(
 
 	// Now transfer ownership of the rendered geometries spatial partition to
 	// the rendered geometry layer.
+	//
+	// NOTE: It's important to add rendered geometries as a spatial partition because it gives
+	// spatial locality to each geometry which makes some types of rendering faster such as
+	// filled polygons (which are actually rendered as multi-resolution cube rasters).
 	rendered_geometry_layer.add_rendered_geometries(d_rendered_geometries_spatial_partition.get());
 
 	// Release our shared reference to the spatial partition.
@@ -344,6 +372,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
+	
+	GPlatesGui::DrawStyle ds = d_style_adapter ? 
+		d_style_adapter->get_style(rfg->get_feature_ref()) : 
+		GPlatesGui::DrawStyle();
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
@@ -352,7 +384,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 					d_render_params,
 					d_colour,
 					d_reconstruction_adjustment,
-					d_feature_type_symbol_map);
+					d_feature_type_symbol_map,
+					ds);
 
 	// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
 	render_reconstruction_geometry_on_sphere(rendered_geometry);
@@ -372,7 +405,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry rendered_resolved_raster =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 					rr,
-					d_render_params.raster_colour_palette);
+					d_render_params.raster_colour_palette,
+					d_render_params.raster_modulate_colour);
 
 
 	// Create a RenderedGeometry for storing the ReconstructionGeometry and
@@ -433,8 +467,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
 				GPlatesViewOperations::create_rendered_small_circle(
-						*pole_point,
-						GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_a95),
+						GPlatesMaths::SmallCircle::create_colatitude(
+								pole_point->position_vector(),
+								GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_a95)),
 						GPlatesGui::ColourProxy(rvgp));
 
 		// The circle/ellipse geometries are not (currently) queryable, so we
@@ -481,15 +516,39 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
 
-	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+	GPlatesGui::DrawStyle ds = d_style_adapter ? 
+			d_style_adapter->get_style(rtb->get_feature_ref()) : 
+			GPlatesGui::DrawStyle();
+	// FIXME: POLYGON, POLYLINE
+
+	if ( rtb->is_polygon() )
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
 					rtb->resolved_topology_geometry(), 
 					rtb, 
 					d_render_params, 
+					d_colour,
+					boost::none,
+					boost::none,
+					ds);
+
+		// Render the rendered geometry.
+		render(rendered_geometry);
+	}
+	else
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			create_rendered_reconstruction_geometry(
+					rtb->resolved_topology_geometry_as_line(), 
+					rtb, 
+					d_render_params, 
 					d_colour);
 
-	// Render the rendered geometry.
-	render(rendered_geometry);
+		// Render the rendered geometry.
+		render(rendered_geometry);
+	}
+
 }
 
 
@@ -502,6 +561,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
 
+	GPlatesGui::DrawStyle ds = d_style_adapter ? 
+		d_style_adapter->get_style(rtn->get_feature_ref()) : 
+		GPlatesGui::DrawStyle();
 
 	// Check for Mesh Triangulation
 	if (d_render_params.show_topological_network_mesh_triangulation)
@@ -522,7 +584,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						d_render_params, 
 						d_colour,
 						boost::none,
-						boost::none);
+						boost::none,
+						ds);
 
 			
 			// Render the rendered geometry.
@@ -678,6 +741,32 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			rendered_geom);
 
 	// Render the rendered geometry.
+	render(rendered_geometry);
+
+}
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+        const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+{
+	// Must be between 'begin_render' and 'end_render'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+		d_rendered_geometries_spatial_partition,
+		GPLATES_ASSERTION_SOURCE);
+
+	// Create a RenderedGeometry for drawing the reconstructed geometry.
+	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
+	// using ColourProxy.
+	GPlatesViewOperations::RenderedGeometry rendered_geom =
+		GPlatesViewOperations::create_rendered_small_circle(GPlatesMaths::SmallCircle::create_colatitude(
+			rsc->centre()->position_vector(),rsc->radius()),
+            d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rsc));
+
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+		rsc,
+		rendered_geom);
+
 	render(rendered_geometry);
 
 }

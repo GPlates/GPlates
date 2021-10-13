@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -53,12 +53,6 @@
 // FIXME remove this header
 #include "view-operations/RenderedGeometryCollection.h"
 
-
-namespace GPlatesApi
-{
-	class Sleeper;
-}
-
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
@@ -77,6 +71,7 @@ namespace GPlatesGui
 	class FeatureFocus;
 	class GraticuleSettings;
 	class MapTransform;
+	class PythonManager;
 	class RenderSettings;
 	class TextOverlaySettings;
 	class ViewportProjection;
@@ -104,17 +99,9 @@ namespace GPlatesPresentation
 			public QObject,
 			private boost::noncopyable
 	{
-
-
-
-
 		Q_OBJECT
 		
 	public:
-	
-
-
-
 
 		ViewState(
 				GPlatesAppLogic::ApplicationState &application_state);
@@ -282,6 +269,12 @@ namespace GPlatesPresentation
 		GPlatesGui::ExportAnimationRegistry &
 		get_export_animation_registry() const;
 
+		GPlatesGui::PythonManager&
+		get_python_manager()
+		{
+			return *d_python_manager_ptr;
+		}
+
 	private slots:
 
 
@@ -299,6 +292,12 @@ namespace GPlatesPresentation
 
 		void
 		setup_rendered_geometry_collection();
+		
+		/**
+		 * Overrides some ViewState settings' defaults based on UserPreferences.
+		 */
+		void
+		initialise_from_user_preferences();
 
 		//
 		// NOTE: Most of these are boost::scoped_ptr's to avoid having to include header files.
@@ -397,11 +396,8 @@ namespace GPlatesPresentation
 		 * Stores information about the export animation types.
 		 */
 		boost::scoped_ptr<GPlatesGui::ExportAnimationRegistry> d_export_animation_registry;
-
-		/**
-		 * Replaces Python's time.sleep() with our own implementation.
-		 */
-		boost::scoped_ptr<GPlatesApi::Sleeper> d_sleeper;
+			
+		GPlatesGui::PythonManager* d_python_manager_ptr;
 	};
 }
 

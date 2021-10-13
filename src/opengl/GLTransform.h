@@ -27,8 +27,6 @@
 #ifndef GPLATES_OPENGL_GLTRANSFORM_H
 #define GPLATES_OPENGL_GLTRANSFORM_H
 
-#include <opengl/OpenGL.h>
-
 #include "GLMatrix.h"
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -43,7 +41,7 @@ namespace GPlatesMaths
 namespace GPlatesOpenGL
 {
 	/**
-	 * Used to set a GL_MODELVIEW or GL_PROJECTION transform 4x4 matrix.
+	 * Simply contains a 4x4 matrix allocated on the heap and managed by reference-counted shared pointers.
 	 */
 	class GLTransform :
 			public GPlatesUtils::ReferenceCount<GLTransform>
@@ -55,47 +53,29 @@ namespace GPlatesOpenGL
 		//! A convenience typedef for a shared pointer to a const @a GLTransform.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLTransform> non_null_ptr_to_const_type;
 
-		/*
-		 * The methods accepting 'GLenum matrix_mode' only accept GL_MODELVIEW and GL_PROJECTION.
-		 *
-		 * GL_TEXTURE is *not* included here because:
-		 * - it is bound to the currently active texture unit unlike GL_MODELVIEW and GL_PROJECTION,
-		 * - it does not normally follow a hierarchy of transformations like GL_MODELVIEW tends to,
-		 * - it is infrequently used when rendering drawables.
-		 * So for these reasons GL_TEXTURE is implemented in class @a GLTextureTransformState.
-		 */
-
 		/**
 		 * Constructs identity matrix.
-		 *
-		 * @a matrix_mode must be GL_MODELVIEW or GL_PROJECTION (GL_TEXTURE not included - see above).
 		 */
 		static
 		non_null_ptr_type
-		create(
-				GLenum matrix_mode)
+		create()
 		{
-			return non_null_ptr_type(new GLTransform(matrix_mode));
+			return non_null_ptr_type(new GLTransform());
 		}
 
 		/**
 		 * Constructs arbitrary matrix.
-		 *
-		 * @a matrix_mode must be GL_MODELVIEW or GL_PROJECTION (GL_TEXTURE not included - see above).
 		 */
 		static
 		non_null_ptr_type
 		create(
-				GLenum matrix_mode,
 				const GLMatrix &matrix)
 		{
-			return non_null_ptr_type(new GLTransform(matrix_mode, matrix));
+			return non_null_ptr_type(new GLTransform(matrix));
 		}
 
 		/**
 		 * Constructs arbitrary matrix.
-		 *
-		 * @a matrix_mode must be GL_MODELVIEW or GL_PROJECTION (GL_TEXTURE not included - see above).
 		 *
 		 * The format of @a m must be column-major:
 		 *
@@ -107,25 +87,21 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				GLenum matrix_mode,
 				const GLdouble *matrix)
 		{
-			return non_null_ptr_type(new GLTransform(matrix_mode, matrix));
+			return non_null_ptr_type(new GLTransform(matrix));
 		}
 
 		/**
 		 * Constructs 4x4 matrix from specified unit quaternion (note only the 3x3 rotation
 		 * part of the matrix is initialised - the rest is set to zero).
-		 *
-		 * @a matrix_mode must be GL_MODELVIEW or GL_PROJECTION (GL_TEXTURE not included - see above).
 		 */
 		static
 		non_null_ptr_type
 		create(
-				GLenum matrix_mode,
 				const GPlatesMaths::UnitQuaternion3D &quaternion)
 		{
-			return non_null_ptr_type(new GLTransform(matrix_mode, quaternion));
+			return non_null_ptr_type(new GLTransform(quaternion));
 		}
 
 
@@ -137,18 +113,9 @@ namespace GPlatesOpenGL
 		{
 			// This class is not copy-constructable due to ReferenceCount base class
 			// so use a non-copy constructor instead that achieves the same effect.
-			return non_null_ptr_type(new GLTransform(d_matrix_mode, d_matrix));
+			return non_null_ptr_type(new GLTransform(d_matrix));
 		}
 
-
-		/**
-		 * Returns one of GL_MODELVIEW or GL_PROJECTION (GL_TEXTURE not included - see above).
-		 */
-		GLenum
-		get_matrix_mode() const
-		{
-			return d_matrix_mode;
-		}
 
 		/**
 		 * Returns the 4x4 matrix of 'this' transform in OpenGL format.
@@ -171,30 +138,33 @@ namespace GPlatesOpenGL
 		}
 
 	private:
-		GLenum d_matrix_mode;
 		GLMatrix d_matrix;
 
 
-		//! Constructor.
-		explicit
-		GLTransform(
-				GLenum matrix_mode);
+		//! Default constructor.
+		GLTransform()
+		{  }
 
 		//! Constructor.
 		explicit
 		GLTransform(
-				GLenum matrix_mode,
-				const GLMatrix &matrix);
+				const GLMatrix &matrix) :
+			d_matrix(matrix)
+		{  }
 
 		//! Constructor.
+		explicit
 		GLTransform(
-				GLenum matrix_mode,
-				const GLdouble *matrix);
+				const GLdouble *matrix) :
+			d_matrix(matrix)
+		{  }
 
 		//! Constructor.
+		explicit
 		GLTransform(
-				GLenum matrix_mode,
-				const GPlatesMaths::UnitQuaternion3D &quaternion);
+				const GPlatesMaths::UnitQuaternion3D &quaternion) :
+			d_matrix(quaternion)
+		{  }
 	};
 }
 

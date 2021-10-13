@@ -30,6 +30,11 @@
 
 #include "ColourScheme.h"
 
+namespace GPlatesModel
+{
+	class FeatureHandle;
+}
+
 namespace GPlatesGui 
 {
 	/**
@@ -48,6 +53,13 @@ namespace GPlatesGui
 			boost::optional<Colour>
 			get_colour(
 					const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
+
+			boost::optional<Colour>
+			get_colour(
+					const GPlatesModel::FeatureHandle& feature_ptr) const
+			{
+				return d_colour;
+			}
 
 			boost::optional<Colour>
 			get_colour() const;

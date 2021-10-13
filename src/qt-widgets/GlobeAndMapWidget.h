@@ -125,6 +125,9 @@ namespace GPlatesQtWidgets
 		void
 		update_canvas();
 
+		void
+		repaint_canvas();
+
 		virtual
 		double
 		current_proximity_inclusion_threshold(
@@ -202,7 +205,7 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState &d_view_state;
 
 		boost::scoped_ptr<GlobeCanvas> d_globe_canvas_ptr;
-		boost::scoped_ptr<MapView> d_map_view_ptr;
+		boost::scoped_ptr<MapView> d_map_view_ptr; // NOTE: Must be declared *after* d_globe_canvas_ptr.
 		QStackedLayout *d_layout;
 
 		/**

@@ -27,11 +27,16 @@
 
 #ifndef GPLATES_GUI_COLOURPALETTE_H
 #define GPLATES_GUI_COLOURPALETTE_H
-
+#include <map>
+#include <boost/foreach.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/optional.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/variant.hpp>
+#include <QDebug>
 
 #include "Colour.h"
+#include "ColourSpectrum.h"
 
 #include "model/types.h"
 
@@ -39,7 +44,6 @@
 #include "utils/ReferenceCount.h"
 #include "utils/Select.h"
 #include "utils/TypeTraits.h"
-
 
 namespace GPlatesGui 
 {
@@ -92,7 +96,7 @@ namespace GPlatesGui
 		virtual
 		boost::optional<Colour>
 		get_colour(
-				value_type value) const = 0;
+ 				value_type value) const = 0;
 
 		virtual
 		void
@@ -106,6 +110,7 @@ namespace GPlatesGui
 				ColourPaletteVisitor &)
 		{  }
 	};
+
 }
 
 #endif  /* GPLATES_GUI_COLOURPALETTE_H */

@@ -1373,7 +1373,8 @@ namespace
 		{
 			// Make variable volatile so compiler doesn't optimise away
 			// the get_ticks() call in the loop.
-			volatile ticks_t dummy_ticks;
+			volatile ticks_t dummy_ticks = 0;
+			dummy_ticks++; dummy_ticks--;//cheat compiler.
 
 			// Time a loop of NUM_LOOP_ITERATIONS calls to 'get_ticks()'
 			// because it consumes about 90% of the time spent inside

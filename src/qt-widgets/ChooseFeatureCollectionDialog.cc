@@ -30,12 +30,14 @@
 
 
 GPlatesQtWidgets::ChooseFeatureCollectionDialog::ChooseFeatureCollectionDialog(
+		const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesAppLogic::FeatureCollectionFileIO &file_io,
 		QWidget *parent_) :
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_choose_widget(
 			new ChooseFeatureCollectionWidget(
+				reconstruct_method_registry,
 				file_state,
 				file_io,
 				this))
@@ -126,3 +128,25 @@ GPlatesQtWidgets::ChooseFeatureCollectionDialog::get_file_reference(
 	}
 }
 
+boost::optional<std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> >
+GPlatesQtWidgets::ChooseFeatureCollectionDialog::get_file_reference()
+{
+	d_choose_widget->initialise();
+	d_choose_widget->setFocus();
+
+	if (exec() == QDialog::Accepted)
+	{
+		try
+		{
+			return d_choose_widget->get_file_reference();
+		}
+		catch (...)
+		{
+			return boost::none;
+		}
+	}
+	else
+	{
+		return boost::none;
+	}
+}

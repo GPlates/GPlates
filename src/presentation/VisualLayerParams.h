@@ -26,6 +26,7 @@
 #ifndef GPLATES_PRESENTATION_VISUALLAYERPARAMS_H
 #define GPLATES_PRESENTATION_VISUALLAYERPARAMS_H
 
+#include <boost/shared_ptr.hpp>
 #include <QObject>
 
 #include "VisualLayerParamsVisitor.h"
@@ -38,6 +39,11 @@ namespace GPlatesAppLogic
 {
 	class Layer;
 	class LayerTaskParams;
+}
+
+namespace GPlatesGui
+{
+	class StyleAdapter;
 }
 
 namespace GPlatesPresentation
@@ -103,6 +109,19 @@ namespace GPlatesPresentation
 				const GPlatesAppLogic::Layer &layer)
 		{  }
 
+		void
+		set_style_adaper(
+				const GPlatesGui::StyleAdapter* adapter)
+		{
+			d_style = adapter;
+		}
+
+		const GPlatesGui::StyleAdapter*
+		style_adapter() const
+		{
+			return d_style;
+		}
+
 	signals:
 
 		/**
@@ -116,7 +135,9 @@ namespace GPlatesPresentation
 		explicit
 		VisualLayerParams(
 				GPlatesAppLogic::LayerTaskParams &layer_task_params) :
+			d_style(NULL),
 			d_layer_task_params(layer_task_params)
+			
 		{  }
 
 		GPlatesAppLogic::LayerTaskParams &
@@ -134,9 +155,11 @@ namespace GPlatesPresentation
 		{
 			emit modified();
 		}
-
+	protected:
+		const GPlatesGui::StyleAdapter* d_style;
 	private:
 		GPlatesAppLogic::LayerTaskParams &d_layer_task_params;
+		
 	};
 }
 

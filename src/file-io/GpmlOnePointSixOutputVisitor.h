@@ -279,6 +279,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_topological_line(
+				const GPlatesPropertyValues::GpmlTopologicalLine &gpml_toplogical_line);
+
+		virtual
+		void
 		visit_gpml_topological_line_section(
 				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
 

@@ -87,10 +87,12 @@ namespace GPlatesGui
 			Configuration(
 					const QString& filename_template_,
 					FileFormat file_format_,
-					const ExportOptionsUtils::ExportFileOptions &file_options_) :
+					const ExportOptionsUtils::ExportFileOptions &file_options_,
+					bool wrap_to_dateline_ = false) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
-				file_options(file_options_)
+				file_options(file_options_),
+				wrap_to_dateline(wrap_to_dateline_)
 			{  }
 
 			virtual
@@ -102,6 +104,7 @@ namespace GPlatesGui
 
 			FileFormat file_format;
 			ExportOptionsUtils::ExportFileOptions file_options;
+			bool wrap_to_dateline;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.

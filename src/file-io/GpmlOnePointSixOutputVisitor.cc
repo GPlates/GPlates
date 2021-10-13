@@ -79,6 +79,7 @@
 #include "property-values/GpmlTopologicalInterior.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
+#include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlOldPlatesHeader.h"
@@ -683,6 +684,19 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_top_level_property_inline(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	bool pop = d_output.writeStartElement(top_level_property_inline.property_name());
+
+	// Top-level properties which also contain xml attributes
+	// may be having their attributes written twice (at both the property
+	// level, and here). To attempt to get round this, do not write
+	// xml attributes at the top level.
+	//
+	// If this turns out to cause problems with other property types
+	// we will have to find another solution.
+	//
+	// Similar modifications have been made in the GpmlOnePointSixOutputReader - see
+	// GpmlOnePointSixOutputReader::create_feature and
+	// GpmlOnePointSixOutputReader::create_unclassified_feature
+
 		d_output.writeAttributes(
 			top_level_property_inline.xml_attributes().begin(),
 			top_level_property_inline.xml_attributes().end());
@@ -1247,6 +1261,27 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_polygon(
 	}
 	d_output.writeEndElement();  // </gpml:TopologicalPolygon>
 }
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_line(
+	const GPlatesPropertyValues::GpmlTopologicalLine &gpml_toplogical_line)
+{
+	d_output.writeStartGpmlElement("TopologicalLine");
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator iter;
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator end;
+	iter = gpml_toplogical_line.sections().begin();
+	end = gpml_toplogical_line.sections().end();
+
+	for ( ; iter != end; ++iter) 
+	{
+		d_output.writeStartGpmlElement("section");
+		(*iter)->accept_visitor(*this);
+		d_output.writeEndElement();
+	}
+	d_output.writeEndElement();  // </gpml:TopologicalLine>
+}
+
 
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_line_section(

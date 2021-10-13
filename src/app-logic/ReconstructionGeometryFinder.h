@@ -172,6 +172,7 @@ namespace GPlatesAppLogic
 		visit_reconstructed_feature_geometry(
 				ReconstructedFeatureGeometry &rfg);
 
+
 		virtual
 		void
 		visit_reconstructed_flowline(
@@ -181,6 +182,11 @@ namespace GPlatesAppLogic
 		void
 		visit_reconstructed_motion_path(
 				ReconstructedMotionPath &rmp);
+
+		virtual
+		void
+		visit_reconstructed_small_circle(
+				GPlatesAppLogic::ReconstructedSmallCircle &rsc);
 
 		virtual
 		void

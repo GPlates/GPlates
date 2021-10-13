@@ -34,6 +34,7 @@
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
+#include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 
 namespace GPlatesDataMining

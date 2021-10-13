@@ -29,6 +29,9 @@
 
 #include "GreatCircleArc.h"
 
+#include "FiniteRotation.h"
+#include "Rotation.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
@@ -174,6 +177,36 @@ GPlatesMaths::BoundingSmallCircle::test_filled_polygon(
 	}
 
 	return result;
+}
+
+
+const GPlatesMaths::BoundingSmallCircle
+GPlatesMaths::operator*(
+		const FiniteRotation &rotation,
+		const BoundingSmallCircle &bounding_small_circle)
+{
+	// Make a copy so that the rotated small circle inherits any cached data (such as sine).
+	BoundingSmallCircle rotated_bounding_small_circle(bounding_small_circle);
+
+	// We only need to rotate the small circle centre - the other parameters remain the same.
+	rotated_bounding_small_circle.set_centre(rotation * bounding_small_circle.get_centre());
+
+	return rotated_bounding_small_circle;
+}
+
+
+const GPlatesMaths::BoundingSmallCircle
+GPlatesMaths::operator*(
+		const Rotation &rotation,
+		const BoundingSmallCircle &bounding_small_circle)
+{
+	// Make a copy so that the rotated small circle inherits any cached data (such as sine).
+	BoundingSmallCircle rotated_bounding_small_circle(bounding_small_circle);
+
+	// We only need to rotate the small circle centre - the other parameters remain the same.
+	rotated_bounding_small_circle.set_centre(rotation * bounding_small_circle.get_centre());
+
+	return rotated_bounding_small_circle;
 }
 
 
@@ -417,6 +450,38 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test_filled_polygon(
 	}
 
 	return result;
+}
+
+
+const GPlatesMaths::InnerOuterBoundingSmallCircle
+GPlatesMaths::operator*(
+		const FiniteRotation &rotation,
+		const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle)
+{
+	// Make a copy so that the rotated small circle inherits any cached data (such as sine).
+	InnerOuterBoundingSmallCircle rotated_inner_outer_bounding_small_circle(inner_outer_bounding_small_circle);
+
+	// We only need to rotate the small circle centre - the other parameters remain the same.
+	rotated_inner_outer_bounding_small_circle.set_centre(
+			rotation * inner_outer_bounding_small_circle.get_centre());
+
+	return rotated_inner_outer_bounding_small_circle;
+}
+
+
+const GPlatesMaths::InnerOuterBoundingSmallCircle
+GPlatesMaths::operator*(
+		const Rotation &rotation,
+		const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle)
+{
+	// Make a copy so that the rotated small circle inherits any cached data (such as sine).
+	InnerOuterBoundingSmallCircle rotated_inner_outer_bounding_small_circle(inner_outer_bounding_small_circle);
+
+	// We only need to rotate the small circle centre - the other parameters remain the same.
+	rotated_inner_outer_bounding_small_circle.set_centre(
+			rotation * inner_outer_bounding_small_circle.get_centre());
+
+	return rotated_inner_outer_bounding_small_circle;
 }
 
 

@@ -369,6 +369,67 @@ namespace GPlatesAppLogic
 
 
 		//
+		// Getting a sequence of @a ReconstructContext::ReconstructedFeature objects.
+		//
+
+		/**
+		 * Returns the reconstructed feature geometries (grouped by feature), for the current
+		 * reconstruction time, by appending them to @a reconstructed_features.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_features(
+				std::vector<ReconstructContext::ReconstructedFeature> &reconstructed_features)
+		{
+			return get_reconstructed_features(reconstructed_features, d_current_reconstruct_params, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the reconstructed feature geometries (grouped by feature), for the specified
+		 * reconstruct params and current reconstruction time, by appending them to @a reconstructed_features.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_features(
+				std::vector<ReconstructContext::ReconstructedFeature> &reconstructed_features,
+				const ReconstructParams &reconstruct_params)
+		{
+			return get_reconstructed_features(
+					reconstructed_features, reconstruct_params, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the reconstructed feature geometries (grouped by feature), for the current
+		 * reconstruct params and specified reconstruction time, by appending them to @a reconstructed_features.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_features(
+				std::vector<ReconstructContext::ReconstructedFeature> &reconstructed_features,
+				const double &reconstruction_time)
+		{
+			return get_reconstructed_features(
+					reconstructed_features, d_current_reconstruct_params, reconstruction_time);
+		}
+
+		/**
+		 * Returns the reconstructed feature geometries (grouped by feature), for the specified
+		 * reconstruct params and reconstruction time, by appending them to @a reconstructed_features.
+		 *
+		 * Note that ReconstructContext::Reconstruction::get_geometry_property_handle can index
+		 * into the sequences returned by @a get_present_day_geometries and
+		 * @a get_present_day_geometries_spatial_partition_locations.
+		 *
+		 * This geometry property handle can be used to index into the sequence of present day
+		 * geometries returned by @a get_present_day_geometries.
+		 *
+		 * Returns the reconstruct handle that identifies the reconstructed feature geometries.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_features(
+				std::vector<ReconstructContext::ReconstructedFeature> &reconstructed_features,
+				const ReconstructParams &reconstruct_params,
+				const double &reconstruction_time);
+
+
+		//
 		// Getting current reconstruct params and reconstruction time as set by the layer system.
 		//
 
@@ -461,6 +522,13 @@ namespace GPlatesAppLogic
 		 */
 		const std::vector<GPlatesMaths::CubeQuadTreeLocation> &
 		get_present_day_geometries_spatial_partition_locations();
+
+
+		/**
+		 * Returns the current reconstruction layer proxy used for reconstructions.
+		 */
+		ReconstructionLayerProxy::non_null_ptr_type
+		get_reconstruction_layer_proxy();
 
 
 		/**
@@ -567,6 +635,12 @@ namespace GPlatesAppLogic
 			 * in this structure.
 			 */
 			boost::optional<ReconstructHandle::type> cached_reconstruct_handle;
+
+			/**
+			 * The cached reconstructed features (RFGs grouped by feature).
+			 */
+			boost::optional< std::vector<ReconstructContext::ReconstructedFeature> >
+					cached_reconstructed_features;
 
 			/**
 			 * The cached reconstructed feature geometries.
@@ -730,11 +804,11 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Generates reconstructions for the specified reconstruct params and reconstruction time
-		 * if they're not already cached.
+		 * Generates reconstructed features for the specified reconstruct params and
+		 * reconstruction time if they're not already cached.
 		 */
-		std::vector<ReconstructContext::Reconstruction> &
-		cache_reconstructions(
+		std::vector<ReconstructContext::ReconstructedFeature> &
+		cache_reconstructed_features(
 				ReconstructionInfo &reconstruction_info,
 				const ReconstructParams &reconstruct_params,
 				const double &reconstruction_time);

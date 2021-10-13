@@ -35,6 +35,7 @@ namespace GPlatesAppLogic
 	class ReconstructedFeatureGeometry;
 	class ReconstructedFlowline;
 	class ReconstructedMotionPath;
+	class ReconstructedSmallCircle;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
 	class ResolvedTopologicalBoundary;
@@ -170,6 +171,15 @@ namespace GPlatesModel
 		void
 		visit_reconstructed_motion_path(
 				GPlatesAppLogic::ReconstructedMotionPath &rmp)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_reconstructed_small_circle(
+				GPlatesAppLogic::ReconstructedSmallCircle &rsc)
 		{  }
 
 		/**

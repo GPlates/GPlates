@@ -28,11 +28,14 @@
 
 #ifndef GPLATES_GUI_PLATEIDCOLOURPALETTES_H
 #define GPLATES_GUI_PLATEIDCOLOURPALETTES_H
+#include "boost/assign.hpp"
 
 #include "Colour.h"
 #include "ColourPalette.h"
 #include "ColourPaletteVisitor.h"
+#include "HTMLColourNames.h"
 
+#include "utils/Singleton.h"
 #include "model/types.h"
 
 namespace GPlatesGui

@@ -32,10 +32,13 @@
 #include <QList>
 #include <QUrl>
 #include <boost/function.hpp>
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "app-logic/FeatureCollectionFileState.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
+#include "file-io/FeatureCollectionFileFormatConfiguration.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -108,6 +111,9 @@ namespace GPlatesGui
 		 * appropriate error dialogs.
 		 *
 		 * See the slot open_files() for the version which pops up a file selection dialog.
+		 *
+		 * Each file is read using the default file configuration options for its file format
+		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
 		void
 		open_files(
@@ -116,6 +122,9 @@ namespace GPlatesGui
 		/**
 		 * As @a open_files(QStringList), but for a list of QUrl. For drag-and-drop
 		 * functionality.
+		 *
+		 * The file is read using the default file configuration options for its file format
+		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
 		void
 		open_urls(
@@ -127,7 +136,7 @@ namespace GPlatesGui
 		 */
 		void
 		reload_file(
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_it);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 
 		/**
@@ -147,8 +156,7 @@ namespace GPlatesGui
 		 * bars and/or error dialogs.
 		 *
 		 * NOTE: This will likely result in a "Unable to save files of that type" error if
-		 * the file has not been named yet. This could be handled better. See also
-		 * GMT header problem in @a get_feature_collection_write_format().
+		 * the file has not been named yet. This could be handled better.
 		 */
 		bool
 		save_file_in_place(
@@ -174,16 +182,12 @@ namespace GPlatesGui
 
 
 		/**
-		 * Saves specified feature collection into a file described by @a file_info.
+		 * Save a file, given by FileState file_reference @a file.
 		 * Pops up simple dialogs if there are problems, and returns false.
-		 *
-		 * This is called by the other @a save_file_* methods above.
 		 */
 		bool
 		save_file(
-				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
 
 		/**
@@ -200,6 +204,9 @@ namespace GPlatesGui
 		/**
 		 * Opens an Open File dialog allowing the user to select zero or more files,
 		 * then opens them.
+		 *
+		 * Each file is read using the default file configuration options for its file format
+		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
 		void
 		open_files();
@@ -224,21 +231,29 @@ namespace GPlatesGui
 
 
 	private:
-
 		/**
-		 * Get format for writing to feature collection file.
+		 * Saves the feature collection in @a file_ref to the filename in @a file_ref.
+		 * Pops up simple dialogs if there are problems, and returns false.
+		 *
+		 * This is called by the other @a save_file_* methods above.
+		 * NOTE: @a clear_unsaved_changes can be set to false when this method is used by
+		 * @a save_file_copy - that is the original file has not been saved and so it still
+		 * has unsaved changes.
 		 */
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format
-		get_feature_collection_write_format(
-				const GPlatesFileIO::FileInfo& file_info);
+		bool
+		save_file(
+				GPlatesFileIO::File::Reference &file_ref,
+				bool clear_unsaved_changes = true);
+
 
 		/**
 		 * Allows calling multiple functions that throw the same types of exceptions and
 		 * handles those exceptions in one place.
 		 */
 		void
-		try_catch_file_load_with_feedback(
-				boost::function<void ()> file_load_func);
+		try_catch_file_or_session_load_with_feedback(
+				boost::function<void ()> file_load_func,
+				boost::optional<QString> filename = boost::none);
 
 
 		/**
@@ -318,11 +333,6 @@ namespace GPlatesGui
 		 * The open files dialog box.
 		 */
 		GPlatesQtWidgets::OpenFileDialog d_open_files_dialog;
-		
-		/**
-		 * Controls whether Save File dialogs include a Compressed GPML option.
-		 */
-		bool d_gzip_available;
 	};
 }
 

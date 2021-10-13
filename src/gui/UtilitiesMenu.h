@@ -28,11 +28,15 @@
 
 #include <map>
 #include <boost/function.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <QObject>
 #include <QMenu>
-#include <QActionGroup>
 #include <QString>
 
+#include "api/Sleeper.h"
+#include "gui/PythonManager.h"
+
+#if !defined(GPLATES_NO_PYTHON)
 
 namespace GPlatesApi
 {
@@ -52,14 +56,12 @@ namespace GPlatesGui
 	
 	public:
 
-		explicit
 		UtilitiesMenu(
 				QMenu *utilities_menu,
 				QAction *before_action,
-				GPlatesApi::PythonExecutionThread *python_execution_thread,
+				GPlatesGui::PythonManager& python_manager,
 				QObject *parent_ = NULL);
 
-		virtual
 		~UtilitiesMenu();
 
 		void
@@ -71,8 +73,7 @@ namespace GPlatesGui
 	private slots:
 
 		void
-		handle_action_triggered(
-				QAction *action);
+		handle_action_triggered();
 
 	private:
 
@@ -82,13 +83,12 @@ namespace GPlatesGui
 
 		QMenu *d_utilities_menu;
 		QAction *d_before_action;
-		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
+		GPlatesGui::PythonManager& d_python_manager;
 
 		typedef std::map<QString, QMenu *> submenus_map_type;
 		submenus_map_type d_submenus;
-
-		QActionGroup *d_action_group;
 	};
 }
+#endif
 
 #endif	// GPLATES_GUI_UTILITIESMENU_H

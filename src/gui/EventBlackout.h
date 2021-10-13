@@ -47,7 +47,6 @@ namespace GPlatesGui
 	{
 	public:
 
-		explicit
 		EventBlackout();
 
 		/**

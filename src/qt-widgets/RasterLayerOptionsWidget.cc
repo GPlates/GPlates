@@ -92,6 +92,9 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 	colour_scale_palette.setColor(QPalette::Window, Qt::white);
 	d_colour_scale_widget->setPalette(colour_scale_palette);
 
+	opacity_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	intensity_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+
 	make_signal_slot_connections();
 }
 
@@ -168,6 +171,18 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_data(
 				// Populate the palette filename.
 				d_palette_filename_lineedit->setText(visual_layer_params->get_colour_palette_filename());
 			}
+
+			// Setting the values in the spin boxes will emit signals if the value changes
+			// which can lead to an infinitely recursive decent.
+			// To avoid this we temporarily disconnect their signals.
+
+			QObject::disconnect(opacity_spinbox, SIGNAL(valueChanged(double)), this, SLOT(handle_opacity_spinbox_changed(double)));
+			opacity_spinbox->setValue(visual_layer_params->get_opacity());
+			QObject::connect(opacity_spinbox, SIGNAL(valueChanged(double)), this, SLOT(handle_opacity_spinbox_changed(double)));
+
+			QObject::disconnect(intensity_spinbox, SIGNAL(valueChanged(double)), this, SLOT(handle_intensity_spinbox_changed(double)));
+			intensity_spinbox->setValue(visual_layer_params->get_intensity());
+			QObject::connect(intensity_spinbox, SIGNAL(valueChanged(double)), this, SLOT(handle_intensity_spinbox_changed(double)));
 		}
 	}
 }
@@ -313,6 +328,42 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_default_palette_button_cl
 
 
 void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_opacity_spinbox_changed(
+		double value)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->set_opacity(value);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_intensity_spinbox_changed(
+		double value)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->set_intensity(value);
+		}
+	}
+}
+
+
+void
 GPlatesQtWidgets::RasterLayerOptionsWidget::make_signal_slot_connections()
 {
 	QObject::connect(
@@ -330,5 +381,15 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::make_signal_slot_connections()
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_use_default_palette_button_clicked()));
+	QObject::connect(
+			opacity_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(handle_opacity_spinbox_changed(double)));
+	QObject::connect(
+			intensity_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(handle_intensity_spinbox_changed(double)));
 }
 

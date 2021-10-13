@@ -151,8 +151,7 @@ namespace {
 
 	private:
 		const GPlatesMaths::FiniteRotation &d_finite_rotation;
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-				d_rotated_geometry;
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_rotated_geometry;
 	};
 }
 
@@ -241,6 +240,23 @@ namespace {
 
 		real_t cos_theta = dot(q1, q2);
 
+		// Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible that
+		// q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
+		// So check if we're using the longer path and negate either quaternion in order to
+		// take the shorter path.
+		//
+		// See the "Quaternion Slerp" section of http://en.wikipedia.org/wiki/Slerp
+		real_t shortest_path_correction = 1;
+		if (cos_theta.is_precisely_less_than(0))
+		{
+			cos_theta = -cos_theta;
+
+			// NOTE: We really should be negating one of the two quaternions (q1 or q2 - it doesn't
+			// matter which one) but it's easier, and faster, to negate one of the interpolation
+			// coefficients since the quaternions are multiplied by them (q = c1 * q1 + c2 * q2).
+			shortest_path_correction = -1;
+		}
+
 		if (cos_theta >= 1.0) {
 
 			/*
@@ -250,52 +266,15 @@ namespace {
 			 */
 			return q1;
 		}
-		if (cos_theta <= -1.0) {
-
-			/*
-			 * FIXME:  The two quaternions are pointing in opposite
-			 * directions.  In 4D hypersphere space.  What the hell
-			 * am I supposed to do now?  How the hell do I
-			 * interpolate from one to the other when there's not
-			 * even a unique 4D great-circle from one to the other? 
-			 *
-			 * Perhaps *more* concerningly, how the **HELL** do I
-			 * explain this to the user??  "Hello, your finite
-			 * rotation quaternions are pointing in opposite
-			 * directions in four-dimensional hyperspace, even
-			 * though you don't understand how four-dimensional
-			 * hyperspace has anything to do with plate rotations
-			 * and you probably don't even know what quaternions
-			 * are!  This operation will now terminate.  Have a
-			 * nice day!"
-			 *
-			 * Argh!
-			 */
-			std::ostringstream oss;
-
-			oss
-			 << "Unable to interpolate between quaternions which "
-			    "are pointing in opposite directions\n"
-			    "in 4D hypersphere space: "
-			 << q1
-			 << "\nand "
-			 << q2
-			 << ".\nNot quite sure what to make of this?  Neither "
-			    "are we.  You should probably contact us (the "
-			    "developers).";
-
-			throw IndeterminateResultException(GPLATES_EXCEPTION_SOURCE,
-					oss.str().c_str());
-		}
 
 		// Since cos(theta) lies in the range (-1, 1), theta will lie
 		// in the range (0, PI).
-		real_t theta = acos(cos_theta);
+		const real_t theta = acos(cos_theta);
 
 		// Since theta lies in the range (0, PI), sin(theta) will lie
 		// in the range (0, 1].
 		//
-		// Since cos(theta) lies in the range (-1, 1), cos^2(theta)
+		// Since |cos(theta)| lies in the range [0, 1), cos^2(theta)
 		// will lie in the range [0, 1), so (1 - cos^2(theta)) will lie
 		// in the range (0, 1], so sqrt(1 - cos^2(theta)) lie in the
 		// range (0, 1], and hence can be used in place of sin(theta)
@@ -303,14 +282,13 @@ namespace {
 		//
 		// And finally, since sqrt(1 - cos^2(theta)) lies in the range
 		// (0, 1], there won't be any division by zero.
-		real_t one_on_sin_theta =
+		const real_t one_on_sin_theta =
 		 1.0 / sqrt(1.0 - cos_theta * cos_theta);
 
-		real_t
-		 c1 = sin((1.0 - t) * theta) * one_on_sin_theta,
-		 c2 = sin(t * theta) * one_on_sin_theta;
+		const real_t c1 = sin((1.0 - t) * theta) * one_on_sin_theta;
+		const real_t c2 = sin(t * theta) * one_on_sin_theta;
 
-		return UnitQuaternion3D::create(c1 * q1 + c2 * q2);
+		return UnitQuaternion3D::create(c1 * q1 + shortest_path_correction * c2 * q2);
 	}
 
 }
@@ -382,27 +360,20 @@ GPlatesMaths::operator*(
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere,
-		GPlatesUtils::NullIntrusivePointerHandler>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> p)
+		const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p)
 {
 	UnitVector3D rotated_position_vector = r * p->position_vector();
-	GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler> rotated_point(
-			PointOnSphere::create_on_heap(rotated_position_vector));
-	return rotated_point;
+	return PointOnSphere::create_on_heap(rotated_position_vector);
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere,
-		GPlatesUtils::NullIntrusivePointerHandler>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> mp)
+		const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere> &mp)
 {
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(mp->number_of_points());
@@ -413,19 +384,14 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(r * (*iter));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler> rotated_multipoint(
-			MultiPointOnSphere::create_on_heap(rotated_points));
-	return rotated_multipoint;
+	return MultiPointOnSphere::create_on_heap(rotated_points);
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere,
-		GPlatesUtils::NullIntrusivePointerHandler>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> p)
+		const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> &p)
 {
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(p->number_of_vertices());
@@ -436,19 +402,14 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(r * (*iter));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler> rotated_polyline(
-			PolylineOnSphere::create_on_heap(rotated_points));
-	return rotated_polyline;
+	return PolylineOnSphere::create_on_heap(rotated_points);
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere,
-		GPlatesUtils::NullIntrusivePointerHandler>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> p)
+		const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> &p)
 {
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(p->number_of_vertices());
@@ -459,19 +420,14 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(r * (*iter));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler> rotated_polygon(
-			PolygonOnSphere::create_on_heap(rotated_points));
-	return rotated_polygon;
+	return PolygonOnSphere::create_on_heap(rotated_points);
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::GeometryOnSphere,
-		GPlatesUtils::NullIntrusivePointerHandler>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::GeometryOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> g)
+		const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere> &g)
 {
 	return RotateGeometryOnSphere(r).rotate(g);
 }
@@ -502,7 +458,7 @@ GPlatesMaths::operator*(
 		const SmallCircle &s)
 {
 	UnitVector3D axis = r * s.axis_vector();
-	return SmallCircle(axis, s.cos_colatitude());
+	return SmallCircle::create_cosine_colatitude(axis, s.cos_colatitude());
 }
 
 

@@ -32,72 +32,49 @@
 
 #include "PythonExecutionMonitor.h"
 #include "PythonInterpreterLocker.h"
-
+#include "api/PythonUtils.h"
+#include "api/Sleeper.h"
 #include "app-logic/ApplicationState.h"
 
 #include "global/CompilerWarnings.h"
 
 #include "utils/DeferredCallEvent.h"
 #include "utils/StringUtils.h"
+#include "gui/PythonManager.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::PythonRunner::PythonRunner(
-		GPlatesAppLogic::ApplicationState &application_state,
+		const boost::python::object &main_namespace,
 		QObject *parent_) :
 	QObject(parent_),
-	d_application_state(application_state)
+	d_namespace(main_namespace)
 {
-#if !defined(GPLATES_NO_PYTHON)
 	using namespace boost::python;
-
 	PythonInterpreterLocker interpreter_locker;
-	const object &main_namespace = application_state.get_python_main_namespace();
-
 	try
 	{
 		PyRun_SimpleString("import code");
-		d_console = eval("code.InteractiveConsole(locals())", main_namespace, main_namespace);
+		d_console = eval("code.InteractiveConsole(locals())", d_namespace, d_namespace);
 		PyRun_SimpleString("del code");
-	}
-	catch (const error_already_set &)
-	{
-		std::cerr << "Could not create code.InteractiveConsole instance." << std::endl;
-		PyErr_Print();
-	}
 
-	try
-	{
 		object builtin_module = import("__builtin__");
 		d_compile = builtin_module.attr("compile");
-	}
-	catch (const error_already_set &)
-	{
-		std::cerr << "Could not obtain reference to __builtin__.compile function." << std::endl;
-		PyErr_Print();
-	}
-
-	try
-	{
-		object builtin_module = import("__builtin__");
 		d_eval = builtin_module.attr("eval");
 	}
 	catch (const error_already_set &)
 	{
-		std::cerr << "Could not obtain reference to __builtin__.eval function." << std::endl;
-		PyErr_Print();
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
-#endif
 }
 
 
 GPlatesApi::PythonRunner::~PythonRunner()
 {
-#if !defined(GPLATES_NO_PYTHON)
+	//strange
 	PythonInterpreterLocker interpreter_locker;
 	d_console = boost::python::object();
 	d_compile = boost::python::object();
 	d_eval = boost::python::object();
-#endif
 }
 
 
@@ -120,7 +97,6 @@ GPlatesApi::PythonRunner::event(
 }
 
 
-#if !defined(GPLATES_NO_PYTHON)
 void
 GPlatesApi::PythonRunner::exec_interactive_command(
 		const QString &line,
@@ -128,29 +104,28 @@ GPlatesApi::PythonRunner::exec_interactive_command(
 {
 	using namespace boost::python;
 
-	emit exec_or_eval_started();
-
-	PythonInterpreterLocker interpreter_locker;
 	bool continue_interactive_input = false;
-	try
 	{
-		std::wstring wstring = GPlatesUtils::make_wstring_from_qstring(line);
-		continue_interactive_input = extract<bool>(d_console.attr("push")(wstring));
-	}
-	catch (const error_already_set &)
-	{
-		handle_exception(monitor);
-
-		// Let's reset the console, just in case we interrupted the reset.
-		if (!continue_interactive_input)
+		PythonInterpreterLocker interpreter_locker;
+		try
 		{
-			reset_buffer();
+			std::wstring wstring = GPlatesUtils::make_wstring_from_qstring(line);
+			continue_interactive_input = extract<bool>(d_console.attr("push")(wstring));
+		}
+		catch (const error_already_set &)
+		{
+			if(monitor)
+				handle_exception(monitor);
+
+			// Let's reset the console, just in case we interrupted the reset.
+			if (!continue_interactive_input)
+			{
+				reset_buffer();
+			}
 		}
 	}
-	interpreter_locker.release();
-
-	monitor->signal_exec_interactive_command_finished(continue_interactive_input);
-	emit exec_or_eval_finished();
+	if(monitor)
+		monitor->signal_exec_interactive_command_finished(continue_interactive_input);
 }
 
 
@@ -160,24 +135,23 @@ GPlatesApi::PythonRunner::exec_string(
 		PythonExecutionMonitor *monitor)
 {
 	using namespace boost::python;
-
-	emit exec_or_eval_started();
-
-	PythonInterpreterLocker interpreter_locker;
-	try
 	{
-		std::wstring wstring = GPlatesUtils::make_wstring_from_qstring(string);
-		object code = d_compile(wstring, "<string>", "exec");
-		d_console.attr("runcode")(code);
+		PythonInterpreterLocker interpreter_locker;
+		try
+		{
+			std::wstring wstring = GPlatesUtils::make_wstring_from_qstring(string);
+			object code = d_compile(wstring, "<string>", "exec");
+			d_console.attr("runcode")(code);
+		}
+		catch (const error_already_set &)
+		{
+			if(monitor)
+				handle_exception(monitor);
+		}
 	}
-	catch (const error_already_set &)
-	{
-		handle_exception(monitor);
-	}
-	interpreter_locker.release();
 
-	monitor->signal_exec_finished();
-	emit exec_or_eval_finished();
+	if(monitor)
+		monitor->signal_exec_finished();
 }
 
 
@@ -189,15 +163,17 @@ GPlatesApi::PythonRunner::reset_interactive_buffer()
 }
 
 
+/*
+* Somehow, I don't know why. This function cannot run the code which is protected by __main__
+* Strange.
+*/
 void
 GPlatesApi::PythonRunner::exec_file(
 		const QString &filename,
-		PythonExecutionMonitor *monitor,
-		const QString &filename_encoding)
+		const QString &filename_encoding,
+		PythonExecutionMonitor *monitor)
 {
 	using namespace boost::python;
-
-	emit exec_or_eval_started();
 
 	// Convert the filename to a unicode object.
 	std::wstring wstring_filename = GPlatesUtils::make_wstring_from_qstring(filename);
@@ -208,10 +184,10 @@ GPlatesApi::PythonRunner::exec_file(
 	}
 	catch (const error_already_set &)
 	{
-		PyErr_Print();
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 		PySys_WriteStderr("Fatal error: script not executed.\n");
-		monitor->signal_exec_finished();
-		emit exec_or_eval_finished();
+		if(monitor)
+			monitor->signal_exec_finished();
 		return;
 	}
 
@@ -241,10 +217,10 @@ GPlatesApi::PythonRunner::exec_file(
 			catch (const error_already_set &)
 			{
 				// We should never get here, but just in case...
-				PyErr_Print();
+				qWarning() << GPlatesApi::PythonUtils::get_error_message();
 				PySys_WriteStderr("Fatal error: script not executed.\n");
-				monitor->signal_exec_finished();
-				emit exec_or_eval_finished();
+				if(monitor)
+					monitor->signal_exec_finished();
 				return;
 			}
 		}
@@ -256,11 +232,12 @@ GPlatesApi::PythonRunner::exec_file(
 		}
 		catch (const error_already_set &)
 		{
-			handle_exception(monitor);
+			if(monitor)
+				handle_exception(monitor);
 		}
 
-		monitor->signal_exec_finished();
-		emit exec_or_eval_finished();
+		if(monitor)
+			monitor->signal_exec_finished();
 	}
 	else
 	{
@@ -276,12 +253,12 @@ GPlatesApi::PythonRunner::exec_file(
 		}
 		catch (const error_already_set &)
 		{
-			PyErr_Print();
+			qWarning() << GPlatesApi::PythonUtils::get_error_message();
 			PySys_WriteStderr("Fatal error: script not executed.\n");
 		}
 
-		monitor->signal_exec_finished();
-		emit exec_or_eval_finished();
+		if(monitor)
+			monitor->signal_exec_finished();
 	}
 }
 
@@ -292,27 +269,24 @@ GPlatesApi::PythonRunner::eval_string(
 		PythonExecutionMonitor *monitor)
 {
 	using namespace boost::python;
-
-	emit exec_or_eval_started();
-
-	PythonInterpreterLocker interpreter_locker;
 	object result;
-	try
-	{
-		std::wstring wstring = GPlatesUtils::make_wstring_from_qstring(string);
-		result = d_eval(
-				wstring,
-				d_application_state.get_python_main_namespace(),
-				d_application_state.get_python_main_namespace());
-	}
-	catch (const error_already_set &)
-	{
-		handle_exception(monitor);
-	}
-	interpreter_locker.release();
 
-	monitor->signal_eval_finished(result);
-	emit exec_or_eval_finished();
+	{
+		PythonInterpreterLocker interpreter_locker;
+		try
+		{
+			std::wstring wstring = GPlatesUtils::make_wstring_from_qstring(string);
+			result = d_eval(wstring, d_namespace, d_namespace);
+		}
+		catch (const error_already_set &)
+		{
+			if(monitor)
+				handle_exception(monitor);
+		}
+	}
+
+	if(monitor)
+		monitor->signal_eval_finished(result);
 }
 
 
@@ -323,21 +297,21 @@ GPlatesApi::PythonRunner::exec_function(
 {
 	using namespace boost::python;
 
-	emit exec_or_eval_started();
-
-	PythonInterpreterLocker interpreter_locker;
-	try
 	{
-		function();
+		PythonInterpreterLocker interpreter_locker;
+		try
+		{
+			function();
+		}
+		catch (const error_already_set &)
+		{
+			if(monitor)
+				handle_exception(monitor);
+		}
 	}
-	catch (const error_already_set &)
-	{
-		handle_exception(monitor);
-	}
-	interpreter_locker.release();
 
-	monitor->signal_exec_finished();
-	emit exec_or_eval_finished();
+	if(monitor)
+		monitor->signal_exec_finished();
 }
 
 
@@ -347,23 +321,23 @@ GPlatesApi::PythonRunner::eval_function(
 		PythonExecutionMonitor *monitor)
 {
 	using namespace boost::python;
-
-	emit exec_or_eval_started();
-
-	PythonInterpreterLocker interpreter_locker;
 	object result;
-	try
-	{
-		result = function();
-	}
-	catch (const error_already_set &)
-	{
-		handle_exception(monitor);
-	}
-	interpreter_locker.release();
 
-	monitor->signal_eval_finished(result);
-	emit exec_or_eval_finished();
+	{
+		PythonInterpreterLocker interpreter_locker;
+		try
+		{
+			result = function();
+		}
+		catch (const error_already_set &)
+		{
+			if(monitor)
+				handle_exception(monitor);
+		}
+	}
+
+	if(monitor)
+		monitor->signal_eval_finished(result);
 }
 
 
@@ -379,7 +353,7 @@ GPlatesApi::PythonRunner::reset_buffer()
 	}
 	catch (const error_already_set &)
 	{
-		PyErr_Print();
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
 }
 
@@ -388,6 +362,9 @@ void
 GPlatesApi::PythonRunner::handle_exception(
 		PythonExecutionMonitor *monitor)
 {
+	if(!monitor)
+		return;
+
 	if (PyErr_ExceptionMatches(PyExc_SystemExit))
 	{
 		handle_system_exit(monitor);
@@ -405,7 +382,7 @@ GPlatesApi::PythonRunner::handle_exception(
 			monitor->set_other_exception_raised();
 		}
 
-		PyErr_Print();
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
 }
 
@@ -459,7 +436,9 @@ GPlatesApi::PythonRunner::handle_system_exit(
 		Py_XDECREF(traceback_ptr);
 
 		// Let the caller know via the monitor.
-		monitor->set_system_exit_exception_raised(exit_status, error_message);
+
+		if(monitor)
+			monitor->set_system_exit_exception_raised(exit_status, error_message);
 		emit system_exit_exception_raised(exit_status, error_message);
 	}
 	catch (const error_already_set &)
@@ -473,5 +452,7 @@ GPlatesApi::PythonRunner::handle_system_exit(
 
 // See above.
 ENABLE_GCC_WARNING("-Wold-style-cast")
-#endif
+#endif // GPLATES_NO_PYTHON
+
+
 

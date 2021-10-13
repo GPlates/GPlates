@@ -44,8 +44,8 @@ namespace GPlatesFileIO
 	namespace ResolvedTopologicalBoundaryExportImpl
 	{
 		/**
-		 * Determines feature type of subsegment source feature referenced by platepolygon
-		 * at a specific reconstruction time.
+		 * Determines feature type of subsegment source feature referenced by a
+		 * resolved topological geometry at a specific reconstruction time.
 		 */
 		class DetermineSubSegmentFeatureType :
 				private GPlatesModel::ConstFeatureVisitor
@@ -58,7 +58,7 @@ namespace GPlatesFileIO
 
 			SubSegmentType
 			get_sub_segment_feature_type(
-					const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment)
+					const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment)
 			{
 				d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
 
@@ -279,7 +279,7 @@ namespace GPlatesFileIO
 
 			SubSegmentType
 			get_slab_sub_segment_feature_type(
-					const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment)
+					const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment)
 			{
 				d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
 
@@ -427,7 +427,7 @@ namespace GPlatesFileIO
 
 GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::SubSegmentType
 GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::get_sub_segment_type(
-		const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment,
+		const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment,
 		const double &recon_time)
 {
 	return DetermineSubSegmentFeatureType(recon_time).get_sub_segment_feature_type(sub_segment);
@@ -436,7 +436,7 @@ GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::get_sub_segment_type(
 
 GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::SubSegmentType
 GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::get_slab_sub_segment_type(
-		const GPlatesAppLogic::ResolvedTopologicalBoundary::SubSegment &sub_segment,
+		const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment,
 		const double &recon_time)
 {
 	SubSegmentType d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;

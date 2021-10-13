@@ -301,8 +301,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::EditTimeSequenceWidget(
 	AbstractEditWidget(parent_),
 	EditTableWidget(),
         d_current_reconstruction_time(
-                app_state_.get_current_reconstruction_time()),
-	d_editing(false)
+                app_state_.get_current_reconstruction_time())
 {
     setupUi(this);
     // Set column widths and resizabilty.
@@ -493,7 +492,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
 }
 
 
-
 void
 GPlatesQtWidgets::EditTimeSequenceWidget::update_times()
 {
@@ -503,7 +501,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_times()
 		GPlatesPropertyValues::TemplateTypeParameterType::create_gml("TimePeriod");
 
 	// Find first valid time in table, so we can store it as the "end" part of the first gpml:Array element. 
-	boost::optional<double> begin_time,end_time;
+	boost::optional<double> begin_time, end_time;
 	int count;
 
 	for (count = 0; count < table_times->rowCount(); ++count)
@@ -552,7 +550,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_insert_row_above(
 	if (row >= 0) {
 		insert_blank_time_into_table(row);
 	}
-	d_editing = true;
 	update_buttons();
 }
 
@@ -564,7 +561,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_insert_row_below(
 	if (row >= 0) {
 		insert_blank_time_into_table(row + 1);
 	}
-	d_editing = true;
 	update_buttons();
 }
 

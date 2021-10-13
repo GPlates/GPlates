@@ -27,36 +27,44 @@
 
 #include <cmath>
 #include <opengl/OpenGL.h>
-#include <QFontInfo>
 
 #include "QGLWidgetTextRenderer.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
-namespace
-{
-	const qreal MIN_POINT_SIZE = 2.0;
-
-	QFont
-	scale_font(
-			const QFont &font,
-			float scale)
-	{
-		QFont ret = font;
-
-		qreal point_size = QFontInfo(font).pointSizeF();
-		ret.setPointSizeF((std::max)(
-				MIN_POINT_SIZE,
-				point_size * scale));
-
-		return ret;
-	}
-}
+#include "opengl/GLRenderer.h"
 
 
 GPlatesGui::QGLWidgetTextRenderer::QGLWidgetTextRenderer(
 		QGLWidget *gl_widget_ptr) :
-	d_gl_widget_ptr(gl_widget_ptr)
+	d_gl_widget_ptr(gl_widget_ptr),
+	d_renderer(NULL)
 {  }
+
+
+
+void
+GPlatesGui::QGLWidgetTextRenderer::begin_render(
+		GPlatesOpenGL::GLRenderer *renderer)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_renderer,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_renderer = renderer;
+}
+
+
+void
+GPlatesGui::QGLWidgetTextRenderer::end_render()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_renderer,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_renderer = NULL;
+}
 
 
 void
@@ -68,45 +76,24 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 		const QFont &font,
 		float scale) const
 {
+	// Must be between 'begin_render' and 'end_render'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_renderer,
+			GPLATES_ASSERTION_SOURCE);
+
+	// 'QGLWidget::renderText' is expecting the OpenGL state to be the default state so set
+	// the default state and restore on scope exit.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(*d_renderer, true/*reset_to_default_state*/);
+	// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
+	// GLRenderer directly to OpenGL so that Qt can see it. When we're rendering exclusively using
+	// GLRenderer we don't need this because the next draw call will flush the state to OpenGL for us.
+	d_renderer->apply_current_state_to_opengl();
+
+	// NOTE: We don't normally make direct calls to OpenGL (instead using 'GLRenderer') but this
+	// is an exception since GLRenderer doesn't wrap per-vertex state (GLRenderer does not use
+	// immediate-mode rendering - uses the more efficient vertex arrays instead).
+	// So setting this won't affect GLRenderer and it's needed for 'QGLWidget::renderText'.
 	glColor4fv(colour);
-#if 0
-	// need to change to GL_MODULATE for a moment otherwise the text will be rendered as white
-	// GL_MODULATE is the default OpenGL state so we'll leave it that way when we're finished.
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-#endif
+
 	d_gl_widget_ptr->renderText(x, y, string, scale_font(font, scale));
 }
-
-
-void
-GPlatesGui::QGLWidgetTextRenderer::render_text(
-		double x,
-		double y,
-		double z,
-		const QString &string,
-		const GPlatesGui::Colour &colour,
-		int x_offset,
-		int y_offset,
-		const QFont &font,
-		float scale) const
-{
-	// Compute screen coordinates.
-	glColor4fv(colour);
-	GLdouble model[16];
-	glGetDoublev(GL_MODELVIEW_MATRIX, model);
-	GLdouble proj[16];
-	glGetDoublev(GL_PROJECTION_MATRIX, proj);
-	GLint view[4];
-	glGetIntegerv(GL_VIEWPORT, view);
-	GLdouble winX, winY, winZ;
-	gluProject(x, y, z, model, proj, view, &winX, &winY, &winZ);
-
-	// Render, with offset (note that OpenGL and Qt y-axes appear to be the reverse of each other).
-	int height = view[3];
-	render_text(
-			static_cast<int>(winX) + x_offset, height - (static_cast<int>(winY) + y_offset),
-			string,
-			colour,
-			scale_font(font, scale));
-}
-

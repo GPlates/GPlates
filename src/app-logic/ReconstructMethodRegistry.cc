@@ -32,6 +32,7 @@
 #include "ReconstructMethodFlowline.h"
 #include "ReconstructMethodHalfStageRotation.h"
 #include "ReconstructMethodMotionPath.h"
+#include "ReconstructMethodSmallCircle.h"
 #include "ReconstructMethodVirtualGeomagneticPole.h"
 
 #include "global/PreconditionViolationError.h"
@@ -141,6 +142,21 @@ GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method_type(
 }
 
 
+GPlatesAppLogic::ReconstructMethod::Type
+GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method_type_or_default(
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref) const
+{
+	const boost::optional<ReconstructMethod::Type> reconstruct_method_type_opt =
+			get_reconstruct_method_type(feature_ref);
+	if (reconstruct_method_type_opt)
+	{
+		return reconstruct_method_type_opt.get();
+	}
+
+	return ReconstructMethod::BY_PLATE_ID;
+}
+
+
 GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type
 GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method(
 		ReconstructMethod::Type reconstruct_method_type) const
@@ -226,4 +242,12 @@ GPlatesAppLogic::register_default_reconstruct_method_types(
 			ReconstructMethod::MOTION_PATH,
 			&ReconstructMethodMotionPath::can_reconstruct_feature,
 			&ReconstructMethodMotionPath::create);
+
+	//
+	// Reconstruct small circles.
+	//
+	registry.register_reconstruct_method(
+			ReconstructMethod::SMALL_CIRCLE,
+			&ReconstructMethodSmallCircle::can_reconstruct_feature,
+			&ReconstructMethodSmallCircle::create);
 }

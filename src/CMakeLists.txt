@@ -1,8 +1,5 @@
 # Find our required libraries.
 set(required_libs "Qt4" "OpenGL" "GLEW" "GDAL" "GZIP" "PROJ4" "CGAL")
-if(NOT GPLATES_NO_PYTHON)
-	set(required_libs ${required_libs} "PythonLibs")
-endif(NOT GPLATES_NO_PYTHON)
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
@@ -14,6 +11,10 @@ if(NOT GPLATES_NO_PYTHON)
 	set(boost_components ${boost_components} python)
 endif(NOT GPLATES_NO_PYTHON)
 find_package("Boost" 1.34.1 REQUIRED ${boost_components})
+
+if(NOT GPLATES_NO_PYTHON)
+	find_package("PythonLibs" REQUIRED)
+endif(NOT GPLATES_NO_PYTHON)
 
 # Check that each of the above libraries was found, because even though it is
 # required, if Boost is found but not the libraries, the CMake scripts will
@@ -190,11 +191,6 @@ set(unit_test_LIBS
     unit-test)
 endif (ADD_UNIT_TEST_TARGET)
 
-set(g_lib ${app_LIBS} ${util_LIBS} gui python-ext)
-foreach(dir ${g_lib})
-        AUX_SOURCE_DIRECTORY(${dir} g_lib_src)
-endforeach(dir)
-
 # Libraries used by the GUI version of GPlates.
 set(GPlates_LIBS
 	${gui_LIBS} ${presentation_LIBS} ${app_LIBS} ${util_LIBS})
@@ -253,6 +249,9 @@ set(external_INCLUDE_DIRS
 	${OPENGL_INCLUDE_DIR}
 	${GLEW_INCLUDE_DIR}
 	${GDAL_INCLUDE_DIR}
+	${GDAL_OGR_INCLUDE_DIR}
+	${GDAL_PORT_INCLUDE_DIR}
+	${GDAL_FRMTS_INCLUDE_DIR}
 	${Boost_INCLUDE_DIR}
 	${PROJ4_INCLUDE_DIR}
 	${ImageMagick_INCLUDE_DIRS})
@@ -273,9 +272,6 @@ set(internal_INCLUDE_DIRS
 set(ALL_GPlates_src_subdirs
 	${gui_LIBS} ${presentation_LIBS} ${cli_LIBS} ${app_LIBS} ${util_LIBS} ${unit_test_LIBS} )
 
-if(NOT GPLATES_NO_PYTHON)
-	set(ALL_GPlates_src_subdirs ${ALL_GPlates_src_subdirs} python-ext)
-endif(NOT GPLATES_NO_PYTHON)
 #
 # Generate 'global/config.h' file from 'global/config.h.in' and add HAVE_CONFIG_H compiler definition so GPlates will look for it.
 #
@@ -331,6 +327,10 @@ if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGR
     add_dependencies(view-operations qt-widgets)
     add_dependencies(presentation qt-widgets)
     add_dependencies(gui qt-widgets)
+	add_dependencies(utils qt-widgets) #Need more investigation
+if(NOT GPLATES_NO_PYTHON)
+	add_dependencies(api gui)
+endif(NOT GPLATES_NO_PYTHON)
     add_dependencies(global run-gplates-extract-svn-info)
 	# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
     #add_dependencies(qt-widgets qt-resources)
@@ -406,29 +406,30 @@ set(GPLATES_MAIN_TARGET gplates)
 
 # Add Python module library target.
 if(NOT GPLATES_NO_PYTHON)
+
+	foreach(dir ${ALL_GPlates_src_subdirs})
+		AUX_SOURCE_DIRECTORY(${dir} gplates_lib_src)
+		AUX_SOURCE_DIRECTORY("${CMAKE_CURRENT_BINARY_DIR}/${dir}" gplates_lib_src)
+		#message(STATUS "Adding directory ${dir}")
+		#message(STATUS "Adding directory '${CMAKE_CURRENT_BINARY_DIR}/${dir}' ")
+	endforeach(dir)
+
 	message(STATUS "Adding GPlates Python module.")
 	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
-	add_library(pygplates MODULE EXCLUDE_FROM_ALL
-		${target_GPlates_SRCS}
-		${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
-	set_target_properties(pygplates PROPERTIES PREFIX "")
+	add_library(gplates_lib STATIC EXCLUDE_FROM_ALL ${gplates_lib_src})
+	
+    add_library(pygplates MODULE EXCLUDE_FROM_ALL api/Python.cc )
+    add_dependencies(pygplates gplates_lib)
+	add_dependencies(gplates_lib gplates)
+	
 	if(WIN32)
 		set_target_properties(pygplates PROPERTIES SUFFIX ".pyd")
-	endif(WIN32)
-
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
-
-	if(WIN32)
-		add_library(gplates_ext MODULE EXCLUDE_FROM_ALL python-ext/python-ext.cc )
-		set_target_properties(gplates_ext PROPERTIES SUFFIX ".pyd")
 	else(WIN32)
-		add_library(gplates_lib STATIC EXCLUDE_FROM_ALL ${g_lib_src})
-		set_target_properties(gplates_lib PROPERTIES COMPILE_FLAGS "-fPIC")
-		add_library(gplates_ext MODULE EXCLUDE_FROM_ALL python-ext/python-ext.cc )
-		add_dependencies(gplates_ext gplates_lib)
-	endif(WIN32)
+	    set_target_properties(gplates_lib PROPERTIES COMPILE_FLAGS "-fPIC")
+    endif(WIN32)
 
-	set_target_properties(gplates_ext PROPERTIES PREFIX "")
+	set_target_properties(pygplates PROPERTIES PREFIX "")
+	
 endif(NOT GPLATES_NO_PYTHON)
 
 
@@ -488,11 +489,26 @@ if (NOT WIN32)
 	endif (Boost_LIBRARY_DIRS)
 endif (NOT WIN32)
 
+
+
 # Avoid all GPlates library link dependencies on the linker command-line by
-# specifying GPlates libraries twice. This gets around some dependencies
+# specifying a 'group' around GPlates libraries. This gets around some dependencies
 # like 'gui' depends on 'canvas-tools' depends on 'gui' depends on 'maths'.
-target_link_libraries(gplates ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
-target_link_libraries(gplates-no-gui ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
+# The --start-group / --end-group options are specific to Linux' ld command, and
+# the -Xlinker option is necessary to pass those options through 'c++' into 'ld'.
+# The Windows and MacOS linkers appear to work fine without needing to specify
+# this extra resolution behaviour.
+if (NOT WIN32 AND NOT APPLE)
+	set(GPlates_LINK_CMD -Xlinker --start-group ${GPlates_LIBS} -Xlinker --end-group)
+else (NOT WIN32 AND NOT APPLE)
+	set(GPlates_LINK_CMD ${GPlates_LIBS})	
+endif (NOT WIN32 AND NOT APPLE)
+
+# Actual link dependencies get assembled here.
+# The GPlates CLI target doesn't need the extra 'GPlates_LINK_CMD' step above as its
+# dependency list is much smaller.
+target_link_libraries(gplates ${GPlates_LINK_CMD} ${dependency_LIBS})
+target_link_libraries(gplates-no-gui ${GPlates_LINK_CMD} ${dependency_LIBS})
 if (ADD_GPLATES_CLI_TARGET)
 	target_link_libraries(gplates-cli ${GPlates_cli_LIBS} ${dependency_LIBS} ${GPlates_cli_LIBS})
 endif (ADD_GPLATES_CLI_TARGET)
@@ -500,14 +516,9 @@ if (ADD_UNIT_TEST_TARGET)
 	target_link_libraries(gplates-unit-test ${GPlates_unit_test_LIBS} ${dependency_LIBS} ${GPlates_unit_test_LIBS})
 endif (ADD_UNIT_TEST_TARGET)
 if (NOT GPLATES_NO_PYTHON)
-	target_link_libraries(pygplates ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
-
-	if(WIN32)
-		target_link_libraries(gplates_ext python-ext ${GPlates_LIBS} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
-	else(WIN32)
-		target_link_libraries(gplates_ext gplates_lib ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
-	endif(WIN32)
-
+	
+	target_link_libraries(pygplates gplates_lib ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
+    
 endif (NOT GPLATES_NO_PYTHON)
 
 # Current binary directory must be included first for g++ pre-compiled headers.

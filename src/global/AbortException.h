@@ -46,9 +46,7 @@ namespace GPlatesGlobal
 		explicit
 		AbortException(
 				const GPlatesUtils::CallStack::Trace &exception_source) :
-			Exception(exception_source),
-			d_filename(exception_source.get_filename()),
-			d_line_num(exception_source.get_line_num())
+			Exception(exception_source)
 		{  }
 
 	protected:
@@ -64,10 +62,6 @@ namespace GPlatesGlobal
 		void
 		write_message(
 				std::ostream &os) const;
-
-	private:
-		const char *d_filename;
-		int d_line_num;
 	};
 }
 

@@ -51,6 +51,8 @@ namespace GPlatesMaths
 			d_arc2(arc2_)
 		{  }
 
+		~UnableToIntersectEquivalentGreatCirclesException() throw(){}
+
 	protected:
 		virtual
 		const char *

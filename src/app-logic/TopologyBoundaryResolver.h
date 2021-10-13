@@ -74,22 +74,19 @@ namespace GPlatesAppLogic
 		/**
 		 * The resolved dynamic polygons are appended to @a resolved_topological_boundaries.
 		 *
+		 * The 'reconstructed' dynamic topological lines are appended to @a reconstructed_feature_geometries.
+		 * 
 		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
 		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
 		 *        identifies the subset, of all RFGs observing the topological section features,
 		 *        that should be searched when resolving the topological boundaries.
 		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
-		 * @param restrict_boundary_sections_to_same_reconstruction_tree is used to restrict the
-		 *        reconstructed topological boundary sections, specified with
-		 *        @a reconstructed_topological_boundary_sections, to those that were reconstructed
-		 *        using @a reconstruction_tree (ie, the same reconstruction tree associated with
-		 *        the resolved topological boundaries being generated).
 		 */
 		TopologyBoundaryResolver(
 				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
-				bool restrict_boundary_sections_to_same_reconstruction_tree = true);
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
 
 		virtual
 		~TopologyBoundaryResolver() 
@@ -118,6 +115,11 @@ namespace GPlatesAppLogic
 		void
 		visit_gpml_topological_polygon(
 			 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+
+		virtual
+		void
+		visit_gpml_topological_line(
+			 	GPlatesPropertyValues::GpmlTopologicalLine &gpml_toplogical_line);
 
 		virtual
 		void
@@ -221,6 +223,11 @@ namespace GPlatesAppLogic
 		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &d_resolved_topological_boundaries;
 
 		/**
+		 * The @a ReconstructedFeatureGeometry objects generated during reconstruction.
+		 */
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &d_reconstructed_feature_geometries;
+
+		/**
 		 * The reconstruction tree associated with the resolved topological boundaries begin generated.
 		 */
 		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
@@ -233,13 +240,6 @@ namespace GPlatesAppLogic
 		 * If the client didn't produce them, or forgot to, then we'd find no RFGs during the global search.
 		 */
 		boost::optional<std::vector<ReconstructHandle::type> > d_topological_sections_reconstruct_handles;
-
-		/**
-		 * Boolean to determine whether to restrict the reconstructed topological boundary sections
-		 * to those that were reconstructed using the same reconstruction tree associated with
-		 * the resolved topological boundaries being generated.
-		 */
-		bool d_restrict_boundary_sections_to_same_reconstruction_tree;
 
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;
@@ -260,7 +260,7 @@ namespace GPlatesAppLogic
 		 * (stored in @a d_resolved_boundary) and add it to the @a Reconstruction.
 		 */
 		void
-		create_resolved_topology_boundary();
+		create_resolved_topology_boundary( bool is_polygon );
 
 		void
 		record_topological_sections(

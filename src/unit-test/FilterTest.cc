@@ -27,11 +27,6 @@
 #include <QDebug>
 
 #include "unit-test/FilterTest.h"
-#include "utils/FilterMapReduceWorkFlow.h"
-#include "utils/FilterMapOutputHandler.h"
-#include "utils/GenericFilter.h"
-#include "utils/GenericReducer.h"
-
 #include "data-mining/DataTable.h"
 
 //copy the following code into directory level test suite file

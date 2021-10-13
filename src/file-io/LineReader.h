@@ -35,9 +35,10 @@
 #ifndef GPLATES_FILEIO_LINEREADER_H
 #define GPLATES_FILEIO_LINEREADER_H
 
-#include <iostream>
-#include <string>
 #include <boost/noncopyable.hpp>
+#include <QFile>
+#include <QString>
+#include <QTextStream>
 
 #include "utils/SafeBool.h"
 
@@ -47,7 +48,13 @@ namespace GPlatesFileIO
 	/**
 	 * Reads lines in a text file allowing client to peek ahead one line.
 	 *
-	 * Also handles newline conventions for different platforms:
+	 * NOTE: Using a 'QFile' instead of 'std::istream' in order to support filenames
+	 * with unicode characters.
+	 * But still returning lines as 'std::string' instead of 'QString' to introduce minimal
+	 * changes/bugs to clients of this class (currently the PLATES4 line and rotation format readers).
+	 * TODO: Use 'QString' instead of 'std::string'.
+	 *
+	 * TODO: Handles newline conventions for different platforms:
 	 *  - Window:  CR/LF
 	 *  - Unix:    LF
 	 *  - MacOS X: CR
@@ -60,15 +67,23 @@ namespace GPlatesFileIO
 	public:
 		explicit
 		LineReader(
-				std::istream &stream);
+				QFile &input);
 
 		
-		LineReader &
+		/**
+		 * Reads the next line and returns true if there is one.
+		 */
+		bool
 		getline(
 				std::string &line);
 
 					
-		LineReader &
+		/**
+		 * Peeks at the next line and returns true if there is one.
+		 *
+		 * A subsequent call to @a getline will return the same line.
+		 */
+		bool
 		peekline(
 				std::string &line);
 
@@ -81,7 +96,7 @@ namespace GPlatesFileIO
 		bool
 		boolean_test() const
 		{
-			return d_have_buffered_line || *d_stream_ptr;
+			return d_have_buffered_line || !d_text_stream.atEnd();
 		}
 
 		
@@ -92,7 +107,7 @@ namespace GPlatesFileIO
 		}
 	
 	private:
-		std::istream *d_stream_ptr;
+		QTextStream d_text_stream;
 		unsigned int d_line_number;
 		std::string d_buffered_line;
 		bool d_have_buffered_line;

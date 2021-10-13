@@ -24,7 +24,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
+#include <boost/assign/std/vector.hpp>
 #include "ColourNameSet.h"
 
 boost::optional<GPlatesGui::Colour>
@@ -55,5 +55,10 @@ GPlatesGui::ColourNameSet::insert_colour(
 					static_cast<GLfloat>(r) / 255.0f,
 					static_cast<GLfloat>(g) / 255.0f,
 					static_cast<GLfloat>(b) / 255.0f)));
+
+	std::vector<int> v;
+	using namespace boost::assign; 
+	v += r,g,b;
+	d_color_name_table[name] = v;
 }
 

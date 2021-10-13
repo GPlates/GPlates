@@ -29,28 +29,17 @@
 #include <QDebug>
 #include <boost/foreach.hpp>
 
+#include "CoRegReducer.h"
+
 namespace GPlatesDataMining
 {
-	using namespace GPlatesUtils;
-	
-	typedef std::vector<OpaqueData> ReducerInputSequence;
-
-	/*	
-	*	TODO:
-	*	Comments....
-	*/
-	class WeightedMeanReducer 
+	class WeightedMeanReducer : public CoRegReducer
 	{
-	public:
-
-		/*
-		* TODO: comments....
-		*/
-		inline
+	protected:
 		OpaqueData
-		operator()(
-				ReducerInputSequence::const_iterator input_begin,
-				ReducerInputSequence::const_iterator input_end) 
+		exec(
+				CoRegReducer::ReducerInDataset::const_iterator input_begin,
+				CoRegReducer::ReducerInDataset::const_iterator input_end) 
 		{
 			return OpaqueData("To Be Implemented...");
 		}

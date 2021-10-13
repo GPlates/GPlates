@@ -36,6 +36,8 @@
 
 #include "MathsUtils.h"
 
+#include "utils/QtStreamable.h"
+
 
 namespace GPlatesMaths
 {
@@ -54,7 +56,9 @@ namespace GPlatesMaths
 	class Real :
 			public boost::less_than_comparable<Real>,
 			public boost::equivalent<Real>,
-			public boost::equality_comparable<Real>
+			public boost::equality_comparable<Real>,
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<Real>
 	{
 	public:
 

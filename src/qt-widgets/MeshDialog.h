@@ -46,15 +46,16 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
-		explicit
 		MeshDialog(
 				GPlatesPresentation::ViewState &,
 				GPlatesQtWidgets::ManageFeatureCollectionsDialog&,
 				QWidget *parent_ = NULL);
 		
 		virtual
-			~MeshDialog()
-		{	}
+		~MeshDialog()
+		{
+		//	qDebug() << "destructing mesh dialog";
+		}
 		
 	private slots:
 

@@ -198,8 +198,7 @@ namespace GPlatesQtWidgets
 		 * adding brand new properties to the model.
 		 */
 		boost::intrusive_ptr<GPlatesPropertyValues::GpmlStringList> d_string_list_ptr;
-		
-		bool d_editing;
+	
 
 	};
 }

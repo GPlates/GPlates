@@ -34,12 +34,16 @@
 
 #include "MathsUtils.h"
 
+#include "utils/QtStreamable.h"
+
 
 namespace GPlatesMaths
 {
 	class PointOnSphere;
 
-	class LatLonPoint
+	class LatLonPoint :
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<LatLonPoint>
 	{
 	public:
 

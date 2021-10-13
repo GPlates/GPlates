@@ -30,6 +30,14 @@ DISABLE_MSVC_WARNING(4503)
 POP_MSVC_WARNINGS
 
 #include <boost/cast.hpp>
+
+#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
+#	ifdef NDEBUG
+#		define HAVE_NDEBUG
+#		undef NDEBUG
+#	endif
+#endif
+
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Delaunay_mesher_2.h>
@@ -37,6 +45,13 @@ POP_MSVC_WARNINGS
 #include <CGAL/Delaunay_mesh_size_criteria_2.h>
 #include <CGAL/Cartesian.h>
 #include <CGAL/Polygon_2.h>
+
+#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
+#	ifdef HAVE_NDEBUG
+#		define NDEBUG
+#	endif
+#endif
+
 #include <QDebug>
 
 #include "PolygonMesh.h"
@@ -133,7 +148,7 @@ GPlatesMaths::PolygonMesh::initialise(
 		PointOnSphereForwardIter polygon_points_begin,
 		PointOnSphereForwardIter polygon_points_end)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 	typedef CGAL::Triangulation_vertex_base_2<K> Vb;
@@ -267,9 +282,9 @@ GPlatesMaths::PolygonMesh::initialise(
 	cdt.insert_constraint(vertex_handles[vertex_handles.size() - 1], vertex_handles[0]);
 
 	// Mesh the domain of the triangulation - the area bounded by constraints.
-	PROFILE_BEGIN(cgal_refine_triangulation, "CGAL::refine_Delaunay_mesh_2");
+	//PROFILE_BEGIN(cgal_refine_triangulation, "CGAL::refine_Delaunay_mesh_2");
 	CGAL::refine_Delaunay_mesh_2(cdt, Criteria(0.125, 0.25));
-	PROFILE_END(cgal_refine_triangulation);
+	//PROFILE_END(cgal_refine_triangulation);
 
 	// Iterate over the mesh triangles and collect the triangles belonging to the domain.
 	typedef std::map<CDT::Vertex_handle, std::size_t/*vertex index*/> mesh_map_type;

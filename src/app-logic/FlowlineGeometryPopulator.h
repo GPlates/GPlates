@@ -51,7 +51,7 @@ namespace GPlatesAppLogic
 	/**
 	 * Reconstructs flowline features.
 	 *
-	 * Calculates flowlines from the flowline feature's seed points, and creates ReconstructedFlowline's which
+	 * Calculates flowlines from the flowline feature's seed points, and creates ReconstructedFlowlines which
 	 * are added to the reconstruction geometry collection. 
 	 */
 	class FlowlineGeometryPopulator:

@@ -57,7 +57,6 @@ namespace GPlatesQtWidgets
 		/**
 		 * Constructs a @a PythonExecutionMonitorWidget with a non-NULL @a parent_.
 		 */
-		explicit
 		PythonExecutionMonitorWidget(
 				GPlatesApi::PythonExecutionThread *python_execution_thread,
 				QWidget *parent_);

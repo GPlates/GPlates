@@ -121,8 +121,8 @@ namespace
 
 GPlatesQtWidgets::ShapefileAttributeWidget::ShapefileAttributeWidget(
 		QWidget *parent_,
-		QString &filename,
-		QStringList &field_names,
+		const QString &filename,
+		const QStringList &field_names,
 		QMap<QString,QString> &model_to_attribute_map,
 		bool remapping
 ):

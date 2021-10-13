@@ -27,7 +27,7 @@
 #define GPLATES_PRESENTATION_TOPOLOGYBOUNDARYVISUALLAYERPARAMS_H
 
 #include "VisualLayerParams.h"
-
+#include "gui/DrawStyleManager.h"
 
 namespace GPlatesPresentation
 {
@@ -82,7 +82,9 @@ namespace GPlatesPresentation
 				GPlatesAppLogic::LayerTaskParams &layer_task_params) :
 			VisualLayerParams(layer_task_params),
 			d_fill_polygons(false)
-		{  }
+		{ 
+			d_style = GPlatesGui::DrawStyleManager::instance()->default_style();
+		}
 
 	private:
 

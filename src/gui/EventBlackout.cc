@@ -46,7 +46,9 @@ namespace
 		QEvent::ShowToParent,
 		QEvent::Timer,
 		QEvent::UpdateRequest,
-		QEvent::ZOrderChange
+		QEvent::ZOrderChange,
+		QEvent::ActionAdded,
+		QEvent::ActionChanged
 	};
 
 	std::size_t NUM_PERMITTED_EVENTS = sizeof(PERMITTED_EVENTS) / sizeof(QEvent::Type);
@@ -163,6 +165,7 @@ GPlatesGui::EventBlackout::eventFilter(
 	}
 	else
 	{
+		//qDebug() << "Event ignored: " << ev->type();
 		ev->ignore();
 		return true;
 	}

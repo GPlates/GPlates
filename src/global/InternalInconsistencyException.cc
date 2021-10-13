@@ -32,5 +32,5 @@ void
 GPlatesGlobal::InternalInconsistencyException::write_message(
 		std::ostream &os) const
 {
-	os << m_file << ":" << m_line << ": " << m_msg;
+	os << m_msg;
 }

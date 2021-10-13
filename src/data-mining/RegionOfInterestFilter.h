@@ -29,77 +29,118 @@
 #include <QDebug>
 #include <boost/foreach.hpp>
 
-#include "CoRegFilterMapReduceWorkFlow.h"
+#include "CoRegFilter.h"
 #include "IsCloseEnoughChecker.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
-#include "utils/FilterMapOutputHandler.h"
-
 namespace GPlatesDataMining
 {
-	using namespace GPlatesUtils;
-	using namespace GPlatesMaths;
-	
-	typedef FilterInputSequence InputSequence;
-	typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> SeedType;
-
-	/*	
-	*	TODO:
-	*	Comments....
-	*/
-	class RegionOfInterestFilter
+	class RegionOfInterestFilter : public CoRegFilter
 	{
 	public:
-		explicit
 		RegionOfInterestFilter(
-				const SeedType& seed, 
+				const CoRegFilter::RFGVector& seed, 
 				const double range):
 			d_seed(seed),
 			d_range(range)
 			{	}
 
-
-		/*
-		* TODO: comments....
-		*/
-		template< class OutputType, class OutputMode>
-		inline
-		int
-		operator()(
-				InputSequence::const_iterator input_begin,
-				InputSequence::const_iterator input_end,
-				FilterMapOutputHandler<OutputType, OutputMode> &handler) 
+		class Config : public CoRegFilter::Config
 		{
-			int count = 0;
+		public:
+			explicit
+			Config(double val) :
+				d_range(val)
+			{	}
+
+			CoRegFilter*
+			create_filter(const CoRegFilter::RFGVector& seed)
+			{
+				return new RegionOfInterestFilter(seed, d_range);
+			}
+
+			bool
+			is_same_type(const CoRegFilter::Config* other)
+			{
+				return dynamic_cast<const RegionOfInterestFilter::Config*>(other);
+			}
+
+			const QString
+			to_string()
+			{
+				return QString("Region of Interest(%1)").arg(d_range);
+			}
+
+			bool
+			operator< (const CoRegFilter::Config& other)
+			{
+				if(!is_same_type(&other))
+					throw GPlatesGlobal::LogException(GPLATES_EXCEPTION_SOURCE,"Try to compare different filter types.");
+				return d_range < dynamic_cast<const RegionOfInterestFilter::Config&>(other).range();
+			}
+
+			bool
+			operator==(const CoRegFilter::Config& other) 
+			{
+				if(!is_same_type(&other))
+					throw GPlatesGlobal::LogException(GPLATES_EXCEPTION_SOURCE,"Try to compare different filter types.");
+				return GPlatesMaths::are_slightly_more_strictly_equal(d_range,dynamic_cast<const RegionOfInterestFilter::Config&>(other).range());
+			}
+
+			const QString
+			filter_name()
+			{
+				return "Region of Interest";
+			}
+			
+			~Config(){ }
+
+		private:
+			double
+			range() const
+			{
+				return d_range;
+			}
+
+			double d_range;
+		};
+
+		void
+		process(
+				CoRegFilter::RFGVector::const_iterator input_begin,
+				CoRegFilter::RFGVector::const_iterator input_end,
+				CoRegFilter::RFGVector& output) 
+		{
 			for(; input_begin != input_end; input_begin++)
 			{
 				if(is_in_region(*input_begin))
 				{
-					handler.insert(*input_begin);
-					count++;
+					output.push_back(*input_begin);
 				}
 			}
-			return count;
-
+			return;
 		}
 
+		~RegionOfInterestFilter(){ }
+
 	protected:
-		inline
 		bool
-		is_in_region(
-				InputSequence::value_type geo)
+		is_in_region(CoRegFilter::RFGVector::value_type geo)
 		{
-			BOOST_FOREACH(const SeedType::value_type& seed_geo, d_seed )
+			BOOST_FOREACH(const CoRegFilter::RFGVector::value_type& seed_geo, d_seed )
 			{
-				if(is_close_enough(*seed_geo->reconstructed_geometry(), *geo->reconstructed_geometry(), d_range))
+				if(is_close_enough(
+						*seed_geo->reconstructed_geometry(), 
+						*geo->reconstructed_geometry(), 
+						d_range))
 				{
 					return true;
 				}
 			}
 			return false;
 		}
-		const SeedType& d_seed;
+		const CoRegFilter::RFGVector& d_seed;
 		double d_range;
 	};
 }

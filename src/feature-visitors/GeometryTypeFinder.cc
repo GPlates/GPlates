@@ -113,6 +113,20 @@ GPlatesFeatureVisitors::GeometryTypeFinder::visit_polygon_on_sphere(
 	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
 	++d_num_polygon_geometries_found;
+
+		
+	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_on_sphere->vertex_begin();
+	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_on_sphere->vertex_end();
+
+	// Output all the points of the polygon.
+	for ( ; iter != end; ++iter) 
+	{
+		d_points_list.push_back( *iter );
+	}
+
+	// Finally, to produce a closed polygon ring, we should return to the initial point
+	// (Assuming that option was specified, which it is by default).
+	d_points_list.push_back ( *polygon_on_sphere->vertex_begin() );
 }
 
 void
@@ -164,29 +178,29 @@ GPlatesFeatureVisitors::find_first_geometry_property(
 {
 		if(!feature_ref.is_valid())
 			return boost::none;
-
-		GPlatesModel::FeatureHandle::iterator iter =
-			feature_ref->begin();
-		GPlatesModel::FeatureHandle::iterator iter_end =
-			feature_ref->end();
-
-		GPlatesFeatureVisitors::GeometryFinder geometry_finder;
-		for(; iter != iter_end; iter++)
-		{
-#if 0
-			if(!iter.is_valid())
-			{
-				continue;
-			}
-#endif
-			(*iter)->accept_visitor(geometry_finder);
-			if (geometry_finder.has_found_geometries()) 
-			{
-				return iter;					
-			}
-		}
-		return boost::none;
+		else
+			return find_first_geometry_property(*feature_ref);
 	
+}
+
+boost::optional<GPlatesModel::FeatureHandle::iterator>
+GPlatesFeatureVisitors::find_first_geometry_property(
+			GPlatesModel::FeatureHandle& feature_ref)
+{
+	GPlatesModel::FeatureHandle::iterator 
+			iter	 = feature_ref.begin(), 
+			iter_end = feature_ref.end();
+
+	GPlatesFeatureVisitors::GeometryFinder geometry_finder;
+	for(; iter != iter_end; iter++)
+	{
+		(*iter)->accept_visitor(geometry_finder);
+		if (geometry_finder.has_found_geometries()) 
+		{
+			return iter;					
+		}
+	}
+	return boost::none;
 }
 
 /**
@@ -217,3 +231,5 @@ GPlatesFeatureVisitors::is_geometry_property(
 {
 	return !is_not_geometry_property(top_level_prop_ptr);
 }
+
+

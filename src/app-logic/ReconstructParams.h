@@ -55,7 +55,6 @@ namespace GPlatesAppLogic
 			DELTA_T_AROUND_AGE /**< vgps are displayed if the reconstruction time is within a time window around the VGP's age */
 		};
 
-		explicit
 		ReconstructParams();
 
 

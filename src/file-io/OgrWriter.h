@@ -45,9 +45,13 @@
 #include <ogrsf_frmts.h>
 #endif  // HAVE_CONFIG_H
 
+#include <vector>
 #include <QDebug>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
+#include "maths/DateLineWrapper.h"
+#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -69,12 +73,14 @@ namespace GPlatesFileIO
 		 * @a filename: target filename for output.
 		 * @a multiple_layers: whether or not the feature of feature collections to be written contain
 		 * multiple geometry-types. 
+		 * @a wrap_to_dateline whether to wrap/clip polyline/polygon geometries to the dateline (for ArcGIS viewing).
 		 *
 		 * Multiple geometry types will be exported to a subfolder of name @a filename (less the file extension).
 		 */
 		OgrWriter(
 			QString filename,
-			bool multiple_layers);
+			bool multiple_layers,
+			bool wrap_to_dateline = false);
 
 		~OgrWriter();
 
@@ -113,7 +119,6 @@ namespace GPlatesFileIO
 			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary);				
 
 	private:
-
 		/**
 		 * The OGR driver.  
 		 *
@@ -143,6 +148,11 @@ namespace GPlatesFileIO
 		 */
 		bool d_multiple_geometry_types;
 
+		/**
+		 * True if polyline/polygon geometries should be wrapped (clipped) to the dateline (for ArcGIS viewing).
+		 */
+		bool d_wrap_to_dateline;
+
 		OGRDataSource *d_ogr_data_source_ptr;
 
 		// Data source for each of the geometry types. 
@@ -159,6 +169,27 @@ namespace GPlatesFileIO
 		boost::optional<OGRLayer*> d_ogr_polyline_layer;
 		boost::optional<OGRLayer*> d_ogr_polygon_layer;
 
+		/**
+		 * Used to wrap/clip polyline/polygon geometries to the dateline (if enabled).
+		 */
+		GPlatesMaths::DateLineWrapper::non_null_ptr_type d_dateline_wrapper;
+
+
+		/**
+		 * Common method to write a single polyline or multiple polylines.
+		 */
+		void
+		write_single_or_multi_polyline_feature(
+			const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polylines, 
+			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary);
+
+		/**
+		 * Common method to write a single polygon or multiple polygons.
+		 */
+		void
+		write_single_or_multi_polygon_feature(
+			const std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &polygons, 
+			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary);
 	};
 
 }

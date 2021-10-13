@@ -35,6 +35,8 @@
 #include "TemplateTypeParameterType.h"
 #include "model/FeatureVisitor.h"
 
+#include "utils/QtStreamable.h"
+
 
 namespace GPlatesPropertyValues
 {
@@ -43,7 +45,9 @@ namespace GPlatesPropertyValues
 	// TemplateTypeParameterType (which wraps an StringSet::SharedIterator instance which
 	// points to a pre-allocated node in a StringSet), none of the construction,
 	// copy-construction or copy-assignment operations for this class should throw.
-	class GpmlTimeWindow
+	class GpmlTimeWindow :
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<GpmlTimeWindow>
 	{
 
 	public:

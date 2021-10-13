@@ -29,6 +29,9 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
+
+#include "maths/SmallCircleArc.h"
+
 #include "gui/ColourProxy.h"
 
 namespace GPlatesViewOperations
@@ -38,14 +41,10 @@ namespace GPlatesViewOperations
 	{
 	public:
 		RenderedSmallCircleArc(
-				const GPlatesMaths::PointOnSphere &centre,
-				const GPlatesMaths::PointOnSphere &start_point,
-				const GPlatesMaths::Real &arc_length_in_radians,
+				const GPlatesMaths::SmallCircleArc &small_circle_arc,
 				const GPlatesGui::ColourProxy &colour,
 				float line_width_hint) :
-		d_centre(centre),
-		d_start_point(start_point),
-		d_arc_length_in_radians(arc_length_in_radians),
+		d_small_circle_arc(small_circle_arc),
 		d_colour(colour),
 		d_line_width_hint(line_width_hint)
 		{  }
@@ -68,22 +67,10 @@ namespace GPlatesViewOperations
 			return NULL;
 		}
 
-		const GPlatesMaths::PointOnSphere &
-		get_centre() const
+		const GPlatesMaths::SmallCircleArc &
+		get_small_circle_arc() const
 		{
-			return d_centre;
-		}
-		
-		const GPlatesMaths::PointOnSphere &
-		get_start_point() const
-		{
-			return d_start_point;
-		}		
-		
-		const GPlatesMaths::Real &
-		get_arc_length_in_radians() const
-		{
-			return d_arc_length_in_radians;
+			return d_small_circle_arc;
 		}			
 
 		const GPlatesGui::ColourProxy &
@@ -99,14 +86,8 @@ namespace GPlatesViewOperations
 		}
 
 	private:
-		//! The centre of the small circle
-		GPlatesMaths::PointOnSphere d_centre;
-		
-		//! A point on the small circle arc. The arc will be drawn anti-clockwise from @a d_start_point.
-		GPlatesMaths::PointOnSphere d_start_point;
-		
-		//! Length of arc in radians.
-		GPlatesMaths::Real d_arc_length_in_radians;
+		//! The small circle arc.
+		GPlatesMaths::SmallCircleArc d_small_circle_arc;
 		
 		GPlatesGui::ColourProxy d_colour;
 		float d_line_width_hint;

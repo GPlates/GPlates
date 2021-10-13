@@ -20,8 +20,6 @@ set(srcs
     AssignPlateIds.h
     CgalUtils.cc
     CgalUtils.h
-    ClassifyFeatureCollection.cc
-    ClassifyFeatureCollection.h
     CoRegistrationData.cc
     CoRegistrationData.h
     CoRegistrationLayerProxy.cc
@@ -44,6 +42,8 @@ set(srcs
     GeometryCookieCutter.h
     GeometryUtils.cc
     GeometryUtils.h
+    GPlatesQtMsgHandler.cc
+    GPlatesQtMsgHandler.h
     Layer.cc
     Layer.h
     LayerInputChannelType.h
@@ -57,6 +57,10 @@ set(srcs
     LayerTaskRegistry.cc
     LayerTaskRegistry.h
     LayerTaskType.h
+    LogModel.cc
+    LogModel.h
+    LogToModelHandler.cc
+    LogToModelHandler.h
     MeshGenerator.cc
     MeshGenerator.h
     MotionPathGeometryPopulator.cc
@@ -65,6 +69,8 @@ set(srcs
     MotionPathUtils.h
     MultiPointVectorField.cc
     MultiPointVectorField.h
+    PalaeomagUtils.cc
+    PalaeomagUtils.h
     PartitionFeatureTask.cc
     PartitionFeatureTask.h
     PartitionFeatureUtils.cc
@@ -87,6 +93,8 @@ set(srcs
     ReconstructedFlowline.h
     ReconstructedMotionPath.cc
     ReconstructedMotionPath.h
+    ReconstructedSmallCircle.cc
+    ReconstructedSmallCircle.h
     ReconstructedVirtualGeomagneticPole.cc
     ReconstructedVirtualGeomagneticPole.h
     ReconstructGraph.cc
@@ -135,6 +143,8 @@ set(srcs
     ReconstructMethodMotionPath.h
     ReconstructMethodRegistry.cc
     ReconstructMethodRegistry.h
+    ReconstructMethodSmallCircle.cc
+    ReconstructMethodSmallCircle.h
     ReconstructMethodType.cc
     ReconstructMethodType.h
     ReconstructMethodVirtualGeomagneticPole.cc
@@ -147,6 +157,7 @@ set(srcs
     ResolvedRaster.h
     ResolvedTopologicalBoundary.cc
     ResolvedTopologicalBoundary.h
+    ResolvedTopologicalBoundarySubSegment.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
     Serialization.cc
@@ -155,6 +166,8 @@ set(srcs
     Session.h
     SessionManagement.cc
     SessionManagement.h
+    SmallCircleGeometryPopulator.cc
+    SmallCircleGeometryPopulator.h
     TopologyBoundaryIntersections.cc
     TopologyBoundaryIntersections.h
     TopologyBoundaryResolver.cc
@@ -173,6 +186,8 @@ set(srcs
     TopologyNetworkResolverLayerTask.h
     TopologyUtils.cc
     TopologyUtils.h
+    TRSUtils.cc
+    TRSUtils.h
     UserPreferences.cc
     UserPreferences.h
     VelocityFieldCalculatorLayerProxy.cc

@@ -42,6 +42,7 @@
 
 #include "model/Model.h"
 #include "model/PropertyName.h"
+#include "model/FeatureHandle.h"
 #include "model/FeatureType.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
@@ -232,6 +233,7 @@ GPlatesQtWidgets::CreateVGPDialog::CreateVGPDialog(
 	d_application_state_ptr(&view_state_.get_application_state()),
 	d_choose_feature_collection_widget(
 			new ChooseFeatureCollectionWidget(
+				view_state_.get_application_state().get_reconstruct_method_registry(),
 				d_file_state,
 				d_file_io,
 				this))
@@ -263,6 +265,9 @@ GPlatesQtWidgets::CreateVGPDialog::setup_connections()
 	// Pushing Enter or double-clicking should cause the create button to focus.
 	QObject::connect(d_choose_feature_collection_widget, SIGNAL(item_activated()),
 		button_create, SLOT(setFocus()));
+
+	QObject::connect(this,SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
+			d_application_state_ptr,SLOT(reconstruct()));
 }
 
 void
@@ -339,21 +344,13 @@ GPlatesQtWidgets::CreateVGPDialog::handle_create()
 		// We want any observers to see the changes before we emit signals because we don't
 		// know whose listening on those signals and they may be expecting model observers to
 		// be up-to-date with the modified model.
-		// Also this should be done before getting the application state to reconstruct.
+		// Also this should be done before getting the application state reconstructs which
+		// happens when the guard is released (because we modified the model).
 		model_notification_guard.release_guard();
 
-		emit feature_created(feature);
+		// To trigger a reconstruction.
+		emit feature_created();
 	
-
-		// If we've created a new feature collection, we need to tell the ViewportWindow's flowlines
-		// class to update its feature collections. Other app-logic code may also require this. 
-		// FIXME: the new fileIO/Workflow code may not need the same information....
-		if (collection_file_iter.second)
-		{
-			emit feature_collection_created(collection, collection_file_iter.first);
-		}
-
-		d_application_state_ptr->reconstruct();
 		accept();
 	}
 	catch (const ChooseFeatureCollectionWidget::NoFeatureCollectionSelectedException &)

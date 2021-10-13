@@ -34,8 +34,10 @@
 #include "UnitQuaternion3D.h"
 #include "Rotation.h"
 #include "types.h"  /* real_t */
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/QtStreamable.h"
 
 
 namespace GPlatesMaths
@@ -71,7 +73,9 @@ namespace GPlatesMaths
 	 * angle represents an anti-clockwise rotation around the rotation vector; a negative angle
 	 * corresponds to a clockwise rotation.
 	 */
-	class FiniteRotation
+	class FiniteRotation :
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<FiniteRotation>
 	{
 
 	public:
@@ -263,8 +267,8 @@ namespace GPlatesMaths
 	 */
 	const PointOnSphere
 	operator*(
-	 const FiniteRotation &r,
-	 const PointOnSphere &p);
+			const FiniteRotation &r,
+			const PointOnSphere &p);
 
 
 	/**
@@ -272,12 +276,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler>
+	const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
-					GPlatesUtils::NullIntrusivePointerHandler> p);
+			const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p);
 
 
 	/**
@@ -285,12 +287,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler>
+	const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
-					GPlatesUtils::NullIntrusivePointerHandler> mp);
+			const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere> &mp);
 
 
 	/**
@@ -298,12 +298,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler>
+	const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
-					GPlatesUtils::NullIntrusivePointerHandler> p);
+			const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> &p);
 
 
 	/**
@@ -311,12 +309,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler>
+	const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
-					GPlatesUtils::NullIntrusivePointerHandler> p);
+			const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> &p);
 
 
 	/**
@@ -324,12 +320,10 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler>
+	const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere,
-					GPlatesUtils::NullIntrusivePointerHandler> g);
+			const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere> &g);
 
 
 	/**
@@ -339,8 +333,8 @@ namespace GPlatesMaths
 	 */
 	const GreatCircleArc
 	operator*(
-	 const FiniteRotation &r,
-	 const GreatCircleArc &g);
+			const FiniteRotation &r,
+			const GreatCircleArc &g);
 
 
 	/**
@@ -350,8 +344,8 @@ namespace GPlatesMaths
 	 */
 	const GreatCircle
 	operator*(
-	 const FiniteRotation &r,
-	 const GreatCircle &g);
+			const FiniteRotation &r,
+			const GreatCircle &g);
 
 
 	/**
@@ -361,8 +355,8 @@ namespace GPlatesMaths
 	 */
 	const SmallCircle
 	operator*(
-	 const FiniteRotation &r,
-	 const SmallCircle &s);
+			const FiniteRotation &r,
+			const SmallCircle &s);
 
 
 	/**
@@ -372,14 +366,14 @@ namespace GPlatesMaths
 	 */
 	const GridOnSphere
 	operator*(
-	 const FiniteRotation &r,
-	 const GridOnSphere &g);
+			const FiniteRotation &r,
+			const GridOnSphere &g);
 
 
 	std::ostream &
 	operator<<(
-	 std::ostream &os,
-	 const FiniteRotation &fr);
+			std::ostream &os,
+			const FiniteRotation &fr);
 
 }
 

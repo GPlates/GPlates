@@ -36,7 +36,7 @@
 #include "utils/DeferredCallEvent.h"
 #include "utils/FunctionTypes.h"
 
-
+#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	/**
@@ -794,5 +794,5 @@ namespace GPlatesApi
 		}
 	}
 }
-
+#endif //GPLATES_NO_PYTHON
 #endif  // GPLATES_API_DEFERREDAPICALLIMPL_H

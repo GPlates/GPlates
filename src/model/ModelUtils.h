@@ -53,6 +53,15 @@ namespace GPlatesModel
 	{
 		// Note: Consider adding functions as member functions in one of the Handle classes instead.
 
+		struct TotalReconstructionPole
+		{
+			double time;
+			double lat_of_euler_pole;
+			double lon_of_euler_pole;
+			double rotation_angle;
+			QString comment;
+		};
+
 		struct TotalReconstructionPoleData
 		{
 			double time;
@@ -120,7 +129,15 @@ namespace GPlatesModel
 		const TopLevelProperty::non_null_ptr_type
 		create_total_reconstruction_pole(
 				const std::vector<TotalReconstructionPoleData> &five_tuples);
-	
+
+		const TopLevelProperty::non_null_ptr_type
+			create_total_reconstruction_pole(
+				const std::vector<TotalReconstructionPole> &five_tuples);
+
+		const PropertyValue::non_null_ptr_type
+			create_irregular_sampling(
+				const std::vector<TotalReconstructionPole> &five_tuples);
+
 		const FeatureHandle::weak_ref
 		create_total_recon_seq(
 				ModelInterface &model,

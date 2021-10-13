@@ -40,6 +40,10 @@ GPlatesQtWidgets::EditTableActionWidget::EditTableActionWidget(
 	QObject::connect(button_insert_below, SIGNAL(clicked()), this, SLOT(insert_row_below()));
 	QObject::connect(button_delete, SIGNAL(clicked()), this, SLOT(delete_row()));
 
+
+	button_insert_above->setAutoDefault(false);
+	button_insert_below->setAutoDefault(false);
+	button_delete->setAutoDefault(false);
 }
 
 

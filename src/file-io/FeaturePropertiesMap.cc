@@ -7,7 +7,7 @@
  *   $Date$
  * 
  * Copyright (C) 2008, 2010 The University of Sydney, Australia
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -452,6 +452,21 @@ namespace
 		return map;
 	}
 
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_ophiolite_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
+
+		map[ PropertyName::create_gpml("position") ] = 
+			GET_PROP_VAL_NAME(create_point);
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("outlineOf") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
+
 
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_aseismic_ridge_properties()
@@ -725,6 +740,9 @@ namespace
 		map[ PropertyName::create_gpml("slabEdgeType") ] = 
 			GET_PROP_VAL_NAME(create_xs_string);
 
+		map[ PropertyName::create_gpml("rheaFault") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
+
 		return map;
 	}
 
@@ -801,6 +819,8 @@ namespace
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_abstract_rock_unit_properties();
 
+		map[ PropertyName::create_gpml("position") ] =
+			GET_PROP_VAL_NAME(create_point);
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] =
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("outlineOf") ] =
@@ -950,6 +970,13 @@ namespace
 		return map;
 	}
 
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_unclassified_topological_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_topological_closed_plate_boundary_properties();
+
+		return map;
+	}
 
 
 	const PropertyCreationUtils::PropertyCreatorMap
@@ -1031,13 +1058,11 @@ namespace
 	get_motion_path_properties()
 	{
 
-		// FIXME: Should this be a reconstructable feature?
 		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();					
 
 		map[ PropertyName::create_gpml("seedPoints") ] = 
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);	
 
-		// FIXME: This should be an array of time instants. 
 		map[ PropertyName::create_gpml("times") ] =
 			GET_PROP_VAL_NAME(create_array);			
 
@@ -1046,6 +1071,39 @@ namespace
 
 		map[ PropertyName::create_gpml("relativePlate") ] =
 			GET_PROP_VAL_NAME(create_plate_id);
+
+		return map;
+	}
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_small_circle_properties()
+	{
+	/* 
+		Some things to consider regarding small-circles-as-features:
+		
+		* small-circles may have been created via centre-plus-multiple-radii; do we store
+		these as separate small circles, or make provision for multiple radii to be stored
+		in a single feature?
+
+		* small-circle centres may have been created via a stage pole; do we store this fact, and
+		any stage-pole ingredients, so that we can re-create the stage-pole centre dynamically for
+		different reconstruction trees?radius
+
+		The simplest answers are "no" to both of the above; so the current implementation (below) stores
+		only a centre and a radius. 
+	*/
+
+		//PropertyCreationUtils::PropertyCreatorMap map = get_abstract_feature_properties();	
+
+		// Should small circles be reconstructable? I'm forcing them to be reconstructable for now
+		// so that they'll get treated along with other reconstructable features.
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();	
+
+		map[ PropertyName::create_gpml("centre") ] =
+			GET_PROP_VAL_NAME(create_point);
+
+		map[ PropertyName::create_gpml("angularRadius") ] =
+			GET_PROP_VAL_NAME(create_measure);
 
 		return map;
 	}
@@ -1097,6 +1155,9 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_topological_slab_boundary_properties();
 	d_map[ FeatureType::create_gpml("TopologicalNetwork") ] =
 		get_topological_network_properties();
+	d_map[ FeatureType::create_gpml("UnclassifiedTopologcialFeature") ] =
+		get_unclassified_topological_properties();
+
 
 	// Reconstruction features.
 	d_map[ FeatureType::create_gpml("TotalReconstructionSequence") ] = 
@@ -1125,12 +1186,27 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_displacement_point_properties();
 	d_map[ FeatureType::create_gpml("PoliticalBoundary")] =
 		get_political_boundary_properties();
-
+	d_map[ FeatureType::create_gpml("SmallCircle")] =
+		get_small_circle_properties();
 
 
 	// Rock units.
 	d_map[ FeatureType::create_gpml("BasicRockUnit") ] =
 		get_basic_rock_unit_properties();
+		
+	d_map[ FeatureType::create_gpml("RockUnit_carbonate") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_siliciclastic") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_evaporite") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_organic") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_chemical") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_plutonic") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_volcanic") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_metamorphic") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("RockUnit_indeterminate_igneous") ] = get_basic_rock_unit_properties();
+
+	d_map[ FeatureType::create_gpml("FossilCollection_small") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("FossilCollection_medium") ] = get_basic_rock_unit_properties();
+	d_map[ FeatureType::create_gpml("FossilCollection_large") ] = get_basic_rock_unit_properties();
 		
 	// Abstract Geological Plane & Contact features.
 	d_map[ FeatureType::create_gpml("GeologicalPlane") ] =
@@ -1219,6 +1295,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_volcano_properties();
 	d_map[ FeatureType::create_gpml("Pluton") ] =
 		get_pluton_properties();
+	d_map[ FeatureType::create_gpml("Ophiolite") ] =
+		get_ophiolite_properties();
 	d_map[ FeatureType::create_gpml("NavdatSampleMafic") ] =
 		get_navdat_sample_properties();
 	d_map[ FeatureType::create_gpml("NavdatSampleIntermediate") ] =

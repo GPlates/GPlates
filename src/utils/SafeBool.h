@@ -86,7 +86,7 @@ namespace GPlatesUtils
 
 	// Disallow operator== on SafeBools.
 	template<class T, class U>
-	void
+	bool
 	operator==(
 			const SafeBool<T> &lhs,
 			const SafeBool<U> &rhs)
@@ -97,7 +97,7 @@ namespace GPlatesUtils
 
 	// Disallow operator!= on SafeBools.
 	template<class T, class U>
-	void
+	bool
 	operator!=(
 			const SafeBool<T> &lhs,
 			const SafeBool<U> &rhs)

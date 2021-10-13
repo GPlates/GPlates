@@ -25,6 +25,7 @@
 
 #include "ReconstructLayerOptionsWidget.h"
 
+#include "DrawStyleDialog.h"
 #include "LinkWidget.h"
 #include "QtWidgetUtils.h"
 #include "SetVGPVisibilityDialog.h"
@@ -33,8 +34,7 @@
 
 #include "presentation/ReconstructVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
-
-
+#include "utils/ComponentManager.h"
 GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
@@ -43,7 +43,8 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 	LayerOptionsWidget(parent_),
 	d_application_state(application_state),
 	d_viewport_window(viewport_window),
-	d_set_vgp_visibility_dialog(NULL)
+	d_set_vgp_visibility_dialog(NULL),
+	d_draw_style_dialog_ptr(viewport_window->draw_style_dialog())
 {
 	setupUi(this);
 
@@ -57,11 +58,30 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			SIGNAL(link_activated()),
 			this,
 			SLOT(open_vgp_visibility_dialog()));
+	
+	LinkWidget *draw_style_link = new LinkWidget(
+			tr("Draw Style Setting..."), this);
+
+	QtWidgetUtils::add_widget_to_placeholder(
+			draw_style_link,
+			draw_style_placeholder_widget);
+	QObject::connect(
+			draw_style_link,
+			SIGNAL(link_activated()),
+			this,
+			SLOT(open_draw_style_setting_dlg()));
+	
+	fill_polygons->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
 			fill_polygons,
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_fill_polygons_clicked()));
+
+	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+	{
+		draw_style_link->setVisible(false);
+	}
 
 }
 
@@ -128,6 +148,15 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_vgp_visibility_dialog()
 
 
 void
+GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_draw_style_setting_dlg()
+{
+	//qDebug() << "popup draw style dialog...";
+	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
+	d_draw_style_dialog_ptr->reset(d_current_visual_layer);
+}
+
+
+void
 GPlatesQtWidgets::ReconstructLayerOptionsWidget::handle_fill_polygons_clicked()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
@@ -141,3 +170,8 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::handle_fill_polygons_clicked()
 		}
 	}
 }
+
+GPlatesQtWidgets::ReconstructLayerOptionsWidget::~ReconstructLayerOptionsWidget()
+{ }
+
+

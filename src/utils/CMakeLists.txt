@@ -13,28 +13,40 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     AnimationSequenceUtils.cc
     AnimationSequenceUtils.h
+    Base2Utils.cc
+    Base2Utils.h
     CallStackTracker.cc
     CallStackTracker.h
     CommandLineParser.cc
     CommandLineParser.h
+    ComponentManager.h
+    ConfigBundle.cc
+    ConfigBundle.h
+    ConfigBundleUtils.cc
+    ConfigBundleUtils.h
+    ConfigInterface.h
     CopyConst.h
     Counter64.h
     DeferredCallEvent.cc
     DeferredCallEvent.h
-    Filter.h
-    FilterMapOutputHandler.h
-    FilterMapReduceWorkFlow.h
+    Environment.cc
+    Environment.h
+    ExternalSyncController.cc
+    ExternalSyncController.h
+    FeatureUtils.cc
+    FeatureUtils.h
     FunctionTypes.h
-    GenericFilter.h
-    GenericMapper.h
-    GenericReducer.h
     GeometryCreationUtils.h
+    GetPropertyAsPythonObjVisitor.cc
+    GetPropertyAsPythonObjVisitor.h
     IdStringSet.cc
     IdStringSet.h
     IntrusiveSinglyLinkedList.h
     KeyValueCache.h
     LatLonAreaSampling.h
     Mapper.h
+    NetworkUtils.cc
+    NetworkUtils.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
@@ -46,6 +58,7 @@ set(srcs
     Profile.cc
     Profile.h
     QtFormattingUtils.h
+    QtStreamable.h
     Reducer.h
     ReferenceCount.h
     SafeBool.h

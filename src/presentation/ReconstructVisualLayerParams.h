@@ -26,8 +26,14 @@
 #ifndef GPLATES_PRESENTATION_RECONSTRUCTVISUALLAYERPARAMS_H
 #define GPLATES_PRESENTATION_RECONSTRUCTVISUALLAYERPARAMS_H
 
+#include <boost/shared_ptr.hpp>
+
 #include "VisualLayerParams.h"
 
+namespace GPlatesGui
+{
+	class StyleAdapter;
+}
 
 namespace GPlatesPresentation
 {

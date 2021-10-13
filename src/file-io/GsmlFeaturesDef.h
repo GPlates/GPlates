@@ -37,7 +37,7 @@ namespace GPlatesFileIO
 {
 	/*
 	* Add new feature type:
-	* 1. Add an entry in AllFeatures.
+	* 1. Add an entry in AllFeatureTypes.
 	* 2. Determine the properties contained in the new feature and initialize a properties array.
 	* 3. If you want to use a new properties, check GsmlPropertyDef.h.
 	*/
@@ -48,23 +48,57 @@ namespace GPlatesFileIO
 		unsigned property_num;
 	};
 
-	//define the properties are contained in feature.
+	//
+	//define the properties that are contained in feature.
+	//
 	static const PropertyInfo* MappedFeatureProperties[] = 
 	{
 		&GeometryProperty,
 		&ObservationMethodProperty,
 		&GmlName,
-		&GmlDesc
+		&GmlDesc,
+		&GmlValidTime
 	};
+
 	static const PropertyInfo* GeologicUnitProperties[] = 
 	{	
 		&OccurrenceGeometryProperty,
 		&GmlName,
-		&GmlDesc
+		&GmlDesc,
+		&GmlValidTime
 	};
 
-	//define all features.
-	static const FeatureInfo AllFeatures[] = 
+	static const PropertyInfo* UnclassifiedFeatureProperties[] = 
+	{
+		&GeometryProperty, 
+		&GmlName, 
+		&GmlDesc, 
+		&GmlValidTime
+	};
+
+	static const PropertyInfo* RockUnitFeatureProperties[] = 
+	{
+		&GeometryProperty, 
+		&GmlName, 
+		&GmlDesc, 
+		&GmlValidTime,
+		&GpmlRockType,
+		&GpmlRockMaxThick,
+		&GpmlRockMinThick,
+	};
+
+	static const PropertyInfo* FossilCollectionFeatureProperties[] = 
+	{
+		&GeometryProperty, 
+		&GmlName, 
+		&GmlDesc, 
+		&GmlValidTime,
+		&GpmlFossilDiversity,
+	};
+
+
+	// define all features.
+	static const FeatureInfo AllFeatureTypes[] = 
 	{
 		{
 			"MappedFeature",
@@ -75,10 +109,25 @@ namespace GPlatesFileIO
 			"GeologicUnit",
 			GeologicUnitProperties,
 			sizeof(GeologicUnitProperties)/sizeof(PropertyInfo*)
+		},
+		{
+			"UnclassifiedFeature",
+			UnclassifiedFeatureProperties,
+			sizeof(UnclassifiedFeatureProperties)/sizeof(PropertyInfo*)
+		},
+		{
+			"RockUnit", // prefix for features like RockUnit_volcanic
+			RockUnitFeatureProperties,
+			sizeof(RockUnitFeatureProperties)/sizeof(PropertyInfo*)
+		},
+		{
+			"FossilCollection", // prefix for features like FossilCollection_large
+			FossilCollectionFeatureProperties,
+			sizeof(FossilCollectionFeatureProperties)/sizeof(PropertyInfo*)
 		}
+
 	};	
 }
 
 #endif  // GPLATES_FILEIO_GSMLFEATURESDEF_H
-
 

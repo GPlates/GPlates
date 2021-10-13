@@ -25,6 +25,8 @@ set(srcs
     CubeQuadTreeLocation.h
     CubeQuadTreePartition.h
     CubeQuadTreePartitionUtils.h
+    DateLineWrapper.cc
+    DateLineWrapper.h
     EllipseGenerator.cc
     EllipseGenerator.h
     FiniteRotation.cc
@@ -96,10 +98,13 @@ set(srcs
     Rotation.h
     SmallCircle.cc
     SmallCircle.h
+    SmallCircleArc.cc
+    SmallCircleArc.h
     SmallCircleBounds.cc
     SmallCircleBounds.h
     SmallCircleCoverageMesh.cc
     SmallCircleCoverageMesh.h
+    SmallCircleProximityHitDetail.h
     SphereSettings.h
     SphericalArea.cc
     SphericalArea.h

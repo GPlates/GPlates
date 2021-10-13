@@ -90,6 +90,8 @@ set(srcs
     GpmlTopologicalInterior.h
     GpmlTopologicalIntersection.cc
     GpmlTopologicalIntersection.h
+    GpmlTopologicalLine.cc
+    GpmlTopologicalLine.h
     GpmlTopologicalLineSection.cc
     GpmlTopologicalLineSection.h
     GpmlTopologicalPoint.cc

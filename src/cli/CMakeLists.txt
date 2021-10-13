@@ -24,6 +24,8 @@ set(srcs
     CliInvalidOptionValue.h
     CliReconstructCommand.cc
     CliReconstructCommand.h
+    CliRelativeTotalRotation.cc
+    CliRelativeTotalRotation.h
     CliRequiredOptionNotPresent.h
 )
 

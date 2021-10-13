@@ -31,6 +31,8 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
+
+#include "maths/PolygonOnSphere.h"
 	
 #include "model/FeatureVisitor.h"
 
@@ -38,10 +40,12 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedFlowline.h"
 #include "ReconstructedMotionPath.h"
+#include "ReconstructedSmallCircle.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
 #include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalBoundarySubSegment.h"
 #include "ResolvedTopologicalNetwork.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -173,6 +177,31 @@ namespace GPlatesAppLogic
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant>
 		get_time_of_formation(
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
+
+
+		/**
+		 * Returns the boundary subsegment sequence for the specified resolved topological geometry.
+		 *
+		 * @a reconstruction_geom_ptr should be either @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
+		 *
+		 * Returns boost::none if the specified reconstruction geometry is not a resolved topological geometry.
+		 */
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<const sub_segment_seq_type &>
+		get_resolved_topological_boundary_sub_segment_sequence(
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
+
+		/**
+		 * Returns the boundary polygon of the specified resolved topological geometry.
+		 *
+		 * @a reconstruction_geom_ptr should be either @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
+		 *
+		 * Returns boost::none if the specified reconstruction geometry is not a resolved topological geometry.
+		 */
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+		get_resolved_topological_boundary_polygon(
 				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
 
@@ -511,6 +540,14 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+			{
+				d_feature_ref = rsc->get_feature_ref();
+			}
+
+			virtual
+			void
+			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
 			{
 				d_feature_ref = rvgp->get_feature_ref();
@@ -603,6 +640,14 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
 			{
 				d_property = rmp->property();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+			{
+				d_property = rsc->property();
 			}
 
 			virtual
@@ -725,6 +770,14 @@ namespace GPlatesAppLogic
 				d_plate_id = rmp->plate_id();
 			}
 
+                       virtual
+                        void
+                        visit(
+                                const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+                        {
+                                d_plate_id = rsc->plate_id();
+                        }
+
 		private:
 			boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
 		};
@@ -826,6 +879,148 @@ namespace GPlatesAppLogic
 
 			return get_time_of_formation_visitor.get_time_of_formation();
 		}
+
+
+		class GetResolvedTopologicalBoundarySubSegmentSequence :
+				public ConstReconstructionGeometryVisitor
+		{
+		public:
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
+			boost::optional<const sub_segment_seq_type &>
+			get_sub_segment_sequence() const
+			{
+				return d_sub_segment_sequence;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+			{
+				d_sub_segment_sequence = rtb->get_sub_segment_sequence();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+			{
+				d_sub_segment_sequence = rtn->get_boundary_sub_segment_sequence();
+			}
+
+		private:
+			boost::optional<const sub_segment_seq_type &> d_sub_segment_sequence;
+		};
+
+
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<const sub_segment_seq_type &>
+		get_resolved_topological_boundary_sub_segment_sequence(
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
+		{
+			GetResolvedTopologicalBoundarySubSegmentSequence visitor;
+			reconstruction_geom_ptr->accept_visitor(visitor);
+
+			return visitor.get_sub_segment_sequence();
+		}
+
+
+		class GetResolvedTopologicalBoundaryPolygon :
+				public ConstReconstructionGeometryVisitor
+		{
+		public:
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+			get_boundary_polygon() const
+			{
+				return d_boundary_polygon;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+			{
+				d_boundary_polygon = rtb->resolved_topology_geometry();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+			{
+				d_boundary_polygon = rtn->boundary_polygon();
+			}
+
+		private:
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_boundary_polygon;
+		};
+
+
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+		get_resolved_topological_boundary_polygon(
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
+		{
+			GetResolvedTopologicalBoundaryPolygon visitor;
+			reconstruction_geom_ptr->accept_visitor(visitor);
+
+			return visitor.get_boundary_polygon();
+		}
+
+		/**
+		 * Determines if there are any small circle features in the collection.
+		 *
+		 * Note: Small Circles are currently not reconstructable (although they may be 
+		 * in the future). 
+		 */
+		class DetectSmallCircleFeatures:
+			public GPlatesModel::ConstFeatureVisitor
+		{
+		public:
+			DetectSmallCircleFeatures() :
+				d_found_small_circle_features(false)
+			{  }
+
+
+			bool
+			has_small_circle_features() const
+			{
+				return d_found_small_circle_features;
+			}
+
+
+			virtual
+			void
+			visit_feature_handle(
+					const GPlatesModel::FeatureHandle &feature_handle)
+			{
+				if (d_found_small_circle_features)
+				{
+					// We've already found a small circle feature so just return.
+					return;
+				}
+
+				static const GPlatesModel::FeatureType small_circle_feature_type = 
+					GPlatesModel::FeatureType::create_gpml("SmallCircle");
+
+				if (feature_handle.feature_type() == small_circle_feature_type)
+				{
+					d_found_small_circle_features = true;
+				}
+
+				// NOTE: We don't actually want to visit the feature's properties
+				// so we're not calling 'visit_feature_properties()'.
+			}
+
+		private:
+			bool d_found_small_circle_features;
+		};
+
 	}
 }
 

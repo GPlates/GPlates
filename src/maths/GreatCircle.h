@@ -68,19 +68,21 @@ namespace GPlatesMaths
 			/**
 			 * The unit vector indicating the direction of the axis
 			 * of this great circle.
-			 * FIXME: This should return a reference to a const.
 			 * FIXME: s/axisvector/axis/
 			 */
-			UnitVector3D
-			axis_vector() const { return d_axis; }
+			const UnitVector3D &
+			axis_vector() const
+			{
+				return d_axis;
+			}
 
 
 			/**
 			 * FIXME: Remove this.
 			 */
-			UnitVector3D
-			normal() const {
-				
+			const UnitVector3D &
+			normal() const
+			{
 				return axis_vector();
 			}
 
@@ -135,6 +137,25 @@ namespace GPlatesMaths
 		UnitVector3D v = -c.normal ();
 		return GreatCircle (v);
 	}
+
+
+	/**
+	 * Uniformly subdivides a great circle into smaller great circle arcs and appends the
+	 * sequence of subdivided points to @a tessellation_points.
+	 *
+	 * NOTE: The end point is not added to @a tessellation_points. The end point is the same as the
+	 * start point so you can close off the loop by copying the first point.
+	 *
+	 * The subdivided arcs have a maximum angular extent of @a max_segment_angular_extent radians.
+	 * Each arc will extend the same angle (*uniform* subdivision) which will be less than or equal to
+	 * @a max_segment_angular_extent radians.
+	 */
+	void
+	tessellate(
+			std::vector<PointOnSphere> &tessellation_points,
+			const GreatCircle &great_circle,
+			const real_t &max_segment_angular_extent);
+
 
 	inline bool
 	are_equivalent (const GreatCircle &a, const GreatCircle &b)

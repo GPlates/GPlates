@@ -24,7 +24,7 @@
  */
  
 #include "ReconstructVisualLayerParams.h"
-
+#include "gui/DrawStyleManager.h"
 
 GPlatesPresentation::ReconstructVisualLayerParams::ReconstructVisualLayerParams(
 		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
@@ -32,6 +32,7 @@ GPlatesPresentation::ReconstructVisualLayerParams::ReconstructVisualLayerParams(
 	d_vgp_draw_circular_error(true),
 	d_fill_polygons(false)
 {
+	d_style = GPlatesGui::DrawStyleManager::instance()->default_style();
 }
 
 

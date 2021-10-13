@@ -65,10 +65,7 @@ namespace GPlatesDataMining
 
 		void visit_gpml_plate_id(gpml_plate_id_type &gpml_plate_id);
 
-		void visit_gpml_constant_value(gpml_constant_value_type &gpml_constant_value)
-		{
-			gpml_constant_value.value()->accept_visitor(*this);
-		}
+		void visit_gpml_constant_value(gpml_constant_value_type &gpml_constant_value);
 
 		void visit_gpml_feature_reference(gpml_feature_reference_type &gpml_feature_reference){}
 

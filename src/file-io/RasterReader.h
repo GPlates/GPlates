@@ -178,6 +178,15 @@ namespace GPlatesFileIO
 				const QRect &region = QRect(),
 				ReadErrorAccumulation *read_errors = NULL);
 
+
+		/**
+		 * Same interface but for the specified raster band.
+		 */
+		RasterBandReaderHandle
+		create_raster_band_reader_handle(
+				unsigned int band_number);
+
+
 		/**
 		 * Retrieves information about formats supported when reading rasters.
 		 *
@@ -206,30 +215,8 @@ namespace GPlatesFileIO
 				const QString &filename,
 				ReadErrorAccumulation *read_errors);
 
-		/**
-		 * Returns a pointer to a copy of the data contained within the given
-		 * @a region in the given @a band_number.
-		 *
-		 * Ownership of the memory passes to the caller of this function.
-		 *
-		 * @a band_number must be between 1 and @a get_number_of_bands inclusive.
-		 *
-		 * Returns NULL if the band could not be read.
-		 */
-		void *
-		get_data(
-				unsigned int band_number,
-				const QRect &region = QRect(),
-				ReadErrorAccumulation *read_errors = NULL);
-
-		RasterBandReaderHandle
-		create_raster_band_reader_handle(
-				unsigned int band_number);
-
 		boost::scoped_ptr<RasterReaderImpl> d_impl;
 		QString d_filename;
-
-		friend class RasterBandReader;
 	};
 
 
@@ -274,12 +261,23 @@ namespace GPlatesFileIO
 				unsigned int band_number,
 				ReadErrorAccumulation *read_errors) = 0;
 
-		virtual
-		void *
-		get_data(
-				unsigned int band_number,
-				const QRect &region,
-				ReadErrorAccumulation *read_errors) = 0;
+	protected:
+
+		explicit
+		RasterReaderImpl(
+				RasterReader *raster_reader) :
+			d_raster_reader(raster_reader)
+		{  }
+
+		RasterBandReaderHandle
+		create_raster_band_reader_handle(
+				unsigned int band_number)
+		{
+			return d_raster_reader->create_raster_band_reader_handle(band_number);
+		}
+
+	private:
+		RasterReader *d_raster_reader;
 	};
 }
 

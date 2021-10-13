@@ -34,6 +34,9 @@
 #include "maths/Vector3D.h"
 
 
+const GPlatesOpenGL::GLMatrix GPlatesOpenGL::GLMatrix::IDENTITY;
+
+
 GPlatesOpenGL::GLMatrix::GLMatrix(
 		const GPlatesMaths::UnitQuaternion3D &quaternion)
 {

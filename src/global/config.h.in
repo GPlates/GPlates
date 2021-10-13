@@ -138,6 +138,9 @@
 #cmakedefine BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH "${BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH}"
 #cmakedefine BOOST_CSTDINT_HPP_PATH "${BOOST_CSTDINT_HPP_PATH}"
 
+/* Whether GPlates is a public release which should hide debug messages by default */
+#cmakedefine GPLATES_PUBLIC_RELEASE
+
 /* Whether GPlates is not built with Python support */
 #cmakedefine GPLATES_NO_PYTHON
 

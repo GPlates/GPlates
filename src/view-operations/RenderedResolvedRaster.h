@@ -35,6 +35,7 @@
 
 #include "app-logic/ResolvedRaster.h"
 
+#include "gui/Colour.h"
 #include "gui/RasterColourPalette.h"
 
 #include "property-values/Georeferencing.h"
@@ -51,9 +52,11 @@ namespace GPlatesViewOperations
 		explicit
 		RenderedResolvedRaster(
 				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &resolved_raster,
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette) :
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
+				const GPlatesGui::Colour &raster_modulate_colour) :
 			d_resolved_raster(resolved_raster),
-			d_raster_colour_palette(raster_colour_palette)
+			d_raster_colour_palette(raster_colour_palette),
+			d_raster_modulate_colour(raster_modulate_colour)
 		{  }
 
 		virtual
@@ -85,6 +88,12 @@ namespace GPlatesViewOperations
 			return d_raster_colour_palette;
 		}
 
+		const GPlatesGui::Colour &
+		get_raster_modulate_colour() const
+		{
+			return d_raster_modulate_colour;
+		}
+
 		/**
 		 * Returns the reconstruction time at which raster is resolved/reconstructed.
 		 */
@@ -105,6 +114,11 @@ namespace GPlatesViewOperations
 		 * Note that this colour palette is permitted to be invalid, e.g. for RGBA rasters.
 		 */
 		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type d_raster_colour_palette;
+
+		/**
+		 * The modulation colour to multiply the raster with.
+		 */
+		GPlatesGui::Colour d_raster_modulate_colour;
 	};
 }
 

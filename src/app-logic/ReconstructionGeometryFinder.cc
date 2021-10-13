@@ -29,10 +29,12 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedFlowline.h"
 #include "ReconstructedMotionPath.h"
+#include "ReconstructedSmallCircle.h"
+#include "ReconstructedVirtualGeomagneticPole.h"
 #include "Reconstruction.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
-#include "ReconstructedVirtualGeomagneticPole.h"
+
 
 
 namespace
@@ -92,6 +94,13 @@ GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_motion_path(
 	ReconstructedMotionPath &rmp)
 {
 	visit_reconstruction_geometry_derived_type(rmp);
+}
+
+void
+GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_small_circle(
+		GPlatesAppLogic::ReconstructedSmallCircle &rsc)
+{
+	visit_reconstruction_geometry_derived_type(rsc);
 }
 
 void

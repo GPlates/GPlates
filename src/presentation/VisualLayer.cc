@@ -140,7 +140,8 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries(
 			render_params_populator.get_render_params(),
 			boost::none,
             boost::none,
-			feature_type_symbol_map);
+			feature_type_symbol_map,
+			d_visual_layer_params->style_adapter());
 
 	// Visit the layer output in order to render it.
 	// We wrap the ReconstructionGeometryRenderer with a LayerOutputRenderer.

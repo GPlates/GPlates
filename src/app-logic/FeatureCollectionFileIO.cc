@@ -25,12 +25,10 @@
 
 #include "FeatureCollectionFileIO.h"
 
-#include "app-logic/AppLogicUtils.h"
-
 #include "file-io/ArbitraryXmlReader.h"
 #include "file-io/ErrorOpeningFileForReadingException.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
-#include "file-io/FeatureCollectionReaderWriter.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/GeoscimlProfile.h"
 #include "file-io/ShapefileReader.h"
 
@@ -67,8 +65,10 @@ namespace
 
 GPlatesAppLogic::FeatureCollectionFileIO::FeatureCollectionFileIO(
 		GPlatesModel::ModelInterface &model,
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state) :
 	d_model(model),
+	d_file_format_registry(file_format_registry),
 	d_file_state(file_state)
 {
 }
@@ -78,6 +78,10 @@ void
 GPlatesAppLogic::FeatureCollectionFileIO::load_files(
 		const QStringList &filenames)
 {
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many in case we incrementally modify the features below.
+	// Probably won't be modifying the model so much when loading but we should keep this anyway.
+	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
 
 	// Read all the files before we add them to the application state.
 	file_seq_type loaded_files = read_feature_collections(filenames);
@@ -96,6 +100,11 @@ void
 GPlatesAppLogic::FeatureCollectionFileIO::load_file(
 		const QString &filename)
 {
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many in case we incrementally modify the features below.
+	// Probably won't be modifying the model so much when loading but we should keep this anyway.
+	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+
 	const GPlatesFileIO::FileInfo file_info(filename);
 
 	// Create a file with an empty feature collection.
@@ -173,10 +182,13 @@ GPlatesAppLogic::FeatureCollectionFileIO::unload_file(
 
 void
 GPlatesAppLogic::FeatureCollectionFileIO::save_file(
-		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format feature_collection_write_format)
+		GPlatesFileIO::File::Reference &file_ref,
+		bool clear_unsaved_changes)
 {
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many in case we incrementally modify the features below.
+	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+
 	// The following check is commented out because it fails in certain circumstances
 	// on newer versions of Windows. We'll just try and open the file for writing
 	// and throw an exception if it fails.
@@ -188,23 +200,19 @@ GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 	}
 #endif
 
-	if (!feature_collection.is_valid())
+	if (!file_ref.get_feature_collection().is_valid())
 	{
 		throw GPlatesGlobal::InvalidFeatureCollectionException(GPLATES_EXCEPTION_SOURCE,
 				"Attempted to write an invalid feature collection.");
 	}
-	
-	boost::shared_ptr<GPlatesModel::ConstFeatureVisitor> feature_collection_writer =
-			GPlatesFileIO::get_feature_collection_writer(
-					file_info,
-					feature_collection,
-					feature_collection_write_format);
 
-	// Write the feature collection.
-	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
-			feature_collection, *feature_collection_writer);
+	// Write the feature collection to the file.
+	d_file_format_registry.write_feature_collection(file_ref);
 
-	feature_collection->clear_unsaved_changes();
+	if (clear_unsaved_changes)
+	{
+		file_ref.get_feature_collection()->clear_unsaved_changes();
+	}
 }
 
 
@@ -222,48 +230,51 @@ GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::FeatureCollectionFileIO::create_file(
 		const GPlatesFileIO::FileInfo &file_info,
 		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
-		GPlatesFileIO::FeatureCollectionWriteFormat::Format format)
+		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration)
 {
 	const GPlatesFileIO::File::non_null_ptr_type file =
-			GPlatesFileIO::File::create_file(file_info, feature_collection);
+			GPlatesFileIO::File::create_file(file_info, feature_collection, file_configuration);
 
-	save_file(file_info, file->get_reference().get_feature_collection(), format);
+	save_file(file->get_reference());
 
 	return d_file_state.add_file(file);
 }
 
 
-void
-GPlatesAppLogic::FeatureCollectionFileIO::remap_shapefile_attributes(
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref)
+int
+GPlatesAppLogic::FeatureCollectionFileIO::count_features_in_xml_data(
+		QByteArray &data)
 {
-	GPlatesFileIO::ReadErrorAccumulation read_errors;
-	GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
-			file_ref.get_file(),
-			d_model,
+	using namespace GPlatesFileIO;
+	ReadErrorAccumulation read_errors;
+
+	int i = ArbitraryXmlReader::instance()->count_features(
+			boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
+			data,
 			read_errors);
 
 	emit_handle_read_errors_signal(read_errors);
-
-	emit remapped_shapefile_attributes(*this, file_ref);
+	return i;
 }
 
 
 void
 GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
-		const QString& name,
+		const QString& filename,
 		QByteArray &data)
 {
 	using namespace GPlatesFileIO;
 	ReadErrorAccumulation read_errors;
 
 	//create temp file
-	QFile tmp_file(name);
+	QFile tmp_file(filename);
 	tmp_file.open(QIODevice::ReadWrite | QIODevice::Text);
 	tmp_file.close();
 
-	const FileInfo file_info(name);
+	const FileInfo file_info(filename);
 	File::non_null_ptr_type file = File::create_file(file_info);
+
+//qDebug() << "GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data()";
 
 	ArbitraryXmlReader::instance()->read_xml_data(
 			file->get_reference(), 
@@ -275,6 +286,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 
 	// Emit one signal for all loaded files.
 	emit_handle_read_errors_signal(read_errors);
+//qDebug() << "GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data() END =========";
 }
 
 
@@ -299,7 +311,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collections(
 
 		// Read new features from the file into the feature collection.
 		// Both the filename and target feature collection are in 'file'.
-		GPlatesFileIO::read_feature_collection(file->get_reference(), d_model, read_errors);
+		d_file_format_registry.read_feature_collection(file->get_reference(), read_errors);
 
 		// Files that have been freshly loaded from disk are by definition, clean.
 		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
@@ -320,13 +332,13 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collections(
 
 void
 GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collection(
-		const GPlatesFileIO::File::Reference &file_ref)
+		GPlatesFileIO::File::Reference &file_ref)
 {
 	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
 	// Read new features from the file into the feature collection.
 	// Both the filename and target feature collection are in 'file_ref'.
-	GPlatesFileIO::read_feature_collection(file_ref, d_model, read_errors);
+	d_file_format_registry.read_feature_collection(file_ref, read_errors);
 
 	// Files that have been freshly loaded from disk are by definition, clean.
 	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =

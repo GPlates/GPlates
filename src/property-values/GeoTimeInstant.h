@@ -31,6 +31,8 @@
 #include <iosfwd>
 #include <boost/operators.hpp>
 
+#include "utils/QtStreamable.h"
+
 
 namespace GPlatesPropertyValues
 {
@@ -45,7 +47,9 @@ namespace GPlatesPropertyValues
 	 */
 	class GeoTimeInstant :
 			public boost::less_than_comparable<GeoTimeInstant>,
-			public boost::equality_comparable<GeoTimeInstant>
+			public boost::equality_comparable<GeoTimeInstant>,
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<GeoTimeInstant>
 	{
 		/*
 		 * Implementation note:

@@ -279,7 +279,7 @@ GPlatesQtWidgets::ShapefileAttributeViewerDialog::update_table()
 
 	if (index >= 0 && index < static_cast<int>(d_file_vector.size()))
 	{
-		const GPlatesFileIO::File::Reference *file = d_file_vector.at(index);
+		GPlatesFileIO::File::Reference *file = d_file_vector.at(index);
 
 		//std::cerr << index << " " << file.get_file_info().get_qfileinfo().fileName().toStdString().c_str() << std::endl;
 

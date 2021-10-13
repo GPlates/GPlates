@@ -29,8 +29,10 @@
 #include <boost/test/unit_test.hpp>
 
 #include "unit-test/GPlatesTestSuite.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/FileInfo.h"
 #include "file-io/File.h"
+#include "model/ModelInterface.h"
 
 namespace GPlatesDataMining
 {
@@ -118,6 +120,8 @@ namespace GPlatesUnitTest
 			return prefix + "." + QString().setNum(time);
 		}
 
+		GPlatesModel::ModelInterface  d_model;
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry d_file_format_registry;
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_loaded_files;
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_rotation_fc;
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_seed_fc;

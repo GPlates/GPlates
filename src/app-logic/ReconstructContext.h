@@ -118,6 +118,52 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Used to associate a feature with its reconstructed feature geometry(s).
+		 */
+		class ReconstructedFeature
+		{
+		public:
+			//! Typedef for a sequence of @a Reconstruction objects.
+			typedef std::vector<Reconstruction> reconstruction_seq_type;
+
+
+			explicit
+			ReconstructedFeature(
+					const GPlatesModel::FeatureHandle::weak_ref &feature) :
+				d_feature(feature)
+			{  }
+
+			/**
+			 * Returns the feature.
+			 */
+			const GPlatesModel::FeatureHandle::weak_ref &
+			get_feature() const
+			{
+				return d_feature;
+			}
+
+			/**
+			 * Returns the reconstructed feature geometries of 'this' feature.
+			 *
+			 * NOTE: The returned sequence can be empty if the feature is inactive at the
+			 * reconstruction time for example.
+			 */
+			const reconstruction_seq_type &
+			get_reconstructions() const
+			{
+				return d_reconstructions;
+			}
+
+		private:
+			GPlatesModel::FeatureHandle::weak_ref d_feature;
+
+			reconstruction_seq_type d_reconstructions;
+
+			friend class ReconstructContext;
+		};
+
+
+		/**
 		 * Constructor.
 		 *
 		 * Effectively the same as @a reassign_reconstruct_methods_to_features.
@@ -205,13 +251,34 @@ namespace GPlatesAppLogic
 		 * This method will get the next (incremented) global reconstruct handle and store it
 		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 *
-		 * This differs from the other overload of @a reconstruct in that this method also
+		 * This differs from the other overloads of @a reconstruct in that this method also
 		 * associates each reconstructed feature geometry with the feature geometry property
 		 * it was reconstructed from.
 		 */
 		ReconstructHandle::type
 		reconstruct(
 				std::vector<Reconstruction> &reconstructed_feature_geometries,
+				const ReconstructParams &reconstruct_params,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time);
+
+
+		/**
+		 * Reconstructs the features specified in the constructor, or the most recent call
+		 * to @a reassign_reconstruct_methods_to_features, to the specified reconstruction time.
+		 *
+		 * This method will get the next (incremented) global reconstruct handle and store it
+		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
+		 *
+		 * This differs from the other overloads of @a reconstruct in that this method returns
+		 * reconstructions grouped by *feature*.
+		 * Note that even if a feature is not active (or generates no reconstructions for some reason)
+		 * it will still be returned (it just won't have any reconstructions in it) - this is useful
+		 * for co-registration, for example, which correlates by feature over several frames (times).
+		 */
+		ReconstructHandle::type
+		reconstruct(
+				std::vector<ReconstructedFeature> &reconstructed_features,
 				const ReconstructParams &reconstruct_params,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time);
@@ -272,6 +339,15 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<std::vector<geometry_type> > d_cached_present_day_geometries;
 
+
+		/**
+		 * Converts the reconstructed feature geometries, of the specified feature, to reconstructions.
+		 */
+		void
+		get_feature_reconstructions(
+				std::vector<Reconstruction> &reconstructions,
+				const ReconstructMethodFeature &reconstruct_method_feature,
+				const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries);
 
 		/**
 		 * Returns true if the geometry property handles have been assigned and are up-to-date

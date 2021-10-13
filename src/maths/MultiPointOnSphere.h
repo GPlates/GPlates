@@ -536,6 +536,8 @@ namespace GPlatesMaths
 			d_line_num(exception_source.get_line_num())
 		{  }
 
+		~InsufficientPointsForMultiPointConstructionError() throw(){}
+	
 	protected:
 		virtual
 		const char *

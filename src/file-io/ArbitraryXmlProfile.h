@@ -28,6 +28,7 @@
 #ifndef GPLATES_FILEIO_ARBITRARYXMLPROFILE_H
 #define GPLATES_FILEIO_ARBITRARYXMLPROFILE_H
 
+#include <QObject>
 #include <QString>
 #include <QXmlItem>
 
@@ -37,13 +38,17 @@
 namespace GPlatesFileIO
 {
 
-	class ArbitraryXmlProfile
+	class ArbitraryXmlProfile:
+		public QObject
 	{
+		Q_OBJECT
+		
 	public:
+
 		virtual
 		void
 		populate(
-				const File::Reference&) = 0;
+				File::Reference&) = 0;
 
 		virtual
 		void
@@ -52,7 +57,13 @@ namespace GPlatesFileIO
 				GPlatesModel::FeatureCollectionHandle::weak_ref fch) = 0;
 		
 		virtual
+		int
+		count_features(
+				QByteArray& xml_data) = 0;
+		
+		virtual
 			~ArbitraryXmlProfile(){}
+
 	};
 }
 

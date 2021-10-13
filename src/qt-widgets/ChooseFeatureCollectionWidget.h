@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -33,6 +34,7 @@
 #include "ChooseFeatureCollectionWidgetUi.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
+#include "file-io/FeatureCollectionFileFormatClassify.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -56,9 +58,11 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ChooseFeatureCollectionWidget(
+				const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry,
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileIO &file_io,
-				QWidget *parent_ = NULL);
+				QWidget *parent_ = NULL,
+				const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::classifications_type> &allowed_collection_types = boost::none);
 
 		/**
 		 * Initialises the ChooseFeatureCollectionWidget with the currently loaded
@@ -124,6 +128,24 @@ namespace GPlatesQtWidgets
 
 		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
 		GPlatesAppLogic::FeatureCollectionFileIO &d_file_io;
+
+		/**
+		 * The collection types which we wish to display in the widget.
+		 *
+		 * To show only reconstruction types, for example, we would instantiate this class something like
+		 * the following:
+		 *
+		 *		GPlatesFileIO::FeatureCollectionFileFormat::classifications_type reconstruction_collections;
+		 *		reconstruction_collections.set(GPlatesFileIO::FeatureCollectionFileFormat::RECONSTRUCTION);
+		 *
+		 *		d_choose_feature_collection_widget = 
+		 *			new ChooseFeatureCollectionWidget(registry,file_state,file_io,this,reconstruction_collections);
+		 *
+		 *
+		 */
+		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::classifications_type> d_allowed_collection_types;
+
+		const GPlatesAppLogic::ReconstructMethodRegistry &d_reconstruct_method_registry;
 	};
 }
 

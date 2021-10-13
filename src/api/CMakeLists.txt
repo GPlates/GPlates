@@ -7,7 +7,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # The variables used here are set in the parent 'CMakeList.txt' file.
-include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
+include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS}) 
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
@@ -17,10 +17,16 @@ set(srcs
     ConsoleReader.h
     ConsoleWriter.cc
     ConsoleWriter.h
+    CoReg.cc
     DeferredApiCall.h
     DeferredApiCallImpl.h
-    FeatureCollection.cc
-    FeatureCollection.h
+    PyApplication.cc
+    PyColour.cc
+    PyFeature.cc
+    PyFeature.h
+    PyFeatureCollection.cc
+    PyFeatureCollection.h
+    PyFunctions.cc
     Python.cc
     PythonExecutionMonitor.cc
     PythonExecutionMonitor.h
@@ -34,6 +40,8 @@ set(srcs
     PythonRunner.h
     PythonUtils.cc
     PythonUtils.h
+    PyTopologyTools.cc
+    PyViewportWindow.cc
     Sleeper.cc
     Sleeper.h
 )
@@ -51,5 +59,5 @@ set(target_name api)
 GPLATES_GENERATE_TARGET_SOURCES(${target_name} target_srcs ${srcs})
 
 add_library(${target_name} STATIC ${target_srcs})
-
+set_target_properties(${target_name} PROPERTIES COMPILE_FLAGS "-DGPLATES_PYTHON_EMBEDDING")
 GPLATES_POST_ADD_TARGET(${target_name} target_srcs)

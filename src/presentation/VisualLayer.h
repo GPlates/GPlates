@@ -85,7 +85,6 @@ namespace GPlatesPresentation
 		/**
 		 * Constructor wraps a visual layer around @a layer created in @a ReconstructGraph.
 		 */
-		explicit
 		VisualLayer(
 				VisualLayers &visual_layers,
 				const VisualLayerRegistry &visual_layer_registry,

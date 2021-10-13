@@ -32,6 +32,7 @@
 #include <boost/optional.hpp>
 #include <boost/scoped_array.hpp>
 #include <QString>
+#include <QtGlobal>
 
 #include "RasterStatistics.h"
 
@@ -124,6 +125,13 @@ namespace GPlatesPropertyValues
 	//  - With the FLOAT and DOUBLE types below, we don't specify the width; they
 	//    mean whatever C++ says is 'float' and 'double' on a particular platform.
 	//  - GDAL also has complex number types. These are not supported.
+	//
+	// UPDATE: The integer types have been changed from boost types to Qt types so that
+	//         they can be streamed using QDataStream without too much hassle.
+	//         Some of the boost types were unable to be streamed because they represented
+	//         different native types on some platforms (eg, 'unsigned int' versus 'unsigned long')
+	//         for 32-bit unsigned integers.
+	//         For example 'boost::uint32_t' has been changed to 'quint32'. 
 
 	typedef RawRasterImpl
 	<
@@ -135,7 +143,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::int8_t,
+		qint8,
 		RawRasterDataPolicies::WithData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue
@@ -143,7 +151,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::int8_t,
+		qint8,
 		RawRasterDataPolicies::WithProxiedData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue
@@ -151,7 +159,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::uint8_t,
+		quint8,
 		RawRasterDataPolicies::WithData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue
@@ -159,7 +167,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::uint8_t,
+		quint8,
 		RawRasterDataPolicies::WithProxiedData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue
@@ -167,7 +175,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::int16_t,
+		qint16,
 		RawRasterDataPolicies::WithData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue
@@ -175,7 +183,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::int16_t,
+		qint16,
 		RawRasterDataPolicies::WithProxiedData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue
@@ -183,7 +191,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::uint16_t,
+		quint16,
 		RawRasterDataPolicies::WithData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue
@@ -191,7 +199,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::uint16_t,
+		quint16,
 		RawRasterDataPolicies::WithProxiedData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue
@@ -199,7 +207,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::int32_t,
+		qint32,
 		RawRasterDataPolicies::WithData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue
@@ -207,7 +215,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::int32_t,
+		qint32,
 		RawRasterDataPolicies::WithProxiedData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue
@@ -215,7 +223,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::uint32_t,
+		quint32,
 		RawRasterDataPolicies::WithData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue
@@ -223,7 +231,7 @@ namespace GPlatesPropertyValues
 
 	typedef RawRasterImpl
 	<
-		boost::uint32_t,
+		quint32,
 		RawRasterDataPolicies::WithProxiedData,
 		RawRasterStatisticsPolicies::WithStatistics,
 		RawRasterNoDataValuePolicies::WithNoDataValue

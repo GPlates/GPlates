@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 Geological Survey of Norway.
+ * Copyright (C) 2008, 2009, 2011 Geological Survey of Norway.
  *
  * This file is part of GPlates.
  *
@@ -31,6 +31,7 @@
 #include "boost/optional.hpp"
 #include <QImage>
 
+#include "maths/Rotation.h"
 #include "view-operations/QueryProximityThreshold.h"
 
 
@@ -63,6 +64,18 @@ namespace GPlatesQtWidgets
 		set_camera_viewpoint(
 			const GPlatesMaths::LatLonPoint &llp) = 0;
 
+		// FIXME should this be pure virtual? 
+		virtual
+		void
+		set_orientation(
+			const GPlatesMaths::Rotation &rotation
+			/*bool should_emit_external_signal = true */)
+		{ };
+
+		virtual
+		boost::optional<GPlatesMaths::Rotation>
+		orientation() const = 0;
+
 		virtual
 		void
 		enable_raster_display()
@@ -94,6 +107,10 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		update_canvas() = 0;
+
+		virtual
+		void
+		repaint_canvas() = 0;
 
 		virtual
 		void

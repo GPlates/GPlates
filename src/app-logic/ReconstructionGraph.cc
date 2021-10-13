@@ -169,7 +169,7 @@ GPlatesAppLogic::ReconstructionGraph::insert_total_reconstruction_pole(
 			pos_of_inserted_original_edge);
 
 	// Now, let's insert the "reversed" edge.
-	edge_refs_by_plate_id_map_iterator pos_of_inserted_reversed_edge =
+	//edge_refs_by_plate_id_map_iterator pos_of_inserted_reversed_edge =
 			d_edges_by_fixed_plate_id.insert(std::make_pair(moving_plate_id_, reversed_edge));
 
 	// We've made it this far so we can dismiss the undos.

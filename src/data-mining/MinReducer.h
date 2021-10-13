@@ -26,50 +26,46 @@
 #define GPLATESDATAMINING_MINREDUCER_H
 
 #include <vector>
-
 #include <QDebug>
-
 #include <boost/foreach.hpp>
 
+#include "CoRegReducer.h"
 #include "DataMiningUtils.h"
 #include "OpaqueDataToDouble.h"
 
 namespace GPlatesDataMining
 {
-	using namespace GPlatesUtils;
-	
-	typedef std::vector<OpaqueData> ReducerInputSequence;
-
-	/*	
-	*	TODO:
-	*	Comments....
-	*/
-	class MinReducer
+	class MinReducer : public CoRegReducer
 	{
 	public:
-
-		/*
-		* TODO: comments....
-		*/
-		inline
-		OpaqueData
-		operator()(
-				ReducerInputSequence::const_iterator input_begin,
-				ReducerInputSequence::const_iterator input_end) 
+		class Config : public CoRegReducer::Config
 		{
-			std::vector<double> array;
-			DataMiningUtils::convert_to_double_vector(
-					input_begin, 
-					input_end, 
-					array);
-			if(array.size() > 0)
+		public:
+			bool
+			is_same_type(const CoRegReducer::Config* other)
 			{
-				return OpaqueData(*min_element(array.begin(),array.end()));
+				return dynamic_cast<const MinReducer::Config*>(other);
 			}
-			else
-			{
-				return OpaqueData(EmptyData);
-			}
+
+			~Config(){ }
+		};
+
+		~MinReducer(){}
+
+	protected:
+		OpaqueData
+		exec(
+				ReducerInDataset::const_iterator first,
+				ReducerInDataset::const_iterator last) 
+		{
+			std::vector<OpaqueData> data;
+			extract_opaque_data(first, last, data);
+
+			std::vector<double> buf;
+			DataMiningUtils::convert_to_double_vector(data.begin(), data.end(), buf);
+			
+			return (buf.size() > 0) ? 
+				OpaqueData(*min_element(buf.begin(),buf.end())) : OpaqueData(EmptyData);
 		}
 	};
 }

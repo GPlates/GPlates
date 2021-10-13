@@ -29,10 +29,11 @@
 #include <vector>
 #include <map>
 
-#include "Filter.h"
-#include "ReducerTypes.h"
+#include "CoRegFilter.h"
+#include "Types.h"
 #include "DataTable.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "global/GPlatesException.h"
 #include "model/FeatureHandle.h"
 
 namespace GPlatesDataMining
@@ -40,35 +41,111 @@ namespace GPlatesDataMining
 	struct ConfigurationTableRow
 	{
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref target_fc;
-		FilterType filter_type;
-		FilterCfg filter_cfg;
+		boost::shared_ptr<CoRegFilter::Config> filter_cfg;
 		QString attr_name;
 		AttributeType attr_type;
-		ReducerType reducer_type;
+		ReducerType reducer_type; //TODO: change to CoRegReducer::config
+		unsigned index;
 	};
 
-	class CoRegConfigurationTable :
-		public std::vector< ConfigurationTableRow > 
+	class CoRegCfgTableOptimized : GPlatesGlobal::Exception
 	{
 	public:
-		inline
-		void
-		set_seeds_file(
-				std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> seed_files)
+		CoRegCfgTableOptimized(
+				const GPlatesUtils::CallStack::Trace &exception_source) :
+			GPlatesGlobal::Exception(exception_source)
+		{ }
+	protected:
+		const char *
+		exception_name() const
 		{
-			d_seed_files = seed_files;
+			return "CoRegCfgTableOptimized Exception";
+		}
+
+		void
+		write_message(
+				std::ostream &os) const
+		{
+			os << "The co-registration table has been optimized. The table is readonly now.";
+		}
+	};
+
+	class CoRegConfigurationTable 
+	{
+	public:
+		typedef std::vector<ConfigurationTableRow>::iterator iterator;
+		typedef std::vector<ConfigurationTableRow>::const_iterator const_iterator;
+		
+		iterator
+		begin()
+		{
+			if(d_optimized)
+				throw CoRegCfgTableOptimized(GPLATES_EXCEPTION_SOURCE);
+			return d_rows.begin();
+		}
+
+		const_iterator
+		begin() const
+		{
+			return d_rows.begin();
+		}
+
+		iterator
+		end()
+		{
+			if(d_optimized)
+				throw CoRegCfgTableOptimized(GPLATES_EXCEPTION_SOURCE);
+			return d_rows.end();
+		}
+
+		const_iterator
+		end() const
+		{
+			return d_rows.end();
+		}
+
+		void
+		clear()
+		{
+			if(d_optimized)
+				throw CoRegCfgTableOptimized(GPLATES_EXCEPTION_SOURCE);
+			d_rows.clear();
+		}
+
+		void
+		push_back(const ConfigurationTableRow& row)
+		{
+			if(d_optimized)
+				throw CoRegCfgTableOptimized(GPLATES_EXCEPTION_SOURCE);
+			d_rows.push_back(row);
 		}
 
 		void
 		optimize();
 
-	protected:
 		bool
-		is_seed_feature_collection(
-				const ConfigurationTableRow& input_row);
+		is_optimized()
+		{
+			return d_optimized;
+		}
+
+		CoRegConfigurationTable() :
+			d_optimized(false)
+		{ }
+
+		std::size_t
+		size() const
+		{
+			return d_rows.size();
+		}
+
+	protected:
+		void
+		group_and_sort();
 
 	private:
-		std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> d_seed_files;
+		std::vector< ConfigurationTableRow > d_rows;
+		bool d_optimized; // if the table has been optimized, the rows are readonly.
 	};
 
 	inline
@@ -77,8 +154,7 @@ namespace GPlatesDataMining
 			std::ostream &o,
 			const ConfigurationTableRow &g)
 	{
-		o << g.filter_type << "\t";
-		o << g.filter_cfg.d_ROI_range <<  "\t";
+		o << g.filter_cfg->to_string().toStdString() << "\t";
 		o << g.attr_name.toStdString() <<  "\t";
 		o << g.attr_type <<  "\t";
 		o << g.reducer_type << "\t";

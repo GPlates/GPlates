@@ -217,11 +217,6 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 	d_preview_colour_scheme(
 			new PreviewColourScheme(
 				d_view_state_colour_scheme_delegator)),
-	d_globe_and_map_widget_ptr(
-			new GlobeAndMapWidget(
-				d_existing_globe_and_map_widget_ptr,
-				d_preview_colour_scheme,
-				this)),
 	d_feature_store_root(
 			view_state.get_application_state().get_model_interface()->root()),
 	d_show_thumbnails(true),
@@ -245,6 +240,10 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 {
 	setupUi(this);
 	reposition();
+	d_globe_and_map_widget_ptr = new GlobeAndMapWidget(
+                               d_existing_globe_and_map_widget_ptr,
+                                d_preview_colour_scheme,
+                                colour_schemes_list);
 
 	// Create the blank icon.
 	QPixmap blank_pixmap(ICON_SIZE, ICON_SIZE);
@@ -253,7 +252,15 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 
 	// Set up our GlobeAndMapWidget that we use for rendering.
 	d_globe_and_map_widget_ptr->resize(ICON_SIZE, ICON_SIZE);
-	d_globe_and_map_widget_ptr->move(1 - ICON_SIZE, 1 - ICON_SIZE); // leave 1px showing
+
+#if defined(Q_OS_MAC)
+	if(QT_VERSION >= 0x040600)
+		d_globe_and_map_widget_ptr->move(
+				colour_schemes_list->spacing()+4, 
+				colour_schemes_list->spacing()+3); 
+#else
+	d_globe_and_map_widget_ptr->move(1- ICON_SIZE, 1- ICON_SIZE);
+#endif
 
 	// Set up the list of feature collections.
 	populate_feature_collections();
@@ -580,7 +587,7 @@ GPlatesQtWidgets::ColouringDialog::open_cpt_files(
 		case GPlatesGui::ColourSchemeCategory::FEATURE_AGE:
 			open_cpt_files<GPlatesFileIO::RegularCptReader>(
 					file_list,
-					GPlatesAppLogic::AgePropertyExtractor(d_application_state));
+					GPlatesAppLogic::AgePropertyExtractor());
 			break;
 
 		case GPlatesGui::ColourSchemeCategory::FEATURE_TYPE:

@@ -37,7 +37,21 @@ POP_MSVC_WARNINGS
 
 #include "TopologyNetworkResolver.h"
 
+#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
+#	ifdef NDEBUG
+#		define HAVE_NDEBUG
+#		undef NDEBUG
+#	endif
+#endif
+
 #include "CgalUtils.h"
+
+#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
+#	ifdef HAVE_NDEBUG
+#		define NDEBUG
+#	endif
+#endif
+
 #include "GeometryUtils.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
@@ -75,16 +89,12 @@ POP_MSVC_WARNINGS
 
 
 GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
-		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
-		bool restrict_topological_sections_to_same_reconstruction_tree) :
-	d_resolved_topological_boundaries(resolved_topological_boundaries),
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles) :
 	d_resolved_topological_networks(resolved_topological_networks),
 	d_reconstruction_tree(reconstruction_tree),
 	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles),
-	d_restrict_topological_sections_to_same_reconstruction_tree(restrict_topological_sections_to_same_reconstruction_tree),
 	d_reconstruction_params(reconstruction_tree->get_reconstruction_time())
 {  
 	d_num_topologies = 0;
@@ -95,13 +105,10 @@ GPlatesAppLogic::TopologyNetworkResolver::finalise_post_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
 	// If we visited a GpmlTopologicalPolygon property then create:
-	// ResolvedTopologicalBoundary,
 	// ResolvedTopologicalNetwork.
 
 	if (d_topological_polygon_feature_iterator)
 	{
-		create_resolved_topology_boundary(feature_handle);
-
 		create_resolved_topology_network(feature_handle);
 	}
 }
@@ -365,7 +372,6 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_point(
 	// this will become a seed point , not a point in the triangulation
 	if ( section->d_source_rfg->get_feature_ref()->feature_type() == test_type )
 	{
-//qDebug() << "PolygonCentroidPoint -> seed point";
 		section->d_is_seed_point = true;
 	}
 
@@ -388,14 +394,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_section_reconstruct
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
 {
 	// Get the reconstructed geometry of the topological section's delegate.
-	// The referenced RFGs must be in our sequence of reconstructed topological sections
-	// and optionally have been reconstructed by the same reconstruction tree associated with
-	// the resolved topological networks being generated.
-	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> restricted_reconstruction_tree;
-	if (d_restrict_topological_sections_to_same_reconstruction_tree)
-	{
-		restricted_reconstruction_tree = d_reconstruction_tree;
-	}
+	// The referenced RFGs must be in our sequence of reconstructed topological sections.
 	// If we need to restrict the topological section RFGs to specific reconstruct handles...
 	boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles;
 	if (d_topological_sections_reconstruct_handles)
@@ -406,13 +405,13 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_section_reconstruct
 	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
 					geometry_delegate,
-					restricted_reconstruction_tree,
 					topological_sections_reconstruct_handles);
 
 	// If no RFG was found then it's possible that the current reconstruction time is
 	// outside the age range of the feature this section is referencing.
 	// This is ok - it's not necessarily an error.
-	// We just won't add it to the list of boundary sections. This means either:
+	// If we're currently processing boundary sections (as opposed to interior sections) then
+	// we just won't add it to the list of boundary sections. For boundary sections this means either:
 	//  - rubber banding will occur between the two sections adjacent to this section
 	//    since this section is now missing, or
 	//  - one of the adjacent sections did not exist until just now (because of its age range)
@@ -814,157 +813,11 @@ GPlatesAppLogic::TopologyNetworkResolver::assign_boundary_segment_interior(
 }
 
 
-//
-// NOTE : this is copied from  GPlatesAppLogic::TopologyBoundaryResolver 
-//
-void
-GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_boundary(
-		GPlatesModel::FeatureHandle &feature_handle)
-{
-	PROFILE_FUNC();
-
-	// The points to create the plate polygon with.
-	std::vector<GPlatesMaths::PointOnSphere> polygon_points;
-
-#if 0
-#if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
-	// The rotated reference points for any intersecting sections.
-	std::vector<GPlatesMaths::PointOnSphere> rotated_reference_points;
-#endif
-#endif
-
-	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalBoundary.
-	std::vector<ResolvedTopologicalBoundary::SubSegment> output_subsegments;
-
-qDebug() << "\ncreate_resolved_topology_boundary: Loop over BOUNDARY d_resolved_network.d_sections\n";
-	// Iterate over the sections of the resolved boundary and construct
-	// the resolved polygon boundary and its subsegments.
-	ResolvedNetwork::section_seq_type::const_iterator section_iter =
-			d_resolved_network.d_sections.begin();
-
-	const ResolvedNetwork::section_seq_type::const_iterator section_end =
-			d_resolved_network.d_sections.end();
-
-	for ( ; section_iter != section_end; ++section_iter)
-	{
-		const ResolvedNetwork::Section &section = *section_iter;
-
-		// It's possible for a valid segment to not contribute to the boundary
-		// of the plate polygon. This can happen if it contributes zero-length
-		// to the plate boundary which happens when both its neighbouring
-		// boundary sections intersect it at the same point.
-		if (!section.d_final_boundary_segment_unreversed_geom)
-		{
-			continue;
-		}
-
-		// Get the subsegment feature reference.
-		const GPlatesModel::FeatureHandle::weak_ref subsegment_feature_ref =
-				section.d_source_rfg->get_feature_ref();
-		const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_const_ref(subsegment_feature_ref);
-
-		// Create a subsegment structure that'll get used when
-		// creating the resolved topological geometry.
-		const ResolvedTopologicalBoundary::SubSegment output_subsegment(
-				section.d_final_boundary_segment_unreversed_geom.get(),
-				subsegment_feature_const_ref,
-				section.d_use_reverse);
-		output_subsegments.push_back(output_subsegment);
-
-		// Append the subsegment geometry to the plate polygon points.
-		GPlatesAppLogic::GeometryUtils::get_geometry_points(
-				*section.d_final_boundary_segment_unreversed_geom.get(),
-				polygon_points,
-				section.d_use_reverse);
-
-#if 0
-#if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
-		// If there are any intersections then record the rotated reference points
-		// so we can create an RFG for them below.
-		if (section.d_start_intersection &&
-			section.d_start_intersection->d_reconstructed_reference_point)
-		{
-			rotated_reference_points.push_back(
-					*section.d_start_intersection->d_reconstructed_reference_point);
-		}
-		if (section.d_end_intersection &&
-			section.d_end_intersection->d_reconstructed_reference_point)
-		{
-			rotated_reference_points.push_back(
-					*section.d_end_intersection->d_reconstructed_reference_point);
-		}
-#endif // if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
-#endif
-
-	}
-
-	// Create a polygon on sphere for the resolved boundary using 'polygon_points'.
-	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity polygon_validity;
-	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
-			GPlatesUtils::create_polygon_on_sphere(
-					polygon_points.begin(), polygon_points.end(), polygon_validity);
-
-	// If we are unable to create a polygon (such as insufficient points) then
-	// just return without creating a resolved topological geometry.
-	if (polygon_validity != GPlatesUtils::GeometryConstruction::VALID)
-	{
-		qDebug() << "ERROR: Failed to create a ResolvedTopologicalBoundary - probably has "
-				"insufficient points for a polygon.";
-		qDebug() << "Skipping creation for topological polygon feature_id=";
-		qDebug() << GPlatesUtils::make_qstring_from_icu_string(
-				d_currently_visited_feature->feature_id().get());
-		return;
-	}
-
-	//
-	// Create the RTB 
-	//
-	ResolvedTopologicalBoundary::non_null_ptr_type rtb_ptr =
-		ResolvedTopologicalBoundary::create(
-			d_reconstruction_tree,
-			*polygon,
-			feature_handle, // WAS: *(current_top_level_propiter()->handle_weak_ref()),
-			*d_topological_polygon_feature_iterator, // WAS: *(current_top_level_propiter()),
-			output_subsegments.begin(),
-			output_subsegments.end(),
-			d_reconstruction_params.get_recon_plate_id(),
-			d_reconstruction_params.get_time_of_appearance());
-
-	d_resolved_topological_boundaries.push_back(rtb_ptr);
-
-#if 0
-#if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
-	//
-	// Create the RFG for the rotated reference points.
-	//
-	if (!rotated_reference_points.empty())
-	{
-		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type rotated_reference_points_geom = 
-				GPlatesMaths::MultiPointOnSphere::create_on_heap(rotated_reference_points);
-
-		ReconstructedFeatureGeometry::non_null_ptr_type rotated_reference_points_rfg =
-			ReconstructedFeatureGeometry::create(
-				d_reconstruction_geometry_collection.reconstruction_tree(),
-				rotated_reference_points_geom,
-				*(current_top_level_propiter()->handle_weak_ref()),
-				*(current_top_level_propiter()));
-
-		d_reconstruction_geometry_collection.add_reconstruction_geometry(
-				rotated_reference_points_rfg);
-	}
-#endif // if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
-#endif
-
-}
-
-
 // Final Creation Step
 void
 GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
-
-	
 	// The triangulation structs for the topological network.
 
 	// 2D 
@@ -1013,15 +866,19 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network(
 	// seed points filled below , per section
 	std::vector<GPlatesMaths::PointOnSphere> all_seed_points;
 
-	// Sequence of subsegments of resolved topology used for clipping 
-	std::vector<ResolvedTopologicalBoundary::SubSegment> output_subsegments;
+	// Sequence of boundary subsegments of resolved topology boundary.
+	std::vector<ResolvedTopologicalBoundarySubSegment> boundary_subsegments;
 
 	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalNetwork.
 	// See the code in:
 	// GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolation
 	std::vector<ResolvedTopologicalNetwork::Node> output_nodes;
 
-qDebug() << "\ncreate_resolved_topology_network: Loop over BOUNDARY d_resolved_network.d_sections\n";
+	// Any interior section that is a polygon - these are regions that are inside the network but are
+	// not part of the network (ie, not triangulated) and hence are effectively outside the network.
+	std::vector<ResolvedTopologicalNetwork::InteriorPolygon> interior_polygons;
+
+// qDebug() << "\ncreate_resolved_topology_network: Loop over BOUNDARY d_resolved_network.d_sections\n";
 	//
 	// Iterate over the sections of the resolved boundary and construct
 	// the resolved polygon boundary and its subsegments.
@@ -1034,7 +891,9 @@ qDebug() << "\ncreate_resolved_topology_network: Loop over BOUNDARY d_resolved_n
 	{
 		const ResolvedNetwork::Section &section = *section_iter;
 
-debug_output_topological_section(section);
+		# if 0
+		debug_output_topological_section(section);
+		#endif
 
 		// clear out the old list of points
 		section_points.clear();
@@ -1054,12 +913,12 @@ debug_output_topological_section(section);
 		const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_const_ref(subsegment_feature_ref);
 
 		// Create a subsegment structure that'll get used when
-		// creating the resolved topological geometry.
-		const ResolvedTopologicalBoundary::SubSegment output_subsegment(
+		// creating the boundary of the resolved topological geometry.
+		const ResolvedTopologicalBoundarySubSegment boundary_subsegment(
 				section.d_final_boundary_segment_unreversed_geom.get(),
 				subsegment_feature_const_ref,
 				section.d_use_reverse);
-		output_subsegments.push_back(output_subsegment);
+		boundary_subsegments.push_back(boundary_subsegment);
 
 		// Create a subsegment structure that'll get used when
 		// creating the resolved topological geometry.
@@ -1208,9 +1067,10 @@ debug_output_topological_section(section);
 
 	} // end of loop over sections
 
-/// ZZZZ 
+#if 0
 qDebug() << "all_network_points.size(): " << all_network_points.size();
 qDebug() << "boundary_points.size(): " << boundary_points.size();
+#endif
 
 	// 2D + C
 	// add boundary_points as contrained ; do contrain begin and end
@@ -1220,9 +1080,25 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 		boundary_points.end(),
 		true);
 
+	// Create a polygon on sphere for the resolved boundary using 'boundary_points'.
+	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity boundary_polygon_validity;
+	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
+			GPlatesUtils::create_polygon_on_sphere(
+					boundary_points.begin(), boundary_points.end(), boundary_polygon_validity);
 
+	// If we are unable to create a polygon (such as insufficient points) then
+	// just return without creating a resolved topological geometry.
+	if (boundary_polygon_validity != GPlatesUtils::GeometryConstruction::VALID)
+	{
+		qDebug() << "ERROR: Failed to create a polygon boundary for a ResolvedTopologicalNetwork - "
+				"probably has insufficient points for a polygon.";
+		qDebug() << "Skipping creation for topological network feature_id=";
+		qDebug() << GPlatesUtils::make_qstring_from_icu_string(
+				d_currently_visited_feature->feature_id().get());
+		return;
+	}
 
-qDebug() << "\ncreate_resolved_topology_network: Loop over INTERIOR d_resolved_network.d_sections_interior\n";
+// qDebug() << "\ncreate_resolved_topology_network: Loop over INTERIOR d_resolved_network.d_sections_interior\n";
 
 	// 
 	// Iterate over the sections of the interior 
@@ -1233,7 +1109,9 @@ qDebug() << "\ncreate_resolved_topology_network: Loop over INTERIOR d_resolved_n
 	{
 		const ResolvedNetwork::Section &section = *section_iter;
 
-debug_output_topological_section(section);
+		#if 0
+		debug_output_topological_section(section);
+		#endif
 
 		// clear out the old list of points
 		section_points.clear();
@@ -1251,14 +1129,6 @@ debug_output_topological_section(section);
 		const GPlatesModel::FeatureHandle::weak_ref subsegment_feature_ref =
 				section.d_source_rfg->get_feature_ref();
 		const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_const_ref(subsegment_feature_ref);
-
-		// Create a subsegment structure that'll get used when
-		// creating the resolved topological geometry.
-		const ResolvedTopologicalBoundary::SubSegment output_subsegment(
-				section.d_final_boundary_segment_unreversed_geom.get(),
-				subsegment_feature_const_ref,
-				section.d_use_reverse);
-		output_subsegments.push_back(output_subsegment);
 
 		// Create a subsegment structure that'll get used when
 		// creating the resolved topological geometry.
@@ -1288,10 +1158,23 @@ debug_output_topological_section(section);
 					all_network_points,
 					section.d_use_reverse);
 
+			// Keep track of any interior polygon regions.
+			// These will be needed for calculating velocities since they are not part of the triangulation
+			// generated (velocities will be calculated in the normal manner for static polygons).
+			GPlatesFeatureVisitors::GeometryTypeFinder geometry_type_finder;
+			section.d_source_rfg->reconstructed_geometry()->accept_visitor(geometry_type_finder);
+			if (geometry_type_finder.num_polygon_geometries_found() > 0)
+			{
+				// Create a subsegment structure that'll get used when
+				// creating the resolved topological geometry.
+				const ResolvedTopologicalNetwork::InteriorPolygon interior_polygon(section.d_source_rfg);
+				interior_polygons.push_back(interior_polygon);
+			}
+			geometry_type_finder.clear();
+
 			//
 			// Determine the subsegments orginal geometry type 
 			//
-			GPlatesFeatureVisitors::GeometryTypeFinder geometry_type_finder;
  			geometry_type_finder.visit_feature( subsegment_feature_ref );
 
 //qDebug() << "geom_type_finder: points :" << geometry_type_finder.num_point_geometries_found();
@@ -1423,6 +1306,7 @@ debug_output_topological_section(section);
 					qDebug() << "====> property rigidBlock = NOT FOUND";
 				}
 #endif
+
 				continue; // to next section of the topology
 			}
 
@@ -1488,20 +1372,26 @@ debug_output_topological_section(section);
 	// Mesh the data 
 	constrained_mesher->refine_mesh();
 
+#if 0
 std::cout << "constrained_delaunay_triangulation_2 verts: " 
 << constrained_delaunay_triangulation_2->number_of_vertices() << std::endl;
+#endif
 
 	// make it conforming Delaunay
 	CGAL::make_conforming_Delaunay_2(*constrained_delaunay_triangulation_2);
 
+#if 0
 std::cout << "Number of vertices after make_conforming_Delaunay_2: "
 << constrained_delaunay_triangulation_2->number_of_vertices() << std::endl;
+#endif
 
 	// then make it conforming Gabriel
 	CGAL::make_conforming_Gabriel_2(*constrained_delaunay_triangulation_2);
 
+#if 0
 std::cout << "Number of vertices after make_conforming_Gabriel_2: "
 << constrained_delaunay_triangulation_2->number_of_vertices() << std::endl;
+#endif
 	
 	// Create the network RTN 
 	const ResolvedTopologicalNetwork::non_null_ptr_type network =
@@ -1513,6 +1403,11 @@ std::cout << "Number of vertices after make_conforming_Gabriel_2: "
 					*d_topological_polygon_feature_iterator,
 					output_nodes.begin(),
 					output_nodes.end(),
+					boundary_subsegments.begin(),
+					boundary_subsegments.end(),
+					boundary_polygon.get(),
+					interior_polygons.begin(),
+					interior_polygons.end(),
 					d_reconstruction_params.get_recon_plate_id(),
 					d_reconstruction_params.get_time_of_appearance());
 

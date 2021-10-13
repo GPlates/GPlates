@@ -215,6 +215,16 @@ GPlatesGui::ChooseCanvasTool::choose_measure_distance_tool()
 	emit chose_canvas_tool(*this, d_most_recent_tool_type);
 }
 
+void
+GPlatesGui::ChooseCanvasTool::choose_create_small_circle_tool()
+{
+	d_viewport_window->choose_create_small_circle_tool();
+
+	d_most_recent_tool_type = GPlatesCanvasTools::CanvasToolType::CREATE_SMALL_CIRCLE;
+
+	emit chose_canvas_tool(*this, d_most_recent_tool_type);
+}
+
 GPlatesGui::ChooseCanvasToolUndoCommand::ChooseCanvasToolUndoCommand(
 		GPlatesGui::ChooseCanvasTool *choose_canvas_tool,
 		choose_canvas_tool_method_type choose_canvas_tool_method,

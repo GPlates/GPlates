@@ -37,9 +37,11 @@
 #include "app-logic/LayerTaskRegistry.h"
 #include "app-logic/ReconstructGraph.h"
 
+#include "gui/DrawStyleManager.h"
 #include "gui/Symbol.h"
 
 #include "view-operations/RenderedGeometryLayer.h"
+#include "utils/Profile.h"
 
 
 GPlatesPresentation::VisualLayers::VisualLayers(
@@ -194,6 +196,12 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 			&d_application_state,
 			SIGNAL(reconstructed(
 					GPlatesAppLogic::ApplicationState &)),
+			this,
+			SLOT(create_rendered_geometries()));
+
+	QObject::connect(
+			GPlatesGui::DrawStyleManager::instance(),
+			SIGNAL(draw_style_changed()),
 			this,
 			SLOT(create_rendered_geometries()));
 
@@ -438,6 +446,7 @@ GPlatesPresentation::VisualLayers::remove_layer(
 void
 GPlatesPresentation::VisualLayers::create_rendered_geometries()
 {
+	PROFILE_FUNC();
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block. This is so we can do multiple changes
 	// without any canvas' redrawing themselves after each change.

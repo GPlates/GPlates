@@ -6,11 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>262</width>
-    <height>150</height>
+    <width>256</width>
+    <height>96</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QWidget" name="draw_style_placeholder_widget" native="true"/>
+   </item>
    <item>
     <widget class="QCheckBox" name="fill_polygons">
      <property name="text">

@@ -37,6 +37,7 @@ namespace GPlatesFileIO
 	* Add new property support.
 	* It is very straightforward. 
 	* Determine name, query and handler and define the static const object.
+	* Add these call backs to file-io/GsmlFeaturesDef.h
 	*/
 	struct PropertyInfo
 	{
@@ -51,7 +52,7 @@ namespace GPlatesFileIO
 	static const PropertyInfo GeometryProperty = 
 	{
 		"GeometryProperty",
-		"/gsml:MappedFeature/gsml:shape",
+		"//gsml:shape",
 		&GsmlPropertyHandlers::handle_geometry_property
 	};
 
@@ -87,8 +88,57 @@ namespace GPlatesFileIO
 		&GsmlPropertyHandlers::handle_gml_desc
 	};
 	
+	//gml validTime property
+	static const PropertyInfo GmlValidTime = 
+	{
+		"GmlValidTime",
+		"//gml:validTime",
+		&GsmlPropertyHandlers::handle_gml_valid_time
+	};
+
+	//gml validTime property
+	static const PropertyInfo GpmlValidTimeRange = 
+	{
+		"GpmlValidTimeRange",
+		"//gpml:validTimeRange",
+		&GsmlPropertyHandlers::handle_gpml_valid_time_range
+	};
+
+	
+	// Props for RockUnit_* types from Macrosrtat
+
+	static const PropertyInfo GpmlRockType = 
+	{
+		"GpmlRockType",
+		"//gpml:rock_type",
+		&GsmlPropertyHandlers::handle_gpml_rock_type
+	};
+
+	static const PropertyInfo GpmlRockMaxThick = 
+	{
+		"GpmlRockMaxThick",
+		"//gpml:rock_max_thick",
+		&GsmlPropertyHandlers::handle_gpml_rock_max_thick
+	};
+
+	static const PropertyInfo GpmlRockMinThick = 
+	{
+		"GpmlRockMinThick",
+		"//gpml:rock_min_thick",
+		&GsmlPropertyHandlers::handle_gpml_rock_min_thick
+	};
+
+	// Props for FossilCollection_* types from Macrosrtat
+
+	static const PropertyInfo GpmlFossilDiversity = 
+	{
+		"GpmlFossilDiversity",
+		"//gpml:fossil_diversity",
+		&GsmlPropertyHandlers::handle_gpml_fossil_diversity
+	};
+
+
 }
 
 #endif  // GPLATES_FILEIO_GSMLPROPERTYDEF_H
-
 

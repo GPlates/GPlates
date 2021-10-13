@@ -33,8 +33,6 @@
 
 #include "model/types.h"
 #include "property-values/GpmlArray.h"
-#include "property-values/GpmlIrregularSampling.h"
-
 
 #include "EditTimeSequenceWidgetUi.h"
 
@@ -247,7 +245,6 @@ namespace GPlatesQtWidgets
 		
 		 double d_current_reconstruction_time;
 
-		 bool d_editing;
 
 	};
 }

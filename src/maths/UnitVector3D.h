@@ -34,6 +34,8 @@
 #include "Vector3D.h"
 #include "GenericVectorOps3D.h"
 
+#include "utils/QtStreamable.h"
+
 
 namespace GPlatesMaths
 {
@@ -48,7 +50,9 @@ namespace GPlatesMaths
 	 * @invariant
 	 *  - magnitude of vector is identical to 1
 	 */
-	class UnitVector3D
+	class UnitVector3D :
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<UnitVector3D>
 	{
 	public:
 		/**
@@ -122,14 +126,16 @@ namespace GPlatesMaths
 		UnitVector3D
 		xBasis()
 		{
-			return UnitVector3D(1.0, 0.0, 0.0);
+			static UnitVector3D X_BASIS(1.0, 0.0, 0.0);
+			return X_BASIS;
 		}
 
 		static inline
 		UnitVector3D
 		yBasis()
 		{
-			return UnitVector3D(0.0, 1.0, 0.0);
+			static UnitVector3D Y_BASIS(0.0, 1.0, 0.0);
+			return Y_BASIS;
 		}
 
 
@@ -137,7 +143,8 @@ namespace GPlatesMaths
 		UnitVector3D
 		zBasis()
 		{
-			return UnitVector3D(0.0, 0.0, 1.0);
+			static UnitVector3D Z_BASIS(0.0, 0.0, 1.0);
+			return Z_BASIS;
 		}
 
 	private:

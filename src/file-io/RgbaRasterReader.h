@@ -32,14 +32,19 @@
 #include <utility>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_array.hpp>
 #include <QSize>
 #include <QFile>
 #include <QDataStream>
 #include <QImage>
 #include <QImageReader>
 
+#include "SourceRasterFileCacheFormatReader.h"
 #include "RasterReader.h"
 #include "RasterBandReaderHandle.h"
+
+#include "gui/Colour.h"
 
 
 namespace GPlatesFileIO
@@ -54,7 +59,7 @@ namespace GPlatesFileIO
 
 		RgbaRasterReader(
 				const QString &filename,
-				const boost::function<RasterBandReaderHandle (unsigned int)> &proxy_handle_function,
+				RasterReader *raster_reader,
 				ReadErrorAccumulation *read_errors);
 
 		virtual
@@ -90,36 +95,7 @@ namespace GPlatesFileIO
 				unsigned int band_number,
 				ReadErrorAccumulation *read_errors);
 
-		virtual
-		void *
-		get_data(
-				unsigned int band_number,
-				const QRect &region,
-				ReadErrorAccumulation *read_errors);
-
 	private:
-
-		/**
-		 * Reads a region from a RGBA file.
-		 *
-		 * Returns NULL if @a region exceeds the boundaries of the source raster.
-		 */
-		GPlatesGui::rgba8_t *
-		read_rgba_file(
-				const QRect &region);
-
-		/**
-		 * This function ensures that there is a file, either in the same directory as
-		 * the source raster or in the temp directory, that is an uncompressed RGBA
-		 * representation of the source raster.
-		 *
-		 * This is to allow quicker lookups of regions of the source raster.
-		 *
-		 * Returns true if at the conclusion of the function such a file is available.
-		 */
-		bool
-		ensure_rgba_file_available(
-				ReadErrorAccumulation *read_errors);
 
 		void
 		report_recoverable_error(
@@ -131,25 +107,70 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation *read_errors,
 				ReadErrors::Description description);
 
-		bool
-		write_image_to_rgba_file(
+		/**
+		 * Creates a reader for the cached source raster.
+		 *
+		 * If no cache exists, or it's out-of-date, etc then the cache is regenerated.
+		 */
+		void
+		create_source_raster_file_cache_format_reader(
 				ReadErrorAccumulation *read_errors);
 
+		/**
+		 * Creates a raster file cache for the source raster (returns false if unsuccessful).
+		 */
 		bool
-		write_image_to_rgba_file_using_clip_rects(
-				const QSize &image_size,
+		create_source_raster_file_cache(
 				ReadErrorAccumulation *read_errors);
 
-		bool
-		convert_image_to_gl_and_append_to_rgba_file(
-				const QImage &image,
+		void
+		write_source_raster_file_cache(
+				const QString &cache_filename,
+				ReadErrorAccumulation *read_errors);
+
+		void
+		write_source_raster_file_cache_image_data(
+				QFile &cache_file,
 				QDataStream &out,
+				RasterFileCacheFormat::BlockInfos &block_infos,
+				ReadErrorAccumulation *read_errors);
+
+		/**
+		 * Traverse the Hilbert curve of blocks of the source raster using quad-tree recursion.
+		 *
+		 * The leaf nodes of the traversal correspond to the blocks in the source raster.
+		 */
+		void
+		hilbert_curve_traversal(
+				unsigned int depth,
+				unsigned int read_source_raster_depth,
+				unsigned int write_source_raster_depth,
+				unsigned int x_offset,
+				unsigned int y_offset,
+				unsigned int dimension,
+				unsigned int hilbert_start_point,
+				unsigned int hilbert_end_point,
+				QDataStream &out,
+				RasterFileCacheFormat::BlockInfos &block_infos,
+				boost::shared_array<GPlatesGui::rgba8_t> source_region_data,
+				QRect source_region,
+				ReadErrorAccumulation *read_errors);
+
+		/**
+		 * Reads source raster from the specified region.
+		 *
+		 * Returns NULL on memory allocation failure.
+		 */
+		boost::shared_array<GPlatesGui::rgba8_t> 
+		read_source_raster_region(
+				QImageReader &source_reader,
+				const QRect &source_region,
 				ReadErrorAccumulation *read_errors);
 
 
 		// Any image bigger than this we should try to read in pieces to help avoid
 		// the possibility of a memory allocation failure.
-		static const int MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 200 * 1000 * 1000;
+		static const int MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 100 * 1000 * 1000;
 
 		// The maximum memory allocation to attempt for an image.
 		// Going higher than this is likely to cause memory to start paging to disk
@@ -166,20 +187,13 @@ namespace GPlatesFileIO
 		//
 		// If the allocation fails we will repeatedly reduce the allocation size until
 		// it reaches @a MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT.
-		static const int MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 1 * 1000 * 1000 * 1000;
-
-		// The maximum number of image bytes to convert to ARGB32 at one time.
-		// This is also to help avoid memory allocation failure for large images.
-		static const int MAX_BYTES_TO_CONVERT_IMAGE_TO_ARGB32_FORMAT = 20 * 1000 * 1000;
+		static const int MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 500 * 1000 * 1000;
 
 
-		QString d_filename;
-		boost::function<RasterBandReaderHandle (unsigned int)> d_proxy_handle_function;
-		QFile d_rgba_file;
-		QDataStream d_rgba_in;
+		QString d_source_raster_filename;
 		unsigned int d_source_width;
 		unsigned int d_source_height;
-		bool d_can_read;
+		boost::scoped_ptr<SourceRasterFileCacheFormatReader> d_source_raster_file_cache_format_reader;
 	};
 }
 

@@ -239,6 +239,30 @@ namespace GPlatesQtWidgets
 		focus_on_lineedit_filename();
 	
 	private:
+		/**
+		 * A QListWidget that resizes to its contents - this ensures that the QScrollArea just below
+		 * the list of formats can use as much available space as it can for export configuration options.
+		 *
+		 * All manner of experimenting with layouts, etc didn't work, but overriding the
+		 * 'sizeHint()' method did.
+		 */
+		class ResizeToContentsListWidget :
+				public QListWidget
+		{
+		public:
+			explicit
+			ResizeToContentsListWidget(
+					QWidget *parent_ = 0) :
+				QListWidget(parent_)
+			{  }
+
+			QSize
+			sizeHint() const
+			{
+				return contentsSize();
+			}
+		};
+
 		//! Typedef for a set of exporters - identified by their export IDs.
 		typedef std::set<GPlatesGui::ExportAnimationType::ExportID> exporter_set_type;
 
@@ -255,6 +279,8 @@ namespace GPlatesQtWidgets
 		exporter_set_type d_exporters_added;
 
 		bool d_is_single_frame;
+
+		ResizeToContentsListWidget *d_listWidget_format;
 
 		/**
 		 * The current widget, if any, used to select export options.

@@ -53,6 +53,13 @@ GPlatesGlobal::Exception::write(
 
 	// Get derived class to output a message.
 	write_message(os);
+
+	// Extract the call stack trace to the location where the exception was thrown.
+	std::string call_stack_trace_std;
+	get_call_stack_trace_string(call_stack_trace_std);
+
+	// Write out the call-stack - it's always useful to know where an exception was thrown.
+	os << std::endl << call_stack_trace_std;
 }
 
 
@@ -91,42 +98,11 @@ GPlatesGlobal::Exception::what() const throw()
 }
 
 
-namespace GPlatesGlobal
+std::ostream &
+GPlatesGlobal::operator <<(
+		std::ostream &os,
+		const Exception &ex)
 {
-	std::ostream &
-	operator <<(
-			std::ostream &os,
-			const Exception &ex)
-	{
-		ex.write(os);
-		return os;
-	}
-
-
-	QDebug
-	operator <<(
-			QDebug dbg,
-			const Exception &ex)
-	{
-		std::ostringstream output_string_stream;
-		output_string_stream << ex;
-
-		dbg.nospace() << QString::fromStdString(output_string_stream.str());
-
-		return dbg.space();
-	}
-
-
-	QTextStream &
-	operator <<(
-			QTextStream &stream,
-			const Exception &ex)
-	{
-		std::ostringstream output_string_stream;
-		output_string_stream << ex;
-
-		stream << QString::fromStdString(output_string_stream.str());
-
-		return stream;
-	}
+	ex.write(os);
+	return os;
 }

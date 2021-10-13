@@ -41,7 +41,7 @@ namespace GPlatesFileIO
 			static
 			void
 			read_file(
-				const File::Reference &file,
+				File::Reference &file,
 				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
 				

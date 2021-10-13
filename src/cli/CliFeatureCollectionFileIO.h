@@ -35,6 +35,7 @@
 #include "CliRequiredOptionNotPresent.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -95,7 +96,6 @@ namespace GPlatesCli
 		/**
 		 * Write the feature collection associated to a file described by @a file_info.
 		 */
-		static
 		void
 		save_file(
 				const GPlatesFileIO::FileInfo &file_info,
@@ -126,7 +126,6 @@ namespace GPlatesCli
 		 * Returns the save filename by appending the filename extension determined by
 		 * @a save_file_format to @a filename_no_extension.
 		 */
-		static
 		GPlatesFileIO::FileInfo
 		get_save_file_info(
 				const QString &filename_no_extension,
@@ -136,7 +135,6 @@ namespace GPlatesCli
 		 * Returns the save filename by appending the filename extension determined by
 		 * @a save_file_type to @a filename_no_extension.
 		 */
-		static
 		GPlatesFileIO::FileInfo
 		get_save_file_info(
 				const QString &filename_no_extension,
@@ -151,7 +149,6 @@ namespace GPlatesCli
 		 * Returns the save filename by changing the extension of @a file_info using
 		 * the save file format of @a save_file_format.
 		 */
-		static
 		GPlatesFileIO::FileInfo
 		get_save_file_info(
 				const GPlatesFileIO::FileInfo &file_info,
@@ -163,7 +160,6 @@ namespace GPlatesCli
 		 * Returns the save filename by changing the extension of @a file_info using
 		 * the save file format of @a save_file_format.
 		 */
-		static
 		GPlatesFileIO::FileInfo
 		get_save_file_info(
 				const GPlatesFileIO::FileInfo &file_info,
@@ -178,11 +174,26 @@ namespace GPlatesCli
 					filename_suffix);
 		}
 
+
+		/**
+		 * Returns the feature collection file format registry.
+		 */
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry &
+		get_file_format_registry()
+		{
+			return d_file_format_registry;
+		}
+
 	private:
 		/**
 		 * Used to create feature collections when loading files.
 		 */
 		GPlatesModel::ModelInterface d_model;
+
+		/**
+		 * A registry of the file formats for reading/writing feature collections.
+		 */
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry d_file_format_registry;
 
 		/**
 		 * The command-line variables are stored here.

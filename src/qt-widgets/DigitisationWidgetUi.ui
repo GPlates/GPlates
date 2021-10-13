@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>223</width>
-    <height>411</height>
+    <width>339</width>
+    <height>640</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -110,6 +110,33 @@
           <property name="sizeHint" stdset="0">
            <size>
             <width>41</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QToolButton" name="button_use_in_wfs">
+          <property name="toolTip">
+           <string>Use these coordinates in a WFS query</string>
+          </property>
+          <property name="text">
+           <string>Use in WFS Query...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
             <height>20</height>
            </size>
           </property>

@@ -40,8 +40,6 @@ namespace GPlatesMaths
 
 namespace GPlatesGui
 {
-	class Colour;
-
 	/**
 	 * Abstract base class for colour palettes that colour by age. The youngest and
 	 * oldest ages coloured by the colour palette can be changed dynamically.
@@ -51,7 +49,6 @@ namespace GPlatesGui
 	{
 	public:
 
-		explicit
 		AgeColourPalette(
 				const double default_upper_bound,
 				const double default_lower_bound) :
@@ -59,8 +56,7 @@ namespace GPlatesGui
 			d_lower_bound(default_lower_bound),
 			d_default_upper_bound(default_upper_bound),
 			d_default_lower_bound(default_lower_bound)
-		{
-		}
+		{ }
 
 		void
 		reset_bounds()

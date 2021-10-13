@@ -8,6 +8,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2006, 2007, 2009, 2010, 2011 The University of Sydney, Australia
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -34,6 +35,9 @@
 #include <QStringList>
 #include <QTextStream>
 
+#include "app-logic/ApplicationState.h"
+#include "app-logic/GPlatesQtMsgHandler.h"
+
 #include "api/PythonInterpreterLocker.h"
 #include "api/Sleeper.h"
 
@@ -41,22 +45,19 @@
 #include "global/python.h"
 
 #include "gui/GPlatesQApplication.h"
-#include "gui/GPlatesQtMsgHandler.h"
+#include "gui/DrawStyleManager.h"
 
 #include "maths/MathsUtils.h"
 
 #include "presentation/Application.h"
 
+#include "qt-widgets/PythonInitFailedDialog.h"
 #include "qt-widgets/ViewportWindow.h"
 
 #include "utils/Profile.h"
 #include "utils/CommandLineParser.h"
-
-//Data-mining temporary code
-extern bool enable_data_mining;
-bool enable_symbol_table = false;
-
-extern "C" void initpygplates();
+#include "utils/ComponentManager.h"
+#include "gui/PythonManager.h"
 
 namespace
 {
@@ -67,12 +68,14 @@ namespace
 	{
 	public:
 		CommandLineOptions() :
-			debug_gui(false)
+			debug_gui(false),
+			enable_external_syncing(false)
 		{ }
 
 		QStringList line_format_filenames;
 		QStringList rotation_format_filenames;
 		bool debug_gui;
+		bool enable_external_syncing;
 	};
 	
 	const char *ROTATION_FILE_OPTION_NAME_WITH_SHORT_OPTION = "rotation-file,r";
@@ -81,10 +84,14 @@ namespace
 	const char *ROTATION_FILE_OPTION_NAME = "rotation-file";
 	const char *LINE_FILE_OPTION_NAME = "line-file";
 	const char *DEBUG_GUI_OPTION_NAME = "debug-gui";
-	//Data-mining temporary code: enable data-mining feature by secret command line option.
+	//enable data-mining feature by secret command line option.
 	const char *DATA_MINING_OPTION_NAME = "data-mining";
 	//enable symbol-table feature by secret command line option.
 	const char *SYMBOL_TABLE_OPTION_NAME = "symbol-table";
+	//enable python by secret command line option.
+	const char *NO_PYTHON_OPTION_NAME = "no-python";
+	// Enable communication with external programs
+	const char *ENABLE_EXTERNAL_SYNCING_OPTION_NAME = "enable-external-syncing";
 
 	void
 	print_usage(
@@ -141,13 +148,21 @@ namespace
 			(DEBUG_GUI_OPTION_NAME, "Enable GUI debugging menu")
 			;
 
-		// Temporary code. Add secret data-mining options.
+		//Add secret data-mining options.
 		input_options.hidden_options.add_options()
 			(DATA_MINING_OPTION_NAME, "Enable data mining feature");
 
-		// Temporary code. Add secret symbol-table options.
+		//Add secret symbol-table options.
 		input_options.hidden_options.add_options()
 			(SYMBOL_TABLE_OPTION_NAME, "Enable symbol feature");
+
+		//Add secret python options.
+		input_options.hidden_options.add_options()
+			(NO_PYTHON_OPTION_NAME, "Disable python");
+
+		// Add enable-external-syncing options
+		input_options.hidden_options.add_options()
+			(ENABLE_EXTERNAL_SYNCING_OPTION_NAME, "Enable external syncing.");
 
 		boost::program_options::variables_map vm;
 
@@ -200,104 +215,54 @@ namespace
 		{
 			command_line_options.debug_gui = true;
 		}
-		//Data-mining temporary code: enable data mining feature by command line option.
+
+		using namespace GPlatesUtils;
 		if(vm.count(DATA_MINING_OPTION_NAME))
 		{
-			enable_data_mining = true;
+			ComponentManager::instance().enable(
+				ComponentManager::Component::data_mining());
 		}
 
 		//enable symbol-table feature by command line option.
 		if(vm.count(SYMBOL_TABLE_OPTION_NAME))
 		{
-			enable_symbol_table = true;
+			ComponentManager::instance().enable(
+				ComponentManager::Component::symbology());
 		}
+
+		if(vm.count(ENABLE_EXTERNAL_SYNCING_OPTION_NAME))
+		{
+			command_line_options.enable_external_syncing = true;
+		}
+
+
+		//enable python by command line option.
+		if(vm.count(NO_PYTHON_OPTION_NAME))
+		{
+			ComponentManager::instance().disable(
+				ComponentManager::Component::python());
+		}
+		#if defined(GPLATES_NO_PYTHON)
+		ComponentManager::instance().disable(
+				ComponentManager::Component::python());
+		#endif
 
 		return command_line_options;
 	}
+}
 
-	void
-	initialise_python(
-			char *program_name)
+void
+clean_up()
+{
+	if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
 	{
 #if !defined(GPLATES_NO_PYTHON)
-		using namespace boost::python;
-
-		// Initialise the embedded Python interpreter.
-		char GPLATES_MODULE_NAME[] = "pygplates";
-		if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
-		{
-			PyErr_Print();
-			abort();
-		}
-
-		Py_SetProgramName(program_name);
-		Py_Initialize();
-
-		// Initialise Python threading support; this grabs the Global Interpreter Lock
-		// for this thread.
-		PyEval_InitThreads();
-
-		// But then we give up the GIL, so that PythonInterpreterLocker may now be used.
-		PyEval_SaveThread();
-
-		GPlatesApi::PythonInterpreterLocker interpreter_locker;
-
-		// Load the pygplates module.
-		try
-		{
-			object main_module = import("__main__");
-			object main_namespace = main_module.attr("__dict__");
-			object pygplates_module = import("pygplates");
-			main_namespace["pygplates"] = pygplates_module;
-		}
-		catch (const error_already_set &)
-		{
-			std::cerr << "Fatal error while loading pygplates module" << std::endl;
-			PyErr_Print();
-			abort();
-		}
-
-		// Importing "sys" enables the printing of the value of expressions in
-		// the interactive Python console window, and importing "builtin" enables
-		// the magic variable "_" (the last result in the interactive window).
-		// We then delete them so that the packages don't linger around, but their
-		// effect remains even after deletion.
-		// Note: using boost::python::exec doesn't achieve the desired effects.
-		if (PyRun_SimpleString("import sys, __builtin__; del sys; del __builtin__"))
-		{
-			std::cerr << "Failed to import sys, __builtin__" << std::endl;
-			PyErr_Print();
-		}
-
-		// Get rid of some built-in functions.
-		if (PyRun_SimpleString("import __builtin__; del __builtin__.copyright, __builtin__.credits, __builtin__.license, __builtin__"))
-		{
-			std::cerr << "Failed to delete some built-in functions" << std::endl;
-			PyErr_Print();
-		}
+		GPlatesApi::PythonInterpreterLocker lock;
 #endif
+		delete GPlatesGui::DrawStyleManager::instance(); //delete draw style manager singleton.
+		delete GPlatesPresentation::Application::instance(); //delete the application singleton.
 	}
-
-	void
-	install_instance(
-			GPlatesPresentation::Application &state)
-	{
-#if !defined(GPLATES_NO_PYTHON)
-		using namespace boost::python;
-
-		try
-		{
-			// Give Python access to the Application (Instance) object.
-			GPlatesApi::PythonInterpreterLocker interpreter_locker;
-			object pygplates_module = import("pygplates");
-			pygplates_module.attr("instance") = ptr(&state);
-		}
-		catch (const error_already_set &)
-		{
-			PyErr_Print();
-		}
-#endif
-	}
+	delete GPlatesGui::PythonManager::instance();
 }
 
 int internal_main(int argc, char* argv[])
@@ -319,7 +284,7 @@ int internal_main(int argc, char* argv[])
 	//      "true", "1", "yes" or "on".
 	// Note: Installing handler overrides default Qt message handler.
 	//       And does not log messages to the console.
-	GPlatesGui::GPlatesQtMsgHandler::install_qt_message_handler();
+	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler();
 
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions
 	// in the Qt event thread.
@@ -330,40 +295,79 @@ int internal_main(int argc, char* argv[])
 	CommandLineOptions command_line_options = process_command_line_options(
 			qapplication.argc(), qapplication.argv());
 
-	initialise_python(argv[0]);
+	
+	if(GPlatesUtils::ComponentManager::instance().is_enabled(
+			GPlatesUtils::ComponentManager::Component::python()))
+	{
+		GPlatesGui::PythonManager* mgr = GPlatesGui::PythonManager::instance();
 
-	// The application state, view state and main window are stored in this object.
-	// Note that ViewState starts the Python execution thread, so Python threading
-	// support must have been set up already before we get here.
-	GPlatesPresentation::Application state;
-	GPlatesQtWidgets::ViewportWindow &main_window_widget = state.get_viewport_window();
+#ifndef GPLATES_NO_PYTHON
+		try
+		{
+			mgr->initialize();
+		}
+		catch(const GPlatesGui::PythonInitFailed& ex)
+		{
+			std::stringstream ss;
+			ex.write(ss);
+			qWarning() << ss.str().c_str();
+			
+			//try our best to find python installation.
+			mgr->find_python();
+			mgr->set_python_home();
+
+			if(mgr->show_init_fail_dlg())
+			{
+				boost::scoped_ptr<GPlatesQtWidgets::PythonInitFailedDialog> python_fail_dlg(
+					new GPlatesQtWidgets::PythonInitFailedDialog);
+
+				python_fail_dlg->exec();
+				mgr->set_show_init_fail_dlg(python_fail_dlg->show_again());
+			}
+
+			GPlatesUtils::ComponentManager::instance().disable(
+				GPlatesUtils::ComponentManager::Component::python());
+		}
+#endif
+	}
+
+	GPlatesPresentation::Application *app = GPlatesPresentation::Application::instance();
+	GPlatesQtWidgets::ViewportWindow &main_window_widget = app->get_viewport_window();
 	
 	// Set up the main window widget.
 	main_window_widget.load_files(
 			command_line_options.line_format_filenames +
-				command_line_options.rotation_format_filenames);
+			command_line_options.rotation_format_filenames);
 
 	// Install an extra menu for developers to help debug GUI problems.
 	if (command_line_options.debug_gui)
 	{
 		main_window_widget.install_gui_debug_menu();
 	}
+	if (command_line_options.enable_external_syncing){
+		main_window_widget.enable_external_syncing();
+	}
 
-if(!enable_symbol_table)
-	main_window_widget.hide_symbol_menu();
-
-#ifdef GPLATES_NO_PYTHON
-	main_window_widget.hide_python_menu();
-#endif
-
-	install_instance(state);
-
+	using namespace GPlatesGui;
+	using namespace GPlatesUtils;
+	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::symbology()))
+	{
+		// main_window_widget.hide_symbol_menu();
+	}
+    	
 	main_window_widget.show();
-	return qapplication.exec();
+	
+	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::python()))
+	{
+		main_window_widget.hide_python_menu();
+	}
+
+	int ret = qapplication.exec();
+	clean_up();
+	return ret;
 
 	// Note: Because we are using Boost.Python, Py_Finalize() should not be called.
 }
-
 
 int main(int argc, char* argv[])
 {
@@ -382,7 +386,6 @@ int main(int argc, char* argv[])
 	// in Visual Studio or you used the "-DCMAKE_BUILD_TYPE:STRING=profilegplates"
 	// command-line option in "cmake" on Linux or Mac.
 	PROFILE_REPORT_TO_FILE("profile.txt");
-
 	return return_code;
 }
 

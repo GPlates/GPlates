@@ -63,13 +63,13 @@ namespace GPlatesQtWidgets
 
 		void
 		set_projection(
-			GPlatesGui::ProjectionType projection_type);
+			GPlatesGui::MapProjection::Type projection_type);
 
 		void
 		set_central_meridian(
 			double central_meridian);
 
-		GPlatesGui::ProjectionType
+		GPlatesGui::MapProjection::Type
 		get_projection_type() const;
 
 		double

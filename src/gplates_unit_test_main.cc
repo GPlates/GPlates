@@ -5,7 +5,7 @@
 * $Revision$
 * $Date$
 * 
-* Copyright (C) 2009 The University of Sydney, Australia
+* Copyright (C) 2009, 2010 The University of Sydney, Australia
 *
 * This file is part of GPlates.
 *
@@ -32,7 +32,7 @@
 #include "unit-test/MainTestSuite.h"
 #include "unit-test/TestSuiteFilter.h"
 #include "utils/CommandLineParser.h"
-#include "gui/GPlatesQtMsgHandler.h"
+#include "app-logic/GPlatesQtMsgHandler.h"
 #include "global/Constants.h"
 
 namespace
@@ -114,7 +114,7 @@ boost::unit_test::test_suite*
 init_unit_test_suite(
 		int argc, char* argv[])
 {
-	GPlatesGui::GPlatesQtMsgHandler::install_qt_message_handler("GPlates_unit_test_QT.log");
+	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler("GPlates_unit_test_QT.log");
 
 	BOOST_GLOBAL_FIXTURE( GPlatesGlobalFixture );
 	boost::unit_test::framework::master_test_suite().p_name.value = 

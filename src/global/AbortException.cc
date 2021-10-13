@@ -32,5 +32,5 @@ void
 GPlatesGlobal::AbortException::write_message(
 		std::ostream &os) const
 {
-	os << "Abort: " << " in " << d_filename << ":" << d_line_num << std::endl;
+	os << "Abort failure";
 }

@@ -71,9 +71,25 @@ namespace GPlatesModel
 		 * If this is the first time 'this' guard is released then any queued notifications
 		 * are delivered here instead of in the destructor (if 'this' is the top-level object
 		 * in any nesting of notification guard objects).
+		 *
+		 * Does nothing if @a release_guard has already been called (and @a acquire_guard not
+		 * subsequently called).
 		 */
 		void
 		release_guard();
+
+
+		/**
+		 * Acquires this guard (if it has been released).
+		 *
+		 * This is useful if you need to temporarily release the guard and then acquire it again
+		 * so that notifications are sent prior to a small section of code and notification
+		 * blocking is resumed afterwards.
+		 *
+		 * Does nothing if @a release_guard has not yet been called.
+		 */
+		void
+		acquire_guard();
 
 	private:
 

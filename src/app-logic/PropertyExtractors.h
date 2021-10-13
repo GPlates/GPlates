@@ -42,15 +42,15 @@
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
-
+#include "utils/FeatureUtils.h"
+//TODO:
+//It is probably not good to include application.h here.
+#include "presentation/Application.h"
 
 namespace GPlatesAppLogic
 {
 	template<typename Adaptee, typename ReturnType>
-	class PropertyExtractorAdapter :
-			public std::unary_function<
-				const GPlatesAppLogic::ReconstructionGeometry &,
-				const boost::optional<ReturnType> >
+	class PropertyExtractorAdapter
 	{
 	public:
 
@@ -63,12 +63,12 @@ namespace GPlatesAppLogic
 		{
 		}
 
+		template<typename ArguType>
 		const boost::optional<return_type>
-		operator()(
-				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
+		operator()(const ArguType& argu) const
 		{
 			typedef typename Adaptee::return_type adaptee_return_type;
-			boost::optional<adaptee_return_type> result = d_adaptee(reconstruction_geometry);
+			boost::optional<adaptee_return_type> result = d_adaptee(argu);
 			if (result)
 			{
 				return static_cast<return_type>(*result);
@@ -87,10 +87,7 @@ namespace GPlatesAppLogic
 	/**
 	 * Extracts the plate ID for use by GenericColourScheme.
 	 */
-	class PlateIdPropertyExtractor :
-			public std::unary_function<
-				const GPlatesAppLogic::ReconstructionGeometry &,
-				const boost::optional<GPlatesModel::integer_plate_id_type> >
+	class PlateIdPropertyExtractor 
 	{
 	public:
 		
@@ -99,41 +96,45 @@ namespace GPlatesAppLogic
 		const boost::optional<return_type>
 		operator()(
 				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
+	
+		const boost::optional<return_type>
+		operator()(
+				const GPlatesModel::FeatureHandle& feature) const;
 	};
 
 	/**
 	 * Extracts the age for use by GenericColourScheme.
 	 */
-	class AgePropertyExtractor :
-			public std::unary_function<
-				const GPlatesAppLogic::ReconstructionGeometry &,
-				const boost::optional<GPlatesMaths::Real> >
+	class AgePropertyExtractor 
 	{
 	public:
 
 		typedef GPlatesMaths::Real return_type;
 
-		AgePropertyExtractor(
-				const ApplicationState &application_state) :
-			d_application_state(application_state)
+		AgePropertyExtractor()
 		{  }
 
 		const boost::optional<return_type>
 		operator()(
 				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
+
+		const boost::optional<return_type>
+		operator()(
+				const GPlatesModel::FeatureHandle& feature) const
+		{
+			return GPlatesUtils::get_age(
+					&feature, 
+					GPlatesPresentation::Application::instance()->get_application_state().get_current_reconstruction_time());
+		}
 	
 	private:
 
-		const ApplicationState &d_application_state;
 	};
 
 	/**
 	 * Extracts the feature type for use by GenericColourScheme.
 	 */
-	class FeatureTypePropertyExtractor :
-			public std::unary_function<
-				const GPlatesAppLogic::ReconstructionGeometry &,
-				const boost::optional<GPlatesModel::FeatureType> >
+	class FeatureTypePropertyExtractor 
 	{
 	public:
 
@@ -142,6 +143,13 @@ namespace GPlatesAppLogic
 		const boost::optional<return_type>
 		operator()(
 				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
+
+		const boost::optional<return_type>
+		operator()(
+				const GPlatesModel::FeatureHandle& feature) const
+		{
+			return feature.feature_type();
+		}
 	};
 }
 

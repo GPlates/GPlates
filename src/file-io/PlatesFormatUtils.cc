@@ -439,6 +439,13 @@ namespace
 	}
 
 	GPlatesUtils::UnicodeString
+	get_data_type_code_for_ophiolite(
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
+	{
+		return "OH";
+	}
+
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_political_boundary(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
@@ -582,6 +589,8 @@ namespace
 					get_data_type_code_for_volcano;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Pluton")] = 
 					get_data_type_code_for_pluton;
+			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Ophiolite")] = 
+					get_data_type_code_for_ophiolite;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("PoliticalBoundary")] = 
 					get_data_type_code_for_political_boundary;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("LargeIgneousProvince")] = 

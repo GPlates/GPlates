@@ -38,9 +38,10 @@ DISABLE_GCC_WARNING("-Wshadow")
 #include "data-mining/DataSelector.h"
 #include "data-mining/DataMiningUtils.h"
 #include "data-mining/OpaqueDataToQString.h"
+#include "data-mining/RegionOfInterestFilter.h"
 #include "model/ModelInterface.h"
 #include "file-io/ReadErrorAccumulation.h"
-#include "file-io/FeatureCollectionReaderWriter.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 
 //./gplates-unit-test --detect_memory_leaks=0 --G_test_to_run=*/Coreg
 
@@ -60,6 +61,8 @@ GPlatesUnitTest::CoregTestSuite::CoregTestSuite(
 
 GPlatesUnitTest::CoregTest::CoregTest()
 {
+	register_default_file_formats(d_file_format_registry, d_model);
+
 	load_test_data();
 }
 
@@ -71,21 +74,24 @@ GPlatesUnitTest::CoregTest::load_test_data()
 				load_cfg(
 						unit_test_data_path + cfg_file,
 						"rotation files"),
-				d_loaded_files);
+				d_loaded_files,
+				d_file_format_registry);
 
 	d_seed_fc =
 		DataMiningUtils::load_files(
 				load_cfg(
 						unit_test_data_path + cfg_file,
 						"seed files"),
-				d_loaded_files);
+				d_loaded_files,
+				d_file_format_registry);
 
 	d_coreg_fc =
 		DataMiningUtils::load_files(
 				load_cfg(
 						unit_test_data_path + cfg_file,
 						"coreg files"),
-				d_loaded_files);
+				d_loaded_files,
+				d_file_format_registry);
 	
 	if(d_rotation_fc.empty()) 
 		qDebug() << "No rotation file.";
@@ -234,8 +240,6 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 		SHAPE_ATTR,//4
 		COL_NUM//5
 	};
-	std::map<QString, FilterType> coreg_op_map;
-	coreg_op_map["Region_of_Interest"] = REGION_OF_INTEREST;
 
 	std::map<QString, AttributeType> attr_map;
 	attr_map["Distance"] =			DISTANCE_ATTRIBUTE;
@@ -280,8 +284,8 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 		std::string op_type_str;
 		double d = 0.0;
 		ss >> op_type_str; ss.ignore(256,'('); ss >> d; 
-		row.filter_type = coreg_op_map[op_type_str.c_str()];
-		row.filter_cfg.d_ROI_range = d;
+		//TODO:
+		row.filter_cfg.reset(new RegionOfInterestFilter::Config(d));
 
 		std::map<QString, AttributeType>::iterator it = attr_map.find(items[ATTR_NAME].trimmed());
 		row.attr_type = it != attr_map.end() ?  it->second : CO_REGISTRATION_ATTRIBUTE;

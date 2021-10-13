@@ -36,6 +36,7 @@
 
 #include "AppLogicFwd.h"
 #include "GeometryCookieCutter.h"
+#include "LayerProxy.h"
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructUtils.h"
 
@@ -160,8 +161,17 @@ namespace GPlatesAppLogic
 		 *
 		 * @a partitioning_feature_collections can be a source of dynamic polygons or
 		 * static polygons.
-		 * That is they can contain TopologicalClosedPlateBoundary features or
+		 * That is they can contain TopologicalClosedPlateBoundary features or TopologicalNetwork or
 		 * regular static polygon features.
+		 *
+		 * NOTE: We also include topological network here even though they are deforming
+		 * and not rigid regions. This is because the current topological closed plate polygons
+		 * do *not* cover the entire globe and leave holes where there are topological networks.
+		 * So we assign plate ids using the topological networks with the understanding that
+		 * these are to be treated as rigid regions as a first order approximation (although the
+		 * plate ids don't exist in the rotation file so they'll need to be added - for example
+		 * the Andes deforming region has plate id 29201 which should be mapped to 201 in
+		 * the rotation file).
 		 *
 		 * @a reconstruction_feature_collections contains rotations required to reconstruct
 		 * the partitioning polygon features and to reverse reconstruct any features
@@ -171,11 +181,14 @@ namespace GPlatesAppLogic
 		 * topological closed plate boundary features can be used as partitioning polygons.
 		 * @a allow_partitioning_using_static_polygons determines if
 		 * regular features (with static polygon geometry) can be used as partitioning polygons.
-		 * By default they both are allowed but the features in @a partitioning_feature_collections
-		 * should ideally only contain one type.
 		 *
 		 * The default value of @a feature_properties_to_assign only assigns
 		 * the reconstruction plate id.
+		 *
+		 * If @a respect_feature_time_period is true (the default) then the feature is only
+		 * partitioned if the reconstruction time (stored in derived class instance) is within
+		 * the time period over which the feature is defined.
+		 * This may not apply to some feature types (eg, virtual geomagnetic poles).
 		 */
 		static
 		non_null_ptr_type
@@ -190,7 +203,9 @@ namespace GPlatesAppLogic
 				const feature_property_flags_type &feature_property_types_to_assign =
 						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
 				bool allow_partitioning_using_topological_plate_polygons = true,
-				bool allow_partitioning_using_static_polygons = true)
+				bool allow_partitioning_using_topological_networks = true,
+				bool allow_partitioning_using_static_polygons = true,
+				bool respect_feature_time_period = true)
 		{
 			return non_null_ptr_type(new AssignPlateIds(
 					assign_plate_id_method,
@@ -200,7 +215,52 @@ namespace GPlatesAppLogic
 					anchor_plate_id,
 					feature_property_types_to_assign,
 					allow_partitioning_using_topological_plate_polygons,
-					allow_partitioning_using_static_polygons));
+					allow_partitioning_using_topological_networks,
+					allow_partitioning_using_static_polygons,
+					respect_feature_time_period));
+		}
+
+
+		/**
+		 * The partitioning static or dynamic polygons come from a layer output.
+		 *
+		 * It is expected that the layer proxy type is either @a ReconstructLayerProxy
+		 * (for static partitioning polygons) or @a TopologyBoundaryResolverLayerProxy or
+		 * @a TopologicalNetwork, otherwise no partitioning will occur.
+		 *
+		 * NOTE: We also include topological network here even though they are deforming
+		 * and not rigid regions. This is because the current topological closed plate polygons
+		 * do *not* cover the entire globe and leave holes where there are topological networks.
+		 * So we assign plate ids using the topological networks with the understanding that
+		 * these are to be treated as rigid regions as a first order approximation (although the
+		 * plate ids don't exist in the rotation file so they'll need to be added - for example
+		 * the Andes deforming region has plate id 29201 which should be mapped to 201 in
+		 * the rotation file).
+		 *
+		 * The default value of @a feature_properties_to_assign only assigns
+		 * the reconstruction plate id.
+		 *
+		 * If @a respect_feature_time_period is true (the default) then the feature is only
+		 * partitioned if the reconstruction time (stored in derived class instance) is within
+		 * the time period over which the feature is defined.
+		 * This may not apply to some feature types (eg, virtual geomagnetic poles).
+		 */
+		static
+		non_null_ptr_type
+		create(
+				AssignPlateIdMethodType assign_plate_id_method,
+				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
+				const double &reconstruction_time,
+				const feature_property_flags_type &feature_property_types_to_assign =
+						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
+				bool respect_feature_time_period = true)
+		{
+			return non_null_ptr_type(new AssignPlateIds(
+					assign_plate_id_method,
+					partitioning_layer_proxies,
+					reconstruction_time,
+					feature_property_types_to_assign,
+					respect_feature_time_period));
 		}
 
 
@@ -259,29 +319,20 @@ namespace GPlatesAppLogic
 		feature_property_flags_type d_feature_property_types_to_assign;
 
 		/**
-		 * Reconstruction tree cache.
-		 */
-		ReconstructionTreeCreator d_reconstruction_tree_cache;
-
-		/**
-		 * Contains the reconstructed static polygons used for cookie-cutting.
-		 *
-		 * Can also contain the topological section geometries referenced by topological polygons.
-		 */
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> d_reconstructed_feature_geometries;
-
-		/**
-		 * Contains the resolved topological polygons used for cookie-cutting.
-		 */
-		std::vector<resolved_topological_boundary_non_null_ptr_type> d_resolved_topological_boundaries;
-
-		/**
 		 * Used to cookie cut geometries to find partitioning polygons.
 		 */
 		boost::scoped_ptr<GeometryCookieCutter> d_geometry_cookie_cutter;
 
 		//! Tasks that do the actual assigning of properties like plate id.
 		std::vector< boost::shared_ptr<PartitionFeatureTask> > d_partition_feature_tasks;
+
+		/**
+		 * Determines if features are only partitioned if the reconstruction time is within
+		 * the time period over which the features are defined.
+		 *
+		 * This may not apply to some feature types (eg, virtual geomagnetic poles).
+		 */
+		bool d_respect_feature_time_period;
 
 
 		/**
@@ -299,7 +350,26 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const feature_property_flags_type &feature_property_types_to_assign,
 				bool allow_partitioning_using_topological_plate_polygons,
-				bool allow_partitioning_using_static_polygons);
+				bool allow_partitioning_using_topological_networks,
+				bool allow_partitioning_using_static_polygons,
+				bool respect_feature_time_period);
+
+
+		/**
+		 * The partitioning static or dynamic polygons come from layer outputs.
+		 *
+		 * It is expected that the layer proxy type is either @a ReconstructLayerProxy or
+		 * @a TopologyBoundaryResolverLayerProxy or @a TopologyNetworkResolverLayerProxy,
+		 * otherwise no partitioning will occur.
+		 *
+		 * @throws PreconditionViolationError exception if @a partitioning_layer_proxies is empty.
+		 */
+		AssignPlateIds(
+				AssignPlateIdMethodType assign_plate_id_method,
+				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
+				const double &reconstruction_time,
+				const feature_property_flags_type &feature_property_types_to_assign,
+				bool respect_feature_time_period);
 	};
 }
 

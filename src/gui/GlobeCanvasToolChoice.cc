@@ -52,7 +52,8 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 		const GPlatesCanvasTools::ManipulatePole::non_null_ptr_type &manipulate_pole_tool,
 		const GPlatesCanvasTools::BuildTopology::non_null_ptr_type &build_topology_tool,
 		const GPlatesCanvasTools::EditTopology::non_null_ptr_type &edit_topology_tool,
-		const GPlatesCanvasTools::MeasureDistance::non_null_ptr_type &measure_distance_tool) :
+		const GPlatesCanvasTools::MeasureDistance::non_null_ptr_type &measure_distance_tool,
+		const GPlatesCanvasTools::CreateSmallCircle::non_null_ptr_type &create_small_circle_tool) :
 	d_reorient_globe_tool_ptr(
 			new GPlatesCanvasTools::ReorientGlobe(
 				globe,
@@ -122,6 +123,11 @@ GPlatesGui::GlobeCanvasToolChoice::GlobeCanvasToolChoice(
 	d_measure_distance_tool_ptr(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 				measure_distance_tool,
+				globe,
+				globe_canvas)),
+	d_create_small_circle_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+				create_small_circle_tool,
 				globe,
 				globe_canvas)),
 	d_tool_choice_ptr(d_reorient_globe_tool_ptr.get())

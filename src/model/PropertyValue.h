@@ -33,6 +33,7 @@
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
+#include "utils/QtStreamable.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -68,7 +69,9 @@ namespace GPlatesModel
 	 * also provides the functions to be used by boost::intrusive_ptr for reference-counting.
 	 */
 	class PropertyValue :
-			public GPlatesUtils::ReferenceCount<PropertyValue>
+			public GPlatesUtils::ReferenceCount<PropertyValue>,
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<PropertyValue>
 	{
 	public:
 		/**

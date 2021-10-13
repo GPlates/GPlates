@@ -27,42 +27,27 @@
 
 #include <numeric>
 #include <vector>
-
 #include <QDebug>
-
 #include <boost/foreach.hpp>
+
+#include "CoRegReducer.h"
 
 namespace GPlatesDataMining
 {
-	using namespace GPlatesUtils;
-	
-	typedef std::vector<OpaqueData> ReducerInputSequence;
-
-	/*	
-	*	TODO:
-	*	Comments....
-	*/
-	class MeanReducer
+	class MeanReducer : public CoRegReducer
 	{
-	public:
-
-		/*
-		* TODO: comments....
-		*/
-		inline
+	protected:
 		OpaqueData
-		operator()(
-				ReducerInputSequence::const_iterator input_begin,
-				ReducerInputSequence::const_iterator input_end) 
+		exec(
+				CoRegReducer::ReducerInDataset::const_iterator first,
+				CoRegReducer::ReducerInDataset::const_iterator last) 
 		{
-			std::vector<double> array;
-			DataMiningUtils::convert_to_double_vector(
-					input_begin, 
-					input_end, 
-					array);
-			double sum = std::accumulate(array.begin(),array.end(),0);
-			double mean = sum / array.size();
-			return OpaqueData(mean);
+			std::vector<OpaqueData> data;
+			extract_opaque_data(first, last, data);
+			std::vector<double> buf;
+			DataMiningUtils::convert_to_double_vector(data.begin(),data.end(), buf); 
+			double ret = std::accumulate(buf.begin(),buf.end(),0) / buf.size();
+			return OpaqueData(ret);
 		}
 	};
 }

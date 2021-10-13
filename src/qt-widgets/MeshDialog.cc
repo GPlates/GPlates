@@ -50,6 +50,7 @@
 #include "model/ModelInterface.h"
 #include "model/Model.h"
 #include "model/ModelUtils.h"
+#include "model/NotificationGuard.h"
 
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GpmlPlateId.h"
@@ -284,11 +285,15 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 	resolution<<d_node_x+1;
 	std::string res_str = resolution.str();
 
+	GPlatesModel::ModelInterface model =
+			d_view_state.get_application_state().get_model_interface();
+
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many as we incrementally modify the feature below.
+	GPlatesModel::NotificationGuard model_notification_guard(model.access_model());
+
 	for(int i=geometries.size()-1; i>=0; i--)
 	{
-		GPlatesModel::ModelInterface model =
-				d_view_state.get_application_state().get_model_interface();
-
 		// Create a feature collection that is not added to the model.
 		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection = 
 				GPlatesModel::FeatureCollectionHandle::create();

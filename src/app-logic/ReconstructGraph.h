@@ -268,7 +268,7 @@ namespace GPlatesAppLogic
 		 * Emits the @a default_reconstruction_tree_layer_changed signal if the default
 		 * reconstruction tree layer changed.
 		 *
-		 * @a throws PreconditionViolationError if @a default_reconstruction_tree_layer is *invalid*
+		 * @throws PreconditionViolationError if @a default_reconstruction_tree_layer is *invalid*
 		 * or if it does *not* refer to a reconstruction tree layer type.
 		 */
 		void

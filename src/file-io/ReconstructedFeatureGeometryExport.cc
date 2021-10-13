@@ -28,6 +28,7 @@
 
 #include "GMTFormatReconstructedFeatureGeometryExport.h"
 #include "FeatureCollectionFileFormat.h"
+#include "FeatureCollectionFileFormatRegistry.h"
 #include "FileFormatNotSupportedException.h"
 #include "ReconstructionGeometryExportImpl.h"
 #include "OgrFormatReconstructedFeatureGeometryExport.h"
@@ -57,7 +58,8 @@ namespace GPlatesFileIO
 					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
 					const std::vector<const File::Reference *> &referenced_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-					const double &reconstruction_time)
+					const double &reconstruction_time,
+					bool wrap_to_dateline)
 			{
 				switch (export_format)
 				{
@@ -67,7 +69,8 @@ namespace GPlatesFileIO
 						filename,
 						referenced_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);		
+						reconstruction_time,
+						wrap_to_dateline);
 					break;
 
 				case OGRGMT:
@@ -101,7 +104,8 @@ namespace GPlatesFileIO
 					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
 					const std::vector<const File::Reference *> &referenced_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-					const double &reconstruction_time)
+					const double &reconstruction_time,
+					bool wrap_to_dateline)
 			{
 				switch(export_format)
 				{
@@ -111,7 +115,8 @@ namespace GPlatesFileIO
 						filename,
 						referenced_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						wrap_to_dateline);
 					break;
 				case OGRGMT:
 					OgrFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
@@ -141,20 +146,26 @@ namespace GPlatesFileIO
 
 GPlatesFileIO::ReconstructedFeatureGeometryExport::Format
 GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
-		const QFileInfo& file_info)
+		const QFileInfo& file_info,
+		const FeatureCollectionFileFormat::Registry &file_format_registry)
 {
 	// Since we're using a feature collection file format to export
 	// our RFGs we'll use the feature collection file format code.
-	const FeatureCollectionFileFormat::Format feature_collection_file_format =
-			get_feature_collection_file_format(file_info);
+	const boost::optional<FeatureCollectionFileFormat::Format> feature_collection_file_format =
+			file_format_registry.get_file_format(file_info);
+	if (!feature_collection_file_format ||
+		!file_format_registry.does_file_format_support_writing(feature_collection_file_format.get()))
+	{
+		return UNKNOWN;
+	}
 
 	// Only some feature collection file formats are used for exporting
 	// reconstructed feature geometries because most file formats only
 	// make sense for unreconstructed geometry (since they provide the
 	// information required to do the reconstructions).
-	switch (feature_collection_file_format)
+	switch (feature_collection_file_format.get())
 	{
-	case FeatureCollectionFileFormat::GMT:
+	case FeatureCollectionFileFormat::WRITE_ONLY_XY_GMT:
 		return GMT;
 	case FeatureCollectionFileFormat::SHAPEFILE:
 		return SHAPEFILE;
@@ -177,7 +188,8 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool export_single_output_file,
-		bool export_per_input_file)
+		bool export_per_input_file,
+		bool wrap_to_dateline)
 {
 	// Get the list of active reconstructable feature collection files that contain
 	// the features referenced by the ReconstructionGeometry objects.
@@ -200,7 +212,8 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 				grouped_recon_geom_seq,
 				referenced_files,
 				reconstruction_anchor_plate_id,
-				reconstruction_time);
+				reconstruction_time,
+				wrap_to_dateline);
 	}
 
 	if (export_per_input_file)
@@ -227,7 +240,8 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 					grouped_features_iter->feature_geometry_groups,
 					referenced_files,
 					reconstruction_anchor_plate_id,
-					reconstruction_time);
+					reconstruction_time,
+					wrap_to_dateline);
 		}
 	}
 }

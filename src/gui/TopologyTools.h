@@ -375,7 +375,6 @@ namespace GPlatesGui
 			boost::optional<VisibleSection>
 			reconstruct_section_info_from_table_row(
 					std::size_t section_index,
-					const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 					const std::vector<GPlatesAppLogic::ReconstructHandle::type> &reconstruct_handles) const;
 
 			/**

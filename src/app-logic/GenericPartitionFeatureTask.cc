@@ -31,6 +31,10 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "model/NotificationGuard.h"
+
+#include "utils/Profile.h"
+
 
 GPlatesAppLogic::GenericPartitionFeatureTask::GenericPartitionFeatureTask(
 		const ReconstructionTree &reconstruction_tree,
@@ -47,16 +51,13 @@ void
 GPlatesAppLogic::GenericPartitionFeatureTask::partition_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		const GeometryCookieCutter &geometry_cookie_cutter)
+		const GeometryCookieCutter &geometry_cookie_cutter,
+		bool respect_feature_time_period)
 {
-	// If the feature is not defined at the reconstruction time then
-	// do not partition it.
-	if (!PartitionFeatureUtils::does_feature_exist_at_reconstruction_time(
-			feature_ref,
-			d_reconstruction_tree.get_reconstruction_time()))
-	{
-		return;
-	}
+	//PROFILE_FUNC();
+
+	// Merge model events across this scope to avoid excessive number of model callbacks.
+	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
 
 	// Partition the feature and get the partitioned results in return.
 	// NOTE: This does not modify the feature referenced by 'feature_ref'.
@@ -66,7 +67,9 @@ GPlatesAppLogic::GenericPartitionFeatureTask::partition_feature(
 	const boost::shared_ptr<const PartitionFeatureUtils::PartitionedFeature> partitioned_feature =
 			PartitionFeatureUtils::partition_feature(
 					feature_ref,
-					geometry_cookie_cutter);
+					geometry_cookie_cutter,
+					// Determines if partition feature wen not defined at the reconstruction time...
+					respect_feature_time_period);
 
 	// If the feature being partitioned does not exist at the reconstruction time of
 	// the cookie cutter then return early and do nothing.
@@ -231,6 +234,8 @@ GPlatesAppLogic::GenericPartitionFeatureTask::partition_feature_into_plates(
 		const boost::shared_ptr<const PartitionFeatureUtils::PartitionedFeature> &partitioned_feature,
 		PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager)
 {
+	//PROFILE_FUNC();
+
 	//
 	// Iterate over the results of the partitioned feature.
 	//

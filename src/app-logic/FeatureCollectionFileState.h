@@ -35,11 +35,14 @@
 #include <boost/shared_ptr.hpp>
 #include <QObject>
 
+#include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/File.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/WeakReferenceCallback.h"
+
+#include "utils/CopyConst.h"
 
 
 namespace GPlatesAppLogic
@@ -72,23 +75,43 @@ namespace GPlatesAppLogic
 
 		/**
 		 * A reference to a file loaded into @a FeatureCollectionFileState.
+		 *
+		 * 'FileStateQualifiedType' can be either 'FeatureCollectionFileState' or 'const FeatureCollectionFileState'.
 		 */
+		template <class FileStateQualifiedType>
 		class FileReference :
-				public boost::equality_comparable<FileReference>
+				public boost::equality_comparable<FileReference<FileStateQualifiedType> >
 		{
 		public:
+			//! Typedef for the const or non-const @a FeatureCollectionFileState.
+			typedef FileStateQualifiedType file_state_qualified_type;
+			
+			//! Typedef for a const or non-const @a GPlatesFileIO::File::Reference.
+			typedef typename GPlatesUtils::CopyConst<file_state_qualified_type, GPlatesFileIO::File::Reference>::type
+					file_reference_qualified_type;
+
+
 			//! Constructor used by implementation only.
 			FileReference(
-					FeatureCollectionFileState &file_state,
+					file_state_qualified_type &file_state,
 					file_handle_type file_handle) :
 				d_file_state(&file_state),
 				d_file_handle(file_handle)
 			{  }
 
 			/**
-			 * Returns the file object referenced.
+			 * Implicit conversion constructor from 'file_reference' to 'const_file_reference'.
 			 */
-			const GPlatesFileIO::File::Reference &
+			FileReference(
+					const FileReference<FeatureCollectionFileState> &rhs) :
+				d_file_state(rhs.d_file_state),
+				d_file_handle(rhs.d_file_handle)
+			{  }
+
+			/**
+			 * Returns the 'const' or 'non-const' @a GPlatesFileIO::File::Reference depending on template type.
+			 */
+			file_reference_qualified_type &
 			get_file() const
 			{
 				return d_file_state->get_file(d_file_handle);
@@ -113,22 +136,25 @@ namespace GPlatesAppLogic
 			}
 
 			/**
-			 * Changes the file information to @a new_file_info.
+			 * Changes the file information to @a new_file_info and the file configuration to
+			 * @a new_file_configuration (such as changed read/write options).
 			 *
 			 * @a FeatureCollectionFileState emits signals @a file_state_file_info_changed and
 			 * @a file_state_changed after setting the file info.
 			 */
 			void
 			set_file_info(
-					const GPlatesFileIO::FileInfo &new_file_info)
+					const GPlatesFileIO::FileInfo &new_file_info,
+					boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+							new_file_configuration = boost::none)
 			{
-				d_file_state->set_file_info(d_file_handle, new_file_info);
+				d_file_state->set_file_info(d_file_handle, new_file_info, new_file_configuration);
 			}
 
 			/**
 			 * Returns the @a FeatureCollectionFileState that we belong to.
 			 */
-			FeatureCollectionFileState &
+			file_state_qualified_type &
 			get_file_state() const
 			{
 				return *d_file_state;
@@ -170,17 +196,23 @@ namespace GPlatesAppLogic
 			}
 
 		private:
-			FeatureCollectionFileState *d_file_state;
+			file_state_qualified_type *d_file_state;
 			file_handle_type d_file_handle;
+
+			// For implicit non-const to const constructor.
+			friend class FileReference<typename boost::add_const<FeatureCollectionFileState>::type>;
 		};
 
 
 		/**
-		 * Typedef for a reference to a loaded file.
-		 *
-		 * The reference deferences to 'GPlatesFileIO::File &'.
+		 * Typedef for a 'const' reference to a loaded file.
 		 */
-		typedef FileReference file_reference;
+		typedef FileReference<const FeatureCollectionFileState> const_file_reference;
+
+		/**
+		 * Typedef for a 'non-const' reference to a loaded file.
+		 */
+		typedef FileReference<FeatureCollectionFileState> file_reference;
 
 
 		//! Constructor.
@@ -192,7 +224,7 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns a sequence of file reference to all currently loaded files.
+		 * Returns a sequence of 'const' file references to all currently loaded files.
 		 *
 		 * The returned sequence is ordered by file index and the file indices are always
 		 * contiguous (no gaps) starting at index zero.
@@ -201,6 +233,12 @@ namespace GPlatesAppLogic
 		 *
 		 * The returned sequence is ordered by file index (that is the order in which
 		 * the files were first loaded).
+		 */
+		std::vector<const_file_reference>
+		get_loaded_files() const;
+
+		/**
+		 * Returns a sequence of 'non-const' file references to all currently loaded files.
 		 */
 		std::vector<file_reference>
 		get_loaded_files();
@@ -411,6 +449,10 @@ namespace GPlatesAppLogic
 		get_file(
 				file_handle_type file_handle) const;
 
+		GPlatesFileIO::File::Reference &
+		get_file(
+				file_handle_type file_handle);
+
 		file_index_type
 		get_file_index(
 				file_handle_type file_handle) const;
@@ -418,7 +460,9 @@ namespace GPlatesAppLogic
 		void
 		set_file_info(
 				file_handle_type file_handle,
-				const GPlatesFileIO::FileInfo &new_file_info);
+				const GPlatesFileIO::FileInfo &new_file_info,
+				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+						new_file_configuration);
 
 		void
 		deactivated_feature_collection(

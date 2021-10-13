@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Preferences</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../qt-resources/qt_widgets.qrc">
@@ -52,11 +52,6 @@
        </property>
        <item>
         <property name="text">
-         <string>Network</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
          <string>Advanced</string>
         </property>
         <property name="flags">
@@ -76,8 +71,59 @@
        <property name="frameShape">
         <enum>QFrame::StyledPanel</enum>
        </property>
-       <widget class="QWidget" name="page"/>
-       <widget class="QWidget" name="page_2"/>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="QWidget" name="page_advanced">
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QLabel" name="label_advanced_1">
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Advanced Settings</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_advanced_2">
+           <property name="font">
+            <font>
+             <weight>50</weight>
+             <italic>true</italic>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>Below is a listing of every setting available to GPlates. If you do not know what a setting affects, it is best to leave it alone!</string>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="advanced_settings_placeholder">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </item>
     </layout>

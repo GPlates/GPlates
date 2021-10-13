@@ -36,191 +36,7 @@
 #include "model/FeatureVisitor.h"
 
 #include "property-values/Georeferencing.h"
-#include "property-values/GmlFile.h"
-#include "property-values/GmlRectifiedGrid.h"
-#include "property-values/GpmlConstantValue.h"
-#include "property-values/GpmlPiecewiseAggregation.h"
-#include "property-values/GpmlTimeWindow.h"
-#include "property-values/RawRaster.h"
-#include "property-values/RawRasterUtils.h"
 #include "property-values/TextContent.h"
-
-
-namespace
-{
-	/**
-	 * Visits a feature collection and determines whether the feature collection
-	 * contains any raster features.
-	 *
-	 * The heuristic that we're using here is that it is a raster feature if there
-	 * is all of the following:
-	 *  - GmlRectifiedGrid inside a GpmlConstantValue inside a gpml:domainSet
-	 *    top level property.
-	 *  - GmlFile inside a GpmlConstantValue or a GpmlPiecewiseAggregation inside
-	 *    a gpml:rangeSet top level property.
-	 *  - any proxied raw raster (for any band) in the GmlFile is initialised.
-	 *    TODO: Check only the band number that this layer task is interested in.
-	 *          Although maybe not because the user could switch the band number in
-	 *          the layer controls and this class is designed to test if a raster layer
-	 *          can process the input feature.
-	 *          So probably better to leave as is and just check that any band can be processed.
-	 *  - GpmlRasterBandNames (not inside any time dependent structure) inside a
-	 *    gpml:bandNames top level property.
-	 */
-	class CanResolveRasterFeature :
-			public GPlatesModel::ConstFeatureVisitor
-	{
-	public:
-
-		CanResolveRasterFeature() :
-			d_seen_gml_rectified_grid(false),
-			d_seen_gml_file(false),
-			d_seen_gpml_raster_band_names(false),
-			d_inside_constant_value(false),
-			d_inside_piecewise_aggregation(false),
-			d_collection_has_raster_feature(false)
-		{  }
-
-		bool
-		collection_has_raster_feature() const
-		{
-			return d_collection_has_raster_feature;
-		}
-
-		virtual
-		bool
-		initialise_pre_feature_properties(
-				const GPlatesModel::FeatureHandle &feature_handle)
-		{
-			d_seen_gml_rectified_grid = false;
-			d_seen_gml_file = false;
-			d_seen_at_least_one_valid_proxied_raw_raster = false;
-			d_seen_gpml_raster_band_names = false;
-
-			return true;
-		}
-
-		virtual
-		void
-		finalise_post_feature_properties(
-				const GPlatesModel::FeatureHandle &feature_handle)
-		{
-			if (d_seen_gml_rectified_grid &&
-					d_seen_gml_file &&
-					d_seen_at_least_one_valid_proxied_raw_raster &&
-					d_seen_gpml_raster_band_names)
-			{
-				d_collection_has_raster_feature = true;
-			}
-		}
-
-		virtual
-		void
-		visit_gpml_constant_value(
-				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
-		{
-			d_inside_constant_value = true;
-			gpml_constant_value.value()->accept_visitor(*this);
-			d_inside_constant_value = false;
-		}
-
-		virtual
-		void
-		visit_gpml_piecewise_aggregation(
-				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
-		{
-			d_inside_piecewise_aggregation = true;
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
-				gpml_piecewise_aggregation.time_windows();
-			BOOST_FOREACH(const GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
-			{
-				time_window.time_dependent_value()->accept_visitor(*this);
-			}
-			d_inside_piecewise_aggregation = false;
-		}
-
-		virtual
-		void
-		visit_gml_rectified_grid(
-				const GPlatesPropertyValues::GmlRectifiedGrid &gml_rectified_grid)
-		{
-			static const GPlatesModel::PropertyName DOMAIN_SET =
-				GPlatesModel::PropertyName::create_gpml("domainSet");
-
-			if (d_inside_constant_value)
-			{
-				const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
-				if (propname && *propname == DOMAIN_SET)
-				{
-					d_seen_gml_rectified_grid = true;
-				}
-			}
-		}
-
-		virtual
-		void
-		visit_gml_file(
-				const GPlatesPropertyValues::GmlFile &gml_file)
-		{
-			static const GPlatesModel::PropertyName RANGE_SET =
-				GPlatesModel::PropertyName::create_gpml("rangeSet");
-
-			if (d_inside_constant_value || d_inside_piecewise_aggregation)
-			{
-				const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
-				if (propname && *propname == RANGE_SET)
-				{
-					d_seen_gml_file = true;
-
-					// Make sure we have at least one initialised proxied raw raster for a band.
-					// If we have at least one then it means we can process something (even if
-					// it's only one band).
-					const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> proxied_rasters =
-							gml_file.proxied_raw_rasters();
-					BOOST_FOREACH(
-							const GPlatesPropertyValues::RawRaster::non_null_ptr_type &proxied_raster,
-							proxied_rasters)
-					{
-						if (GPlatesPropertyValues::RawRasterUtils::has_proxied_data(*proxied_raster))
-						{
-							d_seen_at_least_one_valid_proxied_raw_raster = true;
-							break;
-						}
-					}
-				}
-			}
-		}
-
-		virtual
-		void
-		visit_gpml_raster_band_names(
-				const GPlatesPropertyValues::GpmlRasterBandNames &gpml_raster_band_names)
-		{
-			static const GPlatesModel::PropertyName BAND_NAMES =
-				GPlatesModel::PropertyName::create_gpml("bandNames");
-
-			if (!d_inside_constant_value && !d_inside_piecewise_aggregation)
-			{
-				const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
-				if (propname && *propname == BAND_NAMES)
-				{
-					d_seen_gpml_raster_band_names = true;
-				}
-			}
-		}
-
-	private:
-		bool d_seen_gml_rectified_grid;
-		bool d_seen_gml_file;
-		bool d_seen_at_least_one_valid_proxied_raw_raster;
-		bool d_seen_gpml_raster_band_names;
-
-		bool d_inside_constant_value;
-		bool d_inside_piecewise_aggregation;
-		
-		bool d_collection_has_raster_feature;
-	};
-}
 
 
 const QString GPlatesAppLogic::RasterLayerTask::RASTER_FEATURE_CHANNEL_NAME =
@@ -235,13 +51,7 @@ bool
 GPlatesAppLogic::RasterLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 {
-	CanResolveRasterFeature visitor;
-	for (GPlatesModel::FeatureCollectionHandle::const_iterator iter = feature_collection->begin();
-			iter != feature_collection->end(); ++iter)
-	{
-		visitor.visit_feature(iter);
-	}
-	return visitor.collection_has_raster_feature();
+	return contains_raster_feature(feature_collection);
 }
 
 
@@ -371,11 +181,36 @@ GPlatesAppLogic::RasterLayerTask::modified_input_file(
 {
 	if (input_channel_name == RASTER_FEATURE_CHANNEL_NAME)
 	{
-		// Let the layer task params know that the raster feature has been modified.
-		d_layer_task_params.raster_feature_modified();
+		// The feature collection has been modified which means it may have a new feature such as when
+		// a file is reloaded (same feature collection but all features are removed and reloaded).
+		// So we have to assume the existing raster feature is no longer valid so we need to set
+		// the raster feature again.
+		//
+		// This is pretty much the same as 'add_input_file_connection()'.
+		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
+		GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection->end();
+		if (features_iter == features_end)
+		{
+			// A raster feature collection should have one feature.
+			qWarning() << "Modified raster feature collection contains no features.";
+			return;
+		}
 
-		// Let the raster layer proxy know the raster feature has been modified.
-		d_raster_layer_proxy->modified_raster_feature(d_layer_task_params);
+		// Set the raster feature in the raster layer proxy.
+		const GPlatesModel::FeatureHandle::weak_ref feature_ref = (*features_iter)->reference();
+
+		// Let the layer task params know of the new raster feature.
+		d_layer_task_params.set_raster_feature(feature_ref);
+
+		// Let the raster layer proxy know of the raster and let it know of the new parameters.
+		d_raster_layer_proxy->set_current_raster_feature(feature_ref, d_layer_task_params);
+
+		// A raster feature collection should have only one feature.
+		if (++features_iter != features_end)
+		{
+			qWarning() << "Modified raster feature collection contains more than one feature - "
+					"ignoring all but the first.";
+		}
 	}
 }
 
@@ -518,13 +353,6 @@ GPlatesAppLogic::RasterLayerTask::Params::set_raster_feature(
 {
 	d_raster_feature = raster_feature;
 
-	updated_raster_feature();
-}
-
-
-void
-GPlatesAppLogic::RasterLayerTask::Params::raster_feature_modified()
-{
 	updated_raster_feature();
 }
 

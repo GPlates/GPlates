@@ -49,6 +49,7 @@ namespace
 			// FIXME: Perhaps these shouldn't be here in which case the mapping between
 			// the "gpml:reconstructionMethod" enumerations and the ReconstructMethodInterface
 			// classes that carry out different types of reconstruction should not be a direct mapping.
+			GPlatesPropertyValues::EnumerationContent("SmallCircle"),
 			GPlatesPropertyValues::EnumerationContent("VirtualGeomagneticPole"),
 			GPlatesPropertyValues::EnumerationContent("Flowline"),
 			GPlatesPropertyValues::EnumerationContent("MotionPath")

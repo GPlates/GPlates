@@ -1154,6 +1154,8 @@ namespace GPlatesMaths
 			d_line_num(exception_source.get_line_num())
 		{  }
 
+		~InvalidPointsForPolylineConstructionError() throw(){}
+
 	protected:
 		virtual
 		const char *

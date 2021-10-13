@@ -6,7 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 The University of Sydney, Australia
- * Copyright (C) 2007, 2008, 2009, 2010 Geological Survey of Norway
+ * Copyright (C) 2007, 2008, 2009, 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -68,6 +68,7 @@ namespace GPlatesFileIO
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
+	class Dialogs;
 	class DockState;
 	class EnableCanvasTool;
 	class FeatureFocus;
@@ -102,6 +103,11 @@ namespace GPlatesViewOperations
 	class GeometryOperationTarget;
 }
 
+namespace GPlatesUtils
+{
+	class ExternalSyncController;
+}
+
 namespace GPlatesQtWidgets
 {
 	class AboutDialog;
@@ -114,6 +120,7 @@ namespace GPlatesQtWidgets
 	class ConfigureGraticulesDialog;
 	class ConfigureTextOverlayDialog;
 	class DockWidget;
+	class DrawStyleDialog;
 	class CreateVGPDialog;
 	class ExportAnimationDialog;
 	class FeaturePropertiesDialog;
@@ -121,7 +128,6 @@ namespace GPlatesQtWidgets
 	class ManageFeatureCollectionsDialog;
 	class MapView;
 	class MeshDialog;
-	class PreferencesDialog;
 	class PythonConsoleDialog;
 	class ReadErrorAccumulationDialog;
 	class ReconstructionViewWidget;
@@ -173,6 +179,12 @@ namespace GPlatesQtWidgets
 			return *d_reconstruction_view_widget_ptr;
 		}
 
+		GPlatesQtWidgets::ConnectWFSDialog &
+		wfs_dialog()
+		{
+			return *d_connect_wfs_dialog_ptr;
+		}
+
 		GlobeCanvas &
 		globe_canvas();
 
@@ -184,6 +196,15 @@ namespace GPlatesQtWidgets
 
 		const MapView &
 		map_view() const;
+		
+		
+		/**
+		 * Accessor for the Dialogs class which manages all the instances of major dialogs/windows
+		 * that would ordinarily hang off of ViewportWindow and clutter things up.
+		 */
+		GPlatesGui::Dialogs &
+		dialogs() const;
+
 
 		void
 		create_svg_file(
@@ -241,6 +262,9 @@ namespace GPlatesQtWidgets
 			return *d_visual_layers_dialog_ptr;
 		}
 
+		DrawStyleDialog*
+		draw_style_dialog();
+		
 		void
 		restore_canvas_tool_last_chosen_by_user();
 
@@ -255,6 +279,20 @@ namespace GPlatesQtWidgets
 		{
 			return *d_utilities_menu_ptr;
 		}
+	
+		/**
+		 * Enable  communication.
+		 *
+		 * We need to control this from the viewport
+		 * window for situations where gplates is
+		 * launched remotely and acts as the "slave"
+		 * application. This would also disable the ability
+		 * to open the external-sync-dialog from
+		 * GPlates.
+		 */
+		void
+		enable_external_syncing(
+		    bool gplates_is_master = false);
 
 	public slots:
 		
@@ -316,7 +354,7 @@ namespace GPlatesQtWidgets
 				bool enable = true);
 
 		void
-			enable_split_feature_tool(
+		enable_split_feature_tool(
 			bool enable = true);
 
 		void
@@ -333,6 +371,10 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_measure_distance_tool(
+				bool enable = true);
+
+		void
+		enable_create_small_circle_tool(
 				bool enable = true);
 
 		void
@@ -378,6 +420,9 @@ namespace GPlatesQtWidgets
 		choose_edit_topology_tool();
 
 		void
+		choose_create_small_circle_tool();
+
+		void
 		choose_measure_distance_tool();
 
 		void
@@ -419,9 +464,6 @@ namespace GPlatesQtWidgets
 		pop_up_animate_dialog();
 
 		void
-		pop_up_preferences_dialog();
-
-		void
 		pop_up_configure_text_overlay_dialog();
 
 		void
@@ -429,6 +471,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_colouring_dialog();
+
+		void
+		pop_up_draw_style_dialog();
 
 		void
 		handle_load_symbol_file();
@@ -472,6 +517,18 @@ namespace GPlatesQtWidgets
 		hide_python_menu()
 		{
 			action_Open_Python_Console->setVisible(false);
+		}
+
+		void
+		set_time(const double time)
+		{
+			d_animation_controller.set_view_time(time);
+		}
+
+		GPlatesGui::AnimationController&
+		get_animation_controller()
+		{
+			return d_animation_controller;
 		}
 
 	protected:
@@ -593,7 +650,10 @@ namespace GPlatesQtWidgets
 		void
 		set_internal_release_window_title();
 
-	private slots:
+
+	
+		
+		private slots:
 
 		void
 		pop_up_specify_anchored_plate_id_dialog();
@@ -610,9 +670,6 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_window_menu_about_to_show();
-
-		void
-		close_all_dialogs();
 		
 		void
 		dock_search_results_at_top();
@@ -734,13 +791,13 @@ namespace GPlatesQtWidgets
 		handle_edit_topology_triggered();
 
 		void
+		handle_create_small_circle_triggered();
+
+		void
 		handle_measure_distance_triggered();
 
 		void
 		open_new_window();
-
-		void
-		pop_up_small_circle_manager();
 
 		void
 		pop_up_background_colour_picker();
@@ -759,10 +816,7 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_python_console();
-
-		void
-		handle_python_console_text_changed();
-
+		
 	private:
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
@@ -804,6 +858,11 @@ namespace GPlatesQtWidgets
 		QPointer<GPlatesGui::DockState> d_dock_state_ptr;
 
 		/**
+		 * Manages all the major dialogs that would otherwise clutter up ViewportWindow.
+		 */
+		QPointer<GPlatesGui::Dialogs> d_dialogs_ptr;
+
+		/**
 		 * A temporary position for the new DockWidget for Clicked/Topology
 		 * while I refactor it out of ViewportWindow --JC
 		 */
@@ -811,12 +870,20 @@ namespace GPlatesQtWidgets
 
 		ReconstructionViewWidget *d_reconstruction_view_widget_ptr;
 
+		/*
+		* Fixme: some of the scoped pointers below are not necessary since
+		* most of the dialogs have a parent which means Qt will handle the memory for us.
+		* There is no "double free" problem because the boost::scoped_ptr goes out of scope first, 
+		* when the pointer has been deleted by boost::scoped_ptr, Qt memory management system can
+		* detect the deletion of the pointer because the object is derived from QObject.
+		*/
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
 		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
 		boost::scoped_ptr<ChooseFeatureCollectionDialog> d_choose_feature_collection_dialog_ptr;
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
+		DrawStyleDialog* d_draw_style_dialog_ptr;
 		boost::scoped_ptr<ConnectWFSDialog> d_connect_wfs_dialog_ptr;
 		boost::scoped_ptr<ConfigureGraticulesDialog> d_configure_graticules_dialog_ptr;
 		boost::scoped_ptr<ConfigureTextOverlayDialog> d_configure_text_overlay_dialog_ptr;
@@ -824,14 +891,11 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
-		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
-		boost::scoped_ptr<PreferencesDialog> d_preferences_dialog_ptr;
-		boost::scoped_ptr<PythonConsoleDialog> d_python_console_dialog_ptr;
+		MeshDialog* d_mesh_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
-		boost::scoped_ptr<SmallCircleManager> d_small_circle_manager_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
 		boost::scoped_ptr<SymbolManagerDialog> d_symbol_manager_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
@@ -936,6 +1000,11 @@ namespace GPlatesQtWidgets
 		 * Allows Python scripts to be run from the Utilities menu.
 		 */
 		GPlatesGui::UtilitiesMenu *d_utilities_menu_ptr;
+
+		/**
+		 * Controller for external communication.
+		 */
+		boost::scoped_ptr<GPlatesUtils::ExternalSyncController> d_external_sync_controller_ptr;	
 	};
 }
 

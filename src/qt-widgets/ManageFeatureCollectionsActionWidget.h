@@ -26,12 +26,24 @@
 #ifndef GPLATES_QTWIDGETS_MANAGEFEATURECOLLECTIONSACTIONWIDGET_H
 #define GPLATES_QTWIDGETS_MANAGEFEATURECOLLECTIONSACTIONWIDGET_H
 
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QWidget>
 
 #include "ManageFeatureCollectionsActionWidgetUi.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
 
+#include "file-io/FeatureCollectionFileFormat.h"
+
+
+namespace GPlatesFileIO
+{
+	namespace FeatureCollectionFileFormat
+	{
+		class Registry;
+	}
+}
 
 namespace GPlatesQtWidgets
 {
@@ -43,54 +55,62 @@ namespace GPlatesQtWidgets
 			protected Ui_ManageFeatureCollectionsActionWidget
 	{
 		Q_OBJECT
-		
+
 	public:
+		/**
+		 * Constructor.
+		 *
+		 * NOTE: This disables all buttons and functionality.
+		 * You need to call @a update at least once to set things up.
+		 */
 		explicit
 		ManageFeatureCollectionsActionWidget(
 				ManageFeatureCollectionsDialog &feature_collections_dialog,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
 				QWidget *parent_ = NULL);
-		
+
 		/**
-		 * Enables and disables buttons according to various criteria.
+		 * Updates with a new filename.
+		 *
+		 * @a file_format is boost::none if the file's format could not be determined.
 		 */
 		void
-		update_state();
-		
+		update(
+				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
+				const GPlatesFileIO::FileInfo &fileinfo,
+				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Format> file_format,
+				bool enable_edit_configuration);
+
+		//! Returns the file referenced by this action widget.
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference
 		get_file_reference() const
 		{
 			return d_file_reference;
 		}
-	
-		void
-		enable_edit_configuration_button();
-	
-	public slots:
+
+	private slots:
 		
 		void
-		edit_configuration();
+		handle_edit_configuration();
 
 		void
-		save();
+		handle_save();
 		
 		void
-		save_as();
+		handle_save_as();
 		
 		void
-		save_copy();
+		handle_save_copy();
 		
 		void
-		reload();
+		handle_reload();
 
 		void
-		unload();
+		handle_unload();
 	
 	private:
-	
 		ManageFeatureCollectionsDialog &d_feature_collections_dialog;
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference d_file_reference;
-		
 	};
 }
 

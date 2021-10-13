@@ -34,10 +34,15 @@
 #include "property-values/TemplateTypeParameterType.h"
 #include "property-values/XsString.h"
 
+#include "utils/QtStreamable.h"
+
+
 namespace GPlatesPropertyValues
 {
 
-	class GpmlKeyValueDictionaryElement
+	class GpmlKeyValueDictionaryElement :
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<GeoTimeInstant>
 	{
 
 	public:

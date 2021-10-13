@@ -248,7 +248,7 @@ namespace GPlatesQtWidgets
 				QListWidget *_listWidget_attributes);
 			
 		void
-		setup_REDUCER_combobox(
+		setup_reducer_combobox(
 				const QString& attribute_name,	
 				QComboBox* combo);
 

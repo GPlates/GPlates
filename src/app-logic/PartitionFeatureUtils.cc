@@ -45,6 +45,7 @@
 #include "maths/FiniteRotation.h"
 
 #include "model/ModelUtils.h"
+#include "model/NotificationGuard.h"
 #include "model/PropertyName.h"
 #include "model/TopLevelPropertyInline.h"
 
@@ -390,10 +391,12 @@ namespace
 boost::shared_ptr<const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature>
 GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
-		const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter)
+		const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter,
+		bool respect_feature_time_period)
 {
-	// Only partition features that exist at the partitioning reconstruction time.
-	if (!does_feature_exist_at_reconstruction_time(
+	// Only partition features that exist at the partitioning reconstruction time if we've been requested.
+	if (respect_feature_time_period &&
+		!does_feature_exist_at_reconstruction_time(
 			feature_ref,
 			geometry_cookie_cutter.get_reconstruction_time()))
 	{
@@ -424,6 +427,9 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 		const GPlatesModel::FeatureHandle::weak_ref &partitioned_feature,
 		const boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> &partitioning_feature)
 {
+	// Merge model events across this scope to avoid excessive number of model callbacks.
+	GPlatesModel::NotificationGuard model_notification_guard(partitioned_feature->model_ptr());
+
 	// Get the reconstruction plate id.
 	// Either from the partitioning feature or the default plate id.
 	// If we are not supposed to assign plate ids then use the default plate id as
@@ -708,7 +714,8 @@ GPlatesAppLogic::PartitionFeatureUtils::get_reverse_reconstruction(
 		const boost::optional<const ReconstructionGeometry *> &partition,
 		const ReconstructionTree &reconstruction_tree)
 {
-	if (partition && reconstruction_tree.get_reconstruction_time() > 0)
+	const GPlatesMaths::real_t reconstruction_time = reconstruction_tree.get_reconstruction_time();
+	if (partition && (reconstruction_time > 0))
 	{
 		// Get the reconstruction plate id from the partitioning polygon.
 		const boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id =
@@ -753,6 +760,9 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_reconstruction_plate_id_to_featur
 		const boost::optional<GPlatesModel::integer_plate_id_type> &reconstruction_plate_id,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
+	// Merge model events across this scope to avoid excessive number of model callbacks.
+	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+
 	// First remove any that might already exist.
 	feature_ref->remove_properties_by_name(get_reconstruction_plate_id_property_name());
 

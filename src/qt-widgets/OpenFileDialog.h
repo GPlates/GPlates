@@ -44,6 +44,11 @@ namespace GPlatesQtWidgets
 	public:
 
 		/**
+		 * Typedef for a sequence of FileDialogFilter.
+		 */
+		typedef std::vector<FileDialogFilter> filter_list_type;
+
+		/**
 		 * Constructs an OpenFileDialog with a sequence of @a FileDialogFilter specified by
 		 * @a filters_begin and @a filters_end.
 		 */
@@ -58,6 +63,20 @@ namespace GPlatesQtWidgets
 			d_caption(caption),
 			d_last_open_directory(view_state.get_last_open_directory()),
 			d_filter(FileDialogFilter::create_filter_string(filters_begin, filters_end))
+		{  }
+
+		/**
+		 * Constructs an OpenFileDialog with a sequence of @a FileDialogFilter specified by @a filters.
+		 */
+		OpenFileDialog(
+				QWidget *parent,
+				const QString &caption,
+				const filter_list_type &filters,
+				GPlatesPresentation::ViewState &view_state) :
+			d_parent(parent),
+			d_caption(caption),
+			d_last_open_directory(view_state.get_last_open_directory()),
+			d_filter(FileDialogFilter::create_filter_string(filters.begin(), filters.end()))
 		{  }
 
 		/**

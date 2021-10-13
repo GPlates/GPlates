@@ -30,74 +30,53 @@
 
 #include <boost/foreach.hpp>
 
+#include "CoRegMapper.h"
 #include "DataTable.h"
 #include "DataMiningUtils.h"
 #include "GetValueFromPropertyVisitor.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
-#include "utils/FilterMapOutputHandler.h"
-
 namespace GPlatesDataMining
 {
-	using namespace GPlatesUtils;
 	
-	typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> InputSequence;
-	typedef std::vector<OpaqueData> OutputSequence;
-
-	/*	
-	*	TODO:
-	*	Comments....
-	*/
-	class RFGToPropertyValueMapper
+	class RFGToPropertyValueMapper : public CoRegMapper
 	{
 	public:
-
 		explicit
 		RFGToPropertyValueMapper(
 				const QString& attr_name,
-				const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& seed_geos,
 				bool is_shapefile_attr = false):
 			d_attr_name(attr_name),
-			d_seed_geos(seed_geos),
 			d_is_shapefile_attr(is_shapefile_attr)
 			{	}
 
-		/*
-		* TODO: comments....
-		*/
-		template< class OutputType, class OutputMode>
-		int
-		operator()(
-				InputSequence::const_iterator input_begin,
-				InputSequence::const_iterator input_end,
-				FilterMapOutputHandler<OutputType, OutputMode> &handler)
+		void 
+		process(
+				CoRegMapper::MapperInDataset::const_iterator input_begin,
+				CoRegMapper::MapperInDataset::const_iterator input_end,
+				CoRegMapper::MapperOutDataset &output)
 		{
-			int count = 0;
-			DataMiningUtils::RFG_INDEX_VECTOR.clear();
 			for(; input_begin != input_end; input_begin++)
 			{
 				if(!d_is_shapefile_attr)
 				{
-					handler.insert(
+					output.push_back(boost::make_tuple(
 							DataMiningUtils::get_property_value_by_name(
-									(*input_begin)->get_feature_ref(), 
-									d_attr_name));
+									input_begin->first, 
+									d_attr_name),
+							input_begin->second));
 				}
 				else
 				{
-					handler.insert(
+					output.push_back(boost::make_tuple(
 							DataMiningUtils::get_shape_file_value_by_name(
-									(*input_begin)->get_feature_ref(), 
-									d_attr_name));
+									input_begin->first, 
+									d_attr_name),
+							input_begin->second));
 				}
-				DataMiningUtils::RFG_INDEX_VECTOR.push_back(
-						boost::tie(
-								d_seed_geos,
-								*input_begin));
-				count++;
 			}
-			return count;
+			return;
 		}
 
 		virtual
@@ -105,9 +84,7 @@ namespace GPlatesDataMining
 
 
 	protected:
-		
 		const QString d_attr_name;
-		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> d_seed_geos;
 		bool d_is_shapefile_attr;
 	};
 }

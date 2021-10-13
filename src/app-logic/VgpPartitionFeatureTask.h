@@ -50,7 +50,8 @@ namespace GPlatesAppLogic
 		partition_feature(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-				const GeometryCookieCutter &geometry_cookie_cutter);
+				const GeometryCookieCutter &geometry_cookie_cutter,
+				bool respect_feature_time_period);
 	};
 }
 

@@ -147,7 +147,7 @@ GPlatesGui::ColourSchemeDelegator::set_colour_scheme(
 			result.first->second = colour_scheme;
 		}
 
-		colour_scheme_handle inserted = d_special_colour_schemes[feature_collection];
+		//colour_scheme_handle inserted = d_special_colour_schemes[feature_collection];
 	}
 	
 	emit changed();

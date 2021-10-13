@@ -31,8 +31,8 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
-#include "opengl/GLDrawable.h"
-#include "opengl/GLStateSet.h"
+#include "opengl/GLCompiledDrawState.h"
+#include "opengl/GLVertexArray.h"
 
 
 namespace GPlatesOpenGL
@@ -58,6 +58,7 @@ namespace GPlatesGui
 	public:
 
 		Stars(
+				GPlatesOpenGL::GLRenderer &renderer,
 				GPlatesPresentation::ViewState &view_state,
 				const GPlatesGui::Colour &colour);
 
@@ -66,20 +67,10 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer);
 
 	private:
-
-		void
-		draw_stars(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> &stars_drawable,
-				const GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type &state_set);
-
 		GPlatesPresentation::ViewState &d_view_state;
 
-		boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> d_small_stars_drawable;
-		boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> d_large_stars_drawable;
-
-		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type d_small_stars_state_set;
-		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type d_large_stars_state_set;
+		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
+		boost::optional<GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type> d_compiled_draw_state;
 	};
 }
 

@@ -29,6 +29,8 @@
 #include <list>
 #include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -48,7 +50,11 @@
 
 namespace GPlatesFileIO
 {
-	class PropertyMapper;
+	namespace FeatureCollectionFileFormat
+	{
+		class Registry;
+	}
+
 	struct ReadErrorAccumulation;
 }
 
@@ -70,6 +76,7 @@ namespace GPlatesAppLogic
 	public:
 		FeatureCollectionFileIO(
 				GPlatesModel::ModelInterface &model,
+				GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
 
@@ -98,6 +105,9 @@ namespace GPlatesAppLogic
 		 * instead so that the application state sends one notification instead of
 		 * multiple notifications (for each @a load_file) which is beneficial
 		 * if some files in the group depend on each other.
+		 *
+		 * The file is read using the default file configuration options for its file format
+		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
 		void
 		load_file(
@@ -107,6 +117,9 @@ namespace GPlatesAppLogic
 		/**
 		 * As @a load_files, but for QUrl instances of file:// urls.
 		 * Included for drag and drop support.
+		 *
+		 * The file is read using the default file configuration options for its file format
+		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
 		void
 		load_urls(
@@ -151,38 +164,39 @@ namespace GPlatesAppLogic
 		create_file(
 				const GPlatesFileIO::FileInfo &file_info,
 				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
-				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
-					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
+				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
+						file_configuration = boost::none);
 
 
 		/**
-		 * Write the feature collection associated to a file described by @a file_info.
+		 * Write the feature collection in @a file_ref to the filename in @a file_ref.
 		 *
 		 * NOTE: this differs from @a create_file in that it only saves the feature collection
 		 * to the file and doesn't register with FeatureCollectionFileState.
+		 *
+		 * NOTE: @a clear_unsaved_changes can be set to false when saving a *copy* of a
+		 * feature collection - that is the original file has not been saved and so it still
+		 * has unsaved changes.
 		 */
-		static
 		void
 		save_file(
-				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				GPlatesFileIO::FeatureCollectionWriteFormat::Format =
-					GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
+				GPlatesFileIO::File::Reference &file_ref,
+				bool clear_unsaved_changes = true);
 
 
-		/**
-		 * Temporary method for initiating shapefile attribute remapping. 
-		 */
-		void
-		remap_shapefile_attributes(
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it);
+		/*
+		* Returns the number of features in the xml data @a data;
+		*/
+		int 
+		count_features_in_xml_data(
+				QByteArray &data);
 
 		/*
 		* Load xml data in QByteArray.
 		*/
 		void
 		load_xml_data(
-				const QString& name,
+				const QString& filename,
 				QByteArray &data);
 
 	signals:
@@ -195,17 +209,17 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::FeatureCollectionFileIO &,
 				const GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
-		void
-		remapped_shapefile_attributes(
-				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_manager,
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
-
 	private:
 		//! Typedef for a sequence of file shared refs.
 		typedef std::vector<GPlatesFileIO::File::non_null_ptr_type> file_seq_type;
 
 
 		GPlatesModel::ModelInterface d_model;
+
+		/**
+		 * A registry of the file formats for reading/writing feature collections.
+		 */
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry &d_file_format_registry;
 
 		/**
 		 * The loaded feature collection files.
@@ -222,7 +236,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		read_feature_collection(
-				const GPlatesFileIO::File::Reference &file_ref);
+				GPlatesFileIO::File::Reference &file_ref);
 
 		void
 		emit_handle_read_errors_signal(

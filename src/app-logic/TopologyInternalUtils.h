@@ -147,8 +147,8 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Finds the reconstructed feature geometry, optionally referencing @a reconstruction_tree,
-		 * for the geometry property referenced by the property delegate @a geometry_delegate.
+		 * Finds the reconstructed feature geometry for the geometry property referenced by the
+		 * property delegate @a geometry_delegate.
 		 *
 		 * If @a reconstruct_handles is specified then an RFG is returned only if it has a
 		 * reconstruct handle in that set.
@@ -161,8 +161,8 @@ namespace GPlatesAppLogic
 		 * Returns false if:
 		 * - there is *not* exactly *one* feature referencing the delegate feature id
 		 *   (in this case an error message is output to the console), or
-		 * - there are *no* RFGs satisfying the specified constraints (reconstruction tree and
-		 *  reconstruct handles) and in this case an error message is output to the console.
+		 * - there are *no* RFGs satisfying the specified constraints (reconstruct handles) and
+		 *   in this case an error message is output to the console.
 		 *
 		 * If there is no RFG that is reconstructed from @a geometry_delegate, and satisfying the
 		 * other constraints, then it probably means the reconstruction time is outside the
@@ -184,13 +184,11 @@ namespace GPlatesAppLogic
 		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
 		find_reconstructed_feature_geometry(
 				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree = boost::none,
 				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
 
 		/**
-		 * Finds the reconstructed feature geometry, optionally referencing @a reconstruction_tree,
-		 * for the geometry properties iterator @a geometry_property.
+		 * Finds the reconstructed feature geometry for the geometry properties iterator @a geometry_property.
 		 *
 		 * If @a reconstruct_handles is specified then an RFG is returned only if it has a
 		 * reconstruct handle in that set.
@@ -202,8 +200,8 @@ namespace GPlatesAppLogic
 		 *
 		 * Returns false if:
 		 * - @a geometry_property is invalid, or
-		 * - there are *no* RFGs satisfying the specified constraints (reconstruction tree and
-		 *   reconstruct handles) and in this case an error message is output to the console.
+		 * - there are *no* RFGs satisfying the specified constraints (reconstruct handles) and
+		 *   in this case an error message is output to the console.
 		 *
 		 * If there is no RFG that is reconstructed from @a geometry_property, and satisfying the
 		 * other constraints, then it probably means the reconstruction time is outside the
@@ -219,7 +217,6 @@ namespace GPlatesAppLogic
 		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
 		find_reconstructed_feature_geometry(
 				const GPlatesModel::FeatureHandle::iterator &geometry_property,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
 

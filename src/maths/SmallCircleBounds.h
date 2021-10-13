@@ -42,6 +42,9 @@
 
 namespace GPlatesMaths
 {
+	class Rotation;
+	class FiniteRotation;
+
 	/**
 	 * Returns the minimum and maximum dot product of a point and a great circle arc.
 	 *
@@ -223,6 +226,19 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Sets the small circle centre.
+		 *
+		 * This is the equivalent of moving this same small circle to a new location on the globe
+		 * (eg, when moving the geometry bounding by this small circle).
+		 */
+		void
+		set_centre(
+				const UnitVector3D &centre)
+		{
+			d_small_circle_centre = centre;
+		}
+
+		/**
 		 * Returns the small circle centre.
 		 */
 		const UnitVector3D &
@@ -288,6 +304,27 @@ namespace GPlatesMaths
 
 		friend class InnerOuterBoundingSmallCircle;
 	};
+
+
+	/**
+	 * Apply the specified finite rotation to get a new bounding small circle.
+	 *
+	 * This is synonymous with rotating the bounded geometry.
+	 */
+	const BoundingSmallCircle
+	operator*(
+			const FiniteRotation &rotation,
+			const BoundingSmallCircle &bounding_small_circle);
+
+	/**
+	 * Apply the specified rotation to get a new bounding small circle.
+	 *
+	 * This is synonymous with rotating the bounded geometry.
+	 */
+	const BoundingSmallCircle
+	operator*(
+			const Rotation &rotation,
+			const BoundingSmallCircle &bounding_small_circle);
 
 
 	namespace SmallCircleBoundsImpl
@@ -532,6 +569,19 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Sets the centre of both small circles.
+		 *
+		 * This is the equivalent of moving this same inner/outer small circle to a new location
+		 * on the globe (eg, when moving the geometry bounding by this inner/outer small circle).
+		 */
+		void
+		set_centre(
+				const UnitVector3D &centre)
+		{
+			d_outer_small_circle.set_centre(centre);
+		}
+
+		/**
 		 * Returns the centre of both small circles.
 		 */
 		const UnitVector3D &
@@ -598,6 +648,27 @@ namespace GPlatesMaths
 		double d_max_dot_product;
 		mutable boost::optional<double> d_magnitude_inner_boundary_cross_product;
 	};
+
+
+	/**
+	 * Apply the specified finite rotation to get a new inner/outer bounding small circle.
+	 *
+	 * This is synonymous with rotating the bounded geometry.
+	 */
+	const InnerOuterBoundingSmallCircle
+	operator*(
+			const FiniteRotation &rotation,
+			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle);
+
+	/**
+	 * Apply the specified rotation to get a new inner/outer bounding small circle.
+	 *
+	 * This is synonymous with rotating the bounded geometry.
+	 */
+	const InnerOuterBoundingSmallCircle
+	operator*(
+			const Rotation &rotation,
+			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle);
 
 
 	namespace SmallCircleBoundsImpl

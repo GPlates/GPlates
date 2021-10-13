@@ -573,19 +573,15 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the layer proxy at the output of this layer.
+		 * Returns a handle to the layer proxy at the output of this layer.
 		 *
-		 * NOTE: The only difference between this method and @a get_layer_output is the latter
-		 * only returns a layer proxy if the layer is *active* whereas this method returns
-		 * the layer proxy regardless.
-		 *
-		 * The returned proxy is a base class and must be visited to determine its derived type.
-		 * NOTE: Use LayerProxyUtils to make this visitation easier.
+		 * Unlike @a get_layer_output this method returns a layer proxy (handle) regardless
+		 * of whether this layer is active or inactive.
 		 *
 		 * @throws PreconditionViolationError if @a is_valid is false.
 		 */
-		LayerProxy::non_null_ptr_type
-		get_layer_proxy() const;
+		LayerProxyHandle::non_null_ptr_type
+		get_layer_proxy_handle() const;
 
 
 		/**

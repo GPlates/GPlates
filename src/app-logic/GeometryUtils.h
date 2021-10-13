@@ -56,21 +56,6 @@ namespace GPlatesAppLogic
 		 * are reversed before appending to @a points.
 		 */
 		void
-		get_geometry_edges(
-				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
-				std::vector<GPlatesMaths::PointOnSphere> &points,
-				bool reverse_points = false);
-
-		/**
-		 * Copies the @a PointOnSphere points from @a geometry_on_sphere to the @a points array.
-		 *
-		 * Does not clear @a points - just appends whatever points it
-		 * finds in @a geometry_on_sphere.
-		 *
-		 * If @a reverse_points is true then the order of the points in @a geometry_on_sphere
-		 * are reversed before appending to @a points.
-		 */
-		void
 		get_geometry_points(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 				std::vector<GPlatesMaths::PointOnSphere> &points,

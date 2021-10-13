@@ -26,11 +26,13 @@
 #include "TopologyBoundaryResolverLayerOptionsWidget.h"
 
 #include "ViewportWindow.h"
-
+#include "DrawStyleDialog.h"
+#include "LinkWidget.h"
+#include "QtWidgetUtils.h"
+#include "VisualLayersDialog.h"
 #include "presentation/TopologyBoundaryVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
-
-
+#include "utils/ComponentManager.h"
 GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::TopologyBoundaryResolverLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
@@ -39,15 +41,33 @@ GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::TopologyBoundaryRe
 	LayerOptionsWidget(parent_),
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_viewport_window(viewport_window)
+	d_viewport_window(viewport_window),
+	d_draw_style_dialog_ptr(viewport_window->draw_style_dialog())
 {
 	setupUi(this);
+
+	fill_polygons->setCursor(QCursor(Qt::ArrowCursor));
+	LinkWidget *draw_style_link = new LinkWidget(
+			tr("Draw Style Setting..."), this);
+
+	QtWidgetUtils::add_widget_to_placeholder(
+			draw_style_link,
+			draw_style_placeholder_widget);
+	QObject::connect(
+			draw_style_link,
+			SIGNAL(link_activated()),
+			this,
+			SLOT(open_draw_style_setting_dlg()));
 
 	QObject::connect(
 			fill_polygons,
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_fill_polygons_clicked()));
+	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+	{
+		draw_style_link->setVisible(false);
+	}
 }
 
 
@@ -108,4 +128,11 @@ GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::handle_fill_polygo
 			params->set_fill_polygons(fill_polygons->isChecked());
 		}
 	}
+}
+
+void
+GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::open_draw_style_setting_dlg()
+{
+	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
+	d_draw_style_dialog_ptr->reset(d_current_visual_layer);
 }

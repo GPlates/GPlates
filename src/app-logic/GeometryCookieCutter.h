@@ -79,29 +79,44 @@ namespace GPlatesAppLogic
 		/**
 		 * Finds reconstructed polygon geometries to partition other geometry with.
 		 *
-		 * If @a resolved_topological_boundaries is true then all
-		 * @a ResolvedTopologicalBoundary objects found are used to partition geometry.
+		 * Topological networks (and their static interior polygons, if any) are used first when
+		 * partitioning, then topological boundaries and then regular static polygons.
+		 * The static interior polygons of any topological networks are higher priority than the
+		 * networks themselves (it's required since the network boundaries contain the interior polygons).
 		 *
-		 * If @a partition_using_static_polygons is true then all @a ReconstructedFeatureGeometry
-		 * objects found, that contain polygon geometry, are used to partition geometry.
-		 *
-		 * By default only topological plate polygons are used to partition geometry.
-		 * Both flags can be true (but probably not useful).
-		 *
-		 * The partitioning polygons are sorted from highest plate id to lowest.
+		 * The partitioning polygons, in each group (ie, static, topological boundary, topological network),
+		 * are sorted from highest plate id to lowest.
 		 * This ensures that if there are any overlapping polygons in the (combined) set then
 		 * those with the highest plate id will partition before those with lower plate ids.
 		 *
-		 * The reason for choosing the plate that is furthest from the anchor is, I think,
+		 * The reason for preferring plates further from the anchor is, I think,
 		 * because it provides more detailed rotations since plates further down the plate
 		 * circuit (or tree) are relative to plates higher up the tree and hence provide
 		 * extra detail.
+		 * And they are presumably smaller so they will partition their area leaving geometry
+		 * partitioned outside their area a bigger overlapping plate polygon.
+		 *
+		 * Ideally the plate boundaries shouldn't overlap at all but it is possible to construct
+		 * a set that do overlap.
+		 *
+		 * NOTE: We also include topological network here even though they are deforming
+		 * and not rigid regions. This is because the current topological closed plate polygons
+		 * do *not* cover the entire globe and leave holes where there are topological networks.
+		 * So we assign plate ids using the topological networks with the understanding that
+		 * these are to be treated as rigid regions as a first order approximation (although the
+		 * plate ids don't exist in the rotation file so they'll need to be added - for example
+		 * the Andes deforming region has plate id 29201 which should be mapped to 201 in
+		 * the rotation file).
+		 *
+		 * Note that if the topological network contains interior static polygons (microblocks)
+		 * then they do *not* need to be included in @a reconstructed_static_polygons - they are
+		 * found directly through the networks in @a resolved_topological_networks.
 		 */
 		GeometryCookieCutter(
 				const double &reconstruction_time,
-				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				boost::optional<const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &> reconstructed_static_polygons,
 				boost::optional<const std::vector<resolved_topological_boundary_non_null_ptr_type> &> resolved_topological_boundaries,
-				bool partition_using_static_polygons);
+				boost::optional<const std::vector<resolved_topological_network_non_null_ptr_type> &> resolved_topological_networks);
 
 
 		/**
@@ -165,10 +180,7 @@ namespace GPlatesAppLogic
 		{
 		public:
 			PartitioningGeometry(
-					const resolved_topological_boundary_non_null_ptr_type &resolved_topological_boundary);
-
-			PartitioningGeometry(
-					const reconstructed_feature_geometry_non_null_ptr_type &reconstructed_feature_geometry,
+					const reconstruction_geometry_non_null_ptr_type &reconstruction_geometry,
 					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon);
 
 
@@ -203,30 +215,26 @@ namespace GPlatesAppLogic
 				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries);
 
 		/**
+		 * Adds all @a ResolvedTopologicalNetwork objects as partitioning geometries.
+		 */
+		void
+		add_partitioning_resolved_topological_networks(
+				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks);
+
+		/**
+		 * Adds all @a ResolvedTopologicalNetwork interior polygons, if any, as partitioning geometries.
+		 */
+		void
+		add_partitioning_resolved_topological_network_interior_polygons(
+				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks);
+
+		/**
 		 * Adds all @a ReconstructedFeatureGeometry objects in @a reconstruction, that have
 		 * polygon geometry, as partitioning geometries.
 		 */
 		void
 		add_partitioning_reconstructed_feature_polygons(
 				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries);
-
-		/**
-		 * Sorts the sequence of @a ReconstructionGeometry objects added with
-		 * @a add_partitioning_resolved_topological_boundaries and
-		 * @a add_partitioning_reconstructed_feature_polygons by plate id.
-		 *
-		 * The reason for preferring plates further from the anchor is, I think,
-		 * because it provides more detailed rotations since plates further down the plate
-		 * circuit (or tree) are relative to plates higher up the tree and hence provide
-		 * extra detail.
-		 * And they are presumably smaller so they will partition their area leaving geometry
-		 * partitioned outside their area a bigger overlapping plate polygon.
-		 *
-		 * Ideally the plate boundaries shouldn't overlap at all but it is possible to construct
-		 * a set that do overlap.
-		 */
-		void
-		sort_partitioning_reconstructed_feature_polygons_by_plate_id();
 	};
 }
 

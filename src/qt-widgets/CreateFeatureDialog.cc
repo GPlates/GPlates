@@ -175,7 +175,7 @@ namespace
 		// Note that we're reversing the plate-id and conjugate-plate-ids which have been 
 		// passed to this function, so we use the conjugate here.
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
-			GPlatesAppLogic::ReconstructUtils::reconstruct(
+			GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 			geometry,
 			conjugate_plate_id_widget->create_integer_plate_id_from_widget(),
 			*application_state_ptr->get_current_reconstruction()
@@ -416,6 +416,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 				this)),
 	d_choose_feature_collection_widget(
 			new ChooseFeatureCollectionWidget(
+				view_state_.get_application_state().get_reconstruct_method_registry(),
 				d_file_state,
 				d_file_io,
 				this)),
@@ -707,7 +708,15 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_next()
 	int index_increment = 1;
 	if ((stack->currentIndex() == PROPERTIES_PAGE) && !d_customisable_feature_type_selected)
 	{
-		index_increment = 2;		
+		index_increment = 2;
+
+		if(!d_time_period_widget->valid()) // if the start-end time are not valid, do not change page.
+		{
+			QMessageBox::warning(this, tr("Time Period Invalid"),
+				tr("The begin-end time is not valid."),
+				QMessageBox::Ok);
+			return;
+		}
 	}
 
 	int next_index = stack->currentIndex() + index_increment;
@@ -1147,7 +1156,7 @@ GPlatesQtWidgets::CreateFeatureDialog::add_geometry(
     }
     else
     {
-		present_day_geometry = GPlatesAppLogic::ReconstructUtils::reconstruct(
+		present_day_geometry = GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 			d_geometry_opt_ptr.get(),
 			d_plate_id_widget->create_integer_plate_id_from_widget(),
 			*default_reconstruction_tree,

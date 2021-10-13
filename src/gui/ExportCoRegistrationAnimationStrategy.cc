@@ -48,8 +48,8 @@ GPlatesGui::ExportCoRegistrationAnimationStrategy::do_export_iteration(
 	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
-	CsvExport::ExportOptions option;
-	option.delimiter = ',';
+	//CsvExport::ExportOptions option;
+	//option.delimiter = ',';
 	
 	QString basename = *filename_it;
 	QString full_filename = d_export_animation_context_ptr->target_dir().absoluteFilePath(basename);

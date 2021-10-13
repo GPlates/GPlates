@@ -81,6 +81,7 @@
 #include "property-values/GpmlTimeWindow.h"
 #include "property-values/GpmlTopologicalInterior.h"
 #include "property-values/GpmlTopologicalIntersection.h"
+#include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlTopologicalPolygon.h"
@@ -529,6 +530,14 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 		AS_PROP_VAL(create_topological_section)
+
+
+		GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type
+		create_topological_line(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+				ReadErrorAccumulation &read_errors);
+
+		AS_PROP_VAL(create_topological_line)
 
 
 		GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type

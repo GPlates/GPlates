@@ -221,8 +221,7 @@ namespace
 GPlatesQtWidgets::EditStringListWidget::EditStringListWidget(
 		QWidget *parent_):
 	AbstractEditWidget(parent_),
-	EditTableWidget(),
-	d_editing(false)
+	EditTableWidget()
 {
 	setupUi(this);
 
@@ -339,7 +338,6 @@ GPlatesQtWidgets::EditStringListWidget::handle_insert_row_above(
 	if (row >= 0) {
 		insert_empty_string_element_into_table(row);
 	}
-	d_editing = true;
 }
 
 void
@@ -350,7 +348,6 @@ GPlatesQtWidgets::EditStringListWidget::handle_insert_row_below(
 	if (row >= 0) {
 		insert_empty_string_element_into_table(row + 1);
 	}
-	d_editing = true;
 }
 
 

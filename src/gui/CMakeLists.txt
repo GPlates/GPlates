@@ -38,12 +38,24 @@ set(srcs
     ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
+    ConfigGuiUtils.cc
+    ConfigGuiUtils.h
+    ConfigModel.cc
+    ConfigModel.h
+    ConfigValueDelegate.cc
+    ConfigValueDelegate.h
     CptColourPalette.cc
     CptColourPalette.h
     CsvExport.cc
     CsvExport.h
+    Dialogs.cc
+    Dialogs.h
     DockState.cc
     DockState.h
+    DrawStyleAdapters.cc
+    DrawStyleAdapters.h
+    DrawStyleManager.cc
+    DrawStyleManager.h
     EnableCanvasTool.cc
     EnableCanvasTool.h
     EventBlackout.cc
@@ -113,8 +125,6 @@ set(srcs
     GMTColourNames.h
     GPlatesQApplication.cc
     GPlatesQApplication.h
-    GPlatesQtMsgHandler.cc
-    GPlatesQtMsgHandler.h
     GraticuleSettings.h
     GuiDebug.cc
     GuiDebug.h
@@ -123,33 +133,49 @@ set(srcs
     HTMLColourNames.h
     ImportMenu.cc
     ImportMenu.h
+    LayerPainter.cc
+    LayerPainter.h
+    LogFilterModel.cc
+    LogFilterModel.h
     Map.cc
     Map.h
-    MapCanvasPainter.cc
-    MapCanvasPainter.h
     MapCanvasTool.cc
     MapCanvasTool.h
     MapCanvasToolAdapter.cc
     MapCanvasToolAdapter.h
     MapCanvasToolChoice.cc
     MapCanvasToolChoice.h
+    MapGrid.cc
+    MapGrid.h
     MapProjection.cc
     MapProjection.h
+    MapRenderedGeometryCollectionPainter.cc
+    MapRenderedGeometryCollectionPainter.h
+    MapRenderedGeometryLayerPainter.cc
+    MapRenderedGeometryLayerPainter.h
     MapTransform.cc
     MapTransform.h
     Mipmapper.cc
     Mipmapper.h
     OpaqueSphere.cc
     OpaqueSphere.h
+    Palette.cc
+    Palette.h
     PersistentOpenGLObjects.cc
     PersistentOpenGLObjects.h
     PlateIdColourPalettes.cc
     PlateIdColourPalettes.h
     ProjectionException.h
+    PythonConfiguration.cc
+    PythonConfiguration.h
     PythonConsoleHistory.cc
     PythonConsoleHistory.h
+    PythonManager.cc
+    PythonManager.h
     QGLWidgetTextRenderer.cc
     QGLWidgetTextRenderer.h
+    QPainterTextRenderer.cc
+    QPainterTextRenderer.h
     RasterColourPalette.cc
     RasterColourPalette.h
     ReconstructionGeometrySequence.h
@@ -172,6 +198,7 @@ set(srcs
     TextOverlay.h
     TextOverlaySettings.cc
     TextOverlaySettings.h
+    TextRenderer.cc
     TextRenderer.h
     TopologySectionsContainer.cc
     TopologySectionsContainer.h

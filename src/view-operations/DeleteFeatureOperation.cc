@@ -53,7 +53,6 @@ GPlatesViewOperations::DeleteFeatureOperation::delete_focused_feature()
 		if (feature_ref)
 		{
 			feature_ref->remove_from_parent();
-			d_application_state.reconstruct();
 		}
 	}
 }

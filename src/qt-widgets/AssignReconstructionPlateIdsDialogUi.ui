@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>796</width>
-    <height>543</height>
+    <height>549</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,25 +23,25 @@
    <item>
     <widget class="QStackedWidget" name="stack_widget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
-     <widget class="QWidget" name="partitioning_files">
+     <widget class="QWidget" name="partitioning_layers">
       <layout class="QVBoxLayout">
        <property name="margin">
         <number>0</number>
        </property>
        <item>
-        <widget class="QGroupBox" name="partitioning_files_group_box">
+        <widget class="QGroupBox" name="partitioning_layers_group_box">
          <property name="title">
-          <string>Partitioning Polygons</string>
+          <string>Partitioning Layers</string>
          </property>
-         <layout class="QVBoxLayout">
+         <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
            <layout class="QHBoxLayout">
             <item>
-             <widget class="QLabel" name="partitioning_files_label">
+             <widget class="QLabel" name="partitioning_layers_label">
               <property name="text">
-               <string>Specify topological closed plate boundaries (or non-topological static polygons) from the following files:</string>
+               <string>Specify the partitioning layer:</string>
               </property>
              </widget>
             </item>
@@ -59,7 +59,7 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="push_button_help_partitioning_files">
+             <widget class="QPushButton" name="push_button_help_partitioning_layers">
               <property name="toolTip">
                <string>What does this mean?</string>
               </property>
@@ -75,7 +75,7 @@
            </layout>
           </item>
           <item>
-           <widget class="QTableWidget" name="table_partitioning_files">
+           <widget class="QTableWidget" name="table_partitioning_layers">
             <property name="alternatingRowColors">
              <bool>true</bool>
             </property>
@@ -107,9 +107,9 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout">
+           <layout class="QHBoxLayout" name="select_or_clear_all_layers">
             <item>
-             <widget class="QPushButton" name="button_select_all_partitioning_files">
+             <widget class="QPushButton" name="button_select_all_partitioning_layers">
               <property name="toolTip">
                <string>Select all files</string>
               </property>
@@ -119,7 +119,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="button_clear_all_partitioning_files">
+             <widget class="QPushButton" name="button_clear_all_partitioning_layers">
               <property name="enabled">
                <bool>true</bool>
               </property>
@@ -233,7 +233,7 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout">
+           <layout class="QHBoxLayout" name="select_or_clear_all_files">
             <item>
              <widget class="QPushButton" name="button_select_all_partitioned_files">
               <property name="toolTip">
@@ -278,10 +278,7 @@
       </layout>
      </widget>
      <widget class="QWidget" name="general_options">
-      <layout class="QVBoxLayout">
-       <property name="margin">
-        <number>0</number>
-       </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
        <item>
         <widget class="QGroupBox" name="group_box_reconstruction_time">
          <property name="title">
@@ -464,11 +461,58 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="group_box_respect_feature_time_period">
+         <property name="title">
+          <string>Reconstruction Options</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="check_box_respect_feature_time_period">
+            <property name="text">
+             <string>Only partition features that exist at the reconstruction time</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_6">
+            <item>
+             <spacer>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="push_button_help_respect_feature_time_period">
+              <property name="toolTip">
+               <string>What does this mean?</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../qt-resources/qt_widgets.qrc">
+                <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="partition_options">
          <property name="title">
           <string>Feature Partitioning</string>
          </property>
-         <layout class="QGridLayout" name="gridLayout_3">
+         <layout class="QGridLayout" name="gridLayout_4">
           <item row="0" column="0">
            <widget class="QLabel" name="label_partition_options">
             <property name="text">
@@ -537,13 +581,6 @@
           <string>Feature Properties</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_properties_to_assign">
-            <property name="text">
-             <string>Specify the feature properties to copy from a polygon:</string>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="1">
            <layout class="QHBoxLayout" name="horizontalLayout_4">
             <item>
@@ -574,6 +611,13 @@
              </widget>
             </item>
            </layout>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_properties_to_assign">
+            <property name="text">
+             <string>Specify the feature properties to copy from a polygon:</string>
+            </property>
+           </widget>
           </item>
           <item row="1" column="0">
            <widget class="QCheckBox" name="check_box_assign_plate_id">

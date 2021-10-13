@@ -29,6 +29,8 @@
 #define _GPLATES_MATHS_SMALLCIRCLE_H_
 
 #include <vector>
+#include <boost/optional.hpp>
+
 #include "types.h"
 #include "GreatCircle.h"
 #include "PointOnSphere.h"
@@ -55,12 +57,39 @@ namespace GPlatesMaths
 			 * @param axis The axis of the circle.
 			 * @param p A point through which the circle must pass.
 			 */
-			SmallCircle (const UnitVector3D &axis,
-			             const PointOnSphere &p)
-				: d_axis (axis),
-				  d_cos_colat(dot(axis, p.position_vector())) {
+			static
+			const SmallCircle
+			create(
+					const UnitVector3D &axis,
+					const PointOnSphere &p)
+			{
+				return SmallCircle(axis, dot(axis, p.position_vector()));
+			}
 
-				AssertInvariantHolds ();
+			/**
+			 * Create a small circle, given its axis and the "colatitude" of the
+			 * small circle around the "North Pole" of its axis.
+			 *
+			 * @param axis The axis of the circle.
+			 * @param colat The angle between axis and circumference (aka the "colatitude").
+			 * 
+			 * @image html fig_small_circle.png
+			 * @image latex fig_small_circle.eps width=2.3in
+			 *
+			 * @throws ViolatedClassInvariantException if
+			 *   @p abs(@a cos(colat)) > 1.
+			 *
+			 * NOTE: Use this method instead of @a create_cos_colatitude if you have the angle.
+			 * In other words don't call 'create_cos_colatitude(axis, cos(colat))' since it's more
+			 * expensive later if you need to retrieve the angle (colat) since an 'acos' is required.
+			 */
+			static
+			const SmallCircle
+			create_colatitude(
+					const UnitVector3D &axis,
+					const real_t &colat)
+			{
+				return SmallCircle(axis, cos(colat), colat);
 			}
 
 			/**
@@ -77,44 +106,62 @@ namespace GPlatesMaths
 			 * @image latex fig_small_circle.eps width=2.3in
 			 *
 			 * @throws ViolatedClassInvariantException if
-			 *   @p abs(@a cos_colat)) > 1.
+			 *   @p abs(@a cos_colat) > 1.
 			 */
-			SmallCircle (const UnitVector3D &axis,
-			             const real_t &cos_colat)
-				: d_axis (axis), d_cos_colat (cos_colat) {
-
-				AssertInvariantHolds ();
+			static
+			const SmallCircle
+			create_cosine_colatitude(
+					const UnitVector3D &axis,
+					const real_t &cos_colat)
+			{
+				return SmallCircle(axis, cos_colat);
 			}
 
 
 			/**
 			 * The unit vector indicating the direction of the axis
 			 * of this great circle.
-			 * FIXME: This should return a reference to a const.
 			 * FIXME: s/axisvector/axis/
 			 */
-			UnitVector3D
-			axis_vector() const { return d_axis; }
+			const UnitVector3D &
+			axis_vector() const
+			{
+				return d_axis;
+			}
 
 			/**
 			 * FIXME: Remove this.
 			 */
-			UnitVector3D
-			normal () const { return axis_vector(); }
+			const UnitVector3D &
+			normal() const
+			{
+				return axis_vector();
+			}
+
+			const real_t &
+			cos_colatitude() const
+			{
+				return d_cos_colat;
+			}
 
 			real_t
-			colatitude () const { return acos (d_cos_colat); }
-
-			real_t
-			cos_colatitude () const { return d_cos_colat; }
+			colatitude() const
+			{
+				if (!d_colat)
+				{
+					d_colat = acos(d_cos_colat);
+				}
+				return d_colat.get();
+			}
 
 			/**
 			 * Evaluate whether the point @a pt lies on this
 			 * small circle.
 			 */
 			bool
-			contains (const PointOnSphere &pt) const {
-
+			contains(
+					const PointOnSphere &pt) const
+			{
 				real_t dp = dot(normal(), pt.position_vector());
 				return (dp == d_cos_colat);
 			}
@@ -126,8 +173,10 @@ namespace GPlatesMaths
 			 * intersections is returned.
 			 * @todo Allow any container to be passed in.
 			 */
-			unsigned int intersection (const GreatCircle &other,
-				std::vector<PointOnSphere> &points) const;
+			unsigned int
+			intersection(
+					const GreatCircle &other,
+					std::vector<PointOnSphere> &points) const;
 
 		protected:
 			/**
@@ -137,15 +186,58 @@ namespace GPlatesMaths
 			 * @throws ViolatedClassInvariantException if
 			 *   @p abs(@a _cos_colat) > 1.
 			 */
-			void AssertInvariantHolds () const;
+			void
+			AssertInvariantHolds() const;
 
 		private:
 
 			UnitVector3D d_axis;
 
+			/**
+			 * The cosine of the colatitude.
+			 */
 			real_t d_cos_colat;
 
+			/**
+			 * The colatitude in radians.
+			 *
+			 * Since 'acos' is expensive to evaluate, this is only calculated if:
+			 *  - small circle constructed using colatitude directly, or
+			 *  - small circle constructed using cosine-of-colatitude and colatitude subsequently requested.
+			 */
+			mutable boost::optional<real_t> d_colat;
+
+
+			SmallCircle(
+					const UnitVector3D &axis,
+					const real_t &cos_colat,
+					boost::optional<real_t> colat = boost::none) :
+				d_axis (axis),
+				d_cos_colat (cos_colat),
+				d_colat(colat)
+			{
+				AssertInvariantHolds();
+			}
 	};
+
+
+	/**
+	 * Uniformly subdivides a small circle into smaller segments and appends the
+	 * sequence of subdivided points to @a tessellation_points.
+	 *
+	 * NOTE: The end point is not added to @a tessellation_points. The end point is the same as the
+	 * start point so you can close off the loop by copying the first point.
+	 *
+	 * The subdivided segments have a maximum angular extent of @a max_segment_angular_extent radians
+	 * when viewed from the centre of the small circle.
+	 * Each segment will extend the same angle (*uniform* subdivision) which will be less than or
+	 * equal to @a max_segment_angular_extent radians.
+	 */
+	void
+	tessellate(
+			std::vector<PointOnSphere> &tessellation_points,
+			const SmallCircle &small_circle,
+			const real_t &max_segment_angular_extent);
 }
 
 #endif  // _GPLATES_MATHS_SMALLCIRCLE_H_

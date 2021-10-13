@@ -386,8 +386,8 @@ GPlatesMaths::polylines_are_directed_equivalent(
 	PolylineOnSphere::vertex_const_iterator
 			poly1_iter = poly1.vertex_begin(),
 			poly1_end = poly1.vertex_end(),
-			poly2_iter = poly2.vertex_begin(),
-			poly2_end = poly2.vertex_end();
+			poly2_iter = poly2.vertex_begin();
+			//poly2_end = poly2.vertex_end();
 	for ( ; poly1_iter != poly1_end; ++poly1_iter, ++poly2_iter) {
 		if ( ! points_are_coincident(*poly1_iter, *poly2_iter)) {
 			return false;

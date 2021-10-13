@@ -60,12 +60,14 @@ namespace GPlatesQtWidgets
 		 * Constructs a VisualLayersComboBox that shows visual layers that meet a the
 		 * given @a predicate based on the type of the visual layer.
 		 */
-		explicit
 		VisualLayersComboBox(
 				GPlatesPresentation::VisualLayers &visual_layers,
 				GPlatesPresentation::VisualLayerRegistry &visual_layer_registry,
 				const predicate_type &predicate,
 				QWidget *parent_ = NULL);
+
+		virtual
+		~VisualLayersComboBox(){ }
 
 		boost::weak_ptr<GPlatesPresentation::VisualLayer>
 		get_selected_visual_layer() const;
@@ -80,7 +82,7 @@ namespace GPlatesQtWidgets
 		selected_visual_layer_changed(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 
-	private slots:
+	protected slots:
 
 		/**
 		 * Called when anything in the visual layers state is changed.
@@ -92,12 +94,13 @@ namespace GPlatesQtWidgets
 		handle_current_index_changed(
 				int index);
 
-	private:
+	protected:
 
 		void
 		make_signal_slot_connections(
 				GPlatesPresentation::VisualLayers *visual_layers);
 
+		virtual
 		void
 		populate();
 

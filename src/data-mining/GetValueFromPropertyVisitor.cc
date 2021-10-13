@@ -74,6 +74,14 @@
 #include "property-values/XsInteger.h"
 #include "property-values/XsString.h"
 
+
+void
+GPlatesDataMining::GetValueFromPropertyVisitor::visit_gpml_constant_value(
+		gpml_constant_value_type &gpml_constant_value)
+{
+	gpml_constant_value.value()->accept_visitor(*this);
+}
+
 void
 GPlatesDataMining::GetValueFromPropertyVisitor::visit_gpml_plate_id(
 		gpml_plate_id_type &gpml_plate_id)

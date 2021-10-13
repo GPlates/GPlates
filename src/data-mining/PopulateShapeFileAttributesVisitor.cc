@@ -55,14 +55,8 @@ bool
 GPlatesDataMining::PopulateShapeFileAttributesVisitor::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	// FIXME:  Why are we comparing QString to string literal rather than PropertyName to (static) PropertyName?
-	QString property_name = GPlatesUtils::make_qstring_from_icu_string(top_level_property_inline.property_name().get_name());
-
-	if (property_name != "shapefileAttributes") 
-	{
-		return false;
-	}
-	return true;
+	static const GPlatesModel::PropertyName n = GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
+	return top_level_property_inline.property_name() == n;
 }
 
 
@@ -75,9 +69,7 @@ GPlatesDataMining::PopulateShapeFileAttributesVisitor::visit_gpml_key_value_dict
 		end = dictionary.elements().end();
 	for ( ; iter != end; ++iter) 
 	{
-		d_names.push_back(
-				GPlatesUtils::make_qstring_from_icu_string(
-						iter->key()->value().get() ) );
+		d_names.push_back(iter->key()->value().get().qstring() );
 	}
 }
 
@@ -85,7 +77,6 @@ void
 GPlatesDataMining::PopulateShapeFileAttributesVisitor::visit_xs_boolean(
 		const GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
-	//d_found_qvariants.push_back(QVariant(xs_boolean.value()));
 }
 
 
@@ -93,22 +84,18 @@ void
 GPlatesDataMining::PopulateShapeFileAttributesVisitor::visit_xs_double(
 	const GPlatesPropertyValues::XsDouble& xs_double)
 {
-	//d_found_qvariants.push_back(QVariant(xs_double.value()));
 }
 
 void
 GPlatesDataMining::PopulateShapeFileAttributesVisitor::visit_xs_integer(
 	const GPlatesPropertyValues::XsInteger& xs_integer)
 {
-	//d_found_qvariants.push_back(QVariant(xs_integer.value()));
 }
 
 void
 GPlatesDataMining::PopulateShapeFileAttributesVisitor::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
-	//QString qstring = GPlatesUtils::make_qstring(xs_string.value());
-	//d_found_qvariants.push_back(QVariant(qstring));
 }
 
 

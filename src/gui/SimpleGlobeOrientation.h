@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2004, 2005, 2006, 2007, 2008, 2010 The University of Sydney, Australia
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -91,6 +92,14 @@ namespace GPlatesGui
 		{
 			return d_accum_rot;
 		}
+
+		/**
+		 * Set the accumulated rotation of the globe.                                                                    
+		 */
+		void
+		set_rotation(
+			const GPlatesMaths::Rotation &rotation
+			/*bool should_emit_external_signal = true */);
 
 		/**
 		 * Apply the accumulated rotation of the globe to the supplied geometry.

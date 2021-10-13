@@ -148,31 +148,31 @@ GPlatesAppLogic::CgalUtils::is_point_in_mesh(
 
 	found_face = cdt2.locate(point, locate_type, number, start_face);
 
-	qDebug() << "locate_point: number = " << number;
-	qDebug() << "locate_point: locate_type = " << locate_type;
+	//qDebug() << "locate_point: number = " << number;
+	//qDebug() << "locate_point: locate_type = " << locate_type;
 
  	switch (locate_type)
 	{
 		case cgal_constrained_delaunay_triangulation_2_type::VERTEX:
-			qDebug() << "locate_point: VERTEX";
+			//qDebug() << "locate_point: VERTEX";
 			break;
 		case cgal_constrained_delaunay_triangulation_2_type::FACE:
 			if ( found_face->is_in_domain() )
 			{
-				qDebug() << "locate_point: FACE: in Mesh domain";
+				//qDebug() << "locate_point: FACE: in Mesh domain";
 				return true;
 			} else {
-				qDebug() << "locate_point: FACE: not in Mesh domain";
+				//qDebug() << "locate_point: FACE: not in Mesh domain";
 			}
 			break;
 		case cgal_constrained_delaunay_triangulation_2_type::EDGE:
-			qDebug() << "locate_point: EDGE";
+			//qDebug() << "locate_point: EDGE";
 			break;
 		case cgal_constrained_delaunay_triangulation_2_type::OUTSIDE_CONVEX_HULL:
-			qDebug() << "locate_point: OUTSIDE_CONVEX_HULL";
+			//qDebug() << "locate_point: OUTSIDE_CONVEX_HULL";
 			break;
 		case cgal_constrained_delaunay_triangulation_2_type::OUTSIDE_AFFINE_HULL:
-			qDebug() << "locate_point: OUTSIDE_AFFINE_HULL";
+			//qDebug() << "locate_point: OUTSIDE_AFFINE_HULL";
 			break;
 		default:
 			qDebug() << "???";

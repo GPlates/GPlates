@@ -52,9 +52,7 @@
 #include "qt-widgets/TopologyNetworkResolverLayerOptionsWidget.h"
 #include "qt-widgets/VelocityFieldCalculatorLayerOptionsWidget.h"
 #include "qt-widgets/CoRegistrationOptionsWidget.h"
-
-//Data-mining temporary code
-bool enable_data_mining = false;
+#include "utils/ComponentManager.h"
 
 namespace
 {
@@ -509,7 +507,8 @@ GPlatesPresentation::register_default_visual_layers(
 			&VelocityFieldCalculatorVisualLayerParams::create,
 			true);
 
-	if (enable_data_mining) //Data-mining temporary code
+	using namespace  GPlatesUtils;
+	if (ComponentManager::instance().is_enabled(ComponentManager::Component::data_mining())) 
 	{
 		registry.register_visual_layer_type(
 				VisualLayerType::Type(CO_REGISTRATION),

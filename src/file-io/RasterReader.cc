@@ -51,6 +51,8 @@
 #include "opengl/OpenGLBadAllocException.h"
 #include "opengl/OpenGLException.h"
 
+#include "property-values/ProxiedRasterResolver.h"
+
 #include "utils/OverloadResolution.h"
 
 using namespace GPlatesFileIO;
@@ -308,7 +310,29 @@ GPlatesFileIO::RasterReader::create(
 		const QString &filename,
 		ReadErrorAccumulation *read_errors)
 {
-	return new RasterReader(filename, read_errors);
+	RasterReader::non_null_ptr_type raster_reader(new RasterReader(filename, read_errors));
+
+	// By creating the raster reader we've ensured the source raster file cache has been created and
+	// is up to date so do the same with the raster mipmaps file cache.
+	// This way the slow creation of caches can be done up front during the GPML file loading phase
+	// ensuring no hickups or delays during rendering (eg, if the user the mipmaps suddenly need
+	// to be rendered they won't suffer a delay while the mipmaps file cache is built).
+	for (unsigned int band_number = 1; band_number <= raster_reader->get_number_of_bands(); ++band_number)
+	{
+		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> proxied_raw_raster =
+				raster_reader->get_proxied_raw_raster(band_number, read_errors);
+		if (proxied_raw_raster)
+		{
+			boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxied_raster_resolver =
+					GPlatesPropertyValues::ProxiedRasterResolver::create(proxied_raw_raster.get());
+			if (proxied_raster_resolver)
+			{
+				proxied_raster_resolver.get()->ensure_mipmaps_available();
+			}
+		}
+	}
+
+	return raster_reader;
 }
 
 
@@ -326,17 +350,14 @@ GPlatesFileIO::RasterReader::RasterReader(
 	FormatHandler handler =
 		(iter != supported_formats.end()) ? iter->second.handler : UNKNOWN;
 
-	boost::function<RasterBandReaderHandle (unsigned int)> proxy_handle_function =
-		boost::bind(&RasterReader::create_raster_band_reader_handle, boost::ref(*this), _1);
-
 	switch (handler)
 	{
 		case RGBA:
-			d_impl.reset(new RgbaRasterReader(filename, proxy_handle_function, read_errors));
+			d_impl.reset(new RgbaRasterReader(filename, this, read_errors));
 			break;
 		
 		case GDAL:
-			d_impl.reset(new GDALRasterReader(filename, proxy_handle_function, read_errors));
+			d_impl.reset(new GDALRasterReader(filename, this, read_errors));
 			break;
 
 		default:
@@ -450,23 +471,6 @@ GPlatesFileIO::RasterReader::get_type(
 	else
 	{
 		return GPlatesPropertyValues::RasterType::UNKNOWN;
-	}
-}
-
-
-void *
-GPlatesFileIO::RasterReader::get_data(
-		unsigned int band_number,
-		const QRect &region,
-		ReadErrorAccumulation *read_errors)
-{
-	if (d_impl)
-	{
-		return d_impl->get_data(band_number, region, read_errors);
-	}
-	else
-	{
-		return NULL;
 	}
 }
 

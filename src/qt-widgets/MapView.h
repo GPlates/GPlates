@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2008, 2009, 2011 Geological Survey of Norway
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -37,8 +37,11 @@
 #include <QMouseEvent>
 
 #include "gui/ColourScheme.h"
+#include "gui/PersistentOpenGLObjects.h"
 
 #include "maths/LatLonPoint.h"
+
+#include "opengl/GLContext.h"
 
 #include "qt-widgets/SceneView.h"
 
@@ -97,10 +100,24 @@ namespace GPlatesQtWidgets
 			bool d_is_mouse_drag;
 		};
 
+		/**
+		 * Constructor.
+		 *
+		 * @a share_gl_widget, @a share_gl_context and @a share_persistent_opengl_objects specify
+		 * another QGLWidget and associated helper structures that the map view should try to share
+		 * OpenGL state with. This is state that can be shared across OpenGL contexts (such as
+		 * texture objects, vertex buffer objects, etc).
+		 * This is important since high-resolution rasters can consume a lot of memory and we don't
+		 * want to double that memory usage.
+		 * This is currently used to share textures, etc, with the OpenGL context in GlobeCanvas.
+		 */
 		MapView(
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
-				QWidget *parent);
+				QWidget *parent,
+				const QGLWidget *share_gl_widget,
+				const GPlatesOpenGL::GLContext::non_null_ptr_type &share_gl_context,
+				const GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type &share_persistent_opengl_objects);
 
 		~MapView();
 
@@ -111,6 +128,19 @@ namespace GPlatesQtWidgets
 		void
 		set_camera_viewpoint(
 			const GPlatesMaths::LatLonPoint &llp);
+
+		virtual
+		void
+		set_orientation(
+			const GPlatesMaths::Rotation &rotation
+			/*bool should_emit_external_signal  = true*/);
+
+		virtual
+		boost::optional<GPlatesMaths::Rotation> 
+		orientation() const
+		{
+			return boost::none;
+		};
 
 		virtual
 		void
@@ -188,11 +218,19 @@ namespace GPlatesQtWidgets
 		MapCanvas &
 		map_canvas();
 
+
+		void
+		set_disable_update(
+				bool b);
+
 		/**
 		 * Redraw geometries on the canvas associated with this view.
 		 */
 		void
 		update_canvas();
+
+		void
+		repaint_canvas();
 
 		double
 		current_proximity_inclusion_threshold(
@@ -243,6 +281,16 @@ namespace GPlatesQtWidgets
 		void
 		keyPressEvent(
 				QKeyEvent *key_event);
+
+		void 
+		paintEvent(
+				QPaintEvent *paint_event)
+		{
+			if (d_disable_update)
+				return;
+
+			QGraphicsView::paintEvent(paint_event);
+		}
 
 	signals:
 
@@ -341,6 +389,12 @@ namespace GPlatesQtWidgets
 		 */
 		QGLWidget *d_gl_widget_ptr;
 
+		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
+		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
+
+		//! Keeps track of OpenGL objects that persist from one render to another.
+		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type d_gl_persistent_objects;
+
 		/**
 		 * A pointer to the map canvas that this view is associated with. 
 		 */
@@ -367,6 +421,8 @@ namespace GPlatesQtWidgets
 		 * Translates and rotates maps
 		 */
 		GPlatesGui::MapTransform &d_map_transform;
+
+		bool d_disable_update;
 	};
 }
 

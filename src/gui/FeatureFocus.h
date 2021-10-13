@@ -33,7 +33,6 @@
 
 #include "model/FeatureHandle.h"
 
-
 namespace GPlatesPresentation
 {
 	class ViewState;
@@ -286,6 +285,9 @@ namespace GPlatesGui
 		void
 		find_new_associated_reconstruction_geometry();
 	};
+
+	boost::optional<const GPlatesMaths::LatLonPoint>
+	locate_focus();
 }
 
 #endif // GPLATES_GUI_FEATUREFOCUS_H

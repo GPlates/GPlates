@@ -30,9 +30,10 @@
 #include <boost/none.hpp>
 
 #include <QString>
-
+#include <QImage>
 #include "ExportAnimationStrategy.h"
 
+#include "qt-widgets/GlobeAndMapWidget.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
@@ -51,8 +52,11 @@ namespace GPlatesGui
 	 * described in Gamma et al. p315. It is used by ExportAnimationContext.
 	 */
 	class ExportRasterAnimationStrategy:
+			public QObject,
 			public GPlatesGui::ExportAnimationStrategy
 	{
+		Q_OBJECT
+
 	public:
 		/**
 		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportReconstructedGeometryAnimationStrategy>.
@@ -94,7 +98,6 @@ namespace GPlatesGui
 			};
 
 
-			explicit
 			Configuration(
 					const QString& filename_template_,
 					ImageType image_type_) :
@@ -146,14 +149,25 @@ namespace GPlatesGui
 		 * Protected constructor to prevent instantiation on the stack.
 		 * Use the create() method on the individual Strategy subclasses.
 		 */
-		explicit
 		ExportRasterAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const const_configuration_ptr &export_configuration);
+
+	private slots:
+		void
+		handle_repaint(bool)
+		{
+			d_repaint_flag = true;
+			d_image = d_main_widget.grab_frame_buffer();
+		}
 		
 	private:
 		//! Export configuration parameters.
 		const_configuration_ptr d_configuration;
+		GPlatesQtWidgets::GlobeAndMapWidget& d_main_widget;
+		QImage d_image;
+		bool d_repaint_flag;
+
 	};
 }
 

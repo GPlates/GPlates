@@ -32,7 +32,8 @@
 
 #include "data-mining/PopulateShapeFileAttributesVisitor.h"
 #include "data-mining/CoRegConfigurationTable.h"
-
+#include "data-mining/RegionOfInterestFilter.h"
+#include "data-mining/SeedSelfFilter.h"
 #include "global/CompilerWarnings.h"
 
 #include "presentation/VisualLayer.h"
@@ -63,7 +64,6 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::pop_up()
 std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::get_input_seed_files() const
 {
-	// TODO: create a const for the channel name.
 	return get_input_files(
 			GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME);
 }
@@ -72,7 +72,6 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::get_input_seed_files() const
 std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::get_input_target_files() const
 {
-	// TODO: create a const for the channel name.
 	return get_input_files(
 			GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME);
 }
@@ -315,6 +314,9 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::populate_coregistration_attribu
 			feature_collection_ref, 
 			attr_names);
 	
+	//hack for Jo
+	attr_names.insert(GPlatesModel::PropertyName::create_gpml("gpml feature type"));
+
 	std::set< GPlatesModel::PropertyName >::const_iterator it = attr_names.begin();
 	std::set< GPlatesModel::PropertyName >::const_iterator it_end = attr_names.end();
 
@@ -326,7 +328,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::populate_coregistration_attribu
 					*it,
 					CO_REGISTRATION_ATTRIBUTE);
 
-		if(GPlatesUtils::make_qstring_from_icu_string((*it).get_name()) == "shapefileAttributes")
+		if((*it).get_name() == "shapefileAttributes")
 		{
 			add_shape_file_attrs(
 					feature_collection_ref,
@@ -379,7 +381,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::react_add_button_clicked()
 				Reducer, 
 				combo);
 
-		setup_REDUCER_combobox(
+		setup_reducer_combobox(
 				attr_item->text(),
 				combo);
 
@@ -419,7 +421,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::react_add_button_clicked()
 
 
 void
-GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_REDUCER_combobox(
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_reducer_combobox(
 		const QString& attribute_name,	
 		QComboBox* combo)
 {
@@ -434,6 +436,15 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_REDUCER_combobox(
 		combo->addItem(
 				QApplication::tr("Min"),
 				GPlatesDataMining::REDUCER_MIN);
+		combo->addItem(
+				QApplication::tr("Max"),
+				GPlatesDataMining::REDUCER_MAX);
+		combo->addItem(
+				QApplication::tr("Mean"),
+				GPlatesDataMining::REDUCER_MEAN);
+		combo->addItem(
+				QApplication::tr("Median"),
+				GPlatesDataMining::REDUCER_MEDIAN);
 		return;
 	}
 
@@ -485,9 +496,7 @@ void
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_association_type_combobox(
 			QComboBox* combo)
 {
-	combo->addItem(
-			QApplication::tr("Region of Interest"),
-			GPlatesDataMining::REGION_OF_INTEREST);
+	combo->addItem(QApplication::tr("Region of Interest"));
 	return;
 }
 
@@ -496,6 +505,9 @@ void
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::apply(
 		QAbstractButton* button)
 {
+	using namespace GPlatesDataMining;
+	using namespace GPlatesAppLogic;
+
 	d_cfg_table.clear(); //Clean up the table each time applied.
 	
 	if(buttonBox->buttonRole(button) != QDialogButtonBox::ApplyRole)
@@ -513,7 +525,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::apply(
 		AttributeTableItem* attr_item = 
 			dynamic_cast< AttributeTableItem* > (
 					CoRegCfgTableWidget->item(i, AttributeName) );
-		QComboBox* REDUCER = 
+		QComboBox* reducer_box = 
 			dynamic_cast< QComboBox* >(
 					CoRegCfgTableWidget->cellWidget(i, Reducer) );
 		QDoubleSpinBox* spinbox_ROI_range = 
@@ -522,34 +534,48 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::apply(
 		
 		if( !(	feature_collection_item &&
 				attr_item				&&
-				REDUCER			&&
+				reducer_box			&&
 				spinbox_ROI_range) )
 		{
 			qWarning() << "Invalid input table item found! Skip this iteration";
 			continue;
 		}
 		
-		QString operator_name = REDUCER->currentText();
-		GPlatesDataMining::ReducerType op = 
+		QString operator_name = reducer_box->currentText();
+		ReducerType op = 
 			static_cast<GPlatesDataMining::ReducerType>(
-					REDUCER->itemData(REDUCER->currentIndex()).toUInt());
+					reducer_box->itemData(reducer_box->currentIndex()).toUInt());
 
-		GPlatesDataMining::ConfigurationTableRow row;
+		ConfigurationTableRow row;
 
 		row.target_fc = 
 				feature_collection_item->file_ref.get_file().get_feature_collection();
  
 		//TODO: TO BE IMPLEMENTED
-		row.filter_type = GPlatesDataMining::REGION_OF_INTEREST;
-
-		row.filter_cfg.d_ROI_range = spinbox_ROI_range->value();
+		row.filter_cfg.reset(new RegionOfInterestFilter::Config(spinbox_ROI_range->value()));
+		
 		row.attr_name = attr_item->text();
 		row.attr_type = attr_item->attr_type;
 		row.reducer_type = op;
 
+		if(0.0 == GPlatesMaths::Real(spinbox_ROI_range->value()))
+		{
+			//The target feature collection is seed collection 
+			//the region of interest is zero, which implies the user wants
+			//to extract data from seed feature.
+			//A special filter will be used to optimize performance.
+			BOOST_FOREACH(const FeatureCollectionFileState::file_reference& f, get_input_seed_files())
+			{
+				if(f == feature_collection_item->file_ref)
+				{
+					row.filter_cfg.reset(new SeedSelfFilter::Config());
+					break;
+				}
+			}
+		}
+
 		d_cfg_table.push_back(row);	
 	}
-	d_cfg_table.set_seeds_file(get_input_seed_files()); 
 	done(QDialog::Accepted);
 }
 

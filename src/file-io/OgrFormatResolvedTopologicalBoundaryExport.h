@@ -50,7 +50,7 @@ namespace GPlatesFileIO
 				referenced_files_collection_type;
 
 		/**
-		 * Typedef for a feature geometry group of @a ResolvedTopologicalBoundary objects.
+		 * Typedef for a feature geometry group of resolved topological geometries.
 		 */
 		typedef ResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type resolved_geom_seq_type;
 
@@ -62,18 +62,23 @@ namespace GPlatesFileIO
 
 		/**
 		* Exports @a ResolvedTopologicalBoundary objects to Shapefile format.
+		*
+		* If @a wrap_to_dateline is true then exported polygon boundaries are wrapped/clipped to the dateline.
 		*/
 		void
 		export_resolved_topological_boundaries(
-				const resolved_geom_seq_type &resolved_topological_boundaries,
+				const resolved_geom_seq_type &resolved_topological_geometries,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				bool wrap_to_dateline = false);
 
 
 		/**
 		 * Exports subsegments of resolved topological boundaries to Shapefile format.
+		*
+		* If @a wrap_to_dateline is true then exported geometries are wrapped/clipped to the dateline.
 		 */
 		void
 		export_sub_segments(
@@ -81,7 +86,8 @@ namespace GPlatesFileIO
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				bool wrap_to_dateline = false);
 	}
 }
 

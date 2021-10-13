@@ -29,6 +29,7 @@
 
 #include "MotionPathGeometryPopulator.h"
 #include "MotionPathUtils.h"
+#include "ReconstructionFeatureProperties.h"
 #include "ReconstructUtils.h"
 
 #include "maths/MultiPointOnSphere.h"
@@ -144,4 +145,35 @@ GPlatesAppLogic::ReconstructMethodMotionPath::reconstruct_feature(
 			reconstruction_time);
 
 	visitor.visit_feature(feature_weak_ref);
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructMethodMotionPath::reconstruct_geometry(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time,
+		bool reverse_reconstruct)
+{
+	// Get the values of the properties at present day.
+	ReconstructionFeatureProperties reconstruction_feature_properties(0/*reconstruction_time*/);
+
+	reconstruction_feature_properties.visit_feature(reconstruction_properties);
+
+	// If we found a reconstruction plate ID then reconstruct (or reverse reconstruct the geometry).
+	if (reconstruction_feature_properties.get_recon_plate_id())
+	{
+		ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+				reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
+
+		return ReconstructUtils::reconstruct_by_plate_id(
+				geometry,
+				reconstruction_feature_properties.get_recon_plate_id().get(),
+				*reconstruction_tree,
+				reverse_reconstruct);
+	}
+
+	// Otherwise just return the original geometry.
+	return geometry;
 }

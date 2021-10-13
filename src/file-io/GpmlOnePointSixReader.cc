@@ -137,10 +137,9 @@ namespace
 				properties.push_back(std::make_pair(node, (pc->second)(node, params.errors)));
 				return;
 			} catch (const IO::PropertyCreationUtils::GpmlReaderException &ex) {
-				// FIXME: Remove this eventually:
-				std::cerr << "Caught exception originating at " 
-					<< ex.source_location() << std::endl;
-
+				qWarning()
+					<< "GpmlOnePointSixReader.cc:read_property: caught exception originating at "
+					<< ex.source_location();
 				Utils::append_warning(
 						ex.location(), params, ex.description(),
 						IO::ReadErrors::FeatureNotInterpreted);
@@ -272,12 +271,34 @@ namespace
 			iter = properties.begin(),
 			end = properties.end();
 		for ( ; iter != end; ++iter) {
+
+
+
+// Top-level properties which also contain xml attributes
+// may be having their attributes read twice (at both the property
+// level, and here). To attempt to get round this, do not read
+// xml attributes at the top level.
+//
+// If this turns out to cause problems with other property types
+// we will have to find another solution.
+//
+// A similar modification has been made in the GpmlOnePointSixOutputVisitor - see
+// GpmlOnePointSixOutputVisitor::visit_top_level_property_inline.
+
+#if 0
 			feature->add(
-					Model::TopLevelPropertyInline::create(
-						iter->first->get_name(),
-						iter->second,
-						iter->first->attributes_begin(),
-						iter->first->attributes_end()));
+				Model::TopLevelPropertyInline::create(
+					iter->first->get_name(),
+					iter->second,
+					iter->first->attributes_begin(),
+					iter->first->attributes_end()));
+#else
+			// Don't write any xml attributes.
+			feature->add(
+				Model::TopLevelPropertyInline::create(
+					iter->first->get_name(),
+					iter->second));
+#endif
 		}
 	}
 
@@ -331,12 +352,31 @@ namespace
 			iter = properties.begin(),
 			end = properties.end();
 		for ( ; iter != end; ++iter) {
+			// Top-level properties which also contain xml attributes
+			// may be having their attributes read twice (at both the property
+			// level, and here). To attempt to get round this, do not read
+			// xml attributes at the top level.
+			//
+			// If this turns out to cause problems with other property types
+			// we will have to find another solution.
+			//
+			// A similar modification has been made in the GpmlOnePointSixOutputVisitor - see
+			// GpmlOnePointSixOutputVisitor::visit_top_level_property_inline.
+
+#if 0
 			feature->add(
-					Model::TopLevelPropertyInline::create(
-						iter->first->get_name(),
-						iter->second,
-						iter->first->attributes_begin(),
-						iter->first->attributes_end()));
+				Model::TopLevelPropertyInline::create(
+				iter->first->get_name(),
+				iter->second,
+				iter->first->attributes_begin(),
+				iter->first->attributes_end()));
+#else
+			// Don't write any xml attributes.
+			feature->add(
+				Model::TopLevelPropertyInline::create(
+				iter->first->get_name(),
+				iter->second));
+#endif
 		}
 	}
 
@@ -541,7 +581,7 @@ namespace
 
 void
 GPlatesFileIO::GpmlOnePointSixReader::read_file(
-		const File::Reference &file,
+		File::Reference &file,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors,
 		bool use_gzip)

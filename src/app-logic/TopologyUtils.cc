@@ -135,7 +135,7 @@ namespace GPlatesAppLogic
 				resolved_network.network->get_delaunay_triangulation_2(),
 				resolved_network.network->get_constrained_delaunay_triangulation_2() );
 
-			qDebug() << "interpolate_resolved_topology_network: in_mesh ?" << in_mesh;
+			//qDebug() << "interpolate_resolved_topology_network: in_mesh ?" << in_mesh;
 			if ( ! in_mesh )
 			{
 				return boost::none;
@@ -255,9 +255,16 @@ GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(
 		test = true;
 	}
 
-	static const GPlatesModel::FeatureType type =
+	static const GPlatesModel::FeatureType slab_type =
 			GPlatesModel::FeatureType::create_gpml("TopologicalSlabBoundary");
-	if (feature.feature_type() == type) 
+	if (feature.feature_type() == slab_type) 
+	{
+		test = true;
+	}
+
+	static const GPlatesModel::FeatureType unclass_type =
+			GPlatesModel::FeatureType::create_gpml("UnclassifiedTopologcialFeature");
+	if (feature.feature_type() == unclass_type) 
 	{
 		test = true;
 	}
@@ -289,17 +296,17 @@ GPlatesAppLogic::TopologyUtils::has_topological_closed_plate_boundary_features(
 void
 GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
 		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
 		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
-		bool restrict_boundary_sections_to_same_reconstruction_tree)
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
 {
 	// Visit topological boundary features.
 	TopologyBoundaryResolver topology_boundary_resolver(
 			resolved_topological_boundaries,
+			reconstructed_feature_geometries,
 			reconstruction_tree,
-			topological_sections_reconstruct_handles,
-			restrict_boundary_sections_to_same_reconstruction_tree);
+			topological_sections_reconstruct_handles);
 
 	AppLogicUtils::visit_feature_collections(
 		topological_closed_plate_polygon_features_collection.begin(),
@@ -603,20 +610,16 @@ GPlatesAppLogic::TopologyUtils::has_topological_network_features(
 
 void
 GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
-		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
 		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
-		bool restrict_sections_to_same_reconstruction_tree)
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
 {
 	// Visit topological network features.
 	TopologyNetworkResolver topology_network_resolver(
-			resolved_topological_boundaries,
 			resolved_topological_networks,
 			reconstruction_tree,
-			topological_sections_reconstruct_handles,
-			restrict_sections_to_same_reconstruction_tree);
+			topological_sections_reconstruct_handles);
 
 	AppLogicUtils::visit_feature_collections(
 		topological_network_features_collection.begin(),

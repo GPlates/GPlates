@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include <boost/optional.hpp>
+#include <QDebug>
 
 #include "FeatureHandle.h"
 #include "FeatureCollectionHandle.h"
@@ -77,6 +78,7 @@ namespace GPlatesPropertyValues
 	class GpmlStringList;
 	class GpmlTopologicalInterior;
 	class GpmlTopologicalPolygon;
+	class GpmlTopologicalLine;
 	class GpmlTopologicalLineSection;
 	class GpmlTopologicalIntersection;
 	class GpmlTopologicalPoint;
@@ -211,6 +213,7 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlStringList>::type gpml_string_list_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalInterior>::type gpml_topological_interior_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPolygon>::type gpml_topological_polygon_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalLine>::type gpml_topological_line_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalLineSection>::type gpml_topological_line_section_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalIntersection>::type gpml_topological_intersection_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPoint>::type gpml_topological_point_type;
@@ -581,6 +584,12 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_topological_line(
+				gpml_topological_line_type &gpml_toplogical_line)
+		{  }
+
+		virtual
+		void
 		visit_gpml_topological_line_section(
 				gpml_topological_line_section_type &gpml_toplogical_line_section)
 		{  }
@@ -840,7 +849,7 @@ namespace GPlatesModel
 	FeatureVisitorBase<FeatureHandleType>::log_invalid_weak_ref(
 			const feature_weak_ref_type &feature_weak_ref)
 	{
-		std::cerr << "Invalid weak-ref not dereferenced." << std::endl;
+		qWarning() << "Invalid weak-ref not dereferenced.";
 	}
 
 
@@ -849,7 +858,7 @@ namespace GPlatesModel
 	FeatureVisitorBase<FeatureHandleType>::log_invalid_iterator(
 			const feature_collection_iterator_type &iterator)
 	{
-		std::cerr << "Invalid iterator not dereferenced." << std::endl;
+		qWarning() << "Invalid iterator not dereferenced.";
 	}
 
 

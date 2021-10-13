@@ -374,13 +374,13 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 		QString gpml_file_path = create_gpml_file_path(time_dependent_raster);
 		GPlatesFileIO::FileInfo file_info(gpml_file_path);
 		GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file(file_info);
-		GPlatesAppLogic::FeatureCollectionFileState::FileReference app_logic_file_ref =
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference app_logic_file_ref =
 			d_application_state.get_feature_collection_file_state().add_file(file);
-		const GPlatesFileIO::File::Reference &file_io_file_ref = app_logic_file_ref.get_file();
+		GPlatesFileIO::File::Reference &file_io_file_ref = app_logic_file_ref.get_file();
 
 		// Add feature to feature collection in file.
 		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
-			file_io_file_ref.get_feature_collection();
+				file_io_file_ref.get_feature_collection();
 		feature_collection->add(feature);
 		
 		// Release the model notification guard now that we've finished modifying the feature.
@@ -393,11 +393,7 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 		{
 			try
 			{
-				GPlatesAppLogic::FeatureCollectionFileIO::save_file(
-						file_info,
-						feature_collection,
-						GPlatesFileIO::FeatureCollectionWriteFormat::USE_FILE_EXTENSION);
-				d_unsaved_changes_tracker->handle_model_has_changed();
+				d_file_io_feedback->save_file(app_logic_file_ref);
 			}
 			catch (std::exception &exc)
 			{

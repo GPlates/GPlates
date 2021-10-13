@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -100,7 +100,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	d_edit_string_widget_ptr(new EditStringWidget(this)),
 	d_edit_boolean_widget_ptr(new EditBooleanWidget(this)),
 	d_edit_shapefile_attributes_widget_ptr(new EditShapefileAttributesWidget(this)),
-        d_edit_time_sequence_widget_ptr(new EditTimeSequenceWidget(
+    d_edit_time_sequence_widget_ptr(new EditTimeSequenceWidget(
                 view_state_.get_application_state(), this)),
 	d_edit_verb(tr("Edit"))
 {
@@ -157,6 +157,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 			this, SLOT(edit_widget_wants_committing()));
 	QObject::connect(d_edit_time_sequence_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));	
+	QObject::connect(d_edit_time_sequence_widget_ptr, SIGNAL(commit_me()),
+			this, SLOT(edit_widget_wants_committing()));
 }
 
 
@@ -189,12 +191,16 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map() const
 	map["gpml:angle"] = d_edit_angle_widget_ptr;
 	map["xs:string"] = d_edit_string_widget_ptr;
 	map["xs:boolean"] = d_edit_boolean_widget_ptr;
+
+	// FIXME: check if IrregularSampling should correspond to the time-sequence-widget, 
+	// and if it should be included in this map. I think 
 	map["gpml:IrregularSampling"] = d_edit_time_sequence_widget_ptr;
 	map["gpml:StringList"] = d_edit_string_list_widget_ptr;
 #if 0
 	// Keep the KeyValueDictionary out of the map until we have the
 	// ability to create one. 
 	map["gpml:KeyValueDictionary"] = d_edit_shapefile_attributes_widget_ptr;
+
 #endif
 	return map;
 }
@@ -405,7 +411,10 @@ void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_old_plates_header_widget(
 		GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
-	setTitle(tr("%1 Old PLATES Header").arg(d_edit_verb));
+	// A bit of a hack: OldPlatesHeader can no longer be edited, so specifying "Edit Old PLATES Header" in the
+	// groupbox title is a tease. We ignore d_edit_verb in this case; Add Property has similarly been hacked to
+	// prevent users from adding a new OldPlatesHeader which doesn't make a *whole* lot of sense.
+	setTitle(tr("View Old PLATES Header"));
 	show();
 	d_edit_old_plates_header_widget_ptr->update_widget_from_old_plates_header(gpml_old_plates_header);
 	d_active_widget_ptr = d_edit_old_plates_header_widget_ptr;

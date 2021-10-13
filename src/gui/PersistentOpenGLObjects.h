@@ -29,7 +29,10 @@
 
 #include <map>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
+#include "Colour.h"
+#include "MapProjection.h"
 #include "RasterColourPalette.h"
 
 #include "app-logic/Layer.h"
@@ -40,16 +43,18 @@
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/types.h"
 
-#include "opengl/GLAgeGridCoverageSource.h"
+#include "opengl/GLCoverageSource.h"
 #include "opengl/GLAgeGridMaskSource.h"
 #include "opengl/GLContext.h"
-#include "opengl/GLCubeSubdivision.h"
 #include "opengl/GLMultiResolutionCubeMesh.h"
 #include "opengl/GLMultiResolutionCubeRaster.h"
+#include "opengl/GLMultiResolutionCubeRasterInterface.h"
 #include "opengl/GLMultiResolutionFilledPolygons.h"
+#include "opengl/GLMultiResolutionMapCubeMesh.h"
 #include "opengl/GLMultiResolutionRaster.h"
+#include "opengl/GLMultiResolutionRasterMapView.h"
 #include "opengl/GLMultiResolutionStaticPolygonReconstructedRaster.h"
-#include "opengl/GLProxiedRasterSource.h"
+#include "opengl/GLVisualRasterSource.h"
 #include "opengl/GLReconstructedStaticPolygonMeshes.h"
 #include "opengl/OpenGLFwd.h"
 
@@ -97,44 +102,13 @@ namespace GPlatesGui
 		typedef GPlatesUtils::non_null_intrusive_ptr<const PersistentOpenGLObjects> non_null_ptr_to_const_type;
 
 		
-		//! Typedef for a spatial partition of filled polygons.
-		typedef GPlatesOpenGL::GLMultiResolutionFilledPolygons::filled_polygons_spatial_partition_type
-				filled_polygons_spatial_partition_type;
-
+		//! Typedef for a collection of filled polygons.
+		typedef GPlatesOpenGL::GLMultiResolutionFilledPolygons::filled_polygons_type filled_polygons_type;
 
 		/**
-		 * Typedef for a @a GLCubeSubvision cache of projection transforms.
+		 * Typedef for an opaque object that caches a particular render (eg, raster or filled polygons).
 		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
-				true/*CacheProjectionTransform*/>
-						cube_subdivision_projection_transforms_cache_type;
-
-		/**
-		 * Typedef for a @a GLCubeSubvision cache that caches bounds.
-		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
-				false/*CacheProjectionTransform*/,
-				true/*CacheBounds*/>
-						cube_subdivision_bounds_cache_type;
-
-		/**
-		 * Typedef for a @a GLCubeSubvision cache that caches loose bounds.
-		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
-				false/*CacheProjectionTransform*/,
-				false/*CacheBounds*/,
-				true/*CacheLooseBounds*/>
-						cube_subdivision_loose_bounds_cache_type;
-
-		/**
-		 * Typedef for a @a GLCubeSubvision cache that caches bounding polygons.
-		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
-				false/*CacheProjectionTransform*/,
-				false/*CacheBounds*/,
-				false/*CacheLooseBounds*/,
-				true/*CacheBoundingPolygon*/>
-						cube_subdivision_bounding_polygons_cache_type;
+		typedef boost::shared_ptr<void> cache_handle_type;
 
 
 		/**
@@ -173,43 +147,41 @@ namespace GPlatesGui
 
 
 		/**
-		 * Cube subdivision cache for loose cube quad tree oriented bounding boxes.
-		 */
-		cube_subdivision_loose_bounds_cache_type &
-		get_cube_subdivision_loose_bounds_cache()
-		{
-			return *d_non_list_objects->cube_subdivision_loose_bounds_cache;
-		}
-
-
-		/**
 		 * Renders the possibly reconstructed multi-resolution raster.
 		 *
 		 * This method will try to reuse an existing multi-resolution raster as
 		 * best it can if some of the parameters are common.
+		 *
+		 * @a source_raster_modulate_colour can be used to modulate the raster by the specified
+		 * colour (eg, to enable semi-transparent rasters).
+		 *
+		 * If @a map_projection is specified then the raster is rendered using the specified
+		 * 2D map projection, otherwise it's rendered to the 3D globe.
 		 */
-		void
+		cache_handle_type
 		render_raster(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &source_resolved_raster,
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette);
+				const RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
+				const Colour &source_raster_modulate_colour = Colour::get_white(),
+				boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
 
 
 		/**
 		 * Renders filled polygons.
 		 *
 		 * These correspond to @a RenderedGeometry objects that have had their 'fill' option
-		 * turned on and can be polygons or polylines or multipoints - the latter two
-		 * geometry types are treated as an ordered sequence of points that join to form a polygon.
+		 * turned on and can be polygons or polylines - the latter geometry type is treated as an
+		 * ordered sequence of points that join to form a polygon.
 		 *
 		 * A self-intersecting polygon is filled in those parts of the polygon that intersect the
 		 * polygon an odd numbers of times when a line is formed from the point (part) in question
-		 * to a point outside the exterior of the polygon. Same applies to polylines/multipoints.
+		 * to a point outside the exterior of the polygon. Same applies to polylines.
 		 */
 		void
 		render_filled_polygons(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const filled_polygons_spatial_partition_type &filled_polygons);
+				const filled_polygons_type &filled_polygons);
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -247,6 +219,7 @@ namespace GPlatesGui
 				AGE_GRID,
 				RECONSTRUCTED_STATIC_POLYGON_MESHES,
 				STATIC_POLYGON_RECONSTRUCTED_RASTER,
+				MAP_RASTER,
 
 				NUM_TYPES
 			};
@@ -264,7 +237,7 @@ namespace GPlatesGui
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const = 0;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const = 0;
 
 			/**
 			 * Notifies that a layer (proxy) is about to be removed.
@@ -276,7 +249,7 @@ namespace GPlatesGui
 			virtual
 			void
 			removing_layer(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy)
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy)
 			{  }
 		};
 
@@ -288,15 +261,21 @@ namespace GPlatesGui
 				public LayerUsage
 		{
 		public:
+			explicit
 			RasterLayerUsage(
-					const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &raster_layer_proxy,
-					const boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> &texture_resource_manager,
-					const boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> &vertex_buffer_resource_manager);
+					const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &raster_layer_proxy);
 
 			//! Sets the raster colour palette.
 			void
 			set_raster_colour_palette(
-					const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
+					GPlatesOpenGL::GLRenderer &renderer,
+					const RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
+
+			//! Sets the raster modulation colour.
+			void
+			set_raster_modulate_colour(
+					GPlatesOpenGL::GLRenderer &renderer,
+					const Colour &raster_modulate_colour);
 
 			/**
 			 * Returns multi-resolution raster - rebuilds if out-of-date with respect to its dependencies.
@@ -304,28 +283,26 @@ namespace GPlatesGui
 			 * Returns false if the raster is not a proxy raster or if it's uninitialised.
 			 */
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
-			get_multi_resolution_raster();
-
-			//! Let clients know we've rebuilt our raster.
-			const GPlatesUtils::SubjectToken &
-			get_rebuild_subject_token();
+			get_multi_resolution_raster(
+					GPlatesOpenGL::GLRenderer &renderer);
 
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 		private:
-			boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> d_texture_resource_manager;
-			boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> d_vertex_buffer_resource_manager;
-
 			GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type d_raster_layer_proxy;
 			GPlatesUtils::ObserverToken d_proxied_raster_observer_token;
 			GPlatesUtils::ObserverToken d_raster_feature_observer_token;
-			GPlatesUtils::SubjectToken d_rebuild_subject_token;
 
-			boost::optional<GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type> d_raster_colour_palette;
-			boost::optional<GPlatesOpenGL::GLProxiedRasterSource::non_null_ptr_type> d_proxied_raster_source;
+			boost::optional<RasterColourPalette::non_null_ptr_to_const_type> d_raster_colour_palette;
+			bool d_raster_colour_palette_dirty;
+
+			Colour d_raster_modulate_colour;
+			bool d_raster_modulate_colour_dirty;
+
+			boost::optional<GPlatesOpenGL::GLVisualRasterSource::non_null_ptr_type> d_visual_raster_source;
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
 		};
 
@@ -339,36 +316,26 @@ namespace GPlatesGui
 				public LayerUsage
 		{
 		public:
+			explicit
 			CubeRasterLayerUsage(
-					const GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> &raster_layer_usage,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-							cube_subdivision_projection_transforms_cache,
-					const GPlatesOpenGL::GLTextureResourceManager::shared_ptr_type &texture_resource_manager);
+					const GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> &raster_layer_usage);
 
 			/**
 			 * Returns multi-resolution cube raster - rebuilds if out-of-date with respect to its dependencies.
 			 */
 			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
-			get_multi_resolution_cube_raster();
-
-			//! Let clients know we've rebuilt our cube raster.
-			const GPlatesUtils::SubjectToken &
-			get_rebuild_subject_token();
+			get_multi_resolution_cube_raster(
+					GPlatesOpenGL::GLRenderer &renderer);
 
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 		private:
-			boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> d_texture_resource_manager;
-			GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type
-					d_cube_subdivision_projection_transforms_cache;
-
 			GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> d_raster_layer_usage;
-			GPlatesUtils::ObserverToken d_raster_layer_usage_observer_token;
-			GPlatesUtils::SubjectToken d_rebuild_subject_token;
 
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
 			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
 		};
 
@@ -380,65 +347,58 @@ namespace GPlatesGui
 				public LayerUsage
 		{
 		public:
+			explicit
 			AgeGridLayerUsage(
-					const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &age_grid_raster_layer_proxy,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-							cube_subdivision_projection_transforms_cache,
-					const GPlatesOpenGL::GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-					const boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> &vertex_buffer_resource_manager);
+					const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &age_grid_raster_layer_proxy);
 
-			/**
-			 * Returns the age grid *mask* multi-resolution cube raster.
-			 *
-			 * Rebuilds if out-of-date with respect to its dependencies.
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
-			get_age_grid_mask_multi_resolution_cube_raster(
-					const double &reconstruction_time);
-
-			/**
-			 * Returns the age grid *mask* multi-resolution cube raster.
-			 *
-			 * Rebuilds if out-of-date with respect to its dependencies.
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
-			get_age_grid_coverage_multi_resolution_cube_raster(
-					const double &reconstruction_time);
-
-			//! See if needs updating.
+			//! Specify the current reconstruction time.
 			void
-			update(
+			set_reconstruction_time(
+					GPlatesOpenGL::GLRenderer &renderer,
 					const double &reconstruction_time);
 
-			//! Let clients know we've rebuilt our age grid cube rasters.
-			const GPlatesUtils::SubjectToken &
-			get_rebuild_subject_token();
+			/**
+			 * Returns the age grid *mask* multi-resolution raster.
+			 *
+			 * Rebuilds if out-of-date with respect to its dependencies.
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
+			get_age_grid_mask_multi_resolution_raster(
+					GPlatesOpenGL::GLRenderer &renderer);
+
+			/**
+			 * Returns the age grid *mask* multi-resolution raster.
+			 *
+			 * Rebuilds if out-of-date with respect to its dependencies.
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
+			get_age_grid_coverage_multi_resolution_raster(
+					GPlatesOpenGL::GLRenderer &renderer);
+
 
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 		private:
-			boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> d_texture_resource_manager;
-			boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> d_vertex_buffer_resource_manager;
-			GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type
-					d_cube_subdivision_projection_transforms_cache;
-
 			GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type d_age_grid_raster_layer_proxy;
 			GPlatesUtils::ObserverToken d_age_grid_raster_feature_observer_token;
-			GPlatesUtils::SubjectToken d_rebuild_subject_token;
+
+			GPlatesMaths::real_t d_reconstruction_time;
+			bool d_reconstruction_time_dirty;
 
 			boost::optional<GPlatesOpenGL::GLAgeGridMaskSource::non_null_ptr_type> d_age_grid_mask_multi_resolution_source;
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_age_grid_mask_multi_resolution_raster;
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_age_grid_mask_multi_resolution_cube_raster;
 
-			boost::optional<GPlatesOpenGL::GLAgeGridCoverageSource::non_null_ptr_type> d_age_grid_coverage_multi_resolution_source;
+			boost::optional<GPlatesOpenGL::GLCoverageSource::non_null_ptr_type> d_age_grid_coverage_multi_resolution_source;
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_age_grid_coverage_multi_resolution_raster;
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_age_grid_coverage_multi_resolution_cube_raster;
 
 			void
 			check_input_raster();
+
+			void
+			update();
 		};
 
 
@@ -449,15 +409,15 @@ namespace GPlatesGui
 				public LayerUsage
 		{
 		public:
+			explicit
 			ReconstructedStaticPolygonMeshesLayerUsage(
-					const GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-							cube_subdivision_projection_transforms_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_loose_bounds_cache_type>::non_null_ptr_type &
-							cube_subdivision_loose_bounds_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_bounding_polygons_cache_type>::non_null_ptr_type &
-							cube_subdivision_bounding_polygons_cache,
-					const GPlatesOpenGL::GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager);
+					const GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy);
+
+			//! Specify the current reconstruction time.
+			void
+			set_reconstruction_time(
+					GPlatesOpenGL::GLRenderer &renderer,
+					const double &reconstruction_time);
 
 			/**
 			 * Returns the reconstructed static polygon meshes.
@@ -466,42 +426,29 @@ namespace GPlatesGui
 			 */
 			GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 			get_reconstructed_static_polygon_meshes(
-					const double &reconstruction_time,
+					GPlatesOpenGL::GLRenderer &renderer,
 					bool reconstructing_with_age_grid);
-
-			//! See if needs updating.
-			void
-			update(
-					const double &reconstruction_time,
-					bool reconstructing_with_age_grid);
-
-			//! Let clients know we've rebuilt our reconstructed static polygon meshes.
-			const GPlatesUtils::SubjectToken &
-			get_rebuild_subject_token();
 
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 		private:
-			boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> d_vertex_buffer_resource_manager;
-			GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type
-					d_cube_subdivision_projection_transforms_cache;
-			GPlatesGlobal::PointerTraits<cube_subdivision_loose_bounds_cache_type>::non_null_ptr_type
-					d_cube_subdivision_loose_bounds_cache;
-			GPlatesGlobal::PointerTraits<cube_subdivision_bounding_polygons_cache_type>::non_null_ptr_type
-					d_cube_subdivision_bounding_polygons_cache;
-
 			GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type d_reconstructed_static_polygon_meshes_layer_proxy;
 			GPlatesUtils::ObserverToken d_reconstructed_polygons_observer_token;
 			GPlatesUtils::ObserverToken d_present_day_polygons_observer_token;
-			GPlatesUtils::SubjectToken d_rebuild_subject_token;
+
+			GPlatesMaths::real_t d_reconstruction_time;
+			bool d_reconstruction_time_dirty;
+
+			boost::optional<bool> d_reconstructing_with_age_grid;
 
 			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
 					d_reconstructed_static_polygon_meshes;
-			boost::optional<GPlatesMaths::real_t> d_reconstruction_time;
-			boost::optional<bool> d_reconstructing_with_age_grid;
+
+			void
+			update();
 		};
 
 
@@ -514,14 +461,20 @@ namespace GPlatesGui
 				public LayerUsage
 		{
 		public:
+			explicit
 			StaticPolygonReconstructedRasterLayerUsage(
-					const GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> &cube_raster_layer_usage,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-							cube_subdivision_projection_transforms_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_bounds_cache_type>::non_null_ptr_type &
-							cube_subdivision_bounds_cache,
-					const GPlatesOpenGL::GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-					const GPlatesOpenGL::GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager);
+					const GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> &cube_raster_layer_usage);
+
+			/**
+			 * Set/update the layer usages that come from other layers.
+			 *
+			 * This is done in case the user connects to new layers or disconnects.
+			 */
+			void
+			set_layer_inputs(
+					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> > &
+							reconstructed_polygon_meshes_layer_usage,
+					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage);
 
 			/**
 			 * Returns the static polygon reconstructed raster.
@@ -531,53 +484,72 @@ namespace GPlatesGui
 			 */
 			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 			get_static_polygon_reconstructed_raster(
-					const double &reconstruction_time);
-
-			/**
-			 * Update the layer usages that come from other layers.
-			 *
-			 * This is done in case the user connects to new layers or disconnects.
-			 */
-			void
-			update(
-					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> > &
-							reconstructed_polygon_meshes_layer_usage,
-					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage);
-
-			//! Let clients know we've rebuilt our static polygon reconstructed raster.
-			const GPlatesUtils::SubjectToken &
-			get_rebuild_subject_token();
+					GPlatesOpenGL::GLRenderer &renderer);
 
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) const;
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 			virtual
 			void
 			removing_layer(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy);
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy);
 
 		private:
-			boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> d_texture_resource_manager;
-			boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> d_vertex_buffer_resource_manager;
-			GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type
-					d_cube_subdivision_projection_transforms_cache;
-			GPlatesGlobal::PointerTraits<cube_subdivision_bounds_cache_type>::non_null_ptr_type
-					d_cube_subdivision_bounds_cache;
-
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
 			GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> d_cube_raster_layer_usage;
+
+			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
+					d_reconstructed_polygon_meshes;
 			boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> >
 					d_reconstructed_polygon_meshes_layer_usage;
-			boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > d_age_grid_layer_usage;
 
-			GPlatesUtils::ObserverToken d_cube_raster_layer_usage_observer_token;
-			GPlatesUtils::ObserverToken d_reconstructer_polygon_meshes_layer_usage_observer_token;
-			GPlatesUtils::ObserverToken d_age_grid_layer_usage_observer_token;
-			GPlatesUtils::SubjectToken d_rebuild_subject_token;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_age_grid_mask_raster;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_age_grid_coverage_raster;
+			boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > d_age_grid_layer_usage;
 
 			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 					d_reconstructed_raster;
+		};
+
+
+		/**
+		 * A map-view of a (possibly reconstructed) raster.
+		 */
+		class MapRasterLayerUsage :
+				public LayerUsage
+		{
+		public:
+			explicit
+			MapRasterLayerUsage(
+					const GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> &raster_layer_usage,
+					const GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage> &
+							reconstructed_raster_layer_usage);
+
+			/**
+			 * Returns multi-resolution raster in map view - rebuilds if out-of-date with respect to its dependencies.
+			 *
+			 * @a multi_resolution_map_cube_mesh is shared by all layers (because contains no layer-specific state).
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type>
+			get_multi_resolution_raster_map_view(
+					GPlatesOpenGL::GLRenderer &renderer,
+					const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh);
+
+			virtual
+			bool
+			is_required_direct_or_indirect_dependency(
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
+
+		private:
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_raster;
+			GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> d_raster_layer_usage;
+
+			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type> d_reconstructed_raster;
+			GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage> d_reconstructed_raster_layer_usage;
+
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type> d_multi_resolution_raster_map_view;
 		};
 
 
@@ -598,28 +570,9 @@ namespace GPlatesGui
 			static
 			non_null_ptr_type
 			create(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy,
-					const GPlatesOpenGL::GLCubeSubdivision::non_null_ptr_to_const_type &cube_subdivision,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-							cube_subdivision_projection_transforms_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_bounds_cache_type>::non_null_ptr_type &
-							cube_subdivision_bounds_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_loose_bounds_cache_type>::non_null_ptr_type &
-							cube_subdivision_loose_bounds_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_bounding_polygons_cache_type>::non_null_ptr_type &
-							cube_subdivision_bounding_polygons_cache,
-					const boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> &texture_resource_manager,
-					const boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> &vertex_buffer_resource_manager)
+					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy)
 			{
-				return non_null_ptr_type(new GLLayer(
-						layer_proxy,
-						cube_subdivision,
-						cube_subdivision_projection_transforms_cache,
-						cube_subdivision_bounds_cache,
-						cube_subdivision_loose_bounds_cache,
-						cube_subdivision_bounding_polygons_cache,
-						texture_resource_manager,
-						vertex_buffer_resource_manager));
+				return non_null_ptr_type(new GLLayer(layer_proxy));
 			}
 
 			//! Returns the raster layer usage (creates one if does not yet exist).
@@ -642,46 +595,27 @@ namespace GPlatesGui
 			GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage>
 			get_static_polygon_reconstructed_raster_layer_usage();
 
+			//! Returns the map raster layer usage (creates one if does not yet exist).
+			GPlatesUtils::non_null_intrusive_ptr<MapRasterLayerUsage>
+			get_map_raster_layer_usage();
+
 			/**
 			 * Called by @a GLLayers when a layer (proxy) is about to be removed.
 			 */
 			void
 			remove_references_to_layer(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy_to_be_removed);
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_to_be_removed);
 
 		private:
 			//! Typedef for a sequence of optional layer usage objects.
 			typedef std::vector<boost::optional<GPlatesUtils::non_null_intrusive_ptr<LayerUsage> > >
 					optional_layer_usage_seq_type;
 
-			GPlatesOpenGL::GLCubeSubdivision::non_null_ptr_to_const_type d_cube_subdivision;
-			GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type
-					d_cube_subdivision_projection_transforms_cache;
-			GPlatesGlobal::PointerTraits<cube_subdivision_bounds_cache_type>::non_null_ptr_type
-					d_cube_subdivision_bounds_cache;
-			GPlatesGlobal::PointerTraits<cube_subdivision_loose_bounds_cache_type>::non_null_ptr_type
-					d_cube_subdivision_loose_bounds_cache;
-			GPlatesGlobal::PointerTraits<cube_subdivision_bounding_polygons_cache_type>::non_null_ptr_type
-					d_cube_subdivision_bounding_polygons_cache;
-			boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> d_texture_resource_manager;
-			boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> d_vertex_buffer_resource_manager;
-
 			GPlatesAppLogic::LayerProxy::non_null_ptr_type d_layer_proxy;
 			optional_layer_usage_seq_type d_layer_usages;
 
 			GLLayer(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy,
-					const GPlatesOpenGL::GLCubeSubdivision::non_null_ptr_to_const_type &cube_subdivision,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-							cube_subdivision_projection_transforms_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_bounds_cache_type>::non_null_ptr_type &
-							cube_subdivision_bounds_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_loose_bounds_cache_type>::non_null_ptr_type &
-							cube_subdivision_loose_bounds_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_bounding_polygons_cache_type>::non_null_ptr_type &
-							cube_subdivision_bounding_polygons_cache,
-					const boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> &texture_resource_manager,
-					const boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> &vertex_buffer_resource_manager);
+					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy);
 		};
 
 
@@ -691,43 +625,18 @@ namespace GPlatesGui
 		class GLLayers
 		{
 		public:
-			GLLayers(
-					const GPlatesOpenGL::GLCubeSubdivision::non_null_ptr_to_const_type &cube_subdivision,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-							cube_subdivision_projection_transforms_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_bounds_cache_type>::non_null_ptr_type &
-							cube_subdivision_bounds_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_loose_bounds_cache_type>::non_null_ptr_type &
-							cube_subdivision_loose_bounds_cache,
-					const GPlatesGlobal::PointerTraits<cube_subdivision_bounding_polygons_cache_type>::non_null_ptr_type &
-							cube_subdivision_bounding_polygons_cache,
-					const boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> &texture_resource_manager,
-					const boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> &vertex_buffer_resource_manager);
-
 			GLLayer &
 			get_layer(
 					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy);
 
 			void
 			remove_layer(
-					const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy);
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle);
 
 		private:
 			typedef std::map<
-					GPlatesAppLogic::LayerProxy::non_null_ptr_type,
+					GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type,
 					GLLayer::non_null_ptr_type> layer_map_type;
-
-			GPlatesOpenGL::GLCubeSubdivision::non_null_ptr_to_const_type d_cube_subdivision;
-			GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type
-					d_cube_subdivision_projection_transforms_cache;
-			GPlatesGlobal::PointerTraits<cube_subdivision_bounds_cache_type>::non_null_ptr_type
-					d_cube_subdivision_bounds_cache;
-			GPlatesGlobal::PointerTraits<cube_subdivision_loose_bounds_cache_type>::non_null_ptr_type
-					d_cube_subdivision_loose_bounds_cache;
-			GPlatesGlobal::PointerTraits<cube_subdivision_bounding_polygons_cache_type>::non_null_ptr_type
-					d_cube_subdivision_bounding_polygons_cache;
-			boost::shared_ptr<GPlatesOpenGL::GLTextureResourceManager> d_texture_resource_manager;
-			boost::shared_ptr<GPlatesOpenGL::GLVertexBufferResourceManager> d_vertex_buffer_resource_manager;
 
 			layer_map_type d_layer_map;
 		};
@@ -747,21 +656,6 @@ namespace GPlatesGui
 		 */
 		struct NonListObjects
 		{
-			NonListObjects();
-
-			GPlatesOpenGL::GLCubeSubdivision::non_null_ptr_to_const_type cube_subdivision;
-
-			GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type
-					cube_subdivision_projection_transforms_cache;
-
-			GPlatesGlobal::PointerTraits<cube_subdivision_bounds_cache_type>::non_null_ptr_type
-					cube_subdivision_bounds_cache;
-
-			GPlatesGlobal::PointerTraits<cube_subdivision_loose_bounds_cache_type>::non_null_ptr_type
-					cube_subdivision_loose_bounds_cache;
-
-			GPlatesGlobal::PointerTraits<cube_subdivision_bounding_polygons_cache_type>::non_null_ptr_type
-					cube_subdivision_bounding_polygons_cache;
 		};
 
 
@@ -792,12 +686,36 @@ namespace GPlatesGui
 			GLLayers gl_layers;
 
 			/**
+			 * Returns the multi-resolution cube mesh.
+			 *
+			 * This consumes a reasonable amount of memory (~50Mb) so it is shared across all layers.
+			 *
+			 * NOTE: This must be called when an OpenGL context is currently active.
+			 */
+			GPlatesOpenGL::GLMultiResolutionCubeMesh::non_null_ptr_to_const_type
+			get_multi_resolution_cube_mesh(
+					GPlatesOpenGL::GLRenderer &renderer) const;
+
+			/**
+			 * Returns the multi-resolution *map* cube mesh.
+			 *
+			 * This also consumes a reasonable amount of memory so it is shared across all layers.
+			 *
+			 * NOTE: This must be called when an OpenGL context is currently active.
+			 */
+			GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type
+			get_multi_resolution_map_cube_mesh(
+					GPlatesOpenGL::GLRenderer &renderer,
+					const MapProjection &map_projection) const;
+
+			/**
 			 * Returns the multi-resolution filled polygons renderer.
 			 *
 			 * NOTE: This must be called when an OpenGL context is currently active.
 			 */
 			GPlatesOpenGL::GLMultiResolutionFilledPolygons::non_null_ptr_type
-			get_multi_resolution_filled_polygons() const;
+			get_multi_resolution_filled_polygons(
+					GPlatesOpenGL::GLRenderer &renderer) const;
 
 		private:
 			const NonListObjects &d_non_list_objects;
@@ -810,6 +728,15 @@ namespace GPlatesGui
 			 */
 			mutable boost::optional<GPlatesOpenGL::GLMultiResolutionCubeMesh::non_null_ptr_to_const_type>
 					d_multi_resolution_cube_mesh;
+
+			/**
+			 * Used to get a mesh to view any cube quad tree raster in a map-projection view.
+			 *
+			 * NOTE: This can be shared by all layers since it contains no state specific
+			 * to anything a layer will draw with it (contains only global map projection).
+			 */
+			mutable boost::optional<GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_type>
+					d_multi_resolution_map_cube_mesh;
 
 			/**
 			 * Used to render coloured filled polygons as raster masks (instead of polygon meshes).

@@ -46,7 +46,7 @@ GPlatesMaths::GridOnSphere::Create(const PointOnSphere &origin,
 	 * and the great-circle of longitude (which is defined to be "directed"
 	 * from the South Pole up to the origin).
 	 */
-	SmallCircle line_of_lat(GPlatesMaths::PointOnSphere::north_pole.position_vector(), origin);
+	const SmallCircle line_of_lat = SmallCircle::create(GPlatesMaths::PointOnSphere::north_pole.position_vector(), origin);
 	GreatCircle line_of_lon(GPlatesMaths::PointOnSphere::south_pole, origin);
 
 	/*

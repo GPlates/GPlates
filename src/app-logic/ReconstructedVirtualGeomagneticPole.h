@@ -34,30 +34,7 @@ namespace GPlatesAppLogic
 
 	struct ReconstructedVirtualGeomagneticPoleParams
 	{
-			//GPlatesModel::Reconstruction &d_reconstruction;
-			/**
-			 * A rotation applied to the Vgp geometries before rendering.
-			 * 
-			 * If the VgpRenderer is used from the PoleManipulation tool, we need to 
-			 * perform this additional rotation for rendering the "dragged" geometries.
-			 */
-			boost::optional<GPlatesMaths::Rotation> d_additional_rotation;
-			
-			//GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type d_target_layer;
-		//	boost::optional<GPlatesGui::ColourProxy> d_colour;
-	//		GPlatesPresentation::ViewState *d_view_state_ptr;
-			
-			/**
-			 * Whether or not the reconstructed Vgp geometries should be added to the
-			 * set of reconstruction geometries.
-			 *
-			 * If the VgpRenderer is used in the normal Pmag workflow, we want to add the 
-			 * geometries; if it's used from the manipulate pole tool, for example, we don't
-			 * necessarily want to add them.
-			 */
-			bool d_should_add_to_reconstruction;
-
-			
+	
 			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> d_site_point;
 			boost::optional<GPlatesModel::FeatureHandle::iterator> d_site_iterator;
 			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> d_vgp_point;

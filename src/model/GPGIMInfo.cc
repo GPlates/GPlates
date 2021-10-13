@@ -144,8 +144,34 @@ namespace
 		{ "AseismicRidge", "centerLineOf" },
 		{ "AseismicRidge", "outlineOf" },
 		{ "AseismicRidge", "unclassifiedGeometry" },
+
+		{ "BasicRockUnit", "position" },
 		{ "BasicRockUnit", "outlineOf" },
 		{ "BasicRockUnit", "unclassifiedGeometry" },
+
+		{ "RockUnit_carbonate", "position" },
+		{ "RockUnit_carbonate", "outlineOf" },
+		{ "RockUnit_siliciclastic", "position" },
+		{ "RockUnit_siliciclastic", "outlineOf" },
+		{ "RockUnit_evaporite", "position" },
+		{ "RockUnit_evaporite", "outlineOf" },
+		{ "RockUnit_organic", "position" },
+		{ "RockUnit_organic", "outlineOf" },
+		{ "RockUnit_chemical", "position" },
+		{ "RockUnit_chemical", "outlineOf" },
+		{ "RockUnit_volcanic", "position" },
+		{ "RockUnit_volcanic", "outlineOf" },
+		{ "RockUnit_plutonic", "position" },
+		{ "RockUnit_plutonic", "outlineOf" },
+		{ "RockUnit_metamorphic", "position" },
+		{ "RockUnit_metamorphic", "outlineOf" },
+		{ "RockUnit_indeterminate_igneous", "position" },
+		{ "RockUnit_indeterminate_igneous", "outlineOf" },
+
+		{ "FossilCollection_small", "position" },
+		{ "FossilCollection_medium", "position" },
+		{ "FossilCollection_large", "position" },
+
 		{ "Basin", "outlineOf" },
 		{ "Basin", "unclassifiedGeometry" },
 		{ "Bathymetry", "outlineOf" },
@@ -250,6 +276,10 @@ namespace
 		{ "TopologicalClosedPlateBoundary", "boundary" },
 		{ "TopologicalSlabBoundary", "boundary" },
 		{ "TopologicalNetwork", "boundary" },
+		{ "UnclassifiedTopologcialFeature", "boundary" },
+		{ "UnclassifiedTopologcialFeature", "centerLineOf" },
+		{ "UnclassifiedTopologcialFeature", "outlineOf" },
+		{ "UnclassifiedTopologcialFeature", "unclassifiedGeometry" },
 		{ "Transform", "centerLineOf" },
 		{ "Transform", "outlineOf" },
 		{ "Transform", "unclassifiedGeometry" },
@@ -269,8 +299,15 @@ namespace
 		{ "Volcano", "outlineOf" },
 		{ "Volcano", "position" },
 		{ "Volcano", "unclassifiedGeometry" },
+		{ "Ophiolite", "outlineOf" },
+		{ "Ophiolite", "position" },
+		{ "Ophiolite", "unclassifiedGeometry" },
 	};
 	
+
+   
+	// NOTE: this is duplicated from above, 
+	// as a simple way to isolate only topological features
 
 	static const FeatureTypeInfo topological_feature_type_info_table[] = {
 		{ "TopologicalClosedPlateBoundary", "boundary" },
@@ -296,8 +333,12 @@ namespace
 		const FeatureTypeInfo *end = it + NUM_ELEMS(feature_type_info_table);
 		for ( ; it != end; ++it)
 		{
-			map.insert(std::make_pair(GPlatesModel::FeatureType::create_gpml(it->gpml_type),
-					GPlatesModel::PropertyName::create_gpml(it->geometric_property) ));
+			map.insert(
+				std::make_pair(
+					GPlatesModel::FeatureType::create_gpml(it->gpml_type),
+					GPlatesModel::PropertyName::create_gpml(it->geometric_property) 
+				)
+			);
 		}
 		return map;
 	}

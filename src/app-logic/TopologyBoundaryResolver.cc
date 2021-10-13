@@ -48,6 +48,7 @@
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
+#include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
@@ -71,13 +72,13 @@
 
 GPlatesAppLogic::TopologyBoundaryResolver::TopologyBoundaryResolver(
 		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles,
-		bool restrict_boundary_sections_to_same_reconstruction_tree) :
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles) :
 	d_resolved_topological_boundaries(resolved_topological_boundaries),
+	d_reconstructed_feature_geometries(reconstructed_feature_geometries),
 	d_reconstruction_tree(reconstruction_tree),
 	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles),
-	d_restrict_boundary_sections_to_same_reconstruction_tree(restrict_boundary_sections_to_same_reconstruction_tree),
 	d_reconstruction_params(reconstruction_tree->get_reconstruction_time())
 {  
 	d_num_topologies = 0;
@@ -183,8 +184,49 @@ GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_polygon(
 	//
 	// Now create the ResolvedTopologicalBoundary.
 	//
-	create_resolved_topology_boundary();
+	create_resolved_topology_boundary( true );
 }
+
+void
+GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_line(
+		GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
+{
+	PROFILE_FUNC();
+
+	// Prepare for a new topological polygon.
+	d_resolved_boundary.reset();
+
+	//
+	// Visit the topological sections to gather needed information and store
+	// it internally in 'd_resolved_boundary'.
+	//
+	record_topological_sections(gpml_topological_line.sections());
+
+	//
+	// See if the topological section 'start' and 'end' intersections are consistent.
+	//
+	validate_topological_section_intersections();
+
+	//
+	// Now iterate over our internal structure 'd_resolved_boundary' and
+	// intersect neighbouring sections that require it and
+	// generate the resolved boundary subsegments.
+	//
+	process_topological_section_intersections();
+
+	//
+	// Now iterate over the intersection results and assign boundary segments to
+	// each section.
+	//
+	assign_boundary_segments();
+
+	//
+	// Now create the ResolvedTopologicalBoundary. 
+	// as a polyline
+	//
+	create_resolved_topology_boundary( false );
+}
+
 
 
 void
@@ -280,14 +322,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::record_topological_section_reconstruc
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
 {
 	// Get the reconstructed geometry of the topological section's delegate.
-	// The referenced RFGs must be in our sequence of reconstructed topological boundary sections
-	// and optionally have been reconstructed by the same reconstruction tree associated with
-	// the resolved topological boundaries being generated.
-	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> restricted_reconstruction_tree;
-	if (d_restrict_boundary_sections_to_same_reconstruction_tree)
-	{
-		restricted_reconstruction_tree = d_reconstruction_tree;
-	}
+	// The referenced RFGs must be in our sequence of reconstructed topological boundary sections.
 	// If we need to restrict the topological section RFGs to specific reconstruct handles...
 	boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles;
 	if (d_topological_sections_reconstruct_handles)
@@ -298,7 +333,6 @@ GPlatesAppLogic::TopologyBoundaryResolver::record_topological_section_reconstruc
 	boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> source_rfg =
 			TopologyInternalUtils::find_reconstructed_feature_geometry(
 					geometry_delegate,
-					restricted_reconstruction_tree,
 					topological_sections_reconstruct_handles);
 	if (!source_rfg)
 	{
@@ -513,7 +547,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::assign_boundary_segment(
 
 // Final Creation Step
 void
-GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
+GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary(bool is_polygon )
 {
 	PROFILE_FUNC();
 
@@ -526,7 +560,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 #endif
 
 	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalBoundary.
-	std::vector<ResolvedTopologicalBoundary::SubSegment> output_subsegments;
+	std::vector<ResolvedTopologicalBoundarySubSegment> output_subsegments;
 
 	// Iterate over the sections of the resolved boundary and construct
 	// the resolved polygon boundary and its subsegments.
@@ -554,7 +588,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 
 		// Create a subsegment structure that'll get used when
 		// creating the resolved topological geometry.
-		const ResolvedTopologicalBoundary::SubSegment output_subsegment(
+		const ResolvedTopologicalBoundarySubSegment output_subsegment(
 				section.d_final_boundary_segment_unreversed_geom.get(),
 				subsegment_feature_const_ref,
 				section.d_use_reverse);
@@ -584,6 +618,32 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 #endif // if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
 	}
 
+	// FIXME: POLYGON , LINE , GEOM
+
+	// We are creating both a polyline and a polygon so that the same set of 
+	// resolved boundary sections may be used either way by client code
+
+	// This might be better served by some abstract geom on sphere? 
+
+	// Create a polyline on sphere for the resolved boundary using 'polygon_points'.
+	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity polyline_validity;
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> boundary_as_polyline =
+			GPlatesUtils::create_polyline_on_sphere(
+					polygon_points.begin(), polygon_points.end(), polyline_validity);
+
+	// If we are unable to create a polyline (such as insufficient points) then
+	// just return without creating a resolved topological geometry.
+	if (polyline_validity != GPlatesUtils::GeometryConstruction::VALID)
+	{
+		qDebug() << "ERROR: Failed to create a ResolvedTopologicalBoundary - probably has "
+				"insufficient points for a polyline.";
+		qDebug() << "Skipping creation for topological polygon feature_id=";
+		qDebug() << GPlatesUtils::make_qstring_from_icu_string(
+				d_currently_visited_feature->feature_id().get());
+
+		return;
+	}
+
 	// Create a polygon on sphere for the resolved boundary using 'polygon_points'.
 	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity polygon_validity;
 	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> plate_polygon =
@@ -602,6 +662,7 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 		return;
 	}
 
+
 	//
 	// Create the RTB for the plate polygon.
 	//
@@ -609,6 +670,8 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 		ResolvedTopologicalBoundary::create(
 			d_reconstruction_tree,
 			*plate_polygon,
+			*boundary_as_polyline,
+			is_polygon,
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()),
 			output_subsegments.begin(),
@@ -617,6 +680,24 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary()
 			d_reconstruction_params.get_time_of_appearance());
 
 	d_resolved_topological_boundaries.push_back(rtb_ptr);
+
+	// Also add an RFG for the boundary_as_polyline geom
+	if ( !is_polygon )
+	{
+		// NOTE: This code was copied from app-logic/ReconstructMethodByPlateId.cc 
+		GPlatesModel::FeatureHandle::iterator property = *current_top_level_propiter();
+
+		ReconstructedFeatureGeometry::non_null_ptr_type rfg_ptr =
+			ReconstructedFeatureGeometry::create(
+				d_reconstruction_tree,
+				*(current_top_level_propiter()->handle_weak_ref()),
+				property,
+				*boundary_as_polyline
+			);
+
+        d_reconstructed_feature_geometries.push_back(rfg_ptr);
+	}
+
 
 #if defined(CREATE_RFG_FOR_ROTATED_REFERENCE_POINTS)
 	//

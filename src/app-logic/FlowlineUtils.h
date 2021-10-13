@@ -40,6 +40,7 @@
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GpmlArray.h"
+#include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 
@@ -96,8 +97,8 @@ namespace GPlatesAppLogic
 		};
 
 		/**
-		* Used to obtain flowline-relevant parameters from a flowline feature.
-		*/
+		 * Used to obtain flowline-relevant parameters from a flowline feature.
+		 */
 		class FlowlinePropertyFinder :
 			public GPlatesModel::ConstFeatureVisitor
 		{

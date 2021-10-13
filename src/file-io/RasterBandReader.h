@@ -85,6 +85,10 @@ namespace GPlatesFileIO
 		bool
 		can_read();
 
+		GPlatesPropertyValues::RasterType::Type
+		get_type(
+				ReadErrorAccumulation *read_errors = NULL);
+
 		boost::optional<GPlatesGlobal::PointerTraits<GPlatesPropertyValues::RawRaster>::non_null_ptr_type>
 		get_proxied_raw_raster(
 				ReadErrorAccumulation *read_errors = NULL);
@@ -95,17 +99,6 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation *read_errors = NULL);
 
 	private:
-
-		GPlatesPropertyValues::RasterType::Type
-		get_type(
-				ReadErrorAccumulation *read_errors = NULL);
-
-		void *
-		get_data(
-				const QRect &region = QRect(),
-				ReadErrorAccumulation *read_errors = NULL);
-
-		friend class RasterBandReaderHandle;
 
 		GPlatesGlobal::PointerTraits<RasterReader>::non_null_ptr_type d_raster_reader;
 		unsigned int d_band_number;

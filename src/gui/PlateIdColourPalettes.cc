@@ -25,54 +25,14 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include <vector>
-
 #include "PlateIdColourPalettes.h"
-#include "HTMLColourNames.h"
-
-#include "utils/Singleton.h"
-
+#include "Palette.h"
 
 namespace
 {
 	using namespace GPlatesGui;
-
-	int leading_digit(
-			GPlatesModel::integer_plate_id_type plate_id)
-	{
-		while (plate_id >= 10)
-		{
-			plate_id /= 10;
-		}
-		return static_cast<int>(plate_id);
-	}
-
-
-	int
-	get_region_from_plate_id(
-			GPlatesModel::integer_plate_id_type plate_id)
-	{
-		if (plate_id < 100) // plate 0xx is treated as being in region zero
-		{
-			return 0;
-		}
-		else
-		{
-			return leading_digit(plate_id);
-		}
-	}
-
-
-	GPlatesGui::Colour
-	html_colour(
-			const char *name)
-	{
-		static HTMLColourNames &html_colours = HTMLColourNames::instance();
-		return *html_colours.get_colour(name);
-	}
-
-
+	
 	class DefaultColours
 	{
 	public:

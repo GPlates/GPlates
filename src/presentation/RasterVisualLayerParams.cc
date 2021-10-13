@@ -104,7 +104,9 @@ GPlatesPresentation::RasterVisualLayerParams::RasterVisualLayerParams(
 	VisualLayerParams(layer_task_params),
 	d_colour_palette_filename(QString()),
 	d_colour_palette(GPlatesGui::RasterColourPalette::create()),
-	d_raster_type(GPlatesPropertyValues::RasterType::UNKNOWN)
+	d_raster_type(GPlatesPropertyValues::RasterType::UNKNOWN),
+	d_opacity(1.0),
+	d_intensity(1.0)
 {
 }
 
@@ -278,3 +280,27 @@ GPlatesPresentation::RasterVisualLayerParams::get_raster_type() const
 	return d_raster_type;
 }
 
+
+void
+GPlatesPresentation::RasterVisualLayerParams::set_opacity(
+		const double &opacity)
+{
+	d_opacity = opacity;
+	emit_modified();
+}
+
+
+void
+GPlatesPresentation::RasterVisualLayerParams::set_intensity(
+		const double &intensity)
+{
+	d_intensity = intensity;
+	emit_modified();
+}
+
+
+GPlatesGui::Colour
+GPlatesPresentation::RasterVisualLayerParams::get_modulate_colour() const
+{
+	return GPlatesGui::Colour(d_intensity, d_intensity, d_intensity, d_opacity);
+}

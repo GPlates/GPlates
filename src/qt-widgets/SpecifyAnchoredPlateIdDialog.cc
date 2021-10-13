@@ -34,6 +34,7 @@
 #include "model/FeatureVisitor.h"
 
 #include "property-values/GpmlPlateId.h"
+#include "property-values/GpmlConstantValue.h"
 
 #include "utils/UnicodeStringUtils.h"
 

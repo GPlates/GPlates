@@ -34,6 +34,27 @@
 namespace GPlatesAppLogic
 {
 	/**
+	 * A handle to a layer proxy.
+	 *
+	 * This is useful when you need a pointer to a layer proxy for object identification but
+	 * you don't want clients to be able to use the layer proxy interface - for example,
+	 * because the layer is inactive.
+	 */
+	class LayerProxyHandle :
+			public GPlatesUtils::ReferenceCount<LayerProxyHandle>
+	{
+	public:
+		// Convenience typedefs for a shared pointer to a @a LayerProxyHandle.
+		typedef GPlatesUtils::non_null_intrusive_ptr<LayerProxyHandle> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const LayerProxyHandle> non_null_ptr_to_const_type;
+
+		virtual
+		~LayerProxyHandle()
+		{  }
+	};
+
+
+	/**
 	 * Base class for layer proxies.
 	 *
 	 * Each application logic layer has a single layer proxy object at its output that clients,
@@ -53,7 +74,7 @@ namespace GPlatesAppLogic
 	 * The hierarchy of layer proxy objects is visitable with the @a LayerProxyVisitor hierarchy.
 	 */
 	class LayerProxy :
-			public GPlatesUtils::ReferenceCount<LayerProxy>
+			public LayerProxyHandle
 	{
 	public:
 		// Convenience typedefs for a shared pointer to a @a LayerProxy.

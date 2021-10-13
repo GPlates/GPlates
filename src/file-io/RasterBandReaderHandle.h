@@ -33,16 +33,16 @@
 
 namespace GPlatesFileIO
 {
-	// Forward declaration.
-	class RasterReader;
-
 	/**
-	 * This class acts as a bridge between RasterBandReader and proxied RawRasters,
-	 * exposing some private functions meant only for proxied RawRasters.
+	 * This class acts as a bridge between RasterBandReader and proxied RawRasters.
 	 */
 	class RasterBandReaderHandle
 	{
 	public:
+
+		explicit
+		RasterBandReaderHandle(
+				const RasterBandReader &raster_band_reader);
 
 		const QString &
 		get_filename() const;
@@ -62,19 +62,7 @@ namespace GPlatesFileIO
 				const QRect &region = QRect(),
 				ReadErrorAccumulation *read_errors = NULL);
 
-		void *
-		get_data(
-				const QRect &region = QRect(),
-				ReadErrorAccumulation *read_errors = NULL);
-
 	private:
-
-		explicit
-		RasterBandReaderHandle(
-				const RasterBandReader &raster_band_reader);
-
-		// Only RasterReader can create one of these.
-		friend class RasterReader;
 
 		RasterBandReader d_raster_band_reader;
 	};

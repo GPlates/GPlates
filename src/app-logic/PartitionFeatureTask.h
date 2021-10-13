@@ -86,6 +86,11 @@ namespace GPlatesAppLogic
 		 * Assigns properties of the partitioning polygons to @a feature_ref and
 		 * any clones of it that hold partitioned geometry.
 		 *
+		 * If @a respect_feature_time_period is true (the default) then the feature is only
+		 * partitioned if the reconstruction time (stored in derived class instance) is within
+		 * the time period over which the feature is defined.
+		 * Note that some this can be ignored by some derived classes (eg, @a VgpPartitionFeatureTask).
+		 *
 		 * NOTE: Currently @a feature_ref can be modified to hold one of geometries
 		 * resulting from partitioning while clones of it can hold the other
 		 * partitioned geometries.
@@ -95,7 +100,8 @@ namespace GPlatesAppLogic
 		partition_feature(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-				const GeometryCookieCutter &geometry_cookie_cutter) = 0;
+				const GeometryCookieCutter &geometry_cookie_cutter,
+				bool respect_feature_time_period = true) = 0;
 	};
 }
 

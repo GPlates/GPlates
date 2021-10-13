@@ -62,8 +62,6 @@ namespace GPlatesGlobal {
 				const GPlatesUtils::CallStack::Trace &exception_source,
 				const std::string &msg) :
 			Exception(exception_source),
-			m_file(exception_source.get_filename()),
-			m_line(exception_source.get_line_num()),
 			m_msg(msg)
 		{  }
 
@@ -85,8 +83,6 @@ namespace GPlatesGlobal {
 
 	 private:
 
-		const char *m_file;
-		int m_line;
 		std::string m_msg;
 
 	};

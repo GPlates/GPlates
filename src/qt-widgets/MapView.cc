@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2008, 2009, 2011 Geological Survey of Norway
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -40,7 +40,6 @@
 #include "gui/MapTransform.h"
 #include "gui/ProjectionException.h"
 #include "gui/SvgExport.h"
-#include "gui/QGLWidgetTextRenderer.h"
 
 #include "maths/InvalidLatLonException.h"
 
@@ -64,45 +63,47 @@ namespace
 GPlatesQtWidgets::MapView::MapView(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
-		QWidget *parent_) :
+		QWidget *parent_,
+		const QGLWidget *share_gl_widget,
+		const GPlatesOpenGL::GLContext::non_null_ptr_type &share_gl_context,
+		const GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type &share_persistent_opengl_objects) :
 	d_gl_widget_ptr(
 			new QGLWidget(
-				QGLFormat(QGL::SampleBuffers),
-				this)),
+				// We turn *off* multisampling because lines actually look better without it...
+				// We need an alpha channel in case falling back to main frame buffer for render textures...
+				QGLFormat(/*QGL::SampleBuffers |*/ QGL::AlphaChannel),
+				this,
+				// Share texture objects, vertex buffer objects, etc...
+				share_gl_widget)),
+	d_gl_context(d_gl_widget_ptr->isSharing() // Mirror the sharing of OpenGL context state (if sharing)...
+			? GPlatesOpenGL::GLContext::create(
+					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
+							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*d_gl_widget_ptr)),
+					*share_gl_context)
+			: GPlatesOpenGL::GLContext::create(
+					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
+							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*d_gl_widget_ptr)))),
+	d_gl_persistent_objects(
+			// Attempt to share OpenGL resources across contexts.
+			// This will depend on whether the two 'GLContext's share any state.
+			GPlatesGui::PersistentOpenGLObjects::create(
+					d_gl_context,
+					share_persistent_opengl_objects,
+					view_state.get_application_state())),
 	d_map_canvas_ptr(
 			new MapCanvas(
 				view_state,
 				view_state.get_rendered_geometry_collection(),
 				this,
+				d_gl_context,
+				d_gl_persistent_objects,
 				view_state.get_render_settings(),
 				view_state.get_viewport_zoom(),
 				colour_scheme,
-				GPlatesGui::QGLWidgetTextRenderer::create(d_gl_widget_ptr),
 				this)),
-	d_map_transform(view_state.get_map_transform())
+	d_map_transform(view_state.get_map_transform()),
+	d_disable_update(false)
 {
-#if QT_VERSION >= 0x040600
-	// From Qt 4.6, the default paint engine is QPaintEngine::OpenGL2. This
-	// causes the map view in GPlates to not function correctly.
-	// 
-	// This is documented in the Qt 4.6 changelog
-	// (http://qt.nokia.com/developer/changes/changes-4.6.0):
-	//
-	//		The default engine used to draw onto OpenGL buffers has changed in
-	//		Qt 4.6. The QPaintEngine::OpenGL2 engine is now used as the default
-	//		engine. This *may* cause compatibility problems for applications
-	//		that use a mix of QPainter and native OpenGL calls to draw into a GL
-	//		buffer. Use the QGL::setPreferredPaintEngine() function to enforce
-	//		usage of the old GL paint engine.
-	//
-	// FIXME: It may be desirable to fix the Map rendering code so that the new
-	// OpenGL2 paint engine can be used.
-	//
-	// Note that the 3D Globe view is not affected by the change to OpenGL2.
-	QGL::setPreferredPaintEngine(QPaintEngine::OpenGL);
-	// setOptimizationFlag(QGraphicsView::IndirectPainting);
-#endif
-
 	// QWidget::setMouseTracking:
 	//   If mouse tracking is disabled (the default), the widget only receives mouse move
 	//   events when at least one mouse button is pressed while the mouse is being moved.
@@ -116,7 +117,11 @@ GPlatesQtWidgets::MapView::MapView(
 	setScene(d_map_canvas_ptr.get());
 
 	setViewportUpdateMode(
-		QGraphicsView::MinimalViewportUpdate);
+		// This is the preferred mode for QGLWidget - although in our case I don't think it really
+		// matters since there's no QGraphicsItem's and hence not much work for Qt to do.
+		// But it should force Qt to specify the entire widget to 'glViewport' so we can assume the
+		// OpenGL viewport is set to the dimensions of the QGLWidget.
+		QGraphicsView::FullViewportUpdate);
 	setInteractive(false);
 
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -604,6 +609,24 @@ GPlatesQtWidgets::MapView::update_canvas()
 
 
 void
+GPlatesQtWidgets::MapView::repaint_canvas()
+{
+	QPaintEvent e(rect());
+	paintEvent(&e);
+	repaint();
+}
+
+
+void
+GPlatesQtWidgets::MapView::set_disable_update(
+		bool b)
+{
+	d_disable_update = b;
+	d_map_canvas_ptr->set_disable_update(b);
+}
+
+
+void
 GPlatesQtWidgets::MapView::move_camera(
 		double dx,
 		double dy)
@@ -777,3 +800,36 @@ GPlatesQtWidgets::MapView::height() const
 	return d_gl_widget_ptr->height();
 }
 
+void
+GPlatesQtWidgets::MapView::set_orientation(
+	const GPlatesMaths::Rotation &rotation
+	/*bool should_emit_external_signal */)
+{
+	GPlatesMaths::LatLonPoint llp(0,0);
+	GPlatesMaths::PointOnSphere centre = GPlatesMaths::make_point_on_sphere(llp);
+
+	GPlatesMaths::Rotation rev = rotation.get_reverse();
+
+	GPlatesMaths::PointOnSphere desired_centre = rev*centre;
+	GPlatesMaths::LatLonPoint desired_llp = GPlatesMaths::make_lat_lon_point(desired_centre);
+
+
+	// Convert the llp to canvas coordinates.
+	double x_pos = desired_llp.longitude();
+	double y_pos = desired_llp.latitude();
+
+	try{
+		d_map_canvas_ptr->map().projection().forward_transform(x_pos,y_pos);
+	}
+	catch(GPlatesGui::ProjectionException &e)
+	{
+		std::cerr << "Caught exception converting lat-long to scene coordinates." << std::endl;
+		e.write(std::cerr);
+	}
+
+	// Centre the view on this point.
+	d_map_transform.set_centre_of_viewport(
+		GPlatesGui::MapTransform::point_type(x_pos, y_pos)
+		/*should_emit_external_signal */);
+
+}

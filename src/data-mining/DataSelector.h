@@ -30,9 +30,14 @@
 #include <string>
 #include <QString>
 #include <map>
+#include <boost/version.hpp>
+
+#if BOOST_VERSION > 103600
+#include <boost/unordered_map.hpp>
+#endif
 
 #include "CoRegConfigurationTable.h"
-#include "Filter.h"
+#include "CoRegFilterCache.h"
 #include "DataTable.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
@@ -50,20 +55,31 @@
 
 namespace GPlatesDataMining
 {
-	/*
-	* 
-	*/
 	class DataSelector
 	{
 	public:
+#if BOOST_VERSION > 103600
+		typedef boost::unordered_map< 
+				const GPlatesModel::FeatureHandle*,
+				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> 
+									> FeatureRFGMap;
 
-		typedef std::map< const GPlatesModel::FeatureHandle*,
-				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> > FeatureRFGMap;
-
-		typedef std::map< 
+		typedef boost::unordered_map< 
 				const GPlatesModel::FeatureCollectionHandle*,
-				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> > FeatureCollectionRFGMap;
+				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> 
+									> FeatureCollectionRFGMap;
+#else
+		 typedef std::map<
+                                const GPlatesModel::FeatureHandle*,
+                                std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>
+                                                                        > FeatureRFGMap;
 
+                typedef std::map<
+                                const GPlatesModel::FeatureCollectionHandle*,
+                                std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>
+                                                                        > FeatureCollectionRFGMap;
+
+#endif
 		static
 		boost::shared_ptr<DataSelector> 
 		create(
@@ -83,34 +99,7 @@ namespace GPlatesDataMining
 				DataTable& ret														
 				);
 
-		typedef 
-		std::multimap< 
-				GPlatesModel::FeatureCollectionHandle::const_weak_ref, 
-				boost::shared_ptr< const AssociationOperator::AssociatedCollection > 
-					> CacheMap;
-
-		/*
-		*
-		*/
 		static
-		void
-		insert_associated_data_into_cache(
-				boost::shared_ptr< const AssociationOperator::AssociatedCollection >,
-				GPlatesModel::FeatureCollectionHandle::const_weak_ref  target_feature_collection,
-				CacheMap& cache_map);
-
-		/*
-		*
-		*/
-		static
-		boost::shared_ptr< const AssociationOperator::AssociatedCollection > 
-		retrieve_associated_data_from_cache(
-				FilterCfg,
-				GPlatesModel::FeatureCollectionHandle::const_weak_ref target_feature_collection,
-				const CacheMap& cache_map);
-
-		static
-		inline
 		void
 		set_data_table(
 				const DataTable& table)
@@ -119,105 +108,33 @@ namespace GPlatesDataMining
 		}
 
 		static
-		inline
 		const DataTable&
-		get_data_table()
+		get_data_table() 
 		{
 			return d_data_table;
 		}
+
+		void
+		populate_table_header();
 
 		~DataSelector()
 		{ }
 		
 	protected:
 		/*
-		*
+		* Get target feature collections from input table.
 		*/
 		void
-		get_target_collections_from_input_table(
-				std::vector< GPlatesModel::FeatureCollectionHandle::const_weak_ref >& );
-		/*
-		*
-		*/
-		void
-		get_table_desc_from_input_table(
-				TableDesc& table_desc);
-		
-		/*
-		*
-		*/
-		void
-		get_reconstructed_geometries(
-				GPlatesModel::FeatureHandle::non_null_ptr_to_const_type feature,
-				std::vector< GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type	>& geometries
-				);
-		
-		/*
-		*
-		*/
-		void
-		get_reconstructed_geometries(
-				GPlatesModel::FeatureHandle::non_null_ptr_to_const_type feature,
-				std::vector< GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type	>& geometries,
-				const GPlatesAppLogic::Reconstruction& rec);
-
-		/*
-		*
-		*/
-		void
-		construct_geometry_map(
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref& feature_collection,
-				FeatureGeometryMap& the_map,
-				const GPlatesAppLogic::Reconstruction* reconstruction);
-		
-		/*
-		*
-		*/
-		void
-		construct_geometry_map(
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref& seed_collection,	/*In*/
-				const std::vector< GPlatesModel::FeatureCollectionHandle::const_weak_ref >& target_collection,							/*In*/
-				const GPlatesAppLogic::Reconstruction* reconstruction);
-
-		/*
-		*
-		*/
-		void
-		construct_geometry_map(
-				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>&,
-				FeatureGeometryMap& the_map);
-		/*
-		*
-		*/
-		boost::shared_ptr< const AssociationOperator::AssociatedCollection > 
-		retrieve_associated_data_from_cache(
-				FilterCfg,
-				GPlatesModel::FeatureCollectionHandle::const_weak_ref target_feature_collection);
-		/*
-		*
-		*/
-		void
-		insert_associated_data_into_cache(
-				boost::shared_ptr< const AssociationOperator::AssociatedCollection >,
-				GPlatesModel::FeatureCollectionHandle::const_weak_ref  target_feature_collection);
-
-		/*
-		* Modify the @a cfg_row to optimize performance.
-		*/
-		const ConfigurationTableRow
-		optimize_cfg_table_row(
-				const ConfigurationTableRow& cfg_row,
-				const GPlatesModel::FeatureHandle* seed_feature,
-				const GPlatesModel::FeatureCollectionHandle* target_feature_collection);
-
+		get_target_collections(
+				std::vector<const GPlatesModel::FeatureCollectionHandle*>& ) const;				
 		/*
 		* Check if the configuration table is still valid.
 		*/
 		bool
-		is_cfg_table_valid();
+		is_cfg_table_valid() const;
 
 		void
-		append_seed_info(
+		fill_seed_info(
 				const GPlatesModel::FeatureHandle*,
 				DataRowSharedPtr);
 		
@@ -231,19 +148,27 @@ namespace GPlatesDataMining
 		const DataSelector&
 		operator=(const DataSelector&);
 
-		DataSelector(const CoRegConfigurationTable &table) 
-			: d_configuration_table(table)
-		{ }
+		DataSelector(const CoRegConfigurationTable &table) : 
+			d_cfg_table(table),
+			d_data_index(0)
+		{
+			populate_table_header();
+			if(!d_cfg_table.is_optimized())
+				d_cfg_table.optimize();
+		}
 
-		CoRegConfigurationTable d_configuration_table;
+		CoRegConfigurationTable d_cfg_table;
 
-		FeatureGeometryMap d_seed_geometry_map;
-		FeatureGeometryMap d_target_geometry_map;
-		
-		CacheMap d_associated_data_cache;
-
+		FeatureCollectionRFGMap d_target_fc_rfg_map;
+		FeatureRFGMap d_seed_feature_rfg_map;
+		TableHeader d_table_header;
+		unsigned d_data_index;
+		/*
+		* TODO:
+		* Need to remove the "static" in the future.
+		* Find a way to move result data more gracefully.
+		*/
 		static DataTable d_data_table;
-
 	};
 }
 

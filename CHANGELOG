@@ -1,3 +1,233 @@
+GPlates 1.2
+===========
+
+Changes since 1.1.1:
+
+ * Total Reconstruction Sequence Editing / Creation:
+   * Total Reconstruction Sequence dialog extended to allow creation, editing and deletion of Total Reconstuction Sequences (TRSs).
+   * Newly created TRSs can be saved to existing rotation files, or to a new rotation file.
+     (Note: disabled poles / TRSes are not editable or creatable at the moment).
+ * Small Circle Tool:
+   * Replaced Small Circle Manager with a canvas tool.
+   * Can create small circles directly on the globe (or map) using the mouse.
+     * Click once for centre, click again to define point on radius of the circle. To define multiple radii with the same centre point, click once for centre, shift-click to define radii, and click again to define point on radius of last circle.
+     * Create small circles (as before) by specifying the centre and radii, and generating the centre from a stage pole if desired.
+     * Create small circle features which can be: exported to gpml, imported from gpml, and visualised as a layer.
+     * Query and edit small cirles through the Click Feature canvas tool.
+ * Calculate Rotation Pole tool field automatically filled from an already-selected pmag VGP.
+ * Added synchronisation with an external program to allow viewpoints, reconstruction time, etc to remain in sync:
+   * Message communication using strings with parameters via standard input/output.
+ * Colouring dialog per visual layer (instead of per feature collection):
+   * Can activate colouring dialog via layer.
+ * Python colour scripting:
+   * Existing hardwired colour schemes implemented as python scripts.
+   * Users can create/register their own colouring via python scripts.
+   * Python script can request GUI configuration options like strings, floats and colour palettes.
+   * Load/save python script configuration.
+   * Python API to query feature properties (when implementing python colouring scripts).
+ * Dateline wrapping option when saving Shapefiles:
+   * Wraps polylines and polygons to the dateline.
+   * Also available as option when exporting to Shapefile format.
+ * New Log dialog:
+   * Displays low-level debug, warning and error messages in a dialog window.
+   * Messages can be filtered with a text string entered by the user.
+   * Messages can be copy'n'pasted in order to, for example, email bug reports to the GPlates developers.
+   * Removes duplicate messages - shows message once along with a count of the number of identical messages.
+ * New Preferences dialog:
+   * A user interface to view and modify settings and parameters used in GPlates.
+   * Currently available settings include animation range, export directory, maximum number of save/restore sessions, network proxy settings and python paths.
+   * The "Advanced" pane lists all settings in table format but is *only* for advanced users.
+   * Network proxy settings used for WFS queries.
+ * Significant overhaul of OpenGL rendering engine to both facilitate shader programs and allow feedback from GPU to CPU:
+   * Added floating-point support (OpenGL texture and shader program) throughout raster reconstruction pipeline.
+   * Removed render graph since the extra complexity is not needed and interferes with CPU->GPU->CPU feedback.
+   * Individual GLStateSet's replaced by single GLRenderer interface (from rendering client's point-of-view).
+ * Raster co-registration data mining front-end:
+   * Required overhaul of OpenGL rendering engine.
+   * Can co-register point, polyline and (filled or unfilled) polygon geometries with a (reconstructed) raster containing numerical data.
+   * Supports mean, standard-deviation, minimum and maximum - percentiles/median to come later.
+   * Entirely hardware accelerated by the graphics card for performance (requires OpenGL 2 compliant graphics).
+   * Core is implemented but not yet available.
+ * Reconstructed rasters in the map views:
+   * Supports all raster variations (reconstructed, time-dependent, age-grid and combinations of these).
+   * Supports level-of-detail and view-frustum culling for optimal efficiency.
+   * Uses dateline wrapper (in central meridian reference frame) to clip polyline/polygon geometries.
+ * Added raster opacity/intensity (user-specified per layer).
+ * Improved interactivity with rasters for very high resolution rasters.
+   * New GPlates raster streaming tiled file format for raster file cache to minimise disk file seeks ("*.gplates.cache").
+ * Added bilinear filtering for reconstructed rasters and filled polygons for visual improvement.
+ * Fixed holes appearing in large filled polygons.
+ * Connected digitisation tool to WFS query - digitised geometry can be used for WFS region query.
+ * Render directly to colour preview icon to avoid off-screen render issues on some systems (due to OpenGL pixel ownership test).
+ * Assign Plate ID dialog uses layers instead of files to select the partitioning polygons (one or more layers).
+ * Assign Plate ID dialog has option to ignore the time period of the feature(s) being partitioned.
+ * Can assign Plate IDs using topological networks.
+ * Fixed extremely long running time for Assign Plate ID assignment.
+ * Fixed Assign Plate IDs bug crash (caused by not checking for zero-length arc before accessing its rotation axis).
+ * Significantly reduced delay when clicking on a feature when a very large number of features are under mouse cursor (eg, 2,000 features).
+ * Fixed exponential loading times when restoring many files during a session restore.
+ * PropertyValueFinder works with time-dependent properties.
+ * Temporary hack to merge adjacent point features, along topological polygon or network boundary, into a single polyline during export.
+ * Replaced FWtools with GDAL and PROJ4 - the former uses old python (2.3) and VC runtime (7.1) preventing pygplates from loading into ArcGIS.
+ * Fixed topological sections sometimes not getting found when no rotation file loaded.
+ * Fixed export of duplicate reconstructed geometry, flowline, motion path, or resolved topology when highlighted (in-focus).
+ * Reverse reconstruction included in reconstruct method framework.
+ * Clone Geometry tool can clone topological plate polygons.
+ * gpml:OldPlatesHeader is read-only as far as user edits are concerned.
+ * Fixed slow saving to Shapefiles.
+ * Fixed memory leak exporting velocities.
+ * Fixed extra topological geometry listed in focused features table when clicking on a topological network boundary.
+ * Velocities calculated in microblocks without needing to connect (or auto-connect) their static polygons layer to the velocity layers.
+   * Now calculated as part of the topological network (since microblocks belong to the network)
+ * Fixed certain Qt library files not getting copied into GPlates Mac bundle (such '.nib' files) - by updating cmake scripts to cmake version 2.8.4.
+ * Fixed error reading conjugate plate id from gpml file when it was saved from a Shapefile.
+ * Fixed incorrect generation of empty feature IDs on Shapefile import - empty fields now result in a new feature ID.
+ * Reconstructed raster polygons sorted by plate id to ensure consistent, reproducible visual results.
+ * Allow PLATES4 line/rotation format readers to read non-ascii (unicode) filenames.
+ * Fixed draw style settings not adjusting to a layer order change.
+ * Fixed bug in VGP pole calculator.
+ * Fixed bug in quaternion slerp that, on rare occasions, caused rotation to take the longer path around a pole (instead of shorter path).
+ * Fixed corrupt colour previews problem on some systems.
+ * Fixed inability to enable a layer if layer is disabled, then GPlates closed, then GPlates opened, and then re-opening the session.
+ * Fixed rare crash assigning plate IDs due to numerical precision polyline intersection issue.
+ * Fixed erratic motion of globe when dragging with mouse.
+
+GPlates 1.1.1
+=============
+
+Changes since 1.1:
+
+ * Fixed empty layers loaded into session.
+ * Fixed save/restore of sessions containing feature collections not associated with a file (not yet saved).
+ * Fixed file-loading error (in old session versions) causing failure to create layers for new session versions).
+ * Fixed 'fill polygons' affecting wrong layer after visual layer reordering.
+ * Fixed filled polygons drawn as square tiles when zoom deep enough.
+ * Fixed filled polygon checkbox not working on 'Reconstructed Geometries' layers in some situations.
+ * Small speed improvement to filled polygons.
+ * Fixed reconstructed raster not using age grid smoothing when connected to an age grid raster.
+ * Fixed user specifying new anchor plate id and globe not updating.
+ * Fixed some topological sections not getting added in topology tools (or not being allowed to be added).
+ * Fixed inability to add points to a topological network boundary.
+ * Fixed inability to add same topological section feature to a topological boundary more than once.
+ * Fixed topological plate polygon not updating when modifying one of its boundary features (such as with the Insert Vertex tool).
+ * All triangulations of topological networks now clipped to the final mesh triangulation.
+ * Fixed missing topological plate polygons export when only the "Export each Plate Polygon to a separate file" checkbox is ticked.
+ * Fixed missing export of topological network boundaries.
+ * Fixed incorrect auto-segment-reversal when adding points to a topological network boundary.
+ * Fixed focused feature losing highlight when no reconstruction tree loaded and reconstruction time changed.
+ * Fixed feature focus hightlight disappearing when changing reconstruction time.
+ * Fixed feature focus highlight not showing other geometries belonging to focused feature (in grey).
+ * Removed OGRGMT export format option from topological plate polygons export since it's not currently supported.
+ * Fixed OGRGMT format not exporting to single file for reconstructed geometries when requested.
+ * Fixed full motion path not getting exported.
+ * Default export location is now platform-specific documents directory.
+ * Exporting a single snapshot now does not modify current animation range.
+ * Fixed export type not getting removed (when user removed it) after previous export failed.
+ * Fixed crash when unloading a file connected to a user-created polygon layer (that's connected to a reconstructing raster layer).
+ * Fixed continuously increasing number of layers when switching back and forth between sessions.
+ * Fixed crash when inserting no points into CGAL triangulations.
+ * Old '.xy' format now writes out file even if no header lines generated (eg, because no Plate ID).
+ * Fixed incorrectly creating a conjugate isochron feature when creating a mid-ocean ridge feature.
+ * Fixed incorrectly adding a reconstruction plate ID and conjugate plate ID to a newly created mid-ocean ridge feature.
+ * Assign Plate IDs dialog allow times before 100Ma.
+ * Fixed Mac bundle filename not updating correctly.
+ * Fixed Mac bundle creation failure when 'svnversion' returns a string with a colon in it.
+
+GPlates 1.1
+===========
+
+Changes since 1.0.1:
+
+ * Can save/restore layer connections (in addition to previous loaded files save/restore).
+ * Added new feature collection file format OGRGMT ('.gmt'):
+   * Compatible with the 'ogr2ogr' vector format conversion tool.
+   * Effectively a Shapefile-like format embedded in GMT format.
+ * Filled polygons now supported:
+   * Uses same colour scheme as non-filled polygons (eg, Colour-by-feature-age, etc).
+   * Supports dynamic topological plate polygons and static polygons:
+     * Using stencil-based raster technique (since dynamic polygon re-triangulation is non-interactive).
+     * Still slow on some systems though.
+   * Can toggle in 'Resolved Topological Closed Plate Boundary' and 'Reconstructed Geometries' layers.
+ * 'Calculated Velocity Fields' layers can now calculate velocities of arbitrary static polygon geometries:
+   * By connecting to a 'Reconstructed Geometries' layer containing static polygons.
+   * In addition to existing topological polygons/networks.
+ * 'Calculated Velocity Fields' layers can now calculate velocities at the *vertices* of arbitrary geometries:
+   * Such as polyline, polygon or multipoint geometries:
+     * However currently only present day positions are used (ie, geometries are not rotated).
+   * And can export these velocities to GPML (in the same way the mesh cap files are currently exported).
+ * Experimental Web Feature Service connectivity:
+   * Currently can load geometry from a WFS server.
+ * More improvements in reading/parsing GeoSciML.
+ * Implemented spatial partition for reconstructed geometries:
+   * A novel cube 'loose' quad tree scheme.
+   * Supports region-of-interest (ROI) queries and fast insertion of reconstructed geometries.
+   * Parallels existing novel cube quad tree scheme used for level-of-detail raster reconstructions:
+     * Used to associate reconstructed geometries with raster tiles.
+   * Used for visibility culling of vector geometries.
+ * Added new 'export' file format OGRGMT ('.gmt') for reconstructed geometries, flowlines and motion paths.
+ * Can export topological plate polygons to Shapefile format.
+ * Added export of topological network boundaries and topological slab boundaries.
+ * Added options to control export of topological plate polygons to various polygon and subsegment files.
+ * Added options to control export of reconstructed geometries to single file, multiple files or both:
+   * Same with flowlines and motionpath export.
+ * Can now load larger rasters on 32-bit systems with 2Gb physical memory without memory failure:
+   * Such as 1 minute resolution global rasters.
+   * For JPEG format can go even higher such as 0.3 minute resolution global rasters (~60,000 x 30,000 pixels).
+ * Raster memory allocation failure now reported.
+ * Added button in Layer dialog (top-right) to open colouring preview dialog.
+ * Layers now grouped together based on layer type.
+ * Can now delete and rename layers.
+ * Use 'tick' icon in 'Reconstruction Tree' layer to toggle default layer.
+ * Can now prevent the default 'Reconstruction Tree' layer from changing when opening a new rotation file.
+ * Toggling a layer's visibility off now improves rendering speed.
+ * Now draws colour scales for gridded rasters in the layer dialog:
+   * And can right-click colour scale to save as a PNG image.
+ * Can expand/contract individual sections in each layer (in Layers dialog).
+ * Virtual Geomagnetic Pole visibility is now a per-layer setting.
+ * Added topological network layer options to visualise associated triangulations.
+   * And visualise source segment velocities (when velocity mesh cap files also loaded).
+ * Separated interior from boundary segments in topology tool.
+ * Added interpolation from topological network constrained mesh.
+ * Colour left/right sections of flowlines independently according to default plate id colour scheme.
+   * And motion path coloured by its plate id.
+ * Noticeably improved flowlines reconstruction/rendering performance.
+ * Noticeably faster loading/unloading of files when many files are already loaded:
+   * Most noticeable when loading velocity mesh cap files.
+ * Increased GPML (file format) float precision from 6 to 17 significant digits:
+   * Enough to cover double-precision floating point numbers used inside GPlates.
+ * Removed check for duplicate points on loading files:
+   * Previously failed to load very small size polylines/polygons (and containing a handful of vertices).
+ * Improved export dialog general user interface.
+ * Increased export time precision from 2 to 4 decimal places.
+ * Reconstructed rasters now update if the reconstructing polygons are modified:
+   * For example, using one of the editing tools (such as Move Vertex tool).
+ * Uses highest-resolution raster when reconstructing source raster with age grid.
+   * Previously resolution was limited to the lowest resolution of the source or age grid rasters.
+ * Removed special purpose "age grid" layer:
+   * Age grid rasters now treated like any other raster (and can be visualised).
+   * No longer need to specify 'age' as the band name when importing age grid raster.
+   * Can still connect to another raster layer (to help smooth its reconstruction).
+ * Only first connection of any raster layer to a particular polygon layer suffers a delay (of a few seconds):
+   * Connections of a second, third, etc, raster layer to that polygon layer are now immediate.
+ * Can drag files onto import time-dependent raster dialog page.
+ * Raster mipmap error messages printed on globe.
+ * Significantly improved performance of topology tool auto-reversal (when building topological networks from points).
+ * Fatter lines in digitisation tool.
+ * Magnifying glass icons in zoom slider are now clickable.
+ * "Edit -> Clear" (CTRL+K) now a common menu location for clear actions on the canvas tools (task panel).
+ * Insert Vertex no longer restricts polyline end-point extension.
+ * Fixed incorrectly rendered grid lines on Natty Ubuntu systems.
+ * Fixed features with no plate Id receiving a random plate Id.
+ * Fixed MeshNode (velocity) points rotating when anchor plate id is *not* zero.
+ * Fixed flowline GMT export bug (missing '>').
+ * Fixed inability to insert multiple times after inserting single time when creating a motion path.
+ * Fixed NULL character being written to PLATES rotation file after the comment on each line.
+   * Caused problems with gawk and some text editors.
+ * Fixed crash bug fix due to interaction of Split Feature Tool with Build Topology tool.
+ * Fixed crash loading categorical colour palettes (CPT files) into raster layers (containing 'integer' raster).
+ * Fixed some menu items not enabled at start-up (such as Show Stars).
+ * Fixed actual export time occasionally out-of-sync with expected export time.
+
 GPlates 1.0.1
 =============
 

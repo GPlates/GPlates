@@ -40,6 +40,7 @@
 #include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
+#include "gui/DrawStyleManager.h"
 #include "gui/Symbol.h"
 #include "gui/RasterColourPalette.h"
 
@@ -94,8 +95,18 @@ namespace GPlatesPresentation
 			bool fill_polygons;
 			float velocity_ratio_unit_vector_direction_to_globe_radius;
 
+			//
 			// Raster-specific parameters.
+			//
+			//! Raster colour palette.
 			GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette;
+
+			/**
+			 * Raster modulate colour (eg, to control raster opacity/intensity).
+			 *
+			 * TODO: This could be used for general layer transparency.
+			 */
+			GPlatesGui::Colour raster_modulate_colour;
 
 			// VGP-specific parameters.
 			bool vgp_draw_circular_error;
@@ -180,7 +191,8 @@ namespace GPlatesPresentation
 				const RenderParams &render_params = RenderParams(),
 				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
 				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none,
-				const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none);
+				const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none,
+				const GPlatesGui::StyleAdapter* sa = NULL);
 
 		/**
 		 * Must be called before any rendering including visiting any reconstruction geometries.
@@ -269,6 +281,12 @@ namespace GPlatesPresentation
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp);
 
+
+                virtual
+                void
+                visit(
+                                const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc);
+
 		virtual
 		void
 		visit(
@@ -312,6 +330,7 @@ namespace GPlatesPresentation
 		boost::optional<GPlatesGui::Colour> d_colour;
 		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
 		boost::optional<GPlatesGui::symbol_map_type> d_feature_type_symbol_map;
+		const GPlatesGui::StyleAdapter* d_style_adapter;
 
 		/**
 		 * All rendered geometries are added to this spatial partition.
