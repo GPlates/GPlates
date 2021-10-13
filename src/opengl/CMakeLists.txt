@@ -133,6 +133,8 @@ set(srcs
     OpenGL.h
     OpenGLBadAllocException.h
     OpenGLException.h
+    Vertex.cc
+    Vertex.h
 )
 
 

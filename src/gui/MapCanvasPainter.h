@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The Geological Survey of Norway
+ * Copyright (C) 2009, 2010 The Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -52,7 +52,8 @@ namespace GPlatesGui
 	 * This is a Visitor to paint geometries on the map canvas.
 	 */
 	class MapCanvasPainter:
-			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<>,
+			public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
+				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>,
 			public boost::noncopyable
 	{
 	public:
@@ -62,7 +63,7 @@ namespace GPlatesGui
 				Map &map,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				GPlatesGui::RenderSettings &render_settings,
-				GPlatesGui::TextRenderer::ptr_to_const_type text_renderer_ptr,
+				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type &layers_to_visit,
 				double inverse_zoom_factor,
 				ColourScheme::non_null_ptr_type colour_scheme);
@@ -80,6 +81,11 @@ namespace GPlatesGui
             const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
             GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type);
 #endif
+		virtual
+		void
+		visit_rendered_arrowed_polyline(
+				const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline);
+
 
 		virtual
 		void
@@ -130,10 +136,12 @@ namespace GPlatesGui
 
 		void
 		set_scale(
-				float scale)
-		{
-			d_scale = scale;
-		}
+				float scale);
+
+		virtual
+		boost::optional<GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>
+		get_custom_child_layers_order(
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer);
 
 	private:
 
@@ -145,7 +153,7 @@ namespace GPlatesGui
 		RenderSettings &d_render_settings;
 
 		//! For rendering text
-		TextRenderer::ptr_to_const_type d_text_renderer_ptr;
+		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
 
 		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type d_main_rendered_layers_to_visit;
 

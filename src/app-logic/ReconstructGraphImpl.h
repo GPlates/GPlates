@@ -49,6 +49,7 @@ namespace GPlatesAppLogic
 {
 	class Layer;
 	class LayerTask;
+	class LayerTaskParams;
 	class ReconstructGraph;
 
 	namespace ReconstructGraphImpl
@@ -182,13 +183,6 @@ namespace GPlatesAppLogic
 			boost::optional<layer_task_data_type> d_data;
 			connection_seq_type d_output_connections;
 			state_type d_state;
-
-			/**
-			 * Active status of this data as an input file.
-			 *
-			 * FIXME: Remove this when @a activate_input_file is removed.
-			 */
-			bool d_active;
 		};
 
 
@@ -362,6 +356,9 @@ namespace GPlatesAppLogic
 			{
 				return *d_reconstruct_graph;
 			}
+
+			LayerTaskParams &
+			get_layer_task_params();
 
 		private:
 			ReconstructGraph *d_reconstruct_graph;

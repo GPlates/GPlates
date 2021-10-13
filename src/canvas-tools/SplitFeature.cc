@@ -30,19 +30,21 @@
 
 
 GPlatesCanvasTools::SplitFeature::SplitFeature(
+		const status_bar_callback_type &status_bar_callback,
 		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesPresentation::ViewState	&view_state,
 		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold):
+		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold) :
+	CanvasTool(status_bar_callback),
 	d_feature_focus(&feature_focus),
 	d_view_state(&view_state),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_geometry_operation_target(&geometry_operation_target),
 	d_split_feature_geometry_operation(
-		new GPlatesViewOperations::SplitFeatureGeometryOperation(
+			new GPlatesViewOperations::SplitFeatureGeometryOperation(
 				feature_focus,
 				view_state,
 				geometry_operation_target,
@@ -50,8 +52,7 @@ GPlatesCanvasTools::SplitFeature::SplitFeature(
 				&rendered_geometry_collection,
 				choose_canvas_tool,
 				query_proximity_threshold))
-{
-}
+{  }
 
 
 GPlatesCanvasTools::SplitFeature::~SplitFeature()
@@ -82,23 +83,7 @@ GPlatesCanvasTools::SplitFeature::handle_activation()
 	// Activate our InsertVertexGeometryOperation.
 	d_split_feature_geometry_operation->activate(geometry_builder, main_layer_type);
 
-	switch (get_view())
-	{
-		case GLOBE_VIEW:
-			set_status_bar_message(QObject::tr(
-				"Click to split the current feature into two."
-				" Ctrl+drag to re-orient the globe."));
-			break;
-
-		case MAP_VIEW:
-			set_status_bar_message(QObject::tr(
-				"Click to split the current feature into two."
-				" Ctrl+drag to pan the map."));
-			break;
-
-		default:
-			break;
-	}
+	set_status_bar_message(QT_TR_NOOP("Click to split the current feature into two."));
 }
 
 
@@ -128,7 +113,8 @@ GPlatesCanvasTools::SplitFeature::handle_left_drag(
 		double initial_proximity_inclusion_threshold,
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
-		double current_proximity_inclusion_threshold)
+		double current_proximity_inclusion_threshold,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
 	d_split_feature_geometry_operation->mouse_move(
 			current_point_on_sphere,

@@ -88,7 +88,6 @@ namespace GPlatesFileIO
 			map["RF"] = std::make_pair("Fault","centerLineOf");
 			map["RI"] = std::make_pair("MidOceanRidge","centerLineOf");
 			map["SM"] = std::make_pair("Seamount","unclassifiedGeometry");
-			map["SL"] = std::make_pair("Slab","unclassifiedGeometry");
 			map["SS"] = std::make_pair("Fault","centerLineOf");
 			map["SU"] = std::make_pair("Suture","centerLineOf");
 			map["TB"] = std::make_pair("TerraneBoundary","centerLineOf");

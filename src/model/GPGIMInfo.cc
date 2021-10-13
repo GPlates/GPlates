@@ -23,11 +23,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <boost/bind.hpp>
 #include <QObject>
 #include <QDebug>
 
 #include "GPGIMInfo.h"
 
+#include "utils/UnicodeStringUtils.h"
+
+#define HIDE_DEV_CODE
+
+#define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
 namespace
 {
@@ -74,10 +81,10 @@ namespace
 	/**
 	 * Converts the above table into a map of PropertyName -> QString.
 	 */
-	const geometry_prop_name_map_type &
-	build_geometry_prop_name_map()
+	const geometric_property_name_map_type &
+	build_geometric_property_name_map()
 	{
-		static geometry_prop_name_map_type map;
+		static geometric_property_name_map_type map;
 
 		// Add all the friendly names from the table.
 		const GeometryPropInfo *it = geometry_prop_info_table;
@@ -93,10 +100,10 @@ namespace
 	/**
 	 * Converts the above table into a map of PropertyName -> bool.
 	 */
-	const geometry_prop_timedependency_map_type &
-	build_geometry_prop_timedependency_map()
+	const geometric_property_timedependency_map_type &
+	build_geometric_property_timedependency_map()
 	{
-		static geometry_prop_timedependency_map_type map;
+		static geometric_property_timedependency_map_type map;
 
 		// Add all the expects_time_dependent_wrapper flags from the table.
 		const GeometryPropInfo *it = geometry_prop_info_table;
@@ -162,6 +169,7 @@ namespace
 		{ "ExtendedContinentalCrust", "unclassifiedGeometry" },
 		{ "Fault", "centerLineOf" },
 		{ "Fault", "unclassifiedGeometry" },
+		{ "Flowline", "seedPoints" },
 		{ "FoldPlane", "centerLineOf" },
 		{ "FoldPlane", "unclassifiedGeometry" },
 		{ "FractureZone", "centerLineOf" },
@@ -196,6 +204,7 @@ namespace
 		{ "MidOceanRidge", "centerLineOf" },
 		{ "MidOceanRidge", "outlineOf" },
 		{ "MidOceanRidge", "unclassifiedGeometry" },
+		{ "MotionPath", "seedPoints" },
 		{ "OceanicAge", "outlineOf" },
 		{ "OldPlatesGridMark", "centerLineOf" },
 		{ "OldPlatesGridMark", "unclassifiedGeometry" },
@@ -212,9 +221,9 @@ namespace
 		{ "Seamount", "position" },
 		{ "Seamount", "unclassifiedGeometry" },
 		{ "SedimentThickness", "outlineOf" },
-		{ "Slab", "centerLineOf" },
-		{ "Slab", "outlineOf" },
-		{ "Slab", "unclassifiedGeometry" },
+		{ "SlabEdge", "centerLineOf" },
+		{ "SlabEdge", "outlineOf" },
+		{ "SlabEdge", "unclassifiedGeometry" },
 		{ "SpreadingAsymmetry", "outlineOf" },
 		{ "SpreadingRate", "outlineOf" },
 		{ "Stress", "outlineOf" },
@@ -228,6 +237,8 @@ namespace
 		{ "TerraneBoundary", "unclassifiedGeometry" },
 		{ "Topography", "outlineOf" },
 		{ "TopologicalClosedPlateBoundary", "boundary" },
+		{ "TopologicalSlabBoundary", "boundary" },
+		{ "TopologicalNetwork", "boundary" },
 		{ "Transform", "centerLineOf" },
 		{ "Transform", "outlineOf" },
 		{ "Transform", "unclassifiedGeometry" },
@@ -248,16 +259,24 @@ namespace
 
 	static const FeatureTypeInfo topological_feature_type_info_table[] = {
 		{ "TopologicalClosedPlateBoundary", "boundary" },
+#ifndef HIDE_DEV_CODE
+		{ "TopologicalSlabBoundary", "boundary" },
+		{ "TopologicalNetwork", "boundary" },
+		{ "UnclassifiedTopologcialFeature", "boundary" },
+		{ "UnclassifiedTopologcialFeature", "centerLineOf" },
+		{ "UnclassifiedTopologcialFeature", "outlineOf" },
+		{ "UnclassifiedTopologcialFeature", "unclassifiedGeometry" },
+#endif
 	};
 
 
 	/**
 	 * Converts the above table into a multimap.
 	 */
-	const feature_geometric_prop_map_type &
-	build_feature_geometric_prop_map()
+	const feature_geometric_property_map_type &
+	build_feature_geometric_property_map()
 	{
-		static feature_geometric_prop_map_type map;
+		static feature_geometric_property_map_type map;
 
 		// Add all the feature types -> geometric props from the feature_type_info_table.
 		const FeatureTypeInfo *it = feature_type_info_table;
@@ -274,10 +293,10 @@ namespace
 	/**
 	 * Converts the above table into a set.
 	 */
-	const feature_set_type &
+	feature_set_type
 	build_normal_feature_set()
 	{
-		static feature_set_type set;
+		feature_set_type set;
 
 		// Add all feature types from the feature_type_info_table.
 		const FeatureTypeInfo *it = feature_type_info_table;
@@ -286,6 +305,7 @@ namespace
 		{
 			set.insert(GPlatesModel::FeatureType::create_gpml(it->gpml_type));
 		}
+
 		return set;
 	}
 
@@ -293,10 +313,10 @@ namespace
 	/**
 	 * Converts the above table into a set.
 	 */
-	const feature_set_type &
+	feature_set_type
 	build_topological_feature_set()
 	{
-		static feature_set_type set;
+		feature_set_type set;
 
 		// Add all feature types from the topological_feature_type_info_table.
 		const FeatureTypeInfo *it = topological_feature_type_info_table;
@@ -305,32 +325,100 @@ namespace
 		{
 			set.insert(GPlatesModel::FeatureType::create_gpml(it->gpml_type));
 		}
+
 		return set;
+	}
+
+
+	const feature_set_type &
+	normal_feature_set()
+	{
+		static const feature_set_type feature_set = build_normal_feature_set();
+		return feature_set;
+	}
+
+
+	const feature_set_type &
+	topological_feature_set()
+	{
+		static const feature_set_type feature_set = build_topological_feature_set();
+		return feature_set;
 	}
 }
 
 
-const GPlatesModel::GPGIMInfo::geometry_prop_name_map_type &
-GPlatesModel::GPGIMInfo::get_geometry_prop_name_map()
+const GPlatesModel::GPGIMInfo::geometric_property_name_map_type &
+GPlatesModel::GPGIMInfo::get_geometric_property_name_map()
 {
-	static const geometry_prop_name_map_type &map = build_geometry_prop_name_map();
+	static const geometric_property_name_map_type &map = build_geometric_property_name_map();
 	return map;
 }
 
 
-const GPlatesModel::GPGIMInfo::geometry_prop_timedependency_map_type &
-GPlatesModel::GPGIMInfo::get_geometry_prop_timedependency_map()
+QString
+GPlatesModel::GPGIMInfo::get_geometric_property_name(
+		const PropertyName &property_name)
 {
-	static const geometry_prop_timedependency_map_type &map = build_geometry_prop_timedependency_map();
+	const geometric_property_name_map_type &map = get_geometric_property_name_map();
+	geometric_property_name_map_type::const_iterator iter = map.find(property_name);
+	if (iter == map.end())
+	{
+		return GPlatesUtils::make_qstring_from_icu_string(property_name.build_aliased_name());
+	}
+	else
+	{
+		return iter->second;
+	}
+}
+
+
+const GPlatesModel::GPGIMInfo::geometric_property_timedependency_map_type &
+GPlatesModel::GPGIMInfo::get_geometric_property_timedependency_map()
+{
+	static const geometric_property_timedependency_map_type &map = build_geometric_property_timedependency_map();
 	return map;
 }
 
 
-const GPlatesModel::GPGIMInfo::feature_geometric_prop_map_type &
-GPlatesModel::GPGIMInfo::get_feature_geometric_prop_map()
+bool
+GPlatesModel::GPGIMInfo::expects_time_dependent_wrapper(
+		const PropertyName &property_name)
 {
-	static const feature_geometric_prop_map_type &map = build_feature_geometric_prop_map();
+	const geometric_property_timedependency_map_type &map = get_geometric_property_timedependency_map();
+	geometric_property_timedependency_map_type::const_iterator iter = map.find(property_name);
+	if (iter == map.end())
+	{
+		return true;
+	}
+	else
+	{
+		return iter->second;
+	}
+}
+
+
+const GPlatesModel::GPGIMInfo::feature_geometric_property_map_type &
+GPlatesModel::GPGIMInfo::get_feature_geometric_property_map()
+{
+	static const feature_geometric_property_map_type &map = build_feature_geometric_property_map();
 	return map;
+}
+
+
+bool
+GPlatesModel::GPGIMInfo::is_valid_geometric_property(
+		const FeatureType &feature_type,
+		const PropertyName &property_name)
+{
+	const feature_geometric_property_map_type &map = get_feature_geometric_property_map();
+
+	typedef feature_geometric_property_map_type::const_iterator map_iterator_type;
+	typedef const feature_geometric_property_map_type::value_type map_value_type;
+	map_iterator_type lower_bound = map.lower_bound(feature_type);
+	map_iterator_type upper_bound = map.upper_bound(feature_type);
+
+	return std::find_if(lower_bound, upper_bound,
+			boost::bind(&map_value_type::second, _1) == property_name) != upper_bound;
 }
 
 
@@ -338,16 +426,22 @@ const GPlatesModel::GPGIMInfo::feature_set_type &
 GPlatesModel::GPGIMInfo::get_feature_set(
 		bool topological)
 {
-	static const feature_set_type &normal_set = build_normal_feature_set();
-	static const feature_set_type &topological_set = build_topological_feature_set();
-
 	if (topological)
 	{
-		return topological_set;
+		return topological_feature_set();
 	}
 	else
 	{
-		return normal_set;
+		return normal_feature_set();
 	}
+}
+
+
+bool
+GPlatesModel::GPGIMInfo::is_topological(
+		const FeatureType &feature_type)
+{
+	const feature_set_type &topological_features = topological_feature_set();
+	return topological_features.find(feature_type) != topological_features.end();
 }
 

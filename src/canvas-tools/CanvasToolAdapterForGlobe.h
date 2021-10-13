@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,10 +29,11 @@
 #define GPLATES_CANVASTOOLS_CANVASTOOLADAPTERFORGLOBE_H
 
 #include <QString>
-#include <boost/scoped_ptr.hpp>
 
 #include "CanvasTool.h"
+
 #include "gui/GlobeCanvasTool.h"
+
 
 namespace GPlatesQtWidgets
 {
@@ -62,22 +63,12 @@ namespace GPlatesCanvasTools
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<CanvasToolAdapterForGlobe,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<CanvasToolAdapterForGlobe,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		/**
 		 * Create a CanvasToolAdapterForGlobe instance.
 		 */
-		static
-		const non_null_ptr_type
-		create(
-				CanvasTool *canvas_tool_ptr,
+		CanvasToolAdapterForGlobe(
+				const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
 				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &viewport_window_);
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas_);
 		
 		virtual
 		void
@@ -218,24 +209,11 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
 				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
-
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		CanvasToolAdapterForGlobe (
-				CanvasTool *canvas_tool_ptr,
-				GPlatesGui::Globe &globe_,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				const GPlatesQtWidgets::ViewportWindow &viewport_window_);
 		
 	private:
 
 		//! A pointer to the CanvasTool instance that we wrap around
-		boost::scoped_ptr<CanvasTool> d_canvas_tool_ptr;
-
-		//! Listeners to status bar updates from the CanvasTool
-		StatusBarListenerForViewport d_status_bar_listener;
-
+		CanvasTool::non_null_ptr_type d_canvas_tool_ptr;
 	};
 }
 

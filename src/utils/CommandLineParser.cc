@@ -23,18 +23,21 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
 #include <fstream>
 #include <boost/bind.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
-#include <iostream>
-#include "utils/CommandLineParser.h"
+
+#include "CommandLineParser.h"
+
+#include "Profile.h"
+
 #include "file-io/ErrorOpeningFileForReadingException.h"
+
 #include "global/Constants.h"
 #include "global/GPlatesException.h"
 #include "global/NotYetImplementedException.h"
-
-#include "utils/Profile.h"
 
 namespace
 {

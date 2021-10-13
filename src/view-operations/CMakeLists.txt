@@ -40,6 +40,7 @@ set(srcs
     MoveVertexGeometryOperation.cc
     MoveVertexGeometryOperation.h
     QueryProximityThreshold.h
+    RenderedArrowedPolyline.h
     RenderedDirectionArrow.h
     RenderedEllipse.h
     RenderedGeometry.cc
@@ -74,8 +75,8 @@ set(srcs
     SplitFeatureUndoCommand.h
     UndoRedo.cc
     UndoRedo.h
-    VisibleReconstructedFeatureGeometryExport.cc
-    VisibleReconstructedFeatureGeometryExport.h
+    VisibleReconstructionGeometryExport.cc
+    VisibleReconstructionGeometryExport.h
 )
 
 

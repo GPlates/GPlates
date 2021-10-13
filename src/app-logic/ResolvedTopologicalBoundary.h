@@ -152,6 +152,7 @@ namespace GPlatesAppLogic
 		typedef std::vector<SubSegment> sub_segment_seq_type;
 
 
+#if 0
 		/**
 		 * Forward iterator over export template filename sequence.
 		 * Dereferencing iterator returns a 'const SubSegment &'.
@@ -242,12 +243,17 @@ namespace GPlatesAppLogic
 				d_sequence_index(sequence_index)
 			{  }
 		};
+#endif
 
 
 		/**
 		 * The type used to const_iterate over the subsegments.
 		 */
+#if 0
 		typedef SubSegmentConstIterator sub_segment_const_iterator;
+#endif
+		typedef sub_segment_seq_type::const_iterator sub_segment_const_iterator;
+
 
 
 		/**
@@ -410,7 +416,10 @@ namespace GPlatesAppLogic
 		sub_segment_const_iterator
 		sub_segment_begin() const
 		{
+#if 0
 			return sub_segment_const_iterator::create_begin(d_sub_segment_seq);
+#endif
+			return d_sub_segment_seq.begin();
 		}
 
 
@@ -420,7 +429,10 @@ namespace GPlatesAppLogic
 		sub_segment_const_iterator
 		sub_segment_end() const
 		{
+#if 0
 			return sub_segment_const_iterator::create_end(d_sub_segment_seq);
+#endif
+			return d_sub_segment_seq.end();
 		}
 
 

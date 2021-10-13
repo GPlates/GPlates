@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,72 +28,17 @@
 #ifndef GPLATES_CANVASTOOLS_CANVASTOOL_H
 #define GPLATES_CANVASTOOLS_CANVASTOOL_H
 
-#include <vector>
-#include <algorithm>
-#include <QString>
-#include <boost/noncopyable.hpp>
-#include <boost/bind.hpp>
+#include <boost/function.hpp>
+#include <boost/optional.hpp>
 
 #include "maths/PointOnSphere.h"
 
+#include "utils/ReferenceCount.h"
+#include "utils/non_null_intrusive_ptr.h"
 
-namespace GPlatesQtWidgets
-{
-	class ViewportWindow;
-}
 
 namespace GPlatesCanvasTools
 {
-
-	/**
-	 * An abstract base listener class for status bar updates. Subclass this in
-	 * order to listen to status bar updates from CanvasTool subclasses.
-	 * Add CanvasToolStatusBarListener objects using add_status_bar_listener()
-	 * in CanvasTool.
-	 */
-	class CanvasToolStatusBarListener
-	{
-		public:
-			
-			virtual
-			~CanvasToolStatusBarListener()
-			{
-			}
-			
-			/**
-			 * Called when the status bar message is changed by the CanvasTool
-			 */
-			virtual
-			void
-			update_status_bar_message(const QString &message) = 0;
-
-	};
-
-	/**
-	 * An implementation of CanvasToolStatusBarListener for ViewportWindow
-	 */
-	class StatusBarListenerForViewport:
-		public CanvasToolStatusBarListener
-	{
-		
-		public:
-
-			StatusBarListenerForViewport(
-					const GPlatesQtWidgets::ViewportWindow *view_state_ptr):
-				d_view_state_ptr(view_state_ptr)
-			{
-			}
-			
-			virtual
-			void
-			update_status_bar_message(const QString &message);
-
-		private:
-
-			//! A pointer to the ViewportWindow where the status bar updates will be shown
-			const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
-	};
-
 	/**
 	 * Base class for canvas tools that do not need to be implemented differently
 	 * for globe and map views.
@@ -117,56 +62,33 @@ namespace GPlatesCanvasTools
 	 * the nearest point on the map for clicks off the map.
 	 */
 	class CanvasTool :
-			public boost::noncopyable
+			public GPlatesUtils::ReferenceCount<CanvasTool>
 	{
-
 	public:
-
-		/**
-		 * What view is this instance of CanvasTool being used in?
-		 * (Main use: providing context-sensitive status bar messages)
-		 */
-		enum View
-		{
-			GLOBE_VIEW,
-			MAP_VIEW
-		};
-
-		/**
-		 * Construct a new instance of CanvasTool. View defaults to globe view.
-		 */
-		CanvasTool():
-			d_view(GLOBE_VIEW)
-		{
-		}
-
-		/**
-		 * Construct a new instance of CanvasTool, specifying whether it is being
-		 * used in a globe or a map @a view.
-		 */
-		explicit
-		CanvasTool(
-				View view):
-			d_view(view)
-		{
-		}
 
 		virtual
 		~CanvasTool()
-		{
-		}
+		{  }
+
+		/**
+		 * Typedef for a function that takes a C string and displays it on the status bar.
+		 */
+		typedef boost::function< void ( const char * ) > status_bar_callback_type;
+
+		/**
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<CanvasTool>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<CanvasTool> non_null_ptr_type;
 
 		virtual
 		void
 		handle_activation()
-		{
-		}
+		{  }
 
 		virtual
 		void
 		handle_deactivation()
-		{
-		}
+		{  }
 
 		virtual
 		void
@@ -174,8 +96,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
+		{  }
 		
 		virtual
 		void
@@ -183,8 +104,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
+		{  }
 
 		virtual
 		void
@@ -194,9 +114,9 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
-		{
-		}
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		{  }
 
 		virtual
 		void
@@ -206,9 +126,9 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
-		{
-		}
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		{  }
 
 		virtual
 		void
@@ -216,8 +136,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
+		{  }
 
 		virtual
 		void
@@ -227,9 +146,9 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
-		{
-		}
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		{  }
 
 		virtual
 		void
@@ -239,9 +158,9 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
-		{
-		}
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		{  }
 
 		virtual
 		void
@@ -249,8 +168,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
+		{  }
 
 		virtual
 		bool
@@ -260,7 +178,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 		{
 			return true; // perform default behaviour (rotate globe)
 		}
@@ -273,7 +192,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 		{
 			return true; // perform default behaviour (rotate globe)
 		}
@@ -284,8 +204,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
+		{  }
 
 		virtual
 		bool
@@ -295,7 +214,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 		{
 			return true; // perform default behaviour (rotate globe)
 		}
@@ -308,7 +228,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold)
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 		{
 			return true; // perform default behaviour (rotate globe)
 		}
@@ -319,54 +240,40 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
-		{
-		}
-
-		void
-		set_view(View view)
-		{
-			d_view = view;
-		}
-
-		View
-		get_view()
-		{
-			return d_view;
-		}
-
-		/**
-		 * Adds the @a listener for status bar updates.
-		 */
-		void
-		add_status_bar_listener(
-				CanvasToolStatusBarListener *listener)
-		{
-			d_status_bar_listeners.push_back(listener);
-		}
+		{  }
 
 	protected:
 
 		/**
+		 * Constructs CanvasTool, given @a status_bar_callback that can be used by the
+		 * canvas tool to set status bar messages.
+		 */
+		explicit
+		CanvasTool(
+				const status_bar_callback_type &status_bar_callback) :
+			d_status_bar_callback(status_bar_callback)
+		{  }
+
+		/**
 		 * Subclasses call this function to set text on the status bar.
-		 * All listeners are notified of the @message.
+		 *
+		 * Note that @a message should *not* have been translated, i.e. passed
+		 * through QObject::tr().
 		 */
 		void
-		set_status_bar_message(const QString &message)
+		set_status_bar_message(
+				const char *message)
 		{
-			std::for_each(
-				d_status_bar_listeners.begin(),
-				d_status_bar_listeners.end(),
-				boost::bind(&CanvasToolStatusBarListener::update_status_bar_message, _1, message));
+			if (d_status_bar_callback)
+			{
+				d_status_bar_callback(message);
+			}
 		}
 
 	private:
 
-		//! The view that this CanvasTool is being used in (globe or map)
-		View d_view;
-
-		//! A vector of status bar listeners that are notified about status bar changes
-		std::vector<CanvasToolStatusBarListener *> d_status_bar_listeners;
-
+		//! The callback used to show text on the status bar.
+		status_bar_callback_type d_status_bar_callback;
 	};
 
 }

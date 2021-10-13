@@ -54,27 +54,37 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to focus features by clicking on them.
 	 */
-	class ClickGeometry:
+	class ClickGeometry :
 			public CanvasTool
 	{
-
 	public:
 
-		virtual
-		~ClickGeometry()
-		{  }
-
 		/**
-		 * Create a ClickGeometry instance.
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ClickGeometry>.
 		 */
-		ClickGeometry(
+		typedef GPlatesUtils::non_null_intrusive_ptr<ClickGeometry> non_null_ptr_type;
+
+		static
+		const non_null_ptr_type
+		create(
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::FeatureTableModel &clicked_table_model,
 				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
 				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesAppLogic::ApplicationState &application_state);
-		
+				GPlatesAppLogic::ApplicationState &application_state)
+		{
+			return new ClickGeometry(
+					status_bar_callback,
+					rendered_geom_collection,
+					view_state,
+					clicked_table_model,
+					fp_dialog,
+					feature_focus,
+					application_state);
+		}
+
 		virtual
 		void
 		handle_activation();
@@ -96,6 +106,18 @@ namespace GPlatesCanvasTools
 	private:
 
 		/**
+		 * Create a ClickGeometry instance.
+		 */
+		ClickGeometry(
+				const status_bar_callback_type &status_bar_callback,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesQtWidgets::ViewportWindow &view_state,
+				GPlatesGui::FeatureTableModel &clicked_table_model,
+				GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog,
+				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesAppLogic::ApplicationState &application_state);
+
+		/**
 		 * We need to change which canvas-tool layer is shown when this canvas-tool is
 		 * activated.
 		 */
@@ -107,7 +129,7 @@ namespace GPlatesCanvasTools
 		 * Since the view state is also the ViewportWindow, it is currently used to
 		 * pass messages to the status bar.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * This is the external table of hits which will be updated in the event that

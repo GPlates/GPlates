@@ -45,7 +45,7 @@ namespace GPlatesFileIO
 			UNKNOWN,           //!< Format, or file extension, is unknown.
 
 			GPML,              //!< '.gpml' extension.
-			GPML_GZ,           //!< '.gpml.gz' extension.
+			GPMLZ,			   //!< '.gpmlz' or '.gpml.gz' extension.
 			PLATES4_LINE,      //!< '.dat' or '.pla' extension.
 			PLATES4_ROTATION,  //!< '.rot' extension.
 			SHAPEFILE,         //!< '.shp' extension.

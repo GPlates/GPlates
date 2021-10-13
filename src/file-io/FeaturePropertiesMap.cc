@@ -6,7 +6,8 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -24,13 +25,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "model/PropertyName.h"
-#include "model/FeatureType.h"
 #include "FeaturePropertiesMap.h"
+
 #include "PropertyCreationUtils.h"
 
+#include "model/FeatureType.h"
+#include "model/PropertyName.h"
 
 #define GET_PROP_VAL_NAME(create_prop) GPlatesFileIO::PropertyCreationUtils::create_prop##_as_prop_val
+
 
 namespace
 {
@@ -368,7 +371,7 @@ namespace
 	}
 
 	const PropertyCreationUtils::PropertyCreatorMap
-	get_slab_properties()
+	get_slab_edge_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
 
@@ -376,6 +379,20 @@ namespace
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("subductionPolarity") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("slabEdgeType") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
+		map[ PropertyName::create_gpml("slabFlatLying") ] =
+			GET_PROP_VAL_NAME(create_xs_boolean);
+		map[ PropertyName::create_gpml("slabFlatLyingDepth") ] =
+			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("subductionZoneAge") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("subductionZoneDeepDip") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("subductionZoneDepth") ] = 
+			GET_PROP_VAL_NAME(create_xs_double);
 
 		return map;
 	}
@@ -558,8 +575,11 @@ namespace
 			GET_PROP_VAL_NAME(create_xs_double);
 		map[ PropertyName::create_gpml("poleDm") ] = 
 			GET_PROP_VAL_NAME(create_xs_double);
+		// FIXME:  Should gpml:averageAge be a gpml:TimeInstant rather than an xs:double?
 		map[ PropertyName::create_gpml("averageAge") ] = 
 			GET_PROP_VAL_NAME(create_xs_double);
+		map[ PropertyName::create_gpml("locationNames") ] = 
+			GET_PROP_VAL_NAME(create_string_list);
 
 		return map;
 	}	
@@ -649,6 +669,19 @@ namespace
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("islandArc") ] =
 			GET_PROP_VAL_NAME(create_feature_reference);
+
+		map[ PropertyName::create_gpml("subductionZoneAge") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
+		map[ PropertyName::create_gpml("subductionZoneDeepDip") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
+		map[ PropertyName::create_gpml("subductionZoneDepth") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
+
+		map[ PropertyName::create_gpml("isActive") ] =
+			GET_PROP_VAL_NAME(create_xs_boolean);
+
+		map[ PropertyName::create_gpml("slabEdgeType") ] = 
+			GET_PROP_VAL_NAME(create_xs_string);
 
 		return map;
 	}
@@ -825,6 +858,25 @@ namespace
 		return map;
 	}
 
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_topological_slab_boundary_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_topological_closed_plate_boundary_properties();
+
+		map[ PropertyName::create_gpml("slabFlatLying") ] =
+			GET_PROP_VAL_NAME(create_xs_boolean);
+
+		map[ PropertyName::create_gpml("slabFlatLyingDepth") ] =
+			GET_PROP_VAL_NAME(create_xs_double);
+
+		map[ PropertyName::create_gpml("dipAngle") ] =
+			GET_PROP_VAL_NAME(create_xs_double);
+
+		return map;
+	}
+
+
+
 
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_reconstruction_feature_properties()
@@ -877,6 +929,66 @@ namespace
 
 		return map;
 	}
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_flowline_properties()
+	{
+
+		// FIXME: Should this be a reconstructable feature?
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();					
+
+		map[ PropertyName::create_gpml("seedPoints") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);	
+
+		map[ PropertyName::create_gpml("times") ] =
+			GET_PROP_VAL_NAME(create_array);			
+
+		map[ PropertyName::create_gpml("reconstructionMethod") ] = 
+			GET_PROP_VAL_NAME(create_reconstruction_method_enumeration);
+		map[ PropertyName::create_gpml("leftPlate") ] =
+			GET_PROP_VAL_NAME(create_plate_id);
+		map[ PropertyName::create_gpml("rightPlate") ] =
+			GET_PROP_VAL_NAME(create_plate_id);
+
+		return map;
+	}
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_motion_path_properties()
+	{
+
+		// FIXME: Should this be a reconstructable feature?
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();					
+
+		map[ PropertyName::create_gpml("seedPoints") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);	
+
+		// FIXME: This should be an array of time instants. 
+		map[ PropertyName::create_gpml("times") ] =
+			GET_PROP_VAL_NAME(create_array);			
+
+		map[ PropertyName::create_gpml("reconstructionMethod") ] = 
+			GET_PROP_VAL_NAME(create_reconstruction_method_enumeration);
+
+		map[ PropertyName::create_gpml("relativePlate") ] =
+			GET_PROP_VAL_NAME(create_plate_id);
+
+		return map;
+	}
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_polygon_centroid_point_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();					
+		map[ PropertyName::create_gpml("position") ] =
+			GET_PROP_VAL_NAME(create_point);
+		map[ PropertyName::create_gpml("multiPosition") ] = 
+			GET_PROP_VAL_NAME(create_gml_multi_point);
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
 }
 
 
@@ -893,6 +1005,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 	// Topological features.
 	d_map[ FeatureType::create_gpml("TopologicalClosedPlateBoundary") ] =
 		get_topological_closed_plate_boundary_properties();
+	d_map[ FeatureType::create_gpml("TopologicalSlabBoundary") ] =
+		get_topological_slab_boundary_properties();
 	d_map[ FeatureType::create_gpml("TopologicalNetwork") ] =
 		get_topological_closed_plate_boundary_properties();
 
@@ -913,6 +1027,13 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_old_plates_grid_mark_properties();
 	d_map[ FeatureType::create_gpml("MeshNode") ] =
 		get_mesh_node_properties();
+	d_map[ FeatureType::create_gpml("Flowline")] =
+		get_flowline_properties();
+	d_map[ FeatureType::create_gpml("MotionPath")] =
+		get_motion_path_properties();
+	d_map[ FeatureType::create_gpml("PolygonCentroidPoint")] =
+		get_polygon_centroid_point_properties();
+
 
 	// Rock units.
 	d_map[ FeatureType::create_gpml("BasicRockUnit") ] =
@@ -999,9 +1120,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_hot_spot_trail_properties();
 	d_map[ FeatureType::create_gpml("Seamount") ] =
 		get_seamount_properties();
-	d_map[ FeatureType::create_gpml("Slab") ] =
-		get_slab_properties();
-	d_map[ FeatureType::create_gpml("Volcano") ] =
+	d_map[ FeatureType::create_gpml("SlabEdge") ] =
+		get_slab_edge_properties();
 	d_map[ FeatureType::create_gpml("Volcano") ] =
 		get_volcano_properties();
 	d_map[ FeatureType::create_gpml("AseismicRidge") ] =
@@ -1034,5 +1154,43 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_raster_properties();
 
 	// Time variant features.
+}
+
+
+GPlatesFileIO::FeaturePropertiesMap::const_iterator
+GPlatesFileIO::FeaturePropertiesMap::find(
+		const GPlatesModel::FeatureType &key) const
+{
+	return d_map.find(key);
+}
+
+
+GPlatesFileIO::FeaturePropertiesMap::const_iterator
+GPlatesFileIO::FeaturePropertiesMap::begin() const
+{
+	return d_map.begin();
+}
+
+
+GPlatesFileIO::FeaturePropertiesMap::const_iterator
+GPlatesFileIO::FeaturePropertiesMap::end() const
+{
+	return d_map.end();
+}
+
+
+bool
+GPlatesFileIO::FeaturePropertiesMap::is_valid_property(
+		const GPlatesModel::FeatureType &feature_type,
+		const GPlatesModel::PropertyName &property_name) const
+{
+	const_iterator iter = find(feature_type);
+	if (iter == end())
+	{
+		return false;
+	}
+
+	const PropertyCreationUtils::PropertyCreatorMap &prop_map = iter->second;
+	return prop_map.find(property_name) != prop_map.end();
 }
 

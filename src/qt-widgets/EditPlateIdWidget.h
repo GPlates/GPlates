@@ -112,6 +112,11 @@ namespace GPlatesQtWidgets
 		void
 		set_null(
 				bool should_nullify);
+
+	signals:
+		
+		void
+		value_changed();
 	
 	private slots:
 	
@@ -123,6 +128,9 @@ namespace GPlatesQtWidgets
 		{
 			set_null(true);
 		}
+
+		void
+		handle_value_changed();
 		
 	private:
 

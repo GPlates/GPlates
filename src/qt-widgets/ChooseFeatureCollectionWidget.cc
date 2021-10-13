@@ -27,6 +27,7 @@
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QString>
+#include <QDir>
 
 #include "ChooseFeatureCollectionWidget.h"
 
@@ -53,7 +54,7 @@ namespace
 		FeatureCollectionItem(
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
 				const QString &label):
-			QListWidgetItem(label),
+			QListWidgetItem(QDir::toNativeSeparators(label)),
 			d_file_ref(file_ref)
 		{  }
 
@@ -126,7 +127,7 @@ namespace
 			else
 			{
 				// The file doesn't exist so give it a filename to indicate this.
-				label = "New Feature Collection";
+				label = GPlatesQtWidgets::ChooseFeatureCollectionWidget::tr("New Feature Collection");
 			}
 			
 			// We are only interested in loaded files which have valid FeatureCollections.
@@ -134,8 +135,12 @@ namespace
 				list_widget.addItem(new FeatureCollectionItem(file_ref, label));
 			}
 		}
+
 		// Add a final option for creating a brand new FeatureCollection.
-		list_widget.addItem(new FeatureCollectionItem(QObject::tr(" < Create a new feature collection > ")));
+		list_widget.addItem(
+				new FeatureCollectionItem(
+					GPlatesQtWidgets::ChooseFeatureCollectionWidget::tr(" < Create a new feature collection > ")));
+
 		// Default to first entry.
 		list_widget.setCurrentRow(0);
 	}
@@ -169,6 +174,14 @@ GPlatesQtWidgets::ChooseFeatureCollectionWidget::initialise()
 
 
 void
+GPlatesQtWidgets::ChooseFeatureCollectionWidget::set_help_text(
+		const QString &text)
+{
+	label_help_text->setText(text);
+}
+
+
+void
 GPlatesQtWidgets::ChooseFeatureCollectionWidget::handle_listwidget_item_activated(
 		QListWidgetItem *)
 {
@@ -195,6 +208,36 @@ GPlatesQtWidgets::ChooseFeatureCollectionWidget::get_file_reference() const
 	else
 	{
 		throw NoFeatureCollectionSelectedException();
+	}
+}
+
+
+void
+GPlatesQtWidgets::ChooseFeatureCollectionWidget::select_file_reference(
+		const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_reference)
+{
+	select_feature_collection(file_reference.get_file().get_feature_collection());
+}
+
+
+void
+GPlatesQtWidgets::ChooseFeatureCollectionWidget::select_feature_collection(
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
+{
+	for (int i = 0; i != listwidget_feature_collections->count(); ++i)
+	{
+		FeatureCollectionItem *collection_item = dynamic_cast<FeatureCollectionItem *>(
+				listwidget_feature_collections->item(i));
+		if (collection_item)
+		{
+			if (!collection_item->is_create_new_collection_item() &&
+				collection_item->get_file_reference().get_file().get_feature_collection() ==
+					feature_collection)
+			{
+				listwidget_feature_collections->setCurrentRow(i);
+				return;
+			}
+		}
 	}
 }
 

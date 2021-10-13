@@ -31,6 +31,9 @@
 #include "boost/optional.hpp"
 #include <QImage>
 
+#include "view-operations/QueryProximityThreshold.h"
+
+
 namespace GPlatesMaths
 {
 	class LatLonPoint;
@@ -42,7 +45,8 @@ namespace GPlatesQtWidgets
 	/**
 	 * Base class of GlobeCanvas and MapView.
 	 */
-	class SceneView
+	class SceneView :
+			public GPlatesViewOperations::QueryProximityThreshold
 	{
 
 	public:

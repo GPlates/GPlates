@@ -34,7 +34,10 @@
 #include <string>
 
 #include "PlatesRotationFormatReader.h"
+
 #include "LineReader.h"
+
+#include "maths/MathsUtils.h"
 
 #include "model/ChangesetHandle.h"
 #include "model/Model.h"
@@ -47,7 +50,6 @@
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/TemplateTypeParameterType.h"
 
-#include "utils/FloatingPointComparisons.h"
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -59,14 +61,12 @@ namespace
 			const GPlatesPropertyValues::GeoTimeInstant &t1,
 			const GPlatesPropertyValues::GeoTimeInstant &t2)
 	{
-		using namespace GPlatesUtils::FloatingPointComparisons;
-
 		if (( ! t1.is_real()) || ( ! t2.is_real())) {
 			// One or both time-instants are in the distant past or distant future; in
 			// such a case, comparisons for equality are meaningless.
 			return false;
 		}
-		return geo_times_are_approx_equal(t1.value(), t2.value());
+		return GPlatesMaths::are_geo_times_approximately_equal(t1.value(), t2.value());
 	}
 
 

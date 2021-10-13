@@ -59,6 +59,7 @@
 #include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlArray.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFeatureReference.h"
 #include "property-values/GpmlFeatureSnapshotReference.h"
@@ -73,6 +74,7 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/GpmlRevisionId.h"
+#include "property-values/GpmlStringList.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
@@ -122,29 +124,6 @@ namespace
 		q_file_ptr->setFileName(file_info.absolutePath() + QDir::separator() + uuid_string + ".gpml");
 	}
 
-
-	/**
-	 * If the filename of the QFile ends in ".gz", this will be stripped from the QFile's filename. 
-	 */
-	void
-	remove_gz_from_filename(
-		boost::shared_ptr<QFile> q_file_ptr)
-	{
-		if (!q_file_ptr){
-			return;
-		}
-
-		QString file_name = q_file_ptr->fileName();
-
-		QString gz_string(".gz");
-
-		if (file_name.endsWith(gz_string))
-		{
-			file_name.remove(file_name.length()-gz_string.length(),gz_string.length());
-			q_file_ptr->setFileName(file_name);
-		}
-	}
-
 	typedef std::pair<
 		GPlatesModel::XmlAttributeName, 
 		GPlatesModel::XmlAttributeValue> 
@@ -156,10 +135,10 @@ namespace
 			GPlatesFileIO::XmlWriter &writer,
 			const QualifiedNameType &value_type)
 	{
-		boost::optional<const UnicodeString &> alias = 
+		boost::optional<const GPlatesUtils::UnicodeString &> alias = 
 			value_type.get_namespace_alias();
 
-		UnicodeString prefix;
+		GPlatesUtils::UnicodeString prefix;
 
 		if (alias) 
 		{
@@ -1534,6 +1513,23 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_old_plates_header(
 	d_output.writeEndElement();  // </gpml:OldPlatesHeader>
 }
 
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_string_list(
+			const GPlatesPropertyValues::GpmlStringList &gpml_string_list)
+{
+	d_output.writeStartGpmlElement("StringList");
+
+		BOOST_FOREACH(const GPlatesPropertyValues::TextContent &text_content, gpml_string_list)
+		{
+			d_output.writeStartGpmlElement("element");
+				d_output.writeText(text_content.get());
+			d_output.writeEndElement();
+		}
+	d_output.writeEndElement();
+}
+
+
 void
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
@@ -1598,4 +1594,27 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::write_gpml_key_value_dictionary_ele
 			element.value()->accept_visitor(*this);
 		d_output.writeEndElement();
 	d_output.writeEndElement();
+}
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_array(
+		const GPlatesPropertyValues::GpmlArray &gpml_array)
+{
+
+	d_output.writeStartGpmlElement("Array");
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(d_output, gpml_array.type());
+		d_output.writeEndElement();
+	
+	//d_output.writeStartGpmlElement("members");
+		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator 
+			iter = gpml_array.members().begin(),
+			end = gpml_array.members().end();
+		for ( ; iter != end; ++iter) {
+			d_output.writeStartGpmlElement("member");
+				(*iter)->accept_visitor(*this);
+			d_output.writeEndElement();
+		}
+	d_output.writeEndElement();
+
 }

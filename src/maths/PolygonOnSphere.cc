@@ -225,19 +225,6 @@ GPlatesMaths::PolygonOnSphere::create_segment_and_append_to_seq(
 }
 
 
-const GPlatesMaths::PointOnSphere &
-GPlatesMaths::PolygonOnSphere::VertexConstIterator::current_point() const
-{
-	if (d_poly_ptr == NULL) {
-
-		// I think the exception message sums it up pretty nicely...
-		throw GPlatesGlobal::UninitialisedIteratorException(GPLATES_EXCEPTION_SOURCE,
-		 "Attempted to dereference an uninitialised iterator.");
-	}
-	return d_curr_gca->start_point();
-}
-
-
 void
 GPlatesMaths::InvalidPointsForPolygonConstructionError::write_message(
 		std::ostream &os) const
@@ -264,3 +251,4 @@ GPlatesMaths::InvalidPointsForPolygonConstructionError::write_message(
 		os << message;
 	}
 }
+

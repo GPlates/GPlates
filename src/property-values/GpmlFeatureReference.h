@@ -181,7 +181,7 @@ namespace GPlatesPropertyValues
 		GpmlFeatureReference(
 				const GPlatesModel::FeatureId &feature_,
 				const TemplateTypeParameterType &value_type_,
-				const UnicodeString &description_):
+				const GPlatesUtils::UnicodeString &description_):
 			PropertyValue(),
 			d_feature(feature_),
 			d_value_type(value_type_)

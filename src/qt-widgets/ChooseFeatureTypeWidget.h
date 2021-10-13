@@ -27,10 +27,10 @@
 #define GPLATES_QTWIDGETS_CHOOSEFEATURETYPEWIDGET_H
 
 #include <boost/optional.hpp>
-#include <QGroupBox>
+#include <QWidget>
 #include <QFocusEvent>
 
-#include "ChooseFeatureTypeWidgetUi.h"
+#include "SelectionWidget.h"
 
 #include "model/FeatureType.h"
 
@@ -38,8 +38,7 @@
 namespace GPlatesQtWidgets
 {
 	class ChooseFeatureTypeWidget :
-			public QGroupBox,
-			protected Ui_ChooseFeatureTypeWidget
+			public QWidget
 	{
 		Q_OBJECT
 		
@@ -47,26 +46,38 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ChooseFeatureTypeWidget(
+				SelectionWidget::DisplayWidget display_widget,
 				QWidget *parent_ = NULL);
 
 		/**
 		 * Initialises the list widget with feature types.
 		 */
 		void
-		initialise(
-				bool topological);
+		populate(
+				bool is_topological);
 
 		/**
 		 * Gets the currently selected feature type, or boost::none if no feature type
 		 * is currently selected.
 		 */
-		boost::optional<const GPlatesModel::FeatureType>
+		boost::optional<GPlatesModel::FeatureType>
 		get_feature_type() const;
+
+		/**
+		 * Changes the currently selected feature type to @a feature_type.
+		 */
+		void
+		set_feature_type(
+				const GPlatesModel::FeatureType &feature_type);
 
 	signals:
 
 		void
 		item_activated();
+
+		void
+		current_index_changed(
+				boost::optional<GPlatesModel::FeatureType>);
 
 	protected:
 
@@ -78,9 +89,19 @@ namespace GPlatesQtWidgets
 	private slots:
 
 		void
-		handle_listwidget_item_activated(
-				QListWidgetItem *);
+		handle_item_activated(
+				int index);
 
+		void
+		handle_current_index_changed(
+				int index);
+
+	private:
+
+		void
+		make_signal_slot_connections();
+
+		SelectionWidget *d_selection_widget;
 	};
 }
 

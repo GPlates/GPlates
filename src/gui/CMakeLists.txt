@@ -41,12 +41,18 @@ set(srcs
     CptColourPalette.h
     CsvExport.cc
     CsvExport.h
+    DockState.cc
+    DockState.h
     EnableCanvasTool.cc
     EnableCanvasTool.h
     ExportAnimationContext.cc
     ExportAnimationContext.h
     ExportAnimationStrategy.cc
     ExportAnimationStrategy.h
+    ExportFlowlineAnimationStrategy.cc
+    ExportFlowlineAnimationStrategy.h
+    ExportMotionPathAnimationStrategy.cc
+    ExportMotionPathAnimationStrategy.h
     ExportRasterAnimationStrategy.cc
     ExportRasterAnimationStrategy.h
     ExportReconstructedGeometryAnimationStrategy.cc
@@ -97,13 +103,12 @@ set(srcs
     GPlatesQApplication.h
     GPlatesQtMsgHandler.cc
     GPlatesQtMsgHandler.h
+    GraticuleSettings.h
     GuiDebug.cc
     GuiDebug.h
     GuiException.h
     HTMLColourNames.cc
     HTMLColourNames.h
-    LayerTaskTypeInfo.cc
-    LayerTaskTypeInfo.h
     Map.cc
     Map.h
     MapCanvasPainter.cc
@@ -136,14 +141,22 @@ set(srcs
     RasterColourSchemeMap.h
     ReconstructionGeometrySequence.h
     RenderSettings.h
+    SessionMenu.cc
+    SessionMenu.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
     SingleColourScheme.cc
     SingleColourScheme.h
     SphericalGrid.cc
     SphericalGrid.h
+    Stars.cc
+    Stars.h
     SvgExport.cc
     SvgExport.h
+    TextOverlay.cc
+    TextOverlay.h
+    TextOverlaySettings.cc
+    TextOverlaySettings.h
     TextRenderer.h
     TopologySectionsContainer.cc
     TopologySectionsContainer.h

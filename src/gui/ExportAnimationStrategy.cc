@@ -33,8 +33,6 @@
 
 #include "presentation/ViewState.h"
 
-#include "utils/FloatingPointComparisons.h"
-
 
 const QString GPlatesGui::ExportAnimationStrategy::dummy_desc="";
 

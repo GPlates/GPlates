@@ -26,7 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_VISUALLAYERSWIDGET_H
 #define GPLATES_QTWIDGETS_VISUALLAYERSWIDGET_H
 
-#include <QString>
+#include <boost/scoped_ptr.hpp>
 #include <QWidget>
 
 #include "VisualLayersWidgetUi.h"
@@ -47,8 +47,9 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	// Forward declaration.
-	class ReadErrorAccumulationDialog;
+	// Forward declarations.
+	class AddNewLayerDialog;
+	class ViewportWindow;
 
 	/**
 	 * VisualLayersWidget displays the contents of VisualLayers. It displays a
@@ -67,9 +68,16 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::VisualLayers &visual_layers,
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				QString &open_file_path,
-				ReadErrorAccumulationDialog *read_errors_dialog,
+				ViewportWindow *viewport_window,
 				QWidget *parent_ = NULL);
+
+		virtual
+		~VisualLayersWidget();
+
+	private slots:
+
+		void
+		handle_add_new_layer_button_clicked();
 
 	private:
 
@@ -77,6 +85,10 @@ namespace GPlatesQtWidgets
 		 * A wrapper around VisualLayers to invert the ordering for the user interface.
 		 */
 		GPlatesGui::VisualLayersProxy d_visual_layers;
+		GPlatesAppLogic::ApplicationState &d_application_state;
+		GPlatesPresentation::ViewState &d_view_state;
+
+		boost::scoped_ptr<AddNewLayerDialog> d_add_new_layer_dialog;
 	};
 }
 

@@ -29,7 +29,8 @@
 #define GPLATES_UTILS_UNIQUEID_H
 
 #include <string>
-#include <unicode/unistr.h>
+
+#include "global/unicode.h"
 
 namespace GPlatesUtils
 {
@@ -51,7 +52,7 @@ namespace GPlatesUtils
 	 * @post Return-value is a unique string identifier which conforms to the regexp
 	 * "[A-Za-z_][-A-Za-z_0-9.]*", or an exception has been thrown.
 	 */
-	const UnicodeString
+	const GPlatesUtils::UnicodeString
 	generate_unique_id();
 }
 

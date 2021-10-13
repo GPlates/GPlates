@@ -162,29 +162,18 @@ namespace GPlatesModel
 		 * The "end" iterator will not be changed by this operation -- the length of the
 		 * sequence will not change, only a child-slot will become NULL.
 		 */
-		void
+		typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type
 		remove(
 				const_iterator iter);
 
 		/**
-		 * Gets the child indicated by @a iter in the collection.
-		 * 
-		 * The results of this operation are only defined if @a iter is a valid
-		 * iterator, and the iterator belongs to this Handle.
+		 * If this handle has a parent, removes this handle from the parent's collection.
+		 *
+		 * Returns a non_null_ptr_type to this handle, regardless of whether this
+		 * handle has a parent.
 		 */
-		typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type
-		get(
-				iterator iter);
-
-		/**
-		 * Gets the child indicated by @a iter in the collection.
-		 * 
-		 * The results of this operation are only defined if @a iter is a valid
-		 * iterator, and the iterator belongs to this Handle.
-		 */
-		typename GPlatesGlobal::PointerTraits<const child_type>::non_null_ptr_type
-		get(
-				const_iterator iter) const;
+		typename GPlatesGlobal::PointerTraits<handle_type>::non_null_ptr_type
+		remove_from_parent();
 
 		/**
 		 * Sets the pointer to the parent object that contains this feature.
@@ -320,6 +309,20 @@ namespace GPlatesModel
 		current_changeset_handle_ptr();
 
 	private:
+
+		/**
+		 * Gets the child at the specified @a index, which must be valid.
+		 */
+		typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type
+		get(
+				container_size_type index);
+
+		/**
+		 * Gets the child at the specified @a index, which must be valid.
+		 */
+		typename GPlatesGlobal::PointerTraits<const child_type>::non_null_ptr_type
+		get(
+				container_size_type index) const;
 
 		/**
 		 * Does the actual job of adding the child to the revision's container.
@@ -471,6 +474,7 @@ namespace GPlatesModel
 
 		friend class RevisionAwareIterator<HandleType>;
 		friend class RevisionAwareIterator<const HandleType>;
+		friend class TopLevelPropertyRef;
 	};
 
 
@@ -564,6 +568,26 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
+	typename GPlatesGlobal::PointerTraits<typename BasicHandle<HandleType>::child_type>::non_null_ptr_type
+	BasicHandle<HandleType>::get(
+			container_size_type index)
+	{
+		boost::intrusive_ptr<child_type> child_ptr = current_revision()->get(index);
+		return child_ptr.get();
+	}
+
+
+	template<class HandleType>
+	typename GPlatesGlobal::PointerTraits<const typename BasicHandle<HandleType>::child_type>::non_null_ptr_type
+	BasicHandle<HandleType>::get(
+			container_size_type index) const
+	{
+		boost::intrusive_ptr<const child_type> child_ptr = current_revision()->get(index);
+		return child_ptr.get();
+	}
+
+
+	template<class HandleType>
 	container_size_type
 	BasicHandle<HandleType>::actual_add(
 			typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type new_child)
@@ -583,7 +607,7 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	void
+	typename GPlatesGlobal::PointerTraits<typename BasicHandle<HandleType>::child_type>::non_null_ptr_type
 	BasicHandle<HandleType>::remove(
 			const_iterator iter)
 	{
@@ -592,8 +616,9 @@ namespace GPlatesModel
 		// Deactivate the child.
 		set_child_active(iter, false);
 
-		// Remove from Revision object (currently, this would destroy it in the C++ sense).
-		current_revision()->remove(iter.index());
+		// Remove from Revision object; assume return value is non-NULL.
+		typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type result =
+			current_revision()->remove(iter.index()).get();
 
 		ChangesetHandle *changeset_ptr = current_changeset_handle_ptr();
 		// changeset_ptr will be NULL if we're not connected to a model.
@@ -604,26 +629,27 @@ namespace GPlatesModel
 		}
 
 		notify_listeners_of_modification(true, false);
+
+		return result;
 	}
 
 
 	template<class HandleType>
-	typename GPlatesGlobal::PointerTraits<typename BasicHandle<HandleType>::child_type>::non_null_ptr_type
-	BasicHandle<HandleType>::get(
-			iterator iter)
+	typename GPlatesGlobal::PointerTraits<HandleType>::non_null_ptr_type
+	BasicHandle<HandleType>::remove_from_parent()
 	{
-		boost::intrusive_ptr<child_type> child_ptr = current_revision()->get(iter.index());
-		return child_ptr.get();
-	}
-
-
-	template<class HandleType>
-	typename GPlatesGlobal::PointerTraits<const typename BasicHandle<HandleType>::child_type>::non_null_ptr_type
-	BasicHandle<HandleType>::get(
-			const_iterator iter) const
-	{
-		boost::intrusive_ptr<const child_type> child_ptr = current_revision()->get(iter.index());
-		return child_ptr.get();
+		if (d_parent_ptr)
+		{
+			typedef typename HandleTraits<parent_type>::iterator parent_iterator_type;
+			parent_iterator_type iter(*d_parent_ptr, d_index_in_container);
+			BasicHandle<parent_type> &parent_handle =
+				dynamic_cast<BasicHandle<parent_type> &>(*d_parent_ptr);
+			return parent_handle.remove(iter);
+		}
+		else
+		{
+			return d_handle_ptr;
+		}
 	}
 
 

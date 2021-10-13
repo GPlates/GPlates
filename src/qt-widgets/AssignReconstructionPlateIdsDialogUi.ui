@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>791</width>
-    <height>517</height>
+    <width>796</width>
+    <height>543</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -287,22 +287,22 @@
          <property name="title">
           <string>Reconstruction Time</string>
          </property>
-         <layout class="QVBoxLayout">
-          <item>
-           <layout class="QHBoxLayout">
-            <item>
-             <widget class="QLabel" name="label_reconstruction_time">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Select the reconstruction time representing the geometry in the feature collections:</string>
-              </property>
-             </widget>
-            </item>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="label_reconstruction_time">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Select the reconstruction time representing the geometry in the feature collections:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
             <item>
              <spacer>
               <property name="orientation">
@@ -332,7 +332,7 @@
             </item>
            </layout>
           </item>
-          <item>
+          <item row="1" column="0">
            <widget class="QRadioButton" name="radio_button_present_day">
             <property name="text">
              <string>Present day</string>
@@ -342,18 +342,28 @@
             </property>
            </widget>
           </item>
-          <item>
-           <layout class="QHBoxLayout">
-            <item>
-             <widget class="QRadioButton" name="radio_button_current_recon_time">
-              <property name="text">
-               <string>Current reconstruction time:</string>
-              </property>
-              <property name="checked">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QRadioButton" name="radio_button_current_recon_time">
+            <property name="text">
+             <string>Current reconstruction time:</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <property name="spacing">
+             <number>6</number>
+            </property>
             <item>
              <widget class="QLabel" name="label_current_reconstruction_time">
               <property name="text">
@@ -369,7 +379,7 @@
              </widget>
             </item>
             <item>
-             <spacer>
+             <spacer name="horizontalSpacer_2">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -383,15 +393,31 @@
             </item>
            </layout>
           </item>
-          <item>
-           <layout class="QHBoxLayout">
-            <item>
-             <widget class="QRadioButton" name="radio_button_specify_recon_time">
-              <property name="text">
-               <string>Specify reconstruction time:</string>
-              </property>
-             </widget>
-            </item>
+          <item row="2" column="2">
+           <spacer>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>203</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="3" column="0">
+           <widget class="QRadioButton" name="radio_button_specify_recon_time">
+            <property name="text">
+             <string>Specify reconstruction time:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <property name="spacing">
+             <number>6</number>
+            </property>
             <item>
              <widget class="QDoubleSpinBox" name="double_spin_box_reconstruction_time"/>
             </item>
@@ -403,7 +429,7 @@
              </widget>
             </item>
             <item>
-             <spacer>
+             <spacer name="horizontalSpacer">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -417,6 +443,19 @@
             </item>
            </layout>
           </item>
+          <item row="3" column="2">
+           <spacer>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>203</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </widget>
        </item>
@@ -425,16 +464,16 @@
          <property name="title">
           <string>Feature Partitioning</string>
          </property>
-         <layout class="QVBoxLayout">
-          <item>
-           <layout class="QHBoxLayout">
-            <item>
-             <widget class="QLabel" name="label_partition_options">
-              <property name="text">
-               <string>Specify how features should be partitioned:</string>
-              </property>
-             </widget>
-            </item>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_partition_options">
+            <property name="text">
+             <string>Specify how features should be partitioned:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
             <item>
              <spacer>
               <property name="orientation">
@@ -464,21 +503,21 @@
             </item>
            </layout>
           </item>
-          <item>
+          <item row="1" column="0">
            <widget class="QRadioButton" name="radio_button_assign_features">
             <property name="text">
              <string>Copy feature properties from the polygon that most overlaps a feature</string>
             </property>
            </widget>
           </item>
-          <item>
+          <item row="2" column="0">
            <widget class="QRadioButton" name="radio_button_assign_feature_sub_geometries">
             <property name="text">
              <string>Copy feature properties from the polygon that most overlaps each geometry in a feature</string>
             </property>
            </widget>
           </item>
-          <item>
+          <item row="3" column="0">
            <widget class="QRadioButton" name="radio_button_partition_features">
             <property name="text">
              <string>Partition (cookie cut) feature geometry into polygons and copy feature properties</string>
@@ -493,19 +532,16 @@
          <property name="title">
           <string>Feature Properties</string>
          </property>
-         <layout class="QVBoxLayout">
-          <property name="rightMargin">
-           <number>9</number>
-          </property>
-          <item>
-           <layout class="QHBoxLayout">
-            <item>
-             <widget class="QLabel" name="label_properties_to_assign">
-              <property name="text">
-               <string>Specify the feature properties to copy from a polygon:</string>
-              </property>
-             </widget>
-            </item>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_properties_to_assign">
+            <property name="text">
+             <string>Specify the feature properties to copy from a polygon:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
             <item>
              <spacer>
               <property name="orientation">
@@ -535,15 +571,15 @@
             </item>
            </layout>
           </item>
-          <item>
-           <widget class="QRadioButton" name="radio_button_assign_plate_id">
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="check_box_assign_plate_id">
             <property name="text">
-             <string>Reconstruction plate id</string>
+             <string>Reconstruction plate ID</string>
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QRadioButton" name="radio_button_assign_time_period">
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="check_box_assign_time_period">
             <property name="text">
              <string>Time of appearance and disappearance</string>
             </property>

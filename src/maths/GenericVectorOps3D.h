@@ -41,11 +41,13 @@ namespace GPlatesMaths {
 		 const V1 &v1,
 		 const V2 &v2) {
 
-			real_t x_dot = v1.x() * v2.x();
-			real_t y_dot = v1.y() * v2.y();
-			real_t z_dot = v1.z() * v2.z();
-
-			return (x_dot + y_dot + z_dot);
+			// Removing temporary variables and using double instead of real_t generates
+			// significantly more efficient assembly code (in MSVC2005 reduces from
+			// 41 instructions to 12 and allows the code to be inlined saving the call overhead).
+			return
+				v1.x().dval() * v2.x().dval() +
+				v1.y().dval() * v2.y().dval() +
+				v1.z().dval() * v2.z().dval();
 		}
 
 
@@ -55,7 +57,7 @@ namespace GPlatesMaths {
 		negate(
 		 const V &v) {
 
-			return V(-v.x(), -v.y(), -v.z());
+			return V(-v.x().dval(), -v.y().dval(), -v.z().dval());
 		}
 
 
@@ -66,8 +68,7 @@ namespace GPlatesMaths {
 		 const V1 &v1,
 		 const V2 &v2) {
 
-			real_t dot_prod = dot(v1, v2);
-			return (abs(dot_prod) <= 0.0);
+			return (abs(dot(v1, v2)) <= 0.0);
 		}
 
 
@@ -81,12 +82,13 @@ namespace GPlatesMaths {
 			 const V1 &v1,
 			 const V2 &v2) {
 
-				real_t
-				 x_comp = v1.y() * v2.z() - v1.z() * v2.y(),
-				 y_comp = v1.z() * v2.x() - v1.x() * v2.z(),
-				 z_comp = v1.x() * v2.y() - v1.y() * v2.x();
-
-				return R(x_comp, y_comp, z_comp);
+				// Removing temporary variables and using double instead of real_t generates
+				// significantly more efficient assembly code (in MSVC2005 reduces from
+				// 89 instructions to 29).
+				return R(
+				 v1.y().dval() * v2.z().dval() - v1.z().dval() * v2.y().dval(),
+				 v1.z().dval() * v2.x().dval() - v1.x().dval() * v2.z().dval(),
+				 v1.x().dval() * v2.y().dval() - v1.y().dval() * v2.x().dval());
 			}
 
 
@@ -97,7 +99,7 @@ namespace GPlatesMaths {
 			 const real_t s,
 			 const V v) {
 
-				return R(s * v.x(), s * v.y(), s * v.z());
+				return R(s * v.x().dval(), s * v.y().dval(), s * v.z().dval());
 			}
 
 		};

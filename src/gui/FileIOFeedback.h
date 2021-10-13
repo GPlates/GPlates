@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,13 +33,18 @@
 #include <boost/function.hpp>
 
 #include "app-logic/FeatureCollectionFileState.h"
+
 #include "file-io/FeatureCollectionFileFormat.h"
+
 #include "model/FeatureCollectionHandle.h"
+
+#include "qt-widgets/OpenFileDialog.h"
 #include "qt-widgets/SaveFileDialog.h"
 
 
 namespace GPlatesAppLogic
 {
+	class ApplicationState;
 	class FeatureCollectionFileIO;
 }
 
@@ -49,6 +54,10 @@ namespace GPlatesGui
 	class UnsavedChangesTracker;
 }
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -82,9 +91,9 @@ namespace GPlatesGui
 	
 		explicit
 		FileIOFeedback(
+				GPlatesAppLogic::ApplicationState &app_state_,
+				GPlatesPresentation::ViewState &view_state_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				GPlatesAppLogic::FeatureCollectionFileState &file_state_,
-				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io_,
 				FeatureFocus &feature_focus_,
 				QObject *parent_ = NULL);
 
@@ -195,6 +204,21 @@ namespace GPlatesGui
 		open_files();
 
 
+		/**
+		 * Opens the set of files from the user's previous session.
+		 * This delegates to SessionManagement, but catches any exceptions the
+		 * file-io code might throw.
+		 *
+		 * The default value loads the most recent session "slot" in the user's
+		 * history; higher numbers dig further into the past. Attempting to
+		 * load a "session slot" which does not exist does nothing - the menu
+		 * should match the correct number of slots anyway.
+		 */
+		void
+		open_previous_session(
+				int session_slot_to_load = 0);
+
+
 	private:
 
 		/**
@@ -222,6 +246,13 @@ namespace GPlatesGui
 			return *d_viewport_window_ptr;
 		}
 
+
+		/**
+		 * Quick method to get at the ApplicationState from inside this class.
+		 */
+		GPlatesAppLogic::ApplicationState &
+		app_state();
+
 		
 		/**
 		 * Sneaky method to find the ManageFeatureCollectionsDialog via
@@ -241,6 +272,11 @@ namespace GPlatesGui
 		unsaved_changes_tracker();
 
 
+
+		/**
+		 * ApplicationState for getting access to important file-loading stuff.
+		 */
+		GPlatesAppLogic::ApplicationState *d_app_state_ptr;
 
 		/**
 		 * Pointer to the main window, to pop up error dialogs from etc.
@@ -266,32 +302,23 @@ namespace GPlatesGui
 
 		/**
 		 * The save file as dialog box.
-		 *
-		 * FIXME: I don't believe shared_ptr is the Right Thing To Do here,
-		 * since we are already parenting to Qt. - JC
 		 */
-		boost::shared_ptr<GPlatesQtWidgets::SaveFileDialog> d_save_file_as_dialog_ptr;
+		GPlatesQtWidgets::SaveFileDialog d_save_file_as_dialog;
 
 		/**
 		 * The save file copy dialog box.
-		 *
-		 * FIXME: I don't believe shared_ptr is the Right Thing To Do here,
-		 * since we are already parenting to Qt. - JC
 		 */
-		boost::shared_ptr<GPlatesQtWidgets::SaveFileDialog> d_save_file_copy_dialog_ptr;
+		GPlatesQtWidgets::SaveFileDialog d_save_file_copy_dialog;
+
+		/**
+		 * The open files dialog box.
+		 */
+		GPlatesQtWidgets::OpenFileDialog d_open_files_dialog;
 		
 		/**
 		 * Controls whether Save File dialogs include a Compressed GPML option.
 		 */
 		bool d_gzip_available;
-
-		/**
-		 * Holds the path information from the last file opened using the Open File dialog.
-		 * Note that file save dialogs infer their directory based on the path of the file
-		 * being saved.
-		 */
-		QString d_open_file_path;
-
 	};
 }
 

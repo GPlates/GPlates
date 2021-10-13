@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,21 +37,19 @@
 namespace GPlatesGui
 {
 	class QGLWidgetTextRenderer :
-		public TextRenderer
+			public TextRenderer
 	{
-
 	public:
 
 		/**
-		 * Construct an instance of QGLWidgetTextRenderer on the heap
+		 * Constructs an instance of QGLWidgetTextRenderer on the heap.
 		 */
 		static
-		TextRenderer::ptr_to_const_type
+		non_null_ptr_type
 		create(
 				QGLWidget *gl_widget_ptr)
 		{
-			return TextRenderer::ptr_to_const_type(
-					new QGLWidgetTextRenderer(gl_widget_ptr));
+			return new QGLWidgetTextRenderer(gl_widget_ptr);
 		}
 
 		/**
@@ -85,15 +83,15 @@ namespace GPlatesGui
 				const QFont &font = QFont(),
 				float scale = 1.0f) const;
 
-	private:
+	protected:
 
-		QGLWidget *d_gl_widget_ptr;
-
-		// prevent direct instantiation
 		explicit
 		QGLWidgetTextRenderer(
 				QGLWidget *gl_widget_ptr);
 
+	private:
+
+		QGLWidget *d_gl_widget_ptr;
 	};
 }
 

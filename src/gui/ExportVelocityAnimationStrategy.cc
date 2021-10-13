@@ -67,9 +67,6 @@ POP_MSVC_WARNINGS
 #include "property-values/GmlDataBlock.h"
 #include "property-values/GmlMultiPoint.h"
 
-#include "utils/FloatingPointComparisons.h"
-
-
 
 // All code in this namespace was copied from "file-io/ReconstructedFeatureGeometryExportImpl.h"
 // and "file-io/ReconstructedFeatureGeometryExportImpl.cc".
@@ -288,12 +285,9 @@ namespace
 			referenced_files.push_back(file);
 		}
 
-		using boost::lambda::_1;
-		using boost::lambda::_2;
-
 		// Sort in preparation for removing duplicates.
 		// We end up sorting on 'const GPlatesFileIO::File::weak_ref' objects.
-		std::sort(referenced_files.begin(), referenced_files.end(), _1 < _2);
+		std::sort(referenced_files.begin(), referenced_files.end(), boost::lambda::_1 < boost::lambda::_2);
 
 		// Remove duplicates.
 		referenced_files.erase(
@@ -330,14 +324,11 @@ namespace
 		vector_field_seq_type mpvfs_sorted_by_feature(
 				reconstructed_feature_geometry_seq);
 
-		using boost::lambda::_1;
-		using boost::lambda::_2;
-
 		// Sort in preparation for grouping RFGs by feature.
 		std::sort(mpvfs_sorted_by_feature.begin(), mpvfs_sorted_by_feature.end(),
-			boost::lambda::bind(&GPlatesAppLogic::MultiPointVectorField::feature_handle_ptr, _1) <
+			boost::lambda::bind(&GPlatesAppLogic::MultiPointVectorField::feature_handle_ptr, boost::lambda::_1) <
 						boost::lambda::bind(
-								&GPlatesAppLogic::MultiPointVectorField::feature_handle_ptr, _2));
+								&GPlatesAppLogic::MultiPointVectorField::feature_handle_ptr, boost::lambda::_2));
 
 		const GPlatesModel::FeatureHandle *current_feature_handle_ptr = NULL;
 
@@ -410,7 +401,6 @@ namespace
 	}
 
 }
-
 
 
 namespace
@@ -486,17 +476,14 @@ GPlatesGui::ExportVelocityAnimationStrategy::ExportVelocityAnimationStrategy(
 			d_export_animation_context_ptr->view_state().get_application_state()
 					.get_feature_collection_file_state();
 
-	// From the ViewState, obtain the list of all currently loaded files.
+	// From the file state, obtain the list of all currently loaded files.
 	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
 			file_state.get_loaded_files();
 
-	// Add those that are currently active to our list of active files.
+	// Add them to our list of loaded files.
 	BOOST_FOREACH(GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref, loaded_files)
 	{
-		if (file_ref.is_file_active())
-		{
-			d_active_files.push_back(&file_ref.get_file());
-		}
+		d_loaded_files.push_back(&file_ref.get_file());
 	}
 }
 
@@ -785,7 +772,7 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 
 	// Determine which velocity fields came from which mesh files.
 	file_to_vector_fields_map_type file_to_vector_fields_map;
-	match_files_to_velocity_fields(file_to_vector_fields_map, vector_field_seq, d_active_files);
+	match_files_to_velocity_fields(file_to_vector_fields_map, vector_field_seq, d_loaded_files);
 
 	// For each mesh file, export the velocity fields calculated from that file.
 	file_to_vector_fields_map_type::const_iterator iter = file_to_vector_fields_map.begin();
@@ -844,3 +831,9 @@ GPlatesGui::ExportVelocityAnimationStrategy::get_filename_template_desc()
 }
 
 
+// Quash warning C4503 ("decorated name length exceeded, name was truncated")
+// on VS2008 with CGAL 3.6.1.
+// It's here at the end of the file by a process of trial and error; the warning
+// is probably being emitted here because the compiler is instantiating
+// templates at the end of the file.
+DISABLE_MSVC_WARNING(4503)

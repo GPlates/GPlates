@@ -54,6 +54,14 @@ namespace
 	 * It is a boost::optional because creation of geometry may fail for various reasons.
 	 */
 	typedef boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_opt_ptr_type;
+
+	GPlatesQtWidgets::SaveFileDialog::filter_list_type
+	get_filters()
+	{
+		GPlatesQtWidgets::SaveFileDialog::filter_list_type result;
+		result.push_back(GPlatesQtWidgets::FileDialogFilter("All files"));
+		return result;
+	}
 }
 
 
@@ -69,11 +77,15 @@ const QString GPlatesQtWidgets::ExportCoordinatesDialog::s_terminating_point_inf
 
 
 GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
-		QWidget *parent_):
+		GPlatesPresentation::ViewState &view_state,
+		QWidget *parent_) :
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_geometry_opt_ptr(boost::none),
-	d_export_file_dialog(new QFileDialog(this, tr("Select a filename for exporting"), QString(),
-			"All files (*)")),
+	d_save_file_dialog(
+			this,
+			tr("Select a file name for exporting"),
+			get_filters(),
+			view_state),
 	d_terminating_point_information_dialog(new InformationDialog(s_terminating_point_information_text,
 			tr("Polygon point conventions"), this))
 {
@@ -98,7 +110,6 @@ GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
 			this, SLOT(select_to_clipboard_stack()));
 
 	// Set up the export file selection dialog.
-	d_export_file_dialog->setAcceptMode(QFileDialog::AcceptSave);
 	QObject::connect(button_select_file, SIGNAL(clicked()),
 			this, SLOT(pop_up_file_browser()));
 	
@@ -203,11 +214,12 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_format_selection(
 void
 GPlatesQtWidgets::ExportCoordinatesDialog::pop_up_file_browser()
 {
-	if (d_export_file_dialog->exec()) {
-		lineedit_filename->setText(d_export_file_dialog->selectedFiles().front());
+	boost::optional<QString> file_name = d_save_file_dialog.get_file_name();
+	if (file_name)
+	{
+		lineedit_filename->setText(*file_name);
 	}
 }
-
 
 
 void

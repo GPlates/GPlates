@@ -29,7 +29,8 @@
 #define GPLATES_FILEIO_XMLOUTPUTINTERFACE_H
 
 #include <iosfwd>
-#include <unicode/unistr.h>
+
+#include "global/unicode.h"
 
 // Even though we only pass XmlAttributeName and XmlAttributeValue by reference in this header, we
 // can't just forward-declare the class, since XmlAttributeName and XmlAttributeValue are typedefs
@@ -73,7 +74,7 @@ namespace GPlatesFileIO
 			 */
 			ElementPairStackFrame(
 					XmlOutputInterface &interface,
-					const UnicodeString &elem_name);
+					const GPlatesUtils::UnicodeString &elem_name);
 
 			/**
 			 * Open an element pair whose opening element contains attributes.
@@ -113,7 +114,7 @@ namespace GPlatesFileIO
 			template<typename F>
 			ElementPairStackFrame(
 					XmlOutputInterface &interface,
-					const UnicodeString &elem_name,
+					const GPlatesUtils::UnicodeString &elem_name,
 					F attrs_pair_begin,
 					F attrs_pair_end);
 
@@ -122,7 +123,7 @@ namespace GPlatesFileIO
 		private:
 
 			XmlOutputInterface *d_interface_ptr;
-			UnicodeString d_elem_name;
+			GPlatesUtils::UnicodeString d_elem_name;
 
 			// This constructor should never be defined, because we don't want to allow
 			// copy-construction.
@@ -151,7 +152,7 @@ namespace GPlatesFileIO
 		static
 		const XmlOutputInterface
 		create_for_stdout(
-				const UnicodeString &indentation_unit = "\t");
+				const GPlatesUtils::UnicodeString &indentation_unit = "\t");
 		
 		/**
 		 * Create a new interface instance which will write to an output stream.
@@ -165,7 +166,7 @@ namespace GPlatesFileIO
 		const XmlOutputInterface
 		create_for_stream(
 				std::ostream &output_stream,
-				const UnicodeString &indentation_unit = "\t");
+				const GPlatesUtils::UnicodeString &indentation_unit = "\t");
 
 		/**
 		 * Return the status of this instance.
@@ -193,7 +194,7 @@ namespace GPlatesFileIO
 		 */
 		void
 		write_opening_element(
-				const UnicodeString &elem_name);
+				const GPlatesUtils::UnicodeString &elem_name);
 
 		/**
 		 * Write an opening XML element which contains attributes.
@@ -234,7 +235,7 @@ namespace GPlatesFileIO
 		template<typename F>
 		void
 		write_opening_element_with_attributes(
-				const UnicodeString &elem_name,
+				const GPlatesUtils::UnicodeString &elem_name,
 				F attrs_pair_begin,
 				F attrs_pair_end);
 
@@ -247,7 +248,7 @@ namespace GPlatesFileIO
 		 */
 		void
 		write_closing_element(
-				const UnicodeString &elem_name);
+				const GPlatesUtils::UnicodeString &elem_name);
 
 		/**
 		 * Write an empty element.
@@ -258,7 +259,7 @@ namespace GPlatesFileIO
 		 */
 		void
 		write_empty_element(
-				const UnicodeString &elem_name);
+				const GPlatesUtils::UnicodeString &elem_name);
 
 		/**
 		 * Write a line of string content.
@@ -267,7 +268,7 @@ namespace GPlatesFileIO
 		 */
 		void
 		write_line_of_string_content(
-				const UnicodeString &content);
+				const GPlatesUtils::UnicodeString &content);
 
 		/**
 		 * Write a line of content consisting of a single integer.
@@ -363,14 +364,14 @@ namespace GPlatesFileIO
 
 		XmlOutputInterface(
 				std::ostream &os,
-				const UnicodeString &indentation_unit);
+				const GPlatesUtils::UnicodeString &indentation_unit);
 
 		void
 		write_indentation();
 
 		void
 		write_unicode_string(
-				const UnicodeString &s);
+				const GPlatesUtils::UnicodeString &s);
 
 		void
 		write_attribute_name(
@@ -400,7 +401,7 @@ namespace GPlatesFileIO
 		 * This is the string which is output for indentation of the XML output, once per
 		 * level of indentation.
 		 */
-		UnicodeString d_indentation_unit;
+		GPlatesUtils::UnicodeString d_indentation_unit;
 
 		/*
 		 * This is the current indentation level of the XML output.
@@ -419,7 +420,7 @@ namespace GPlatesFileIO
 	inline
 	XmlOutputInterface::ElementPairStackFrame::ElementPairStackFrame(
 			XmlOutputInterface &interface,
-			const UnicodeString &elem_name,
+			const GPlatesUtils::UnicodeString &elem_name,
 			F attrs_pair_begin,
 			F attrs_pair_end):
 		d_interface_ptr(&interface),
@@ -432,7 +433,7 @@ namespace GPlatesFileIO
 	inline
 	void
 	XmlOutputInterface::write_opening_element_with_attributes(
-			const UnicodeString &elem_name,
+			const GPlatesUtils::UnicodeString &elem_name,
 			F attrs_pair_begin,
 			F attrs_pair_end) {
 		write_indentation();

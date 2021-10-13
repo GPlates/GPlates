@@ -170,6 +170,15 @@ namespace GPlatesUtils
 				const QString&);
 	};
 
+	class ExportFlowlineFileNameTemplateValidator :
+		public ExportFileNameTemplateValidator
+	{
+		virtual
+		bool
+		is_valid(
+				const QString&);
+	};
+
 	class DummyExportFileNameTemplateValidator :
 		public ExportFileNameTemplateValidator
 	{

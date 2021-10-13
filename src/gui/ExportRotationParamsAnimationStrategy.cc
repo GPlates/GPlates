@@ -40,9 +40,8 @@
 
 #include "maths/MathsUtils.h"
 
-#include "utils/FloatingPointComparisons.h"
-
 #include "presentation/ViewState.h"
+
 
 const QString GPlatesGui::ExportRotationParamsAnimationStrategy::DEFAULT_ROTATION_PARAMS_COMMA_FILENAME_TEMPLATE
 		="equivalent_stage_rotation_comma_%0.2f.csv";

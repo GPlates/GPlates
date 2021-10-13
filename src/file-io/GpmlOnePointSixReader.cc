@@ -486,7 +486,7 @@ namespace
 		visit_gml_file(
 				GPlatesPropertyValues::GmlFile &gml_file)
 		{
-			const UnicodeString &filename = gml_file.file_name()->value().get();
+			const GPlatesUtils::UnicodeString &filename = gml_file.file_name()->value().get();
 			QString filename_qstring = GPlatesUtils::make_qstring_from_icu_string(filename);
 			
 			// Only fix if the filename in the GPML is relative.
@@ -498,7 +498,7 @@ namespace
 
 				// qDebug() << result_qstring;
 
-				UnicodeString result = GPlatesUtils::make_icu_string_from_qstring(result_qstring);
+				GPlatesUtils::UnicodeString result = GPlatesUtils::make_icu_string_from_qstring(result_qstring);
 				gml_file.set_file_name(GPlatesPropertyValues::XsString::create(result));
 			}
 		}

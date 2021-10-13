@@ -29,7 +29,7 @@
      <item row="0" column="0">
       <widget class="QRadioButton" name="radiobutton_always_visible">
        <property name="text">
-        <string>Show all VGPs at all times</string>
+        <string>Show all VGPs at &amp;all times</string>
        </property>
       </widget>
      </item>
@@ -49,7 +49,7 @@
      <item row="1" column="0">
       <widget class="QRadioButton" name="radiobutton_time_window">
        <property name="text">
-        <string>Show all VGPs at times between</string>
+        <string>Show all VGPs at times &amp;between</string>
        </property>
       </widget>
      </item>
@@ -76,7 +76,7 @@
      <item row="1" column="3">
       <widget class="QCheckBox" name="checkbox_past">
        <property name="text">
-        <string>Distant Past</string>
+        <string>Distant &amp;Past</string>
        </property>
       </widget>
      </item>
@@ -113,14 +113,14 @@
      <item row="2" column="3">
       <widget class="QCheckBox" name="checkbox_future">
        <property name="text">
-        <string>Distant Future</string>
+        <string>Distant &amp;Future</string>
        </property>
       </widget>
      </item>
      <item row="3" column="0">
       <widget class="QRadioButton" name="radiobutton_delta_t_around_age">
        <property name="text">
-        <string>Show VGPs at times within </string>
+        <string>Show VGPs at times &amp;within </string>
        </property>
       </widget>
      </item>
@@ -160,35 +160,11 @@
     </spacer>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <spacer>
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_cancel">
-       <property name="text">
-        <string>&amp;Cancel</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_apply">
-       <property name="text">
-        <string>&amp;Apply</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <widget class="QDialogButtonBox" name="main_buttonbox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

@@ -25,10 +25,18 @@ set(srcs
     CgalUtils.h
     ClassifyFeatureCollection.cc
     ClassifyFeatureCollection.h
+    CoRegistrationData.cc
+    CoRegistrationData.h
+    CoRegistrationLayerTask.cc
+    CoRegistrationLayerTask.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
     FeatureCollectionFileState.h
+    FlowlineGeometryPopulator.cc
+    FlowlineGeometryPopulator.h
+    FlowlineUtils.cc
+    FlowlineUtils.h
     GenericPartitionFeatureTask.cc
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc
@@ -40,11 +48,16 @@ set(srcs
     LayerTask.cc
     LayerTask.h
     LayerTaskDataType.h
+    LayerTaskParams.h
     LayerTaskRegistry.cc
     LayerTaskRegistry.h
     LayerTaskType.h
     MeshGenerator.cc
     MeshGenerator.h
+    MotionPathGeometryPopulator.cc
+    MotionPathGeometryPopulator.h
+    MotionPathUtils.cc
+    MotionPathUtils.h
     MultiPointVectorField.cc
     MultiPointVectorField.h
     PartitionFeatureTask.cc
@@ -63,6 +76,10 @@ set(srcs
     ReconstructedFeatureGeometryFinder.h
     ReconstructedFeatureGeometryPopulator.cc
     ReconstructedFeatureGeometryPopulator.h
+    ReconstructedFlowline.cc
+    ReconstructedFlowline.h
+    ReconstructedMotionPath.cc
+    ReconstructedMotionPath.h
     ReconstructedPaleomagGeometryPopulator.h
     ReconstructedVirtualGeomagneticPole.cc
     ReconstructedVirtualGeomagneticPole.h
@@ -87,7 +104,8 @@ set(srcs
     ReconstructionGraph.h
     ReconstructionLayerTask.cc
     ReconstructionLayerTask.h
-    ReconstructionMethodId.h
+    ReconstructionMethod.cc
+    ReconstructionMethod.h
     ReconstructionTree.cc
     ReconstructionTree.h
     ReconstructionTreeEdge.cc
@@ -106,6 +124,10 @@ set(srcs
     ResolvedTopologicalBoundary.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
+    Session.cc
+    Session.h
+    SessionManagement.cc
+    SessionManagement.h
     TopologyBoundaryIntersections.cc
     TopologyBoundaryIntersections.h
     TopologyBoundaryResolver.cc
@@ -120,6 +142,8 @@ set(srcs
     TopologyNetworkResolverLayerTask.h
     TopologyUtils.cc
     TopologyUtils.h
+    UserPreferences.cc
+    UserPreferences.h
     VelocityFieldCalculatorLayerTask.cc
     VelocityFieldCalculatorLayerTask.h
     VgpPartitionFeatureTask.cc

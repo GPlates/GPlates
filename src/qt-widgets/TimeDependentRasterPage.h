@@ -26,14 +26,24 @@
 #ifndef GPLATES_QTWIDGETS_TIMEDEPENDENTRASTERPAGE_H
 #define GPLATES_QTWIDGETS_TIMEDEPENDENTRASTERPAGE_H
 
+#include <map>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QWizardPage>
 #include <QFileInfo>
 #include <QValidator>
 
 #include "TimeDependentRasterPageUi.h"
 
+#include "OpenDirectoryDialog.h"
+#include "OpenFileDialog.h"
+
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -48,9 +58,14 @@ namespace GPlatesQtWidgets
 		
 	public:
 
+		/**
+		 * Assists with finding out which editor is editing which index.
+		 */
+		typedef std::map<QModelIndex, QWidget *> index_to_editor_map_type;
+
 		explicit
 		TimeDependentRasterPage(
-				QString &open_file_path,
+				GPlatesPresentation::ViewState &view_state,
 				TimeDependentRasterSequence &raster_sequence,
 				const boost::function<void (unsigned int)> &set_number_of_bands_function,
 				QWidget *parent_ = NULL);
@@ -111,7 +126,6 @@ namespace GPlatesQtWidgets
 		deduce_time(
 				const QFileInfo &file_info);
 
-		QString &d_open_file_path;
 		TimeDependentRasterSequence &d_raster_sequence;
 		boost::function<void (unsigned int)> d_set_number_of_bands_function;
 
@@ -119,6 +133,12 @@ namespace GPlatesQtWidgets
 
 		bool d_is_complete;
 		bool d_show_full_paths;
+
+		boost::shared_ptr<index_to_editor_map_type> d_index_to_editor_map;
+		QWidget *d_widget_to_focus;
+
+		OpenDirectoryDialog d_open_directory_dialog;
+		OpenFileDialog d_open_files_dialog;
 	};
 }
 

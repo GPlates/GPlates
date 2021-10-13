@@ -26,15 +26,14 @@
 #ifndef GPLATES_GUI_MAPCANVASTOOL_H
 #define GPLATES_GUI_MAPCANVASTOOL_H
 
+#include <boost/noncopyable.hpp>
+#include <QPointF>
 #include <QDebug>
 
 #include "gui/MapTransform.h"
-#include "qt-widgets/MapView.h"
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
-#include "utils/ReferenceCount.h"
 
-class QPointF;
+#include "qt-widgets/MapView.h"
+
 
 namespace GPlatesQtWidgets
 {
@@ -54,15 +53,9 @@ namespace GPlatesGui
 	 * The currently-activated MapCanvasTool is referenced by an instance of MapCanvasToolChoice.
 	 */
 	class MapCanvasTool :
-			public GPlatesUtils::ReferenceCount<MapCanvasTool>
+			public boost::noncopyable
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<CanvasTool,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<MapCanvasTool,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * Construct a MapCanvasTool instance.
@@ -278,7 +271,7 @@ namespace GPlatesGui
 				bool is_on_surface,
 				const QPointF &translation)
 		{
-			map_transform().translate_maps(translation.x(), translation.y());
+			map_transform().translate(-translation.x(), -translation.y());
 		}
 
 		/**
@@ -345,39 +338,7 @@ namespace GPlatesGui
 					is_on_surface,
 					translation);
 		}
-#if 0
-		/**
-		 * Handle the release of the left-mouse button after a mouse drag while a Shift key
-		 * and Control key are held.
-		 *
-		 * This function should be invoked in response to the final mouse-pointer position
-		 * update (when the mouse-button has just been released).  In response to
-		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
-		 * moved about with the mouse-button pressed), invoke the function @a
-		 * handle_left_drag instead.
-		 *
-		 * The default implementation of this function rotates the globe.  This
-		 * implementation may be overridden in a derived class.
-		 */
-		virtual
-		void
-		handle_shift_ctrl_left_release_after_drag(
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
-				bool was_on_globe,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
-		{
-			rotate_globe_by_drag_release(initial_pos_on_globe,
-					oriented_initial_pos_on_globe, was_on_globe,
-					current_pos_on_globe,
-					oriented_current_pos_on_globe, is_on_globe,
-					oriented_centre_of_viewport);
-		}
 
-#endif
 		/**
 		* Handle a mouse movement when left mouse-button is NOT down.
 		*
@@ -428,74 +389,6 @@ namespace GPlatesGui
 				const QPointF &current_point_on_scene,
 				bool is_on_surface,
 				const QPointF &translation);
-
-#if 0
-		/**
-		 * Re-orient the globe by dragging the mouse pointer.
-		 *
-		 * This function is used by the default implementation of the Ctrl + left-mouse
-		 * button drag handler.
-		 */
-		void
-		reorient_globe_by_drag_update(
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
-				bool was_on_globe,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
-
-		/**
-		 * Re-orient the globe by dragging the mouse pointer.
-		 *
-		 * This function is used by the default implementation of the Ctrl + left-mouse
-		 * button drag handler.
-		 */
-		void
-		reorient_globe_by_drag_release(
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
-				bool was_on_globe,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
-
-		/**
-		 * Rotate the globe around the centre of the viewport by dragging the mouse
-		 * pointer.
-		 *
-		 * This function is used by the default implementation of the Ctrl + Shift +
-		 * left-mouse button drag handler.
-		 */
-		void
-		rotate_globe_by_drag_update(
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
-				bool was_on_globe,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
-
-		/**
-		 * Rotate the map around the centre of the viewport by dragging the mouse
-		 * pointer.
-		 *
-		 * This function is used by the default implementation of the Ctrl + Shift +
-		 * left-mouse button drag handler.
-		 */
-		void
-		rotate_map_by_drag_release(
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
-				bool was_on_globe,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe,
-				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
-#endif
 
 	private:
 

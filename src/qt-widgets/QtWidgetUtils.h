@@ -26,8 +26,12 @@
 #ifndef GPLATES_QTWIDGETS_QTWIDGETUTILS_H
 #define GPLATES_QTWIDGETS_QTWIDGETUTILS_H
 
+#include <boost/optional.hpp>
 #include <QWidget>
 #include <QDialog>
+#include <QColorDialog>
+
+#include "gui/Colour.h"
 
 
 namespace GPlatesQtWidgets
@@ -49,6 +53,29 @@ namespace GPlatesQtWidgets
 		void
 		reposition_to_side_of_parent(
 				QDialog *dialog);
+
+		/**
+		 * Shows @a dialog if currently hidden, ensures that it is active and also
+		 * ensures that it is on top of its parent.
+		 */
+		void
+		pop_up_dialog(
+				QDialog *dialog);
+
+		/**
+		 * Retrieves a colour using a standard dialog box. Returns boost::none if the
+		 * user clicked cancel.
+		 *
+		 * This method exists because Qt 4.5 revamped QColorDialog. The implementation
+		 * of this function calls the correct methods on QColorDialog depending on the
+		 * version of Qt.
+		 *
+		 * In addition, note that this method uses GPlatesGui::Colour.
+		 */
+		boost::optional<GPlatesGui::Colour>
+		get_colour_with_alpha(
+				const GPlatesGui::Colour &initial,
+				QWidget *parent);
 	}
 }
 

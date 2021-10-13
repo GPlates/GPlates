@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -60,6 +60,13 @@ namespace GPlatesGui
 		virtual
 		~AnimationController()
 		{  }
+
+		/**
+		 * Sets the start, end, and time increment based on the user's preferences.
+		 */
+		void
+		init_default_time_range();
+
 
 		/**
 		 * Returns the current reconstruction time the View is looking at.

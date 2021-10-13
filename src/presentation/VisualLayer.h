@@ -31,6 +31,8 @@
 #include <boost/optional.hpp>
 #include <QString>
 
+#include "VisualLayerType.h"
+
 #include "app-logic/Layer.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -45,6 +47,7 @@ namespace GPlatesAppLogic
 
 namespace GPlatesPresentation
 {
+	class VisualLayerRegistry;
 	class VisualLayers;
 
 	/**
@@ -62,6 +65,7 @@ namespace GPlatesPresentation
 		 */
 		VisualLayer(
 				VisualLayers &visual_layers,
+				const VisualLayerRegistry &visual_layer_registry,
 				const GPlatesAppLogic::Layer &layer,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				int layer_number);
@@ -80,6 +84,12 @@ namespace GPlatesPresentation
 		{
 			return d_rendered_geometry_layer_index;
 		}
+
+		/**
+		 * Returns the type of the visual layer as an enumeration.
+		 */
+		VisualLayerType::Type
+		get_layer_type() const;
 
 		/**
 		 * Creates rendered geometries for this visual layer.
@@ -172,6 +182,9 @@ namespace GPlatesPresentation
 		void
 		emit_layer_modified();
 
+		VisualLayers &d_visual_layers;
+		const VisualLayerRegistry &d_visual_layer_registry;
+
 		/**
 		 * The reconstruct graph layer for which this is the counterpart in the
 		 * presentation application tier.
@@ -197,8 +210,6 @@ namespace GPlatesPresentation
 		 */
 		const GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 			d_rendered_geometry_layer;
-
-		VisualLayers &d_visual_layers;
 
 		/**
 		 * Whether this visual layer is displayed as expanded in the user interface.

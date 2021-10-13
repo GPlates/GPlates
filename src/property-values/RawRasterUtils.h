@@ -111,7 +111,7 @@ namespace GPlatesPropertyValues
 				operator()(
 						IntType value)
 				{
-					static const FloatType NAN_VALUE = static_cast<FloatType>(GPlatesMaths::nan());
+					static const FloatType NAN_VALUE = GPlatesMaths::quiet_nan<FloatType>();
 
 					if (d_is_no_data_value(value))
 					{

@@ -25,9 +25,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifdef HAVE_PYTHON
-# include <boost/python.hpp>
-#endif
 #include "MultiPointOnSphere.h"
 #include "MultiPointProximityHitDetail.h"
 #include "ProximityCriteria.h"
@@ -169,34 +166,4 @@ GPlatesMaths::multi_points_are_ordered_equivalent(
 	}
 	return true;
 }
-
-
-#ifdef HAVE_PYTHON
-/**
- * Here begin the Python wrappers
- */
-
-
-using namespace boost::python;
-
-
-void
-GPlatesMaths::export_MultiPointOnSphere()
-{
-	class_<GPlatesMaths::MultiPointOnSphere>("MultiPointOnSphere", init<const MultiPointOnSphere &>())
-		// .def("create_on_heap", &GPlatesMaths::MultiPointOnSphere::create_on_heap).staticmethod("create_on_heap")
-		// .def("clone_on_heap", &GPlatesMaths::MultiPointOnSphere::clone_on_heap).staticmethod("clone_on_heap")
-		// *** VARIOUS TEMPLATE CONSTRUCTORS ***
-		//.def("assign", &GPlatesMaths::MultiPointOnSphere::operator=)
-		.def("number_of_vertices", &GPlatesMaths::MultiPointOnSphere::number_of_points)
-		.def("start_point", &GPlatesMaths::MultiPointOnSphere::start_point,
-				return_internal_reference<1>())
-		.def("end_point", &GPlatesMaths::MultiPointOnSphere::end_point,
-				return_internal_reference<1>())
-		.def("swap", &GPlatesMaths::MultiPointOnSphere::swap)
-		.def("is_close_to", &GPlatesMaths::MultiPointOnSphere::is_close_to,
-				args("test_point", "latitude_exclusion_threshold", "closeness"))
-	;
-}
-#endif
 

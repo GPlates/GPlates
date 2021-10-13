@@ -14,10 +14,14 @@ set(srcs
     AboutDialog.cc
     AboutDialog.h
     AboutDialogUi.ui
+    AbstractCustomPropertiesWidget.h
     AbstractEditWidget.cc
     AbstractEditWidget.h
     ActionButtonBox.cc
     ActionButtonBox.h
+    AddNewLayerDialog.cc
+    AddNewLayerDialog.h
+    AddNewLayerDialogUi.ui
     AddPropertyDialog.cc
     AddPropertyDialog.h
     AddPropertyDialogUi.ui
@@ -37,27 +41,60 @@ set(srcs
     CalculateReconstructionPoleDialog.cc
     CalculateReconstructionPoleDialog.h
     CalculateReconstructionPoleDialogUi.ui
+    ChangeFeatureTypeDialog.cc
+    ChangeFeatureTypeDialog.h
+    ChangeFeatureTypeDialogUi.ui
+    ChangeGeometryPropertyWidget.cc
+    ChangeGeometryPropertyWidget.h
+    ChangeGeometryPropertyWidgetUi.ui
+    ChooseColourButton.cc
+    ChooseColourButton.h
+    ChooseFeatureCollectionDialog.cc
+    ChooseFeatureCollectionDialog.h
+    ChooseFeatureCollectionDialogUi.ui
     ChooseFeatureCollectionWidget.cc
     ChooseFeatureCollectionWidget.h
     ChooseFeatureCollectionWidgetUi.ui
     ChooseFeatureTypeWidget.cc
     ChooseFeatureTypeWidget.h
-    ChooseFeatureTypeWidgetUi.ui
+    ChooseFontButton.cc
+    ChooseFontButton.h
+    ChooseGeometryPropertyWidget.cc
+    ChooseGeometryPropertyWidget.h
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
+    ConfigureGraticulesDialog.cc
+    ConfigureGraticulesDialog.h
+    ConfigureGraticulesDialogUi.ui
+    ConfigureTextOverlayDialog.cc
+    ConfigureTextOverlayDialog.h
+    ConfigureTextOverlayDialogUi.ui
+    CoRegistrationOptionsWidget.h
+    CoRegistrationOptionsWidgetUi.ui
+    CoRegLayerConfigurationDialog.cc
+    CoRegLayerConfigurationDialog.h
+    CoRegLayerConfigurationDialogUi.ui
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
+    CreateSmallCircleDialog.cc
+    CreateSmallCircleDialog.h
+    CreateSmallCircleDialogUi.ui
     CreateVGPDialog.cc
     CreateVGPDialog.h
     CreateVGPDialogUi.ui
+    DataAssociationDialog.cc
+    DataAssociationDialog.h
+    DataAssociationDialogUi.ui
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
+    DockWidget.cc
+    DockWidget.h
     EditAffineTransformGeoreferencingWidget.cc
     EditAffineTransformGeoreferencingWidget.h
     EditAffineTransformGeoreferencingWidgetUi.ui
@@ -76,9 +113,6 @@ set(srcs
     EditFeaturePropertiesWidget.cc
     EditFeaturePropertiesWidget.h
     EditFeaturePropertiesWidgetUi.ui
-    EditGeometryActionWidget.cc
-    EditGeometryActionWidget.h
-    EditGeometryActionWidgetUi.ui
     EditGeometryWidget.cc
     EditGeometryWidget.h
     EditGeometryWidgetUi.ui
@@ -100,12 +134,22 @@ set(srcs
     EditStringWidget.cc
     EditStringWidget.h
     EditStringWidgetUi.ui
+    EditStringListWidget.cc
+    EditStringListWidget.h
+    EditStringListWidgetUi.ui
+    EditTableActionWidget.cc
+    EditTableActionWidget.h
+    EditTableActionWidgetUi.ui
+    EditTableWidget.h
     EditTimeInstantWidget.cc
     EditTimeInstantWidget.h
     EditTimeInstantWidgetUi.ui
     EditTimePeriodWidget.cc
     EditTimePeriodWidget.h
     EditTimePeriodWidgetUi.ui
+    EditTimeSequenceWidget.cc
+    EditTimeSequenceWidget.h
+    EditTimeSequenceWidgetUi.ui
     EditTopologyWidgetUi.ui
     EditWidgetChooser.cc
     EditWidgetChooser.h
@@ -125,6 +169,10 @@ set(srcs
     FeatureSummaryWidget.cc
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
+    FileDialogFilter.h
+    FlowlinePropertiesWidget.cc
+    FlowlinePropertiesWidget.h
+    FlowlinePropertiesWidgetUi.ui
     FriendlyLineEdit.cc
     FriendlyLineEdit.h
     GeoreferencingPage.cc
@@ -153,6 +201,7 @@ set(srcs
     InvalidPropertyValueException.h
     LatLonCoordinatesTable.cc
     LatLonCoordinatesTable.h
+    LayerOptionsWidget.h
     LeaveFullScreenButton.h
     LeaveFullScreenButtonUi.ui
     LicenseDialog.cc
@@ -163,9 +212,6 @@ set(srcs
     ManageFeatureCollectionsDialog.cc
     ManageFeatureCollectionsDialog.h
     ManageFeatureCollectionsDialogUi.ui
-    ManageFeatureCollectionsStateWidget.cc
-    ManageFeatureCollectionsStateWidget.h
-    ManageFeatureCollectionsStateWidgetUi.ui
     MapCanvas.cc
     MapCanvas.h
     MapView.cc
@@ -182,10 +228,20 @@ set(srcs
     ModifyReconstructionPoleWidget.cc
     ModifyReconstructionPoleWidget.h
     ModifyReconstructionPoleWidgetUi.ui
+    MotionPathPropertiesWidget.cc
+    MotionPathPropertiesWidget.h
+    MotionPathPropertiesWidgetUi.ui
     NoActiveEditWidgetException.h
+    OpenDirectoryDialog.cc
+    OpenDirectoryDialog.h
+    OpenFileDialog.cc
+    OpenFileDialog.h
     PoleSequenceTableWidget.cc
     PoleSequenceTableWidget.h
     PoleSequenceTableWidgetUi.ui
+    PreferencesDialog.cc
+    PreferencesDialog.h
+    PreferencesDialogUi.ui
     ProgressDialog.h
     ProgressDialogUi.ui
     ProjectionControlWidget.cc
@@ -212,15 +268,25 @@ set(srcs
     ReadErrorAccumulationDialog.cc
     ReadErrorAccumulationDialog.h
     ReadErrorAccumulationDialogUi.ui
+    ReconstructionLayerOptionsWidget.cc
+    ReconstructionLayerOptionsWidget.h
+    ReconstructionLayerOptionsWidgetUi.ui
     ReconstructionPoleWidget.cc
     ReconstructionPoleWidget.h
     ReconstructionPoleWidgetUi.ui
     ReconstructionViewWidget.cc
     ReconstructionViewWidget.h
     ReconstructionViewWidgetUi.ui
+    ResultTableDialog.cc
+    ResultTableDialog.h
+    ResultTableDialogUi.ui
     SaveFileDialog.cc
     SaveFileDialog.h
+    SaveFileDialogImpl.cc
+    SaveFileDialogImpl.h
     SceneView.h
+    SelectionWidget.cc
+    SelectionWidget.h
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui
@@ -244,15 +310,15 @@ set(srcs
     ShapefileAttributeWidgetUi.ui
     ShapefilePropertyMapper.cc
     ShapefilePropertyMapper.h
+    SmallCircleManager.cc
+    SmallCircleManager.h
+    SmallCircleManagerUi.ui
     SnapNearbyVerticesWidget.cc
     SnapNearbyVerticesWidget.h
     SnapNearbyVerticesWidgetUi.ui
     SpecifyAnchoredPlateIdDialog.cc
     SpecifyAnchoredPlateIdDialog.h
     SpecifyAnchoredPlateIdDialogUi.ui
-    SpecifyTimeIncrementDialog.cc
-    SpecifyTimeIncrementDialog.h
-    SpecifyTimeIncrementDialogUi.ui
     TaskPanel.cc
     TaskPanel.h
     TimeControlWidget.cc
@@ -267,6 +333,9 @@ set(srcs
     TotalReconstructionPolesDialog.cc
     TotalReconstructionPolesDialog.h
     TotalReconstructionPolesDialogUi.ui
+    TotalReconstructionSequencesDialog.cc
+    TotalReconstructionSequencesDialog.h
+    TotalReconstructionSequencesDialogUi.ui
     TrinketIcon.cc
     TrinketIcon.h
     UninitialisedEditWidgetException.h
@@ -278,6 +347,8 @@ set(srcs
     ViewportWindow.cc
     ViewportWindow.h
     ViewportWindowUi.ui
+    VisualLayersComboBox.cc
+    VisualLayersComboBox.h
     VisualLayersDelegate.cc
     VisualLayersDelegate.h
     VisualLayersListView.cc

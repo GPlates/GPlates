@@ -41,6 +41,7 @@ set(srcs
     SubversionInfo.h
     types.h
     UnexpectedEmptyFeatureCollectionException.h
+    unicode.h
     UninitialisedIteratorException.h
     UnsupportedFunctionException.h
 )

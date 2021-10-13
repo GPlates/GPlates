@@ -24,43 +24,62 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDir>
 #include <QDebug>
 
 #include "ViewState.h"
 
+#include "VisualLayerRegistry.h"
 #include "VisualLayers.h"
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic//VGPRenderSettings.h"
+#include "app-logic/VGPRenderSettings.h"
 
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/TemporaryFileRegistry.h"
 
-#include "gui/ColourRawRaster.h"
 #include "gui/ColourSchemeContainer.h"
 #include "gui/ColourSchemeDelegator.h"
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/CptColourPalette.h"
 #include "gui/FeatureFocus.h"
 #include "gui/GeometryFocusHighlight.h"
+#include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
 #include "gui/RasterColourPalette.h"
 #include "gui/RasterColourSchemeMap.h"
 #include "gui/RenderSettings.h"
+#include "gui/TextOverlaySettings.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
+#include "maths/MathsUtils.h"
 #include "maths/Real.h"
 
-#include "property-values/Georeferencing.h"
-#include "property-values/ProxiedRasterResolver.h"
-#include "property-values/RawRaster.h"
-#include "property-values/RawRasterUtils.h"
-
-#include "utils/VirtualProxy.h"
-
 #include "view-operations/RenderedGeometryCollection.h"
+
+
+namespace
+{
+	const double DEFAULT_GRATICULES_DELTA_LAT = GPlatesMaths::PI / 6.0; // 30 degrees
+	const double DEFAULT_GRATICULES_DELTA_LON = GPlatesMaths::PI / 6.0; // 30 degrees
+
+	GPlatesGui::Colour
+	get_default_background_colour()
+	{
+		return GPlatesGui::Colour(0.35f, 0.35f, 0.35f);
+	}
+
+	GPlatesGui::Colour
+	get_default_graticules_colour()
+	{
+		GPlatesGui::Colour result = GPlatesGui::Colour::get_silver();
+		result.alpha() = 0.5f;
+		return result;
+	}
+}
+
 
 GPlatesPresentation::ViewState::ViewState(
 		GPlatesAppLogic::ApplicationState &application_state) :
@@ -80,37 +99,36 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection)),
 	d_feature_focus(
 			new GPlatesGui::FeatureFocus(application_state)),
-	d_comp_mesh_point_layer(
-			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
-					0.175f)),
-	d_comp_mesh_arrow_layer(
-			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-					GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER,
-					0.175f)),
-	d_paleomag_layer(
-			d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-					GPlatesViewOperations::RenderedGeometryCollection::PALEOMAG_LAYER,
-					0.175f)),					
 	d_visual_layers(
 			new VisualLayers(
 				d_application_state,
+				*this,
 				*d_rendered_geometry_collection)),
+	d_visual_layer_registry(
+			new VisualLayerRegistry()),
 	d_render_settings(
 			new GPlatesGui::RenderSettings()),
 	d_map_transform(
-			new GPlatesGui::MapTransform()),
-	d_main_viewport_min_dimension(0),
+			new GPlatesGui::MapTransform(
+				*d_viewport_zoom)),
+	d_main_viewport_dimensions(0, 0),
 	d_vgp_render_settings(
 			GPlatesAppLogic::VGPRenderSettings::instance()),
-	d_raw_raster(
-			GPlatesPropertyValues::UninitialisedRawRaster::create()),
-	d_georeferencing(
-			GPlatesPropertyValues::Georeferencing::create()),
-	d_is_raster_colour_map_invalid(false),
 	d_raster_colour_scheme_map(
 			new GPlatesGui::RasterColourSchemeMap(
-				application_state.get_reconstruct_graph()))
+				application_state.get_reconstruct_graph())),
+	d_last_open_directory(QDir::currentPath()),
+	d_show_stars(true),
+	d_background_colour(
+			new GPlatesGui::Colour(get_default_background_colour())),
+	d_graticule_settings(
+			new GPlatesGui::GraticuleSettings(
+				DEFAULT_GRATICULES_DELTA_LAT,
+				DEFAULT_GRATICULES_DELTA_LON,
+				get_default_graticules_colour())),
+	d_text_overlay_settings(
+			new GPlatesGui::TextOverlaySettings())
+
 {
 	connect_to_viewport_zoom();
 
@@ -119,8 +137,14 @@ GPlatesPresentation::ViewState::ViewState(
 
 	connect_to_raster_colour_scheme_map();
 
-	// Setup RenderedGeometryCollection.
+	// Set up RenderedGeometryCollection.
 	setup_rendered_geometry_collection();
+
+	// Set up VisualLayerRegistry.
+	register_default_visual_layers(
+			*d_visual_layer_registry,
+			d_application_state,
+			*this);
 }
 
 
@@ -192,6 +216,13 @@ GPlatesPresentation::ViewState::get_visual_layers()
 }
 
 
+GPlatesPresentation::VisualLayerRegistry &
+GPlatesPresentation::ViewState::get_visual_layer_registry()
+{
+	return *d_visual_layer_registry;
+}
+
+
 GPlatesGui::RenderSettings &
 GPlatesPresentation::ViewState::get_render_settings()
 {
@@ -206,18 +237,50 @@ GPlatesPresentation::ViewState::get_map_transform()
 }
 
 
-int
-GPlatesPresentation::ViewState::get_main_viewport_min_dimension()
+const std::pair<int, int> &
+GPlatesPresentation::ViewState::get_main_viewport_dimensions() const
 {
-	return d_main_viewport_min_dimension;
+	return d_main_viewport_dimensions;
 }
 
 
 void
-GPlatesPresentation::ViewState::set_main_viewport_min_dimension(
-		int min_dimension)
+GPlatesPresentation::ViewState::set_main_viewport_dimensions(
+		const std::pair<int, int> &dimensions)
 {
-	d_main_viewport_min_dimension = min_dimension;
+	d_main_viewport_dimensions = dimensions;
+}
+
+
+int
+GPlatesPresentation::ViewState::get_main_viewport_min_dimension() const
+{
+	int width = d_main_viewport_dimensions.first;
+	int height = d_main_viewport_dimensions.second;
+	if (width < height)
+	{
+		return width;
+	}
+	else
+	{
+		return height;
+	}
+}
+
+
+int
+GPlatesPresentation::ViewState::get_main_viewport_max_dimension() const
+{
+	int width = d_main_viewport_dimensions.first;
+	int height = d_main_viewport_dimensions.second;
+	if (width > height)
+	{
+		return width;
+	}
+	else
+	{
+		return height;
+	}
 }
 
 
@@ -235,14 +298,12 @@ GPlatesPresentation::ViewState::setup_rendered_geometry_collection()
 	d_rendered_geometry_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
-	d_rendered_geometry_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::COMPUTATIONAL_MESH_LAYER);
+
 		
 	d_rendered_geometry_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_TOOL_LAYER);	
+		GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_LAYER);	
 		
-	d_rendered_geometry_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::PALEOMAG_LAYER);			
+	
 			
 
 	// Activate the main rendered layer.
@@ -334,5 +395,77 @@ GPlatesPresentation::ViewState::connect_to_raster_colour_scheme_map()
 			SIGNAL(colour_scheme_changed(const GPlatesAppLogic::Layer &)),
 			&d_application_state,
 			SLOT(reconstruct()));
+}
+
+
+QString &
+GPlatesPresentation::ViewState::get_last_open_directory()
+{
+	return d_last_open_directory;
+}
+
+
+const QString &
+GPlatesPresentation::ViewState::get_last_open_directory() const
+{
+	return d_last_open_directory;
+}
+
+
+bool
+GPlatesPresentation::ViewState::get_show_stars() const
+{
+	return d_show_stars;
+}
+
+
+void
+GPlatesPresentation::ViewState::set_show_stars(
+		bool show_stars)
+{
+	d_show_stars = show_stars;
+}
+
+
+const GPlatesGui::Colour &
+GPlatesPresentation::ViewState::get_background_colour() const
+{
+	return *d_background_colour;
+}
+
+
+void
+GPlatesPresentation::ViewState::set_background_colour(
+		const GPlatesGui::Colour &colour)
+{
+	*d_background_colour = colour;
+}
+
+
+GPlatesGui::GraticuleSettings &
+GPlatesPresentation::ViewState::get_graticule_settings()
+{
+	return *d_graticule_settings;
+}
+
+
+const GPlatesGui::GraticuleSettings &
+GPlatesPresentation::ViewState::get_graticule_settings() const
+{
+	return *d_graticule_settings;
+}
+
+
+GPlatesGui::TextOverlaySettings &
+GPlatesPresentation::ViewState::get_text_overlay_settings()
+{
+	return *d_text_overlay_settings;
+}
+
+
+const GPlatesGui::TextOverlaySettings &
+GPlatesPresentation::ViewState::get_text_overlay_settings() const
+{
+	return *d_text_overlay_settings;
 }
 

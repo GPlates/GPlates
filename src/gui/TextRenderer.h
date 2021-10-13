@@ -9,7 +9,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,18 +32,22 @@
 
 #include <QString>
 #include <QFont>
-#include <boost/shared_ptr.hpp>
 
 #include "gui/Colour.h"
 
+#include "utils/ReferenceCount.h"
+#include "utils/non_null_intrusive_ptr.h"
+
+
 namespace GPlatesGui
 {
-	class TextRenderer
+	class TextRenderer :
+			public GPlatesUtils::ReferenceCount<TextRenderer>
 	{
-
 	public:
 
-		typedef boost::shared_ptr<const TextRenderer> ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<TextRenderer> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const TextRenderer> non_null_ptr_to_const_type;
 
 		virtual
 		~TextRenderer()
@@ -80,7 +84,6 @@ namespace GPlatesGui
 				int y_offset = 0,
 				const QFont &font = QFont(),
 				float scale = 1.0f) const = 0;
-
 	};
 }
 

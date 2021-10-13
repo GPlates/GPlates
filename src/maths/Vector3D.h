@@ -166,10 +166,14 @@ namespace GPlatesMaths {
 	}
 
 
+	inline
 	const Vector3D
 	operator*(
 			const real_t &s,
-			const Vector3D &v);
+			const Vector3D &v)
+	{
+		return GenericVectorOps3D::ReturnType<Vector3D>::scale(s, v);
+	}
 
 
 	inline
@@ -188,7 +192,10 @@ namespace GPlatesMaths {
 			const Vector3D &v1,
 			const Vector3D &v2)
 	{
-		return Vector3D(v1.x() + v2.x(), v1.y() + v2.y(), v1.z() + v2.z());
+		return Vector3D(
+				v1.x().dval() + v2.x().dval(),
+				v1.y().dval() + v2.y().dval(),
+				v1.z().dval() + v2.z().dval());
 	}
 
 
@@ -198,7 +205,10 @@ namespace GPlatesMaths {
 			const Vector3D &v1,
 			const Vector3D &v2)
 	{
-		return Vector3D(v1.x() - v2.x(), v1.y() - v2.y(), v1.z() - v2.z());
+		return Vector3D(
+				v1.x().dval() - v2.x().dval(),
+				v1.y().dval() - v2.y().dval(),
+				v1.z().dval() - v2.z().dval());
 	}
 
 
@@ -259,6 +269,9 @@ namespace GPlatesMaths {
 	}
 
 
+	/**
+	 * Returns cross product of two vectors.
+	 */
 	const Vector3D
 	cross(
 			const Vector3D &v1,

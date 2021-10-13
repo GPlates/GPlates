@@ -31,7 +31,9 @@
 #include "TextContent.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -67,7 +69,7 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const UnicodeString &s)
+				const GPlatesUtils::UnicodeString &s)
 		{
 			XsString::non_null_ptr_type ptr(new XsString(s));
 			return ptr;
@@ -160,7 +162,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		XsString(
-				const UnicodeString &s) :
+				const GPlatesUtils::UnicodeString &s) :
 			PropertyValue(),
 			d_value(s)
 		{  }

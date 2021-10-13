@@ -36,6 +36,7 @@
 
 #include "MultiPointVectorField.h"
 #include "ReconstructedFeatureGeometry.h"
+#include "ReconstructedFlowline.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryVisitor.h"

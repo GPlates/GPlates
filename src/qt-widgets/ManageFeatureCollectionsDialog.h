@@ -26,13 +26,6 @@
 #ifndef GPLATES_GUI_MANAGEFEATURECOLLECTIONSDIALOG_H
 #define GPLATES_GUI_MANAGEFEATURECOLLECTIONSDIALOG_H
 
-#ifdef HAVE_PYTHON
-// We need to include this _before_ any Qt headers get included because
-// of a moc preprocessing problems with a feature called 'slots' in the
-// python header file object.h
-# include <boost/python.hpp>
-#endif
-
 #include <QObject>
 #include <QPointer>
 #include <QString>
@@ -62,7 +55,6 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	class ManageFeatureCollectionsActionWidget;
-	class ManageFeatureCollectionsStateWidget;
 	
 
 	class ManageFeatureCollectionsDialog:
@@ -132,16 +124,6 @@ namespace GPlatesQtWidgets
 		void
 		unload_file(
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
-
-		/**
-		 * Causes the file referenced by the state widget to be added or
-		 * removed from the active files list, effectively
-		 * 'showing' or 'hiding' that feature data.
-		 */
-		void
-		set_state_for_file(
-				ManageFeatureCollectionsStateWidget *state_widget_ptr,
-				bool activate);
 	
 	public slots:
 	
@@ -193,12 +175,6 @@ namespace GPlatesQtWidgets
 		handle_file_state_file_info_changed(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
-
-		void
-		handle_file_state_file_activation_changed(
-				GPlatesAppLogic::FeatureCollectionFileState &file_state,
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file,
-				bool activation);
 
 	protected:
 	

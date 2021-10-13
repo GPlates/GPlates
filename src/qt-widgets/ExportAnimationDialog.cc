@@ -24,15 +24,16 @@
  */
  
 #include <QDir>
-#include <QFileDialog>
 #include <QHeaderView>
 #include <QAbstractItemModel>
+
 #include "ExportAnimationDialog.h"
 
-#include "utils/FloatingPointComparisons.h"
+#include "gui/AnimationController.h"
+
 #include "utils/ExportTemplateFilenameSequence.h"
 #include "utils/ExportAnimationStrategyFactory.h"
-#include "gui/AnimationController.h"
+
 
 GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 		GPlatesGui::AnimationController &animation_controller,
@@ -51,11 +52,13 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 			GPlatesUtils::NullIntrusivePointerHandler()),
 	d_animation_controller_ptr(
 			&animation_controller),
-	d_view_state_ptr(
-			&viewport_window_),
 	d_configure_parameters_dialog_ptr(
 			new GPlatesQtWidgets::ConfigureExportParametersDialog(
 					d_export_animation_context_ptr, this)),
+	d_open_directory_dialog(
+			this,
+			tr("Select Path"),
+			view_state_),
 	d_is_single_frame(false)
 {
 	setupUi(this);
@@ -68,13 +71,11 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 	
 	update_single_frame_progress_bar(0,tableWidget_single->rowCount());
 
-	tableWidget_range->horizontalHeader()->setResizeMode(0,QHeaderView::ResizeToContents);
-	tableWidget_range->horizontalHeader()->setResizeMode(1,QHeaderView::ResizeToContents);
-	tableWidget_range->horizontalHeader()->setResizeMode(2,QHeaderView::Stretch);
-
-	tableWidget_single->horizontalHeader()->setResizeMode(0,QHeaderView::ResizeToContents);
-	tableWidget_single->horizontalHeader()->setResizeMode(1,QHeaderView::ResizeToContents);
-	tableWidget_single->horizontalHeader()->setResizeMode(2,QHeaderView::Stretch);
+	for (int i = 0; i != 2; ++i)
+	{
+		tableWidget_range->horizontalHeader()->setResizeMode(i, QHeaderView::ResizeToContents);
+		tableWidget_single->horizontalHeader()->setResizeMode(i, QHeaderView::ResizeToContents);
+	}
 
 	tableWidget_range->verticalHeader()->hide();
 	tableWidget_single->verticalHeader()->hide();
@@ -499,7 +500,6 @@ GPlatesQtWidgets::ExportAnimationDialog::insert_item(
 			new QTableWidgetItem(filename));
 
 	tableWidget->setSortingEnabled(true);	
-	tableWidget->resizeColumnsToContents();
 
 	if(radioButton_single->isChecked())
 	{
@@ -511,7 +511,7 @@ void
 GPlatesQtWidgets::ExportAnimationDialog::react_choose_target_directory_clicked()
 {
 	QString current_path;
-	if(d_is_single_frame)
+	if (d_is_single_frame)
 	{
 		current_path=lineEdit_single_path->text();
 	}
@@ -519,18 +519,14 @@ GPlatesQtWidgets::ExportAnimationDialog::react_choose_target_directory_clicked()
 	{
 		current_path=lineEdit_range_path->text();
 	}
+	d_open_directory_dialog.select_directory(current_path);
 
-	QString path = 
-		QFileDialog::getExistingDirectory(
-				this, 
-				tr("Select Path"), 
-				current_path);
-	
-	if(!path.isEmpty())
+	QString path = d_open_directory_dialog.get_existing_directory();
+
+	if (!path.isEmpty())
 	{
 		update_target_directory(path);
 	}
-	
 }
 
 void
@@ -570,10 +566,10 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_abort_button_state(
 
 	radioButton_single->setDisabled(we_are_exporting);
 	radioButton_range->setDisabled(we_are_exporting);
-	pushButton_close->setDisabled(we_are_exporting);
 
 	button_export_single_frame->setDisabled(we_are_exporting);
-	pushButton_single_cancel->setDisabled(we_are_exporting);
+
+	main_buttonbox->setDisabled(we_are_exporting);
 }
 
 void
@@ -647,11 +643,11 @@ GPlatesQtWidgets::ExportAnimationDialog::update_target_directory(
 	//otherwise, set the new value
 	if(d_is_single_frame)
 	{
-		lineEdit_single_path->setText(d_single_path);
+		lineEdit_single_path->setText(QDir::toNativeSeparators(d_single_path));
 	}
 	else
 	{
-		lineEdit_range_path->setText(d_range_path);
+		lineEdit_range_path->setText(QDir::toNativeSeparators(d_range_path));
 	}
 
 	if(ret == false)

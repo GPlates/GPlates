@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney
  *
  * This file is part of GPlates.
  *
@@ -34,8 +35,8 @@
 
 
 GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
-	ViewportWindow &viewport_window,
-	QWidget *parent_):
+		ViewportWindow &viewport_window,
+		QWidget *parent_) :
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
 	d_viewport_window_ptr(&viewport_window)
 {
@@ -50,27 +51,41 @@ GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
 
 	// The central_meridian spinbox should be disabled if we're in Orthographic mode. 
 	update_central_meridian_status();
-	QObject::connect(combo_projection,SIGNAL(currentIndexChanged(int)),
-			this,SLOT(update_central_meridian_status()));
+	QObject::connect(
+			combo_projection,
+			SIGNAL(currentIndexChanged(int)),
+			this,
+			SLOT(update_central_meridian_status()));
 
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(accepted()),
+			this,
+			SLOT(accept()));
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(rejected()),
+			this,
+			SLOT(reject()));
 }
 
 void
 GPlatesQtWidgets::SetProjectionDialog::set_projection(
-	GPlatesGui::ProjectionType projection_type)
+		GPlatesGui::ProjectionType projection_type)
 {
 	// Now we can quickly select the appropriate line of the combobox
 	// by finding our projection ID (and not worrying about the text
 	// label)
 	const int idx = combo_projection->findData(projection_type);
-	if (idx != -1) {
+	if (idx != -1)
+	{
 		combo_projection->setCurrentIndex(idx);
 	}
 }
 
 void
 GPlatesQtWidgets::SetProjectionDialog::set_central_meridian(
-	double central_meridian_)
+		double central_meridian_)
 {
 	spin_central_meridian->setValue(central_meridian_);
 }
@@ -80,7 +95,7 @@ GPlatesQtWidgets::SetProjectionDialog::setup()
 {
 	// Get the current projection. 
 	const GPlatesGui::ProjectionType projection_type =
-			d_viewport_window_ptr->reconstruction_view_widget().map_view().map_canvas().map().projection_type();
+		d_viewport_window_ptr->reconstruction_view_widget().map_view().map_canvas().map().projection_type();
 
 	set_projection(projection_type);
 }
@@ -89,7 +104,7 @@ void
 GPlatesQtWidgets::SetProjectionDialog::update_central_meridian_status()
 {
 	spin_central_meridian->setDisabled(
-		combo_projection->currentIndex() == GPlatesGui::ORTHOGRAPHIC);
+			combo_projection->currentIndex() == GPlatesGui::ORTHOGRAPHIC);
 }
 
 GPlatesGui::ProjectionType
@@ -100,7 +115,7 @@ GPlatesQtWidgets::SetProjectionDialog::get_projection_type() const
 
 	// Extract projection type from QVariant.
 	const GPlatesGui::ProjectionType projection_type =
-			static_cast<GPlatesGui::ProjectionType>(projection_qv.toInt());
+		static_cast<GPlatesGui::ProjectionType>(projection_qv.toInt());
 	
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			projection_type >= 0 && projection_type < GPlatesGui::NUM_PROJECTIONS,
@@ -114,3 +129,4 @@ GPlatesQtWidgets::SetProjectionDialog::central_meridian()
 {
 	return spin_central_meridian->value();
 }
+

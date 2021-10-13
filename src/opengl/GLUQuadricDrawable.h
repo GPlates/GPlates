@@ -1,6 +1,5 @@
 /* $Id$ */
 
-
 /**
  * \file 
  * $Revision$
@@ -84,6 +83,33 @@ namespace GPlatesOpenGL
 		GLdouble d_radius;
 		GLint d_num_slices;
 		GLint d_num_stacks;
+	};
+
+
+	class GLUQuadricDisk :
+			public GLUQuadricGeometry
+	{
+	public:
+		GLUQuadricDisk(
+				GLdouble inner,
+				GLdouble outer,
+				GLint num_slices,
+				GLint num_loops);
+
+
+		virtual
+		void
+		draw(
+				GLUquadricObj *quadric) const
+		{
+			gluDisk(quadric, d_inner, d_outer, d_num_slices, d_num_loops);
+		}
+
+	private:
+		GLdouble d_inner;
+		GLdouble d_outer;
+		GLint d_num_slices;
+		GLint d_num_loops;
 	};
 
 

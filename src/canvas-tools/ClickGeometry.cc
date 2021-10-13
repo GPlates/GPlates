@@ -38,29 +38,27 @@
 
 
 GPlatesCanvasTools::ClickGeometry::ClickGeometry(
+		const status_bar_callback_type &status_bar_callback,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		const GPlatesQtWidgets::ViewportWindow &view_state_,
+		GPlatesQtWidgets::ViewportWindow &view_state_,
 		GPlatesGui::FeatureTableModel &clicked_table_model_,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 		GPlatesGui::FeatureFocus &feature_focus_,
-		GPlatesAppLogic::ApplicationState &application_state_):
+		GPlatesAppLogic::ApplicationState &application_state_) :
+	CanvasTool(status_bar_callback),
 	d_rendered_geom_collection(&rendered_geom_collection),
 	d_view_state_ptr(&view_state_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
 	d_fp_dialog_ptr(&fp_dialog_),
 	d_feature_focus_ptr(&feature_focus_),
 	d_reconstruct_graph(application_state_.get_reconstruct_graph())
-{
-}
+{  }
 
 
 void
 GPlatesCanvasTools::ClickGeometry::handle_activation()
 {
-	set_status_bar_message(QObject::tr(
-		"Click a geometry to choose a feature."
-		" Shift+click to query immediately."
-		" Ctrl+drag to re-orient the globe."));
+	set_status_bar_message(QT_TR_NOOP("Click a geometry to choose a feature. Shift+click to query immediately."));
 
 	// Activate the geometry focus hightlight layer.
 	d_rendered_geom_collection->set_main_layer_active(

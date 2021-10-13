@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,6 +26,8 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <QDir>
+
 #include "ReadErrorAccumulationDialog.h"
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -626,15 +628,46 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::ReadErrorAccumulationDialog(
 	setupUi(this);
 	clear();
 	
-	QObject::connect(button_help, SIGNAL(clicked()),
-			this, SLOT(pop_up_help_dialog()));
+	QObject::connect(
+			button_help,
+			SIGNAL(clicked()),
+			this,
+			SLOT(pop_up_help_dialog()));
 
-	QObject::connect(button_expand_all, SIGNAL(clicked()),
-			this, SLOT(expandAll()));
-	QObject::connect(button_collapse_all, SIGNAL(clicked()),
-			this, SLOT(collapseAll()));
-	QObject::connect(button_clear, SIGNAL(clicked()),
-			this, SLOT(clear_errors()));
+	QObject::connect(
+			button_expand_all,
+			SIGNAL(clicked()),
+			this,
+			SLOT(expandAll()));
+	QObject::connect(
+			button_collapse_all,
+			SIGNAL(clicked()),
+			this,
+			SLOT(collapseAll()));
+
+	// Set up the button box.
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(clicked(QAbstractButton *)),
+			this,
+			SLOT(handle_buttonbox_clicked(QAbstractButton *)));
+	main_buttonbox->button(QDialogButtonBox::Reset)->setText("Clea&r All");
+}
+
+
+void
+GPlatesQtWidgets::ReadErrorAccumulationDialog::handle_buttonbox_clicked(
+		QAbstractButton *button)
+{
+	QDialogButtonBox::StandardButton button_enum = main_buttonbox->standardButton(button);
+	if (button_enum == QDialogButtonBox::Reset)
+	{
+		clear_errors();
+	}
+	else if (button_enum == QDialogButtonBox::Close)
+	{
+		accept();
+	}
 }
 
 
@@ -983,7 +1016,7 @@ GPlatesQtWidgets::ReadErrorAccumulationDialog::create_occurrence_file_path_item(
 	QTreeWidgetItem *path_item = new QTreeWidgetItem();
 	std::ostringstream path_str;
 	error.d_data_source->write_full_name(path_str);
-	path_item->setText(0, QString::fromAscii(path_str.str().c_str()));
+	path_item->setText(0, QDir::toNativeSeparators(QString::fromAscii(path_str.str().c_str())));
  	path_item->setIcon(0, path_icon);
  	
  	return path_item;

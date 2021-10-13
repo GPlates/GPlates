@@ -5,7 +5,8 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -26,18 +27,12 @@
 #ifndef GPLATES_QTWIDGETS_VIEWPORTWINDOW_H
 #define GPLATES_QTWIDGETS_VIEWPORTWINDOW_H
 
-#ifdef HAVE_PYTHON
-// We need to include this _before_ any Qt headers get included because
-// of a moc preprocessing problems with a feature called 'slots' in the
-// python header file object.h
-# include <boost/python.hpp>
-#endif
-
 #include <vector>
 #include <string>
 #include <list>
 #include <memory>
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <QtCore/QTimer>
 #include <QPointer>
 #include <QCloseEvent>
@@ -74,24 +69,27 @@ namespace GPlatesFileIO
 namespace GPlatesGui
 {
 	class ChooseCanvasTool;
+	class DockState;
 	class EnableCanvasTool;
 	class FeatureFocus;
 	class FeatureTableModel;
+	class FileIOFeedback;
 	class GlobeCanvasToolAdapter;
 	class GlobeCanvasToolChoice;
 	class MapCanvasToolAdapter;
 	class MapCanvasToolChoice;
+	class SessionMenu;
 	class TopologySectionsTable;
 	class TopologySectionsContainer;
 	class TrinketArea;
 	class UnsavedChangesTracker;
-	class FileIOFeedback;
 }
 
 namespace GPlatesPresentation
 {
 	class Application;
 	class ViewState;
+	class VisualLayer;
 }
 
 namespace GPlatesViewOperations
@@ -110,22 +108,29 @@ namespace GPlatesQtWidgets
 	class AnimateDialog;
 	class AssignReconstructionPlateIdsDialog;
 	class CalculateReconstructionPoleDialog;
+	class ChooseFeatureCollectionDialog;
 	class ColouringDialog;
+	class ConfigureGraticulesDialog;
+	class ConfigureTextOverlayDialog;
+	class DataAssociationDialog;
+	class DockWidget;
 	class CreateVGPDialog;
 	class ExportAnimationDialog;
 	class FeaturePropertiesDialog;
 	class ManageFeatureCollectionsDialog;
 	class MeshDialog;
+	class PreferencesDialog;
 	class ReadErrorAccumulationDialog;
 	class SaveFileDialog;
 	class SetCameraViewpointDialog;
 	class SetProjectionDialog;
 	class SetVGPVisibilityDialog;
 	class ShapefileAttributeViewerDialog;
+	class SmallCircleManager;
 	class SpecifyAnchoredPlateIdDialog;
-	class SpecifyTimeIncrementDialog;
 	class TaskPanel;
 	class TotalReconstructionPolesDialog;
+	class TotalReconstructionSequencesDialog;
 
 	class ViewportWindow:
 			public QMainWindow, 
@@ -214,6 +219,18 @@ namespace GPlatesQtWidgets
 			return d_task_panel_ptr;
 		}
 
+		ReadErrorAccumulationDialog &
+		read_errors_dialog()
+		{
+			return *d_read_errors_dialog_ptr;
+		}
+
+		TotalReconstructionPolesDialog &
+		total_reconstruction_poles_dialog()
+		{
+			return *d_total_reconstruction_poles_dialog_ptr;
+		}
+
 		void
 		restore_canvas_tool_last_chosen_by_user();
 
@@ -222,10 +239,7 @@ namespace GPlatesQtWidgets
 		void
 		status_message(
 				const QString &message,
-				int timeout = 20000) const
-		{
-			statusBar()->showMessage(message, timeout);
-		}
+				int timeout = 20000);
 
 		/**
 		 * Highlights the first row in the "Clicked" feature table.
@@ -238,9 +252,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		highlight_focused_feature_in_table();
-
-		void
-		handle_reconstruction();
 
 		void
 		enable_drag_globe_tool(
@@ -383,13 +394,29 @@ namespace GPlatesQtWidgets
 #endif
 		void
 		pop_up_total_reconstruction_poles_dialog();
+
+		void
+		pop_up_total_reconstruction_poles_dialog(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 	
 		void
 		pop_up_animate_dialog();
 
 		void
+		pop_up_preferences_dialog();
+
+		void
+		pop_up_configure_text_overlay_dialog();
+
+		void
+		pop_up_configure_graticules_dialog();
+
+		void
 		update_tools_and_status_message();
 
+		void
+		use_small_canvas_tool_icons(
+				bool use_small_icons);
 
 		void
 		handle_read_errors(
@@ -402,6 +429,9 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		install_gui_debug_menu();
+
+		void
+		install_data_mining_menu();
 
 	private:
 		//! Returns the application state.
@@ -452,25 +482,47 @@ namespace GPlatesQtWidgets
 		 */
 		QPointer<GPlatesGui::FileIOFeedback> d_file_io_feedback_ptr;
 
+		/**
+		 * Manages the Open Recent Session menu.
+		 */
+		QPointer<GPlatesGui::SessionMenu> d_session_menu_ptr;
+
+		/**
+		 * Deals with all the micro-management of the ViewportWindow's docks.
+		 */
+		QPointer<GPlatesGui::DockState> d_dock_state_ptr;
+
+		/**
+		 * A temporary position for the new DockWidget for Clicked/Topology
+		 * while I refactor it out of ViewportWindow --JC
+		 */
+		QPointer<DockWidget> d_info_dock_ptr;
+
 		ReconstructionViewWidget d_reconstruction_view_widget;
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
 		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
+		boost::scoped_ptr<ChooseFeatureCollectionDialog> d_choose_feature_collection_dialog_ptr;
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
+		boost::scoped_ptr<ConfigureGraticulesDialog> d_configure_graticules_dialog_ptr;
+		boost::scoped_ptr<ConfigureTextOverlayDialog> d_configure_text_overlay_dialog_ptr;
+		boost::scoped_ptr<DataAssociationDialog> d_data_association_dialog_ptr;
 		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
 		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
+		boost::scoped_ptr<PreferencesDialog> d_preferences_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
 		boost::scoped_ptr<SetVGPVisibilityDialog> d_set_vgp_visibility_dialog_ptr;
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
+		boost::scoped_ptr<SmallCircleManager> d_small_circle_manager_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
-		boost::scoped_ptr<SpecifyTimeIncrementDialog> d_specify_time_increment_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
+		boost::scoped_ptr<TotalReconstructionSequencesDialog> d_total_reconstruction_sequences_dialog_ptr;
 
 		boost::scoped_ptr<QDialog> d_layering_dialog_ptr;
 
@@ -543,16 +595,6 @@ namespace GPlatesQtWidgets
 		 */
 		TaskPanel *d_task_panel_ptr;
 
-		//! The last path used for opening raster files.
-		QString d_open_file_path; 
-
-		/**
-		 * To help users adjust to the new layers system, we'll open up the layers
-		 * dialog the first time (and only the first time) a new layer gets added.
-		 * This variable is true iff that has already happened.
-		 */
-		bool d_layering_dialog_opened_automatically_once;
-
 		/**
 		 * The last canvas tool explicitly chosen by the user (i.e. not the
 		 * result of an automatic switch of canvas tool by GPlates code).
@@ -615,7 +657,11 @@ namespace GPlatesQtWidgets
 		pop_up_colouring_dialog();
 
 		void
-		pop_up_layering_dialog();
+		set_layering_dialog_visibility(
+				bool visible);
+
+		void
+		handle_layers_menu_about_to_show();
 
 		void
 		close_all_dialogs();
@@ -643,6 +689,9 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_strings_display();
+
+		void
+		enable_stars_display();
 
 		void
 		pop_up_shapefile_attribute_viewer_dialog();
@@ -697,6 +746,12 @@ namespace GPlatesQtWidgets
 		pop_up_import_time_dependent_raster_dialog();
 
 		void
+		pop_up_total_reconstruction_sequences_dialog();
+
+		void
+		pop_up_data_association_dialog();
+
+		void
 		handle_visual_layer_added(
 				size_t index);
 
@@ -741,6 +796,18 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_measure_distance_triggered();
+
+		void
+		open_new_window();
+
+		void
+		pop_up_small_circle_manager();
+
+		void
+		pop_up_background_colour_picker();
+
+		void
+		clone_feature_with_dialog();
 
 	protected:
 	

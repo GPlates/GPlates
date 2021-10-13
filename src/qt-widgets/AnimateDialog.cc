@@ -24,8 +24,8 @@
  */
  
 #include "AnimateDialog.h"
+
 #include "gui/AnimationController.h"
-#include "utils/FloatingPointComparisons.h"
 
 
 GPlatesQtWidgets::AnimateDialog::AnimateDialog(

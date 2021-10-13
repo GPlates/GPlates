@@ -58,42 +58,49 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to insert vertices into geometry.
 	 */
-	class SplitFeature:
+	class SplitFeature :
 			public CanvasTool
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<InsertVertex,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<SplitFeature,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		virtual
-		~SplitFeature();
 
 		/**
-		 * Create a InsertVertex instance.
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<SplitFeature>.
 		 */
-		SplitFeature(
+		typedef GPlatesUtils::non_null_intrusive_ptr<SplitFeature> non_null_ptr_type;
+
+		static
+		const non_null_ptr_type
+		create(
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
-		
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold)
+		{
+			return new SplitFeature(
+					status_bar_callback,
+					feature_focus,
+					view_state,
+					geometry_operation_target,
+					active_geometry_operation,
+					rendered_geometry_collection,
+					choose_canvas_tool,
+					query_proximity_threshold);
+		}
+
+		virtual
+		~SplitFeature();
 		
 		virtual
 		void
 		handle_activation();
 
-
 		virtual
 		void
 		handle_deactivation();
-
 
 		virtual
 		void
@@ -110,7 +117,8 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
-				double current_proximity_inclusion_threshold);
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
 
 		virtual
 		void
@@ -120,6 +128,19 @@ namespace GPlatesCanvasTools
 				double proximity_inclusion_threshold);
 
 	private:
+
+		/**
+		 * Create a InsertVertex instance.
+		 */
+		SplitFeature(
+				const status_bar_callback_type &status_bar_callback,
+				GPlatesGui::FeatureFocus &feature_focus,
+				GPlatesPresentation::ViewState &view_state,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
 
 		GPlatesGui::FeatureFocus *d_feature_focus;
 

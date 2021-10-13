@@ -177,6 +177,11 @@ namespace GPlatesQtWidgets
 			// Default implementation: does nothing.
 		}
 
+		virtual
+		void
+		focusInEvent(
+				QFocusEvent *event_);
+
 	private slots:
 
 		void

@@ -103,7 +103,7 @@ GPlatesAppLogic::ClassifyFeatureCollection::classify_feature_collection(
 	switch (file_format)
 	{
 	case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
-	case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
+	case GPlatesFileIO::FeatureCollectionFileFormat::GPMLZ:
 		// GPML format files can contain both reconstructable features and
 		// reconstruction trees. Inspect the features to find out which.
 		return classify_feature_collection(

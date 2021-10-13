@@ -27,8 +27,10 @@
 
 #include <ostream>
 #include <cmath>
+
 #include "GeoTimeInstant.h"
-#include "utils/FloatingPointComparisons.h"
+
+#include "maths/MathsUtils.h"
 
 
 const GPlatesPropertyValues::GeoTimeInstant
@@ -68,9 +70,7 @@ GPlatesPropertyValues::GeoTimeInstant::is_strictly_earlier_than(
 		return false;
 	} else {
 		// Both types are "real"; hence, the geo-times must be compared by "value".
-		using namespace GPlatesUtils::FloatingPointComparisons;
-
-		if (geo_times_are_approx_equal(d_value, other.d_value)) {
+		if (GPlatesMaths::are_geo_times_approximately_equal(d_value, other.d_value)) {
 			return false;
 		} else {
 			// Don't forget that, since positive numbers indicate time instants in the
@@ -107,9 +107,7 @@ GPlatesPropertyValues::GeoTimeInstant::is_earlier_than_or_coincident_with(
 		return true;
 	} else {
 		// Both types are "real"; hence, the geo-times must be compared by "value".
-		using namespace GPlatesUtils::FloatingPointComparisons;
-
-		if (geo_times_are_approx_equal(d_value, other.d_value)) {
+		if (GPlatesMaths::are_geo_times_approximately_equal(d_value, other.d_value)) {
 			return true;
 		} else {
 			// Don't forget that, since positive numbers indicate time instants in the
@@ -140,10 +138,7 @@ GPlatesPropertyValues::GeoTimeInstant::is_coincident_with(
 	// Note that all geo-times in the distant past and the distant future have their "value"s
 	// initialised to 0.0, so all geo-times in the distant past will compare equal by
 	// comparison of "value", as will all geo-times in the distant future.
-
-	using namespace GPlatesUtils::FloatingPointComparisons;
-
-	return (geo_times_are_approx_equal(d_value, other.d_value));
+	return (GPlatesMaths::are_geo_times_approximately_equal(d_value, other.d_value));
 }
 
 

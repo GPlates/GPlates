@@ -140,14 +140,11 @@ namespace GPlatesViewOperations
 		enum MainLayerType
 		{
 			RECONSTRUCTION_LAYER,
-			COMPUTATIONAL_MESH_LAYER,
 			DIGITISATION_LAYER,
 			TOPOLOGY_TOOL_LAYER,
-			SMALL_CIRCLE_TOOL_LAYER,
-			PALEOMAG_LAYER,
+			SMALL_CIRCLE_LAYER,
 			GEOMETRY_FOCUS_HIGHLIGHT_LAYER,
 			POLE_MANIPULATION_LAYER,
-			MOUSE_MOVEMENT_LAYER,
 			MEASURE_DISTANCE_LAYER,
 
 			NUM_LAYERS // Must be the last enum.
@@ -790,7 +787,7 @@ namespace GPlatesViewOperations
 			// Visit the child render layers second.
 
 			// First, determine if the visitor would like to use a custom order of visitation.
-			const ChildLayerIndexRangeType *custom_child_layers_order =
+			boost::optional<ChildLayerIndexRangeType> custom_child_layers_order =
 				visitor.get_custom_child_layers_order(main_layer_type);
 			if (custom_child_layers_order)
 			{

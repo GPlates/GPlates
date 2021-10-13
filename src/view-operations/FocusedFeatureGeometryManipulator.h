@@ -201,6 +201,16 @@ namespace GPlatesViewOperations
 				bool reverse_reconstruct);
 
 		/**
+		 * Reconstructs the specified geometry forward or backward in time using
+		 * current reconstruction tree and plate_id of currently focused feature.
+		 * If @a reverse_reconstruct is true then reconstruct back to present day.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reconstruct_test(
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
+				bool reverse_reconstruct);
+
+		/**
 		 * Starts blocking of @a set_focus.
 		 */
 		void
@@ -230,6 +240,7 @@ namespace GPlatesViewOperations
 		 */
 		boost::optional<GPlatesModel::integer_plate_id_type>
 		get_plate_id_from_feature();
+
 	};
 }
 

@@ -24,26 +24,20 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include <iostream>
 #include <typeinfo>
 #include <algorithm>
 
+// Suppress warning being emitted from Boost 1.35 header.
+#include "global/CompilerWarnings.h"
+PUSH_MSVC_WARNINGS
+DISABLE_MSVC_WARNING(4181)
+#include <boost/lambda/lambda.hpp>
+
 #include "TopLevelPropertyInline.h"
 #include "FeatureVisitor.h"
+
 #include "utils/UnicodeStringUtils.h"
-
-
-namespace
-{
-	bool
-	prop_eq(
-			const GPlatesModel::PropertyValue::non_null_ptr_type &p1,
-			const GPlatesModel::PropertyValue::non_null_ptr_type &p2)
-	{
-		return *p1 == *p2;
-	}
-}
 
 
 const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
@@ -80,8 +74,8 @@ const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
 GPlatesModel::TopLevelPropertyInline::create(
 		const PropertyName &property_name_,
 		PropertyValue::non_null_ptr_type value_,
-		const UnicodeString &attribute_name_string,
-		const UnicodeString &attribute_value_string)
+		const GPlatesUtils::UnicodeString &attribute_name_string,
+		const GPlatesUtils::UnicodeString &attribute_value_string)
 {
 	xml_attributes_type xml_attributes_;
 
@@ -115,7 +109,7 @@ GPlatesModel::TopLevelPropertyInline::deep_clone() const
 			container_type(),
 			xml_attributes());
 
-	const_iterator iter = d_values.begin(), end_ = d_values.end();
+	container_type::const_iterator iter = d_values.begin(), end_ = d_values.end();
 	for ( ; iter != end_; ++iter)
 	{
 		PropertyValue::non_null_ptr_type cloned_pval = (*iter)->deep_clone_as_prop_val();
@@ -181,7 +175,8 @@ GPlatesModel::TopLevelPropertyInline::operator==(
 					d_values.begin(),
 					d_values.end(),
 					other_inline.d_values.begin(),
-					&prop_eq);
+					// Compare PropertyValues, not pointers to PropertyValues.
+					*boost::lambda::_1 == *boost::lambda::_2);
 		}
 		else
 		{
@@ -193,4 +188,8 @@ GPlatesModel::TopLevelPropertyInline::operator==(
 		return false;
 	}
 }
+
+
+// See above.
+POP_MSVC_WARNINGS
 

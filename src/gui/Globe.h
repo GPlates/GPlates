@@ -37,6 +37,7 @@
 #include "PersistentOpenGLObjects.h"
 #include "SphericalGrid.h"
 #include "SimpleGlobeOrientation.h"
+#include "Stars.h"
 #include "TextRenderer.h"
 #include "RenderSettings.h"
 
@@ -53,6 +54,11 @@
 #include "utils/VirtualProxy.h"
 
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
@@ -68,12 +74,13 @@ namespace GPlatesGui
 	public:
 
 		Globe(
+				GPlatesPresentation::ViewState &view_state,
 				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
 				RasterColourSchemeMap &raster_colour_scheme_map,
-				TextRenderer::ptr_to_const_type text_renderer_ptr,
+				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
@@ -82,7 +89,7 @@ namespace GPlatesGui
 				Globe &existing_globe,
 				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				RasterColourSchemeMap &raster_colour_scheme_map,
-				TextRenderer::ptr_to_const_type text_renderer_ptr,
+				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
@@ -147,6 +154,9 @@ namespace GPlatesGui
 		disable_raster_display();
 
 	private:
+
+		GPlatesPresentation::ViewState &d_view_state;
+
 		/**
 		 * Keeps track of OpenGL-related objects that persist from one render to the next.
 		 */
@@ -166,9 +176,19 @@ namespace GPlatesGui
 		GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type d_nurbs_renderer;
 
 		/**
+		 * Stars in the background, behind the Earth.
+		 */
+		Stars d_stars;
+
+		/**
 		 * The solid earth.
 		 */
 		OpaqueSphere d_sphere;
+
+		/**
+		 * Assists with rendering when @a d_sphere is translucent.
+		 */
+		OpaqueSphere d_black_sphere;
 
 		/**
 		 * Lines of lat and lon on surface of earth.
@@ -186,17 +206,6 @@ namespace GPlatesGui
 		GlobeRenderedGeometryCollectionPainter d_rendered_geom_collection_painter;
 
 		/**
-		 * One circle of latitude every 30 degrees.
-		 */
-		static const unsigned NUM_CIRCLES_LAT = 5;
-
-		/**
-		 * One circle of longitude every 30 degrees.
-		 */
-		static const unsigned NUM_CIRCLES_LON = 6;
-
-
-		/**
 		 * Adds a render graph node to @a render_graph_node that transforms the view
 		 * according to the current globe orientation (and returns the node).
 		 */
@@ -209,7 +218,9 @@ namespace GPlatesGui
 		 */
 		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
 		create_rendered_layer_node(
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &parent_render_graph_node);
+				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &parent_render_graph_node,
+				GLboolean depth_test_flag = GL_TRUE,
+				GLboolean depth_write_flag = GL_FALSE);
 	};
 }
 

@@ -242,15 +242,11 @@ namespace GPlatesModel
 				typename GPlatesGlobal::PointerTraits<child_type>::non_null_ptr_type new_child);
 
 		/**
-		 * Removes the child at @a index in the collection.
+		 * Removes and returns the child at @a index in the collection.
 		 *
-		 * Returns true if a child existed at @a index and was removed.
-		 *
-		 * The value of @a index is expected to be non-negative.  If the value of @a index
-		 * is greater-than or equal-to the return value of the @a size function, this
-		 * function will be a no-op.
+		 * The value of @a index is expected to be valid (non-negative, less than @a size()).
 		 */
-		bool
+		boost::intrusive_ptr<child_type>
 		remove(
 				container_size_type index);
 
@@ -424,22 +420,20 @@ namespace GPlatesModel
 
 
 	template<class HandleType>
-	bool
+	boost::intrusive_ptr<typename BasicRevision<HandleType>::child_type>
 	BasicRevision<HandleType>::remove(
 			container_size_type index)
 	{
-		if (index < d_children.size() && d_children[index])
+		boost::intrusive_ptr<child_type> result = d_children[index];
+
+		if (result)
 		{
 			// Remove our pointer to the child.
 			d_children[index] = NULL;
 			--d_num_children;
+		}
 
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		return result;
 	}
 
 	

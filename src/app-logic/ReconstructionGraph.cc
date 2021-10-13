@@ -40,7 +40,9 @@ namespace
 			const GPlatesAppLogic::ReconstructionGraph &graph,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
-			const GPlatesMaths::FiniteRotation &pole)
+			const GPlatesMaths::FiniteRotation &pole,
+			const GPlatesModel::FeatureHandle::weak_ref &originating_feature,
+			bool finite_rotation_was_interpolated)
 	{
 		using namespace GPlatesModel;
 
@@ -67,6 +69,8 @@ namespace
 						ReconstructionTreeEdge::create(fixed_plate_id,
 						moving_plate_id,
 						pole,
+						originating_feature,
+						finite_rotation_was_interpolated,
 						ReconstructionTreeEdge::PoleTypes::ORIGINAL);
 
 				output_for_debugging(std::cerr, *edge);
@@ -95,6 +99,8 @@ namespace
 						ReconstructionTreeEdge::create(fixed_plate_id,
 						moving_plate_id,
 						pole,
+						originating_feature,
+						finite_rotation_was_interpolated,
 						ReconstructionTreeEdge::PoleTypes::ORIGINAL);
 
 				output_for_debugging(std::cerr, *edge);
@@ -116,26 +122,31 @@ void
 GPlatesAppLogic::ReconstructionGraph::insert_total_reconstruction_pole(
 		GPlatesModel::integer_plate_id_type fixed_plate_id_,
 		GPlatesModel::integer_plate_id_type moving_plate_id_,
-		const GPlatesMaths::FiniteRotation &pole)
+		const GPlatesMaths::FiniteRotation &pole,
+		const GPlatesModel::FeatureHandle::weak_ref &originating_feature,
+		bool finite_rotation_was_interpolated)
 {
 	// FIXME:  Confirm that 'fixed_plate_id' and 'moving_plate_id' are not equal
 
 	using namespace GPlatesUtils::OverloadResolution;
 
-	if (edge_is_already_in_graph(*this, fixed_plate_id_, moving_plate_id_, pole)) {
+	if (edge_is_already_in_graph(*this, fixed_plate_id_, moving_plate_id_, pole,
+				originating_feature, finite_rotation_was_interpolated)) {
+		// FIXME:  Should we complain?
 		return;
 	}
 
 	// This is an edge for the "original" pole.
 	edge_ref_type original_edge =
 			ReconstructionTreeEdge::create(fixed_plate_id_, moving_plate_id_,
-					pole,
+					pole, originating_feature, finite_rotation_was_interpolated,
 					ReconstructionTreeEdge::PoleTypes::ORIGINAL);
 
 	// This is an edge for the "reversed" pole.
 	edge_ref_type reversed_edge =
 			ReconstructionTreeEdge::create(moving_plate_id_, fixed_plate_id_,
-					GPlatesMaths::get_reverse(pole),
+					GPlatesMaths::get_reverse(pole), originating_feature,
+					finite_rotation_was_interpolated,
 					ReconstructionTreeEdge::PoleTypes::REVERSED);
 
 	// Now, let's insert the "original" edge.

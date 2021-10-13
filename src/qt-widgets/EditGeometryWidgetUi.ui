@@ -204,7 +204,7 @@
    <item>
     <widget class="QGroupBox" name="groupbox_append_point" >
      <property name="title" >
-      <string>A&amp;ppend points</string>
+      <string>A&amp;ppend point</string>
      </property>
      <property name="flat" >
       <bool>true</bool>

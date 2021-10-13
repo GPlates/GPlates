@@ -40,14 +40,23 @@
 namespace GPlatesFeatureVisitors
 {
 	/**
-	 * This const feature visitor finds the fixed and moving reference frame plate IDs within a
+	 * This const feature visitor finds the begin and end times of a
 	 * total reconstruction sequence feature.
 	 */
 	class TotalReconstructionSequenceTimePeriodFinder:
 			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
-		TotalReconstructionSequenceTimePeriodFinder();
+		/**
+		 * Create a new finder instance.
+		 *
+		 * In general, you want @a skip_over_disabled_samples to be true, unless you have
+		 * a specific reason to retain disabled samples (for example, if you're displaying
+		 * the contents of rotation files).
+		 */
+		explicit
+		TotalReconstructionSequenceTimePeriodFinder(
+				bool skip_over_disabled_samples = true);
 
 		virtual
 		~TotalReconstructionSequenceTimePeriodFinder()
@@ -111,6 +120,18 @@ namespace GPlatesFeatureVisitors
 				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
 	private:
+		/**
+		 * Whether client code wants us to skip over any disabled time samples when
+		 * iterating through the irregular sampling.
+		 *
+		 * (In general, it @em will want us to skip over any disabled time samples, which
+		 * is why this member is initialised to true by default.  However, when displaying
+		 * rotation files in the TotalReconstructionSequencesDialog, we want to include
+		 * @em all time samples, even disabled ones, and @em all reconstruction sequences,
+		 * even those that contain @em only disabled time samples.)
+		 */
+		bool d_skip_over_disabled_samples;
+
 		std::vector<GPlatesModel::PropertyName> d_property_names_to_allow;
 		boost::optional<GPlatesModel::PropertyName> d_most_recent_propname_read;
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_begin_time;

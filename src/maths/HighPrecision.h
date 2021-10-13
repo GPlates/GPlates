@@ -29,7 +29,6 @@
 #define _GPLATES_MATHS_HIGHPRECISION_H_
 
 #include <ostream>
-#include "Real.h"  // Real::High_Precision
 
 
 namespace GPlatesMaths
@@ -63,6 +62,8 @@ namespace GPlatesMaths
 					std::ostream &os) const;
 
 		private:
+			static const unsigned int HIGH_PRECISION = 18;
+
 			output_type d_val;
 	};
 
@@ -73,7 +74,7 @@ namespace GPlatesMaths
 	HighPrecision< T >::write_to(
 			std::ostream &os) const
 	{
-		std::streamsize high_prec = Real::High_Precision;
+		std::streamsize high_prec = HIGH_PRECISION;
 		std::streamsize orig_prec = os.precision(high_prec);
 		os << d_val;
 		os.precision(orig_prec);

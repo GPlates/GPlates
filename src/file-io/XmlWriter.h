@@ -103,7 +103,7 @@ namespace GPlatesFileIO
 				const QString &namespace_alias);
 
 
-		const UnicodeString
+		const GPlatesUtils::UnicodeString
 		getAliasForNamespace(
 				const GPlatesUtils::StringSet::SharedIterator namespace_uri) const;
 
@@ -182,7 +182,7 @@ namespace GPlatesFileIO
 
 		void
 		writeText(
-				const UnicodeString &text) {
+				const GPlatesUtils::UnicodeString &text) {
 			writeText(GPlatesUtils::make_qstring_from_icu_string(text));
 		}
 
@@ -305,7 +305,7 @@ namespace GPlatesFileIO
 
 		void
 		writeRelativeFilePath(
-				const UnicodeString &absolute_file_path)
+				const GPlatesUtils::UnicodeString &absolute_file_path)
 		{
 			writeRelativeFilePath(GPlatesUtils::make_qstring_from_icu_string(absolute_file_path));
 		}

@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 
 #include "Colour.h"
+
 #include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
 

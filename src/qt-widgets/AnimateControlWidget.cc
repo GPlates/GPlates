@@ -25,9 +25,7 @@
 
 #include "AnimateControlWidget.h"
 
-#include <QDebug>
 #include "gui/AnimationController.h"
-#include "utils/FloatingPointComparisons.h"
 
 
 QDockWidget *

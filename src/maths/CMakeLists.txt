@@ -46,6 +46,7 @@ set(srcs
     LatLonPoint.cc
     LatLonPoint.h
     MathematicalException.h
+    MathsUtils.cc
     MathsUtils.h
     MultiPointOnSphere.cc
     MultiPointOnSphere.h
@@ -82,7 +83,12 @@ set(srcs
     Rotation.h
     SmallCircle.cc
     SmallCircle.h
+    SphereSettings.h
+    SphericalArea.cc
+    SphericalArea.h
     SphericalCollection.h
+    SphericalDistance.cc
+    SphericalDistance.h
     TrailingLatLonCoordinateException.cc
     TrailingLatLonCoordinateException.h
     types.h

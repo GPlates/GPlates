@@ -71,7 +71,7 @@ namespace
 			GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gml("name"),
 					GPlatesPropertyValues::XsString::create(
-							UnicodeString(description.toStdString().c_str()))));
+							GPlatesUtils::UnicodeString(description.toStdString().c_str()))));
 	}	
 
 	void
@@ -338,6 +338,10 @@ GPlatesQtWidgets::CreateVGPDialog::handle_create()
 		{
 			emit feature_collection_created(collection, collection_file_iter.first);
 		}
+
+		// Create a new layer if necessary.
+		d_application_state_ptr->update_layers(collection_file_iter.first);
+
 		d_application_state_ptr->reconstruct();
 		accept();
 	}

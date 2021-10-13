@@ -26,8 +26,8 @@
 #include "TimeControlWidget.h"
 
 #include <QFont>
+
 #include "gui/AnimationController.h"
-#include "utils/FloatingPointComparisons.h"
 
 
 QDockWidget *

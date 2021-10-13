@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,13 +25,6 @@
  
 #ifndef GPLATES_GUI_READERRORACCUMULATIONDIALOG_H
 #define GPLATES_GUI_READERRORACCUMULATIONDIALOG_H
-
-#ifdef HAVE_PYTHON
-// We need to include this _before_ any Qt headers get included because
-// of a moc preprocessing problems with a feature called 'slots' in the
-// python header file object.h
-# include <boost/python.hpp>
-#endif
 
 #include <QObject>
 #include <QString>
@@ -112,6 +105,12 @@ namespace GPlatesQtWidgets
 			d_read_errors.clear();
 			clear();
 		}
+
+	private slots:
+
+		void
+		handle_buttonbox_clicked(
+				QAbstractButton *button);
 		
 	private:
 		/**

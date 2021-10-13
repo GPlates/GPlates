@@ -64,7 +64,7 @@ GPlatesUnitTest::StringSetTest::equality_test()
 
 	using GPlatesModel::FeatureType;
 
-	FeatureType foo(UnicodeString("gpml"), UnicodeString("Foo"));
+	FeatureType foo(GPlatesUtils::UnicodeString("gpml"), GPlatesUtils::UnicodeString("Foo"));
 	FeatureType foo2(QString("gpml"), QString("Foo"));
 	BOOST_CHECK(foo == foo2);
 }

@@ -41,9 +41,8 @@
 #include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/GlobeCanvas.h"
 
-#include "utils/FloatingPointComparisons.h"
-
 #include "presentation/ViewState.h"
+
 
  const QString GPlatesGui::ExportRasterAnimationStrategy::DEFAULT_RASTER_BMP_FILENAME_TEMPLATE
 		="raster_%0.2f.bmp";

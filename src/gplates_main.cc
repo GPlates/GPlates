@@ -24,19 +24,17 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
-#ifdef HAVE_PYTHON
-// We need to include this _before_ any Qt headers get included because
-// of a moc preprocessing problems with a feature called 'slots' in the
-// python header file object.h
-# include <boost/python.hpp>
-#endif
+
+#include "global/config.h" // GPLATES_HAS_PYTHON
 
 #include <iostream>
 #include <string>
 #include <utility>
 #include <algorithm>
 #include <vector>
+#if defined(GPLATES_HAS_PYTHON)
+#	include <boost/python.hpp>
+#endif
 #include <QStringList>
 #include <QTextStream>
 
@@ -45,6 +43,8 @@
 #include "gui/GPlatesQApplication.h"
 #include "gui/GPlatesQtMsgHandler.h"
 
+#include "maths/MathsUtils.h"
+
 #include "presentation/Application.h"
 
 #include "qt-widgets/ViewportWindow.h"
@@ -52,6 +52,10 @@
 #include "utils/Profile.h"
 #include "utils/CommandLineParser.h"
 
+//Data-mining temporary code
+extern bool enable_data_mining;
+
+extern "C" void initpygplates();
 
 namespace {
 
@@ -76,6 +80,8 @@ namespace {
 	const char *ROTATION_FILE_OPTION_NAME = "rotation-file";
 	const char *LINE_FILE_OPTION_NAME = "line-file";
 	const char *DEBUG_GUI_OPTION_NAME = "debug-gui";
+	//Data-mining temporary code: enable data-mining feature by secret command line option.
+	const char *DATA_MINING_OPTION_NAME = "show-me-data-mining-feature-please";
 
 	void
 	print_usage(
@@ -130,6 +136,10 @@ namespace {
 			(DEBUG_GUI_OPTION_NAME, "Enable GUI debugging menu")
 			;
 
+		// Temporary code. Add secret data-mining options.
+		input_options.hidden_options.add_options()
+			(DATA_MINING_OPTION_NAME, "Enable data mining feature");
+
 		boost::program_options::variables_map vm;
 
 		try
@@ -181,6 +191,11 @@ namespace {
 		{
 			command_line_options.debug_gui = true;
 		}
+		//Data-mining temporary code: enable data mining feature by command line option.
+		if(vm.count(DATA_MINING_OPTION_NAME))
+		{
+			enable_data_mining = true;
+		}
 
 		return command_line_options;
 	}
@@ -188,6 +203,10 @@ namespace {
 
 int internal_main(int argc, char* argv[])
 {
+	// Sanity check: Proceed only if we have access to infinity and NaN.
+	// This should pass on all systems that we support.
+	GPlatesMaths::assert_has_infinity_and_nan();
+
 	// This will only install handler if any of the following conditions are satisfied:
 	//   1) GPLATES_PUBLIC_RELEASE is defined (automatically handled by CMake build system), or
 	//   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
@@ -208,13 +227,35 @@ int internal_main(int argc, char* argv[])
 	// The application state and view state are stored in this object.
 	GPlatesPresentation::Application state;
 
+#if defined(GPLATES_HAS_PYTHON)
+	// Start the embedded Python interpreter and give it access to the ApplicationState.
+	using namespace boost::python;
+	try
+	{
+		char GPLATES_MODULE_NAME[] = "pygplates";
+		PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates);
+
+		Py_Initialize();
+
+		object main_module((handle<>(borrowed(PyImport_AddModule("__main__")))));
+		object main_namespace = main_module.attr("__dict__");
+		object gplates_module((handle<>(PyImport_ImportModule("pygplates"))));
+		main_namespace["pygplates"] = gplates_module;
+		scope(gplates_module).attr("app_state") = ptr(&state.get_application_state());
+		handle<> ignored((PyRun_String("print pygplates.app_state.get_num()\n", Py_file_input, main_namespace.ptr(), main_namespace.ptr())));
+	}
+	catch (const error_already_set &)
+	{
+		PyErr_Print();
+	}
+#endif
+
 	// The main window widget.
 	GPlatesQtWidgets::ViewportWindow main_window_widget(state);
 	main_window_widget.show();
 	main_window_widget.load_files(
 			command_line_options.line_format_filenames +
 				command_line_options.rotation_format_filenames);
-	main_window_widget.reconstruct_to_time(0.0);
 	// Make sure the appropriate tool status message is displayed at start up. 
 	main_window_widget.update_tools_and_status_message();
 	// Install an extra menu for developers to help debug GUI problems.
@@ -223,6 +264,8 @@ int internal_main(int argc, char* argv[])
 	}
 
 	return qapplication.exec();
+
+	// Note: Because we are using Boost.Python, Py_Finalize() should not be called.
 }
 
 

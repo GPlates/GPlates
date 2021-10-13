@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
  *  (under the name "GLCanvas.h")
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
  *  (under the name "GlobeCanvas.h")
  *
  * This file is part of GPlates.
@@ -31,15 +31,8 @@
 #ifndef GPLATES_QTWIDGETS_GLOBECANVAS_H
 #define GPLATES_QTWIDGETS_GLOBECANVAS_H
 
-#ifdef HAVE_PYTHON
-// We need to include this _before_ any Qt headers get included because
-// of a moc preprocessing problems with a feature called 'slots' in the
-// python header file object.h
-# include <boost/python.hpp>
-#endif
-
 #include <vector>
-#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 #include <QtOpenGL/qgl.h>
@@ -47,6 +40,7 @@
 #include "gui/ColourScheme.h"
 #include "gui/Globe.h"
 #include "gui/PersistentOpenGLObjects.h"
+#include "gui/TextRenderer.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/MultiPointOnSphere.h"
@@ -62,9 +56,14 @@
 #include "opengl/GLViewport.h"
 
 #include "qt-widgets/SceneView.h"
-#include "view-operations/QueryProximityThreshold.h"
+
 #include "view-operations/RenderedGeometryFactory.h"
 
+
+namespace GPlatesGui
+{
+	class TextOverlay;
+}
 
 namespace GPlatesPresentation
 {
@@ -80,7 +79,6 @@ namespace GPlatesQtWidgets
 {
 	class GlobeCanvas:
 			public QGLWidget,
-			public GPlatesViewOperations::QueryProximityThreshold,
 			public SceneView
 	{
 		Q_OBJECT
@@ -130,6 +128,8 @@ namespace GPlatesQtWidgets
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = 0);
 
+		~GlobeCanvas();
+
 	private:
 
 		//! Private constructor for use by clone()
@@ -140,7 +140,6 @@ namespace GPlatesQtWidgets
 				GPlatesMaths::PointOnSphere &virtual_mouse_pointer_pos_on_globe_,
 				bool mouse_pointer_is_on_globe_,
 				GPlatesGui::Globe &existing_globe_,
-				bool mouse_wheel_enabled_,
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 				QWidget *parent_ = 0);
 
@@ -250,13 +249,6 @@ namespace GPlatesQtWidgets
 		void
 		set_camera_viewpoint(
 			const GPlatesMaths::LatLonPoint &llp);
-
-		void
-		set_mouse_wheel_enabled(
-				bool enabled = true)
-		{
-			d_mouse_wheel_enabled = enabled;
-		}
 
 		QImage
 		grab_frame_buffer();
@@ -387,24 +379,6 @@ namespace GPlatesQtWidgets
 		mouseReleaseEvent(
 				QMouseEvent *event);
 
-		/**
-		 * This is a virtual override of the function in QWidget.
-		 *
-		 * To quote the QWidget documentation:
-		 *
-		 * This event handler, for event event, can be reimplemented in a subclass to
-		 * receive wheel events for the widget.
-		 *
-		 * If you reimplement this handler, it is very important that you ignore() the
-		 * event if you do not handle it, so that the widget's parent can interpret it.
-		 *
-		 * The default implementation ignores the event.
-		 */
-		virtual
-		void
-		wheelEvent(
-				QWheelEvent *event);
-
 		virtual
 		void
 		move_camera_up();
@@ -512,8 +486,8 @@ namespace GPlatesQtWidgets
 		handle_zoom_change();
 
 	private:
-		GPlatesPresentation::ViewState &d_view_state;
 
+		GPlatesPresentation::ViewState &d_view_state;
 
 		/**
 		 * Shadows some OpenGL state to allow faster OpenGL queries and
@@ -535,12 +509,25 @@ namespace GPlatesQtWidgets
 		//! The OpenGL viewport used to render the main scene into this canvas.
 		GPlatesOpenGL::GLViewport d_gl_viewport;
 
-		//! The current projection transform for OpenGL.
+		//! The current projection transform for regular OpenGL rendering.
 		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform;
+
+		/**
+		 * The current projection transform for OpenGL rendering for SVG output.
+		 *
+		 * This is different than the regular OpenGL rendering transform because the
+		 * far clip plane differs (because SVG output ignores depth buffering - it uses
+		 * the OpenGL feedback mechanism which bypasses rasterisation - and hence the
+		 * opaque disc through the centre of the globe does not occlude vector geometry
+		 * on the back side of the globe and hence is visible in the SVG output).
+		 * The solution is to set the far clip plane to pass through the globe centre
+		 * (effectively doing the equivalent of the opaque disc but in the transformation
+		 * pipeline instead of the rasterisation pipeline).
+		 */
+		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform_svg;
 
 		//! Keeps track of OpenGL objects that persist from one render to another.
 		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type d_gl_persistent_objects;
-
 
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer
@@ -574,12 +561,11 @@ namespace GPlatesQtWidgets
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
+		GPlatesGui::TextRenderer::non_null_ptr_to_const_type d_text_renderer;
+
 		GPlatesGui::Globe d_globe;
 
-		GPlatesGui::ViewportZoom &d_viewport_zoom;
-
-		//! Whether the mouse wheel is enabled
-		bool d_mouse_wheel_enabled;
+		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
 
 		void
 		set_view();
@@ -590,10 +576,6 @@ namespace GPlatesQtWidgets
 
 		void
 		update_dimensions();
-
-		void
-		handle_wheel_rotation(
-				int delta);
 
 		/**
 		 * Get the "universe" y-coordinate of the current mouse pointer position.
@@ -652,7 +634,8 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
 		initialise_render_graph(
-				GPlatesOpenGL::GLRenderGraph &render_graph);
+				GPlatesOpenGL::GLRenderGraph &render_graph,
+				const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type &projection_transform);
 
 		void
 		draw_render_graph(

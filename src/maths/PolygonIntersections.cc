@@ -291,8 +291,7 @@ namespace
 GPlatesMaths::PolygonIntersections::PolygonIntersections(
 		const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon) :
 	d_partitioning_polygon(partitioning_polygon),
-	d_point_in_polygon_tester(
-			PointInPolygon::create_optimised_polygon(partitioning_polygon)),
+	d_point_in_polygon_tester(partitioning_polygon),
 	d_partitioning_polygon_orientation(
 			PolygonOrientation::calculate_polygon_orientation(*partitioning_polygon))
 {
@@ -408,9 +407,7 @@ GPlatesMaths::PolygonIntersections::partition_point(
 		const PointOnSphere &point_to_be_partitioned) const
 {
 	const GPlatesMaths::PointInPolygon::Result point_in_polygon_result =
-			GPlatesMaths::PointInPolygon::test_point_in_polygon(
-					point_to_be_partitioned,
-					d_point_in_polygon_tester);
+			d_point_in_polygon_tester.is_point_in_polygon(point_to_be_partitioned);
 
 	switch (point_in_polygon_result)
 	{
@@ -419,8 +416,8 @@ GPlatesMaths::PolygonIntersections::partition_point(
 		return GEOMETRY_OUTSIDE;
 	case PointInPolygon::POINT_INSIDE_POLYGON:
 		return GEOMETRY_INSIDE;
-	case PointInPolygon::POINT_ON_POLYGON:
-		return GEOMETRY_INTERSECTING;
+// 	case PointInPolygon::POINT_ON_POLYGON:
+// 		return GEOMETRY_INTERSECTING;
 	}
 
 	// Shouldn't get here.

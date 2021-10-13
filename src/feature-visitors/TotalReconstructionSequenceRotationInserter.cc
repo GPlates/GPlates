@@ -25,6 +25,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <QDebug>
 
 #include <boost/none.hpp>  // boost::none
 
@@ -84,6 +85,7 @@ void
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_finite_rotation(
 		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
+    qDebug() << "Visiting finite rotation";
 	if (d_is_expecting_a_finite_rotation) {
 		// The visitor was expecting a FiniteRotation, which means the structure of the
 		// Total Reconstruction Sequence is (more or less) correct.
@@ -180,6 +182,11 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 		d_is_expecting_a_finite_rotation = true;
 		d_trp_time_matches_exactly = true;
 		iter->value()->accept_visitor(*this);
+
+                // And update the comment field.
+                boost::intrusive_ptr<XsString> description =
+                        XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
+                iter->set_description(description);
 
 		// Did the visitor successfully collect the FiniteRotation?
 		if ( ! d_finite_rotation) {
@@ -310,6 +317,11 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			d_trp_time_matches_exactly = true;
 			iter->value()->accept_visitor(*this);
 
+                        // Update the comment field too.
+                        boost::intrusive_ptr<XsString> description =
+                                        XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
+                        iter->set_description(description);
+
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_finite_rotation) {
 				// No, it didn't.
@@ -326,3 +338,4 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 	// FIXME:  We've passed the last fence-post, and not yet reached the requested recon time. 
 	// Should we complain?
 }
+

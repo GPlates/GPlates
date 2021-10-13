@@ -50,6 +50,7 @@
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/QGLWidgetTextRenderer.h"
 #include "gui/SvgExport.h"
+#include "gui/TextOverlay.h"
 
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
@@ -70,20 +71,19 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
-/**
- * At the initial zoom, the smaller dimension of the GlobeCanvas will be @a FRAMING_RATIO times the
- * diameter of the Globe.  Obviously, when the GlobeCanvas is resized, the Globe will be scaled
- * accordingly.
- *
- * The value of this constant is purely cosmetic.
- */
-static const GLfloat FRAMING_RATIO = static_cast<GLfloat>(1.07);
-
-static const GLfloat EYE_X = 0.0, EYE_Y = 0.0, EYE_Z = -5.0;
-
-
 namespace 
 {
+	/**
+	 * At the initial zoom, the smaller dimension of the GlobeCanvas will be @a FRAMING_RATIO times the
+	 * diameter of the Globe.  Obviously, when the GlobeCanvas is resized, the Globe will be scaled
+	 * accordingly.
+	 *
+	 * The value of this constant is purely cosmetic.
+	 */
+	static const GLfloat FRAMING_RATIO = static_cast<GLfloat>(1.07);
+
+	static const GLfloat EYE_X = 0.0, EYE_Y = 0.0, EYE_Z = -5.0;
+
 	/**
 	 * Calculate the globe-position discriminant for the universe coordinates @a y and @a z.
 	 */
@@ -211,23 +211,29 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
 	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_projection_transform_svg(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_persistent_objects(
 			GPlatesGui::PersistentOpenGLObjects::create(
 					d_gl_context, view_state.get_application_state())),
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
+	d_text_renderer(
+			GPlatesGui::QGLWidgetTextRenderer::create(this)),
 	d_globe(
+			view_state,
 			d_gl_persistent_objects,
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
 			view_state.get_render_settings(),
 			view_state.get_raster_colour_scheme_map(),
-			GPlatesGui::QGLWidgetTextRenderer::create(this),
+			d_text_renderer,
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme),
-	d_viewport_zoom(view_state.get_viewport_zoom()),
-	d_mouse_wheel_enabled(true)
+	d_text_overlay(
+			new GPlatesGui::TextOverlay(
+				view_state.get_application_state(),
+				d_text_renderer))
 {
 	init();
 }
@@ -240,7 +246,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesMaths::PointOnSphere &virtual_mouse_pointer_pos_on_globe_,
 		bool mouse_pointer_is_on_globe_,
 		GPlatesGui::Globe &existing_globe_,
-		bool mouse_wheel_enabled_,
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
 	QGLWidget(
@@ -262,6 +267,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
 	d_gl_projection_transform(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
+	d_gl_projection_transform_svg(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_persistent_objects(
 			// Attempt to share OpenGL resources across contexts.
 			// This will depend on whether the two 'GLContext's share any state.
@@ -271,15 +277,19 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 					view_state_.get_application_state())),
 	d_virtual_mouse_pointer_pos_on_globe(virtual_mouse_pointer_pos_on_globe_),
 	d_mouse_pointer_is_on_globe(mouse_pointer_is_on_globe_),
+	d_text_renderer(
+			GPlatesGui::QGLWidgetTextRenderer::create(this)),
 	d_globe(
 			existing_globe_,
 			d_gl_persistent_objects,
 			view_state_.get_raster_colour_scheme_map(),
-			GPlatesGui::QGLWidgetTextRenderer::create(this),
+			d_text_renderer,
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme_),
-	d_viewport_zoom(view_state_.get_viewport_zoom()),
-	d_mouse_wheel_enabled(mouse_wheel_enabled_)
+	d_text_overlay(
+			new GPlatesGui::TextOverlay(
+				d_view_state.get_application_state(),
+				d_text_renderer))
 {
 	if (!isSharing())
 	{
@@ -288,6 +298,10 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 
 	init();
 }
+
+
+GPlatesQtWidgets::GlobeCanvas::~GlobeCanvas()
+{  }
 
 
 void
@@ -308,6 +322,7 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	QSizePolicy globe_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	globe_size_policy.setHorizontalStretch(255);
 	setSizePolicy(globe_size_policy);
+	setFocusPolicy(Qt::StrongFocus);
 	setMinimumSize(100, 100);
 
 	QObject::connect(&(d_globe.orientation()), SIGNAL(orientation_changed()),
@@ -350,7 +365,6 @@ GPlatesQtWidgets::GlobeCanvas::clone(
 			d_virtual_mouse_pointer_pos_on_globe,
 			d_mouse_pointer_is_on_globe,
 			d_globe,
-			d_mouse_wheel_enabled,
 			colour_scheme,
 			parent_);
 }
@@ -417,7 +431,7 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 	double cos_lambda = click_point.position_vector().x().dval();
 	double lambda_scaled_epsilon_diameter = epsilon_diameter + 3 * epsilon_diameter * (1 - cos_lambda);
 	GLdouble diameter_ratio =
-			lambda_scaled_epsilon_diameter / (d_smaller_dim * d_viewport_zoom.zoom_factor());
+			lambda_scaled_epsilon_diameter / (d_smaller_dim * d_view_state.get_viewport_zoom().zoom_factor());
 	double proximity_inclusion_threshold = cos(static_cast<double>(diameter_ratio));
 
 #if 0  // Change 0 to 1 if you want this informative output.
@@ -460,9 +474,9 @@ GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 
 		// Initialise the render graph before we ask Globe to do its job.
 		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_render_graph_node =
-				initialise_render_graph(*render_graph);
+				initialise_render_graph(*render_graph, d_gl_projection_transform_svg);
 
-		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
+		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 		// Fill up the render graph with more nodes.
 		d_globe.paint_vector_output(
 				d_gl_context->get_shared_state(),
@@ -581,23 +595,31 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 
 		// Initialise the render graph before we ask Globe to do its job.
 		GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type globe_render_graph_node =
-				initialise_render_graph(*render_graph);
+				initialise_render_graph(*render_graph, d_gl_projection_transform);
 
-		const double viewport_zoom_factor = d_viewport_zoom.zoom_factor();
+		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
+		const float scale = calculate_scale();
 		// Fill up the render graph with more nodes.
 		d_globe.paint(
 				globe_render_graph_node,
 				viewport_zoom_factor,
-				calculate_scale());
+				scale);
 
 		draw_render_graph(*render_graph);
 
 		// Finished rendering.
 		d_gl_context->end_render();
+
+		// Paint the text overlay.
+		d_text_overlay->paint(
+				d_view_state.get_text_overlay_settings(),
+				width(),
+				height(),
+				scale);
 	}
 	catch (const GPlatesGlobal::Exception &e)
 	{
-			std::cerr << e << std::endl;
+		std::cerr << e << std::endl;
 	}
 
 	// If d_mouse_press_info is not boost::none, then mouse is down.
@@ -737,20 +759,6 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 }
 
 
-void GPlatesQtWidgets::GlobeCanvas::wheelEvent(
-		QWheelEvent *wheel_event) 
-{
-	if (d_mouse_wheel_enabled)
-	{
-		handle_wheel_rotation(wheel_event->delta());
-	}
-	else
-	{
-		wheel_event->ignore();
-	}
-}
-
-
 void
 GPlatesQtWidgets::GlobeCanvas::handle_zoom_change() 
 {
@@ -774,7 +782,18 @@ GPlatesQtWidgets::GlobeCanvas::handle_zoom_change()
 void
 GPlatesQtWidgets::GlobeCanvas::set_view() 
 {
-	static const GLdouble depth_near_clipping = 0.5;
+	// NOTE: The projection transform for SVG output is different than for regular OpenGL rendering.
+	// This is because the far clip plane differs (because SVG output ignores depth buffering -
+	// it uses the OpenGL feedback mechanism which bypasses rasterisation - and hence the
+	// opaque disc through the centre of the globe does not occlude vector geometry
+	// on the back side of the globe and hence is visible in the SVG output).
+	// The solution is to set the far clip plane to pass through the globe centre
+	// (effectively doing the equivalent of the opaque disc but in the transformation
+	// pipeline instead of the rasterisation pipeline).
+	static const GLdouble depth_near_clipping = 3.5;
+	static const GLdouble depth_far_clipping = 15;
+	// The 0.0001 is there just so that the circumference of the globe doesn't get clipped.
+	static const GLdouble depth_far_clipping_svg = fabsf(EYE_Z - 0.0001);
 
 	// Always fill up all of the available space.
 	update_dimensions();
@@ -786,27 +805,48 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	// This is used for the coordinates of the symmetrical clipping planes which bound the
 	// smaller dimension.
 	GLdouble smaller_dim_clipping =
-			FRAMING_RATIO / d_viewport_zoom.zoom_factor();
+			FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor();
 
 	// This is used for the coordinates of the symmetrical clipping planes which bound the
 	// larger dimension.
 	GLdouble dim_ratio = d_larger_dim / d_smaller_dim;
 	GLdouble larger_dim_clipping = smaller_dim_clipping * dim_ratio;
 
-	// This is used for the coordinate of the further clipping plane in the depth dimension.
-	GLdouble depth_far_clipping = fabsf(EYE_Z);
-
 	d_gl_projection_transform->get_matrix().gl_load_identity();
+	d_gl_projection_transform_svg->get_matrix().gl_load_identity();
 
-	if (d_canvas_screen_width <= d_canvas_screen_height) {
+	//
+	// Note that the coordinate system, as set up in initialise_render_graph() is:
+	//   Z points up
+	//   Y points right
+	//   X points out of the screen
+	//
+	// The "camera" is effectively at (5, 0, 0), looking straight towards the origin.
+	// Previously, the far clipping plane was set as the x = 0 plane; this was used
+	// to ensure that the far side of the earth (which lies on the -X halfspace)
+	// does not get drawn (no depth testing was used).
+	// Now, so that we can draw pretty stars on the background, the far clipping
+	// plane has been pushed much further back. Depth testing is now used to ensure
+	// the far side of the earth does not get drawn.
+
+	if (d_canvas_screen_width <= d_canvas_screen_height)
+	{
 		d_gl_projection_transform->get_matrix().gl_ortho(-smaller_dim_clipping, smaller_dim_clipping,
 			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
 			depth_far_clipping);
+		d_gl_projection_transform_svg->get_matrix().gl_ortho(-smaller_dim_clipping, smaller_dim_clipping,
+			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
+			depth_far_clipping_svg);
 
-	} else {
+	}
+	else
+	{
 		d_gl_projection_transform->get_matrix().gl_ortho(-larger_dim_clipping, larger_dim_clipping,
 			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
 			depth_far_clipping);
+		d_gl_projection_transform_svg->get_matrix().gl_ortho(-larger_dim_clipping, larger_dim_clipping,
+			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
+			depth_far_clipping_svg);
 	}
 }
 
@@ -838,27 +878,6 @@ GPlatesQtWidgets::GlobeCanvas::update_mouse_pointer_pos(
 }
 
 
-void
-GPlatesQtWidgets::GlobeCanvas::handle_wheel_rotation(
-		int delta) 
-{
-	// These integer values (8 and 15) are copied from the Qt reference docs for QWheelEvent:
-	//  http://doc.trolltech.com/4.3/qwheelevent.html#delta
-	const int num_degrees = delta / 8;
-	int num_steps = num_degrees / 15;
-
-	if (num_steps > 0) {
-		while (num_steps--) {
-			d_viewport_zoom.zoom_in();
-		}
-	} else {
-		while (num_steps++) {
-			d_viewport_zoom.zoom_out();
-		}
-	}
-}
-
-
 double
 GPlatesQtWidgets::GlobeCanvas::get_universe_coord_y(
 		int screen_x) const
@@ -866,7 +885,7 @@ GPlatesQtWidgets::GlobeCanvas::get_universe_coord_y(
 	// Scale the screen to a "unit square".
 	double y_pos = (2.0 * screen_x - d_canvas_screen_width) / d_smaller_dim;
 
-	return (y_pos * FRAMING_RATIO / d_viewport_zoom.zoom_factor());
+	return (y_pos * FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 
@@ -877,7 +896,7 @@ GPlatesQtWidgets::GlobeCanvas::get_universe_coord_z(
 	// Scale the screen to a "unit square".
 	double z_pos = (d_canvas_screen_height - 2.0 * screen_y) / d_smaller_dim;
 	
-	return (z_pos * FRAMING_RATIO / d_viewport_zoom.zoom_factor());
+	return (z_pos * FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 
@@ -895,7 +914,8 @@ GPlatesQtWidgets::GlobeCanvas::clear_canvas(
 
 GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type
 GPlatesQtWidgets::GlobeCanvas::initialise_render_graph(
-		GPlatesOpenGL::GLRenderGraph &render_graph)
+		GPlatesOpenGL::GLRenderGraph &render_graph,
+		const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type &projection_transform)
 {
 	// Create a viewport node with the current viewport dimensions.
 	// All children of the viewport node will use this viewport.
@@ -907,7 +927,7 @@ GPlatesQtWidgets::GlobeCanvas::initialise_render_graph(
 	// Set the projection transform on the viewport node.
 	// It doesn't have to been set on it - it's just a convenient location
 	// and viewport and view projection are related.
-	viewport_node->set_transform(d_gl_projection_transform);
+	viewport_node->set_transform(projection_transform);
 
 	// Create a drawable node to clear the frame buffers.
 	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type clear_buffers_drawable_node =
@@ -1130,25 +1150,25 @@ GPlatesQtWidgets::GlobeCanvas::camera_llp() const
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_up()
 {
-	globe().orientation().move_camera_up();
+	globe().orientation().move_camera_up(d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_down()
 {
-	globe().orientation().move_camera_down();
+	globe().orientation().move_camera_down(d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_left()
 {
-	globe().orientation().move_camera_left();
+	globe().orientation().move_camera_left(d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 void
 GPlatesQtWidgets::GlobeCanvas::move_camera_right()
 {
-	globe().orientation().move_camera_right();
+	globe().orientation().move_camera_right(d_view_state.get_viewport_zoom().zoom_factor());
 }
 
 void

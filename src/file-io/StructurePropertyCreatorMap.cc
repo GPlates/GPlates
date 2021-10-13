@@ -86,6 +86,8 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_gpml_strike_slip_enumeration);
 	d_map[TemplateTypeParameterType::create_gpml("SubductionPolarityEnumeration")] = 
 		GET_PROP_VAL_NAME(create_gpml_subduction_polarity_enumeration);
+	d_map[TemplateTypeParameterType::create_gpml("SlabEdgeEnumeration")] = 
+		GET_PROP_VAL_NAME(create_gpml_slab_edge_enumeration);
 
 	d_map[TemplateTypeParameterType::create_gml("TimeInstant")] = 
 		GET_PROP_VAL_NAME(create_time_instant);
@@ -129,10 +131,10 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_gml_polygon);
 	d_map[TemplateTypeParameterType::create_gml("MultiPoint")] = 
 		GET_PROP_VAL_NAME(create_gml_multi_point);
+	d_map[TemplateTypeParameterType::create_gpml("StringList")] = 
+		GET_PROP_VAL_NAME(create_string_list);
 	d_map[TemplateTypeParameterType::create_gpml("TopologicalPolygon")] = 
 		GET_PROP_VAL_NAME(create_topological_polygon);
-	d_map[TemplateTypeParameterType::create_gpml("KeyValueDictionary")] =
-		GET_PROP_VAL_NAME(create_key_value_dictionary);
 	d_map[TemplateTypeParameterType::create_gpml("KeyValueDictionary")] =
 		GET_PROP_VAL_NAME(create_key_value_dictionary);
 
@@ -142,4 +144,7 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 		GET_PROP_VAL_NAME(create_rectified_grid);
 	d_map[TemplateTypeParameterType::create_gml("File")] =
 		GET_PROP_VAL_NAME(create_file);
+
+	d_map[TemplateTypeParameterType::create_gpml("Array")] =
+		GET_PROP_VAL_NAME(create_array);
 }

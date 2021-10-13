@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -38,9 +38,11 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlOldPlatesHeader.h"
+#include "property-values/GpmlStringList.h"
 #include "property-values/Enumeration.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -160,6 +162,12 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gml_time_period(
 	d_edit_widget_group_box_ptr->activate_edit_time_period_widget(gml_time_period);
 }
 
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gpml_array(
+		GPlatesPropertyValues::GpmlArray &gpml_array)
+{
+	d_edit_widget_group_box_ptr->activate_edit_time_sequence_widget(gpml_array);
+}
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_constant_value(
@@ -167,6 +175,15 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_constant_value(
 {
 	gpml_constant_value.value()->accept_visitor(*this);
 }
+
+#if 0
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gpml_irregular_sampling(
+	GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+{
+	d_edit_widget_group_box_ptr->activate_edit_time_sequence_widget(gpml_irregular_sampling);
+}
+#endif
 
 void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_key_value_dictionary(
@@ -205,6 +222,14 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gpml_old_plates_header(
 		GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
 	d_edit_widget_group_box_ptr->activate_edit_old_plates_header_widget(gpml_old_plates_header);
+}
+
+
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gpml_string_list(
+		GPlatesPropertyValues::GpmlStringList &gpml_string_list)
+{
+	d_edit_widget_group_box_ptr->activate_edit_string_list_widget(gpml_string_list);
 }
 
 

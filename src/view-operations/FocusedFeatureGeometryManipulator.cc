@@ -30,7 +30,9 @@
 #include "UndoRedo.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/FlowlineUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructionFeatureProperties.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructUtils.h"
@@ -41,6 +43,7 @@
 #include "global/GPlatesAssert.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
+#include "model/FeatureHandle.h"
 #include "presentation/ViewState.h"
 
 
@@ -48,6 +51,7 @@ namespace GPlatesViewOperations
 {
 	namespace
 	{
+
 		/**
 		 * Visitor gets a sequence of @a PointOnSphere objects from a @a GeometryOnSphere
 		 * derived object and sets the geometry in a @a GeometryBuilder.
@@ -331,6 +335,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 	}
 }
 
+#if 0
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
@@ -357,6 +362,8 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
 	// If feature wasn't reconstructed then we'll be returning the geometry passed in.
 	return geometry_on_sphere;
 }
+#endif
+
 
 boost::optional<GPlatesModel::integer_plate_id_type>
 GPlatesViewOperations::FocusedFeatureGeometryManipulator::get_plate_id_from_feature()
@@ -399,4 +406,76 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_secondary_geom
 		(*iter)->deep_clone();
 	geometry_setter.set_geometry(geom_top_level_prop_clone.get());
 	*iter = geom_top_level_prop_clone;
+}
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
+	bool reverse_reconstruct)
+{
+
+	// Handle flowline features specially, until MOR reconstruction can be used for flowlines.
+
+	static const GPlatesModel::FeatureType flowline_type = GPlatesModel::FeatureType::create_gpml("Flowline");
+
+	if (d_feature->feature_type() == flowline_type)
+	{
+	    return GPlatesAppLogic::FlowlineUtils::reconstruct_flowline_seed_points(
+			geometry_on_sphere,
+			d_focused_geometry->reconstruction_tree(),
+			d_feature,
+			true /* reverse reconstruct */);
+	}
+
+	GPlatesAppLogic::ReconstructionFeatureProperties visitor(
+		d_application_state->get_current_reconstruction_time());
+
+	visitor.visit_feature(d_feature);
+
+
+	if (visitor.get_reconstruction_method() == 
+		GPlatesAppLogic::ReconstructionMethod::HALF_STAGE_ROTATION)
+	{
+		boost::optional<GPlatesModel::integer_plate_id_type> left_plate = visitor.get_left_plate_id();
+		boost::optional<GPlatesModel::integer_plate_id_type> right_plate = visitor.get_right_plate_id();
+
+		if (left_plate && right_plate)
+		{
+
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_focused_geometry,
+				GPLATES_ASSERTION_SOURCE);
+
+			geometry_on_sphere = GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
+					geometry_on_sphere,
+					left_plate.get(),
+					right_plate.get(),
+					*d_focused_geometry->reconstruction_tree(),
+					reverse_reconstruct);
+		}
+	}
+	else
+	{
+		// If feature is reconstructable then need to convert geometry to present day
+		// coordinates first. This is because the geometry is currently reconstructed
+		// geometry at the current reconstruction time.
+		boost::optional<GPlatesModel::integer_plate_id_type> plate_id = get_plate_id_from_feature();
+		if (plate_id)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_focused_geometry,
+				GPLATES_ASSERTION_SOURCE);
+
+			// Get current reconstruction tree from the focused geometry.
+			const GPlatesAppLogic::ReconstructionTree &recon_tree =
+				*d_focused_geometry->reconstruction_tree();
+
+			geometry_on_sphere = GPlatesAppLogic::ReconstructUtils::reconstruct(
+				geometry_on_sphere, plate_id.get(), recon_tree, reverse_reconstruct);
+		}
+	}
+
+
+	// If feature wasn't reconstructed then we'll be returning the geometry passed in.
+	return geometry_on_sphere;
 }

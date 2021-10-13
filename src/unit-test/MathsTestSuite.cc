@@ -29,6 +29,7 @@
 #include "unit-test/MathsTestSuite.h"
 #include "unit-test/TestSuiteFilter.h"
 #include "unit-test/RealTest.h"
+#include "unit-test/SphericalDistanceTest.h"
 
 GPlatesUnitTest::MathsTestSuite::MathsTestSuite(
 		unsigned level) : 
@@ -42,6 +43,7 @@ void
 GPlatesUnitTest::MathsTestSuite::construct_maps()
 {
 	ADD_TESTSUITE(Real);
+	ADD_TESTSUITE(SphericalDistance);
 }
 
 

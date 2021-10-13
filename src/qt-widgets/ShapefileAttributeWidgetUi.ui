@@ -24,228 +24,212 @@
   <property name="windowTitle" >
    <string>Form</string>
   </property>
-  <layout class="QGridLayout" >
-   <item row="0" column="0" colspan="2" >
-    <widget class="QLabel" name="label_main_description" >
-     <property name="text" >
+  <layout class="QHBoxLayout" name="horizontalLayout_2" >
+   <property name="spacing" >
+    <number>0</number>
+   </property>
+   <property name="margin" >
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QGroupBox" name="groupBox" >
+     <property name="title" >
       <string>Associate shapefile attributes with GPlates model properties.</string>
      </property>
+     <layout class="QVBoxLayout" name="verticalLayout" >
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout" >
+        <item>
+         <widget class="QLabel" name="label_filename" >
+          <property name="layoutDirection" >
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="text" >
+           <string>Filename:</string>
+          </property>
+          <property name="alignment" >
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="line_filename" >
+          <property name="readOnly" >
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="Line" name="line" >
+        <property name="orientation" >
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QFormLayout" name="formLayout" >
+        <item row="0" column="0" >
+         <widget class="QLabel" name="label_model_properties" >
+          <property name="font" >
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text" >
+           <string>Model property</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1" >
+         <widget class="QLabel" name="label_shapefile_attributes" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Fixed" hsizetype="Preferred" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font" >
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text" >
+           <string>Shapefile attribute</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" >
+         <widget class="QLabel" name="label_plateID" >
+          <property name="text" >
+           <string>&amp;Plate ID:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>combo_plateID</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1" >
+         <widget class="QComboBox" name="combo_plateID" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Fixed" hsizetype="Minimum" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0" >
+         <widget class="QLabel" name="label_feature_type" >
+          <property name="text" >
+           <string>Feature &amp;Type:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>combo_feature_type</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1" >
+         <widget class="QComboBox" name="combo_feature_type" />
+        </item>
+        <item row="3" column="0" >
+         <widget class="QLabel" name="label_from_age" >
+          <property name="text" >
+           <string>&amp;Begin:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>combo_from_age</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1" >
+         <widget class="QComboBox" name="combo_from_age" />
+        </item>
+        <item row="4" column="0" >
+         <widget class="QLabel" name="label_to_age" >
+          <property name="text" >
+           <string>&amp;End:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>combo_to_age</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1" >
+         <widget class="QComboBox" name="combo_to_age" />
+        </item>
+        <item row="5" column="0" >
+         <widget class="QLabel" name="label_name" >
+          <property name="text" >
+           <string>&amp;Name:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>combo_name</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1" >
+         <widget class="QComboBox" name="combo_name" />
+        </item>
+        <item row="6" column="0" >
+         <widget class="QLabel" name="label_description" >
+          <property name="text" >
+           <string>&amp;Description:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>combo_description</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="1" >
+         <widget class="QComboBox" name="combo_description" />
+        </item>
+        <item row="7" column="0" >
+         <widget class="QLabel" name="label_feature_id" >
+          <property name="text" >
+           <string>Feature &amp;ID:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>combo_feature_id</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1" >
+         <widget class="QComboBox" name="combo_feature_id" />
+        </item>
+        <item row="8" column="0" >
+         <widget class="QLabel" name="label_conjugate" >
+          <property name="text" >
+           <string>&amp;Conjugate Plate ID:</string>
+          </property>
+          <property name="buddy" >
+           <cstring>combo_feature_id</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="1" >
+         <widget class="QComboBox" name="combo_conjugate" />
+        </item>
+       </layout>
+      </item>
+      <item>
+       <spacer name="verticalSpacer" >
+        <property name="orientation" >
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0" >
+         <size>
+          <width>20</width>
+          <height>34</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
     </widget>
-   </item>
-   <item row="1" column="0" >
-    <widget class="QLabel" name="label_filename" >
-     <property name="layoutDirection" >
-      <enum>Qt::LeftToRight</enum>
-     </property>
-     <property name="text" >
-      <string>Filename:</string>
-     </property>
-     <property name="alignment" >
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1" >
-    <widget class="QLineEdit" name="line_filename" >
-     <property name="readOnly" >
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0" colspan="2" >
-    <layout class="QGridLayout" >
-     <item row="0" column="0" >
-      <widget class="QLabel" name="label_model_properties" >
-       <property name="font" >
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="layoutDirection" >
-        <enum>Qt::RightToLeft</enum>
-       </property>
-       <property name="text" >
-        <string>Model property</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1" >
-      <widget class="QLabel" name="label_shapefile_attributes" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Preferred" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="font" >
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="layoutDirection" >
-        <enum>Qt::RightToLeft</enum>
-       </property>
-       <property name="text" >
-        <string>Shapefile attribute</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0" >
-      <widget class="QLabel" name="label_plateID" >
-       <property name="layoutDirection" >
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="text" >
-        <string>&amp;Plate ID</string>
-       </property>
-       <property name="alignment" >
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-       <property name="buddy" >
-        <cstring>combo_plateID</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1" >
-      <widget class="QComboBox" name="combo_plateID" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Minimum" >
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0" >
-      <widget class="QLabel" name="label_feature_type" >
-       <property name="layoutDirection" >
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="text" >
-        <string>Feature &amp;Type</string>
-       </property>
-       <property name="alignment" >
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-       <property name="buddy" >
-        <cstring>combo_feature_type</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1" >
-      <widget class="QComboBox" name="combo_feature_type" />
-     </item>
-     <item row="3" column="0" >
-      <widget class="QLabel" name="label_from_age" >
-       <property name="layoutDirection" >
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="text" >
-        <string>&amp;Begin</string>
-       </property>
-       <property name="alignment" >
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-       <property name="buddy" >
-        <cstring>combo_from_age</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1" >
-      <widget class="QComboBox" name="combo_from_age" />
-     </item>
-     <item row="4" column="0" >
-      <widget class="QLabel" name="label_to_age" >
-       <property name="layoutDirection" >
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="text" >
-        <string>&amp;End</string>
-       </property>
-       <property name="alignment" >
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-       <property name="buddy" >
-        <cstring>combo_to_age</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="1" >
-      <widget class="QComboBox" name="combo_to_age" />
-     </item>
-     <item row="5" column="0" >
-      <widget class="QLabel" name="label_name" >
-       <property name="layoutDirection" >
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="text" >
-        <string>&amp;Name</string>
-       </property>
-       <property name="alignment" >
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-       <property name="buddy" >
-        <cstring>combo_name</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="1" >
-      <widget class="QComboBox" name="combo_name" />
-     </item>
-     <item row="6" column="0" >
-      <widget class="QLabel" name="label_description" >
-       <property name="layoutDirection" >
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="text" >
-        <string>&amp;Description</string>
-       </property>
-       <property name="alignment" >
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-       <property name="buddy" >
-        <cstring>combo_description</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="1" >
-      <widget class="QComboBox" name="combo_description" />
-     </item>
-     <item row="7" column="0" >
-      <widget class="QLabel" name="label_feature_id" >
-       <property name="text" >
-        <string>Feature &amp;ID</string>
-       </property>
-       <property name="alignment" >
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-       <property name="buddy" >
-        <cstring>combo_feature_id</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="1" >
-      <widget class="QComboBox" name="combo_feature_id" />
-     </item>
-     <item row="8" column="0" >
-      <widget class="QLabel" name="label_conjugate" >
-       <property name="text" >
-        <string>&amp;Conjugate Plate ID</string>
-       </property>
-       <property name="alignment" >
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-       <property name="buddy" >
-        <cstring>combo_feature_id</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="1" >
-      <widget class="QComboBox" name="combo_conjugate" />
-     </item>
-    </layout>
    </item>
   </layout>
  </widget>

@@ -130,14 +130,22 @@ namespace GPlatesPropertyValues
 		 * A convenience structure for conversions to and from the affine transform
 		 * and lat-lon extents.
 		 *
-		 * We constrain the latitude extents to be in the range [-90, +90], and the
-		 * top latitude must be greater than or equal to the bottom latitude.
+		 * We constrain the latitude (top/bottom) extents to be in the range
+		 * [-90, +90]:
+		 *  - If 'top' is strictly greater than 'bottom' (the usual case), the
+		 *    first line of the raster file is drawn to the north of the last line.
+		 *  - If 'top' is equal to 'bottom', the raster is drawn with height zero.
+		 *  - If 'top' is strictly less than 'bottom', the first line of the
+		 *    raster file is drawn to the south of the last line; that is, the
+		 *    raster is drawn flipped vertically.
 		 *
-		 * We constrain the longitude extents to be in the range [-180, +180], even
-		 * if the raster crosses the International Date Line (IDL). If the right
-		 * longitude is strictly greater than the left longitude, then the raster does
-		 * not cross the IDL. If the right longitude is strictly less than the left
-		 * longitude, the raster crosses the IDL.
+		 * There are no constraints on the longitude (left/right) extents:
+		 *  - If 'left' is strictly less than 'right' (the usual case), the
+		 *    columns of the raster are drawn from west to east.
+		 *  - If 'left' is equal to 'right', the raster is drawn with width zero.
+		 *  - If 'left' is strictly greater than 'right', the columns of the
+		 *    raster are drawn from east to west; that is, the raster is drawn
+		 *    flipped horizontally.
 		 */
 		struct lat_lon_extents_type
 		{
@@ -220,11 +228,10 @@ namespace GPlatesPropertyValues
 		 *
 		 * It is not possible to convert the parameters to lat-lon extents where:
 		 *  - The transform rotates or shears the raster, or
-		 *  - The raster is flipped horizontally (in this case, we would need to say
-		 *    that the right extent has a smaller longitude than the left extent, but
-		 *    this would be interpreted as a specifying a raster that crosses the
-		 *    International Date Line instead), or
-		 *  - The raster is flipped vertically (the bottom is further north than the top).
+		 *  - The 'top' and/or 'bottom' lie outside of [-90, +90]. (Note: to avoid
+		 *    issues to do with numerical tolerance, if the computed 'top' or
+		 *    'bottom' lie outside that range but within a certain epsilon, they
+		 *    are clamped to the nearest value in that range.)
 		 *
 		 * Where it is not possible to produce lat-lon extents, boost::none is returned.
 		 */
@@ -233,27 +240,15 @@ namespace GPlatesPropertyValues
 				unsigned int raster_width,
 				unsigned int raster_height) const;
 
-		enum ConversionFromLatLonExtentsError
-		{
-			NONE,
-			BOTTOM_ABOVE_TOP,
-			TOP_EQUALS_BOTTOM,
-			LEFT_EQUALS_RIGHT
-		};
-
 		/**
 		 * Sets the affine transform parameters using lat-lon extents.
 		 *
-		 * If the longitude extents are outside of [-180, +180], the extents are
-		 * brought within that range by adding or subtracting multiples of 360.
-		 *
-		 * If the latitude extents are outside of [-90, +90], the extents are clamped
-		 * to the nearest value in that range.
-		 *
-		 * Returns NONE if the extents were successfully set; returns an error code
-		 * if the extents were not set for any particular reason.
+		 * If the latitude extents are outside of [-90, +90], and the value lies
+		 * within a certain epsilon, the extents are clamped to the nearest value
+		 * in that range. If the value does not lie within a certain epsilon, this
+		 * method is a no-op.
 		 */
-		ConversionFromLatLonExtentsError
+		void
 		set_lat_lon_extents(
 				lat_lon_extents_type extents,
 				unsigned int raster_width,

@@ -55,6 +55,7 @@
 namespace GPlatesAppLogic
 {
 	class LayerTask;
+	class LayerTaskParams;
 
 	/**
 	 * Wrapper around a layer of @a ReconstructGraph that can be used to query the layer.
@@ -147,20 +148,6 @@ namespace GPlatesAppLogic
 			{
 				return !d_impl.expired();
 			}
-
-			/**
-			 * Activates (or deactivates) this loaded input file.
-			 *
-			 * Any layers connected to us will only receive the feature collection data
-			 * in us if @a activate is true.
-			 *
-			 * FIXME: This is really a temporary method until file activation in
-			 * ManageFeatureCollectionsDialog is removed and layer activation is provided
-			 * in the layers GUI. We could keep both but it might be confusing for the user.
-			 */
-			void
-			activate(
-					bool active = true);
 
 			/**
 			 * Returns the loaded file that 'this' wraps.
@@ -591,6 +578,14 @@ namespace GPlatesAppLogic
 		 */
 		std::vector<InputConnection>
 		get_all_inputs() const;
+
+
+		/**
+		 * Returns a non-const reference to the additional parameters and
+		 * configuration options of the associated layer task.
+		 */
+		LayerTaskParams &
+		get_layer_task_params();
 
 
 		/**

@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,12 +28,14 @@
 #ifndef GPLATES_QTWIDGETS_MEASUREDISTANCEWIDGET_H
 #define GPLATES_QTWIDGETS_MEASUREDISTANCEWIDGET_H
 
+#include <boost/optional.hpp>
 #include <QWidget>
 #include <QPalette>
-#include <boost/optional.hpp>
 
 #include "MeasureDistanceWidgetUi.h"
+
 #include "maths/PointOnSphere.h"
+
 
 namespace GPlatesCanvasTools
 {
@@ -47,7 +49,7 @@ namespace GPlatesQtWidgets
 	/**
 	 * TaskPanel widget that displays information for distance measuring canvas tool
 	 */
-	class MeasureDistanceWidget:
+	class MeasureDistanceWidget :
 			public QWidget, 
 			protected Ui_MeasureDistanceWidget
 	{
@@ -81,6 +83,7 @@ namespace GPlatesQtWidgets
 		void
 		update_feature_measure(
 				double total_distance,
+				boost::optional<double> area,
 				boost::optional<GPlatesMaths::PointOnSphere> segment_start,
 				boost::optional<GPlatesMaths::PointOnSphere> segment_end,
 				boost::optional<double> segment_distance);

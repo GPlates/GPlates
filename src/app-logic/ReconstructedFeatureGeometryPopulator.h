@@ -144,6 +144,11 @@ namespace GPlatesAppLogic
 
 		bool d_is_vgp_feature;
 		boost::optional<ReconstructedVirtualGeomagneticPoleParams> d_VGP_params;
+
+		// Flowline features do their own reconstruction in the FlowlineGeometryPopulator; so
+		// we should not reconstruct the seed point here. So we need to look out for flowline
+		// features and handle them slightly differently.
+		bool d_is_flowline_feature;
 	};
 }
 

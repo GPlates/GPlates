@@ -86,6 +86,10 @@ namespace GPlatesQtWidgets
 
 		void
 		set_appropriate_edit_widget();
+
+		void
+		check_property_name_validity(
+				int index);
 		
 		void
 		add_property();

@@ -23,11 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
+#include <boost/weak_ptr.hpp>
 #include <QTableWidgetItem>
 #include <QItemDelegate>
-#include <QFileDialog>
 #include <QDir>
 #include <QString>
 #include <QStringList>
@@ -36,7 +37,6 @@
 #include <QDoubleValidator>
 #include <QKeyEvent>
 #include <QSizePolicy>
-#include <QDebug>
 
 #include "TimeDependentRasterPage.h"
 
@@ -46,6 +46,7 @@
 #include "file-io/RasterReader.h"
 
 #include "maths/MathsUtils.h"
+#include "maths/Real.h"
 
 #include "utils/Parse.h"
 
@@ -58,29 +59,88 @@ namespace
 	const double MAXIMUM_TIME = 5000.0; // The Earth is only 4.5 billion years old!
 	const int DECIMAL_PLACES = 4;
 
+	double
+	round(
+			double d)
+	{
+		double fractpart, intpart;
+		fractpart = std::modf(d, &intpart);
+		if (fractpart >= 0.5)
+		{
+			intpart += 1.0;
+		}
+
+		return intpart;
+	}
+
+	double
+	round_to_dp(
+			double d)
+	{
+		static const double MULTIPLIER = std::pow(10.0, DECIMAL_PLACES);
+		return ::round(d * MULTIPLIER) / MULTIPLIER;
+	}
+
 	class TimeLineEdit :
 			public FriendlyLineEdit
 	{
 	public:
 
+		typedef GPlatesQtWidgets::TimeDependentRasterPage::index_to_editor_map_type index_to_editor_map_type;
+
 		TimeLineEdit(
 				const QString &contents,
 				const QString &message_on_empty_string,
 				QTableWidget *table,
+				const boost::weak_ptr<index_to_editor_map_type> &index_to_editor_map,
 				QWidget *parent_ = NULL) :
 			FriendlyLineEdit(contents, message_on_empty_string, parent_),
-			d_table(table)
+			d_table(table),
+			d_index_to_editor_map(index_to_editor_map)
 		{
 			QSizePolicy policy = lineEditSizePolicy();
 			policy.setVerticalPolicy(QSizePolicy::Preferred);
 			setLineEditSizePolicy(policy);
 		}
 
+		virtual
+		~TimeLineEdit()
+		{
+			erase_index_mapping();
+		}
+
 		void
 		set_model_index(
 				const QModelIndex &index)
 		{
+			erase_index_mapping();
 			d_model_index = index;
+
+			typedef index_to_editor_map_type::iterator iterator_type;
+			if (boost::shared_ptr<index_to_editor_map_type> locked_map = d_index_to_editor_map.lock())
+			{
+				std::pair<iterator_type, bool> new_iter = locked_map->insert(std::make_pair(index, this));
+				if (!new_iter.second)
+				{
+					new_iter.first->second = this;
+				}
+			}
+		}
+
+	private:
+
+		void
+		erase_index_mapping()
+		{
+			typedef index_to_editor_map_type::iterator iterator_type;
+			if (boost::shared_ptr<index_to_editor_map_type> locked_map = d_index_to_editor_map.lock())
+			{
+				iterator_type old_iter = locked_map->find(d_model_index);
+				if (old_iter != locked_map->end() && old_iter->second == this)
+				{
+					locked_map->erase(old_iter);
+				}
+			}
 		}
 
 	protected:
@@ -93,7 +153,11 @@ namespace
 			// For some reason, the row in the table containing this line edit sometimes
 			// gets selected when the line edit gets focus, but sometimes it doesn't.
 			// Because Qt can't make up its mind, we'll do it explicitly here.
-			d_table->setCurrentIndex(d_model_index);
+			if (d_table->currentIndex() != d_model_index)
+			{
+				d_table->setCurrentIndex(d_model_index);
+			}
+			FriendlyLineEdit::focusInEvent(event_);
 		}
 
 		virtual
@@ -111,6 +175,7 @@ namespace
 
 		QTableWidget *d_table;
 		QModelIndex d_model_index;
+		boost::weak_ptr<index_to_editor_map_type> d_index_to_editor_map;
 	};
 
 	class TimeDelegate :
@@ -118,11 +183,15 @@ namespace
 	{
 	public:
 
+		typedef GPlatesQtWidgets::TimeDependentRasterPage::index_to_editor_map_type index_to_editor_map_type;
+
 		TimeDelegate(
 				QValidator *validator,
+				const boost::weak_ptr<index_to_editor_map_type> index_to_editor_map,
 				QTableWidget *parent_) :
 			QItemDelegate(parent_),
 			d_validator(validator),
+			d_index_to_editor_map(index_to_editor_map),
 			d_table(parent_)
 		{  }
 
@@ -135,9 +204,12 @@ namespace
 		{
 			QString existing = d_table->item(index.row(), index.column())->text();
 
-			static const QString EMPTY_STRING_MESSAGE = "not set";
-			GPlatesQtWidgets::FriendlyLineEdit *line_edit =
-				new TimeLineEdit(existing, EMPTY_STRING_MESSAGE, d_table, parent_);
+			GPlatesQtWidgets::FriendlyLineEdit *line_edit = new TimeLineEdit(
+					existing,
+					tr("not set"),
+					d_table,
+					d_index_to_editor_map,
+					parent_);
 			line_edit->setValidator(d_validator);
 			line_edit->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
@@ -175,6 +247,7 @@ namespace
 	private:
 
 		QValidator *d_validator;
+		boost::weak_ptr<index_to_editor_map_type> d_index_to_editor_map;
 		QTableWidget *d_table;
 	};
 
@@ -185,10 +258,8 @@ namespace
 
 		TimeValidator(
 				QObject *parent_) :
-			QDoubleValidator(parent_)
-		{
-			setRange(MINIMUM_TIME, MAXIMUM_TIME, DECIMAL_PLACES);
-		}
+			QDoubleValidator(MINIMUM_TIME, MAXIMUM_TIME, DECIMAL_PLACES, parent_)
+		{  }
 
 		virtual
 		State
@@ -202,8 +273,6 @@ namespace
 			}
 			else
 			{
-				// This means that values deemed "Intermediate" by the base class are deemed
-				// to be invalid.
 				return QValidator::Invalid;
 			}
 		}
@@ -249,22 +318,32 @@ namespace
 
 
 GPlatesQtWidgets::TimeDependentRasterPage::TimeDependentRasterPage(
-		QString &open_file_path,
+		GPlatesPresentation::ViewState &view_state,
 		TimeDependentRasterSequence &raster_sequence,
 		const boost::function<void (unsigned int)> &set_number_of_bands_function,
 		QWidget *parent_) :
 	QWizardPage(parent_),
-	d_open_file_path(open_file_path),
 	d_raster_sequence(raster_sequence),
 	d_set_number_of_bands_function(set_number_of_bands_function),
 	d_validator(new TimeValidator(this)),
 	d_is_complete(false),
-	d_show_full_paths(false)
+	d_show_full_paths(false),
+	d_index_to_editor_map(new index_to_editor_map_type()),
+	d_widget_to_focus(NULL),
+	d_open_directory_dialog(
+			this,
+			tr("Add Directory"),
+			view_state),
+	d_open_files_dialog(
+			this,
+			tr("Add Files"),
+			GPlatesFileIO::RasterReader::get_file_dialog_filters(),
+			view_state)
 {
 	setupUi(this);
 
-	setTitle("Raster File Sequence");
-	setSubTitle("Build the sequence of raster files that make up the time-dependent raster.");
+	setTitle(tr("Raster File Sequence"));
+	setSubTitle(tr("Build the sequence of raster files that make up the time-dependent raster."));
 
 	files_table->verticalHeader()->hide();
 	files_table->horizontalHeader()->setResizeMode(1, QHeaderView::Stretch);
@@ -276,7 +355,8 @@ GPlatesQtWidgets::TimeDependentRasterPage::TimeDependentRasterPage(
 	files_table->setSelectionMode(QAbstractItemView::ContiguousSelection);
 	files_table->setCursor(QCursor(Qt::ArrowCursor));
 
-	files_table->setItemDelegateForColumn(0, new TimeDelegate(d_validator, files_table));
+	files_table->setItemDelegateForColumn(0, new TimeDelegate(
+				d_validator, d_index_to_editor_map, files_table));
 
 	files_table->installEventFilter(
 			new DeleteKeyEventFilter(
@@ -303,17 +383,11 @@ GPlatesQtWidgets::TimeDependentRasterPage::isComplete() const
 void
 GPlatesQtWidgets::TimeDependentRasterPage::handle_add_directory_button_clicked()
 {
-	QString dir_path = QFileDialog::getExistingDirectory(
-			this,
-			tr("Add Directory"),
-			d_open_file_path,
-			QFileDialog::ShowDirsOnly);
+	QString dir_path = d_open_directory_dialog.get_existing_directory();
 	if (dir_path.isEmpty())
 	{
 		return;
 	}
-
-	d_open_file_path = dir_path;
 
 	QDir dir(dir_path);
 	add_files_to_sequence(dir.entryInfoList());
@@ -323,19 +397,11 @@ GPlatesQtWidgets::TimeDependentRasterPage::handle_add_directory_button_clicked()
 void
 GPlatesQtWidgets::TimeDependentRasterPage::handle_add_files_button_clicked()
 {
-	const QString &filters = GPlatesFileIO::RasterReader::get_file_dialog_filters();
-	QStringList files = QFileDialog::getOpenFileNames(
-			this,
-			tr("Add Files"),
-			d_open_file_path,
-			filters);
+	QStringList files = d_open_files_dialog.get_open_file_names();
 	if (files.isEmpty())
 	{
 		return;
 	}
-
-	QFileInfo first(files.front());
-	d_open_file_path = first.path();
 
 	QList<QFileInfo> info_list;
 	BOOST_FOREACH(const QString &file, files)
@@ -401,8 +467,20 @@ GPlatesQtWidgets::TimeDependentRasterPage::handle_show_full_paths_button_toggled
 void
 GPlatesQtWidgets::TimeDependentRasterPage::handle_table_selection_changed()
 {
-	remove_selected_button->setEnabled(
-			!files_table->selectedRanges().isEmpty());
+	// Only enable the remove selected button if there are items selected.
+	remove_selected_button->setEnabled(files_table->selectedItems().count());
+
+	if (files_table->selectedItems().count() == 3 /* number of columns in row */)
+	{
+		typedef index_to_editor_map_type::iterator iterator_type;
+		int current_row = files_table->currentIndex().row();
+		iterator_type iter = d_index_to_editor_map->find(
+				files_table->model()->index(current_row, 0));
+		if (iter != d_index_to_editor_map->end())
+		{
+			iter->second->setFocus();
+		}
+	}
 }
 
 
@@ -580,6 +658,9 @@ GPlatesQtWidgets::TimeDependentRasterPage::check_if_complete()
 void
 GPlatesQtWidgets::TimeDependentRasterPage::populate_table()
 {
+	QLocale loc;
+	loc.setNumberOptions(QLocale::OmitGroupSeparator);
+
 	typedef TimeDependentRasterSequence::sequence_type sequence_type;
 	const sequence_type &sequence = d_raster_sequence.get_sequence();
 
@@ -591,22 +672,24 @@ GPlatesQtWidgets::TimeDependentRasterPage::populate_table()
 		// First column is the time.
 		boost::optional<double> time = iter->time;
 		QTableWidgetItem *time_item = new QTableWidgetItem(
-				time ? QString::number(*time) : QString());
+				time ? loc.toString(*time) : QString());
 		time_item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
 		time_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable);
 		files_table->setItem(i, 0, time_item);
 		files_table->openPersistentEditor(time_item);
 
 		// Second column is the file name.
-		QString file_name = d_show_full_paths ? iter->absolute_file_path : iter->file_name;
+		QString native_absolute_file_path = QDir::toNativeSeparators(iter->absolute_file_path);
+		QString file_name = d_show_full_paths ?
+				native_absolute_file_path : iter->file_name;
 		QTableWidgetItem *file_item = new QTableWidgetItem(file_name);
 		file_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-		file_item->setToolTip(iter->absolute_file_path);
+		file_item->setToolTip(native_absolute_file_path);
 		files_table->setItem(i, 1, file_item);
 
 		// Third column is the number of bands.
 		unsigned int number_of_bands = iter->band_types.size();
-		QTableWidgetItem *bands_item = new QTableWidgetItem(QString::number(number_of_bands));
+		QTableWidgetItem *bands_item = new QTableWidgetItem(loc.toString(number_of_bands));
 		bands_item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
 		bands_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 		files_table->setItem(i, 2, bands_item);
@@ -686,7 +769,7 @@ GPlatesQtWidgets::TimeDependentRasterPage::deduce_time(
 		const QFileInfo &file_info)
 {
 	QString base_name = file_info.completeBaseName();
-	QStringList tokens = base_name.split("-", QString::SkipEmptyParts);
+	QStringList tokens = base_name.split(QRegExp("[_-]"), QString::SkipEmptyParts);
 
 	if (tokens.count() < 2)
 	{
@@ -697,6 +780,9 @@ GPlatesQtWidgets::TimeDependentRasterPage::deduce_time(
 	{
 		GPlatesUtils::Parse<double> parse;
 		double value = parse(tokens.last());
+
+		// Round to DECIMAL_PLACES.
+		value = round_to_dp(value);
 		
 		// Is value in an acceptable range?
 		if (MINIMUM_TIME <= value && value <= MAXIMUM_TIME)

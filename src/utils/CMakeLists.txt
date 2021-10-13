@@ -29,12 +29,17 @@ set(srcs
     ExportTemplateFilenameSequenceFormats.h
     ExportTemplateFilenameSequenceImpl.cc
     ExportTemplateFilenameSequenceImpl.h
-    FloatingPointComparisons.cc
-    FloatingPointComparisons.h
+    Filter.h
+    FilterMapOutputHandler.h
+    FilterMapReduceWorkFlow.h
+    GenericFilter.h
+    GenericMapper.h
+    GenericReducer.h
     GeometryCreationUtils.h
     IdStringSet.cc
     IdStringSet.h
     LatLonAreaSampling.h
+    Mapper.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
@@ -44,6 +49,7 @@ set(srcs
     Profile.cc
     Profile.h
     QtFormattingUtils.h
+    Reducer.h
     ReferenceCount.h
     SafeBool.h
     Select.h
@@ -55,6 +61,8 @@ set(srcs
     StringSet.h
     StringUtils.h
     TypeTraits.h
+    UnicodeString.cc
+    UnicodeString.h
     UnicodeStringUtils.cc
     UnicodeStringUtils.h
     UniqueId.cc
@@ -62,6 +70,8 @@ set(srcs
     VirtualProxy.h
     XmlNamespaces.cc
     XmlNamespaces.h
+    XPath.cc
+    XPath.h
 )
 
 

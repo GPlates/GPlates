@@ -1,7 +1,8 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>ReadErrorAccumulationDialog</class>
- <widget class="QDialog" name="ReadErrorAccumulationDialog" >
-  <property name="geometry" >
+ <widget class="QDialog" name="ReadErrorAccumulationDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,34 +10,36 @@
     <height>432</height>
    </rect>
   </property>
-  <property name="windowTitle" >
-   <string>File Errors</string>
+  <property name="windowTitle">
+   <string>Read Errors</string>
   </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_dialog_warning_16.png</iconset>
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
+    <normaloff>:/gnome_dialog_warning_16.png</normaloff>:/gnome_dialog_warning_16.png</iconset>
   </property>
-  <property name="sizeGripEnabled" >
+  <property name="sizeGripEnabled">
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout" >
+  <layout class="QVBoxLayout">
    <item>
-    <layout class="QHBoxLayout" >
+    <layout class="QHBoxLayout">
      <item>
-      <widget class="QLabel" name="label_problem" >
-       <property name="text" >
+      <widget class="QLabel" name="label_problem">
+       <property name="text">
         <string>There are no warnings or errors for the currently-loaded files.</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="button_help" >
-       <property name="toolTip" >
+      <widget class="QPushButton" name="button_help">
+       <property name="toolTip">
         <string>What does this mean?</string>
        </property>
-       <property name="icon" >
-        <iconset resource="../qt-resources/qt_widgets.qrc" >:/human_help_browser_16.png</iconset>
+       <property name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
        </property>
-       <property name="iconSize" >
+       <property name="iconSize">
         <size>
          <width>16</width>
          <height>16</height>
@@ -46,10 +49,10 @@
      </item>
      <item>
       <spacer>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" >
+       <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
          <height>20</height>
@@ -58,41 +61,41 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="button_expand_all" >
-       <property name="text" >
+      <widget class="QPushButton" name="button_expand_all">
+       <property name="text">
         <string>E&amp;xpand All</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="button_collapse_all" >
-       <property name="text" >
-        <string>&amp;Collapse All</string>
+      <widget class="QPushButton" name="button_collapse_all">
+       <property name="text">
+        <string>C&amp;ollapse All</string>
        </property>
       </widget>
      </item>
     </layout>
    </item>
    <item>
-    <widget class="QTabWidget" name="tabWidget" >
-     <property name="currentIndex" >
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
       <number>0</number>
      </property>
-     <widget class="QWidget" name="tab_by_type" >
-      <attribute name="title" >
+     <widget class="QWidget" name="tab_by_type">
+      <attribute name="title">
        <string>By &amp;Error</string>
       </attribute>
-      <layout class="QHBoxLayout" >
-       <property name="margin" >
+      <layout class="QHBoxLayout">
+       <property name="margin">
         <number>4</number>
        </property>
        <item>
-        <widget class="QTreeWidget" name="tree_widget_errors_by_type" >
-         <property name="alternatingRowColors" >
+        <widget class="QTreeWidget" name="tree_widget_errors_by_type">
+         <property name="alternatingRowColors">
           <bool>true</bool>
          </property>
          <column>
-          <property name="text" >
+          <property name="text">
            <string/>
           </property>
          </column>
@@ -100,21 +103,21 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_by_line" >
-      <attribute name="title" >
+     <widget class="QWidget" name="tab_by_line">
+      <attribute name="title">
        <string>By &amp;Line</string>
       </attribute>
-      <layout class="QHBoxLayout" >
-       <property name="margin" >
+      <layout class="QHBoxLayout">
+       <property name="margin">
         <number>4</number>
        </property>
        <item>
-        <widget class="QTreeWidget" name="tree_widget_errors_by_line" >
-         <property name="alternatingRowColors" >
+        <widget class="QTreeWidget" name="tree_widget_errors_by_line">
+         <property name="alternatingRowColors">
           <bool>true</bool>
          </property>
          <column>
-          <property name="text" >
+          <property name="text">
            <string/>
           </property>
          </column>
@@ -125,63 +128,16 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" >
-     <item>
-      <spacer>
-       <property name="orientation" >
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" >
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_clear" >
-       <property name="text" >
-        <string>Clear &amp;All</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_ok" >
-       <property name="text" >
-        <string>Close</string>
-       </property>
-       <property name="default" >
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <widget class="QDialogButtonBox" name="main_buttonbox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close|QDialogButtonBox::Reset</set>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>button_ok</tabstop>
- </tabstops>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
- <connections>
-  <connection>
-   <sender>button_ok</sender>
-   <signal>clicked()</signal>
-   <receiver>ReadErrorAccumulationDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel" >
-     <x>668</x>
-     <y>432</y>
-    </hint>
-    <hint type="destinationlabel" >
-     <x>456</x>
-     <y>442</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2007, 2009 Geological Survey of Norway
+ * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,30 +25,47 @@
  */
 #include <algorithm> // std::find
 #include <iostream>
-
 #include <QMap>
 #include <QString>
+
+#include "ShapefileAttributeRemapperDialog.h"
+
+#include "ShapefilePropertyMapper.h"
+#include "ShapefileAttributeWidget.h"
+#include "QtWidgetUtils.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/TopLevelProperty.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
+
 #include "utils/UnicodeStringUtils.h"
-
-#include "ShapefilePropertyMapper.h"
-#include "ShapefileAttributeWidget.h"
-#include "ShapefileAttributeRemapperDialog.h"
-
 
 
 GPlatesQtWidgets::ShapefileAttributeRemapperDialog::ShapefileAttributeRemapperDialog(
-		QWidget *parent_):
+		QWidget *parent_) :
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 {
 	setupUi(this);
 
-	QObject::connect(button_reset,SIGNAL(clicked()),this,SLOT(reset_fields()));
+	// Button box signals.
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(accepted()),
+			this,
+			SLOT(accept()));
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(rejected()),
+			this,
+			SLOT(reject()));
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(clicked(QAbstractButton *)),
+			this,
+			SLOT(handle_buttonbox_clicked(QAbstractButton *)));
 }
+
 
 void
 GPlatesQtWidgets::ShapefileAttributeRemapperDialog::setup(
@@ -56,20 +74,34 @@ GPlatesQtWidgets::ShapefileAttributeRemapperDialog::setup(
 		QMap< QString,QString > &model_to_attribute_map)
 {
 	d_shapefile_attribute_widget = new ShapefileAttributeWidget(this,filename,field_names,model_to_attribute_map,true);
-	gridLayout->addWidget(d_shapefile_attribute_widget,0,0);
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_shapefile_attribute_widget,
+			widget_shapefile_attribute);
 }
 
 
 void
 GPlatesQtWidgets::ShapefileAttributeRemapperDialog::accept()
 {
-	d_shapefile_attribute_widget->accept_fields();	
+	d_shapefile_attribute_widget->accept_fields();
 	done(QDialog::Accepted);
 }
+
 
 void
 GPlatesQtWidgets::ShapefileAttributeRemapperDialog::reset_fields()
 {
 	d_shapefile_attribute_widget->reset_fields();
+}
+
+
+void
+GPlatesQtWidgets::ShapefileAttributeRemapperDialog::handle_buttonbox_clicked(
+		QAbstractButton *button)
+{
+	if (main_buttonbox->buttonRole(button) == QDialogButtonBox::ResetRole)
+	{
+		reset_fields();
+	}
 }
 

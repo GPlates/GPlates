@@ -118,6 +118,14 @@ namespace GPlatesGui
 		bool
 		close_event_hook();
 
+
+		/**
+		 * Called when the user wants to open a new Session. Returns true if unloading
+		 * the existing session is ok, false if the user wants to abort.
+		 */
+		bool
+		replace_session_event_hook();
+
 	
 	public slots:
 

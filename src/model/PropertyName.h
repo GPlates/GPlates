@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,10 +30,11 @@
 
 #include "QualifiedXmlName.h"
 
-namespace GPlatesModel {
 
-	class PropertyNameFactory {
-
+namespace GPlatesModel
+{
+	class PropertyNameFactory
+	{
 	public:
 
 		static
@@ -49,7 +50,6 @@ namespace GPlatesModel {
 	};
 
 	typedef QualifiedXmlName<PropertyNameFactory> PropertyName;
-
 }
 
 #endif  // GPLATES_MODEL_PROPERTYNAME_H

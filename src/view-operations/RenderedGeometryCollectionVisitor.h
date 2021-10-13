@@ -28,6 +28,8 @@
 #ifndef GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYCOLLECTIONVISITOR_H
 #define GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYCOLLECTIONVISITOR_H
 
+#include <boost/optional.hpp>
+
 #include "RenderedGeometryLayerVisitor.h"
 #include "RenderedGeometryCollection.h"
 
@@ -73,9 +75,6 @@ namespace GPlatesViewOperations
 					main_rendered_layer_type);
 		}
 
-		// FIXME: The following virtual function should return a boost::optional of
-		// ForwardReadableRange, to avoid having to deal with memory issues.
-
 		/**
 		 * Returns a sequence of child layer indices used for custom order of
 		 * visitation of child layers for the given main layer.
@@ -84,11 +83,11 @@ namespace GPlatesViewOperations
 		 * visitation (by order of creation) is to be used.
 		 */
 		virtual
-		const ForwardReadableRange *
+		boost::optional<ForwardReadableRange>
 		get_custom_child_layers_order(
 				RenderedGeometryCollection::MainLayerType parent_layer)
 		{
-			return NULL;
+			return boost::none;
 		}
 	};
 
@@ -139,11 +138,11 @@ namespace GPlatesViewOperations
 		 * visitation (by order of creation) is to be used.
 		 */
 		virtual
-		const ForwardReadableRange *
+		boost::optional<ForwardReadableRange>
 		get_custom_child_layers_order(
 				RenderedGeometryCollection::MainLayerType parent_layer)
 		{
-			return NULL;
+			return boost::none;
 		}
 	};
 }

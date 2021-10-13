@@ -246,6 +246,9 @@ GPlatesOpenGL::GLVertexArray::bind_tex_coord_pointers() const
 
 		bind_tex_coord_pointer(texture_unit);
 	}
+
+	// Restore to default state.
+	glClientActiveTextureARB(GL_TEXTURE0_ARB);
 }
 
 

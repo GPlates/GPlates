@@ -214,7 +214,7 @@ GPlatesUnitTest::MipmapperTest::test_float_mipmapper()
 {
 	// Let's mipmap a 3x5 raster.
 	FloatRawRaster::non_null_ptr_type raster = FloatRawRaster::create(5, 3);
-	float nan = static_cast<float>(GPlatesMaths::nan());
+	float nan = GPlatesMaths::quiet_nan<float>();
 	float raster_data[] = {
 		/* 1st row */ nan, nan, 2.0f, 3.0f, 4.0f,
 		/* 2nd row */ nan, nan, 12.0f, 13.0f, 14.0f,

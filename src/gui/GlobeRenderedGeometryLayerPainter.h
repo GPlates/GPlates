@@ -7,6 +7,7 @@
  * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -47,6 +48,7 @@
 #include "opengl/GLRenderGraphInternalNode.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLUNurbsRenderer.h"
+#include "opengl/Vertex.h"
 
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryVisitor.h"
@@ -77,7 +79,7 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer,
 				RenderSettings &render_settings,
 				RasterColourSchemeMap &raster_colour_scheme_map,
-				TextRenderer::ptr_to_const_type text_renderer_ptr,
+				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme) :
 			d_rendered_geometry_layer(rendered_geometry_layer),
@@ -108,7 +110,15 @@ namespace GPlatesGui
 		}
 
 	private:
+
+		typedef GPlatesOpenGL::Vertex vertex_type;
 	
+		virtual
+		void
+		visit_rendered_arrowed_polyline(
+			const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline);
+
+
 		virtual
 		void
 		visit_rendered_ellipse(
@@ -161,15 +171,6 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedString &rendered_string);
 
 
-		/**
-		 * Every primitive type has one or more vertices of this type.
-		 */
-		struct Vertex
-		{
-			GLfloat x, y, z;
-			rgba8_t colour;
-		};
-
 		//! Typedef for a sequence of drawables.
 		typedef std::vector<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> drawable_seq_type;
 
@@ -179,9 +180,9 @@ namespace GPlatesGui
 		struct LineDrawables
 		{
 			LineDrawables(
-					const GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type &stream_);
+					const GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type &stream_);
 
-			GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type stream;
+			GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type stream;
 			drawable_seq_type nurbs_drawables;
 		};
 
@@ -198,7 +199,7 @@ namespace GPlatesGui
 			/**
 			 * Returns the stream for points of size @a point_size.
 			 */
-			GPlatesOpenGL::GLStreamPrimitives<Vertex> &
+			GPlatesOpenGL::GLStreamPrimitives<vertex_type> &
 			get_point_drawables(
 					float point_size);
 
@@ -215,7 +216,7 @@ namespace GPlatesGui
 			 * There's no point size of line width equivalent for polygons
 			 * so they all get lumped into a single stream.
 			 */
-			GPlatesOpenGL::GLStreamPrimitives<Vertex> &
+			GPlatesOpenGL::GLStreamPrimitives<vertex_type> &
 			get_triangle_drawables()
 			{
 				return *d_triangle_drawables;
@@ -224,7 +225,7 @@ namespace GPlatesGui
 			/**
 			 * Returns the stream for the quad mesh drawables.
 			 */
-			GPlatesOpenGL::GLStreamPrimitives<Vertex> &
+			GPlatesOpenGL::GLStreamPrimitives<vertex_type> &
 			get_quad_drawables()
 			{
 				return *d_quad_drawables;
@@ -247,7 +248,7 @@ namespace GPlatesGui
 			 */
 			typedef std::map<
 					GPlatesMaths::real_t,
-					GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type >
+					GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type >
 							point_size_to_drawables_map_type;
 
 			/**
@@ -269,8 +270,8 @@ namespace GPlatesGui
 			 * Although we keep a separate stream for triangles and quads since they are
 			 * different primitive types and streaming is more efficient that way.
 			 */
-			GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type d_triangle_drawables;
-			GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type d_quad_drawables;
+			GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type d_triangle_drawables;
+			GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type d_quad_drawables;
 
 			void
 			add_points_drawable(
@@ -287,10 +288,6 @@ namespace GPlatesGui
 					float line_width,
 					const GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type &lines_drawable,
 					GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_parent_node);
-
-			static
-			GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type
-			create_stream();
 		};
 
 
@@ -338,7 +335,7 @@ namespace GPlatesGui
 		RasterColourSchemeMap &d_raster_colour_scheme_map;
 
 		//! For rendering text
-		TextRenderer::ptr_to_const_type d_text_renderer_ptr;
+		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
 
 		//! For determining whether a particular point on the globe is visible or not
 		GlobeVisibilityTester d_visibility_tester;
@@ -367,6 +364,10 @@ namespace GPlatesGui
 
 		void
 		set_state_for_non_raster_primitives_on_the_sphere(
+				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
+
+		void
+		set_state_for_raster_primitives_on_the_sphere(
 				GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node);
 
 		void
@@ -418,7 +419,7 @@ namespace GPlatesGui
 				const GPlatesMaths::Vector3D &apex,
 				const GPlatesMaths::Vector3D &cone_axis,
 				rgba8_t rgba8_color,
-				GPlatesOpenGL::GLStreamPrimitives<Vertex> &stream);
+				GPlatesOpenGL::GLStreamPrimitives<vertex_type> &stream);
 	};
 }
 

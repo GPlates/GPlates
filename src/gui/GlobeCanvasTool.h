@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,10 +28,6 @@
 
 #include <boost/noncopyable.hpp>
 
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
-#include "utils/ReferenceCount.h"
-
 
 namespace GPlatesMaths
 {
@@ -47,7 +43,6 @@ namespace GPlatesGui
 {
 	class Globe;
 
-
 	/**
 	 * This class is the abstract base of all canvas tools.
 	 *
@@ -56,15 +51,9 @@ namespace GPlatesGui
 	 * The currently-activated GlobeCanvasTool is referenced by an instance of GlobeCanvasToolChoice.
 	 */
 	class GlobeCanvasTool :
-			public GPlatesUtils::ReferenceCount<GlobeCanvasTool>
+			public boost::noncopyable
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GlobeCanvasTool,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<GlobeCanvasTool,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
 		/**
 		 * Construct a GlobeCanvasTool instance.
@@ -108,8 +97,6 @@ namespace GPlatesGui
 		handle_deactivation()
 		{  }
 
-
-
 		/**
 		 * Handle a left mouse-button press.
 		 *
@@ -138,7 +125,6 @@ namespace GPlatesGui
 			const GPlatesMaths::PointOnSphere &oriented_press_pos_on_globe,
 			bool is_on_globe)
 		{  }
-
 
 		/**
 		 * Handle a left mouse-button click.
@@ -471,7 +457,6 @@ namespace GPlatesGui
 					oriented_centre_of_viewport);
 		}
 
-
 		/**
 		 * Handle a mouse movement when left mouse-button is NOT down.
 		 *
@@ -491,6 +476,7 @@ namespace GPlatesGui
 		{  }
 
 	protected:
+
 		Globe &
 		globe() const
 		{
@@ -570,6 +556,7 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
 	private:
+
 		/**
 		 * The globe which will be re-oriented by globe re-orientation operations.
 		 */

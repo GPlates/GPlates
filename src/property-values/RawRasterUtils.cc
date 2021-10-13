@@ -172,7 +172,7 @@ namespace
 		do_visit(
 				RawRasterNoDataValuePolicies::NanNoDataValue<T> &nan_no_data_value)
 		{
-			d_no_data_value = GPlatesMaths::nan();
+			d_no_data_value = GPlatesMaths::quiet_nan<T>();
 		}
 
 		template<typename T>

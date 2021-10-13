@@ -35,7 +35,7 @@
 
 #include "UniqueId.h"
 
-const UnicodeString
+const GPlatesUtils::UnicodeString
 GPlatesUtils::generate_unique_id()
 {
 	QUuid uuid = QUuid::createUuid();
@@ -47,5 +47,5 @@ GPlatesUtils::generate_unique_id()
 			uuid.data4[2], uuid.data4[3], uuid.data4[4], uuid.data4[5], uuid.data4[6],
 			uuid.data4[7]);
 
-	return UnicodeString(buffer);
+	return GPlatesUtils::UnicodeString(buffer);
 }

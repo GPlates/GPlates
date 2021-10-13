@@ -29,18 +29,19 @@
 #include <fstream>
 #include <vector>
 #include <QTextStream>
-#include <unicode/ustream.h>
 
 #include "GMTFormatWriter.h"
 
 #include "GMTFormatGeometryExporter.h"
 #include "PlatesLineFormatHeaderVisitor.h"
 #include "ErrorOpeningFileForWritingException.h"
-#include "model/FeatureHandle.h"
-#include "model/TopLevelPropertyInline.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "global/unicode.h"
+
+#include "model/FeatureHandle.h"
+#include "model/TopLevelPropertyInline.h"
 
 #include "utils/StringFormattingUtils.h"
 

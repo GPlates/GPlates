@@ -2,7 +2,7 @@
 
 /**
  * \file 
- * File specific comments.
+ * Contains the definition of class EditWidgetGroupBox.
  *
  * Most recent change:
  *   $Date$
@@ -51,11 +51,13 @@ namespace GPlatesPropertyValues
 	class GmlPolygon;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
+	class GpmlArray; 
 	class GpmlKeyValueDictionary;
 	class GpmlMeasure;
 	class GpmlOldPlatesHeader;
 	class GpmlPlateId;
 	class GpmlPolarityChronId;
+	class GpmlStringList;
 	class XsBoolean;
 	class XsDouble;
 	class XsInteger;
@@ -64,20 +66,22 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesQtWidgets
 {
-	class EditTimeInstantWidget;
-	class EditTimePeriodWidget;
-	class EditOldPlatesHeaderWidget;
+	class EditAngleWidget;
+	class EditBooleanWidget;
 	class EditDoubleWidget;
 	class EditEnumerationWidget;
 	class EditGeometryWidget;
 	class EditIntegerWidget;
+	class EditOldPlatesHeaderWidget;
 	class EditPlateIdWidget;
 	class EditPolarityChronIdWidget;
-	class EditAngleWidget;
-	class EditStringWidget;
-	class EditBooleanWidget;
 	class EditShapefileAttributesWidget;
-	
+	class EditStringListWidget;
+	class EditStringWidget;
+	class EditTimeInstantWidget;
+	class EditTimePeriodWidget;
+	class EditTimeSequenceWidget;
+
 
 	/**
 	 * A collection of pre-allocated property edit widgets, which are hidden/shown
@@ -348,6 +352,13 @@ namespace GPlatesQtWidgets
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
+		activate_edit_string_list_widget(
+				GPlatesPropertyValues::GpmlStringList &gpml_string_list);
+
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 */
+		void
 		activate_edit_string_widget(
 				GPlatesPropertyValues::XsString &xs_string);
 
@@ -364,6 +375,13 @@ namespace GPlatesQtWidgets
 		void
 		activate_edit_shapefile_attributes_widget(
 				GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
+
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 */
+		void
+		activate_edit_time_sequence_widget(
+				GPlatesPropertyValues::GpmlArray &gpml_array);
 
 		/**
 		 * Accessor for the EditGeometryWidget, to support the extra functionality
@@ -441,9 +459,11 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::EditPlateIdWidget *d_edit_plate_id_widget_ptr;
 		GPlatesQtWidgets::EditPolarityChronIdWidget *d_edit_polarity_chron_id_widget_ptr;
 		GPlatesQtWidgets::EditAngleWidget *d_edit_angle_widget_ptr;
+		GPlatesQtWidgets::EditStringListWidget *d_edit_string_list_widget_ptr;
 		GPlatesQtWidgets::EditStringWidget *d_edit_string_widget_ptr;
 		GPlatesQtWidgets::EditBooleanWidget *d_edit_boolean_widget_ptr;
 		GPlatesQtWidgets::EditShapefileAttributesWidget *d_edit_shapefile_attributes_widget_ptr;
+		GPlatesQtWidgets::EditTimeSequenceWidget *d_edit_time_sequence_widget_ptr;
 		
 		/**
 		 * The verb in front of the title of the groupbox, prepended to the PropertyValue

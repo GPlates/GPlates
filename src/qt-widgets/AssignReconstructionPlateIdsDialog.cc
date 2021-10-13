@@ -613,9 +613,9 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 			this, SLOT(react_partition_options_radio_button(bool)));
 
 	// Listen for feature properties radio button selections.
-	QObject::connect(radio_button_assign_plate_id, SIGNAL(toggled(bool)),
+	QObject::connect(check_box_assign_plate_id, SIGNAL(toggled(bool)),
 			this, SLOT(react_feature_properties_options_radio_button(bool)));
-	QObject::connect(radio_button_assign_time_period, SIGNAL(toggled(bool)),
+	QObject::connect(check_box_assign_time_period, SIGNAL(toggled(bool)),
 			this, SLOT(react_feature_properties_options_radio_button(bool)));
 
 	// Set the initial reconstruction time for the double spin box.
@@ -629,14 +629,10 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 	// it overlaps the most.
 	radio_button_assign_features->setChecked(true);
 
-	// The feature properties buttons are not mutually exclusive.
-	radio_button_assign_plate_id->setAutoExclusive(false);
-	radio_button_assign_time_period->setAutoExclusive(false);
-
 	// Copy plate ids from partitioning polygon?
-	radio_button_assign_plate_id->setChecked(d_assign_plate_ids);
+	check_box_assign_plate_id->setChecked(d_assign_plate_ids);
 	// Copy time periods from partitioning polygon?
-	radio_button_assign_time_period->setChecked(d_assign_time_periods);
+	check_box_assign_time_period->setChecked(d_assign_time_periods);
 }
 
 
@@ -948,8 +944,8 @@ void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_feature_properties_options_radio_button(
 		bool checked)
 {
-	d_assign_plate_ids = radio_button_assign_plate_id->isChecked();
-	d_assign_time_periods = radio_button_assign_time_period->isChecked();
+	d_assign_plate_ids = check_box_assign_plate_id->isChecked();
+	d_assign_time_periods = check_box_assign_time_period->isChecked();
 }
 
 

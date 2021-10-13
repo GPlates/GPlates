@@ -7,6 +7,7 @@
  * $Date$
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -29,6 +30,7 @@
 
 namespace GPlatesViewOperations
 {
+	class RenderedArrowedPolyline;
 	class RenderedEllipse;
 	class RenderedPointOnSphere;
 	class RenderedMultiPointOnSphere;
@@ -53,6 +55,12 @@ namespace GPlatesViewOperations
 	public:
 		virtual
 		~ConstRenderedGeometryVisitor()
+		{  }
+
+		virtual
+		void
+		visit_rendered_arrowed_polyline(
+				const GPlatesViewOperations::RenderedArrowedPolyline &)
 		{  }
 
 		virtual

@@ -156,14 +156,20 @@ namespace GPlatesGui
 		//
 
 		void
-		handle_shift_left_click(
-			const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-			const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-			bool is_on_globe);
-
-		void
 		handle_create_new_feature(
 			GPlatesModel::FeatureHandle::weak_ref);
+
+		/**
+		 * The slot that gets called when the user changes the "Topology Type" combo box.
+		 */
+		void
+		handle_topology_type_changed(int index);
+
+		/**
+		 * The slot that gets called when the user clicks the Mesh button 
+		 */
+		void
+		handle_mesh(double shape_factor, double max_edge);
 
 
 		/**
@@ -177,6 +183,17 @@ namespace GPlatesGui
 		 */
 		void
 		handle_add_feature();
+
+		/**
+		 * The slot that gets called when the user clicks "Remove Focused Feature".
+		 *
+		 * This will remove the focused feature 
+		 *
+		 * The topology feature being edited is not modified yet though - to do that
+		 * call @a handle_apply.
+		 */
+		void
+		handle_remove_feature();
 
 		/**
 		 * The slot that gets called when the user clicks "Remove All Features".
@@ -439,6 +456,10 @@ namespace GPlatesGui
 		 */ 
 		GPlatesModel::FeatureHandle::weak_ref d_topology_feature_ref;
 
+		// shape bound : 0.125 is the default shape bound. It corresponds to about 20.6 degree.
+		double d_shape_factor;
+		// max edge is the longest edge length
+		double d_max_edge;
 
 		//
 		// private functions 

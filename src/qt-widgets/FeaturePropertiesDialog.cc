@@ -23,26 +23,51 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <vector>
+#include <typeinfo>
+#include <boost/optional.hpp>
+#include <boost/foreach.hpp>
 #include <QString>
+#include <QStringList>
+
 #include "FeaturePropertiesDialog.h"
+
+#include "ChangeFeatureTypeDialog.h"
 
 #include "model/FeatureType.h"
 #include "model/FeatureId.h"
 #include "model/FeatureRevision.h"
-#include "utils/UnicodeStringUtils.h"
+#include "model/FeatureVisitor.h"
+#include "model/PropertyValue.h"
+#include "model/TopLevelPropertyInline.h"
+
 #include "presentation/ViewState.h"
+
+#include "utils/UnicodeStringUtils.h"
 
 
 GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	QDialog(parent_, Qt::Window),
-	d_query_feature_properties_widget(new GPlatesQtWidgets::QueryFeaturePropertiesWidget(
-			view_state_, this)),
-	d_edit_feature_properties_widget(new GPlatesQtWidgets::EditFeaturePropertiesWidget(
-			view_state_, this)),
-	d_view_feature_geometries_widget(new GPlatesQtWidgets::ViewFeatureGeometriesWidget(
-			view_state_, this))
+	d_query_feature_properties_widget(
+			new QueryFeaturePropertiesWidget(
+				view_state_,
+				this)),
+	d_edit_feature_properties_widget(
+			new EditFeaturePropertiesWidget(
+				view_state_,
+				this)),
+	d_view_feature_geometries_widget(
+			new ViewFeatureGeometriesWidget(
+				view_state_,
+				this)),
+	d_change_feature_type_dialog(
+			new ChangeFeatureTypeDialog(
+				view_state_.get_application_state(),
+				view_state_.get_feature_focus(),
+				this))
 {
 	setupUi(this);
 	
@@ -69,6 +94,13 @@ GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
 			SLOT(display_feature(GPlatesGui::FeatureFocus &)));
+
+	// Handle feature type changes.
+	QObject::connect(
+			toolbutton_change_feature_type,
+			SIGNAL(clicked()),
+			this,
+			SLOT(pop_up_change_feature_type_dialog()));
 	
 	// Refresh display - since the feature ref is invalid at this point,
 	// the dialog should lock everything down that might otherwise cause problems.
@@ -154,7 +186,8 @@ GPlatesQtWidgets::FeaturePropertiesDialog::pop_up()
 
 
 void
-GPlatesQtWidgets::FeaturePropertiesDialog::setVisible(bool visible)
+GPlatesQtWidgets::FeaturePropertiesDialog::setVisible(
+		bool visible)
 {
 	if ( ! visible) {
 		// We are closing. Ensure things are left tidy.
@@ -165,16 +198,30 @@ GPlatesQtWidgets::FeaturePropertiesDialog::setVisible(bool visible)
 }
 
 
-
 void
 GPlatesQtWidgets::FeaturePropertiesDialog::handle_tab_change(
 		int index)
 {
 	const QIcon icon = tabwidget_query_edit->tabIcon(index);
-	if(index == 0)
+	if (index == 0)
 	{
 		d_query_feature_properties_widget->load_data_if_necessary();
 	}
 	setWindowIcon(icon);
+}
+
+
+void
+GPlatesQtWidgets::FeaturePropertiesDialog::pop_up_change_feature_type_dialog()
+{
+	if (d_feature_ref.is_valid())
+	{
+		d_change_feature_type_dialog->populate(d_feature_ref);
+
+		// Show the Change Feature Type dialog as modal.
+		d_change_feature_type_dialog->exec();
+
+		refresh_display();
+	}
 }
 

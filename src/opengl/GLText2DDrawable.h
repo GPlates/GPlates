@@ -67,7 +67,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				const GPlatesGui::TextRenderer::ptr_to_const_type &text_renderer,
+				const GPlatesGui::TextRenderer::non_null_ptr_to_const_type &text_renderer,
 				int x,
 				int y,
 				const QString &string,
@@ -97,7 +97,7 @@ namespace GPlatesOpenGL
 
 	private:
 		//! For rendering text
-		GPlatesGui::TextRenderer::ptr_to_const_type d_text_renderer;
+		GPlatesGui::TextRenderer::non_null_ptr_to_const_type d_text_renderer;
 
 		int d_x;
 		int d_y;
@@ -109,7 +109,7 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLText2DDrawable(
-				const GPlatesGui::TextRenderer::ptr_to_const_type &text_renderer,
+				const GPlatesGui::TextRenderer::non_null_ptr_to_const_type &text_renderer,
 				int x,
 				int y,
 				const QString &string,

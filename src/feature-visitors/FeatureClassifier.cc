@@ -29,6 +29,7 @@
 #include "FeatureClassifier.h"
 
 #include "model/TopLevelPropertyInline.h"
+
 #include "property-values/GpmlConstantValue.h"
 
 

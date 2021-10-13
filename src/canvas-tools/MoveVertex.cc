@@ -38,12 +38,14 @@ namespace GPlatesMaths
 }
 
 GPlatesCanvasTools::MoveVertex::MoveVertex(
+		const status_bar_callback_type &status_bar_callback,
 		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-		const GPlatesQtWidgets::ViewportWindow *viewport_window):
+		const GPlatesQtWidgets::ViewportWindow *viewport_window) :
+	CanvasTool(status_bar_callback),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_geometry_operation_target(&geometry_operation_target),
 	d_move_vertex_geometry_operation(
@@ -55,8 +57,7 @@ GPlatesCanvasTools::MoveVertex::MoveVertex(
 				query_proximity_threshold,
 				viewport_window)),
 	d_is_in_drag(false)
-{
-}
+{  }
 
 
 GPlatesCanvasTools::MoveVertex::~MoveVertex()
@@ -72,23 +73,7 @@ GPlatesCanvasTools::MoveVertex::handle_activation()
 			d_geometry_operation_target,
 			d_move_vertex_geometry_operation.get());
 
-	switch (get_view())
-	{
-		case GLOBE_VIEW:
-			set_status_bar_message(QObject::tr(
-					"Drag to move a vertex of the current geometry."
-					" Ctrl+drag to re-orient the globe."));
-			break;
-
-		case MAP_VIEW:
-			set_status_bar_message(QObject::tr(
-					"Drag to move a vertex of the current geometry."
-					" Ctrl+drag to pan the map."));
-			break;
-
-		default:
-			break;
-	}
+	set_status_bar_message(QT_TR_NOOP("Drag to move a vertex of the current geometry."));
 }
 
 void
@@ -157,23 +142,24 @@ GPlatesCanvasTools::MoveVertex::handle_left_drag(
 		double initial_proximity_inclusion_threshold,
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
-		double current_proximity_inclusion_threshold)
+		double current_proximity_inclusion_threshold,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
 	handle_left_drag(
-		d_is_in_drag,
-		d_move_vertex_geometry_operation.get(),
-		initial_point_on_sphere,
-		initial_proximity_inclusion_threshold,
-		current_point_on_sphere);
+			d_is_in_drag,
+			d_move_vertex_geometry_operation.get(),
+			initial_point_on_sphere,
+			initial_proximity_inclusion_threshold,
+			current_point_on_sphere);
 }
 
 void
 GPlatesCanvasTools::MoveVertex::handle_left_drag(
-	bool &is_in_drag,
-	GPlatesViewOperations::MoveVertexGeometryOperation *move_vertex_geometry_operation,
-	const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
-	const double &closeness_inclusion_threshold,
-	const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe)
+		bool &is_in_drag,
+		GPlatesViewOperations::MoveVertexGeometryOperation *move_vertex_geometry_operation,
+		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
+		const double &closeness_inclusion_threshold,
+		const GPlatesMaths::PointOnSphere &oriented_current_pos_on_globe)
 {
 
 	if ( ! is_in_drag)
@@ -195,7 +181,8 @@ GPlatesCanvasTools::MoveVertex::handle_left_release_after_drag(
 		double initial_proximity_inclusion_threshold,
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
-		double current_proximity_inclusion_threshold)
+		double current_proximity_inclusion_threshold,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
 	// In case clicked and released at same time.
 	handle_left_drag(
@@ -204,7 +191,8 @@ GPlatesCanvasTools::MoveVertex::handle_left_release_after_drag(
 			initial_proximity_inclusion_threshold,
 			current_point_on_sphere,
 			is_on_earth,
-			current_proximity_inclusion_threshold);
+			current_proximity_inclusion_threshold,
+			centre_of_viewport);
 
 	d_move_vertex_geometry_operation->end_drag(current_point_on_sphere);
 	d_is_in_drag = false;

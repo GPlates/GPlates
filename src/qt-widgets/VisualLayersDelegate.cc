@@ -43,15 +43,13 @@ GPlatesQtWidgets::VisualLayersDelegate::VisualLayersDelegate(
 		GPlatesGui::VisualLayersProxy &visual_layers,
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
-		QString &open_file_path,
-		ReadErrorAccumulationDialog *read_errors_dialog,
+		ViewportWindow *viewport_window,
 		QObject *parent_) :
 	QItemDelegate(parent_),
 	d_visual_layers(visual_layers),
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_open_file_path(open_file_path),
-	d_read_errors_dialog(read_errors_dialog)
+	d_viewport_window(viewport_window)
 {  }
 
 
@@ -88,8 +86,7 @@ GPlatesQtWidgets::VisualLayersDelegate::createEditor(
 			d_visual_layers,
 			d_application_state,
 			d_view_state,
-			d_open_file_path,
-			d_read_errors_dialog,
+			d_viewport_window,
 			parent_);
 }
 

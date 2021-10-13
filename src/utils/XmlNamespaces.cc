@@ -73,7 +73,7 @@ GPlatesUtils::XmlNamespaces::Internals::xsi_standard_alias()
 
 GPlatesUtils::StringSet::SharedIterator
 GPlatesUtils::XmlNamespaces::get_standard_alias_for_namespace(
-		const UnicodeString &namespace_uri)
+		const GPlatesUtils::UnicodeString &namespace_uri)
 {
 	GPlatesUtils::StringSet& aliases = 
 		GPlatesModel::StringSetSingletons::xml_namespace_alias_instance();
@@ -95,10 +95,10 @@ GPlatesUtils::XmlNamespaces::get_standard_alias_for_namespace(
 
 GPlatesUtils::StringSet::SharedIterator
 GPlatesUtils::XmlNamespaces::get_namespace_for_standard_alias(
-		const UnicodeString &namespace_alias)
+		const GPlatesUtils::UnicodeString &namespace_alias)
 {
 	GPlatesUtils::StringSet& aliases = 
-		GPlatesModel::StringSetSingletons::xml_namespace_alias_instance();
+		GPlatesModel::StringSetSingletons::xml_namespace_instance();
 	if (namespace_alias == GPML_STANDARD_ALIAS)
 	{
 		return aliases.insert(GPML_NAMESPACE);

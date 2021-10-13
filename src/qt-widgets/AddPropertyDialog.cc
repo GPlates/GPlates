@@ -32,9 +32,14 @@
 #include "EditFeaturePropertiesWidget.h"
 #include "InvalidPropertyValueException.h"
 
+#include "file-io/FeaturePropertiesMap.h"
+
 #include "model/PropertyName.h"
+
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/TemplateTypeParameterType.h"
+
+#include "utils/UnicodeStringUtils.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -81,7 +86,7 @@ namespace
 		{ "gpml:conjugatePlateId", "gpml:plateId", false, true },	// half-way support for Isochron.
 		{ "gpml:continentalSide", "gpml:ContinentalBoundarySideEnumeration", false, false }, // Enumeration
 		{ "gpml:reconstructionMethod", "gpml:ReconstructionMethodEnumeration", false, false }, // Enumeration
-		{ "gpml:depthList", "gpml:depthList", false, false },
+		{ "gpml:depth", "xs:double", false, false },
 		{ "gml:description", "xs:string", false, true },
 		{ "gpml:dipAngle", "gpml:angle", false, false },
 		{ "gpml:dipSide", "gpml:DipSideEnumeration", false, false }, // Enumeration
@@ -113,8 +118,15 @@ namespace
 		{ "gpml:rightPlate", "gpml:plateId", false, true },
 	//	{ "gpml:rightUnit", "gpml:FeatureReference", false, false }, // FeatureReference<AbstractRockUnit>
 	//	{ "gpml:shipTrack", "gpml:FeatureReference", false, false }, // FeatureReference<MagneticAnomalyShipTrack>
+		{ "gpml:slabEdgeType", "xs:string", false, false }, 
+		{ "gpml:slabFlatLying", "xs:boolean", false, false }, 
+		{ "gpml:slabFlatLyingDepth", "xs:double", false, false }, 
 		{ "gpml:strikeSlip", "gpml:StrikeSlipEnumeration", false, false },
 		{ "gpml:subductionPolarity", "gpml:SubductionPolarityEnumeration", true, false }, // TimeDependentPropertyValue<>
+		{ "gpml:subductionZoneAge", "xs:double", false, false }, 
+		{ "gpml:subductionZoneDeepDip", "xs:double", false, false }, 
+		{ "gpml:subductionZoneDepth", "xs:double", false, false }, 
+
 	//	{ "gpml:totalReconstructionPole", "gpml:FiniteRotation", true, false }, // For TotalReconstructionSequence. IrregularSampling<FiniteRotation>
 	//	{ "gpml:type", "gpml:AbsoluteReferenceFrameEnumeration", false, false }, // Enumeration. For AbsoluteReferenceFrame.
 		{ "gpml:unclassifiedGeometry", "gml:MultiPoint", true, false },	// _Geometry
@@ -339,6 +351,7 @@ GPlatesQtWidgets::AddPropertyDialog::reset()
 	combobox_add_property_name->setCurrentIndex(default_index);
 	set_appropriate_property_value_type(default_index);
 	set_appropriate_edit_widget();
+	check_property_name_validity(default_index);
 }
 
 
@@ -359,6 +372,9 @@ GPlatesQtWidgets::AddPropertyDialog::set_up_add_property_box()
 	// Choose appropriate edit widget for property type.
 	QObject::connect(combobox_add_property_type, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(set_appropriate_edit_widget()));
+	// Check if the selected property is appropriate for the current feature's type.
+	QObject::connect(combobox_add_property_type, SIGNAL(currentIndexChanged(int)),
+			this, SLOT(check_property_name_validity(int)));
 
 	// Add property when user hits "Add".
 	QObject::connect(buttonBox, SIGNAL(accepted()),
@@ -401,6 +417,53 @@ GPlatesQtWidgets::AddPropertyDialog::set_appropriate_edit_widget()
 {
 	d_edit_widget_group_box_ptr->activate_widget_by_property_value_name(
 			combobox_add_property_type->currentText());
+}
+
+
+void
+GPlatesQtWidgets::AddPropertyDialog::check_property_name_validity(
+		int index)
+{
+	bool property_name_valid = true;
+
+	try
+	{
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref =
+			d_edit_feature_properties_widget_ptr->current_feature();
+
+		if (feature_ref.is_valid())
+		{
+			GPlatesUtils::Parse<GPlatesModel::PropertyName> parse;
+			GPlatesModel::PropertyName property_name = parse(combobox_add_property_name->currentText());
+
+			// Check whether the file-io code thinks the selected property is valid for the feature type.
+			const GPlatesFileIO::FeaturePropertiesMap &feature_properties_map =
+				GPlatesFileIO::FeaturePropertiesMap::instance();
+			GPlatesFileIO::FeaturePropertiesMap::const_iterator feature_properties_iter =
+				feature_properties_map.find(feature_ref->feature_type());
+			if (feature_properties_iter != feature_properties_map.end())
+			{
+				typedef GPlatesFileIO::PropertyCreationUtils::PropertyCreatorMap property_creator_map_type;
+				const property_creator_map_type &property_creator_map = feature_properties_iter->second;
+				property_name_valid = (property_creator_map.find(property_name) != property_creator_map.end());
+
+				if (!property_name_valid)
+				{
+					static const char *WARNING_TEXT = "%1 is not a valid property for a %2 feature.";
+					label_warning->setText(tr(WARNING_TEXT).arg(
+							combobox_add_property_name->currentText()).arg(
+							GPlatesUtils::make_qstring_from_icu_string(
+								feature_ref->feature_type().build_aliased_name())));
+				}
+			}
+		}
+	}
+	catch (const GPlatesUtils::ParseError &)
+	{
+		// Do nothing and fall through.
+	}
+
+	widget_warning->setVisible(!property_name_valid);
 }
 
 

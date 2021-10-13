@@ -232,13 +232,6 @@ GPlatesAppLogic::FeatureCollectionFileState::remove_file(
 			file_slot.d_is_active_in_model,
 			GPLATES_ASSERTION_SOURCE);
 
-	// If file is currently active in the GUI then deactivate it before it's removed.
-	if (file_slot.d_file_slot_extra->d_active)
-	{
-		// File is deactivated before its removed.
-		emit file_state_file_activation_changed(*this, file, false);
-	}
-
 	// Unload the feature collection - remove it from the feature store root in the model.
 	const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 			file_slot.d_file_slot_extra->d_file_ref->get_feature_collection();
@@ -305,43 +298,6 @@ GPlatesAppLogic::FeatureCollectionFileState::set_file_info(
 	file_reference file_ref(*this, file_handle);
 	emit file_state_file_info_changed(*this, file_ref);
 	emit file_state_changed(*this);
-}
-
-
-void
-GPlatesAppLogic::FeatureCollectionFileState::set_file_active(
-		file_handle_type file_handle,
-		bool activate)
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			file_handle < d_file_slots.size() &&
-					d_file_slots[file_handle].d_is_active_in_model,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Return without emitting signals if the active state hasn't changed.
-	if (activate == d_file_slots[file_handle].d_file_slot_extra->d_active)
-	{
-		return;
-	}
-
-	d_file_slots[file_handle].d_file_slot_extra->d_active = activate;
-
-	file_reference file_ref(*this, file_handle);
-	emit file_state_file_activation_changed(*this, file_ref, activate);
-	emit file_state_changed(*this);
-}
-
-
-bool
-GPlatesAppLogic::FeatureCollectionFileState::is_file_active(
-		file_handle_type file_handle) const
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			file_handle < d_file_slots.size() &&
-					d_file_slots[file_handle].d_is_active_in_model,
-			GPLATES_ASSERTION_SOURCE);
-
-	return d_file_slots[file_handle].d_file_slot_extra->d_active;
 }
 
 
@@ -527,22 +483,6 @@ GPlatesAppLogic::FeatureCollectionFileState::destroying_feature_collection(
 	d_free_file_handles.push_back(file_handle);
 }
 
-
-boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref>
-GPlatesAppLogic::get_feature_collection_containing_feature(
-		FeatureCollectionFileState &file_state_ref,
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
-{
-	boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference> file_ref;
-	if(file_ref = get_file_reference_containing_feature(file_state_ref,feature_ref))
-	{
-		return (*file_ref).get_file().get_feature_collection();
-	}
-	else
-	{
-		return boost::none;
-	}
-}
 
 boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 GPlatesAppLogic::get_file_reference_containing_feature(

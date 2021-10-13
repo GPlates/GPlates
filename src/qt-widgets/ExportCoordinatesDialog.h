@@ -26,16 +26,24 @@
 #ifndef GPLATES_QTWIDGETS_EXPORTCOORDINATESDIALOG_H
 #define GPLATES_QTWIDGETS_EXPORTCOORDINATESDIALOG_H
 
-#include <QFileDialog>
-#include <QTextStream>
 #include <boost/optional.hpp>
+#include <QTextStream>
+
 #include "ExportCoordinatesDialogUi.h"
 
+#include "SaveFileDialog.h"
+
 #include "maths/GeometryOnSphere.h"
+
 
 namespace GPlatesFileIO
 {
 	class GeometryExporter;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
 }
 
 namespace GPlatesQtWidgets
@@ -52,6 +60,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ExportCoordinatesDialog(
+				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 		
 		/**
@@ -85,7 +94,7 @@ namespace GPlatesQtWidgets
 		}
 		
 		/**
-		 * Handles the seleciton of a filename to export to via QFileDialog.
+		 * Handles the selection of a filename to export to via QFileDialog.
 		 */
 		void
 		pop_up_file_browser();
@@ -130,16 +139,8 @@ namespace GPlatesQtWidgets
 		 */
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry_opt_ptr;
 
+		SaveFileDialog d_save_file_dialog;
 
-		/**
-		 * A QFileDialog instance that we use for specifying the destination file.
-		 * We keep it as a member so that it will remember where the user last
-		 * saved to, for convenience.
-		 *
-		 * Memory managed by Qt.
-		 */
-		QFileDialog *d_export_file_dialog;
-		
 		/**
 		 * The small information dialog that pops up to explain the reason for the
 		 * checkbox_polygon_terminating_point option.

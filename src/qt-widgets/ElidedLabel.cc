@@ -28,6 +28,8 @@
 #include <QFrame>
 #include <QFontInfo>
 #include <QLayout>
+#include <QMouseEvent>
+#include <QDebug>
 
 #include "ElidedLabel.h"
 
@@ -176,6 +178,7 @@ GPlatesQtWidgets::ElidedLabel::InternalLabel::enterEvent(
 	// Only show a tool tip if currently elided.
 	if (d_is_elided)
 	{
+#if 0
 		// The tool tip should have the exact same font as 'this'.
 		QFontInfo font_info(font());
 		QFont tool_tip_font(
@@ -191,7 +194,10 @@ GPlatesQtWidgets::ElidedLabel::InternalLabel::enterEvent(
 				d_full_text,
 				tool_tip_font,
 				tool_tip_pos,
-				height());
+				height(),
+				width());
+#endif
+		ElidedLabelToolTip::showToolTip(d_full_text, this);
 	}
 }
 
@@ -200,6 +206,7 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::ElidedLabelToolTip() :
 	QDialog(NULL, Qt::Popup),
 	d_internal_label_frame(new QFrame(this)),
 	d_internal_label(new QLabel(this)),
+	d_master_label(NULL),
 	d_inside_do_show(false)
 {
 	// Put the internal label into a frame.
@@ -208,24 +215,36 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::ElidedLabelToolTip() :
 
 	// Put the frame into this widget.
 	QtWidgetUtils::add_widget_to_placeholder(d_internal_label_frame, this);
+
+	setMouseTracking(true);
+	d_internal_label->setMouseTracking(true);
+	d_internal_label->installEventFilter(this);
 }
 
 
 void
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::showToolTip(
 		const QString &text,
-		const QFont &text_font,
-		const QPoint &global_pos,
-		int label_height)
+		QLabel *master_label)
 {
-	instance().do_show(text, text_font, global_pos, label_height);
+	// FIXME: Temporarily disabling tooltips on Windows as two computers so far lose mouse/key
+	// focus for all applications when a tooltip in the Layers dialog pops up.
+	// CTRL+ALT+DEL is the only way to break the freeze after which GPlates can continue to be used.
+#if !defined(WIN32)
+	instance().do_show(text, master_label);
+#endif
 }
 
 
 void
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::hideToolTip()
 {
+	// FIXME: Temporarily disabling tooltips on Windows as two computers so far lose mouse/key
+	// focus for all applications when a tooltip in the Layers dialog pops up.
+	// CTRL+ALT+DEL is the only way to break the freeze after which GPlates can continue to be used.
+#if !defined(WIN32)
 	instance().do_hide();
+#endif
 }
 
 
@@ -233,7 +252,38 @@ void
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::leaveEvent(
 		QEvent *event_)
 {
-	hide();
+	do_hide();
+}
+
+
+void
+GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::mouseMoveEvent(
+		QMouseEvent *event_)
+{
+	QPointF event_pos = event_->pos();
+	if (event_pos.x() < 0 || event_pos.x() > d_master_label->width() ||
+			event_pos.y() < 0 || event_pos.y() > height())
+	{
+		do_hide();
+	}
+}
+
+
+bool
+GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::eventFilter(
+		QObject *object_,
+		QEvent *event_)
+{
+	if (event_->type() == QEvent::MouseMove)
+	{
+		QMouseEvent *mouse_event = static_cast<QMouseEvent *>(event_);
+		if (mouse_event->pos().x() > d_master_label->width())
+		{
+			do_hide();
+			return true;
+		}
+	}
+	return false;
 }
 
 
@@ -248,14 +298,18 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::instance()
 void
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
 		const QString &text,
-		const QFont &text_font,
-		const QPoint &global_pos,
-		int label_height)
+		QLabel *master_label)
 {
 	if (d_inside_do_show)
 	{
 		return;
 	}
+
+	if (isVisible() && d_master_label == master_label)
+	{
+		return;
+	}
+	d_master_label = master_label;
 
 	// On MacOS, we're getting infinite loops. What's happening is that the hide()
 	// call below causes the tooltip to disappear, which sometimes causes the
@@ -267,7 +321,16 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
 
 	// Shift towards top-left because of frame.
 	int frame_width = d_internal_label_frame->frameWidth();
+	QPoint global_pos = master_label->mapToGlobal(QPoint(0, 0));
 	move(global_pos - QPoint(frame_width, frame_width));
+
+	// The tool tip should have the exact same font as the master label.
+	QFontInfo font_info(master_label->font());
+	QFont text_font(
+			font_info.family(),
+			font_info.pointSize(),
+			font_info.weight(),
+			font_info.italic());
 
 	// This little song and dance is necessary to make sure the tool tip is resized
 	// correctly when the user moves the mouse from one ElidedLabel to another.
@@ -276,8 +339,10 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
 	hide();
 	show();
 	QSize new_size = layout()->sizeHint();
-	new_size.setHeight(label_height + frame_width * 2);
+	new_size.setHeight(master_label->height() + frame_width * 2);
 	resize(new_size);
+
+	grabMouse();
 
 	d_inside_do_show = false;
 }
@@ -286,6 +351,7 @@ GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_show(
 void
 GPlatesQtWidgets::ElidedLabel::ElidedLabelToolTip::do_hide()
 {
+	releaseMouse();
 	hide();
 }
 

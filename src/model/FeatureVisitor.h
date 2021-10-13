@@ -57,6 +57,7 @@ namespace GPlatesPropertyValues
 	class GmlRectifiedGrid;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
+	class GpmlArray;
 	class GpmlConstantValue;
 	class GpmlFeatureReference;
 	class GpmlFeatureSnapshotReference;
@@ -73,6 +74,7 @@ namespace GPlatesPropertyValues
 	class GpmlPropertyDelegate;
 	class GpmlRasterBandNames;
 	class GpmlRevisionId;
+	class GpmlStringList;
 	class GpmlTopologicalPolygon;
 	class GpmlTopologicalLineSection;
 	class GpmlTopologicalIntersection;
@@ -188,6 +190,7 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlRectifiedGrid>::type gml_rectified_grid_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimeInstant>::type gml_time_instant_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimePeriod>::type gml_time_period_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlArray>::type gpml_array_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlConstantValue>::type gpml_constant_value_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureReference>::type gpml_feature_reference_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureSnapshotReference>::type gpml_feature_snapshot_reference_type;
@@ -204,6 +207,7 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPropertyDelegate>::type gpml_property_delegate_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlRasterBandNames>::type gpml_raster_band_names_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlRevisionId>::type gpml_revision_id_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlStringList>::type gpml_string_list_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPolygon>::type gpml_topological_polygon_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalLineSection>::type gpml_topological_line_section_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalIntersection>::type gpml_topological_intersection_type;
@@ -451,6 +455,14 @@ namespace GPlatesModel
 				gml_time_period_type &gml_time_period)
 		{  }
 
+
+		virtual
+		void
+		visit_gpml_array(
+				gpml_array_type &gpml_array)
+		{  }
+
+
 		virtual
 		void
 		visit_gpml_constant_value(
@@ -545,6 +557,12 @@ namespace GPlatesModel
 		void
 		visit_gpml_revision_id(
 				gpml_revision_id_type &gpml_revision_id) 
+		{  }
+
+		virtual
+		void
+		visit_gpml_string_list(
+				gpml_string_list_type &gpml_string_list)
 		{  }
 
 		virtual

@@ -70,8 +70,8 @@ namespace {
 } // anonymous namespace
 
 
-namespace GPlatesGui {
-	
+namespace GPlatesGui
+{
 	void
 	GPlatesGui::CsvExport::export_table(
 		const QString &filename,
@@ -88,20 +88,25 @@ namespace GPlatesGui {
 			int num_columns = table.columnCount();
 			int num_rows = table.rowCount();
 
-			int column_count;
-			int row_count;
+			int column;
+			int row;
 			QTableWidgetItem *item;
-			QString item_string;
+			QString item_as_str;
 
-			for(row_count = 0 ; row_count < num_rows ; row_count++)
+			for(row = 0 ; row < num_rows; row++)
 			{
-				for (column_count = 0 ; column_count < num_columns  ; column_count++)
+				for (column = 0 ; column < num_columns; column++)
 				{
-					item = table.item(row_count,column_count);
-					item_string = csv_quote_if_necessary(item->text(), options);
-					os << item_string.toStdString().c_str();
-				
-					if (column_count < (num_columns - 1)){
+					// Beware:  QTableWidget::item returns a NULL pointer
+					// if no item has been set at the (row, column) position.
+					item = table.item(row, column);
+					if (item) {
+						item_as_str = csv_quote_if_necessary(item->text(), options);
+						os << item_as_str.toStdString().c_str();
+					}
+
+					// Separate fields with a delimiter.
+					if (column < (num_columns - 1)) {
 						os << options.delimiter;
 					}
 	

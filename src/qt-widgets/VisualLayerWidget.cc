@@ -24,7 +24,6 @@
  */
 
 #include <boost/shared_ptr.hpp>
-#include <boost/iterator/zip_iterator.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -34,7 +33,6 @@
 #include <QString>
 #include <QMetaType>
 #include <QIcon>
-#include <QPixmap>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QByteArray>
@@ -55,137 +53,24 @@
 #include "file-io/File.h"
 #include "file-io/FileInfo.h"
 
-#include "gui/Colour.h"
-#include "gui/HTMLColourNames.h"
-#include "gui/LayerTaskTypeInfo.h"
 #include "gui/VisualLayersListModel.h"
 #include "gui/VisualLayersProxy.h"
 
+#include "presentation/ViewState.h"
 #include "presentation/VisualLayer.h"
+#include "presentation/VisualLayerType.h"
+#include "presentation/VisualLayerRegistry.h"
 
 
 namespace
 {
-	using namespace GPlatesGui;
-
-	static const QString NEW_FEATURE_COLLECTION = "New Feature Collection";
-
-	const Colour &
-	get_layer_colour(
-			GPlatesAppLogic::LayerTaskType::Type layer_type)
-	{
-		static const HTMLColourNames &html_colours = HTMLColourNames::instance();
-
-		// If you add an entry here, don't forget to also add an entry in get_layer_icon below!
-		static const Colour RECONSTRUCTION_COLOUR = *html_colours.get_colour("gold");
-		static const Colour RECONSTRUCT_COLOUR = *html_colours.get_colour("yellowgreen");
-		static const Colour RASTER_COLOUR = *html_colours.get_colour("tomato");
-		static const Colour AGE_GRID_COLOUR = *html_colours.get_colour("darkturquoise");
-		static const Colour TOPOLOGY_BOUNDARY_RESOLVER_COLOUR = *html_colours.get_colour("plum");
-		static const Colour TOPOLOGY_NETWORK_RESOLVER_COLOUR = *html_colours.get_colour("darkkhaki");
-		static const Colour VELOCITY_FIELD_CALCULATOR_COLOUR = *html_colours.get_colour("aquamarine");
-
-		static const Colour DEFAULT_COLOUR = Colour::get_white();
-
-		using namespace GPlatesAppLogic::LayerTaskType;
-
-		switch (layer_type)
-		{
-			case RECONSTRUCTION:
-				return RECONSTRUCTION_COLOUR;
-
-			case RECONSTRUCT:
-				return RECONSTRUCT_COLOUR;
-
-			case RASTER:
-				return RASTER_COLOUR;
-
-			case AGE_GRID:
-				return AGE_GRID_COLOUR;
-
-			case TOPOLOGY_BOUNDARY_RESOLVER:
-				return TOPOLOGY_BOUNDARY_RESOLVER_COLOUR;
-
-			case TOPOLOGY_NETWORK_RESOLVER:
-				return TOPOLOGY_NETWORK_RESOLVER_COLOUR;
-
-			case VELOCITY_FIELD_CALCULATOR:
-				return VELOCITY_FIELD_CALCULATOR_COLOUR;
-
-			default:
-				return DEFAULT_COLOUR;
-		}
-	}
-
-	QPixmap
-	get_filled_pixmap(
-			int width,
-			int height,
-			const Colour &colour)
-	{
-		QPixmap result(width, height);
-		result.fill(colour);
-		return result;
-	}
+	static const char *NEW_FEATURE_COLLECTION = "New Feature Collection";
 
 	const QIcon &
 	get_feature_collection_icon()
 	{
 		static const QIcon FEATURE_COLLECTION_ICON(":/gnome_text_x_preview_16.png");
 		return FEATURE_COLLECTION_ICON;
-	}
-
-	const QIcon &
-	get_layer_icon(
-			GPlatesAppLogic::LayerTaskType::Type layer_type)
-	{
-		using namespace GPlatesAppLogic::LayerTaskType;
-
-		static const int ICON_SIZE = 16;
-
-		static const QIcon RECONSTRUCTION_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(RECONSTRUCTION)));
-		static const QIcon RECONSTRUCT_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(RECONSTRUCT)));
-		static const QIcon RASTER_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(RASTER)));
-		static const QIcon AGE_GRID_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(AGE_GRID)));
-		static const QIcon TOPOLOGY_BOUNDARY_RESOLVER_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(TOPOLOGY_BOUNDARY_RESOLVER)));
-		static const QIcon TOPOLOGY_NETWORK_RESOLVER_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(TOPOLOGY_NETWORK_RESOLVER)));
-		static const QIcon VELOCITY_FIELD_CALCULATOR_ICON(get_filled_pixmap(
-					ICON_SIZE, ICON_SIZE, get_layer_colour(VELOCITY_FIELD_CALCULATOR)));
-
-		static const QIcon DEFAULT_ICON;
-
-		switch (layer_type)
-		{
-			case RECONSTRUCTION:
-				return RECONSTRUCTION_ICON;
-
-			case RECONSTRUCT:
-				return RECONSTRUCT_ICON;
-
-			case RASTER:
-				return RASTER_ICON;
-
-			case AGE_GRID:
-			 	return AGE_GRID_ICON;
-
-			case TOPOLOGY_BOUNDARY_RESOLVER:
-				return TOPOLOGY_BOUNDARY_RESOLVER_ICON;
-
-			case TOPOLOGY_NETWORK_RESOLVER:
-			 	return TOPOLOGY_NETWORK_RESOLVER_ICON;
-
-			case VELOCITY_FIELD_CALCULATOR:
-				return VELOCITY_FIELD_CALCULATOR_ICON;
-
-			default:
-				return DEFAULT_ICON;
-		}
 	}
 }
 
@@ -201,7 +86,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::ToggleIcon::ToggleIcon(
 	d_on_icon(on_icon),
 	d_off_icon(off_icon)
 {
-	setCursor(Qt::PointingHandCursor);
+	set_cursor();
 }
 
 
@@ -221,6 +106,24 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::ToggleIcon::mousePressEvent(
 	{
 		emit clicked();
 	}
+}
+
+
+void
+GPlatesQtWidgets::VisualLayerWidgetInternals::ToggleIcon::changeEvent(
+		QEvent *event_)
+{
+	if (event_->type() == QEvent::EnabledChange)
+	{
+		set_cursor();
+	}
+}
+
+
+void
+GPlatesQtWidgets::VisualLayerWidgetInternals::ToggleIcon::set_cursor()
+{
+	setCursor(isEnabled() ? Qt::PointingHandCursor : Qt::ArrowCursor);
 }
 
 
@@ -260,17 +163,16 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 		GPlatesGui::VisualLayersProxy &visual_layers,
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
-		QString &open_file_path,
-		ReadErrorAccumulationDialog *read_errors_dialog,
+		ViewportWindow *viewport_window,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_visual_layers(visual_layers),
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_open_file_path(open_file_path),
-	d_read_errors_dialog(read_errors_dialog),
+	d_viewport_window(viewport_window),
+	d_row(-1),
 	d_left_widget(
-			new DraggableWidget(this)),
+			new QWidget(this)),
 	d_expand_icon(
 			new VisualLayerWidgetInternals::ToggleIcon(
 				VisualLayerWidgetInternals::get_expanded_icon(),
@@ -285,14 +187,21 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 			new ElidedLabel(Qt::ElideMiddle, this)),
 	d_type_label(
 			new ElidedLabel(Qt::ElideRight, this)),
-	d_input_channels_widget_layout(NULL),
-	d_raster_layer_options_widget(NULL)
+	d_input_channels_groupbox_layout(NULL),
+	d_current_layer_options_widget(NULL),
+	d_layer_options_groupbox_layout(NULL)
 {
 	setupUi(this);
 
-	// Give the input_channels_widget a layout.
-	d_input_channels_widget_layout = new QVBoxLayout(input_channels_widget);
-	d_input_channels_widget_layout->setContentsMargins(2, 6, 2, 0);
+	// Set the mouse cursor over various parts of the widget.
+	setCursor(QCursor(Qt::OpenHandCursor));
+	advanced_options_groupbox->setCursor(QCursor(Qt::ArrowCursor));
+	input_channels_groupbox->setCursor(QCursor(Qt::ArrowCursor));
+	layer_options_groupbox->setCursor(QCursor(Qt::ArrowCursor));
+
+	// Give the input_channels_groupbox a layout.
+	d_input_channels_groupbox_layout = new QVBoxLayout(input_channels_groupbox);
+	d_input_channels_groupbox_layout->setContentsMargins(2, 6, 2, 0);
 
 	// Install labels for the layer name and type.
 	QtWidgetUtils::add_widget_to_placeholder(
@@ -321,13 +230,12 @@ GPlatesQtWidgets::VisualLayerWidget::VisualLayerWidget(
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_visibility_icon,
 			visibility_icon_placeholder_widget);
-	d_visibility_icon->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+
+	// Give the layer_options_groupbox a layout.
+	d_layer_options_groupbox_layout = new QVBoxLayout(layer_options_groupbox);
+	d_layer_options_groupbox_layout->setContentsMargins(0, 0, 0, 0);
 
 	make_signal_slot_connections();
-
-	// Hide things for now...
-	advanced_options_groupbox->hide();
-	colouring_groupbox->hide();
 }
 
 
@@ -339,11 +247,19 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			visual_layer.lock())
 	{
-		const GPlatesAppLogic::Layer &layer = locked_visual_layer->get_reconstruct_graph_layer();
-		GPlatesAppLogic::LayerTaskType::Type layer_type = layer.get_type();
+		GPlatesPresentation::VisualLayerType::Type visual_layer_type = locked_visual_layer->get_layer_type();
+		const GPlatesPresentation::VisualLayerRegistry &visual_layer_registry =
+			d_view_state.get_visual_layer_registry();
+		GPlatesAppLogic::Layer reconstruct_graph_layer = locked_visual_layer->get_reconstruct_graph_layer();
 
-		// Store pointer to visual layer for later use.
-		d_visual_layer = visual_layer;
+		// Enable or disable widgets based on whether the layer is active.
+		bool is_active = reconstruct_graph_layer.is_active();
+		other_advanced_options_widget->setEnabled(is_active);
+		input_channels_groupbox->setEnabled(is_active);
+		layer_options_groupbox->setEnabled(is_active);
+		top_widget->setEnabled(is_active);
+
+		enable_layer_stackedwidget->setCurrentIndex(is_active ? 0 : 1);
 
 		// Set the expand/collapse icon.
 		bool expanded = locked_visual_layer->is_expanded();
@@ -351,52 +267,109 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 
 		// Set the background colour of d_left_widget depending on what type of layer it is.
 		QPalette left_widget_palette;
-		left_widget_palette.setColor(QPalette::Base, get_layer_colour(layer_type));
+		left_widget_palette.setColor(
+				QPalette::Base,
+				visual_layer_registry.get_colour(visual_layer_type));
 		d_left_widget->setPalette(left_widget_palette);
-		d_left_widget->set_row(row);
 
 		// Set the hide/show icon.
-		d_visibility_icon->show_icon(locked_visual_layer->is_visible());
+		if (visual_layer_registry.produces_rendered_geometries(visual_layer_type))
+		{
+			d_visibility_icon->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+			d_visibility_icon->show_icon(locked_visual_layer->is_visible());
+			d_visibility_icon->setEnabled(true);
+		}
+		else
+		{
+			d_visibility_icon->setFrameStyle(QFrame::NoFrame);
+			d_visibility_icon->show_icon(false);
+			d_visibility_icon->setEnabled(false);
+		}
+
+		// Special behaviour for reconstruction tree layers.
+		bool is_recon_tree_layer = (visual_layer_type ==
+			static_cast<GPlatesPresentation::VisualLayerType::Type>(
+					GPlatesAppLogic::LayerTaskType::RECONSTRUCTION));
+		bool is_default = (is_recon_tree_layer && reconstruct_graph_layer ==
+				d_application_state.get_reconstruct_graph().get_default_reconstruction_tree_layer());
+		set_as_default_stackedwidget->setVisible(is_recon_tree_layer);
+		if (is_recon_tree_layer)
+		{
+			set_as_default_stackedwidget->setCurrentIndex(!is_default && is_active ? 0 : 1);
+		}
 
 		// Update the basic info.
 		d_name_label->setText(locked_visual_layer->get_name());
-		d_type_label->setText(GPlatesGui::LayerTaskTypeInfo::get_name(layer_type));
-		top_widget->setToolTip(GPlatesGui::LayerTaskTypeInfo::get_description(layer_type));
+		d_type_label->setText((is_default ? tr("[Default] ") : tr(""))  +
+			visual_layer_registry.get_name(visual_layer_type));
 
 		// Show or hide the details panel as necessary.
-		details_placeholder_widget->setVisible(expanded);
+		details_widget->setVisible(expanded);
+
+		// Change the layers option widget if type changed since last time.
+		if (d_visual_layer.expired() || d_visual_layer.lock()->get_layer_type() != visual_layer_type)
+		{
+			// Remove the existing widget if there is one.
+			if (d_current_layer_options_widget)
+			{
+				d_layer_options_groupbox_layout->removeWidget(d_current_layer_options_widget);
+				delete d_current_layer_options_widget;
+			}
+
+			d_current_layer_options_widget = visual_layer_registry.create_options_widget(
+					visual_layer_type,
+					d_application_state,
+					d_view_state,
+					d_viewport_window,
+					this);
+			if (d_current_layer_options_widget)
+			{
+				d_layer_options_groupbox_layout->addWidget(d_current_layer_options_widget);
+				layer_options_groupbox->setTitle(d_current_layer_options_widget->get_title());
+				layer_options_groupbox->show();
+			}
+			else
+			{
+				layer_options_groupbox->hide();
+			}
+		}
 
 		// Populate the details panel only if shown.
 		if (expanded)
 		{
 			// Update the input channel info.
-			set_input_channel_data(locked_visual_layer->get_reconstruct_graph_layer());
+			set_input_channel_data(reconstruct_graph_layer);
 
-			// Show or hide the special groupbox for raster layers.
-			if (layer_type == GPlatesAppLogic::LayerTaskType::RASTER)
+			// Update the layers option widget.
+			if (d_current_layer_options_widget)
 			{
-				if (!d_raster_layer_options_widget)
-				{
-					d_raster_layer_options_widget = new RasterLayerOptionsWidget(
-							d_application_state,
-							d_view_state,
-							d_open_file_path,
-							d_read_errors_dialog,
-							this);
-					QtWidgetUtils::add_widget_to_placeholder(
-							d_raster_layer_options_widget,
-							raster_groupbox);
-				}
-				d_raster_layer_options_widget->set_data(
-						locked_visual_layer->get_reconstruct_graph_layer());
-				raster_groupbox->show();
-			}
-			else
-			{
-				raster_groupbox->hide();
+				d_current_layer_options_widget->set_data(visual_layer);
+				d_current_layer_options_widget->updateGeometry();
 			}
 		}
+
+		// Store pointer to visual layer for later use.
+		d_visual_layer = visual_layer;
+		d_row = row;
+
+		right_widget->updateGeometry();
 	}
+}
+
+
+void
+GPlatesQtWidgets::VisualLayerWidget::mousePressEvent(
+		QMouseEvent *event_)
+{
+	QMimeData *mime_data = new QMimeData(); // Qt responsible for memory.
+	QByteArray encoded_data;
+	QDataStream stream(&encoded_data, QIODevice::WriteOnly);
+	stream << d_row;
+	mime_data->setData(GPlatesGui::VisualLayersListModel::VISUAL_LAYERS_MIME_TYPE, encoded_data);
+
+	QDrag *drag = new QDrag(this);
+	drag->setMimeData(mime_data);
+	drag->exec();
 }
 
 
@@ -442,9 +415,13 @@ GPlatesQtWidgets::VisualLayerWidget::set_input_channel_data(
 		for (unsigned int i = 0; i != num_new_widgets; ++i)
 		{
 			VisualLayerWidgetInternals::InputChannelWidget *new_widget =
-				new VisualLayerWidgetInternals::InputChannelWidget(d_visual_layers, d_application_state, this);
+				new VisualLayerWidgetInternals::InputChannelWidget(
+						d_visual_layers,
+						d_application_state,
+						d_view_state,
+						this);
 			d_input_channel_widgets.push_back(new_widget);
-			d_input_channels_widget_layout->addWidget(new_widget);
+			d_input_channels_groupbox_layout->addWidget(new_widget);
 		}
 	}
 
@@ -478,6 +455,8 @@ GPlatesQtWidgets::VisualLayerWidget::set_input_channel_data(
 			(*widget_iter)->hide();
 		}
 	}
+
+	input_channels_groupbox->updateGeometry();
 }
 
 
@@ -506,6 +485,30 @@ GPlatesQtWidgets::VisualLayerWidget::handle_visibility_icon_clicked()
 
 
 void
+GPlatesQtWidgets::VisualLayerWidget::handle_link_activated(
+		const QString &link)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		if (link == "disable_layer")
+		{
+			layer.activate(false);
+		}
+		else if (link == "enable_layer")
+		{
+			layer.activate(true);
+		}
+		else if (link == "set_as_default")
+		{
+			d_application_state.get_reconstruct_graph().set_default_reconstruction_tree_layer(layer);
+		}
+	}
+}
+
+
+void
 GPlatesQtWidgets::VisualLayerWidget::make_signal_slot_connections()
 {
 	// Connect to signals from the icons.
@@ -519,6 +522,23 @@ GPlatesQtWidgets::VisualLayerWidget::make_signal_slot_connections()
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_visibility_icon_clicked()));
+
+	// Connect to signals from links.
+	QObject::connect(
+			disable_layer_label,
+			SIGNAL(linkActivated(const QString &)),
+			this,
+			SLOT(handle_link_activated(const QString &)));
+	QObject::connect(
+			enable_layer_label,
+			SIGNAL(linkActivated(const QString &)),
+			this,
+			SLOT(handle_link_activated(const QString &)));
+	QObject::connect(
+			set_as_default_label,
+			SIGNAL(linkActivated(const QString &)),
+			this,
+			SLOT(handle_link_activated(const QString &)));
 }
 
 
@@ -569,8 +589,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputConnectionWidget::InputConnec
 	d_disconnect_icon->setPixmap(get_disconnect_pixmap());
 	d_disconnect_icon->setCursor(QCursor(Qt::PointingHandCursor));
 
-	static const QString DISCONNECT_ICON_TOOLTIP = "Disconnect";
-	d_disconnect_icon->setToolTip(DISCONNECT_ICON_TOOLTIP);
+	d_disconnect_icon->setToolTip(tr("Disconnect"));
 
 	// Lay out the internal label and the disconnect icon.
 	QHBoxLayout *widget_layout = new QHBoxLayout(this);
@@ -597,7 +616,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputConnectionWidget::set_data(
 		QString filename = input_file->get_file_info().get_display_name(false /* no absolute path */);
 		if (filename.isEmpty())
 		{
-			filename = NEW_FEATURE_COLLECTION;
+			filename = tr(NEW_FEATURE_COLLECTION);
 		}
 		d_input_connection_label->setText(filename);
 	}
@@ -633,10 +652,12 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputConnectionWidget::get_disconn
 GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::InputChannelWidget(
 		GPlatesGui::VisualLayersProxy &visual_layers,
 		GPlatesAppLogic::ApplicationState &application_state,
+		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_visual_layers(visual_layers),
 	d_application_state(application_state),
+	d_view_state(view_state),
 	d_input_channel_name_label(
 			new ElidedLabel(Qt::ElideRight, this)),
 	d_input_connection_widgets_container(
@@ -645,8 +666,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::InputChannelWi
 			new QToolButton(this)),
 	d_input_connection_widgets_layout(NULL)
 {
-	static const QString ADD_NEW_CONNECTION = "Add new connection";
-	d_add_new_connection_widget->setText(ADD_NEW_CONNECTION);
+	d_add_new_connection_widget->setText(tr("Add new connection"));
 	d_add_new_connection_widget->setAutoRaise(true);
 	d_add_new_connection_widget->setPopupMode(QToolButton::InstantPopup);
 	QMenu *add_new_connection_menu = new QMenu(d_add_new_connection_widget);
@@ -672,7 +692,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::InputChannelWi
 	this_layout->setSpacing(4);
 	this_layout->addWidget(d_input_channel_name_label);
 	this_layout->addWidget(yet_another_container);
-	this_layout->addStretch();
+	// this_layout->addStretch();
 
 	// Create a layout for the input connection widgets container.
 	d_input_connection_widgets_layout = new QVBoxLayout(d_input_connection_widgets_container);
@@ -702,8 +722,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 			input_connections.size() >= 1)
 	{
 		d_add_new_connection_widget->setEnabled(false);
-		static const QString ONLY_ONE_CONNECTION_TOOLTIP = tr("This input channel only accepts one connection.");
-		d_add_new_connection_widget->setToolTip(ONLY_ONE_CONNECTION_TOOLTIP);
+		d_add_new_connection_widget->setToolTip(tr("This input channel only accepts one connection."));
 	}
 	else
 	{
@@ -724,14 +743,6 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 					d_add_new_connection_widget);
 		}
 	}
-
-	// Easy code path if no input connections.
-	if (input_connections.size() == 0)
-	{
-		d_input_connection_widgets_container->hide();
-		return;
-	}
-	d_input_connection_widgets_container->show();
 
 	// Make sure we have enough widgets in our pool to display all input channels.
 	if (input_connections.size() > d_input_connection_widgets.size())
@@ -768,6 +779,10 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 			(*widget_iter)->hide();
 		}
 	}
+
+	d_input_connection_widgets_layout->update();
+	d_input_connection_widgets_container->updateGeometry();
+	updateGeometry();
 }
 
 
@@ -789,8 +804,8 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::handle_menu_tr
 		{
 			QMessageBox::critical(
 					this,
-					"Add new connection",
-					"The requested connection could not be made because it would introduce a cycle.");
+					tr("Add new connection"),
+					tr("The requested connection could not be made because it would introduce a cycle."));
 		}
 	}
 }
@@ -810,8 +825,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 	if (loaded_files.size() == 0)
 	{
 		button->setEnabled(false);
-		static const QString NO_FEATURE_COLLECTIONS_TOOLTIP = tr("No feature collections have been loaded.");
-		button->setToolTip(NO_FEATURE_COLLECTIONS_TOOLTIP);
+		button->setToolTip(tr("No feature collections have been loaded."));
 		return;
 	}
 	else
@@ -827,7 +841,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 		QString display_name = loaded_file.get_file().get_file_info().get_display_name(false);
 		if (display_name.isEmpty())
 		{
-			display_name = NEW_FEATURE_COLLECTION;
+			display_name = tr(NEW_FEATURE_COLLECTION);
 		}
 		QAction *action = new QAction(display_name, menu);
 		boost::function<void ()> fn = boost::bind(
@@ -869,6 +883,8 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 	}
 
 	const GPlatesAppLogic::ReconstructGraph &reconstruct_graph = d_application_state.get_reconstruct_graph();
+	const GPlatesPresentation::VisualLayerRegistry &visual_layer_registry =
+		d_view_state.get_visual_layer_registry();
 	unsigned int count = 0;
 	BOOST_FOREACH(const GPlatesAppLogic::Layer &outputting_layer, reconstruct_graph)
 	{
@@ -890,8 +906,8 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 				qv.setValue(fn);
 				action->setData(qv);
 				action->setIcon(
-						get_layer_icon(
-							locked_outputting_visual_layer->get_reconstruct_graph_layer().get_type()));
+						visual_layer_registry.get_icon(
+							locked_outputting_visual_layer->get_layer_type()));
 				menu->addAction(action);
 
 				++count;
@@ -902,46 +918,12 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 	if (count == 0)
 	{
 		button->setEnabled(false);
-		static const QString NO_APPROPRIATE_LAYERS_TOOLTIP = tr("There are no layers that can supply input to this connection.");
-		button->setToolTip(NO_APPROPRIATE_LAYERS_TOOLTIP);
+		button->setToolTip(tr("There are no layers that can supply input to this connection."));
 	}
 	else
 	{
 		button->setEnabled(true);
 		button->setToolTip(QString());
 	}
-}
-
-
-GPlatesQtWidgets::VisualLayerWidget::DraggableWidget::DraggableWidget(
-		QWidget *parent_) :
-	QWidget(parent_),
-	d_row(-1)
-{
-	setCursor(QCursor(Qt::OpenHandCursor));
-}
-
-
-void
-GPlatesQtWidgets::VisualLayerWidget::DraggableWidget::mousePressEvent(
-		QMouseEvent *event_)
-{
-	QMimeData *mime_data = new QMimeData(); // Qt responsible for memory.
-	QByteArray encoded_data;
-	QDataStream stream(&encoded_data, QIODevice::WriteOnly);
-	stream << d_row;
-	mime_data->setData(GPlatesGui::VisualLayersListModel::VISUAL_LAYERS_MIME_TYPE, encoded_data);
-
-	QDrag *drag = new QDrag(this);
-	drag->setMimeData(mime_data);
-	drag->exec();
-}
-
-
-void
-GPlatesQtWidgets::VisualLayerWidget::DraggableWidget::set_row(
-		int row)
-{
-	d_row = row;
 }
 

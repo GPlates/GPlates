@@ -31,6 +31,7 @@
 #include <boost/noncopyable.hpp>
 
 #include "GeometryExporter.h"
+
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
 // FIXME: For now, I'm defining this visitor as part of the GPlatesFileIO

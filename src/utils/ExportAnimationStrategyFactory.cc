@@ -22,7 +22,9 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 #include <boost/bind.hpp>
+
 #include "ExportAnimationStrategyFactory.h"
 
 GPlatesUtils::ExportAnimationStrategyFactory::ExporterIdType 
@@ -61,6 +63,10 @@ GPlatesUtils::ExportAnimationStrategyFactory::init_id_map()
 	REGISTER_EXPORTER(ROTATION_PARAMS_CSV_COMMA);
 	REGISTER_EXPORTER(ROTATION_PARAMS_CSV_SEMICOLON);
 	REGISTER_EXPORTER(ROTATION_PARAMS_CSV_TAB);
+	REGISTER_EXPORTER(FLOWLINES_GMT);
+	REGISTER_EXPORTER(FLOWLINES_SHAPEFILE);
+	REGISTER_EXPORTER(MOTION_PATHS_GMT);
+	REGISTER_EXPORTER(MOTION_PATHS_SHAPEFILE);
 	return true;
 }
 GPlatesGui::ExportAnimationStrategy::non_null_ptr_type

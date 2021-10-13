@@ -28,6 +28,7 @@
 
 #include "unit-test/ModelTestSuite.h"
 #include "unit-test/TestSuiteFilter.h"
+#include "unit-test/FeatureHandleTest.h"
 
 GPlatesUnitTest::ModelTestSuite::ModelTestSuite(
 		unsigned level) : 
@@ -41,6 +42,7 @@ void
 GPlatesUnitTest::ModelTestSuite::construct_maps()
 {
 	//ADD YOUR TEST SUITE HERE
+	ADD_TESTSUITE(FeatureHandle);
 }
 
 

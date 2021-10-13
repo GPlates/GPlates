@@ -32,7 +32,8 @@
 #include <QLocale>
 
 #include "EditGeometryWidget.h"
-#include "EditGeometryActionWidget.h"
+#include "EditTableWidget.h"
+#include "EditTableActionWidget.h"
 #include "InvalidPropertyValueException.h"
 #include "UninitialisedEditWidgetException.h"
 
@@ -76,7 +77,7 @@ namespace
 	 * Fetches the appropriate action widget given a row number.
 	 * May return NULL.
 	 */
-	GPlatesQtWidgets::EditGeometryActionWidget *
+	GPlatesQtWidgets::EditTableActionWidget *
 	get_action_widget_for_row(
 			QTableWidget &table,
 			int row)
@@ -87,8 +88,8 @@ namespace
 		if (table.cellWidget(row, COLUMN_ACTION) == NULL) {
 			return NULL;
 		}
-		GPlatesQtWidgets::EditGeometryActionWidget *action_widget =
-				static_cast<GPlatesQtWidgets::EditGeometryActionWidget *>(
+		GPlatesQtWidgets::EditTableActionWidget *action_widget =
+				static_cast<GPlatesQtWidgets::EditTableActionWidget *>(
 						table.cellWidget(row, COLUMN_ACTION));
 		return action_widget;
 	}
@@ -145,8 +146,8 @@ namespace
 #if 0
 		// Creating the action_widget is not a memory leak - Qt will take ownership of
 		// the action_widget memory, and clean it up when the table row is deleted.
-		GPlatesQtWidgets::EditGeometryActionWidget *action_widget =
-				new GPlatesQtWidgets::EditGeometryActionWidget(geometry_widget, &geometry_widget);
+		GPlatesQtWidgets::EditTableActionWidget *action_widget =
+				new GPlatesQtWidgets::EditTableActionWidget(geometry_widget, &geometry_widget);
 		table.setCellWidget(row, COLUMN_ACTION, action_widget);
 #endif
 	}
@@ -161,7 +162,7 @@ namespace
 	 */
 	void
 	populate_table_row_with_blank_point(
-			GPlatesQtWidgets::EditGeometryWidget &geometry_widget,
+			GPlatesQtWidgets::EditGeometryWidget *geometry_widget,
 			QTableWidget &table,
 			int row)
 	{
@@ -174,8 +175,9 @@ namespace
 		table.setItem(row, COLUMN_ACTION, action_item);
 		// Creating the action_widget is not a memory leak - Qt will take ownership of
 		// the action_widget memory, and clean it up when the table row is deleted.
-		GPlatesQtWidgets::EditGeometryActionWidget *action_widget =
-				new GPlatesQtWidgets::EditGeometryActionWidget(geometry_widget, &geometry_widget);
+		GPlatesQtWidgets::EditTableActionWidget *action_widget =
+				new GPlatesQtWidgets::EditTableActionWidget(
+							geometry_widget, geometry_widget);
 		table.setCellWidget(row, COLUMN_ACTION, action_widget);
 	}
 
@@ -570,7 +572,7 @@ namespace
 
 
 	/**
-	 * Work around a graphical glitch, where the EditGeometryActionWidgets around the
+	 * Work around a graphical glitch, where the EditTableActionWidgets around the
 	 * recently scrolled-to row appear to be misaligned.
 	 * 
 	 * This graphical glitch appears most prominently when appending a point to the
@@ -583,7 +585,8 @@ namespace
 			GPlatesQtWidgets::EditGeometryWidget &edit_geometry_widget,
 			QTableWidget &table)
 	{
-		static const GPlatesQtWidgets::EditGeometryActionWidget dummy(edit_geometry_widget, NULL);
+		GPlatesQtWidgets::EditTableWidget *table_widget_ptr = &edit_geometry_widget;
+		static const GPlatesQtWidgets::EditTableActionWidget dummy(table_widget_ptr, NULL);
 		table.horizontalHeader()->resizeSection(COLUMN_ACTION, dummy.width() + 1);
 		table.horizontalHeader()->resizeSection(COLUMN_ACTION, dummy.width());
 	}
@@ -639,7 +642,7 @@ GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 {
 	setupUi(this);
 	// Set column widths and resizabilty.
-	EditGeometryActionWidget dummy(*this, NULL);
+	EditTableActionWidget dummy(this, NULL);
 	table_points->horizontalHeader()->setResizeMode(COLUMN_LAT, QHeaderView::Stretch);
 	table_points->horizontalHeader()->setResizeMode(COLUMN_LON, QHeaderView::Stretch);
 	table_points->horizontalHeader()->setResizeMode(COLUMN_ACTION, QHeaderView::Fixed);
@@ -908,8 +911,8 @@ GPlatesQtWidgets::EditGeometryWidget::update_property_value_from_widget()
 
 
 void
-GPlatesQtWidgets::EditGeometryWidget::handle_insert_point_above(
-		const EditGeometryActionWidget *action_widget)
+GPlatesQtWidgets::EditGeometryWidget::handle_insert_row_above(
+		const EditTableActionWidget *action_widget)
 {
 	int row = get_row_for_action_widget(action_widget);
 	if (row >= 0) {
@@ -918,8 +921,8 @@ GPlatesQtWidgets::EditGeometryWidget::handle_insert_point_above(
 }
 
 void
-GPlatesQtWidgets::EditGeometryWidget::handle_insert_point_below(
-		const EditGeometryActionWidget *action_widget)
+GPlatesQtWidgets::EditGeometryWidget::handle_insert_row_below(
+		const EditTableActionWidget *action_widget)
 {
 	int row = get_row_for_action_widget(action_widget);
 	if (row >= 0) {
@@ -928,8 +931,8 @@ GPlatesQtWidgets::EditGeometryWidget::handle_insert_point_below(
 }
 
 void
-GPlatesQtWidgets::EditGeometryWidget::handle_delete_point(
-		const EditGeometryActionWidget *action_widget)
+GPlatesQtWidgets::EditGeometryWidget::handle_delete_row(
+		const EditTableActionWidget *action_widget)
 {
 	int row = get_row_for_action_widget(action_widget);
 	if (row >= 0) {
@@ -966,7 +969,7 @@ GPlatesQtWidgets::EditGeometryWidget::handle_reconstruction(
 
 int
 GPlatesQtWidgets::EditGeometryWidget::get_row_for_action_widget(
-		const EditGeometryActionWidget *action_widget)
+		const EditTableActionWidget *action_widget)
 {
 	for (int i = 0; i < table_points->rowCount(); ++i)
 	{
@@ -996,7 +999,7 @@ GPlatesQtWidgets::EditGeometryWidget::append_point_to_table(
 	if (table_item_to_scroll_to != NULL) {
 		table_points->scrollToItem(table_item_to_scroll_to);
 	}
-	// Work around a graphical glitch, where the EditGeometryActionWidgets above the
+	// Work around a graphical glitch, where the EditTableActionWidgets above the
 	// recently scrolled-to row appear to be misaligned.
 	work_around_table_graphical_glitch(*this, *table_points);
 
@@ -1021,9 +1024,9 @@ GPlatesQtWidgets::EditGeometryWidget::insert_blank_point_into_table(
 	// we may want to include a 'append break' button or modify this function to be smart about
 	// where it is inserting the point.
 	table_points->insertRow(row);
-	populate_table_row_with_blank_point(*this, *table_points, row);
+	populate_table_row_with_blank_point(this, *table_points, row);
 	
-	// Work around a graphical glitch, where the EditGeometryActionWidgets above the
+	// Work around a graphical glitch, where the EditTableActionWidgets above the
 	// recently scrolled-to row appear to be misaligned. And yes, the table widget
 	// may auto-scroll if we (for instance) insert a row at the end.
 	work_around_table_graphical_glitch(*this, *table_points);
@@ -1151,8 +1154,8 @@ GPlatesQtWidgets::EditGeometryWidget::handle_current_cell_changed(
 		{
 			table_points->removeCellWidget(previous_row,COLUMN_ACTION);
 		}
-		GPlatesQtWidgets::EditGeometryActionWidget *action_widget =
-				new GPlatesQtWidgets::EditGeometryActionWidget(*this, this);
+		GPlatesQtWidgets::EditTableActionWidget *action_widget =
+				new GPlatesQtWidgets::EditTableActionWidget(this, this);
 		table_points->setCellWidget(current_row, COLUMN_ACTION, action_widget);
 	}
 

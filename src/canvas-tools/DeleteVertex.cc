@@ -31,11 +31,13 @@
 
 
 GPlatesCanvasTools::DeleteVertex::DeleteVertex(
+		const status_bar_callback_type &status_bar_callback,
 		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold):
+		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold) :
+	CanvasTool(status_bar_callback),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_geometry_operation_target(&geometry_operation_target),
 	d_delete_vertex_geometry_operation(
@@ -45,8 +47,7 @@ GPlatesCanvasTools::DeleteVertex::DeleteVertex(
 				&rendered_geometry_collection,
 				choose_canvas_tool,
 				query_proximity_threshold))
-{
-}
+{  }
 
 
 GPlatesCanvasTools::DeleteVertex::~DeleteVertex()
@@ -76,24 +77,8 @@ GPlatesCanvasTools::DeleteVertex::handle_activation()
 
 	// Activate our InsertVertexGeometryOperation.
 	d_delete_vertex_geometry_operation->activate(geometry_builder, main_layer_type);
-	
-	switch (get_view())
-	{
-		case GLOBE_VIEW:
-			set_status_bar_message(QObject::tr(
-				"Click to delete a vertex of the current geometry."
-				" Ctrl+drag to re-orient the globe."));
-			break;
 
-		case MAP_VIEW:
-			set_status_bar_message(QObject::tr(
-				"Click to delete a vertex of the current geometry."
-				" Ctrl+drag to pan the map."));
-			break;
-
-		default:
-			break;
-	}
+	set_status_bar_message(QT_TR_NOOP("Click to delete a vertex of the current geometry."));
 }
 
 

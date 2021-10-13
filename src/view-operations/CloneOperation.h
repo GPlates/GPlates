@@ -32,7 +32,10 @@
 
 #include "gui/ChooseCanvasTool.h"
 
+#include "model/FeatureCollectionHandle.h"
+
 #include "presentation/ViewState.h"
+
 
 namespace GPlatesViewOperations
 {
@@ -64,7 +67,9 @@ namespace GPlatesViewOperations
 		clone_focused_geometry();
 
 		void 
-		clone_focused_feature();
+		clone_focused_feature(
+				GPlatesModel::FeatureCollectionHandle::weak_ref target_feature_collection =
+					GPlatesModel::FeatureCollectionHandle::weak_ref());
 
 	private:
 		GPlatesGui::ChooseCanvasTool* d_choose_canvas_tool;

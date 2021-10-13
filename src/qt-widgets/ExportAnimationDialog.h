@@ -27,11 +27,13 @@
 #define GPLATES_QTWIDGETS_EXPORTANIMATIONDIALOG_H
 
 #include <QDir>	// for export settings dialog/backend.
-
 #include <QDialog>
+
 #include "ExportAnimationDialogUi.h"
 
 #include "ConfigureExportParametersDialog.h"
+#include "OpenDirectoryDialog.h"
+
 #include "gui/ExportAnimationContext.h"
 
 
@@ -225,13 +227,6 @@ namespace GPlatesQtWidgets
 		 * ExportAnimationDialog, AnimateDialog and AnimateControlWidget.
 		 */
 		GPlatesGui::AnimationController *d_animation_controller_ptr;
-		
-		/**
-		 * View State pointer, which needs to be passed to various exporters,
-		 * so that they can get access to things like the current anchored plate
-		 * ID and the Reconstruction.
-		 */
-		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
 
 		/**
 		 * We have a minature sub-dialog, which is modal, for configuring parameters.
@@ -239,6 +234,8 @@ namespace GPlatesQtWidgets
 		 * one, and Qt will handle memory management for it from then onwards.
 		 */
 		GPlatesQtWidgets::ConfigureExportParametersDialog *d_configure_parameters_dialog_ptr;
+
+		OpenDirectoryDialog d_open_directory_dialog;
 
 		/*
 		 * flag used to indicate which stack widget is currently using                                                                     

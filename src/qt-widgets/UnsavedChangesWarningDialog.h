@@ -37,13 +37,17 @@ namespace GPlatesQtWidgets
 	/**
 	 * This dialog is the one which pops up if the user attempts to close GPlates
 	 * while there are yet files unsaved.
+	 *
+	 * It may also pop up if the user attempts to load a new session while there
+	 * are yet files unsaved, as doing so would replace the current files.
+	 *
 	 * It is triggered from GPlatesGui::UnsavedChangesTracker.
 	 *
 	 * When you exec() this dialog, the return value is the QDialogButtonBox::StandardButton
 	 * enum corresponding to the clicked button; this is one of:-
-	 * 	QDialogButtonBox::Discard - do not save, just close.
-	 * 	QDialogButtonBox::Abort - do not close.
-	 * 	QDialogButtonBox::SaveAll - save all modified files, then close.
+	 * 	QDialogButtonBox::Discard - do not save, just {close gplates,replace session}.
+	 * 	QDialogButtonBox::Abort - do not {close gplates, replace session}.
+	 * 	QDialogButtonBox::SaveAll - save all modified files first, then {close,replace}.
 	 *
 	 * The reason QDialogButtonBox is used is so that Qt can handle the platform-specific
 	 * button ordering conventions.
@@ -55,6 +59,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
+		enum ActionRequested { CLOSE_GPLATES, REPLACE_SESSION };
 
 		explicit
 		UnsavedChangesWarningDialog(
@@ -62,7 +67,7 @@ namespace GPlatesQtWidgets
 			QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 		{
 			setupUi(this);
-			tweak_buttons();
+			set_action_requested(CLOSE_GPLATES);
 			connect_buttons();
 		}
 
@@ -80,6 +85,22 @@ namespace GPlatesQtWidgets
 			list_files->clear();
 			list_files->addItems(filenames);
 		}
+
+		/**
+		 * Changes the label text and button labels to be appropriate
+		 * for the corresponding action requested by the user (that
+		 * GPlates is interrupting on account of the unsaved changes).
+		 */
+		void
+		set_action_requested(
+				ActionRequested act)
+		{
+			tweak_buttons(act);
+			tweak_label(act);
+			adjustSize();
+			ensurePolished();
+		}
+
 
 	private slots:
 
@@ -108,19 +129,69 @@ namespace GPlatesQtWidgets
 		 * and adds icons.
 		 */
 		void
-		tweak_buttons()
+		tweak_buttons(
+				ActionRequested act)
 		{
-			buttonbox->button(QDialogButtonBox::SaveAll)->setText(tr("&Save all modified feature collections"));
-			buttonbox->button(QDialogButtonBox::SaveAll)->setIcon(QIcon(":/gnome_save_22.png"));
-			buttonbox->button(QDialogButtonBox::SaveAll)->setIconSize(QSize(22, 22));
+			static QPushButton *saveall = buttonbox->button(QDialogButtonBox::SaveAll);
+			static QPushButton *discard = buttonbox->button(QDialogButtonBox::Discard);
+			static QPushButton *abort = buttonbox->button(QDialogButtonBox::Abort);
+			
+			switch (act)
+			{
+			default:
+			case CLOSE_GPLATES:
+					saveall->setText(tr("&Save all modified feature collections"));
+					saveall->setIcon(QIcon(":/gnome_save_22.png"));
+					saveall->setIconSize(QSize(22, 22));
 
-			buttonbox->button(QDialogButtonBox::Discard)->setText(tr("&Discard changes"));
-			buttonbox->button(QDialogButtonBox::Discard)->setIcon(QIcon(":/discard_changes_22.png"));
-			buttonbox->button(QDialogButtonBox::Discard)->setIconSize(QSize(22, 22));
+					discard->setText(tr("&Discard changes"));
+					discard->setIcon(QIcon(":/discard_changes_22.png"));
+					discard->setIconSize(QSize(22, 22));
 
-			buttonbox->button(QDialogButtonBox::Abort)->setText(tr("D&on't close"));
-			buttonbox->button(QDialogButtonBox::Abort)->setIcon(QIcon(":/tango_process_stop_22.png"));
-			buttonbox->button(QDialogButtonBox::Abort)->setIconSize(QSize(22, 22));
+					abort->setText(tr("D&on't close"));
+					abort->setIcon(QIcon(":/tango_process_stop_22.png"));
+					abort->setIconSize(QSize(22, 22));
+					break;
+
+			case REPLACE_SESSION:
+					saveall->setText(tr("&Save all first"));
+					saveall->setIcon(QIcon(":/gnome_save_22.png"));
+					saveall->setIconSize(QSize(22, 22));
+
+					discard->setText(tr("&Discard changes, load session"));
+					discard->setIcon(QIcon(":/discard_changes_22.png"));
+					discard->setIconSize(QSize(22, 22));
+
+					abort->setText(tr("D&on't open the new session"));
+					abort->setIcon(QIcon(":/tango_process_stop_22.png"));
+					abort->setIconSize(QSize(22, 22));
+					break;
+			}
+			buttonbox->adjustSize();
+		}
+
+		/**
+		 * Sets the dialog's main descriptive label (as defined in UI)
+		 * to something more context-sensitive.
+		 */
+		void
+		tweak_label(
+				ActionRequested act)
+		{
+			switch (act)
+			{
+			default:
+			case CLOSE_GPLATES:
+					label_context->setText(tr("GPlates is closing."));
+					break;
+
+			case REPLACE_SESSION:
+					label_context->setText(tr(
+							"Opening a previous session will replace all currently loaded"
+							" feature collections. You may wish to save changes you have made"
+							" before continuing."));
+					break;
+			}
 		}
 
 		/**

@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,14 +28,14 @@
 #ifndef GPLATES_CANVASTOOLS_CANVASTOOLADAPTERFORMAP_H
 #define GPLATES_CANVASTOOLS_CANVASTOOLADAPTERFORMAP_H
 
+#include <boost/optional.hpp>
 #include <QPointF>
 #include <QString>
 
-#include <boost/scoped_ptr.hpp>
-#include <boost/optional.hpp>
-
 #include "CanvasTool.h"
+
 #include "gui/MapCanvasTool.h"
+
 
 namespace GPlatesGui
 {
@@ -66,22 +66,12 @@ namespace GPlatesCanvasTools
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<CanvasToolAdapterForMap,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<CanvasToolAdapterForMap,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
-
-		/**
 		 * Create a CanvasToolAdapterForMap instance.
 		 */
-		static
-		const non_null_ptr_type
-		create(
-				CanvasTool *canvas_tool_ptr,
+		CanvasToolAdapterForMap(
+				const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
-				const GPlatesQtWidgets::ViewportWindow &view_state,
 				GPlatesGui::MapTransform &map_transform_);
 		
 		virtual
@@ -201,25 +191,59 @@ namespace GPlatesCanvasTools
 				const QPointF &current_point_on_scene,
 				bool is_on_surface,
 				const QPointF &translation);
-
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		CanvasToolAdapterForMap (
-				CanvasTool *canvas_tool_ptr,
-				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesQtWidgets::MapView &map_view_,
-				const GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::MapTransform &map_transform_);
 		
 	private:
 
-		//! A pointer to the CanvasTool instance that we wrap around
-		boost::scoped_ptr<CanvasTool> d_canvas_tool_ptr;
+		/**
+		 * Typedef for a pointer to a member function of CanvasTool used for clicks
+		 * and moves without drag.
+		 */
+		typedef void (CanvasTool::*canvas_tool_click_func)
+			(const GPlatesMaths::PointOnSphere &, bool, double);
 
-		//! Listeners to status bar updates from the CanvasTool
-		StatusBarListenerForViewport d_status_bar_listener;
-		
+		/**
+		 * Typedef for a pointer to a member function of CanvasTool used for drag
+		 * operations that do not have a default action.
+		 */
+		typedef void (CanvasTool::*canvas_tool_drag_func_without_default)
+			(const GPlatesMaths::PointOnSphere &, bool, double,
+			 const GPlatesMaths::PointOnSphere &, bool, double,
+			 const boost::optional<GPlatesMaths::PointOnSphere> &);
+
+		/**
+		 * Typedef for a pointer to a member function of CanvasTool used for drag
+		 * operations that have a default action.
+		 */
+		typedef bool (CanvasTool::*canvas_tool_drag_func_with_default)
+			(const GPlatesMaths::PointOnSphere &, bool, double,
+			 const GPlatesMaths::PointOnSphere &, bool, double,
+			 const boost::optional<GPlatesMaths::PointOnSphere> &);
+
+		void
+		invoke_canvas_tool_func(
+				const QPointF &click_point_on_scene,
+				bool is_on_surface,
+				const canvas_tool_click_func &func);
+
+		void
+		invoke_canvas_tool_func(
+				const QPointF &initial_point_on_scene,
+				bool was_on_surface,
+				const QPointF &current_point_on_scene,
+				bool is_on_surface,
+				const canvas_tool_drag_func_without_default &func);
+
+		bool
+		invoke_canvas_tool_func(
+				const QPointF &initial_point_on_scene,
+				bool was_on_surface,
+				const QPointF &current_point_on_scene,
+				bool is_on_surface,
+				const canvas_tool_drag_func_with_default &func);
+				
+
+		//! A pointer to the CanvasTool instance that we wrap around
+		CanvasTool::non_null_ptr_type d_canvas_tool_ptr;
 	};
 }
 

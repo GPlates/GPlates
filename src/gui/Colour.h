@@ -401,6 +401,22 @@ namespace GPlatesGui
 		to_rgba8(
 				const Colour &colour);
 
+		/**
+		 * Converts a QRgb to a Colour, preserving the alpha component.
+		 */
+		static
+		Colour
+		from_qrgb(
+				const QRgb &rgba);
+
+		/**
+		 * Converts a Colour to a QRgb, preserving the alpha component.
+		 */
+		static
+		QRgb
+		to_qrgb(
+				const Colour &colour);
+
 	private:
 
 		/**

@@ -61,6 +61,7 @@
 #include "property-values/GpmlTopologicalIntersection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/XsString.h"
 
 #include "utils/UnicodeStringUtils.h"
 
@@ -370,7 +371,7 @@ namespace
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 			static const GPlatesPropertyValues::TemplateTypeParameterType reference_point_value_type =
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("PlateId" );
+					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId" );
 
 			// Feature id of feature used to lookup plate id for reconstructing reference point.
 			// This is the feature that contains the adjacent geometry properties iterator.
@@ -763,28 +764,47 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	ReconstructedFeatureGeometryFinder rfg_finder(property_name, &reconstruction_tree); 
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
+// FIXME: MULTIPLE GEOM
+
 	// If we found no RFG (referencing 'reconstruction_tree') that is reconstructed from
 	// 'geometry_property' then it probably means the reconstruction time is
 	// outside the age range of the feature containing 'geometry_property'.
 	// This is ok - it's not necessarily an error.
 	if (rfg_finder.num_rfgs_found() == 0)
-	{
-		return boost::none;
-	}
-
-	//
-	// However if we found more than one RFG then the feature has multiple geometry
-	// properties with the same name and we cannot determine which one to return.
-	if (rfg_finder.num_rfgs_found() > 1)
-	{
-		qDebug() << "ERROR: More than one RFG found using property name for feature_id =";
-		qDebug() <<
-			GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
-		qDebug() << "and property name =" << property_name_qstring;
-		qDebug() << "ERROR: Unable to determine RFG";
-
-		return boost::none;
-	}
+	{ 
+		int num = rfg_finder.num_rfgs_found();
+		qDebug() << "ERROR: " << num << "Reconstruction Feature Geometries (RFGs) found for:";
+		qDebug() << "  feature id =" 
+			<< GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
+		static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
+		const GPlatesPropertyValues::XsString *name;
+        if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
+            qDebug() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
+        } else {
+            qDebug() << "  feature name = UNKNOWN";
+        }
+        qDebug() << "  property name =" << property_name_qstring;
+        qDebug() << "  Unable to use any RFG.";
+        return boost::none;
+    }
+    else if (rfg_finder.num_rfgs_found() > 1)
+    {
+        // We should only return boost::none for the case == 0, as above.
+        // For the case >1 we return the rfg_finder.found_rfgs_begin() as normally
+        int num = rfg_finder.num_rfgs_found();
+        qDebug() << "WARNING: " << num << "Reconstruction Feature Geometries (RFGs) found for:";
+        qDebug() << "  feature id =" 
+			<< GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
+        static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
+        const GPlatesPropertyValues::XsString *name;
+        if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
+            qDebug() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
+        } else {
+            qDebug() << "  feature name = UNKNOWN";
+        }
+        qDebug() << "  property name =" << property_name_qstring;
+        qDebug() << "  Using the first RFG found.";
+    }
 
 	// Get the only RFG found.
 	const ReconstructedFeatureGeometry::non_null_ptr_type &rfg =

@@ -27,6 +27,7 @@
 #ifndef GPLATES_PRESENTATION_VIEWSTATE_H
 #define GPLATES_PRESENTATION_VIEWSTATE_H
 
+#include <utility>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -68,17 +69,13 @@ namespace GPlatesGui
 	class ColourSchemeDelegator;
 	class GeometryFocusHighlight;
 	class FeatureFocus;
+	class GraticuleSettings;
 	class MapTransform;
 	class RasterColourSchemeMap;
 	class RenderSettings;
+	class TextOverlaySettings;
 	class ViewportProjection;
 	class ViewportZoom;
-}
-
-namespace GPlatesPropertyValues
-{
-	class Georeferencing;
-	class RawRaster;
 }
 
 namespace GPlatesQtWidgets
@@ -94,6 +91,7 @@ namespace GPlatesViewOperations
 
 namespace GPlatesPresentation
 {
+	class VisualLayerRegistry;
 	class VisualLayers;
 
 	class ViewState :
@@ -190,6 +188,10 @@ namespace GPlatesPresentation
 		get_visual_layers();
 
 
+		VisualLayerRegistry &
+		get_visual_layer_registry();
+
+
 		GPlatesGui::RenderSettings &
 		get_render_settings();
 
@@ -198,13 +200,21 @@ namespace GPlatesPresentation
 		get_map_transform();
 
 
-		int
-		get_main_viewport_min_dimension();
+		const std::pair<int, int> &
+		get_main_viewport_dimensions() const;
 
 
 		void
-		set_main_viewport_min_dimension(
-				int min_dimension);
+		set_main_viewport_dimensions(
+				const std::pair<int, int> &dimensions);
+
+
+		int
+		get_main_viewport_min_dimension() const;
+
+		
+		int
+		get_main_viewport_max_dimension() const;
 
 
 		inline
@@ -213,7 +223,8 @@ namespace GPlatesPresentation
 		{
 			return *d_vgp_render_settings;
 		}
-	
+
+
 		GPlatesAppLogic::VGPRenderSettings &
 		get_vgp_render_settings();
 
@@ -224,6 +235,48 @@ namespace GPlatesPresentation
 
 		const GPlatesGui::RasterColourSchemeMap &
 		get_raster_colour_scheme_map() const;
+
+
+		QString &
+		get_last_open_directory();
+
+
+		const QString &
+		get_last_open_directory() const;
+
+
+		bool
+		get_show_stars() const;
+
+
+		void
+		set_show_stars(
+				bool show_stars = true);
+
+
+		const GPlatesGui::Colour &
+		get_background_colour() const;
+
+
+		void
+		set_background_colour(
+				const GPlatesGui::Colour &colour);
+
+
+		GPlatesGui::GraticuleSettings &
+		get_graticule_settings();
+
+
+		const GPlatesGui::GraticuleSettings &
+		get_graticule_settings() const;
+
+
+		GPlatesGui::TextOverlaySettings &
+		get_text_overlay_settings();
+
+		
+		const GPlatesGui::TextOverlaySettings &
+		get_text_overlay_settings() const;
 
 
 	private slots:
@@ -272,21 +325,17 @@ namespace GPlatesPresentation
 		 */
 		boost::scoped_ptr<GPlatesGui::FeatureFocus> d_feature_focus;
 
-		// FIXME: remove these 
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_comp_mesh_point_layer;
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_comp_mesh_arrow_layer;
-			
-		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-			d_paleomag_layer;
-
 		/**
 		 * Manages the various layers (usually corresponding to each loaded feature collection)
 		 * whose output results are drawn into child layers of the RECONSTRUCTION main
 		 * rendered geometry layer.
 		 */
 		boost::scoped_ptr<VisualLayers> d_visual_layers;
+
+		/**
+		 * Stores information about the available visual layer types.
+		 */
+		boost::scoped_ptr<VisualLayerRegistry> d_visual_layer_registry;
 
 		//! What gets rendered and what doesn't
 		boost::scoped_ptr<GPlatesGui::RenderSettings> d_render_settings;
@@ -295,10 +344,10 @@ namespace GPlatesPresentation
 		boost::scoped_ptr<GPlatesGui::MapTransform> d_map_transform;
 
 		/**
-		 * The smaller of width or height of the main globe or map attached.
+		 * The dimensions (in pixels) of the main globe or map attached.
 		 * Used for scaling additional globes and maps.
 		 */
-		int d_main_viewport_min_dimension;
+		std::pair<int, int> d_main_viewport_dimensions;
 
 		/**
 		 * Stores render settings for VirtualGeomagneticPole features.                                                                     
@@ -306,54 +355,35 @@ namespace GPlatesPresentation
 		boost::scoped_ptr<GPlatesAppLogic::VGPRenderSettings> d_vgp_render_settings;
 
 		/**
-		 * Stores the raw bits in the currently loaded raster.
-		 *
-		 * FIXME: This should only live in ViewState as long as we have only one
-		 * raster loaded at any time.
-		 */
-		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::RawRaster>::non_null_ptr_type d_raw_raster;
-
-		/**
-		 * Stores the georeferencing information for the currently loaded raster
-		 * or time dependent raster sequence.
-		 *
-		 * FIXME: This should only live in ViewState as long as we have only one
-		 * raster loaded at any time.
-		 */
-		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::Georeferencing>::non_null_ptr_type d_georeferencing;
-
-		/**
-		 * Stores the filename of the currently loaded raster.
-		 *
-		 * If it is the empty string, then no raster is currently loaded.
-		 *
-		 * FIXME: This should only live in ViewState as long as we have only one
-		 * raster loaded at any time.
-		 */
-		QString d_raster_filename;
-
-		/**
-		 * Stores the filename of the CPT file used to colour the raster.
-		 *
-		 * If it is the empty string, the default in-built colour map is used.
-		 *
-		 * FIXME: This should only live in ViewState as long as we have only one
-		 * raster loaded at any time.
-		 */
-		QString d_raster_colour_map_filename;
-
-		/**
-		 * True if d_raster_colour_map_filename is invalid.
-		 *
-		 * FIXME: This should only live in ViewState as long as we have only one
-		 * raster loaded at any time.
-		 */
-		bool d_is_raster_colour_map_invalid;
-
-		/**
 		 * Stores the mapping of Layer to RasterColourSchemes.
 		 */
 		boost::scoped_ptr<GPlatesGui::RasterColourSchemeMap> d_raster_colour_scheme_map;
+
+		/**
+		 * Stores the directory containing the files last opened, or the last opened
+		 * directory.
+		 */
+		QString d_last_open_directory;
+
+		/**
+		 * Whether to draw stars behind the 3D globe.
+		 */
+		bool d_show_stars;
+
+		/**
+		 * The colour of the background sphere or plane in 3D globe or map view respectively.
+		 */
+		boost::scoped_ptr<GPlatesGui::Colour> d_background_colour;
+
+		/**
+		 * Settings related to the graticules displayed on the map and the globe.
+		 */
+		boost::scoped_ptr<GPlatesGui::GraticuleSettings> d_graticule_settings;
+
+		/**
+		 * Settings related to the overlay of text on top the map and the globe.
+		 */
+		boost::scoped_ptr<GPlatesGui::TextOverlaySettings> d_text_overlay_settings;
 
 		void
 		connect_to_viewport_zoom();

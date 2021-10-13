@@ -85,8 +85,6 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::EditAffineTransformGe
 		d_last_known_affine_transform_values[i] = d_affine_transform_spinboxes[i]->value();
 	}
 
-	warning_container_widget->hide();
-
 	make_signal_slot_connections();
 }
 
@@ -144,8 +142,6 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::handle_advanced_check
 		case Qt::Checked:
 			populate_affine_transform_spinboxes(
 					d_georeferencing->parameters());
-			warning_container_widget->hide();
-			emit warning_visible_changed(false);
 			main_stackedwidget->setCurrentIndex(1);
 			break;
 	}
@@ -168,39 +164,10 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::update_extents_if_nec
 		{
 			new_extents.components[i] = d_extents_spinboxes[i]->value();
 		}
-		Georeferencing::ConversionFromLatLonExtentsError error =
-			d_georeferencing->set_lat_lon_extents(
-					new_extents,
-					d_raster_width,
-					d_raster_height);
-
-		if (error == Georeferencing::NONE)
-		{
-			// FIXME: Remove this after we get rasters out of ViewState.
-			// d_view_state->update_texture_extents();
-			emit georeferencing_changed();
-
-			// Read it back into the spinboxes.
-			boost::optional<lat_lon_extents_type> extents =
-					d_georeferencing->lat_lon_extents(d_raster_width, d_raster_height);
-			populate_lat_lon_extents_spinboxes(*extents);
-		}
-		else if (error == Georeferencing::BOTTOM_ABOVE_TOP)
-		{
-			warning_label->setText(tr("Invalid extents: bottom cannot be north of top."));
-		}
-		else if (error == Georeferencing::TOP_EQUALS_BOTTOM)
-		{
-			warning_label->setText(tr("Invalid extents: height cannot be zero."));
-		}
-		else if (error == Georeferencing::LEFT_EQUALS_RIGHT)
-		{
-			warning_label->setText(tr("Invalid extents: width cannot be zero."));
-		}
-
-		bool show_warning = (error != Georeferencing::NONE);
-		warning_container_widget->setVisible(show_warning);
-		emit warning_visible_changed(show_warning);
+		d_georeferencing->set_lat_lon_extents(
+				new_extents,
+				d_raster_width,
+				d_raster_height);
 	}
 }
 
@@ -221,11 +188,10 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::update_affine_transfo
 		}
 		d_georeferencing->set_parameters(new_parameters);
 
-		// FIXME: Remove this after we get rasters out of ViewState.
-		// d_view_state->update_texture_extents();
 		emit georeferencing_changed();
 
-		// Read it back into the spinboxes.
+		// Read it back into the spinboxes (there's no guarantee that what we put in
+		// is what we get back out).
 		populate_affine_transform_spinboxes(d_georeferencing->parameters());
 	}
 }
@@ -235,14 +201,7 @@ void
 GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::handle_use_global_extents_button_clicked()
 {
 	d_georeferencing->reset_to_global_extents(d_raster_width, d_raster_height);
-
-	warning_container_widget->hide();
-	emit warning_visible_changed(false);
-
-	// FIXME: Remove this after we get rasters out of ViewState.
-	// d_view_state->update_texture_extents();
 	emit georeferencing_changed();
-
 	refresh();
 }
 

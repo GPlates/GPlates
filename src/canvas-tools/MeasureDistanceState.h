@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,14 +28,18 @@
 #ifndef GPLATES_CANVASTOOLS_MEASUREDISTANCESTATE_H
 #define GPLATES_CANVASTOOLS_MEASUREDISTANCESTATE_H
 
-#include <QObject>
 #include <boost/optional.hpp>
+#include <QObject>
 
 #include "app-logic/ReconstructionGeometry.h"
+
 #include "maths/PointOnSphere.h"
 #include "maths/Real.h"
+
 #include "model/FeatureHandle.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
+
 
 namespace GPlatesViewOperations
 {
@@ -46,12 +50,11 @@ namespace GPlatesViewOperations
 
 namespace GPlatesCanvasTools
 {
-
 	/**
-	 * Stores the state for the distance measuring tool, shared between globe and map
+	 * Stores the state for the distance measuring tool, shared between globe and map.
 	 */
 	class MeasureDistanceState :
-		public QObject
+			public QObject
 	{
 
 		Q_OBJECT
@@ -68,11 +71,6 @@ namespace GPlatesCanvasTools
 		MeasureDistanceState(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target);
-		
-		//! Destructor
-		~MeasureDistanceState()
-		{
-		}
 
 		//! Add a new point for the Quick Measure tool
 		void
@@ -212,6 +210,9 @@ namespace GPlatesCanvasTools
 		//! The calculated total distance for Feature Measure tool; boost::none if no feature
 		boost::optional<double> d_feature_total_distance;
 
+		//! The area of the selected polygon; boost::none if no polygon selected
+		boost::optional<double> d_feature_area;
+
 		//! The start point of the feature segment that is highlighted
 		boost::optional<GPlatesMaths::PointOnSphere> d_feature_segment_start;
 
@@ -274,6 +275,7 @@ namespace GPlatesCanvasTools
 		void
 		feature_measure_updated(
 				double total_distance,
+				boost::optional<double> area,
 				boost::optional<GPlatesMaths::PointOnSphere> segment_start,
 				boost::optional<GPlatesMaths::PointOnSphere> segment_end,
 				boost::optional<double> segment_distance);

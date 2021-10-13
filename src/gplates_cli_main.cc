@@ -49,6 +49,8 @@
 #include "global/NotYetImplementedException.h"
 #include "global/SubversionInfo.h"
 
+#include "maths/MathsUtils.h"
+
 #include "utils/Profile.h"
 #include "utils/CommandLineParser.h"
 
@@ -327,6 +329,10 @@ namespace
 			int argc,
 			char* argv[])
 	{
+		// Sanity check: Proceed only if we have access to infinity and NaN.
+		// This should pass on all systems that we support.
+		GPlatesMaths::assert_has_infinity_and_nan();
+
 		/*
 		 * This object handles all interpretation of command-line options for different
 		 * commands and executes a specified command.

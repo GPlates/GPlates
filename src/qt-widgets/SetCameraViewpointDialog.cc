@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -34,6 +34,17 @@ GPlatesQtWidgets::SetCameraViewpointDialog::SetCameraViewpointDialog(
 {
 	setupUi(this);
 	set_lat_lon(0.0, 0.0);
+
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(accepted()),
+			this,
+			SLOT(accept()));
+	QObject::connect(
+			main_buttonbox,
+			SIGNAL(rejected()),
+			this,
+			SLOT(reject()));
 }
 
 void

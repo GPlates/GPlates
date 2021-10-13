@@ -29,23 +29,27 @@
 #include "EditWidgetGroupBox.h"
 
 #include "AbstractEditWidget.h"
-#include "EditTimeInstantWidget.h"
-#include "EditTimePeriodWidget.h"
-#include "EditOldPlatesHeaderWidget.h"
+#include "EditAngleWidget.h"
+#include "EditBooleanWidget.h"
 #include "EditDoubleWidget.h"
 #include "EditEnumerationWidget.h"
 #include "EditGeometryWidget.h"
 #include "EditIntegerWidget.h"
+#include "EditOldPlatesHeaderWidget.h"
 #include "EditPlateIdWidget.h"
 #include "EditPolarityChronIdWidget.h"
-#include "EditAngleWidget.h"
-#include "EditStringWidget.h"
-#include "EditBooleanWidget.h"
 #include "EditShapefileAttributesWidget.h"
+#include "EditStringListWidget.h"
+#include "EditStringWidget.h"
+#include "EditTimeInstantWidget.h"
+#include "EditTimePeriodWidget.h"
+#include "EditTimeSequenceWidget.h"
 
 #include "EditWidgetChooser.h"
 #include "NoActiveEditWidgetException.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+#include "presentation/ViewState.h"
 #include "property-values/GpmlPlateId.h"
 
 
@@ -92,9 +96,12 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	d_edit_plate_id_widget_ptr(new EditPlateIdWidget(this)),
 	d_edit_polarity_chron_id_widget_ptr(new EditPolarityChronIdWidget(this)),
 	d_edit_angle_widget_ptr(new EditAngleWidget(this)),
+	d_edit_string_list_widget_ptr(new EditStringListWidget(this)),
 	d_edit_string_widget_ptr(new EditStringWidget(this)),
 	d_edit_boolean_widget_ptr(new EditBooleanWidget(this)),
 	d_edit_shapefile_attributes_widget_ptr(new EditShapefileAttributesWidget(this)),
+        d_edit_time_sequence_widget_ptr(new EditTimeSequenceWidget(
+                view_state_.get_application_state(), this)),
 	d_edit_verb(tr("Edit"))
 {
 	// We stay invisible unless we are called on for a specific widget.
@@ -113,9 +120,11 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	edit_layout->addWidget(d_edit_plate_id_widget_ptr);
 	edit_layout->addWidget(d_edit_polarity_chron_id_widget_ptr);
 	edit_layout->addWidget(d_edit_angle_widget_ptr);
+	edit_layout->addWidget(d_edit_string_list_widget_ptr);
 	edit_layout->addWidget(d_edit_string_widget_ptr);
 	edit_layout->addWidget(d_edit_boolean_widget_ptr);
 	edit_layout->addWidget(d_edit_shapefile_attributes_widget_ptr);
+	edit_layout->addWidget(d_edit_time_sequence_widget_ptr);
 	setLayout(edit_layout);
 		
 	QObject::connect(d_edit_time_instant_widget_ptr, SIGNAL(commit_me()),
@@ -138,12 +147,16 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 			this, SLOT(edit_widget_wants_committing()));
 	QObject::connect(d_edit_angle_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
+	QObject::connect(d_edit_string_list_widget_ptr, SIGNAL(commit_me()),
+			this, SLOT(edit_widget_wants_committing()));
 	QObject::connect(d_edit_string_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
 	QObject::connect(d_edit_boolean_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
 	QObject::connect(d_edit_shapefile_attributes_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));
+	QObject::connect(d_edit_time_sequence_widget_ptr, SIGNAL(commit_me()),
+			this, SLOT(edit_widget_wants_committing()));	
 }
 
 
@@ -176,6 +189,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map() const
 	map["gpml:angle"] = d_edit_angle_widget_ptr;
 	map["xs:string"] = d_edit_string_widget_ptr;
 	map["xs:boolean"] = d_edit_boolean_widget_ptr;
+	map["gpml:IrregularSampling"] = d_edit_time_sequence_widget_ptr;
+	map["gpml:StringList"] = d_edit_string_list_widget_ptr;
 #if 0
 	// Keep the KeyValueDictionary out of the map until we have the
 	// ability to create one. 
@@ -559,6 +574,18 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_boolean_widget(
 
 
 void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_string_list_widget(
+		GPlatesPropertyValues::GpmlStringList &gpml_string_list)
+{
+	setTitle(tr("%1 String List").arg(d_edit_verb));
+	show();
+	d_edit_string_list_widget_ptr->update_widget_from_string_list(gpml_string_list);
+	d_active_widget_ptr = d_edit_string_list_widget_ptr;
+	d_edit_string_list_widget_ptr->show();
+}
+
+
+void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_shapefile_attributes_widget(
 		GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
 {
@@ -569,6 +596,16 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_shapefile_attributes_widget(
 	d_edit_shapefile_attributes_widget_ptr->show();
 }
 
+void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_time_sequence_widget(
+	GPlatesPropertyValues::GpmlArray &gpml_array)
+{
+	setTitle(tr("%1 Time Sequence").arg(d_edit_verb));
+	show();
+	d_edit_time_sequence_widget_ptr->update_widget_from_time_period_array(gpml_array);
+	d_active_widget_ptr = d_edit_time_sequence_widget_ptr;
+	d_edit_time_sequence_widget_ptr->show();
+}
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::deactivate_edit_widgets()
@@ -599,7 +636,10 @@ GPlatesQtWidgets::EditWidgetGroupBox::deactivate_edit_widgets()
 	d_edit_string_widget_ptr->reset_widget_to_default_values();
 	d_edit_boolean_widget_ptr->hide();
 	d_edit_boolean_widget_ptr->reset_widget_to_default_values();
+	d_edit_string_list_widget_ptr->hide();
+	d_edit_string_list_widget_ptr->reset_widget_to_default_values();
 	d_edit_shapefile_attributes_widget_ptr->hide();
+	d_edit_time_sequence_widget_ptr->hide();
 }
 
 

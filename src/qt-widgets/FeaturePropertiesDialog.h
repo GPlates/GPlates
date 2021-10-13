@@ -35,6 +35,7 @@
 #include "ViewFeatureGeometriesWidget.h"
 
 #include "gui/FeatureFocus.h"
+
 #include "model/FeatureHandle.h"
 
 
@@ -45,13 +46,16 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class FeaturePropertiesDialog:
+	class ChangeFeatureTypeDialog;
+
+	class FeaturePropertiesDialog :
 			public QDialog,
 			protected Ui_FeaturePropertiesDialog
 	{
 		Q_OBJECT
 		
 	public:
+
 		explicit
 		FeaturePropertiesDialog(
 				GPlatesPresentation::ViewState &view_state_,
@@ -97,15 +101,17 @@ namespace GPlatesQtWidgets
 		 * enough - the default buttonbox "Close" button only appears to hide the dialog.
 		 */
 		void
-		setVisible(bool visible);
-
-	signals:
+		setVisible(
+				bool visible);
 	
 	private slots:
 		
 		void
 		handle_tab_change(
 				int index);
+
+		void
+		pop_up_change_feature_type_dialog();
 
 	private:
 		
@@ -125,9 +131,15 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_focused_rg;
 
-		GPlatesQtWidgets::QueryFeaturePropertiesWidget *d_query_feature_properties_widget;
-		GPlatesQtWidgets::EditFeaturePropertiesWidget *d_edit_feature_properties_widget;
-		GPlatesQtWidgets::ViewFeatureGeometriesWidget *d_view_feature_geometries_widget;
+		QueryFeaturePropertiesWidget *d_query_feature_properties_widget;
+		EditFeaturePropertiesWidget *d_edit_feature_properties_widget;
+		ViewFeatureGeometriesWidget *d_view_feature_geometries_widget;
+
+		/**
+		 * Allows the user to change the feature type of the currently selected
+		 * feature and also fix up any geometry properties that are no longer valid.
+		 */
+		ChangeFeatureTypeDialog *d_change_feature_type_dialog;
 	};
 }
 

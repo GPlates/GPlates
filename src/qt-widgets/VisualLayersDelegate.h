@@ -50,7 +50,7 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declarations.
-	class ReadErrorAccumulationDialog;
+	class ViewportWindow;
 	class VisualLayerWidget;
 
 	/**
@@ -68,8 +68,7 @@ namespace GPlatesQtWidgets
 				GPlatesGui::VisualLayersProxy &visual_layers,
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				QString &open_file_path,
-				ReadErrorAccumulationDialog *read_errors_dialog,
+				ViewportWindow *viewport_window,
 				QObject *parent_ = NULL);
 
 		virtual
@@ -122,8 +121,7 @@ namespace GPlatesQtWidgets
 		GPlatesGui::VisualLayersProxy &d_visual_layers;
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
-		QString &d_open_file_path;
-		ReadErrorAccumulationDialog *d_read_errors_dialog;
+		ViewportWindow *d_viewport_window;
 
 		mutable editor_ptr_map_type d_editor_ptrs;
 	};

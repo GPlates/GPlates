@@ -27,20 +27,15 @@
  */
 
 #include <iostream>
-#include <limits> // epsilon
-#include <cmath_ext.h> // fabs, isinf
-// #include <float.h>
-
+#include <boost/none.hpp>
 #include <QDebug>
 #include <QString>
 
-#include <boost/none.hpp>
+#include "MapProjection.h"
 
 #include "maths/GreatCircle.h"
 #include "maths/Real.h"
 #include "maths/MathsUtils.h"
-
-#include "MapProjection.h"
 
 #ifdef _MSC_VER
 #define strdup _strdup
@@ -225,7 +220,7 @@ GPlatesGui::MapProjection::forward_transform(
 	{
 		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,"Error in pj_transform.");
 	}
-	if (std::isinf(longitude) || std::isinf(latitude))
+	if (GPlatesMaths::is_infinity(longitude) || GPlatesMaths::is_infinity(latitude))
 	{
 		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,"HUGE_VAL returned from pj_transform.");
 	}
@@ -293,7 +288,7 @@ GPlatesGui::MapProjection::inverse_transform(
 	{
 		return boost::none;
 	}
-	if (std::isinf(longitude) || std::isinf(latitude))
+	if (GPlatesMaths::is_infinity(longitude) || GPlatesMaths::is_infinity(latitude))
 	{
 		return boost::none;
 	}
@@ -391,12 +386,12 @@ GPlatesGui::MapProjection::forward_transform(
 	{
 		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,"Error in pj_transform.");
 	}
-	if (std::isinf(x_coordinate) || std::isinf(y_coordinate))
+	if (GPlatesMaths::is_infinity(x_coordinate) || GPlatesMaths::is_infinity(y_coordinate))
 	{
 		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,"HUGE_VAL returned from pj_transform.");
 	}
 
 	x_coordinate *= d_scale;
 	y_coordinate *= d_scale;
-
 }
+

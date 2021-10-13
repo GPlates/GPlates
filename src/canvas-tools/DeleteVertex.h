@@ -57,29 +57,37 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to delete vertices from geometry.
 	 */
-	class DeleteVertex:
+	class DeleteVertex :
 			public CanvasTool
 	{
 	public:
+
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<DeleteVertex,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<DeleteVertex>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<DeleteVertex,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<DeleteVertex> non_null_ptr_type;
 
 		virtual
 		~DeleteVertex();
 
-		/**
-		 * Create a DeleteVertex instance.
-		 */
-		DeleteVertex(
+		static
+		const non_null_ptr_type
+		create(
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold)
+		{
+			return new DeleteVertex(
+					status_bar_callback,
+					geometry_operation_target,
+					active_geometry_operation,
+					rendered_geometry_collection,
+					choose_canvas_tool,
+					query_proximity_threshold);
+		}
 
 		virtual
 		void
@@ -106,6 +114,17 @@ namespace GPlatesCanvasTools
 				double proximity_inclusion_threshold);
 
 	private:
+
+		/**
+		 * Create a DeleteVertex instance.
+		 */
+		DeleteVertex(
+				const status_bar_callback_type &status_bar_callback,
+				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
+				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
 
 		/**
 		 * Used to set main rendered layer.

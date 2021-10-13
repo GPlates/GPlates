@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -25,17 +26,25 @@
 
 #include <cstddef> // For std::size_t
 
+#include <boost/foreach.hpp>
+
+#include "global/CompilerWarnings.h"
 #include "ReconstructionGeometryRenderer.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/CoRegistrationData.h"
 #include "app-logic/MultiPointVectorField.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructedFlowline.h"
+#include "app-logic/ReconstructedMotionPath.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
 #include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/PlateVelocityUtils.h"
 #include "app-logic//VGPRenderSettings.h"
+
+#include "data-mining/DataTable.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -397,6 +406,31 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 {
+#if 0 
+	//
+	// 2D total triangulation
+	//
+	const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
+		geometries = rtn->resolved_topology_geometries_from_triangulation_2();
+
+	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+		it = geometries.begin();
+	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+		it_end = geometries.end();
+	for(; it !=it_end; it++)
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				create_rendered_reconstruction_geometry(
+						*it, rtn, d_style_params, GPlatesGui::Colour::get_grey() );
+
+		// Add to the rendered geometry layer.
+		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+	}
+
+
+	//
+	// 2D + C Total Triangulation 
+	//
 	const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
 		geometries = rtn->resolved_topology_geometries();
 	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
@@ -407,11 +441,141 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_geometry =
 				create_rendered_reconstruction_geometry(
-						*it, rtn, d_style_params, d_colour);
+						*it, rtn, d_style_params, GPlatesGui::Colour::get_grey() );
+
+		// Add to the rendered geometry layer.
+		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+	}
+#endif
+
+	//
+	// Mesh triangulation
+	//
+	const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
+		mesh_geometries = rtn->resolved_topology_geometries_mesh();
+	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+		mesh_it = mesh_geometries.begin();
+	std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
+		mesh_it_end = mesh_geometries.end();
+	for(; mesh_it !=mesh_it_end; mesh_it++)
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				create_rendered_reconstruction_geometry(
+						*mesh_it, rtn, d_style_params, d_colour );
 
 		// Add to the rendered geometry layer.
 		d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
 	}
 
+	
+
 	render_topological_network_velocities(rtn, d_rendered_geometry_layer, d_style_params, d_colour);
 }
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+	const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+{
+
+	// Left-plate flowline
+	GPlatesViewOperations::RenderedGeometry left_rendered_geom =
+		GPlatesViewOperations::create_rendered_arrowed_polyline(
+			rf->left_flowline_points(),
+			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rf));
+
+	GPlatesViewOperations::RenderedGeometry left_rendered_geometry = 
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rf,
+			left_rendered_geom);
+
+	// Add to the rendered geometry layer.
+	d_rendered_geometry_layer.add_rendered_geometry(left_rendered_geometry);
+
+	// Downstream
+	GPlatesViewOperations::RenderedGeometry right_rendered_geom =
+		GPlatesViewOperations::create_rendered_arrowed_polyline(
+			rf->right_flowline_points(),
+			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rf));
+
+	GPlatesViewOperations::RenderedGeometry right_rendered_geometry = 
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rf,
+			right_rendered_geom);
+
+	// Add to the rendered geometry layer.
+	d_rendered_geometry_layer.add_rendered_geometry(right_rendered_geometry);
+
+}
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+	const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+{
+
+	// Create a RenderedGeometry for drawing the reconstructed geometry.
+	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
+	// using ColourProxy.
+	GPlatesViewOperations::RenderedGeometry rendered_geom =
+		GPlatesViewOperations::create_rendered_arrowed_polyline(
+			rmp->motion_path_points(),
+			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rmp));
+
+	GPlatesViewOperations::RenderedGeometry rendered_geometry = 
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+		rmp,
+		rendered_geom);
+
+	// Add to the rendered geometry layer.
+	d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+
+}
+
+
+// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
+// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
+// cause GCC to warn about shadowed declarations.
+DISABLE_GCC_WARNING("-Wshadow")
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr)
+{
+	//TODO: 
+	// Add to the rendered geometry layer.
+	using namespace GPlatesDataMining;
+	using namespace GPlatesAppLogic;
+	using namespace GPlatesMaths;
+
+	const DataTable& table = crr->data_table();
+	BOOST_FOREACH(const DataTable::value_type& row, table )
+	{
+		const std::vector< const ReconstructedFeatureGeometry* >& rfgs = row->seed_rfgs();
+		BOOST_FOREACH(const ReconstructedFeatureGeometry* rfg, rfgs )
+		{
+			GPlatesViewOperations::RenderedGeometry rendered_geometry =
+				create_rendered_reconstruction_geometry(
+						rfg->geometry(), crr, d_style_params, GPlatesGui::Colour::get_red());
+			d_rendered_geometry_layer.add_rendered_geometry(rendered_geometry);
+			
+			const PointOnSphere* point = dynamic_cast<const PointOnSphere*>(rfg->geometry().get());
+			if(point)
+			{
+				GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
+					GPlatesViewOperations::create_rendered_small_circle(
+							*point,
+							GPlatesMaths::convert_deg_to_rad(12),
+							GPlatesGui::Colour::get_red());
+				d_rendered_geometry_layer.add_rendered_geometry(rendered_small_circle);	
+			}
+		}
+	}
+}
+
+// See above
+ENABLE_GCC_WARNING("-Wshadow")
+
+// Suppress warning with boost::variant with Boost 1.34 and g++ 4.2.
+// This is here at the end of the file because the problem resides in a template
+// being instantiated at the end of the compilation unit.
+DISABLE_GCC_WARNING("-Wshadow")
+

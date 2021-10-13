@@ -31,6 +31,12 @@
 #include "gui/ViewportZoom.h"
 
 
+namespace
+{
+	const int NUM_STEPS_PER_LEVEL = 100;
+}
+
+
 GPlatesQtWidgets::ZoomSliderWidget::ZoomSliderWidget(
 		GPlatesGui::ViewportZoom &vzoom,
 		QWidget *parent_):
@@ -72,9 +78,11 @@ GPlatesQtWidgets::ZoomSliderWidget::set_up_ui()
 
 	// Set up the zoom slider to use appropriate range and current zoom level.
 	d_slider_zoom->setSingleStep(1);
-	d_slider_zoom->setRange(d_viewport_zoom_ptr->s_min_zoom_level,
-			d_viewport_zoom_ptr->s_max_zoom_level);
-	d_slider_zoom->setValue(d_viewport_zoom_ptr->s_initial_zoom_level);
+	d_slider_zoom->setRange(
+			0,
+			(d_viewport_zoom_ptr->s_max_zoom_level - d_viewport_zoom_ptr->s_min_zoom_level) *
+				NUM_STEPS_PER_LEVEL);
+	handle_zoom_changed();
 }
 
 
@@ -97,7 +105,9 @@ GPlatesQtWidgets::ZoomSliderWidget::handle_slider_moved(
 		int slider_position)
 {
 	if ( ! d_suppress_zoom_change_event) {
-		d_viewport_zoom_ptr->set_zoom_level(slider_position);
+		d_viewport_zoom_ptr->set_zoom_level(
+			static_cast<double>(slider_position) / NUM_STEPS_PER_LEVEL +
+				d_viewport_zoom_ptr->s_min_zoom_level);
 	}
 }
 
@@ -111,7 +121,7 @@ GPlatesQtWidgets::ZoomSliderWidget::handle_zoom_changed()
 	// cause a further change to ViewportZoom.
 	d_suppress_zoom_change_event = true;
 	
-	int new_zoom_level = d_viewport_zoom_ptr->zoom_level();
+	int new_zoom_level = static_cast<int>(d_viewport_zoom_ptr->zoom_level() * NUM_STEPS_PER_LEVEL + 0.5);
 	d_slider_zoom->setValue(new_zoom_level);
 
 	// Re-enable the modification of ViewportZoom from this slider by the user.

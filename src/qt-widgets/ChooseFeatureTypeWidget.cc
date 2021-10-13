@@ -23,10 +23,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QListWidget>
 #include <QListWidgetItem>
 
 #include "ChooseFeatureTypeWidget.h"
+
+#include "QtWidgetUtils.h"
 
 #include "model/GPGIMInfo.h"
 
@@ -35,29 +38,33 @@
 
 namespace
 {
-	/**
-	 * Subclass of QListWidgetItem so that we can display QualifiedXmlNames in the QListWidget
-	 * without converting them to a QString (and thus forgetting that we had a QualifiedXmlName
-	 * in the first place).
-	 */
-	class FeatureTypeItem :
-			public QListWidgetItem
+	class DefaultConstructibleFeatureType
 	{
 	public:
-		FeatureTypeItem(
-				const GPlatesModel::FeatureType type_):
-			QListWidgetItem(GPlatesUtils::make_qstring_from_icu_string(type_.build_aliased_name())),
-			d_type(type_)
+
+		DefaultConstructibleFeatureType()
 		{  }
-		
-		const GPlatesModel::FeatureType
-		get_type()
+
+		DefaultConstructibleFeatureType(
+				const GPlatesModel::FeatureType &feature_type) :
+			d_feature_type(feature_type)
+		{  }
+
+		operator GPlatesModel::FeatureType() const
 		{
-			return d_type;
+			return *d_feature_type;
 		}
-			
+
+		bool
+		operator==(
+				const DefaultConstructibleFeatureType &other)
+		{
+			return d_feature_type == other.d_feature_type;
+		}
+
 	private:
-		const GPlatesModel::FeatureType d_type;
+
+		boost::optional<GPlatesModel::FeatureType> d_feature_type;
 	};
 
 
@@ -66,90 +73,71 @@ namespace
 	 */
 	void
 	populate_feature_types_list(
-			QListWidget &list_widget,
-			bool topological)
+			GPlatesQtWidgets::SelectionWidget &selection_widget,
+			bool is_topological)
 	{
 		// FIXME: For extra brownie points, filter -this- list based on features
 		// which you couldn't possibly create given the digitised geometry.
 		// E.g. no Cratons made from PolylineOnSphere!
-		typedef const GPlatesModel::GPGIMInfo::feature_set_type feature_set_type;
-		const feature_set_type &list = GPlatesModel::GPGIMInfo::get_feature_set(topological);
+		typedef GPlatesModel::GPGIMInfo::feature_set_type feature_set_type;
+		const feature_set_type &list = GPlatesModel::GPGIMInfo::get_feature_set(is_topological);
 
-		list_widget.clear();
+		selection_widget.clear();
 
 		// Add all the feature types from the finished list.
-		feature_set_type::const_iterator list_it = list.begin();
-		feature_set_type::const_iterator list_end = list.end();
-		for ( ; list_it != list_end; ++list_it) {
-			list_widget.addItem(new FeatureTypeItem(*list_it));
+		BOOST_FOREACH(const GPlatesModel::FeatureType &feature_type, list)
+		{
+			selection_widget.add_item<DefaultConstructibleFeatureType>(
+					GPlatesUtils::make_qstring_from_icu_string(feature_type.build_aliased_name()),
+					feature_type);
 		}
 
-		// Set the default field to UnclassifiedFeature. 
-		QList<QListWidgetItem*> unclassified_items = list_widget.findItems(
-			QString("gpml:UnclassifiedFeature"),Qt::MatchFixedString);
-		if (unclassified_items.isEmpty())
+		if (selection_widget.get_count())
 		{
-			list_widget.setCurrentRow(0);
-		}
-		else
-		{
-			list_widget.setCurrentItem(unclassified_items.first());
+			selection_widget.set_current_index(0);
 		}
 	}
-
-	/**
-	 * Get the FeatureType the user has selected.
-	 */
-	boost::optional<const GPlatesModel::FeatureType>
-	currently_selected_feature_type(
-			const QListWidget *listwidget_feature_types)
-	{
-		FeatureTypeItem *type_item = dynamic_cast<FeatureTypeItem *>(
-				listwidget_feature_types->currentItem());
-		if (type_item == NULL) {
-			return boost::none;
-		}
-		return type_item->get_type();
-	}
-
 }
+
+
+Q_DECLARE_METATYPE( DefaultConstructibleFeatureType )
 
 
 GPlatesQtWidgets::ChooseFeatureTypeWidget::ChooseFeatureTypeWidget(
+		SelectionWidget::DisplayWidget display_widget,
 		QWidget *parent_) :
-	QGroupBox(parent_)
+	QWidget(parent_),
+	d_selection_widget(new SelectionWidget(display_widget, this))
 {
-	setupUi(this);
+	QtWidgetUtils::add_widget_to_placeholder(d_selection_widget, this);
 
-	// Emit signal if the user pushes Enter or double-clicks on the list.
-	QObject::connect(
-			listwidget_feature_types,
-			SIGNAL(itemActivated(QListWidgetItem *)),
-			this,
-			SLOT(handle_listwidget_item_activated(QListWidgetItem *)));
+	make_signal_slot_connections();
 }
 
 
 void
-GPlatesQtWidgets::ChooseFeatureTypeWidget::initialise(
-		bool topological)
+GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
+		bool is_topological)
 {
-	populate_feature_types_list(*listwidget_feature_types, topological);
+	populate_feature_types_list(*d_selection_widget, is_topological);
 }
 
 
-void
-GPlatesQtWidgets::ChooseFeatureTypeWidget::handle_listwidget_item_activated(
-		QListWidgetItem *)
-{
-	emit item_activated();
-}
-
-
-boost::optional<const GPlatesModel::FeatureType>
+boost::optional<GPlatesModel::FeatureType>
 GPlatesQtWidgets::ChooseFeatureTypeWidget::get_feature_type() const
 {
-	return currently_selected_feature_type(listwidget_feature_types);
+	return boost::optional<GPlatesModel::FeatureType>(
+			d_selection_widget->get_data<DefaultConstructibleFeatureType>(
+				d_selection_widget->get_current_index()));
+}
+
+
+void
+GPlatesQtWidgets::ChooseFeatureTypeWidget::set_feature_type(
+		const GPlatesModel::FeatureType &feature_type)
+{
+	int index = d_selection_widget->find_data<DefaultConstructibleFeatureType>(feature_type);
+	d_selection_widget->set_current_index(index);
 }
 
 
@@ -157,5 +145,40 @@ void
 GPlatesQtWidgets::ChooseFeatureTypeWidget::focusInEvent(
 		QFocusEvent *ev)
 {
-	listwidget_feature_types->setFocus();
+	d_selection_widget->setFocus();
 }
+
+
+void
+GPlatesQtWidgets::ChooseFeatureTypeWidget::handle_item_activated(
+		int index)
+{
+	emit item_activated();
+}
+
+
+void
+GPlatesQtWidgets::ChooseFeatureTypeWidget::handle_current_index_changed(
+		int index)
+{
+	emit current_index_changed(
+			boost::optional<GPlatesModel::FeatureType>(
+				d_selection_widget->get_data<DefaultConstructibleFeatureType>(index)));
+}
+
+
+void
+GPlatesQtWidgets::ChooseFeatureTypeWidget::make_signal_slot_connections()
+{
+	QObject::connect(
+			d_selection_widget,
+			SIGNAL(item_activated(int)),
+			this,
+			SLOT(handle_item_activated(int)));
+	QObject::connect(
+			d_selection_widget,
+			SIGNAL(current_index_changed(int)),
+			this,
+			SLOT(handle_current_index_changed(int)));
+}
+

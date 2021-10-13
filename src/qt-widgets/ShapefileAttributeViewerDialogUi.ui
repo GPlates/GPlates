@@ -13,7 +13,8 @@
    <string>Shapefile Attributes</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/GPlates-icon-160x160-opaque.png</iconset>
+   <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <normaloff>:/GPlates-icon-160x160-opaque.png</normaloff>:/GPlates-icon-160x160-opaque.png</iconset>
   </property>
   <layout class="QGridLayout" >
    <item row="0" column="0" >
@@ -21,12 +22,18 @@
      <item>
       <widget class="QLabel" name="label_collection" >
        <property name="text" >
-        <string>Feature Collection</string>
+        <string>Feature Collection:</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QComboBox" name="combo_feature_collections" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
+         <horstretch>3</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="minimumSize" >
         <size>
          <width>230</width>
@@ -36,17 +43,14 @@
       </widget>
      </item>
      <item>
-      <spacer>
-       <property name="orientation" >
-        <enum>Qt::Horizontal</enum>
+      <widget class="QWidget" native="1" name="widget" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
+         <horstretch>2</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
-       <property name="sizeHint" >
-        <size>
-         <width>231</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
+      </widget>
      </item>
     </layout>
    </item>
@@ -85,7 +89,7 @@
        <property name="orientation" >
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" >
+       <property name="sizeHint" stdset="0" >
         <size>
          <width>40</width>
          <height>20</height>
@@ -108,6 +112,7 @@
   </layout>
  </widget>
  <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
   <include location="../qt-resources/qt_widgets.qrc" />
  </resources>
  <connections>

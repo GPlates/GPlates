@@ -37,6 +37,19 @@ GPlatesOpenGL::GLUQuadricSphere::GLUQuadricSphere(
 }
 
 
+GPlatesOpenGL::GLUQuadricDisk::GLUQuadricDisk(
+		GLdouble inner,
+		GLdouble outer,
+		GLint num_slices,
+		GLint num_loops) :
+	d_inner(inner),
+	d_outer(outer),
+	d_num_slices(num_slices),
+	d_num_loops(num_loops)
+{
+}
+
+
 void
 GPlatesOpenGL::GLUQuadricDrawable::bind() const
 {

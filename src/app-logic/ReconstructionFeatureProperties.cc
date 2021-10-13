@@ -35,11 +35,15 @@
 
 GPlatesAppLogic::ReconstructionFeatureProperties::ReconstructionFeatureProperties(
 		const double &recon_time) :
-	d_recon_time(recon_time),
-	d_feature_is_defined_at_recon_time(true),
-	d_recon_method(GPlatesAppLogic::BY_PLATE_ID)
-{
-}
+	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
+	d_feature_is_defined_at_recon_time(true)
+{  }
+
+
+GPlatesAppLogic::ReconstructionFeatureProperties::ReconstructionFeatureProperties() :
+	d_recon_time(boost::none),
+	d_feature_is_defined_at_recon_time(true)
+{  }
 
 
 bool
@@ -50,7 +54,7 @@ GPlatesAppLogic::ReconstructionFeatureProperties::initialise_pre_feature_propert
 	d_time_of_appearance = boost::none;
 	d_time_of_dissappearance = boost::none;
 
-	d_recon_method = GPlatesAppLogic::BY_PLATE_ID;
+	d_recon_method = boost::none;
 	d_right_plate_id = boost::none;
 	d_left_plate_id = boost::none;
 
@@ -65,11 +69,11 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gml_time_period(
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
-	// Note that we're going to assume that we're in a property...
+	// Note that we're going to assume boost::nonethat we're in a property...
 	if (current_top_level_propname() == valid_time_property_name)
 	{
 		// This time period is the "valid time" time period.
-		if ( ! gml_time_period.contains(d_recon_time))
+		if (d_recon_time && !gml_time_period.contains(*d_recon_time))
 		{
 			// Oh no!  This feature instance is not defined at the recon time!
 			d_feature_is_defined_at_recon_time = false;
@@ -108,13 +112,11 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gpml_plate_id(
 		// This plate ID is the reconstruction plate ID.
 		d_recon_plate_id = gpml_plate_id.value();
 	}
-
-	if (current_top_level_propname() == right_plate_id_property_name)
+	else if (current_top_level_propname() == right_plate_id_property_name)
 	{
 		d_right_plate_id = gpml_plate_id.value();
 	}
-
-	if (current_top_level_propname() == left_plate_id_property_name)
+	else if (current_top_level_propname() == left_plate_id_property_name)
 	{
 		d_left_plate_id = gpml_plate_id.value();
 	}
@@ -127,20 +129,11 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_enumeration(
 	static GPlatesModel::PropertyName reconstruction_method_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
 
-	d_recon_method = GPlatesAppLogic::BY_PLATE_ID;
 	// Note that we're going to assume that we're in a property...
 	if (current_top_level_propname() == reconstruction_method_name)
 	{
-		if(enumeration.value().get() == 
-			GPlatesUtils::make_icu_string_from_qstring(
-					(*GPlatesAppLogic::recon_method_map.find(
-							GPlatesAppLogic::HALF_STAGE_ROTATION)).second))
-		{
-			d_recon_method = GPlatesAppLogic::HALF_STAGE_ROTATION;
-		}
-
+		// Note that this returns boost::none if string is not recognised.
+		d_recon_method = ReconstructionMethod::get_string_as_enum(enumeration.value());
 	}
-	return;
 }
-
 

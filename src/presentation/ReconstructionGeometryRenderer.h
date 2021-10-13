@@ -46,7 +46,7 @@ namespace GPlatesPresentation
 
 	/**
 	 * Visits classes derived from @a ReconstructionGeometry and
-	 * renderes them by creating @a RenderedGeometry objects.
+	 * renders them by creating @a RenderedGeometry objects.
 	 */
 	class ReconstructionGeometryRenderer :
 			public GPlatesAppLogic::ConstReconstructionGeometryVisitor
@@ -104,6 +104,16 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf);
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp);
+
+		virtual
+		void
+		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp);
 
 		virtual
@@ -125,6 +135,11 @@ namespace GPlatesPresentation
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr);
 
 	private:
 		GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;

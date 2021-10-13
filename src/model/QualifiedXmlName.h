@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,13 +28,15 @@
 #ifndef GPLATES_MODEL_QUALIFIEDXMLNAME_H
 #define GPLATES_MODEL_QUALIFIEDXMLNAME_H
 
-#include <QString>
 #include <boost/optional.hpp>
+#include <QString>
+#include <QStringList>
+
 #include "StringSetSingletons.h"
+
+#include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h" // For GPLATES_ICU_BOOL
 #include "utils/XmlNamespaces.h"
-
-
 
 
 namespace GPlatesModel
@@ -146,8 +148,8 @@ namespace GPlatesModel
 
 
 		QualifiedXmlName(
-				const UnicodeString &namespace_uri,
-				const UnicodeString &name) :
+				const GPlatesUtils::UnicodeString &namespace_uri,
+				const GPlatesUtils::UnicodeString &name) :
 			d_namespace(StringSetSingletons::xml_namespace_instance().insert(namespace_uri)), 
 			d_name(SingletonType::instance().insert(name))
 		{
@@ -172,9 +174,9 @@ namespace GPlatesModel
 
 
 		QualifiedXmlName(
-				const UnicodeString &namespace_uri,
-				boost::optional<const UnicodeString &> namespace_alias,
-				const UnicodeString &name) :
+				const GPlatesUtils::UnicodeString &namespace_uri,
+				boost::optional<const GPlatesUtils::UnicodeString &> namespace_alias,
+				const GPlatesUtils::UnicodeString &name) :
 			d_namespace(StringSetSingletons::xml_namespace_instance().insert(namespace_uri)), 
 			d_name(SingletonType::instance().insert(name))
 		{
@@ -189,7 +191,7 @@ namespace GPlatesModel
 		/**
 		 * Access the Unicode string of the namespace for this instance.
 		 */
-		const UnicodeString &
+		const GPlatesUtils::UnicodeString &
 		get_namespace() const {
 			return *d_namespace;
 		}
@@ -205,7 +207,7 @@ namespace GPlatesModel
 		/**
 		 * Access the Unicode string of the namespace alias for this instance.
 		 */
-		const UnicodeString &
+		const GPlatesUtils::UnicodeString &
 		get_namespace_alias() const {
 			return *d_namespace_alias;
 		}
@@ -222,7 +224,7 @@ namespace GPlatesModel
 		/**
 		 * Access the Unicode string of the name for this instance.
 		 */
-		const UnicodeString &
+		const GPlatesUtils::UnicodeString &
 		get_name() const {
 			return *d_name;
 		}
@@ -235,9 +237,9 @@ namespace GPlatesModel
 		 * Note that this undermines many of the performance benefits
 		 * gained from using QualifiedXmlName in the first place.
 		 */
-		const UnicodeString
+		const GPlatesUtils::UnicodeString
 		build_aliased_name() const {
-			return get_namespace_alias() + UnicodeString(":") + get_name();
+			return get_namespace_alias() + GPlatesUtils::UnicodeString(":") + get_name();
 		}
 
 		/**
@@ -298,5 +300,33 @@ namespace GPlatesModel
 	}
 
 }
+
+
+namespace GPlatesUtils
+{
+	// Specialisation of Parse for the QualifiedXmlName.
+	template<typename SingletonType>
+	struct Parse<GPlatesModel::QualifiedXmlName<SingletonType> >
+	{
+		GPlatesModel::QualifiedXmlName<SingletonType>
+		operator()(
+				const QString &s)
+		{
+			QStringList tokens = s.split(':');
+			if (tokens.count() == 2)
+			{
+				return GPlatesModel::QualifiedXmlName<SingletonType>(
+						*GPlatesUtils::XmlNamespaces::get_namespace_for_standard_alias(
+							GPlatesUtils::make_icu_string_from_qstring(tokens.at(0))),
+						GPlatesUtils::make_icu_string_from_qstring(tokens.at(1)));
+			}
+			else
+			{
+				throw ParseError();
+			}
+		}
+	};
+}
+
 
 #endif  // GPLATES_MODEL_QUALIFIEDXMLNAME_H

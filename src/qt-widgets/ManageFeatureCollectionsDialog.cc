@@ -31,6 +31,7 @@
 #include <QPushButton>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QDir>
 #include <QDebug>
 
 #include "app-logic/ApplicationState.h"
@@ -50,7 +51,6 @@
 #include "model/FeatureCollectionHandle.h"
 #include "presentation/ViewState.h"
 #include "ManageFeatureCollectionsActionWidget.h"
-#include "ManageFeatureCollectionsStateWidget.h"
 
 #include "ManageFeatureCollectionsDialog.h"
 
@@ -69,7 +69,7 @@ namespace
 		 */
 		enum ColumnName
 		{
-			FILENAME, FORMAT, LAYER_TYPES, ACTIONS
+			FILENAME, FORMAT, ACTIONS
 		};
 	}
 	
@@ -85,7 +85,7 @@ namespace
 		static const QString format_rotation(QObject::tr("PLATES4 rotation"));
 		static const QString format_shapefile(QObject::tr("ESRI shapefile"));
 		static const QString format_gpml(QObject::tr("GPlates Markup Language"));
-		static const QString format_gpml_gz(QObject::tr("Compressed GPML"));
+		static const QString format_gpmlz(QObject::tr("Compressed GPML"));
 		static const QString format_gmt(QObject::tr("GMT xy"));
 		static const QString format_gmap(QObject::tr("GMAP VGP"));
 		static const QString format_unknown(QObject::tr(""));
@@ -104,8 +104,8 @@ namespace
 		case GPlatesFileIO::FeatureCollectionFileFormat::GPML:
 			return format_gpml;
 
-		case GPlatesFileIO::FeatureCollectionFileFormat::GPML_GZ:
-			return format_gpml_gz;
+		case GPlatesFileIO::FeatureCollectionFileFormat::GPMLZ:
+			return format_gpmlz;
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::GMT:
 			return format_gmt;
@@ -117,16 +117,6 @@ namespace
 		default:
 			return format_unknown;
 		}
-	}
-
-
-	GPlatesQtWidgets::ManageFeatureCollectionsStateWidget *
-	get_state_widget(
-			QTableWidget *qtable_widget,
-			int row)
-	{
-		return dynamic_cast<GPlatesQtWidgets::ManageFeatureCollectionsStateWidget *>(
-				qtable_widget->cellWidget(row, ColumnNames::LAYER_TYPES));
 	}
 
 
@@ -196,7 +186,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	QHeaderView *header = table_feature_collections->horizontalHeader();
 	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
 	header->resizeSection(ColumnNames::FORMAT, 128);
-	header->resizeSection(ColumnNames::LAYER_TYPES, 88);
 	header->resizeSection(ColumnNames::ACTIONS, 212);
 
 	// Enforce minimum row height for the Actions widget's sake.
@@ -316,19 +305,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::unload_file(
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::set_state_for_file(
-		ManageFeatureCollectionsStateWidget *state_widget_ptr,
-		bool activate)
-{
-	GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref =
-			state_widget_ptr->get_file_reference();
-
-	// File will be activated.
-	file_ref.set_file_active(activate);
-}
-
-
-void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_files_added(
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files)
@@ -367,33 +343,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_file_info_ch
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_file_activation_changed(
-		GPlatesAppLogic::FeatureCollectionFileState &file_state,
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
-		bool activation)
-{
-	const int row = find_row(file_ref);
-
-	if (row != table_feature_collections->rowCount())
-	{
-		ManageFeatureCollectionsStateWidget *state_widget = get_state_widget(
-				table_feature_collections, row);
-		if (state_widget)
-		{
-			state_widget->update_state(activation, true/*enable*/);
-		}
-
-		ManageFeatureCollectionsActionWidget *action_widget = get_action_widget(
-				table_feature_collections, row);
-		if (action_widget)
-		{
-			action_widget->update_state();
-		}
-	}
-}
-
-
-void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::connect_to_file_state_signals()
 {
 	QObject::connect(
@@ -425,18 +374,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::connect_to_file_state_signals(
 			SLOT(handle_file_state_file_info_changed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
-
-	QObject::connect(
-			&d_file_state,
-			SIGNAL(file_state_file_activation_changed(
-				GPlatesAppLogic::FeatureCollectionFileState &,
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference,
-				bool)),
-			this,
-			SLOT(handle_file_state_file_activation_changed(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference,
-					bool)));
 }
 
 
@@ -471,9 +408,8 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	}
 	
 	QString filename_str = qfileinfo.fileName();
-	QString filepath_str = qfileinfo.path();
+	QString filepath_str = QDir::toNativeSeparators(qfileinfo.path());
 	QString format_str = get_format_for_file(qfileinfo);
-	const bool active = file.is_file_active();
 
 	// Add blank row.
 	int row = table_feature_collections->rowCount();
@@ -489,12 +425,6 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	QTableWidgetItem *format_item = new QTableWidgetItem(format_str);
 	format_item->setFlags(Qt::ItemIsEnabled);
 	table_feature_collections->setItem(row, ColumnNames::FORMAT, format_item);
-
-	// Add layer type / in use status.
-	ManageFeatureCollectionsStateWidget *state_widget_ptr =
-			new ManageFeatureCollectionsStateWidget(*this, file, 
-					active, true/*enable*/, this);
-	table_feature_collections->setCellWidget(row, ColumnNames::LAYER_TYPES, state_widget_ptr);
 	
 	// Add action buttons widget.
 	ManageFeatureCollectionsActionWidget *action_widget_ptr =

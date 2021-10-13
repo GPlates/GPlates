@@ -35,9 +35,9 @@
 #include <QToolButton>
 #include <QMenu>
 
-#include "app-logic/Layer.h"
-
 #include "VisualLayerWidgetUi.h"
+
+#include "app-logic/Layer.h"
 
 
 namespace GPlatesAppLogic
@@ -60,8 +60,8 @@ namespace GPlatesQtWidgets
 {
 	// Forward declarations.
 	class ElidedLabel;
-	class RasterLayerOptionsWidget;
-	class ReadErrorAccumulationDialog;
+	class LayerOptionsWidget;
+	class ViewportWindow;
 
 	namespace VisualLayerWidgetInternals
 	{
@@ -95,11 +95,20 @@ namespace GPlatesQtWidgets
 
 		protected:
 
+			virtual
 			void
 			mousePressEvent(
 					QMouseEvent *event_);
 
+			virtual
+			void
+			changeEvent(
+					QEvent *event_);
+
 		private:
+
+			void
+			set_cursor();
 
 			const QPixmap &d_on_icon;
 			const QPixmap &d_off_icon;
@@ -180,7 +189,8 @@ namespace GPlatesQtWidgets
 
 			InputChannelWidget(
 					GPlatesGui::VisualLayersProxy &visual_layers,
-					GPlatesAppLogic::ApplicationState &file_state,
+					GPlatesAppLogic::ApplicationState &application_state,
+					GPlatesPresentation::ViewState &view_state,
 					QWidget *parent_ = NULL);
 
 			/**
@@ -215,13 +225,11 @@ namespace GPlatesQtWidgets
 					QToolButton *button);
 
 			GPlatesGui::VisualLayersProxy &d_visual_layers;
-
 			GPlatesAppLogic::ApplicationState &d_application_state;
+			GPlatesPresentation::ViewState &d_view_state;
 
 			ElidedLabel *d_input_channel_name_label;
-
 			QWidget *d_input_connection_widgets_container;
-
 			QToolButton *d_add_new_connection_widget;
 
 			/**
@@ -263,14 +271,20 @@ namespace GPlatesQtWidgets
 				GPlatesGui::VisualLayersProxy &visual_layers,
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
-				QString &open_file_path,
-				ReadErrorAccumulationDialog *read_errors_dialog,
+				ViewportWindow *viewport_window,
 				QWidget *parent_ = NULL);
 
 		void
 		set_data(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
 				int row);
+
+	protected:
+
+		virtual
+		void
+		mousePressEvent(
+				QMouseEvent *event_);
 
 	private slots:
 
@@ -280,29 +294,11 @@ namespace GPlatesQtWidgets
 		void
 		handle_visibility_icon_clicked();
 
+		void
+		handle_link_activated(
+				const QString &link);
+
 	private:
-
-		class DraggableWidget:
-				public QWidget
-		{
-		public:
-
-			DraggableWidget(
-					QWidget *parent_ = NULL);
-
-			virtual
-			void
-			mousePressEvent(
-					QMouseEvent *event_);
-
-			void
-			set_row(
-					int row);
-
-		private:
-
-			int d_row;
-		};
 
 		void
 		make_signal_slot_connections();
@@ -317,8 +313,7 @@ namespace GPlatesQtWidgets
 		GPlatesGui::VisualLayersProxy &d_visual_layers;
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
-		QString &d_open_file_path;
-		ReadErrorAccumulationDialog *d_read_errors_dialog;
+		ViewportWindow *d_viewport_window;
 
 		/**
 		 * A weak pointer to the visual layer that we're currently displaying.
@@ -328,7 +323,12 @@ namespace GPlatesQtWidgets
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
 
-		DraggableWidget *d_left_widget;
+		/**
+		 * The index of the row that this widget is showing.
+		 */
+		int d_row;
+
+		QWidget *d_left_widget;
 
 		/**
 		 * A pointer to the expand/collapse icon on the left. For this icon, 'on'
@@ -351,11 +351,11 @@ namespace GPlatesQtWidgets
 		ElidedLabel *d_type_label;
 
 		/**
-		 * A pointer to the layout of the input_channels_widget.
+		 * A pointer to the layout of the input_channels_groupbox.
 		 *
 		 * Memory managed by Qt.
 		 */
-		QVBoxLayout *d_input_channels_widget_layout;
+		QVBoxLayout *d_input_channels_groupbox_layout;
 
 		/**
 		 * A pool of InputChannelWidgets that can be used to display information about
@@ -371,7 +371,8 @@ namespace GPlatesQtWidgets
 		 */
 		std::vector<VisualLayerWidgetInternals::InputChannelWidget *> d_input_channel_widgets;
 
-		RasterLayerOptionsWidget *d_raster_layer_options_widget;
+		LayerOptionsWidget *d_current_layer_options_widget;
+		QVBoxLayout *d_layer_options_groupbox_layout;
 	};
 }
 

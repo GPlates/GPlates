@@ -52,18 +52,8 @@ GPlatesViewOperations::DeleteFeatureOperation::delete_focused_feature()
 		GPlatesModel::FeatureHandle::weak_ref feature_ref = d_feature_focus.focused_feature();
 		if (feature_ref)
 		{
-			GPlatesModel::FeatureCollectionHandle *feature_collection_ptr = feature_ref->parent_ptr();
-			if (feature_collection_ptr)
-			{
-				d_feature_focus.unset_focus();
-
-				GPlatesModel::container_size_type index = feature_ref->index_in_container();
-				GPlatesModel::FeatureCollectionHandle::iterator iter_to_feature(
-						*feature_collection_ptr, index);
-				feature_collection_ptr->remove(iter_to_feature);
-
-				d_application_state.reconstruct();
-			}
+			feature_ref->remove_from_parent();
+			d_application_state.reconstruct();
 		}
 	}
 }

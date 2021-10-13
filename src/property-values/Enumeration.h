@@ -62,8 +62,8 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const UnicodeString &enum_type,
-				const UnicodeString &enum_content)
+				const GPlatesUtils::UnicodeString &enum_type,
+				const GPlatesUtils::UnicodeString &enum_content)
 		{
 			Enumeration::non_null_ptr_type ptr(new Enumeration(enum_type, enum_content));
 			return ptr;
@@ -140,8 +140,8 @@ namespace GPlatesPropertyValues
 
 		explicit
 		Enumeration(
-				const UnicodeString &enum_type,
-				const UnicodeString &enum_content) :
+				const GPlatesUtils::UnicodeString &enum_type,
+				const GPlatesUtils::UnicodeString &enum_content) :
 			PropertyValue(),
 			d_type(enum_type),
 			d_value(enum_content)

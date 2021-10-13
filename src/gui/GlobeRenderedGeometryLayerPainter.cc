@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -58,6 +59,7 @@
 #include "property-values/RawRasterUtils.h"
 #include "property-values/XsString.h"
 
+#include "view-operations/RenderedArrowedPolyline.h"
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
@@ -99,7 +101,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
 	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Used to add line strips to the stream.
-	GPlatesOpenGL::GLStreamLineStrips<Vertex> stream_line_strips(*line_drawables.stream);
+	GPlatesOpenGL::GLStreamLineStrips<vertex_type> stream_line_strips(*line_drawables.stream);
 
 	stream_line_strips.begin_line_strip();
 
@@ -129,7 +131,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
 				const GPlatesMaths::UnitVector3D &start = gca.start_point().position_vector();
 
 				// Vertex representing the start point's position and colour.
-				const Vertex start_vertex = {
+				const vertex_type start_vertex = {
 						start.x().dval(), start.y().dval(), start.z().dval(), rgba8_color };
 
 				stream_line_strips.add_vertex(start_vertex);
@@ -139,7 +141,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
 			const GPlatesMaths::UnitVector3D &end = gca.end_point().position_vector();
 
 			// Vertex representing the end point's position and colour.
-			const Vertex end_vertex = {
+			const vertex_type end_vertex = {
 					end.x().dval(), end.y().dval(), end.z().dval(), rgba8_color };
 
 			stream_line_strips.add_vertex(end_vertex);
@@ -202,8 +204,11 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 	GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type primitives_off_the_sphere_node =
 			GPlatesOpenGL::GLRenderGraphInternalNode::create();
 
-	// Only setting for non-raster primitives - the raster primitives will handle their own state.
+	// Only setting for non-raster primitives.
 	set_state_for_non_raster_primitives_on_the_sphere(*non_raster_primitives_on_the_sphere_node);
+
+	// Only setting for raster primitives.
+	set_state_for_raster_primitives_on_the_sphere(*raster_primitives_on_the_sphere_node);
 
 	set_state_for_primitives_off_the_sphere(*primitives_off_the_sphere_node);
 
@@ -317,7 +322,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 			rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
 
 	// Get the stream for points of the current point size.
-	GPlatesOpenGL::GLStreamPrimitives<Vertex> &stream =
+	GPlatesOpenGL::GLStreamPrimitives<vertex_type> &stream =
 			d_paint_params->translucent_drawables_on_the_sphere.get_point_drawables(point_size);
 
 	// Get the point position.
@@ -326,11 +331,11 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 
 	// Vertex representing the point's position and colour.
 	// Convert colour from floats to bytes to use less vertex memory.
-	const Vertex vertex = {
+	const vertex_type vertex = {
 			pos.x().dval(), pos.y().dval(), pos.z().dval(), Colour::to_rgba8(*colour) };
 
 	// Used to add points to the stream.
-	GPlatesOpenGL::GLStreamPoints<Vertex> stream_points(stream);
+	GPlatesOpenGL::GLStreamPoints<vertex_type> stream_points(stream);
 
 	stream_points.begin_points();
 	stream_points.add_vertex(vertex);
@@ -360,11 +365,11 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sph
 			rendered_multi_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
 
 	// Get the stream for points of the current point size.
-	GPlatesOpenGL::GLStreamPrimitives<Vertex> &stream =
+	GPlatesOpenGL::GLStreamPrimitives<vertex_type> &stream =
 			d_paint_params->translucent_drawables_on_the_sphere.get_point_drawables(point_size);
 
 	// Used to add points to the stream.
-	GPlatesOpenGL::GLStreamPoints<Vertex> stream_points(stream);
+	GPlatesOpenGL::GLStreamPoints<vertex_type> stream_points(stream);
 
 	stream_points.begin_points();
 
@@ -379,7 +384,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sph
 		const GPlatesMaths::UnitVector3D &pos = point_iter->position_vector();
 
 		// Vertex representing the point's position and colour.
-		const Vertex vertex = { pos.x().dval(), pos.y().dval(), pos.z().dval(), rgba8_color };
+		const vertex_type vertex = { pos.x().dval(), pos.y().dval(), pos.z().dval(), rgba8_color };
 
 		stream_points.add_vertex(vertex);
 	}
@@ -510,7 +515,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 	boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> age_grid_raster;
 	if (rendered_resolved_raster.get_age_grid_raster_band_names())
 	{
-		static const GPlatesPropertyValues::TextContent AGE_BAND_NAME(UnicodeString("age"));
+		static const GPlatesPropertyValues::TextContent AGE_BAND_NAME(GPlatesUtils::UnicodeString("age"));
 
 		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
 				age_grid_proxied_rasters = rendered_resolved_raster.get_age_grid_proxied_rasters();
@@ -628,13 +633,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 	// Render a single line segment for the arrow body.
 
 	// Used to add lines to the stream.
-	GPlatesOpenGL::GLStreamLines<Vertex> stream_lines(*line_drawables.stream);
+	GPlatesOpenGL::GLStreamLines<vertex_type> stream_lines(*line_drawables.stream);
 
 	stream_lines.begin_lines();
 
 	// Vertex representing the start and end point's position and colour.
-	const Vertex start_vertex = { start.x().dval(), start.y().dval(), start.z().dval(), rgba8_color };
-	const Vertex end_vertex = { end.x().dval(), end.y().dval(), end.z().dval(), rgba8_color };
+	const vertex_type start_vertex = { start.x().dval(), start.y().dval(), start.z().dval(), rgba8_color };
+	const vertex_type end_vertex = { end.x().dval(), end.y().dval(), end.z().dval(), rgba8_color };
 
 	stream_lines.add_vertex(start_vertex);
 	stream_lines.add_vertex(end_vertex);
@@ -809,7 +814,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_ellipse(
 	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Used to add line loops to the stream.
-	GPlatesOpenGL::GLStreamLineLoops<Vertex> stream_line_loops(*line_drawables.stream);
+	GPlatesOpenGL::GLStreamLineLoops<vertex_type> stream_line_loops(*line_drawables.stream);
 
 	stream_line_loops.begin_line_loop();
 
@@ -818,7 +823,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_ellipse(
 		GPlatesMaths::UnitVector3D uv = ellipse_generator.get_point_on_ellipse(i);
 
 		// Vertex representing the ellipse point position and colour.
-		const Vertex vertex = { uv.x().dval(), uv.y().dval(), uv.z().dval(), rgba8_color };
+		const vertex_type vertex = { uv.x().dval(), uv.y().dval(), uv.z().dval(), rgba8_color };
 
 		stream_line_loops.add_vertex(vertex);
 	}
@@ -832,7 +837,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_cone(
 		const GPlatesMaths::Vector3D &apex,
 		const GPlatesMaths::Vector3D &cone_axis,
 		rgba8_t rgba8_color,
-		GPlatesOpenGL::GLStreamPrimitives<Vertex> &stream)
+		GPlatesOpenGL::GLStreamPrimitives<vertex_type> &stream)
 {
 	const GPlatesMaths::Vector3D centre_base_circle = apex - cone_axis;
 
@@ -898,11 +903,11 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_cone(
 	// This is the default state for OpenGL so we don't need to set it.
 
 	// Used to add triangle fan to the stream.
-	GPlatesOpenGL::GLStreamTriangleFans<Vertex> stream_triangle_fans(stream);
+	GPlatesOpenGL::GLStreamTriangleFans<vertex_type> stream_triangle_fans(stream);
 
 	stream_triangle_fans.begin_triangle_fan();
 
-	const Vertex apex_vertex = { apex.x().dval(), apex.y().dval(), apex.z().dval(), rgba8_color };
+	const vertex_type apex_vertex = { apex.x().dval(), apex.y().dval(), apex.z().dval(), rgba8_color };
 	stream_triangle_fans.add_vertex(apex_vertex);
 
 	for (int vertex_index = 0;
@@ -910,12 +915,12 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_cone(
 		++vertex_index)
 	{
 		const GPlatesMaths::Vector3D &boundary = cone_base_circle[vertex_index];
-		const Vertex boundary_vertex = {
+		const vertex_type boundary_vertex = {
 				boundary.x().dval(), boundary.y().dval(), boundary.z().dval(), rgba8_color };
 		stream_triangle_fans.add_vertex(boundary_vertex);
 	}
 	const GPlatesMaths::Vector3D &last_circle = cone_base_circle[0];
-	const Vertex last_circle_vertex = {
+	const vertex_type last_circle_vertex = {
 			last_circle.x().dval(), last_circle.y().dval(), last_circle.z().dval(), rgba8_color };
 	stream_triangle_fans.add_vertex(last_circle_vertex);
 
@@ -968,6 +973,39 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::set_state_for_non_raster_primitiv
 	render_graph_node.set_state_set(state_set);
 }
 
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::set_state_for_raster_primitives_on_the_sphere(
+		GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node)
+{
+	GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type state_set =
+			GPlatesOpenGL::GLCompositeStateSet::create();
+
+	//
+	// Note that we set the depth testing/writing state here rather than inside the
+	// raster rendering machinery because here we know we are rendering to the scene
+	// and hence have a depth buffer attachment to the main framebuffer.
+	// In the raster rendering code there are certain paths that use render targets which
+	// currently don't have a depth buffer attachment (because it's not needed) and
+	// hence enabling depth testing in these paths can give corrupt results.
+	//
+
+	// Turn on depth testing.
+	GPlatesOpenGL::GLDepthTestState::non_null_ptr_type depth_test_state_set =
+			GPlatesOpenGL::GLDepthTestState::create();
+	depth_test_state_set->gl_enable(GL_TRUE);
+	state_set->add_state_set(depth_test_state_set);
+
+	// Turn off depth writes.
+	GPlatesOpenGL::GLMaskBuffersState::non_null_ptr_type depth_mask_state_set =
+			GPlatesOpenGL::GLMaskBuffersState::create();
+	depth_mask_state_set->gl_depth_mask(GL_FALSE);
+	state_set->add_state_set(depth_mask_state_set);
+
+	render_graph_node.set_state_set(state_set);
+}
+
+
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::set_state_for_text_off_the_sphere(
 		GPlatesOpenGL::GLRenderGraphInternalNode &render_graph_node)
@@ -1018,13 +1056,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::set_translucent_state(
 
 
 GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::PointLinePolygonDrawables() :
-	d_triangle_drawables(create_stream()),
-	d_quad_drawables(create_stream())
+	d_triangle_drawables(GPlatesOpenGL::create_stream<vertex_type>()),
+	d_quad_drawables(GPlatesOpenGL::create_stream<vertex_type>())
 {
 }
 
 
-GPlatesOpenGL::GLStreamPrimitives<GPlatesGui::GlobeRenderedGeometryLayerPainter::Vertex> &
+GPlatesOpenGL::GLStreamPrimitives<GPlatesGui::GlobeRenderedGeometryLayerPainter::vertex_type> &
 GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::get_point_drawables(
 		float point_size)
 {
@@ -1036,7 +1074,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::get_po
 	}
 
 	// Create a new stream.
-	GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type stream = create_stream();
+	GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type stream = GPlatesOpenGL::create_stream<vertex_type>();
 	
 	d_point_drawables_map.insert(
 			point_size_to_drawables_map_type::value_type(point_size, stream));
@@ -1057,7 +1095,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::get_li
 	}
 
 	// Create a new stream.
-	GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type stream = create_stream();
+	GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type stream = GPlatesOpenGL::create_stream<vertex_type>();
 
 	std::pair<line_width_to_drawables_map_type::iterator, bool> insert_result =
 			d_line_drawables_map.insert(
@@ -1079,7 +1117,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::add_dr
 	// Iterate over the point size groups and add a render graph node for each.
 	BOOST_FOREACH(point_size_to_drawables_map_type::value_type &point_size_entry, d_point_drawables_map)
 	{
-		GPlatesOpenGL::GLStreamPrimitives<Vertex> &points_stream = *point_size_entry.second;
+		GPlatesOpenGL::GLStreamPrimitives<vertex_type> &points_stream = *point_size_entry.second;
 		boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> points_drawable =
 				points_stream.get_drawable();
 		if (points_drawable)
@@ -1240,30 +1278,74 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::add_li
 }
 
 
-GPlatesOpenGL::GLStreamPrimitives<GPlatesGui::GlobeRenderedGeometryLayerPainter::Vertex>::non_null_ptr_type
-GPlatesGui::GlobeRenderedGeometryLayerPainter::PointLinePolygonDrawables::create_stream()
-{
-	//
-	// The following reflects the structure of 'struct Vertex'.
-	// It defines how the elements of the vertex are packed together in the vertex.
-	// It's an OpenGL thing.
-	//
-
-	const GPlatesOpenGL::GLVertexArray::VertexPointer vertex_pointer = {
-			3, GL_FLOAT, sizeof(Vertex), 0 };
-
-	const GPlatesOpenGL::GLVertexArray::ColorPointer colour_pointer = {
-			4, GL_UNSIGNED_BYTE, sizeof(Vertex), 3 * sizeof(GLfloat) };
-
-	GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type stream =
-			GPlatesOpenGL::GLStreamPrimitives<Vertex>::create(vertex_pointer, colour_pointer);
-
-	return stream;
-}
-
-
 GPlatesGui::GlobeRenderedGeometryLayerPainter::LineDrawables::LineDrawables(
-		const GPlatesOpenGL::GLStreamPrimitives<Vertex>::non_null_ptr_type &stream_) :
+		const GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type &stream_) :
 	stream(stream_)
 {
 }
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
+		const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline)
+{
+	// Based on the "visit_rendered_direction_arrow" code 
+
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_arrowed_polyline);
+	if (!colour)
+	{
+		return;
+	}
+
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
+
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type points =
+			rendered_arrowed_polyline.get_polyline_on_sphere();
+
+	GPlatesMaths::PolylineOnSphere::const_iterator 
+			iter = points->begin(),
+			end = points->end();
+
+	for (; iter != end ; ++iter)
+	{	
+		GPlatesMaths::real_t arrowhead_size =
+			d_inverse_zoom_factor * rendered_arrowed_polyline.get_arrowhead_projected_size();
+
+		//qDebug() << "arrowhead_size:" << arrowhead_size.dval();
+
+		const float MAX_ARROWHEAD_SIZE = rendered_arrowed_polyline.get_max_arrowhead_size();
+
+		if (arrowhead_size >MAX_ARROWHEAD_SIZE)
+		{
+			arrowhead_size = MAX_ARROWHEAD_SIZE;
+		}
+
+		// For the direction of the arrow, we really want the tangent to the curve at
+		// the end of the curve. The curve will ultimately be a small circle arc; the 
+		// current implementation uses a great circle arc. 
+		if (!(iter->is_zero_length()))
+		{
+			GPlatesMaths::Vector3D tangent_direction = GPlatesMaths::cross(
+				iter->rotation_axis(),iter->end_point().position_vector());
+			GPlatesMaths::UnitVector3D arrowline_unit_vector(tangent_direction);			
+			paint_cone(GPlatesMaths::Vector3D(iter->end_point().position_vector()),
+				arrowhead_size*arrowline_unit_vector,
+				rgba8_colour,
+				d_paint_params->drawables_off_the_sphere.get_triangle_drawables());
+		}
+	}
+
+	const float line_width =
+		rendered_arrowed_polyline.get_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	LineDrawables &line_drawables =
+		d_paint_params->translucent_drawables_on_the_sphere.get_line_drawables(line_width);
+
+
+	paint_great_circle_arcs(
+		points->begin(),
+		points->end(),
+		colour.get(),
+		line_drawables,
+		*d_nurbs_renderer);
+}
+

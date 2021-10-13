@@ -58,10 +58,13 @@ namespace GPlatesAppLogic
 	class AgeGridRaster;
 	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
+	class ReconstructedFlowline;
+	class ReconstructedMotionPath;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
 	class ResolvedTopologicalBoundary;
 	class ResolvedTopologicalNetwork;
+	class CoRegistrationData;
 
 
 	/**
@@ -91,6 +94,16 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryType, ReconstructedFeatureGeometry>::type
 						reconstructed_feature_geometry_type;
 
+		//! Typedef for @a ReconstructedFlowline of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, ReconstructedFlowline>::type
+						reconstructed_flowline_type;
+
+		//! Typedef for @a ReconstructedMotionPath of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, ReconstructedMotionPath>::type
+						reconstructed_motion_path_type;
+
 		//! Typedef for @a ReconstructedFeatureGeometry of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, ReconstructedVirtualGeomagneticPole>::type
@@ -116,6 +129,10 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryType, ResolvedTopologicalNetwork>::type
 						resolved_topological_network_type;
 
+		//! Typedef for @a ResolvedTopologicalNetwork of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, CoRegistrationData>::type
+						co_registration_data_type;
 
 		// We'll make this function pure virtual so that the class is abstract.  The class
 		// *should* be abstract, but wouldn't be unless we did this, since all the virtual
@@ -142,6 +159,24 @@ namespace GPlatesAppLogic
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
 		{  }
 
 
@@ -192,6 +227,13 @@ namespace GPlatesAppLogic
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 		{  }
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &rtn)
+		{  }
+
 
 	private:
 

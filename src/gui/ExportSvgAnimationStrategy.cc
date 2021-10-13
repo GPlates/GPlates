@@ -31,9 +31,8 @@
 
 #include "qt-widgets/ViewportWindow.h"
 
-#include "utils/FloatingPointComparisons.h"
-
 #include "presentation/ViewState.h"
+
 
 const QString 
 GPlatesGui::ExportSvgAnimationStrategy::DEFAULT_PROJECTED_GEOMETRIES_FILENAME_TEMPLATE

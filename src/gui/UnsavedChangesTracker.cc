@@ -176,6 +176,9 @@ GPlatesGui::UnsavedChangesTracker::close_event_hook()
 	if (has_unsaved_changes()) {
 		// Exec the dialog and find which QDialogButtonBox::StandardButton was clicked.
 		d_warning_dialog_ptr->set_filename_list(list_unsaved_filenames());
+		d_warning_dialog_ptr->set_action_requested(
+				GPlatesQtWidgets::UnsavedChangesWarningDialog::CLOSE_GPLATES);
+
 		switch (d_warning_dialog_ptr->exec()) {
 		case QDialogButtonBox::SaveAll:
 			// Save. And if this save should fail, you MUST NOT CLOSE.
@@ -193,6 +196,37 @@ GPlatesGui::UnsavedChangesTracker::close_event_hook()
 		}
 	} else {
 		// All saved, all good. Quit already.
+		return true;
+	}
+}
+
+
+bool
+GPlatesGui::UnsavedChangesTracker::replace_session_event_hook()
+{
+	if (has_unsaved_changes()) {
+		// Exec the dialog and find which QDialogButtonBox::StandardButton was clicked.
+		d_warning_dialog_ptr->set_filename_list(list_unsaved_filenames());
+		d_warning_dialog_ptr->set_action_requested(
+				GPlatesQtWidgets::UnsavedChangesWarningDialog::REPLACE_SESSION);
+
+		switch (d_warning_dialog_ptr->exec()) {
+		case QDialogButtonBox::SaveAll:
+			// Save. And if this save should fail, you MUST NOT DISCARD THE CURRENT SESSION.
+			// Note also that this save must prompt the user for filenames if necessary,
+			// unlike the MCFD Save All button.
+			return file_io_feedback().save_all(true);
+
+		case QDialogButtonBox::Discard:
+			return true;
+
+		default:
+		case QDialogButtonBox::Abort:
+			return false;
+
+		}
+	} else {
+		// All saved, all good. Unload the files already.
 		return true;
 	}
 }

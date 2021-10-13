@@ -3,7 +3,7 @@
  * $Revision: 4572 $
  * $Date: 2009-01-13 01:17:30 -0800 (Tue, 13 Jan 2009) $ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010 The University of Sydney, Australia
  * Copyright (C) 2008, 2009 California Institute of Technology 
  *
  * This file is part of GPlates.
@@ -22,14 +22,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_EDIT_TOPLOGY_H
-#define GPLATES_CANVASTOOLS_EDIT_TOPLOGY_H
+#ifndef GPLATES_CANVASTOOLS_EDIT_TOPOLOGY_H
+#define GPLATES_CANVASTOOLS_EDIT_TOPOLOGY_H
 
 #include <QObject>
 
+#include "CanvasTool.h"
+
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
-#include "gui/GlobeCanvasTool.h"
 #include "gui/TopologySectionsContainer.h"
 #include "gui/TopologyTools.h"
 
@@ -57,99 +58,65 @@ namespace GPlatesCanvasTools
 	/**
 	 * This is the canvas tool used to define new geometry.
 	 */
-	class EditTopology:
+	class EditTopology :
 			public QObject,
-			public GPlatesGui::GlobeCanvasTool
+			public CanvasTool
 	{
 		Q_OBJECT
 
 	public:
 
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<EditTopology,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<EditTopology>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<EditTopology,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<EditTopology> non_null_ptr_type;
 
-		virtual
-		~EditTopology()
-		{  }
-
-		/**
-		 * Create a EditTopology instance.
-		 */
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesGui::Globe &globe,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
-				const GPlatesQtWidgets::ViewportWindow &viewport_window,
-				GPlatesGui::FeatureTableModel &clicked_table_model,	
+				GPlatesQtWidgets::ViewportWindow &viewport_window,
+				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesAppLogic::ApplicationState &application_state)
 		{
-			EditTopology::non_null_ptr_type ptr(
-					new EditTopology(
-							globe, 
-							globe_canvas, 
-							view_state,
-							viewport_window, 
-							clicked_table_model,
-							topology_sections_container,
-							topology_tools_widget,
-							application_state),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return ptr;
+			return new EditTopology(
+					status_bar_callback,
+					view_state,
+					viewport_window,
+					clicked_table_model_,
+					topology_sections_container,
+					topology_tools_widget,
+					application_state);
 		}
-		
-		
+
 		virtual
 		void
 		handle_activation();
-
 
 		virtual
 		void
 		handle_deactivation();
 
-
 		virtual
 		void
 		handle_left_click(
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-				bool is_on_globe);
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
 
-		virtual
-		void
-		handle_shift_left_click(
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				const GPlatesMaths::PointOnSphere &oriented_click_pos_on_globe,
-				bool is_on_globe);
+	private:
 
-	protected:
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
 		EditTopology(
-				GPlatesGui::Globe &globe,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
+				const status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
-				const GPlatesQtWidgets::ViewportWindow &viewport_window,
+				GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesGui::FeatureTableModel &clicked_table_model_,	
 				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesAppLogic::ApplicationState &application_state);
-
-		GPlatesGui::FeatureTableModel &
-		clicked_table_model() const
-		{
-			return *d_clicked_table_model_ptr;
-		}
-		
-	private:
 
 		/**
 		 * We need to change which canvas-tool layer is shown when this canvas-tool is
@@ -161,7 +128,7 @@ namespace GPlatesCanvasTools
 		 *
 		 * This is currently used to pass messages to the status bar.
 		 */
-		const GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
 
 		/**
 		 * This is the external table of hits which will be updated in the event that
@@ -191,18 +158,7 @@ namespace GPlatesCanvasTools
 		 */
 		const GPlatesAppLogic::ReconstructGraph &d_reconstruct_graph;
 
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		EditTopology(
-				const EditTopology &);
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		EditTopology &
-		operator=(
-				const EditTopology &);
-
 	};
 }
 
-#endif  // GPLATES_CANVASTOOLS_EDIT_TOPLOGY_H
+#endif  // GPLATES_CANVASTOOLS_EDIT_TOPOLOGY_H

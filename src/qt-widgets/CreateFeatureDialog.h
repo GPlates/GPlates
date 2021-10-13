@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008, 2010 The University of Sydney, Australia
+ * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -28,15 +29,19 @@
 
 #include <boost/optional.hpp>
 
+#include <QCheckBox>
+
 #include "CreateFeatureDialogUi.h"
 
-#include "app-logic/ReconstructionMethodId.h"
+#include "app-logic/ReconstructionMethod.h"
 
 #include "maths/GeometryOnSphere.h"
+
 #include "model/ModelInterface.h"
 #include "model/FeatureHandle.h"
 
 class QComboBox;
+
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
@@ -51,11 +56,13 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
+	class AbstractCustomPropertiesWidget;
 	class ChooseFeatureCollectionWidget;
 	class ChooseFeatureTypeWidget;
 	class EditPlateIdWidget;
 	class EditTimePeriodWidget;
 	class EditStringWidget;
+	class ChooseGeometryPropertyWidget;
 	class InformationDialog;
 	class ViewportWindow;
 
@@ -74,6 +81,15 @@ namespace GPlatesQtWidgets
 		{
 			NORMAL, TOPOLOGICAL
 		};
+
+		enum StackedWidgetPage
+		{
+			FEATURE_TYPE_PAGE,
+			PROPERTIES_PAGE,
+			CUSTOM_PAGE,
+			COLLECTION_PAGE
+		};
+
 
 		explicit
 		CreateFeatureDialog(
@@ -94,10 +110,20 @@ namespace GPlatesQtWidgets
 		bool
 		display();
 
+		bool
+		display(int index);
+
 		GPlatesModel::FeatureHandle::weak_ref
 		get_feature_ref() {
 			return d_feature_ref;
 		}
+
+                boost::optional<GPlatesModel::integer_plate_id_type>
+                get_left_plate();
+
+                boost::optional<GPlatesModel::integer_plate_id_type>
+                get_right_plate();
+
 
 	signals:
 		
@@ -116,7 +142,6 @@ namespace GPlatesQtWidgets
 		void
 		handle_page_change(
 				int page);
-
 		void
 		handle_create();
 
@@ -126,11 +151,20 @@ namespace GPlatesQtWidgets
 		void
 		recon_method_changed(
 				int index);		
+
+		void
+		handle_conjugate_value_changed();
+
+		void
+		handle_feature_type_changed();
 		
 	private:
 	
 		void
 		set_up_button_box();
+
+		void
+		set_up_custom_properties_page();
 		
 		void
 		set_up_feature_type_page();
@@ -143,6 +177,11 @@ namespace GPlatesQtWidgets
 		
 		void
 		set_up_geometric_property_list();
+
+		void
+		add_geometry(
+		    GPlatesModel::FeatureHandle::weak_ref &feature,
+		    const GPlatesModel::PropertyName &geom_prop_name);
 
 		/**
 		 * The Model interface, used to create new features.
@@ -231,13 +270,13 @@ namespace GPlatesQtWidgets
 		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
 
 		/**
-		* reconstruction method combox
-		*/
+		 * reconstruction method combox
+		 */
 		QComboBox *d_recon_method_combobox;
 		
 		/**
-		* right plate id
-		*/
+		 * right plate id
+		 */
 		EditPlateIdWidget *d_right_plate_id;
 		
 		/**
@@ -245,7 +284,28 @@ namespace GPlatesQtWidgets
 		*/
 		EditPlateIdWidget *d_left_plate_id;
 
-		GPlatesAppLogic::ReconstructionMethod d_recon_method;
+		/**
+		 *  Abstract base widget for custom properties widgets.                                                                    
+		 */
+		AbstractCustomPropertiesWidget *d_custom_properties_widget;
+
+
+		/**
+		 * Allows the user to pick the property that will store the geometry.
+		 */
+		ChooseGeometryPropertyWidget *d_listwidget_geometry_destinations;
+
+		GPlatesAppLogic::ReconstructionMethod::Type d_recon_method;
+
+		/**
+		 *  Whether or not a customisable feature type has been selected.                                                                    
+		 */
+		bool d_customisable_feature_type_selected;
+
+		/**
+		 *  Checkbox for creating conjugate isochron.                                                                    
+		 */
+		QCheckBox *d_create_conjugate_isochron_checkbox;
 	};
 }
 

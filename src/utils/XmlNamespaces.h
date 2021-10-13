@@ -65,9 +65,9 @@ namespace GPlatesUtils
 		/**
 		 * Standard namespaces.
 		 */
-		const UnicodeString GPML_NAMESPACE = Internals::gpml_namespace();
-		const UnicodeString GML_NAMESPACE = Internals::gml_namespace();
-		const UnicodeString XSI_NAMESPACE = Internals::xsi_namespace();
+		const GPlatesUtils::UnicodeString GPML_NAMESPACE = Internals::gpml_namespace();
+		const GPlatesUtils::UnicodeString GML_NAMESPACE = Internals::gml_namespace();
+		const GPlatesUtils::UnicodeString XSI_NAMESPACE = Internals::xsi_namespace();
 
 		const QString GPML_NAMESPACE_QSTRING = Internals::gpml_namespace();
 		const QString GML_NAMESPACE_QSTRING = Internals::gml_namespace();
@@ -77,9 +77,9 @@ namespace GPlatesUtils
 		/**
 		 * Standard namespace aliases.
 		 */
-		const UnicodeString GPML_STANDARD_ALIAS = Internals::gpml_standard_alias();
-		const UnicodeString GML_STANDARD_ALIAS = Internals::gml_standard_alias();
-		const UnicodeString XSI_STANDARD_ALIAS = Internals::xsi_standard_alias();
+		const GPlatesUtils::UnicodeString GPML_STANDARD_ALIAS = Internals::gpml_standard_alias();
+		const GPlatesUtils::UnicodeString GML_STANDARD_ALIAS = Internals::gml_standard_alias();
+		const GPlatesUtils::UnicodeString XSI_STANDARD_ALIAS = Internals::xsi_standard_alias();
 
 		const QString GPML_STANDARD_ALIAS_QSTRING = Internals::gpml_standard_alias();
 		const QString GML_STANDARD_ALIAS_QSTRING = Internals::gml_standard_alias();
@@ -92,7 +92,7 @@ namespace GPlatesUtils
 		 */
 		StringSet::SharedIterator
 		get_standard_alias_for_namespace(
-				const UnicodeString &namespace_uri);
+				const GPlatesUtils::UnicodeString &namespace_uri);
 
 
 		/**
@@ -101,7 +101,7 @@ namespace GPlatesUtils
 		 */
 		StringSet::SharedIterator
 		get_namespace_for_standard_alias(
-				const UnicodeString &namespace_alias);
+				const GPlatesUtils::UnicodeString &namespace_alias);
 	}
 }
 

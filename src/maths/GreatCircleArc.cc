@@ -303,26 +303,30 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 	if ( ! is_zero_length()) {
 		// The arc has a determinate rotation axis.
 
-		real_t closeness_to_poles = abs(dot(test_point.position_vector(), rotation_axis()));
+		if( is_strictly_positive(closeness_inclusion_threshold) )
+		{
+			real_t closeness_to_poles = abs(dot(test_point.position_vector(), rotation_axis()));
 
-		// This first if-statement should weed out most of the no-hopers.
-		if (closeness_to_poles.is_precisely_greater_than(latitude_exclusion_threshold.dval())) {
+			// This first if-statement should weed out most of the no-hopers.
+			if (closeness_to_poles.is_precisely_greater_than(latitude_exclusion_threshold.dval())) 
+			{
 
-			/*
-			 * 'test_point' lies within latitudes sufficiently far above or
-			 * below the GC that there is no chance it could be "close to"
-			 * this GCA.
-			 */
-			return false;
-
-		} else {
-			// Get the closest feature of this GCA to 'test_point'.
-			boost::optional<UnitVector3D> closest_point_on_great_circle_arc;
-			calculate_closest_feature(
-					*this, test_point, closest_point_on_great_circle_arc, closeness);
-			
-			return closeness.is_precisely_greater_than(closeness_inclusion_threshold.dval());
+				/*
+				 * 'test_point' lies within latitudes sufficiently far above or
+				 * below the GC that there is no chance it could be "close to"
+				 * this GCA.
+				 */
+				return false;
+			}
 		}
+		
+		// Get the closest feature of this GCA to 'test_point'.
+		boost::optional<UnitVector3D> closest_point_on_great_circle_arc;
+		calculate_closest_feature(
+				*this, test_point, closest_point_on_great_circle_arc, closeness);
+		
+		return closeness.is_precisely_greater_than(closeness_inclusion_threshold.dval());
+		
 	}
 
 	// The arc is point-like.

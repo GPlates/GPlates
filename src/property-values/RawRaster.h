@@ -451,8 +451,7 @@ namespace GPlatesPropertyValues
 			const boost::optional<T> &
 			no_data_value() const
 			{
-				static const boost::optional<T> result =
-					static_cast<T>(GPlatesMaths::nan());
+				static const boost::optional<T> result = GPlatesMaths::quiet_nan<T>();
 				return result;
 			}
 

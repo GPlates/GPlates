@@ -29,9 +29,12 @@
 #define GPLATES_MODEL_IDTYPEGENERATOR_H
 
 #include <vector>
-#include <unicode/unistr.h>
 #include <boost/scoped_ptr.hpp>
+
 #include "StringSetSingletons.h"
+
+#include "global/unicode.h"
+
 #include "utils/UniqueId.h"
 
 
@@ -174,7 +177,7 @@ namespace GPlatesModel
 		static
 		bool
 		is_loaded(
-				const UnicodeString &s);
+				const GPlatesUtils::UnicodeString &s);
 
 		IdTypeGenerator() :
 			d_sh_iter(SingletonType::instance().insert(GPlatesUtils::generate_unique_id()))
@@ -192,7 +195,7 @@ namespace GPlatesModel
 		 */
 		explicit
 		IdTypeGenerator(
-				const UnicodeString &s):
+				const GPlatesUtils::UnicodeString &s):
 			d_sh_iter(SingletonType::instance().insert(s))
 		{  }
 
@@ -233,7 +236,7 @@ namespace GPlatesModel
 		/**
 		 * Access the Unicode string of the text content for this instance.
 		 */
-		const UnicodeString &
+		const GPlatesUtils::UnicodeString &
 		get() const {
 			return *d_sh_iter;
 		}
@@ -314,7 +317,7 @@ namespace GPlatesModel
 	inline
 	bool
 	GPlatesModel::IdTypeGenerator<SingletonType, BackRefTargetType>::is_loaded(
-			const UnicodeString &s) {
+			const GPlatesUtils::UnicodeString &s) {
 		return SingletonType::instance().contains(s);
 	}
 

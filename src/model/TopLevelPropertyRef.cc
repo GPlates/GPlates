@@ -25,14 +25,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "TopLevelPropertyRef.h"
+
 #include "FeatureHandle.h"
 #include "TopLevelProperty.h"
-#include "TopLevelPropertyRef.h"
 
 
 GPlatesModel::TopLevelPropertyRef::TopLevelPropertyRef(
 		const FeatureHandle::iterator &iterator) :
-	d_iterator_ptr(new FeatureHandle::iterator(iterator))
+	d_feature_ref(iterator.handle_weak_ref()),
+	d_index(iterator.index())
 {
 }
 
@@ -40,7 +42,8 @@ GPlatesModel::TopLevelPropertyRef::TopLevelPropertyRef(
 GPlatesModel::TopLevelPropertyRef::TopLevelPropertyRef(
 		const TopLevelPropertyRef &other) :
 	GPlatesUtils::SafeBool<TopLevelPropertyRef>(other),
-	d_iterator_ptr(new FeatureHandle::iterator(*(other.d_iterator_ptr)))
+	d_feature_ref(other.d_feature_ref),
+	d_index(other.d_index)
 {
 }
 
@@ -81,14 +84,9 @@ void
 GPlatesModel::TopLevelPropertyRef::operator=(
 		GPlatesGlobal::PointerTraits<const TopLevelProperty>::non_null_ptr_type new_property)
 {
-	container_size_type index = d_iterator_ptr->index();
-	FeatureHandle::weak_ref handle_weak_ref = d_iterator_ptr->handle_weak_ref();
-
-	if (index != INVALID_INDEX && handle_weak_ref)
+	if (d_index != INVALID_INDEX && d_feature_ref)
 	{
-		handle_weak_ref->set(
-				*d_iterator_ptr,
-				new_property);
+		d_feature_ref->set(FeatureHandle::iterator(*d_feature_ref, d_index), new_property);
 	}
 }
 
@@ -103,6 +101,5 @@ GPlatesModel::TopLevelPropertyRef::boolean_test() const
 GPlatesGlobal::PointerTraits<const GPlatesModel::TopLevelProperty>::non_null_ptr_type
 GPlatesModel::TopLevelPropertyRef::pointer() const
 {
-	FeatureHandle::weak_ref handle_weak_ref = d_iterator_ptr->handle_weak_ref();
-	return handle_weak_ref->get(*d_iterator_ptr);
+	return d_feature_ref->get(d_index);
 }

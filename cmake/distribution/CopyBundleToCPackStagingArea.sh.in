@@ -7,14 +7,32 @@ then
 	rm -rf "@STAGING_AREA_FOR_CPACK@"
 fi
 
-mkdir -p "@STAGING_AREA_FOR_CPACK@"
+if [ $# -eq 1 ]
+then
+	GPLATES_INSTALLER_FOLDER="$1"
+else
+	GPLATES_INSTALLER_FOLDER="@STAGING_AREA_FOR_CPACK@"
+fi
+
+mkdir -p "${GPLATES_INSTALLER_FOLDER}/"
 
 # Copy the @BUILT_BUNDLE@ bundle to the installation location
-echo "Copying @BUILT_BUNDLE@ from the build tree to @STAGING_AREA_FOR_CPACK@/"
-cp -Rp "@BUILT_BUNDLE@" "@STAGING_AREA_FOR_CPACK@/"
+echo "Copying @BUILT_BUNDLE@ from the build tree to ${GPLATES_INSTALLER_FOLDER}/"
+cp -Rp "@BUILT_BUNDLE@" "${GPLATES_INSTALLER_FOLDER}/"
 
 # Copy extra files/directories that are to be included along with the GPlates app bundle.
 for extra in @GPLATES_BINARY_INSTALL_EXTRAS@
+do
+	if [ -e $extra ]
+	then
+		cp -Rp $extra "${GPLATES_INSTALLER_FOLDER}/"
+	fi
+done
+
+# Copy extra files/directories that are to be included in the CPACK staging area.
+# Note that this is not the GPlates installer folder (where the GPlates bundle and
+# optional sample data are stored).
+for extra in @GPLATES_CPACK_STAGING_AREA_EXTRAS@
 do
 	if [ -e $extra ]
 	then

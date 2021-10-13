@@ -33,7 +33,6 @@
 #include "LatLonPoint.h"
 #include "InvalidLatLonException.h"
 #include "IndeterminateResultException.h"
-#include "MathsUtils.h"
 #include "PointOnSphere.h"
 
 
@@ -55,22 +54,6 @@ GPlatesMaths::LatLonPoint::LatLonPoint(
 		throw InvalidLatLonException(GPLATES_EXCEPTION_SOURCE,
 				lon, InvalidLatLonException::Longitude);
 	}
-}
-
-
-bool
-GPlatesMaths::LatLonPoint::is_valid_latitude(
-		const double &val)
-{
-	return is_in_range(val, -90.0, 90.0);
-}
-
-
-bool
-GPlatesMaths::LatLonPoint::is_valid_longitude(
-		const double &val)
-{
-	return is_in_range(val, -360.0, 360.0);
 }
 
 
@@ -127,3 +110,4 @@ GPlatesMaths::make_lat_lon_point(
 			convert_rad_to_deg(lat),
 			convert_rad_to_deg(lon));
 }
+

@@ -8,114 +8,46 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>468</width>
-    <height>289</height>
+    <width>500</width>
+    <height>420</height>
    </rect>
   </property>
   <property name="windowTitle" >
    <string>Re-map Shapefile Attributes</string>
   </property>
   <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_document_properties_22.png</iconset>
+   <iconset resource="../qt-resources/qt_widgets.qrc" >
+    <normaloff>:/gnome_document_properties_22.png</normaloff>:/gnome_document_properties_22.png</iconset>
   </property>
   <layout class="QGridLayout" >
    <item row="0" column="0" >
-    <widget class="QWidget" native="1" name="widget_shapefile_attribute" >
-     <property name="sizePolicy" >
-      <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize" >
-      <size>
-       <width>450</width>
-       <height>236</height>
-      </size>
-     </property>
-    </widget>
+    <widget class="QWidget" native="1" name="widget_shapefile_attribute" />
    </item>
    <item row="1" column="0" >
-    <layout class="QHBoxLayout" >
-     <item>
-      <spacer>
-       <property name="orientation" >
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" >
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_cancel" >
-       <property name="text" >
-        <string>Cancel</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_reset" >
-       <property name="minimumSize" >
-        <size>
-         <width>100</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text" >
-        <string>&amp;Reset Fields</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_ok" >
-       <property name="text" >
-        <string>OK</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <spacer name="verticalSpacer" >
+     <property name="orientation" >
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0" >
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="2" column="0" >
+    <widget class="QDialogButtonBox" name="main_buttonbox" >
+     <property name="standardButtons" >
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok|QDialogButtonBox::Reset</set>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
  <resources>
   <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc" />
  </resources>
- <connections>
-  <connection>
-   <sender>button_ok</sender>
-   <signal>clicked()</signal>
-   <receiver>ShapefileAttributeRemapper</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel" >
-     <x>372</x>
-     <y>276</y>
-    </hint>
-    <hint type="destinationlabel" >
-     <x>369</x>
-     <y>284</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>button_cancel</sender>
-   <signal>clicked()</signal>
-   <receiver>ShapefileAttributeRemapper</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel" >
-     <x>91</x>
-     <y>261</y>
-    </hint>
-    <hint type="destinationlabel" >
-     <x>117</x>
-     <y>281</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
