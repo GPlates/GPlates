@@ -432,10 +432,52 @@ namespace
 	}
 
 	GPlatesUtils::UnicodeString
+	get_data_type_code_for_pluton(
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
+	{
+		return "PL";
+	}
+
+	GPlatesUtils::UnicodeString
+	get_data_type_code_for_political_boundary(
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
+	{
+		return "PO";
+	}
+
+	GPlatesUtils::UnicodeString
 	get_data_type_code_for_large_igneous_province(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
 		return "VP";
+	}
+
+	GPlatesUtils::UnicodeString
+	get_data_type_code_for_navdat_1(
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
+	{
+		return "N1";
+	}
+
+	GPlatesUtils::UnicodeString
+	get_data_type_code_for_navdat_2(
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
+	{
+		return "N2";
+	}
+
+	GPlatesUtils::UnicodeString
+	get_data_type_code_for_navdat_3(
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
+	{
+		return "N3";
+	}
+
+	GPlatesUtils::UnicodeString
+	get_data_type_code_for_navdat_4(
+			const GPlatesModel::FeatureHandle::const_weak_ref &)
+	{
+		return "N4";
 	}
 
 
@@ -538,8 +580,21 @@ namespace
 					get_data_type_code_for_subduction_zone;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Volcano")] = 
 					get_data_type_code_for_volcano;
+			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("Pluton")] = 
+					get_data_type_code_for_pluton;
+			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("PoliticalBoundary")] = 
+					get_data_type_code_for_political_boundary;
 			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("LargeIgneousProvince")] = 
 					get_data_type_code_for_large_igneous_province;
+
+			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("NavdatSampleMafic")] = 
+					get_data_type_code_for_navdat_1;
+			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("NavdatSampleIntermediate")] = 
+					get_data_type_code_for_navdat_2;
+			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("NavdatSampleFelsicLow")] = 
+					get_data_type_code_for_navdat_3;
+			plates_data_type_code_map[GPlatesModel::FeatureType::create_gpml("NavdatSampleFelsicHigh")] = 
+					get_data_type_code_for_navdat_4;
 
 			initialised = true;
 		}

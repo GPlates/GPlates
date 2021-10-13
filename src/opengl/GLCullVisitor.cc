@@ -27,10 +27,9 @@
 
 #include "GLCullVisitor.h"
 
-#include "GLBlendState.h"
 #include "GLMultiResolutionRaster.h"
 #include "GLMultiResolutionRasterNode.h"
-#include "GLMultiResolutionReconstructedRaster.h"
+#include "GLMultiResolutionStaticPolygonReconstructedRaster.h"
 #include "GLMultiResolutionReconstructedRasterNode.h"
 #include "GLRenderOperation.h"
 #include "GLRenderGraph.h"
@@ -58,7 +57,12 @@ GPlatesOpenGL::GLCullVisitor::visit(
 {
 	// Push a render target corresponding to the frame buffer (of the window).
 	// This will be the render target that the main scene is rendered to.
-	d_renderer->push_render_target(GLFrameBufferRenderTargetType::create());
+	// It doesn't really matter whether the render target usage is serial or parallel
+	// because the render target is the framebuffer and we're not using the results
+	// of rendering to it (like we would a render texture).
+	d_renderer->push_render_target(
+			GLFrameBufferRenderTargetType::create(),
+			GLRenderer::RENDER_TARGET_USAGE_SERIAL);
 
 	render_graph->get_root_node().accept_visitor(*this);
 
@@ -139,17 +143,8 @@ GPlatesOpenGL::GLCullVisitor::visit(
 {
 	preprocess_node(*raster_node);
 
-	// Enable alpha-blending in case texture has partial transparency.
-	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
-			GPlatesOpenGL::GLBlendState::create();
-	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	d_renderer->push_state_set(blend_state);
-
 	// Render the multi-resolution raster.
 	raster_node->get_multi_resolution_raster()->render(*d_renderer);
-
-	d_renderer->pop_state_set();
 
 	postprocess_node(*raster_node);
 }
@@ -162,17 +157,8 @@ GPlatesOpenGL::GLCullVisitor::visit(
 {
 	preprocess_node(*reconstructed_raster_node);
 
-	// Enable alpha-blending in case texture has partial transparency.
-	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
-			GPlatesOpenGL::GLBlendState::create();
-	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	d_renderer->push_state_set(blend_state);
-
 	// Render the multi-resolution raster.
 	reconstructed_raster_node->get_multi_resolution_reconstructed_raster()->render(*d_renderer);
-
-	d_renderer->pop_state_set();
 
 	postprocess_node(*reconstructed_raster_node);
 }

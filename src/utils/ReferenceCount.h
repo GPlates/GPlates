@@ -80,7 +80,7 @@ namespace GPlatesUtils
 		/**
 		 * The type used to store the reference-count of an instance of this class.
 		 */
-		typedef long ref_count_type;
+		typedef int ref_count_type;
 
 		/**
 		 * Constructor.

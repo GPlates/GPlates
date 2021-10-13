@@ -23,12 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 
 #include "CliReconstructCommand.h"
 #include "CliFeatureCollectionFileIO.h"
 #include "CliInvalidOptionValue.h"
 #include "CliRequiredOptionNotPresent.h"
 
+#include "app-logic/ReconstructParams.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
@@ -194,25 +196,26 @@ GPlatesCli::ReconstructCommand::run(
 	//
 
 	// Perform reconstruction.
-	const GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_type
-			reconstruction_geometry_collection =
-					GPlatesAppLogic::ReconstructUtils::reconstruct(
-							GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
-									d_recon_time,
-									d_anchor_plate_id,
-									reconstruction_feature_collections),
-							reconstructable_feature_collections);
+	std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+	GPlatesAppLogic::ReconstructUtils::reconstruct(
+			reconstructed_feature_geometries,
+			d_recon_time,
+			d_anchor_plate_id,
+			reconstructable_feature_collections,
+			reconstruction_feature_collections);
 
-	// Get any ReconstructionGeometry objects that are of type ReconstructedFeatureGeometry.
-	GPlatesFileIO::ReconstructedFeatureGeometryExport::reconstructed_feature_geom_seq_type
-			reconstruct_feature_geom_seq;
-	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-			reconstruction_geometry_collection->begin(),
-			reconstruction_geometry_collection->end(),
-			reconstruct_feature_geom_seq);
+	// Converts to raw pointers.
+	std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> reconstruct_feature_geom_seq;
+	reconstruct_feature_geom_seq.reserve(reconstructed_feature_geometries.size());
+	BOOST_FOREACH(
+			const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type &rfg,
+			reconstructed_feature_geometries)
+	{
+		reconstruct_feature_geom_seq.push_back(rfg.get());
+	}
 
 	// Get the sequence of reconstructable files as File pointers.
-	GPlatesFileIO::ReconstructedFeatureGeometryExport::files_collection_type reconstructable_file_ptrs;
+	std::vector<const GPlatesFileIO::File::Reference *> reconstructable_file_ptrs;
 	loaded_feature_collection_file_seq_type::const_iterator file_iter = reconstructable_files.begin();
 	loaded_feature_collection_file_seq_type::const_iterator file_end = reconstructable_files.end();
 	for ( ; file_iter != file_end; ++file_iter)
@@ -229,10 +232,14 @@ GPlatesCli::ReconstructCommand::run(
 	// Export the reconstructed feature geometries.
 	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
 				export_filename.get_qfileinfo().filePath(),
+				GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
+						export_filename.get_qfileinfo().filePath()),
 				reconstruct_feature_geom_seq,
 				reconstructable_file_ptrs,
 				d_anchor_plate_id,
-				d_recon_time);
+				d_recon_time,
+				true/*export_single_output_file*/,
+				false/*export_per_input_file*/);
 
 	return 0;
 }

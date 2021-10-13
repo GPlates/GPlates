@@ -740,9 +740,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::insert_multiple()
 		return;
 	}
 	
-	table_times->clearContents();
-	table_times->setRowCount(0);
-	
 	for (double time = youngest_time ; time <= oldest_time ; time += step)
 	{
 		insert_single(time);
@@ -816,8 +813,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::setup_connections()
         QObject::connect(table_times, SIGNAL(cellActivated(int, int)),
                         this, SLOT(handle_cell_changed(int, int)));
 
-	// See comments in EditGeometryWidget about issues with this signal.
-	QObject::connect(table_times, SIGNAL(cellClicked(int, int)),
+		// See comments in EditGeometryWidget about issues with this signal.
+		QObject::connect(table_times, SIGNAL(cellClicked(int, int)),
 			this, SLOT(handle_cell_clicked(int, int)));
 
         // Signals for managing data entry focus for the "Insert single time" widgets.
@@ -853,10 +850,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::setup_connections()
                          this,
                          SLOT(handle_use_main_to()));
 
-	QObject::connect(spinbox_time,
-			 SIGNAL(editingFinished()),
-			 this,
-			 SLOT(handle_single_time_entered()));
 }
 
 void

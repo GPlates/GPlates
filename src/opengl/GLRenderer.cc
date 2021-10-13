@@ -41,13 +41,40 @@ GPlatesOpenGL::GLRenderer::GLRenderer(
 
 void
 GPlatesOpenGL::GLRenderer::push_render_target(
-		const GLRenderTargetType::non_null_ptr_type &render_target_type)
+		const GLRenderTargetType::non_null_ptr_type &render_target_type,
+		RenderTargetUsageType render_target_usage)
 {
-	// Create a new state for the render target.
-	//
-	// NOTE: The call to 'push_render_target()' on the render queue is done
-	// inside the 'RenderTargetState' constructor.
-	RenderTargetState render_target_state(render_target_type, *d_render_queue);
+	switch (render_target_usage)
+	{
+	case RENDER_TARGET_USAGE_SERIAL:
+		// If we have a parent render target state *and* the render target about to be pushed
+		// is 'serial' then force a new render operations target to be created when the render
+		// target being pushed is subsequently popped. This ensures that any render operations
+		// submitted after the pop will get rendered after the render target (being pushed) is
+		// rendered to. This effectively causes render targets to be serialised wrt draw order.
+		if (d_current_render_target_state)
+		{
+			// This forces the parent to create a new render target when/if we later return
+			// to continue drawing to it.
+			d_current_render_target_state->d_render_operations_target = boost::none;
+		}
+		break;
+
+	case RENDER_TARGET_USAGE_PARALLEL:
+		// If the render target usage is parallel then render to a deeper render pass.
+		d_render_queue->push_render_pass();
+		break;
+
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
+
+	// Create a new render target state for the render target.
+	RenderTargetState render_target_state(render_target_type, render_target_usage);
+
+	// Note that we don't actually push or add a render target yet - we wait until the first
+	// drawable is added to ensure our render target will always have drawables.
 
 	d_render_target_state_stack.push(render_target_state);
 	d_current_render_target_state = &d_render_target_state_stack.top();
@@ -61,9 +88,13 @@ GPlatesOpenGL::GLRenderer::pop_render_target()
 			!d_render_target_state_stack.empty(),
 			GPLATES_ASSERTION_SOURCE);
 
-	d_render_queue->pop_render_target();
+	// If the render target usage is 'parallel' then pop the render pass off the render queue.
+	if (d_current_render_target_state->d_render_target_usage == RENDER_TARGET_USAGE_PARALLEL)
+	{
+		d_render_queue->pop_render_pass();
+	}
 
-	// Pop the state created for the render target.
+	// Pop the render target state created for the render target.
 	d_render_target_state_stack.pop();
 	d_current_render_target_state = d_render_target_state_stack.empty()
 			? NULL
@@ -83,11 +114,7 @@ GPlatesOpenGL::GLRenderer::push_state_set(
 	// Push the state set and get a new, or existing, state in return depending on whether
 	// the 'state_set' has been seen before and has the same ancestor lineage up to the root
 	// state graph node.
-	GLStateGraphNode::non_null_ptr_to_const_type state_graph_node =
-			d_current_render_target_state->d_state_graph_builder->push_state_set(state_set);
-
-	// Notify the render operations target of the new state.
-	d_current_render_target_state->d_render_operations_target->set_state(state_graph_node);
+	d_current_render_target_state->d_state_graph_builder->push_state_set(state_set);
 }
 
 
@@ -100,11 +127,7 @@ GPlatesOpenGL::GLRenderer::pop_state_set()
 			GPLATES_ASSERTION_SOURCE);
 
 	// Pop the most recently pushed state set and get state that results after the pop.
-	GLStateGraphNode::non_null_ptr_to_const_type state_graph_node =
-			d_current_render_target_state->d_state_graph_builder->pop_state_set();
-
-	// Notify the render operations target of the new state.
-	d_current_render_target_state->d_render_operations_target->set_state(state_graph_node);
+	d_current_render_target_state->d_state_graph_builder->pop_state_set();
 }
 
 
@@ -179,18 +202,37 @@ GPlatesOpenGL::GLRenderer::add_drawable(
 			transform_state.get_current_model_view_transform(),
 			transform_state.get_current_projection_transform());
 
-	d_current_render_target_state->d_render_operations_target->add_render_operation(render_operation);
+	// Get the current state.
+	const GLStateGraphNode::non_null_ptr_to_const_type state =
+			d_current_render_target_state->d_state_graph_builder->get_current_state_set();
+
+	// Make sure we have a render operations target before adding the drawable.
+	// We delay the creation of the target until a drawable is added so that a target
+	// only gets created if a drawable is added.
+	if (!d_current_render_target_state->d_render_operations_target)
+	{
+		// Create a new target for current render operations.
+		d_current_render_target_state->d_render_operations_target =
+				d_render_queue->add_render_target(
+						d_current_render_target_state->d_render_target_type,
+						d_current_render_target_state->d_state_graph);
+	}
+
+	// Add the render operation and its associated state - if the state is the same as
+	// the last render operation added to this target then the GLRenderOperationsTarget object
+	// will make sure the state only gets set once and reused by both render operations.
+	d_current_render_target_state->d_render_operations_target.get()->add_render_operation(
+			state, render_operation);
 }
 
 
 GPlatesOpenGL::GLRenderer::RenderTargetState::RenderTargetState(
 		const GLRenderTargetType::non_null_ptr_type &render_target_type,
-		GLRenderQueue &render_queue) :
+		RenderTargetUsageType render_target_usage) :
 	d_transform_state(GLTransformState::create()),
 	d_state_graph_builder(GLStateGraphBuilder::create()),
 	d_state_graph(d_state_graph_builder->get_state_graph()),
-	// Create a new target for current render operations...
-	d_render_operations_target(
-			render_queue.push_render_target(render_target_type, d_state_graph))
+	d_render_target_type(render_target_type),
+	d_render_target_usage(render_target_usage)
 {
 }

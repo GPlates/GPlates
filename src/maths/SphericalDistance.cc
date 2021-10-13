@@ -99,7 +99,7 @@ namespace
 		for(; v_iter != v_iter_end; v_iter++)
 		{
 			using namespace PointInPolygon;
-			if(POINT_OUTSIDE_POLYGON == is_point_in_polygon(*v_iter, polygon.get_non_null_pointer()))
+			if(POINT_OUTSIDE_POLYGON == polygon.is_point_in_polygon(*v_iter))
 			{
 				inside = false;
 				break;
@@ -413,7 +413,7 @@ GPlatesMaths::Spherical::details::min_dot_product_distance(
 {
 	using namespace PointInPolygon;
 	if( (!distance_to_boundary) && 
-		(POINT_OUTSIDE_POLYGON != is_point_in_polygon(point, polygon.get_non_null_pointer())))
+		(POINT_OUTSIDE_POLYGON != polygon.is_point_in_polygon(point)))
 	{
 		return 0.0;
 	}

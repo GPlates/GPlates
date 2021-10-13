@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,23 +23,30 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QLocale>
-#include <QDebug>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <QLocale>
+#include <QDebug>
 
 #include "FeatureSummaryWidget.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/FeatureCollectionFileState.h"
+
 #include "gui/FeatureFocus.h"
+
 #include "model/FeatureHandle.h"
+
 #include "utils/UnicodeStringUtils.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "file-io/FileInfo.h"
+
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/InvalidParametersException.h"
+
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GeoTimeInstant.h"
@@ -198,20 +205,20 @@ namespace
 GPlatesQtWidgets::FeatureSummaryWidget::FeatureSummaryWidget(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
-	QWidget(parent_),
-	d_file_state(view_state_.get_application_state().get_feature_collection_file_state())
+	TaskPanelWidget(parent_),
+	d_file_state(view_state_.get_application_state().get_feature_collection_file_state()),
+	d_feature_focus(view_state_.get_feature_focus())
 {
 	setupUi(this);
 	clear();
 	setDisabled(true);
 	
-	// Subscribe to focus events. We can discard the FeatureFocus reference afterwards.
-	GPlatesGui::FeatureFocus &feature_focus = view_state_.get_feature_focus();
-	QObject::connect(&feature_focus,
+	// Subscribe to focus events.
+	QObject::connect(&d_feature_focus,
 			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
 			this,
 			SLOT(display_feature(GPlatesGui::FeatureFocus &)));
-	QObject::connect(&feature_focus,
+	QObject::connect(&d_feature_focus,
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
 			SLOT(display_feature(GPlatesGui::FeatureFocus &)));
@@ -248,6 +255,9 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 
 	// Clear the fields first, then fill in those that we have data for.
 	clear();
+
+	emit_clear_action_enabled_changed(feature_ref.is_valid());
+
 	// Always check your weak_refs!
 	if ( ! feature_ref.is_valid()) {
 		setDisabled(true);
@@ -366,5 +376,32 @@ GPlatesQtWidgets::FeatureSummaryWidget::hide_plate_id_fields_as_appropriate()
 	label_left_plate_id->setVisible(has_left_data || has_right_data);
 	lineedit_right_plate_id->setVisible(has_left_data || has_right_data);
 	label_right_plate_id->setVisible(has_left_data || has_right_data);
+}
+
+
+void
+GPlatesQtWidgets::FeatureSummaryWidget::handle_activation()
+{
+}
+
+
+QString
+GPlatesQtWidgets::FeatureSummaryWidget::get_clear_action_text() const
+{
+	return tr("C&lear Selection");
+}
+
+
+bool
+GPlatesQtWidgets::FeatureSummaryWidget::clear_action_enabled() const
+{
+	return d_feature_focus.is_valid();
+}
+
+
+void
+GPlatesQtWidgets::FeatureSummaryWidget::handle_clear_action_triggered()
+{
+	d_feature_focus.unset_focus();
 }
 

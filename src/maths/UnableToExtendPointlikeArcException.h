@@ -49,6 +49,7 @@ namespace GPlatesMaths
 			d_arc(arc_)
 		{  }
 
+		~UnableToExtendPointlikeArcException() throw() { }
 		const GreatCircleArc &
 		arc() const
 		{

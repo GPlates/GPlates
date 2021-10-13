@@ -6,7 +6,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -33,11 +33,12 @@
 #include "LatLonCoordinatesTable.h"
 #include "view-operations/GeometryOperationTarget.h"
 
+
 GPlatesQtWidgets::ModifyGeometryWidget::ModifyGeometryWidget(
 		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		QWidget *parent_):
-	QWidget(parent_)
+	TaskPanelWidget(parent_)
 {
 	setupUi(this);
 	
@@ -55,10 +56,12 @@ GPlatesQtWidgets::ModifyGeometryWidget::ModifyGeometryWidget(
 	
 }
 
+
 GPlatesQtWidgets::ModifyGeometryWidget::~ModifyGeometryWidget()
 {
 	// boost::scoped_ptr destructor needs complete type.
 }
+
 
 void
 GPlatesQtWidgets::ModifyGeometryWidget::connect_to_geometry_builder_tool_target(
@@ -76,10 +79,18 @@ GPlatesQtWidgets::ModifyGeometryWidget::connect_to_geometry_builder_tool_target(
 					GPlatesViewOperations::GeometryBuilder *)));
 }
 
+
 void
 GPlatesQtWidgets::ModifyGeometryWidget::switched_geometry_builder(
 		GPlatesViewOperations::GeometryOperationTarget &,
 		GPlatesViewOperations::GeometryBuilder *new_geom_builder)
 {
 	d_lat_lon_coordinates_table->set_geometry_builder(new_geom_builder);
+}
+
+
+void
+GPlatesQtWidgets::ModifyGeometryWidget::handle_activation()
+{
+	reload_coordinates_table_if_necessary();
 }

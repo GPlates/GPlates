@@ -31,18 +31,68 @@
 #include <list>
 #include <sstream>
 
+#include "Centroid.h"
+#include "ConstGeometryOnSphereVisitor.h"
+#include "HighPrecision.h"
 #include "PolylineOnSphere.h"
 #include "PolylineProximityHitDetail.h"
 #include "ProximityCriteria.h"
-#include "ConstGeometryOnSphereVisitor.h"
-#include "HighPrecision.h"
+#include "SmallCircleBounds.h"
+
 #include "global/InvalidParametersException.h"
 #include "global/UninitialisedIteratorException.h"
 #include "global/IntrusivePointerZeroRefCountException.h"
 
+#include "utils/ReferenceCount.h"
+
+
+namespace GPlatesMaths
+{
+	namespace PolylineOnSphereImpl
+	{
+		/**
+		 * Cached results of calculations performed on the polyline geometry.
+		 */
+		struct CachedCalculations :
+				public GPlatesUtils::ReferenceCount<CachedCalculations>
+		{
+			boost::optional<BoundingSmallCircle> bounding_small_circle;
+		};
+	}
+}
+
 
 const unsigned
 GPlatesMaths::PolylineOnSphere::s_min_num_collection_points = 2;
+
+
+GPlatesMaths::PolylineOnSphere::~PolylineOnSphere()
+{
+	// Destructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
+	// PolylineOnSphereImpl::CachedCalculations.
+}
+
+
+GPlatesMaths::PolylineOnSphere::PolylineOnSphere() :
+	GeometryOnSphere()
+{
+	// Constructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
+	// PolylineOnSphereImpl::CachedCalculations - because compiler must
+	// generate code that destroys already constructed members if constructor throws.
+}
+
+
+GPlatesMaths::PolylineOnSphere::PolylineOnSphere(
+		const PolylineOnSphere &other) :
+	GeometryOnSphere(),
+	d_seq(other.d_seq),
+	// Since PolylineOnSphere is immutable we can just share the cached calculations.
+	d_cached_calculations(other.d_cached_calculations)
+{
+	// Constructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
+	// PolylineOnSphereImpl::CachedCalculations - because compiler must
+	// generate code that destroys already constructed members if constructor throws.
+}
 
 
 GPlatesMaths::PolylineOnSphere::ConstructionParameterValidity
@@ -217,6 +267,42 @@ GPlatesMaths::PolylineOnSphere::create_segment_and_append_to_seq(
 
 	GreatCircleArc segment = GreatCircleArc::create(p1, p2);
 	seq.push_back(segment);
+}
+
+
+const GPlatesMaths::UnitVector3D &
+GPlatesMaths::PolylineOnSphere::get_centroid() const
+{
+	// We use the centroid for the centre of the bounding small circle.
+	// Getting it from there avoids having to store it twice.
+	// There's extra calculations required to generate the bounding small circle but
+	// generally if the client wants the centroid they also want the bounding small circle.
+	return get_bounding_small_circle().get_centre();
+}
+
+
+const GPlatesMaths::BoundingSmallCircle &
+GPlatesMaths::PolylineOnSphere::get_bounding_small_circle() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolylineOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the bounding small circle if it's not cached.
+	if (!d_cached_calculations->bounding_small_circle)
+	{
+		// The centroid will be the bounding small circle centre.
+		BoundingSmallCircleBuilder bounding_small_circle_builder(
+				Centroid::calculate_points_centroid(*this));
+		// Add the polyline great-circle-arc sections to define the bounds.
+		bounding_small_circle_builder.add(*this);
+
+		d_cached_calculations->bounding_small_circle =
+				bounding_small_circle_builder.get_bounding_small_circle();
+	}
+
+	return d_cached_calculations->bounding_small_circle.get();
 }
 
 

@@ -153,6 +153,26 @@ namespace GPlatesMaths
 		operator*(
 				const UnitVector3D &uv) const;
 
+		/**
+		 * Apply this rotation to a (not necessarily unit) vector.
+		 *
+		 * Note that this function is a member function for
+		 * two (2) reasons:
+		 *
+		 *  (i) to enable it to access the private member data
+		 *       '_d' and '_e'.
+		 *
+		 *  (ii) to enforce the concept that the operation of
+		 *        a finite rotation is APPLIED TO a vector --
+		 *        it is very much a PREmultiplication, in the
+		 *        style of traditional matrix operations.
+		 *
+		 * This operation is not supposed to be symmetrical.
+		 */
+		const Vector3D
+		operator*(
+				const Vector3D &v) const;
+
 	protected:
 		/**
 		 * Create the rotation described by the supplied

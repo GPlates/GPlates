@@ -26,30 +26,131 @@
 #ifndef GPLATESDATAMINING_DATAMININGUTILS_H
 #define GPLATESDATAMINING_DATAMININGUTILS_H
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <QString>
+#include <QVariant>
 #include <vector>
 
 #include "OpaqueData.h"
 
+#include "file-io/File.h"
+#include "file-io/ReadErrorAccumulation.h"
+#include "model/FeatureHandle.h"
+
+namespace GPlatesAppLogic
+{
+	class ReconstructedFeatureGeometry;
+}
+
 namespace GPlatesDataMining
 {
+	class CoRegConfigurationTable;
+
 	namespace DataMiningUtils
 	{
 		/*
-		* TODO: comments
+		* Return the minimum value 
+		* Return boost::none if the input vector is empty.
 		*/
 		boost::optional< double > 
 		minimum(
 				const std::vector< double >& input);
 
 		/*
-		* TODO: comments
+		* Convert a vector of OpaqueData to a vector of double.
 		*/
 		void
 		convert_to_double_vector(
 				std::vector<OpaqueData>::const_iterator begin,
 				std::vector<OpaqueData>::const_iterator end,
 				std::vector<double>& result);
+
+		/*
+		* Calculate the distances between each two geometries
+		* return the shortest distance.
+		*/
+		double
+		shortest_distance(
+				const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& seed_geos,
+				const GPlatesAppLogic::ReconstructedFeatureGeometry* geo);
+		
+		/*
+		* Given the feature handle, find a property by the name.
+		*/
+		OpaqueData
+		get_property_value_by_name(
+				GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
+				QString prop_name);
+
+		/*
+		* Since the shape file visitor return QVariant,
+		* convert QVariant to OpaqueData
+		*/
+		OpaqueData
+		convert_qvariant_to_Opaque_data(
+				const QVariant& data);
+
+		/*
+		* Fine the shape file attribute from the given feature handle 
+		*/
+		OpaqueData
+		get_shape_file_value_by_name(
+				GPlatesModel::FeatureHandle::const_weak_ref feature_ref,
+				QString attr_name);
+		
+		/*
+		* Given a list of file names, load all the files and
+		* return a vector of weak reference of feature collection handle
+		*/
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+		load_files(
+				const std::vector<QString>& filenames,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
+				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL);
+
+		
+		inline
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
+		load_files(
+				const std::vector<const char*>& filenames,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
+				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL)
+		{
+			std::vector<QString> new_filenames;
+			BOOST_FOREACH(const char* filename, filenames)
+			{
+				new_filenames.push_back(QString(filename));
+			}
+			return load_files(new_filenames,files);
+		}
+		
+		/*
+		* Return particular section of configuration file. 
+		*/
+		std::vector<QString>
+		load_cfg(
+				const QString& cfg_filename,
+				const QString& section_name);
+
+		/*
+		* Convenient function for loading cfg section having only one line.
+		*/
+		inline
+		QString
+		load_one_line_cfg(
+				const QString& cfg_file,
+				const QString& section_name)
+		{
+			std::vector<QString> cfgs = load_cfg(cfg_file,section_name);
+			return cfgs.size() ? cfgs[0] : QString();
+		}
+
+		static std::vector<
+				boost::tuple<
+						std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>,
+						const GPlatesAppLogic::ReconstructedFeatureGeometry* > > RFG_INDEX_VECTOR;
 	}
 }
 #endif

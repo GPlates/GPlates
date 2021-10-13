@@ -51,7 +51,7 @@ namespace GPlatesMaths
 			{  }
 
 			virtual
-			~ViolatedClassInvariantException() {  }
+			~ViolatedClassInvariantException() throw() {  }
 
 		protected:
 			virtual const char *

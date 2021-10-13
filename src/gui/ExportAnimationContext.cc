@@ -28,14 +28,14 @@
 
 #include "ExportAnimationContext.h"
 
-#include "gui/AnimationController.h"
-#include "gui/ExportSvgAnimationStrategy.h"
-#include "gui/ExportVelocityAnimationStrategy.h"
-#include "gui/ExportReconstructedGeometryAnimationStrategy.h"
-#include "gui/ExportResolvedTopologyAnimationStrategy.h"
+#include "AnimationController.h"
+#include "ExportAnimationRegistry.h"
+#include "ExportReconstructedGeometryAnimationStrategy.h"
+#include "ExportResolvedTopologyAnimationStrategy.h"
+#include "ExportSvgAnimationStrategy.h"
+#include "ExportVelocityAnimationStrategy.h"
 
-#include "utils/ExportTemplateFilenameSequence.h"
-#include "utils/ExportAnimationStrategyFactory.h"
+#include "presentation/ViewState.h"
 
 #include "qt-widgets/ExportAnimationDialog.h"
 
@@ -109,23 +109,25 @@ GPlatesGui::ExportAnimationContext::do_export()
 
 		// Run through each of the exporters for one iteration.
 		bool ok = true;
-		ExportersMapType::iterator export_it = d_exporters_map.begin();
-		ExportersMapType::iterator export_end = d_exporters_map.end();
+		exporter_map_type::iterator export_it = d_exporter_map.begin();
+		exporter_map_type::iterator export_end = d_exporter_map.end();
 
 		d_export_animation_dialog_ptr->update_single_frame_progress_bar(
-					0,d_exporters_map.size());
+					0,d_exporter_map.size());
 		int count=0;
 		for (; export_it != export_end; ++export_it, count++) 
 		{
-			ok = ok && (*export_it).second->do_export_iteration(frame_index);
+			ok = ok &&
+				(*export_it).second->check_filename_sequence() &&
+				(*export_it).second->do_export_iteration(frame_index);
 			d_export_animation_dialog_ptr->update_single_frame_progress_bar(
-					count, d_exporters_map.size());
+					count, d_exporter_map.size());
 		}
 		
 		if ( ! ok) {
 			// Failed. Just quit the whole thing.
-			ExportersMapType::iterator failed_it = d_exporters_map.begin();
-			ExportersMapType::iterator failed_end = d_exporters_map.end();
+			exporter_map_type::iterator failed_it = d_exporter_map.begin();
+			exporter_map_type::iterator failed_end = d_exporter_map.end();
 			for (; failed_it != failed_end; ++failed_it) {
 				(*failed_it).second->wrap_up(false);
 			}
@@ -137,12 +139,12 @@ GPlatesGui::ExportAnimationContext::do_export()
 		// Move the dialog's progress bar to indicate we have finished this frame number.
 		d_export_animation_dialog_ptr->update_progress_bar(length, frame_number);
 		d_export_animation_dialog_ptr->update_single_frame_progress_bar(
-			count, d_exporters_map.size());
+			count, d_exporter_map.size());
 	}
 
 	// All finished! Allow exporters to do some clean-up, if they need to.
-	ExportersMapType::iterator done_it = d_exporters_map.begin();
-	ExportersMapType::iterator done_end = d_exporters_map.end();
+	exporter_map_type::iterator done_it = d_exporter_map.begin();
+	exporter_map_type::iterator done_end = d_exporter_map.end();
 	for (; done_it != done_end; ++done_it) {
 		(*done_it).second->wrap_up(true);
 	}
@@ -162,31 +164,26 @@ GPlatesGui::ExportAnimationContext::update_status_message(
 }
 
 void
-GPlatesGui::ExportAnimationContext::add_exporter(
-		GPlatesUtils::Exporter_ID id,
-		const ExportAnimationStrategy::Configuration& cfg)
+GPlatesGui::ExportAnimationContext::add_export_animation_strategy(
+		ExportAnimationType::ExportID export_id,
+		const ExportAnimationStrategy::const_configuration_base_ptr &export_configuration)
 {
-	ExportersMapType::iterator it =
-		d_exporters_map.find(id);
+	exporter_map_type::iterator exporter_iter = d_exporter_map.find(export_id);
 
-	if(it!=d_exporters_map.end())
+	if (exporter_iter != d_exporter_map.end())
 	{
-		d_exporters_map.erase(it);
+		d_exporter_map.erase(exporter_iter);
 	}
 
-	d_exporters_map.insert(
-			std::pair<
-				GPlatesUtils::Exporter_ID, 
-				ExportAnimationStrategy::non_null_ptr_type>(
-						id,
-						GPlatesUtils::ExportAnimationStrategyFactory::create_exporter(
-								id,
-								*this,
-								cfg)));
+	ExportAnimationRegistry &export_animation_registry =
+			view_state().get_export_animation_registry();
 
-	return;
+	const ExportAnimationStrategy::non_null_ptr_type export_animation_strategy =
+			export_animation_registry.create_export_animation_strategy(
+					export_id,
+					*this,
+					export_configuration);
+
+	d_exporter_map.insert(
+			std::make_pair(export_id, export_animation_strategy));
 }
-
-
-
-

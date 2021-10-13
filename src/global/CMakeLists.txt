@@ -33,10 +33,12 @@ set(srcs
     IntrusivePointerZeroRefCountException.h
     InvalidFeatureCollectionException.h
     InvalidParametersException.h
+    LogException.h
     NotYetImplementedException.h
     NullParameterException.h
     PointerTraits.h
     PreconditionViolationError.h
+    python.h
     RetrievalFromEmptyContainerException.h
     SubversionInfo.h
     types.h

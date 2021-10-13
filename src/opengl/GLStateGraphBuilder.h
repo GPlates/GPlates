@@ -74,10 +74,8 @@ namespace GPlatesOpenGL
 		 * If the current state graph node has a child state graph node that is
 		 * associated with @a state_set then this existing branch of the state graph is
 		 * traversed, otherwise a new child state graph node is created.
-		 *
-		 * Returns the new current state graph node (the child node).
 		 */
-		GLStateGraphNode::non_null_ptr_to_const_type
+		void
 		push_state_set(
 				const GLStateSet::non_null_ptr_to_const_type &state_set);
 
@@ -90,12 +88,24 @@ namespace GPlatesOpenGL
 		 * The current state graph node is not destroyed though - it is retained so
 		 * that the full state graph can be returned in @a get_state_graph.
 		 *
-		 * Returns the new current state graph node (the parent node).
-		 *
 		 * @throws PreconditionViolationError if popped too many times.
 		 */
-		GLStateGraphNode::non_null_ptr_to_const_type
+		void
 		pop_state_set();
+
+
+		/**
+		 * Returns the current state set.
+		 *
+		 * This is either the root state set (if @a pop_state_set has been called the same
+		 * number of times as @a push_state_set, or if neither have been called) or,
+		 * it returns the most recently pushed state set (from most recent call to @a push_state_set).
+		 */
+		GLStateGraphNode::non_null_ptr_to_const_type
+		get_current_state_set() const
+		{
+			return GPlatesUtils::get_non_null_pointer<const GLStateGraphNode>(d_current_node);
+		}
 
 
 		/**

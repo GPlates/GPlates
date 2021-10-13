@@ -6,7 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2009, 2010 The University of Sydney, Australia
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -37,42 +37,13 @@
 #include "presentation/ViewState.h"
 
 
-const QString 
-GPlatesGui::ExportReconstructedGeometryAnimationStrategy::DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE
-		="reconstructed_%u_%0.2f.xy";
-const QString 
-GPlatesGui::ExportReconstructedGeometryAnimationStrategy::DEFAULT_RECONSTRUCTED_GEOMETRIES_SHP_FILENAME_TEMPLATE
-		="reconstructed_%u_%0.2f.shp";
-const QString GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_FILENAME_TEMPLATE_DESC
-		= FORMAT_CODE_DESC;
-const QString GPlatesGui::ExportReconstructedGeometryAnimationStrategy::RECONSTRUCTED_GEOMETRIES_DESC
-		="Export reconstructed geometries.";
-
-
-const GPlatesGui::ExportReconstructedGeometryAnimationStrategy::non_null_ptr_type
-GPlatesGui::ExportReconstructedGeometryAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context,
-		FileFormat format,
-		const ExportAnimationStrategy::Configuration &cfg)
-{
-	ExportReconstructedGeometryAnimationStrategy * ptr=
-			new ExportReconstructedGeometryAnimationStrategy(
-					export_animation_context,
-					cfg.filename_template());
-
-	ptr->d_file_format=format;
-
-	return non_null_ptr_type(
-			ptr,
-			GPlatesUtils::NullIntrusivePointerHandler());
-}
-
 GPlatesGui::ExportReconstructedGeometryAnimationStrategy::ExportReconstructedGeometryAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const QString &filename_template):
-	ExportAnimationStrategy(export_animation_context)
+		const const_configuration_ptr &cfg) :
+	ExportAnimationStrategy(export_animation_context),
+	d_configuration(cfg)
 {
-	set_template_filename(filename_template);
+	set_template_filename(d_configuration->get_filename_template());
 	
 	GPlatesAppLogic::FeatureCollectionFileState &file_state =
 			d_export_animation_context_ptr->view_state().get_application_state()
@@ -94,12 +65,7 @@ bool
 GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
-	if(!check_filename_sequence())
-	{
-		return false;
-	}
-
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
 	// Figure out a filename from the template filename sequence.
@@ -119,13 +85,15 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 	// given frame_index, filename, reconstructable files and geoms, and target_dir. Etc.
 	try {
 
-		
+		// TODO: Get 'export_single_output_file' and 'export_per_input_file' from user (via GUI).
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_feature_geometries(
 			full_filename,
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
 			d_loaded_files,
 			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
-			d_export_animation_context_ptr->view_time());
+			d_export_animation_context_ptr->view_time(),
+			d_configuration->file_options.export_to_a_single_file,
+			d_configuration->file_options.export_to_multiple_files);
 
 	} catch (...) {
 		// FIXME: Catch all proper exceptions we might get here.
@@ -137,24 +105,3 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;
 }
-
-const QString&
-GPlatesGui::ExportReconstructedGeometryAnimationStrategy::get_default_filename_template()
-{
-	switch(d_file_format)
-	{
-	case SHAPEFILE:
-		return DEFAULT_RECONSTRUCTED_GEOMETRIES_SHP_FILENAME_TEMPLATE;
-		break;
-	case GMT:
-		return DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE;
-		break;
-	default:
-		return DEFAULT_RECONSTRUCTED_GEOMETRIES_GMT_FILENAME_TEMPLATE;
-		break;
-	}
-}
-
-
-
-

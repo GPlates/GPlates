@@ -28,6 +28,8 @@
 #include "ErrorOpeningFileForReadingException.h"
 #include "ErrorOpeningFileForWritingException.h"
 #include "FileFormatNotSupportedException.h"
+#include "ArbitraryXmlReader.h"
+#include "GeoscimlProfile.h"
 #include "GmapReader.h"
 #include "GMTFormatWriter.h"
 #include "GpmlOnePointSixOutputVisitor.h"
@@ -37,7 +39,7 @@
 #include "PlatesRotationFormatReader.h"
 #include "PlatesRotationFormatWriter.h"
 #include "ShapefileReader.h"
-#include "ShapefileWriter.h"
+#include "OgrFeatureCollectionWriter.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
@@ -110,7 +112,11 @@ namespace
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-				new GPlatesFileIO::ShapefileWriter(file_info, feature_collection));
+				new GPlatesFileIO::OgrFeatureCollectionWriter(file_info, feature_collection));
+
+		case GPlatesFileIO::FeatureCollectionFileFormat::OGRGMT:
+			return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
+				new GPlatesFileIO::OgrFeatureCollectionWriter(file_info, feature_collection));
 
 		case GPlatesFileIO::FeatureCollectionFileFormat::UNKNOWN:
 		default:
@@ -261,6 +267,13 @@ GPlatesFileIO::read_feature_collection(
 
 		case FeatureCollectionFileFormat::GMAP:
 			return GmapReader::read_file(file_ref, model, read_errors);
+
+		case FeatureCollectionFileFormat::GSML:
+			return ArbitraryXmlReader::instance()->read_file(
+					file_ref, 
+					boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
+					model, 
+					read_errors);
 
 		case FeatureCollectionFileFormat::GMT:
 		

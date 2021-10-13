@@ -57,6 +57,7 @@ namespace GPlatesFileIO
 			d_filename(filename_)
 		{  }
 
+		~ErrorOpeningFileForReadingException() throw() { }
 		/**
 		 * Return the filename of the file which couldn't be opened for reading.
 		 */

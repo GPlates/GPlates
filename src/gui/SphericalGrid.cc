@@ -40,7 +40,7 @@
 #include "opengl/GLCompositeDrawable.h"
 #include "opengl/GLCompositeStateSet.h"
 #include "opengl/GLPointLinePolygonState.h"
-#include "opengl/GLRenderGraphDrawableNode.h"
+#include "opengl/GLRenderer.h"
 #include "opengl/GLUNurbsRenderer.h"
 
 
@@ -312,7 +312,7 @@ GPlatesGui::SphericalGrid::SphericalGrid(
 
 void
 GPlatesGui::SphericalGrid::paint(
-		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node)
+		GPlatesOpenGL::GLRenderer &renderer)
 {
 	// Check whether we need to create the drawables.
 	if (!d_last_seen_graticule_settings ||
@@ -325,26 +325,23 @@ GPlatesGui::SphericalGrid::paint(
 		d_last_seen_graticule_settings = d_graticule_settings;
 	}
 
-	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type drawable_node =
-			GPlatesOpenGL::GLRenderGraphDrawableNode::create(*d_grid_drawable);
-	drawable_node->set_state_set(d_state_set);
-
-	render_graph_parent_node->add_child_node(drawable_node);
+	renderer.push_state_set(d_state_set);
+	renderer.add_drawable(d_grid_drawable.get());
+	renderer.pop_state_set();
 }
 
 
 void
 GPlatesGui::SphericalGrid::paint_circumference(
-		const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node,
+		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesMaths::UnitVector3D &axis,
 		double angle_in_deg)
 {
-	GPlatesOpenGL::GLRenderGraphDrawableNode::non_null_ptr_type drawable_node =
-			GPlatesOpenGL::GLRenderGraphDrawableNode::create(
-					create_circumference_drawable(d_graticule_settings.get_colour()));
-	drawable_node->set_transform(undo_rotation(axis, angle_in_deg));
-	drawable_node->set_state_set(d_state_set);
-
-	render_graph_parent_node->add_child_node(drawable_node);
+	GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type transform = undo_rotation(axis, angle_in_deg);
+	renderer.push_transform(*transform);
+	renderer.push_state_set(d_state_set);
+	renderer.add_drawable(create_circumference_drawable(d_graticule_settings.get_colour()));
+	renderer.pop_state_set();
+	renderer.pop_transform();
 }
 

@@ -54,6 +54,7 @@ namespace GPlatesFileIO
 			d_filename(filename_)
 		{  }
 
+		~ErrorOpeningPipeFromGzipException() throw() { }
 		/**
 		 * Return the command which could not be executed.
 		 */

@@ -30,6 +30,9 @@ GPlates also builds under MSVC9 (2008). Older versions of the environment
 are tied to older versions of the Microsoft C/C++ compiler (CL.EXE) 
 which are not standard-conforming enough, and do not properly support many of the 
 C++ features that GPlates and its dependencies (especially Boost) use. 
+GPlates is also known to build under MSVC10 (2010), although newer versions of
+the dependencies will be required; if in doubt, for each dependency, download
+the latest version instead of the version stated in DEPS.Windows.
 
 Visual C++ Express Edition
 
@@ -56,10 +59,9 @@ in "DEPS.Windows".
 Creating Visual Studio solution and project files with CMake
 
   1.  Edit the 'CMAKE_INCLUDE_PATH' environment variable to refer to the include paths for
-      Boost, GDAL, ICU and GLEW packages you've installed.
+      Boost, GDAL, and GLEW packages you've installed.
       For example add the following to 'CMAKE_INCLUDE_PATH':
          "C:/Libraries/Boost"
-         "C:/Libraries/icu/include"
          "C:/Libraries/FWTools/include"
 		 "C:/Libraries/glew-1.5.4/include"
       The corresponding library directories will be found relative to these include directories.

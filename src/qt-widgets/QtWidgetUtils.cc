@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,12 +23,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QHBoxLayout>
 #include <QRect>
 #include <QSize>
 #include <QColorDialog>
+#include <QPainter>
+#include <QPen>
+#include <QBrush>
 
 #include "QtWidgetUtils.h"
 
@@ -74,7 +78,7 @@ GPlatesQtWidgets::QtWidgetUtils::reposition_to_side_of_parent(
 
 void
 GPlatesQtWidgets::QtWidgetUtils::pop_up_dialog(
-		QDialog *dialog)
+		QWidget *dialog)
 {
 	dialog->show();
 	// In most cases, 'show()' is sufficient. However, selecting the menu entry
@@ -84,6 +88,17 @@ GPlatesQtWidgets::QtWidgetUtils::pop_up_dialog(
 	// On platforms which do not keep dialogs on top of their parent, a call to
 	// raise() may also be necessary to properly 're-pop-up' the dialog.
 	dialog->raise();
+}
+
+
+void
+GPlatesQtWidgets::QtWidgetUtils::resize_based_on_size_hint(
+		QDialog *dialog)
+{
+	QSize size_hint = dialog->sizeHint();
+	dialog->resize(
+			(std::max)(dialog->width(), size_hint.width()),
+			size_hint.height());
 }
 
 
@@ -117,5 +132,44 @@ GPlatesQtWidgets::QtWidgetUtils::get_colour_with_alpha(
 	}
 	return boost::none;
 #endif
+}
+
+
+bool
+GPlatesQtWidgets::QtWidgetUtils::is_control_c(
+		QKeyEvent *key_event)
+{
+	return key_event->key() == Qt::Key_C &&
+#if defined(Q_WS_MAC)
+		key_event->modifiers() == Qt::MetaModifier;
+#else
+		key_event->modifiers() == Qt::ControlModifier;
+#endif
+}
+
+
+QPixmap
+GPlatesQtWidgets::QtWidgetUtils::create_transparent_checkerboard(
+		int width,
+		int height,
+		int grid_size)
+{
+	// First we create a tile with 2 rows and 2 columns of checkerboard.
+	QPixmap tile(grid_size * 2, grid_size * 2);
+	QPainter tile_painter(&tile);
+	tile_painter.setPen(QPen(Qt::NoPen));
+	tile_painter.setBrush(QBrush(Qt::lightGray));
+	tile_painter.drawRect(0, 0, grid_size, grid_size);
+	tile_painter.drawRect(grid_size, grid_size, grid_size, grid_size);
+	tile_painter.setBrush(QBrush(Qt::darkGray));
+	tile_painter.drawRect(0, grid_size, grid_size, grid_size);
+	tile_painter.drawRect(grid_size, 0, grid_size, grid_size);
+
+	// Create the final pixmap by tiling the tile over it.
+	QPixmap checkerboard(width, height);
+	QPainter checkerboard_painter(&checkerboard);
+	checkerboard_painter.drawTiledPixmap(0, 0, width, height, tile);
+
+	return checkerboard;
 }
 

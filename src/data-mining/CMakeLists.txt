@@ -11,8 +11,6 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
-    AssociationOperator.h
-    AssociationOperatorFactory.h
     CheckAttrTypeVisitor.h
     CoRegConfigurationTable.cc
     CoRegConfigurationTable.h
@@ -22,37 +20,21 @@ set(srcs
     DataMiningCache.h
     DataMiningUtils.cc
     DataMiningUtils.h
-    DataOperator.cc
-    DataOperator.h
-    DataOperatorFactory.cc
-    DataOperatorFactory.h
-    DataOperatorTypes.h
     DataSelector.cc
     DataSelector.h
     DataTable.cc
     DataTable.h
-    DistanceDataOperator.cc
-    DistanceDataOperator.h
     DualGeometryVisitor.h
+    Filter.h
     GetValueFromPropertyVisitor.cc
     GetValueFromPropertyVisitor.h
     IsCloseEnoughChecker.cc
     IsCloseEnoughChecker.h
-    LookupDataOperator.cc
-    LookupDataOperator.h
     LookupReducer.h
-    MaxDistanceDataOperator.h
     MaxReducer.h
-    MeanDistanceDataOperator.h
     MeanReducer.h
-    MedianDistanceDataOperator.h
     MedianReducer.h
-    MinDataOperator.cc
-    MinDataOperator.h
-    MinDistanceDataOperator.cc
-    MinDistanceDataOperator.h
     MinReducer.h
-    NumInROIDataOperator.h
     OpaqueData.h
     OpaqueDataToDouble.h
     OpaqueDataToQString.cc
@@ -60,14 +42,10 @@ set(srcs
     PercentileReducer.h
     PopulateShapeFileAttributesVisitor.cc
     PopulateShapeFileAttributesVisitor.h
-    PresenceDataOperator.h
-    RegionOfInterestAssociationOperator.cc
-    RegionOfInterestAssociationOperator.h
+    ReducerTypes.h
     RegionOfInterestFilter.cc
     RegionOfInterestFilter.h
-    RFGToPropertyValueMapper.cc
     RFGToPropertyValueMapper.h
-    RFGToRelationalPropertyMapper.cc
     RFGToRelationalPropertyMapper.h
     SeedSelfFilter.h
     VoteReducer.h

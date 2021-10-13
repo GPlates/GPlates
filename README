@@ -52,7 +52,7 @@ file in this directory.
 
 To compile on Windows:
  * Edit the 'CMAKE_INCLUDE_PATH' environment variable to refer to the include paths for
-   Boost, GDAL and ICU packages you've installed.
+   Boost and GDAL packages you've installed.
  * The Gzip package should be found automatically if it's installed in 'C:/Program Files/GnuWin32/'.
  * Run the CMake program ('CMakeSetup.exe'). CMake 2.6.2 and above is fine.
       Vista NOTE: You need to elevate permissions on 'CMakeSetup.exe' by

@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -43,8 +44,9 @@
 #include "global/AssertionFailureException.h"
 #include "file-io/GMTFormatGeometryExporter.h"
 #include "file-io/OgrException.h"
+#include "file-io/OgrGeometryExporter.h"
 #include "file-io/PlatesLineFormatGeometryExporter.h"
-#include "file-io/ShapefileGeometryExporter.h"
+#include "qt-widgets/SaveFileDialog.h"
 
 
 namespace
@@ -56,12 +58,40 @@ namespace
 	typedef boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_opt_ptr_type;
 
 	GPlatesQtWidgets::SaveFileDialog::filter_list_type
+	get_filter_list_from_format(
+		const GPlatesQtWidgets::ExportCoordinatesDialog::OutputFormat &format)
+	{
+		GPlatesQtWidgets::SaveFileDialog::filter_list_type result;
+		switch(format)
+		{
+		case GPlatesQtWidgets::ExportCoordinatesDialog::PLATES4:
+			result.push_back(GPlatesQtWidgets::FileDialogFilter(QObject::tr("PLATES4"),"dat"));
+			break;
+		case GPlatesQtWidgets::ExportCoordinatesDialog::GMT:
+			result.push_back(GPlatesQtWidgets::FileDialogFilter(QObject::tr("GMT"),"xy"));
+			break;
+		case GPlatesQtWidgets::ExportCoordinatesDialog::SHAPEFILE:
+			result.push_back(GPlatesQtWidgets::FileDialogFilter(QObject::tr("ESRI Shapfile"),"shp"));
+			break;
+		case GPlatesQtWidgets::ExportCoordinatesDialog::OGRGMT:
+			result.push_back(GPlatesQtWidgets::FileDialogFilter(QObject::tr("OGR-GMT"),"gmt"));
+			break;
+                default:
+                        break;
+		}
+
+		return result;
+	}
+
+
+	GPlatesQtWidgets::SaveFileDialog::filter_list_type
 	get_filters()
 	{
 		GPlatesQtWidgets::SaveFileDialog::filter_list_type result;
 		result.push_back(GPlatesQtWidgets::FileDialogFilter("All files"));
 		return result;
 	}
+
 }
 
 
@@ -81,11 +111,7 @@ GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
 		QWidget *parent_) :
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_geometry_opt_ptr(boost::none),
-	d_save_file_dialog(
-			this,
-			tr("Select a file name for exporting"),
-			get_filters(),
-			view_state),
+	d_view_state_ref(view_state),
 	d_terminating_point_information_dialog(new InformationDialog(s_terminating_point_information_text,
 			tr("Polygon point conventions"), this))
 {
@@ -102,16 +128,6 @@ GPlatesQtWidgets::ExportCoordinatesDialog::ExportCoordinatesDialog(
 	// The "Terminating Point" option for polygons.
 	QObject::connect(button_explain_terminating_point, SIGNAL(clicked()),
 			d_terminating_point_information_dialog, SLOT(show()));
-	
-	// Radio buttons control destination selection widgets.
-	QObject::connect(radiobutton_to_file, SIGNAL(clicked()),
-			this, SLOT(select_to_file_stack()));
-	QObject::connect(radiobutton_to_clipboard, SIGNAL(clicked()),
-			this, SLOT(select_to_clipboard_stack()));
-
-	// Set up the export file selection dialog.
-	QObject::connect(button_select_file, SIGNAL(clicked()),
-			this, SLOT(pop_up_file_browser()));
 	
 	// Default 'OK' button should read 'Export'.
 	QPushButton *button_export = buttonbox_export->addButton(tr("Export"), QDialogButtonBox::AcceptRole);
@@ -179,6 +195,26 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_format_selection(
 		radiobutton_to_clipboard->setEnabled(true);
 		break;
 
+	case OGRGMT:
+
+		radiobutton_to_clipboard->setEnabled(false);
+		radiobutton_to_file->setChecked(true);
+
+		// Don't give the user the terminating-point option, because polygons will be
+		// closed prior to shapefile export. 
+		checkbox_polygon_terminating_point->setEnabled(false);
+
+		// Don't give the user the lat-lon order option. 
+		//
+		// Set the order to lon-lat though. The order doesn't have that much meaning here, 
+		// I don't think, because the data are written/extracted by calling the OGR library's setX/getX
+		// and setY/getY functions. X corresponds to longitude and y corresponds to latitude, 
+		// so we might as well give some indication of this in the combo box. 
+		combobox_coordinate_order->setCurrentIndex(LON_LAT);
+		combobox_coordinate_order->setEnabled(false);
+
+		break;
+
 	case SHAPEFILE:
 		// Don't allow clipboard export if SHAPEFILE format is selected, and
 		// make sure the file button is selected.
@@ -197,7 +233,7 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_format_selection(
 		// so we might as well give some indication of this in the combo box. 
 		combobox_coordinate_order->setCurrentIndex(LON_LAT);
 		combobox_coordinate_order->setEnabled(false);
-		select_to_file_stack();
+
 		break;
 
 	case WKT:
@@ -207,17 +243,6 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_format_selection(
 	default:
 		// Can't possibly happen, because we set up each possible combobox state, right?
 		return;
-	}
-}
-
-
-void
-GPlatesQtWidgets::ExportCoordinatesDialog::pop_up_file_browser()
-{
-	boost::optional<QString> file_name = d_save_file_dialog.get_file_name();
-	if (file_name)
-	{
-		lineedit_filename->setText(*file_name);
 	}
 }
 
@@ -235,18 +260,26 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_export()
 	// What output has the user requested?
 	OutputFormat format = OutputFormat(combobox_format->currentIndex());
 		
+	
+
 	if (radiobutton_to_file->isChecked()) {
-		// Get filename.
-		QString filename = lineedit_filename->text();
-		if (filename.isEmpty()) {
+
+		SaveFileDialog::filter_list_type filters = get_filter_list_from_format(format);
+		SaveFileDialog save_file_dialog(
+				this,
+				tr("Select a file name for exporting"),
+				filters,
+				d_view_state_ref);
+		boost::optional<QString> filename = save_file_dialog.get_file_name();
+
+		if (!filename) {
 			QMessageBox::warning(this, tr("No filename specified"),
-					tr("Please specify a filename to export to."));
-			lineedit_filename->setFocus();
+					tr("Please specify a filename for export."));
 			return;
 		}
 
 		// Create geometry exporter and export geometry.
-		export_geometry_to_file(format, filename);
+		export_geometry_to_file(format, *filename);
 
 	} else {
 
@@ -270,75 +303,22 @@ GPlatesQtWidgets::ExportCoordinatesDialog::handle_export()
 	accept();
 }
 
-void
-GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry(
-	OutputFormat format, QTextStream &text_stream)
-{
-	std::auto_ptr<GPlatesFileIO::GeometryExporter> geometry_exporter;
 
-
-	// FIXME: It would be awesome if we could arrange this switch -before- we
-	// open the file, to avoid clobbering the user's file needlessly.
-
-	// Create the geometry exporter based on 'format'.
-
-
-	switch (format)
-	{
-	case PLATES4:
-		geometry_exporter.reset(
-			new GPlatesFileIO::PlatesLineFormatGeometryExporter(
-			text_stream,
-			(combobox_coordinate_order->currentIndex() != LAT_LON),
-			checkbox_polygon_terminating_point->isChecked()));
-		break;
-
-	case GMT:
-		geometry_exporter.reset(
-			new GPlatesFileIO::GMTFormatGeometryExporter(
-			text_stream,
-			// Default coordinate order for GMT is (lon, lat).
-			(combobox_coordinate_order->currentIndex() != LON_LAT),
-			checkbox_polygon_terminating_point->isChecked()));
-		break;
-
-	default:
-		QMessageBox::critical(this, tr("Unsupported output format"),
-			tr("Sorry, writing in the selected format is currently not supported."));
-		return;
-	}
-
-	// Make sure we created a geometry exporter.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			geometry_exporter.get() != NULL,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Export the geometry.
-	geometry_exporter->export_geometry(*d_geometry_opt_ptr);
-}
 
 void
 GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry_to_file(
 	OutputFormat format, QString &filename)
 {
-
-	// RJW: Should maybe put this inside the individual GeometryExporter::export_geometry() functions...
-
-	// Open the file.
 	QFile file(filename);
 
-	// Reset the file name so the slashes all go the same way...
-	filename = file.fileName();
-
+	// Open the file
 	if ( ! file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QMessageBox::critical(this, tr("Error writing to file"),
 				tr("Error: The file could not be written."));
-		lineedit_filename->setFocus();
 		return;
 	}
 
 	std::auto_ptr<GPlatesFileIO::GeometryExporter> geometry_exporter;
-
 
 	// FIXME: It would be awesome if we could arrange this switch -before- we
 	// open the file, to avoid clobbering the user's file needlessly.
@@ -369,7 +349,14 @@ GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry_to_file(
 	case SHAPEFILE:
 		file.remove();
 		geometry_exporter.reset(
-			new GPlatesFileIO::ShapefileGeometryExporter(
+			new GPlatesFileIO::OgrGeometryExporter(
+			filename, false /* multiple_geometries = false */));
+		break;
+
+	case OGRGMT:
+		file.remove();
+		geometry_exporter.reset(
+			new GPlatesFileIO::OgrGeometryExporter(
 			filename, false /* multiple_geometries = false */));
 		break;
 

@@ -49,12 +49,6 @@
 /* Define to 1 if you have the `GLU' library (-lGLU). */
 #cmakedefine HAVE_LIBGLU
 
-/* Define to 1 if you have the `icui18n' library (-licui18n). */
-#cmakedefine HAVE_LIBICUI18N
-
-/* Define to 1 if you have the `icuio' library (-licuio). */
-#cmakedefine HAVE_LIBICUIO
-
 /* Define to 1 if you have the `proj' library (-lproj). */
 #undef HAVE_LIBPROJ
 
@@ -109,9 +103,6 @@
 /* define if the compiler recognizes typename */
 #cmakedefine HAVE_TYPENAME
 
-/* Define to 1 if you have the <unicode/unistr.h> header file. */
-#cmakedefine HAVE_UNICODE_UNISTR_H
-
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
 
@@ -147,5 +138,11 @@
 #cmakedefine BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH "${BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH}"
 #cmakedefine BOOST_CSTDINT_HPP_PATH "${BOOST_CSTDINT_HPP_PATH}"
 
-/* Whether GPlates is built with Python support */
-#cmakedefine GPLATES_HAS_PYTHON
+/* Whether GPlates is not built with Python support */
+#cmakedefine GPLATES_NO_PYTHON
+
+/* Check CGAL-3.7 patch in src/system-fixes/cgal/Constrained_Delaunay_triangulation_2.h */
+#cmakedefine HAVE_GCAL_PATCH_CDT2_H
+
+/* Whether GPlates is not built with Symbol stuff */
+#cmakedefine GPLATES_NO_SYMBOL

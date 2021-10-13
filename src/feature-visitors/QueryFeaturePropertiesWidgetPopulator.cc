@@ -402,7 +402,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon
 		QString interior;
 		interior.append(QObject::tr("gml:interior"));
 		interior.append(QObject::tr(" #"));
-		interior.append(ring_number);
+		interior.append(QString().setNum(ring_number));
 
 		const GPlatesGui::TreeWidgetBuilder::item_handle_type interior_item_handle =
 				add_child_to_current_item(d_tree_widget_builder, interior);

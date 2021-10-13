@@ -25,8 +25,12 @@
 
 #include "PolygonOrientation.h"
 
+#include "Centroid.h"
 #include "PolygonOnSphere.h"
+#include "SphericalArea.h"
 #include "Vector3D.h"
+
+#include "utils/Profile.h"
 
 
 namespace
@@ -54,28 +58,31 @@ GPlatesMaths::PolygonOrientation::Orientation
 GPlatesMaths::PolygonOrientation::calculate_polygon_orientation(
 		const PolygonOnSphere &polygon)
 {
-	// Iterate through the polygon vertices and calculate the sum of vertex positions.
-	GPlatesMaths::Vector3D summed_vertex_position(0,0,0);
-	int num_vertices = 0;
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator vertex_iter = polygon.vertex_begin();
-	const GPlatesMaths::PolygonOnSphere::vertex_const_iterator vertex_end = polygon.vertex_end();
-	for ( ; vertex_iter != vertex_end; ++vertex_iter, ++num_vertices)
-	{
-		const GPlatesMaths::PointOnSphere &vertex = *vertex_iter;
-		const GPlatesMaths::Vector3D point(vertex.position_vector());
-		summed_vertex_position = summed_vertex_position + point;
-	}
+	//PROFILE_BLOCK("poly orientation test");
 
-	// If the magnitude of the summed vertex position is zero then all the points averaged
-	// to zero and hence we cannot get a plane normal to project onto.
-	// This most likely happens when the vertices roughly form a great circle arc and hence
-	// then are two possible projection directions and hence you could assign the orientation
-	// to be either clockwise or counter-clockwise.
-	// If this happens we'll just choose one orientation arbitrarily.
-	if (summed_vertex_position.magSqrd() <= 0.0)
+	// Iterate through the polygon vertices and calculate the sum of vertex positions.
+	const GPlatesMaths::Vector3D summed_vertex_position =
+			Centroid::calculate_sum_points(
+					polygon.vertex_begin(), polygon.vertex_end());
+
+	// If the average magnitude of the summed vertex position is too small then it means
+	// all the points averaged to a small vector which means our projection onto a tangent
+	// plane is not such a good idea anymore because the points are distributed around the globe.
+	// When the magnitude gets too small divert to a more expensive but more accurate test.
+	if (summed_vertex_position.magSqrd() <=
+		polygon.number_of_vertices() * 0.7/*polygon forms cone of roughly 90 degrees*/)
 	{
-		// Return arbitrary orientation.
-		return CLOCKWISE;
+		// Put a profile in to count the percentage of times this is called.
+		//PROFILE_BLOCK("poly orientation test: diversion to accurate test");
+
+		// Get an accurate polygon signed area.
+		// NOTE: We have to be a little bit careful here in case PolygonOnSphere methods
+		// like 'get_area()' use methods like the one we're currently in to calculate its
+		// results - however the signed area calculation is safe - there won't be any infinite recursion.
+		// If in doubt call 'SphericalArea::calculate_polygon_signed_area()' directly.
+		const real_t polygon_signed_area = polygon.get_signed_area();
+
+		return (polygon_signed_area < 0) ? CLOCKWISE : COUNTERCLOCKWISE;
 	}
 
 	// Calculate a unit vector from the sum to use as our plane normal.
@@ -96,12 +103,13 @@ GPlatesMaths::PolygonOrientation::calculate_polygon_orientation(
 	const GPlatesMaths::UnitVector3D proj_plane_axis_y(
 			cross(proj_plane_normal, proj_plane_axis_x));
 
-	// Iterate through the vertices again and project onto the plane and
+	// Iterate through the vertices and project onto the plane and
 	// also calculate the signed area of the projected polygon.
 	GPlatesMaths::real_t signed_poly_area = 0;
 	GPlatesMaths::real_t last_proj_point_x = 0;
 	GPlatesMaths::real_t last_proj_point_y = 0;
-	vertex_iter = polygon.vertex_begin();
+	GPlatesMaths::PolygonOnSphere::vertex_const_iterator vertex_iter = polygon.vertex_begin();
+	const GPlatesMaths::PolygonOnSphere::vertex_const_iterator vertex_end = polygon.vertex_end();
 	if (vertex_iter != vertex_end)
 	{
 		const GPlatesMaths::PointOnSphere &vertex = *vertex_iter;

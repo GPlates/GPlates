@@ -37,6 +37,7 @@
 #include "MultiPointVectorField.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedFlowline.h"
+#include "ReconstructedMotionPath.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
@@ -48,7 +49,6 @@
 
 namespace GPlatesAppLogic
 {
-	class Reconstruction;
 	class ReconstructionTree;
 
 	namespace ReconstructionGeometryUtils
@@ -111,6 +111,29 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref>
 		get_feature_ref(
 				ReconstructionGeometryPointer reconstruction_geom_ptr);
+
+
+		/**
+		 * Visits a @a ReconstructionGeometry to get a pointer to its feature handle.
+		 * Returns false if derived type of reconstruction geometry has an invalid
+		 * feature handle reference.
+		 * NOTE: @a reconstruction_geom_ptr can be anything that acts like a const or
+		 * non-const pointer to a @a ReconstructionGeometry.
+		 */
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<GPlatesModel::FeatureHandle *>
+		get_feature_handle_ptr(
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
+		{
+			boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+					get_feature_ref(reconstruction_geom_ptr);
+			if (!feature_ref)
+			{
+				return boost::none;
+			}
+
+			return feature_ref->handle_ptr();
+		}
 
 
 		/**
@@ -241,7 +264,10 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Template visitor class to find instances of @a ReconstructionFeatureGeometry.
+		 * Template visitor class to find instances of @a ReconstructedFeatureGeometry.
+		 *
+		 * This class is only designed to use 'ReconstructedFeatureGeometry' or
+		 * 'const ReconstructedFeatureGeometry' as the template parameter.
 		 */
 		template <class ReconstructedFeatureGeometryType>
 		class ReconstructedFeatureGeometryTypeFinderBase :
@@ -260,6 +286,12 @@ namespace GPlatesAppLogic
 
 			//! Typedef for reconstructed virtual geomagnetic pole type.
 			typedef typename base_class_type::reconstructed_virtual_geomagnetic_pole_type reconstructed_virtual_geomagnetic_pole_type ;
+
+			//! Typedef for reconstructed flowline type.
+			typedef typename base_class_type::reconstructed_flowline_type reconstructed_flowline_type ;
+
+			//! Typedef for reconstructed motion path type.
+			typedef typename base_class_type::reconstructed_motion_path_type reconstructed_motion_path_type ;
 
 			//! Convenience typedef for sequence of pointers to a reconstructed feature geometry.
 			typedef std::vector<reconstructed_feature_geometry_type *> container_type;
@@ -289,6 +321,22 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
 			{
 				d_found_geometries.push_back(rvgp.get());
+			}
+
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+			{
+				d_found_geometries.push_back(rf.get());
+			}
+
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+			{
+				d_found_geometries.push_back(rmp.get());
 			}
 
 		private:
@@ -401,8 +449,11 @@ namespace GPlatesAppLogic
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
 			{
-				// A MultiPointVectorField instance does not reference a feature,
-				// so nothing to do here.
+				// A MultiPointVectorField references both a velocity point location and
+				// a plate polygon of some sort.
+				// Here we just return whichever feature reference is stored in the
+				// MultiPointVectorField object itself - currently this is velocity point location.
+				d_feature_ref = mpvf->get_feature_ref();
 			}
 
 			virtual
@@ -411,6 +462,22 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 			{
 				d_feature_ref = rfg->get_feature_ref();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+			{
+				d_feature_ref = rf->get_feature_ref();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+			{
+				d_feature_ref = rmp->get_feature_ref();
 			}
 
 			virtual
@@ -479,8 +546,11 @@ namespace GPlatesAppLogic
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
 			{
-				// A MultiPointVectorField instance does not correspond to a
-				// property of any single feature, so nothing to do here.
+				// A MultiPointVectorField references both a velocity point location and
+				// a plate polygon of some sort.
+				// Here we just return whichever geometry property is stored in the
+				// MultiPointVectorField object itself - currently this is velocity point location.
+				d_property = mpvf->property();
 			}
 
 			virtual
@@ -489,6 +559,22 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 			{
 				d_property = rfg->property();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+			{
+				d_property = rf->property();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+			{
+				d_property = rmp->property();
 			}
 
 			virtual
@@ -594,6 +680,23 @@ namespace GPlatesAppLogic
 				d_plate_id = rtn->plate_id();
 			}
 
+
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+			{
+				d_plate_id = rf->reconstruction_plate_id();
+			}
+
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+			{
+				d_plate_id = rmp->plate_id();
+			}
+
 		private:
 			boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
 		};
@@ -664,6 +767,22 @@ namespace GPlatesAppLogic
 				d_time_of_formation = rtn->time_of_formation();
 			}
 
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+			{
+				d_time_of_formation = rf->time_of_formation();
+			}
+
+			virtual
+			void
+			visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+			{
+				d_time_of_formation = rmp->time_of_formation();
+			}
+
 		private:
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_formation;
 		};
@@ -679,53 +798,6 @@ namespace GPlatesAppLogic
 
 			return get_time_of_formation_visitor.get_time_of_formation();
 		}
-
-		/**
-		* Determines if there are any paleomag features in the collection.
-		*/
-		class DetectPaleomagFeatures:
-			public GPlatesModel::ConstFeatureVisitor
-		{
-		public:
-			DetectPaleomagFeatures() :
-				d_found_paleomag_features(false)
-			{  }
-
-
-			bool
-			has_paleomag_features() const
-			{
-				return d_found_paleomag_features;
-			}
-
-
-			virtual
-			void
-			visit_feature_handle(
-					const GPlatesModel::FeatureHandle &feature_handle)
-			{
-				if (d_found_paleomag_features)
-				{
-					// We've already found a paleomag feature so just return.
-					return;
-				}
-
-				static const GPlatesModel::FeatureType paleomag_feature_type = 
-					GPlatesModel::FeatureType::create_gpml("VirtualGeomagneticPole");
-
-				if (feature_handle.feature_type() == paleomag_feature_type)
-				{
-					d_found_paleomag_features = true;
-				}
-
-				// NOTE: We don't actually want to visit the feature's properties
-				// so we're not calling 'visit_feature_properties()'.
-			}
-
-		private:
-			bool d_found_paleomag_features;
-		};
-
 	}
 }
 

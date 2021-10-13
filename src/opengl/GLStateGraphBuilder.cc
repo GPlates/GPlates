@@ -38,17 +38,15 @@ GPlatesOpenGL::GLStateGraphBuilder::GLStateGraphBuilder() :
 }
 
 
-GPlatesOpenGL::GLStateGraphNode::non_null_ptr_to_const_type
+void
 GPlatesOpenGL::GLStateGraphBuilder::push_state_set(
 		const GLStateSet::non_null_ptr_to_const_type &state_set)
 {
 	d_current_node = &d_current_node->get_or_create_child_node(state_set);
-
-	return GPlatesUtils::get_non_null_pointer<const GLStateGraphNode>(d_current_node);
 }
 
 
-GPlatesOpenGL::GLStateGraphNode::non_null_ptr_to_const_type
+void
 GPlatesOpenGL::GLStateGraphBuilder::pop_state_set()
 {
 	d_current_node = d_current_node->get_parent();
@@ -56,8 +54,6 @@ GPlatesOpenGL::GLStateGraphBuilder::pop_state_set()
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_current_node != NULL,
 			GPLATES_ASSERTION_SOURCE);
-
-	return GPlatesUtils::get_non_null_pointer<const GLStateGraphNode>(d_current_node);
 }
 
 

@@ -167,7 +167,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -ggdb3 -DGPLATES_DEBUG")
 	set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os")
-
+	
     # Disable profiling when releasing to the public.
     if (NOT GPLATES_PUBLIC_RELEASE)
         # Create our own build type for profiling since there are no defaults that suit it.

@@ -463,7 +463,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_default_reconstruction
 	// want to use (and bypass the layers which we already do for the partitioning and
 	// partitioned feature collections).
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
-			d_application_state.get_current_reconstruction().get_default_reconstruction_tree();
+			d_application_state.get_current_reconstruction()
+				.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 
 	return default_reconstruction_tree->get_reconstruction_features();
 }

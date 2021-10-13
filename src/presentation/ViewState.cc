@@ -32,6 +32,8 @@
 #include "VisualLayerRegistry.h"
 #include "VisualLayers.h"
 
+#include "api/Sleeper.h"
+
 #include "app-logic/ApplicationState.h"
 #include "app-logic/VGPRenderSettings.h"
 
@@ -43,13 +45,14 @@
 #include "gui/ColourSchemeDelegator.h"
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/CptColourPalette.h"
+#include "gui/ExportAnimationRegistry.h"
 #include "gui/FeatureFocus.h"
 #include "gui/GeometryFocusHighlight.h"
 #include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
 #include "gui/RasterColourPalette.h"
-#include "gui/RasterColourSchemeMap.h"
 #include "gui/RenderSettings.h"
+#include "gui/Symbol.h"
 #include "gui/TextOverlaySettings.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
@@ -96,7 +99,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_viewport_projection(
 			new GPlatesGui::ViewportProjection(GPlatesGui::ORTHOGRAPHIC)),
 	d_geometry_focus_highlight(
-			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection)),
+			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection,d_feature_type_symbol_map)),
 	d_feature_focus(
 			new GPlatesGui::FeatureFocus(application_state)),
 	d_visual_layers(
@@ -114,11 +117,8 @@ GPlatesPresentation::ViewState::ViewState(
 	d_main_viewport_dimensions(0, 0),
 	d_vgp_render_settings(
 			GPlatesAppLogic::VGPRenderSettings::instance()),
-	d_raster_colour_scheme_map(
-			new GPlatesGui::RasterColourSchemeMap(
-				application_state.get_reconstruct_graph())),
 	d_last_open_directory(QDir::currentPath()),
-	d_show_stars(true),
+	d_show_stars(false),
 	d_background_colour(
 			new GPlatesGui::Colour(get_default_background_colour())),
 	d_graticule_settings(
@@ -127,15 +127,16 @@ GPlatesPresentation::ViewState::ViewState(
 				DEFAULT_GRATICULES_DELTA_LON,
 				get_default_graticules_colour())),
 	d_text_overlay_settings(
-			new GPlatesGui::TextOverlaySettings())
-
+			new GPlatesGui::TextOverlaySettings()),
+	d_export_animation_registry(
+			new GPlatesGui::ExportAnimationRegistry()),
+	d_sleeper(
+			new GPlatesApi::Sleeper())
 {
 	connect_to_viewport_zoom();
 
 	// Connect to signals from FeatureFocus.
 	connect_to_feature_focus();
-
-	connect_to_raster_colour_scheme_map();
 
 	// Set up RenderedGeometryCollection.
 	setup_rendered_geometry_collection();
@@ -145,6 +146,43 @@ GPlatesPresentation::ViewState::ViewState(
 			*d_visual_layer_registry,
 			d_application_state,
 			*this);
+
+#if 0
+	// Set up a symbol map for testing
+	GPlatesModel::FeatureType gpml_volcano_type =
+		GPlatesModel::FeatureType::create_gpml("Volcano");
+	GPlatesModel::FeatureType gpml_hot_spot_type =
+		GPlatesModel::FeatureType::create_gpml("HotSpot");
+	GPlatesModel::FeatureType gpml_magnetic_pick_type =
+		GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification");
+
+
+	GPlatesGui::Symbol volcano_symbol(
+		    GPlatesGui::Symbol::TRIANGLE,
+		    1,
+		    true);
+	GPlatesGui::Symbol hotspot_symbol(
+		    GPlatesGui::Symbol::SQUARE,
+		    1,
+		    true);
+	GPlatesGui::Symbol magnetic_pick_symbol(
+		    GPlatesGui::Symbol::SQUARE,
+		    1,
+		    false);
+
+
+	d_feature_type_symbol_map.insert(
+		    std::make_pair(gpml_volcano_type,volcano_symbol));
+	d_feature_type_symbol_map.insert(
+		    std::make_pair(gpml_hot_spot_type,hotspot_symbol));
+	d_feature_type_symbol_map.insert(
+		    std::make_pair(gpml_magnetic_pick_type,magnetic_pick_symbol));
+#endif
+
+	// Set up the ExportAnimationRegistry.
+	register_default_export_animation_types(
+			*d_export_animation_registry);
+
 }
 
 
@@ -373,31 +411,6 @@ GPlatesPresentation::ViewState::get_vgp_render_settings()
 }
 
 
-GPlatesGui::RasterColourSchemeMap &
-GPlatesPresentation::ViewState::get_raster_colour_scheme_map()
-{
-	return *d_raster_colour_scheme_map;
-}
-
-
-const GPlatesGui::RasterColourSchemeMap &
-GPlatesPresentation::ViewState::get_raster_colour_scheme_map() const
-{
-	return *d_raster_colour_scheme_map;
-}
-
-
-void
-GPlatesPresentation::ViewState::connect_to_raster_colour_scheme_map()
-{
-	QObject::connect(
-			d_raster_colour_scheme_map.get(),
-			SIGNAL(colour_scheme_changed(const GPlatesAppLogic::Layer &)),
-			&d_application_state,
-			SLOT(reconstruct()));
-}
-
-
 QString &
 GPlatesPresentation::ViewState::get_last_open_directory()
 {
@@ -426,6 +439,18 @@ GPlatesPresentation::ViewState::set_show_stars(
 	d_show_stars = show_stars;
 }
 
+
+const GPlatesGui::symbol_map_type &
+GPlatesPresentation::ViewState::get_feature_type_symbol_map() const
+{
+    return d_feature_type_symbol_map;
+}
+
+GPlatesGui::symbol_map_type &
+GPlatesPresentation::ViewState::get_feature_type_symbol_map()
+{
+    return d_feature_type_symbol_map;
+}
 
 const GPlatesGui::Colour &
 GPlatesPresentation::ViewState::get_background_colour() const
@@ -469,3 +494,8 @@ GPlatesPresentation::ViewState::get_text_overlay_settings() const
 	return *d_text_overlay_settings;
 }
 
+GPlatesGui::ExportAnimationRegistry &
+GPlatesPresentation::ViewState::get_export_animation_registry() const
+{
+	return *d_export_animation_registry;
+}

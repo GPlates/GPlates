@@ -7,7 +7,7 @@
  * $Revision: 10510 $
  * $Date: 2010-12-11 13:25:34 +1100 (Sat, 11 Dec 2010) $ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -43,6 +43,10 @@ namespace GPlatesQtWidgets
 	{
 	public:
 
+		/**
+		 * Constructs an OpenFileDialog with a sequence of @a FileDialogFilter specified by
+		 * @a filters_begin and @a filters_end.
+		 */
 		template<typename Iterator>
 		OpenFileDialog(
 				QWidget *parent,
@@ -56,15 +60,28 @@ namespace GPlatesQtWidgets
 			d_filter(FileDialogFilter::create_filter_string(filters_begin, filters_end))
 		{  }
 
+		/**
+		 * Constructs an OpenFileDialog with a preformatted @a filter, which should
+		 * look something like:
+		 *     "Text Documents (*.txt *.foo);;All Files (*)"
+		 */
 		OpenFileDialog(
 				QWidget *parent,
 				const QString &caption,
 				const QString &filter,
 				GPlatesPresentation::ViewState &view_state);
 
+		/**
+		 * Prompts the user to select one file name and returns it.
+		 * If the user clicks cancel, returns the empty string.
+		 */
 		QString
 		get_open_file_name();
 
+		/**
+		 * Prompts the user to select at least one file name and returns them in a
+		 * list. If the user clicks cancel, returns an empty list.
+		 */
 		QStringList
 		get_open_file_names();
 

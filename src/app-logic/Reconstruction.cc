@@ -27,174 +27,22 @@
 
 #include "Reconstruction.h"
 
-#include "ReconstructUtils.h"
-
 #include "global/PreconditionViolationError.h"
 
 
 GPlatesAppLogic::Reconstruction::Reconstruction(
 		const double &reconstruction_time,
-		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree) :
+		const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy) :
 	d_reconstruction_time(reconstruction_time),
-	d_default_reconstruction_tree(reconstruction_tree)
+	d_default_reconstruction_layer_proxy(default_reconstruction_layer_proxy)
 {
 }
 
 
 GPlatesAppLogic::Reconstruction::Reconstruction(
-		const double &reconstruction_time,
-		GPlatesModel::integer_plate_id_type anchored_plate_id) :
+		const double &reconstruction_time) :
 	d_reconstruction_time(reconstruction_time),
-	// Create an empty default reconstruction tree...
-	d_default_reconstruction_tree(
-			ReconstructUtils::create_reconstruction_tree(
-					reconstruction_time,
-					anchored_plate_id))
-{
-}
-
-
-GPlatesAppLogic::Reconstruction::~Reconstruction()
-{
-	// Tell all ReconstructionGeometryCollection's, which currently point to this
-	// Reconstruction instance, to set those pointers to NULL,
-	// lest they become dangling pointers.
-
-	reconstruction_tree_map_type::iterator reconstruction_geom_collection_iter =
-			d_reconstruction_tree_map.begin();
-	reconstruction_tree_map_type::iterator reconstruction_geom_collection_end =
-			d_reconstruction_tree_map.end();
-	for ( ;
-		reconstruction_geom_collection_iter != reconstruction_geom_collection_end;
-		++reconstruction_geom_collection_iter)
-	{
-		reconstruction_geom_collection_iter->second->set_reconstruction_ptr(NULL);
-	}
-}
-
-
-void
-GPlatesAppLogic::Reconstruction::add_reconstruction_geometries(
-		const GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_to_const_type &
-				reconstruction_geom_collection)
-{
-	if (d_reconstruction_time != reconstruction_geom_collection->get_reconstruction_time())
-	{
-		throw GPlatesGlobal::PreconditionViolationError(GPLATES_EXCEPTION_SOURCE);
-	}
-
-	// Map the reconstruction tree to the reconstruction geometry collection.
-	d_reconstruction_tree_map.insert(
-			std::make_pair(
-					reconstruction_geom_collection->reconstruction_tree(),
-					reconstruction_geom_collection));
-
-	reconstruction_geom_collection->set_reconstruction_ptr(this);
-}
-
-
-GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator
-GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::create_begin(
-		const Reconstruction &reconstruction,
-		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree)
-{
-	reconstruction_tree_map_type::const_iterator lower_bound_iter =
-			reconstruction.d_reconstruction_tree_map.lower_bound(reconstruction_tree);
-
-	boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator> iter =
-		get_next_valid_reconstruction_geometry_collection_iterator(
-				reconstruction,
-				lower_bound_iter);
-	return ConstReconstructionGeometryIterator(
-				&reconstruction,
-				lower_bound_iter,
-				iter);
-}
-
-
-GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator
-GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::create_end(
-		const Reconstruction &reconstruction,
-		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree)
-{
-	reconstruction_tree_map_type::const_iterator upper_bound_iter =
-			reconstruction.d_reconstruction_tree_map.upper_bound(reconstruction_tree);
-
-	boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator> iter =
-		get_next_valid_reconstruction_geometry_collection_iterator(
-				reconstruction,
-				upper_bound_iter);
-	return ConstReconstructionGeometryIterator(
-				&reconstruction,
-				upper_bound_iter,
-				iter);
-}
-
-
-const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type
-GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::operator*() const
-{
-	// The caller shouldn't be trying to dereference an invalid iterator
-	// so we will assume valid internal iterators.
-	return *d_reconstruction_geometry_collection_iterator.get();
-}
-
-
-GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator &
-GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::operator++()
-{
-	// The caller shouldn't be trying to increment an invalid iterator
-	// so we will assume valid internal iterators.
-
-	// If we've reached the end of one ReconstructionGeometryCollection then
-	// move to the beginning of the next ReconsructionGeometryCollection.
-	++d_reconstruction_geometry_collection_iterator.get();
-	if (d_reconstruction_geometry_collection_iterator ==
-		d_reconstruction_tree_map_iterator->second->end())
-	{
-		++d_reconstruction_tree_map_iterator;
-		d_reconstruction_geometry_collection_iterator = 
-			get_next_valid_reconstruction_geometry_collection_iterator(
-					*d_reconstruction,
-					d_reconstruction_tree_map_iterator);
-	}
-
-	return *this;
-}
-
-boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator>
-GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::get_next_valid_reconstruction_geometry_collection_iterator(
-		const Reconstruction &reconstruction,	
-		reconstruction_tree_map_type::const_iterator &map_iter)
-{
-	for (; map_iter != reconstruction.d_reconstruction_tree_map.end(); ++map_iter)
-	{
-#if 0
-		if (map_iter->second->begin() != map_iter->second->end())
-#endif
-		if (!map_iter->second->empty())
-		{
-			return map_iter->second->begin();
-		}
-#if 0
-		else
-		{
-			continue;
-		}
-#endif
-	}
-
-	return boost::none;
-}
-
-
-GPlatesAppLogic::Reconstruction::ConstReconstructionGeometryIterator::ConstReconstructionGeometryIterator(
-		const Reconstruction *reconstruction,
-		reconstruction_tree_map_type::const_iterator reconstruction_tree_map_iterator,
-		boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator>
-				reconstruction_geometry_collection_iterator) :
-	d_reconstruction(reconstruction),
-	d_reconstruction_tree_map_iterator(reconstruction_tree_map_iterator),
-	d_reconstruction_geometry_collection_iterator(reconstruction_geometry_collection_iterator)
+	// Create a reconstruction layer proxy that performs identity rotations...
+	d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create())
 {
 }

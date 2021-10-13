@@ -140,6 +140,7 @@ namespace GPlatesModel
 				const QString &name) :
 			d_namespace(StringSetSingletons::xml_namespace_instance().insert(
 						GPlatesUtils::make_icu_string_from_qstring(namespace_uri))),
+			d_namespace_alias(d_namespace),
 			d_name(SingletonType::instance().insert(
 						GPlatesUtils::make_icu_string_from_qstring(name)))
 		{
@@ -150,7 +151,8 @@ namespace GPlatesModel
 		QualifiedXmlName(
 				const GPlatesUtils::UnicodeString &namespace_uri,
 				const GPlatesUtils::UnicodeString &name) :
-			d_namespace(StringSetSingletons::xml_namespace_instance().insert(namespace_uri)), 
+			d_namespace(StringSetSingletons::xml_namespace_instance().insert(namespace_uri)),
+			d_namespace_alias(d_namespace),
 			d_name(SingletonType::instance().insert(name))
 		{
 			set_namespace_alias();
@@ -178,6 +180,7 @@ namespace GPlatesModel
 				boost::optional<const GPlatesUtils::UnicodeString &> namespace_alias,
 				const GPlatesUtils::UnicodeString &name) :
 			d_namespace(StringSetSingletons::xml_namespace_instance().insert(namespace_uri)), 
+			d_namespace_alias(d_namespace),
 			d_name(SingletonType::instance().insert(name))
 		{
 			if (namespace_alias) {

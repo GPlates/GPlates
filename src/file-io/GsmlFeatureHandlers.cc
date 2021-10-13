@@ -1,0 +1,102 @@
+/* $Id$ */
+
+/**
+ * @file 
+ *
+ * Most recent change:
+ *   $Date$
+ * 
+ * Copyright (C) 2011 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+#include <boost/foreach.hpp>
+#include <boost/bind.hpp>
+#include <QBuffer>
+
+#include "GsmlFeatureHandlers.h"
+#include "GsmlPropertyHandlers.h"
+#include "GsmlNodeProcessorFactory.h"
+
+#include "global/LogException.h"
+#include "utils/XQueryUtils.h"
+
+using namespace GPlatesUtils;
+using namespace GPlatesModel;
+
+void
+GPlatesFileIO::GsmlFeatureHandler::handle_gsml_feature(
+		const QString& feature_type_str,
+		FeatureCollectionHandle::weak_ref fc,
+		QBuffer& xml_data)
+{
+	FeatureHandle::weak_ref feature = FeatureHandle::create(
+			fc,
+			FeatureType(PropertyName::create_gml(feature_type_str)));
+
+	GsmlNodeProcessorFactory(feature).process_with_property_processors(
+			feature_type_str, 
+			xml_data);
+	return;
+}
+
+void
+GPlatesFileIO::GsmlFeatureHandler::handle_feature_memeber(
+		FeatureCollectionHandle::weak_ref fc,
+		QByteArray& xml_data)
+{
+	QBuffer buffer(&xml_data);
+	buffer.open(QIODevice::ReadOnly | QIODevice::Text);
+	if(!buffer.isOpen())
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,	
+			"Unable to open buffer.");
+	}
+	QXmlStreamReader reader(&buffer);
+	XQuery::next_start_element(reader);//gml:featureMember
+	XQuery::next_start_element(reader);//gsml:MappedFeature -- real feature type
+	QString feature_type = reader.name().toString();
+
+	std::vector<QByteArray> results = 
+		XQuery::evaluate(
+				xml_data,
+				"//gsml:"+ feature_type ,
+				boost::bind(&XQuery::is_empty,_1));
+
+	if(results.size() != 1)
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,	
+			"The number of feature is not 1. We are expecting one and only one feature here.");
+	}
+
+	QBuffer buf(&results[0]);
+	buf.open(QIODevice::ReadOnly | QIODevice::Text);
+	if(!buf.isOpen())
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,	
+			"Unable to open buffer.");
+	}
+	handle_gsml_feature(feature_type,fc,buf);
+}
+
+
+
+
+
+

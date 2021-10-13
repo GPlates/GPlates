@@ -84,7 +84,7 @@
                <number>5</number>
               </property>
               <property name="horizontalSpacing">
-               <number>6</number>
+               <number>4</number>
               </property>
               <property name="verticalSpacing">
                <number>2</number>
@@ -98,6 +98,12 @@
                  </sizepolicy>
                 </property>
                 <property name="minimumSize">
+                 <size>
+                  <width>18</width>
+                  <height>18</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
                  <size>
                   <width>18</width>
                   <height>18</height>
@@ -143,155 +149,234 @@
               <string notr="true"/>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_5">
+              <property name="spacing">
+               <number>4</number>
+              </property>
               <property name="leftMargin">
-               <number>5</number>
+               <number>0</number>
               </property>
               <property name="topMargin">
                <number>0</number>
               </property>
               <property name="rightMargin">
-               <number>5</number>
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>4</number>
               </property>
               <item>
-               <widget class="QGroupBox" name="input_channels_groupbox">
+               <widget class="QWidget" name="input_channels_header_widget" native="true">
+                <property name="autoFillBackground">
+                 <bool>true</bool>
+                </property>
+                <layout class="QHBoxLayout" name="horizontalLayout">
+                 <property name="spacing">
+                  <number>4</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>4</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>2</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>2</number>
+                 </property>
+                 <item>
+                  <widget class="QWidget" name="expand_input_channels_icon_placeholder_widget" native="true">
+                   <property name="minimumSize">
+                    <size>
+                     <width>18</width>
+                     <height>18</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>18</width>
+                     <height>18</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="input_channels_header_label">
+                   <property name="font">
+                    <font>
+                     <weight>75</weight>
+                     <bold>true</bold>
+                    </font>
+                   </property>
+                   <property name="text">
+                    <string>Inputs</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QWidget" name="input_channels_widget" native="true">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
                   <horstretch>0</horstretch>
                   <verstretch>1</verstretch>
                  </sizepolicy>
                 </property>
-                <property name="title">
-                 <string>Input channels</string>
-                </property>
-                <property name="flat">
-                 <bool>true</bool>
-                </property>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="layer_options_groupbox">
-                <property name="title">
-                 <string>Layer options</string>
-                </property>
-                <property name="flat">
+               <widget class="QWidget" name="layer_options_header_widget" native="true">
+                <property name="autoFillBackground">
                  <bool>true</bool>
                 </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QGroupBox" name="advanced_options_groupbox">
-                <property name="title">
-                 <string>Advanced options</string>
-                </property>
-                <property name="flat">
-                 <bool>true</bool>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout">
+                <layout class="QHBoxLayout" name="horizontalLayout_5">
                  <property name="spacing">
-                  <number>3</number>
+                  <number>4</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>4</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>2</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>2</number>
                  </property>
                  <item>
-                  <widget class="QStackedWidget" name="enable_layer_stackedwidget">
-                   <property name="currentIndex">
-                    <number>0</number>
+                  <widget class="QWidget" name="expand_layer_options_icon_placeholder_widget" native="true">
+                   <property name="minimumSize">
+                    <size>
+                     <width>18</width>
+                     <height>18</height>
+                    </size>
                    </property>
-                   <widget class="QWidget" name="page">
-                    <layout class="QHBoxLayout" name="horizontalLayout">
-                     <property name="spacing">
-                      <number>0</number>
-                     </property>
-                     <property name="margin">
-                      <number>0</number>
-                     </property>
-                     <item>
-                      <widget class="QLabel" name="disable_layer_label">
-                       <property name="text">
-                        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;a href=&quot;disable_layer&quot;&gt;&lt;span style=&quot; text-decoration: none; color:#0000ff;&quot;&gt;Disable layer&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                   <widget class="QWidget" name="page_2">
-                    <layout class="QHBoxLayout" name="horizontalLayout_2">
-                     <property name="spacing">
-                      <number>0</number>
-                     </property>
-                     <property name="margin">
-                      <number>0</number>
-                     </property>
-                     <item>
-                      <widget class="QLabel" name="enable_layer_label">
-                       <property name="text">
-                        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;a href=&quot;enable_layer&quot;&gt;&lt;span style=&quot; text-decoration: none; color:#0000ff;&quot;&gt;Enable layer&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
+                   <property name="maximumSize">
+                    <size>
+                     <width>18</width>
+                     <height>18</height>
+                    </size>
+                   </property>
                   </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="layer_options_header_label">
+                   <property name="font">
+                    <font>
+                     <weight>75</weight>
+                     <bold>true</bold>
+                    </font>
+                   </property>
+                   <property name="text">
+                    <string>Layer options</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QWidget" name="layer_options_widget" native="true"/>
+              </item>
+              <item>
+               <widget class="QWidget" name="advanced_options_header_widget" native="true">
+                <property name="autoFillBackground">
+                 <bool>true</bool>
+                </property>
+                <layout class="QHBoxLayout" name="horizontalLayout_2">
+                 <property name="spacing">
+                  <number>4</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>4</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>2</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>2</number>
+                 </property>
+                 <item>
+                  <widget class="QWidget" name="expand_advanced_options_icon_placeholder_widget" native="true">
+                   <property name="minimumSize">
+                    <size>
+                     <width>18</width>
+                     <height>18</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>18</width>
+                     <height>18</height>
+                    </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="advanced_options_header_label">
+                   <property name="font">
+                    <font>
+                     <weight>75</weight>
+                     <bold>true</bold>
+                    </font>
+                   </property>
+                   <property name="text">
+                    <string>Manage layer</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QWidget" name="advanced_options_widget" native="true">
+                <layout class="QVBoxLayout" name="verticalLayout">
+                 <property name="spacing">
+                  <number>4</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>26</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>4</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>4</number>
+                 </property>
+                 <item>
+                  <widget class="QWidget" name="enable_layer_placeholder_widget" native="true"/>
                  </item>
                  <item>
                   <widget class="QWidget" name="other_advanced_options_widget" native="true">
                    <layout class="QVBoxLayout" name="verticalLayout_3">
+                    <property name="spacing">
+                     <number>4</number>
+                    </property>
                     <property name="margin">
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QStackedWidget" name="set_as_default_stackedwidget">
-                      <property name="currentIndex">
-                       <number>0</number>
-                      </property>
-                      <widget class="QWidget" name="page_3">
-                       <layout class="QHBoxLayout" name="horizontalLayout_5">
-                        <property name="spacing">
-                         <number>0</number>
-                        </property>
-                        <property name="margin">
-                         <number>0</number>
-                        </property>
-                        <item>
-                         <widget class="QLabel" name="set_as_default_label">
-                          <property name="text">
-                           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;a href=&quot;set_as_default&quot;&gt;&lt;span style=&quot; text-decoration: none; color:#0000ff;&quot;&gt;Set as default reconstruction tree&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </widget>
-                      <widget class="QWidget" name="page_4">
-                       <layout class="QHBoxLayout" name="horizontalLayout_6">
-                        <property name="spacing">
-                         <number>0</number>
-                        </property>
-                        <property name="margin">
-                         <number>0</number>
-                        </property>
-                        <item>
-                         <widget class="QLabel" name="disabled_set_as_default_label">
-                          <property name="enabled">
-                           <bool>false</bool>
-                          </property>
-                          <property name="text">
-                           <string>Set as default reconstruction tree</string>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </widget>
-                     </widget>
+                     <widget class="QWidget" name="rename_layer_placeholder_widget" native="true"/>
+                    </item>
+                    <item>
+                     <widget class="QWidget" name="delete_layer_placeholder_widget" native="true"/>
                     </item>
                    </layout>
                   </widget>

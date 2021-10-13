@@ -12,6 +12,11 @@ include_directories(${internal_INCLUDE_DIRS})
 
 
 set(srcs
+    ArbitraryNodeProcessor.h
+    ArbitraryXmlProfile.cc
+    ArbitraryXmlProfile.h
+    ArbitraryXmlReader.cc
+    ArbitraryXmlReader.h
     CptReader.cc
     CptReader.h
     ErrorOpeningFileForReadingException.cc
@@ -22,6 +27,12 @@ set(srcs
     ErrorOpeningPipeFromGzipException.h
     ErrorOpeningPipeToGzipException.cc
     ErrorOpeningPipeToGzipException.h
+    ExportTemplateFilenameSequence.cc
+    ExportTemplateFilenameSequence.h
+    ExportTemplateFilenameSequenceFormats.cc
+    ExportTemplateFilenameSequenceFormats.h
+    ExportTemplateFilenameSequenceImpl.cc
+    ExportTemplateFilenameSequenceImpl.h
     ExternalProgram.cc
     ExternalProgram.h
     FeatureCollectionFileFormat.cc
@@ -42,6 +53,8 @@ set(srcs
     GdalUtils.cc
     GdalUtils.h
     GeometryExporter.h
+    GeoscimlProfile.cc
+    GeoscimlProfile.h
     GmapReader.cc
     GmapReader.h
     GMTFormatFlowlineExport.cc
@@ -54,6 +67,8 @@ set(srcs
     GMTFormatMotionPathExport.h
     GMTFormatReconstructedFeatureGeometryExport.cc
     GMTFormatReconstructedFeatureGeometryExport.h
+    GMTFormatResolvedTopologicalBoundaryExport.cc
+    GMTFormatResolvedTopologicalBoundaryExport.h
     GMTFormatWriter.cc
     GMTFormatWriter.h
     GpmlOnePointFiveOutputVisitor.cc
@@ -64,12 +79,36 @@ set(srcs
     GpmlOnePointSixReader.h
     GpmlReaderUtils.cc
     GpmlReaderUtils.h
+    GsmlConst.h
+    GsmlFeatureHandlers.cc
+    GsmlFeatureHandlers.h
+    GsmlFeaturesDef.h
+    GsmlNodeProcessor.cc
+    GsmlNodeProcessor.h
+    GsmlNodeProcessorFactory.cc
+    GsmlNodeProcessorFactory.h
+    GsmlPropertyDef.h
+    GsmlPropertyHandlers.cc
+    GsmlPropertyHandlers.h
+    LineReader.cc
     LineReader.h
     MipmappedRasterFormat.cc
     MipmappedRasterFormat.h
     MipmappedRasterFormatReader.h
     MipmappedRasterFormatWriter.h
     OgrException.h
+    OgrFeatureCollectionWriter.cc
+    OgrFeatureCollectionWriter.h
+    OgrFormatFlowlineExport.cc
+    OgrFormatFlowlineExport.h
+    OgrFormatMotionPathExport.cc
+    OgrFormatMotionPathExport.h
+    OgrFormatReconstructedFeatureGeometryExport.cc
+    OgrFormatReconstructedFeatureGeometryExport.h
+    OgrFormatResolvedTopologicalBoundaryExport.cc
+    OgrFormatResolvedTopologicalBoundaryExport.h
+    OgrGeometryExporter.cc
+    OgrGeometryExporter.h
     OgrWriter.cc
     OgrWriter.h
     PlatesFormatUtils.cc
@@ -101,38 +140,30 @@ set(srcs
     ReadErrors.h
     ReconstructedFeatureGeometryExport.cc
     ReconstructedFeatureGeometryExport.h
-    ReconstructedFeatureGeometryExportImpl.cc
-    ReconstructedFeatureGeometryExportImpl.h
     ReconstructedFlowlineExport.cc
     ReconstructedFlowlineExport.h
-    ReconstructedFlowlineExportImpl.cc
-    ReconstructedFlowlineExportImpl.h
     ReconstructedMotionPathExport.cc
     ReconstructedMotionPathExport.h
-    ReconstructedMotionPathExportImpl.cc
-    ReconstructedMotionPathExportImpl.h
+    ReconstructionGeometryExportImpl.cc
+    ReconstructionGeometryExportImpl.h
+    ResolvedTopologicalBoundaryExport.cc
+    ResolvedTopologicalBoundaryExport.h
+    ResolvedTopologicalBoundaryExportImpl.cc
+    ResolvedTopologicalBoundaryExportImpl.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
-    ShapefileFormatFlowlineExport.cc
-    ShapefileFormatFlowlineExport.h
-    ShapefileFormatMotionPathExport.cc
-    ShapefileFormatMotionPathExport.h
-    ShapefileFormatReconstructedFeatureGeometryExport.cc
-    ShapefileFormatReconstructedFeatureGeometryExport.h
-    ShapefileGeometryExporter.cc
-    ShapefileGeometryExporter.h
     ShapefileReader.cc
     ShapefileReader.h
     ShapefileUtils.cc
     ShapefileUtils.h
-    ShapefileWriter.cc
-    ShapefileWriter.h
     ShapefileXmlReader.cc
     ShapefileXmlReader.h
     ShapefileXmlWriter.cc
     ShapefileXmlWriter.h
     StructurePropertyCreatorMap.cc
     StructurePropertyCreatorMap.h
+    SymbolFileReader.cc
+    SymbolFileReader.h
     TemporaryFileRegistry.cc
     TemporaryFileRegistry.h
     XmlOutputInterface.cc

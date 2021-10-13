@@ -25,6 +25,65 @@
 
 #include "CgalUtils.h"
 
+
+namespace
+{
+#if !defined(__WINDOWS__)
+	// The old sigaction for SIGSEGV before we called sigaction().
+	struct sigaction old_action;
+
+	// Holds the information necessary for setjmp/longjmp to work.
+	jmp_buf buf;
+
+
+	/**
+ 	* Handles the SIGSEGV signal.
+ 	*/
+	void
+	handler(int signum)
+	{
+		// Jump past the problem call to GDALOpen.
+		/* non-zero value so that the GDALOpen call doesn't get called again */
+		//qDebug() << "handler";
+		longjmp( buf, 1);
+	}
+#endif
+}
+
+
+		void
+		GPlatesAppLogic::CgalUtils::do_insert(
+			cgal_point_2_type point,
+			cgal_constrained_delaunay_triangulation_2_type &constrained_delaunay_triangulation_2,
+			std::vector<cgal_constrained_vertex_handle> &vertex_handles)
+		{
+#if !defined(__WINDOWS__)
+			// Set a handler for SIGSEGV in case the call to GDALOpen does a segfault.
+			struct sigaction action;
+			std::memset(&action, 0, sizeof(action)); // sizeof(struct sigaction) is platform dependent.
+			action.sa_handler = &handler;
+			sigaction(SIGSEGV, &action, &old_action);
+	
+			// Try and call 
+			if (!setjmp( buf ))
+			{
+#endif
+				// The first time setjmp() is called, it returns 0. If call segfaults,
+	
+				// we longjmp back to the if statement, but with a non-zero value.
+				//qDebug() << " call insert ";
+				vertex_handles.push_back(
+					 constrained_delaunay_triangulation_2.insert( point ) );
+#if !defined(__WINDOWS__)
+			}
+			//qDebug() << " after insert ";
+
+			// Restore the old sigaction whether or not we segfaulted.
+			sigaction(SIGSEGV, &old_action, NULL);
+#endif
+		}
+
+
 GPlatesAppLogic::CgalUtils::cgal_point_2_type
 GPlatesAppLogic::CgalUtils::convert_point_to_cgal_2(
 		const GPlatesMaths::PointOnSphere &point)
@@ -72,10 +131,61 @@ GPlatesAppLogic::CgalUtils::convert_point_from_cgal_3(
 }
 
 
+
+//GPlatesAppLogic::CgalUtils::cgal_cdt_2_locate_type
+bool
+GPlatesAppLogic::CgalUtils::is_point_in_mesh(
+	const cgal_point_2_type &point,
+	const cgal_delaunay_triangulation_2_type &dt2,
+	const cgal_constrained_delaunay_triangulation_2_type &cdt2)
+{
+
+	GPlatesAppLogic::CgalUtils::cgal_cdt_2_locate_type locate_type;
+
+	GPlatesAppLogic::CgalUtils::cgal_cdt_2_face_handle start_face = cgal_cdt_2_face_handle();
+	GPlatesAppLogic::CgalUtils::cgal_cdt_2_face_handle found_face;
+	int number;
+
+	found_face = cdt2.locate(point, locate_type, number, start_face);
+
+	qDebug() << "locate_point: number = " << number;
+	qDebug() << "locate_point: locate_type = " << locate_type;
+
+ 	switch (locate_type)
+	{
+		case cgal_constrained_delaunay_triangulation_2_type::VERTEX:
+			qDebug() << "locate_point: VERTEX";
+			break;
+		case cgal_constrained_delaunay_triangulation_2_type::FACE:
+			if ( found_face->is_in_domain() )
+			{
+				qDebug() << "locate_point: FACE: in Mesh domain";
+				return true;
+			} else {
+				qDebug() << "locate_point: FACE: not in Mesh domain";
+			}
+			break;
+		case cgal_constrained_delaunay_triangulation_2_type::EDGE:
+			qDebug() << "locate_point: EDGE";
+			break;
+		case cgal_constrained_delaunay_triangulation_2_type::OUTSIDE_CONVEX_HULL:
+			qDebug() << "locate_point: OUTSIDE_CONVEX_HULL";
+			break;
+		case cgal_constrained_delaunay_triangulation_2_type::OUTSIDE_AFFINE_HULL:
+			qDebug() << "locate_point: OUTSIDE_AFFINE_HULL";
+			break;
+		default:
+			qDebug() << "???";
+	} 
+	
+	//return cgal_constrained_delaunay_triangulation_2_type::VERTEX;
+	return false;
+}
+
+
 //
 // 2D
 //
-
 boost::optional<GPlatesAppLogic::CgalUtils::interpolate_triangulation_query_type>
 GPlatesAppLogic::CgalUtils::query_interpolate_triangulation_2(
 		const cgal_point_2_type &point,
@@ -84,6 +194,7 @@ GPlatesAppLogic::CgalUtils::query_interpolate_triangulation_2(
 {
 	// Build the natural_neighbor_coordinates_2 from the cgal_delaunay_triangulation_2_type
 	cgal_point_coordinate_vector_type coords;
+
 	CGAL::Triple< std::back_insert_iterator<cgal_point_coordinate_vector_type>, cgal_kernel_type::FT, bool>
 			coordinate_result =
 					CGAL::natural_neighbor_coordinates_2(
@@ -91,20 +202,6 @@ GPlatesAppLogic::CgalUtils::query_interpolate_triangulation_2(
 							point,
 							std::back_inserter(coords));
 
-	# if 0
-	// NOTE: 
-	// cannot use cgal_constrained_delaunay_triangulation_2_type as the base triangulation
-	// 2D + C
-	cgal_point_coordinate_vector_type c_coords;
-	CGAL::Triple< std::back_insert_iterator<cgal_point_coordinate_vector_type>, cgal_kernel_type::FT, bool>
-			c_coordinate_result =
-					CGAL::natural_neighbor_coordinates_2(
-							c_triangulation,
-							point,
-							std::back_inserter(c_coords));
-	#endif
-
-	
 	const bool in_network = coordinate_result.third;
 
 	if (!in_network)
@@ -115,6 +212,47 @@ GPlatesAppLogic::CgalUtils::query_interpolate_triangulation_2(
 	const cgal_coord_type &norm = coordinate_result.second;
 
 	return std::make_pair(coords, norm);
+}
+
+//
+// 2D + C
+//
+boost::optional<GPlatesAppLogic::CgalUtils::interpolate_triangulation_query_type>
+GPlatesAppLogic::CgalUtils::query_interpolate_constrained_triangulation_2(
+		const cgal_point_2_type &point,
+		const cgal_delaunay_triangulation_2_type &triangulation,
+		const cgal_constrained_delaunay_triangulation_2_type &c_triangulation)
+{
+#ifdef HAVE_GCAL_PATCH_CDT2_H
+qDebug() << "HAVE_GCAL_PATCH_CDT2_H";
+	// NOTE: 
+	// must use patched version of CGAL's Constrained_Delaunay_triangulation_2.h 
+	// to use our cgal_constrained_delaunay_triangulation_2_type as the base triangulation
+	//
+
+	// Build the natural_neighbor_coordinates_2 from the cgal_delaunay_triangulation_2_type
+	cgal_point_coordinate_vector_type c_coords;
+
+	CGAL::Triple< std::back_insert_iterator<cgal_point_coordinate_vector_type>, cgal_kernel_type::FT, bool>
+			c_coordinate_result =
+					CGAL::natural_neighbor_coordinates_2(
+							c_triangulation,
+							point,
+							std::back_inserter(c_coords));
+	
+	const bool in_network = c_coordinate_result.third;
+
+	if (!in_network)
+	{
+		return boost::none;
+	}
+
+	const cgal_coord_type &norm = c_coordinate_result.second;
+
+	return std::make_pair(c_coords, norm);
+#else
+	return boost::none;
+#endif
 }
 
 double
@@ -140,6 +278,7 @@ GPlatesAppLogic::CgalUtils::cgal_vector_2_type
 GPlatesAppLogic::CgalUtils::gradient_2(
 		const cgal_point_2_type &test_point,
 		const cgal_delaunay_triangulation_2_type &triangulation,
+		const cgal_constrained_delaunay_triangulation_2_type &c_triangulation,
 		const cgal_map_point_2_to_value_type &function_values)
 {
 	typedef CGAL::Interpolation_gradient_fitting_traits_2<cgal_kernel_type> Traits;
@@ -158,7 +297,7 @@ GPlatesAppLogic::CgalUtils::gradient_2(
 	const bool in_network = coordinate_result.third;
 	if (!in_network)
 	{
-		qDebug() << " !in_network ";
+		//qDebug() << " !in_network ";
 	}
 
 	const cgal_coord_type &norm = coordinate_result.second;

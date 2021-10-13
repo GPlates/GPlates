@@ -112,36 +112,6 @@ namespace GPlatesOpenGL
 		GLResourceManager()
 		{  }
 	};
-
-
-
-	/**
-	 * Policy class to allocate and deallocate OpenGL texture objects.
-	 */
-	class GLTextureObjectAllocator
-	{
-	public:
-		GLint
-		allocate()
-		{
-			GLuint texture;
-			glGenTextures(1, &texture);
-			return texture;
-		}
-
-		void
-		deallocate(
-				GLuint texture)
-		{
-			glDeleteTextures(1, &texture);
-		}
-	};
-
-
-	/**
-	 * Typedef for a texture object resource manager.
-	 */
-	typedef GLResourceManager<GLuint, GLTextureObjectAllocator> GLTextureResourceManager;
 }
 
 #endif // GPLATES_OPENGL_GLRESOURCEMANAGER_H

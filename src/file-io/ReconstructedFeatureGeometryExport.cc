@@ -23,171 +23,112 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <QDebug>
-#include <QDir> // static "separator" function.
 
 #include "ReconstructedFeatureGeometryExport.h"
 
-#include "ErrorOpeningFileForWritingException.h"
 #include "GMTFormatReconstructedFeatureGeometryExport.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FileFormatNotSupportedException.h"
-#include "ShapefileFormatReconstructedFeatureGeometryExport.h"
-#include "ShapefileUtils.h"
-#include "ReconstructedFeatureGeometryExportImpl.h"
+#include "ReconstructionGeometryExportImpl.h"
+#include "OgrFormatReconstructedFeatureGeometryExport.h"
 
-namespace
+using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
+
+
+namespace GPlatesFileIO
 {
-	QString
-	build_flat_structure_filename(
-		const QString &export_path,
-		const QString &collection_filename,
-		const QString &export_filename)
+	namespace ReconstructedFeatureGeometryExport
 	{
-		QString output_filename =  export_path + 
-								QDir::separator() + 
-								collection_filename + 
-								"_" + 
-								export_filename;
-		return output_filename;
-
-	}
-
-	/**
-	 * Builds output file name for folder-format output, and creates and subfolders
-	 * if they do not already exist. 
-	 */
-	QString
-	build_folder_structure_filename(
-		const QString &export_path,
-		const QString &collection_filename,
-		const QString &export_filename)
-	{
-		QString output_folder_name= export_path + 
-			QDir::separator() + 
-			collection_filename;
-		
-		QDir folder(export_path);
-		QDir sub_folder(output_folder_name);
-
-		if (!sub_folder.exists())
+		namespace
 		{
-			bool success = folder.mkdir(collection_filename);
-			if (!success)
+			//! Typedef for a sequence of @a FeatureGeometryGroup objects.
+			typedef std::list< FeatureGeometryGroup<GPlatesAppLogic::ReconstructedFeatureGeometry> >
+					feature_geometry_group_seq_type;
+
+			//! Typedef for a sequence of @a FeatureCollectionFeatureGroup objects.
+			typedef std::list< FeatureCollectionFeatureGroup<GPlatesAppLogic::ReconstructedFeatureGeometry> >
+					grouped_features_seq_type;
+
+
+			void
+			export_as_single_file(
+					const QString &filename,
+					Format export_format,
+					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
+					const std::vector<const File::Reference *> &referenced_files,
+					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+					const double &reconstruction_time)
 			{
-				throw GPlatesFileIO::ErrorOpeningFileForWritingException(
-					GPLATES_EXCEPTION_SOURCE,"Unable to create output directory.");
+				switch (export_format)
+				{
+				case GMT:
+					GMTFormatReconstructedFeatureGeometryExport::export_geometries(
+						grouped_recon_geoms_seq,
+						filename,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time);
+					break;
+
+				case SHAPEFILE:
+					OgrFormatReconstructedFeatureGeometryExport::export_geometries(
+						grouped_recon_geoms_seq,
+						filename,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time);		
+					break;
+
+				default:
+					throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
+						"Chosen export format is not currently supported.");
+				}
+			}
+
+			void
+			export_per_collection(
+					const QString &filename,
+					Format export_format,
+					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
+					const std::vector<const File::Reference *> &referenced_files,
+					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+					const double &reconstruction_time)
+			{
+				switch(export_format)
+				{
+				case SHAPEFILE:
+					OgrFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
+						grouped_recon_geoms_seq,
+						filename,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time);
+					break;
+				case OGRGMT:
+					OgrFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
+						grouped_recon_geoms_seq,
+						filename,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time);
+					break;
+				case GMT:
+					GMTFormatReconstructedFeatureGeometryExport::export_geometries(
+						grouped_recon_geoms_seq,
+						filename,
+						referenced_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time);
+					break;
+				default:
+					throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
+						"Chosen export format is not currently supported.");
+				}
 			}
 		}
-
-		QString output_filename = output_folder_name + 
-								QDir::separator() + 
-								export_filename;
-		return output_filename;
 	}
+}
 
-	void
-	export_as_single_file(
-		const QString &filename,
-		GPlatesFileIO::ReconstructedFeatureGeometryExport::Format export_format,
-		const GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::feature_geometry_group_seq_type &grouped_rfgs_seq,
-		const GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::referenced_files_collection_type &referenced_files,
-		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
-	{
-		using namespace GPlatesFileIO;
-
-		switch (export_format)
-		{
-		case ReconstructedFeatureGeometryExport::GMT:
-			GMTFormatReconstructedFeatureGeometryExport::export_geometries(
-				grouped_rfgs_seq,
-				filename,
-				referenced_files,
-				reconstruction_anchor_plate_id,
-				reconstruction_time);
-			break;
-
-		case ReconstructedFeatureGeometryExport::SHAPEFILE:
-			ShapefileFormatReconstructedFeatureGeometryExport::export_geometries(
-				grouped_rfgs_seq,
-				filename,
-				referenced_files,
-				reconstruction_anchor_plate_id,
-				reconstruction_time);		
-			break;
-
-		default:
-			throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
-				"Chosen export format is not currently supported.");
-		}
-	}
-
-
-	void
-	export_per_collection(
-		const QString &filename,
-		GPlatesFileIO::ReconstructedFeatureGeometryExport::Format export_format,
-		const GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::feature_collection_feature_group_seq_type &grouped_features_seq,
-		const GPlatesFileIO::ReconstructedFeatureGeometryExportImpl::referenced_files_collection_type &referenced_files,
-		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
-	{
-		using namespace GPlatesFileIO;
-
-		ReconstructedFeatureGeometryExportImpl::feature_collection_feature_group_seq_type::const_iterator 
-			it = grouped_features_seq.begin(),
-			end = grouped_features_seq.end();
-
-		QFileInfo export_qfile_info(filename);
-		QString export_path = export_qfile_info.absolutePath();
-		QString export_filename = export_qfile_info.fileName();
-
-		for (; it != end; ++it)
-		{
-			const File::Reference *file_ptr = it->file_ptr;	
-			FileInfo file_info = file_ptr->get_file_info();
-			QFileInfo qfile_info = file_info.get_qfileinfo();
-			QString collection_filename = qfile_info.completeBaseName();
-
-#if 1
-			// Folder-structure output
-			QString output_filename = build_folder_structure_filename(export_path,collection_filename,export_filename);
-#else	
-			// Flat-structure output.
-			QString output_filename = build_flat_structure_filename(export_path,collection_filename,export_filename);
-#endif
-
-
-			boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> kvd;
-			ShapefileUtils::create_default_kvd_from_collection(file_ptr->get_feature_collection(),kvd);
-
-			switch(export_format)
-			{
- 
-			case ReconstructedFeatureGeometryExport::SHAPEFILE:
-				ShapefileFormatReconstructedFeatureGeometryExport::export_geometries_per_collection(
-					it->feature_geometry_groups,
-					output_filename,
-					referenced_files,
-					reconstruction_anchor_plate_id,
-					reconstruction_time);
-				break;
-			case ReconstructedFeatureGeometryExport::GMT:
-				GMTFormatReconstructedFeatureGeometryExport::export_geometries(
-					it->feature_geometry_groups,
-					output_filename,
-					referenced_files,
-					reconstruction_anchor_plate_id,
-					reconstruction_time);
-				break;
-			default:
-				throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
-					"Chosen export format is not currently supported.");
-			}
-		} // iterate over collections
-	}
-} // namespace
 
 GPlatesFileIO::ReconstructedFeatureGeometryExport::Format
 GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
@@ -208,6 +149,8 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
 		return GMT;
 	case FeatureCollectionFileFormat::SHAPEFILE:
 		return SHAPEFILE;
+	case FeatureCollectionFileFormat::OGRGMT:
+		return OGRGMT;
 	default:
 		break;
 	}
@@ -218,49 +161,64 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
 
 void
 GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
-	const QString &filename,
-	ReconstructedFeatureGeometryExport::Format export_format,
-	const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
-	const files_collection_type &active_files,
-	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-	const double &reconstruction_time)
+		const QString &filename,
+		Format export_format,
+		const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> &reconstructed_feature_geom_seq,
+		const std::vector<const File::Reference *> &active_files,
+		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+		const double &reconstruction_time,
+		bool export_single_output_file,
+		bool export_per_input_file)
 {
 	// Get the list of active reconstructable feature collection files that contain
-	// the features referenced by the ReconstructedFeatureGeometry objects.
-	ReconstructedFeatureGeometryExportImpl::feature_handle_to_collection_map_type feature_to_collection_map;
-	ReconstructedFeatureGeometryExportImpl::referenced_files_collection_type referenced_files;
-	ReconstructedFeatureGeometryExportImpl::get_files_referenced_by_geometries(
-		referenced_files, reconstructed_feature_geom_seq, active_files,
-		feature_to_collection_map);
+	// the features referenced by the ReconstructionGeometry objects.
+	feature_handle_to_collection_map_type feature_to_collection_map;
+	std::vector<const File::Reference *> referenced_files;
+	get_files_referenced_by_geometries(
+			referenced_files, reconstructed_feature_geom_seq, active_files,
+			feature_to_collection_map);
 
-	// Group the RFGs by their feature.
-	ReconstructedFeatureGeometryExportImpl::feature_geometry_group_seq_type grouped_rfgs_seq;
-	ReconstructedFeatureGeometryExportImpl::group_rfgs_with_their_feature(
-		grouped_rfgs_seq, reconstructed_feature_geom_seq);
+	// Group the ReconstructionGeometry objects by their feature.
+	feature_geometry_group_seq_type grouped_recon_geom_seq;
+	group_reconstruction_geometries_with_their_feature(
+			grouped_recon_geom_seq, reconstructed_feature_geom_seq);
 
+	if (export_single_output_file)
+	{
+		export_as_single_file(
+				filename,
+				export_format,
+				grouped_recon_geom_seq,
+				referenced_files,
+				reconstruction_anchor_plate_id,
+				reconstruction_time);
+	}
 
-	// Group the feature-groups with their collections. 
-	ReconstructedFeatureGeometryExportImpl::feature_collection_feature_group_seq_type grouped_features_seq;
-	ReconstructedFeatureGeometryExportImpl::group_feature_geom_groups_with_their_collection(
-		feature_to_collection_map,
-		grouped_features_seq,
-		grouped_rfgs_seq);
+	if (export_per_input_file)
+	{
+		// Group the feature-groups with their collections. 
+		grouped_features_seq_type grouped_features_seq;
+		group_feature_geom_groups_with_their_collection(
+				feature_to_collection_map,
+				grouped_features_seq,
+				grouped_recon_geom_seq);
 
+		std::vector<QString> output_filenames;
+		get_output_filenames(output_filenames, filename, grouped_features_seq);
 
-	export_as_single_file(
-		filename,
-		export_format,
-		grouped_rfgs_seq,
-		referenced_files,
-		reconstruction_anchor_plate_id,
-		reconstruction_time);
-
-	export_per_collection(
-		filename,
-		export_format,
-		grouped_features_seq,
-		referenced_files,
-		reconstruction_anchor_plate_id,
-		reconstruction_time);
+		grouped_features_seq_type::const_iterator grouped_features_iter = grouped_features_seq.begin();
+		grouped_features_seq_type::const_iterator grouped_features_end = grouped_features_seq.end();
+		for (std::vector<QString>::const_iterator output_filename_iter = output_filenames.begin();
+			grouped_features_iter != grouped_features_end;
+			++grouped_features_iter, ++output_filename_iter)
+		{
+			export_per_collection(
+					*output_filename_iter,
+					export_format,
+					grouped_features_iter->feature_geometry_groups,
+					referenced_files,
+					reconstruction_anchor_plate_id,
+					reconstruction_time);
+		}
+	}
 }
-

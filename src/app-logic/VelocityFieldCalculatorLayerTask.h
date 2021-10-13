@@ -33,6 +33,7 @@
 
 #include "LayerTask.h"
 #include "LayerTaskParams.h"
+#include "VelocityFieldCalculatorLayerProxy.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -40,24 +41,14 @@
 namespace GPlatesAppLogic
 {
 	/**
-	 * A layer task that calculates velocity fields on domains of mesh points.
+	 * A layer task that calculates velocity fields on domains of mesh points inside
+	 * reconstructed static polygons, resolved topological dynamic polygons or resolved
+	 * topological networks.
 	 */
 	class VelocityFieldCalculatorLayerTask :
 			public LayerTask
 	{
 	public:
-
-		/**
-		 * Can be used to create a layer automatically when a file is first loaded.
-		 */
-		static
-		bool
-		is_primary_layer_task_type()
-		{
-			return true;
-		}
-
-
 		static
 		bool
 		can_process_feature_collection(
@@ -68,7 +59,8 @@ namespace GPlatesAppLogic
 		boost::shared_ptr<VelocityFieldCalculatorLayerTask>
 		create_layer_task()
 		{
-			return boost::shared_ptr<VelocityFieldCalculatorLayerTask>(new VelocityFieldCalculatorLayerTask());
+			return boost::shared_ptr<VelocityFieldCalculatorLayerTask>(
+					new VelocityFieldCalculatorLayerTask());
 		}
 
 
@@ -81,8 +73,8 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		std::vector<Layer::input_channel_definition_type>
-		get_input_channel_definitions() const;
+		std::vector<LayerInputChannelType>
+		get_input_channel_types() const;
 
 
 		virtual
@@ -91,26 +83,52 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		Layer::LayerOutputDataType
-		get_output_definition() const;
+		void
+		add_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		virtual
+		void
+		remove_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
+
+		virtual
+		void
+		modified_input_file(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
 		virtual
-		bool
-		is_topological_layer_task() const
-		{
-			return false;
-		}
+		void
+		add_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy);
+
+		virtual
+		void
+		remove_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy);
 
 
 		virtual
-		boost::optional<layer_task_data_type>
-		process(
+		void
+		update(
 				const Layer &layer_handle /* the layer invoking this */,
-				const input_data_type &input_data,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchored_plate_id,
-				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
+				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy);
+
+
+		virtual
+		LayerProxy::non_null_ptr_type
+		get_layer_proxy()
+		{
+			return d_velocity_field_calculator_layer_proxy;
+		}
 
 
 		virtual
@@ -121,20 +139,34 @@ namespace GPlatesAppLogic
 		}
 
 	private:
+		//! This is a human-readable name for the velocity domain features input channel.
+		static const QString VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME;
 
-		/**
-		 * This is a human-readable name for the mesh-point features input channel.
-		 */
-		static const char *MESH_POINT_FEATURES_CHANNEL_NAME;
+		//! This is a human-readable name for the reconstructed static/dynamic polygons/networks input channel.
+		static const QString RECONSTRUCTED_STATIC_DYNAMIC_POLYGONS_NETWORKS_CHANNEL_NAME;
 
-		/**
-		 * This is a human-readable name for the polygon features input channel.
-		 */
-		static const char *POLYGON_FEATURES_CHANNEL_NAME;
 
 		LayerTaskParams d_layer_task_params;
 
-		VelocityFieldCalculatorLayerTask()
+		/**
+		 * Keep track of the default reconstruction layer proxy.
+		 */
+		ReconstructionLayerProxy::non_null_ptr_type d_default_reconstruction_layer_proxy;
+
+		//! Are we using the default reconstruction layer proxy.
+		bool d_using_default_reconstruction_layer_proxy;
+
+		/**
+		 * Does all the velocity calculations.
+		 */
+		VelocityFieldCalculatorLayerProxy::non_null_ptr_type d_velocity_field_calculator_layer_proxy;
+
+
+		//! Constructor.
+		VelocityFieldCalculatorLayerTask() :
+				d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
+				d_using_default_reconstruction_layer_proxy(true),
+				d_velocity_field_calculator_layer_proxy(VelocityFieldCalculatorLayerProxy::create())
 		{  }
 	};
 }

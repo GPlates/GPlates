@@ -101,18 +101,14 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Creates a @a GLStreamPrimitives object.
+		 *
+		 * @a tex_coord_pointers is a vector of optional texture coordinates for each texture unit.
 		 */
 		static
 		non_null_ptr_type
-		create(
-				const GLVertexArray::VertexPointer &vertex_pointer,
-				const boost::optional<GLVertexArray::ColorPointer> &colour_pointer = boost::none,
-				const boost::optional<GLVertexArray::NormalPointer> &normal_pointer = boost::none,
-				const boost::optional<std::vector<boost::optional<GLVertexArray::TexCoordPointer> > > &
-						tex_coord_pointers = boost::none)
+		create()
 		{
-			return non_null_ptr_type(new GLStreamPrimitives(
-					vertex_pointer, colour_pointer, normal_pointer, tex_coord_pointers));
+			return non_null_ptr_type(new GLStreamPrimitives());
 		}
 
 
@@ -264,16 +260,6 @@ namespace GPlatesOpenGL
 		static const unsigned int MAX_NUM_VERTICES_PER_DRAWABLE =
 				(1 << (8 * sizeof(vertex_element_type)));
 
-		//
-		// Contain information about what a vertex structure looks like.
-		// See class @a GLVertexArray for more information.
-		//
-		GLVertexArray::VertexPointer d_vertex_pointer;
-		boost::optional<GLVertexArray::ColorPointer> d_colour_pointer;
-		boost::optional<GLVertexArray::NormalPointer> d_normal_pointer;
-		// Each element in the vector represents a texture unit (0, 1, 2, ...).
-		// If an element is optional it means no texture coordinates are specified for that unit.
-		boost::optional<std::vector<boost::optional<GLVertexArray::TexCoordPointer> > > d_tex_coord_pointers;
 
 		/**
 		 * Contains vertices used for the current drawable.
@@ -298,12 +284,7 @@ namespace GPlatesOpenGL
 
 
 		//! Constructor.
-		GLStreamPrimitives(
-				const GLVertexArray::VertexPointer &vertex_pointer,
-				const boost::optional<GLVertexArray::ColorPointer> &colour_pointer,
-				const boost::optional<GLVertexArray::NormalPointer> &normal_pointer,
-				const boost::optional<std::vector<boost::optional<GLVertexArray::TexCoordPointer> > > &
-						tex_coord_pointers);
+		GLStreamPrimitives();
 
 		/**
 		 * Puts any vertices/indices accumulated, since the last call
@@ -612,16 +593,7 @@ namespace GPlatesOpenGL
 namespace GPlatesOpenGL
 {
 	template <class VertexType>
-	GLStreamPrimitives<VertexType>::GLStreamPrimitives(
-			const GLVertexArray::VertexPointer &vertex_pointer,
-			const boost::optional<GLVertexArray::ColorPointer> &colour_pointer,
-			const boost::optional<GLVertexArray::NormalPointer> &normal_pointer,
-			const boost::optional<std::vector<boost::optional<GLVertexArray::TexCoordPointer> > > &
-					tex_coord_pointers) :
-		d_vertex_pointer(vertex_pointer),
-		d_colour_pointer(colour_pointer),
-		d_normal_pointer(normal_pointer),
-		d_tex_coord_pointers(tex_coord_pointers),
+	GLStreamPrimitives<VertexType>::GLStreamPrimitives() :
 		d_current_primitive_type(PRIMITIVE_NONE)
 	{
 	}
@@ -900,44 +872,8 @@ namespace GPlatesOpenGL
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array =
 				GPlatesOpenGL::GLVertexArray::create(d_current_vertices);
 
-		//
-		// Specify the structure of the vertex as defined by the client.
-		//
-
-		vertex_array->gl_enable_client_state(GL_VERTEX_ARRAY);
-		vertex_array->gl_vertex_pointer(d_vertex_pointer);
-
-		if (d_colour_pointer)
-		{
-			vertex_array->gl_enable_client_state(GL_COLOR_ARRAY);
-			vertex_array->gl_color_pointer(d_colour_pointer.get());
-		}
-
-		if (d_normal_pointer)
-		{
-			vertex_array->gl_normal_pointer(d_normal_pointer.get());
-		}
-
-		if (d_tex_coord_pointers)
-		{
-			const std::vector<boost::optional<GLVertexArray::TexCoordPointer> > &tex_coord_pointers =
-					d_tex_coord_pointers.get();
-
-			for (std::size_t n = 0; n < tex_coord_pointers.size(); ++n)
-			{
-				const boost::optional<GLVertexArray::TexCoordPointer> &tex_coord_pointer =
-						tex_coord_pointers[n];
-				if (tex_coord_pointer)
-				{
-					vertex_array->gl_client_active_texture_ARB(
-							GLContext::TextureParameters::gl_texture0_ARB + n);
-					vertex_array->gl_tex_coord_pointer(tex_coord_pointer.get());
-				}
-			}
-		}
-
 		// Create a vertex element array using the currently batched vertex indices.
-		GPlatesOpenGL::GLVertexElementArray::non_null_ptr_type vertex_element_array =
+		GPlatesOpenGL::GLVertexElementArray::shared_ptr_type vertex_element_array =
 				GPlatesOpenGL::GLVertexElementArray::create(d_current_vertex_elements);
 
 		// Convert our primitive enumeration to corresponding the OpenGL enum.
@@ -971,7 +907,6 @@ namespace GPlatesOpenGL
 				0/*start*/,
 				d_current_vertices.size() - 1/*end*/,
 				d_current_vertex_elements.size()/*count*/,
-				GL_UNSIGNED_SHORT/*type*/, // This must match the vertex_element_type
 				0 /*indices_offset*/);
 
 		// Create a drawable using the vertex array and vertex element array.

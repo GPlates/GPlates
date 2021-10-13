@@ -64,6 +64,8 @@ set(srcs
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
+    ColourScaleWidget.cc
+    ColourScaleWidget.h
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
@@ -73,6 +75,9 @@ set(srcs
     ConfigureTextOverlayDialog.cc
     ConfigureTextOverlayDialog.h
     ConfigureTextOverlayDialogUi.ui
+    ConnectWFSDialog.cc
+    ConnectWFSDialog.h
+    ConnectWFSDialogUi.ui
     CoRegistrationOptionsWidget.h
     CoRegistrationOptionsWidgetUi.ui
     CoRegLayerConfigurationDialog.cc
@@ -87,9 +92,6 @@ set(srcs
     CreateVGPDialog.cc
     CreateVGPDialog.h
     CreateVGPDialogUi.ui
-    DataAssociationDialog.cc
-    DataAssociationDialog.h
-    DataAssociationDialogUi.ui
     DigitisationWidget.cc
     DigitisationWidget.h
     DigitisationWidgetUi.ui
@@ -131,12 +133,12 @@ set(srcs
     EditShapefileAttributesWidget.cc
     EditShapefileAttributesWidget.h
     EditShapefileAttributesWidgetUi.ui
-    EditStringWidget.cc
-    EditStringWidget.h
-    EditStringWidgetUi.ui
     EditStringListWidget.cc
     EditStringListWidget.h
     EditStringListWidgetUi.ui
+    EditStringWidget.cc
+    EditStringWidget.h
+    EditStringWidgetUi.ui
     EditTableActionWidget.cc
     EditTableActionWidget.h
     EditTableActionWidgetUi.ui
@@ -163,6 +165,15 @@ set(srcs
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
+    ExportFileOptionsWidget.h
+    ExportFileOptionsWidgetUi.ui
+    ExportFlowlineOptionsWidget.h
+    ExportMotionPathOptionsWidget.h
+    ExportOptionsWidget.h
+    ExportReconstructedGeometryOptionsWidget.h
+    ExportResolvedTopologicalBoundaryOptionsWidget.cc
+    ExportResolvedTopologicalBoundaryOptionsWidget.h
+    ExportResolvedTopologicalBoundaryOptionsWidgetUi.ui
     FeaturePropertiesDialog.cc
     FeaturePropertiesDialog.h
     FeaturePropertiesDialogUi.ui
@@ -206,6 +217,8 @@ set(srcs
     LeaveFullScreenButtonUi.ui
     LicenseDialog.cc
     LicenseDialog.h
+    LinkWidget.cc
+    LinkWidget.h
     ManageFeatureCollectionsActionWidget.cc
     ManageFeatureCollectionsActionWidget.h
     ManageFeatureCollectionsActionWidgetUi.ui
@@ -248,6 +261,15 @@ set(srcs
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui
     PropertyValueNotSupportedException.h
+    PythonConsoleDialog.cc
+    PythonConsoleDialog.h
+    PythonConsoleDialogUi.ui
+    PythonExecutionMonitorWidget.cc
+    PythonExecutionMonitorWidget.h
+    PythonExecutionMonitorWidgetUi.ui
+    PythonReadlineDialog.cc
+    PythonReadlineDialog.h
+    PythonReadlineDialogUi.ui
     QtWidgetUtils.cc
     QtWidgetUtils.h
     QueryFeaturePropertiesWidget.cc
@@ -277,6 +299,9 @@ set(srcs
     ReconstructionViewWidget.cc
     ReconstructionViewWidget.h
     ReconstructionViewWidgetUi.ui
+    ReconstructLayerOptionsWidget.cc
+    ReconstructLayerOptionsWidget.h
+    ReconstructLayerOptionsWidgetUi.ui
     ResultTableDialog.cc
     ResultTableDialog.h
     ResultTableDialogUi.ui
@@ -319,14 +344,28 @@ set(srcs
     SpecifyAnchoredPlateIdDialog.cc
     SpecifyAnchoredPlateIdDialog.h
     SpecifyAnchoredPlateIdDialogUi.ui
+    SymbolManagerDialog.cc
+    SymbolManagerDialog.h
+    SymbolManagerDialogUi.ui
     TaskPanel.cc
     TaskPanel.h
+    TaskPanelWidget.h
     TimeControlWidget.cc
     TimeControlWidget.h
     TimeControlWidgetUi.ui
     TimeDependentRasterPage.cc
     TimeDependentRasterPage.h
     TimeDependentRasterPageUi.ui
+    TopologyBoundaryResolverLayerOptionsWidget.cc
+    TopologyBoundaryResolverLayerOptionsWidget.h
+    TopologyBoundaryResolverLayerOptionsWidgetUi.ui
+
+    TopologyNetworkPropertiesWidget.cc
+    TopologyNetworkPropertiesWidget.h
+    TopologyNetworkPropertiesWidgetUi.ui
+    TopologyNetworkResolverLayerOptionsWidget.cc
+    TopologyNetworkResolverLayerOptionsWidget.h
+    TopologyNetworkResolverLayerOptionsWidgetUi.ui
     TopologyToolsWidget.cc
     TopologyToolsWidget.h
     TopologyToolsWidgetUi.ui
@@ -341,6 +380,9 @@ set(srcs
     UninitialisedEditWidgetException.h
     UnsavedChangesWarningDialog.h
     UnsavedChangesWarningDialogUi.ui
+    VelocityFieldCalculatorLayerOptionsWidget.cc
+    VelocityFieldCalculatorLayerOptionsWidget.h
+    VelocityFieldCalculatorLayerOptionsWidgetUi.ui
     ViewFeatureGeometriesWidget.cc
     ViewFeatureGeometriesWidget.h
     ViewFeatureGeometriesWidgetUi.ui
@@ -351,6 +393,8 @@ set(srcs
     VisualLayersComboBox.h
     VisualLayersDelegate.cc
     VisualLayersDelegate.h
+    VisualLayersDialog.cc
+    VisualLayersDialog.h
     VisualLayersListView.cc
     VisualLayersListView.h
     VisualLayersWidget.cc

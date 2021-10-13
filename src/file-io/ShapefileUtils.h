@@ -98,6 +98,7 @@ namespace GPlatesFileIO
 			map["TR"] = std::make_pair("SubductionZone","centerLineOf");
 			map["UN"] = std::make_pair("UnclassifiedFeature","unclassifiedGeometry");
 			map["VO"] = std::make_pair("Volcano","unclassifiedGeometry");
+			map["PL"] = std::make_pair("Pluton","unclassifiedGeometry");
 			map["VP"] = std::make_pair("LargeIgneousProvince","outlineOf");
 			map["XR"] = std::make_pair("MidOceanRidge","centerLineOf");
 			map["XT"] = std::make_pair("SubductionZone","centerLineOf");

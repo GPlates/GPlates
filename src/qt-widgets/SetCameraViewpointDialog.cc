@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007, 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,6 +24,8 @@
  */
  
 #include "SetCameraViewpointDialog.h"
+
+#include "QtWidgetUtils.h"
 
 
 GPlatesQtWidgets::SetCameraViewpointDialog::SetCameraViewpointDialog(
@@ -45,6 +47,8 @@ GPlatesQtWidgets::SetCameraViewpointDialog::SetCameraViewpointDialog(
 			SIGNAL(rejected()),
 			this,
 			SLOT(reject()));
+
+	QtWidgetUtils::resize_based_on_size_hint(this);
 }
 
 void

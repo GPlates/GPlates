@@ -40,8 +40,14 @@
 #include "utils/Select.h"
 #include "utils/TypeTraits.h"
 
+
 namespace GPlatesGui 
 {
+	// Forward declarations.
+	template <bool> class ColourPaletteVisitorBase;
+	typedef ColourPaletteVisitorBase<true> ConstColourPaletteVisitor;
+	typedef ColourPaletteVisitorBase<false> ColourPaletteVisitor;
+
 	/**
 	 * ColourPalette maps KeyType values to Colours, the mapping being either
 	 * continuous or discrete.
@@ -63,13 +69,18 @@ namespace GPlatesGui
 	{
 	public:
 
-		typedef typename GPlatesUtils::TypeTraits<KeyType>::argument_type value_type;
+		typedef KeyType key_type;
+		typedef typename GPlatesUtils::TypeTraits<key_type>::argument_type value_type;
 
 		typedef ColourPalette<KeyType> this_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
 		typedef boost::intrusive_ptr<this_type> maybe_null_ptr_type;
 		typedef boost::intrusive_ptr<const this_type> maybe_null_ptr_to_const_type;
+
+		virtual
+		~ColourPalette()
+		{  }
 
 		/**
 		 * Retrieves the Colour associated with the @a value provided.
@@ -83,11 +94,17 @@ namespace GPlatesGui
 		get_colour(
 				value_type value) const = 0;
 
-		//! Destructor
 		virtual
-		~ColourPalette()
-		{
-		}
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &) const
+		{  }
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &)
+		{  }
 	};
 }
 

@@ -66,11 +66,13 @@ GPlatesAppLogic::Layer::activate(
 	const boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(d_impl);
 
 	const bool previously_active = layer_impl->is_active();
-	layer_impl->activate(active);
 
-	// Get the ReconstructGraph to emit a signal if the active state changed.
 	if (active != previously_active)
 	{
+		// We only activate/deactivate if the activation state changes.
+		layer_impl->activate(active);
+
+		// Get the ReconstructGraph to emit a signal if the active state changed.
 		layer_impl->get_reconstruct_graph().emit_layer_activation_changed(*this, active);
 	}
 }
@@ -85,12 +87,12 @@ GPlatesAppLogic::Layer::get_type() const
 		GPLATES_ASSERTION_SOURCE);
 
 	return boost::shared_ptr<ReconstructGraphImpl::Layer>(d_impl)
-			->get_layer_task()->get_layer_type();
+			->get_layer_task().get_layer_type();
 }
 
 
-std::vector<GPlatesAppLogic::Layer::input_channel_definition_type>
-GPlatesAppLogic::Layer::get_input_channel_definitions() const
+std::vector<GPlatesAppLogic::LayerInputChannelType>
+GPlatesAppLogic::Layer::get_input_channel_types() const
 {
 	// Throw our own exception to track location of throw.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -98,7 +100,7 @@ GPlatesAppLogic::Layer::get_input_channel_definitions() const
 		GPLATES_ASSERTION_SOURCE);
 
 	return boost::shared_ptr<ReconstructGraphImpl::Layer>(d_impl)
-			->get_layer_task()->get_input_channel_definitions();
+			->get_layer_task().get_input_channel_types();
 }
 
 
@@ -111,20 +113,7 @@ GPlatesAppLogic::Layer::get_main_input_feature_collection_channel() const
 		GPLATES_ASSERTION_SOURCE);
 
 	return boost::shared_ptr<ReconstructGraphImpl::Layer>(d_impl)
-			->get_layer_task()->get_main_input_feature_collection_channel();
-}
-
-
-GPlatesAppLogic::Layer::LayerOutputDataType
-GPlatesAppLogic::Layer::get_output_definition() const
-{
-	// Throw our own exception to track location of throw.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-		is_valid(),
-		GPLATES_ASSERTION_SOURCE);
-
-	return boost::shared_ptr<ReconstructGraphImpl::Layer>(d_impl)
-			->get_layer_task()->get_output_definition();
+			->get_layer_task().get_main_input_feature_collection_channel();
 }
 
 
@@ -205,7 +194,7 @@ GPlatesAppLogic::Layer::connect_input_to_layer_output(
 	// Connect the feature collection to the 'input_data_channel' of this layer.
 	boost::shared_ptr<ReconstructGraphImpl::LayerInputConnection> input_connection_impl(
 			new ReconstructGraphImpl::LayerInputConnection(
-					input, get_impl(), input_data_channel));
+					input, get_impl(), input_data_channel, layer_outputting_data_impl->is_active()));
 
 	layer_impl->get_input_connections().add_input_connection(
 			input_data_channel, input_connection_impl);
@@ -349,6 +338,62 @@ GPlatesAppLogic::Layer::get_layer_task_params()
 }
 
 
+boost::optional<GPlatesAppLogic::LayerProxy::non_null_ptr_type>
+GPlatesAppLogic::Layer::get_layer_output() const
+{
+	// Throw our own exception to track location of throw.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_valid(),
+			GPLATES_ASSERTION_SOURCE);
+
+	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(d_impl);
+
+	// If the current layer is not active then don't return the layer proxy.
+	// Otherwise the caller can ask the layer proxy to do some processing effectively
+	// making the layer active.
+	if (!layer_impl->is_active())
+	{
+		return boost::none;
+	}
+
+	// Get the layer proxy.
+	const boost::optional<LayerProxy::non_null_ptr_type> layer_proxy =
+			layer_impl->get_output_data()->get_layer_proxy();
+
+	// The output of a layer should always be a layer proxy.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			layer_proxy,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Return the layer proxy converted to a pointer-to-const.
+	return layer_proxy.get();
+}
+
+
+GPlatesAppLogic::LayerProxy::non_null_ptr_type
+GPlatesAppLogic::Layer::get_layer_proxy() const
+{
+	// Throw our own exception to track location of throw.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_valid(),
+			GPLATES_ASSERTION_SOURCE);
+
+	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(d_impl);
+
+	// Get the layer proxy.
+	const boost::optional<LayerProxy::non_null_ptr_type> layer_proxy =
+			layer_impl->get_output_data()->get_layer_proxy();
+
+	// The output of a layer should always be a layer proxy.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			layer_proxy,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Return the layer proxy converted to a pointer-to-const.
+	return layer_proxy.get();
+}
+
+
 GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::Layer::InputFile::get_file() const
 {
@@ -454,8 +499,6 @@ GPlatesAppLogic::Layer::InputConnection::disconnect()
 		is_valid(),
 		GPLATES_ASSERTION_SOURCE);
 
-	boost::shared_ptr<ReconstructGraphImpl::LayerInputConnection> input_connection_impl(d_impl);
-
 	// Get the layer that owns 'this' connection.
 	Layer layer = get_layer();
 
@@ -466,9 +509,18 @@ GPlatesAppLogic::Layer::InputConnection::disconnect()
 
 	// NOTE: this will make 'this' invalid (see @a is_valid) upon returning since
 	// there will be no more owning references to 'input_connection_impl'.
-	input_connection_impl->disconnect_from_parent_layer();
+	{
+		// NOTE: We place this in its own scope because when 'disconnect_from_parent_layer()'
+		// is called then 'input_connection_impl' will be the last reference to the input
+		// connection impl and we want that to be destroyed before we signal that the layer
+		// connection has been removed. And that is because the destructor of
+		// 'ReconstructGraphImpl::LayerInputConnection' internally notifies any connected layers
+		// that the connection is being removed and we want that app-logic state to be consistent
+		// before we let the outside world know of the disconnection via signals.
+		boost::shared_ptr<ReconstructGraphImpl::LayerInputConnection> input_connection_impl(d_impl);
+		input_connection_impl->disconnect_from_parent_layer();
+	}
 
 	// Get the ReconstructGraph to emit another signal.
 	reconstruct_graph.emit_layer_removed_input_connection(layer);
 }
-

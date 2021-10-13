@@ -61,7 +61,7 @@ namespace
 namespace
 {
 	/**
-	 * Used to determine if @a ReconstructedFeatureGeometryPopulator can reconstruct a feature.
+	 * Used to determine if @a ReconstructionTreePopulator can reconstruct a feature.
 	 */
 	class IsReconstructionFeature :
 			public GPlatesModel::ConstFeatureVisitor

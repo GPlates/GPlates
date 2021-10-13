@@ -95,6 +95,12 @@ namespace
 	}
 
 	FileDialogFilter
+	create_ogrgmt_filter()
+	{
+		return FileDialogFilter(QObject::tr("OGR GMT"), "gmt");
+	}
+
+	FileDialogFilter
 	create_gpml_filter()
 	{
 		return FileDialogFilter(QObject::tr("GPlates Markup Language"), "gpml");
@@ -129,6 +135,7 @@ namespace
 		static const FileDialogFilter line_filter(create_line_filter());
 		static const FileDialogFilter rotation_filter(create_rotation_filter());
 		static const FileDialogFilter shapefile_filter(create_shapefile_filter());
+		static const FileDialogFilter ogrgmt_filter(create_ogrgmt_filter());
 		static const FileDialogFilter gpml_filter(create_gpml_filter());
 		static const FileDialogFilter gpmlz_filter(create_gpmlz_filter());
 		static const FileDialogFilter all_filter(create_all_filter());
@@ -158,6 +165,7 @@ namespace
 				filters.push_back(gpml_filter);
 				filters.push_back(line_filter);
 				filters.push_back(shapefile_filter);
+				filters.push_back(ogrgmt_filter);
 				filters.push_back(all_filter);
 			}
 			break;
@@ -172,6 +180,7 @@ namespace
 				filters.push_back(gpml_filter);
 				filters.push_back(gmt_filter);
 				filters.push_back(shapefile_filter);
+				filters.push_back(ogrgmt_filter);
 				filters.push_back(all_filter);
 			}
 			break;
@@ -191,6 +200,7 @@ namespace
 		case GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE:
 			{
 				filters.push_back(shapefile_filter);
+				filters.push_back(ogrgmt_filter);
 				filters.push_back(line_filter);
 				if (has_gzip)
 				{
@@ -207,8 +217,7 @@ namespace
 #if 0			
 				// Disable any kind of export from GMAP data. 
 #else			
-				// No GMAP writing yet. (Ever?).
-				// Offer gmpl/gpmlz export.
+				// No writing to GMAP format, but offer gmpl/gpmlz export.
 				// 
 				// (Probably not useful to export these in shapefile or plates formats
 				// for example - users would get the geometries but nothing else).
@@ -235,6 +244,7 @@ namespace
 					filters.push_back(gmt_filter);
 					filters.push_back(line_filter);
 					filters.push_back(shapefile_filter);
+					filters.push_back(ogrgmt_filter);
 				}
 				if (has_reconstruction_features)
 				{
@@ -262,6 +272,7 @@ namespace
 					filters.push_back(gmt_filter);
 					filters.push_back(line_filter);
 					filters.push_back(shapefile_filter);
+					filters.push_back(ogrgmt_filter);
 				}
 				if (has_reconstruction_features)
 				{

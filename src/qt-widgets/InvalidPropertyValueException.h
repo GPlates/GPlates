@@ -54,6 +54,8 @@ namespace GPlatesQtWidgets
 				GPlatesGlobal::PreconditionViolationError(exception_source),
 				d_reason(reason_)
 			{  }
+
+			~InvalidPropertyValueException() throw() { }
 			
 			const QString &
 			reason() const

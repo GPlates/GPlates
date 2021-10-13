@@ -105,7 +105,12 @@ namespace
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_tangible_feature_properties()
 	{
-		return get_reconstructable_feature_properties();
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();
+
+		map[ PropertyName::create_gpml("rigidBlock") ] =
+			GET_PROP_VAL_NAME(create_xs_boolean);
+
+		return map;
 	}
 
 
@@ -379,14 +384,17 @@ namespace
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
 		map[ PropertyName::create_gpml("subductionPolarity") ] =
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
 		map[ PropertyName::create_gpml("slabEdgeType") ] = 
 			GET_PROP_VAL_NAME(create_xs_string);
 		map[ PropertyName::create_gpml("slabFlatLying") ] =
 			GET_PROP_VAL_NAME(create_xs_boolean);
 		map[ PropertyName::create_gpml("slabFlatLyingDepth") ] =
 			GET_PROP_VAL_NAME(create_xs_double);
+
 		map[ PropertyName::create_gpml("subductionZoneAge") ] = 
 			GET_PROP_VAL_NAME(create_xs_double);
 		map[ PropertyName::create_gpml("subductionZoneDeepDip") ] = 
@@ -401,6 +409,36 @@ namespace
 
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_volcano_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
+
+		map[ PropertyName::create_gpml("position") ] = 
+			GET_PROP_VAL_NAME(create_point);
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("outlineOf") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
+
+	
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_navdat_sample_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
+
+		map[ PropertyName::create_gpml("position") ] = 
+			GET_PROP_VAL_NAME(create_point);
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
+
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_pluton_properties()
 	{
 		PropertyCreationUtils::PropertyCreatorMap map = get_tangible_feature_properties();
 
@@ -596,6 +634,8 @@ namespace
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
 		map[ PropertyName::create_gpml("outlineOf") ] =
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("position") ] =
+			GET_PROP_VAL_NAME(create_point);
 
 		return map;
 	}
@@ -673,11 +713,11 @@ namespace
 			GET_PROP_VAL_NAME(create_feature_reference);
 
 		map[ PropertyName::create_gpml("subductionZoneAge") ] = 
-			GET_PROP_VAL_NAME(create_xs_string);
+			GET_PROP_VAL_NAME(create_xs_double);
 		map[ PropertyName::create_gpml("subductionZoneDeepDip") ] = 
-			GET_PROP_VAL_NAME(create_xs_string);
+			GET_PROP_VAL_NAME(create_xs_double);
 		map[ PropertyName::create_gpml("subductionZoneDepth") ] = 
-			GET_PROP_VAL_NAME(create_xs_string);
+			GET_PROP_VAL_NAME(create_xs_double);
 
 		map[ PropertyName::create_gpml("isActive") ] =
 			GET_PROP_VAL_NAME(create_xs_boolean);
@@ -822,6 +862,21 @@ namespace
 		return map;
 	}
 
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_political_boundary_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_artificial_feature_properties();
+
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("centerLineOf") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+		map[ PropertyName::create_gpml("outlineOf") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
+
 
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_old_plates_grid_mark_properties()
@@ -877,6 +932,23 @@ namespace
 		return map;
 	}
 
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_topological_network_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_topological_closed_plate_boundary_properties();
+
+		map[ PropertyName::create_gpml("interior") ] =
+			GET_PROP_VAL_NAME(create_piecewise_aggregation);
+
+		map[ PropertyName::create_gpml("shapeFactor") ] =
+			GET_PROP_VAL_NAME(create_xs_double);
+
+		map[ PropertyName::create_gpml("maxEdge") ] =
+			GET_PROP_VAL_NAME(create_xs_double);
+
+		return map;
+	}
 
 
 
@@ -991,6 +1063,21 @@ namespace
 
 		return map;
 	}
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_displacement_point_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();					
+		map[ PropertyName::create_gpml("position") ] =
+			GET_PROP_VAL_NAME(create_point);
+		map[ PropertyName::create_gpml("multiPosition") ] = 
+			GET_PROP_VAL_NAME(create_gml_multi_point);
+		map[ PropertyName::create_gpml("unclassifiedGeometry") ] = 
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
+
 }
 
 
@@ -998,11 +1085,10 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 {
 	// FIXME: As-yet unimplemented features of the GPGIM are:
 	// All Instantaneous*
-	// All Topological*
 	
 	// Instantaneous features.
-//	d_map[ FeatureType::create_gpml("InstantaneousClosedPlateBoundary") ] = 
-//		get_instantaneous_closed_plate_boundary_properties();
+	//	d_map[ FeatureType::create_gpml("InstantaneousClosedPlateBoundary") ] = 
+	//		get_instantaneous_closed_plate_boundary_properties();
 
 	// Topological features.
 	d_map[ FeatureType::create_gpml("TopologicalClosedPlateBoundary") ] =
@@ -1010,7 +1096,7 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 	d_map[ FeatureType::create_gpml("TopologicalSlabBoundary") ] =
 		get_topological_slab_boundary_properties();
 	d_map[ FeatureType::create_gpml("TopologicalNetwork") ] =
-		get_topological_closed_plate_boundary_properties();
+		get_topological_network_properties();
 
 	// Reconstruction features.
 	d_map[ FeatureType::create_gpml("TotalReconstructionSequence") ] = 
@@ -1035,6 +1121,11 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_motion_path_properties();
 	d_map[ FeatureType::create_gpml("PolygonCentroidPoint")] =
 		get_polygon_centroid_point_properties();
+	d_map[ FeatureType::create_gpml("DisplacementPoint")] =
+		get_displacement_point_properties();
+	d_map[ FeatureType::create_gpml("PoliticalBoundary")] =
+		get_political_boundary_properties();
+
 
 
 	// Rock units.
@@ -1126,6 +1217,16 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_slab_edge_properties();
 	d_map[ FeatureType::create_gpml("Volcano") ] =
 		get_volcano_properties();
+	d_map[ FeatureType::create_gpml("Pluton") ] =
+		get_pluton_properties();
+	d_map[ FeatureType::create_gpml("NavdatSampleMafic") ] =
+		get_navdat_sample_properties();
+	d_map[ FeatureType::create_gpml("NavdatSampleIntermediate") ] =
+		get_navdat_sample_properties();
+	d_map[ FeatureType::create_gpml("NavdatSampleFelsicLow") ] =
+		get_navdat_sample_properties();
+	d_map[ FeatureType::create_gpml("NavdatSampleFelsicHigh") ] =
+		get_navdat_sample_properties();
 	d_map[ FeatureType::create_gpml("AseismicRidge") ] =
 		get_aseismic_ridge_properties();
 	d_map[ FeatureType::create_gpml("Coastline") ] =

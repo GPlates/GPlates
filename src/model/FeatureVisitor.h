@@ -75,6 +75,7 @@ namespace GPlatesPropertyValues
 	class GpmlRasterBandNames;
 	class GpmlRevisionId;
 	class GpmlStringList;
+	class GpmlTopologicalInterior;
 	class GpmlTopologicalPolygon;
 	class GpmlTopologicalLineSection;
 	class GpmlTopologicalIntersection;
@@ -208,6 +209,7 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlRasterBandNames>::type gpml_raster_band_names_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlRevisionId>::type gpml_revision_id_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlStringList>::type gpml_string_list_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalInterior>::type gpml_topological_interior_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPolygon>::type gpml_topological_polygon_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalLineSection>::type gpml_topological_line_section_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalIntersection>::type gpml_topological_intersection_type;
@@ -563,6 +565,12 @@ namespace GPlatesModel
 		void
 		visit_gpml_string_list(
 				gpml_string_list_type &gpml_string_list)
+		{  }
+
+		virtual
+		void
+		visit_gpml_topological_interior(
+				gpml_topological_interior_type &gpml_toplogical_interior)
 		{  }
 
 		virtual

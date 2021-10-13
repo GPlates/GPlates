@@ -37,11 +37,17 @@
 GPlatesMaths::UnitVector3D::UnitVector3D(
 		const real_t &x_comp,
 		const real_t &y_comp,
-		const real_t &z_comp) :
+		const real_t &z_comp,
+		bool check_validity) :
 	d_x(x_comp),
 	d_y(y_comp),
 	d_z(z_comp)
 {
+	if (!check_validity)
+	{
+		return;
+	}
+
 	AssertInvariant(__LINE__);
 
 	if (d_x.dval() > 1.0) {

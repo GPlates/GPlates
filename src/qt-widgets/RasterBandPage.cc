@@ -62,7 +62,6 @@ namespace
 
 			BandNameComboBox *combobox = new BandNameComboBox(d_table, parent_);
 			combobox->addItem(existing);
-			combobox->addItem("age");
 			combobox->setEditable(true);
 
 			return combobox;

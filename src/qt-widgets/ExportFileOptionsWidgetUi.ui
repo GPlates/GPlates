@@ -1,0 +1,34 @@
+<ui version="4.0" >
+ <class>ExportFileOptionsWidget</class>
+ <widget class="QWidget" name="ExportFileOptionsWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>317</width>
+    <height>60</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Export Options</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout" >
+   <item>
+    <widget class="QCheckBox" name="checkBox_export_to_single_file" >
+     <property name="text" >
+      <string>Export to a single file</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="checkBox_export_to_multiple_files" >
+     <property name="text" >
+      <string>Export to multiple files (one output file per input file)</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

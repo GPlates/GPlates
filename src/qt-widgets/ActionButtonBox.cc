@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,6 +24,7 @@
  */
 
 #include <QToolButton>
+
 #include "ActionButtonBox.h"
 
 
@@ -43,7 +44,7 @@ GPlatesQtWidgets::ActionButtonBox::ActionButtonBox(
 	// As we passed 'this' into the QGridLayout's constructor, we do not need to call
 	// QWidget::setLayout().
 	d_layout_ptr->setSpacing(2);
-	d_layout_ptr->setContentsMargins(2, 2, 2, 2);
+	d_layout_ptr->setContentsMargins(0, 0, 0, 0);
 }
 
 
@@ -55,6 +56,7 @@ GPlatesQtWidgets::ActionButtonBox::add_action(
 	QToolButton *tool_button = new QToolButton(this);
 	tool_button->setIconSize(QSize(d_default_icon_size, d_default_icon_size));
 	tool_button->setDefaultAction(action_ptr);
+	tool_button->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred));
 	
 	// As soon as we call setDefaultAction, the QToolButton begins behaving identically
 	// to the QAction assigned to it. This is advantageous for situations like automatic

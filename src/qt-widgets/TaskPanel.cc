@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -116,22 +116,56 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 		ViewportWindow &viewport_window,
+		QAction *undo_action_ptr,
+		QAction *redo_action_ptr,
 		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_stacked_widget_ptr(new QStackedWidget(this)),
-	d_feature_action_button_box_ptr(new ActionButtonBox(5, 22, this)),
-	d_digitisation_widget_ptr(new DigitisationWidget(
-			digitise_geometry_builder, view_state, viewport_window, choose_canvas_tool)),
-	d_modify_geometry_widget_ptr(new ModifyGeometryWidget(
-			geometry_operation_target, active_geometry_operation)),
-	d_modify_reconstruction_pole_widget_ptr(new ModifyReconstructionPoleWidget(
-			view_state, viewport_window)),
-	d_topology_tools_widget_ptr( new TopologyToolsWidget(
-			view_state, viewport_window, choose_canvas_tool)),
-	d_snap_nearby_vertices_widget_ptr(new SnapNearbyVerticesWidget(this,view_state)),
-	d_measure_distance_widget_ptr(new MeasureDistanceWidget(
-			measure_distance_state))
+	d_stacked_widget_ptr(
+			new QStackedWidget(this)),
+	d_feature_action_button_box_ptr(
+			new ActionButtonBox(5, 22, this)),
+	d_snap_nearby_vertices_widget_ptr(
+			new SnapNearbyVerticesWidget(
+				this,
+				view_state)),
+	d_clear_action(new QAction(this)),
+	d_feature_summary_widget_ptr(
+			new FeatureSummaryWidget(
+				view_state,
+				this)),
+	d_digitisation_widget_ptr(
+			new DigitisationWidget(
+				digitise_geometry_builder,
+				view_state,
+				viewport_window,
+				d_clear_action,
+				undo_action_ptr,
+				choose_canvas_tool,
+				this)),
+	d_modify_geometry_widget_ptr(
+			new ModifyGeometryWidget(
+				geometry_operation_target,
+				active_geometry_operation,
+				this)),
+	d_modify_reconstruction_pole_widget_ptr(
+			new ModifyReconstructionPoleWidget(
+				view_state,
+				viewport_window,
+				d_clear_action,
+				this)),
+	d_topology_tools_widget_ptr(
+			new TopologyToolsWidget(
+				view_state,
+				viewport_window,
+				d_clear_action,
+				choose_canvas_tool,
+				this)),
+	d_measure_distance_widget_ptr(
+			new MeasureDistanceWidget(
+				measure_distance_state,
+				this)),
+	d_active_widget(NULL)
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
 	// 32 pixels wide (and 31 high, for some reason) on Linux/Qt/Plastique. Including
@@ -140,6 +174,12 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	// Obviously on some platforms these pixel measurements might not be accurate;
 	// Qt should still manage to arrange things tastefully though.
 	set_up_ui();
+
+	QObject::connect(
+			d_clear_action,
+			SIGNAL(triggered()),
+			this,
+			SLOT(handle_clear_action_triggered()));
 	
 	// Set up the EX-TREME Task Panel's tabs. Please ensure this order matches the
 	// enumeration set up in the class declaration.
@@ -188,11 +228,12 @@ GPlatesQtWidgets::TaskPanel::set_up_feature_tab(
 	
 	// Add a summary of the currently-focused Feature.
 	// As usual, Qt will take ownership of memory so we don't have to worry.
-	lay->addWidget(new FeatureSummaryWidget(view_state, this));
+	lay->addWidget(d_feature_summary_widget_ptr);
 	
 	// Action Buttons; these are added by ViewportWindow via
 	// TaskPanel::feature_action_button_box().add_action().
 	QHBoxLayout* ab_lay = new QHBoxLayout();
+	ab_lay->setContentsMargins(2, 2, 2, 2);
 	lay->addItem(ab_lay);
 	// Ensure the button box understands the new parent. This one is finicky.
 	d_feature_action_button_box_ptr->setParent(page);
@@ -280,6 +321,7 @@ GPlatesQtWidgets::TaskPanel::set_up_topology_tools_tab()
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
 
+
 void
 GPlatesQtWidgets::TaskPanel::set_up_measure_distance_tab()
 {
@@ -299,9 +341,111 @@ GPlatesQtWidgets::TaskPanel::set_up_measure_distance_tab()
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
 
+
+void
+GPlatesQtWidgets::TaskPanel::choose_tab(
+		GPlatesQtWidgets::TaskPanel::Page page)
+{
+	int page_idx = static_cast<int>(page);
+	d_stacked_widget_ptr->setCurrentIndex(page_idx);
+
+	if (d_active_widget)
+	{
+		QObject::disconnect(
+				d_active_widget,
+				SIGNAL(clear_action_enabled_changed(bool)),
+				this,
+				SLOT(handle_clear_action_enabled_changed(bool)));
+	}
+
+	d_active_widget = d_task_panel_widgets[page_idx];
+	d_active_widget->handle_activation();
+
+	QObject::connect(
+			d_active_widget,
+			SIGNAL(clear_action_enabled_changed(bool)),
+			this,
+			SLOT(handle_clear_action_enabled_changed(bool)));
+	QString clear_action_text = d_active_widget->get_clear_action_text();
+	if (clear_action_text.isEmpty())
+	{
+		d_clear_action->setVisible(false);
+	}
+	else
+	{
+		d_clear_action->setVisible(true);
+		d_clear_action->setToolTip("");
+		d_clear_action->setText(clear_action_text);
+		if (!d_clear_action->shortcut().isEmpty())
+		{
+			d_clear_action->setToolTip(d_clear_action->toolTip() + "  " +
+					d_clear_action->shortcut().toString(QKeySequence::NativeText));
+		}
+		d_clear_action->setEnabled(d_active_widget->clear_action_enabled());
+	}
+}
+
+
+void
+GPlatesQtWidgets::TaskPanel::choose_feature_tab()
+{
+	choose_tab(CURRENT_FEATURE);
+}
+
+
+void
+GPlatesQtWidgets::TaskPanel::choose_digitisation_tab()
+{
+	choose_tab(DIGITISATION);
+}
+
+
+void
+GPlatesQtWidgets::TaskPanel::choose_modify_geometry_tab()
+{
+	choose_tab(MODIFY_GEOMETRY);
+}
+
+
+void
+GPlatesQtWidgets::TaskPanel::choose_modify_pole_tab()
+{
+	choose_tab(MODIFY_POLE);
+}
+
+
+void
+GPlatesQtWidgets::TaskPanel::choose_topology_tools_tab()
+{
+	choose_tab(TOPOLOGY_TOOLS);
+}
+
+
+void
+GPlatesQtWidgets::TaskPanel::choose_measure_distance_tab()
+{
+	choose_tab(MEASURE_DISTANCE);
+}
+
+
+void
+GPlatesQtWidgets::TaskPanel::handle_clear_action_enabled_changed(
+		bool enabled)
+{
+	d_clear_action->setEnabled(enabled);
+}
+
+
+void
+GPlatesQtWidgets::TaskPanel::handle_clear_action_triggered()
+{
+	d_active_widget->handle_clear_action_triggered();
+}
+
+
 void
 GPlatesQtWidgets::TaskPanel::enable_move_nearby_vertices_widget(
-	bool enable)
+		bool enable)
 {
 	QLayout *lay = d_modify_geometry_widget_ptr->layout();	
 	if (enable)
@@ -317,12 +461,13 @@ GPlatesQtWidgets::TaskPanel::enable_move_nearby_vertices_widget(
 
 }
 
+
 void
 GPlatesQtWidgets::TaskPanel::emit_vertex_data_changed_signal(
-	bool should_check_nearby_vertices, 
-	double threshold, 
-	bool should_use_plate_id, 
-	GPlatesModel::integer_plate_id_type plate_id)
+		bool should_check_nearby_vertices, 
+		double threshold, 
+		bool should_use_plate_id, 
+		GPlatesModel::integer_plate_id_type plate_id)
 {
 	emit vertex_data_changed(should_check_nearby_vertices,threshold,should_use_plate_id,plate_id);
 }

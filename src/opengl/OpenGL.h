@@ -30,7 +30,7 @@
 
 // NOTE: We're not including the OpenGL Extension Wrangler Library (GLEW) library here
 // even though it complains if it's not included before the regular OpenGL headers.
-// This is because other modules include this "opengl/OpenGL.h" header and they also
+// This is because other modules include this <opengl/OpenGL.h> header and they also
 // include Qt headers which in turn include regular OpenGL headers.
 // So getting the order of includes correct throughout the application becomes quite difficult.
 // A better way is to only include GLEW headers in the GPlates' OpenGL module (which is the
@@ -58,5 +58,13 @@ extern "C" {
 #include <GL/glu.h>
 #endif
 }
+
+
+/**
+ * This can be used to test a 'GLboolean' which is typically typedef'ed to 'unsigned char'.
+ */
+#ifndef GPLATES_OPENGL_BOOL
+#define GPLATES_OPENGL_BOOL(b) ((b) != 0)
+#endif
 
 #endif  // GPLATES_OPENGL_OPENGL_H

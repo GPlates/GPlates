@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -47,6 +47,7 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	// Forward declarations.
+	class ColourScaleWidget;
 	class FriendlyLineEdit;
 	class ReadErrorAccumulationDialog;
 	class ViewportWindow;
@@ -94,6 +95,7 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		explicit
 		RasterLayerOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
@@ -103,14 +105,13 @@ namespace GPlatesQtWidgets
 		void
 		make_signal_slot_connections();
 
-		static const QString PALETTE_FILENAME_BLANK_TEXT;
-
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
-		ReadErrorAccumulationDialog *d_read_errors_dialog;
+		ViewportWindow *d_viewport_window;
 
 		FriendlyLineEdit *d_palette_filename_lineedit;
 		OpenFileDialog d_open_file_dialog;
+		ColourScaleWidget *d_colour_scale_widget;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

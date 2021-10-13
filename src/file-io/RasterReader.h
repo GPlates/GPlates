@@ -189,7 +189,7 @@ namespace GPlatesFileIO
 		get_supported_formats();
 
 		/**
-		 * Gets a string that can be used as the filter string in a QFileDialog.
+		 * Gets a string that can be used as the filter string in a eQFileDialog.
 		 *
 		 * The first filter is an all-inclusive filter that matches all supported
 		 * raster formats. The other filters are for the other formats, sorted in

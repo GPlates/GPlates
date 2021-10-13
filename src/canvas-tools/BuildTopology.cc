@@ -64,14 +64,12 @@ GPlatesCanvasTools::BuildTopology::BuildTopology(
 		GPlatesPresentation::ViewState &view_state_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesGui::FeatureTableModel &clicked_table_model_,	
-		GPlatesGui::TopologySectionsContainer &topology_sections_container,
 		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 		GPlatesAppLogic::ApplicationState &application_state) :
 	CanvasTool(status_bar_callback),
 	d_rendered_geom_collection(&view_state_.get_rendered_geometry_collection()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
-	d_topology_sections_container_ptr(&topology_sections_container),
 	d_topology_tools_widget_ptr(&topology_tools_widget),
 	d_feature_focus_ptr(&view_state_.get_feature_focus()),
 	d_reconstruct_graph(application_state.get_reconstruct_graph())
@@ -107,6 +105,46 @@ GPlatesCanvasTools::BuildTopology::handle_deactivation()
 
 void
 GPlatesCanvasTools::BuildTopology::handle_left_click(
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
+		bool is_on_earth,
+		double proximity_inclusion_threshold)
+{
+	// Show the 'Clicked' Feature Table
+	d_viewport_window_ptr->choose_clicked_geometry_table();
+	
+	GPlatesGui::add_clicked_geometries_to_feature_table(
+			point_on_sphere,
+			proximity_inclusion_threshold,
+			*d_viewport_window_ptr,
+			*d_clicked_table_model_ptr,
+			*d_feature_focus_ptr,
+			*d_rendered_geom_collection,
+			d_reconstruct_graph,
+			&GPlatesAppLogic::TopologyInternalUtils::include_only_reconstructed_feature_geometries);
+}
+
+void
+GPlatesCanvasTools::BuildTopology::handle_left_shift_click(
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
+		bool is_on_earth,
+		double proximity_inclusion_threshold)
+{
+	// Show the 'Clicked' Feature Table
+	d_viewport_window_ptr->choose_clicked_geometry_table();
+	
+	GPlatesGui::add_clicked_geometries_to_feature_table(
+			point_on_sphere,
+			proximity_inclusion_threshold,
+			*d_viewport_window_ptr,
+			*d_clicked_table_model_ptr,
+			*d_feature_focus_ptr,
+			*d_rendered_geom_collection,
+			d_reconstruct_graph,
+			&GPlatesAppLogic::TopologyInternalUtils::include_only_reconstructed_feature_geometries);
+}
+
+void
+GPlatesCanvasTools::BuildTopology::handle_left_control_click(
 		const GPlatesMaths::PointOnSphere &point_on_sphere,
 		bool is_on_earth,
 		double proximity_inclusion_threshold)

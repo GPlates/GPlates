@@ -26,6 +26,7 @@ set(srcs
     ColourNameSet.h
     ColourPalette.h
     ColourPaletteAdapter.h
+    ColourPaletteVisitor.h
     ColourProxy.cc
     ColourProxy.h
     ColourRawRaster.h
@@ -45,14 +46,25 @@ set(srcs
     DockState.h
     EnableCanvasTool.cc
     EnableCanvasTool.h
+    EventBlackout.cc
+    EventBlackout.h
     ExportAnimationContext.cc
     ExportAnimationContext.h
+    ExportAnimationRegistry.cc
+    ExportAnimationRegistry.h
     ExportAnimationStrategy.cc
     ExportAnimationStrategy.h
+    ExportAnimationType.cc
+    ExportAnimationType.h
+    ExportCoRegistrationAnimationStrategy.cc
+    ExportCoRegistrationAnimationStrategy.h
+    ExportFileNameTemplateValidationUtils.cc
+    ExportFileNameTemplateValidationUtils.h
     ExportFlowlineAnimationStrategy.cc
     ExportFlowlineAnimationStrategy.h
     ExportMotionPathAnimationStrategy.cc
     ExportMotionPathAnimationStrategy.h
+    ExportOptionsUtils.h
     ExportRasterAnimationStrategy.cc
     ExportRasterAnimationStrategy.h
     ExportReconstructedGeometryAnimationStrategy.cc
@@ -109,6 +121,8 @@ set(srcs
     GuiException.h
     HTMLColourNames.cc
     HTMLColourNames.h
+    ImportMenu.cc
+    ImportMenu.h
     Map.cc
     Map.h
     MapCanvasPainter.cc
@@ -123,6 +137,7 @@ set(srcs
     MapProjection.h
     MapTransform.cc
     MapTransform.h
+    Mipmapper.cc
     Mipmapper.h
     OpaqueSphere.cc
     OpaqueSphere.h
@@ -131,14 +146,12 @@ set(srcs
     PlateIdColourPalettes.cc
     PlateIdColourPalettes.h
     ProjectionException.h
+    PythonConsoleHistory.cc
+    PythonConsoleHistory.h
     QGLWidgetTextRenderer.cc
     QGLWidgetTextRenderer.h
     RasterColourPalette.cc
     RasterColourPalette.h
-    RasterColourScheme.cc
-    RasterColourScheme.h
-    RasterColourSchemeMap.cc
-    RasterColourSchemeMap.h
     ReconstructionGeometrySequence.h
     RenderSettings.h
     SessionMenu.cc
@@ -153,6 +166,8 @@ set(srcs
     Stars.h
     SvgExport.cc
     SvgExport.h
+    Symbol.cc
+    Symbol.h
     TextOverlay.cc
     TextOverlay.h
     TextOverlaySettings.cc
@@ -172,6 +187,8 @@ set(srcs
     TrinketArea.h
     UnsavedChangesTracker.cc
     UnsavedChangesTracker.h
+    UtilitiesMenu.cc
+    UtilitiesMenu.h
     ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h

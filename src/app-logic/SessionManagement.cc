@@ -34,6 +34,7 @@
 #include "ApplicationState.h"
 #include "FeatureCollectionFileState.h"
 #include "FeatureCollectionFileIO.h"
+#include "Serialization.h"
 #include "file-io/FileInfo.h"
 
 
@@ -60,9 +61,9 @@ namespace
 
 GPlatesAppLogic::SessionManagement::SessionManagement(
 		GPlatesAppLogic::ApplicationState &app_state):
+	QObject(NULL),
 	d_app_state_ptr(&app_state)
-{
-}
+{  }
 
 
 void
@@ -85,8 +86,6 @@ GPlatesAppLogic::SessionManagement::load_session(
 		
 		// For now, maybe just clear and load everything?
 		unload_all_files();
-		
-		file_io.load_files(QStringList::fromSet(session_to_load.loaded_files()));
 
 	} else {
 		// User is attempting to load a new session. Should we replace the old one?
@@ -94,9 +93,37 @@ GPlatesAppLogic::SessionManagement::load_session(
 		// However, before we do that, save the current session.
 		save_session();
 		unload_all_files();
-		
-		file_io.load_files(QStringList::fromSet(session_to_load.loaded_files()));
 	}
+
+	// Loading session depends on the version...
+	switch (session_to_load.version())
+	{
+	case 0:
+		// Layers state not saved in this version so allow application state to auto-create layers.
+		// The layers won't be connected though, but when the session is saved they will be because
+		// the session will be saved with the latest version.
+		file_io.load_files(QStringList::fromSet(session_to_load.loaded_files()));
+		break;
+
+	case 1:
+	default:
+		// Suppress auto-creation of layers because we have session information regarding which
+		// layers should be created and what their connections should be.
+		d_app_state_ptr->suppress_auto_layer_creation(true);
+		file_io.load_files(QStringList::fromSet(session_to_load.loaded_files()));
+		d_app_state_ptr->suppress_auto_layer_creation(false);
+		// New in version 1 is save/restore of layer type and connections.
+		d_app_state_ptr->get_serialization().load_layers_state(session_to_load.layers_state());
+		break;
+
+#if 0
+	case 2:
+		// Next version can add save/restore of layer params state and visual layer ordering.
+		// Note that the 'default' will then be moved here.
+		break;
+#endif
+	}
+
 	// Thinking out loud:-
 	// save current session first, if any - may require a prompt up in a gui level
 	// asking user if they want to overwrite current, or append loaded session onto current.
@@ -265,10 +292,12 @@ GPlatesAppLogic::SessionManagement::new_session_from_current_state()
 	Q_FOREACH(const QFileInfo &fi, files) {
 		filenames.insert(fi.absoluteFilePath());
 	}
+
+	GPlatesAppLogic::Session::LayersStateType layers_state = d_app_state_ptr->get_serialization().save_layers_state();
 	
 	// Create and return the new Session. It's a lightweight class, all the members
 	// are Qt pimpl-idiom stuff, passing it by value isn't a bad thing.
-	return Session(time, filenames);
+	return Session(time, filenames, layers_state);
 }
 
 

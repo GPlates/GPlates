@@ -2,7 +2,7 @@
 <gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:TopologicalClosedPlateBoundary>
-            <gpml:identity>GPlates-e2774265-1b2b-45d0-a5a9-2f33d4b20942</gpml:identity>
+            <gpml:identity>GPlates-1polygon-from-4lines</gpml:identity>
             <gpml:revision>GPlates-3e9268f8-3854-4709-95bb-e9b014f1ff84</gpml:revision>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>

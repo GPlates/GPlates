@@ -31,10 +31,13 @@
 #include "VisualLayers.h"
 
 #include "ViewState.h"
+#include "VisualLayerRegistry.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/LayerTaskRegistry.h"
 #include "app-logic/ReconstructGraph.h"
+
+#include "gui/Symbol.h"
 
 #include "view-operations/RenderedGeometryLayer.h"
 
@@ -51,8 +54,8 @@ GPlatesPresentation::VisualLayers::VisualLayers(
 	connect_to_application_state_signals();
 
 	// Go through the reconstruct graph and add all the existing layers, if any.
-	const GPlatesAppLogic::ReconstructGraph &reconstruct_graph = application_state.get_reconstruct_graph();
-	BOOST_FOREACH(const GPlatesAppLogic::Layer &layer, reconstruct_graph)
+	GPlatesAppLogic::ReconstructGraph &reconstruct_graph = application_state.get_reconstruct_graph();
+	BOOST_FOREACH(GPlatesAppLogic::Layer layer, reconstruct_graph)
 	{
 		add_layer(layer);
 	}
@@ -286,10 +289,10 @@ GPlatesPresentation::VisualLayers::handle_layer_added(
 
 void
 GPlatesPresentation::VisualLayers::add_layer(
-		const GPlatesAppLogic::Layer &layer)
+		GPlatesAppLogic::Layer &layer)
 {
-	// Index of new layer is size() as it is added to the front.
-	size_t new_index = size();
+	// Work out where the new layer should go.
+	std::size_t new_index = get_index_of_new_layer(static_cast<VisualLayerType::Type>(layer.get_type()));;
 	emit layer_about_to_be_added(new_index);
 
 	// Create a new visual layer.
@@ -299,8 +302,9 @@ GPlatesPresentation::VisualLayers::add_layer(
 	d_visual_layers.insert(std::make_pair(layer, visual_layer));
 
 	// Add new layer's rendered geometry layer index to the ordered sequence.
-	// New layers should go on top of existing layers, so place at back of sequence.
-	d_layer_order.push_back(visual_layer->get_rendered_geometry_layer_index());
+	d_layer_order.insert(
+			d_layer_order.begin() + new_index,
+			visual_layer->get_rendered_geometry_layer_index());
 
 	// Associate rendered geometry layer index with the visual layer.
 	d_index_map.insert(
@@ -311,6 +315,61 @@ GPlatesPresentation::VisualLayers::add_layer(
 	emit layer_added(new_index);
 	emit layer_added(visual_layer);
 	emit changed();
+}
+
+
+std::size_t
+GPlatesPresentation::VisualLayers::get_index_of_new_layer(
+		VisualLayerType::Type new_type) const
+{
+	// Searching from the back of the ordering to the front (because that is how it
+	// is displayed on screen):
+	//  - If the @a visual_layer_type is already in @a d_layer_order, put the
+	//    new layer after the first layer found of the same type.
+	//  - If we don't already have that visual layer type, put the new layer after
+	//    the first layer found that, according to the @a layer_type_order,
+	//    should belong before the new layer.
+	const VisualLayerRegistry::visual_layer_type_order_map_type &order_map =
+		d_view_state.get_visual_layer_registry().get_visual_layer_type_order_map();
+	std::size_t fallback_index = 0;
+	bool fallback_found = false;
+
+	for (std::size_t i = d_layer_order.size(); i != 0; --i)
+	{
+		boost::weak_ptr<VisualLayer> visual_layer = d_index_map.find(d_layer_order[i - 1])->second;
+		if (boost::shared_ptr<VisualLayer> locked_visual_layer = visual_layer.lock())
+		{
+			VisualLayerType::Type curr_type = locked_visual_layer->get_layer_type();
+			if (curr_type == new_type)
+			{
+				return i;
+			}
+
+			if (!fallback_found)
+			{
+				typedef VisualLayerRegistry::visual_layer_type_order_map_type::const_iterator order_map_iter;
+				order_map_iter curr_type_order_iter = order_map.find(curr_type);
+				order_map_iter new_type_order_iter = order_map.find(new_type);
+
+				if (curr_type_order_iter != order_map.end() && new_type_order_iter != order_map.end() &&
+					curr_type_order_iter->second < new_type_order_iter->second)
+				{
+					// The current layer belongs before the new layer, so insert new layer after it.
+					fallback_found = true;
+					fallback_index = i;
+				}
+			}
+		}
+	}
+
+	if (fallback_found)
+	{
+		return fallback_index;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 
@@ -407,14 +466,15 @@ GPlatesPresentation::VisualLayers::create_rendered_geometries()
 	{
 		const visual_layer_ptr_type &visual_layer = visual_layer_map_entry.second;
 
-		visual_layer->create_rendered_geometries();
+		visual_layer->create_rendered_geometries(
+			    d_view_state.get_feature_type_symbol_map());
 	}
 }
 
 
 GPlatesPresentation::VisualLayers::visual_layer_ptr_type
 GPlatesPresentation::VisualLayers::create_visual_layer(
-		const GPlatesAppLogic::Layer &layer)
+		GPlatesAppLogic::Layer &layer)
 {
 	// Create a new visual layer.
 	boost::shared_ptr<VisualLayer> visual_layer(
@@ -530,6 +590,8 @@ GPlatesPresentation::VisualLayers::handle_layer_added_input_connection(
 		GPlatesAppLogic::Layer layer,
 		GPlatesAppLogic::Layer::InputConnection input_connection)
 {
+	notify_visual_layer_params(layer);
+
 	// When an input connection has been added, all layers need to be refreshed,
 	// because a change in input connections can result in a change in the name of
 	// a visual layer.
@@ -542,10 +604,24 @@ GPlatesPresentation::VisualLayers::handle_layer_removed_input_connection(
 		GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 		GPlatesAppLogic::Layer layer)
 {
+	notify_visual_layer_params(layer);
+
 	// When an input connection has been removed, all layers need to be refreshed,
 	// because a change in input connections can result in a change in the name of
 	// a visual layer.
 	refresh_all_layers();
+}
+
+
+void
+GPlatesPresentation::VisualLayers::notify_visual_layer_params(
+		const GPlatesAppLogic::Layer &layer)
+{
+	visual_layer_map_type::const_iterator iter = d_visual_layers.find(layer);
+	if (iter != d_visual_layers.end())
+	{
+		iter->second->get_visual_layer_params()->handle_layer_modified(layer);
+	}
 }
 
 

@@ -1,58 +1,24 @@
-#include <iostream>
-#include <sstream>
-#include <ctime>
-#include <QtCore/QUuid>
-#include <QtNetwork/QHostInfo>
-#include <unicode/unistr.h>
-#if _MSC_VER == 1600
-#	undef INT8_MIN
-#	undef INT16_MIN
-#	undef INT32_MIN
-#	undef INT8_MAX
-#	undef INT16_MAX
-#	undef INT32_MAX
-#	undef UINT8_MAX
-#	undef UINT16_MAX
-#	undef UINT32_MAX
-#	undef INT64_C
-#	undef UINT64_C
-#	include <cstdint>
-#endif // _MSC_VER == 1600
+#include <cmath>
+#include <cstddef>
+#include <iosfwd>
+#include <string>
 #include <vector>
-#include <unicode/schriter.h>
-#if _MSC_VER == 1600
-#	undef INT8_MIN
-#	undef INT16_MIN
-#	undef INT32_MIN
-#	undef INT8_MAX
-#	undef INT16_MAX
-#	undef INT32_MAX
-#	undef UINT8_MAX
-#	undef UINT16_MAX
-#	undef UINT32_MAX
-#	undef INT64_C
-#	undef UINT64_C
-#	include <cstdint>
-#endif // _MSC_VER == 1600
+#ifdef __WINDOWS__
+#include <boost/noncopyable.hpp>
+#endif // __WINDOWS__
+#include <limits>
+#ifdef __WINDOWS__
+#include <boost/optional.hpp>
+#endif // __WINDOWS__
 #include <QString>
+#include <QLocale>
 #include <algorithm>
 #include <set>
 #ifdef __WINDOWS__
 #include <boost/intrusive_ptr.hpp>
 #endif // __WINDOWS__
-#include <iomanip>
-#include <cmath>
 #ifdef __WINDOWS__
-#include <boost/current_function.hpp>
-#endif // __WINDOWS__
-#include <ostream>
-#include <string>
-#include <QDebug>
-#ifdef __WINDOWS__
-#include <boost/none.hpp>
-#endif // __WINDOWS__
-#ifdef __WINDOWS__
-#include <boost/optional.hpp>
+#include <boost/checked_delete.hpp>
 #endif // __WINDOWS__
 #ifdef __WINDOWS__
 #include <boost/config.hpp>
@@ -62,4 +28,75 @@
 #endif // __WINDOWS__
 #ifdef __WINDOWS__
 #include <boost/detail/workaround.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/cstdint.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/shared_ptr.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/operators.hpp>
+#endif // __WINDOWS__
+#include <sstream>
+#include <ctime>
+#include <QtCore/QUuid>
+#include <QtNetwork/QHostInfo>
+#include <functional>
+#include <ostream>
+#ifdef __WINDOWS__
+#include <boost/none.hpp>
+#endif // __WINDOWS__
+#include <iomanip>
+#ifdef __WINDOWS__
+#include <boost/math/special_functions/fpclassify.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/pool/object_pool.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/bind.hpp>
+#endif // __WINDOWS__
+#include <stack>
+#include <map>
+#include <iostream>
+#include <fstream>
+#include <numeric>
+#include <memory>
+#ifdef __WINDOWS__
+#include <boost/mpl/for_each.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/mpl/lambda.hpp>
+#endif // __WINDOWS__
+#include <QLatin1Char>
+#include <QDateTime>
+#ifdef __WINDOWS__
+#include <boost/mpl/vector.hpp>
+#endif // __WINDOWS__
+#include <QRegExp>
+#ifdef __WINDOWS__
+#include <boost/numeric/conversion/cast.hpp>
+#endif // __WINDOWS__
+#include <iterator>
+#include <QFileInfo>
+#include <QMap>
+#ifdef __WINDOWS__
+#include <boost/any.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/scoped_ptr.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/function.hpp>
+#endif // __WINDOWS__
+#include <QStringList>
+#ifdef __WINDOWS__
+#include <boost/tokenizer.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/token_functions.hpp>
+#endif // __WINDOWS__
+#ifdef __WINDOWS__
+#include <boost/program_options.hpp>
 #endif // __WINDOWS__

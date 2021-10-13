@@ -34,6 +34,8 @@
 #include "RawRaster.h"
 #include "TextContent.h"
 
+#include "file-io/ReadErrorAccumulation.h"
+
 #include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
 
@@ -62,19 +64,22 @@ namespace GPlatesPropertyValues
 		static
 		non_null_ptr_type
 		create(
-				const TextContent &file_name);
+				const TextContent &file_name,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors = NULL);
 
 		const std::vector<RawRaster::non_null_ptr_type> &
 		proxied_raw_rasters() const;
 
 		void
 		set_file_name(
-				const TextContent &file_name);
+				const TextContent &file_name,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors = NULL);
 
 	private:
 
 		ProxiedRasterCache(
-				const TextContent &file_name);
+				const TextContent &file_name,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors);
 
 		boost::scoped_ptr<ProxiedRasterCacheInternals::ProxiedRasterCacheImpl> d_impl;
 	};
@@ -96,7 +101,8 @@ namespace GPlatesPropertyValues
 			virtual
 			void
 			set_file_name(
-					const TextContent &file_name) = 0;
+					const TextContent &file_name,
+					GPlatesFileIO::ReadErrorAccumulation *read_errors) = 0;
 		};
 	}
 }

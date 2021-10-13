@@ -67,6 +67,7 @@ IF(PYTHON_EMBEDDING_RUNS EQUAL 1 # Program above returns 1 if exception thrown.
 		)
 	MESSAGE(STATUS "Python embedding test program output: ${PYTHON_EMBEDDING_RUN_OUTPUT}")
 	MESSAGE(FATAL_ERROR "Python embedding test program failed to run correctly. "
+		"Check that the Python and Boost.Python libraries are in your system path."
 		"If you have multiple Python installations, make sure that the version of "
 		"Python that GPlates is being linked against is the same version of Python "
 		"that Boost.Python was built against. In particular, on Mac OS X, if "

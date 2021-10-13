@@ -27,20 +27,17 @@
 #ifndef GPLATES_APP_LOGIC_LAYERTASK_H
 #define GPLATES_APP_LOGIC_LAYERTASK_H
 
-#include <map>
 #include <utility>
 #include <vector>
-#include <boost/mpl/assert.hpp>
-#include <boost/mpl/contains.hpp>
 #include <boost/optional.hpp>
-#include <boost/utility/enable_if.hpp>
 #include <QString>
 
 #include "Layer.h"
-#include "LayerTaskDataType.h"
+#include "LayerInputChannelType.h"
+#include "LayerProxy.h"
 #include "LayerTaskType.h"
-#include "ReconstructionTree.h"
 
+#include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 
 
@@ -49,21 +46,12 @@ namespace GPlatesAppLogic
 	class LayerTaskParams;
 
 	/**
-	 * Abstract interface for processing input feature collections, reconstructed geometries
-	 * and/or reconstruction trees into a single output.
+	 * Abstract interface for processing input feature collections and/or the outputs
+	 * of other layers (each layer has a layer proxy at its output).
 	 */
 	class LayerTask
 	{
 	public:
-		/**
-		 * Typedef for input data in the form of a mappings of channel
-		 * data objects belonging to the channel.
-		 */
-		typedef std::multimap<
-				QString,
-				layer_task_data_type> input_data_type;
-
-
 		virtual
 		~LayerTask()
 		{ }
@@ -75,7 +63,7 @@ namespace GPlatesAppLogic
 		 * This is in the base layer task class so all layer tasks can access it.
 		 */
 		static
-		const char *
+		QString
 		get_reconstruction_tree_channel_name();
 
 
@@ -95,8 +83,8 @@ namespace GPlatesAppLogic
 		 * for each channel.
 		 */
 		virtual
-		std::vector<Layer::input_channel_definition_type>
-		get_input_channel_definitions() const = 0;
+		std::vector<LayerInputChannelType>
+		get_input_channel_types() const = 0;
 
 
 		/**
@@ -116,40 +104,93 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the data type that this task outputs.
+		 * An input file has been connected on the specified input channel.
 		 */
 		virtual
-		Layer::LayerOutputDataType
-		get_output_definition() const = 0;
+		void
+		add_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection) = 0;
+
+		/**
+		 * An input file has been disconnected on the specified input channel.
+		 */
+		virtual
+		void
+		remove_input_file_connection(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection) = 0;
 
 
 		/**
-		 * Returns true if this layer task is a topological layer task.
+		 * An input file has been modified.
 		 *
-		 * A topological layer task is one that processes topological features which
-		 * in turn reference reconstructed features (possibly from other layers that aren't
-		 * connected to the topological layer).
+		 * Either a feature was added or removed from the feature collection or an existing
+		 * feature in the collection was modified (property value added/removed/modified).
 		 */
 		virtual
-		bool
-		is_topological_layer_task() const = 0;
-		
+		void
+		modified_input_file(
+				const QString &input_channel_name,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection) = 0;
+
 
 		/**
-		 * Execute this task by processing the specified input data and storing
-		 * the result in the specified output data.
-		 *
-		 * NOTE: If processing cannot succeed, for example because the required inputs
-		 * are not present, then false.
+		 * The output of another layer (a layer proxy) has been connected on the specified input channel.
 		 */
 		virtual
-		boost::optional<layer_task_data_type>
-		process(
+		void
+		add_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy) = 0;
+
+		/**
+		 * The output of another layer (a layer proxy) has been disconnected on the specified input channel.
+		 */
+		virtual
+		void
+		remove_input_layer_proxy_connection(
+				const QString &input_channel_name,
+				const LayerProxy::non_null_ptr_type &layer_proxy) = 0;
+
+
+		/**
+		 * Update this task.
+		 *
+		 * This typically happens when one, or more, of the following occurs:
+		 * - the reconstruction time changes, or
+		 * - the anchored plate changes, or
+		 * - something in the model changed, or
+		 * - a layer connection somewhere was added or removed, or
+		 * - layer task parameters of some layer were modified.
+		 *
+		 * This gives the layer task a chance to update itself and flush any cached internal data.
+		 * This can happen for instance if a dependent layer changes and this layer needs to
+		 * flush any cached data as a result.
+		 *
+		 * NOTE: Each layer proxy should listen for model change events and have its layer
+		 * connection changes propagated to it so it should already know about changes to
+		 * this layer - so this method is really just to respond to changes in other layers or
+		 * changes in any input feature collections.
+		 */
+		virtual
+		void
+		update(
 				const Layer &layer_handle /* the layer invoking this */,
-				const input_data_type &input_data,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchored_plate_id,
-				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree) = 0;
+				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy) = 0;
+
+
+		/**
+		 * Returns the layer proxy that clients can use to request results from this
+		 * layer - typically the layer proxy does the real processing and it sits at the output
+		 * of this layer in the reconstruct graph.
+		 */
+		virtual
+		LayerProxy::non_null_ptr_type
+		get_layer_proxy() = 0;
+
 
 		/**
 		 * Returns a reference to the additional parameters and configuration
@@ -158,78 +199,6 @@ namespace GPlatesAppLogic
 		virtual
 		LayerTaskParams &
 		get_layer_task_params() = 0;
-
-	protected:
-		/**
-		 * A utility function for derived classes to extract a specific bounded type
-		 * from the variant @a layer_task_data_type objects in a channel into a container
-		 * of the type ContainerType.
-		 *
-		 * The variant bounded type to be extracted is determined by the container's element type.
-		 * The container type must support the 'push_back()' method.
-		 *
-		 * Example usage:
-		 *   std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collections;
-		 *   extract_input_channel_data(feature_collections, "reconstructable features", input_data);
-		 */
-		template <typename ContainerType>
-		static
-		void
-		extract_input_channel_data(
-				ContainerType &input_channel_data,
-				const QString &input_channel_name,
-				const input_data_type &input_data,
-				// This function can only be called if the value_type of the
-				// template parameter ContainerType is one of the bounded types
-				// in layer_task_data_types.
-				//
-				// If the compiler can't find an appropriate overload of this
-				// function, then make sure the type stored in your container
-				// (in 'input_channel_data') is one of the types in layer_task_data_types.
-				typename boost::enable_if<
-					boost::mpl::contains<layer_task_data_types, typename ContainerType::value_type>
-				>::type *dummy = NULL)
-		{
-			// Get range of data objects assigned to 'input_channel_name'.
-			const std::pair<input_data_type::const_iterator, input_data_type::const_iterator>
-					input_chanel_name_range = input_data.equal_range(input_channel_name);
-
-			// Copy the data to caller's sequence.
-			input_data_type::const_iterator data_iter = input_chanel_name_range.first;
-			const input_data_type::const_iterator data_end = input_chanel_name_range.second;
-			for ( ; data_iter != data_end; ++data_iter)
-			{
-				const layer_task_data_type &layer_data = data_iter->second;
-
-				// The type to be stored in the caller's container.
-				typedef typename ContainerType::value_type variant_bounded_type;
-
-				// Extract the specified bounded type from the variant.
-				const variant_bounded_type *variant_bounded_data =
-						boost::get<variant_bounded_type>(&layer_data);
-
-				// If the bounded type expected is what is contained in the variant
-				// then add to the caller's container. This should always be the case
-				// unless the layer tasks were setup incorrectly.
-				if (variant_bounded_data)
-				{
-					input_channel_data.push_back(*variant_bounded_data);
-				}
-			}
-		}
-
-
-		/**
-		 * Extracts a reconstruction tree from the input channel
-		 * 'get_reconstruction_tree_channel_name()' if there is one,
-		 * otherwise returns @a default_reconstruction_tree.
-		 *
-		 * Returns false if more than one reconstruction is tree found in the channel.
-		 */
-		boost::optional<ReconstructionTree::non_null_ptr_to_const_type>
-		extract_reconstruction_tree(
-				const input_data_type &input_data,
-				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree);
 	};
 }
 

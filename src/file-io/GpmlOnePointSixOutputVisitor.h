@@ -269,6 +269,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_topological_interior(
+			 	const GPlatesPropertyValues::GpmlTopologicalInterior &gpml_toplogical_interior);
+
+		virtual
+		void
 		visit_gpml_topological_polygon(
 			 	const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
 

@@ -70,30 +70,43 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Starts a new render target using @a render_target.
+		 * Starts a new render pass by incrementing the render pass depth at which render targets are added.
 		 *
-		 * This also increments the render pass depth at which render operations are added.
 		 * This creates a new render pass if one has not already been created at the current depth.
+		 */
+		void
+		push_render_pass();
+
+
+		/**
+		 * Stops using the most recently pushed render pass for adding render targets by
+		 * decrementing the render pass depth at which render operations are added.
+		 *
+		 * Subsequent render target adds will go to the parent render pass.
+		 */
+		void
+		pop_render_pass();
+
+
+		/**
+		 * Adds a new render target to the current render pass.
+		 *
+		 * There is always one render pass even if @a push_render_pass has never been called.
 		 *
 		 * Render operations can be added to the returned @a GLRenderOperationsTarget.
 		 */
 		GLRenderOperationsTarget::non_null_ptr_type
-		push_render_target(
+		add_render_target(
 				const GLRenderTargetType::non_null_ptr_type &render_target_type,
-				const GLStateGraph::non_null_ptr_type &render_target_state_graph);
+				const GLStateGraph::non_null_ptr_type &render_target_state_graph)
+		{
+			return d_current_render_pass->add_render_target(render_target_type, render_target_state_graph);
+		}
 
 
 		/**
-		 * Stops using the most recently pushed render target.
-		 *
-		 * This also decrements the render pass depth at which render operations are added.
-		 */
-		void
-		pop_render_target();
-
-
-		/**
-		 * Draws all render targets in their respective render passes in the appropriate order.
+		 * Draws all render targets in their respective render passes in the appropriate order
+		 * (render passes pushed to a deeper depth get rendered first).
 		 */
 		void
 		draw(

@@ -92,7 +92,7 @@ namespace GPlatesDataMining
 		{
 			BOOST_FOREACH(const SeedType::value_type& seed_geo, d_seed )
 			{
-				if(is_close_enough(*seed_geo->geometry(), *geo->geometry(), d_range))
+				if(is_close_enough(*seed_geo->reconstructed_geometry(), *geo->reconstructed_geometry(), d_range))
 				{
 					return true;
 				}

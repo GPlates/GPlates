@@ -37,11 +37,14 @@
 
 #include "OpenDirectoryDialog.h"
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/ReconstructGraph.h"
 
 #include "data-mining/CheckAttrTypeVisitor.h"
 #include "data-mining/CoRegConfigurationTable.h"
 
+#include "presentation/ViewState.h"
 
 namespace GPlatesPresentation
 {
@@ -56,11 +59,11 @@ namespace GPlatesQtWidgets
 	enum ConfigurationTableColumnEnum
 	{
 		FeatureCollectionName = 0,
-		AssociationType,
+		FilterType,
 		AttributeName,
 		Range,
-		DataOperator,
-		EndOFTheEnum
+		Reducer,
+		NumOfCol
 	};
 	/**
 	 * struct of QListWidgetItem so that we can display a list of FeatureCollection in
@@ -76,7 +79,6 @@ namespace GPlatesQtWidgets
 			QListWidgetItem(file_name),
 			file_ref(file),
 			label(file_name)
-			
 			{ }
 
 		const GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref;
@@ -118,7 +120,6 @@ namespace GPlatesQtWidgets
 			QTableWidgetItem(file_name),
 			file_ref(file),
 			label(file_name)
-			
 			{ }
 
 		const GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref;
@@ -150,8 +151,6 @@ namespace GPlatesQtWidgets
 
 	public:
 
-		static GPlatesDataMining::CoRegConfigurationTable CoRegCfgTable;
-
 		CoRegLayerConfigurationDialog(
 				GPlatesPresentation::ViewState &view_state,
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer) :
@@ -182,10 +181,56 @@ namespace GPlatesQtWidgets
 
 			QObject::connect(CoregRadioButton, SIGNAL(clicked()), 
 				this, SLOT(populate_coregistration_attributes()));
+
+			QObject::connect(RemovePushButton, SIGNAL(clicked()), 
+				this, SLOT(remove()));
+
+			QObject::connect(RemoveAllPushButton, SIGNAL(clicked()), 
+				this, SLOT(remove_all()));
+
+			QObject::connect(
+				&view_state.get_application_state().get_feature_collection_file_state(),
+				SIGNAL(file_state_file_about_to_be_removed(
+						GPlatesAppLogic::FeatureCollectionFileState &,
+						GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
+				this,
+				SLOT(handle_file_state_file_about_to_be_removed(
+						GPlatesAppLogic::FeatureCollectionFileState &,
+						GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
+
+			QObject::connect(
+				&view_state.get_application_state().get_reconstruct_graph(),
+				SIGNAL(layer_removed_input_connection(
+						GPlatesAppLogic::ReconstructGraph &,
+						GPlatesAppLogic::Layer)),
+				this,
+				SLOT(handle_layer_removed_input_connection(
+						GPlatesAppLogic::ReconstructGraph &,
+						GPlatesAppLogic::Layer )));
+			 ExportPathlineEdit->setVisible(false);
+             ChooseExportPathPushButton->setVisible(false);
+			 label_3->setVisible(false);
+			 CoRegCfgTableWidget->resizeColumnsToContents();
+			 AttributesListWidget->setSelectionMode(QAbstractItemView::MultiSelection);
 		}
 
 		void
 		pop_up();
+
+		inline
+		GPlatesDataMining::CoRegConfigurationTable&
+		cfg_table()
+		{
+			return d_cfg_table;
+		}
+
+		inline
+		void
+		set_visual_layer(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer)
+		{
+			d_visual_layer = layer;
+		}
 
 	protected:
 		void
@@ -203,7 +248,7 @@ namespace GPlatesQtWidgets
 				QListWidget *_listWidget_attributes);
 			
 		void
-		setup_data_operator_combobox(
+		setup_REDUCER_combobox(
 				const QString& attribute_name,	
 				QComboBox* combo);
 
@@ -239,7 +284,26 @@ namespace GPlatesQtWidgets
 		void
 		populate_coregistration_attributes();
 
+		void
+		handle_file_state_file_about_to_be_removed(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
+
+		void
+		handle_layer_removed_input_connection(
+				GPlatesAppLogic::ReconstructGraph &,
+				GPlatesAppLogic::Layer);
+
+		void
+		remove();
+
+		void
+		remove_all();
+
 	private:
+		void
+		check_integrity();
+	
 		std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 		get_input_target_files() const;
 
@@ -253,6 +317,8 @@ namespace GPlatesQtWidgets
 		void
 		update_export_path(
 				const QString&);
+
+		GPlatesDataMining::CoRegConfigurationTable d_cfg_table;
 
 		std::multimap< QString, GPlatesDataMining::AttributeTypeEnum >  d_attr_name_type_map;
 

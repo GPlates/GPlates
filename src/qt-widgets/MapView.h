@@ -239,6 +239,11 @@ namespace GPlatesQtWidgets
 		wheelEvent(
 				QWheelEvent *wheel_event);
 
+		virtual
+		void
+		keyPressEvent(
+				QKeyEvent *key_event);
+
 	signals:
 
 		void

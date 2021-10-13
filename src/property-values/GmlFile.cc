@@ -36,14 +36,16 @@ GPlatesPropertyValues::GmlFile::create(
 		const XsString::non_null_ptr_to_const_type &file_name_,
 		const XsString::non_null_ptr_to_const_type &file_structure_,
 		const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type_,
-		const boost::optional<XsString::non_null_ptr_to_const_type> &compression_)
+		const boost::optional<XsString::non_null_ptr_to_const_type> &compression_,
+		GPlatesFileIO::ReadErrorAccumulation *read_errors_)
 {
 	return new GmlFile(
 			range_parameters_,
 			file_name_,
 			file_structure_,
 			mime_type_,
-			compression_);
+			compression_,
+			read_errors_);
 }
 
 
@@ -52,14 +54,15 @@ GPlatesPropertyValues::GmlFile::GmlFile(
 		const XsString::non_null_ptr_to_const_type &file_name_,
 		const XsString::non_null_ptr_to_const_type &file_structure_,
 		const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type_,
-		const boost::optional<XsString::non_null_ptr_to_const_type> &compression_) :
+		const boost::optional<XsString::non_null_ptr_to_const_type> &compression_,
+		GPlatesFileIO::ReadErrorAccumulation *read_errors_) :
 	PropertyValue(),
 	d_range_parameters(range_parameters_),
 	d_file_name(file_name_),
 	d_file_structure(file_structure_),
 	d_mime_type(mime_type_),
 	d_compression(compression_),
-	d_proxied_raster_cache(ProxiedRasterCache::create(file_name_->value()))
+	d_proxied_raster_cache(ProxiedRasterCache::create(file_name_->value(), read_errors_))
 {  }
 
 

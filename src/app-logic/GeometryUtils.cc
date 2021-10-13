@@ -296,6 +296,57 @@ namespace
 
 
 	/**
+	 * Retrieves the bounding small circle of a derived @a GeometryOnSphere if appropriate for the type.
+	 */
+	class GetBoundingSmallCircle :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		const boost::optional<const GPlatesMaths::BoundingSmallCircle &> &
+		get_bounding_small_circle() const
+		{
+			return d_bounding_small_circle;
+		}
+
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			// There is no bounding small circle for a point.
+		}
+
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			d_bounding_small_circle = multi_point_on_sphere->get_bounding_small_circle();
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_bounding_small_circle = polygon_on_sphere->get_bounding_small_circle();
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_bounding_small_circle = polyline_on_sphere->get_bounding_small_circle();
+		}
+
+	private:
+		boost::optional<const GPlatesMaths::BoundingSmallCircle &> d_bounding_small_circle;
+	};
+
+
+	/**
 	 * Visits a @a GeometryOnSphere and creates a suitable property value for it.
 	 */
 	class CreateGeometryProperty :
@@ -400,6 +451,18 @@ GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
 
 	return get_geometry_on_sphere_end_points.get_geometry_end_points(
 		geometry_on_sphere, reverse_points);
+}
+
+
+boost::optional<const GPlatesMaths::BoundingSmallCircle &>
+GPlatesAppLogic::GeometryUtils::get_geometry_bounding_small_circle(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	GetBoundingSmallCircle visitor;
+
+	geometry_on_sphere.accept_visitor(visitor);
+
+	return visitor.get_bounding_small_circle();
 }
 
 

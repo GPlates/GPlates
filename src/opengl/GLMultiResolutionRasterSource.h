@@ -27,17 +27,17 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONRASTERSOURCE_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONRASTERSOURCE_H
 
+#include "GLRenderer.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
+#include "utils/SubjectObserverToken.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
-
 	/**
 	 * Interface for an arbitrary dimension source of RGBA data that's used as input
 	 * to a @a GLMultiResolutionRaster.
@@ -68,13 +68,13 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns a token that clients can store with each tile they cache and compare
-		 * against the current token to determine if they should reload that tile.
+		 * Returns a subject token that clients can observe with each tile they cache and determine
+		 * when/if they should reload that tile.
 		 */
-		GLTextureUtils::ValidToken
-		get_current_valid_token() const
+		const GPlatesUtils::SubjectToken &
+		get_subject_token() const
 		{
-			return d_current_valid_token;
+			return d_subject_token;
 		}
 
 
@@ -109,6 +109,8 @@ namespace GPlatesOpenGL
 		 * (you can pass NULL to glTexImage2D to create without loading image data).
 		 *
 		 * @a renderer is provided in case the data needs to be rendered into the texture.
+		 * @a render_target_usage dictates the render target usage if @a target_texture
+		 * is rendered to.
 		 *
 		 * @a texel_x_offset and @a texel_y_offset are guaranteed to be a multiple of
 		 * the tile texel dimension.
@@ -156,7 +158,8 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer) = 0;
+				GLRenderer &renderer,
+				GLRenderer::RenderTargetUsageType render_target_usage) = 0;
 
 	protected:
 		GLMultiResolutionRasterSource()
@@ -170,11 +173,11 @@ namespace GPlatesOpenGL
 		void
 		invalidate()
 		{
-			d_current_valid_token.invalidate();
+			d_subject_token.invalidate();
 		}
 
 	private:
-		GLTextureUtils::ValidToken d_current_valid_token;
+		GPlatesUtils::SubjectToken d_subject_token;
 	};
 }
 

@@ -27,19 +27,24 @@
 #include <QtGui/QHeaderView>
 #include <QtGui/QPushButton>
 #include <boost/optional.hpp> 
+
 #include "ResultTableDialog.h"
 
-#include "utils/ExportTemplateFilenameSequence.h"
+#include "app-logic/ApplicationState.h"
+#include "app-logic/FeatureCollectionFileState.h"
+#include "global/CompilerWarnings.h"
+#include "gui/FeatureFocus.h"
+#include "presentation/ViewState.h"
+#include "file-io/ExportTemplateFilenameSequence.h"
 
-using namespace GPlatesQtWidgets;
+using namespace GPlatesDataMining;
 
-const QString ResultTableDialog::filter_csv(QObject::tr("CSV (*.csv)"));
-const QString ResultTableDialog::filter_csv_ext(QObject::tr("csv"));
-const QString ResultTableDialog::page_label_format("Page: %d/%d ");
-
+const QString GPlatesQtWidgets::ResultTableDialog::filter_csv(QObject::tr("CSV (*.csv)"));
+const QString GPlatesQtWidgets::ResultTableDialog::filter_csv_ext(QObject::tr("csv"));
+const QString GPlatesQtWidgets::ResultTableDialog::page_label_format("Page: %d/%d ");
 	
 void
-ResultTableDialog::update_page_label()
+GPlatesQtWidgets::ResultTableDialog::update_page_label()
 {
 	char tmp[20];
 	sprintf(
@@ -56,7 +61,7 @@ ResultTableDialog::update_page_label()
 }
 
 void 
-ResultTableDialog::update_time_label()
+GPlatesQtWidgets::ResultTableDialog::update_time_label()
 {
 	char tmp[50];
 	sprintf(
@@ -71,13 +76,15 @@ ResultTableDialog::update_time_label()
 					QApplication::UnicodeUTF8));
 }
 
-ResultTableDialog::ResultTableDialog(
-		const std::vector< DataTable > data_tables,
+GPlatesQtWidgets::ResultTableDialog::ResultTableDialog(
+		const std::vector< GPlatesDataMining::DataTable > data_tables,
 		GPlatesPresentation::ViewState &view_state,
-		QWidget *parent_) :
+		QWidget *parent_,
+		bool old_version) :
 	d_data_tables(data_tables),
 	d_view_state(view_state),
-	d_page_index(0)
+	d_page_index(0),
+	d_old_version(old_version)
 {
 	setupUi(this);
 	setModal(false);
@@ -88,21 +95,51 @@ ResultTableDialog::ResultTableDialog(
     table_view->setVerticalScrollMode(QAbstractItemView::ScrollPerItem);
     table_view->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
 	table_view->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
-	table_view->horizontalHeader()->setStretchLastSection(true);
+	table_view->horizontalHeader()->setStretchLastSection(false);
 	//table_view->setContextMenuPolicy(Qt::ActionsContextMenu);
 	d_page_num = data_tables.size();
-	d_table_model_prt.reset(
-			new ResultTableModel(
-					d_data_tables.at(d_page_index), 
-					this));
+	if(d_page_num > 0)
+	{
+		d_table_model_prt.reset(
+				new ResultTableModel(
+						d_data_tables.at(d_page_index), 
+						this));
+	}
 
 	if(d_data_tables.size() > d_page_index)
 	{
 		table_view->setModel(d_table_model_prt.get());
 	}
-
+	table_view->resizeColumnsToContents(); 
 	vboxLayout->addWidget(table_view);
 
+	if(d_old_version)
+	{
+		init_controls();
+	}
+	else
+	{
+		QHBoxLayout* hboxLayout;
+		QSpacerItem* spacerItem;
+		hboxLayout = new QHBoxLayout();
+		hboxLayout->setObjectName(QString::fromUtf8("hboxLayout"));
+		spacerItem = new QSpacerItem(91, 25, QSizePolicy::Expanding, QSizePolicy::Minimum);
+		hboxLayout->addItem(spacerItem);
+		QPushButton* pushButton_close = new QPushButton(this);
+		pushButton_close->setObjectName(QString::fromUtf8("pushButton_close"));
+		hboxLayout->addWidget(pushButton_close);
+		vboxLayout->addLayout(hboxLayout);
+		pushButton_close->setText(QApplication::translate("ResultTableDialog", "close", 0, QApplication::UnicodeUTF8));
+		QObject::connect(pushButton_close, SIGNAL(clicked()), this, SLOT(reject()));
+	}
+	
+	update();
+}	
+
+
+void
+GPlatesQtWidgets::ResultTableDialog::init_controls()
+{
 	QHBoxLayout* hboxLayout_1;
 	QSpacerItem* spacerItem_1;
 	QPushButton* pushButton_goto;
@@ -177,11 +214,12 @@ ResultTableDialog::ResultTableDialog(
 	QObject::connect(pushButton_previous, SIGNAL(clicked()), this, SLOT(handle_previous_page()));
 	QObject::connect(pushButton_goto, SIGNAL(clicked()), this, SLOT(handle_goto_page()));
 	QObject::connect(pushButton_save_all, SIGNAL(clicked()), this, SLOT(handle_save_all()));
-	update();
-}	
+	return;
+}
+
 
 void
-ResultTableDialog::reject()
+GPlatesQtWidgets::ResultTableDialog::reject()
 {
 	d_page_index = 0;
 	d_page_num = 0;
@@ -190,7 +228,7 @@ ResultTableDialog::reject()
 }
 
 void
-ResultTableDialog::accept()
+GPlatesQtWidgets::ResultTableDialog::accept()
 {
 	GPlatesQtWidgets::SaveFileDialog::filter_list_type filters;
 	filters.push_back(FileDialogFilter(filter_csv, filter_csv_ext));
@@ -213,14 +251,14 @@ ResultTableDialog::accept()
 }
 
 void
-ResultTableDialog::handle_next_page()
+GPlatesQtWidgets::ResultTableDialog::handle_next_page()
 {
 	d_page_index++;
 	update();
 }
 
 void
-ResultTableDialog::update()
+GPlatesQtWidgets::ResultTableDialog::update()
 {
 	if(d_page_index >= d_page_num)
 	{
@@ -251,7 +289,7 @@ ResultTableDialog::update()
 }
 
 void
-ResultTableDialog::handle_previous_page()
+GPlatesQtWidgets::ResultTableDialog::handle_previous_page()
 {
 	if(0 == d_page_index)
 	{
@@ -262,14 +300,14 @@ ResultTableDialog::handle_previous_page()
 }
 
 void
-ResultTableDialog::handle_goto_page()
+GPlatesQtWidgets::ResultTableDialog::handle_goto_page()
 {
 	d_page_index = spinBox_page->value() -1 ;
 	update();
 }
 
 void
-ResultTableDialog::handle_save_all()
+GPlatesQtWidgets::ResultTableDialog::handle_save_all()
 {
 	GPlatesQtWidgets::SaveFileDialog::filter_list_type filters;
 	filters.push_back(FileDialogFilter(filter_csv, filter_csv_ext));
@@ -306,14 +344,14 @@ ResultTableDialog::handle_save_all()
 		time_start = d_data_tables[0].reconstruction_time();
 		time_end = d_data_tables[d_page_num-1].reconstruction_time();
 		time_incre = (time_start - time_end)/(d_page_num - 1);
-		GPlatesUtils::ExportTemplateFilenameSequence filenames(
+		GPlatesFileIO::ExportTemplateFilenameSequence filenames(
 				basename,
 				0,
 				time_end,
 				time_start,
 				time_incre,
 				true);
-		GPlatesUtils::ExportTemplateFilenameSequence::const_iterator filename_it = filenames.begin();
+		GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator filename_it = filenames.begin();
 		for(unsigned i = 0; i < d_page_num; i++, ++filename_it)
 		{
 			
@@ -335,6 +373,104 @@ ResultTableDialog::handle_save_all()
 		qDebug() << "No data table to be exported.";
 	}
 	return;
+}
+
+
+void
+GPlatesQtWidgets::ResultTableDialog::data_arrived(
+		const GPlatesDataMining::DataTable& table)
+{
+	d_table_model_prt.reset(
+			new ResultTableModel(table));
+	table_view->setModel(d_table_model_prt.get());
+	
+	//table_view->setModel(new ResultTableModel(table));
+}
+
+
+// For the nested BOOST_FOREACH below.
+// Also for a problem in the ResultTableModel::data function.
+DISABLE_GCC_WARNING("-Wshadow")
+
+
+GPlatesModel::FeatureHandle::weak_ref
+GPlatesQtWidgets::ResultTableDialog::find_feature_by_id(
+		GPlatesAppLogic::FeatureCollectionFileState& state,
+		const QString& id)
+{
+	using namespace GPlatesAppLogic;
+	std::vector<FeatureCollectionFileState::file_reference> files = state.get_loaded_files();
+	BOOST_FOREACH(FeatureCollectionFileState::file_reference& file_ref, files)
+	{
+		GPlatesModel::FeatureCollectionHandle::weak_ref fc = file_ref.get_file().get_feature_collection();
+		BOOST_FOREACH(GPlatesModel::FeatureHandle::non_null_ptr_type feature, *fc)
+		{
+			if(feature->feature_id().get().qstring() == id)
+			{
+				return feature->reference();
+			}
+		}
+	}
+	throw QString("No feature found by this id: %1").arg(id);
+}
+
+
+QVariant
+GPlatesQtWidgets::ResultTableModel::data(
+		const QModelIndex &idx,
+		int role) const
+{
+	if ( ! idx.isValid()) 
+	{
+		return QVariant();
+	}
+
+	if (idx.row() < 0 || idx.row() >= rowCount())	
+	{
+		return QVariant();
+	}
+
+	if (role == Qt::DisplayRole) 
+	{
+		OpaqueData o_data;
+		d_table.at( idx.row() )->get_cell( idx.column(), o_data );
+
+		return 
+			boost::apply_visitor(
+					GPlatesDataMining::ConvertOpaqueDataToString(),
+					o_data);
+
+	} 
+	else if (role == Qt::TextAlignmentRole) 
+	{
+		return QVariant();
+	}
+	return QVariant();
+}
+
+
+void
+GPlatesQtWidgets::ResultTableDialog::highlight_seed()
+{
+	QModelIndex idx = table_view->currentIndex();
+	QString id;
+	if(idx.column()==0)
+		id = idx.data().toString();
+	else
+		id = idx.sibling(idx.row(),0).data().toString();
+
+	GPlatesAppLogic::FeatureCollectionFileState& file_state = 
+		d_view_state.get_application_state().get_feature_collection_file_state();
+	try
+	{
+		GPlatesModel::FeatureHandle::weak_ref feature = 
+			find_feature_by_id(file_state,id);
+		d_view_state.get_feature_focus().set_focus(feature);
+	}catch(QString err)
+	{
+		qDebug() << "exception happened!";
+		qDebug() << err;
+	}
 }
 
 

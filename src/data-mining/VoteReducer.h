@@ -35,20 +35,12 @@
 namespace GPlatesDataMining
 {
 	using namespace GPlatesUtils;
-	
 	typedef std::vector<OpaqueData> ReducerInputSequence;
 
-	/*	
-	*	TODO:
-	*	Comments....
-	*/
 	class VoteReducer
 	{
 	public:
 
-		/*
-		* TODO: comments....
-		*/
 		inline
 		OpaqueData
 		operator()(
@@ -66,8 +58,9 @@ namespace GPlatesDataMining
 			}
 			std::sort(tmp_vector.begin(),tmp_vector.end());
 			unsigned count = 0;
-			std::vector<QString>::iterator begin;
-			std::vector<QString>::iterator end;
+			std::vector<QString>::iterator 
+				begin = tmp_vector.begin(),
+			    end = tmp_vector.end();
 			for(; begin != end; begin+=count)
 			{
 				count = std::count(begin,end,*begin);

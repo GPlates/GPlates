@@ -27,6 +27,7 @@
 #ifndef GPLATES_PRESENTATION_VIEWSTATE_H
 #define GPLATES_PRESENTATION_VIEWSTATE_H
 
+#include <map>
 #include <utility>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -35,7 +36,7 @@
 #include <QString>
 
 #include "global/PointerTraits.h"
-
+#include "gui/Symbol.h"
 #include "utils/VirtualProxy.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -53,6 +54,11 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
+namespace GPlatesApi
+{
+	class Sleeper;
+}
+
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
@@ -67,15 +73,16 @@ namespace GPlatesGui
 	class ColourScheme;
 	class ColourSchemeContainer;
 	class ColourSchemeDelegator;
+	class ExportAnimationRegistry;
 	class GeometryFocusHighlight;
 	class FeatureFocus;
 	class GraticuleSettings;
 	class MapTransform;
-	class RasterColourSchemeMap;
 	class RenderSettings;
 	class TextOverlaySettings;
 	class ViewportProjection;
 	class ViewportZoom;
+
 }
 
 namespace GPlatesQtWidgets
@@ -98,10 +105,18 @@ namespace GPlatesPresentation
 			public QObject,
 			private boost::noncopyable
 	{
+
+
+
+
 		Q_OBJECT
 		
 	public:
 	
+
+
+
+
 		ViewState(
 				GPlatesAppLogic::ApplicationState &application_state);
 
@@ -229,14 +244,6 @@ namespace GPlatesPresentation
 		get_vgp_render_settings();
 
 
-		GPlatesGui::RasterColourSchemeMap &
-		get_raster_colour_scheme_map();
-
-
-		const GPlatesGui::RasterColourSchemeMap &
-		get_raster_colour_scheme_map() const;
-
-
 		QString &
 		get_last_open_directory();
 
@@ -251,7 +258,14 @@ namespace GPlatesPresentation
 
 		void
 		set_show_stars(
-				bool show_stars = true);
+				bool show_stars = false);
+
+
+		GPlatesGui::symbol_map_type &
+		get_feature_type_symbol_map();
+
+		const GPlatesGui::symbol_map_type &
+		get_feature_type_symbol_map() const;
 
 
 		const GPlatesGui::Colour &
@@ -278,6 +292,8 @@ namespace GPlatesPresentation
 		const GPlatesGui::TextOverlaySettings &
 		get_text_overlay_settings() const;
 
+		GPlatesGui::ExportAnimationRegistry &
+		get_export_animation_registry() const;
 
 	private slots:
 
@@ -287,6 +303,16 @@ namespace GPlatesPresentation
 
 
 	private:
+
+		void
+		connect_to_viewport_zoom();
+
+		void
+		connect_to_feature_focus();
+
+		void
+		setup_rendered_geometry_collection();
+
 		//
 		// NOTE: Most of these are boost::scoped_ptr's to avoid having to include header files.
 		//
@@ -310,6 +336,11 @@ namespace GPlatesPresentation
 
 		//! The viewport projection state.
 		boost::scoped_ptr<GPlatesGui::ViewportProjection> d_viewport_projection;
+
+		/**
+		 * Holds map of feature type to symbol.
+		 */
+		GPlatesGui::symbol_map_type d_feature_type_symbol_map;
 
 		/**
 		 * Renders the focused geometry highlighted.
@@ -355,11 +386,6 @@ namespace GPlatesPresentation
 		boost::scoped_ptr<GPlatesAppLogic::VGPRenderSettings> d_vgp_render_settings;
 
 		/**
-		 * Stores the mapping of Layer to RasterColourSchemes.
-		 */
-		boost::scoped_ptr<GPlatesGui::RasterColourSchemeMap> d_raster_colour_scheme_map;
-
-		/**
 		 * Stores the directory containing the files last opened, or the last opened
 		 * directory.
 		 */
@@ -385,17 +411,15 @@ namespace GPlatesPresentation
 		 */
 		boost::scoped_ptr<GPlatesGui::TextOverlaySettings> d_text_overlay_settings;
 
-		void
-		connect_to_viewport_zoom();
+		/**
+		 * Stores information about the export animation types.
+		 */
+		boost::scoped_ptr<GPlatesGui::ExportAnimationRegistry> d_export_animation_registry;
 
-		void
-		connect_to_feature_focus();
-
-		void
-		connect_to_raster_colour_scheme_map();
-
-		void
-		setup_rendered_geometry_collection();
+		/**
+		 * Replaces Python's time.sleep() with our own implementation.
+		 */
+		boost::scoped_ptr<GPlatesApi::Sleeper> d_sleeper;
 	};
 }
 

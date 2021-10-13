@@ -68,7 +68,7 @@
          <item>
           <widget class="QToolButton" name="add_new_layer_button">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -82,6 +82,26 @@
            </property>
            <property name="toolButtonStyle">
             <enum>Qt::ToolButtonTextBesideIcon</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="colouring_button">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>Manage Colouring</string>
+           </property>
+           <property name="text">
+            <string>Manage Colouring</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../qt-resources/qt_widgets.qrc">
+             <normaloff>:/gnome_stock_color_16.png</normaloff>:/gnome_stock_color_16.png</iconset>
            </property>
           </widget>
          </item>

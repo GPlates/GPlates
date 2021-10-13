@@ -51,6 +51,7 @@ namespace GPlatesMaths
 				_msg(msg)
 			{  }
 
+			~IndeterminateResultException() throw() { }
 		protected:
 			virtual const char *
 			exception_name() const {

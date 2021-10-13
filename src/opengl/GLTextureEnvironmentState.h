@@ -53,7 +53,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Call @a gl_enable_texture_2D, etc to initialise the state.
 		 * For example:
-		 *   blend_state->gl_enable_texture_2D(GL_TRUE);
+		 *   tex_env_state->gl_enable_texture_2D(GL_TRUE);
 		 */
 		static
 		non_null_ptr_type

@@ -5,8 +5,8 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
- *(as "ReconstructionPoleWidget.cc")
+ * Copyright (C) 2008, 2009, 2011 The University of Sydney, Australia
+ * (as "ReconstructionPoleWidget.cc")
  * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -26,21 +26,28 @@
  */
 
 #include <iostream>
-
 #include <QDebug>
 
+#include "ActionButtonBox.h"
 #include "ApplyReconstructionPoleAdjustmentDialog.h"
 #include "ModifyReconstructionPoleWidget.h"
+#include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/LayerProxyUtils.h"
+#include "app-logic/ReconstructLayerProxy.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
+
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
+
 #include "gui/FeatureFocus.h"
+
 #include "presentation/ReconstructionGeometryRenderer.h"
 #include "presentation/ViewState.h"
+
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
 
@@ -48,8 +55,9 @@
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::ModifyReconstructionPoleWidget(
 		GPlatesPresentation::ViewState &view_state,
 		ViewportWindow &viewport_window,
+		QAction *clear_action,
 		QWidget *parent_):
-	QWidget(parent_),
+	TaskPanelWidget(parent_),
 	d_application_state_ptr(&view_state.get_application_state()),
 	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
 	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&viewport_window)),
@@ -59,6 +67,16 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::ModifyReconstructionPoleWidget
 	d_view_state_ptr(&view_state)
 {
 	setupUi(this);
+
+	// Set up the action button box showing the reset button.
+	ActionButtonBox *action_button_box = new ActionButtonBox(1, 16, this);
+	action_button_box->add_action(clear_action);
+#ifndef Q_WS_MAC
+	action_button_box->setFixedHeight(button_apply->sizeHint().height());
+#endif
+	QtWidgetUtils::add_widget_to_placeholder(
+			action_button_box,
+			action_button_box_placeholder_widget);
 
 	make_signal_slot_connections(view_state);
 
@@ -697,53 +715,60 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 	display_collection(plate_id_collection);	
 #endif
 
+	//
 	// Iterate over all the reconstruction geometries that were reconstructed using the same
 	// reconstruction tree as the focused feature geometry.
-	GPlatesAppLogic::Reconstruction::reconstruction_geometry_const_iterator iter =
-			d_application_state_ptr->get_current_reconstruction().begin_reconstruction_geometries(
-					*d_reconstruction_tree);
-	GPlatesAppLogic::Reconstruction::reconstruction_geometry_const_iterator end =
-			d_application_state_ptr->get_current_reconstruction().end_reconstruction_geometries(
-					*d_reconstruction_tree);
-	for ( ; iter != end; ++iter)
+	//
+
+	// Get the layer outputs.
+	const GPlatesAppLogic::Reconstruction::layer_output_seq_type &layer_outputs =
+			d_application_state_ptr->get_current_reconstruction().get_active_layer_outputs();
+
+	// Find those layer outputs that come from a reconstruct layer.
+	std::vector<GPlatesAppLogic::ReconstructLayerProxy *> reconstruct_outputs;
+	if (GPlatesAppLogic::LayerProxyUtils::get_layer_proxy_derived_type_sequence(
+			layer_outputs.begin(), layer_outputs.end(), reconstruct_outputs))
 	{
-		/**
-		 * FIXME: The following check should not be necessary, as the iterator, if it
-		 * has not reached the end, should always be valid. Remove this once we figure
-		 * out why GPlates keeps crashing...
-		 */
-		if ( ! iter.is_valid())
-		{
-			std::cerr << "Invalid iterator in ModifyReconstructionPoleWidget::populate_initial_geometries!" << std::endl;
-			continue;
-		}
-
-		const GPlatesAppLogic::ReconstructionGeometry *rg = (*iter).get();
-
-		// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
+		// Iterate over the *reconstruct* layers because...
+		// ...we're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
 		// for instance, are used to assign plate ids to regular features so we probably only
 		// want to look at geometries of regular features).
 		// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
 		// from ReconstructedFeatureGeometry.
-		boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
-				GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-						const GPlatesAppLogic::ReconstructedFeatureGeometry>(rg);
-		if (!rfg)
+		BOOST_FOREACH(
+				GPlatesAppLogic::ReconstructLayerProxy *reconstruct_layer_proxy,
+				reconstruct_outputs)
 		{
-			continue;
-		}
+			// Get the reconstructed feature geometries from the current layer.
+			typedef std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> rfg_seq_type;
+			rfg_seq_type reconstructed_feature_geometries;
+			reconstruct_layer_proxy->get_reconstructed_feature_geometries(reconstructed_feature_geometries);
 
-		// It's an RFG, so let's look at its reconstruction plate ID property (if
-		// there is one).
-		if (rfg.get()->reconstruction_plate_id())
-		{
-			// OK, so the RFG *does* have a reconstruction plate ID.
-			GPlatesModel::integer_plate_id_type rfg_plate_id = *rfg.get()->reconstruction_plate_id();
-			if (std::find(plate_id_collection.begin(), plate_id_collection.end(), rfg_plate_id) !=
-				plate_id_collection.end())
+			// Iterate over the RFGs.
+			for (rfg_seq_type::const_iterator rfg_iter = reconstructed_feature_geometries.begin();
+				rfg_iter != reconstructed_feature_geometries.end();
+				++rfg_iter)
 			{
-				d_reconstructed_feature_geometries.push_back(
-						rfg.get()->get_non_null_pointer_to_const());
+				const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *rfg_iter;
+
+				// Make sure the current RFG was created from the same reconstruction tree as
+				// the focused geometry.
+				if (rfg->reconstruction_tree() != *d_reconstruction_tree)
+				{
+					continue;
+				}
+
+				// It's an RFG, so let's look at its reconstruction plate ID property (if there is one).
+				if (rfg->reconstruction_plate_id())
+				{
+					// OK, so the RFG *does* have a reconstruction plate ID.
+					GPlatesModel::integer_plate_id_type rfg_plate_id = rfg->reconstruction_plate_id().get();
+					if (std::find(plate_id_collection.begin(), plate_id_collection.end(), rfg_plate_id) !=
+						plate_id_collection.end())
+					{
+						d_reconstructed_feature_geometries.push_back(rfg->get_non_null_pointer_to_const());
+					}
+				}
 			}
 		}
 	}
@@ -785,7 +810,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 
 	// FIXME: Probably should use the same styling params used to draw
 	// the original geometries rather than use some of the defaults.
-	GPlatesPresentation::ReconstructionGeometryRenderer::StyleParams render_style_params;
+	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params;
 	render_style_params.reconstruction_line_width_hint =
 			GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT;
 	render_style_params.reconstruction_point_size_hint =
@@ -793,10 +818,17 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 
 	// This creates the RenderedGeometry's from the ReconstructedFeatureGeomtries
 	// using the colour 'white_colour'.
+	//
+	// Note that we don't have the feature_type_to_symbol_map available in this class
+	// at the moment, so we can't pass it to the Renderer, so any symbols will just
+	// get rendered as regular point-on-spheres.
 	GPlatesPresentation::ReconstructionGeometryRenderer initial_geometry_renderer(
-			*d_initial_geom_layer_ptr,
 			render_style_params,
-			white_colour);
+			white_colour,
+			boost::none,
+			boost::none);
+
+	initial_geometry_renderer.begin_render();
 
 	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
 			d_reconstructed_feature_geometries.begin();
@@ -807,6 +839,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 		// Visit the RFG with the renderer.
 		(*rfg_iter)->accept_visitor(initial_geometry_renderer);
 	}
+
+	initial_geometry_renderer.end_render(*d_initial_geom_layer_ptr);
 }
 
 
@@ -834,7 +868,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 
 	// FIXME: Probably should use the same styling params used to draw
 	// the original geometries rather than use some of the defaults.
-	GPlatesPresentation::ReconstructionGeometryRenderer::StyleParams render_style_params;
+	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params;
 	render_style_params.reconstruction_line_width_hint =
 			GPlatesViewOperations::RenderedLayerParameters::POLE_MANIPULATION_LINE_WIDTH_HINT;
 	render_style_params.reconstruction_point_size_hint =
@@ -843,10 +877,12 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 	// This creates the RenderedGeometry's from the ReconstructedFeatureGeomtries
 	// using the colour 'silver_colour' and rotates geometries in the RFGs.
 	GPlatesPresentation::ReconstructionGeometryRenderer dragged_geometry_renderer(
-			*d_dragged_geom_layer_ptr,
 			render_style_params,
 			silver_colour,
-			d_accum_orientation->rotation());
+			d_accum_orientation->rotation(),
+			boost::none);
+
+	dragged_geometry_renderer.begin_render();
 
 	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
 			d_reconstructed_feature_geometries.begin();
@@ -857,6 +893,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 		// Visit the RFG with the renderer.
 		(*rfg_iter)->accept_visitor(dragged_geometry_renderer);
 	}
+
+	dragged_geometry_renderer.end_render(*d_dragged_geom_layer_ptr);
 }
 
 
@@ -893,6 +931,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::clear_and_reset_after_reconstr
 	draw_initial_geometries_at_activation();
 }
 
+
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::make_signal_slot_connections(
 		GPlatesPresentation::ViewState &view_state)
@@ -901,16 +940,12 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::make_signal_slot_connections(
 	QObject::connect(button_apply, SIGNAL(clicked()),
 		this, SLOT(apply()));
 
-	// The user wants to reset the adjustment (to zero).
-	QObject::connect(button_reset_adjustment, SIGNAL(clicked()),
-		this, SLOT(reset()));
-
 	// Communication between the Apply ... Adjustment dialog and the Adjustment Applicator.
-	QObject::connect(d_dialog_ptr.get(), SIGNAL(pole_sequence_choice_changed(int)),
+	QObject::connect(d_dialog_ptr, SIGNAL(pole_sequence_choice_changed(int)),
 		d_applicator_ptr.get(), SLOT(handle_pole_sequence_choice_changed(int)));
-	QObject::connect(d_dialog_ptr.get(), SIGNAL(pole_sequence_choice_cleared()),
+	QObject::connect(d_dialog_ptr, SIGNAL(pole_sequence_choice_cleared()),
 		d_applicator_ptr.get(), SLOT(handle_pole_sequence_choice_cleared()));
-	QObject::connect(d_dialog_ptr.get(), SIGNAL(accepted()),
+	QObject::connect(d_dialog_ptr, SIGNAL(accepted()),
 		d_applicator_ptr.get(), SLOT(apply_adjustment()));
 
 	// The user has agreed to apply the adjustment as described in the dialog.
@@ -941,6 +976,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::make_signal_slot_connections(
 			this, SLOT(change_highlight_children_checkbox_state(int)));			
 }
 
+
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::create_child_rendered_layers()
 {
@@ -969,4 +1005,31 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::create_child_rendered_layers()
 	// Activate both layers.
 	d_initial_geom_layer_ptr->set_active();
 	d_dragged_geom_layer_ptr->set_active();
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::handle_activation()
+{
+}
+
+
+QString
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::get_clear_action_text() const
+{
+	return tr("Re&set Rotation");
+}
+
+
+bool
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::clear_action_enabled() const
+{
+	return true;
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::handle_clear_action_triggered()
+{
+	reset();
 }

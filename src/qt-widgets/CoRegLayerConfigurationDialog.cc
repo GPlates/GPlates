@@ -28,6 +28,8 @@
 
 #include "CoRegLayerConfigurationDialog.h"
 
+#include "app-logic/CoRegistrationLayerTask.h"
+
 #include "data-mining/PopulateShapeFileAttributesVisitor.h"
 #include "data-mining/CoRegConfigurationTable.h"
 
@@ -35,7 +37,9 @@
 
 #include "presentation/VisualLayer.h"
 
-GPlatesDataMining::CoRegConfigurationTable GPlatesQtWidgets::CoRegLayerConfigurationDialog::CoRegCfgTable;
+const char* DISTANCE = QT_TR_NOOP("Distance");
+const char* PRESENCE = QT_TR_NOOP("Presence");
+const char* NUM_ROI  = QT_TR_NOOP("Number in Region");
 
 void 
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::pop_up()
@@ -43,6 +47,7 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::pop_up()
 	RelationalRadioButton->setChecked(true);
 	FeatureCollectionListWidget->clear();
 	populate_feature_collection_list();
+	check_integrity();
 
 	show();
 	// In most cases, 'show()' is sufficient. However, selecting the menu entry
@@ -59,7 +64,8 @@ std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::get_input_seed_files() const
 {
 	// TODO: create a const for the channel name.
-	return get_input_files("CoRegistration seed Channel");
+	return get_input_files(
+			GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME);
 }
 
 
@@ -67,7 +73,8 @@ std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::get_input_target_files() const
 {
 	// TODO: create a const for the channel name.
-	return get_input_files("CoRegistration input Channel");
+	return get_input_files(
+			GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME);
 }
 
 
@@ -260,9 +267,12 @@ void
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::populate_relational_attributes()
 {
 	AttributesListWidget->clear();
-	const char* DISTANCE = QT_TR_NOOP("Distance");
-	const char* PRESENCE = QT_TR_NOOP("Presence");
-	const char* NUM_ROI  = QT_TR_NOOP("Number in Region");
+	FeatureCollectionItem* current_item = 
+		dynamic_cast< FeatureCollectionItem* > (FeatureCollectionListWidget->currentItem());
+	if(!current_item)
+	{
+		return;
+	}
 
 	QListWidgetItem *item = 
 		new AttributeListItem(
@@ -334,76 +344,82 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::populate_coregistration_attribu
 void
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::react_add_button_clicked()
 {
+	QList<QListWidgetItem*> items = AttributesListWidget->selectedItems();
 	//feature collection and attribute must have been selected.
-	if( !(FeatureCollectionListWidget->currentItem() && AttributesListWidget->currentItem()))
+	if( !FeatureCollectionListWidget->currentItem() || 
+		items.size() == 0)
 	{
 		return;
 	}
 
-	int row_num=CoRegCfgTableWidget->rowCount();
-	CoRegCfgTableWidget->insertRow(row_num);
-
-	//Attribute Name column 
-	AttributeListItem* attr_item = 
-			dynamic_cast< AttributeListItem* >(AttributesListWidget->currentItem());
-	if(attr_item)
-	{
-		CoRegCfgTableWidget->setItem(
-				row_num, 
-				AttributeName, 
-				new AttributeTableItem(
-						attr_item->text(),
-						attr_item->name,
-						attr_item->attr_type));
-	}
-
-	//Data Operator column
-	QComboBox* combo = new QComboBox();       
-    CoRegCfgTableWidget->setCellWidget(
-			row_num, 
-			DataOperator, 
-			combo);
-
-	setup_data_operator_combobox(
-			attr_item->text(),
-			combo);
-
-	//Feature Collection Name column
-	FeatureCollectionItem* fc_item = 
-		dynamic_cast<FeatureCollectionItem*>(FeatureCollectionListWidget->currentItem());
-	CoRegCfgTableWidget->setItem(
-			row_num,
-			FeatureCollectionName,
-			new FeatureCollectionTableItem(
-					fc_item->file_ref,
-					fc_item->label));
-
-	//Association Type column
-	//TODO: To be finished...
-	QComboBox* association_combo = new QComboBox();       
-    CoRegCfgTableWidget->setCellWidget(
-			row_num, 
-			AssociationType, 
-			association_combo);
 	
-	setup_association_type_combobox(association_combo);
+	BOOST_FOREACH(QListWidgetItem* item, items)
+	{
+		int row_num=CoRegCfgTableWidget->rowCount();
+		CoRegCfgTableWidget->insertRow(row_num);
 
-	//Range column
-	QDoubleSpinBox* ROI_range_spinbox = new QDoubleSpinBox(); 
-	QObject::connect(
-			ROI_range_spinbox, SIGNAL(valueChanged(double)),
-			this, SLOT(handle_range_changed(double)));
-	ROI_range_spinbox->setRange(0,25000);
-	ROI_range_spinbox->setValue(0);
-    CoRegCfgTableWidget->setCellWidget(
-			row_num, 
-			Range, 
-			ROI_range_spinbox);
+		//Attribute Name column 
+		AttributeListItem* attr_item = 
+				dynamic_cast< AttributeListItem* >(item);
+		if(attr_item)
+		{
+			CoRegCfgTableWidget->setItem(
+					row_num, 
+					AttributeName, 
+					new AttributeTableItem(
+							attr_item->text(),
+							attr_item->name,
+							attr_item->attr_type));
+		}
+
+		//Data Operator column
+		QComboBox* combo = new QComboBox();       
+		CoRegCfgTableWidget->setCellWidget(
+				row_num, 
+				Reducer, 
+				combo);
+
+		setup_REDUCER_combobox(
+				attr_item->text(),
+				combo);
+
+		//Feature Collection Name column
+		FeatureCollectionItem* fc_item = 
+			dynamic_cast<FeatureCollectionItem*>(FeatureCollectionListWidget->currentItem());
+		CoRegCfgTableWidget->setItem(
+				row_num,
+				FeatureCollectionName,
+				new FeatureCollectionTableItem(
+						fc_item->file_ref,
+						fc_item->label));
+
+		//Association Type column
+		//TODO: To be finished...
+		QComboBox* association_combo = new QComboBox();       
+		CoRegCfgTableWidget->setCellWidget(
+				row_num, 
+				FilterType, 
+				association_combo);
+		
+		setup_association_type_combobox(association_combo);
+
+		//Range column
+		QDoubleSpinBox* ROI_range_spinbox = new QDoubleSpinBox(); 
+		QObject::connect(
+				ROI_range_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(handle_range_changed(double)));
+		ROI_range_spinbox->setRange(0,25000);
+		ROI_range_spinbox->setValue(0);
+		CoRegCfgTableWidget->setCellWidget(
+				row_num, 
+				Range, 
+				ROI_range_spinbox);
+	}
 }
 
 
 void
-GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_data_operator_combobox(
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_REDUCER_combobox(
 		const QString& attribute_name,	
 		QComboBox* combo)
 {
@@ -413,30 +429,53 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_data_operator_combobox(
 		a_type = d_attr_name_type_map.find(attribute_name)->second;
 	}
 
-	if(GPlatesDataMining::String_Attribute == a_type || GPlatesDataMining::Unknown_Type == a_type)
+	if(attribute_name == DISTANCE)
+	{
+		combo->addItem(
+				QApplication::tr("Min"),
+				GPlatesDataMining::REDUCER_MIN);
+		return;
+	}
+
+	if(attribute_name == PRESENCE || attribute_name == NUM_ROI)
 	{
 		combo->addItem(
 				QApplication::tr("Lookup"), 
-				GPlatesDataMining::DATA_OPERATOR_LOOKUP);
+				GPlatesDataMining::REDUCER_LOOKUP);
+		return;
+	}
+
+	if(GPlatesDataMining::String_Attribute == a_type )
+	{
+		combo->addItem(
+				QApplication::tr("Lookup"), 
+				GPlatesDataMining::REDUCER_LOOKUP);
 		combo->addItem(
 				QApplication::tr("Vote"),
-				GPlatesDataMining::DATA_OPERATOR_VOTE);
+				GPlatesDataMining::REDUCER_VOTE);
+		return;
 	}
 
 	if(GPlatesDataMining::Number_Attribute == a_type || GPlatesDataMining::Unknown_Type == a_type)
 	{
 		combo->addItem(
+				QApplication::tr("Lookup"), 
+				GPlatesDataMining::REDUCER_LOOKUP);
+		combo->addItem(
+				QApplication::tr("Vote"),
+				GPlatesDataMining::REDUCER_VOTE);
+		combo->addItem(
 				QApplication::tr("Min"),
-				GPlatesDataMining::DATA_OPERATOR_MIN);
+				GPlatesDataMining::REDUCER_MIN);
 		combo->addItem(
 				QApplication::tr("Max"),
-				GPlatesDataMining::DATA_OPERATOR_MAX);
+				GPlatesDataMining::REDUCER_MAX);
 		combo->addItem(
 				QApplication::tr("Mean"),
-				GPlatesDataMining::DATA_OPERATOR_MEAN);
+				GPlatesDataMining::REDUCER_MEAN);
 		combo->addItem(
 				QApplication::tr("Median"),
-				GPlatesDataMining::DATA_OPERATOR_MEDIAN);
+				GPlatesDataMining::REDUCER_MEDIAN);
 	}
 	return;
 }
@@ -449,9 +488,6 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::setup_association_type_combobox
 	combo->addItem(
 			QApplication::tr("Region of Interest"),
 			GPlatesDataMining::REGION_OF_INTEREST);
-	combo->addItem(
-			QApplication::tr("TODO..."),
-			GPlatesDataMining::REGION_OF_INTEREST);
 	return;
 }
 
@@ -460,7 +496,7 @@ void
 GPlatesQtWidgets::CoRegLayerConfigurationDialog::apply(
 		QAbstractButton* button)
 {
-	CoRegCfgTable.clear(); //Clean up the table each time applied.
+	d_cfg_table.clear(); //Clean up the table each time applied.
 	
 	if(buttonBox->buttonRole(button) != QDialogButtonBox::ApplyRole)
 	{
@@ -477,52 +513,43 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::apply(
 		AttributeTableItem* attr_item = 
 			dynamic_cast< AttributeTableItem* > (
 					CoRegCfgTableWidget->item(i, AttributeName) );
-		QComboBox* data_operator = 
+		QComboBox* REDUCER = 
 			dynamic_cast< QComboBox* >(
-					CoRegCfgTableWidget->cellWidget(i, DataOperator) );
+					CoRegCfgTableWidget->cellWidget(i, Reducer) );
 		QDoubleSpinBox* spinbox_ROI_range = 
 			dynamic_cast< QDoubleSpinBox* >(
 					CoRegCfgTableWidget->cellWidget(i,Range) );
 		
 		if( !(	feature_collection_item &&
 				attr_item				&&
-				data_operator			&&
+				REDUCER			&&
 				spinbox_ROI_range) )
 		{
 			qWarning() << "Invalid input table item found! Skip this iteration";
 			continue;
 		}
 		
-		QString operator_name = data_operator->currentText();
-		GPlatesDataMining::DataOperatorType op = 
-			static_cast<GPlatesDataMining::DataOperatorType>(
-					data_operator->itemData(data_operator->currentIndex()).toUInt());
+		QString operator_name = REDUCER->currentText();
+		GPlatesDataMining::ReducerType op = 
+			static_cast<GPlatesDataMining::ReducerType>(
+					REDUCER->itemData(REDUCER->currentIndex()).toUInt());
 
 		GPlatesDataMining::ConfigurationTableRow row;
 
-		row.target_feature_collection_handle = 
+		row.target_fc = 
 				feature_collection_item->file_ref.get_file().get_feature_collection();
  
 		//TODO: TO BE IMPLEMENTED
-		row.association_operator_type = GPlatesDataMining::REGION_OF_INTEREST;
+		row.filter_type = GPlatesDataMining::REGION_OF_INTEREST;
 
-		row.association_parameters.d_ROI_range = spinbox_ROI_range->value();
-		row.attribute_name = attr_item->text();
+		row.filter_cfg.d_ROI_range = spinbox_ROI_range->value();
+		row.attr_name = attr_item->text();
 		row.attr_type = attr_item->attr_type;
-		row.data_operator_type = op;
+		row.reducer_type = op;
 
-		CoRegCfgTable.push_back(row);	
-
-		CoRegCfgTable.export_path() = ExportPathlineEdit->text();
-		//TODO:
-		//Validate the path here.
-		if(CoRegCfgTable.export_path().isEmpty())
-		{
-			qWarning() << "The export path is invalid";
-			return;
-		}
+		d_cfg_table.push_back(row);	
 	}
-	CoRegCfgTable.set_seeds_file(get_input_seed_files()); 
+	d_cfg_table.set_seeds_file(get_input_seed_files()); 
 	done(QDialog::Accepted);
 }
 
@@ -558,6 +585,99 @@ GPlatesQtWidgets::CoRegLayerConfigurationDialog::update_export_path(
 	}
 	return;
 }
+
+
+void
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::check_integrity()
+{
+	bool flag = false;
+
+	for(int i = 0; i < CoRegCfgTableWidget->rowCount(); )
+	{
+		FeatureCollectionTableItem* feature_collection_item = 
+			dynamic_cast< FeatureCollectionTableItem* > (
+					CoRegCfgTableWidget->item(i, FeatureCollectionName) );
+		int list_size = FeatureCollectionListWidget->count();
+		for(int j = 0; j < list_size; j++ ) // make sure the items in cfg table are still valid.
+		{
+			FeatureCollectionItem* item = 
+				dynamic_cast< FeatureCollectionItem* > (FeatureCollectionListWidget->item(j));
+			if(item->file_ref == feature_collection_item->file_ref)
+			{
+				flag = true;
+				break;
+			}
+		}
+		if(!flag)
+		{
+			CoRegCfgTableWidget->removeRow(i);
+		}
+		else
+		{
+			flag = false;
+			i++;
+		}
+	}
+	return;
+}
+
+
+void
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::handle_file_state_file_about_to_be_removed(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state,
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
+{
+	for(int j = 0; j < FeatureCollectionListWidget->count(); )
+	{
+		FeatureCollectionItem* item = 
+			dynamic_cast< FeatureCollectionItem* > (FeatureCollectionListWidget->item(j));
+		if(item->file_ref == file)
+		{
+			delete FeatureCollectionListWidget->takeItem(j);
+		}
+		else
+		{
+			j++;
+		}
+	}
+	check_integrity();
+}
+
+
+void
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::handle_layer_removed_input_connection(
+		GPlatesAppLogic::ReconstructGraph & graph,
+		GPlatesAppLogic::Layer layer)
+{
+	if(boost::shared_ptr<GPlatesPresentation::VisualLayer> layer_ptr = d_visual_layer.lock())
+	{
+		if(!(layer_ptr->get_reconstruct_graph_layer() == layer))
+		{
+			return;
+		}
+	}
+	FeatureCollectionListWidget->clear();
+	populate_feature_collection_list();
+	check_integrity();
+	
+}
+
+
+void
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::remove()
+{
+	int idx = CoRegCfgTableWidget->currentRow();
+	CoRegCfgTableWidget->removeRow(idx);
+}
+
+
+void
+GPlatesQtWidgets::CoRegLayerConfigurationDialog::remove_all()
+{
+	CoRegCfgTableWidget->clearContents();
+	CoRegCfgTableWidget->setRowCount(0);
+}
+
 
 // Suppress warning with boost::variant with Boost 1.34 and g++ 4.2.
 // This is here at the end of the file because the problem resides in a template

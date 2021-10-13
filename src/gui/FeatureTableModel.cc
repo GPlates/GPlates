@@ -593,11 +593,7 @@ namespace
 GPlatesGui::FeatureTableModel::ReconstructionGeometryRow::ReconstructionGeometryRow(
 		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry_,
 		const GPlatesAppLogic::ReconstructGraph &reconstruct_graph_) :
-	reconstruction_geometry(reconstruction_geometry_),
-	reconstruction_tree_layer(
-			find_layer(
-					reconstruct_graph_,
-					reconstruction_geometry_->reconstruction_tree()))
+	reconstruction_geometry(reconstruction_geometry_)
 {
 }
 
@@ -804,7 +800,8 @@ GPlatesGui::FeatureTableModel::handle_reconstruction(
 		boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> new_rg =
 				GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometry(
 						old_rg,
-						*application_state.get_current_reconstruction().get_default_reconstruction_tree());
+						*application_state.get_current_reconstruction()
+							.get_default_reconstruction_layer_output()->get_reconstruction_tree());
 #else
 		const boost::optional<GPlatesAppLogic::Layer> &recon_tree_layer =
 				it->reconstruction_tree_layer;

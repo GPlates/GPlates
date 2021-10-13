@@ -23,10 +23,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <boost/foreach.hpp>
 #include <QPixmap>
 
 #include "VisualLayerRegistry.h"
+
+#include "RasterVisualLayerParams.h"
+#include "ReconstructVisualLayerParams.h"
+#include "TopologyBoundaryVisualLayerParams.h"
+
+#include "TopologyNetworkVisualLayerParams.h"
+#include "VelocityFieldCalculatorVisualLayerParams.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/LayerTaskRegistry.h"
@@ -35,12 +43,18 @@
 
 #include "gui/HTMLColourNames.h"
 
+#include "qt-widgets/CoRegistrationOptionsWidget.h"
 #include "qt-widgets/RasterLayerOptionsWidget.h"
+#include "qt-widgets/ReconstructLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructionLayerOptionsWidget.h"
+#include "qt-widgets/TopologyBoundaryResolverLayerOptionsWidget.h"
+
+#include "qt-widgets/TopologyNetworkResolverLayerOptionsWidget.h"
+#include "qt-widgets/VelocityFieldCalculatorLayerOptionsWidget.h"
 #include "qt-widgets/CoRegistrationOptionsWidget.h"
 
 //Data-mining temporary code
-extern bool enable_data_mining;
+bool enable_data_mining = false;
 
 namespace
 {
@@ -109,17 +123,28 @@ namespace
 	{
 		return NULL;
 	}
+
+	// A function that instantiates the base VisualLayerParams class for use with
+	// create_visual_layer_params_function.
+	GPlatesPresentation::VisualLayerParams::non_null_ptr_type
+	default_visual_layer_params(
+			GPlatesAppLogic::LayerTaskParams &layer_task_params)
+	{
+		return GPlatesPresentation::VisualLayerParams::create(layer_task_params);
+	}
 }
 
 
 void
 GPlatesPresentation::VisualLayerRegistry::register_visual_layer_type(
 		VisualLayerType::Type visual_layer_type_,
+		VisualLayerGroup::Type group_,
 		const QString &name_,
 		const QString &description_,
 		const GPlatesGui::Colour &colour_,
 		const create_visual_layer_function_type &create_visual_layer_function_,
 		const create_options_widget_function_type &create_options_widget_function_,
+		const create_visual_layer_params_function_type &create_visual_layer_params_function_,
 		bool produces_rendered_geometries_)
 {
 	static const int ICON_SIZE = 16;
@@ -128,13 +153,18 @@ GPlatesPresentation::VisualLayerRegistry::register_visual_layer_type(
 			std::make_pair(
 				visual_layer_type_,
 				VisualLayerInfo(
+					group_,
 					name_,
 					description_,
 					colour_,
 					QIcon(get_filled_pixmap(ICON_SIZE, ICON_SIZE, colour_)),
 					create_visual_layer_function_,
 					create_options_widget_function_,
+					create_visual_layer_params_function_,
 					produces_rendered_geometries_)));
+
+	d_visual_layer_type_order[static_cast<std::size_t>(group_)].push_back(visual_layer_type_);
+	invalidate_order_cache();
 }
 
 
@@ -142,19 +172,75 @@ void
 GPlatesPresentation::VisualLayerRegistry::unregister_visual_layer_type(
 		VisualLayerType::Type visual_layer_type)
 {
+	VisualLayerGroup::Type group = get_group(visual_layer_type);
+	visual_layer_type_seq_type &group_order = d_visual_layer_type_order[static_cast<std::size_t>(group)];
+	group_order.erase(std::find(group_order.begin(), group_order.end(), visual_layer_type));
+	invalidate_order_cache();
+
 	d_visual_layer_info_map.erase(visual_layer_type);
 }
 
 
-GPlatesPresentation::VisualLayerRegistry::visual_layer_type_seq_type
-GPlatesPresentation::VisualLayerRegistry::get_registered_visual_layer_types() const
+void
+GPlatesPresentation::VisualLayerRegistry::invalidate_order_cache()
 {
-	visual_layer_type_seq_type result;
-	BOOST_FOREACH(const visual_layer_info_map_type::value_type &elem, d_visual_layer_info_map)
+	d_cached_combined_visual_layer_type_order = boost::none;
+	d_cached_visual_layer_type_order_map = boost::none;
+}
+
+
+const GPlatesPresentation::VisualLayerRegistry::visual_layer_type_seq_type &
+GPlatesPresentation::VisualLayerRegistry::get_visual_layer_types_in_order() const
+{
+	if (!d_cached_combined_visual_layer_type_order)
 	{
-		result.push_back(elem.first);
+		d_cached_combined_visual_layer_type_order = visual_layer_type_seq_type();
+
+		BOOST_FOREACH(const visual_layer_type_seq_type &group_order, d_visual_layer_type_order)
+		{
+			d_cached_combined_visual_layer_type_order->insert(
+					d_cached_combined_visual_layer_type_order->end(),
+					group_order.begin(),
+					group_order.end());
+		}
 	}
-	return result;
+
+	return *d_cached_combined_visual_layer_type_order;
+}
+
+
+const GPlatesPresentation::VisualLayerRegistry::visual_layer_type_order_map_type &
+GPlatesPresentation::VisualLayerRegistry::get_visual_layer_type_order_map() const
+{
+	if (!d_cached_visual_layer_type_order_map)
+	{
+		const GPlatesPresentation::VisualLayerRegistry::visual_layer_type_seq_type &order =
+			get_visual_layer_types_in_order();
+		d_cached_visual_layer_type_order_map = visual_layer_type_order_map_type();
+		
+		for (std::size_t i = 0; i != order.size(); ++i)
+		{
+			d_cached_visual_layer_type_order_map->insert(std::make_pair(order[i], i));
+		}
+	}
+
+	return *d_cached_visual_layer_type_order_map;
+}
+
+
+GPlatesPresentation::VisualLayerGroup::Type
+GPlatesPresentation::VisualLayerRegistry::get_group(
+		VisualLayerType::Type visual_layer_type) const
+{
+	visual_layer_info_map_type::const_iterator iter = d_visual_layer_info_map.find(visual_layer_type);
+	if (iter == d_visual_layer_info_map.end())
+	{
+		return VisualLayerGroup::NUM_GROUPS;
+	}
+	else
+	{
+		return iter->second.group;
+	}
 }
 
 
@@ -259,6 +345,20 @@ GPlatesPresentation::VisualLayerRegistry::create_options_widget(
 }
 
 
+GPlatesPresentation::VisualLayerParams::non_null_ptr_type
+GPlatesPresentation::VisualLayerRegistry::create_visual_layer_params(
+		VisualLayerType::Type visual_layer_type,
+		GPlatesAppLogic::LayerTaskParams &layer_task_params) const
+{
+	visual_layer_info_map_type::const_iterator iter = d_visual_layer_info_map.find(visual_layer_type);
+	if (iter != d_visual_layer_info_map.end())
+	{
+		return iter->second.create_visual_layer_params_function(layer_task_params);
+	}
+	return VisualLayerParams::create(layer_task_params);
+}
+
+
 bool
 GPlatesPresentation::VisualLayerRegistry::produces_rendered_geometries(
 		VisualLayerType::Type visual_layer_type) const
@@ -273,19 +373,23 @@ GPlatesPresentation::VisualLayerRegistry::produces_rendered_geometries(
 
 
 GPlatesPresentation::VisualLayerRegistry::VisualLayerInfo::VisualLayerInfo(
+		VisualLayerGroup::Type group_,
 		const QString &name_,
 		const QString &description_,
 		const GPlatesGui::Colour &colour_,
 		const QIcon &icon_,
 		const create_visual_layer_function_type &create_visual_layer_function_,
 		const create_options_widget_function_type &create_options_widget_function_,
+		const create_visual_layer_params_function_type &create_visual_layer_params_function_,
 		bool produces_rendered_geometries_) :
+	group(group_),
 	name(name_),
 	description(description_),
 	colour(colour_),
 	icon(icon_),
 	create_visual_layer_function(create_visual_layer_function_),
 	create_options_widget_function(create_options_widget_function_),
+	create_visual_layer_params_function(create_visual_layer_params_function_),
 	produces_rendered_geometries(produces_rendered_geometries_)
 {  }
 
@@ -305,9 +409,29 @@ GPlatesPresentation::register_default_visual_layers(
 	//
 	// The following visual layer types are those that have corresponding app-logic layers.
 	//
+	// Note that, for each group, the visual layer types are registered in the
+	// order used internally, i.e. opposite to how they are displayed on screen.
+	//
+
+	// BASIC_DATA group.
+	registry.register_visual_layer_type(
+			VisualLayerType::Type(RECONSTRUCT),
+			VisualLayerGroup::BASIC_DATA,
+			"Reconstructed Geometries",
+			"Geometries in this layer will be reconstructed to the current reconstruction "
+			"time when this layer is connected to a reconstruction tree layer.",
+			*html_colours.get_colour("yellowgreen"),
+			CreateAppLogicLayer(
+				reconstruct_graph,
+				layer_task_registry,
+				RECONSTRUCT),
+			&GPlatesQtWidgets::ReconstructLayerOptionsWidget::create,
+			&ReconstructVisualLayerParams::create,
+			true);
 
 	registry.register_visual_layer_type(
 			VisualLayerType::Type(RECONSTRUCTION),
+			VisualLayerGroup::BASIC_DATA,
 			"Reconstruction Tree",
 			"A plate-reconstruction hierarchy of total reconstruction poles "
 			"that can be used to reconstruct geometries in other layers.",
@@ -317,23 +441,12 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				RECONSTRUCTION),
 			&GPlatesQtWidgets::ReconstructionLayerOptionsWidget::create,
+			&default_visual_layer_params,
 			false);
 
 	registry.register_visual_layer_type(
-			VisualLayerType::Type(RECONSTRUCT),
-			"Reconstructed Geometries",
-			"Geometries in this layer will be reconstructed to the current reconstruction "
-			"time when this layer is connected to a reconstruction tree layer.",
-			*html_colours.get_colour("yellowgreen"),
-			CreateAppLogicLayer(
-				reconstruct_graph,
-				layer_task_registry,
-				RECONSTRUCT),
-			&no_widget,
-			true);
-
-	registry.register_visual_layer_type(
 			VisualLayerType::Type(RASTER),
+			VisualLayerGroup::RASTERS,
 			"Reconstructed Raster",
 			"A raster in this layer will be reconstructed when "
 			"this layer is connected to a static plate polygon feature collection and "
@@ -344,23 +457,13 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				RASTER),
 			&GPlatesQtWidgets::RasterLayerOptionsWidget::create,
+			&RasterVisualLayerParams::create,
 			true);
 
-	registry.register_visual_layer_type(
-			VisualLayerType::Type(AGE_GRID),
-			"Age Grid",
-			"An age grid can be attached to a reconstructed raster layer to provide "
-			"smoother raster reconstructions.",
-			*html_colours.get_colour("darkturquoise"),
-			CreateAppLogicLayer(
-				reconstruct_graph,
-				layer_task_registry,
-				AGE_GRID),
-			&no_widget,
-			false);
-
+	// DERIVED_DATA group.
 	registry.register_visual_layer_type(
 			VisualLayerType::Type(TOPOLOGY_BOUNDARY_RESOLVER),
+			VisualLayerGroup::DERIVED_DATA,
 			"Resolved Topological Closed Plate Boundaries",
 			"Plate boundaries will be generated dynamically by referencing topological section "
 			"features, that have been reconstructed to a geological time, and joining them to "
@@ -370,11 +473,13 @@ GPlatesPresentation::register_default_visual_layers(
 				reconstruct_graph,
 				layer_task_registry,
 				TOPOLOGY_BOUNDARY_RESOLVER),
-			&no_widget,
+			&GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::create,
+			&TopologyBoundaryVisualLayerParams::create,
 			true);
 
 	registry.register_visual_layer_type(
 			VisualLayerType::Type(TOPOLOGY_NETWORK_RESOLVER),
+			VisualLayerGroup::DERIVED_DATA,
 			"Resolved Topological Networks",
 			"Deforming regions will be simulated dynamically by referencing topological section "
 			"features, that have been reconstructed to a geological time, and triangulating "
@@ -385,11 +490,13 @@ GPlatesPresentation::register_default_visual_layers(
 				reconstruct_graph,
 				layer_task_registry,
 				TOPOLOGY_NETWORK_RESOLVER),
-			&no_widget,
+			&GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::create,
+			&TopologyNetworkVisualLayerParams::create,
 			true);
 
 	registry.register_visual_layer_type(
 			VisualLayerType::Type(VELOCITY_FIELD_CALCULATOR),
+			VisualLayerGroup::DERIVED_DATA,
 			"Calculated Velocity Fields",
 			"Lithosphere-motion velocity vectors will be calculated dynamically at mesh points "
 			"that lie within resolved topological boundaries or topological networks.",
@@ -398,21 +505,24 @@ GPlatesPresentation::register_default_visual_layers(
 				reconstruct_graph,
 				layer_task_registry,
 				VELOCITY_FIELD_CALCULATOR),
-			&no_widget,
+			&GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::create,
+			&VelocityFieldCalculatorVisualLayerParams::create,
 			true);
 
 	if (enable_data_mining) //Data-mining temporary code
 	{
 		registry.register_visual_layer_type(
 				VisualLayerType::Type(CO_REGISTRATION),
-				"Co-registration tool",
-				"Co-registration tool for data mining.",
+				VisualLayerGroup::DERIVED_DATA,
+				"Co-registration layer",
+				"Co-registration layer for data mining.",
 				*html_colours.get_colour("sandybrown"),
 				CreateAppLogicLayer(
 					reconstruct_graph,
 					layer_task_registry,
 					CO_REGISTRATION),
 				&GPlatesQtWidgets::CoRegistrationOptionsWidget::create,
+				&default_visual_layer_params,
 				true);
 	}
 

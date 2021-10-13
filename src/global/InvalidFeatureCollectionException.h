@@ -48,6 +48,8 @@ namespace GPlatesGlobal
 				_msg(msg)
 			{  }
 
+			~InvalidFeatureCollectionException() throw() { }
+
 		protected:
 			virtual const char *
 			exception_name() const {

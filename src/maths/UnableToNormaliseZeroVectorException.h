@@ -48,6 +48,7 @@ namespace GPlatesMaths
 			d_vector(v)
 		{  }
 
+		~UnableToNormaliseZeroVectorException() throw() { }
 	protected:
 		virtual
 		const char *

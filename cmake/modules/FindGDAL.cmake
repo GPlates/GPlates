@@ -111,7 +111,8 @@ FIND_PATH(GDAL_INCLUDE_DIR gdal.h
 # 
 set(GDAL_LIBRARY_NAMES
 	gdal gdal_i
-        gdal1.7.0
+	gdal1.8.0
+	gdal1.7.0
 	gdal1.6.2 gdal1.6.1 gdal1.6.0
 	gdal1.5.4 gdal1.5.3 gdal1.5.2 gdal1.5.1 gdal1.5.0
 	gdal1.4.5 gdal1.4.4 gdal1.4.3 gdal1.4.2 gdal1.4.1 gdal1.4.0

@@ -59,12 +59,13 @@ namespace GPlatesAppLogic
 	 *    would expect with .toInt(), Qt does the rest.
 	 *
 	 *  - Almost all recognised keys should get a default value. If the user hasn't
-	 *    picked anything explicitly, we fall back to this.
+	 *    picked anything explicitly, we fall back to this. Default values are read from
+	 *    the DefaultPreferences.conf file in qt-resources/.
 	 *
 	 *  - If we are running multiple GPlates versions simultaneously and the user wishes
 	 *    to keep profile data for the old version around, it gets 'sandboxed' into
 	 *    a path like "version/old/GPlates 0.9.10/" - calls to get_value and set_value
-	 *    should seamlessly map to this location if on the old version.
+	 *    should seamlessly map to this location if on the old version. (NOT FULLY IMPLEMENTED)
 	 */
 	class UserPreferences :
 			public QObject,

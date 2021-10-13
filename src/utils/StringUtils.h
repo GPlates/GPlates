@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2007 The University of Sydney, Australia
+ * Copyright (C) 2007, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,7 +29,10 @@
 #define GPLATES_UTILS_STRINGUTILS_H
 
 #include <cctype>
+#include <string>
 #include <boost/lexical_cast.hpp>
+#include <QString>
+
 
 namespace GPlatesUtils
 {
@@ -101,6 +104,34 @@ namespace GPlatesUtils
 			throw error; 
 		}
 	}
+
+
+	/**
+	 * Converts a std::wstring instance into a QString instance.
+	 *
+	 * On Windows, Qt is compiled without wchar_t as a native type:
+	 * http://www.qtforum.org/article/17883/problem-using-qstring-fromstdwstring.html
+	 * But GPlates is, so you'll get a linker error if you call
+	 * QString::fromStdWString(). This function contains a workaround.
+	 *
+	 * On other platforms, this just calls QString::fromStdWString().
+	 */
+	QString
+	make_qstring_from_wstring(
+			const std::wstring &str);
+
+
+	/**
+	 * Converts a QString instance into a std::wstring instance.
+	 *
+	 * On Windows, this contains a workaround; see comments above for
+	 * @a make_qstring_from_wstring.
+	 *
+	 * On other platforms, this just calls QString::toStdWString().
+	 */
+	std::wstring
+	make_wstring_from_qstring(
+			const QString &str);
 }
 
 #endif  // GPLATES_UTILS_STRINGUTILS_H

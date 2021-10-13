@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,18 +32,23 @@
 
 #include "presentation/ViewState.h"
 
+#include "qt-widgets/ViewportWindow.h"
+
 
 namespace GPlatesPresentation
 {
 	/**
-	 * Stores the application state and the view state.
+	 * Stores the application state, the view state and ViewportWindow.
+	 *
+	 * This is exposed in Python as the "Instance" class.
 	 */
 	class Application :
 			private boost::noncopyable
 	{
 	public:
-		Application();
 
+		explicit
+		Application();
 
 		GPlatesAppLogic::ApplicationState &
 		get_application_state()
@@ -51,18 +56,24 @@ namespace GPlatesPresentation
 			return d_application_state;
 		}
 
-
 		GPlatesPresentation::ViewState &
 		get_view_state()
 		{
 			return d_view_state;
 		}
 
+		GPlatesQtWidgets::ViewportWindow &
+		get_viewport_window()
+		{
+			return d_viewport_window;
+		}
 
 	private:
+
 		GPlatesAppLogic::ApplicationState d_application_state;
 		GPlatesPresentation::ViewState d_view_state;
+		GPlatesQtWidgets::ViewportWindow d_viewport_window;
 	};
 }
 
-#endif // GPLATES_PRESENTATION_APPLICATION_H
+#endif  // GPLATES_PRESENTATION_APPLICATION_H

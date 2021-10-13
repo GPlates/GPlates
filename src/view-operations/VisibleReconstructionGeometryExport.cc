@@ -31,22 +31,24 @@
 #include "RenderedGeometryCollection.h"
 
 #include "app-logic/ReconstructionGeometryUtils.h"
+
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/ReconstructedFlowlineExport.h"
 #include "file-io/ReconstructedMotionPathExport.h"
 
+
 namespace
 {
 	//! Convenience typedef for sequence of RFGs.
-	typedef GPlatesFileIO::ReconstructedFeatureGeometryExport::reconstructed_feature_geom_seq_type
+	typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>
 			reconstructed_feature_geom_seq_type;
 
 	//! Convenience typedef for sequence of reconstructed flowline geometries.
-	typedef GPlatesFileIO::ReconstructedFlowlineExport::reconstructed_flowline_seq_type
+	typedef std::vector<const GPlatesAppLogic::ReconstructedFlowline *>
 			reconstructed_flowline_seq_type;
 
 	//! Convenience typedef for sequence of reconstructed motion track geometries.
-	typedef GPlatesFileIO::ReconstructedMotionPathExport::reconstructed_motion_path_seq_type
+	typedef std::vector<const GPlatesAppLogic::ReconstructedMotionPath *>
 			reconstructed_motion_path_seq_type;
 }
 
@@ -57,7 +59,9 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const files_collection_type &active_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		bool export_single_output_file,
+		bool export_per_input_file)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
 	// of the RenderedGeometryCollection.
@@ -76,20 +80,25 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the RFGs to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
 			filename,
+			GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(filename),
 			reconstruct_feature_geom_seq,
 			active_files,
 			reconstruction_anchor_plate_id,
-			reconstruction_time);
+			reconstruction_time,
+			export_single_output_file,
+			export_per_input_file);
 }
 
 
 void
-GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstruced_flowlines(
+GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_flowlines(
 	const QString &filename,
 	const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 	const files_collection_type &active_files,
 	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-	const double &reconstruction_time)
+	const double &reconstruction_time,
+	bool export_single_output_file,
+	bool export_per_input_file)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
 	// of the RenderedGeometryCollection.
@@ -108,19 +117,24 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the flowlines to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedFlowlineExport::export_reconstructed_flowlines(
 		filename,
+		GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(filename),
 		reconstructed_flowline_seq,
 		active_files,
 		reconstruction_anchor_plate_id,
-		reconstruction_time);
+		reconstruction_time,
+		export_single_output_file,
+		export_per_input_file);
 }
 
 void
-GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstruced_motion_paths(
+GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_motion_paths(
 	const QString &filename,
 	const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 	const files_collection_type &active_files,
 	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-	const double &reconstruction_time)
+	const double &reconstruction_time,
+	bool export_single_output_file,
+	bool export_per_input_file)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
 	// of the RenderedGeometryCollection.
@@ -139,8 +153,11 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the flowlines to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 		filename,
+		GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(filename),
 		reconstructed_motion_path_seq,
 		active_files,
 		reconstruction_anchor_plate_id,
-		reconstruction_time);
+		reconstruction_time,
+		export_single_output_file,
+		export_per_input_file);
 }

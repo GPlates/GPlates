@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -32,8 +32,10 @@
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 #include <boost/scoped_ptr.hpp>
+
 #include "DigitisationWidgetUi.h"
 #include "LatLonCoordinatesTable.h"
+#include "TaskPanelWidget.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "model/ModelInterface.h"
@@ -67,18 +69,21 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 	class LatLonCoordinatesTable;
 
-	class DigitisationWidget:
-			public QWidget, 
+	class DigitisationWidget :
+			public TaskPanelWidget, 
 			protected Ui_DigitisationWidget
 	{
 		Q_OBJECT
 
 	public:
+
 		explicit
 		DigitisationWidget(
 				GPlatesViewOperations::GeometryBuilder &new_geometry_builder,
 				GPlatesPresentation::ViewState &view_state_,
 				ViewportWindow &viewport_window_,
+				QAction *clear_action,
+				QAction *undo_action,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				QWidget *parent_ = NULL);
 
@@ -108,6 +113,22 @@ namespace GPlatesQtWidgets
 			d_lat_lon_coordinates_table->reload_if_necessary();
 		}
 
+		virtual
+		void
+		handle_activation();
+
+		virtual
+		QString
+		get_clear_action_text() const;
+
+		virtual
+		bool
+		clear_action_enabled() const;
+
+		virtual
+		void
+		handle_clear_action_triggered();
+
 	private slots:
 
 		/**
@@ -117,17 +138,18 @@ namespace GPlatesQtWidgets
 		handle_create();
 
 		/**
-		 * The slot that gets called when the user clicks "Clear".
-		 */
-		void
-		handle_clear();
-
-		/**
 		 * Feeds the ExportCoordinatesDialog a GeometryOnSphere, and
 		 * then displays it.
 		 */
 		void
 		handle_export();
+
+		/**
+		 * The slot that gets called when the geometry inside the geometry
+		 * builder is changed.
+		 */
+		void
+		handle_geometry_changed();
 
 	private:
 		/**
@@ -158,7 +180,6 @@ namespace GPlatesQtWidgets
 		 * and fills in the table accordingly.
 		 */
 		boost::scoped_ptr<LatLonCoordinatesTable> d_lat_lon_coordinates_table;
-
 
 		void
 		make_signal_slot_connections();

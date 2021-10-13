@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -79,6 +79,9 @@ namespace GPlatesQtWidgets
 		void
 		handle_add_new_layer_button_clicked();
 
+		void
+		handle_colouring_button_clicked();
+
 	private:
 
 		/**
@@ -87,6 +90,7 @@ namespace GPlatesQtWidgets
 		GPlatesGui::VisualLayersProxy d_visual_layers;
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
+		ViewportWindow *d_viewport_window;
 
 		boost::scoped_ptr<AddNewLayerDialog> d_add_new_layer_dialog;
 	};

@@ -35,6 +35,7 @@
 #include "OpenDirectoryDialog.h"
 
 #include "gui/ExportAnimationContext.h"
+#include "gui/ExportAnimationStrategy.h"
 
 
 namespace GPlatesGui
@@ -75,9 +76,9 @@ namespace GPlatesQtWidgets
 
 		void
 		insert_item(
-				ConfigureExportParametersDialog::ExportItemName item, 
-				ConfigureExportParametersDialog::ExportItemType type,
-				QString filebanme_template);
+				GPlatesGui::ExportAnimationType::Type export_type,
+				GPlatesGui::ExportAnimationType::Format export_format,
+				const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &export_configuration);
 	
 	public slots:
 		/**
@@ -156,7 +157,7 @@ namespace GPlatesQtWidgets
 			{
 				stackedWidget->setCurrentIndex(1);
 				d_is_single_frame=true;
-				d_configure_parameters_dialog_ptr->d_is_single_frame=d_is_single_frame;
+				d_configure_parameters_dialog_ptr->set_single_frame(d_is_single_frame);
 				update_target_directory(d_single_path);
 				reset();
 			}
@@ -170,7 +171,7 @@ namespace GPlatesQtWidgets
 			{
 				stackedWidget->setCurrentIndex(0);
 				d_is_single_frame=false;
-				d_configure_parameters_dialog_ptr->d_is_single_frame=d_is_single_frame;
+				d_configure_parameters_dialog_ptr->set_single_frame(d_is_single_frame);
 				update_target_directory(d_range_path);
 				reset();
 			}
@@ -193,9 +194,6 @@ namespace GPlatesQtWidgets
 		
 		void
 		react_abort_button_clicked();
-		
-		void
-		react_configure_export_parameters_clicked();
 
 		void
 		react_add_export_clicked();
@@ -275,92 +273,7 @@ namespace GPlatesQtWidgets
 
 		void
 		set_export_parameters();
-
-		typedef GPlatesQtWidgets::ConfigureExportParametersDialog::ExportItemName ExportItemName;
-		typedef GPlatesQtWidgets::ConfigureExportParametersDialog::ExportItemType ExportItemType;
-	
-		class ExportItem :
-			public QTableWidgetItem
-		{
-			
-		public:
-			ExportItem(
-					ExportItemName item_id):
-			d_id(item_id)
-			{  }
-
-			ExportItemName
-			item_name_id()
-			{
-				return d_id;
-			}
-
-		private:
-			ExportItemName d_id;
-		};
-
-		class ExportTypeItem :
-			public QTableWidgetItem
-		{
-			
-		public:
-			ExportTypeItem(
-					ExportItemType type_id):
-			d_id(type_id)
-			{  }
-
-			ExportItemType
-			item_type_id()
-			{
-				return d_id;
-			}
-
-		private:
-			ExportItemType d_id;
-		};
-
-		public:
-		inline
-		ExportItemName 
-		get_export_item_name(
-				QTableWidgetItem* widget_item)
-		{
-			if(ExportItem* item = dynamic_cast<ExportItem*> (widget_item))
-			{
-				return item->item_name_id();
-			}
-			else
-			{
-				//This is very unlikely to happen. If it did happen, it is not necessary to abort the application since this is not a fatal error.
-				//Record the error here. The further improvement could be throwing exception and make sure the exception is handled properly.
-				qWarning()
-					<<"Unexpected pointer type found in ExportAnimationDialog::get_export_item_name()";
-				return GPlatesQtWidgets::ConfigureExportParametersDialog::INVALID_NAME;
-			}
-		};
-
-		inline
-		ExportItemType
-		get_export_item_type(
-				QTableWidgetItem* widget_item)
-		{
-			if(ExportTypeItem* item = dynamic_cast<ExportTypeItem*> (widget_item))
-			{
-				return item->item_type_id();
-			}
-			else
-			{
-				//This is very unlikely to happen. If it did happen, it is not necessary to abort the application since this is not a fatal error.
-				//Record the error here. The further improvement could be throwing exception and make sure the exception is handled properly.
-				qWarning()
-					<<"Unexpected pointer type found in ExportAnimationDialog::get_export_item_type()";
-				return GPlatesQtWidgets::ConfigureExportParametersDialog::INVALID_TYPE;
-			}
-		}
 	};
 }
 
-#endif
-// GPLATES_QTWIDGETS_EXPORTANIMATIONDIALOG
-
-
+#endif // GPLATES_QTWIDGETS_EXPORTANIMATIONDIALOG

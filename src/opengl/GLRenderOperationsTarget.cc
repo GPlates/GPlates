@@ -42,6 +42,8 @@
 
 #include "global/CompilerWarnings.h"
 
+#include "utils/Profile.h"
+
 
 GPlatesOpenGL::GLRenderOperationsTarget::GLRenderOperationsTarget(
 		const GLRenderTargetType::non_null_ptr_type &render_target_type,
@@ -63,11 +65,6 @@ void
 GPlatesOpenGL::GLRenderOperationsTarget::set_state(
 		const GLStateGraphNode::non_null_ptr_to_const_type &state_graph_node)
 {
-	// If the state hasn't changed then nothing to do.
-	if (state_graph_node.get() == d_current_render_state)
-	{
-		return;
-	}
 	d_current_render_state = state_graph_node.get();
 
 	// Get the render group from the new state.
@@ -105,8 +102,15 @@ GPlatesOpenGL::GLRenderOperationsTarget::set_state(
 
 void
 GPlatesOpenGL::GLRenderOperationsTarget::add_render_operation(
+		const GLStateGraphNode::non_null_ptr_to_const_type &state,
 		const GLRenderOperation::non_null_ptr_to_const_type &render_operation)
 {
+	// If the state hasn't changed then there's no need to set it.
+	if (state.get() != d_current_render_state)
+	{
+		set_state(state);
+	}
+
 	d_current_render_sequence->render_operations.push_back(render_operation);
 }
 
@@ -121,6 +125,8 @@ GPlatesOpenGL::GLRenderOperationsTarget::draw(
 		GLRenderTargetManager &render_target_manager,
 		const GLRenderTarget::non_null_ptr_type &previous_render_target)
 {
+	PROFILE_FUNC();
+
 	GLRenderTarget::non_null_ptr_type current_render_target =
 			d_render_target_type->get_render_target(render_target_manager);
 

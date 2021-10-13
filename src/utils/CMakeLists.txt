@@ -18,32 +18,27 @@ set(srcs
     CommandLineParser.cc
     CommandLineParser.h
     CopyConst.h
-    ExportAnimationStrategyExporterID.h
-    ExportAnimationStrategyFactory.cc
-    ExportAnimationStrategyFactory.h
-    ExportFileNameTemplateValidator.cc
-    ExportFileNameTemplateValidator.h
-    ExportTemplateFilenameSequence.cc
-    ExportTemplateFilenameSequence.h
-    ExportTemplateFilenameSequenceFormats.cc
-    ExportTemplateFilenameSequenceFormats.h
-    ExportTemplateFilenameSequenceImpl.cc
-    ExportTemplateFilenameSequenceImpl.h
+    DeferredCallEvent.cc
+    DeferredCallEvent.h
     Filter.h
     FilterMapOutputHandler.h
     FilterMapReduceWorkFlow.h
+    FunctionTypes.h
     GenericFilter.h
     GenericMapper.h
     GenericReducer.h
     GeometryCreationUtils.h
     IdStringSet.cc
     IdStringSet.h
+    IntrusiveSinglyLinkedList.h
     LatLonAreaSampling.h
     Mapper.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h
     NullNonNullIntrusivePointerException.h
+    ObjectCache.h
+    ObjectPool.h
     OverloadResolution.h
     Parse.h
     Profile.cc
@@ -53,17 +48,21 @@ set(srcs
     ReferenceCount.h
     SafeBool.h
     Select.h
+    SetConst.h
     Singleton.h
     SmartNodeLinkedList.h
+    SpatialReferenceSystem.cc
+    SpatialReferenceSystem.h
     StringFormattingUtils.cc
     StringFormattingUtils.h
     StringSet.cc
     StringSet.h
+    StringUtils.cc
     StringUtils.h
+    SubjectObserverToken.h
     TypeTraits.h
     UnicodeString.cc
     UnicodeString.h
-    UnicodeStringUtils.cc
     UnicodeStringUtils.h
     UniqueId.cc
     UniqueId.h
@@ -72,6 +71,8 @@ set(srcs
     XmlNamespaces.h
     XPath.cc
     XPath.h
+    XQueryUtils.cc
+    XQueryUtils.h
 )
 
 

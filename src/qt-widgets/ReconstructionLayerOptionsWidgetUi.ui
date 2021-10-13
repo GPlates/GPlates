@@ -1,34 +1,44 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>ReconstructionLayerOptionsWidget</class>
- <widget class="QWidget" name="ReconstructionLayerOptionsWidget" >
-  <property name="geometry" >
+ <widget class="QWidget" name="ReconstructionLayerOptionsWidget">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>262</width>
-    <height>49</height>
+    <width>330</width>
+    <height>101</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Layers</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout" >
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>4</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
    <item>
-    <widget class="QPushButton" name="view_total_reconstruction_poles_button" >
-     <property name="text" >
-      <string>View Total Reconstruction Poles</string>
+    <widget class="QWidget" name="view_total_reconstruction_poles_placeholder_widget" native="true"/>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="keep_as_default_checkbox">
+     <property name="text">
+      <string>Keep as default tree upon file open</string>
      </property>
     </widget>
    </item>
    <item>
-    <spacer name="horizontalSpacer" >
-     <property name="orientation" >
-      <enum>Qt::Horizontal</enum>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-     <property name="sizeHint" stdset="0" >
+     <property name="sizeHint" stdset="0">
       <size>
-       <width>76</width>
-       <height>20</height>
+       <width>0</width>
+       <height>0</height>
       </size>
      </property>
     </spacer>
@@ -36,8 +46,8 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections/>
 </ui>

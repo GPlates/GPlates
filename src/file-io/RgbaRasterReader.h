@@ -35,6 +35,8 @@
 #include <QSize>
 #include <QFile>
 #include <QDataStream>
+#include <QImage>
+#include <QImageReader>
 
 #include "RasterReader.h"
 #include "RasterBandReaderHandle.h"
@@ -116,7 +118,8 @@ namespace GPlatesFileIO
 		 * Returns true if at the conclusion of the function such a file is available.
 		 */
 		bool
-		ensure_rgba_file_available();
+		ensure_rgba_file_available(
+				ReadErrorAccumulation *read_errors);
 
 		void
 		report_recoverable_error(
@@ -127,6 +130,48 @@ namespace GPlatesFileIO
 		report_failure_to_begin(
 				ReadErrorAccumulation *read_errors,
 				ReadErrors::Description description);
+
+		bool
+		write_image_to_rgba_file(
+				ReadErrorAccumulation *read_errors);
+
+		bool
+		write_image_to_rgba_file_using_clip_rects(
+				const QSize &image_size,
+				ReadErrorAccumulation *read_errors);
+
+		bool
+		convert_image_to_gl_and_append_to_rgba_file(
+				const QImage &image,
+				QDataStream &out,
+				ReadErrorAccumulation *read_errors);
+
+
+		// Any image bigger than this we should try to read in pieces to help avoid
+		// the possibility of a memory allocation failure.
+		static const int MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 200 * 1000 * 1000;
+
+		// The maximum memory allocation to attempt for an image.
+		// Going higher than this is likely to cause memory to start paging to disk
+		// which will just slow things down.
+		//
+		// I'm setting this fairly high because currently (as of Qt 4.6.1 - see
+		// http://bugreports.qt.nokia.com/browse/QTBUG-3249) only JPEG supports this
+		// and looking at the source code it actually reads the entire image for each
+		// cliprect request - it does it scanline-by-scanline so still uses low memory -
+		// and just copies the relevant parts (cliprect) of the entire image into the
+		// returned QImage. So we don't really want to do lots of cliprect requests
+		// (each decoding the entire JPEG image) so we set the image size at which
+		// we start using cliprects to be as high as we can.
+		//
+		// If the allocation fails we will repeatedly reduce the allocation size until
+		// it reaches @a MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT.
+		static const int MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 1 * 1000 * 1000 * 1000;
+
+		// The maximum number of image bytes to convert to ARGB32 at one time.
+		// This is also to help avoid memory allocation failure for large images.
+		static const int MAX_BYTES_TO_CONVERT_IMAGE_TO_ARGB32_FORMAT = 20 * 1000 * 1000;
+
 
 		QString d_filename;
 		boost::function<RasterBandReaderHandle (unsigned int)> d_proxy_handle_function;

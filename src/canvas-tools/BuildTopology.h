@@ -77,7 +77,6 @@ namespace GPlatesCanvasTools
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
-				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesAppLogic::ApplicationState &application_state)
 		{
@@ -86,7 +85,6 @@ namespace GPlatesCanvasTools
 					view_state,
 					viewport_window,
 					clicked_table_model,
-					topology_sections_container,
 					topology_tools_widget,
 					application_state);
 		}
@@ -107,6 +105,20 @@ namespace GPlatesCanvasTools
 				bool is_on_earth,
 				double proximity_inclusion_threshold);
 		
+		virtual
+		void
+		handle_left_shift_click(
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
+		
+		virtual
+		void
+		handle_left_control_click(
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
+		
 	private:
 
 		BuildTopology(
@@ -114,7 +126,6 @@ namespace GPlatesCanvasTools
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window,
 				GPlatesGui::FeatureTableModel &clicked_table_model,	
-				GPlatesGui::TopologySectionsContainer &topology_sections_container,
 				GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 				GPlatesAppLogic::ApplicationState &application_state);
 
@@ -138,7 +149,6 @@ namespace GPlatesCanvasTools
 		/**
 		 * This is the external table of selected features for the closed boundary
 		 */
-		GPlatesGui::TopologySectionsContainer *d_topology_sections_container_ptr;
 
 		/**
 		 * This is the TopologyToolsWidget in the Task Panel.

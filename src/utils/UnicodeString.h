@@ -68,7 +68,7 @@ namespace GPlatesUtils
 		 * It seems that this constructor is not explicit in ICU UnicodeString.
 		 */
 		UnicodeString(
-				const char *s):
+				const char *s)://We assume s contains Ascii data. Don't try to pass in local code page data.
 			d_qstring(s)
 		{  }
 

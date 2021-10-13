@@ -38,6 +38,8 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "file-io/ReadErrorAccumulation.h"
+
 #include "global/unicode.h"
 
 #include "model/PropertyValue.h"
@@ -119,7 +121,8 @@ namespace GPlatesPropertyValues
 				const XsString::non_null_ptr_to_const_type &file_name_,
 				const XsString::non_null_ptr_to_const_type &file_structure_,
 				const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type_ = boost::none,
-				const boost::optional<XsString::non_null_ptr_to_const_type> &compression_ = boost::none);
+				const boost::optional<XsString::non_null_ptr_to_const_type> &compression_ = boost::none,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors_ = NULL);
 
 		const non_null_ptr_type
 		clone() const
@@ -160,10 +163,11 @@ namespace GPlatesPropertyValues
 
 		void
 		set_file_name(
-				const XsString::non_null_ptr_to_const_type &file_name_)
+				const XsString::non_null_ptr_to_const_type &file_name_,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors = NULL)
 		{
 			d_file_name = file_name_;
-			d_proxied_raster_cache->set_file_name(file_name_->value());
+			d_proxied_raster_cache->set_file_name(file_name_->value(), read_errors);
 			update_instance_id();
 		}
 
@@ -263,7 +267,8 @@ namespace GPlatesPropertyValues
 				const XsString::non_null_ptr_to_const_type &file_name_,
 				const XsString::non_null_ptr_to_const_type &file_structure_,
 				const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type_,
-				const boost::optional<XsString::non_null_ptr_to_const_type> &compression_);
+				const boost::optional<XsString::non_null_ptr_to_const_type> &compression_,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors_ = NULL);
 
 
 		// This constructor should not be public, because we don't want to allow

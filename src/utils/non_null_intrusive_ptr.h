@@ -254,17 +254,17 @@ template<class T, class H> T * get_pointer(non_null_intrusive_ptr<T, H> const & 
     return p.get();
 }
 
-template<class T, class H, class U, class I> non_null_intrusive_ptr<T, H> static_pointer_cast(non_null_intrusive_ptr<U, I> const & p)
+template<class T, class H, class U> non_null_intrusive_ptr<T, H> static_pointer_cast(non_null_intrusive_ptr<U, H> const & p)
 {
     return static_cast<T *>(p.get());
 }
 
-template<class T, class H, class U, class I> non_null_intrusive_ptr<T, H> const_pointer_cast(non_null_intrusive_ptr<U, I> const & p)
+template<class T, class H, class U> non_null_intrusive_ptr<T, H> const_pointer_cast(non_null_intrusive_ptr<U, H> const & p)
 {
     return const_cast<T *>(p.get());
 }
 
-template<class T, class H, class U, class I> non_null_intrusive_ptr<T, H> dynamic_pointer_cast(non_null_intrusive_ptr<U, I> const & p)
+template<class T, class H, class U> non_null_intrusive_ptr<T, H> dynamic_pointer_cast(non_null_intrusive_ptr<U, H> const & p)
 {
     return dynamic_cast<T *>(p.get());
 }

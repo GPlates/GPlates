@@ -175,7 +175,15 @@ namespace GPlatesAppLogic
 		 */
 		void
 		remap_shapefile_attributes(
-			GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it);
+				GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it);
+
+		/*
+		* Load xml data in QByteArray.
+		*/
+		void
+		load_xml_data(
+				const QString& name,
+				QByteArray &data);
 
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments

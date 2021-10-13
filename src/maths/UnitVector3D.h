@@ -52,14 +52,20 @@ namespace GPlatesMaths
 	{
 	public:
 		/**
-		 * Create a 3D vector from the specified
-		 * x, y and z components.
+		 * Create a 3D vector from the specified x, y and z components.
+		 *
+		 * NOTE: Only set @a check_validity to false if you are sure that the components
+		 * form a unit vector and the components are strictly within the range [-1,1].
+		 * This is *only* useful in areas of code that require efficiency and where we are
+		 * certain that the above conditions hold (eg, taking an existing unit vector and
+		 * negating the signs one or more components to create a new unit vector).
+		 *
 		 * @param x_comp The x-component.
 		 * @param y_comp The y-component.
 		 * @param z_comp The z-component.
 		 *
 		 * @throw ViolatedUnitVectorInvariantException if the
-		 *   resulting vector does not have unit magnitude.
+		 *   @a check_validity is true and the resulting vector does not have unit magnitude.
 		 *
 		 * FIXME:  This should become a 'create' function,
 		 * invoking a private ctor.
@@ -67,7 +73,8 @@ namespace GPlatesMaths
 		UnitVector3D(
 				const real_t &x_comp,
 				const real_t &y_comp,
-				const real_t &z_comp);
+				const real_t &z_comp,
+				bool check_validity = true);
 
 
 		explicit

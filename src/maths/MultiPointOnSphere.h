@@ -31,14 +31,24 @@
 #include <vector>
 #include <algorithm>  // std::swap
 #include <iterator>   // std::distance
+#include <boost/intrusive_ptr.hpp>
 
 #include "GeometryOnSphere.h"
 #include "PointOnSphere.h"
+
 #include "global/PreconditionViolationError.h"
 
 
 namespace GPlatesMaths
 {
+	// Forward declarations.
+	namespace MultiPointOnSphereImpl
+	{
+		struct CachedCalculations;
+	}
+	class BoundingSmallCircle;
+
+
 	/** 
 	 * Represents a multi-point on the surface of a sphere. 
 	 *
@@ -207,6 +217,9 @@ namespace GPlatesMaths
 		}
 
 
+		virtual
+		~MultiPointOnSphere();
+
 		/**
 		 * Clone this MultiPointOnSphere instance, to create a duplicate instance on the
 		 * heap.
@@ -302,13 +315,7 @@ namespace GPlatesMaths
 		 */
 		MultiPointOnSphere &
 		operator=(
-				const MultiPointOnSphere &other)
-		{
-			// Use the copy+swap idiom to enable strong exception safety.
-			MultiPointOnSphere dup(other);
-			this->swap(dup);
-			return *this;
-		}
+				const MultiPointOnSphere &other);
 
 
 		/**
@@ -376,6 +383,7 @@ namespace GPlatesMaths
 		{
 			// Obviously, we should not swap the ref-counts of the instances.
 			d_points.swap(other.d_points);
+			d_cached_calculations.swap(other.d_cached_calculations);
 		}
 
 
@@ -404,6 +412,28 @@ namespace GPlatesMaths
 			return d_points == other.d_points;
 		}
 
+		//
+		// The following are cached calculations on the geometry data.
+		//
+
+		/**
+		 * Returns the sum of the points in this multipoint (normalised).
+		 *
+		 * The result is cached on first call.
+		 */
+		const UnitVector3D &
+		get_centroid() const;
+
+
+		/**
+		 * Returns the small circle that bounds this multipoint - the small circle centre
+		 * is the same as calculated by @a get_centroid.
+		 *
+		 * The result is cached on first call.
+		 */
+		const BoundingSmallCircle &
+		get_bounding_small_circle() const;
+
 	private:
 
 		/**
@@ -419,9 +449,7 @@ namespace GPlatesMaths
 		 * default-constructor would, except that it should initialise the ref-count to
 		 * zero.
 		 */
-		MultiPointOnSphere():
-			GeometryOnSphere()
-		{  }
+		MultiPointOnSphere();
 
 
 		/**
@@ -437,10 +465,7 @@ namespace GPlatesMaths
 		 * copy-constructor would, except that it should initialise the ref-count to zero.
 		 */
 		MultiPointOnSphere(
-				const MultiPointOnSphere &other):
-			GeometryOnSphere(),
-			d_points(other.d_points)
-		{  }
+				const MultiPointOnSphere &other);
 
 
 		/**
@@ -455,6 +480,17 @@ namespace GPlatesMaths
 		 */
 		point_container_type d_points;
 
+		/**
+		 * Useful calculations on the multipoint data.
+		 *
+		 * These calculations are stored directly with the geometry instead of associating
+		 * them at a higher level since it's then much easier to query the same geometry
+		 * at various places throughout the code (and reuse results of previous queries).
+		 * This is made easier by the fact that the geometry data itself is immutable.
+		 *
+		 * This pointer is NULL until the first calculation is requested.
+		 */
+		mutable boost::intrusive_ptr<MultiPointOnSphereImpl::CachedCalculations> d_cached_calculations;
 	};
 
 

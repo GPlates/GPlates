@@ -32,16 +32,11 @@
 
 #include "ReconstructionGeometry.h"
 
-#include "Layer.h"
-#include "ReconstructRasterPolygons.h"
+#include "AppLogicFwd.h"
 
 #include "model/FeatureHandle.h"
 #include "model/types.h"
 #include "model/WeakObserver.h"
-
-#include "property-values/Georeferencing.h"
-#include "property-values/GpmlRasterBandNames.h"
-#include "property-values/RawRaster.h"
 
 
 namespace GPlatesAppLogic
@@ -58,19 +53,13 @@ namespace GPlatesAppLogic
 			public GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle>
 	{
 	public:
-		/**
-		 * A convenience typedef for a shared pointer to a non-const @a ResolvedRaster.
-		 */
+		//! A convenience typedef for a shared pointer to a non-const @a ResolvedRaster.
 		typedef GPlatesUtils::non_null_intrusive_ptr<ResolvedRaster> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for a shared pointer to a non-const @a ResolvedRaster.
-		 */
+		//! A convenience typedef for a shared pointer to a non-const @a ResolvedRaster.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const ResolvedRaster> non_null_ptr_to_const_type;
 
-		/**
-		 * A convenience typedef for the WeakObserver base class of this class.
-		 */
+		//! A convenience typedef for the WeakObserver base class of this class.
 		typedef GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle> WeakObserverType;
 
 
@@ -87,45 +76,20 @@ namespace GPlatesAppLogic
 		const non_null_ptr_type
 		create(
 				GPlatesModel::FeatureHandle &feature_handle,
-				const Layer &created_from_layer_,
 				const double &reconstruction_time,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
-				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
-				const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names,
-				const boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type> &
-						reconstruct_raster_polygons = boost::none,
-				const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
-						age_grid_georeferencing = boost::none,
-				const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
-						age_grid_proxied_rasters = boost::none,
-				const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
-						age_grid_raster_band_names = boost::none)
+				const raster_layer_proxy_non_null_ptr_type &raster_layer_proxy,
+				const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxy,
+				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy)
 		{
 			return non_null_ptr_type(
 					new ResolvedRaster(
 							feature_handle,
-							created_from_layer_,
 							reconstruction_time,
 							reconstruction_tree_,
-							georeferencing,
-							proxied_rasters,
-							raster_band_names,
-							reconstruct_raster_polygons,
-							age_grid_georeferencing,
-							age_grid_proxied_rasters,
-							age_grid_raster_band_names),
-					GPlatesUtils::NullIntrusivePointerHandler());
-		}
-
-
-		/**
-		 * Returns the layer that this resolved raster was created in.
-		 */
-		const Layer &
-		get_layer() const
-		{
-			return d_created_from_layer;
+							raster_layer_proxy,
+							reconstructed_polygons_layer_proxy,
+							age_grid_raster_layer_proxy));
 		}
 
 
@@ -140,60 +104,32 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the georeferencing parameters to position the raster onto the globe.
+		 * Returns the raster layer proxy.
 		 */
-		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &
-		get_georeferencing() const
+		const raster_layer_proxy_non_null_ptr_type &
+		get_raster_layer_proxy() const
 		{
-			return d_georeferencing;
-		}
-
-
-		const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
-		get_proxied_rasters() const
-		{
-			return d_proxied_rasters;
-		}
-
-
-		const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &
-		get_raster_band_names() const
-		{
-			return d_raster_band_names;
+			return d_raster_layer_proxy;
 		}
 
 
 		/**
-		 * Returns the optional polygon set used to reconstruct the raster.
+		 * Returns the optional reconstructed polygons layer proxy.
 		 */
-		const boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type> &
-		get_reconstruct_raster_polygons() const
+		const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &
+		get_reconstructed_polygons_layer_proxy() const
 		{
-			return d_reconstruct_raster_polygons;
+			return d_reconstructed_polygons_layer_proxy;
 		}
 
 
 		/**
-		 * Returns the georeferencing for the age grid raster.
+		 * Returns the optional age grid layer proxy.
 		 */
-		const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
-		get_age_grid_georeferencing() const
+		const boost::optional<raster_layer_proxy_non_null_ptr_type> &
+		get_age_grid_layer_proxy() const
 		{
-			return d_age_grid_georeferencing;
-		}
-
-
-		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
-		get_age_grid_proxied_rasters() const
-		{
-			return d_age_grid_proxied_rasters;
-		}
-
-
-		const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
-		get_age_grid_raster_band_names() const
-		{
-			return d_age_grid_raster_band_names;
+			return d_age_grid_raster_layer_proxy;
 		}
 
 
@@ -228,78 +164,32 @@ namespace GPlatesAppLogic
 		 */
 		ResolvedRaster(
 				GPlatesModel::FeatureHandle &feature_handle,
-				const Layer &created_from_layer_,
 				const double &reconstruction_time,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
-				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
-				const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names,
-				const boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type> &
-						reconstruct_raster_polygons,
-				const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
-						age_grid_georeferencing,
-				const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
-						age_grid_proxied_rasters,
-				const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
-						age_grid_raster_band_names) :
-			ReconstructionGeometry(reconstruction_tree_),
-			WeakObserverType(feature_handle),
-			d_created_from_layer(created_from_layer_),
-			d_reconstruction_time(reconstruction_time),
-			d_georeferencing(georeferencing),
-			d_proxied_rasters(proxied_rasters),
-			d_raster_band_names(raster_band_names),
-			d_reconstruct_raster_polygons(reconstruct_raster_polygons),
-			d_age_grid_georeferencing(age_grid_georeferencing),
-			d_age_grid_proxied_rasters(age_grid_proxied_rasters),
-			d_age_grid_raster_band_names(age_grid_raster_band_names)
-		{  }
+				const raster_layer_proxy_non_null_ptr_type &raster_layer_proxy,
+				const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxy,
+				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy);
 
 	private:
-		/**
-		 * The layer that this resolved raster was created in.
-		 */
-		Layer d_created_from_layer;
-
 		/**
 		 * The reconstruction time at which raster is resolved/reconstructed.
 		 */
 		double d_reconstruction_time;
 
 		/**
-		 * The georeferencing parameters to position the raster onto the globe.
+		 * The raster layer proxy.
 		 */
-		GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type d_georeferencing;
+		raster_layer_proxy_non_null_ptr_type d_raster_layer_proxy;
 
 		/**
-		 * The proxied rasters of the time-resolved GmlFile (in the case of time-dependent rasters).
-		 *
-		 * The band name will be used to look up the correct raster in the presentation code.
-		 * The user-selected band name is not accessible here since this is app-logic code.
+		 * The optional reconstructed polygons layer proxy.
 		 */
-		std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> d_proxied_rasters;
+		boost::optional<reconstruct_layer_proxy_non_null_ptr_type> d_reconstructed_polygons_layer_proxy;
 
 		/**
-		 * The list of band names - one for each proxied raster.
+		 * The optional age grid layer proxy.
 		 */
-		GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type d_raster_band_names;
-
-		/**
-		 * The optional polygon set used to reconstruct the raster.
-		 */
-		boost::optional<ReconstructRasterPolygons::non_null_ptr_to_const_type> d_reconstruct_raster_polygons;
-
-		/**
-		 * Georeferencing for the age grid raster.
-		 */
-		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
-				d_age_grid_georeferencing;
-
-		boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> >
-				d_age_grid_proxied_rasters;
-
-		boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type>
-				d_age_grid_raster_band_names;
+		boost::optional<raster_layer_proxy_non_null_ptr_type> d_age_grid_raster_layer_proxy;
 	};
 }
 

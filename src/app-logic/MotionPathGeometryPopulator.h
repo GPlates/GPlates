@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date: 2010-08-11 05:48:32 +0200 (on, 11 aug 2010) $
  * 
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -29,13 +29,16 @@
 #define GPLATES_APP_LOGIC_MOTIONPATHGEOMETRYPOPULATOR_H
 
 #include <vector>
+#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include "MotionPathUtils.h"
 #include "ReconstructedMotionPath.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionTree.h"
+#include "ReconstructionTreeCreator.h"
 
 #include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
@@ -47,59 +50,6 @@
 
 namespace GPlatesAppLogic
 {
-
-		/**
-		* Determines if there are any motion track features in the collection.
-		*/
-		class DetectMotionPathFeatures:
-			public GPlatesModel::ConstFeatureVisitor
-		{
-		public:
-			DetectMotionPathFeatures() :
-				d_found_motion_track_features(false)
-			{  }
-
-
-			bool
-			has_motion_track_features() const
-			{
-				return d_found_motion_track_features;
-			}
-
-
-			virtual
-			void
-			visit_feature_handle(
-					const GPlatesModel::FeatureHandle &feature_handle)
-			{
-				if (d_found_motion_track_features)
-				{
-					// We've already found a motion track feature so just return.
-					return;
-				}
-
-				static const GPlatesModel::FeatureType motion_track_feature_type = 
-					GPlatesModel::FeatureType::create_gpml("MotionPath");
-
-				if (feature_handle.feature_type() == motion_track_feature_type)
-				{
-					d_found_motion_track_features = true;
-				}
-
-				// NOTE: We don't actually want to visit the feature's properties
-				// so we're not calling 'visit_feature_properties()'.
-			}
-
-		private:
-
-
-
-			bool d_found_motion_track_features;
-		};
-
-
-	class ReconstructionGeometryCollection;
-
 	/**
 	 * Reconstructs motion path features
 	 */
@@ -108,10 +58,11 @@ namespace GPlatesAppLogic
 			private boost::noncopyable
 	{
 	public:
-
-
 		MotionPathGeometryPopulator(
-				ReconstructionGeometryCollection &reconstruction_geometry_collection);
+				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time);
+
 
 		virtual
 		~MotionPathGeometryPopulator()
@@ -122,11 +73,6 @@ namespace GPlatesAppLogic
 		virtual
 		bool
 		initialise_pre_feature_properties(
-				GPlatesModel::FeatureHandle &feature_handle);
-		
-		virtual
-		void
-		finalise_post_feature_properties(
 				GPlatesModel::FeatureHandle &feature_handle);
 
 
@@ -149,11 +95,20 @@ namespace GPlatesAppLogic
 	private:
 
 		void
-		process_point(
-			const GPlatesMaths::PointOnSphere &point);
+		create_motion_path_geometry(
+			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point,
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry);
 
-		ReconstructionGeometryCollection &d_reconstruction_geometry_collection;
-		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
+
+		/**
+		 * The @a ReconstructedFeatureGeometry objects generated during reconstruction.
+		 */
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &d_reconstructed_feature_geometries;
+
+		/**
+		 * The function to call (with a time/anchor argument) to get a @a ReconstructionTree.
+		 */
+		ReconstructionTreeCreator d_reconstruction_tree_creator;
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 

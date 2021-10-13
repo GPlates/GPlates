@@ -35,6 +35,8 @@
 
 #include "ColourPalette.h"
 #include "ColourPaletteAdapter.h"
+#include "ColourRawRaster.h"
+#include "RasterColourPalette.h"
 
 #include "maths/Real.h"
 
@@ -287,6 +289,62 @@ namespace GPlatesGui
 			source.accept_visitor(visitor);
 
 			return visitor.coloured_raster();
+		}
+
+
+		namespace ColourRawRasterInternals
+		{
+			class ColourRawRasterVisitorWithRasterColourPalette :
+					public boost::static_visitor<
+						boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> >
+			{
+			public:
+
+				ColourRawRasterVisitorWithRasterColourPalette(
+						GPlatesPropertyValues::RawRaster &raster) :
+					d_raster(raster)
+				{  }
+
+				result_type
+				operator()(
+						const RasterColourPalette::empty &) const
+				{
+					return boost::none;
+				}
+
+				template<class ColourPaletteType>
+				result_type
+				operator()(
+						const GPlatesUtils::non_null_intrusive_ptr<ColourPaletteType> &colour_palette) const
+				{
+					return colour_raw_raster<typename ColourPaletteType::key_type>(
+							d_raster, colour_palette);
+				}
+
+			private:
+
+				GPlatesPropertyValues::RawRaster &d_raster;
+			};
+		}
+
+		/**
+		 * Colours a RawRaster using a RasterColourPalette.
+		 *
+		 * Note that we can't overload this with the template function of the same name
+		 * because both take a @a non_null_ptr_type as their second arguments and the
+		 * non-template function gets chosen (and associated compiler warning C4344 if we use
+		 * explicit template arguments to force the template function to be used) even though
+		 * the template function actually is a better match.
+		 */
+		inline
+		boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type>
+		colour_raw_raster_with_raster_colour_palette(
+				GPlatesPropertyValues::RawRaster &source,
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
+		{
+			return boost::apply_visitor(
+					ColourRawRasterInternals::ColourRawRasterVisitorWithRasterColourPalette(source),
+					*colour_palette);
 		}
 	}
 }

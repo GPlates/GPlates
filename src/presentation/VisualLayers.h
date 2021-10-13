@@ -39,6 +39,8 @@
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Layer.h"
 
+#include "gui/Symbol.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -374,11 +376,11 @@ namespace GPlatesPresentation
 
 		visual_layer_ptr_type
 		create_visual_layer(
-				const GPlatesAppLogic::Layer &layer);
+				GPlatesAppLogic::Layer &layer);
 
 		void
 		add_layer(
-				const GPlatesAppLogic::Layer &layer);
+				GPlatesAppLogic::Layer &layer);
 
 		void
 		remove_layer(
@@ -414,11 +416,25 @@ namespace GPlatesPresentation
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index);
 
 		/**
+		 * Calculates where a new layer of the given type should go in the ordering.
+		 */
+		std::size_t
+		get_index_of_new_layer(
+				VisualLayerType::Type visual_layer_type) const;
+
+		/**
 		 * Emits the layer_modified signal, if @a index is found in the layer ordering.
 		 */
 		void
 		emit_layer_modified(
 				GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type index);
+
+		/**
+		 * Notifies the corresponding visual layer params object about a change in @a layer.
+		 */
+		void
+		notify_visual_layer_params(
+				const GPlatesAppLogic::Layer &layer);
 
 		// VisualLayer causes VisualLayers to emit layer_modified.
 		friend class VisualLayer;
@@ -452,6 +468,7 @@ namespace GPlatesPresentation
 		 * The number that will be given to the next visual layer created.
 		 */
 		int d_next_visual_layer_number;
+
 	};
 }
 

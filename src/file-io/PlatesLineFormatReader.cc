@@ -1647,6 +1647,30 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
 
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_pluton(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const geometry_seq_type &geometry_seq)
+	{
+		return create_common(model, collection, header, geometry_seq,
+				GPlatesModel::FeatureType::create_gpml("Pluton"),
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
+	}
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_political_boundary(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const geometry_seq_type &geometry_seq)
+	{
+		return create_common(model, collection, header, geometry_seq, 
+				GPlatesModel::FeatureType::create_gpml("PoliticalBoundary"), 
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
+	}
+
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_large_igneous_province(
@@ -1658,6 +1682,57 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		return create_common(model, collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("LargeIgneousProvince"),
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_navdat_1(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const geometry_seq_type &geometry_seq)
+	{
+		return create_common(model, collection, header, geometry_seq,
+				GPlatesModel::FeatureType::create_gpml("NavdatSampleMafic"),
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
+	}
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_navdat_2(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const geometry_seq_type &geometry_seq)
+	{
+		return create_common(model, collection, header, geometry_seq,
+				GPlatesModel::FeatureType::create_gpml("NavdatSampleIntermediate"),
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_navdat_3(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const geometry_seq_type &geometry_seq)
+	{
+		return create_common(model, collection, header, geometry_seq,
+				GPlatesModel::FeatureType::create_gpml("NavdatSampleFelsicLow"),
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
+	}
+
+
+	GPlatesModel::FeatureHandle::weak_ref	
+	create_navdat_4(
+			GPlatesModel::ModelInterface &model, 
+			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+			const geometry_seq_type &geometry_seq)
+	{
+		return create_common(model, collection, header, geometry_seq,
+				GPlatesModel::FeatureType::create_gpml("NavdatSampleFelsicHigh"),
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
 
 
@@ -1717,6 +1792,10 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		map["LI"] = create_geological_lineation;
 		map["MA"] = create_magnetics;
 		map["NF"] = create_normal_fault;
+		map["N1"] = create_navdat_1;
+		map["N2"] = create_navdat_2;
+		map["N3"] = create_navdat_3;
+		map["N4"] = create_navdat_4;
 		map["OB"] = create_orogenic_belt;
 		map["OP"] = create_ophiolite_belt;
 		map["OR"] = create_orogenic_belt;
@@ -1724,6 +1803,8 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		map["PA"] = create_magnetic_pick;
 		map["PC"] = create_magnetic_pick;
 		map["PM"] = create_magnetic_pick;
+		map["PL"] = create_pluton;
+		map["PO"] = create_political_boundary;
 		map["RA"] = create_island_arc_inactive;
 		map["RF"] = create_reverse_fault;
 		map["RI"] = create_ridge_segment;

@@ -1,7 +1,8 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>ConfigureTextOverlayDialog</class>
- <widget class="QDialog" name="ConfigureTextOverlayDialog" >
-  <property name="geometry" >
+ <widget class="QDialog" name="ConfigureTextOverlayDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,77 +10,77 @@
     <height>374</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Configure Text Overlay</string>
   </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
     <normaloff>:/GPlates-icon-160x160-opaque.png</normaloff>:/GPlates-icon-160x160-opaque.png</iconset>
   </property>
-  <property name="modal" >
+  <property name="modal">
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" >
+  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QGroupBox" name="text_overlay_groupbox" >
-     <property name="title" >
+    <widget class="QGroupBox" name="text_overlay_groupbox">
+     <property name="title">
       <string>&amp;Enable Text Overlay</string>
      </property>
-     <property name="checkable" >
+     <property name="checkable">
       <bool>true</bool>
      </property>
-     <property name="checked" >
+     <property name="checked">
       <bool>true</bool>
      </property>
-     <layout class="QFormLayout" name="formLayout" >
-      <property name="fieldGrowthPolicy" >
+     <layout class="QFormLayout" name="formLayout">
+      <property name="fieldGrowthPolicy">
        <enum>QFormLayout::ExpandingFieldsGrow</enum>
       </property>
-      <item row="0" column="0" >
-       <widget class="QLabel" name="text_label" >
-        <property name="text" >
+      <item row="0" column="0">
+       <widget class="QLabel" name="text_label">
+        <property name="text">
          <string>&amp;Text:</string>
         </property>
-        <property name="buddy" >
+        <property name="buddy">
          <cstring>text_lineedit</cstring>
         </property>
        </widget>
       </item>
-      <item row="0" column="1" >
-       <widget class="QLineEdit" name="text_lineedit" />
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="text_lineedit"/>
       </item>
-      <item row="1" column="1" >
-       <widget class="QLabel" name="text_hint_label" >
-        <property name="text" >
+      <item row="1" column="1">
+       <widget class="QLabel" name="text_hint_label">
+        <property name="text">
          <string>%f will be substituted for the current reconstruction time.</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="0" >
-       <widget class="QLabel" name="font_label" >
-        <property name="text" >
+      <item row="2" column="0">
+       <widget class="QLabel" name="font_label">
+        <property name="text">
          <string>&amp;Font:</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="1" >
-       <widget class="QWidget" native="1" name="font_widget" >
-        <layout class="QHBoxLayout" name="horizontalLayout_2" >
-         <property name="spacing" >
+      <item row="2" column="1">
+       <widget class="QWidget" name="font_widget" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <property name="spacing">
           <number>0</number>
          </property>
-         <property name="margin" >
+         <property name="margin">
           <number>0</number>
          </property>
          <item>
-          <widget class="QWidget" native="1" name="font_button_placeholder_widget" />
+          <widget class="QWidget" name="font_button_placeholder_widget" native="true"/>
          </item>
          <item>
-          <spacer name="horizontalSpacer_2" >
-           <property name="orientation" >
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
-           <property name="sizeHint" stdset="0" >
+           <property name="sizeHint" stdset="0">
             <size>
              <width>203</width>
              <height>20</height>
@@ -90,41 +91,41 @@
         </layout>
        </widget>
       </item>
-      <item row="3" column="1" >
-       <widget class="QCheckBox" name="shadow_checkbox" >
-        <property name="text" >
+      <item row="3" column="1">
+       <widget class="QCheckBox" name="shadow_checkbox">
+        <property name="text">
          <string>Draw &amp;shadow</string>
         </property>
-        <property name="checked" >
+        <property name="checked">
          <bool>true</bool>
         </property>
        </widget>
       </item>
-      <item row="4" column="0" >
-       <widget class="QLabel" name="colour_label" >
-        <property name="text" >
+      <item row="4" column="0">
+       <widget class="QLabel" name="colour_label">
+        <property name="text">
          <string>Co&amp;lour:</string>
         </property>
        </widget>
       </item>
-      <item row="4" column="1" >
-       <widget class="QWidget" native="1" name="colour_widget" >
-        <layout class="QHBoxLayout" name="horizontalLayout" >
-         <property name="spacing" >
+      <item row="4" column="1">
+       <widget class="QWidget" name="colour_widget" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <property name="spacing">
           <number>0</number>
          </property>
-         <property name="margin" >
+         <property name="margin">
           <number>0</number>
          </property>
          <item>
-          <widget class="QWidget" native="1" name="colour_button_placeholder_widget" />
+          <widget class="QWidget" name="colour_button_placeholder_widget" native="true"/>
          </item>
          <item>
-          <spacer name="horizontalSpacer" >
-           <property name="orientation" >
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
-           <property name="sizeHint" stdset="0" >
+           <property name="sizeHint" stdset="0">
             <size>
              <width>203</width>
              <height>20</height>
@@ -135,76 +136,76 @@
         </layout>
        </widget>
       </item>
-      <item row="5" column="0" >
-       <widget class="QLabel" name="anchor_label" >
-        <property name="text" >
+      <item row="5" column="0">
+       <widget class="QLabel" name="anchor_label">
+        <property name="text">
          <string>&amp;Anchor:</string>
         </property>
-        <property name="buddy" >
+        <property name="buddy">
          <cstring>anchor_combobox</cstring>
         </property>
        </widget>
       </item>
-      <item row="5" column="1" >
-       <widget class="QComboBox" name="anchor_combobox" >
+      <item row="5" column="1">
+       <widget class="QComboBox" name="anchor_combobox">
         <item>
-         <property name="text" >
+         <property name="text">
           <string>Top Left</string>
          </property>
         </item>
         <item>
-         <property name="text" >
+         <property name="text">
           <string>Top Right</string>
          </property>
         </item>
         <item>
-         <property name="text" >
+         <property name="text">
           <string>Bottom Left</string>
          </property>
         </item>
         <item>
-         <property name="text" >
+         <property name="text">
           <string>Bottom Right</string>
          </property>
         </item>
        </widget>
       </item>
-      <item row="6" column="0" >
-       <widget class="QLabel" name="horizontal_offset_label" >
-        <property name="text" >
+      <item row="6" column="0">
+       <widget class="QLabel" name="horizontal_offset_label">
+        <property name="text">
          <string>&amp;Horizontal offset:</string>
         </property>
-        <property name="buddy" >
+        <property name="buddy">
          <cstring>horizontal_offset_spinbox</cstring>
         </property>
        </widget>
       </item>
-      <item row="6" column="1" >
-       <widget class="QSpinBox" name="horizontal_offset_spinbox" >
-        <property name="minimum" >
+      <item row="6" column="1">
+       <widget class="QSpinBox" name="horizontal_offset_spinbox">
+        <property name="minimum">
          <number>-10000</number>
         </property>
-        <property name="maximum" >
+        <property name="maximum">
          <number>10000</number>
         </property>
        </widget>
       </item>
-      <item row="7" column="0" >
-       <widget class="QLabel" name="vertical_offset_label" >
-        <property name="text" >
+      <item row="7" column="0">
+       <widget class="QLabel" name="vertical_offset_label">
+        <property name="text">
          <string>&amp;Vertical offset:</string>
         </property>
-        <property name="buddy" >
+        <property name="buddy">
          <cstring>vertical_offset_spinbox</cstring>
         </property>
        </widget>
       </item>
-      <item row="7" column="1" >
-       <widget class="QSpinBox" name="vertical_offset_spinbox" >
-        <property name="minimum" >
+      <item row="7" column="1">
+       <widget class="QSpinBox" name="vertical_offset_spinbox">
+        <property name="minimum">
          <number>-10000</number>
         </property>
-        <property name="maximum" >
+        <property name="maximum">
          <number>10000</number>
         </property>
        </widget>
@@ -213,21 +214,21 @@
     </widget>
    </item>
    <item>
-    <spacer name="verticalSpacer" >
-     <property name="orientation" >
+    <spacer name="verticalSpacer">
+     <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
-     <property name="sizeHint" stdset="0" >
+     <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>15</height>
+       <height>0</height>
       </size>
      </property>
     </spacer>
    </item>
    <item>
-    <widget class="QDialogButtonBox" name="main_buttonbox" >
-     <property name="standardButtons" >
+    <widget class="QDialogButtonBox" name="main_buttonbox">
+     <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
     </widget>
@@ -235,7 +236,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections/>
 </ui>

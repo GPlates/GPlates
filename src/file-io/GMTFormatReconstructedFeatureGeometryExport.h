@@ -28,26 +28,31 @@
 
 #include <QFileInfo>
 
-#include "ReconstructedFeatureGeometryExportImpl.h"
+#include "ReconstructionGeometryExportImpl.h"
 
 #include "model/types.h"
 
+
+namespace GPlatesAppLogic
+{
+	class ReconstructedFeatureGeometry;
+}
 
 namespace GPlatesFileIO
 {
 	namespace GMTFormatReconstructedFeatureGeometryExport
 	{
 		/**
-		 * Typedef for a sequence of @a FeatureGeometryGroup objects.
+		 * Typedef for a feature geometry group of @a ReconstructedFeatureGeometry objects.
 		 */
-		typedef ReconstructedFeatureGeometryExportImpl::feature_geometry_group_seq_type
-			feature_geometry_group_seq_type;
+		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ReconstructedFeatureGeometry>
+				feature_geometry_group_type;
 
 		/**
-		 * Typedef for a sequence of files that reference the geometries.
+		 * Typedef for a sequence of referenced files.
 		 */
-		typedef ReconstructedFeatureGeometryExportImpl::referenced_files_collection_type
-			referenced_files_collection_type;
+		typedef ReconstructionGeometryExportImpl::referenced_files_collection_type
+				referenced_files_collection_type;
 
 
 		/**
@@ -55,7 +60,7 @@ namespace GPlatesFileIO
 		*/
 		void
 		export_geometries(
-				const feature_geometry_group_seq_type &feature_geometry_group_seq,
+				const std::list<feature_geometry_group_type> & feature_geometry_group_seq,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,

@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2006, 2007, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,20 +25,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "global/config.h" // GPLATES_HAS_PYTHON
-
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <utility>
 #include <algorithm>
 #include <vector>
-#if defined(GPLATES_HAS_PYTHON)
-#	include <boost/python.hpp>
-#endif
 #include <QStringList>
 #include <QTextStream>
 
+#include "api/PythonInterpreterLocker.h"
+#include "api/Sleeper.h"
+
 #include "global/Constants.h"
+#include "global/python.h"
 
 #include "gui/GPlatesQApplication.h"
 #include "gui/GPlatesQtMsgHandler.h"
@@ -54,18 +54,19 @@
 
 //Data-mining temporary code
 extern bool enable_data_mining;
+bool enable_symbol_table = false;
 
 extern "C" void initpygplates();
 
-namespace {
-
+namespace
+{
 	/**
 	 * The results of parsing the command-line options.
 	 */
 	class CommandLineOptions
 	{
 	public:
-		CommandLineOptions():
+		CommandLineOptions() :
 			debug_gui(false)
 		{ }
 
@@ -81,12 +82,15 @@ namespace {
 	const char *LINE_FILE_OPTION_NAME = "line-file";
 	const char *DEBUG_GUI_OPTION_NAME = "debug-gui";
 	//Data-mining temporary code: enable data-mining feature by secret command line option.
-	const char *DATA_MINING_OPTION_NAME = "show-me-data-mining-feature-please";
+	const char *DATA_MINING_OPTION_NAME = "data-mining";
+	//enable symbol-table feature by secret command line option.
+	const char *SYMBOL_TABLE_OPTION_NAME = "symbol-table";
 
 	void
 	print_usage(
 			std::ostream &os,
-			const GPlatesUtils::CommandLineParser::InputOptions &input_options) {
+			const GPlatesUtils::CommandLineParser::InputOptions &input_options)
+	{
 
 		// Print the visible options.
 		os
@@ -105,7 +109,8 @@ namespace {
 	void
 	print_usage_and_exit(
 			std::ostream &os,
-			const GPlatesUtils::CommandLineParser::InputOptions &input_options) {
+			const GPlatesUtils::CommandLineParser::InputOptions &input_options)
+	{
 
 		print_usage(os, input_options);
 		exit(1);
@@ -139,6 +144,10 @@ namespace {
 		// Temporary code. Add secret data-mining options.
 		input_options.hidden_options.add_options()
 			(DATA_MINING_OPTION_NAME, "Enable data mining feature");
+
+		// Temporary code. Add secret symbol-table options.
+		input_options.hidden_options.add_options()
+			(SYMBOL_TABLE_OPTION_NAME, "Enable symbol feature");
 
 		boost::program_options::variables_map vm;
 
@@ -197,7 +206,97 @@ namespace {
 			enable_data_mining = true;
 		}
 
+		//enable symbol-table feature by command line option.
+		if(vm.count(SYMBOL_TABLE_OPTION_NAME))
+		{
+			enable_symbol_table = true;
+		}
+
 		return command_line_options;
+	}
+
+	void
+	initialise_python(
+			char *program_name)
+	{
+#if !defined(GPLATES_NO_PYTHON)
+		using namespace boost::python;
+
+		// Initialise the embedded Python interpreter.
+		char GPLATES_MODULE_NAME[] = "pygplates";
+		if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
+		{
+			PyErr_Print();
+			abort();
+		}
+
+		Py_SetProgramName(program_name);
+		Py_Initialize();
+
+		// Initialise Python threading support; this grabs the Global Interpreter Lock
+		// for this thread.
+		PyEval_InitThreads();
+
+		// But then we give up the GIL, so that PythonInterpreterLocker may now be used.
+		PyEval_SaveThread();
+
+		GPlatesApi::PythonInterpreterLocker interpreter_locker;
+
+		// Load the pygplates module.
+		try
+		{
+			object main_module = import("__main__");
+			object main_namespace = main_module.attr("__dict__");
+			object pygplates_module = import("pygplates");
+			main_namespace["pygplates"] = pygplates_module;
+		}
+		catch (const error_already_set &)
+		{
+			std::cerr << "Fatal error while loading pygplates module" << std::endl;
+			PyErr_Print();
+			abort();
+		}
+
+		// Importing "sys" enables the printing of the value of expressions in
+		// the interactive Python console window, and importing "builtin" enables
+		// the magic variable "_" (the last result in the interactive window).
+		// We then delete them so that the packages don't linger around, but their
+		// effect remains even after deletion.
+		// Note: using boost::python::exec doesn't achieve the desired effects.
+		if (PyRun_SimpleString("import sys, __builtin__; del sys; del __builtin__"))
+		{
+			std::cerr << "Failed to import sys, __builtin__" << std::endl;
+			PyErr_Print();
+		}
+
+		// Get rid of some built-in functions.
+		if (PyRun_SimpleString("import __builtin__; del __builtin__.copyright, __builtin__.credits, __builtin__.license, __builtin__"))
+		{
+			std::cerr << "Failed to delete some built-in functions" << std::endl;
+			PyErr_Print();
+		}
+#endif
+	}
+
+	void
+	install_instance(
+			GPlatesPresentation::Application &state)
+	{
+#if !defined(GPLATES_NO_PYTHON)
+		using namespace boost::python;
+
+		try
+		{
+			// Give Python access to the Application (Instance) object.
+			GPlatesApi::PythonInterpreterLocker interpreter_locker;
+			object pygplates_module = import("pygplates");
+			pygplates_module.attr("instance") = ptr(&state);
+		}
+		catch (const error_already_set &)
+		{
+			PyErr_Print();
+		}
+#endif
 	}
 }
 
@@ -224,45 +323,35 @@ int internal_main(int argc, char* argv[])
 	CommandLineOptions command_line_options = process_command_line_options(
 			qapplication.argc(), qapplication.argv());
 
-	// The application state and view state are stored in this object.
+	initialise_python(argv[0]);
+
+	// The application state, view state and main window are stored in this object.
+	// Note that ViewState starts the Python execution thread, so Python threading
+	// support must have been set up already before we get here.
 	GPlatesPresentation::Application state;
-
-#if defined(GPLATES_HAS_PYTHON)
-	// Start the embedded Python interpreter and give it access to the ApplicationState.
-	using namespace boost::python;
-	try
-	{
-		char GPLATES_MODULE_NAME[] = "pygplates";
-		PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates);
-
-		Py_Initialize();
-
-		object main_module((handle<>(borrowed(PyImport_AddModule("__main__")))));
-		object main_namespace = main_module.attr("__dict__");
-		object gplates_module((handle<>(PyImport_ImportModule("pygplates"))));
-		main_namespace["pygplates"] = gplates_module;
-		scope(gplates_module).attr("app_state") = ptr(&state.get_application_state());
-		handle<> ignored((PyRun_String("print pygplates.app_state.get_num()\n", Py_file_input, main_namespace.ptr(), main_namespace.ptr())));
-	}
-	catch (const error_already_set &)
-	{
-		PyErr_Print();
-	}
-#endif
-
-	// The main window widget.
-	GPlatesQtWidgets::ViewportWindow main_window_widget(state);
-	main_window_widget.show();
+	GPlatesQtWidgets::ViewportWindow &main_window_widget = state.get_viewport_window();
+	
+	// Set up the main window widget.
 	main_window_widget.load_files(
 			command_line_options.line_format_filenames +
 				command_line_options.rotation_format_filenames);
-	// Make sure the appropriate tool status message is displayed at start up. 
-	main_window_widget.update_tools_and_status_message();
+
 	// Install an extra menu for developers to help debug GUI problems.
-	if (command_line_options.debug_gui) {
+	if (command_line_options.debug_gui)
+	{
 		main_window_widget.install_gui_debug_menu();
 	}
 
+if(!enable_symbol_table)
+	main_window_widget.hide_symbol_menu();
+
+#ifdef GPLATES_NO_PYTHON
+	main_window_widget.hide_python_menu();
+#endif
+
+	install_instance(state);
+
+	main_window_widget.show();
 	return qapplication.exec();
 
 	// Note: Because we are using Boost.Python, Py_Finalize() should not be called.
@@ -289,3 +378,4 @@ int main(int argc, char* argv[])
 
 	return return_code;
 }
+

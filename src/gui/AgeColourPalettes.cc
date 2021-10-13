@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -77,6 +77,20 @@ GPlatesGui::DefaultAgeColourPalette::get_colour(
 }
 
 
+GPlatesGui::Colour
+GPlatesGui::DefaultAgeColourPalette::get_background_colour() const
+{
+	return ColourSpectrum::get_colour_at(0.0);
+}
+
+
+GPlatesGui::Colour
+GPlatesGui::DefaultAgeColourPalette::get_foreground_colour() const
+{
+	return ColourSpectrum::get_colour_at(1.0);
+}
+
+
 const double
 GPlatesGui::MonochromeAgeColourPalette::DEFAULT_UPPER_BOUND = 450.0; // Ma
 
@@ -128,4 +142,17 @@ GPlatesGui::MonochromeAgeColourPalette::get_colour(
 	}
 }
 
+
+GPlatesGui::Colour
+GPlatesGui::MonochromeAgeColourPalette::get_background_colour() const
+{
+	return LOWER_COLOUR;
+}
+
+
+GPlatesGui::Colour
+GPlatesGui::MonochromeAgeColourPalette::get_foreground_colour() const
+{
+	return UPPER_COLOUR;
+}
 

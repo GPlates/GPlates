@@ -38,26 +38,26 @@ namespace
 			ConfigurationTableRow row_1,
 			ConfigurationTableRow row_2)
 	{
-		const GPlatesModel::FeatureCollectionHandle *fch_1 = row_1.target_feature_collection_handle.handle_ptr();
-		const GPlatesModel::FeatureCollectionHandle *fch_2 = row_2.target_feature_collection_handle.handle_ptr();
+		const GPlatesModel::FeatureCollectionHandle *fch_1 = row_1.target_fc.handle_ptr();
+		const GPlatesModel::FeatureCollectionHandle *fch_2 = row_2.target_fc.handle_ptr();
 		if(fch_1 > fch_2)
 		{
 			return true;
 		}
 		else if(fch_1 == fch_2)
 		{
-			if( row_1.association_operator_type > row_2.association_operator_type)
+			if( row_1.filter_type > row_2.filter_type)
 			{
 				return true;
 			}
 			else if(
-					(row_1.association_operator_type == REGION_OF_INTEREST) 
+					(row_1.filter_type == REGION_OF_INTEREST) 
 					 && 
-					(row_2.association_operator_type == REGION_OF_INTEREST)
+					(row_2.filter_type == REGION_OF_INTEREST)
 					)
 			{
-				if( row_1.association_parameters.d_ROI_range > 
-					row_2.association_parameters.d_ROI_range )
+				if( row_1.filter_cfg.d_ROI_range > 
+					row_2.filter_cfg.d_ROI_range )
 				{
 					return true;
 				}
@@ -81,9 +81,9 @@ GPlatesDataMining::CoRegConfigurationTable::optimize()
 	{
 		if(is_seed_feature_collection(row))
 		{
-			if(0.0 == GPlatesMaths::Real(row.association_parameters.d_ROI_range))
+			if(0.0 == GPlatesMaths::Real(row.filter_cfg.d_ROI_range))
 			{
-				row.association_operator_type = SEED_ITSELF;
+				row.filter_type = SEED_ITSELF;
 			}
 		}
 	}
@@ -99,7 +99,7 @@ GPlatesDataMining::CoRegConfigurationTable::is_seed_feature_collection(
 	BOOST_FOREACH(const FeatureCollectionFileState::file_reference &file_ref, d_seed_files)
 	{
 		if( file_ref.get_file().get_feature_collection().handle_ptr() == 
-			input_row.target_feature_collection_handle.handle_ptr() )
+			input_row.target_fc.handle_ptr() )
 		{
 			return true;
 		}

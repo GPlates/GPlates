@@ -26,14 +26,76 @@
  */
 
 #include "MultiPointOnSphere.h"
+
+#include "Centroid.h"
+#include "ConstGeometryOnSphereVisitor.h"
 #include "MultiPointProximityHitDetail.h"
 #include "ProximityCriteria.h"
-#include "ConstGeometryOnSphereVisitor.h"
+#include "SmallCircleBounds.h"
+
 #include "global/IntrusivePointerZeroRefCountException.h"
+
+#include "utils/ReferenceCount.h"
+
+
+namespace GPlatesMaths
+{
+	namespace MultiPointOnSphereImpl
+	{
+		/**
+		 * Cached results of calculations performed on the multipoint geometry.
+		 */
+		struct CachedCalculations :
+				public GPlatesUtils::ReferenceCount<CachedCalculations>
+		{
+			boost::optional<BoundingSmallCircle> bounding_small_circle;
+		};
+	}
+}
 
 
 const unsigned
 GPlatesMaths::MultiPointOnSphere::s_min_num_collection_points = 1;
+
+
+GPlatesMaths::MultiPointOnSphere::~MultiPointOnSphere()
+{
+	// Destructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
+	// MultiPointOnSphereImpl::CachedCalculations.
+}
+
+
+GPlatesMaths::MultiPointOnSphere::MultiPointOnSphere() :
+	GeometryOnSphere()
+{
+	// Constructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
+	// MultiPointOnSphereImpl::CachedCalculations - because compiler must
+	// generate code that destroys already constructed members if constructor throws.
+}
+
+
+GPlatesMaths::MultiPointOnSphere::MultiPointOnSphere(
+		const MultiPointOnSphere &other) :
+	GeometryOnSphere(),
+	d_points(other.d_points),
+	// Since MultiPointOnSphere is immutable we can just share the cached calculations.
+	d_cached_calculations(other.d_cached_calculations)
+{
+	// Constructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
+	// MultiPointOnSphereImpl::CachedCalculations - because compiler must
+	// generate code that destroys already constructed members if constructor throws.
+}
+
+
+GPlatesMaths::MultiPointOnSphere &
+GPlatesMaths::MultiPointOnSphere::operator=(
+		const MultiPointOnSphere &other)
+{
+	// Use the copy+swap idiom to enable strong exception safety.
+	MultiPointOnSphere dup(other);
+	this->swap(dup);
+	return *this;
+}
 
 
 GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
@@ -139,6 +201,42 @@ GPlatesMaths::MultiPointOnSphere::is_close_to(
 		}
 	}
 	return have_already_found_a_close_point;
+}
+
+
+const GPlatesMaths::UnitVector3D &
+GPlatesMaths::MultiPointOnSphere::get_centroid() const
+{
+	// We use the centroid for the centre of the bounding small circle.
+	// Getting it from there avoids having to store it twice.
+	// There's extra calculations required to generate the bounding small circle but
+	// generally if the client wants the centroid they also want the bounding small circle.
+	return get_bounding_small_circle().get_centre();
+}
+
+
+const GPlatesMaths::BoundingSmallCircle &
+GPlatesMaths::MultiPointOnSphere::get_bounding_small_circle() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new MultiPointOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the bounding small circle if it's not cached.
+	if (!d_cached_calculations->bounding_small_circle)
+	{
+		// The centroid will be the bounding small circle centre.
+		BoundingSmallCircleBuilder bounding_small_circle_builder(
+				Centroid::calculate_points_centroid(*this));
+		// Add the points to define the bounds.
+		bounding_small_circle_builder.add(*this);
+
+		d_cached_calculations->bounding_small_circle =
+				bounding_small_circle_builder.get_bounding_small_circle();
+	}
+
+	return d_cached_calculations->bounding_small_circle.get();
 }
 
 

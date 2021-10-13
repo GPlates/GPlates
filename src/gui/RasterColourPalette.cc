@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,6 +25,52 @@
  */
 
 #include "RasterColourPalette.h"
+
+
+namespace
+{
+	class RasterColourPaletteTypeVisitor :
+			public boost::static_visitor<GPlatesGui::RasterColourPaletteType::Type>
+	{
+	public:
+
+		GPlatesGui::RasterColourPaletteType::Type
+		operator()(
+				const GPlatesGui::RasterColourPalette::empty &) const
+		{
+			return GPlatesGui::RasterColourPaletteType::INVALID;
+		}
+
+		GPlatesGui::RasterColourPaletteType::Type
+		operator()(
+				const GPlatesGui::ColourPalette<boost::int32_t>::non_null_ptr_type &) const
+		{
+			return GPlatesGui::RasterColourPaletteType::INT32;
+		}
+
+		GPlatesGui::RasterColourPaletteType::Type
+		operator()(
+				const GPlatesGui::ColourPalette<boost::uint32_t>::non_null_ptr_type &) const
+		{
+			return GPlatesGui::RasterColourPaletteType::UINT32;
+		}
+
+		GPlatesGui::RasterColourPaletteType::Type
+		operator()(
+				const GPlatesGui::ColourPalette<double>::non_null_ptr_type &) const
+		{
+			return GPlatesGui::RasterColourPaletteType::DOUBLE;
+		}
+	};
+}
+
+
+GPlatesGui::RasterColourPaletteType::Type
+GPlatesGui::RasterColourPaletteType::get_type(
+		const RasterColourPalette &colour_palette)
+{
+	return boost::apply_visitor(RasterColourPaletteTypeVisitor(), colour_palette);
+}
 
 
 namespace
@@ -50,10 +96,12 @@ GPlatesGui::DefaultRasterColourPalette::DefaultRasterColourPalette(
 		double mean,
 		double std_dev) :
 	d_inner_palette(
-			RegularCptColourPalette::create())
+			RegularCptColourPalette::create()),
+	d_mean(mean),
+	d_std_dev(std_dev)
 {
-	double min = mean - NUM_STD_DEV_AWAY_FROM_MEAN * std_dev;
-	double max = mean + NUM_STD_DEV_AWAY_FROM_MEAN * std_dev;
+	double min = get_lower_bound();
+	double max = get_upper_bound();
 	double range = max - min;
 
 	// Background colour, for values before min value.
@@ -92,3 +140,18 @@ GPlatesGui::DefaultRasterColourPalette::get_colour(
 {
 	return d_inner_palette->get_colour(value);
 }
+
+
+double
+GPlatesGui::DefaultRasterColourPalette::get_lower_bound() const
+{
+	return d_mean - NUM_STD_DEV_AWAY_FROM_MEAN * d_std_dev;
+}
+
+
+double
+GPlatesGui::DefaultRasterColourPalette::get_upper_bound() const
+{
+	return d_mean + NUM_STD_DEV_AWAY_FROM_MEAN * d_std_dev;
+}
+

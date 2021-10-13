@@ -35,10 +35,14 @@
 
 #include "RenderedGeometry.h"
 
+#include "app-logic/AppLogicFwd.h"
 #include "app-logic/ReconstructionGeometry.h"
-#include "app-logic/ReconstructRasterPolygons.h"
+
 #include "gui/Colour.h"
 #include "gui/ColourProxy.h"
+#include "gui/Symbol.h"
+#include "gui/RasterColourPalette.h"
+
 #include "maths/GeometryOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -49,6 +53,7 @@
 #include "property-values/Georeferencing.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/RawRaster.h"
+#include "property-values/TextContent.h"
 
 
 namespace GPlatesAppLogic
@@ -103,6 +108,11 @@ namespace GPlatesViewOperations
 		const float DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS = 0.03f;
 
 		/**
+		 * Determines the size of symbol rendered geometries.
+		 */
+		const unsigned int DEFAULT_SYMBOL_SIZE = 1;
+
+		/**
 		 * Creates a @a RenderedGeometry for a @a GeometryOnSphere.
 		 *
 		 * Both @a point_size_hint and @a line_width_hint are needed since
@@ -113,7 +123,9 @@ namespace GPlatesViewOperations
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
 				const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
 				float point_size_hint = RenderedGeometryFactory::DEFAULT_POINT_SIZE_HINT,
-				float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
+				float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT,
+				bool fill_polygon = false,
+				const boost::optional<GPlatesGui::Symbol> &symbol = boost::none);
 
 		/**
 		 * Creates a @a RenderedGeometry for a @a PointOnSphere.
@@ -163,29 +175,16 @@ namespace GPlatesViewOperations
 		create_rendered_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
 				const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
-				float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
+				float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT,
+				bool filled = false);
 
 		/**
 		 * Creates a @a RenderedGeometry for a resolved raster.
-		 *
-		 * @a layer is the layer the resolved raster was created in.
-		 * FIXME: This is a temporary solution to tracking persistent OpenGL objects.
 		 */
 		RenderedGeometry
 		create_rendered_resolved_raster(
-				const GPlatesAppLogic::Layer &layer,
-				const double &reconstruction_time,
-				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-				const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
-				const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names,
-				const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
-						reconstruct_raster_polygons = boost::none,
-				const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
-						age_grid_georeferencing = boost::none,
-				const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
-						age_grid_proxied_rasters = boost::none,
-				const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
-						age_grid_raster_band_names = boost::none);
+				const GPlatesAppLogic::resolved_raster_non_null_ptr_to_const_type &resolved_raster,
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
 
 		/**
 		 * Creates a single direction arrow consisting of an arc line segment on the globe's surface
@@ -463,6 +462,45 @@ namespace GPlatesViewOperations
 				RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS,
 			const float arrowline_width_hint =
 				RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
+
+        /**
+         * Creates a triangle centred at @a centre. Size not yet controllable.  Triangle will
+         * be rendered on a tangent plane at the centre.
+         */
+        RenderedGeometry
+	create_rendered_triangle_symbol(
+			const GPlatesMaths::PointOnSphere &centre,
+                        const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			const unsigned int size = RenderedGeometryFactory::DEFAULT_SYMBOL_SIZE,
+                        const bool filled = TRUE,
+			const float line_width_hint =
+                             RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
+
+
+	/**
+	 * Creates a square centred at @a centre. Size not yet controllable.  Square will
+	 * be rendered on a tangent plane at the centre.
+	 */
+	RenderedGeometry
+	create_rendered_square_symbol(
+			const GPlatesMaths::PointOnSphere &centre,
+			const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			const unsigned int size = RenderedGeometryFactory::DEFAULT_SYMBOL_SIZE,
+			const bool filled = TRUE,
+			const float line_width_hint =
+			     RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
+
+	/**
+	 * Creates a cross centred at @a centre.  Cross will be north-south aligned and
+	 * rendered on a tangent plane at the centre.
+	 */
+	RenderedGeometry
+	create_rendered_cross_symbol(
+			const GPlatesMaths::PointOnSphere &centre,
+			const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			const unsigned int size = RenderedGeometryFactory::DEFAULT_SYMBOL_SIZE,
+			const float line_width_hint =
+			     RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
 }
 
 #endif // GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYFACTORY_H

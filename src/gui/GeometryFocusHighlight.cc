@@ -30,6 +30,7 @@
 
 #include "app-logic/ReconstructionGeometryFinder.h"
 #include "gui/FeatureFocus.h"
+#include "gui/Symbol.h"
 #include "presentation/ReconstructionGeometryRenderer.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryFactory.h"
@@ -38,11 +39,13 @@
 
 
 GPlatesGui::GeometryFocusHighlight::GeometryFocusHighlight(
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection):
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		const GPlatesGui::symbol_map_type &symbol_map):
 d_rendered_geom_collection(&rendered_geom_collection),
 d_highlight_layer_ptr(
 		rendered_geom_collection.get_main_rendered_layer(
-				GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER))
+				GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER)),
+d_symbol_map(symbol_map)
 {
 }
 
@@ -105,7 +108,7 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 
 	// FIXME: Probably should use the same styling params used to draw
 	// the original geometries rather than use some of the defaults.
-	GPlatesPresentation::ReconstructionGeometryRenderer::StyleParams render_style_params;
+	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params;
 	render_style_params.reconstruction_line_width_hint =
 			GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
 	render_style_params.reconstruction_point_size_hint =
@@ -129,10 +132,15 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 
 		// This creates the RenderedGeometry's using the highlight colour.
 		GPlatesPresentation::ReconstructionGeometryRenderer highlighted_geometry_renderer(
-				*d_highlight_layer_ptr,
 				render_style_params,
-				highlight_colour);
+				highlight_colour, 
+				boost::none,
+				d_symbol_map);
+
+		highlighted_geometry_renderer.begin_render();
 
 		reconstruction_geometry->accept_visitor(highlighted_geometry_renderer);
+
+		highlighted_geometry_renderer.end_render(*d_highlight_layer_ptr);
 	}
 }

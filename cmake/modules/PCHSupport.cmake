@@ -196,6 +196,7 @@ ENDMACRO(_PCH_GET_TARGET_COMPILE_FLAGS )
 
 MACRO(GET_PRECOMPILED_HEADER_OUTPUT _targetName _input _output)
     GET_FILENAME_COMPONENT(_name ${_input} NAME)
+    SET(_name "copied_${_name}")  # Needed to avoid make complaining about circular dependency from src/subdir/subdir_pch.h to itself.
     if(CMAKE_COMPILER_IS_GNUCXX)
         set(_build "")
         IF(CMAKE_BUILD_TYPE)
@@ -218,6 +219,7 @@ MACRO(ADD_PRECOMPILED_HEADER _targetName _input _targetSources)
 	endif()
 
     GET_FILENAME_COMPONENT(_name ${_input} NAME)
+    SET(_name "copied_${_name}")  # Needed to avoid make complaining about circular dependency from src/subdir/subdir_pch.h to itself.
     GET_FILENAME_COMPONENT(_path ${_input} PATH)
     GET_PRECOMPILED_HEADER_OUTPUT( ${_targetName} ${_input} _output)
     GET_FILENAME_COMPONENT(_outdir ${_output} PATH )
@@ -227,12 +229,12 @@ MACRO(ADD_PRECOMPILED_HEADER _targetName _input _targetSources)
     _PCH_GET_COMPILE_FLAGS(_compile_FLAGS)
 
     #Ensure same directory! Required by gcc
-    IF(NOT ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
+	#IF(NOT ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})  # IF commented out because "copied_" prepended in front of name (see above).
         SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/${_name} PROPERTIES GENERATED 1)
         ADD_CUSTOM_COMMAND(OUTPUT	${CMAKE_CURRENT_BINARY_DIR}/${_name} 
                            COMMAND ${CMAKE_COMMAND} -E copy  ${CMAKE_CURRENT_SOURCE_DIR}/${_input} ${CMAKE_CURRENT_BINARY_DIR}/${_name}
                            DEPENDS ${_input})
-    ENDIF()
+	#ENDIF()
 
     _PCH_GET_COMPILE_COMMAND(_command  ${CMAKE_CURRENT_BINARY_DIR}/${_name} ${_output} )
     #message("${_command}")

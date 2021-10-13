@@ -47,38 +47,39 @@ namespace GPlatesAppLogic
 			public ReconstructionGeometry
 	{
 	public:
+		typedef GPlatesUtils::non_null_intrusive_ptr<CoRegistrationData> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const CoRegistrationData> non_null_ptr_to_const_type;
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<CoRegistrationData>
-				non_null_ptr_type;
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<const CoRegistrationData>
-				non_null_ptr_to_const_type;
+		/**
+		 * Creates a new @a CoRegistrationData object.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_)
+		{
+			return non_null_ptr_type(new CoRegistrationData(reconstruction_tree_));
+		}
+
 
 		virtual
 		~CoRegistrationData()
 		{  }
 
 
-		CoRegistrationData(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_):
-			ReconstructionGeometry(reconstruction_tree_)
-		{  }
-
-		inline 
 		const GPlatesDataMining::DataTable&
 		data_table() const 
 		{
 			return d_table;
 		}
 
-		inline 
 		GPlatesDataMining::DataTable&
 		data_table() 
 		{
 			return d_table;
 		}
 
-		inline
 		const non_null_ptr_to_const_type
 		get_non_null_pointer_to_const() const
 		{
@@ -86,7 +87,6 @@ namespace GPlatesAppLogic
 		}
 
 		
-		inline
 		non_null_ptr_type
 		get_non_null_pointer()
 		{
@@ -112,9 +112,18 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryVisitor &visitor);
 
 	private:
-
 		GPlatesDataMining::DataTable d_table;
 	
+
+		/**
+		 * Constructor is private so it cannot be created on the runtime stack which could cause
+		 * problems if a client then tries to get a non_null_ptr_type from the stack object.
+		 */
+		explicit
+		CoRegistrationData(
+				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_):
+			ReconstructionGeometry(reconstruction_tree_)
+		{  }
 	};
 		
 }

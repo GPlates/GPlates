@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -50,7 +50,7 @@ namespace GPlatesQtWidgets
 	// Forward declaration.
 	class TimeDependentRasterSequence;
 
-	class TimeDependentRasterPage: 
+	class TimeDependentRasterPage : 
 			public QWizardPage,
 			protected Ui_TimeDependentRasterPage
 	{
@@ -73,6 +73,18 @@ namespace GPlatesQtWidgets
 		virtual
 		bool
 		isComplete() const;
+
+	protected:
+
+		virtual
+		void
+		dragEnterEvent(
+				QDragEnterEvent *ev);
+
+		virtual
+		void
+		dropEvent(
+				QDropEvent *ev);
 
 	private slots:
 

@@ -31,16 +31,16 @@
 
 #include <QString>
 
+#include "ExportAnimationStrategy.h"
+
 #include "model/FeatureCollectionHandle.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
-#include "utils/ExportTemplateFilenameSequence.h"
 
 #include "view-operations/VisibleReconstructionGeometryExport.h"
 
-#include "gui/ExportAnimationStrategy.h"
 
 namespace GPlatesAppLogic
 {
@@ -64,26 +64,47 @@ namespace GPlatesGui
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportVelocityAnimationStrategy,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportVelocityAnimationStrategy>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportVelocityAnimationStrategy,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportVelocityAnimationStrategy> non_null_ptr_type;
 
-		static const QString 
-			DEFAULT_MESH_VELOCITIES_FILENAME_TEMPLATE;
-		static const QString 
-			MESH_VELOCITIES_FILENAME_TEMPLATE_DESC;
-		static const QString
-			MESH_VELOCITIES_DESC;
+
+		/**
+		 * Configuration options..
+		 */
+		class Configuration :
+				public ExportAnimationStrategy::ConfigurationBase
+		{
+		public:
+			explicit
+			Configuration(
+					const QString& filename_template_) :
+				ConfigurationBase(filename_template_)
+			{  }
+
+			virtual
+			configuration_base_ptr
+			clone() const
+			{
+				return configuration_base_ptr(new Configuration(*this));
+			}
+		};
+
+		//! Typedef for a shared pointer to const @a Configuration.
+		typedef boost::shared_ptr<const Configuration> const_configuration_ptr;
+
 
 		static
 		const non_null_ptr_type
 		create(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const ExportAnimationStrategy::Configuration& cfg=
-					ExportAnimationStrategy::Configuration(
-							DEFAULT_MESH_VELOCITIES_FILENAME_TEMPLATE));
+				const const_configuration_ptr &export_configuration)
+		{
+			return non_null_ptr_type(
+					new ExportVelocityAnimationStrategy(
+							export_animation_context,
+							export_configuration));
+		}
 
 
 		virtual
@@ -99,21 +120,6 @@ namespace GPlatesGui
 		bool
 		do_export_iteration(
 				std::size_t frame_index);
-
-		virtual
-		const QString&
-		get_default_filename_template();
-		
-		virtual
-		const QString&
-		get_filename_template_desc();
-
-		virtual
-		const QString&
-		get_description()
-		{
-			return MESH_VELOCITIES_DESC;
-		}
 
 
 		/**
@@ -145,7 +151,7 @@ namespace GPlatesGui
 		explicit
 		ExportVelocityAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const QString filename_template);
+				const const_configuration_ptr &export_configuration);
 
 		void
 		export_velocity_fields_to_file(
@@ -165,7 +171,8 @@ namespace GPlatesGui
 		 */
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type d_loaded_files;
 
-		ExportVelocityAnimationStrategy();
+		//! Export configuration parameters.
+		const_configuration_ptr d_configuration;
 	};
 }
 

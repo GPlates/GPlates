@@ -6,7 +6,7 @@
  * $Revision: 10506 $
  * $Date: 2010-12-11 11:10:52 +1100 (Sat, 11 Dec 2010) $ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -54,6 +54,7 @@ namespace GPlatesQtWidgets
 			d_description(description)
 		{  }
 
+		explicit
 		FileDialogFilter(
 				const QString &description,
 				const QString &extension) :
@@ -62,6 +63,7 @@ namespace GPlatesQtWidgets
 		{  }
 
 		template<typename Iterator>
+		explicit
 		FileDialogFilter(
 				const QString &description,
 				Iterator extensions_begin,

@@ -52,7 +52,7 @@ namespace GPlatesMaths
 				MathematicalException(exception_source),
 				_msg(msg)
 			{  }
-
+			~FunctionDomainException() throw() { }
 		protected:
 			virtual const char *
 			exception_name() const {

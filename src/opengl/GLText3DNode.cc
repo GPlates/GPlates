@@ -26,11 +26,6 @@
 #include "GLText3DNode.h"
 
 #include "GLText2DDrawable.h"
-#include "GLTransformState.h"
-#include "GLViewport.h"
-
-#include "global/AssertionFailureException.h"
-#include "global/GPlatesAssert.h"
 
 
 GPlatesOpenGL::GLText3DNode::GLText3DNode(
@@ -62,20 +57,16 @@ GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
 GPlatesOpenGL::GLText3DNode::get_drawable(
 		const GLTransformState &transform_state) const
 {
-	GLdouble winX, winY, winZ;
-	transform_state.glu_project(d_x, d_y, d_z, &winX, &winY, &winZ);
-
-	// render, with offset (note that OpenGL and Qt y-axes appear to be the reverse of each other)
-	const boost::optional<GLViewport> viewport = transform_state.get_current_viewport();
-
-	// The viewport should have been set otherwise something is definitely wrong.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			viewport,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Get the window coordinates at which to render text.
-	const int x = static_cast<int>(winX) + d_x_offset;
-	const int y = viewport->height() - (static_cast<int>(winY) + d_y_offset);
-
-	return GLText2DDrawable::create(d_text_renderer, x, y, d_string, d_colour, d_font, d_scale);
+	return GLText2DDrawable::create(
+			transform_state,
+			d_text_renderer,
+			d_x,
+			d_y,
+			d_z,
+			d_string,
+			d_colour,
+			d_x_offset,
+			d_y_offset,
+			d_font,
+			d_scale);
 }

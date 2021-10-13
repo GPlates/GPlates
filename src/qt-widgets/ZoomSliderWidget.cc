@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -24,8 +24,7 @@
  */
 
 #include <QVBoxLayout>
-#include <QLabel>
-#include <QPixmap>
+
 #include "ZoomSliderWidget.h"
 
 #include "gui/ViewportZoom.h"
@@ -42,7 +41,7 @@ GPlatesQtWidgets::ZoomSliderWidget::ZoomSliderWidget(
 		QWidget *parent_):
 	QWidget(parent_),
 	d_viewport_zoom_ptr(&vzoom),
-	d_slider_zoom(new QSlider(this)),
+	d_slider_zoom(new ZoomSlider(this)),
 	d_suppress_zoom_change_event(false)
 {
 	set_up_ui();
@@ -63,8 +62,11 @@ GPlatesQtWidgets::ZoomSliderWidget::set_up_ui()
 	vbox->setContentsMargins(0, 0, 0, 0);
 	vbox->setSpacing(2);
 
-	QLabel *label_zoom_max = new QLabel(this);
-	label_zoom_max->setPixmap(QPixmap(QString::fromUtf8(":/gnome_zoom_in_16.png")));
+	QLabel *label_zoom_max = new ZoomIcon(
+			QPixmap(QString::fromUtf8(":/gnome_zoom_in_16.png")),
+			d_slider_zoom,
+			QAbstractSlider::SliderPageStepAdd,
+			this);
 	vbox->addWidget(label_zoom_max);
 
 	d_slider_zoom->setOrientation(Qt::Vertical);
@@ -72,8 +74,11 @@ GPlatesQtWidgets::ZoomSliderWidget::set_up_ui()
 	d_slider_zoom->setFocusPolicy(Qt::WheelFocus);
 	vbox->addWidget(d_slider_zoom);
 
-	QLabel *label_zoom_min = new QLabel(this);
-	label_zoom_min->setPixmap(QPixmap(QString::fromUtf8(":/gnome_zoom_out_16.png")));
+	QLabel *label_zoom_min = new ZoomIcon(
+			QPixmap(QString::fromUtf8(":/gnome_zoom_out_16.png")),
+			d_slider_zoom,
+			QAbstractSlider::SliderPageStepSub,
+			this);
 	vbox->addWidget(label_zoom_min);
 
 	// Set up the zoom slider to use appropriate range and current zoom level.

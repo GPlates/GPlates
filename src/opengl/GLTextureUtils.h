@@ -27,9 +27,14 @@
 #ifndef GPLATES_OPENGL_GLTEXTUREUTILS_H
 #define GPLATES_OPENGL_GLTEXTUREUTILS_H
 
-#include <boost/cstdint.hpp>
+#include <QColor>
+#include <QImage>
+#include <QRect>
+#include <QString>
 
+#include "GLMatrix.h"
 #include "GLTexture.h"
+#include "GLTextureResource.h"
 
 #include "gui/Colour.h"
 
@@ -57,9 +62,33 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Loads the specified image into the specified RGBA texture.
+		 *
+		 * @a image must contains 4-byte (R,G,B,A) colour values in that order.
+		 * Note that this is a byte ordering in *memory* (not in a 32-bit integer which
+		 * is machine-endian dependent).
+		 *
+		 * NOTE: It is the caller's responsibility to ensure the region is inside an
+		 * already allocated and created OpenGL texture.
+		 * It is also the caller's responsibility to ensure that @a image points
+		 * to @a image_width by @a image_height colour values.
+		 *
+		 * NOTE: This will bind @a texture to whatever the currently active texture unit is.
+		 */
+		void
+		load_rgba8_image_into_texture(
+				const GLTexture::shared_ptr_type &texture,
+				const void *image,
+				unsigned int image_width,
+				unsigned int image_height,
+				unsigned int texel_u_offset = 0,
+				unsigned int texel_v_offset = 0);
+
+
+		/**
 		 * Loads the specified RGBA8 image into the specified RGBA texture.
 		 *
-		 * It is the caller's responsibility to ensure the region is inside an
+		 * NOTE: It is the caller's responsibility to ensure the region is inside an
 		 * already allocated and created OpenGL texture.
 		 * It is also the caller's responsibility to ensure that @a image points
 		 * to @a image_width by @a image_height colour values.
@@ -77,45 +106,49 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Used to determine if some data is still valid.
+		 * Loads the specified QImage, must be QImage::Format_ARGB32, into the specified texture.
 		 *
-		 * This is currently used for texture tiles where a @a ValidToken is stored with
-		 * each cached texture and used in subsequent renders to determine if the cached
-		 * tile is still valid.
+		 * NOTE: It is the caller's responsibility to ensure the region is inside an
+		 * already allocated and created OpenGL texture.
+		 *
+		 * NOTE: This will bind @a texture to whatever the currently active texture unit is.
 		 */
-		class ValidToken
-		{
-		public:
-			ValidToken() :
-				d_invalidate_counter(0)
-			{  }
+		void
+		load_argb32_qimage_into_texture(
+				const GLTexture::shared_ptr_type &texture,
+				const QImage &argb32_qimage,
+				unsigned int texel_u_offset = 0,
+				unsigned int texel_v_offset = 0);
 
-			/**
-			 * Returns true if 'this' token matches that of @a current_token.
-			 *
-			 * Typically 'this' token is cached by the client and subsequently queried
-			 * against the current token to determine if their cache should be invalidated.
-			 */
-			bool
-			is_still_valid(
-					const ValidToken &current_token) const
-			{
-				return d_invalidate_counter == current_token.d_invalidate_counter;
-			}
 
-			/**
-			 * Invalidates this token such it will no longer return true in @a is_still_valid
-			 * when compared with a token that @a is_still_valid previously returned true for.
-			 */
-			void
-			invalidate()
-			{
-				d_invalidate_counter++;
-			}
+		/**
+		 * Draws the specified text into a QImage the specified size.
+		 */
+		QImage
+		draw_text_into_qimage(
+				const QString &text,
+				unsigned int image_width,
+				unsigned int image_height,
+				const float text_scale = 1.0f,
+				const QColor &text_colour = QColor(255, 255, 255, 255)/*white*/,
+				const QColor &background_colour = QColor(0, 0, 0, 255)/*black*/);
 
-		private:
-			boost::intmax_t d_invalidate_counter;
-		};
+
+		/**
+		 * Creates a new 4x4 texel clip texture whose centre 2x2 texels are white with the
+		 * remaining texels black (including alpha channel).
+		 */
+		GLTexture::shared_ptr_type
+		create_xy_clip_texture(
+				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager);
+
+
+		/**
+		 * Initialise clip texture transform to convert the clip-space range [-1, 1] to
+		 * range [0.25, 0.75] to map to the interior 2x2 texel region of the 4x4 clip texture.
+		 */
+		const GLMatrix &
+		get_clip_texture_clip_space_to_texture_space_transform();
 	}
 }
 

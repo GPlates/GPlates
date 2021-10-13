@@ -50,6 +50,7 @@ namespace GPlatesMaths
 				_msg(msg)
 			{  }
 
+			~ViolatedUnitVectorInvariantException() throw() { }
 		protected:
 			virtual const char *
 			exception_name() const {

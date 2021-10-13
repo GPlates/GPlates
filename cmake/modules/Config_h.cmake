@@ -49,10 +49,17 @@ IF (NOT EXISTS ${BOOST_CSTDINT_HPP_PATH})
 	SET (BOOST_CSTDINT_HPP_PATH "")
 ENDIF (NOT EXISTS ${BOOST_CSTDINT_HPP_PATH})
 
+# controls to find patched Constrained_Delaunay_triangulation_2.h 
+SET (GCAL_PATCH_CDT2_H_PATH "${CGAL_INCLUDE_DIR}/cgal/Constrained_Delaunay_triangulation_2.h") 
+IF (EXISTS ${GCAL_PATCH_CDT2_H_PATH}) 
+    # uncomment for CGAL 3.7
+    # SET (HAVE_GCAL_PATCH_CDT2_H 1) 
+ENDIF (EXISTS ${GCAL_PATCH_CDT2_H_PATH})
+
 # Tell GPlates that we have a valid 'global/config.h' file.
 add_definitions(-DHAVE_CONFIG_H)
 
 # Convert 'global/config.h.in' file to 'global/config.h'.
 set(CONFIG_H_IN_FILE "${GPlates_SOURCE_DIR}/src/global/config.h.in")
-set(CONFIG_H_OUT_FILE "${GPlates_SOURCE_DIR}/src/global/config.h")
+set(CONFIG_H_OUT_FILE "${CMAKE_BINARY_DIR}/src/global/config.h")
 configure_file(${CONFIG_H_IN_FILE} ${CONFIG_H_OUT_FILE})

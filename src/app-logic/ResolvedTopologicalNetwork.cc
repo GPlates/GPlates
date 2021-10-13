@@ -94,7 +94,7 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_t
 			}
 			catch(...)
 			{
-				std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+				// std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
 			}
 	}
 
@@ -102,7 +102,7 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_t
 }
 
 const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type>
-GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries() const
+GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_constrained() const
 {
 	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type> ret;
 
@@ -119,45 +119,7 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries() cons
 
 	for ( ; constrained_finite_faces_2_iter != constrained_finite_faces_2_end; ++constrained_finite_faces_2_iter)
 	{
-		// Only draw those triangles in the interior of the meshed region
-		// This excludes areas with seed points
-		// and regions outside the envelope of the bounded area 
-		if ( constrained_finite_faces_2_iter->is_in_domain() )
-		{
-//#if 0
-			std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
-			network_triangle_points.reserve(3);
-
-			for (int index = 0; index != 3 ; ++index)
-			{
-				const CgalUtils::cgal_point_2_type cgal_triangle_point =
-						constrained_finite_faces_2_iter->vertex( index )->point();
-				const float lon = cgal_triangle_point.x();
-				const float lat = cgal_triangle_point.y();
-	
-				// convert coordinates
-				const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
-				const GPlatesMaths::PointOnSphere triangle_point =
-						GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
-				network_triangle_points.push_back(triangle_point);
-			}
-		
-			try 
-			{
-				// create a PolygonOnSphere
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
-					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
-				ret.push_back(resolved_topology_network_triangle);
-			}
-			catch(...)
-			{
-				std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
-			}
-//#endif 
-			// continue;
-		} 
-		// end of exclude seed points 
-		else
+		// Create triangles for all the constrained triangulation
 		{
 			std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
 			network_triangle_points.reserve(3);
@@ -185,21 +147,20 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries() cons
 			}
 			catch(...)
 			{
-				std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+				// std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
 			}
 		} 
 	}
-
 	return ret;
 }
 
 const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type>
-GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_mesh() const
+GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_mesh() const
 {
 	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type> ret;
 
 	// 
-	// 2D + Constraints
+	// 2D + C + Mesh 
 	//
 
 	// Iterate over the individual faces of the constrained triangulation and create a
@@ -211,10 +172,9 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_mesh()
 
 	for ( ; constrained_finite_faces_2_iter != constrained_finite_faces_2_end; ++constrained_finite_faces_2_iter)
 	{
-
 		// Only draw those triangles in the interior of the meshed region
-		// This excludes areas with seed points
-		// and regions outside the envelope of the bounded area 
+		// This excludes areas with seed points (also called micro blocks) 
+		// and excludes regions outside the envelope of the bounded area 
 		if ( constrained_finite_faces_2_iter->is_in_domain() )
 		{
 			std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
@@ -243,47 +203,10 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_mesh()
 			}
 			catch(...)
 			{
-				std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
+				// std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
 			}
-		} 
-		// end of exclude seed points 
-		else
-		{
-			continue;
-
-#if 0
-			std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
-			network_triangle_points.reserve(3);
-
-			for (int index = 0; index != 3 ; ++index)
-			{
-				const CgalUtils::cgal_point_2_type cgal_triangle_point =
-						constrained_finite_faces_2_iter->vertex( index )->point();
-				const float lon = cgal_triangle_point.x();
-				const float lat = cgal_triangle_point.y();
-	
-				// convert coordinates
-				const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
-				const GPlatesMaths::PointOnSphere triangle_point =
-						GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
-				network_triangle_points.push_back(triangle_point);
-			}
-		
-			try 
-			{
-				// create a PolygonOnSphere
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
-					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
-				ret.push_back(resolved_topology_network_triangle);
-			}
-			catch(...)
-			{
-				std::cout << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2\n"; 
-			}
-#endif
 		} 
 	}
-
 	return ret;
 }
 

@@ -51,6 +51,7 @@
 #include "GpmlPolarityChronId.h"
 #include "GpmlPropertyDelegate.h"
 #include "GpmlRevisionId.h"
+#include "GpmlTopologicalInterior.h"
 #include "GpmlTopologicalLineSection.h"
 #include "GpmlTopologicalPoint.h"
 #include "GpmlTopologicalPolygon.h"

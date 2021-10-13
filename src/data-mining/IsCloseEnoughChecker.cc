@@ -36,10 +36,7 @@ GPlatesDataMining::is_close_enough(
 		const double range)
 {
 	using namespace GPlatesMaths::Spherical;
-	IsCloseEnoughChecker checker(
-			range 
-			+ 
-			SphereSettings::instance().accuracy_tolerance_of_distance_on_sphere_surface().dval());
+	IsCloseEnoughChecker checker(range);
 	DualGeometryVisitor< IsCloseEnoughChecker > dual_visitor(g1, g2, &checker);
 	dual_visitor.apply();
 	return checker.is_close_enough();
@@ -62,6 +59,12 @@ GPlatesDataMining::IsCloseEnoughChecker::execute(
 		const GPlatesMaths::PointOnSphere* point1,
 		const GPlatesMaths::PointOnSphere* point2)
 {
+	if((*point1) == (*point2))
+	{
+		d_distance = 0;
+		d_is_close_enough = true;
+		return;
+	}
 	real_t closeness = acos(calculate_closeness(*point1, *point2)) * DEFAULT_RADIUS_OF_EARTH;
 
 	#ifdef _DEBUG
@@ -74,16 +77,9 @@ GPlatesDataMining::IsCloseEnoughChecker::execute(
 		d_distance = closeness.dval();
 	}
 	
-	//TODO: temporary code. will be changed soon.
 	using namespace GPlatesMaths::Spherical;
-	if((closeness - SphereSettings::instance().accuracy_tolerance_of_distance_on_sphere_surface()) > real_t(d_range))
-	{
-		d_is_close_enough = false;
-	}
-	else
-	{
-		d_is_close_enough = true;
-	}
+	d_is_close_enough =
+		(closeness - SphereSettings::instance().distance_tolerance()) > real_t(d_range) ? false : true;
 }
 
 
@@ -98,7 +94,7 @@ GPlatesDataMining::IsCloseEnoughChecker::execute(
 	using namespace GPlatesMaths::PointInPolygon;
 	//if the point is inside a polygon, we assume the distance is 0
 	//TODO: maybe need a flag to control the assumption.
-	if(POINT_OUTSIDE_POLYGON != is_point_in_polygon(*point, polygon->get_non_null_pointer()))
+	if(POINT_OUTSIDE_POLYGON != polygon->is_point_in_polygon(*point))
 	{
 		if(d_calculate_distance_flag)
 		{
@@ -241,6 +237,8 @@ GPlatesDataMining::IsCloseEnoughChecker::test_proximity(
 		#ifdef _DEBUG
 		std::cout << "The distance is: " << d_distance <<std::endl;
 		#endif
+		if(d_distance > range)//this could happen due to the float point precision problem.
+			d_distance = range;
 
 		return d_distance;
 	}

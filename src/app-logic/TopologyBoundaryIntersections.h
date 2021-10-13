@@ -169,6 +169,12 @@ namespace GPlatesAppLogic
 			return d_num_neighbours_intersected == 2;
 		}
 
+		unsigned int 
+		get_num_neighbours_intersected() const
+		{
+			return d_num_neighbours_intersected;
+		}
+
 	private:
 		/**
 		 * Keep track of where we are in the processing of intersections.

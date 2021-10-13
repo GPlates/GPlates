@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,97 +23,31 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/optional.hpp>
 #include <QFileInfo>
 #include <QDir>
-#include <QDebug>
+#include <QPalette>
 
 #include "RasterLayerOptionsWidget.h"
 
+#include "ColourScaleWidget.h"
 #include "FriendlyLineEdit.h"
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ViewportWindow.h"
 
-#include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/Layer.h"
+#include "app-logic/RasterLayerTask.h"
 
 #include "file-io/CptReader.h"
-#include "file-io/File.h"
 #include "file-io/ReadErrorAccumulation.h"
 
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/CptColourPalette.h"
-#include "gui/RasterColourSchemeMap.h"
 
-#include "model/FeatureCollectionHandle.h"
-#include "model/FeatureVisitor.h"
-
-#include "presentation/ViewState.h"
+#include "presentation/RasterVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
 
-#include "property-values/GmlFile.h"
-#include "property-values/GpmlConstantValue.h"
-#include "property-values/GpmlPiecewiseAggregation.h"
-#include "property-values/GpmlRasterBandNames.h"
-#include "property-values/RawRasterUtils.h"
 #include "property-values/XsString.h"
-
-#include "utils/UnicodeStringUtils.h"
-
-
-namespace
-{
-	class ExtractRasterProperties :
-			public GPlatesModel::ConstFeatureVisitor
-	{
-	public:
-
-		const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
-		get_raster_band_names() const
-		{
-			return d_raster_band_names;
-		}
-
-		virtual
-		bool
-		initialise_pre_feature_properties(
-				const GPlatesModel::FeatureHandle &feature_handle)
-		{
-			d_raster_band_names = boost::none;
-
-			return true;
-		}
-
-		virtual
-		void
-		visit_gpml_raster_band_names(
-				const GPlatesPropertyValues::GpmlRasterBandNames &gpml_raster_band_names)
-		{
-			static const GPlatesModel::PropertyName BAND_NAMES =
-				GPlatesModel::PropertyName::create_gpml("bandNames");
-
-			const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
-			if (propname && *propname == BAND_NAMES)
-			{
-				d_raster_band_names = gpml_raster_band_names.band_names();
-			}
-		}
-
-	private:
-
-		/**
-		 * The list of band names - one for each proxied raster.
-		 */
-		boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> d_raster_band_names;
-	};
-}
-
-
-const QString
-GPlatesQtWidgets::RasterLayerOptionsWidget::PALETTE_FILENAME_BLANK_TEXT("Default Palette");
 
 
 GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
@@ -124,24 +58,39 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 	LayerOptionsWidget(parent_),
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_read_errors_dialog(&viewport_window->read_errors_dialog()),
+	d_viewport_window(viewport_window),
 	d_palette_filename_lineedit(
 			new FriendlyLineEdit(
 				QString(),
-				PALETTE_FILENAME_BLANK_TEXT,
+				tr("Default Palette"),
 				this)),
 	d_open_file_dialog(
 			this,
 			tr("Open CPT File"),
 			tr("Regular CPT file (*.cpt);;All files (*)"),
-			view_state)
+			view_state),
+	d_colour_scale_widget(
+			new ColourScaleWidget(
+				view_state,
+				viewport_window,
+				this))
 {
 	setupUi(this);
+	band_combobox->setCursor(QCursor(Qt::ArrowCursor));
+	select_palette_filename_button->setCursor(QCursor(Qt::ArrowCursor));
+	use_default_palette_button->setCursor(QCursor(Qt::ArrowCursor));
 
 	d_palette_filename_lineedit->setReadOnly(true);
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_palette_filename_lineedit,
 			palette_filename_placeholder_widget);
+
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_colour_scale_widget,
+			colour_scale_placeholder_widget);
+	QPalette colour_scale_palette = d_colour_scale_widget->palette();
+	colour_scale_palette.setColor(QPalette::Window, Qt::white);
+	d_colour_scale_widget->setPalette(colour_scale_palette);
 
 	make_signal_slot_connections();
 }
@@ -172,76 +121,53 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_data(
 			visual_layer.lock())
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::RasterLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::RasterLayerTask::Params *>(
+					&layer.get_layer_task_params());
+		if (layer_task_params)
+		{
+			// Populate the band combobox with the list of band names, and ensure that
+			// the correct one is selected.
+			int band_name_index = -1;
+			const GPlatesPropertyValues::TextContent &selected_band_name = layer_task_params->get_band_name();
 
-		// Get at the feature collection used as main input into the layer.
-		QString main_channel = layer.get_main_input_feature_collection_channel();
-		std::vector<GPlatesAppLogic::Layer::InputConnection> input_connections =
-			layer.get_channel_inputs(main_channel);
-		if (input_connections.size() != 1)
-		{
-			return;
-		}
-		boost::optional<GPlatesAppLogic::Layer::InputFile> input_file =
-			input_connections[0].get_input_file();
-		if (!input_file)
-		{
-			return;
-		}
-		const GPlatesFileIO::File::Reference &file = input_file->get_file().get_file();
-		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection = file.get_feature_collection();
-		if (feature_collection.is_valid() && feature_collection->size() != 1)
-		{
-			return;
-		}
-
-		// Get the raster bands out of the single feature.
-		ExtractRasterProperties visitor;
-		visitor.visit_feature(feature_collection->begin());
-		typedef GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type band_names_list_type;
-		const boost::optional<band_names_list_type> &raster_band_names_opt = visitor.get_raster_band_names();
-		if (!raster_band_names_opt || raster_band_names_opt->size() == 0)
-		{
-			return;
-		}
-		const band_names_list_type &raster_band_names = *raster_band_names_opt;
-
-		// Populate the band combobox.
-		band_combobox->clear();
-		BOOST_FOREACH(const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type &band_name, raster_band_names)
-		{
-			band_combobox->addItem(GPlatesUtils::make_qstring_from_icu_string(band_name->value().get()));
-		}
-
-		GPlatesGui::RasterColourSchemeMap &map = d_view_state.get_raster_colour_scheme_map();
-		boost::optional<GPlatesGui::RasterColourSchemeMap::layer_info_type> layer_info =
-			map.get_layer_info(layer);
-		if (layer_info)
-		{
-			// Find the currently selected band name in the list of band names
-			// drawn from the raster.
-			const GPlatesGui::RasterColourScheme::non_null_ptr_type &colour_scheme =
-				layer_info->colour_scheme;
-			const GPlatesPropertyValues::TextContent &selected_band_name =
-				colour_scheme->get_band_name();
-			unsigned int band_name_index = 0;
-			for (unsigned int i = 0; i != raster_band_names.size(); ++i)
+			band_combobox->clear();
+			const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &band_names =
+				layer_task_params->get_band_names();
+			for (int i = 0; i != static_cast<int>(band_names.size()); ++i)
 			{
-				if (selected_band_name == raster_band_names[i]->value())
+				const GPlatesPropertyValues::TextContent &curr_band_name = band_names[i]->value();
+				if (curr_band_name == selected_band_name)
 				{
 					band_name_index = i;
-					break;
 				}
+				band_combobox->addItem(curr_band_name.get().qstring());
 			}
-			band_combobox->setCurrentIndex(band_name_index);
 
-			// Populate the palette filename.
-			d_palette_filename_lineedit->setText(layer_info->palette_file_name);
+			band_combobox->setCurrentIndex(band_name_index);
 		}
-		else
+
+		GPlatesPresentation::RasterVisualLayerParams *visual_layer_params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (visual_layer_params)
 		{
-			// Initialise to sensible defaults.
-			band_combobox->setCurrentIndex(0);
-			d_palette_filename_lineedit->setText(QString());
+			// Hide colour palette-related widgets if raster type is RGBA8.
+			bool is_rgba8 = (visual_layer_params->get_raster_type() == GPlatesPropertyValues::RasterType::RGBA8);
+			palette_label->setVisible(!is_rgba8);
+			palette_widget->setVisible(!is_rgba8);
+			bool show_colour_scale = false;
+			if (!is_rgba8)
+			{
+				show_colour_scale = d_colour_scale_widget->populate(visual_layer_params->get_colour_palette());
+			}
+			colour_scale_placeholder_widget->setVisible(show_colour_scale);
+
+			if (!is_rgba8)
+			{
+				// Populate the palette filename.
+				d_palette_filename_lineedit->setText(visual_layer_params->get_colour_palette_filename());
+			}
 		}
 	}
 }
@@ -250,7 +176,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_data(
 const QString &
 GPlatesQtWidgets::RasterLayerOptionsWidget::get_title()
 {
-	static const QString TITLE = "Raster options";
+	static const QString TITLE = tr("Raster options");
 	return TITLE;
 }
 
@@ -262,40 +188,14 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_band_combobox_activated(
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
 	{
+		// Set the band name in the app-logic layer params.
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-
-		GPlatesUtils::UnicodeString band_name = GPlatesUtils::make_icu_string_from_qstring(text);
-		QString palette_file_name = d_palette_filename_lineedit->text();
-
-		GPlatesGui::RasterColourSchemeMap &map = d_view_state.get_raster_colour_scheme_map();
-		boost::optional<GPlatesGui::RasterColourSchemeMap::layer_info_type> layer_info =
-			map.get_layer_info(layer);
-		if (layer_info)
+		GPlatesAppLogic::RasterLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::RasterLayerTask::Params *>(
+					&layer.get_layer_task_params());
+		if (layer_task_params)
 		{
-			GPlatesGui::RasterColourScheme::non_null_ptr_type new_colour_scheme =
-				GPlatesGui::RasterColourScheme::create_from_existing(
-						layer_info->colour_scheme, band_name);
-			map.set_colour_scheme(
-					layer,
-					new_colour_scheme,
-					palette_file_name);
-		}
-		else
-		{
-#if 0
-			GPlatesGui::RasterColourScheme::non_null_ptr_type new_colour_scheme =
-				GPlatesGui::RasterColourScheme::create(band_name);
-			map.set_colour_scheme(
-					layer,
-					new_colour_scheme,
-					palette_file_name);
-#endif
-			// Do nothing, which means that if there is currently no entry in the map for
-			// the layer, there still won't be an entry in the map for this layer.
-			// The raster painting code will then paint the first band using the default
-			// colour scheme, not whichever band the user has selected. This is because
-			// the raster painting code doesn't know about the RasterColourScheme
-			// enumeration value of USE_DEFAULT.
+			layer_task_params->set_band_name(GPlatesUtils::UnicodeString(text));
 		}
 	}
 }
@@ -307,49 +207,90 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
 	{
-		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-
-		// FIXME: This currently just reads in regular CPT files.
-		QString palette_file_name = d_open_file_dialog.get_open_file_name();
-		if (!palette_file_name.isEmpty())
+		GPlatesPresentation::RasterVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (!params)
 		{
-			GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog->read_errors();
-			GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
+			return;
+		}
 
-			GPlatesFileIO::RegularCptReader cpt_reader;
-			GPlatesGui::RegularCptColourPalette::maybe_null_ptr_type colour_palette_opt =
-				cpt_reader.read_file(palette_file_name, read_errors);
+		QString palette_file_name = d_open_file_dialog.get_open_file_name();
+		if (palette_file_name.isEmpty())
+		{
+			return;
+		}
 
-			if (colour_palette_opt)
+		ReadErrorAccumulationDialog &read_errors_dialog = d_viewport_window->read_errors_dialog();
+		GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
+		GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
+
+		GPlatesFileIO::RegularCptReader regular_cpt_reader;
+		GPlatesFileIO::ReadErrorAccumulation regular_errors;
+		GPlatesGui::RegularCptColourPalette::maybe_null_ptr_type regular_colour_palette_opt =
+			regular_cpt_reader.read_file(palette_file_name, regular_errors);
+
+		// There is a slight complication in the detection of whether a
+		// CPT file is regular or categorical. For the most part, a line
+		// in a categorical CPT file looks nothing like a line in a
+		// regular CPT file and will not be successfully parsed; the
+		// exception to the rule are the "BFN" lines, the format of
+		// which is common to both regular and categorical CPT files.
+		// For that reason, we also check if the regular_palette has any
+		// ColourSlices.
+		//
+		// Note: this flow of code is very similar to that in class IntegerCptReader.
+		if (regular_colour_palette_opt && regular_colour_palette_opt->size())
+		{
+			// Add all the errors reported to read_errors.
+			read_errors.accumulate(regular_errors);
+
+			GPlatesGui::ColourPalette<double>::non_null_ptr_type colour_palette =
+				GPlatesGui::convert_colour_palette<
+					GPlatesMaths::Real,
+					double
+				>(regular_colour_palette_opt.get(), GPlatesGui::RealToBuiltInConverter<double>());
+
+			params->set_colour_palette(palette_file_name,
+					GPlatesGui::RasterColourPalette::create<double>(colour_palette));
+
+			d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
+		}
+		else
+		{
+			// Attempt to read the file as a regular CPT file has failed.
+			// Now, let's try to parse it as a categorical CPT file.
+			GPlatesFileIO::CategoricalCptReader<boost::int32_t>::Type categorical_cpt_reader;
+			GPlatesFileIO::ReadErrorAccumulation categorical_errors;
+			GPlatesGui::CategoricalCptColourPalette<boost::int32_t>::maybe_null_ptr_type categorical_colour_palette_opt =
+				categorical_cpt_reader.read_file(palette_file_name, categorical_errors);
+
+			if (categorical_colour_palette_opt)
 			{
-				GPlatesGui::ColourPalette<double>::non_null_ptr_type colour_palette =
-					GPlatesGui::convert_colour_palette<
-						GPlatesMaths::Real,
-						double
-					>(colour_palette_opt.get(), GPlatesGui::RealToBuiltInConverter<double>());
-				GPlatesUtils::UnicodeString band_name = GPlatesUtils::make_icu_string_from_qstring(
-						band_combobox->currentText());
-				GPlatesGui::RasterColourScheme::non_null_ptr_type colour_scheme =
-					GPlatesGui::RasterColourScheme::create<double>(band_name, colour_palette);
+				// This time, we return the colour palette even if it just
+				// contains "BFN" lines and no ColourEntrys.
 
-				GPlatesGui::RasterColourSchemeMap &map = d_view_state.get_raster_colour_scheme_map();
-				map.set_colour_scheme(
-						layer,
-						colour_scheme,
-						palette_file_name);
+				// Add all the errors reported to errors.
+				read_errors.accumulate(categorical_errors);
+
+				const GPlatesGui::ColourPalette<boost::int32_t>::non_null_ptr_type colour_palette(
+						categorical_colour_palette_opt.get());
+
+				params->set_colour_palette(palette_file_name,
+						GPlatesGui::RasterColourPalette::create<boost::int32_t>(colour_palette));
 
 				d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
 			}
-
-			d_read_errors_dialog->update();
-			GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
-			if (num_initial_errors != num_final_errors)
-			{
-				d_read_errors_dialog->show();
-			}
-
-			d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 		}
+
+		read_errors_dialog.update();
+		GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+		if (num_initial_errors != num_final_errors)
+		{
+			read_errors_dialog.show();
+		}
+
+		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 	}
 }
 
@@ -360,32 +301,13 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_default_palette_button_cl
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
 	{
-		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
-
-#if 0
-		QString palette_file_name; // empty string.
-		UnicodeString band_name = GPlatesUtils::make_icu_string_from_qstring(
-				band_combobox->currentText());
-		GPlatesGui::RasterColourScheme::non_null_ptr_type colour_scheme =
-			GPlatesGui::RasterColourScheme::create(band_name);
-
-		GPlatesGui::RasterColourSchemeMap &map = d_view_state.get_raster_colour_scheme_map();
-		map.set_colour_scheme(
-				layer,
-				colour_scheme,
-				palette_file_name);
-
-		d_palette_filename_lineedit->setText(QString());
-#endif
-
-		// This is not quite correct, but we do this because the raster painting code
-		// doesn't know about the RasterColourScheme enumeration value of USE_DEFAULT.
-		// This is not correct because the raster painting code will end up painting
-		// the first band (using the default colour scheme) instead of whichever band
-		// the user has selected.
-		GPlatesGui::RasterColourSchemeMap &map = d_view_state.get_raster_colour_scheme_map();
-		map.unset_colour_scheme(layer);
-		d_palette_filename_lineedit->setText(QString());
+		GPlatesPresentation::RasterVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->use_auto_generated_colour_palette();
+		}
 	}
 }
 

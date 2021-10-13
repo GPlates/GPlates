@@ -39,7 +39,6 @@ GPlatesGui::TopologySectionsContainer::size() const
 	return d_container.size();
 }
 
-
 const GPlatesGui::TopologySectionsContainer::TableRow &
 GPlatesGui::TopologySectionsContainer::at(
 		const size_type index) const
@@ -111,6 +110,7 @@ void
 GPlatesGui::TopologySectionsContainer::move_insertion_point(
 		size_type new_index)
 {
+#if 0
 	// Note: It is possible to leave the new insertion index as the size
 	// of the container but it's also equivalent to having it as index zero.
 	// This is because the topology sections form a polygon and hence form
@@ -119,9 +119,11 @@ GPlatesGui::TopologySectionsContainer::move_insertion_point(
 	// But to make clients work easier we will set the insertion point to zero
 	// in this case so that the insertion point always points to an existing
 	// section in the container (rather than one past the last element).
-	if (new_index == d_container.size()) {
+	if (new_index == d_container.size()) 
+	{
 		new_index = 0;
 	}
+#endif
 	
 	if (new_index != d_insertion_point) {
 		// Do the move.
@@ -139,6 +141,12 @@ GPlatesGui::TopologySectionsContainer::reset_insertion_point()
 	move_insertion_point(d_container.size());
 }
 
+void
+GPlatesGui::TopologySectionsContainer::update_table_from_container()
+{
+	// Emit signals.
+	emit do_update();
+}
 
 void
 GPlatesGui::TopologySectionsContainer::clear()
@@ -159,6 +167,13 @@ GPlatesGui::TopologySectionsContainer::set_focus_feature_at_index(
 	emit focus_feature_at_index( index );
 }
 
+void
+GPlatesGui::TopologySectionsContainer::set_container_ptr_in_table( 
+	GPlatesGui::TopologySectionsContainer *ptr)
+{
+	// Emit signals.
+	emit container_change( ptr );
+}
 
 namespace
 {

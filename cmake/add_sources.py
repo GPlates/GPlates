@@ -29,6 +29,7 @@ GPLATES_SUB_DIRECTORIES = [
     'opengl',
     'property-values',
     'presentation',
+    'python-ext',
     'qt-resources',
     'qt-widgets',
 	'unit-test',

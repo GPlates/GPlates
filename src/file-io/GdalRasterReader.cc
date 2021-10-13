@@ -188,6 +188,10 @@ namespace
 		// should be able to report back statistics.
 		if (!add_statistics(*result, band))
 		{
+			// Log an error message so we know why a raster is not being displayed.
+			qWarning() << "Failed to read GDAL statistics from '"
+					<< raster_band_reader_handle.get_filename() << "'.";
+
 			return boost::none;
 		}
 

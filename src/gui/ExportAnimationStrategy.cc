@@ -34,21 +34,19 @@
 #include "presentation/ViewState.h"
 
 
-const QString GPlatesGui::ExportAnimationStrategy::dummy_desc="";
-
 GPlatesGui::ExportAnimationStrategy::ExportAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context):
 	d_export_animation_context_ptr(&export_animation_context),
 	d_filename_sequence_opt(boost::none),
-	d_filename_iterator_opt(boost::none),
-	d_cfg(Configuration("dummy_%u_%d_%A.gpml"))
-{ }
+	d_filename_iterator_opt(boost::none)
+{
+}
 
 void
 GPlatesGui::ExportAnimationStrategy::set_template_filename(
 		const QString &filename)
 {
-	d_filename_sequence_opt = GPlatesUtils::ExportTemplateFilenameSequence(filename,
+	d_filename_sequence_opt = GPlatesFileIO::ExportTemplateFilenameSequence(filename,
 			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 			d_export_animation_context_ptr->animation_controller().start_time(),
 			d_export_animation_context_ptr->animation_controller().end_time(),
@@ -67,7 +65,7 @@ GPlatesGui::ExportAnimationStrategy::check_filename_sequence()
 				QObject::tr("Error in export iteration - not properly initialised!"));
 		return false;
 	}
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it= 
+	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it= 
 		*d_filename_iterator_opt;
 
 	// Double check that the iterator is valid.
@@ -79,4 +77,3 @@ GPlatesGui::ExportAnimationStrategy::check_filename_sequence()
 	}
 	return true;
 }
-

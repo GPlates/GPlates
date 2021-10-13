@@ -31,9 +31,14 @@
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/function.hpp>
+#include <boost/optional.hpp>
 #include <QString>
 #include <QIcon>
 
+#include "app-logic/LayerTaskParams.h"
+
+#include "VisualLayerGroup.h"
+#include "VisualLayerParams.h"
 #include "VisualLayerType.h"
 
 #include "gui/Colour.h"
@@ -94,7 +99,21 @@ namespace GPlatesPresentation
 		> create_options_widget_function_type;
 
 		/**
-		 * Stores information about the given @a visual_layer_type.
+		 * Convenience typedef for a function that takes a layer task params argument and
+		 * creates a non-null intrusive pointer to an instance of VisualLayerParams
+		 * (or one of its derived classes).
+		 */
+		typedef boost::function< VisualLayerParams::non_null_ptr_type (GPlatesAppLogic::LayerTaskParams &) >
+			create_visual_layer_params_function_type;
+
+		/**
+		 * Stores information about the given @a visual_layer_type_.
+		 *
+		 * The given @a visual_layer_type_ is added to the end of the ordering for the
+		 * given @a group_. Because visual layers are stored in the reverse order to
+		 * how they are displayed on screen, say, if layer types A and B, both in
+		 * group G, are added in that order, layers of type B would by default appear
+		 * on top of layers of type A.
 		 *
 		 * @a produces_rendered_geometries_ should be set to false only if this
 		 * particular type of visual layer, almost paradoxically, will never
@@ -103,11 +122,13 @@ namespace GPlatesPresentation
 		void
 		register_visual_layer_type(
 				VisualLayerType::Type visual_layer_type_,
+				VisualLayerGroup::Type group_,
 				const QString &name_,
 				const QString &description_,
 				const GPlatesGui::Colour &colour_,
 				const create_visual_layer_function_type &create_visual_layer_function_,
 				const create_options_widget_function_type &create_options_widget_function_,
+				const create_visual_layer_params_function_type &create_visual_layer_params_function_,
 				bool produces_rendered_geometries_);
 
 		void
@@ -116,8 +137,32 @@ namespace GPlatesPresentation
 
 		typedef std::vector<VisualLayerType::Type> visual_layer_type_seq_type;
 
-		visual_layer_type_seq_type
-		get_registered_visual_layer_types() const;
+		/**
+		 * Retrieves visual layer types sorted by group. Within each group, visual
+		 * layer types are returned in the order that they were registered.
+		 *
+		 * Note that the order returned is the order in which visual layers are stored
+		 * internally, which is the opposite to how they are displayed on screen.
+		 */
+		const visual_layer_type_seq_type &
+		get_visual_layer_types_in_order() const;
+
+		typedef std::map<VisualLayerType::Type, std::size_t> visual_layer_type_order_map_type;
+
+		/**
+		 * Returns a map of visual layer types to their corresponding index in
+		 * the sequence returned by @a get_visual_layer_types_in_order.
+		 */
+		const visual_layer_type_order_map_type &
+		get_visual_layer_type_order_map() const;
+
+		/**
+		 * Returns the group to which the given visual layer type belongs, or
+		 * VisualLayerGroup::NUM_GROUPS if the given type has not been registered.
+		 */
+		VisualLayerGroup::Type
+		get_group(
+				VisualLayerType::Type visual_layer_type) const;
 
 		/**
 		 * Returns a human-readable name for the given visual layer type,
@@ -173,6 +218,15 @@ namespace GPlatesPresentation
 				QWidget *parent) const;
 
 		/**
+		 * Returns an object suitable for holding visualisation-related parameters and
+		 * options for the given visual layer type.
+		 */
+		VisualLayerParams::non_null_ptr_type
+		create_visual_layer_params(
+				VisualLayerType::Type visual_layer_type,
+				GPlatesAppLogic::LayerTaskParams &layer_task_params) const;
+
+		/**
 		 * Returns whether the given @a visual_layer_type ever produces rendered
 		 * geometries. If it is false, this layer has no output that can be
 		 * rendered on the globe or map.
@@ -186,26 +240,51 @@ namespace GPlatesPresentation
 		struct VisualLayerInfo
 		{
 			VisualLayerInfo(
+					VisualLayerGroup::Type group_,
 					const QString &name_,
 					const QString &description_,
 					const GPlatesGui::Colour &colour_,
 					const QIcon &icon_,
 					const create_visual_layer_function_type &create_visual_layer_function_,
 					const create_options_widget_function_type &create_options_widget_function_,
+					const create_visual_layer_params_function_type &create_visual_layer_params_function_,
 					bool produces_rendered_geometries_);
 
+			VisualLayerGroup::Type group;
 			QString name;
 			QString description;
 			GPlatesGui::Colour colour;
 			QIcon icon;
 			create_visual_layer_function_type create_visual_layer_function;
 			create_options_widget_function_type create_options_widget_function;
+			create_visual_layer_params_function_type create_visual_layer_params_function;
 			bool produces_rendered_geometries;
 		};
 
+		void
+		invalidate_order_cache();
+
 		typedef std::map<VisualLayerType::Type, VisualLayerInfo> visual_layer_info_map_type;
 
+		/**
+		 * Stores a struct of information for each visual layer type.
+		 */
 		visual_layer_info_map_type d_visual_layer_info_map;
+
+		/**
+		 * For each visual layer group, stores the order of visual layer types within it.
+		 */
+		visual_layer_type_seq_type d_visual_layer_type_order[static_cast<std::size_t>(VisualLayerGroup::NUM_GROUPS)];
+
+		/**
+		 * Each element of @a d_visual_layer_type_order combined in order.
+		 */
+		mutable boost::optional<visual_layer_type_seq_type> d_cached_combined_visual_layer_type_order;
+
+		/**
+		 * Map of visual layer type to index in @a d_cached_combined_visual_layer_type_order.
+		 */
+		mutable boost::optional<visual_layer_type_order_map_type> d_cached_visual_layer_type_order_map;
 	};
 
 	/**

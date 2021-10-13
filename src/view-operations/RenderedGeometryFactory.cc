@@ -25,8 +25,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+
 #include "RenderedGeometryFactory.h"
 #include "RenderedArrowedPolyline.h"
+#include "RenderedCrossSymbol.h"
 #include "RenderedDirectionArrow.h"
 #include "RenderedEllipse.h"
 #include "RenderedMultiPointOnSphere.h"
@@ -37,7 +39,10 @@
 #include "RenderedReconstructionGeometry.h"
 #include "RenderedSmallCircle.h"
 #include "RenderedSmallCircleArc.h"
+#include "RenderedSquareSymbol.h"
 #include "RenderedString.h"
+#include "RenderedTriangleSymbol.h"
+#include "gui/Symbol.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
 namespace GPlatesViewOperations
@@ -56,11 +61,15 @@ namespace GPlatesViewOperations
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom_on_sphere,
 				const GPlatesGui::ColourProxy &colour,
 				float point_size_hint,
-				float line_width_hint) :
+				float line_width_hint,
+				bool fill_polygon,
+				const boost::optional<GPlatesGui::Symbol> &symbol_) :
 			d_geom_on_sphere(geom_on_sphere),
 			d_colour(colour),
 			d_point_size_hint(point_size_hint),
-			d_line_width_hint(line_width_hint)
+			d_line_width_hint(line_width_hint),
+			d_fill_polygon(fill_polygon),
+			d_symbol(symbol_)
 			{  }
 
 			/**
@@ -93,8 +102,37 @@ namespace GPlatesViewOperations
 			visit_point_on_sphere(
 					GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				d_rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
-						*point_on_sphere, d_colour, d_point_size_hint);
+				if (d_symbol)
+				{
+				    switch(d_symbol->d_symbol_type){
+				    case GPlatesGui::Symbol::TRIANGLE:
+					d_rendered_geom = GPlatesViewOperations::create_rendered_triangle_symbol(
+						*point_on_sphere, d_colour, d_symbol->d_size,d_symbol->d_filled, d_line_width_hint);
+					break;
+
+				    case GPlatesGui::Symbol::SQUARE:
+					d_rendered_geom = GPlatesViewOperations::create_rendered_square_symbol(
+						*point_on_sphere, d_colour, d_symbol->d_size, d_symbol->d_filled, d_line_width_hint);
+					break;
+
+				    case GPlatesGui::Symbol::CROSS:
+					d_rendered_geom = GPlatesViewOperations::create_rendered_cross_symbol(
+						*point_on_sphere, d_colour, d_symbol->d_size, d_line_width_hint);
+					break;
+
+				    default:
+					d_rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
+							*point_on_sphere, d_colour, d_point_size_hint);
+					break;
+				    }
+
+				}
+				else
+				{
+				    d_rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
+						    *point_on_sphere, d_colour, d_point_size_hint);
+				}
+
 			}
 
 			virtual
@@ -103,7 +141,7 @@ namespace GPlatesViewOperations
 					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 			{
 				d_rendered_geom = RenderedGeometryFactory::create_rendered_polygon_on_sphere(
-						polygon_on_sphere, d_colour, d_line_width_hint);
+						polygon_on_sphere, d_colour, d_line_width_hint, d_fill_polygon);
 			}
 
 			virtual
@@ -119,6 +157,8 @@ namespace GPlatesViewOperations
 			const GPlatesGui::ColourProxy &d_colour;
 			float d_point_size_hint;
 			float d_line_width_hint;
+			bool d_fill_polygon;
+			const boost::optional<GPlatesGui::Symbol> &d_symbol;
 			RenderedGeometry d_rendered_geom;
 		};
 	}
@@ -130,12 +170,14 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphe
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom_on_sphere,
 		const GPlatesGui::ColourProxy &colour,
 		float point_size_hint,
-		float line_width_hint)
+		float line_width_hint,
+		bool fill_polygon,
+		const boost::optional<GPlatesGui::Symbol> &symbol)
 {
 	// This is used to determine the derived type of 'geom_on_sphere'
 	// and create a RenderedGeometryImpl for it.
 	CreateRenderedGeometryFromGeometryOnSphere create_rendered_geom(
-			geom_on_sphere, colour, point_size_hint, line_width_hint);
+			geom_on_sphere, colour, point_size_hint, line_width_hint, fill_polygon, symbol);
 
 	return create_rendered_geom.create_rendered_geometry();
 }
@@ -180,10 +222,11 @@ GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
 		const GPlatesGui::ColourProxy &colour,
-		float line_width_hint)
+		float line_width_hint,
+		bool filled)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedPolygonOnSphere(
-			polygon_on_sphere, colour, line_width_hint));
+			polygon_on_sphere, colour, line_width_hint, filled));
 
 	return RenderedGeometry(rendered_geom_impl);
 }
@@ -191,31 +234,13 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_spher
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
-		const GPlatesAppLogic::Layer &layer,
-		const double &reconstruction_time,
-		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
-		const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &proxied_rasters,
-		const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names,
-		const boost::optional<GPlatesAppLogic::ReconstructRasterPolygons::non_null_ptr_to_const_type> &
-				reconstruct_raster_polygons,
-		const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
-				age_grid_georeferencing,
-		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
-				age_grid_proxied_rasters,
-		const boost::optional<GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type> &
-				age_grid_raster_band_names)
+		const GPlatesAppLogic::resolved_raster_non_null_ptr_to_const_type &resolved_raster,
+		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
 			new RenderedResolvedRaster(
-					layer,
-					reconstruction_time,
-					georeferencing,
-					proxied_rasters,
-					raster_band_names,
-					reconstruct_raster_polygons,
-					age_grid_georeferencing,
-					age_grid_proxied_rasters,
-					age_grid_raster_band_names));
+					resolved_raster,
+					raster_colour_palette));
 
 	return RenderedGeometry(rendered_geom_impl);
 }
@@ -391,4 +416,46 @@ GPlatesViewOperations::create_rendered_arrowed_polyline(
 
 	return RenderedGeometry(rendered_geom_impl);		
 
+}
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_triangle_symbol(
+	const GPlatesMaths::PointOnSphere &centre,
+        const GPlatesGui::ColourProxy &colour,
+	const unsigned int size,
+        bool filled,
+        const float line_width_hint)
+{
+    RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedTriangleSymbol(
+	    centre,colour,size,filled,line_width_hint));
+
+    return RenderedGeometry(rendered_geom_impl);
+
+}
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_square_symbol(
+	const GPlatesMaths::PointOnSphere &centre,
+	const GPlatesGui::ColourProxy &colour,
+	const unsigned int size,
+	bool filled,
+	const float line_width_hint)
+{
+    RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedSquareSymbol(
+	    centre,colour,size,filled,line_width_hint));
+
+    return RenderedGeometry(rendered_geom_impl);
+}
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::create_rendered_cross_symbol(
+	const GPlatesMaths::PointOnSphere &centre,
+	const GPlatesGui::ColourProxy &colour,
+	const unsigned int size,
+	const float line_width_hint)
+{
+    RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedCrossSymbol(
+	    centre,colour,size,line_width_hint));
+
+    return RenderedGeometry(rendered_geom_impl);
 }

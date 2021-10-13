@@ -2,8 +2,7 @@
 <gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:TopologicalNetwork>
-            <gpml:identity>GPlates-5b61cdb3-3f29-4cb7-92ba-60c2f348d202</gpml:identity>
-            <gpml:revision>GPlates-303bd5f4-a84e-4b59-87a7-603c5cf6c0ab</gpml:revision>
+            <gpml:identity>GPlates-1net-from-4lines</gpml:identity>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
                     <gpml:value>102</gpml:value>

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2007, 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,6 +28,8 @@
 #include <QString>
 
 #include "SpecifyAnchoredPlateIdDialog.h"
+
+#include "QtWidgetUtils.h"
 
 #include "model/FeatureVisitor.h"
 
@@ -119,6 +121,8 @@ GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::SpecifyAnchoredPlateIdDialog(
 			SIGNAL(clicked()),
 			this,
 			SLOT(reset_to_zero()));
+
+	QtWidgetUtils::resize_based_on_size_hint(this);
 }
 
 

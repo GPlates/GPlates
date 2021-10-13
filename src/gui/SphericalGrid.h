@@ -34,9 +34,13 @@
 #include "GraticuleSettings.h"
 
 #include "opengl/GLDrawable.h"
-#include "opengl/GLRenderGraphInternalNode.h"
 #include "opengl/GLStateSet.h"
 
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+}
 
 namespace GPlatesMaths
 {
@@ -58,14 +62,14 @@ namespace GPlatesGui
 		 */
 		void
 		paint(
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node);
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		/**
 		 * Paints the circumference for vector output.
 		 */
 		void
 		paint_circumference(
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_parent_node,
+				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesMaths::UnitVector3D &axis,
 				double angle_in_deg);
 

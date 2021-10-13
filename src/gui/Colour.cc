@@ -28,7 +28,8 @@
 #include <iostream>
 #include <cmath>
 #include <limits>
-#include "QDataStream"
+#include <QDataStream>
+#include <QSysInfo>
 
 #include "Colour.h"
 
@@ -74,6 +75,106 @@ DEFINE_COLOUR(aqua, 0.0, 1.0, 1.0)
 #undef DEFINE_COLOUR
 
 
+namespace
+{
+	inline
+	qreal
+	clamp_zero_one(
+			qreal value)
+	{
+		if (value < 0.0)
+		{
+			return 0.0;
+		}
+		else if (value > 1.0)
+		{
+			return 1.0;
+		}
+		else
+		{
+			return value;
+		}
+	}
+}
+
+
+void
+GPlatesGui::convert_argb32_to_rgba8(
+		const boost::uint32_t *argb32_pixels,
+		rgba8_t *rgba8_pixels,
+		unsigned int num_pixels)
+{
+	if (QSysInfo::ByteOrder == QSysInfo::BigEndian)
+	{
+		for (unsigned int i = 0; i < num_pixels; ++i)
+		{
+			// Convert 0xAARRGGBB to 0xRRGGBBAA.
+			// Since this is big-endian the 0xRRGGBBAA will get written to memory
+			// as (RR,GG,BB,AA) which is what we want.
+			//
+			// This integer indexing (by 'i') is free in most assembly languages.
+			rgba8_pixels[i].uint32_value = (
+					(argb32_pixels[i] << 8) |
+					((argb32_pixels[i] >> 24) & 0xff));
+		}
+	}
+	else // QSysInfo::LittleEndian ...
+	{
+		for (unsigned int i = 0; i < num_pixels; ++i)
+		{
+			// Convert 0xAARRGGBB to 0xAABBGGRR (ie, swap the blue and red channels).
+			// Since this is little-endian the 0xAABBGGRR will get written to memory
+			// as (RR,GG,BB,AA) which is what we want.
+			//
+			// This integer indexing (by 'i') is free in most assembly languages.
+			rgba8_pixels[i].uint32_value = (
+						((argb32_pixels[i] << 16) & 0xff0000) |
+						((argb32_pixels[i] >> 16) & 0xff) |
+						(argb32_pixels[i] & 0xff00ff00));
+		}
+	}
+}
+
+
+void
+GPlatesGui::convert_rgba8_to_argb32(
+		const rgba8_t *rgba8_pixels,
+		boost::uint32_t *argb32_pixels,
+		unsigned int num_pixels)
+{
+	if (QSysInfo::ByteOrder == QSysInfo::BigEndian)
+	{
+		for (unsigned int i = 0; i < num_pixels; ++i)
+		{
+			// Since this is big-endian the (RR,GG,BB,AA) in 'rgba8_t' will get read
+			// as the 32-bit integer 0xRRGGBBAA.
+			// Convert 0xRRGGBBAA to 0xAARRGGBB.
+			//
+			// This integer indexing (by 'i') is free in most assembly languages.
+			argb32_pixels[i] = (
+					(rgba8_pixels[i].uint32_value >> 8) |
+					((rgba8_pixels[i].uint32_value << 24) & 0xff000000));
+		}
+	}
+	else // QSysInfo::LittleEndian ...
+	{
+		for (unsigned int i = 0; i < num_pixels; ++i)
+		{
+			// Since this is little-endian the (RR,GG,BB,AA) in 'rgba8_t' will get read
+			// as the 32-bit integer 0xAABBGGRR.
+			//
+			// Convert 0xAABBGGRR to 0xAARRGGBB (ie, swap the blue and red channels).
+			//
+			// This integer indexing (by 'i') is free in most assembly languages.
+			argb32_pixels[i] = (
+						((rgba8_pixels[i].uint32_value << 16) & 0xff0000) |
+						((rgba8_pixels[i].uint32_value >> 16) & 0xff) |
+						(rgba8_pixels[i].uint32_value & 0xff00ff00));
+		}
+	}
+}
+
+
 GPlatesGui::Colour::Colour(
 		const GLfloat &red_,
 		const GLfloat &green_,
@@ -100,7 +201,11 @@ GPlatesGui::Colour::Colour(
 GPlatesGui::Colour::operator QColor() const
 {
 	QColor qcolor;
-	qcolor.setRgbF(d_rgba[RED_INDEX], d_rgba[GREEN_INDEX], d_rgba[BLUE_INDEX], d_rgba[ALPHA_INDEX]);
+	qcolor.setRgbF(
+			::clamp_zero_one(d_rgba[RED_INDEX]),
+			::clamp_zero_one(d_rgba[GREEN_INDEX]),
+			::clamp_zero_one(d_rgba[BLUE_INDEX]),
+			::clamp_zero_one(d_rgba[ALPHA_INDEX]));
 	return qcolor;
 }
 

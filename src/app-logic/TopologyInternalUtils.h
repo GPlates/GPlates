@@ -56,7 +56,6 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesAppLogic
 {
-	class Reconstruction;
 	class ReconstructionTree;
 
 	/**
@@ -148,17 +147,18 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Finds the reconstructed feature geometry, referencing @a reconstruction_tree,
+		 * Finds the reconstructed feature geometry, optionally referencing @a reconstruction_tree,
 		 * for the geometry property referenced by the property delegate @a geometry_delegate.
 		 *
 		 * Returns false if:
 		 * - there is *not* exactly *one* feature referencing the delegate feature id
 		 *   (in this case an error message is output to the console), or
-		 * - there is no RFG (referencing @a reconstruction_tree) that is reconstructed from
-		 *   @a geometry_property (this probably means the reconstruction time is
+		 * - there is no RFG (optionally referencing @a reconstruction_tree) that is reconstructed from
+		 *   @a geometry_delegate (this probably means the reconstruction time is
 		 *   outside the age range of the feature containing @a geometry_property) and
 		 *   in this case *no* error message is output, or
-		 * - there are more than one RFGs (referencing @a reconstruction_tree) that are referencing
+		 * - (if @a reconstruction_tree is not boost::none) there are more than one RFGs
+		 *   (optionally referencing @a reconstruction_tree) that are referencing
 		 *   the delegate feature (this means there are multiple geometry properties
 		 *   in the delegate feature that have the same delegate property name) and
 		 *   in this case an error message is output to the console.
@@ -170,16 +170,18 @@ namespace GPlatesAppLogic
 		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
 		find_reconstructed_feature_geometry(
 				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
-				const ReconstructionTree &reconstruction_tree);
+				const boost::optional<const ReconstructionTree &> &reconstruction_tree = boost::none,
+				const boost::optional<const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &> &
+						restrict_reconstructed_feature_geometries = boost::none);
 
 
 		/**
-		 * Finds the reconstructed feature geometry, referencing @a reconstruction_tree,
+		 * Finds the reconstructed feature geometry, optionally referencing @a reconstruction_tree,
 		 * for the geometry properties iterator @a geometry_property.
 		 *
 		 * Returns false if:
 		 * - @a geometry_property is invalid, or
-		 * - there is no RFG (referencing @a reconstruction_tree) that is reconstructed from
+		 * - there is no RFG (optionally referencing @a reconstruction_tree) that is reconstructed from
 		 *   @a geometry_property (this probably means the reconstruction time is
 		 *   outside the age range of the feature containing @a geometry_property).
 		 */

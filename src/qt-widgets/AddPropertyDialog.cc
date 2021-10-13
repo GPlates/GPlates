@@ -68,8 +68,6 @@ namespace
 	 * Properties which are not intended to be user-editable (e.g. gpml:identity) are
 	 * not included in this list.
 	 *
-	 * Properties relating to the Topological stuff are similarly not included.
-	 *
 	 * Contour's properties aren't included because Contour is a geometry type.
 	 *
 	 * Oh and naturally, when you're editing an InstantaneousFeature, all time-dependent
@@ -99,6 +97,7 @@ namespace
 		{ "gpml:isActive", "xs:boolean", true, false }, // TimeDependentPropertyValue<>
 		{ "gpml:leftPlate", "gpml:plateId", false, true },
 	//	{ "gpml:leftUnit", "gpml:FeatureReference", false, false }, // FeatureReference<AbstractRockUnit>
+		{ "gpml:maxEdge", "xs:double", false, false },
 	//	{ "gml:metaDataProperty", "gml:_MetaData", false, false },
 		{ "gpml:motion", "gpml:StrikeSlipEnumeration", true, false }, // Enumeration. Just for fun, it's also time-dependent.
 		{ "gml:name", "xs:string", false, true },
@@ -117,6 +116,8 @@ namespace
 		{ "gpml:reconstructionPlateId", "gpml:plateId", true, true }, // For ReconstructableFeatures
 		{ "gpml:rightPlate", "gpml:plateId", false, true },
 	//	{ "gpml:rightUnit", "gpml:FeatureReference", false, false }, // FeatureReference<AbstractRockUnit>
+		{ "gpml:rigidBlock", "xs:boolean", false, false }, 
+		{ "gpml:shapeFactor", "xs:double", false, false },
 	//	{ "gpml:shipTrack", "gpml:FeatureReference", false, false }, // FeatureReference<MagneticAnomalyShipTrack>
 		{ "gpml:slabEdgeType", "xs:string", false, false }, 
 		{ "gpml:slabFlatLying", "xs:boolean", false, false }, 

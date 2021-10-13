@@ -28,20 +28,15 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTION_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTION_H
 
-#include <iterator>  // std::iterator
-#include <map>
-#include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
-#include "ReconstructionGeometryCollection.h"
-#include "ReconstructionTree.h"
+#include "ReconstructionLayerProxy.h"
 
 #include "maths/Real.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 
-#include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -50,281 +45,25 @@ namespace GPlatesAppLogic
 	/**
 	 * This class represents a plate-tectonic reconstruction at a particular geological
 	 * time-instant.
+	 *
+	 * It represents the output of the layer reconstruct graph and contains the layer outputs
+	 * (layer proxy objects) for all *active* layers.
+	 *
+	 * Results can be obtained by determining the derived types of the layer proxy objects
+	 * and then querying those interfaces.
 	 */
 	class Reconstruction :
 			public GPlatesUtils::ReferenceCount<Reconstruction>
 	{
-	private:
-		/**
-		 * Typedef for a mapping of reconstruction trees to of @a ReconstructionGeometry objects.
-		 */
-		typedef std::multimap<
-				ReconstructionTree::non_null_ptr_to_const_type,
-				GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_to_const_type>
-						reconstruction_tree_map_type;
-
 	public:
-		/**
-		 * A convenience typedef for a shared pointer to non-const @a Reconstruction.
-		 */
+		//! A convenience typedef for a shared pointer to non-const @a Reconstruction.
 		typedef GPlatesUtils::non_null_intrusive_ptr<Reconstruction> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for a shared pointer to const @a Reconstruction.
-		 */
+		//! A convenience typedef for a shared pointer to const @a Reconstruction.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const Reconstruction> non_null_ptr_to_const_type;
 
-
-		/**
-		 * Forward iterator over all @a ReconstructionGeometry objects in the @a Reconstruction.
-		 * Dereferencing iterator returns a 'ReconstructionGeometry::non_null_ptr_to_const_type'.
-		 */
-		class ConstReconstructionGeometryIterator :
-				public std::iterator<std::forward_iterator_tag, ReconstructionGeometry::non_null_ptr_to_const_type>,
-				public boost::equality_comparable<ConstReconstructionGeometryIterator>,
-				public boost::incrementable<ConstReconstructionGeometryIterator>
-		{
-		public:
-			/**
-			 * Create a "begin" iterator over the reconstruction geometries associated with
-			 * @a reconstruction_tree.
-			 */
-			static
-			ConstReconstructionGeometryIterator
-			create_begin(
-					const Reconstruction &reconstruction,
-					const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree);
-
-
-			/**
-			 * Create a "end" iterator over the reconstruction geometries associated with
-			 * @a reconstruction_tree.
-			 */
-			static
-			ConstReconstructionGeometryIterator
-			create_end(
-					const Reconstruction &reconstruction,
-					const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree);
-
-
-			/**
-			 * Dereference operator.
-			 * No 'operator->()' is provided since we're returning a temporary object.
-			 */
-			const ReconstructionGeometry::non_null_ptr_to_const_type
-			operator*() const;
-
-
-			/**
-			 * Pre-increment operator.
-			 * Post-increment operator provided by base class boost::incrementable.
-			 */
-			ConstReconstructionGeometryIterator &
-			operator++();
-
-
-			/**
-			 * Equality comparison for @a ConstReconstructionGeometryIterator.
-			 * Inequality operator provided by base class boost::equality_comparable.
-			 */
-			friend
-			bool
-			operator==(
-					const ConstReconstructionGeometryIterator &lhs,
-					const ConstReconstructionGeometryIterator &rhs)
-			{
-				//
-				// d_reconstruction_geometry_collection_iterator is boost::none
-				// if the reconstruction geometry collections belonging to the
-				// requested reconstruction tree (and all subsequent reconstruction
-				// trees) are empty. In this case, the "begin" and "end" iterators
-				// should both have d_reconstruction_tree_map_iterator set to the
-				// reconstruction tree map's end iterator. This check is,
-				// therefore, strictly unnecessary.
-				//
-				// However, given the number of crashes related to iterating
-				// over the reconstruction geometries for a given reconstruction
-				// tree, it doesn't hurt to treat all invalid iterators as equal
-				// irrespective of d_reconstruction_tree_map_iterator.
-				//
-				if (!lhs.d_reconstruction_geometry_collection_iterator &&
-						!rhs.d_reconstruction_geometry_collection_iterator)
-				{
-					return true;
-				}
-
-				return
-					(lhs.d_reconstruction_tree_map_iterator ==
-							rhs.d_reconstruction_tree_map_iterator) &&
-					(lhs.d_reconstruction_geometry_collection_iterator ==
-							rhs.d_reconstruction_geometry_collection_iterator);
-			}
-
-
-			/**
-			 * Returns whether this iterator is able to be dereferenced.
-			 *
-			 * FIXME: Remove this once we figure out why GPlates keeps crashing...
-			 */
-			bool
-			is_valid() const
-			{
-				return d_reconstruction_geometry_collection_iterator;
-			}
-
-
-		private:
-			const Reconstruction *d_reconstruction;
-			reconstruction_tree_map_type::const_iterator d_reconstruction_tree_map_iterator;
-			boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator>
-					d_reconstruction_geometry_collection_iterator;
-
-
-			ConstReconstructionGeometryIterator(
-					const Reconstruction *reconstruction,
-					reconstruction_tree_map_type::const_iterator reconstruction_tree_map_iterator,
-					boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator>
-							reconstruction_geometry_collection_iterator = boost::none);
-
-
-			/**
-			 * Moves @a map_iter along until it is pointing to a non-empty
-			 * reconstruction geometry collection, and then returns the begin
-			 * iterator of that non-empty reconstruction geometry collection.
-			 *
-			 * If no non-empty reconstruction geometry collection is found,
-			 * @a map_iter will be the end iterator of the reconstruction tree
-			 * map and boost::none is returned.
-			 *
-			 * Note that @a map_iter is a non-const reference and may be
-			 * modified in this function. This is intentional; the
-			 * reconstruction geometry collection pointed to by the initial value of
-			 * @a map_iter may be empty, in which case the reconstruction
-			 * geometry collection iterator returned belongs to a subsequent
-			 * collection.
-			 */
-			static
-			boost::optional<GPlatesAppLogic::ReconstructionGeometryCollection::const_iterator>
-			get_next_valid_reconstruction_geometry_collection_iterator(
-					const Reconstruction &reconstruction,
-					reconstruction_tree_map_type::const_iterator &map_iter);
-		};
-
-		/**
-		 * The type used to const_iterate over the reconstruction geometries associated
-		 * with a reconstruction tree.
-		 *
-		 * Dereferencing iterator returns a 'ReconstructionGeometry::non_null_ptr_to_const_type'.
-		 */
-		typedef ConstReconstructionGeometryIterator reconstruction_geometry_const_iterator;
-
-
-		/**
-		 * Forward iterator over all @a ReconstructionTree objects in the @a Reconstruction.
-		 * Dereferencing iterator returns a 'ReconstructionTree::non_null_ptr_to_const_type'.
-		 */
-		class ConstReconstructionTreeIterator :
-				public std::iterator<std::forward_iterator_tag, ReconstructionTree::non_null_ptr_to_const_type>,
-				public boost::equality_comparable<ConstReconstructionTreeIterator>,
-				public boost::incrementable<ConstReconstructionTreeIterator>
-		{
-		public:
-			/**
-			 * Create a "begin" iterator over the reconstruction trees in @a reconstruction.
-			 */
-			static
-			ConstReconstructionTreeIterator
-			create_begin(
-					const Reconstruction &reconstruction)
-			{
-				return ConstReconstructionTreeIterator(reconstruction.d_reconstruction_tree_map.begin());
-			}
-
-
-			/**
-			 * Create a "end" iterator over the reconstruction trees in @a reconstruction.
-			 */
-			static
-			ConstReconstructionTreeIterator
-			create_end(
-					const Reconstruction &reconstruction)
-			{
-				return ConstReconstructionTreeIterator(reconstruction.d_reconstruction_tree_map.end());
-			}
-
-
-			/**
-			 * Dereference operator.
-			 * No 'operator->()' is provided since we're returning a temporary object.
-			 */
-			const ReconstructionTree::non_null_ptr_to_const_type
-			operator*() const
-			{
-				return d_reconstruction_tree_map_iterator->first;
-			}
-
-
-			/**
-			 * Pre-increment operator.
-			 * Post-increment operator provided by base class boost::incrementable.
-			 */
-			ConstReconstructionTreeIterator &
-			operator++()
-			{
-				++d_reconstruction_tree_map_iterator;
-				return *this;
-			}
-
-
-			/**
-			 * Equality comparison for @a ConstReconstructionTreeIterator.
-			 * Inequality operator provided by base class boost::equality_comparable.
-			 */
-			friend
-			bool
-			operator==(
-					const ConstReconstructionTreeIterator &lhs,
-					const ConstReconstructionTreeIterator &rhs)
-			{
-				return lhs.d_reconstruction_tree_map_iterator == rhs.d_reconstruction_tree_map_iterator;
-			}
-		
-
-		private:
-			reconstruction_tree_map_type::const_iterator d_reconstruction_tree_map_iterator;
-
-
-			ConstReconstructionTreeIterator(
-					reconstruction_tree_map_type::const_iterator reconstruction_tree_map_iterator) :
-				d_reconstruction_tree_map_iterator(reconstruction_tree_map_iterator)
-			{  }
-		};
-
-		/**
-		 * The type used to const_iterate over the reconstruction trees in a @a Reconstruction.
-		 *
-		 * Dereferencing iterator returns a 'ReconstructionTree::non_null_ptr_to_const_type'.
-		 */
-		typedef ConstReconstructionTreeIterator reconstruction_tree_const_iterator;
-
-
-		~Reconstruction();
-
-
-		/**
-		 * Create a new blank Reconstruction instance with the default reconstruction tree
-		 * being an empty reconstruction tree (ie, returns identity rotations for all plates).
-		 */
-		static
-		const non_null_ptr_type
-		create(
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchored_plate_id)
-		{
-			return non_null_ptr_type(
-					new Reconstruction(reconstruction_time, anchored_plate_id),
-					GPlatesUtils::NullIntrusivePointerHandler());
-		}
+		//! Typedef for a sequence of *active* layer outputs (in the form of layer proxies).
+		typedef std::vector<LayerProxy::non_null_ptr_type> layer_output_seq_type;
 
 
 		/**
@@ -335,106 +74,43 @@ namespace GPlatesAppLogic
 		const non_null_ptr_type
 		create(
 				const double &reconstruction_time,
-				const ReconstructionTree::non_null_ptr_to_const_type &default_reconstruction_tree)
+				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy)
 		{
-			return non_null_ptr_type(
-					new Reconstruction(reconstruction_time, default_reconstruction_tree),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			return non_null_ptr_type(new Reconstruction(reconstruction_time, default_reconstruction_layer_proxy));
 		}
 
 
 		/**
-		 * Adds @a collection to this reconstruction and explicitly associates @a collection
-		 * with @a collection's reconstruction tree such that calling
-		 * @a begin_reconstruction_geometries or @a end_reconstruction_geometries with that
-		 * reconstruction tree as an argument will iterate over the @a ReconstructionGeometry
-		 * objects contained in @a collection (and potentially other collections with the same
-		 * reconstruction tree).
-		 *
-		 * Also sets reconstruction pointer of @a collection to 'this'.
-		 * When 'this' is destroyed it will set the reconstruction pointer of @a collection to NULL.
-		 *
-		 * @throws PreconditionViolationError if the reconstruction time of @a collection
-		 * is not the same as the reconstruction time passed into the constructor.
+		 * Create a new blank Reconstruction instance with the default reconstruction layer output
+		 * being one that returns empty reconstruction trees (ie, returns identity rotations for all plates).
+		 */
+		static
+		const non_null_ptr_type
+		create(
+				const double &reconstruction_time)
+		{
+			return non_null_ptr_type(new Reconstruction(reconstruction_time));
+		}
+
+
+		/**
+		 * Adds the output of an *active* layer to this reconstruction.
 		 */
 		void
-		add_reconstruction_geometries(
-				const GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_to_const_type &collection);
-
-		
-		/**
-		 * Returns the reconstruction tree used to reconstruct layers that are not explicitly
-		 * connected to an input reconstruction tree layer.
-		 */
-		ReconstructionTree::non_null_ptr_to_const_type
-		get_default_reconstruction_tree() const
+		add_active_layer_output(
+				const LayerProxy::non_null_ptr_type &layer_proxy)
 		{
-			return d_default_reconstruction_tree;
+			d_active_layer_outputs.push_back(layer_proxy);
 		}
 
 
 		/**
-		 * Sets the reconstruction tree used to reconstruct layers that are not explicitly
-		 * connected to an input reconstruction tree layer.
-		 *
-		 * If this is never called then the default reconstruction tree the one generated
-		 * in the constructor.
+		 * Returns the sequence of *active* layer outputs for this reconstruction.
 		 */
-		void
-		set_default_reconstruction_tree(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree)
+		const layer_output_seq_type &
+		get_active_layer_outputs() const
 		{
-			d_default_reconstruction_tree = reconstruction_tree;
-		}
-				
-
-		/**
-		 * Returns the "begin" reconstruction_tree_const_iterator to iterate over the
-		 * sequence of @a ReconstructionTree::non_null_ptr_to_const_type objects in
-		 * this reconstruction.
-		 */
-		reconstruction_tree_const_iterator
-		begin_reconstruction_trees() const
-		{
-			return reconstruction_tree_const_iterator::create_begin(*this);
-		}
-
-
-		/**
-		 * Returns the "end" reconstruction_tree_const_iterator to iterate over the
-		 * sequence of @a ReconstructionTree::non_null_ptr_to_const_type objects in
-		 * this reconstruction.
-		 */
-		reconstruction_tree_const_iterator
-		end_reconstruction_trees() const
-		{
-			return reconstruction_tree_const_iterator::create_end(*this);
-		}
-
-
-		/**
-		 * Returns the "begin" reconstruction_geometry_const_iterator to iterate over the
-		 * sequence of @a ReconstructionGeometry::non_null_ptr_to_const_type
-		 * associated with @a reconstruction_tree.
-		 */
-		reconstruction_geometry_const_iterator
-		begin_reconstruction_geometries(
-				ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree) const
-		{
-			return reconstruction_geometry_const_iterator::create_begin(*this, reconstruction_tree);
-		}
-
-
-		/**
-		 * Returns the "end" reconstruction_geometry_const_iterator to iterate over the
-		 * sequence of @a ReconstructionGeometry::non_null_ptr_to_const_type
-		 * associated with @a reconstruction_tree.
-		 */
-		reconstruction_geometry_const_iterator
-		end_reconstruction_geometries(
-				ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree) const
-		{
-			return reconstruction_geometry_const_iterator::create_end(*this, reconstruction_tree);
+			return d_active_layer_outputs;
 		}
 
 
@@ -448,6 +124,32 @@ namespace GPlatesAppLogic
 			return d_reconstruction_time.dval();
 		}
 
+		
+		/**
+		 * Returns the reconstruction layer proxy used to reconstruct layers that are not explicitly
+		 * connected to an input reconstruction layer.
+		 */
+		ReconstructionLayerProxy::non_null_ptr_type
+		get_default_reconstruction_layer_output() const
+		{
+			return d_default_reconstruction_layer_proxy;
+		}
+
+
+		/**
+		 * Sets the reconstruction layer proxy used to reconstruct layers that are not explicitly
+		 * connected to an input reconstruction layer.
+		 *
+		 * If this is never called then the default reconstruction layer proxy is
+		 * the one generated in the constructor.
+		 */
+		void
+		set_default_reconstruction_layer_output(
+				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy)
+		{
+			d_default_reconstruction_layer_proxy = reconstruction_layer_proxy;
+		}
+
 	private:
 		/**
 		 * The reconstruction time at which all reconstructions are performed.
@@ -455,23 +157,16 @@ namespace GPlatesAppLogic
 		GPlatesMaths::Real d_reconstruction_time;
 
 		/**
-		 * The reconstruction tree used to reconstruct layers that are not explicitly
-		 * connected to an input reconstruction tree layer.
+		 * The reconstruction layer proxy used to reconstruct layers that are not explicitly
+		 * connected to an input reconstruction layer.
 		 */
-		ReconstructionTree::non_null_ptr_to_const_type d_default_reconstruction_tree;
+		ReconstructionLayerProxy::non_null_ptr_type d_default_reconstruction_layer_proxy;
 
 		/**
-		 * Mapping from each ReconstructionTree to its group of ReconstructionGeometryCollection's.
+		 * The sequence of active layer outputs.
 		 */
-		reconstruction_tree_map_type d_reconstruction_tree_map;
+		layer_output_seq_type d_active_layer_outputs;
 
-		/**
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 */
-		Reconstruction(
-				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchored_plate_id);
 
 		/**
 		 * This constructor should not be public, because we don't want to allow
@@ -479,7 +174,15 @@ namespace GPlatesAppLogic
 		 */
 		Reconstruction(
 				const double &reconstruction_time,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree);
+				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy);
+
+		/**
+		 * This constructor should not be public, because we don't want to allow
+		 * instantiation of this type on the stack.
+		 */
+		explicit
+		Reconstruction(
+				const double &reconstruction_time);
 	};
 }
 

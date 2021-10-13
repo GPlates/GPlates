@@ -106,7 +106,7 @@ GPlatesMaths::make_lat_lon_point(
 	}
 	//std::cerr << "lat: " << lat << ", lon: " << lon << std::endl;
 
-	return LatLonPoint::LatLonPoint(
+	return LatLonPoint(
 			convert_rad_to_deg(lat),
 			convert_rad_to_deg(lon));
 }

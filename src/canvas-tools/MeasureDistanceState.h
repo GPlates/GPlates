@@ -7,7 +7,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -56,7 +56,6 @@ namespace GPlatesCanvasTools
 	class MeasureDistanceState :
 			public QObject
 	{
-
 		Q_OBJECT
 	
 	private:
@@ -76,6 +75,10 @@ namespace GPlatesCanvasTools
 		void
 		quick_measure_add_point(
 				const GPlatesMaths::PointOnSphere &point);
+
+		//! Removes all points added to the Quick Measure tool
+		void
+		clear_quick_measure();
 
 		//! Get the first Quick Measure point, if any
 		const boost::optional<GPlatesMaths::PointOnSphere> &
@@ -263,6 +266,10 @@ namespace GPlatesCanvasTools
 		reexamine_geometry_builder();
 
 	signals:
+
+		//! Emitted when the Quick Measure state is cleared
+		void
+		quick_measure_cleared();
 		
 		//! Emitted when the Quick Measure state is changed
 		void

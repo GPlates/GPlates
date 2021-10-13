@@ -24,36 +24,3 @@
  */
 
 #include "ReconstructionGeometry.h"
-
-#include "ReconstructionGeometryCollection.h"
-
-#include "global/PreconditionViolationError.h"
-
-
-GPlatesAppLogic::Reconstruction *
-GPlatesAppLogic::ReconstructionGeometry::reconstruction() const
-{
-	Reconstruction *reconstruction_ptr = NULL;
-
-	if (d_reconstruction_geometry_collection_ptr)
-	{
-		reconstruction_ptr = d_reconstruction_geometry_collection_ptr->reconstruction();
-	}
-
-	return reconstruction_ptr;
-}
-
-
-void
-GPlatesAppLogic::ReconstructionGeometry::set_collection_ptr(
-				   GPlatesAppLogic::ReconstructionGeometryCollection *collection_ptr) const
-{
-	// A ReconstructionGeometry can only belong to one ReconstructionGeometryCollection.
-	// If we're setting it to a non-NULL value then it should currently be NULL.
-	if (d_reconstruction_geometry_collection_ptr != NULL && collection_ptr != NULL)
-	{
-		throw GPlatesGlobal::PreconditionViolationError(GPLATES_EXCEPTION_SOURCE);
-	}
-
-	d_reconstruction_geometry_collection_ptr = collection_ptr;
-}

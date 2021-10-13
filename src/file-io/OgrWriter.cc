@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2009, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -52,6 +52,52 @@ namespace{
 
 	typedef std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> element_type;
 	typedef element_type::const_iterator element_iterator_type;
+	typedef std::map<QString, QStringList> extension_to_driver_map_type; 
+
+	enum driver_string
+	{
+		FORMAT_NAME,
+		CODE
+	};
+
+	/**
+	 * Create a map of file extension to OGR driver information.
+	 *
+	 * The map keys are the lower case file extensions.
+	 * The map data are the "Format Name" and "Code" terms from the list of OGR Vector Formats
+	 * (http://www.gdal.org/ogr/ogr_formats.html)
+	 */
+	extension_to_driver_map_type
+	create_extension_to_driver_map()
+	{
+		static extension_to_driver_map_type map;
+		QStringList shp_driver;
+		shp_driver << "ESRI Shapefile" << "ESRI Shapefile";
+		map["shp"] = shp_driver;
+
+		QStringList gmt_driver;
+		gmt_driver << "GMT" << "GMT";
+		map["gmt"] = gmt_driver;
+
+		return map;
+	}
+
+	QString
+	get_driver_name_from_extension(
+		QString extension)
+	{
+		extension = extension.toLower();
+	
+		extension_to_driver_map_type map = create_extension_to_driver_map();
+	
+		extension_to_driver_map_type::const_iterator iter = map.find(extension);
+		if (iter != map.end())
+		{
+			return iter->second.at(FORMAT_NAME);
+		}
+		return QString();
+	}
+
 
 
 	QVariant
@@ -272,8 +318,8 @@ namespace{
 				layer_name.toStdString().c_str(),&spatial_reference,wkb_type,0));
 			if (*ogr_layer == NULL)
 			{
-				qDebug() << "Error creating shapefile layer.";
-				throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating shapefile layer.");
+				qDebug() << "Error creating OGR layer.";
+				throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR layer.");
 			}
 			if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
 			{
@@ -282,8 +328,27 @@ namespace{
 		}
 	}
 		
+	/**
+	 * Create an ogr data source.
+	 */
 	void
-	remove_shapefile_layers(
+	create_data_source(
+		OGRSFDriver *ogr_driver,
+		OGRDataSource *&data_source_ptr,
+		QString &data_source_name)
+	{
+		data_source_name = QDir::toNativeSeparators(data_source_name);
+		data_source_ptr = ogr_driver->CreateDataSource(data_source_name.toStdString().c_str(), NULL );
+
+		if (data_source_ptr == NULL)
+		{
+			qDebug() << "Creation of data source failed.";
+			throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Ogr data source creation failed.");
+		}
+	}
+
+	void
+	remove_OGR_layers(
 		OGRSFDriver *ogr_driver,
 		const QString &filename)
 	{
@@ -293,7 +358,7 @@ namespace{
 		if (ogr_data_source_ptr == NULL)
 		{
 			qDebug() << "Creation of data source failed.";
-			throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Ogr data source creation failed.");
+			throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"OGR data source creation failed.");
 		}
 		
 		int number_of_layers = ogr_data_source_ptr->GetLayerCount();
@@ -306,62 +371,97 @@ namespace{
 
 	}
 
+	void
+	destroy_ogr_data_source(
+		OGRDataSource *&ogr_data_source)
+	{
+		if (ogr_data_source)
+		{
+			try{
+				OGRDataSource::DestroyDataSource(ogr_data_source);
+			}
+			catch(...)
+			{}
+		}
+	}
+
 }
 
 GPlatesFileIO::OgrWriter::OgrWriter(
 	QString filename,
-	bool multiple_layers):
+	bool multiple_geometry_types):
+	d_ogr_driver_ptr(0),
 	d_filename(filename),
-	d_root_filename(QString()),
+	d_layer_basename(QString()),
+	d_extension(QString()),
+	d_multiple_geometry_types(multiple_geometry_types),
 	d_ogr_data_source_ptr(0),
-	d_multiple_layers(multiple_layers)
+	d_ogr_point_data_source_ptr(0),
+	d_ogr_line_data_source_ptr(0),
+	d_ogr_polygon_data_source_ptr(0)
 {
 	OGRRegisterAll();
 
-	OGRSFDriver *ogr_driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(OGR_DRIVER_NAME.toStdString().c_str());
-	if (ogr_driver == NULL)
+	QFileInfo q_file_info_original(d_filename);
+	d_extension = q_file_info_original.suffix();
+	d_extension = d_extension.toLower();
+
+	QString driver_name = get_driver_name_from_extension(d_extension);
+
+	d_ogr_driver_ptr = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(driver_name.toStdString().c_str());
+	if (d_ogr_driver_ptr == NULL)
 	{
 		qDebug() << "Driver not available.";
-		throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Ogr driver not available.");
+		throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"OGR driver not available.");
 	}
 
-	QFileInfo q_file_info_original(d_filename);
 
+	// Adjust the filename to include a sub-folder if necessary.
+	QString path = q_file_info_original.absolutePath();
 
-
-	if (!multiple_layers)
+	QString basename = q_file_info_original.completeBaseName();
+	if (d_multiple_geometry_types)
 	{
-		// For single geometry types, we export to a single shapefile; the ogr driver requires 
-		// the "shp" extension on the file name.
-		// So if there's no .shp extension, add one. 
-		if (q_file_info_original.suffix().isEmpty())
+		QString folder_name = path + QDir::separator() + basename;
+		QDir qdir(folder_name);
+		
+		qDebug() << "Path: " << path;
+		qDebug() << "Basename: " << basename;
+		qDebug() << "Folder name: " << folder_name;
+		
+		if (!qdir.exists())
 		{
-			d_filename.append(".shp");
+			if (!QDir(path).mkdir(basename))
+			{
+				qDebug() << "Failed to create directory.";
+				throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Failed to create directory for multiple geometry-type files.");
+			}
 		}
+		d_filename = folder_name + QDir::separator() + basename;
 	}
 	else
 	{
-		// For multiple geometry types, we export to multiple files within a folder; for this, the ogr driver
-		// requires no "shp" extension on the filename. 
-		// So if there is a .shp extension, strip it.
-		if (q_file_info_original.suffix() == "shp")
-		{
-			d_filename = q_file_info_original.absolutePath() + QDir::separator() + 
-				q_file_info_original.completeBaseName();
-		}
+		d_filename = path + QDir::separator() + basename;
 	}
+
+	d_layer_basename = basename;
 
 	// FIXME: Consider saving the file to a temporary name, and rename it once export is complete. 
 
-	QFileInfo q_file_info_modified(d_filename);
+
+	QString full_filename = d_filename + "." + d_extension;
+	QFileInfo q_file_info_modified(full_filename);
 	if (q_file_info_modified.exists())
 	{
-		remove_shapefile_layers(ogr_driver,d_filename);
+		// Note: GMT driver does not support DeleteLayer.....
+		remove_OGR_layers(d_ogr_driver_ptr,full_filename);
 	}
 
-	d_ogr_data_source_ptr = ogr_driver->CreateDataSource(d_filename.toStdString().c_str(), NULL );
 
-	d_root_filename = q_file_info_original.completeBaseName();
+#if 0
+	// Experiment with delaying data source creation until we need to create each type of layer. 
+	d_ogr_data_source_ptr = ogr_driver->CreateDataSource(d_filename.toStdString().c_str(), NULL );
+#endif
 
 #if 0
 	if (!q_file_info.exists())
@@ -377,27 +477,15 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 	}
 #endif
 
-#if 0
-	// test exception handling. 
-	d_ogr_data_source_ptr = 0;
-#endif
-
-	if (d_ogr_data_source_ptr == NULL)
-	{
-		qDebug() << "Creation of data source failed.";
-		throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Ogr data source creation failed.");
-	}
 }
 
 GPlatesFileIO::OgrWriter::~OgrWriter()
 {
-	try {
-		if(d_ogr_data_source_ptr){
-			OGRDataSource::DestroyDataSource(d_ogr_data_source_ptr);
-		}
-	}
-	catch (...) {
-	}
+	destroy_ogr_data_source(d_ogr_data_source_ptr);
+	destroy_ogr_data_source(d_ogr_point_data_source_ptr);
+	destroy_ogr_data_source(d_ogr_line_data_source_ptr);
+	destroy_ogr_data_source(d_ogr_polygon_data_source_ptr);
+
 }
 
 void
@@ -406,22 +494,28 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 {
 
-	// Check that we have a valid data_source. It shouldn't be possible to get here without a valid data_source pointer.
-	if (d_ogr_data_source_ptr == NULL)
+	// Create point data source if it doesn't already exist.
+	if (d_ogr_point_data_source_ptr == NULL)
 	{
-		qDebug() << "NULL data source in write_point_feature";
-		return;
+		QString data_source_name = d_filename;
+		if (d_multiple_geometry_types)
+		{
+			data_source_name.append("_point");
+		}
+		data_source_name.append(".").append(d_extension);
+
+		create_data_source(d_ogr_driver_ptr, d_ogr_point_data_source_ptr, data_source_name);
 	}
 
 	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_data_source_ptr,d_ogr_point_layer,wkbPoint,QString(d_root_filename + "_point"),key_value_dictionary);
+	setup_layer(d_ogr_point_data_source_ptr,d_ogr_point_layer,wkbPoint,QString(d_layer_basename + "_point"),key_value_dictionary);
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_point_layer)->GetLayerDefn());
 
 	if (ogr_feature == NULL)
 	{
-		qDebug() << "OGR error creating shapefile feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"OGR error creating shapefile feature.");
+		qDebug() << "Error creating OGR feature.";
+		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
 	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
@@ -453,24 +547,37 @@ GPlatesFileIO::OgrWriter::write_multi_point_feature(
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere, 
 	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 {
-
+#if 0
 	// Check that we have a valid data_source.
 	if (d_ogr_data_source_ptr == NULL)
 	{
 		qDebug() << "NULL data source in write_multi_point_feature";
 		return;
 	}
+#endif
+	// Create point data source if it doesn't already exist.
+	if (d_ogr_point_data_source_ptr == NULL)
+	{
+		QString data_source_name = d_filename;
+		if (d_multiple_geometry_types)
+		{
+			data_source_name.append("_point");
+		}
+		data_source_name.append(".").append(d_extension);
+
+		create_data_source(d_ogr_driver_ptr, d_ogr_point_data_source_ptr, data_source_name);
+	}
 
 	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_data_source_ptr,d_ogr_multi_point_layer,wkbMultiPoint,
-		QString(d_root_filename + "_multi_point"),key_value_dictionary);
+	setup_layer(d_ogr_point_data_source_ptr,d_ogr_multi_point_layer,wkbMultiPoint,
+		QString(d_layer_basename + "_multi_point"),key_value_dictionary);
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_multi_point_layer)->GetLayerDefn());
 
 	if (ogr_feature == NULL)
 	{
-		qDebug() << "Error creating shapefile feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"OGR error creating shapefile feature.");
+		qDebug() << "Error creating OGR feature.";
+		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
 	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
@@ -511,24 +618,38 @@ GPlatesFileIO::OgrWriter::write_polyline_feature(
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere, 
 	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 {	
-
+#if 0
 	// Check that we have a valid data_source.
 	if (d_ogr_data_source_ptr == NULL)
 	{
 		qDebug() << "NULL data source in write_polyline_feature";
 		return;
 	}
+#endif
+
+	// Create line data source if it doesn't already exist.
+	if (d_ogr_line_data_source_ptr == NULL)
+	{
+		QString data_source_name = d_filename;
+		if (d_multiple_geometry_types)
+		{
+			data_source_name.append("_polyline");
+		}
+		data_source_name.append(".").append(d_extension);
+
+		create_data_source(d_ogr_driver_ptr, d_ogr_line_data_source_ptr, data_source_name);
+	}
 
 	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_data_source_ptr,d_ogr_polyline_layer,wkbLineString,
-		QString(d_root_filename + "_polyline"),key_value_dictionary);
+	setup_layer(d_ogr_line_data_source_ptr,d_ogr_polyline_layer,wkbLineString,
+		QString(d_layer_basename + "_polyline"),key_value_dictionary);
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_polyline_layer)->GetLayerDefn());
 
 	if (ogr_feature == NULL)
 	{
-		qDebug() << "Error creating shapefile feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"OGR error creating shapefile feature.");
+		qDebug() << "Error creating OGR feature.";
+		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
 	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
@@ -566,7 +687,7 @@ GPlatesFileIO::OgrWriter::write_polyline_feature(
 
 
 void
-GPlatesFileIO::OgrWriter::write_polyline_feature(
+GPlatesFileIO::OgrWriter::write_multi_polyline_feature(
 	const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polylines, 
 	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 {
@@ -576,24 +697,29 @@ GPlatesFileIO::OgrWriter::write_polyline_feature(
 		return;
 	}
 
-
-	// Check that we have a valid data_source.
-	if (d_ogr_data_source_ptr == NULL)
+	// Create line data source if it doesn't already exist.
+	if (d_ogr_line_data_source_ptr == NULL)
 	{
-		qDebug() << "NULL data source in write_polyline_feature";
-		return;
+		QString data_source_name = d_filename;
+		if (d_multiple_geometry_types)
+		{
+			data_source_name.append("_polyline");
+		}
+		data_source_name.append(".").append(d_extension);
+
+		create_data_source(d_ogr_driver_ptr, d_ogr_line_data_source_ptr, data_source_name);
 	}
 
 	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_data_source_ptr,d_ogr_polyline_layer,wkbMultiLineString,
-		QString(d_root_filename + "_polyline"),key_value_dictionary);
+	setup_layer(d_ogr_line_data_source_ptr,d_ogr_polyline_layer,wkbMultiLineString,
+		QString(d_layer_basename + "_polyline"),key_value_dictionary);
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_polyline_layer)->GetLayerDefn());
 
 	if (ogr_feature == NULL)
 	{
-		qDebug() << "Error creating shapefile feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"OGR error creating shapefile feature.");
+		qDebug() << "Error creating OGR feature.";
+		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
 	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
@@ -649,24 +775,30 @@ GPlatesFileIO::OgrWriter::write_polygon_feature(
 	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 {	
 
-	// Check that we have a valid data_source.
-	if (d_ogr_data_source_ptr == NULL)
+	// Create polygon data source if it doesn't already exist.
+	if (d_ogr_polygon_data_source_ptr == NULL)
 	{
-		qDebug() << "NULL data source in write_polygon_feature";
-		return;
+		QString data_source_name = d_filename;
+		if (d_multiple_geometry_types)
+		{
+			data_source_name.append("_polygon");
+		}
+		data_source_name.append(".").append(d_extension);
+
+		create_data_source(d_ogr_driver_ptr, d_ogr_polygon_data_source_ptr, data_source_name);
 	}
 
 	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_data_source_ptr,d_ogr_polygon_layer,wkbPolygon,
-		QString(d_root_filename + "_polygon"),key_value_dictionary);
+	setup_layer(d_ogr_polygon_data_source_ptr,d_ogr_polygon_layer,wkbPolygon,
+		QString(d_layer_basename + "_polygon"),key_value_dictionary);
 
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_polygon_layer)->GetLayerDefn());
 
 	if (ogr_feature == NULL)
 	{
-		qDebug() << "Error creating shapefile feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"OGR error creating shapefile feature.");
+		qDebug() << "Error creating OGR feature.";
+		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
 	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
@@ -710,7 +842,7 @@ GPlatesFileIO::OgrWriter::write_polygon_feature(
 }
 
 void
-GPlatesFileIO::OgrWriter::write_polygon_feature(
+GPlatesFileIO::OgrWriter::write_multi_polygon_feature(
 	const std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &polygons, 
 	const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 {
@@ -720,24 +852,30 @@ GPlatesFileIO::OgrWriter::write_polygon_feature(
 		return;
 	}
 
-	// Check that we have a valid data_source.
-	if (d_ogr_data_source_ptr == NULL)
+	// Create polygon data source if it doesn't already exist.
+	if (d_ogr_polygon_data_source_ptr == NULL)
 	{
-		qDebug() << "NULL data source in write_polygon_feature";
-		return;
+		QString data_source_name = d_filename;
+		if (d_multiple_geometry_types)
+		{
+			data_source_name.append("_polygon");
+		}
+		data_source_name.append(".").append(d_extension);
+
+		create_data_source(d_ogr_driver_ptr, d_ogr_polygon_data_source_ptr, data_source_name);
 	}
 
 	// Create the layer, if it doesn't already exist, and add any attribute names.
-	setup_layer(d_ogr_data_source_ptr,d_ogr_polygon_layer,wkbMultiPolygon,
-		QString(d_root_filename + "_polygon"),key_value_dictionary);
+	setup_layer(d_ogr_polygon_data_source_ptr,d_ogr_polygon_layer,wkbMultiPolygon,
+		QString(d_layer_basename + "_polygon"),key_value_dictionary);
 
 
 	OGRFeature *ogr_feature = OGRFeature::CreateFeature((*d_ogr_polygon_layer)->GetLayerDefn());
 
 	if (ogr_feature == NULL)
 	{
-		qDebug() << "Error creating shapefile feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"OGR error creating shapefile feature.");
+		qDebug() << "Error creating OGR feature.";
+		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
 	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))

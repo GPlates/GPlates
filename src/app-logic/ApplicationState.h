@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -42,7 +42,7 @@
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
 
-#include "global/config.h"
+#include "global/python.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
@@ -54,6 +54,11 @@
 // This header gets included in a lot of other files and we want to reduce compile times.
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
+namespace GPlatesApi
+{
+	class PythonRunner;
+	class PythonExecutionThread;
+}
 
 namespace GPlatesAppLogic
 {
@@ -61,6 +66,8 @@ namespace GPlatesAppLogic
 	class LayerTask;
 	class LayerTaskRegistry;
 	class ReconstructGraph;
+	class ReconstructMethodRegistry;
+	class Serialization;
 	class SessionManagement;
 	class UserPreferences;
 
@@ -78,7 +85,6 @@ namespace GPlatesAppLogic
 		ApplicationState();
 
 		~ApplicationState();
-
 
 		GPlatesModel::ModelInterface &
 		get_model_interface()
@@ -104,12 +110,12 @@ namespace GPlatesAppLogic
 		const Reconstruction &
 		get_current_reconstruction() const;
 
+
 		/**
 		 * Keeps track of active feature collections loaded from files.
 		 */
 		FeatureCollectionFileState &
 		get_feature_collection_file_state();
-
 
 		/**
 		 * Handling reading/writing feature collection files and notification of read errors.
@@ -117,6 +123,11 @@ namespace GPlatesAppLogic
 		FeatureCollectionFileIO &
 		get_feature_collection_file_io();
 
+		/**
+		 * Helper for dealing with e.g. boost::serialize
+		 */
+		GPlatesAppLogic::Serialization &
+		get_serialization();
 
 		/**
 		 * Stores/Loads loaded file information to and from persistent storage.
@@ -124,20 +135,26 @@ namespace GPlatesAppLogic
 		GPlatesAppLogic::SessionManagement &
 		get_session_management();
 
-
 		/**
 		 * Responsible for all persistent GPlates session storage including user preferences.
 		 */
 		GPlatesAppLogic::UserPreferences &
 		get_user_preferences();
 
+		/**
+		 * Returns the registry of various ways to reconstruct a feature
+		 * into @a ReconstructedFeatureGeometry objects.
+		 *
+		 * This is exposed so that later we can registry user python reconstruct methods.
+		 */
+		ReconstructMethodRegistry &
+		get_reconstruct_method_registry();
 
 		/**
 		 * Returns the layer task registry used to create layer tasks.
 		 */
 		LayerTaskRegistry &
 		get_layer_task_registry();
-
 
 		/**
 		 * Returns the reconstruct graph containing the connected layer tasks.
@@ -147,7 +164,6 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructGraph &
 		get_reconstruct_graph();
-
 
 		/**
 		 * Create any auto-generate layers necessary and connect to @a file_ref.
@@ -164,13 +180,141 @@ namespace GPlatesAppLogic
 		update_layers(
 				const FeatureCollectionFileState::file_reference &file_ref);
 
-#if defined(GPLATES_HAS_PYTHON)
-		int
-		get_num() const
+		/**
+		 * If @a update_default is true, this updates the default reconstruction tree
+		 * when the user loads a new rotation file.
+		 */
+		void
+		set_update_default_reconstruction_tree_layer(
+				bool update_default = true)
 		{
-			return 17;
+			d_update_default_reconstruction_tree_layer = update_default;
+		}
+
+		/**
+		 * Returns whether this is updating the default reconstruction tree when the
+		 * user loads a new rotation file.
+		 */
+		bool
+		is_updating_default_reconstruction_tree_layer() const
+		{
+			return d_update_default_reconstruction_tree_layer;
+		}
+
+#if !defined(GPLATES_NO_PYTHON)
+		const boost::python::object &
+		get_python_main_module() const
+		{
+			return d_python_main_module;
+		}
+
+		const boost::python::object &
+		get_python_main_namespace() const
+		{
+			return d_python_main_namespace;
 		}
 #endif
+
+		/**
+		 * Returns an object that runs Python on the main thread.
+		 */
+		GPlatesApi::PythonRunner *
+		get_python_runner() const
+		{
+			return d_python_runner;
+		}
+
+		/**
+		 * Returns a thread on which Python code can be run off the main thread.
+		 */
+		GPlatesApi::PythonExecutionThread *
+		get_python_execution_thread()
+		{
+			return d_python_execution_thread;
+		}
+
+
+		/**
+		 * Suppress the normal auto-creation of layers upon file load in handle_file_state_files_added(),
+		 * which would normally be triggered by a call to FeatureCollectionFileIO::load_files().
+		 *
+		 * This is called from SessionManagement during the loading of a previous Session.
+		 */
+		void
+		suppress_auto_layer_creation(
+				bool suppress)
+		{
+			d_suppress_auto_layer_creation = suppress;
+		}
+
+
+		/**
+		 * A convenience class that blocks calls to @a reconstruct and optionally also
+		 * calls @a reconstruct when at the scope exit.
+		 *
+		 * This is useful for clients that are going to call @a reconstruct explicitly but
+		 * don't want any unnecessary calls to @a reconstruct to be triggered before then.
+		 *
+		 * This is currently used by the file loading code to allow loading of multiple
+		 * files in one group without causing each file loaded to trigger a separate reconstruction
+		 * which can slow loading significantly. Things which trigger the individual loads are
+		 * signals emitted when connecting newly created layers.
+		 *
+		 * These objects can be nested in which case only the destructor of the outermost
+		 * scoped object will call @a reconstruct.
+		 */
+		class ScopedReconstructGuard :
+				public boost::noncopyable
+		{
+		public:
+			/**
+			 * Constructor blocks calls to @a reconstruct.
+			 *
+			 * Also optionally calls @a reconstruct on scope exit if @a call_reconstruct_on_scope_exit is true.
+			 */
+			explicit
+			ScopedReconstructGuard(
+					ApplicationState &application_state,
+					bool reconstruct_on_scope_exit = false) :
+				d_application_state(application_state),
+				d_call_reconstruct_on_scope_exit(reconstruct_on_scope_exit)
+			{
+				d_application_state.begin_reconstruct_on_scope_exit();
+			}
+
+			/**
+			 * Destructor unblocks calls to @a reconstruct but does *not* detect and re-issue
+			 * any blocked calls to @a reconstruct.
+			 *
+			 * But it does call @a reconstruct if 'call_reconstruct_on_scope_exit' was specified in constructor.
+			 *
+			 * NOTE: Only unblocks when *all* existing @a ScopedReconstructGuard objects go out of scope.
+			 */
+			~ScopedReconstructGuard()
+			{
+				d_application_state.end_reconstruct_on_scope_exit(d_call_reconstruct_on_scope_exit);
+			}
+
+			/**
+			 * Causes @a reconstruct to be called on scope exit (more specifically when *all*
+			 * existing @a ScopedReconstructGuard objects go out of scope).
+			 *
+			 * NOTE: Only one @a ScopedReconstructGuard object out of a nested group of objects
+			 * needs to call this for @a reconstruct to be called (when all objects go out of scope).
+			 *
+			 * It is useful to call this near the end of the scope to avoid @a reconstruct being
+			 * called if an exception is thrown (because destructors are called during stack unwind).
+			 */
+			void
+			call_reconstruct_on_scope_exit()
+			{
+				d_call_reconstruct_on_scope_exit = true;
+			}
+
+		private:
+			ApplicationState &d_application_state;
+			bool d_call_reconstruct_on_scope_exit;
+		};
 
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -267,10 +411,15 @@ namespace GPlatesAppLogic
 		 */
 		boost::scoped_ptr<FeatureCollectionFileIO> d_feature_collection_file_io;
 
-
+		boost::scoped_ptr<Serialization> d_serialization_ptr;
 		boost::scoped_ptr<SessionManagement> d_session_management_ptr;
 
 		boost::scoped_ptr<UserPreferences> d_user_preferences_ptr;
+
+		/**
+		 * A registry for various ways to reconstruct a feature into @a ReconstructedFeatureGeometry objects.
+		 */
+		boost::scoped_ptr<ReconstructMethodRegistry> d_reconstruct_method_registry;
 
 		/**
 		 * The layer task registry is used to create layer tasks.
@@ -299,6 +448,11 @@ namespace GPlatesAppLogic
 		default_reconstruction_tree_layer_stack_type d_default_reconstruction_tree_layer_stack;
 
 		/**
+		 * If true, changes the default reconstruction tree layer upon loading a rotation file.
+		 */
+		bool d_update_default_reconstruction_tree_layer;
+
+		/**
 		 * The current reconstruction time.
 		 */
 		double d_reconstruction_time;
@@ -314,6 +468,53 @@ namespace GPlatesAppLogic
 		Reconstruction::non_null_ptr_to_const_type d_reconstruction;
 
 		/**
+		 * Keep tracks of the nesting of @a ScopedReconstruct objects.
+		 *
+		 * When the count reaches zero then @a reconstruct will be called and
+		 * subsequent calls to @a reconstruct will no longer be blocked.
+		 */
+		int d_scoped_reconstruct_nesting_count;
+
+		/**
+		 * Used, along with @a d_scoped_reconstruct_nesting_count, to determine if @a reconstruct
+		 * should be called when all @a ScopedReconstructGuard objects go out of scope.
+		 */
+		bool d_reconstruct_on_scope_exit;
+
+#if !defined(GPLATES_NO_PYTHON)
+		/**
+		 * The "__main__" Python module.
+		 */
+		boost::python::object d_python_main_module;
+
+		/**
+		 * The "__dict__" attribute of the "__main__" Python module.
+		 * This is useful for passing into exec() and eval() for context.
+		 */
+		boost::python::object d_python_main_namespace;
+#endif
+
+		/**
+		 * Runs Python code on the main thread.
+		 *
+		 * Memory managed by Qt.
+		 */
+		GPlatesApi::PythonRunner *d_python_runner;
+
+		/**
+		 * The thread on which Python is executed, off the main thread.
+		 *
+		 * Memory is managed by Qt.
+		 */
+		GPlatesApi::PythonExecutionThread *d_python_execution_thread;
+
+		/**
+		 * Suppress the normal auto-creation of layers upon file load in handle_file_state_files_added(),
+		 * which would normally be triggered by a call to FeatureCollectionFileIO::load_files().
+		 */
+		bool d_suppress_auto_layer_creation;
+
+		/**
 		 * Make signal/slot connections that coordinate the application logic structure
 		 * of the application.
 		 *
@@ -322,19 +523,24 @@ namespace GPlatesAppLogic
 		void
 		mediate_signal_slot_connections();
 
+		//! Begin blocking of calls to @a reconstruct.
+		void
+		begin_reconstruct_on_scope_exit();
+
+		/**
+		 * Ends blocking of calls to @a reconstruct and calls @a reconstruct if the nested
+		 * scope count decrements to zero.
+		 */
+		void
+		end_reconstruct_on_scope_exit(
+				bool reconstruct_on_scope_exit);
+
 		/**
 		 * Creates all layer tasks that can process @a input_feature_collection.
 		 */
 		std::vector< boost::shared_ptr<LayerTask> >
 		create_layer_tasks(
 				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &input_feature_collection);
-
-		/**
-		 * Creates a layer task from @a layer_task_type if it's a *primary* layer task type.
-		 */
-		boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> >
-		create_primary_layer_task(
-				LayerTaskRegistry::LayerTaskType& layer_task_type);
 
 		/**
 		 * Creates new layer(s) that can process the feature collection in @a input_file_ref and
@@ -347,10 +553,13 @@ namespace GPlatesAppLogic
 		/**
 		 * Creates a new layer using @a layer_task and connects @a file_ref to the main input channel.
 		 */
-		void
+		Layer
 		create_layer(
 				const FeatureCollectionFileState::file_reference &file_ref,
 				const boost::shared_ptr<LayerTask> &layer_task);
+
+		// Make friend so can call @a begin_reconstruct_on_scope_exit and @a end_reconstruct_on_scope_exit.
+		friend class ScopedReconstructGuard;
 	};
 }
 

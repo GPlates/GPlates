@@ -28,6 +28,7 @@
 #define GPLATES_FILEIO_RECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
 
 #include <vector>
+#include <QFileInfo>
 #include <QString>
 
 #include "file-io/File.h"
@@ -51,16 +52,10 @@ namespace GPlatesFileIO
 
 			GMT,               //!< '.xy' extension.
 			
-			SHAPEFILE          //!< '.shp' extension.
+			SHAPEFILE,         //!< '.shp' extension.
+
+			OGRGMT			   //!< '.gmt' extension.
 		};
-
-
-		//! Typedef for sequence of feature collection files.
-		typedef std::vector<const GPlatesFileIO::File::Reference *> files_collection_type;
-
-		//! Typedef for sequence of RFGs.
-		typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>
-				reconstructed_feature_geom_seq_type;
 
 
 		/**
@@ -68,14 +63,23 @@ namespace GPlatesFileIO
 		 *
 		 * @param file_info file whose extension used to determine file format.
 		 */
-		ReconstructedFeatureGeometryExport::Format
+		Format
 		get_export_file_format(
 				const QFileInfo& file_info);
+
 
 		/**
 		 * Exports @a ReconstructedFeatureGeometry objects.
 		 *
 		 * @param export_format specifies which format to write.
+		 * @param export_single_output_file specifies whether to write all reconstruction geometries
+		 *        to a single file.
+		 * @param export_per_input_file specifies whether to group
+		 *        reconstruction geometries according to the input files their features came from
+		 *        and write to corresponding output files.
+		 *
+		 * Note that both @a export_single_output_file and @a export_per_input_file can be true
+		 * in which case both a single output file is exported as well as grouped output files.
 		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 * @throws FileFormatNotSupportedException if file format not supported.
@@ -83,40 +87,14 @@ namespace GPlatesFileIO
 		void
 		export_reconstructed_feature_geometries(
 				const QString &filename,
-				ReconstructedFeatureGeometryExport::Format export_format,
-				const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
-				const files_collection_type &active_files,
+				Format export_format,
+				const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> &reconstructed_feature_geom_seq,
+				const std::vector<const File::Reference *> &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time);
-
-
-		/**
-		 * Exports @a ReconstructedFeatureGeometry objects.
-		 *
-		 * @param file_info file whose extension is used to determine which format to write.
-		 *
-		 * @throws ErrorOpeningFileForWritingException if file is not writable.
-		 * @throws FileFormatNotSupportedException if file format not supported.
-		 */
-		inline
-		void
-		export_reconstructed_feature_geometries(
-				const QString &filename,
-				const reconstructed_feature_geom_seq_type &reconstructed_feature_geom_seq,
-				const files_collection_type &active_files,
-				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-				const double &reconstruction_time)
-		{
-			export_reconstructed_feature_geometries(
-					filename,
-					get_export_file_format(filename),
-					reconstructed_feature_geom_seq,
-					active_files,
-					reconstruction_anchor_plate_id,
-					reconstruction_time);
-		}
+				const double &reconstruction_time,
+				bool export_single_output_file,
+				bool export_per_input_file);
 	}
-
 }
 
 #endif // GPLATES_FILEIO_RECONSTRUCTEDFEATUREGEOMETRYEXPORT_H

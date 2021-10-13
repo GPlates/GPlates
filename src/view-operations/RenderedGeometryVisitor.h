@@ -31,6 +31,7 @@
 namespace GPlatesViewOperations
 {
 	class RenderedArrowedPolyline;
+	class RenderedCrossSymbol;
 	class RenderedEllipse;
 	class RenderedPointOnSphere;
 	class RenderedMultiPointOnSphere;
@@ -41,7 +42,9 @@ namespace GPlatesViewOperations
 	class RenderedResolvedRaster;
 	class RenderedSmallCircle;
 	class RenderedSmallCircleArc;	
+	class RenderedSquareSymbol;
 	class RenderedString;
+	class RenderedTriangleSymbol;
 
 	/**
 	 * Interface for visiting a derived @a RenderedGeometryImpl object.
@@ -61,6 +64,12 @@ namespace GPlatesViewOperations
 		void
 		visit_rendered_arrowed_polyline(
 				const GPlatesViewOperations::RenderedArrowedPolyline &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_cross_symbol(
+				const GPlatesViewOperations::RenderedCrossSymbol &)
 		{  }
 
 		virtual
@@ -124,11 +133,22 @@ namespace GPlatesViewOperations
 			const RenderedSmallCircleArc &)
 		{  }		
 		
+		virtual
+		void
+		visit_rendered_square_symbol(
+			const RenderedSquareSymbol &)
+		{  }
 
 		virtual
 		void
 		visit_rendered_string(
 				const RenderedString &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_triangle_symbol(
+				const RenderedTriangleSymbol &)
 		{  }
 	};
 }

@@ -55,7 +55,6 @@ namespace GPlatesAppLogic
 
 
 	// Forward declarations of ReconstructionGeometry derived types.
-	class AgeGridRaster;
 	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedFlowline;
@@ -114,11 +113,6 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryType, ResolvedRaster>::type
 						resolved_raster_type;
 
-		//! Typedef for @a AgeGridRaster of appropriate const-ness.
-		typedef typename GPlatesUtils::CopyConst<
-				ReconstructionGeometryType, AgeGridRaster>::type
-						age_grid_raster_type;
-
 		//! Typedef for @a ResolvedTopologicalBoundary of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, ResolvedTopologicalBoundary>::type
@@ -129,7 +123,7 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryType, ResolvedTopologicalNetwork>::type
 						resolved_topological_network_type;
 
-		//! Typedef for @a ResolvedTopologicalNetwork of appropriate const-ness.
+		//! Typedef for @a CoRegistrationData of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, CoRegistrationData>::type
 						co_registration_data_type;
@@ -206,16 +200,6 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<age_grid_raster_type> &agr)
-		{  }
-
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 		{  }
 
@@ -231,7 +215,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &rtn)
+				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crd)
 		{  }
 
 

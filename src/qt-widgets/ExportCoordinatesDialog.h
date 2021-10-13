@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -58,6 +59,20 @@ namespace GPlatesQtWidgets
 		
 	public:
 
+		/**
+		* Enumeration for the possible formats to export to.
+		* The order of these should match the setup of the @a combobox_format
+		* as set up in the designer.
+		*
+		* FIXME: When we implement the writers, we will probably want to associate
+		* information with these enums; this would be a good point to include the
+		* combobox text so we can set it up in code.
+		*/
+		enum OutputFormat
+		{
+			PLATES4, GMT, OGRGMT, SHAPEFILE,  WKT, CSV
+		};
+
 		explicit
 		ExportCoordinatesDialog(
 				GPlatesPresentation::ViewState &view_state,
@@ -81,24 +96,6 @@ namespace GPlatesQtWidgets
 		handle_format_selection(
 				int idx);
 		
-		void
-		select_to_file_stack()
-		{
-			stack_destination->setCurrentWidget(page_export_select_file);
-		}
-
-		void
-		select_to_clipboard_stack()
-		{
-			stack_destination->setCurrentWidget(page_export_clipboard);
-		}
-		
-		/**
-		 * Handles the selection of a filename to export to via QFileDialog.
-		 */
-		void
-		pop_up_file_browser();
-		
 		/**
 		 * The slot that gets called when the user clicks the Export button.
 		 */
@@ -107,19 +104,7 @@ namespace GPlatesQtWidgets
 
 	private:
 
-		/**
-		* Enumeration for the possible formats to export to.
-		* The order of these should match the setup of the @a combobox_format
-		* as set up in the designer.
-		*
-		* FIXME: When we implement the writers, we will probably want to associate
-		* information with these enums; this would be a good point to include the
-		* combobox text so we can set it up in code.
-		*/
-		enum OutputFormat
-		{
-			PLATES4, GMT, SHAPEFILE, WKT, CSV
-		};
+
 
 		/**
 		 * Enumeration for the order of coordinates to export with.
@@ -139,7 +124,7 @@ namespace GPlatesQtWidgets
 		 */
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry_opt_ptr;
 
-		SaveFileDialog d_save_file_dialog;
+		GPlatesPresentation::ViewState &d_view_state_ref;
 
 		/**
 		 * The small information dialog that pops up to explain the reason for the
@@ -154,13 +139,6 @@ namespace GPlatesQtWidgets
 		 */
 		static const QString s_terminating_point_information_text;
 	
-		/**
-		 * Export geometry in specified format.
-		 *
-		 * @param format format of geometry export.
-		 * @param text_stream output stream.
-		 */
-		void export_geometry( OutputFormat format, QTextStream &text_stream);
 
 		/**
 		 * Export geometry in specified format.

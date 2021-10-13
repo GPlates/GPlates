@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -28,13 +28,14 @@
 
 #include <QWidget>
 #include <QStackedWidget>
+#include <QAction>
 
-#include "DigitisationWidget.h"
-#include "ModifyGeometryWidget.h"
-#include "ModifyReconstructionPoleWidget.h"
 #include "ActionButtonBox.h"
+#include "TaskPanelWidget.h"
 
 #include "model/ModelInterface.h"
+#include "model/types.h"
+
 #include "presentation/ViewState.h"
 
 
@@ -63,8 +64,11 @@ namespace GPlatesViewOperations
 
 namespace GPlatesQtWidgets
 {
-	class ModifyGeometryWidget;
+	class DigitisationWidget;
+	class FeatureSummaryWidget;
 	class MeasureDistanceWidget;
+	class ModifyGeometryWidget;
+	class ModifyReconstructionPoleWidget;
 	class SnapNearbyVerticesWidget;
 	class TopologyToolsWidget;
 	class ViewportWindow;
@@ -73,10 +77,11 @@ namespace GPlatesQtWidgets
 	 * The Xtreme Task Panel - A contextual tabbed interface to expose powerful tasks
 	 * to manipulate GPlates.... to the XTREME!
 	 */
-	class TaskPanel:
+	class TaskPanel :
 			public QWidget
 	{
 		Q_OBJECT
+
 	public:
 
 		/**
@@ -92,7 +97,9 @@ namespace GPlatesQtWidgets
 			MODIFY_GEOMETRY,
 			MODIFY_POLE,
 			TOPOLOGY_TOOLS,
-			MEASURE_DISTANCE
+			MEASURE_DISTANCE,
+
+			NUM_PAGES // Must be the last entry.
 		};
 
 
@@ -104,6 +111,8 @@ namespace GPlatesQtWidgets
 				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
 				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 				ViewportWindow &viewport_window_,
+				QAction *undo_action_ptr,
+				QAction *redo_action_ptr,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				QWidget *parent_ = NULL);
 		
@@ -167,13 +176,22 @@ namespace GPlatesQtWidgets
 			return *d_measure_distance_widget_ptr;
 		}
 
-			
+		/**
+		 * Gets action shared between all task panel widgets that, when triggered,
+		 * clears the state of that widget.
+		 */
+		QAction *
+		get_clear_action()
+		{
+			return d_clear_action;
+		}
+
 		void
 		emit_vertex_data_changed_signal(
-			bool should_check_nearby_vertices,
-			double threshold,
-			bool should_use_plate_id,
-			GPlatesModel::integer_plate_id_type plate_id);
+				bool should_check_nearby_vertices,
+				double threshold,
+				bool should_use_plate_id,
+				GPlatesModel::integer_plate_id_type plate_id);
 			
 	signals:
 		
@@ -187,12 +205,9 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		choose_tab(
-				GPlatesQtWidgets::TaskPanel::Page page)
-		{
-			int page_idx = static_cast<int>(page);
-			d_stacked_widget_ptr->setCurrentIndex(page_idx);
-		}
+				GPlatesQtWidgets::TaskPanel::Page page);
 
+#if 0
 		/**
 		 * Used to disable (and re-enable) widgets for a particular tab.
 		 *
@@ -207,52 +222,39 @@ namespace GPlatesQtWidgets
 			int page_idx = static_cast<int>(page);
 			d_stacked_widget_ptr->widget(page_idx)->setEnabled(enabled);
 		}
-		
-		
-		void
-		choose_feature_tab()
-		{
-			choose_tab(CURRENT_FEATURE);
-		}
+#endif
 		
 		void
-		choose_digitisation_tab()
-		{
-			choose_tab(DIGITISATION);
-			d_digitisation_widget_ptr->reload_coordinates_table_if_necessary();
-		}		
+		choose_feature_tab();
 		
 		void
-		choose_modify_geometry_tab()
-		{
-			choose_tab(MODIFY_GEOMETRY);
-			d_modify_geometry_widget_ptr->reload_coordinates_table_if_necessary();
-		}		
+		choose_digitisation_tab();
+		
+		void
+		choose_modify_geometry_tab();
 
 		void
-		choose_modify_pole_tab()
-		{
-			choose_tab(MODIFY_POLE);
-		}		
+		choose_modify_pole_tab();
 		
 		void
-		choose_topology_tools_tab()
-		{
-			choose_tab(TOPOLOGY_TOOLS);
-		}
+		choose_topology_tools_tab();
 
 		void
-		choose_measure_distance_tab()
-		{
-			choose_tab(MEASURE_DISTANCE);
-		}
+		choose_measure_distance_tab();
 
 		void
 		enable_move_nearby_vertices_widget(
-			bool enable);
-			
+				bool enable);
 
-			
+	private slots:
+
+		void
+		handle_clear_action_enabled_changed(
+				bool enabled);
+
+		void
+		handle_clear_action_triggered();
+
 	private:
 		
 		/**
@@ -334,45 +336,71 @@ namespace GPlatesQtWidgets
 		 * All you need to do is tell it how many columns to use and the pixel size of
 		 * their icons (done in TaskPanel's initialiser list).
 		 */
-		GPlatesQtWidgets::ActionButtonBox *d_feature_action_button_box_ptr;
+		ActionButtonBox *d_feature_action_button_box_ptr;
 
-		/**
-		 * Widget responsible for the controls in the Digitisation Tab.
-		 * Memory managed by Qt.
-		 */
-		GPlatesQtWidgets::DigitisationWidget *d_digitisation_widget_ptr;
-
-		/**
-		 * Widget responsible for the controls in the Modify Geometry Tab.
-		 * Memory managed by Qt.
-		 */
-		GPlatesQtWidgets::ModifyGeometryWidget *d_modify_geometry_widget_ptr;
-
-		/**
-		 * Widget responsible for the controls in the Modify Pole Tab.
-		 * Memory managed by Qt.
-		 */
-		GPlatesQtWidgets::ModifyReconstructionPoleWidget 
-										*d_modify_reconstruction_pole_widget_ptr;
-
-		/**
-		 * Widget responsible for the controls in the Topology Tools Tab.
-		 * Memory managed by Qt.
-		 */
-		GPlatesQtWidgets::TopologyToolsWidget *d_topology_tools_widget_ptr;
-		
 		/**
 		 * Widget for controls relating to moving nearby vertices
 		 */
-		GPlatesQtWidgets::SnapNearbyVerticesWidget *d_snap_nearby_vertices_widget_ptr;
-		 
+		SnapNearbyVerticesWidget *d_snap_nearby_vertices_widget_ptr;
 
 		/**
-		 * Widget responsible for the controls in the Measure Distance Tab.
-		 * Memory managed by Qt.
+		 * Action shared between all task panel widgets that, when triggered,
+		 * clears the state of that widget.
 		 */
-		GPlatesQtWidgets::MeasureDistanceWidget *d_measure_distance_widget_ptr;
+		QAction *d_clear_action;
 
+		// This union allows access to widgets by name and by index.
+		union
+		{
+			/**
+			 * An array of pointers to all the widgets in the various tabs.
+			 */
+			TaskPanelWidget *d_task_panel_widgets[NUM_PAGES];
+
+			struct
+			{
+				/**
+				 * Widget responsible for the controls in the Current Feature tab.
+				 * Memory managed by Qt.
+				 */
+				FeatureSummaryWidget *d_feature_summary_widget_ptr;
+
+				/**
+				 * Widget responsible for the controls in the Digitisation Tab.
+				 * Memory managed by Qt.
+				 */
+				DigitisationWidget *d_digitisation_widget_ptr;
+
+				/**
+				 * Widget responsible for the controls in the Modify Geometry Tab.
+				 * Memory managed by Qt.
+				 */
+				ModifyGeometryWidget *d_modify_geometry_widget_ptr;
+
+				/**
+				 * Widget responsible for the controls in the Modify Pole Tab.
+				 * Memory managed by Qt.
+				 */
+				ModifyReconstructionPoleWidget *d_modify_reconstruction_pole_widget_ptr;
+
+				/**
+				 * Widget responsible for the controls in the Topology Tools Tab.
+				 * Memory managed by Qt.
+				 */
+				TopologyToolsWidget *d_topology_tools_widget_ptr;
+				 
+				/**
+				 * Widget responsible for the controls in the Measure Distance Tab.
+				 * Memory managed by Qt.
+				 */
+				MeasureDistanceWidget *d_measure_distance_widget_ptr;
+			};
+		};
+
+		/**
+		 * The task panel widget currently active.
+		 */
+		TaskPanelWidget *d_active_widget;
 	};
 }
 

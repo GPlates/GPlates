@@ -50,6 +50,7 @@ namespace GPlatesGlobal
 				_msg(msg)
 			{  }
 
+			~InvalidParametersException() throw() { }
 		protected:
 			virtual const char *
 			exception_name() const {

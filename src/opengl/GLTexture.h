@@ -27,11 +27,12 @@
 #ifndef GPLATES_OPENGL_GLTEXTURE_H
 #define GPLATES_OPENGL_GLTEXTURE_H
 
+#include <memory> // For std::auto_ptr
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL.h>
 
-#include "GLResource.h"
+#include "GLTextureResource.h"
 
 
 namespace GPlatesOpenGL
@@ -59,6 +60,18 @@ namespace GPlatesOpenGL
 				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager)
 		{
 			return shared_ptr_type(new GLTexture(
+					GLTextureResource::create(texture_resource_manager)));
+		}
+
+		/**
+		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 */
+		static
+		std::auto_ptr<GLTexture>
+		create_as_auto_ptr(
+				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager)
+		{
+			return std::auto_ptr<GLTexture>(new GLTexture(
 					GLTextureResource::create(texture_resource_manager)));
 		}
 

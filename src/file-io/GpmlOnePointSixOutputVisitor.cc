@@ -76,6 +76,7 @@
 #include "property-values/GpmlRevisionId.h"
 #include "property-values/GpmlStringList.h"
 #include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlTopologicalInterior.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
@@ -1207,6 +1208,25 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_piecewise_aggregation(
 			d_output.writeEndElement();
 		}
 	d_output.writeEndElement();  // </gpml:IrregularSampling>
+}
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_topological_interior(
+	const GPlatesPropertyValues::GpmlTopologicalInterior &gpml_toplogical_interior)
+{
+	d_output.writeStartGpmlElement("TopologicalInterior");
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator iter;
+	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator end;
+	iter = gpml_toplogical_interior.sections().begin();
+	end = gpml_toplogical_interior.sections().end();
+
+	for ( ; iter != end; ++iter) 
+	{
+		d_output.writeStartGpmlElement("section");
+		(*iter)->accept_visitor(*this);
+		d_output.writeEndElement();
+	}
+	d_output.writeEndElement();  // </gpml:TopologicalInterior>
 }
 
 void

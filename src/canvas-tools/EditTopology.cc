@@ -61,14 +61,14 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 		GPlatesPresentation::ViewState &view_state_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesGui::FeatureTableModel &clicked_table_model_,	
-		GPlatesGui::TopologySectionsContainer &topology_sections_container,
+		// GPlatesGui::TopologySectionsContainer &topology_sections_container,
 		GPlatesQtWidgets::TopologyToolsWidget &topology_tools_widget,
 		GPlatesAppLogic::ApplicationState &application_state) :
 	CanvasTool(status_bar_callback),
 	d_rendered_geom_collection(&view_state_.get_rendered_geometry_collection()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_clicked_table_model_ptr(&clicked_table_model_),
-	d_topology_sections_container_ptr(&topology_sections_container),
+	// d_topology_sections_container_ptr(&topology_sections_container),
 	d_topology_tools_widget_ptr(&topology_tools_widget),
 	d_feature_focus_ptr(&view_state_.get_feature_focus()),
 	d_reconstruct_graph(application_state.get_reconstruct_graph())

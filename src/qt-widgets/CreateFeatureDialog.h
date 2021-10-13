@@ -33,7 +33,7 @@
 
 #include "CreateFeatureDialogUi.h"
 
-#include "app-logic/ReconstructionMethod.h"
+#include "app-logic/ReconstructMethodType.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -295,7 +295,7 @@ namespace GPlatesQtWidgets
 		 */
 		ChooseGeometryPropertyWidget *d_listwidget_geometry_destinations;
 
-		GPlatesAppLogic::ReconstructionMethod::Type d_recon_method;
+		GPlatesAppLogic::ReconstructMethod::Type d_recon_method;
 
 		/**
 		 *  Whether or not a customisable feature type has been selected.                                                                    

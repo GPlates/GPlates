@@ -33,7 +33,8 @@
 #include <QGLWidget>
 
 #include "GLRenderTargetFactory.h"
-#include "GLResourceManager.h"
+#include "GLTextureResource.h"
+#include "GLVertexBufferResource.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -112,13 +113,23 @@ namespace GPlatesOpenGL
 			 * Returns the texture resource manager.
 			 */
 			const boost::shared_ptr<GLTextureResourceManager> &
-			get_texture_resource_manager()
+			get_texture_resource_manager() const
 			{
 				return d_texture_resource_manager;
 			}
 
+			/**
+			 * Returns the vertex buffer resource manager.
+			 */
+			const boost::shared_ptr<GLVertexBufferResourceManager> &
+			get_vertex_buffer_resource_manager() const
+			{
+				return d_vertex_buffer_resource_manager;
+			}
+
 		private:
 			boost::shared_ptr<GLTextureResourceManager> d_texture_resource_manager;
+			boost::shared_ptr<GLVertexBufferResourceManager> d_vertex_buffer_resource_manager;
 		};
 
 
@@ -170,20 +181,14 @@ namespace GPlatesOpenGL
 		 * Call this before rendering a scene.
 		 */
 		void
-		begin_render()
-		{
-			get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources();
-		}
+		begin_render();
 
 
 		/**
 		 * Call this after rendering a scene.
 		 */
 		void
-		end_render()
-		{
-			get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources();
-		}
+		end_render();
 
 
 		/**

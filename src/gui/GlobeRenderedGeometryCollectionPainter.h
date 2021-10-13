@@ -31,18 +31,23 @@
 #include <boost/shared_ptr.hpp>
 
 #include "ColourScheme.h"
-#include "GlobeRenderedGeometryLayerPainter.h"
+#include "GlobeVisibilityTester.h"
 #include "PersistentOpenGLObjects.h"
 #include "RenderSettings.h"
+#include "TextRenderer.h"
 
 #include "opengl/GLContext.h"
-#include "opengl/GLRenderGraphInternalNode.h"
 #include "opengl/GLUNurbsRenderer.h"
 
 #include "presentation/VisualLayers.h"
 
 #include "view-operations/RenderedGeometryCollectionVisitor.h"
 
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+}
 
 namespace GPlatesViewOperations
 {
@@ -52,10 +57,6 @@ namespace GPlatesViewOperations
 
 namespace GPlatesGui
 {
-	class GlobeRenderedGeometryLayerPainter;
-	class GlobeVisibilityTester;
-	class RasterColourSchemeMap;
-
 	/**
 	 * Draws rendered geometries (in a @a RenderedGeometryCollection) onto a
 	 * 3D orthographic view of the globe using OpenGL.
@@ -72,7 +73,6 @@ namespace GPlatesGui
 				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
-				RasterColourSchemeMap &raster_colour_scheme_map,
 				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
@@ -85,7 +85,7 @@ namespace GPlatesGui
 		 */
 		void
 		paint(
-				const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_graph_node,
+				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
 				const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer);
 
@@ -114,15 +114,15 @@ namespace GPlatesGui
 		struct PaintParams
 		{
 			PaintParams(
-					const GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type &render_collection_node,
+					GPlatesOpenGL::GLRenderer &renderer,
 					const double &viewport_zoom_factor,
 					const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer) :
-				d_render_collection_node(render_collection_node),
+				d_renderer(&renderer),
 				d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
 				d_nurbs_renderer(nurbs_renderer)
 			{  }
 
-			GPlatesOpenGL::GLRenderGraphInternalNode::non_null_ptr_type d_render_collection_node;
+			GPlatesOpenGL::GLRenderer *d_renderer;
 			double d_inverse_viewport_zoom_factor;
 			GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type d_nurbs_renderer;
 		};
@@ -143,9 +143,6 @@ namespace GPlatesGui
 		//! Rendering flags to determine what gets shown
 		RenderSettings &d_render_settings;
 
-		//! Colour schemes for the app-logic layers.
-		RasterColourSchemeMap &d_raster_colour_scheme_map;
-		
 		//! Used for rendering text on an OpenGL canvas
 		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
 

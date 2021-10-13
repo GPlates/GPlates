@@ -32,14 +32,11 @@
 #include <map>
 
 #include "CoRegConfigurationTable.h"
-#include "AssociationOperator.h"
-#include "AssociationOperatorFactory.h"
+#include "Filter.h"
 #include "DataTable.h"
-#include "DataOperator.h"
-#include "DataOperatorFactory.h"
 
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructUtils.h"
-#include "app-logic/ReconstructedFeatureGeometryPopulator.h"
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
@@ -48,14 +45,13 @@
 #include "model/FeatureHandle.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
-#include "app-logic/ReconstructionGeometryCollection.h"
 
 #include "utils/UnicodeStringUtils.h"
 
 namespace GPlatesDataMining
 {
 	/*
-	*Comments...
+	* 
 	*/
 	class DataSelector
 	{
@@ -69,23 +65,12 @@ namespace GPlatesDataMining
 				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> > FeatureCollectionRFGMap;
 
 		static
-		DataSelector* 
+		boost::shared_ptr<DataSelector> 
 		create(
-				CoRegConfigurationTable& table)
+				const CoRegConfigurationTable& table)
 		{
-			return  new DataSelector(table) ;
+			return boost::shared_ptr<DataSelector>(new DataSelector(table));
 		}
-
-		/*
-		* Given the @a seed_collection and @a reconstruction, 
-		* the function returns the associated data in DataTable.
-		*/
-		void
-		select(
-				const GPlatesModel::FeatureCollectionHandle::const_weak_ref& seed_collection,	
-				const GPlatesAppLogic::Reconstruction* reconstruction,									
-				DataTable& ret														
-				);
 
 		
 		/*
@@ -93,8 +78,8 @@ namespace GPlatesDataMining
 		*/
 		void
 		select(
-				const std::vector<GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_to_const_type>& seed_collection,	
-				const std::vector<GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_to_const_type>& co_reg_collection,								
+				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>& seed_collection,	
+				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>& co_reg_collection,								
 				DataTable& ret														
 				);
 
@@ -120,9 +105,26 @@ namespace GPlatesDataMining
 		static
 		boost::shared_ptr< const AssociationOperator::AssociatedCollection > 
 		retrieve_associated_data_from_cache(
-				AssociationOperatorParameters,
+				FilterCfg,
 				GPlatesModel::FeatureCollectionHandle::const_weak_ref target_feature_collection,
 				const CacheMap& cache_map);
+
+		static
+		inline
+		void
+		set_data_table(
+				const DataTable& table)
+		{
+			d_data_table = table;
+		}
+
+		static
+		inline
+		const DataTable&
+		get_data_table()
+		{
+			return d_data_table;
+		}
 
 		~DataSelector()
 		{ }
@@ -182,14 +184,14 @@ namespace GPlatesDataMining
 		*/
 		void
 		construct_geometry_map(
-				const std::vector<GPlatesAppLogic::ReconstructionGeometryCollection::non_null_ptr_to_const_type>&,
+				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>&,
 				FeatureGeometryMap& the_map);
 		/*
 		*
 		*/
 		boost::shared_ptr< const AssociationOperator::AssociatedCollection > 
 		retrieve_associated_data_from_cache(
-				AssociationOperatorParameters,
+				FilterCfg,
 				GPlatesModel::FeatureCollectionHandle::const_weak_ref target_feature_collection);
 		/*
 		*
@@ -208,20 +210,28 @@ namespace GPlatesDataMining
 				const GPlatesModel::FeatureHandle* seed_feature,
 				const GPlatesModel::FeatureCollectionHandle* target_feature_collection);
 
+		/*
+		* Check if the configuration table is still valid.
+		*/
+		bool
+		is_cfg_table_valid();
+
+		void
+		append_seed_info(
+				const GPlatesModel::FeatureHandle*,
+				DataRowSharedPtr);
+		
 		//default constructor
 		DataSelector();
 
 		//copy constructor
-		DataSelector(
-				const DataSelector&);
+		DataSelector(const DataSelector&);
 		
-		//assignment
+		//assignment 
 		const DataSelector&
-		operator=(
-				const DataSelector&);
+		operator=(const DataSelector&);
 
-		DataSelector(
-				CoRegConfigurationTable &table) 
+		DataSelector(const CoRegConfigurationTable &table) 
 			: d_configuration_table(table)
 		{ }
 
@@ -231,6 +241,8 @@ namespace GPlatesDataMining
 		FeatureGeometryMap d_target_geometry_map;
 		
 		CacheMap d_associated_data_cache;
+
+		static DataTable d_data_table;
 
 	};
 }

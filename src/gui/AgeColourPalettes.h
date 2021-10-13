@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -30,6 +30,8 @@
 
 #include "Colour.h"
 #include "ColourPalette.h"
+#include "ColourPaletteVisitor.h"
+
 
 namespace GPlatesMaths
 {
@@ -40,12 +42,16 @@ namespace GPlatesGui
 {
 	class Colour;
 
-
+	/**
+	 * Abstract base class for colour palettes that colour by age. The youngest and
+	 * oldest ages coloured by the colour palette can be changed dynamically.
+	 */
 	class AgeColourPalette :
 			public ColourPalette<GPlatesMaths::Real>
 	{
 	public:
 
+		explicit
 		AgeColourPalette(
 				const double default_upper_bound,
 				const double default_lower_bound) :
@@ -64,7 +70,7 @@ namespace GPlatesGui
 		}
 
 		double
-		upper_bound() const
+		get_upper_bound() const
 		{
 			return d_upper_bound;
 		}
@@ -77,7 +83,7 @@ namespace GPlatesGui
 		}
 
 		double
-		lower_bound() const
+		get_lower_bound() const
 		{
 			return d_lower_bound;
 		}
@@ -88,6 +94,38 @@ namespace GPlatesGui
 		{
 			d_lower_bound = lower_bound_;
 		}
+
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			visitor.visit_age_colour_palette(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			visitor.visit_age_colour_palette(*this);
+		}
+
+		/**
+		 * Returns the colour for ages younger than the lower bound.
+		 * (The terminology "background" comes from CPT files.)
+		 */
+		virtual
+		Colour
+		get_background_colour() const = 0;
+
+		/**
+		 * Returns the colour for ages older than the upper bound.
+		 * (The terminology "foreground" comes from CPT files.)
+		 */
+		virtual
+		Colour
+		get_foreground_colour() const = 0;
 
 	protected:
 
@@ -111,9 +149,18 @@ namespace GPlatesGui
 		non_null_ptr_type
 		create();
 
+		virtual
 		boost::optional<Colour>
 		get_colour(
 				const GPlatesMaths::Real &geo_time) const;
+
+		virtual
+		Colour
+		get_background_colour() const;
+
+		virtual
+		Colour
+		get_foreground_colour() const;
 	
 	private:
 		
@@ -136,9 +183,18 @@ namespace GPlatesGui
 		non_null_ptr_type
 		create();
 
+		virtual
 		boost::optional<Colour>
 		get_colour(
 				const GPlatesMaths::Real &geo_time) const;
+
+		virtual
+		Colour
+		get_background_colour() const;
+
+		virtual
+		Colour
+		get_foreground_colour() const;
 
 	private:
 

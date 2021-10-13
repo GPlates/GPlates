@@ -30,9 +30,11 @@
 #include <cstddef> // For std::size_t
 #include <utility>
 #include <vector>
-#include <boost/iterator/iterator_traits.hpp>
-#include <boost/shared_array.hpp>
+#include <boost/optional.hpp>
+#include <boost/scoped_array.hpp>
 #include <opengl/OpenGL.h>
+
+#include "GLVertexBufferResource.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -41,155 +43,320 @@
 namespace GPlatesOpenGL
 {
 	/**
-	 * A utility class to wrap arrays in OpenGL (such as vertex and index arrays) and
-	 * retains ownership of the array data (possibly shared ownership) but can
-	 * only access the array via a 'void' pointer.
+	 * An interface class for arrays in OpenGL (such as vertex and index arrays).
 	 */
-	class GLArray
+	class GLArray :
+			public GPlatesUtils::ReferenceCount<GLArray>
 	{
 	public:
-		/**
-		 * Constructor.
-		 *
-		 * The array data is copied into an internal array.
-		 *
-		 * @a ElementType is the type (or structure) of the data passed in.
-		 * For example it could be a vertex structure for a vertex array or
-		 * a GL_UNSIGNED_SHORT for a vertex index array.
-		 */
-		template <class ElementType>
-		explicit
-		GLArray(
-				const std::vector<ElementType> &elements) :
-			d_array(new ArrayStorage<ElementType>(elements))
-		{  }
+		typedef GPlatesUtils::non_null_intrusive_ptr<GLArray> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GLArray> non_null_ptr_to_const_type;
 
-		/**
-		 * Constructor.
-		 *
-		 * The array data is copied into an internal array.
-		 *
-		 * @a ElementForwardIter is an iterator of the type (or structure) of the data passed in.
-		 * For example it could be a vertex structure for a vertex array or
-		 * a GL_UNSIGNED_SHORT for a vertex index array.
-		 */
-		template <typename ElementForwardIter>
-		GLArray(
-				ElementForwardIter begin,
-				ElementForwardIter end) :
-			d_array(
-					new ArrayStorage<typename boost::iterator_value<ElementForwardIter>::type>(
-							begin, end))
-		{  }
-
-		/**
-		 * Constructor.
-		 *
-		 * The array data is shared internally and hence is less expensive
-		 * than the constructor accepting a std::vector.
-		 *
-		 * @a ElementType is the type (or structure) of the data passed in.
-		 * For example it could be a vertex structure for a vertex array or
-		 * a GL_UNSIGNED_SHORT for a vertex index array.
-		 */
-		template <class ElementType>
-		explicit
-		GLArray(
-				const boost::shared_array<ElementType> &elements) :
-			d_array(new ArrayStorage<ElementType>(elements))
-		{  }
-
-
-		/**
-		 * Returns the opaque void pointer to the internal array.
-		 */
-		const void *
-		get_array() const
+		//! The type of array.
+		enum ArrayType
 		{
-			return d_array->opaque_array;
+			// Array is used to store the vertices themselves.
+			ARRAY_TYPE_VERTICES,
+
+			// Array is used to store the indices (into vertex array) used to build primitives.
+			ARRAY_TYPE_VERTEX_ELEMENTS
+		};
+
+		//! The usage of the array.
+		enum UsageType
+		{
+			// You will specify the data only once,
+			// then use it many times without modifying it.
+			USAGE_STATIC,
+
+			// You will specify or modify the data repeatedly,
+			// and use it repeatedly after each time you do this.
+			USAGE_DYNAMIC,
+
+			// You will modify the data once, then use it once,
+			// and repeat this process many times.
+			USAGE_STREAM
+		};
+
+
+		/**
+		 * Creates an array of the appropriate internal array structure - either system memory
+		 * or a vertex buffer object (OpenGL extension) - but stores no data in it.
+		 *
+		 * If @a vertex_buffer_manager is not none and the vertex buffer objects extension
+		 * is supported then then internal buffer will be a vertex buffer object.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				ArrayType array_type,
+				UsageType usage_type,
+				const boost::optional<GLVertexBufferResourceManager::shared_ptr_type> &
+						vertex_buffer_manager = boost::none);
+
+
+		/**
+		 * Wrap the specified elements in an internal array structure - either system memory
+		 * or a vertex buffer object (OpenGL extension).
+		 *
+		 * If @a vertex_buffer_manager is not none and the vertex buffer objects extension
+		 * is supported then then internal buffer will be a vertex buffer object.
+		 *
+		 * @a ElementType is the type (or structure) of the data passed in.
+		 * For example it could be a vertex structure for a vertex array or
+		 * a GL_UNSIGNED_SHORT for a vertex index array.
+		 */
+		template <class ElementType>
+		static
+		non_null_ptr_type
+		create(
+				const ElementType *elements,
+				const unsigned int num_elements,
+				ArrayType array_type,
+				UsageType usage_type,
+				const boost::optional<GLVertexBufferResourceManager::shared_ptr_type> &
+						vertex_buffer_manager = boost::none);
+
+
+		/**
+		 * Wrap the specified elements in an internal array structure - either system memory
+		 * or a vertex buffer object (OpenGL extension).
+		 *
+		 * If @a vertex_buffer_manager is not none and the vertex buffer objects extension
+		 * is supported then then internal buffer will be a vertex buffer object.
+		 *
+		 * @a ElementType is the type (or structure) of the data passed in.
+		 * For example it could be a vertex structure for a vertex array or
+		 * a GL_UNSIGNED_SHORT for a vertex index array.
+		 */
+		template <class ElementType>
+		static
+		non_null_ptr_type
+		create(
+				const std::vector<ElementType> &elements,
+				ArrayType array_type,
+				UsageType usage_type,
+				const boost::optional<GLVertexBufferResourceManager::shared_ptr_type> &
+						vertex_buffer_manager = boost::none)
+		{
+			return create(&elements[0], elements.size(), array_type, usage_type, vertex_buffer_manager);
 		}
 
-	private:
-		//! Keeps a void pointer to the array.
-		struct Array :
-				public GPlatesUtils::ReferenceCount<Array>
-		{
-			typedef GPlatesUtils::non_null_intrusive_ptr<Array> non_null_ptr_type;
-			typedef GPlatesUtils::non_null_intrusive_ptr<const Array> non_null_ptr_to_const_type;
 
-			virtual
-			~Array()
-			{  }
-
-			void *opaque_array;
-		};
-
-		//! Stores the actual elements.
-		template <class ElementType>
-		struct ArrayStorage :
-				public Array
-		{
-			explicit
-			ArrayStorage(
-					const std::vector<ElementType> &elements)
-			{
-				initialise_storage(elements.begin(), elements.end());
-
-				// Store void pointer in base class.
-				opaque_array = array_storage.get();
-			}
-
-			template <typename ElementForwardIter>
-			ArrayStorage(
-					ElementForwardIter begin,
-					ElementForwardIter end)
-			{
-				initialise_storage(begin, end);
-
-				// Store void pointer in base class.
-				opaque_array = array_storage.get();
-			}
-
-			explicit
-			ArrayStorage(
-					const boost::shared_array<ElementType> &elements) :
-				array_storage(elements)
-			{
-				// Store void pointer in base class.
-				opaque_array = array_storage.get();
-			}
-
-
-		private:
-			boost::shared_array<ElementType> array_storage;
-
-
-			template <typename ElementForwardIter>
-			void
-			initialise_storage(
-					ElementForwardIter begin,
-					ElementForwardIter end)
-			{
-				// Allocate storage.
-				const std::size_t num_elements = std::distance(begin, end);
-				array_storage.reset(new ElementType[num_elements]);
-
-				// Copy the elements into our internal array.
-				ElementType *const dst = array_storage.get();
-				ElementForwardIter src = begin;
-				for (std::size_t n = 0; n < num_elements; ++n, ++src)
-				{
-					dst[n] = *src;
-				}
-			}
-		};
+		virtual
+		~GLArray()
+		{  }
 
 
 		/**
-		 * The array data.
+		 * Specifies the array data to be used for this @a GLArray.
+		 *
+		 * The array data is copied into an internal array.
+		 *
+		 * This method can be used to set the array data if the @a create overload
+		 * with no data was used to create 'this' object, or this method can be used
+		 * to change the array data.
 		 */
-		Array::non_null_ptr_type d_array;
+		template <class ElementType>
+		void
+		set_array_data(
+				const ElementType *elements,
+				const unsigned int num_elements)
+		{
+			set_buffer_data(elements, num_elements * sizeof(ElementType));
+		}
+
+
+		/**
+		 * Specifies the array data to be used for this @a GLArray.
+		 *
+		 * The array data is copied into an internal array.
+		 *
+		 * This method can be used to set the array data if the @a create overload
+		 * with no data was used to create 'this' object, or this method can be used
+		 * to change the array data.
+		 */
+		template <class ElementType>
+		void
+		set_array_data(
+				const std::vector<ElementType> &elements)
+		{
+			set_array_data(&elements[0], elements.size());
+		}
+
+
+		/**
+		 * Binds the internal array (if applicable) and returns the opaque void pointer to
+		 * the internal array data.
+		 *
+		 * Note that binding the internal array is currently only applicable to the
+		 * vertex buffer objects OpenGL extension.
+		 *
+		 * Note that for vertex buffer objects (internal array) the returned pointer is NULL.
+		 */
+		virtual
+		const GLubyte *
+		bind() const = 0;
+
+
+		/**
+		 * Unbinds the internal array (if applicable).
+		 *
+		 * Note that unbinding the internal array is currently only applicable to the
+		 * vertex buffer objects OpenGL extension.
+		 */
+		virtual
+		void
+		unbind() const = 0;
+
+	private:
+		/**
+		 * Implementation method (derived class) that copies array to internal
+		 * implementation-defined buffer.
+		 */
+		virtual
+		void
+		set_buffer_data(
+				const void *array_data,
+				unsigned int num_bytes) = 0;
 	};
+
+
+	//
+	// Implementation
+	//
+
+
+	/**
+	 * Stores the elements in system memory.
+	 */
+	class GLSystemMemoryArray :
+			public GLArray
+	{
+	public:
+		//! Constructor - stores no data.
+		GLSystemMemoryArray();
+
+		GLSystemMemoryArray(
+				const void *array_data,
+				unsigned int num_bytes);
+
+
+		virtual
+		const GLubyte *
+		bind() const
+		{
+			// Nothing to do except return the pointer to our internal array.
+			return d_array_storage.get();
+		}
+
+
+		virtual
+		void
+		unbind() const
+		{
+			// Nothing to do.
+		}
+
+
+		virtual
+		void
+		set_buffer_data(
+				const void *array_data,
+				unsigned int num_bytes);
+
+
+	private:
+		boost::scoped_array<GLubyte> d_array_storage;
+		unsigned int d_num_bytes;
+	};
+
+
+	/**
+	 * Stores the elements in a vertex buffer object (an OpenGL extension that
+	 * can be used to store vertex data and vertex index data).
+	 */
+	class GLVertexBufferObject :
+			public GLArray
+	{
+	public:
+		//! Constructor - stores no data.
+		GLVertexBufferObject(
+				const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_manager,
+				ArrayType array_type,
+				UsageType usage_type);
+
+		GLVertexBufferObject(
+				const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_manager,
+				ArrayType array_type,
+				UsageType usage_type,
+				const void *array_data,
+				unsigned int num_bytes);
+
+
+		virtual
+		const GLubyte *
+		bind() const;
+
+
+		virtual
+		void
+		unbind() const;
+
+
+		virtual
+		void
+		set_buffer_data(
+				const void *array_data,
+				unsigned int num_bytes);
+
+
+	private:
+		//! The array data is stored in an OpenGL vertex buffer object.
+		GLVertexBufferResource::non_null_ptr_type d_vertex_buffer_resource;
+
+		//! Whether the buffer is for vertices or vertex indices.
+		GLenum d_target;
+
+		//! How the buffer is going to be used.
+		GLenum d_usage;
+
+
+		void
+		set_target(
+				ArrayType array_type);
+
+		void
+		set_usage(
+				UsageType usage_type);
+	};
+
+
+	template <class ElementType>
+	GLArray::non_null_ptr_type
+	GLArray::create(
+			const ElementType *elements,
+			const unsigned int num_elements,
+			ArrayType array_type,
+			UsageType usage_type,
+			const boost::optional<GLVertexBufferResourceManager::shared_ptr_type> &vertex_buffer_manager)
+	{
+		if (vertex_buffer_manager && are_vertex_buffer_objects_supported())
+		{
+			return non_null_ptr_type(
+					new GLVertexBufferObject(
+							vertex_buffer_manager.get(),
+							array_type,
+							usage_type,
+							elements,
+							num_elements * sizeof(ElementType)));
+		}
+
+		return non_null_ptr_type(
+				new GLSystemMemoryArray(
+						elements,
+						num_elements * sizeof(ElementType)));
+	}
 }
 
 #endif // GPLATES_OPENGL_GLARRAY_H

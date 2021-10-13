@@ -81,21 +81,18 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Sets the state that subsequently added render operations will be rendered with.
-		 */
-		void
-		set_state(
-				const GLStateGraphNode::non_null_ptr_to_const_type &state);
-
-
-		/**
-		 * Adds a render operation to this target.
+		 * Adds a render operation, and the state to render it with, to this target.
 		 *
-		 * The render operation will be drawn using the current state set by @a set_state,
+		 * The render operation will be drawn using the state set by @a state,
 		 * but the rendering will happen when @a draw is called.
+		 *
+		 * If @a state is the same object passed to the previous call to @a add_render_operation,
+		 * on this target, then, during @a draw, the state will only get set once but used by
+		 * both render operations - so there's no duplicate setting of the same state.
 		 */
 		void
 		add_render_operation(
+				const GLStateGraphNode::non_null_ptr_to_const_type &state,
 				const GLRenderOperation::non_null_ptr_to_const_type &render_operation);
 
 
@@ -198,6 +195,14 @@ namespace GPlatesOpenGL
 		GLRenderOperationsTarget(
 				const GLRenderTargetType::non_null_ptr_type &render_target_type,
 				const GLStateGraph::non_null_ptr_type &state_graph);
+
+
+		/**
+		 * Sets the state that subsequently added render operations will be rendered with.
+		 */
+		void
+		set_state(
+				const GLStateGraphNode::non_null_ptr_to_const_type &state);
 	};
 }
 

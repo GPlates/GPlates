@@ -86,13 +86,6 @@ namespace GPlatesGui
 					const GPlatesAppLogic::ReconstructGraph &reconstruct_graph);
 
 			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry;
-
-			/**
-			 * The reconstruction tree layer that generated the reconstruction tree that was
-			 * used to reconstruct the ReconstructionGeometry.
-			 * This is used to update the ReconstructionGeometry as the reconstruction time changes.
-			 */
-			boost::optional<GPlatesAppLogic::Layer> reconstruction_tree_layer;
 		};
 
 		//! Typedef for a sequence of reconstruction geometry rows.

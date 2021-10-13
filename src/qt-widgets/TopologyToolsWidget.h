@@ -4,6 +4,7 @@
  * $Date: 2009-04-20 17:17:43 -0700 (Mon, 20 Apr 2009) $ 
  * 
  * Copyright (C) 2008, 2009 California Institute of Technology
+ * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,7 +27,9 @@
 
 #include <QDebug>
 #include <QWidget>
+
 #include "TopologyToolsWidgetUi.h"
+#include "TaskPanelWidget.h"
 
 #include "global/types.h"
 #include "model/FeatureHandle.h"
@@ -67,8 +70,8 @@ namespace GPlatesQtWidgets
 	class CreateFeatureDialog;
 	class FeatureSummaryWidget;
 
-	class TopologyToolsWidget:
-			public QWidget, 
+	class TopologyToolsWidget :
+			public TaskPanelWidget, 
 			protected Ui_TopologyToolsWidget
 	{
 		Q_OBJECT
@@ -79,10 +82,27 @@ namespace GPlatesQtWidgets
 		TopologyToolsWidget(
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window,
+				QAction *clear_action,
 				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
 				QWidget *parent_ = NULL);
 
 		~TopologyToolsWidget();
+
+		virtual
+		void
+		handle_activation();
+
+		virtual
+		QString
+		get_clear_action_text() const;
+
+		virtual
+		bool
+		clear_action_enabled() const;
+
+		virtual
+		void
+		handle_clear_action_triggered();
 
 	public slots:
 		
@@ -102,9 +122,29 @@ namespace GPlatesQtWidgets
 				GPlatesGlobal::TopologyTypes topology_type);
 
 		void
-		display_number_of_sections( int i ) {
-			lineedit_number_of_sections->setText( QString::number( i ) );
+		display_number_of_sections_boundary( int i ) {
+			label_num_sections_boundary->setText( QString::number( i ) );
 		}
+
+		void
+		display_number_of_sections_interior( int i ) {
+			label_num_sections_interior->setText( QString::number( i ) );
+		}
+
+		int
+		get_sections_combobox_index()
+		{
+			return sections_combobox->currentIndex();
+		}
+
+		void
+		set_sections_combobox_index( int index )
+		{
+			sections_combobox->setCurrentIndex( index );
+		}
+
+		void
+		handle_sections_combobox_index_changed( int index );
 
 		void
 		handle_remove_all_sections();
@@ -113,7 +153,10 @@ namespace GPlatesQtWidgets
 		handle_create();
 	
 		void
-		handle_add_feature();
+		handle_add_feature_boundary();
+
+		void
+		handle_add_feature_interior();
 
 		void
 		handle_remove_feature();
@@ -129,12 +172,6 @@ namespace GPlatesQtWidgets
 		{
 			tabwidget_main->setCurrentWidget( tab_section );
 		}
-
-		void
-		handle_combobox_topology_type_changed(int index);
-
-		void
-		handle_mesh();
 
 	private:
 

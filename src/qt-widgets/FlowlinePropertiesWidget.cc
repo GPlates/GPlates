@@ -72,10 +72,10 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::FlowlinePropertiesWidget(
 	QWidget *parent_):
 	AbstractCustomPropertiesWidget(parent_),
 	d_application_state_ptr(application_state_ptr),
-        d_time_sequence_widget(new GPlatesQtWidgets::EditTimeSequenceWidget(
-                *d_application_state_ptr,
-                this)),
-        d_create_feature_dialog_ptr(create_feature_dialog_ptr)
+    d_time_sequence_widget(new GPlatesQtWidgets::EditTimeSequenceWidget(
+            *d_application_state_ptr,
+            this)),
+    d_create_feature_dialog_ptr(create_feature_dialog_ptr)
 {
 	setupUi(this);
 	
@@ -164,13 +164,25 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
 	plate_2 = finder.get_left_plate().get();
     }
 
+	// The default reconstruction tree.
+	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
+			d_application_state_ptr->get_current_reconstruction()
+					.get_default_reconstruction_layer_output()->get_reconstruction_tree();
+	// A function to get reconstruction trees with.
+	GPlatesAppLogic::ReconstructionTreeCreator
+			reconstruction_tree_creator =
+					GPlatesAppLogic::get_cached_reconstruction_tree_creator(
+							default_reconstruction_tree->get_reconstruction_features(),
+							default_reconstruction_tree->get_reconstruction_time(),
+							default_reconstruction_tree->get_anchor_plate_id());
+
 
     return GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
 		geometry_,
 		plate_1,
 		plate_2,
 		finder.get_times(),
-		d_application_state_ptr->get_current_reconstruction().get_default_reconstruction_tree(),
+		reconstruction_tree_creator,
 		d_application_state_ptr->get_current_reconstruction_time());
 
 }

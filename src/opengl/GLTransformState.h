@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
+#include "GLFrustum.h"
 #include "GLIntersectPrimitives.h"
 #include "GLTransform.h"
 #include "GLViewport.h"
@@ -209,40 +210,6 @@ namespace GPlatesOpenGL
 		double
 		get_min_pixel_size_on_unit_sphere() const;
 
-
-		/**
-		 * An array of the six frustum planes that bound the viewing volume.
-		 */
-		struct FrustumPlanes
-		{
-			/**
-			 * These can be used as indices into @a planes to get specific frustum planes.
-			 */
-			enum PlaneType
-			{
-				LEFT_PLANE = 0,
-				RIGHT_PLANE,
-				BOTTOM_PLANE,
-				TOP_PLANE,
-				NEAR_PLANE,
-				FAR_PLANE,
-
-				NUM_PLANES
-			};
-
-
-			/**
-			 * The left, right, bottom, top, near and far frustum planes.
-			 *
-			 * NOTE: The plane normals point towards the *inside* of the view frustum
-			 * volume and hence the view frustum is defined by the intersection of the
-			 * positive half-spaces of these planes.
-			 *
-			 * NOTE: These planes do *not* have *unit* vector normals.
-			 */
-			GLIntersect::Plane planes[6];
-		};
-
 		/**
 		 * Returns the *six* frustum planes represented by the current model-view and
 		 * projection matrices.
@@ -253,7 +220,7 @@ namespace GPlatesOpenGL
 		 * The returned planes can be used for frustum culling (culling objects not
 		 * visible inside the current view frustum).
 		 */
-		const FrustumPlanes &
+		const GLFrustum &
 		get_current_frustum_planes_in_model_space() const;
 
 	private:
@@ -280,7 +247,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The frustum planes of the current model-view and projection matrices.
 		 */
-		mutable FrustumPlanes d_current_frustum_planes;
+		mutable GLFrustum d_current_frustum_planes;
 
 		/**
 		 * Whether @a d_current_frustum_planes is valid for the current model-view and
@@ -318,13 +285,6 @@ namespace GPlatesOpenGL
 		project_window_coords_onto_unit_sphere(
 				const double &window_x,
 				const double &window_y) const;
-
-		/**
-		 * Returns frustum planes corresponding to identity model-view and projection matrices.
-		 */
-		static
-		FrustumPlanes
-		initialise_frustum_planes();
 	};
 }
 

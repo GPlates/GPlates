@@ -49,15 +49,19 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/Rotation.h"
 #include "view-operations/RenderedArrowedPolyline.h"
+#include "view-operations/RenderedCrossSymbol.h"
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
+#include "view-operations/RenderedGeometryFactory.h" // include this while triangle and squares need to create a point-on-sphere RenderedGeom.
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
 #include "view-operations/RenderedPolygonOnSphere.h"
 #include "view-operations/RenderedSmallCircle.h"
 #include "view-operations/RenderedSmallCircleArc.h"
+#include "view-operations/RenderedSquareSymbol.h"
 #include "view-operations/RenderedString.h"
+#include "view-operations/RenderedTriangleSymbol.h"
 
 const float GPlatesGui::MapCanvasPainter::POINT_SIZE_ADJUSTMENT = 1.0f;
 const float GPlatesGui::MapCanvasPainter::LINE_WIDTH_ADJUSTMENT = 1.0f;
@@ -1288,3 +1292,45 @@ GPlatesGui::MapCanvasPainter::visit_rendered_arrowed_polyline(
 	}
 }
 
+void
+GPlatesGui::MapCanvasPainter::visit_rendered_triangle_symbol(
+	const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol)
+{
+    // visit a point on sphere for now.
+    GPlatesViewOperations::RenderedGeometry point_on_sphere =
+	    GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
+		rendered_triangle_symbol.get_centre(),
+		rendered_triangle_symbol.get_colour(),
+		rendered_triangle_symbol.get_line_width_hint());
+
+    point_on_sphere.accept_visitor(*this);
+
+}
+
+void
+GPlatesGui::MapCanvasPainter::visit_rendered_square_symbol(
+	const GPlatesViewOperations::RenderedSquareSymbol &rendered_square_symbol)
+{
+    // visit a point on sphere for now.
+    GPlatesViewOperations::RenderedGeometry point_on_sphere =
+	    GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
+		rendered_square_symbol.get_centre(),
+		rendered_square_symbol.get_colour(),
+		rendered_square_symbol.get_line_width_hint());
+
+    point_on_sphere.accept_visitor(*this);
+}
+
+void
+GPlatesGui::MapCanvasPainter::visit_rendered_cross_symbol(
+	const GPlatesViewOperations::RenderedCrossSymbol &rendered_cross_symbol)
+{
+    // visit a point on sphere for now.
+    GPlatesViewOperations::RenderedGeometry point_on_sphere =
+	    GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
+		rendered_cross_symbol.get_centre(),
+		rendered_cross_symbol.get_colour(),
+		rendered_cross_symbol.get_line_width_hint());
+
+    point_on_sphere.accept_visitor(*this);
+}

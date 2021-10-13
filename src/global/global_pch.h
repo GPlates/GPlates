@@ -1,6 +1,9 @@
-#include <sstream>
-#ifdef __WINDOWS__
-#include <boost/current_function.hpp>
-#endif // __WINDOWS__
-#include <iostream>
+#include <ostream>
 #include <string>
+#include <vector>
+#ifdef __WINDOWS__
+#include <boost/noncopyable.hpp>
+#endif // __WINDOWS__
+#include <sstream>
+#include <iostream>
+#include <cstdlib>

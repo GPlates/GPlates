@@ -52,42 +52,25 @@ namespace GPlatesAppLogic
 			public GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle>
 	{
 	public:
-		/**
-		 * A convenience typedef for a shared pointer to a non-const @a ResolvedTopologicalBoundary.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ResolvedTopologicalBoundary>
-				non_null_ptr_type;
+		//! A convenience typedef for a shared pointer to a non-const @a ResolvedTopologicalBoundary.
+		typedef GPlatesUtils::non_null_intrusive_ptr<ResolvedTopologicalBoundary> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for a shared pointer to a non-const @a ResolvedTopologicalBoundary.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const ResolvedTopologicalBoundary>
-				non_null_ptr_to_const_type;
+		//! A convenience typedef for a shared pointer to a non-const @a ResolvedTopologicalBoundary.
+		typedef GPlatesUtils::non_null_intrusive_ptr<const ResolvedTopologicalBoundary> non_null_ptr_to_const_type;
 
-		/**
-		 * A convenience typedef for boost::intrusive_ptr<ResolvedTopologicalBoundary>.
-		 */
+		//! A convenience typedef for boost::intrusive_ptr<ResolvedTopologicalBoundary>.
 		typedef boost::intrusive_ptr<ResolvedTopologicalBoundary> maybe_null_ptr_type;
 
-		/**
-		 * A convenience typedef for boost::intrusive_ptr<const ResolvedTopologicalBoundary>.
-		 */
+		//! A convenience typedef for boost::intrusive_ptr<const ResolvedTopologicalBoundary>.
 		typedef boost::intrusive_ptr<const ResolvedTopologicalBoundary> maybe_null_ptr_to_const_type;
 
-		/**
-		 * A convenience typedef for the WeakObserver base class of this class.
-		 */
+		//! A convenience typedef for the WeakObserver base class of this class.
 		typedef GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle> WeakObserverType;
 
-		/**
-		 * A convenience typedef for the geometry of this @a ResolvedTopologicalBoundary.
-		 */
-		typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-				resolved_topology_geometry_ptr_type;
+		//! A convenience typedef for the geometry of this @a ResolvedTopologicalBoundary.
+		typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_geometry_ptr_type;
 
-		/**
-		 * A convenience typedef for the geometry of subsegments of this RTB.
-		 */
+		//! A convenience typedef for the geometry of subsegments of this RTB.
 		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type sub_segment_geometry_ptr_type;
 
 

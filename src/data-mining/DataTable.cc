@@ -27,14 +27,28 @@
 #include "DataTable.h"
 #include "OpaqueDataToQString.h"
 
+#include "global/CompilerWarnings.h"
+
+
 void
-GPlatesDataMining::DataTable::export_as_CSV
-		(const QString& filename) const
+GPlatesDataMining::DataRow::append_cell(
+		const OpaqueData &val)
+{
+	DataCellSharedPtr ptr(new OpaqueData(val));
+	d_data.push_back(ptr);
+}
+
+
+void
+GPlatesDataMining::DataTable::export_as_CSV(
+		const QString& filename) const
 {
 	const_iterator iter = begin();
 	const_iterator iter_end = end();
 
 	std::vector<GPlatesGui::CsvExport::LineDataType> vector_table;
+
+	vector_table.push_back(d_table_desc);
 
 	for(; iter != iter_end; iter++) //for each row
 	{
@@ -55,7 +69,7 @@ GPlatesDataMining::DataTable::export_as_CSV
 	}
 
 	GPlatesGui::CsvExport::ExportOptions opt;
-	opt.delimiter = ';';
+	opt.delimiter = ',';
 	GPlatesGui::CsvExport::export_data(
 			filename, 
 			opt, 

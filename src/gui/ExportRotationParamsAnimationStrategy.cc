@@ -31,6 +31,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/ReconstructionTreeCreator.h"
 #include "app-logic/ReconstructionTreeEdge.h"
 #include "app-logic/ReconstructUtils.h"
 
@@ -47,32 +48,20 @@ const QString GPlatesGui::ExportRotationParamsAnimationStrategy::DEFAULT_ROTATIO
 		="equivalent_stage_rotation_comma_%0.2f.csv";
 const QString GPlatesGui::ExportRotationParamsAnimationStrategy::DEFAULT_ROTATION_PARAMS_SEMI_FILENAME_TEMPLATE
 		="equivalent_stage_rotation_semi_%0.2f.csv";
-
 const QString GPlatesGui::ExportRotationParamsAnimationStrategy::DEFAULT_ROTATION_PARAMS_TAB_FILENAME_TEMPLATE
 		="equivalent_stage_rotation_tab_%0.2f.csv";
-
-const QString GPlatesGui::ExportRotationParamsAnimationStrategy::ROTATION_PARAMS_FILENAME_TEMPLATE_DESC
-		=FORMAT_CODE_DESC;
-
-const QString GPlatesGui::ExportRotationParamsAnimationStrategy::ROTATION_PARAMS_DESC =
-		"Export equivalent stage(1My) rotation data:\n"
-		"- 'equivalent' is from an exported plate id to the anchor plate,\n"
-		"- 'stage' is from 't+1' Ma to 't' Ma where 't' is the export reconstruction time.\n"
-		"Each line in exported file(s) will contain the following entries...\n"
-		" 'plate_id' 'stage_pole_x' 'stage_pole_y' 'stage_pole_z' 'stage_pole_1My_angle'\n";
-
  
 
 const GPlatesGui::ExportRotationParamsAnimationStrategy::non_null_ptr_type
 GPlatesGui::ExportRotationParamsAnimationStrategy::create(
-		GPlatesGui::ExportAnimationContext &export_animation_context,
+		ExportAnimationContext &export_animation_context,
 		File_Format format,
-		const ExportAnimationStrategy::Configuration& cfg)
+		const const_configuration_base_ptr& cfg)
 {
 	ExportRotationParamsAnimationStrategy* ptr=
 		new ExportRotationParamsAnimationStrategy(
 				export_animation_context,
-				cfg.filename_template());
+				cfg->get_filename_template());
 	ptr->d_format = format;
 	
 	switch(format)
@@ -89,9 +78,7 @@ GPlatesGui::ExportRotationParamsAnimationStrategy::create(
 		break;
 	}
 		
-	return non_null_ptr_type(
-			ptr,
-			GPlatesUtils::NullIntrusivePointerHandler());
+	return non_null_ptr_type(ptr);
 }
 
 GPlatesGui::ExportRotationParamsAnimationStrategy::ExportRotationParamsAnimationStrategy(
@@ -106,19 +93,15 @@ bool
 GPlatesGui::ExportRotationParamsAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {	
-	if(!check_filename_sequence())
-	{
-		return false;
-	}
-	
-	GPlatesUtils::ExportTemplateFilenameSequence::const_iterator &filename_it = 
+	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
 	GPlatesAppLogic::ApplicationState &application_state =
 		d_export_animation_context_ptr->view_state().get_application_state();
 
 	const GPlatesAppLogic::ReconstructionTree& tree1 = 
-		*application_state.get_current_reconstruction().get_default_reconstruction_tree();
+		*application_state.get_current_reconstruction()
+			.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 
 	
 	std::multimap<GPlatesModel::integer_plate_id_type,
@@ -134,7 +117,7 @@ GPlatesGui::ExportRotationParamsAnimationStrategy::do_export_iteration(
 	std::vector<GPlatesGui::CsvExport::LineDataType> data;
 	
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree2=
-		GPlatesAppLogic::ReconstructUtils::create_reconstruction_tree(
+		GPlatesAppLogic::create_reconstruction_tree(
 				tree1.get_reconstruction_time()+1,
 				tree1.get_anchor_plate_id(),
 				tree1.get_reconstruction_features());
@@ -208,29 +191,3 @@ GPlatesGui::ExportRotationParamsAnimationStrategy::do_export_iteration(
 	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;
 }
-
-const QString&
-GPlatesGui::ExportRotationParamsAnimationStrategy::get_default_filename_template()
-{
-	switch(d_format)
-	{
-	case COMMA:
-		return DEFAULT_ROTATION_PARAMS_COMMA_FILENAME_TEMPLATE;
-		break;
-	case SEMICOLON:
-		return DEFAULT_ROTATION_PARAMS_SEMI_FILENAME_TEMPLATE;
-		break;
-	case TAB:
-	default:
-		return DEFAULT_ROTATION_PARAMS_TAB_FILENAME_TEMPLATE;
-		break;
-	}
-}
-
-const QString&
-GPlatesGui::ExportRotationParamsAnimationStrategy::get_filename_template_desc()
-{
-	return ROTATION_PARAMS_FILENAME_TEMPLATE_DESC;
-}
-
-

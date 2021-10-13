@@ -68,7 +68,7 @@ namespace GPlatesMaths
 		{  }
 
 		virtual
-		~InvalidLatLonCoordinateException()
+		~InvalidLatLonCoordinateException() throw()
 		{  }
 
 		const double &

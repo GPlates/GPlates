@@ -48,6 +48,7 @@ namespace GPlatesCli
 			d_option(option_)
 		{  }
 
+		~InvalidOptionValue() throw() { }
 		/**
 		 * Return the option that was required but not present.
 		 */
