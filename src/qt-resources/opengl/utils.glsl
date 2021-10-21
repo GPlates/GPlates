@@ -27,17 +27,13 @@
  * Shader source code to bilinearly interpolate a *non-mipmapped*,
  * *non-anisotropically filtered* 2D texture.
  *
- * The first overload of 'bilinearly_interpolate' returns the interpolated texture result
- * while the second overload returns the four sampled texels and the interpolation coefficients.
+ * Returns the four (nearest) sampled texels and the interpolation coefficients.
  *
  * 'tex_dimensions' should contain the following (xyzw) components:
  *	x: texture width,
  *	y: texture height,
  *	z: inverse texture width,
  *	w: inverse texture height.
- *
- * This is useful for floating-point textures because bilinear filtering is not supported
- * in earlier hardware.
  */
 void
 bilinearly_interpolate(
@@ -66,44 +62,26 @@ bilinearly_interpolate(
 	// Multiply tex coords by inverse texture dimensions to return to normalised form.
 	st *= tex_dimensions.zwzw;
 
-	// The first texture access starts a new indirection phase since it accesses a temporary
-	// written in the current phase (see issue 24 in GL_ARB_fragment_program spec).
+	// Sample texture at 4 nearest texels.
 	tex11 = texture(tex_sampler, st.xy);
 	tex21 = texture(tex_sampler, st.zy);
 	tex12 = texture(tex_sampler, st.xw);
 	tex22 = texture(tex_sampler, st.zw);
 }
 
-vec4
-bilinearly_interpolate(
-		sampler2D tex_sampler,
-		vec2 tex_coords,
-		vec4 tex_dimensions)
-{
-	// The 2x2 texture sample to interpolate.
-	vec4 tex11;
-	vec4 tex21;
-	vec4 tex12;
-	vec4 tex22;
-
-	// The bilinear interpolation coefficients.
-	vec2 interp;
-
-	// Call the other overload of 'bilinearly_interpolate()'.
-	bilinearly_interpolate(
-		tex_sampler, tex_coords, tex_dimensions, tex11, tex21, tex12, tex22, interp);
-
-	// Bilinearly interpolate the four texels.
-	return mix(mix(tex11, tex21, interp.x), mix(tex12, tex22, interp.x), interp.y);
-}
-
 /*
  * Bilinearly interpolate a data raster where the data is in the red channel and
  * the coverage is in the green channel.
  *
- * This function weights the bilinear filter according to the coverage texels.
+ * This function weights the bilinear filter according to the coverage texels:
  *
- * This RG format is used for floating-point rasters in GPlates.
+ *   V = sum(Wi * Ci * Vi)
+ *       -----------------
+ *         sum(Wi * Ci)
+ *
+ * ...where Wi is bilinear weight, Ci is coverage (in green channel) and Vi is value (in red channel).
+ *
+ * This RG format is used for data (numerical) rasters in GPlates.
  */
 vec4
 bilinearly_interpolate_data_coverage_RG(
@@ -120,7 +98,7 @@ bilinearly_interpolate_data_coverage_RG(
 	// The bilinear interpolation coefficients.
 	vec2 interp;
 
-	// Call the other overload of 'bilinearly_interpolate()'.
+	// Sample texture as 4 nearest neighbour samples and get bilinear interpolation weights.
 	bilinearly_interpolate(
 		tex_sampler, tex_coords, tex_dimensions, tex11, tex21, tex12, tex22, interp);
 	
@@ -133,6 +111,7 @@ bilinearly_interpolate_data_coverage_RG(
 	// Bilinearly interpolate the four texels.
 	vec4 result = mix(mix(tex11, tex21, interp.x), mix(tex12, tex22, interp.x), interp.y);
 	
+	// Divide the interpolated data-times-coverage by the interpolated coverage.
 	return vec4(result.r / result.g, result.gba);
 }
 
@@ -193,19 +172,19 @@ lambert_diffuse_lighting(
 /*
  * Mixes ambient lighting with diffuse lighting.
  *
- * ambient_with_diffuse_lighting = light_ambient_contribution + (1 - light_ambient_contribution) * diffuse_lighting
+ * ambient_with_diffuse_lighting = ambient_lighting + (1 - ambient_lighting) * diffuse_lighting
  *
- * 'light_ambient_contribution' is in the range [0,1].
+ * 'ambient_lighting' is in the range [0,1].
  */
 float
 mix_ambient_with_diffuse_lighting(
 		float diffuse_lighting,
-		float light_ambient_contribution)
+		float ambient_lighting)
 {
 	// Blend between ambient and diffuse lighting - when ambient is 1.0 there is no diffuse.
 	// NOTE: Using float instead of integer parameters to 'mix' otherwise driver compiler
 	// crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.
-	return mix(diffuse_lighting, 1.0, light_ambient_contribution);
+	return mix(diffuse_lighting, 1.0, ambient_lighting);
 }
 
 /*

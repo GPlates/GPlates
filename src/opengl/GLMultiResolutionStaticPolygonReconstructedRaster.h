@@ -32,7 +32,6 @@
 #include <boost/ref.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "GLCompiledDrawState.h"
 #include "GLCubeSubdivisionCache.h"
 #include "GLLight.h"
 #include "GLMatrix.h"
@@ -52,7 +51,6 @@
 #include "maths/CubeQuadTree.h"
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/CubeQuadTreePartitionUtils.h"
-#include "maths/UnitQuaternion3D.h"
 
 #include "utils/ObjectCache.h"
 #include "utils/SubjectObserverToken.h"
@@ -60,7 +58,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * A raster that is reconstructed by mapping it onto a set of present-day static polygons and
@@ -83,47 +81,8 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if *reconstructed* rasters are supported on the runtime system.
-		 *
-		 * Currently two texture units are required - pretty much all hardware for over a decade
-		 * has support for this. However some systems fallback to software rendering, which on
-		 * Microsoft platforms is OpenGL 1.1 without destination alpha, and typically only supports
-		 * a single texture unit. For example virtual desktops can exhibit this behaviour.
-		 */
-		static
-		bool
-		is_supported(
-				GLRenderer &renderer);
-
-		/**
-		 * Returns true if floating-point source raster is supported.
-		 *
-		 * If false is returned then only a fixed-point format source texture can be used.
-		 *
-		 * This is effectively a test for support of the 'GL_EXT_framebuffer_object' extension.
-		 */
-		static
-		bool
-		supports_floating_point_source_raster(
-				GLRenderer &renderer);
-
-		/**
-		 * Returns true if a normal map can be used on the runtime system to accentuate surface lighting.
-		 *
-		 * NOTE: Internally this also calls 'GLMultiResolutionRaster::supports_normal_map_source()'.
-		 */
-		static
-		bool
-		supports_normal_map(
-				GLRenderer &renderer);
-
-
-		/**
 		 * Creates a @a GLMultiResolutionStaticPolygonReconstructedRaster object that is reconstructed
 		 * using static polygon meshes.
-		 *
-		 * If @a source_raster is floating-point (which means this reconstructed raster will also be
-		 * floating-point) then @a supports_floating_point_source_raster *must* return true.
 		 *
 		 * @param source_raster the raster to be reconstructed.
 		 * @param reconstructed_static_polygon_meshes the reconstructed present day polygon meshes.
@@ -131,21 +90,20 @@ namespace GPlatesOpenGL
 		 * @param normal_map_raster is the optional normal map raster (used during surface lighting).
 		 * @param light is the light direction used for surface lighting.
 		 *
-		 * NOTE: @a normal_map_raster and @a light are only used for surface lighting and
-		 * surface lighting is ignored for a floating-point source raster (from a @a GLDataRasterSource)
-		 * because it is analysed and not visualised.
+		 * NOTE: @a normal_map_raster and @a light are only used for surface lighting. And it is an error
+		 *       to specify surface lighting with a numerical raster (@a GLDataRasterSource) because
+		 *       it is analysed and not visualised.
 		 * NOTE: If @a light is specified without @a normal_map_raster then lighting is still applied
-		 * but without the perturbed lighting due to the bumps in a normal map.
-		 *
-		 * NOTE: If @a light is specified but lighting is not supported on the run-time system
-		 * (eg, due to exceeding shader instructions limit) then the raster will not be rendered
-		 * with surface lighting.
-		 * Whether lighting is used also depends on the state of SceneLightingParameters.
+		 *       but without the perturbed lighting due to the bumps in a normal map.
+		 *       Whether *directional* lighting is used also depends on the state of SceneLightingParameters.
+		 * NOTE: If @a normal_map_raster is specified without @a light then it is ignored since
+		 *       a normal map is only affected by lighting.
+		 *       Whether *directional* lighting is used also depends on the state of SceneLightingParameters.
 		 */
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const double &reconstruction_time,
 				const GLMultiResolutionCubeRaster::non_null_ptr_type &source_raster,
 				const std::vector<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> &reconstructed_static_polygon_meshes,
@@ -155,7 +113,7 @@ namespace GPlatesOpenGL
 		{
 			return non_null_ptr_type(
 					new GLMultiResolutionStaticPolygonReconstructedRaster(
-							renderer,
+							gl,
 							reconstruction_time,
 							source_raster,
 							reconstructed_static_polygon_meshes,
@@ -180,7 +138,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const double &reconstruction_time,
 				const GLMultiResolutionCubeRaster::non_null_ptr_type &source_raster,
 				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
@@ -190,7 +148,7 @@ namespace GPlatesOpenGL
 		{
 			return non_null_ptr_type(
 					new GLMultiResolutionStaticPolygonReconstructedRaster(
-							renderer,
+							gl,
 							reconstruction_time,
 							source_raster,
 							std::vector<GLReconstructedStaticPolygonMeshes::non_null_ptr_type>()/*reconstructed_static_polygon_meshes*/,
@@ -240,9 +198,7 @@ namespace GPlatesOpenGL
 		 */
 		float
 		get_level_of_detail(
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform,
-				const GLViewport &viewport,
+				const GLViewProjection& view_projection,
 				float level_of_detail_bias = 0.0f) const override;
 
 
@@ -265,8 +221,8 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Renders all tiles visible in the view frustum (determined by the current model-view/projection
-		 * transforms of @a renderer) and returns true if any tiles were rendered.
+		 * Renders all tiles visible in the view frustum (determined by @a view_projection_transform)
+		 * and returns true if any tiles were rendered.
 		 *
 		 * Throws exception if @a level_of_detail is outside the valid range.
 		 * Use @a clamp_level_of_detail to clamp to a valid range before calling this method.
@@ -275,7 +231,7 @@ namespace GPlatesOpenGL
 		 */
 		bool
 		render(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLMatrix &view_projection_transform,
 				float level_of_detail,
 				cache_handle_type &cache_handle) override;
@@ -295,8 +251,6 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the texture internal format that can be used if rendering to a texture, when
 		 * calling @a render, as opposed to the main framebuffer.
-		 *
-		 * This is the 'internalformat' parameter of GLTexture::gl_tex_image_2D for example.
 		 */
 		GLint
 		get_tile_texture_internal_format() const override
@@ -445,104 +399,48 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * A GLProgram and the uniform variables it uses.
-		 */
-		struct Program
-		{
-			//! Which uniform variables are used by a shader program.
-			struct Uniforms
-			{
-				Uniforms();
-
-				bool uses_source_raster_texture_transform;
-				bool uses_source_texture_sampler;
-				bool uses_source_texture_dimensions;
-				bool uses_clip_texture_transform;
-				bool uses_clip_texture_sampler;
-				bool uses_age_grid_texture_transform;
-				bool uses_age_grid_texture_sampler;
-				bool uses_age_grid_texture_dimensions;
-				bool uses_normal_map_texture_transform;
-				bool uses_normal_map_texture_sampler;
-				bool uses_reconstruction_time;
-				bool uses_plate_rotation_quaternion;
-				bool uses_world_space_light_direction;
-				bool uses_light_direction_cube_texture_sampler;
-				bool uses_ambient_and_diffuse_lighting;
-				bool uses_light_ambient_contribution;
-			};
-
-
-			Program(
-					const GLProgram::shared_ptr_type &shader_program_,
-					const Uniforms &uniforms_) :
-				shader_program(shader_program_),
-				uniforms(uniforms_)
-			{  }
-
-			GLProgram::shared_ptr_type shader_program;
-			Uniforms uniforms;
-		};
-
-
-		/**
 		 * Used to cache information, specific to a quad tree node, *during* traversal of the source raster.
 		 *
-		 * The cube quad tree containing these nodes is destroyed at the end of each render.
+		 * This is information that is common to all transform groups. Each transform group traverses
+		 * the cube quad tree separately, so anything common to all groups can be cached for re-use.
 		 *
-		 * NOTE: The members are optional because the internal nodes don't get rendered.
+		 * The cube quad tree containing these nodes is destroyed at the end of each render.
 		 */
 		struct RenderQuadTreeNode
 		{
-			struct TileDrawState
+			struct CommonTileDrawState
 			{
-				explicit
-				TileDrawState(
-						const GLCompiledDrawState::non_null_ptr_to_const_type &compiled_draw_state_,
-						boost::optional<Program> program_ = boost::none) :
-					compiled_draw_state(compiled_draw_state_),
-					program(program_)
+				CommonTileDrawState(
+						GLTexture::shared_ptr_type source_raster_texture_,
+						const GLMatrix &source_raster_texture_transform_,
+						const GLMatrix &clip_texture_transform_) :
+					source_raster_texture(source_raster_texture_),
+					source_raster_texture_transform(source_raster_texture_transform_),
+					clip_texture_transform(clip_texture_transform_)
 				{  }
 
-				// Any state set by calling GLRenderer.
-				GLCompiledDrawState::non_null_ptr_to_const_type compiled_draw_state;
+				GLTexture::shared_ptr_type source_raster_texture;
+				GLMatrix source_raster_texture_transform;
 
-				// Optional program object if not using the fixed-function pipeline.
-				boost::optional<Program> program;
+				GLMatrix clip_texture_transform;
 
-				// Optional uniform variables in program object.
-				// These cannot be stored in a 'GLCompiledDrawState'.
-
-				boost::optional<GLMatrix> source_raster_texture_transform;
-				boost::optional<unsigned int> source_texture_sampler;
-
-				boost::optional<GLMatrix> clip_texture_transform;
-				boost::optional<unsigned int> clip_texture_sampler;
-
+				boost::optional<GLTexture::shared_ptr_type> age_grid_texture;
 				boost::optional<GLMatrix> age_grid_texture_transform;
-				boost::optional<unsigned int> age_grid_texture_sampler;
-				boost::optional<GLfloat> reconstruction_time;
 
+				boost::optional<GLTexture::shared_ptr_type> normal_map_texture;
 				boost::optional<GLMatrix> normal_map_texture_transform;
-				boost::optional<unsigned int> normal_map_texture_sampler;
-
-				boost::optional<GLfloat> ambient_and_diffuse_lighting;
-				boost::optional<GLfloat> light_ambient_contribution;
-				boost::optional<GPlatesMaths::UnitVector3D> world_space_light_direction;
-				boost::optional<unsigned int> light_direction_cube_texture_sampler;
 			};
 
 			/**
-			 * The compiled draw state used to render a tile.
+			 * The common tile state used by all transform groups when they render this tile.
 			 *
-			 * NOTE: Is actually a vector of compiled draw states since age grid rendering needs one
-			 * each for active and inactive polygons.
+			 * It's optional because internal nodes don't get rendered.
 			 *
-			 * NOTE: Since our cube quad tree is destroyed at the end of the render call we
-			 * don't need to worry about the chance of indefinitely holding a reference to any
-			 * cached state such as a tile texture.
+			 * NOTE: Since our cube quad tree is destroyed at the end of the render call we don't
+			 *       need to worry about the chance of indefinitely holding a reference to any
+			 *       cached state such as a tile texture.
 			 */
-			boost::optional< std::vector<TileDrawState> > scene_tile_draw_state;
+			boost::optional<CommonTileDrawState> common_tile_draw_state;
 		};
 
 		/**
@@ -657,16 +555,6 @@ namespace GPlatesOpenGL
 		//! Typedef for a quad tree node of a multi-resolution cube mesh.
 		typedef GLMultiResolutionCubeMesh::quad_tree_node_type cube_mesh_quad_tree_node_type;
 
-		//! Typedef for a sequence of drawables.
-		typedef std::vector<GLCompiledDrawState::non_null_ptr_to_const_type> drawable_seq_type;
-
-		//! Classify the view projection as either a 3D globe view or 2D map view.
-		enum ViewType
-		{
-			GLOBE_VIEW,
-			MAP_VIEW
-		};
-
 
 		/**
 		 * The current reconstruction time (used for age comparisons with age grid).
@@ -747,59 +635,10 @@ namespace GPlatesOpenGL
 		 */
 		GLMatrix d_xy_clip_texture_transform;
 
-		// Used to draw a textured full-screen quad into render texture.
-		GLCompiledDrawState::non_null_ptr_to_const_type d_full_screen_quad_drawable;
-
-		//
-		// Shader programs to render raster tiles to the scene.
-		//
-		// 'boost::none' means shader program variation not needed.
-		//
-
-		//! Render a floating-point source raster.
-		boost::optional<Program> d_render_floating_point_program;
-
-		//! Render a floating-point source raster using an age grid with active polygons.
-		boost::optional<Program> d_render_floating_point_with_age_grid_with_active_polygons_program;
-		//! Render a floating-point source raster using an age grid with inactive polygons.
-		boost::optional<Program> d_render_floating_point_with_age_grid_with_inactive_polygons_program;
-
-		//! Render a fixed-point source raster.
-		boost::optional<Program> d_render_fixed_point_program;
-
-		//! Render a fixed-point source raster using an age grid with active polygons.
-		boost::optional<Program> d_render_fixed_point_with_age_grid_with_active_polygons_program;
-		//! Render a fixed-point source raster using an age grid with inactive polygons.
-		boost::optional<Program> d_render_fixed_point_with_age_grid_with_inactive_polygons_program;
-
-		//
-		// The following shader program variables are arrays of size two since the surface lighting
-		// algorithm depends on whether the view is a 3D globe view or 2D map view.
-		//
-
-		//! Render a fixed-point source raster using an age grid with active polygons with surface lighting.
-		boost::optional<Program> d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[2];
-		//! Render a fixed-point source raster using an age grid with inactive polygons with surface lighting.
-		boost::optional<Program> d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program[2];
-
-		//! Render a fixed-point source raster with surface lighting.
-		boost::optional<Program> d_render_fixed_point_with_surface_lighting_program[2];
-
-		//! Render a fixed-point source raster with with a normal map.
-		boost::optional<Program> d_render_fixed_point_with_normal_map_program[2];
-
-		//! Render a fixed-point source raster with a normal map with surface lighting.
-		boost::optional<Program> d_render_fixed_point_with_normal_map_with_surface_lighting_program[2];
-
-		//! Render a fixed-point source raster using an age grid with active polygons with a normal map with surface lighting.
-		boost::optional<Program> d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[2];
-		//! Render a fixed-point source raster using an age grid with inactive polygons with a normal map.
-		boost::optional<Program> d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program[2];
-
-		//! Render a fixed-point source raster using an age grid with active polygons with a normal map with surface lighting.
-		boost::optional<Program> d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program[2];
-		//! Render a fixed-point source raster using an age grid with inactive polygons with a normal map with surface lighting.
-		boost::optional<Program> d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program[2];
+		/**
+		 * Shader program to render tiles to the scene.
+		 */
+		GLProgram::shared_ptr_type d_render_tile_to_scene_program;
 
 
 		/**
@@ -825,7 +664,7 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLMultiResolutionStaticPolygonReconstructedRaster(
-				GLRenderer &renderer,
+				GL &gl,
 				const double &reconstruction_time,
 				const GLMultiResolutionCubeRaster::non_null_ptr_type &source_raster,
 				const std::vector<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> &reconstructed_static_polygon_meshes,
@@ -846,7 +685,8 @@ namespace GPlatesOpenGL
 
 		void
 		render_transform_group(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLMatrix &view_projection_transform_group,
 				render_traversal_cube_quad_tree_type &render_traversal_cube_quad_tree,
 				client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
 				boost::optional<const reconstructed_polygon_mesh_transform_group_type &> reconstructed_polygon_mesh_transform_group,
@@ -863,7 +703,7 @@ namespace GPlatesOpenGL
 
 		void
 		render_quad_tree(
-				GLRenderer &renderer,
+				GL &gl,
 				boost::object_pool<GLUtils::QuadTreeUVTransform> &pool_quad_tree_uv_transforms,
 				render_traversal_cube_quad_tree_type &render_traversal_cube_quad_tree,
 				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
@@ -898,7 +738,7 @@ namespace GPlatesOpenGL
 
 		void
 		render_tile_to_scene(
-				GLRenderer &renderer,
+				GL &gl,
 				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
 				const source_raster_quad_tree_node_type &source_raster_quad_tree_node,
@@ -923,31 +763,23 @@ namespace GPlatesOpenGL
 
 		bool
 		get_tile_textures(
-				GLRenderer &renderer,
-				boost::optional<GLTexture::shared_ptr_to_const_type> &source_raster_texture,
-				boost::optional<GLTexture::shared_ptr_to_const_type> &age_grid_mask_texture,
-				boost::optional<GLTexture::shared_ptr_to_const_type> &normal_map_texture,
+				GL &gl,
+				boost::optional<GLTexture::shared_ptr_type> &source_raster_texture,
+				boost::optional<GLTexture::shared_ptr_type> &age_grid_mask_texture,
+				boost::optional<GLTexture::shared_ptr_type> &normal_map_texture,
 				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
 				const source_raster_quad_tree_node_type &source_raster_quad_tree_node,
 				const boost::optional<age_grid_mask_quad_tree_node_type> &age_grid_mask_quad_tree_node,
 				const boost::optional<age_grid_mask_quad_tree_node_type> &normal_map_quad_tree_node);
 
-		boost::optional<Program>
-		get_shader_program_for_tile(
-				bool source_raster_is_floating_point,
-				bool using_age_grid_tile,
-				bool using_normal_map_tile,
-				bool active_polygons);
-
-		RenderQuadTreeNode::TileDrawState
-		create_scene_tile_draw_state(
-				GLRenderer &renderer,
-				boost::optional<Program> render_tile_to_scene_program,
-				const GLTexture::shared_ptr_to_const_type &source_raster_tile_texture,
+		RenderQuadTreeNode::CommonTileDrawState
+		create_common_tile_draw_state(
+				GL &gl,
+				const GLTexture::shared_ptr_type&source_raster_tile_texture,
 				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-				boost::optional<GLTexture::shared_ptr_to_const_type> age_grid_tile_texture,
+				boost::optional<GLTexture::shared_ptr_type> age_grid_tile_texture,
 				boost::optional<const GLUtils::QuadTreeUVTransform &> age_grid_uv_transform,
-				boost::optional<GLTexture::shared_ptr_to_const_type> normal_map_tile_texture,
+				boost::optional<GLTexture::shared_ptr_type> normal_map_tile_texture,
 				boost::optional<const GLUtils::QuadTreeUVTransform &> normal_map_uv_transform,
 				source_raster_cube_subdivision_cache_type &source_raster_cube_subdivision_cache,
 				const source_raster_cube_subdivision_cache_type::node_reference_type &source_raster_cube_subdivision_cache_node,
@@ -956,45 +788,24 @@ namespace GPlatesOpenGL
 				boost::optional<age_grid_cube_subdivision_cache_type::non_null_ptr_type> &normal_map_cube_subdivision_cache,
 				const boost::optional<age_grid_cube_subdivision_cache_type::node_reference_type> &normal_map_cube_subdivision_cache_node,
 				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
-				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-				bool active_polygons);
+				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node);
+
+		void
+		set_tile_state(
+				GL &gl,
+				const RenderQuadTreeNode::CommonTileDrawState &common_tile_draw_state);
 
 		void
 		render_tile_polygon_drawables(
-				GLRenderer &renderer,
-				const RenderQuadTreeNode::TileDrawState &render_scene_tile_draw_state,
-				const GPlatesMaths::UnitQuaternion3D &reconstructed_polygon_mesh_rotation,
+				GL &gl,
 				const present_day_polygon_mesh_membership_type &reconstructed_polygon_mesh_membership,
 				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
 				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
 				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables);
 
 		void
-		apply_tile_state(
-				GLRenderer &renderer,
-				const RenderQuadTreeNode::TileDrawState &tile_draw_state,
-				const GPlatesMaths::UnitQuaternion3D &plate_rotation);
-
-		void
-		apply_tile_shader_program_state(
-				GLRenderer &renderer,
-				const RenderQuadTreeNode::TileDrawState &tile_draw_state);
-
-		void
-		create_shader_programs(
-				GLRenderer &renderer);
-
-		boost::optional<Program>
-		create_shader_program(
-				GLRenderer &renderer,
-				bool define_source_raster_is_floating_point,
-				bool define_using_age_grid,
-				bool define_generate_age_mask,
-				bool define_active_polygons,
-				bool define_surface_lighting,
-				bool define_using_normal_map,
-				bool define_no_directional_light_for_normal_maps,
-				bool define_map_view);
+		compile_link_shader_program(
+				GL &gl);
 	};
 }
 

@@ -111,7 +111,7 @@ namespace GPlatesOpenGL
 			 *
 			 * @a cache_handle is to be stored by the client to keep textures (and vertices) cached.
 			 */
-			boost::optional<GLTexture::shared_ptr_to_const_type>
+			boost::optional<GLTexture::shared_ptr_type>
 			get_tile_texture(
 					GL &gl,
 					cache_handle_type &cache_handle) const
@@ -138,7 +138,7 @@ namespace GPlatesOpenGL
 				is_leaf_node() const = 0;
 
 				virtual
-				boost::optional<GLTexture::shared_ptr_to_const_type>
+				boost::optional<GLTexture::shared_ptr_type>
 				get_tile_texture(
 						GL &gl,
 						cache_handle_type &cache_handle) const = 0;

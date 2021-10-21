@@ -31,20 +31,19 @@
 #include "global/CompilerWarnings.h"
 
 #include <boost/cast.hpp>
-#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 
 #include "GLMultiResolutionStaticPolygonReconstructedRaster.h"
 
+#include "GL.h"
 #include "GLContext.h"
 #include "GLDataRasterSource.h"
 #include "GLIntersect.h"
 #include "GLLight.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionRaster.h"
-#include "GLRenderer.h"
-#include "GLShaderProgramUtils.h"
+#include "GLShader.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"
 #include "GLVertexUtils.h"
@@ -58,12 +57,9 @@
 #include "gui/Colour.h"
 
 #include "maths/MathsUtils.h"
+#include "maths/UnitQuaternion3D.h"
 
 #include "utils/Profile.h"
-
-
-// Temporarily remove directional lighting for normal maps until GPlates 1.4 (when introduce light canvas tool)...
-#define TEMPORARY_HACK_NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
 
 
 namespace
@@ -78,155 +74,11 @@ namespace
 	//! Fragment shader source code to render raster tiles to the scene.
 	const QString RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME =
 			":/opengl/multi_resolution_static_polygon_reconstructed_raster/render_tile_to_scene_fragment_shader.glsl";
-
-	/**
-	 * A 4-component texture environment colour used to extract red channel when used with GL_ARB_texture_env_dot3.
-	 */
-	std::vector<GLfloat>
-	create_dot3_extract_red_channel()
-	{
-		std::vector<GLfloat> vec(4);
-
-		vec[0] = 1;
-		vec[1] = 0.5f;
-		vec[2] = 0.5f;
-		vec[3] = 0;
-
-		return vec;
-	}
-}
-
-
-bool
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::is_supported(
-		GLRenderer &renderer)
-{
-	static bool supported = false;
-
-	// Only test for support the first time we're called.
-	static bool tested_for_support = false;
-	if (!tested_for_support)
-	{
-		tested_for_support = true;
-
-		const GLCapabilities &capabilities = renderer.get_capabilities();
-
-		// We currently need four texture units and GL_ARB_texture_env_combine and GL_ARB_texture_env_dot3.
-		// For regular raster reconstruction - one for the raster and another for the clip texture.
-		// For age-grid enhanced raster reconstruction - another two for the age grid coverage/mask texture.
-		if (capabilities.texture.gl_max_texture_units < 4 ||
-			!capabilities.texture.gl_ARB_texture_env_combine ||
-			!capabilities.texture.gl_ARB_texture_env_dot3)
-		{
-			qWarning() <<
-					"RECONSTRUCTED rasters NOT supported by this graphics hardware - requires four texture units.\n"
-					"  Most graphics hardware for over a decade supports this -\n"
-					"  most likely software renderer fallback has occurred - possibly via remote desktop software.";
-
-			return false;
-		}
-
-		// If we get this far then we have support.
-		supported = true;
-	}
-
-	return supported;
-}
-
-
-bool
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_floating_point_source_raster(
-		GLRenderer &renderer)
-{
-	static bool supported = false;
-
-	// Only test for support the first time we're called.
-	static bool tested_for_support = false;
-	if (!tested_for_support)
-	{
-		tested_for_support = true;
-
-		// We use GLRenderer to render to render targets so it must support rendering to
-		// floating-point render targets.
-		supported =
-				renderer.supports_floating_point_render_target_2D() &&
-					// Don't really need to check for this but will anyway in case caller expects us to...
-					renderer.get_capabilities().texture.gl_ARB_texture_float;
-	}
-
-	return supported;
-}
-
-
-bool
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_normal_map(
-		GLRenderer &renderer)
-{
-	static bool supported = false;
-
-	// Only test for support the first time we're called.
-	static bool tested_for_support = false;
-	if (!tested_for_support)
-	{
-		tested_for_support = true;
-
-		const GLCapabilities &capabilities = renderer.get_capabilities();
-
-		// Test input raster for normal map support.
-		// Also need vertex/fragment shader support.
-		if (!GLMultiResolutionRaster::supports_normal_map_source(renderer) ||
-			!capabilities.shader.gl_ARB_vertex_shader ||
-			!capabilities.shader.gl_ARB_fragment_shader)
-		{
-			return false;
-		}
-
-		//
-		// Try to compile our most complex fragment shader program.
-		//
-		// If this fails then it could be exceeding some resource limit on the runtime system
-		// such as number of shader instructions allowed.
-		//
-
-		// Not configuring shader for floating-point source raster since lighting does not apply to it.
-		const char *shader_defines =
-			// Configure shader for using normal maps.
-			"#define USING_NORMAL_MAP\n"
-			// Configure shader for using map view surface lighting as that increases complexity.
-			"#define SURFACE_LIGHTING\n"
-			"#define MAP_VIEW\n"
-			// Configure shader for using an age grid as that increases complexity.
-			"#define USING_AGE_GRID\n"
-			// Configure shader for active polygons as that increases complexity.
-			"#define ACTIVE_POLYGONS\n";
-
-		GLShaderSource fragment_shader_source;
-		fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
-		fragment_shader_source.add_code_segment(shader_defines);
-		fragment_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-		
-		GLShaderSource vertex_shader_source;
-		vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
-		vertex_shader_source.add_code_segment(shader_defines);
-		vertex_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
-
-		// Attempt to create the test shader program.
-		if (!GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-				renderer, vertex_shader_source, fragment_shader_source))
-		{
-			return false;
-		}
-
-		// If we get this far then we have support.
-		supported = true;
-	}
-
-	return supported;
 }
 
 
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::GLMultiResolutionStaticPolygonReconstructedRaster(
-		GLRenderer &renderer,
+		GL &gl,
 		const double &reconstruction_time,
 		const GLMultiResolutionCubeRaster::non_null_ptr_type &source_raster,
 		const std::vector<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> &reconstructed_static_polygon_meshes,
@@ -245,10 +97,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::GLMultiResolut
 			GLUtils::QuadTreeUVTransform::get_expand_tile_ratio(
 					source_raster->get_tile_texel_dimension(),
 					0.5/*tile_border_overlap_in_texels*/)),
-	d_xy_clip_texture(GLTextureUtils::create_xy_clip_texture_2D(renderer)),
-	d_z_clip_texture(GLTextureUtils::create_z_clip_texture_2D(renderer)),
+	d_xy_clip_texture(GLTextureUtils::create_xy_clip_texture_2D(gl)),
+	d_z_clip_texture(GLTextureUtils::create_z_clip_texture_2D(gl)),
 	d_xy_clip_texture_transform(GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform()),
-	d_full_screen_quad_drawable(renderer.get_context().get_shared_state()->get_full_screen_quad(renderer)),
+	d_render_tile_to_scene_program(GLProgram::create(gl)),
 	d_light(light)
 #if 0	// Not needed anymore but keeping in case needed in the future...
 	d_cube_quad_tree(cube_quad_tree_type::create())
@@ -257,15 +109,16 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::GLMultiResolut
 	// We are either reconstructing the raster (using static polygon meshes) or not (instead using
 	// the multi-resolution cube mesh), so one (and only one) must be valid.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			// Essentially the equivalent of boolean XOR (the extra NOT's ensure boolean comparison)...
-			d_reconstructed_static_polygon_meshes.empty() != !d_multi_resolution_cube_mesh,
+			// Essentially the equivalent of boolean XOR...
+			(d_reconstructed_static_polygon_meshes.empty() && d_multi_resolution_cube_mesh) ||
+				(!d_reconstructed_static_polygon_meshes.empty() && !d_multi_resolution_cube_mesh),
 			GPLATES_ASSERTION_SOURCE);
 
 	if (d_light)
 	{
-		// Cannot have lighting for a floating-point source raster (it's not meant to be visualised).
+		// Cannot have lighting for a data/numerical raster (it's not meant to be visualised).
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				!GLTexture::is_format_floating_point(d_source_raster->get_tile_texture_internal_format()),
+				d_source_raster->tile_texture_is_visual(),
 				GPLATES_ASSERTION_SOURCE);
 	}
 
@@ -275,15 +128,18 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::GLMultiResolut
 		d_age_grid_cube_raster = AgeGridCubeRaster(age_grid_raster.get());
 	}
 
-	// If using a normal map...
-	if (normal_map_raster)
+	// If using a normal map (and have a light)...
+	//
+	// A normal map raster is only affected by lighting (so if there's no light then we don't use a normal map).
+	// Note: Whether lighting is used also depends on the state of SceneLightingParameters.
+
+	if (normal_map_raster && d_light)
 	{
 		d_normal_map_cube_raster = NormalMapCubeRaster(normal_map_raster.get());
 	}
 
-	// Use shader programs for rendering if available (otherwise resort to fixed-function pipeline).
-	// NOTE: This needs to be called *after* initialising the age grid and normal map rasters.
-	create_shader_programs(renderer);
+	// Note: This needs to be called *after* initialising the age grid and normal map rasters.
+	compile_link_shader_program(gl);
 }
 
 
@@ -352,6 +208,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_subject_to
 	}
 
 	// If the normal map raster has changed.
+	//
+	// Note: We only use/have a normal map if we also have a light.
 	if (d_normal_map_cube_raster)
 	{
 		if (!d_normal_map_cube_raster->cube_raster->get_subject_token().is_observer_up_to_date(
@@ -381,14 +239,11 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_subject_to
 
 float
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_level_of_detail(
-		const GLMatrix &model_view_transform,
-		const GLMatrix &projection_transform,
-		const GLViewport &viewport,
+		const GLViewProjection& view_projection,
 		float level_of_detail_bias) const
 {
 	// Get the minimum size of a pixel in the current viewport when projected
 	// onto the unit sphere (in model space).
-	GLViewProjection view_projection(viewport, model_view_transform, projection_transform);
 	const double min_pixel_size_on_unit_sphere = view_projection.get_min_pixel_size_on_unit_sphere();
 
 	//
@@ -455,20 +310,24 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::clamp_level_of
 
 bool
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLMatrix &view_projection_transform,
 		float level_of_detail,
 		cache_handle_type &cache_handle)
 {
 	PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+	// We only have one shader program (for rendering each tile to the scene).
+	// Bind it early since we'll be setting state in it as we traverse the cube quad tree.
+	gl.UseProgram(d_render_tile_to_scene_program);
 
 	// Make sure the source cube map raster has not been re-oriented via a non-identity world transform.
 	// This class assumes the cube map is in its default orientation (with identity world transform).
 	// If the cube map raster's world transform is already identity then this call does nothing.
-	// This is necessary since the cube map raster might have be re-oriented to align it with a non-zero
+	// This is necessary since the cube map raster might have been re-oriented to align it with a non-zero
 	// central meridian in a map-projection (for the 2D map view or raster export).
 	d_source_raster->set_world_transform(GLMatrix());
 
@@ -617,13 +476,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	if (reconstructing_raster())
 	{
 		// Iterate over the reconstructed static polygon meshes (that came from different app-logic layers).
-		for (unsigned int reconstructed_static_polygon_meshes_index = 0;
-			reconstructed_static_polygon_meshes_index < d_reconstructed_static_polygon_meshes.size();
-			++reconstructed_static_polygon_meshes_index)
+		for (auto reconstructed_static_polygon_meshes : d_reconstructed_static_polygon_meshes)
 		{
-			const GLReconstructedStaticPolygonMeshes::non_null_ptr_type &reconstructed_static_polygon_meshes =
-					d_reconstructed_static_polygon_meshes[reconstructed_static_polygon_meshes_index];
-
 			// Get the transform groups of reconstructed polygon meshes that are visible in the view frustum.
 			reconstructed_polygon_mesh_transform_groups_type::non_null_ptr_to_const_type
 					reconstructed_polygon_mesh_transform_groups =
@@ -638,20 +492,27 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 					reconstructed_static_polygon_meshes->get_present_day_polygon_mesh_node_intersections();
 
 			// Iterate over the transform groups and traverse the cube quad tree separately for each transform.
-			BOOST_FOREACH(
-					const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
+			for (const auto &reconstructed_polygon_mesh_transform_group :
 					reconstructed_polygon_mesh_transform_groups->get_transform_groups())
 			{
-				// Make sure we leave the OpenGL state the way it was.
-				// We do this for each iteration of the transform groups loop.
-				GLRenderer::StateBlockScope save_restore_state_transform_group(renderer);
+				// Post-multiply the current finite rotation transform into the view-projection transform.
+				const GPlatesMaths::UnitQuaternion3D &transform_group_finite_rotation =
+						reconstructed_polygon_mesh_transform_group.get_finite_rotation();
 
-				// Push the current finite rotation transform.
-				const GLMatrix finite_rotation(reconstructed_polygon_mesh_transform_group.get_finite_rotation());
-				renderer.gl_mult_matrix(GL_MODELVIEW, finite_rotation);
+				// Set the rotation for the current rotation group.
+				glUniform4f(
+						d_render_tile_to_scene_program->get_uniform_location("plate_rotation_quaternion"),
+						transform_group_finite_rotation.x().dval(),
+						transform_group_finite_rotation.y().dval(),
+						transform_group_finite_rotation.z().dval(),
+						transform_group_finite_rotation.w().dval());
+
+				GLMatrix view_projection_transform_group(view_projection_transform);
+				view_projection_transform_group.gl_mult_matrix(transform_group_finite_rotation);
 
 				render_transform_group(
-						renderer,
+						gl,
+						view_projection_transform_group,
 						*render_traversal_cube_quad_tree,
 						*client_cache_cube_quad_tree,
 						reconstructed_polygon_mesh_transform_group,
@@ -674,10 +535,20 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 				d_multi_resolution_cube_mesh,
 				GPLATES_ASSERTION_SOURCE);
 
-		// There is only one transform group to render and that's essentially the identity transform
-		// since there is no reconstruction here.
+		// There is only one transform group to render and that's an identity rotation
+		// for the sole transform group since there is no reconstruction here.
+		const GPlatesMaths::UnitQuaternion3D identity_finite_rotation =
+				GPlatesMaths::UnitQuaternion3D::create_identity_rotation();
+		glUniform4f(
+				d_render_tile_to_scene_program->get_uniform_location("plate_rotation_quaternion"),
+				identity_finite_rotation.x().dval(),
+				identity_finite_rotation.y().dval(),
+				identity_finite_rotation.z().dval(),
+				identity_finite_rotation.w().dval());
+
 		render_transform_group(
-				renderer,
+				gl,
+				view_projection_transform,
 				*render_traversal_cube_quad_tree,
 				*client_cache_cube_quad_tree,
 				boost::none/*reconstructed_polygon_mesh_transform_group*/,
@@ -706,7 +577,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 
 void
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_transform_group(
-		GLRenderer &renderer,
+		GL &gl,
+		const GLMatrix &view_projection_transform_group,
 		render_traversal_cube_quad_tree_type &render_traversal_cube_quad_tree,
 		client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
 		boost::optional<const reconstructed_polygon_mesh_transform_group_type &> reconstructed_polygon_mesh_transform_group,
@@ -723,15 +595,13 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_transfo
 {
 	// First get the view frustum planes.
 	//
-	// NOTE: We do this *after* multiplying the above rotation transform because the
-	// frustum planes are affected by the current model-view and projection transforms.
+	// NOTE: The frustum planes are affected by the current model-view-projection transform,
+	// which includes the rotation of the current transform group.
 	// Our quad tree bounding boxes are in model space but the polygon meshes they
 	// bound are rotating to new positions so we want to take that into account and map
 	// the view frustum back to model space where we can test against our bounding boxes.
 	//
-	const GLFrustum frustum_planes(
-			renderer.gl_get_matrix(GL_MODELVIEW),
-			renderer.gl_get_matrix(GL_PROJECTION));
+	const GLFrustum frustum_planes(view_projection_transform_group);
 
 	//
 	// Traverse the source raster cube quad tree and the spatial partition of reconstructed polygon meshes.
@@ -848,7 +718,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_transfo
 
 		// Render the quad tree.
 		render_quad_tree(
-				renderer,
+				gl,
 				pool_quad_tree_uv_transforms,
 				render_traversal_cube_quad_tree,
 				render_traversal_cube_quad_tree_root,
@@ -887,7 +757,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_transfo
 
 void
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tree(
-		GLRenderer &renderer,
+		GL &gl,
 		boost::object_pool<GLUtils::QuadTreeUVTransform> &pool_quad_tree_uv_transforms,
 		render_traversal_cube_quad_tree_type &render_traversal_cube_quad_tree,
 		render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
@@ -1014,7 +884,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	if (render_source_raster_tile && render_age_grid_tile && render_normal_map_tile)
 	{
 		render_tile_to_scene(
-				renderer,
+				gl,
 				render_traversal_cube_quad_tree_node,
 				client_cache_cube_quad_tree_node,
 				source_raster_quad_tree_node,
@@ -1246,7 +1116,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 									child_v_offset);
 
 			render_quad_tree(
-					renderer,
+					gl,
 					pool_quad_tree_uv_transforms,
 					render_traversal_cube_quad_tree,
 					child_render_traversal_cube_quad_tree_node,
@@ -1285,7 +1155,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 
 void
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to_scene(
-		GLRenderer &renderer,
+		GL &gl,
 		render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 		client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
 		const source_raster_quad_tree_node_type &source_raster_quad_tree_node,
@@ -1308,25 +1178,25 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node)
 {
-	//PROFILE_FUNC();
-
-	// If we are not reconstructing the raster then the code path is simpler since we do not need
-	// to cache state across transform groups, and using the age grid is simpler.
-	if (!reconstructing_raster())
+	// If we haven't yet cached a scene tile state set for the current quad tree node then do so.
+	//
+	// This caching is useful since this cube quad tree is traversed once for each rotation group but
+	// the state set for a specific cube quad tree node is the same for them all so it can be reused.
+	//
+	// NOTE: This caching only happens per-raster-render so there's no chance of a tile getting
+	// stuck in the wrong state *across* render calls (eg, if lighting is toggled).
+	//
+	// WARNING: We need to be careful not to cache anything specific to the current rotation group
+	// since the caching is reused by all transform groups that visit the current tile.
+	// This basically means anything dependent on the rotation should not be cached.
+	if (!render_traversal_cube_quad_tree_node.get_element().common_tile_draw_state)
 	{
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				cube_mesh_quad_tree_node,
-				GPLATES_ASSERTION_SOURCE);
-
-		// Make sure we leave the OpenGL state the way it was.
-		GLRenderer::StateBlockScope save_restore_state(renderer);
-
 		// Get the tile textures (source texture and optionally age grid and normal map).
-		boost::optional<GLTexture::shared_ptr_to_const_type> source_raster_texture;
-		boost::optional<GLTexture::shared_ptr_to_const_type> age_grid_mask_texture;
-		boost::optional<GLTexture::shared_ptr_to_const_type> normal_map_texture;
+		boost::optional<GLTexture::shared_ptr_type> source_raster_texture;
+		boost::optional<GLTexture::shared_ptr_type> age_grid_mask_texture;
+		boost::optional<GLTexture::shared_ptr_type> normal_map_texture;
 		if (!get_tile_textures(
-				renderer,
+				gl,
 				source_raster_texture,
 				age_grid_mask_texture,
 				normal_map_texture,
@@ -1335,23 +1205,23 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 				age_grid_mask_quad_tree_node,
 				normal_map_quad_tree_node))
 		{
-			// Note that this should never happen since we're using a 'GLMultiResolutionCubeRaster's.
+			// Note that this should never happen since we're using 'GLMultiResolutionCubeRaster's.
 			return;
 		}
 
-		// The scene tile draw state.
+		//
+		// Prepare for rendering the current scene tile.
+		//
+		// NOTE: This caching only happens within a render call (not across render frames).
+		//
+
+		// The common tile state used by all transform groups when they render this tile.
+		//
 		// Note that we use the 'active polygons' code path since that renders opaque outside
 		// the age grid regions, and transparent inside the age grid where the age test fails.
-		const RenderQuadTreeNode::TileDrawState render_scene_tile_draw_state =
-				create_scene_tile_draw_state(
-						renderer,
-						// Determine which shader program to use (if any are supported) based on
-						// the configuration of the current tile and lighting...
-						get_shader_program_for_tile(
-								GLTexture::is_format_floating_point(d_source_raster->get_tile_texture_internal_format()),
-								static_cast<bool>(age_grid_mask_quad_tree_node),
-								static_cast<bool>(normal_map_quad_tree_node),
-								true/*active_polygons*/),
+		render_traversal_cube_quad_tree_node.get_element().common_tile_draw_state =
+				create_common_tile_draw_state(
+						gl,
 						source_raster_texture.get(),
 						source_raster_uv_transform,
 						age_grid_mask_texture,
@@ -1365,198 +1235,82 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 						normal_map_cube_subdivision_cache,
 						normal_map_cube_subdivision_cache_node,
 						clip_cube_subdivision_cache,
-						clip_cube_subdivision_cache_node,
-						true/*active_polygons*/);
-
-		// Apply the necessary tile state.
-		// Note that the plate rotation is the identity rotation since we are not reconstructing.
-		apply_tile_state(
-				renderer,
-				render_scene_tile_draw_state,
-				GPlatesMaths::UnitQuaternion3D::create_identity_rotation());
-
-		// Draw the cube mesh covering the current quad tree node tile.
-		cube_mesh_quad_tree_node->render_mesh_drawable(renderer);
-
-		return;
+						clip_cube_subdivision_cache_node);
 	}
 
-	// If we haven't yet cached a scene tile state set for the current quad tree node then do so.
-	//
-	// This caching is useful since this cube quad tree is traversed once for each rotation group but
-	// the state set for a specific cube quad tree node is the same for them all so it can be reused.
-	//
-	// NOTE: This caching only happens per-raster-render so there's no chance of a tile getting
-	// stuck in the wrong state *across* render calls (eg, if lighting is toggled).
-	//
-	// WARNING: We need to be careful not to cache anything specific to the current rotation group
-	// since the caching is reused by all transform groups that visit the current tile.
-	// This basically means anything dependent on the rotation should not be cached.
-	if (!render_traversal_cube_quad_tree_node.get_element().scene_tile_draw_state)
-	{
-		// Get the tile textures (source texture and optionally age grid and normal map).
-		boost::optional<GLTexture::shared_ptr_to_const_type> source_raster_texture;
-		boost::optional<GLTexture::shared_ptr_to_const_type> age_grid_mask_texture;
-		boost::optional<GLTexture::shared_ptr_to_const_type> normal_map_texture;
-		if (!get_tile_textures(
-				renderer,
-				source_raster_texture,
-				age_grid_mask_texture,
-				normal_map_texture,
-				client_cache_cube_quad_tree_node,
-				source_raster_quad_tree_node,
-				age_grid_mask_quad_tree_node,
-				normal_map_quad_tree_node))
-		{
-			// Note that this should never happen since we're using a 'GLMultiResolutionCubeRaster's.
-			return;
-		}
-
-		//
-		// Prepare for rendering the current scene tile.
-		//
-		// NOTE: This caching only happens within a render call (not across render frames).
-		//
-
-		const bool is_floating_point_source_raster =
-				GLTexture::is_format_floating_point(d_source_raster->get_tile_texture_internal_format());
-
-		if (age_grid_mask_quad_tree_node)
-		{
-			render_traversal_cube_quad_tree_node.get_element().scene_tile_draw_state =
-					std::vector<RenderQuadTreeNode::TileDrawState>();
-
-			// Now handle the active polygons first.
-			bool active_polygons = true;
-
-			// Determine which shader program to use (if any are supported) based on the configuration
-			// of the current tile and lighting.
-			boost::optional<Program> active_polygons_program =
-					get_shader_program_for_tile(
-							is_floating_point_source_raster,
-							static_cast<bool>(age_grid_mask_quad_tree_node),
-							static_cast<bool>(normal_map_quad_tree_node),
-							active_polygons);
-			// Draw state for *active* polygons...
-			const RenderQuadTreeNode::TileDrawState active_polygons_draw_state =
-					create_scene_tile_draw_state(
-							renderer,
-							active_polygons_program,
-							source_raster_texture.get(),
-							source_raster_uv_transform,
-							age_grid_mask_texture,
-							age_grid_uv_transform,
-							normal_map_texture,
-							normal_map_uv_transform,
-							source_raster_cube_subdivision_cache,
-							source_raster_cube_subdivision_cache_node,
-							age_grid_cube_subdivision_cache,
-							age_grid_cube_subdivision_cache_node,
-							normal_map_cube_subdivision_cache,
-							normal_map_cube_subdivision_cache_node,
-							clip_cube_subdivision_cache,
-							clip_cube_subdivision_cache_node,
-							active_polygons);
-			// Cache the state.
-			render_traversal_cube_quad_tree_node.get_element().scene_tile_draw_state->push_back(
-					active_polygons_draw_state);
-
-			// Now handle the inactive polygons.
-			active_polygons = false;
-
-			// Determine which shader program to use (if any are supported) based on the configuration
-			// of the current tile and lighting.
-			boost::optional<Program> inactive_polygons_program =
-					get_shader_program_for_tile(
-							is_floating_point_source_raster,
-							static_cast<bool>(age_grid_mask_quad_tree_node),
-							static_cast<bool>(normal_map_quad_tree_node),
-							active_polygons);
-			// Draw state for *inactive* polygons...
-			const RenderQuadTreeNode::TileDrawState inactive_polygons_draw_state =
-					create_scene_tile_draw_state(
-							renderer,
-							inactive_polygons_program,
-							source_raster_texture.get(),
-							source_raster_uv_transform,
-							age_grid_mask_texture,
-							age_grid_uv_transform,
-							normal_map_texture,
-							normal_map_uv_transform,
-							source_raster_cube_subdivision_cache,
-							source_raster_cube_subdivision_cache_node,
-							age_grid_cube_subdivision_cache,
-							age_grid_cube_subdivision_cache_node,
-							normal_map_cube_subdivision_cache,
-							normal_map_cube_subdivision_cache_node,
-							clip_cube_subdivision_cache,
-							clip_cube_subdivision_cache_node,
-							active_polygons);
-			// Cache the state.
-			render_traversal_cube_quad_tree_node.get_element().scene_tile_draw_state->push_back(
-					inactive_polygons_draw_state);
-		}
-		else // not using age grid...
-		{
-			// Determine which shader program to use (if any are supported) based on the configuration
-			// of the current tile and lighting.
-			boost::optional<Program> program =
-					get_shader_program_for_tile(
-							is_floating_point_source_raster,
-							static_cast<bool>(age_grid_mask_quad_tree_node),
-							static_cast<bool>(normal_map_quad_tree_node),
-							true/*active_polygons*/);
-			// Draw state...
-			const RenderQuadTreeNode::TileDrawState draw_state =
-					create_scene_tile_draw_state(
-							renderer,
-							program,
-							source_raster_texture.get(),
-							source_raster_uv_transform,
-							age_grid_mask_texture,
-							age_grid_uv_transform,
-							normal_map_texture,
-							normal_map_uv_transform,
-							source_raster_cube_subdivision_cache,
-							source_raster_cube_subdivision_cache_node,
-							age_grid_cube_subdivision_cache,
-							age_grid_cube_subdivision_cache_node,
-							normal_map_cube_subdivision_cache,
-							normal_map_cube_subdivision_cache_node,
-							clip_cube_subdivision_cache,
-							clip_cube_subdivision_cache_node,
-							true/*active_polygons*/);
-			// Cache the state.
-			render_traversal_cube_quad_tree_node.get_element().scene_tile_draw_state =
-					std::vector<RenderQuadTreeNode::TileDrawState>(1, draw_state);
-		}
-	}
+	const RenderQuadTreeNode::CommonTileDrawState &common_tile_draw_state =
+			render_traversal_cube_quad_tree_node.get_element().common_tile_draw_state.get();
 
 	//
 	// Render the current scene tile.
 	//
 
-	if (age_grid_mask_quad_tree_node)
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
+
+	// Apply the necessary tile state.
+	set_tile_state(gl, common_tile_draw_state);
+
+	// Whether we're using the age grid for the current tile (might not be covered by age grid).
+	const bool using_age_grid = static_cast<bool>(age_grid_mask_quad_tree_node);
+
+	// If we are not reconstructing the raster then we render use the cube mesh tile drawable
+	// (instead of reconstructed static polygons).
+	//
+	// Note that we don't really need to cache and re-use the common tile draw state since that's
+	// meant for re-use across the different transform groups, but that only applies when rendering
+	// reconstructed static polygons. Here we're only visiting each cube quad tree tile once.
+	// However we'll use the cache since it simplifies things (and also its cube quad tree nodes are
+	// already being created during cube quad tree traversal).
+	if (!reconstructing_raster())
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				cube_mesh_quad_tree_node,
+				GPLATES_ASSERTION_SOURCE);
+
+		if (using_age_grid)
+		{
+			// We only need the active polygons pass (not inactive polygons pass) because the cube mesh covers the
+			// entire tile and it so happens that enabling the active polygons path in the shader program does what
+			// we want here - which is to test the age grid values against the reconstruction time where there are
+			// age grid values (ie, ocean crust) and to always render outside the age grid (ie, continental crust).
+			//
+			// Note: Only need to set this variable when 'using_age_grid' shader variable is true.
+			glUniform1i(
+					d_render_tile_to_scene_program->get_uniform_location("using_age_grid_active_polygons"),
+					true);
+		}
+
+		// Draw the cube mesh covering the current quad tree node tile.
+		cube_mesh_quad_tree_node->render_mesh_drawable(gl);
+
+		return;
+	}
+
+	if (using_age_grid)
 	{
 		// We render using active *and* inactive reconstructed polygons because the age grid
 		// decides the begin time of oceanic crust not the polygons.
+		//
 		// We render the active reconstructed polygons first followed by the inactive.
-		// For the active polygons we render the source texture where the age grid coverage is zero and
-		// where both the age grid coverage *and* mask is one - here the polygon begin times are respected.
-		// For the inactive polygons we only render the source texture where the age grid coverage *and*
-		// mask is one.
+
+		// Note: Only need to set this variable when 'using_age_grid' shader variable is true.
+		glUniform1i(
+				d_render_tile_to_scene_program->get_uniform_location("using_age_grid_active_polygons"),
+				true);
 		render_tile_polygon_drawables(
-				renderer,
-				render_traversal_cube_quad_tree_node.get_element().scene_tile_draw_state->at(0),
-				reconstructed_polygon_mesh_transform_group->get_finite_rotation(),
+				gl,
 				reconstructed_polygon_mesh_transform_group->get_visible_present_day_polygon_meshes_for_active_reconstructions(),
 				polygon_mesh_node_intersections.get(),
 				intersections_quad_tree_node.get(),
 				polygon_mesh_drawables.get());
+
+		// Note: Only need to set this variable when 'using_age_grid' shader variable is true.
+		glUniform1i(
+				d_render_tile_to_scene_program->get_uniform_location("using_age_grid_active_polygons"),
+				false);
 		render_tile_polygon_drawables(
-				renderer,
-				render_traversal_cube_quad_tree_node.get_element().scene_tile_draw_state->at(1),
-				reconstructed_polygon_mesh_transform_group->get_finite_rotation(),
+				gl,
 				reconstructed_polygon_mesh_transform_group->get_visible_present_day_polygon_meshes_for_inactive_reconstructions(),
 				polygon_mesh_node_intersections.get(),
 				intersections_quad_tree_node.get(),
@@ -1565,9 +1319,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 	else // not using age grid...
 	{
 		render_tile_polygon_drawables(
-				renderer,
-				render_traversal_cube_quad_tree_node.get_element().scene_tile_draw_state->front(),
-				reconstructed_polygon_mesh_transform_group->get_finite_rotation(),
+				gl,
 				reconstructed_polygon_mesh_transform_group->get_visible_present_day_polygon_meshes_for_active_reconstructions(),
 				polygon_mesh_node_intersections.get(),
 				intersections_quad_tree_node.get(),
@@ -1578,10 +1330,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 
 bool
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_tile_textures(
-		GLRenderer &renderer,
-		boost::optional<GLTexture::shared_ptr_to_const_type> &source_raster_texture,
-		boost::optional<GLTexture::shared_ptr_to_const_type> &age_grid_mask_texture,
-		boost::optional<GLTexture::shared_ptr_to_const_type> &normal_map_texture,
+		GL &gl,
+		boost::optional<GLTexture::shared_ptr_type> &source_raster_texture,
+		boost::optional<GLTexture::shared_ptr_type> &age_grid_mask_texture,
+		boost::optional<GLTexture::shared_ptr_type> &normal_map_texture,
 		client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
 		const source_raster_quad_tree_node_type &source_raster_quad_tree_node,
 		const boost::optional<age_grid_mask_quad_tree_node_type> &age_grid_mask_quad_tree_node,
@@ -1591,7 +1343,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_tile_textu
 	// Since it's a cube texture it may, in turn, have to render its source raster
 	// into its texture (which it then passes to us to use).
 	GLMultiResolutionCubeRaster::cache_handle_type source_raster_cache_handle;
-	source_raster_texture = source_raster_quad_tree_node.get_tile_texture(renderer, source_raster_cache_handle);
+	source_raster_texture = source_raster_quad_tree_node.get_tile_texture(gl, source_raster_cache_handle);
 	if (!source_raster_texture)
 	{
 		// Note that this should never happen since we're using a 'GLMultiResolutionCubeRaster'.
@@ -1620,7 +1372,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_tile_textu
 		// into its texture (which it then passes to us to use).
 		GLMultiResolutionCubeRaster::cache_handle_type age_grid_mask_cache_handle;
 		age_grid_mask_texture =
-				age_grid_mask_quad_tree_node->get_tile_texture(renderer, age_grid_mask_cache_handle);
+				age_grid_mask_quad_tree_node->get_tile_texture(gl, age_grid_mask_cache_handle);
 		if (!age_grid_mask_texture)
 		{
 			// Note that this should never happen since we're using a 'GLMultiResolutionCubeRaster'.
@@ -1644,7 +1396,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_tile_textu
 		// into its texture (which it then passes to us to use).
 		GLMultiResolutionCubeRaster::cache_handle_type normal_map_cache_handle;
 		normal_map_texture =
-				normal_map_quad_tree_node->get_tile_texture(renderer, normal_map_cache_handle);
+				normal_map_quad_tree_node->get_tile_texture(gl, normal_map_cache_handle);
 		if (!normal_map_texture)
 		{
 			// Note that this should never happen since we're using a 'GLMultiResolutionCubeRaster'.
@@ -1662,107 +1414,14 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_tile_textu
 }
 
 
-boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::Program>
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_shader_program_for_tile(
-		bool source_raster_is_floating_point,
-		bool using_age_grid_tile,
-		bool using_normal_map_tile,
-		bool active_polygons)
-{
-	//
-	// Determine which shader program to use or return boost::none to use fixed-function pipeline.
-	//
-	// This effectively mirrors the creation of shader programs in 'create_shader_programs()'.
-	//
-
-	if (source_raster_is_floating_point)
-	{
-		if (using_age_grid_tile)
-		{
-			return active_polygons
-					? d_render_floating_point_with_age_grid_with_active_polygons_program
-					: d_render_floating_point_with_age_grid_with_inactive_polygons_program;
-		}
-
-		// No age grid on current tile...
-		return d_render_floating_point_program;
-	}
-
-	// Source raster is fixed-point ...
-
-	if (d_light)
-	{
-		// The surface lighting depends on whether in a 3D globe view or a 2D map view.
-		const ViewType view = d_light.get()->get_map_projection() ? MAP_VIEW : GLOBE_VIEW;
-
-		if (using_normal_map_tile)
-		{
-			// Note that we'll only get a normal map texture if surface relief lighting is enabled
-			// but we'll check for both surface lighting and a normal map texture just to be certain.
-			if (d_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
-				GPlatesGui::SceneLightingParameters::LIGHTING_RASTER))
-			{
-				if (using_age_grid_tile)
-				{
-					return active_polygons
-							? d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program[view]
-							: d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program[view];
-				}
-
-				return d_render_fixed_point_with_normal_map_with_surface_lighting_program[view];
-			}
-
-			// No surface relief *directional* lighting...
-
-			if (using_age_grid_tile)
-			{
-				return active_polygons
-						? d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[view]
-						: d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program[view];
-			}
-
-			return d_render_fixed_point_with_normal_map_program[view];
-		}
-
-		// No normal map...
-
-		if (d_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
-				GPlatesGui::SceneLightingParameters::LIGHTING_RASTER))
-		{
-			if (using_age_grid_tile)
-			{
-				return active_polygons
-						? d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[view]
-						: d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program[view];
-			}
-
-			return d_render_fixed_point_with_surface_lighting_program[view];
-		}
-	}
-
-	// Not using any surface lighting...
-
-	if (using_age_grid_tile)
-	{
-		return active_polygons
-				? d_render_fixed_point_with_age_grid_with_active_polygons_program
-				: d_render_fixed_point_with_age_grid_with_inactive_polygons_program;
-	}
-
-	// Neither age grid nor surface lighting applied to the current tile ...
-	return d_render_fixed_point_program;
-}
-
-
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::RenderQuadTreeNode::TileDrawState
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_tile_draw_state(
-		GLRenderer &renderer,
-		boost::optional<Program> render_tile_to_scene_program,
-		const GLTexture::shared_ptr_to_const_type &source_raster_tile_texture,
+GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::RenderQuadTreeNode::CommonTileDrawState
+GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_common_tile_draw_state(
+		GL &gl,
+		const GLTexture::shared_ptr_type &source_raster_tile_texture,
 		const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-		boost::optional<GLTexture::shared_ptr_to_const_type> age_grid_tile_texture,
+		boost::optional<GLTexture::shared_ptr_type> age_grid_tile_texture,
 		boost::optional<const GLUtils::QuadTreeUVTransform &> age_grid_uv_transform,
-		boost::optional<GLTexture::shared_ptr_to_const_type> normal_map_tile_texture,
+		boost::optional<GLTexture::shared_ptr_type> normal_map_tile_texture,
 		boost::optional<const GLUtils::QuadTreeUVTransform &> normal_map_uv_transform,
 		source_raster_cube_subdivision_cache_type &source_raster_cube_subdivision_cache,
 		const source_raster_cube_subdivision_cache_type::node_reference_type &source_raster_cube_subdivision_cache_node,
@@ -1771,28 +1430,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 		boost::optional<age_grid_cube_subdivision_cache_type::non_null_ptr_type> &normal_map_cube_subdivision_cache,
 		const boost::optional<age_grid_cube_subdivision_cache_type::node_reference_type> &normal_map_cube_subdivision_cache_node,
 		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
-		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-		bool active_polygons)
+		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node)
 {
-	//PROFILE_FUNC();
-
-	// Create an empty compiled draw state to start off with.
-	GLCompiledDrawState::non_null_ptr_type compiled_draw_state = renderer.create_empty_compiled_draw_state();
-
-	// NOTE: If OpenGL requirements are not supported then return an empty compiled draw state that sets no state.
-	// The 'is_supported()' method should have been called to prevent us from getting here though.
-	if (!is_supported(renderer))
-	{
-		return RenderQuadTreeNode::TileDrawState(compiled_draw_state);
-	}
-
-	// The tile draw state includes the compiled state (calls to GLRenderer) and the shader program state.
-	RenderQuadTreeNode::TileDrawState tile_draw_state(compiled_draw_state, render_tile_to_scene_program);
-
-	// Start compiling the scene tile state.
-	// Compiled state is any call to GLRenderer.
-	GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, compiled_draw_state);
-
 	// Get the view/projection transforms for the current cube quad tree node.
 
 	// The view transform never changes within a cube face so it's the same across
@@ -1819,42 +1458,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 	source_raster_tile_texture_matrix.gl_mult_matrix(source_raster_projection_transform->get_matrix());
 	source_raster_tile_texture_matrix.gl_mult_matrix(view_transform->get_matrix());
 
-	// If using an age grid then it will need a different projection transform due to it, most likely, having
-	// a different tile dimension than the source raster (and hence different half-texel expanded frustum).
-	GLMatrix age_grid_tile_texture_matrix;
-	if (age_grid_tile_texture)
-	{
-		const GLTransform::non_null_ptr_to_const_type age_grid_projection_transform =
-				age_grid_cube_subdivision_cache.get()->get_projection_transform(
-						age_grid_cube_subdivision_cache_node.get());
-
-		// Used to transform texture coordinates to account for partial coverage of current age grid tile.
-		// This can happen if we are rendering a source raster that is higher-resolution than the age grid.
-		age_grid_uv_transform->inverse_transform(age_grid_tile_texture_matrix);
-		age_grid_tile_texture_matrix.gl_mult_matrix(GLUtils::get_clip_space_to_texture_space_transform());
-		// Set up the texture matrix to perform model-view and projection transforms of the frustum.
-		age_grid_tile_texture_matrix.gl_mult_matrix(age_grid_projection_transform->get_matrix());
-		age_grid_tile_texture_matrix.gl_mult_matrix(view_transform->get_matrix());
-	}
-
-	// If using a normal map then it will need a different projection transform due to it, most likely, having
-	// a different tile dimension than the source raster (and hence different half-texel expanded frustum).
-	GLMatrix normal_map_tile_texture_matrix;
-	if (normal_map_tile_texture)
-	{
-		const GLTransform::non_null_ptr_to_const_type normal_map_projection_transform =
-				normal_map_cube_subdivision_cache.get()->get_projection_transform(
-						normal_map_cube_subdivision_cache_node.get());
-
-		// Used to transform texture coordinates to account for partial coverage of current normal map tile.
-		// This can happen if we are rendering a source raster that is higher-resolution than the normal map.
-		normal_map_uv_transform->inverse_transform(normal_map_tile_texture_matrix);
-		normal_map_tile_texture_matrix.gl_mult_matrix(GLUtils::get_clip_space_to_texture_space_transform());
-		// Set up the texture matrix to perform model-view and projection transforms of the frustum.
-		normal_map_tile_texture_matrix.gl_mult_matrix(normal_map_projection_transform->get_matrix());
-		normal_map_tile_texture_matrix.gl_mult_matrix(view_transform->get_matrix());
-	}
-
 	// The regular projection transform (unexpanded) used for the clip texture.
 	const GLTransform::non_null_ptr_to_const_type clip_projection_transform =
 			clip_cube_subdivision_cache.get_projection_transform(
@@ -1871,14 +1474,11 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 	clip_texture_matrix.gl_mult_matrix(clip_projection_transform->get_matrix());
 	clip_texture_matrix.gl_mult_matrix(view_transform->get_matrix());
 
-	// Use shader program (if supported), otherwise the fixed-function pipeline.
-	if (render_tile_to_scene_program)
-	{
-		// Bind the shader program.
-		renderer.gl_bind_program_object(render_tile_to_scene_program->shader_program);
-	}
-
-	unsigned int current_texture_unit = 0;
+	// The common tile state used by all transform groups when they render this tile.
+	RenderQuadTreeNode::CommonTileDrawState common_tile_draw_state(
+			source_raster_tile_texture,
+			source_raster_tile_texture_matrix,
+			clip_texture_matrix);
 
 	//
 	// Age grid texture
@@ -1887,234 +1487,79 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 	// If using an age grid for the current tile...
 	if (age_grid_tile_texture)
 	{
-		// Only need one texture unit for shader programs to access age mask and coverage together.
-		// Fixed function pipeline requires two units though.
-		if (render_tile_to_scene_program)
-		{
-			if (render_tile_to_scene_program->uniforms.uses_age_grid_texture_transform)
-			{
-				// Load the age grid texture transform.
-				tile_draw_state.age_grid_texture_transform = age_grid_tile_texture_matrix;
-			}
+		// Age grid will need a different projection transform due to it, most likely, having a different
+		// tile dimension than the source raster (and hence different half-texel expanded frustum).
+		const GLTransform::non_null_ptr_to_const_type age_grid_projection_transform =
+				age_grid_cube_subdivision_cache.get()->get_projection_transform(
+						age_grid_cube_subdivision_cache_node.get());
 
-			if (render_tile_to_scene_program->uniforms.uses_age_grid_texture_sampler)
-			{
-				// Bind the age grid texture to the current texture unit.
-				renderer.gl_bind_texture(age_grid_tile_texture.get(), GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
+		// Used to transform texture coordinates to account for partial coverage of current age grid tile.
+		// This can happen if we are rendering a source raster that is higher-resolution than the age grid.
+		GLMatrix age_grid_tile_texture_matrix;
+		age_grid_uv_transform->inverse_transform(age_grid_tile_texture_matrix);
+		age_grid_tile_texture_matrix.gl_mult_matrix(GLUtils::get_clip_space_to_texture_space_transform());
+		// Set up the texture matrix to perform model-view and projection transforms of the frustum.
+		age_grid_tile_texture_matrix.gl_mult_matrix(age_grid_projection_transform->get_matrix());
+		age_grid_tile_texture_matrix.gl_mult_matrix(view_transform->get_matrix());
 
-				// Set the age grid texture sampler to the current texture unit.
-				tile_draw_state.age_grid_texture_sampler = current_texture_unit;
-
-				// Move to the next texture unit.
-				++current_texture_unit;
-			}
-
-			if (render_tile_to_scene_program->uniforms.uses_reconstruction_time)
-			{
-				// If we're generating the age mask in the shader program then it needs to know the reconstruction time.
-				tile_draw_state.reconstruction_time = d_reconstruction_time;
-			}
-		}
-		else // Fixed function...
-		{
-			//
-			// Age grid mask texture (to access mask and copy from RGB to Alpha channel)
-			//
-
-			// Load texture transform into the current texture unit.
-			renderer.gl_load_texture_matrix(GL_TEXTURE0 + current_texture_unit, age_grid_tile_texture_matrix);
-			// Bind the age grid mask texture to the current texture unit.
-			renderer.gl_bind_texture(age_grid_tile_texture.get(), GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-			// Enable texturing and set the texture function on the current texture unit.
-			renderer.gl_enable_texture(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-			// We only need to set parameters that are not default parameters...
-			// Use dot3 to convert RGB(1,*,*) to RGBA(1,1,1,1) or RGB(0,*,*) to RGBA(0,0,0,0).
-			// This gets the red channel into the alpha channel (we need it there for alpha-testing).
-			//
-			// NOTE: This only works for extracting a value that's either 0.0 or 1.0 so nearest neighbour
-			// filtering with no anisotropic should be used to prevent a value between 0 and 1.
-			static const std::vector<GLfloat> dot3_extract_red_channel = create_dot3_extract_red_channel();
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_DOT3_RGBA_ARB);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_CONSTANT_ARB);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, dot3_extract_red_channel);
-			// The alpha channel is ignored since using GL_DOT3_RGBA_ARB instead of GL_DOT3_RGB_ARB.
-			// Set up texture coordinate generation from the vertices (x,y,z) on the current texture unit.
-			GLUtils::set_object_linear_tex_gen_state(renderer, current_texture_unit);
-
-			// Move to the next texture unit.
-			++current_texture_unit;
-
-			//
-			// Age grid mask texture (to access mask coverage)
-			//
-
-			// Load texture transform into the current texture unit.
-			renderer.gl_load_texture_matrix(GL_TEXTURE0 + current_texture_unit, age_grid_tile_texture_matrix);
-			// Bind the age grid mask texture to the current texture unit.
-			renderer.gl_bind_texture(age_grid_tile_texture.get(), GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-			// Enable texturing and set the texture function on the current texture unit.
-			renderer.gl_enable_texture(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
-			// For RGB channels set to (1,1,1).
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_REPLACE);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PRIMARY_COLOR_ARB);
-			if (active_polygons)
-			{
-				// Interpolate with the age grid mask in the previous texture unit (the age grid coverage interpolates).
-				// For alpha channel we interpolate (1-Ac) + Ac * Am where Ac is coverage and Am is mask.
-				// INTERPOLATE_ARB --> Arg0 * (Arg2) + Arg1 * (1-Arg2)
-				// We only need to set parameters that are not default parameters...
-				renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_INTERPOLATE_ARB);
-				renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB);
-				renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_PRIMARY_COLOR_ARB);
-				renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE2_ALPHA_ARB, GL_TEXTURE);
-			}
-			else // inactive polygons...
-			{
-				// Just multiple the age grid coverage with the age grid mask.
-				renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE);
-				renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_TEXTURE);
-				renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_PREVIOUS_ARB);
-			}
-			// Set up texture coordinate generation from the vertices (x,y,z) on the current texture unit.
-			GLUtils::set_object_linear_tex_gen_state(renderer, current_texture_unit);
-
-			// Move to the next texture unit.
-			++current_texture_unit;
-		}
+		// Cache the age grid texture transform and texture.
+		common_tile_draw_state.age_grid_texture_transform = age_grid_tile_texture_matrix;
+		common_tile_draw_state.age_grid_texture = age_grid_tile_texture;
 	}
 
 	//
 	// Surface lighting and normal map raster texture
 	//
 
-	// There's no fixed-function pipeline fallback for surface lighting.
-	// If the shader program is not available on runtime system then fixed-function pipeline
-	// will be used *without* surface lighting.
-	if (render_tile_to_scene_program)
+	if (normal_map_tile_texture)
 	{
-		if (render_tile_to_scene_program->uniforms.uses_normal_map_texture_transform)
-		{
-			// Load the normal map texture transform.
-			tile_draw_state.normal_map_texture_transform = normal_map_tile_texture_matrix;
-		}
+		// Normal map will need a different projection transform due to it, most likely, having a different
+		// tile dimension than the source raster (and hence different half-texel expanded frustum).
+		const GLTransform::non_null_ptr_to_const_type normal_map_projection_transform =
+				normal_map_cube_subdivision_cache.get()->get_projection_transform(
+						normal_map_cube_subdivision_cache_node.get());
 
-		if (render_tile_to_scene_program->uniforms.uses_normal_map_texture_sampler)
-		{
-			// Bind the normal map texture to the current texture unit.
-			renderer.gl_bind_texture(normal_map_tile_texture.get(), GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
+		// Used to transform texture coordinates to account for partial coverage of current normal map tile.
+		// This can happen if we are rendering a source raster that is higher-resolution than the normal map.
+		GLMatrix normal_map_tile_texture_matrix;
+		normal_map_uv_transform->inverse_transform(normal_map_tile_texture_matrix);
+		normal_map_tile_texture_matrix.gl_mult_matrix(GLUtils::get_clip_space_to_texture_space_transform());
+		// Set up the texture matrix to perform model-view and projection transforms of the frustum.
+		normal_map_tile_texture_matrix.gl_mult_matrix(normal_map_projection_transform->get_matrix());
+		normal_map_tile_texture_matrix.gl_mult_matrix(view_transform->get_matrix());
 
-			// Set the normal map texture sampler to the current texture unit.
-			tile_draw_state.normal_map_texture_sampler = current_texture_unit;
-
-			// Move to the next texture unit.
-			++current_texture_unit;
-		}
-
-		if (render_tile_to_scene_program->uniforms.uses_world_space_light_direction)
-		{
-			// Set the world space light direction.
-			tile_draw_state.world_space_light_direction =
-					d_light.get()->get_globe_view_light_direction(renderer);
-		}
-
-		if (render_tile_to_scene_program->uniforms.uses_light_direction_cube_texture_sampler)
-		{
-			// Bind the light direction cube texture to the current texture unit.
-			renderer.gl_bind_texture(
-					d_light.get()->get_map_view_light_direction_cube_map_texture(renderer),
-					GL_TEXTURE0 + current_texture_unit,
-					GL_TEXTURE_CUBE_MAP_ARB);
-
-			// Set the light direction cube texture sampler to the current texture unit.
-			tile_draw_state.light_direction_cube_texture_sampler = current_texture_unit;
-
-			// Move to the next texture unit.
-			++current_texture_unit;
-		}
-
-		if (render_tile_to_scene_program->uniforms.uses_ambient_and_diffuse_lighting)
-		{
-			tile_draw_state.ambient_and_diffuse_lighting =
-					d_light.get()->get_map_view_constant_lighting(renderer);
-		}
-
-		if (render_tile_to_scene_program->uniforms.uses_light_ambient_contribution)
-		{
-			// Set the ambient light contribution.
-			tile_draw_state.light_ambient_contribution =
-					d_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution();
-		}
+		// Cache the normal map texture transform and texture.
+		common_tile_draw_state.normal_map_texture_transform = normal_map_tile_texture_matrix;
+		common_tile_draw_state.normal_map_texture = normal_map_tile_texture;
 	}
 
+	return common_tile_draw_state;
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state(
+		GL &gl,
+		const RenderQuadTreeNode::CommonTileDrawState &common_tile_draw_state)
+{
 	//
-	// Source raster texture
-	//
-
-	if (render_tile_to_scene_program)
-	{
-		if (render_tile_to_scene_program->uniforms.uses_source_raster_texture_transform)
-		{
-			// Load the source raster texture transform.
-			tile_draw_state.source_raster_texture_transform = source_raster_tile_texture_matrix;
-		}
-
-		if (render_tile_to_scene_program->uniforms.uses_source_texture_sampler)
-		{
-			// Bind the source raster tile texture to the current texture unit.
-			renderer.gl_bind_texture(source_raster_tile_texture, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-
-			// Set the source tile texture sampler to the current texture unit.
-			tile_draw_state.source_texture_sampler = current_texture_unit;
-
-			// Move to the next texture unit.
-			++current_texture_unit;
-		}
-	}
-	else // Fixed function...
-	{
-		// Load texture transform into the current texture unit.
-		renderer.gl_load_texture_matrix(GL_TEXTURE0 + current_texture_unit, source_raster_tile_texture_matrix);
-		// Bind the source raster tile texture to the current texture unit.
-		renderer.gl_bind_texture(source_raster_tile_texture, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-		// Enable texturing and set the texture function on the current texture unit.
-		renderer.gl_enable_texture(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-		// Modulate with the age grid mask (if using age grid)...
-		if (age_grid_tile_texture)
-		{
-			// NOTE: All raster data has pre-multiplied alpha (for alpha-blending to render targets).
-			// The source raster already has pre-multiplied alpha (see GLVisualRasterSource).
-			// However we still need to pre-multiply the age mask (alpha).
-			// (RGB * A, A)  ->  (RGB * A * age_mask, A * age_mask).
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
-			// RGB * A  ->  RGB * A * age_mask
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_ALPHA);
-			// A  ->  A * age_mask
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_TEXTURE);
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_PREVIOUS_ARB);
-		}
-		else
-		{
-			renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		}
-		// Set up texture coordinate generation from the vertices (x,y,z) on the current texture unit.
-		GLUtils::set_object_linear_tex_gen_state(renderer, current_texture_unit);
-
-		// Move to the next texture unit.
-		++current_texture_unit;
-	}
-
-	//
-	// Clip texture
+	// Source raster.
 	//
 
+	// Bind source texture to texture unit 0.
+	gl.ActiveTexture(GL_TEXTURE0);
+	gl.BindTexture(GL_TEXTURE_2D, common_tile_draw_state.source_raster_texture);
+
+	// Source raster texture transform.
+	GLfloat source_raster_texture_float_matrix[16];
+	common_tile_draw_state.source_raster_texture_transform.get_float_matrix(source_raster_texture_float_matrix);
+	glUniformMatrix4fv(
+			d_render_tile_to_scene_program->get_uniform_location("source_raster_texture_transform"),
+			1, GL_FALSE/*transpose*/, source_raster_texture_float_matrix);
+
+	//
+	// Clip texture.
+	//
 	// NOTE: For reconstructed static polygon meshes we always need clipping, but when there's
 	// no reconstruction we then use GLMultiResolutionCubeMesh which only requires clipping when
 	// we reach (zoom into) the deepest levels of its cube quad tree (because otherwise it can
@@ -2122,89 +1567,171 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 	// However, in order to keep things simple (in this code and in the shader programs) we will
 	// leave clipping on always.
 
-	if (render_tile_to_scene_program)
+	// Bind clip texture to texture unit 1.
+	gl.ActiveTexture(GL_TEXTURE1);
+	gl.BindTexture(GL_TEXTURE_2D, d_xy_clip_texture);
+
+	// Clip texture transform.
+	GLfloat clip_texture_float_matrix[16];
+	common_tile_draw_state.clip_texture_transform.get_float_matrix(clip_texture_float_matrix);
+	glUniformMatrix4fv(
+			d_render_tile_to_scene_program->get_uniform_location("clip_texture_transform"),
+			1, GL_FALSE/*transpose*/, clip_texture_float_matrix);
+
+	//
+	// Age grid (if used for current tile).
+	//
+
+	// Whether we're using the age grid for the current tile (might not be covered by age grid).
+	const bool using_age_grid = static_cast<bool>(common_tile_draw_state.age_grid_texture);
+
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("using_age_grid"),
+			using_age_grid);
+
+	if (using_age_grid)
 	{
-		if (render_tile_to_scene_program->uniforms.uses_clip_texture_transform)
-		{
-			// Load the clip texture transform.
-			tile_draw_state.clip_texture_transform = clip_texture_matrix;
-		}
+		// Bind age grid texture to texture unit 2.
+		gl.ActiveTexture(GL_TEXTURE2);
+		gl.BindTexture(GL_TEXTURE_2D, common_tile_draw_state.age_grid_texture.get());
 
-		if (render_tile_to_scene_program->uniforms.uses_clip_texture_sampler)
-		{
-			// Bind the clip texture to the current texture unit.
-			renderer.gl_bind_texture(d_xy_clip_texture, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
+		// Age grid texture transform.
+		GLfloat age_grid_texture_float_matrix[16];
+		common_tile_draw_state.age_grid_texture_transform->get_float_matrix(age_grid_texture_float_matrix);
+		glUniformMatrix4fv(
+				d_render_tile_to_scene_program->get_uniform_location("age_grid_texture_transform"),
+				1, GL_FALSE/*transpose*/, age_grid_texture_float_matrix);
 
-			// Set the clip texture sampler to the current texture unit.
-			tile_draw_state.clip_texture_sampler = current_texture_unit;
-
-			// Move to the next texture unit.
-			++current_texture_unit;
-		}
+		// Set the reconstruction time for the age grid test.
+		glUniform1f(
+				d_render_tile_to_scene_program->get_uniform_location("reconstruction_time"),
+				d_reconstruction_time);
 	}
-	else // Fixed function...
-	{
-		// Load texture transform into the current texture unit.
-		renderer.gl_load_texture_matrix(GL_TEXTURE0 + current_texture_unit, clip_texture_matrix);
-		// Bind the clip texture to the current texture unit.
-		renderer.gl_bind_texture(d_xy_clip_texture, GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-		// Enable texturing and set the texture function on the current texture unit.
-		renderer.gl_enable_texture(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
-		renderer.gl_tex_env(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		// Set up texture coordinate generation from the vertices (x,y,z) on the current texture unit.
-		GLUtils::set_object_linear_tex_gen_state(renderer, current_texture_unit);
 
-		// Move to the next texture unit.
-		++current_texture_unit;
+	//
+	// Normal map (if used for current tile).
+	//
+
+	// Whether we're using the normal map for the current tile (might not be covered by normal map).
+	const bool using_normal_map = static_cast<bool>(common_tile_draw_state.normal_map_texture);
+
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("using_surface_lighting_normal_map"),
+			using_normal_map);
+
+	if (using_normal_map)
+	{
+		// Bind normal map to texture unit 3.
+		gl.ActiveTexture(GL_TEXTURE3);
+		gl.BindTexture(GL_TEXTURE_2D, common_tile_draw_state.normal_map_texture.get());
+
+		// Normal map texture transform.
+		GLfloat normal_map_texture_float_matrix[16];
+		common_tile_draw_state.normal_map_texture_transform->get_float_matrix(normal_map_texture_float_matrix);
+		glUniformMatrix4fv(
+				d_render_tile_to_scene_program->get_uniform_location("normal_map_texture_transform"),
+				1, GL_FALSE/*transpose*/, normal_map_texture_float_matrix);
 	}
 
-	if (render_tile_to_scene_program)
+	//
+	// Surface lighting (if we have a light and lighting is enabled for rasters).
+	//
+
+	// Whether we're using surface lighting.
+	const bool using_surface_lighting = static_cast<bool>(d_light);
+
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("using_surface_lighting"),
+			using_surface_lighting);
+
+	// If we have a light and lighting is enabled for rasters...
+	if (using_surface_lighting)
 	{
-		// We don't need to enable alpha-testing because the fragment shader uses 'discard' instead.
-	}
-	else // Fixed function...
-	{
-		// Alpha-test state.
-		// This enables the alpha texture clipping (done by reconstructed raster renderer) to mask out
-		// source regions as they're being rendered rather than writing RGBA of zero into the render-target
-		// effectively overwriting previously rendered (from same render call) valid data - when the
-		// render-target is used for rendering in turn as a texture it would come out as transparent
-		// blocky regions where there should be valid reconstructed raster data instead.
+		// Set the ambient light contribution.
 		//
-		// NOTE: This is needed not only for texture clipping but also in case the source raster
-		// is age-masked in which case zero alpha also means don't draw due to age test.
-		renderer.gl_enable(GL_ALPHA_TEST);
-		renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
+		// Note that it's unused in the map view when not using normal maps (but all other shader paths use it).
+		glUniform1f(
+				d_render_tile_to_scene_program->get_uniform_location("ambient_lighting"),
+				d_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
+
+		// Whether we're using surface lighting in map view.
+		const bool using_surface_lighting_in_map_view =
+				static_cast<bool>(d_light.get()->get_map_projection())/*in map view*/;
+
+		// Note: Only need to set this variable when 'using_surface_lighting' shader variable is true.
+		glUniform1i(
+				d_render_tile_to_scene_program->get_uniform_location("using_surface_lighting_in_map_view"),
+				using_surface_lighting_in_map_view);
+
+		if (using_normal_map)
+		{
+			// Whether we're using a *directional* light.
+			const bool using_surface_lighting_normal_map_with_directional_light =
+					d_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
+						GPlatesGui::SceneLightingParameters::LIGHTING_RASTER);
+			// Whether we're using the radial sphere normal as the pseudo light direction
+			// (instead of a directional light).
+			const bool using_surface_lighting_normal_map_with_no_directional_light =
+					!using_surface_lighting_normal_map_with_directional_light;
+
+			// Note: Only need to set this variable when 'using_surface_lighting_in_map_view' shader variable is true.
+			glUniform1i(
+					d_render_tile_to_scene_program->get_uniform_location("using_surface_lighting_normal_map_with_no_directional_light"),
+					using_surface_lighting_normal_map_with_no_directional_light);
+
+			if (using_surface_lighting_in_map_view)  // map view...
+			{
+				// Bind the light direction cube texture to texture unit 4.
+				gl.ActiveTexture(GL_TEXTURE4);
+				gl.BindTexture(GL_TEXTURE_2D, d_light.get()->get_map_view_light_direction_cube_map_texture());
+			}
+			else // globe view...
+			{
+				// Set the world space light direction.
+				const GPlatesMaths::UnitVector3D &world_space_light_direction = d_light.get()->get_globe_view_light_direction();
+				glUniform3f(
+						d_render_tile_to_scene_program->get_uniform_location("world_space_light_direction_in_globe_view"),
+						world_space_light_direction.x().dval(),
+						world_space_light_direction.y().dval(),
+						world_space_light_direction.z().dval());
+			}
+		}
+		else // not using normal map...
+		{
+			if (using_surface_lighting_in_map_view)  // map view...
+			{
+				glUniform1f(
+						d_render_tile_to_scene_program->get_uniform_location("ambient_and_diffuse_lighting_in_map_view_with_no_normal_map"),
+						d_light.get()->get_map_view_constant_lighting());
+			}
+			else // globe view...
+			{
+				// Set the world space light direction.
+				const GPlatesMaths::UnitVector3D &world_space_light_direction = d_light.get()->get_globe_view_light_direction();
+				glUniform3f(
+						d_render_tile_to_scene_program->get_uniform_location("world_space_light_direction_in_globe_view"),
+						world_space_light_direction.x().dval(),
+						world_space_light_direction.y().dval(),
+						world_space_light_direction.z().dval());
+			}
+		}
 	}
 
 #if 0
-	// Used to render as wire-frame meshes instead of filled textured meshes for
-	// visualising mesh density.
-	renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
+	// Used to render as wire-frame meshes instead of filled textured meshes for visualising mesh density.
+	gl.PolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #endif
-
-	return tile_draw_state;
 }
 
 
 void
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_polygon_drawables(
-		GLRenderer &renderer,
-		const RenderQuadTreeNode::TileDrawState &render_scene_tile_draw_state,
-		const GPlatesMaths::UnitQuaternion3D &reconstructed_polygon_mesh_rotation,
+		GL &gl,
 		const present_day_polygon_mesh_membership_type &reconstructed_polygon_mesh_membership,
 		const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
 		const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
 		const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables)
 {
-	//PROFILE_FUNC();
-
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
-	// Apply the necessary tile state.
-	apply_tile_state(renderer, render_scene_tile_draw_state, reconstructed_polygon_mesh_rotation);
-
 	// Get the polygon mesh drawables to render for the current transform group that
 	// intersect the current cube quad tree node.
 	const boost::dynamic_bitset<> polygon_mesh_membership =
@@ -2222,798 +1749,92 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_po
 
 		if (polygon_mesh_drawable)
 		{
-			polygon_mesh_drawable->render(renderer);
+			polygon_mesh_drawable->render(gl);
 		}
 	}
 }
 
 
 void
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_state(
-		GLRenderer &renderer,
-		const RenderQuadTreeNode::TileDrawState &tile_draw_state,
-		const GPlatesMaths::UnitQuaternion3D &plate_rotation)
+GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::compile_link_shader_program(
+		GL &gl)
 {
-	// Apply the pre-compiled draw state for the current tile.
-	// This state is used by all rotation groups visiting this tile.
-	renderer.apply_compiled_draw_state(*tile_draw_state.compiled_draw_state);
-
-	// Set any shader program object state associated with the current tile.
-	// This state is not compiled into the compiled draw state because that only compiles calls to GLRenderer.
-	// And also a shader program object is shared across multiple tiles.
-	apply_tile_shader_program_state(renderer, tile_draw_state);
-
-	// If scene lighting is enabled then we need to apply some non-cached draw state.
-	// This state was not cached with the tile because it varies with rotation group and hence
-	// changes as each rotation group visits the same tile.
-	if (tile_draw_state.program &&
-		tile_draw_state.program->uniforms.uses_plate_rotation_quaternion)
-	{
-		// Set the plate rotation of the current rotation group.
-		tile_draw_state.program->shader_program->gl_uniform4f(
-				renderer,
-				"plate_rotation_quaternion",
-				plate_rotation);
-	}
-}
-
-
-void
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::apply_tile_shader_program_state(
-		GLRenderer &renderer,
-		const RenderQuadTreeNode::TileDrawState &tile_draw_state)
-{
-	// Return early if no shader program to apply state to.
-	if (!tile_draw_state.program)
-	{
-		return;
-	}
-
-	const GLProgram::shared_ptr_type tile_program =
-			tile_draw_state.program->shader_program;
-
-	// Note: We only set the tile state here.
-	// Any state that varies with the rotation group is not cached in the tile and is handled
-	// in 'apply_tile_state()'.
-
-	// Load the source raster texture transform (if specified).
-	if (tile_draw_state.source_raster_texture_transform)
-	{
-		tile_program->gl_uniform_matrix4x4f(
-				renderer,
-				"source_raster_texture_transform",
-				tile_draw_state.source_raster_texture_transform.get());
-	}
-	// Set the source raster texture sampler.
-	if (tile_draw_state.source_texture_sampler)
-	{
-		tile_program->gl_uniform1i(
-				renderer,
-				"source_texture_sampler",
-				tile_draw_state.source_texture_sampler.get());
-	}
-
-	// Load the clip texture transform (if specified).
-	if (tile_draw_state.clip_texture_transform)
-	{
-		tile_program->gl_uniform_matrix4x4f(
-				renderer,
-				"clip_texture_transform",
-				tile_draw_state.clip_texture_transform.get());
-	}
-	// Set the clip texture sampler.
-	if (tile_draw_state.clip_texture_sampler)
-	{
-		tile_program->gl_uniform1i(
-				renderer,
-				"clip_texture_sampler",
-				tile_draw_state.clip_texture_sampler.get());
-	}
-
-	// Load the age grid texture transform (if specified).
-	if (tile_draw_state.age_grid_texture_transform)
-	{
-		tile_program->gl_uniform_matrix4x4f(
-				renderer,
-				"age_grid_texture_transform",
-				tile_draw_state.age_grid_texture_transform.get());
-	}
-	// Set the age grid texture sampler.
-	if (tile_draw_state.age_grid_texture_sampler)
-	{
-		tile_program->gl_uniform1i(
-				renderer,
-				"age_grid_texture_sampler",
-				tile_draw_state.age_grid_texture_sampler.get());
-	}
-	// Set the reconstruction time for the age mask generation.
-	if (tile_draw_state.reconstruction_time)
-	{
-		tile_program->gl_uniform1f(
-				renderer,
-				"reconstruction_time",
-				tile_draw_state.reconstruction_time.get());
-	}
-
-	// Load the normal map texture transform (if specified).
-	if (tile_draw_state.normal_map_texture_transform)
-	{
-		tile_program->gl_uniform_matrix4x4f(
-				renderer,
-				"normal_map_texture_transform",
-				tile_draw_state.normal_map_texture_transform.get());
-	}
-	// Set the normal map texture sampler.
-	if (tile_draw_state.normal_map_texture_sampler)
-	{
-		tile_program->gl_uniform1i(
-				renderer,
-				"normal_map_texture_sampler",
-				tile_draw_state.normal_map_texture_sampler.get());
-	}
-
-	// Set the (ambient+diffuse) lighting.
-	if (tile_draw_state.ambient_and_diffuse_lighting)
-	{
-		tile_program->gl_uniform1f(
-				renderer,
-				"ambient_and_diffuse_lighting",
-				tile_draw_state.ambient_and_diffuse_lighting.get());
-	}
-
-	// Set the ambient light contribution.
-	if (tile_draw_state.light_ambient_contribution)
-	{
-		tile_program->gl_uniform1f(
-				renderer,
-				"light_ambient_contribution",
-				tile_draw_state.light_ambient_contribution.get());
-	}
-	// Set the world space light direction.
-	if (tile_draw_state.world_space_light_direction)
-	{
-		tile_program->gl_uniform3f(
-				renderer,
-				"world_space_light_direction",
-				tile_draw_state.world_space_light_direction.get());
-	}
-	// Set the light direction cube texture sampler.
-	if (tile_draw_state.light_direction_cube_texture_sampler)
-	{
-		tile_program->gl_uniform1i(
-				renderer,
-				"light_direction_cube_texture_sampler",
-				tile_draw_state.light_direction_cube_texture_sampler.get());
-	}
-}
-
-
-void
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_programs(
-		GLRenderer &renderer)
-{
-	// If shader programs are supported then use them to render the raster tile.
-
-	const bool is_floating_point_source_raster =
-			GLTexture::is_format_floating_point(d_source_raster->get_tile_texture_internal_format());
-
-	// If the source raster is floating-point (ie, not coloured as fixed-point for visual display)
-	// then use a shader program instead of the fixed-function pipeline.
-	if (is_floating_point_source_raster)
-	{
-		// We shouldn't have a floating-point raster if it's not supported (the client should check).
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				supports_floating_point_source_raster(renderer),
-				GPLATES_ASSERTION_SOURCE);
-
-		// If floating-point textures are supported then shader programs should also be supported.
-		// If they are not for some reason (pretty unlikely) then revert to using the fixed-function pipeline.
-		//
-		// NOTE: The reason for doing this (instead of just using the fixed-function pipeline always)
-		// is to prevent clamping (to [0,1] range) of floating-point textures.
-		// The raster texture might be rendered as floating-point (if we're being used for
-		// data analysis instead of visualisation). The programmable pipeline has no clamping by default
-		// whereas the fixed-function pipeline does (both clamping at the fragment output and internal
-		// clamping in the texture environment stages). This clamping can be controlled by the
-		// 'GL_ARB_color_buffer_float' extension (which means we could use the fixed-function pipeline
-		// always) but that extension is not available on Mac OSX 10.5 (Leopard) on any hardware
-		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's
-		// available (and all platforms that support GL_ARB_texture_float should also support shaders).
-
-		d_render_floating_point_program =
-				create_shader_program(
-						renderer,
-						true/*define_source_raster_is_floating_point*/,
-						false/*define_using_age_grid*/,
-						false/*define_generate_age_mask*/,
-						false/*define_active_polygons*/,
-						false/*define_surface_lighting*/,
-						false/*define_using_normal_map*/,
-						false/*define_no_directional_light_for_normal_maps*/,
-						false/*define_map_view*/);
-		// If cannot compile program object then will resort to fixed-function pipeline.
-		if (!d_render_floating_point_program)
-		{
-			qDebug() << "Unable to compile shader program to reconstruct floating-point raster.\n"
-				"  Clamping of values to [0,1] range may result.";
-		}
-
-		// If using an age grid...
-		if (d_age_grid_cube_raster)
-		{
-			d_render_floating_point_with_age_grid_with_active_polygons_program =
-					create_shader_program(
-							renderer,
-							true/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							true/*define_active_polygons*/,
-							false/*define_surface_lighting*/,
-							false/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-			d_render_floating_point_with_age_grid_with_inactive_polygons_program =
-					create_shader_program(
-							renderer,
-							true/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							false/*define_surface_lighting*/,
-							false/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-			// If cannot compile program object then will resort to fixed-function pipeline.
-			if (!d_render_floating_point_with_age_grid_with_active_polygons_program ||
-				!d_render_floating_point_with_age_grid_with_inactive_polygons_program)
-			{
-				qDebug() << "Unable to compile shader program to reconstruct floating-point raster with age grid.\n"
-					"  Clamping of values to [0,1] range may result.";
-			}
-		}
-
-		// No surface lighting gets applied to floating-point rasters - they are not for visualisation.
-
-	}
-	else // a fixed-point source raster ...
-	{
-		// If cannot compile then will resort to fixed-function pipeline without any loss.
-		d_render_fixed_point_program = create_shader_program(
-				renderer,
-				false/*define_source_raster_is_floating_point*/,
-				false/*define_using_age_grid*/,
-				false/*define_generate_age_mask*/,
-				false/*define_active_polygons*/,
-				false/*define_surface_lighting*/,
-				false/*define_using_normal_map*/,
-				false/*define_no_directional_light_for_normal_maps*/,
-				false/*define_map_view*/);
-
-		// For rendering with surface lighting (but without a normal map).
-		d_render_fixed_point_with_surface_lighting_program[GLOBE_VIEW] =
-				create_shader_program(
-						renderer,
-						false/*define_source_raster_is_floating_point*/,
-						false/*define_using_age_grid*/,
-						false/*define_generate_age_mask*/,
-						false/*define_active_polygons*/,
-						true/*define_surface_lighting*/,
-						false/*define_using_normal_map*/,
-						false/*define_no_directional_light_for_normal_maps*/,
-						false/*define_map_view*/);
-		d_render_fixed_point_with_surface_lighting_program[MAP_VIEW] =
-				create_shader_program(
-						renderer,
-						false/*define_source_raster_is_floating_point*/,
-						false/*define_using_age_grid*/,
-						false/*define_generate_age_mask*/,
-						false/*define_active_polygons*/,
-						true/*define_surface_lighting*/,
-						false/*define_using_normal_map*/,
-						false/*define_no_directional_light_for_normal_maps*/,
-						true/*define_map_view*/);
-		// If cannot compile program object then will resort to fixed-function pipeline.
-		if (!d_render_fixed_point_with_surface_lighting_program[GLOBE_VIEW] ||
-			!d_render_fixed_point_with_surface_lighting_program[MAP_VIEW])
-		{
-			qDebug() << "Unable to compile shader program to reconstruct raster with surface lighting.\n"
-				"  Raster will lack surface lighting.";
-		}
-
-		// If using an age grid...
-		if (d_age_grid_cube_raster)
-		{
-			d_render_fixed_point_with_age_grid_with_active_polygons_program =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							true/*define_active_polygons*/,
-							false/*define_surface_lighting*/,
-							false/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_program =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							false/*define_surface_lighting*/,
-							false/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-
-			// For rendering with age grid and surface lighting (but without a normal map).
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[GLOBE_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							true/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							false/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[MAP_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							true/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							false/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							true/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program[GLOBE_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							false/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program[MAP_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							false/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							true/*define_map_view*/);
-			// If cannot compile program object then will resort to fixed-function pipeline.
-			if (!d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[GLOBE_VIEW] ||
-				!d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program[MAP_VIEW] ||
-				!d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program[GLOBE_VIEW] ||
-				!d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program[MAP_VIEW])
-			{
-				qDebug() << "Unable to compile shader program to reconstruct raster with age grid and surface lighting.\n"
-					"  Raster will lack surface lighting.";
-			}
-		}
-
-		// If using a normal map...
-		if (d_normal_map_cube_raster)
-		{
-			// We shouldn't have a normal map if it's not supported (the client should check).
-			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					supports_normal_map(renderer),
-					GPLATES_ASSERTION_SOURCE);
-
-			// For rendering with a normal map.
-			d_render_fixed_point_with_normal_map_program[GLOBE_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							false/*define_using_age_grid*/,
-							false/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							true/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-			d_render_fixed_point_with_normal_map_program[MAP_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							false/*define_using_age_grid*/,
-							false/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							true/*define_no_directional_light_for_normal_maps*/,
-							true/*define_map_view*/);
-			// Since 'supports_normal_map()' is true then should not fail to compile.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_render_fixed_point_with_normal_map_program[GLOBE_VIEW] &&
-						d_render_fixed_point_with_normal_map_program[MAP_VIEW],
-					GPLATES_ASSERTION_SOURCE);
-
-			// For rendering surface lighting with a normal map.
-			d_render_fixed_point_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							false/*define_using_age_grid*/,
-							false/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-			d_render_fixed_point_with_normal_map_with_surface_lighting_program[MAP_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							false/*define_using_age_grid*/,
-							false/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							true/*define_map_view*/);
-			// Since 'supports_normal_map()' is true then should not fail to compile.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_render_fixed_point_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] &&
-						d_render_fixed_point_with_normal_map_with_surface_lighting_program[MAP_VIEW],
-					GPLATES_ASSERTION_SOURCE);
-		}
-
-		// If using an age grid and a normal map...
-		if (d_age_grid_cube_raster && d_normal_map_cube_raster)
-		{
-			// We shouldn't have a normal map if it's not supported (the client should check).
-			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					supports_normal_map(renderer),
-					GPLATES_ASSERTION_SOURCE);
-
-			// For rendering with age grid and with normal map.
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[GLOBE_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							true/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							true/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[MAP_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							true/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							true/*define_no_directional_light_for_normal_maps*/,
-							true/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program[GLOBE_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							true/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program[MAP_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							true/*define_no_directional_light_for_normal_maps*/,
-							true/*define_map_view*/);
-
-			// For rendering with age grid and surface lighting with a normal map.
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							true/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program[MAP_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							true/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							true/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							false/*define_map_view*/);
-			d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program[MAP_VIEW] =
-					create_shader_program(
-							renderer,
-							false/*define_source_raster_is_floating_point*/,
-							true/*define_using_age_grid*/,
-							true/*define_generate_age_mask*/,
-							false/*define_active_polygons*/,
-							true/*define_surface_lighting*/,
-							true/*define_using_normal_map*/,
-							false/*define_no_directional_light_for_normal_maps*/,
-							true/*define_map_view*/);
-
-			// Since 'supports_normal_map()' is true then should not fail to compile.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[GLOBE_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program[MAP_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program[GLOBE_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program[MAP_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program[MAP_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program[GLOBE_VIEW] &&
-						d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program[MAP_VIEW],
-					GPLATES_ASSERTION_SOURCE);
-		}
-	}
-}
-
-
-boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::Program>
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_program(
-		GLRenderer &renderer,
-		bool define_source_raster_is_floating_point,
-		bool define_using_age_grid,
-		bool define_generate_age_mask,
-		bool define_active_polygons,
-		bool define_surface_lighting,
-		bool define_using_normal_map,
-		bool define_no_directional_light_for_normal_maps,
-		bool define_map_view)
-{
-	// FIXME: A temporary prevention of normal map lighting in the 2D map views that does not
-	// result in a constant light direction in the 2D map space. Eventually the light canvas tool
-	// could support changing a lighting direction in 2D map space.
-	if (define_surface_lighting && define_using_normal_map && define_map_view)
-	{
-		define_no_directional_light_for_normal_maps = true;
-	}
-
-	// Add the requested vertex/fragment shader defines.
-	std::string vertex_and_fragment_shader_defines;
-	if (define_source_raster_is_floating_point)
-	{
-		vertex_and_fragment_shader_defines += "#define SOURCE_RASTER_IS_FLOATING_POINT\n";
-	}
-	if (define_using_age_grid)
-	{
-		vertex_and_fragment_shader_defines += "#define USING_AGE_GRID\n";
-	}
-	if (define_generate_age_mask)
-	{
-		vertex_and_fragment_shader_defines += "#define GENERATE_AGE_MASK\n";
-	}
-	if (define_active_polygons)
-	{
-		vertex_and_fragment_shader_defines += "#define ACTIVE_POLYGONS\n";
-	}
-	if (define_surface_lighting)
-	{
-		vertex_and_fragment_shader_defines += "#define SURFACE_LIGHTING\n";
-	}
-	if (define_using_normal_map)
-	{
-		vertex_and_fragment_shader_defines += "#define USING_NORMAL_MAP\n";
-	}
-	if (define_no_directional_light_for_normal_maps)
-	{
-		vertex_and_fragment_shader_defines += "#define NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS\n";
-	}
-	if (define_map_view)
-	{
-		vertex_and_fragment_shader_defines += "#define MAP_VIEW\n";
-	}
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
 
 	// Vertex shader source.
-	GLShaderSource vertex_shader_source;
-	// Add the '#define' statements first.
-	vertex_shader_source.add_code_segment(vertex_and_fragment_shader_defines.c_str());
-	// Then add the GLSL function to rotate by quaternion.
-	vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
-	// Then add the GLSL 'main()' function.
+	GPlatesOpenGL::GLShaderSource vertex_shader_source;
+	vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	vertex_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
-	GLShaderSource fragment_shader_source;
-	// Add the '#define' statements first.
-	fragment_shader_source.add_code_segment(vertex_and_fragment_shader_defines.c_str());
-	// Add the bilinear GLSL function for bilinear texture filtering and rotation by quaternion.
-	fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
-	// Then add the GLSL 'main()' function.
+	// Vertex shader.
+	GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
+	vertex_shader->shader_source(vertex_shader_source);
+	vertex_shader->compile_shader();
+
+	// Fragment shader source.
+	GPlatesOpenGL::GLShaderSource fragment_shader_source;
+	fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
 	fragment_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
-	// Link the shader program.
-	boost::optional<GLProgram::shared_ptr_type> shader_program =
-			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-					renderer,
-					vertex_shader_source,
-					fragment_shader_source);
-	if (!shader_program)
-	{
-		return boost::none;
-	}
+	// Fragment shader.
+	GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
+	fragment_shader->shader_source(fragment_shader_source);
+	fragment_shader->compile_shader();
 
-	Program::Uniforms uniforms;
-
-	//
-	// Add the uniforms used by the current shader program.
-	//
-	// NOTE: This can only be determined by inspecting the shader program source code itself.
-	//
-
-	//
-	// Mirror the vertex shader source code uniform variable declarations.
-	//
-
-	uniforms.uses_source_raster_texture_transform = true;
-	uniforms.uses_clip_texture_transform = true;
-
-	if (define_using_age_grid)
-	{
-		uniforms.uses_age_grid_texture_transform = true;
-	}
-	if (define_surface_lighting)
-	{
-		if (define_using_normal_map || !define_map_view)
-		{
-			uniforms.uses_plate_rotation_quaternion = true;
-			if (define_using_normal_map)
-			{
-				uniforms.uses_normal_map_texture_transform = true;
-				if (!define_map_view)
-				{
-					if (!define_no_directional_light_for_normal_maps)
-					{
-						uniforms.uses_world_space_light_direction = true;
-					}
-				}
-			}
-		}
-	}
-
-	//
-	// Mirror the fragment shader source code uniform variable declarations.
-	//
-
-	uniforms.uses_source_texture_sampler = true;
-	uniforms.uses_clip_texture_sampler = true;
-
-	if (define_using_age_grid)
-	{
-		uniforms.uses_age_grid_texture_sampler = true;
-		uniforms.uses_age_grid_texture_dimensions = true;
-		if (define_generate_age_mask)
-		{
-			uniforms.uses_reconstruction_time = true;
-		}
-	}
-	if (define_source_raster_is_floating_point)
-	{
-		uniforms.uses_source_texture_dimensions = true;
-	}
-	if (define_surface_lighting)
-	{
-		if (define_map_view && !define_using_normal_map)
-		{
-			uniforms.uses_ambient_and_diffuse_lighting = true;
-		}
-		else
-		{
-			uniforms.uses_light_ambient_contribution = true;
-			if (define_using_normal_map)
-			{
-				uniforms.uses_normal_map_texture_sampler = true;
-				if (define_map_view)
-				{
-					uniforms.uses_plate_rotation_quaternion = true;
-					if (!define_no_directional_light_for_normal_maps)
-					{
-						uniforms.uses_light_direction_cube_texture_sampler = true;
-					}
-				}
-				else
-				{
-					if (!define_no_directional_light_for_normal_maps)
-					{
-						uniforms.uses_world_space_light_direction = true;
-					}
-				}
-			}
-			else
-			{
-				uniforms.uses_world_space_light_direction = true;
-			}
-		}
-	}
-
-
-	const Program program(shader_program.get(), uniforms);
+	// Vertex-fragment program.
+	d_render_tile_to_scene_program->attach_shader(vertex_shader);
+	d_render_tile_to_scene_program->attach_shader(fragment_shader);
+	d_render_tile_to_scene_program->link_program();
 
 	//
 	// Set some shader program constants that don't change.
 	//
 
-	if (program.uniforms.uses_source_texture_dimensions)
-	{
-		// Set the source tile texture dimensions (and inverse dimensions).
-		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-		program.shader_program->gl_uniform4f(
-				renderer,
-				"source_texture_dimensions",
-				d_source_raster_tile_texel_dimension, d_source_raster_tile_texel_dimension,
-				d_source_raster_inverse_tile_texel_dimension, d_source_raster_inverse_tile_texel_dimension);
-	}
+	gl.UseProgram(d_render_tile_to_scene_program);
 
-	if (program.uniforms.uses_age_grid_texture_dimensions &&
-		d_age_grid_cube_raster)
+	// Use texture unit 0 for source texture.
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("source_texture_sampler"),
+			0/*texture unit*/);
+	// Use texture unit 1 for clip texture.
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("clip_texture_sampler"),
+			1/*texture unit*/);
+	// Use texture unit 2 for age grid.
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("age_grid_texture_sampler"),
+			2/*texture unit*/);
+	// Use texture unit 3 for normal map.
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("normal_map_texture_sampler"),
+			3/*texture unit*/);
+	// Use texture unit 4 for light direction cube map (in map view when using normal maps).
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("light_direction_cube_texture_sampler_in_map_view_with_normal_map"),
+			4/*texture unit*/);
+
+	// Set the source tile texture dimensions (and inverse dimensions).
+	// This uniform is constant (only needs to be reloaded if shader program is re-linked).
+	glUniform4f(
+			d_render_tile_to_scene_program->get_uniform_location("source_texture_dimensions"),
+			d_source_raster_tile_texel_dimension, d_source_raster_tile_texel_dimension,
+			d_source_raster_inverse_tile_texel_dimension, d_source_raster_inverse_tile_texel_dimension);
+
+	// Set whether source raster is a data raster (ie, not visual).
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("using_data_raster_for_source"),
+			!d_source_raster->tile_texture_is_visual());
+
+	if (d_age_grid_cube_raster)
 	{
 		// Set the age grid tile texture dimensions (and inverse dimensions).
 		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-		program.shader_program->gl_uniform4f(
-				renderer,
-				"age_grid_texture_dimensions",
+		glUniform4f(
+				d_render_tile_to_scene_program->get_uniform_location("age_grid_texture_dimensions"),
 				d_age_grid_cube_raster->tile_texel_dimension, d_age_grid_cube_raster->tile_texel_dimension,
 				d_age_grid_cube_raster->inverse_tile_texel_dimension, d_age_grid_cube_raster->inverse_tile_texel_dimension);
 	}
-
-	return program;
-}
-
-
-GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::Program::Uniforms::Uniforms()
-{
-	// Default to false - each shader program must set to true if it uses the uniform variable.
-	uses_source_raster_texture_transform = false;
-	uses_source_texture_sampler = false;
-	uses_source_texture_dimensions = false;
-	uses_clip_texture_transform = false;
-	uses_clip_texture_sampler = false;
-	uses_age_grid_texture_transform = false;
-	uses_age_grid_texture_sampler = false;
-	uses_age_grid_texture_dimensions = false;
-	uses_normal_map_texture_transform = false;
-	uses_normal_map_texture_sampler = false;
-	uses_reconstruction_time = false;
-	uses_plate_rotation_quaternion = false;
-	uses_world_space_light_direction = false;
-	uses_light_direction_cube_texture_sampler = false;
-	uses_ambient_and_diffuse_lighting = false;
-	uses_light_ambient_contribution = false;
 }
 
 

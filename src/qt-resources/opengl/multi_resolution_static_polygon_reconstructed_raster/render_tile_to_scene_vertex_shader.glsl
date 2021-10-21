@@ -27,71 +27,96 @@
 // Vertex shader source code to render reconstructed raster tiles to the scene.
 //
 
+uniform bool using_age_grid;
+uniform bool using_surface_lighting;
+uniform bool using_surface_lighting_in_map_view;
+uniform bool using_surface_lighting_normal_map;
+uniform bool using_surface_lighting_normal_map_with_no_directional_light;
+
+uniform mat4 view_projection;
+
 uniform mat4 source_raster_texture_transform;
 uniform mat4 clip_texture_transform;
-varying vec4 source_raster_texture_coordinate;
-varying vec4 clip_texture_coordinate;
+uniform mat4 age_grid_texture_transform;
+uniform mat4 normal_map_texture_transform;
 
-#ifdef USING_AGE_GRID
-	uniform mat4 age_grid_texture_transform;
-	varying vec4 age_grid_texture_coordinate;
-#endif
+uniform vec4 plate_rotation_quaternion;
+uniform vec3 world_space_light_direction_in_globe_view;
 
-#ifdef SURFACE_LIGHTING
-    #if defined(USING_NORMAL_MAP) || !defined(MAP_VIEW)
-        uniform vec4 plate_rotation_quaternion;
-        varying vec3 world_space_sphere_normal;
-        #ifdef USING_NORMAL_MAP
-            uniform mat4 normal_map_texture_transform;
-            varying vec4 normal_map_texture_coordinate;
-            #ifndef MAP_VIEW
-				#ifndef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
-					uniform vec3 world_space_light_direction;
-				#endif
-                varying vec3 model_space_light_direction;
-            #endif
-        #endif
-    #endif
-#endif
+layout(location = 0) in vec4 position;
+
+out vec4 source_raster_texture_coordinate;
+out vec4 clip_texture_coordinate;
+out vec4 age_grid_texture_coordinate;
+out vec4 normal_map_texture_coordinate;
+
+out vec3 world_space_sphere_normal;
+out vec3 model_space_light_direction;
 
 void main (void)
 {
-	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-
-	// Clip texture cube map projection.
-	clip_texture_coordinate = clip_texture_transform * gl_Vertex;
+    gl_Position = view_projection * position;
 
 	// Source raster cube map projection.
-	source_raster_texture_coordinate = source_raster_texture_transform * gl_Vertex;
+	source_raster_texture_coordinate = source_raster_texture_transform * position;
 
-#ifdef USING_AGE_GRID
-	// Age grid cube map projection.
-	age_grid_texture_coordinate = age_grid_texture_transform * gl_Vertex;
-#endif
+	// Clip texture cube map projection.
+	clip_texture_coordinate = clip_texture_transform * position;
 
-#ifdef SURFACE_LIGHTING
-    #if defined(USING_NORMAL_MAP) || !defined(MAP_VIEW)
-        // Rotate vertex position to world-space - it's also the sphere normal.
-        // This will also be the texture coordinate for the map view's light direction cube texture.
-        world_space_sphere_normal = rotate_vector_by_quaternion(plate_rotation_quaternion, gl_Vertex.xyz);
-        #ifdef USING_NORMAL_MAP
+    if (using_age_grid)
+    {
+        // Age grid cube map projection.
+        age_grid_texture_coordinate = age_grid_texture_transform * position;
+    }
+
+    if (using_surface_lighting)
+    {
+		if (using_surface_lighting_normal_map)
+		{
             // Normal map raster cube map projection.
-            normal_map_texture_coordinate = normal_map_texture_transform * gl_Vertex;
-            #ifndef MAP_VIEW
+            normal_map_texture_coordinate = normal_map_texture_transform * position;
+
+			if (using_surface_lighting_in_map_view)  // map view...
+			{
+                // World-space sphere normal - rotate vertex position to world-space.
+                //
+                // Used as the texture coordinate for the map view's light direction cube texture, or
+                // used directly as a pseudo light direction.
+                world_space_sphere_normal = rotate_vector_by_quaternion(plate_rotation_quaternion, position.xyz);
+			}
+			else // globe view...
+			{
+                // World-space sphere normal - rotate vertex position to world-space.
+                world_space_sphere_normal = rotate_vector_by_quaternion(plate_rotation_quaternion, position.xyz);
+
                 // It's more efficient for fragment shader to do lambert dot product in model-space
                 // instead of world-space so reverse rotate light direction into model space.
                 vec4 plate_reverse_rotation_quaternion =
                     vec4(-plate_rotation_quaternion.xyz, plate_rotation_quaternion.w);
-				#ifdef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
-					// Use the radial sphere normal as the pseudo light direction.
-					model_space_light_direction = rotate_vector_by_quaternion(
-						plate_reverse_rotation_quaternion, world_space_sphere_normal);
-				#else
-					model_space_light_direction = rotate_vector_by_quaternion(
-						plate_reverse_rotation_quaternion, world_space_light_direction);
-				#endif
-            #endif
-        #endif
-    #endif
-#endif
+                if (using_surface_lighting_normal_map_with_no_directional_light)
+                {
+                    // Use the radial sphere normal as the pseudo light direction.
+                    model_space_light_direction = rotate_vector_by_quaternion(
+                        plate_reverse_rotation_quaternion, world_space_sphere_normal);
+                }
+                else
+                {
+                    model_space_light_direction = rotate_vector_by_quaternion(
+                        plate_reverse_rotation_quaternion, world_space_light_direction_in_globe_view);
+                }
+			}
+		}
+		else // not using normal map...
+		{
+			if (using_surface_lighting_in_map_view)  // map view...
+			{
+                // Nothing needed.
+			}
+			else // globe view...
+			{
+                // World-space sphere normal - rotate vertex position to world-space.
+                world_space_sphere_normal = rotate_vector_by_quaternion(plate_rotation_quaternion, position.xyz);
+			}
+		}
+    }
 }

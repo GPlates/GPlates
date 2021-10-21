@@ -1025,7 +1025,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 
 void
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::PolygonMeshDrawable::render(
-		GL& gl)
+		GL &gl) const
 {
 	// Bind vertex array object.
 	gl.BindVertexArray(d_vertex_array);

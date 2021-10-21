@@ -197,7 +197,7 @@ namespace GPlatesOpenGL
 		 * NOTE: You should use GL_TEXTURE_CUBE_MAP instead of GL_TEXTURE_2D when binding the
 		 * returned texture for read access.
 		 */
-		GLTexture::shared_ptr_to_const_type
+		GLTexture::shared_ptr_type
 		get_map_view_light_direction_cube_map_texture()
 		{
 			return d_map_view_light_direction_cube_texture;

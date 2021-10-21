@@ -30,68 +30,60 @@
 // (due to earlier hardware lack of support) so we need to emulate bilinear filtering in the fragment shader.
 //
 
+uniform bool using_data_raster_for_source;
+uniform bool using_age_grid;
+uniform bool using_age_grid_active_polygons;
+uniform bool using_surface_lighting;
+uniform bool using_surface_lighting_in_map_view;
+uniform bool using_surface_lighting_normal_map;
+uniform bool using_surface_lighting_normal_map_with_no_directional_light;
+
 uniform sampler2D source_texture_sampler;
 uniform sampler2D clip_texture_sampler;
-varying vec4 source_raster_texture_coordinate;
-varying vec4 clip_texture_coordinate;
+uniform sampler2D normal_map_texture_sampler;
+uniform sampler2D age_grid_texture_sampler;
+uniform samplerCube light_direction_cube_texture_sampler_in_map_view_with_normal_map;
 
-#ifdef USING_AGE_GRID
-	uniform sampler2D age_grid_texture_sampler;
-	uniform vec4 age_grid_texture_dimensions;
-	#ifdef GENERATE_AGE_MASK
-		uniform float reconstruction_time;
-	#endif
-	varying vec4 age_grid_texture_coordinate;
-#endif
+uniform vec4 age_grid_texture_dimensions;
+uniform vec4 source_texture_dimensions;
 
-#ifdef SOURCE_RASTER_IS_FLOATING_POINT
-	uniform vec4 source_texture_dimensions;
-#endif
+uniform float reconstruction_time;
+uniform vec4 plate_rotation_quaternion;
 
-#ifdef SURFACE_LIGHTING
-    #if defined(MAP_VIEW) && !defined(USING_NORMAL_MAP)
-        // In the map view the lighting is constant across the map because
-        // the surface normal is constant across the map (ie, it's flat unlike the 3D globe).
-        uniform float ambient_and_diffuse_lighting;
-    #else // all other cases we must calculate lighting...
-        uniform float light_ambient_contribution;
-        varying vec3 world_space_sphere_normal;
-        #ifdef USING_NORMAL_MAP
-            uniform sampler2D normal_map_texture_sampler;
-            varying vec4 normal_map_texture_coordinate;
-            #ifdef MAP_VIEW
-                uniform vec4 plate_rotation_quaternion;
-				#ifndef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
-					uniform samplerCube light_direction_cube_texture_sampler;
-				#endif
-            #else
-                varying vec3 model_space_light_direction;
-				#ifndef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
-					uniform vec3 world_space_light_direction;
-				#endif
-            #endif
-        #else // globe view with no normal map...
-            uniform vec3 world_space_light_direction;
-        #endif
-    #endif
-#endif
+uniform float ambient_lighting;
+uniform float ambient_and_diffuse_lighting_in_map_view_with_no_normal_map;
+uniform vec3 world_space_light_direction_in_globe_view;
+
+in vec4 source_raster_texture_coordinate;
+in vec4 clip_texture_coordinate;
+in vec4 age_grid_texture_coordinate;
+in vec4 normal_map_texture_coordinate;
+
+in vec3 world_space_sphere_normal;
+in vec3 model_space_light_direction;
+
+layout(location = 0) out vec4 colour;
 
 void main (void)
 {
 	// Discard the pixel if it has been clipped by the clip texture as an
 	// early rejection test since a lot of pixels will be outside the tile region.
-	float clip_mask = texture2DProj(clip_texture_sampler, clip_texture_coordinate).a;
+	float clip_mask = textureProj(clip_texture_sampler, clip_texture_coordinate).a;
 	if (clip_mask == 0)
+	{
 		discard;
+	}
 
-#ifdef USING_AGE_GRID
-	#ifdef GENERATE_AGE_MASK
+	// Result of age grid test (defaults to 1.0 if not using age grid).
+	float age_factor = 1.0;
+
+	if (using_age_grid)
+	{
 		// Do the texture transform projective divide.
 		vec2 age_grid_texture_coords = age_grid_texture_coordinate.st / age_grid_texture_coordinate.q;
 		vec4 age11, age21, age12, age22;
 		vec2 age_interp;
 		// Retrieve the 2x2 samples in the age grid texture and the bilinear interpolation coefficient.
-		// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
 		bilinearly_interpolate(
 			age_grid_texture_sampler,
 			age_grid_texture_coords,
@@ -111,133 +103,195 @@ void main (void)
 		float age_coverage = mix(
 			mix(age_coverage_vec.x, age_coverage_vec.y, age_interp.x),
 			mix(age_coverage_vec.z, age_coverage_vec.w, age_interp.x), age_interp.y);
-	#else
-		// Get the pre-generated age mask from the age grid texture.
-		vec4 age_mask_and_coverage = 
-			texture2DProj(age_grid_texture_sampler, age_grid_texture_coordinate);
-		float age_coverage = age_mask_and_coverage.a;
-		float age_coverage_mask = age_mask_and_coverage.r * age_coverage;
-	#endif
 
-	#ifdef ACTIVE_POLYGONS
-		// Choose between active polygon and age mask based on age coverage.
-		float age_factor = (1 - age_coverage) + age_coverage_mask;
-	#else
-		// Age factor is zero outside valid (oceanic) regions of the age grid.
-		float age_factor = age_coverage_mask;
-	#endif
+		// For continental crust (where there's no age grid coverage) the age is determined by the active polygon time of appearance.
+		// For oceanic crust (where there is age grid coverage) the age is determined by the age grid
+		if (using_age_grid_active_polygons)
+		{
+			// Choose between active polygon and age mask based on age coverage.
+			//
+			// This is essentially '(1 - age_coverage) + age_coverage * (age >= reconstruction_time ? 1 : 0)'.
+			// Which is '1' when 'age >= reconstruction_time' (for both oceanic and continental crust) and
+			// '1 - age_coverage' when 'age < reconstruction_time' (which is '0' for oceanic crust and '1' for continental crust).
+			//
+			// So this is always '1' for continental crust.
+			// For oceanic crust, it is '1' when 'age >= reconstruction_time' and '0' when 'age < reconstruction_time'.
+			//
+			// Note that continental crust is always '1' here, however we are rendering with *active* polygons and so they
+			// will disappear when the reconstruction time is earlier than the continental polygon's time of appearance
+			// (not that continental polygons should ever disappear, but they do have finite begin times, such as 600Ma).
+			age_factor = (1 - age_coverage) + age_coverage_mask;
+		}
+		else // inactive polygons (where polygon time of appearance is after/younger than reconstruction time)...
+		{
+			// Age factor is zero outside valid (oceanic) regions of the age grid - we only need inactive polygons for oceanic crust (where age grid is).
+			//
+			// This is essentially 'age_coverage * (age >= reconstruction_time ? 1 : 0)'.
+			//
+			// Which is always '0' for continental crust.
+			// For oceanic crust, it is '1' when 'age >= reconstruction_time' and '0' when 'age < reconstruction_time'.
+			age_factor = age_coverage_mask;
+		}
 
-	// Early reject if the age factor is zero.
-	if (age_factor == 0)
-		discard;
-#endif
+		// Early reject if the age factor is zero (because the age test failed and so we don't want to overwrite valid data).
+		if (age_factor == 0)
+		{
+			discard;
+		}
+	}
 
-#ifdef SOURCE_RASTER_IS_FLOATING_POINT
-	// Do the texture transform projective divide.
-	vec2 source_texture_coords = source_raster_texture_coordinate.st / source_raster_texture_coordinate.q;
-	// Bilinearly filter the tile texture (data/coverage is in red/green channel).
-	// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
-	vec4 tile_colour = bilinearly_interpolate_data_coverage_RG(
-		 source_texture_sampler, source_texture_coords, source_texture_dimensions);
-#else
-	// Use hardware bilinear interpolation of fixed-point texture.
-	vec4 tile_colour = texture2DProj(source_texture_sampler, source_raster_texture_coordinate);
-#endif
+	vec4 tile_colour;
+	
+	if (using_data_raster_for_source)
+	{
+		// Do the texture transform projective divide.
+		vec2 source_texture_coords = source_raster_texture_coordinate.st / source_raster_texture_coordinate.q;
+		// Bilinearly filter the tile texture (data/coverage is in red/green channel).
+		// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
+		tile_colour = bilinearly_interpolate_data_coverage_RG(
+			source_texture_sampler, source_texture_coords, source_texture_dimensions);
 
-#ifdef USING_AGE_GRID
-	// Modulate the source texture's coverage with the age test result.
-	#ifdef SOURCE_RASTER_IS_FLOATING_POINT
-		// NOTE: For floating-point textures we've placed the coverage/alpha in the green channel.
+		// Modulate the source texture's coverage with the age test result (whic is 1.0 if not using age grid).
+		//
+		// NOTE: For data textures we've placed the coverage/alpha in the green channel.
 		// And they don't have pre-multiplied alpha like RGBA fixed-point textures because
 		// alpha-blending not supported for floating-point render targets.
 		tile_colour.g *= age_factor;
-	#else
+
+		// Reject the pixel if its coverage/alpha is zero.
+		//
+		// NOTE: For data textures we've placed the coverage/alpha in the green channel.
+		if (tile_colour.g == 0)
+		{
+			discard;
+		}
+	}
+	else
+	{
+		// Use hardware bilinear interpolation of fixed-point texture.
+		tile_colour = textureProj(source_texture_sampler, source_raster_texture_coordinate);
+
+		// Modulate the source texture's coverage with the age test result (whic is 1.0 if not using age grid).
+		//
 		// NOTE: All RGBA raster data has pre-multiplied alpha (for alpha-blending to render targets)
 		// The source raster already has pre-multiplied alpha (see GLVisualRasterSource).
 		// However we still need to pre-multiply the age factor (alpha).
 		// (RGB * A, A) -> (RGB * A * age_factor, A * age_factor).
 		tile_colour *= age_factor;
-	#endif
-#endif
 
-	// Reject the pixel if its coverage/alpha is zero - this is because
-	// it might be an age masked tile - zero coverage, in this case, means don't draw
-	// because the age test failed - if we draw then we'd overwrite valid data.
-#ifdef SOURCE_RASTER_IS_FLOATING_POINT
-	// NOTE: For floating-point textures we've placed the coverage/alpha in the green channel.
-	if (tile_colour.g == 0)
-		discard;
-#else
-	if (tile_colour.a == 0)
-		discard;
-#endif
+		// Reject the pixel if its coverage/alpha is zero.
+		if (tile_colour.a == 0)
+		{
+			discard;
+		}
+	}
 
 	// Surface lighting only needs to be applied to visualised raster sources.
 	// This excludes floating-point sources (GLDataRasterSource) which are used for analysis
 	// only and hence do not need lighting (and should not have lighting applied).
-#ifdef SURFACE_LIGHTING
-    #if defined(MAP_VIEW) && !defined(USING_NORMAL_MAP)
-        // The ambient+diffuse lighting is pre-calculated (constant) for the map view with no normal maps.
-        float lighting = ambient_and_diffuse_lighting;
-    #else // all other cases we must calculate lighting...
-        #ifdef USING_NORMAL_MAP
-            // Sample the model-space normal in the normal map raster.
-            vec3 model_space_normal =
-                texture2DProj(normal_map_texture_sampler, normal_map_texture_coordinate).xyz;
-            // Need to convert the x/y/z components from unsigned to signed ([0,1] -> [-1,1]).
-            model_space_normal = 2 * model_space_normal - 1;
-            #ifdef MAP_VIEW
-				#ifdef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
-					vec3 world_space_light_direction = world_space_sphere_normal;
-				#else
+	if (using_surface_lighting)
+	{
+		float lighting;
+
+		if (using_surface_lighting_normal_map)
+		{
+			if (using_surface_lighting_in_map_view)  // map view...
+			{
+				// Sample the model-space normal in the normal map raster.
+				vec3 model_space_normal = textureProj(normal_map_texture_sampler, normal_map_texture_coordinate).xyz;
+				// Need to convert the x/y/z components from unsigned to signed ([0,1] -> [-1,1]).
+				model_space_normal = 2 * model_space_normal - 1;
+
+				vec3 world_space_light_direction_in_map_view;
+				if (using_surface_lighting_normal_map_with_no_directional_light)
+				{
+					// Use the radial sphere normal as the pseudo light direction.
+					world_space_light_direction_in_map_view = world_space_sphere_normal;
+				}
+				else
+				{
 					// Get the world-space light direction from the light direction cube texture.
-					vec3 world_space_light_direction =
-							textureCube(light_direction_cube_texture_sampler, world_space_sphere_normal).xyz;
+					world_space_light_direction_in_map_view = textureCube(
+							light_direction_cube_texture_sampler_in_map_view_with_normal_map,
+							world_space_sphere_normal).xyz;
 					// Need to convert the x/y/z components from unsigned to signed ([0,1] -> [-1,1]).
-					world_space_light_direction = 2 * world_space_light_direction - 1;
-				#endif
-                // Do the lambert dot product in world-space.
-                // Convert to world-space normal where light direction is.
-                vec3 world_space_normal = rotate_vector_by_quaternion(plate_rotation_quaternion, model_space_normal);
-                vec3 normal = world_space_normal;
-                vec3 light_direction = world_space_light_direction;
-            #else
-                // Do the lambert dot product in *model-space* (not world-space) since more efficient.
-                vec3 normal = model_space_normal;
-                vec3 light_direction = model_space_light_direction;
-            #endif
-        #else // globe view with no normal map...
-            // Do the lambert dot product in world-space.
-            vec3 normal = world_space_sphere_normal;
-			// The light direction is already in world-space.
-			vec3 light_direction = world_space_light_direction;
-        #endif
+					world_space_light_direction_in_map_view = 2 * world_space_light_direction_in_map_view - 1;
+				}
 
-        // Apply the Lambert diffuse lighting to the tile colour.
-        // Note that neither the light direction nor the surface normal need be normalised.
-        float lambert = lambert_diffuse_lighting(light_direction, normal);
+				// Do the lambert dot product in world-space.
+				// Convert to world-space normal where light direction is.
+				vec3 world_space_normal = rotate_vector_by_quaternion(plate_rotation_quaternion, model_space_normal);
+				vec3 normal = world_space_normal;
+				vec3 light_direction = world_space_light_direction_in_map_view;
 
-        #if defined(USING_NORMAL_MAP) && !defined(MAP_VIEW)
-            // Need to clamp the lambert term to zero when the (unperturbed) sphere normal
-            // faces away from the light direction otherwise the perturbed surface will appear
-            // to be lit *through* the globe (ie, not shadowed by the globe).
-            // NOTE: This is not necessary for the 2D map views.
-            // The factor of 8 gives a linear falloff from 1.0 to 0.0 when dot product is below 1/8.
-            // NOTE: The normal and light direction are not normalized since accuracy is less important here.
-            // NOTE: Using float instead of integer parameters to 'clamp' otherwise driver compiler
-            // crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.
-			#ifndef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
-				lambert *= clamp(8 * dot(world_space_sphere_normal, world_space_light_direction), 0.0, 1.0);
-			#endif
-        #endif
+				// The Lambert term in the diffuse lighting equation.
+				// Note that neither the light direction nor the surface normal need be normalised.
+				float diffuse_lighting = lambert_diffuse_lighting(light_direction, normal);
+				// Blend between ambient and diffuse lighting.
+				lighting = mix_ambient_with_diffuse_lighting(diffuse_lighting, ambient_lighting);
+			}
+			else // globe view...
+			{
+				// Sample the model-space normal in the normal map raster.
+				vec3 model_space_normal = textureProj(normal_map_texture_sampler, normal_map_texture_coordinate).xyz;
+				// Need to convert the x/y/z components from unsigned to signed ([0,1] -> [-1,1]).
+				model_space_normal = 2 * model_space_normal - 1;
 
-        // Blend between ambient and diffuse lighting.
-        float lighting = mix_ambient_with_diffuse_lighting(lambert, light_ambient_contribution);
-    #endif
+				// Do the lambert dot product in *model-space* (not world-space) since more efficient.
+				vec3 normal = model_space_normal;
+				vec3 light_direction = model_space_light_direction;
 
-	tile_colour.rgb *= lighting;
-#endif
+				// The Lambert term in the diffuse lighting equation.
+				// Note that neither the light direction nor the surface normal need be normalised.
+				float diffuse_lighting = lambert_diffuse_lighting(light_direction, normal);
+
+				if (!using_surface_lighting_normal_map_with_no_directional_light)
+				{
+					// We're using a directional light (rather than the radial sphere normal as the pseudo light direction).
+					//
+					// So we need to clamp the lambert diffuse lighting to zero when the (unperturbed) sphere normal
+					// faces away from the light direction otherwise the perturbed surface will appear
+					// to be lit *through* the globe (ie, not shadowed by the globe).
+					// NOTE: This is not necessary for the 2D map views.
+					// The factor of 8 gives a linear falloff from 1.0 to 0.0 when dot product is below 1/8.
+					// NOTE: The normal and light direction are not normalized since accuracy is less important here.
+					// NOTE: Using float instead of integer parameters to 'clamp' otherwise driver compiler
+					// crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.
+					diffuse_lighting *= clamp(8 * dot(world_space_sphere_normal, world_space_light_direction_in_globe_view), 0.0, 1.0);
+				}
+
+				// Blend between ambient and diffuse lighting.
+				lighting = mix_ambient_with_diffuse_lighting(diffuse_lighting, ambient_lighting);
+			}
+		}
+		else // not using normal map...
+		{
+			if (using_surface_lighting_in_map_view)  // map view...
+			{
+				// The ambient+diffuse lighting is pre-calculated (constant) for the map view with no normal maps.
+				//
+				// In the map view the lighting is constant across the map because
+				// the surface normal is constant across the map (ie, it's flat unlike the 3D globe).
+				lighting = ambient_and_diffuse_lighting_in_map_view_with_no_normal_map;
+			}
+			else // globe view...
+			{
+				// Do the lambert dot product in world-space.
+				vec3 normal = world_space_sphere_normal;
+				// The light direction is already in world-space.
+				vec3 light_direction = world_space_light_direction_in_globe_view;
+
+				// The Lambert term in the diffuse lighting equation.
+				// Note that neither the light direction nor the surface normal need be normalised.
+				float diffuse_lighting = lambert_diffuse_lighting(light_direction, normal);
+				// Blend between ambient and diffuse lighting.
+				lighting = mix_ambient_with_diffuse_lighting(diffuse_lighting, ambient_lighting);
+			}
+		}
+
+		tile_colour.rgb *= lighting;
+	}
 
 	// The final fragment colour.
-	gl_FragColor = tile_colour;
+	colour = tile_colour;
 }

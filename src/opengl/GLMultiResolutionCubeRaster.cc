@@ -465,7 +465,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_subject_token() const
 }
 
 
-GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
+GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
 		GL &gl,
 		const CubeQuadTreeNode &tile,
@@ -660,6 +660,9 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 		const GLTexture::shared_ptr_type &tile_texture,
 		const CubeQuadTreeNode &tile)
 {
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
+
 	// Bind the texture.
 	gl.BindTexture(GL_TEXTURE_2D, tile_texture);
 
@@ -690,6 +693,9 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::set_tile_texture_filtering(
 		const CubeQuadTreeNode &tile)
 {
 	const GLCapabilities& capabilities = gl.get_capabilities();
+
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
 
 	// Bind the texture.
 	gl.BindTexture(GL_TEXTURE_2D, tile_texture);

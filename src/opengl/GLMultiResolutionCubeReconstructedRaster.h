@@ -327,7 +327,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns texture of tile.
 			 */
-			boost::optional<GLTexture::shared_ptr_to_const_type>
+			boost::optional<GLTexture::shared_ptr_type>
 			get_tile_texture(
 					GLRenderer &renderer,
 					cache_handle_type &cache_handle) const override
@@ -434,7 +434,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				unsigned int tile_texel_dimension);
 
-		boost::optional<GLTexture::shared_ptr_to_const_type>
+		boost::optional<GLTexture::shared_ptr_type>
 		get_tile_texture(
 				GLRenderer &renderer,
 				const CubeQuadTreeNode &tile,

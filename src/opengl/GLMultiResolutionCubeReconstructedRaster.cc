@@ -156,7 +156,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_subject_token() con
 }
 
 
-boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
+boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_type>
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
 		GLRenderer &renderer,
 		const CubeQuadTreeNode &tile,
@@ -226,7 +226,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
 		return boost::none;
 	}
 
-	return GLTexture::shared_ptr_to_const_type(tile_texture->texture);
+	return tile_texture->texture;
 }
 
 

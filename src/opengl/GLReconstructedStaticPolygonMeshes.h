@@ -115,7 +115,7 @@ namespace GPlatesOpenGL
 			//! Render this polygon mesh drawable.
 			void
 			render(
-					GL &gl);
+					GL &gl) const;
 
 			/**
 			 * The polygon mesh.
