@@ -530,10 +530,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 {
 	PROFILE_FUNC();
 
-	// We might do multiple source raster render calls (due to render target tiling).
-	boost::shared_ptr<std::vector<GLMultiResolutionRaster::cache_handle_type> > tile_cache_handle(
-			new std::vector<GLMultiResolutionRaster::cache_handle_type>());
-
 	// Make sure we leave the OpenGL state the way it was.
 	GL::StateScope save_restore_state(
 			gl,
@@ -579,6 +575,8 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 	// Other raster types simply clear the colour buffer to a constant colour - usually RGBA(0,0,0,0).
 	d_multi_resolution_raster->clear_framebuffer(gl, tile_view_projection.get_view_projection_transform());
 
+	// NOTE: We don't really need alpha blending since the source raster tiles don't overlap.
+
 	// Get the source raster to render into the render target using the view frustum
 	// we have provided. We have already pre-calculated the list of visible source raster tiles
 	// that need to be rendered into our frustum to save it a bit of culling work.
@@ -589,7 +587,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 			tile_view_projection.get_view_projection_transform(),
 			tile.d_src_raster_tiles,
 			source_cache_handle);
-	tile_cache_handle->push_back(source_cache_handle);
 
 #if 0	// Debug the tiles by writing them out to file...
 	QImage image(QSize(d_tile_texel_dimension, d_tile_texel_dimension), QImage::Format_ARGB32);
@@ -606,7 +603,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 	image.save(QString("tile_image_") + QString::number(count) + ".png");
 #endif
 
-	tile_texture.source_cache_handle = tile_cache_handle;
+	tile_texture.source_cache_handle = source_cache_handle;
 
 	// This tile texture is now update-to-date with respect to the source multi-resolution raster.
 	d_multi_resolution_raster->get_subject_token().update_observer(

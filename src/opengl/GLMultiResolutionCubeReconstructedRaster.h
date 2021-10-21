@@ -31,6 +31,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "GLCubeSubdivision.h"
+#include "GLFramebuffer.h"
 #include "GLMultiResolutionStaticPolygonReconstructedRaster.h"
 #include "GLMultiResolutionRaster.h"
 #include "GLTexture.h"
@@ -47,8 +48,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
-	class GLViewport;
+	class GL;
 
 	/**
 	 * A reconstructed raster rendered into a multi-resolution cube map.
@@ -64,10 +64,10 @@ namespace GPlatesOpenGL
 		{
 			explicit
 			TileTexture(
-					GLRenderer &renderer_,
+					GL &gl_,
 					const GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type &source_cache_handle_ =
 							GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type()) :
-				texture(GLTexture::create_unique(renderer_)),
+				texture(GLTexture::create(gl_)),
 				source_cache_handle(source_cache_handle_)
 			{  }
 
@@ -119,13 +119,13 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &source_reconstructed_raster,
 				bool cache_tile_textures = true)
 		{
 			return non_null_ptr_type(
 					new GLMultiResolutionCubeReconstructedRaster(
-							renderer,
+							gl,
 							source_reconstructed_raster,
 							cache_tile_textures));
 		}
@@ -329,11 +329,11 @@ namespace GPlatesOpenGL
 			 */
 			boost::optional<GLTexture::shared_ptr_type>
 			get_tile_texture(
-					GLRenderer &renderer,
+					GL &gl,
 					cache_handle_type &cache_handle) const override
 			{
 				return multi_resolution_cube_raster.get_tile_texture(
-						renderer,
+						gl,
 						cube_quad_tree_node.get_element(),
 						cache_handle);
 			}
@@ -401,6 +401,16 @@ namespace GPlatesOpenGL
 		bool d_cache_tile_textures;
 
 		/**
+		 * Framebuffer object to render to tile textures.
+		 */
+		GLFramebuffer::shared_ptr_type d_tile_framebuffer;
+
+		/**
+		 * Check framebuffer completeness the first time we render to a tile texture.
+		 */
+		bool d_have_checked_tile_framebuffer_completeness;
+
+		/**
 		 * Used to calculate projection transforms for the cube quad tree.
 		 */
 		GLCubeSubdivision::non_null_ptr_to_const_type d_cube_subdivision;
@@ -425,24 +435,24 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLMultiResolutionCubeReconstructedRaster(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &source_reconstructed_raster,
 				bool cache_tile_textures);
 
 		unsigned int
 		update_tile_texel_dimension(
-				GLRenderer &renderer,
+				GL &gl,
 				unsigned int tile_texel_dimension);
 
 		boost::optional<GLTexture::shared_ptr_type>
 		get_tile_texture(
-				GLRenderer &renderer,
+				GL &gl,
 				const CubeQuadTreeNode &tile,
 				cache_handle_type &cache_handle);
 
 		bool
 		render_raster_data_into_tile_texture(
-				GLRenderer &renderer,
+				GL &gl,
 				const CubeQuadTreeNode &tile,
 				TileTexture &tile_texture);
 
@@ -452,7 +462,7 @@ namespace GPlatesOpenGL
 
 		void
 		create_tile_texture(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLTexture::shared_ptr_type &tile_texture);
 
 		/**

@@ -31,11 +31,12 @@
 
 #include "GLMultiResolutionCubeReconstructedRaster.h"
 
+#include "GL.h"
 #include "GLContext.h"
-#include "GLRenderer.h"
 #include "GLTexture.h"
 #include "GLUtils.h"
 #include "GLViewport.h"
+#include "OpenGLException.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -50,18 +51,20 @@ const unsigned int GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::MIN_
 
 
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::GLMultiResolutionCubeReconstructedRaster(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &source_reconstructed_raster,
 		bool cache_tile_textures) :
 	d_reconstructed_raster(source_reconstructed_raster),
 	d_level_of_detail_offset_for_scaled_tile_dimension(0),
 	d_tile_texel_dimension(
 			update_tile_texel_dimension(
-					renderer,
+					gl,
 					source_reconstructed_raster->get_tile_texel_dimension())),
 	// Start with small size cache and just let the cache grow in size as needed (if caching enabled)...
 	d_texture_cache(tile_texture_cache_type::create(2/* GPU pipeline breathing room in case caching disabled*/)),
 	d_cache_tile_textures(cache_tile_textures),
+	d_tile_framebuffer(GLFramebuffer::create(gl)),
+	d_have_checked_tile_framebuffer_completeness(false),
 	d_cube_subdivision(
 			// Expand the tile frustums by half a texel around the border of each frustum.
 			// This causes the texel centres of the border tile texels to fall right on the edge
@@ -81,11 +84,9 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::GLMultiResolutionCubeRe
 
 unsigned int
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::update_tile_texel_dimension(
-		GLRenderer &renderer,
+		GL &gl,
 		unsigned int tile_texel_dimension)
 {
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
 	// If tile dimensions are too small then we end up requiring a lot more tiles to render since
 	// there's no limit on how deep we can render (see 'QuadTreeNodeImp::is_leaf_node()' for more details).
 	//
@@ -97,7 +98,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::update_tile_texel_dimen
 		// Make sure the doubled tile dimension does not exceed the maximum texture size.
 		// We're requiring the final multiplier to be a power-of-two so that the level-of-detail
 		// adjustment is an integer (so we can render at an exact LOD level).
-		if (2 * tile_texel_dimension > capabilities.texture.gl_max_texture_size)
+		if (2 * tile_texel_dimension > gl.get_capabilities().gl_max_texture_size)
 		{
 			break;
 		}
@@ -158,7 +159,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_subject_token() con
 
 boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_type>
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
-		GLRenderer &renderer,
+		GL &gl,
 		const CubeQuadTreeNode &tile,
 		cache_handle_type &cache_handle)
 {
@@ -180,19 +181,19 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
 		{
 			// Create a new tile texture.
 			tile_texture = tile.d_tile_texture->set_cached_object(
-					std::unique_ptr<TileTexture>(new TileTexture(renderer)),
+					std::unique_ptr<TileTexture>(new TileTexture(gl)),
 					// Called whenever tile texture is returned to the cache...
 					boost::bind(&TileTexture::returned_to_cache, boost::placeholders::_1));
 
 			// The texture was just allocated so we need to create it in OpenGL.
-			create_tile_texture(renderer, tile_texture->texture);
+			create_tile_texture(gl, tile_texture->texture);
 
 			//qDebug() << "GLMultiResolutionCubeReconstructedRaster: " << d_texture_cache->get_current_num_objects_in_use();
 		}
 
 		// Render the source raster into our tile texture.
 		visible = render_raster_data_into_tile_texture(
-				renderer,
+				gl,
 				tile,
 				*tile_texture);
 	}
@@ -203,7 +204,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
 	{
 		// Render the source raster into our tile texture.
 		visible = render_raster_data_into_tile_texture(
-				renderer,
+				gl,
 				tile,
 				*tile_texture);
 	}
@@ -232,7 +233,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
 
 bool
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into_tile_texture(
-		GLRenderer &renderer,
+		GL &gl,
 		const CubeQuadTreeNode &tile,
 		TileTexture &tile_texture)
 {
@@ -241,68 +242,94 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 	// Determine if anything was rendered.
 	bool rendered = false;
 
-	// We might do multiple source raster render calls (due to render target tiling).
-	boost::shared_ptr<std::vector<GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type> > tile_cache_handle(
-			new std::vector<GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type>());
+	// Make sure we leave the OpenGL state the way it was.
+	GL::StateScope save_restore_state(
+			gl,
+			// We're rendering to a render target so reset to the default OpenGL state...
+			true/*reset_to_default_state*/);
 
-	// Begin rendering to a 2D render target texture.
-	GLRenderer::RenderTarget2DScope render_target_scope(
-			renderer,
-			tile_texture.texture,
-			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
+	// Bind our framebuffer object for rendering to tile textures.
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_tile_framebuffer);
 
-	// The render target tiling loop...
-	do
+	// Begin rendering to the 2D target tile texture.
+	gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tile_texture.texture, 0/*level*/);
+
+	// Check our framebuffer object for completeness (now that a tile texture is attached to it).
+	// We only need to do this once because, while the tile texture changes, the framebuffer configuration
+	// does not (ie, same texture internal format, dimensions, etc).
+	if (!d_have_checked_tile_framebuffer_completeness)
 	{
-		// Begin the current render target tile - this also sets the viewport.
-		GLTransform::non_null_ptr_to_const_type render_target_tile_projection = render_target_scope.begin_tile();
+		// Throw OpenGLException if not complete.
+		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		GPlatesGlobal::Assert<OpenGLException>(
+				completeness == GL_FRAMEBUFFER_COMPLETE,
+				GPLATES_ASSERTION_SOURCE,
+				"Framebuffer not complete for rendering multi-resolution cube reconstructed raster tiles.");
 
-		// Set up the projection transform adjustment for the current render target tile.
-		renderer.gl_load_matrix(GL_PROJECTION, render_target_tile_projection->get_matrix());
-		// Multiply in the projection matrix.
-		renderer.gl_mult_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
-
-		// The model-view matrix.
-		renderer.gl_load_matrix(GL_MODELVIEW, tile.d_view_transform->get_matrix());
-		// Multiply in the requested world transform.
-		renderer.gl_mult_matrix(GL_MODELVIEW, d_world_transform);
-
-		renderer.gl_clear_color(); // Clear colour to all zeros.
-		renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
-
-		// If the render target is floating-point...
-		if (tile_texture.texture->is_floating_point())
-		{
-			// A lot of graphics hardware does not support blending to floating-point targets so we don't enable it.
-			// And a floating-point render target is used for data rasters (ie, not coloured as fixed-point
-			// for visual display) - where the coverage (or alpha) is in the green channel instead of the alpha channel.
-		}
-		else // an RGBA render target...
-		{
-			// Set up alpha blending for pre-multiplied alpha.
-			// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
-			// This is where the RGB channels have already been multiplied by the alpha channel.
-			// See class GLVisualRasterSource for why this is done.
-			renderer.gl_enable(GL_BLEND);
-			renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-			// Enable alpha testing as an optimisation for culling transparent raster pixels.
-			renderer.gl_enable(GL_ALPHA_TEST);
-			renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
-		}
-
-		// Reconstruct source raster by rendering into the render target using the view frustum
-		// we have provided and the level-of-detail we have calculated.
-		GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type source_cache_handle;
-		if (d_reconstructed_raster->render(renderer, tile.d_level_of_detail, source_cache_handle))
-		{
-			rendered = true;
-		}
-		tile_cache_handle->push_back(source_cache_handle);
+		d_have_checked_tile_framebuffer_completeness = true;
 	}
-	while (render_target_scope.end_tile());
 
-	tile_texture.source_cache_handle = tile_cache_handle;
+	// Specify a viewport that matches the tile dimensions.
+	gl.Viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
+
+	// Clear the render target (only has colour, no depth/stencil).
+	gl.ClearColor();
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	// The view transform of the current tile.
+	GLMatrix tile_view_matrix = tile.d_view_transform->get_matrix();
+	// Multiply in the requested world transform.
+	tile_view_matrix.gl_mult_matrix(d_world_transform);
+
+	// The view projection of the current tile.
+	const GLViewProjection tile_view_projection(
+			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension),
+			tile_view_matrix,
+			tile.d_projection_transform->get_matrix());
+
+	if (tile_texture_is_visual())
+	{
+		//
+		// For alpha-blending we want:
+		//
+		//   RGB = A_src * RGB_src + (1-A_src) * RGB_dst
+		//     A =     1 *   A_src + (1-A_src) *   A_dst
+		//
+		// ...so we need to use separate (src,dst) blend factors for the RGB and alpha channels...
+		//
+		//   RGB uses (A_src, 1 - A_src)
+		//     A uses (    1, 1 - A_src)
+		//
+		// ...this enables the destination to be a texture that is subsequently blended into the final scene.
+		// In this case the destination alpha must be correct in order to properly blend the texture into the final scene.
+		// However if we're rendering directly into the scene (ie, no render-to-texture) then destination alpha is not
+		// actually used (since only RGB in the final scene is visible) and therefore could use same blend factors as RGB.
+		//
+		gl.BlendFuncSeparate(
+				GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+				GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	}
+	else // a data/numerical render target...
+	{
+		// A lot of graphics hardware does not support blending to floating-point targets so we don't enable it.
+		// And a floating-point render target is used for data rasters (ie, not coloured as fixed-point
+		// for visual display) - where the coverage (or alpha) is in the green channel instead of the alpha channel.
+	}
+
+	// Reconstruct source raster by rendering into the render target using the view frustum
+	// we have provided and the level-of-detail we have calculated.
+	GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type source_cache_handle;
+	if (d_reconstructed_raster->render(
+			gl,
+			tile_view_projection.get_view_projection_transform(),
+			tile.d_level_of_detail,
+			source_cache_handle))
+	{
+		rendered = true;
+	}
+
+	tile_texture.source_cache_handle = source_cache_handle;
 
 	// This tile texture is now update-to-date with respect to the source raster.
 	d_reconstructed_raster->get_subject_token().update_observer(
@@ -459,62 +486,79 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_child_node(
 
 void
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLTexture::shared_ptr_type &tile_texture)
 {
-	const GLCapabilities &capabilities = renderer.get_capabilities();
+	const GLCapabilities& capabilities = gl.get_capabilities();
 
-	const GLint internal_format = d_reconstructed_raster->get_tile_texture_internal_format();
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
+
+	// Bind the texture.
+	gl.BindTexture(GL_TEXTURE_2D, tile_texture);
+
 	//
 	// No mipmaps needed so we specify no mipmap filtering.
 	// We're not using mipmaps because our cube mapping does not have much distortion
 	// unlike global rectangular lat/lon rasters that squash near the poles.
 	//
-	// We do enable bilinear filtering if the texture is a fixed-point format.
-	// The client needs to emulate bilinear filtering in a fragment shader if the format is floating-point.
-	if (GLTexture::is_format_floating_point(internal_format))
-	{
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	}
-	else // fixed-point...
+
+	if (tile_texture_is_visual())
 	{
 		// Binlinear filtering for GL_TEXTURE_MIN_FILTER and GL_TEXTURE_MAG_FILTER.
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
 		// subsequently sampled non-isotropically.
+		//
+		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
 		if (capabilities.gl_EXT_texture_filter_anisotropic)
 		{
-			const GLfloat anisotropy = capabilities.texture.gl_texture_max_anisotropy;
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
+		}
+	}
+	else if (tile_texture_has_coverage())
+	{
+		// Texture has data (red component) and coverage (green component), and so needs filtering
+		// to be implemented in shader program. Use 'nearest' filtering, and no anisotropic filtering.
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		if (capabilities.gl_EXT_texture_filter_anisotropic)
+		{
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1/*isotropic*/);
+		}
+	}
+	else // a data texture with no coverage ...
+	{
+		// Texture just has data (no coverage) and hence filtering can be done in hardware.
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
+		// subsequently sampled non-isotropically.
+		//
+		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
+		if (capabilities.gl_EXT_texture_filter_anisotropic)
+		{
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
 		}
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
-		capabilities.texture.gl_SGIS_texture_edge_clamp)
-	{
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-	else
-	{
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
 	//
 	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
 	// just use values that are compatible with all internal formats to avoid a possible error.
-	tile_texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0,
-			internal_format,
+	glTexImage2D(GL_TEXTURE_2D, 0,
+			d_reconstructed_raster->get_tile_texture_internal_format(),
 			d_tile_texel_dimension, d_tile_texel_dimension,
-			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+			0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
