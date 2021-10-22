@@ -60,8 +60,7 @@ namespace GPlatesGui
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
-	class GLViewport;
+	class GL;
 }
 
 namespace GPlatesPresentation
@@ -223,11 +222,8 @@ namespace GPlatesQtWidgets
 		int
 		nextId() const;
 
-		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRenderer>::non_null_ptr_type
-		create_gl_renderer() const;
-
-		bool
-		is_scalar_field_import_supported() const;
+		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GL>::non_null_ptr_type
+		create_gl() const;
 
 		/**
 		 * Import georeferencing and spatial reference system (if any) from first depth layer raster.

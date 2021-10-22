@@ -530,7 +530,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 {
 	PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL state the way it was.
+	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(
 			gl,
 			// We're rendering to a render target so reset to the default OpenGL state...

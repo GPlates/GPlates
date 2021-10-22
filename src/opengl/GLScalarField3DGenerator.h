@@ -31,9 +31,12 @@
 #include <QDataStream>
 #include <QString>
 
+#include "GLFramebuffer.h"
 #include "GLMultiResolutionRaster.h"
+#include "GLProgram.h"
+#include "GLRenderbuffer.h"
 #include "GLScalarFieldDepthLayersSource.h"
-#include "GLTexture.h"
+#include "GLVertexArray.h"
 
 #include "file-io/ReadErrors.h"
 #include "file-io/ScalarField3DFileFormat.h"
@@ -51,7 +54,8 @@ namespace GPlatesFileIO
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
+	class GLMatrix;
 
 	/**
 	 * Generates a 3D sub-surface scalar field from a sequence of concentric depth layer 2D rasters.
@@ -88,17 +92,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if generation of 3D scalar fields is supported on the runtime system.
-		 *
-		 * This is less than that required to render 3D scalar fields (OpenGL 3.0) and is roughly OpenGL 2.0.
-		 */
-		static
-		bool
-		is_supported(
-				GLRenderer &renderer);
-
-
-		/**
 		 * Creates a @a GLScalarField3DGenerator object.
 		 *
 		 * @a scalar_field_filename is name of the file to contain the generated scalar field.
@@ -110,7 +103,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const QString &scalar_field_filename,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
@@ -127,7 +120,7 @@ namespace GPlatesOpenGL
 		 */
 		bool
 		generate_scalar_field(
-				GLRenderer &renderer,
+				GL &gl,
 				GPlatesFileIO::ReadErrorAccumulation *read_errors);
 
 	private:
@@ -141,10 +134,25 @@ namespace GPlatesOpenGL
 		boost::optional<GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
 		unsigned int d_cube_face_dimension;
 
+		//! Tile colour buffer.
+		GLRenderbuffer::shared_ptr_type d_tile_colour_buffer;
+
+		//! Tile stencil buffer.
+		GLRenderbuffer::shared_ptr_type d_tile_stencil_buffer;
+
+		//! Tile framebuffer object.
+		GLFramebuffer::shared_ptr_type d_tile_framebuffer;
+
+		//! Full-screen quad to render tile mask.
+		GLVertexArray::shared_ptr_type d_full_screen_quad;
+
+		//! Shader program to render the tile mask.
+		GLProgram::shared_ptr_type d_render_tile_mask_program;
+
 
 		//! Constructor.
 		GLScalarField3DGenerator(
-				GLRenderer &renderer,
+				GL &gl,
 				const QString &scalar_field_filename,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
@@ -155,12 +163,12 @@ namespace GPlatesOpenGL
 
 		bool
 		initialise_multi_resolution_raster(
-				GLRenderer &renderer,
+				GL &gl,
 				GPlatesFileIO::ReadErrorAccumulation *read_errors);
 
 		void
 		initialise_cube_face_dimension(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		report_recoverable_error(
@@ -173,12 +181,20 @@ namespace GPlatesOpenGL
 				GPlatesFileIO::ReadErrors::Description description);
 
 		void
+		create_tile_framebuffer(
+				GL &gl);
+
+		void
+		compile_link_shader_program(
+				GL &gl);
+
+		void
 		generate_scalar_field_depth_tile(
-				GLRenderer &renderer,
+				GL &gl,
 				QDataStream &out,
 				unsigned int depth_layer_index,
+				const GLMatrix &view_projection_transform,
 				const std::vector<GLMultiResolutionRaster::tile_handle_type> &source_raster_tile_handles,
-				const GLPixelBuffer::shared_ptr_type &pixel_buffer,
 				unsigned int tile_resolution,
 				double &tile_scalar_min,
 				double &tile_scalar_max,
@@ -193,8 +209,7 @@ namespace GPlatesOpenGL
 
 		void
 		generate_scalar_field_tile_mask(
-				GLRenderer &renderer,
-				const GLPixelBuffer::shared_ptr_type &pixel_buffer,
+				GL &gl,
 				unsigned int tile_resolution,
 				std::vector<GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample> &mask_data_array);
 	};

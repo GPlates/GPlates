@@ -29,21 +29,21 @@
 #include <cmath>
 #include <limits>
 #include <boost/bind/bind.hpp>
-#include <boost/foreach.hpp>
+#include <boost/scoped_array.hpp>
 #include <QDataStream>
 #include <QDebug>
 #include <QFile>
 
 #include "GLScalarField3DGenerator.h"
 
+#include "GL.h"
 #include "GLBuffer.h"
-#include "GLCompiledDrawState.h"
 #include "GLContext.h"
 #include "GLCubeSubdivision.h"
 #include "GLMultiResolutionRaster.h"
-#include "GLRenderer.h"
-#include "GLRenderTarget.h"
 #include "GLUtils.h"
+#include "GLViewProjection.h"
+#include "OpenGLException.h"
 
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/RasterReader.h"
@@ -73,6 +73,34 @@ namespace GPlatesOpenGL
 {
 	namespace
 	{
+		/**
+		 * Vertex shader source for rendering the tile mask.
+		 */
+		const char *RENDER_TILE_MASK_VERTEX_SHADER_SOURCE =
+			R"(
+				layout(location = 0) in vec4 position;
+			
+				void main (void)
+				{
+					// The geometry is a full-screen quad.
+					gl_Position = position;
+				}
+			)";
+
+		/**
+		 * Fragment shader source for rendering the tile mask.
+		 */
+		const char *RENDER_TILE_MASK_FRAGMENT_SHADER_SOURCE =
+			R"(
+				layout(location = 0) out vec4 mask;
+
+				void main (void)
+				{
+					// The stencil buffer will determine if mask is written to colour buffer.
+					mask = vec4(1);
+				}
+			)";
+
 #ifdef DEBUG_USING_SHADER_GENERATED_TEST_SCALAR_FIELD
 		const char *RENDER_TEST_SCALAR_FIELD_VERTEX_SHADER =
 				"varying vec3 world_space_position;\n"
@@ -183,58 +211,9 @@ namespace GPlatesOpenGL
 }
 
 
-bool
-GPlatesOpenGL::GLScalarField3DGenerator::is_supported(
-		GLRenderer &renderer)
-{
-	static bool supported = false;
-
-	// Only test for support the first time we're called.
-	static bool tested_for_support = false;
-	if (!tested_for_support)
-	{
-		tested_for_support = true;
-
-		// Need support for GLScalarFieldDepthLayersSource.
-		if (!GLMultiResolutionRaster::supports_scalar_field_depth_layers_source(renderer))
-		{
-			qWarning() << "Generation of 3D scalar fields NOT supported by this graphics hardware.";
-			return false;
-		}
-
-		const GLCapabilities &capabilities = renderer.get_capabilities();
-
-		// Test for OpenGL features used to generate scalar fields.
-		if (// Using floating-point textures...
-			!capabilities.texture.gl_ARB_texture_float ||
-			!capabilities.texture.gl_ARB_texture_non_power_of_two ||
-			!capabilities.shader.gl_ARB_vertex_shader ||
-			!capabilities.shader.gl_ARB_fragment_shader ||
-			// Need to render to textures using FBO...
-			!capabilities.framebuffer.gl_EXT_framebuffer_object)
-		{
-			qWarning() << "Generation of 3D scalar fields NOT supported by this graphics hardware.";
-			return false;
-		}
-
-		// Need to be able to render using a framebuffer object with an attached depth buffer.
-		if (!GLRenderTarget::is_supported(renderer, GL_RGBA32F_ARB, false, true, 256, 256))
-		{
-			qWarning() << "Generation of 3D scalar fields NOT supported by this graphics hardware.";
-			return false;
-		}
-
-		// If we get this far then we have support.
-		supported = true;
-	}
-
-	return supported;
-}
-
-
 GPlatesOpenGL::GLScalarField3DGenerator::non_null_ptr_type
 GPlatesOpenGL::GLScalarField3DGenerator::create(
-		GLRenderer &renderer,
+		GL &gl,
 		const QString &scalar_field_filename,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
@@ -243,13 +222,9 @@ GPlatesOpenGL::GLScalarField3DGenerator::create(
 		const depth_layer_seq_type &depth_layers,
 		GPlatesFileIO::ReadErrorAccumulation *read_errors)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			is_supported(renderer),
-			GPLATES_ASSERTION_SOURCE);
-
 	return non_null_ptr_type(
 			new GLScalarField3DGenerator(
-					renderer,
+					gl,
 					scalar_field_filename,
 					georeferencing,
 					coordinate_transformation,
@@ -261,7 +236,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::create(
 
 
 GPlatesOpenGL::GLScalarField3DGenerator::GLScalarField3DGenerator(
-		GLRenderer &renderer,
+		GL &gl,
 		const QString &scalar_field_filename,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
@@ -273,10 +248,15 @@ GPlatesOpenGL::GLScalarField3DGenerator::GLScalarField3DGenerator(
 	d_georeferencing(georeferencing),
 	d_coordinate_transformation(coordinate_transformation),
 	d_depth_layers(depth_layers),
-	d_cube_face_dimension(0)
+	d_cube_face_dimension(0),
+	d_tile_colour_buffer(GLRenderbuffer::create(gl)),
+	d_tile_stencil_buffer(GLRenderbuffer::create(gl)),
+	d_tile_framebuffer(GLFramebuffer::create(gl)),
+	d_full_screen_quad(gl.get_context().get_shared_state()->get_full_screen_quad(gl)),
+	d_render_tile_mask_program(GLProgram::create(gl))
 {
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
 
 	// Should have at least two depth layers.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -292,27 +272,24 @@ GPlatesOpenGL::GLScalarField3DGenerator::GLScalarField3DGenerator(
 
 	// Create a single multi-resolution raster that will be used to render all depth layers
 	// into the cube map.
-	if (!initialise_multi_resolution_raster(renderer, read_errors))
+	if (!initialise_multi_resolution_raster(gl, read_errors))
 	{
 		return;
 	}
 
-	initialise_cube_face_dimension(renderer);
+	initialise_cube_face_dimension(gl);
+
+	create_tile_framebuffer(gl);  // Note: Create after initialising cube face dimension.
+	compile_link_shader_program(gl);
 }
 
 
 bool
 GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
-		GLRenderer &renderer,
+		GL &gl,
 		GPlatesFileIO::ReadErrorAccumulation *read_errors)
 {
 	PROFILE_FUNC();
-
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(
-			renderer,
-			// We're rendering to a render target so reset to the default OpenGL state...
-			true/*reset_to_default_state*/);
 
 	// If we were unable to create the multi-resolution raster in the constructor.
 	if (!d_depth_layers_source ||
@@ -418,48 +395,30 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 							d_cube_face_dimension,
 							0.5/* half a texel */));
 
-	// Create a render texture for rendering the cube map tiles to.
-	GLRenderTarget::shared_ptr_type cube_tile_render_target =
-			GLRenderTarget::create(
-					renderer,
-					GL_RGBA32F_ARB,
-					false/*include_depth_buffer*/,
-					true/*include_stencil_buffer*/,
-					tile_resolution,
-					tile_resolution);
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(
+			gl,
+			// We're rendering to a render target so reset to the default OpenGL state...
+			true/*reset_to_default_state*/);
 
-	// Render to the cube tile render target.
-	GLRenderTarget::RenderScope cube_tile_render_target_scope(*cube_tile_render_target, renderer);
-
-	// Buffer size needed for a single layer of cube tile.
-	// Each floating-point RGBA pixel contains scalar value and field gradient.
-	const unsigned int buffer_size = tile_resolution * tile_resolution * 4 * sizeof(GLfloat);
-
-	// A pixel buffer object to read the cube map scalar field data.
-	GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_PIXEL);
-	buffer->gl_buffer_data(
-			renderer,
-			GLBuffer::TARGET_PIXEL_PACK_BUFFER,
-			buffer_size,
-			NULL, // Uninitialised memory.
-			GLBuffer::USAGE_STREAM_READ);
-	GLPixelBuffer::shared_ptr_type pixel_buffer = GLPixelBuffer::create(renderer, buffer);
-	// Bind the pixel buffer so that all subsequent 'gl_read_pixels()' calls go into that buffer.
-	pixel_buffer->gl_bind_pack(renderer);
+	// Bind our framebuffer object for rendering tiles.
+	// This directs rendering to the tile colour buffer at the first colour attachment, and
+	// its associated depth/stencil renderbuffer at the depth/stencil attachment.
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_tile_framebuffer);
 
 	// Viewport for the cube tile render target.
-	renderer.gl_viewport(0, 0, tile_resolution, tile_resolution);
+	gl.Viewport(0, 0, tile_resolution, tile_resolution);
 
 	// We want regional (non-global) rasters to write their mask into the stencil buffer.
 	//
 	// Enable stencil writes (this is not strictly necessary since it's the default OpenGL state anyway).
-	renderer.gl_stencil_mask(~0);
+	gl.StencilMask(~0);
 	// Enable stencil testing.
-	renderer.gl_enable(GL_STENCIL_TEST);
+	gl.Enable(GL_STENCIL_TEST);
 	// Set the stencil function to always pass and set the reference value to (write) one.
-	renderer.gl_stencil_func(GL_ALWAYS, 1, ~0);
+	gl.StencilFunc(GL_ALWAYS, 1, ~0);
 	// Write the reference value into the stencil buffer where the raster region gets drawn.
-	renderer.gl_stencil_op(GL_KEEP, GL_KEEP, GL_REPLACE);
+	gl.StencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	// The tile metadata.
 	std::vector<GPlatesFileIO::ScalarField3DFileFormat::TileMetaData> tile_meta_data_array;
@@ -488,9 +447,6 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 		const GLTransform::non_null_ptr_to_const_type view_transform =
 				cube_subdivision->get_view_transform(cube_face);
 
-		// Set the view matrix.
-		renderer.gl_load_matrix(GL_MODELVIEW, view_transform->get_matrix());
-
 		// Get the projection transforms of an entire cube face (the lowest resolution level-of-detail).
 		const GLTransform::non_null_ptr_to_const_type projection_transform =
 				cube_subdivision->get_projection_transform(
@@ -498,16 +454,19 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 						0/*tile_u_offset*/,
 						0/*tile_v_offset*/);
 
-		// The projection matrix.
-		renderer.gl_load_matrix(GL_PROJECTION, projection_transform->get_matrix());
+		// The view projection.
+		const GLViewProjection view_projection(
+				GLViewport(0, 0, tile_resolution, tile_resolution),
+				view_transform->get_matrix(),
+				projection_transform->get_matrix());
+		const GLMatrix &view_projection_transform = view_projection.get_view_projection_transform();
 
 		// Get the source multi-resolution tiles that are visible in the current cube face view frustum.
 		// These tiles are the same for all depth layers since each layer has the same georeferencing.
 		std::vector<GLMultiResolutionRaster::tile_handle_type> source_raster_tile_handles;
 		d_multi_resolution_raster.get()->get_visible_tiles(
 				source_raster_tile_handles,
-				view_transform->get_matrix(),
-				projection_transform->get_matrix(),
+				view_projection_transform,
 				0/*tile_level_of_detail*/);
 
 		// The current tile ID.
@@ -524,8 +483,9 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 			++depth_layer_index)
 		{
 			generate_scalar_field_depth_tile(
-					renderer, out, depth_layer_index,
-					source_raster_tile_handles, pixel_buffer,
+					gl, out, depth_layer_index,
+					view_projection_transform,
+					source_raster_tile_handles,
 					tile_resolution, tile_scalar_min, tile_scalar_max,
 					scalar_min, scalar_max,
 					scalar_sum, scalar_sum_squares,
@@ -552,7 +512,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 		// of zero into the stencil buffer for pixels where the raster region is drawn - it then
 		// mentions this is unnecessary since a stencil buffer clear later happens - so may need to be
 		// careful when re-organising code.
-		generate_scalar_field_tile_mask(renderer, pixel_buffer, tile_resolution, mask_data_array);
+		generate_scalar_field_tile_mask(gl, tile_resolution, mask_data_array);
 
 		// Specify the current tile's metadata.
 		GPlatesFileIO::ScalarField3DFileFormat::TileMetaData tile_meta_data;
@@ -682,11 +642,11 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 
 void
 GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_depth_tile(
-		GLRenderer &renderer,
+		GL &gl,
 		QDataStream &out,
 		unsigned int depth_layer_index,
+		const GLMatrix &view_projection_transform,
 		const std::vector<GLMultiResolutionRaster::tile_handle_type> &source_raster_tile_handles,
-		const GLPixelBuffer::shared_ptr_type &pixel_buffer,
 		unsigned int tile_resolution,
 		double &tile_scalar_min,
 		double &tile_scalar_max,
@@ -702,39 +662,40 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_depth_tile(
 	// Clear the render target (colour and stencil).
 	// We also clear the depth buffer (even though we're not using depth) because it's usually
 	// interleaved with stencil so it's more efficient to clear both depth and stencil.
-	renderer.gl_clear_color();
-	renderer.gl_clear_depth();
-	renderer.gl_clear_stencil();
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	gl.ClearColor();
+	gl.ClearDepth();
+	gl.ClearStencil();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// Set the depth at which to render the current layer.
-	d_depth_layers_source.get()->set_depth_layer(renderer, depth_layer_index);
+	d_depth_layers_source.get()->set_depth_layer(gl, depth_layer_index);
 
 	// Render the multi-resolution raster.
 	// We don't need to keep the cache handle alive because we've asked for no caching in
 	// the multi-resolution raster.
 	GLMultiResolutionRaster::cache_handle_type multi_resolution_raster_cache_handle;
 	d_multi_resolution_raster.get()->render(
-			renderer,
+			gl,
+			view_projection_transform,
 			source_raster_tile_handles,
 			multi_resolution_raster_cache_handle);
 
-	// Read back the data just rendered.
+	// Read back the data just rendered (directly into client memory).
+	//
+	// Note that we don't use a pixel buffer object here since it doesn't give us a speed advantage
+	// because we (CPU) would immediately block when we map the pixel buffer object (to read from it).
+	// We'd need two ping-pong pixel buffer objects to take advantage of its asynchronous readback.
+	//
 	// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT
 	// (rows aligned to 4 bytes) since our data is floats (each float is already 4-byte aligned).
-	pixel_buffer->gl_read_pixels(
-			renderer, 0, 0, tile_resolution, tile_resolution, GL_RGBA, GL_FLOAT, 0);
-
-	// Map the pixel buffer to access its data.
-	GLBuffer::MapBufferScope map_pixel_buffer_scope(
-			renderer,
-			*pixel_buffer->get_buffer(),
-			GLBuffer::TARGET_PIXEL_PACK_BUFFER);
+	//
+	// Allocate buffer to read a single layer of cube tile into.
+	boost::scoped_array<float> field_data(new float[4 * tile_resolution * tile_resolution]);
+	glReadPixels(0, 0, tile_resolution, tile_resolution, GL_RGBA, GL_FLOAT, field_data.get());
 
 	// Map the pixel buffer data.
-	void *field_data = map_pixel_buffer_scope.gl_map_buffer_static(GLBuffer::ACCESS_READ_ONLY);
 	GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample *const field_data_pixels =
-			static_cast<GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample *>(field_data);
+			reinterpret_cast<GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample *>(field_data.get());
 
 	// Iterate over the pixels in the depth layer.
 	for (unsigned int n = 0; n < tile_resolution * tile_resolution; ++n)
@@ -804,7 +765,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_depth_tile(
 
 	// Write the field layer to the file.
 	out.writeRawData(
-			static_cast<const char *>(field_data),
+			reinterpret_cast<const char *>(field_data.get()),
 			tile_resolution * tile_resolution *
 				GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample::STREAM_SIZE);
 }
@@ -812,53 +773,42 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_depth_tile(
 
 void
 GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_tile_mask(
-		GLRenderer &renderer,
-		const GLPixelBuffer::shared_ptr_type &pixel_buffer,
+		GL &gl,
 		unsigned int tile_resolution,
 		std::vector<GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample> &mask_data_array)
 {
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
 
-	// Obtain a full screen quad for converting the stencil buffer mask into a texture mask.
-	// We don't actual use the texture coordinates though.
-	// The vertex colours have RGBA channels set to 1.0.
-	GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad_drawable =
-			renderer.get_context().get_shared_state()->get_full_screen_quad(renderer);
+	// Simple shader program to render 1.0 into RGBA channels using a full screen quad.
+	gl.UseProgram(d_render_tile_mask_program);
 
 	// Set the stencil function to pass if reference value (zero) is not equal to the stencil buffer value.
-	renderer.gl_stencil_func(GL_NOTEQUAL, 0, ~0);
+	gl.StencilFunc(GL_NOTEQUAL, 0, ~0);
 	// Write the reference value (zero) into the stencil buffer where the raster region is drawn.
 	// Not strictly necessary since we later clear the stencil buffer anyway.
-	renderer.gl_stencil_op(GL_KEEP, GL_KEEP, GL_REPLACE);
+	gl.StencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	// Clear *only* the colour buffer (we need the current stencil buffer contents intact).
-	renderer.gl_clear_color();
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
-
-	// NOTE: We set the model-view and projection matrices to identity as that is what we
-	// we need to draw a full-screen quad.
-	renderer.gl_load_matrix(GL_MODELVIEW, GLMatrix::IDENTITY);
-	renderer.gl_load_matrix(GL_PROJECTION, GLMatrix::IDENTITY);
+	gl.ClearColor();
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	// Draw RGBA values of 1.0 into the colour buffer where the stencil buffer is non-zero.
-	renderer.apply_compiled_draw_state(*full_screen_quad_drawable);
+	gl.BindVertexArray(d_full_screen_quad);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	// Read back the data just rendered.
+	// Read back the data just rendered (directly into client memory).
+	//
+	// Note that we don't use a pixel buffer object here since it doesn't give us a speed advantage
+	// because we (CPU) would immediately block when we map the pixel buffer object (to read from it).
+	// We'd need two ping-pong pixel buffer objects to take advantage of its asynchronous readback.
+	//
 	// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT
 	// (rows aligned to 4 bytes) since our data is floats (each float is already 4-byte aligned).
-	pixel_buffer->gl_read_pixels(
-			renderer, 0, 0, tile_resolution, tile_resolution, GL_RGBA, GL_FLOAT, 0);
-
-	// Map the pixel buffer to access its data.
-	GLBuffer::MapBufferScope map_pixel_buffer_scope(
-			renderer,
-			*pixel_buffer->get_buffer(),
-			GLBuffer::TARGET_PIXEL_PACK_BUFFER);
-
-	// Map the pixel buffer data.
-	float *mask_data = static_cast<float *>(
-			map_pixel_buffer_scope.gl_map_buffer_static(GLBuffer::ACCESS_READ_ONLY));
+	//
+	// Allocate buffer to read a single layer of cube tile into.
+	boost::scoped_array<float> mask_data(new float[4 * tile_resolution * tile_resolution]);
+	glReadPixels(0, 0, tile_resolution, tile_resolution, GL_RGBA, GL_FLOAT, mask_data.get());
 
 	// Iterate over the pixels in the stencil mask.
 	for (unsigned int n = 0; n < tile_resolution * tile_resolution; ++n)
@@ -875,13 +825,13 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_tile_mask(
 
 bool
 GPlatesOpenGL::GLScalarField3DGenerator::initialise_multi_resolution_raster(
-		GLRenderer &renderer,
+		GL &gl,
 		GPlatesFileIO::ReadErrorAccumulation *read_errors)
 {
 	GLScalarFieldDepthLayersSource::depth_layer_seq_type depth_layers_source_sequence;
 
 	// Create a proxied raster for each depth layer in the sequence.
-	BOOST_FOREACH(const DepthLayer &depth_layer, d_depth_layers)
+	for (const DepthLayer &depth_layer : d_depth_layers)
 	{
 		// Create a raster reader for the current depth layer.
 		GPlatesFileIO::RasterReader::non_null_ptr_type reader =
@@ -908,7 +858,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_multi_resolution_raster(
 	}
 
 	// Create a data source for the multi-resolution raster that can switch between the various depth layers.
-	d_depth_layers_source = GLScalarFieldDepthLayersSource::create(renderer, depth_layers_source_sequence);
+	d_depth_layers_source = GLScalarFieldDepthLayersSource::create(gl, depth_layers_source_sequence);
 	if (!d_depth_layers_source)
 	{
 		report_failure_to_begin(read_errors, GPlatesFileIO::ReadErrors::DepthLayerRasterIsNotNumerical);
@@ -918,7 +868,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_multi_resolution_raster(
 	// Create the multi-resolution raster.
 	d_multi_resolution_raster =
 			GLMultiResolutionRaster::create(
-					renderer,
+					gl,
 					d_georeferencing,
 					d_coordinate_transformation,
 					d_depth_layers_source.get(),
@@ -931,7 +881,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_multi_resolution_raster(
 
 void
 GPlatesOpenGL::GLScalarField3DGenerator::initialise_cube_face_dimension(
-		GLRenderer &renderer)
+		GL &gl)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_multi_resolution_raster,
@@ -955,6 +905,11 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_cube_face_dimension(
 			cube_subdivision->get_view_transform(
 					GPlatesMaths::CubeCoordinateFrame::POSITIVE_X);
 
+	const GLViewProjection view_projection(
+			GLViewport(0, 0, d_cube_face_dimension, d_cube_face_dimension),
+			view_transform->get_matrix(),
+			projection_transform->get_matrix());
+
 	// Start off with a fixed-size viewport - we'll adjust its width and height shortly.
 	// It doesn't matter the initial value since it'll be adjusted to the same end value anyway.
 	d_cube_face_dimension = 256;
@@ -962,9 +917,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_cube_face_dimension(
 	// Determine the scale factor for our viewport dimensions required to capture the resolution
 	// of the highest level of detail (level 0) of the source raster into an entire cube face.
 	double viewport_dimension_scale = d_multi_resolution_raster.get()->get_viewport_dimension_scale(
-			view_transform->get_matrix(),
-			projection_transform->get_matrix(),
-			GLViewport(0, 0, d_cube_face_dimension, d_cube_face_dimension),
+			view_projection,
 			0/*level_of_detail*/);
 
 	// The source raster level-of-detail (and hence viewport dimension scale) is determined such
@@ -994,9 +947,9 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_cube_face_dimension(
 		d_cube_face_dimension = 128;
 	}
 	// Also limit to max texture size if exceeds.
-	if (d_cube_face_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
+	if (d_cube_face_dimension > gl.get_capabilities().gl_max_texture_size)
 	{
-		d_cube_face_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
+		d_cube_face_dimension = gl.get_capabilities().gl_max_texture_size;
 	}
 }
 
@@ -1034,4 +987,74 @@ GPlatesOpenGL::GLScalarField3DGenerator::report_failure_to_begin(
 					description,
 					GPlatesFileIO::ReadErrors::FileNotImported));
 	}
+}
+
+
+void
+GPlatesOpenGL::GLScalarField3DGenerator::create_tile_framebuffer(
+		GL &gl)
+{
+	gl.BindRenderbuffer(GL_RENDERBUFFER, d_tile_stencil_buffer);
+
+	// Allocate a stencil buffer.
+	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
+	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_cube_face_dimension, d_cube_face_dimension);
+
+	gl.BindRenderbuffer(GL_RENDERBUFFER, d_tile_colour_buffer);
+
+	// Allocate a floating-point colour (RGBA) buffer.
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, d_cube_face_dimension, d_cube_face_dimension);
+
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_tile_framebuffer);
+
+	// Bind tile depth/stencil buffer to framebuffer's depth/stencil attachment.
+	//
+	// We're not actually using the depth buffer but in order to ensure we got a stencil buffer we had
+	// to ask for a depth/stencil internal format for the renderbuffer.
+	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, d_tile_stencil_buffer);
+
+	// Bind tile colour buffer to framebuffer's first colour attachment.
+	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, d_tile_colour_buffer);
+
+	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	GPlatesGlobal::Assert<OpenGLException>(
+			completeness == GL_FRAMEBUFFER_COMPLETE,
+			GPLATES_ASSERTION_SOURCE,
+			"Framebuffer not complete for rendering tiles in 3D scalar field generator.");
+}
+
+
+void
+GPlatesOpenGL::GLScalarField3DGenerator::compile_link_shader_program(
+		GL &gl)
+{
+	//
+	// Shader program to render the tile mask.
+	//
+
+	// Vertex shader source.
+	GLShaderSource render_tile_mask_vertex_shader_source;
+	render_tile_mask_vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
+	render_tile_mask_vertex_shader_source.add_code_segment(RENDER_TILE_MASK_VERTEX_SHADER_SOURCE);
+
+	// Vertex shader.
+	GLShader::shared_ptr_type render_tile_mask_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
+	render_tile_mask_vertex_shader->shader_source(render_tile_mask_vertex_shader_source);
+	render_tile_mask_vertex_shader->compile_shader();
+
+	// Fragment shader source.
+	GLShaderSource render_tile_mask_fragment_shader_source;
+	render_tile_mask_fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
+	render_tile_mask_fragment_shader_source.add_code_segment(RENDER_TILE_MASK_FRAGMENT_SHADER_SOURCE);
+
+	// Fragment shader.
+	GLShader::shared_ptr_type render_tile_mask_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
+	render_tile_mask_fragment_shader->shader_source(render_tile_mask_fragment_shader_source);
+	render_tile_mask_fragment_shader->compile_shader();
+
+	// Vertex-fragment program.
+	d_render_tile_mask_program->attach_shader(render_tile_mask_vertex_shader);
+	d_render_tile_mask_program->attach_shader(render_tile_mask_fragment_shader);
+	d_render_tile_mask_program->link_program();
 }

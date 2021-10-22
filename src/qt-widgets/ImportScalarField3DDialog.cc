@@ -73,8 +73,8 @@
 #include "model/NotificationGuard.h"
 #include "model/TopLevelPropertyInline.h"
 
+#include "opengl/GL.h"
 #include "opengl/GLContext.h"
-#include "opengl/GLRenderer.h"
 #include "opengl/GLScalarField3D.h"
 #include "opengl/GLScalarField3DGenerator.h"
 
@@ -351,19 +351,6 @@ void
 GPlatesQtWidgets::ImportScalarField3DDialog::display(
 		GPlatesFileIO::ReadErrorAccumulation *read_errors)
 {
-	// If the runtime system cannot generate a scalar field from depth layers...
-	if (!is_scalar_field_import_supported())
-	{
-		QString message;
-		QTextStream(&message)
-				<< tr("Error: Cannot import or render scalar fields on this graphics hardware - "
-					"necessary OpenGL functionality missing.\n");
-		QMessageBox::critical(&d_viewport_window, tr("Error Importing Scalar Field"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
-		qWarning() << message; // Also log the detailed error message.
-		return;
-	}
-
 	// Start at the depth layers sequence page.
 	setStartId(DEPTH_LAYERS_PAGE_ID);
 
@@ -505,8 +492,8 @@ GPlatesQtWidgets::ImportScalarField3DDialog::import_scalar_field_3d(
 }
 
 
-GPlatesOpenGL::GLRenderer::non_null_ptr_type
-GPlatesQtWidgets::ImportScalarField3DDialog::create_gl_renderer() const
+GPlatesOpenGL::GL::non_null_ptr_type
+GPlatesQtWidgets::ImportScalarField3DDialog::create_gl() const
 {
 	// Get an OpenGL context.
 	GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
@@ -517,30 +504,7 @@ GPlatesQtWidgets::ImportScalarField3DDialog::create_gl_renderer() const
 
 	// Start a begin_render/end_render scope.
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	return gl_context->create_renderer();
-}
-
-
-bool
-GPlatesQtWidgets::ImportScalarField3DDialog::is_scalar_field_import_supported() const
-{
-	//
-	// First get an OpenGL context from the main viewport window and create a renderer from it.
-	//
-
-	// We need an OpenGL renderer before we can query support.
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer();
-
-	// Start a begin_render/end_render scope.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
-
-	//
-	// Now see if we can generate a 3D scalar field from depth layers.
-	// Also test that we can actually render a scalar field (this is actually stricter).
-	//
-
-	return GPlatesOpenGL::GLScalarField3DGenerator::is_supported(*renderer) &&
-		GPlatesOpenGL::GLScalarField3D::is_supported(*renderer);
+	return gl_context->create_gl();
 }
 
 
@@ -570,14 +534,12 @@ GPlatesQtWidgets::ImportScalarField3DDialog::generate_scalar_field(
 			tr("Generating scalar field.\nThis can take a few minutes depending on the number of depth layers..."));
 
 	//
-	// First get an OpenGL context from the main viewport window and create a renderer from it.
+	// First get an OpenGL context from the main viewport window.
 	//
 
-	// We need an OpenGL renderer before we can query support.
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer();
-
-	// Start a begin_render/end_render scope.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
+	// Start a render scope (all GL calls should be done inside this scope).
+	GPlatesOpenGL::GL::non_null_ptr_type gl = create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	//
 	// Now generate the 3D scalar field file from the depth layers.
@@ -602,7 +564,7 @@ GPlatesQtWidgets::ImportScalarField3DDialog::generate_scalar_field(
 
 	GPlatesOpenGL::GLScalarField3DGenerator::non_null_ptr_type scalar_field_generator =
 			GPlatesOpenGL::GLScalarField3DGenerator::create(
-					*renderer,
+					*gl,
 					gpsf_file_path,
 					d_georeferencing,
 					d_coordinate_transformation,
@@ -613,14 +575,14 @@ GPlatesQtWidgets::ImportScalarField3DDialog::generate_scalar_field(
 					read_errors);
 
 	// Generate the scalar field file.
-	if (!scalar_field_generator->generate_scalar_field(*renderer, read_errors))
+	if (!scalar_field_generator->generate_scalar_field(*gl, read_errors))
 	{
-		render_scope.end_render();
+		render_scope.end();
 		progress_dialog->close();
 		return false;
 	}
 
-	render_scope.end_render();
+	render_scope.end();
 	progress_dialog->close();
 
 	return true;
