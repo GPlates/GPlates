@@ -35,7 +35,7 @@ uniform bool using_surface_lighting_normal_map_with_no_directional_light;
 
 uniform mat4 view_projection;
 
-uniform mat4 source_raster_texture_transform;
+uniform mat4 source_texture_transform;
 uniform mat4 clip_texture_transform;
 uniform mat4 age_grid_texture_transform;
 uniform mat4 normal_map_texture_transform;
@@ -45,7 +45,7 @@ uniform vec3 world_space_light_direction_in_globe_view;
 
 layout(location = 0) in vec4 position;
 
-out vec4 source_raster_texture_coordinate;
+out vec4 source_texture_coordinate;
 out vec4 clip_texture_coordinate;
 out vec4 age_grid_texture_coordinate;
 out vec4 normal_map_texture_coordinate;
@@ -58,7 +58,7 @@ void main (void)
     gl_Position = view_projection * position;
 
 	// Source raster cube map projection.
-	source_raster_texture_coordinate = source_raster_texture_transform * position;
+	source_texture_coordinate = source_texture_transform * position;
 
 	// Clip texture cube map projection.
 	clip_texture_coordinate = clip_texture_transform * position;

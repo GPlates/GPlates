@@ -35,13 +35,13 @@
 
 #include "GLMultiResolutionRasterMapView.h"
 
+#include "GL.h"
 #include "GLContext.h"
 #include "GLFrustum.h"
 #include "GLImageUtils.h"
 #include "GLIntersect.h"
 #include "GLMatrix.h"
-#include "GLRenderer.h"
-#include "GLShaderProgramUtils.h"
+#include "GLShader.h"
 #include "GLShaderSource.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
@@ -66,15 +66,114 @@ namespace GPlatesOpenGL
 {
 	namespace
 	{
-		//! Vertex shader source code to render a tile to the scene.
-		const QString RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME =
-				":/opengl/multi_resolution_raster_map_view/render_tile_to_scene_vertex_shader.glsl";
+		/**
+		 * Vertex shader source for rendering the tile texture to the scene.
+		 */
+		const char *RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE =
+			R"(
+				uniform bool using_clip_texture;
+
+				uniform mat4 view_projection;
+
+				uniform mat4 tile_texture_transform;
+				uniform mat4 clip_texture_transform;
+			
+				layout(location = 0) in vec4 position;
+				layout(location = 1) in vec4 texture_coordinate; // xyz from vertex buffer and w=1 (default)
+
+				out vec4 tile_texture_coordinate;
+				out vec4 clip_texture_coordinate;
+
+				void main (void)
+				{
+					gl_Position = view_projection * position;
+
+					//
+					// Transform 3D texture coords (present day position; ie, not 'position') by
+					// cube map projection and any texture coordinate adjustments before accessing textures.
+					// We have two texture transforms but only one texture coordinate.
+					//
+
+					// Tile texture cube map projection.
+					tile_texture_coordinate = tile_texture_transform * texture_coordinate;
+
+					if (using_clip_texture)
+					{
+						// Clip texture cube map projection.
+						clip_texture_coordinate = clip_texture_transform * texture_coordinate;
+					}
+				}
+			)";
 
 		/**
-		 * Fragment shader source code to render a tile to the scene.
+		 * Fragment shader source for rendering the tile texture to the scene.
 		 */
-		const QString RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME =
-				":/opengl/multi_resolution_raster_map_view/render_tile_to_scene_fragment_shader.glsl";
+		const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
+			R"(
+				uniform bool using_data_raster_for_tile;
+				uniform bool using_clip_texture;
+
+				uniform sampler2D tile_texture_sampler;
+				uniform sampler2D clip_texture_sampler;
+
+				uniform vec4 tile_texture_dimensions;
+
+				in vec4 tile_texture_coordinate;
+				in vec4 clip_texture_coordinate;
+			
+				layout(location = 0) out vec4 colour;
+
+				void main (void)
+				{
+					// Discard the pixel if it has been clipped by the clip texture.
+					//
+					// Note: Discarding is necessary for our 'data' floating-point textures,
+					//       as opposed to just modulating the alpha channel as you could with
+					//       fixed-point colour textures, because there is no alpha blending/testing
+					//       for floating-point textures (and also they store data in red channel and
+					//       coverage in green channel).
+					if (using_clip_texture)
+					{
+						float clip_mask = textureProj(clip_texture_sampler, clip_texture_coordinate).a;
+						if (clip_mask == 0)
+						{
+							discard;
+						}
+					}
+	
+					if (using_data_raster_for_tile)
+					{
+						// Do the texture transform projective divide.
+						vec2 tile_texture_coords = tile_texture_coordinate.st / tile_texture_coordinate.q;
+						// Bilinearly filter the tile texture (data/coverage is in red/green channel).
+						// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
+						tile_colour = bilinearly_interpolate_data_coverage_RG(
+							tile_texture_sampler, tile_texture_coords, tile_texture_dimensions);
+
+						// Reject the pixel if its coverage/alpha is zero.
+						//
+						// NOTE: For data textures we've placed the coverage/alpha in the green channel.
+						if (tile_colour.g == 0)
+						{
+							discard;
+						}
+					}
+					else
+					{
+						// Use hardware bilinear interpolation of fixed-point texture.
+						tile_colour = textureProj(tile_texture_sampler, tile_texture_coordinate);
+
+						// Reject the pixel if its coverage/alpha is zero.
+						if (tile_colour.a == 0)
+						{
+							discard;
+						}
+					}
+
+					// The final fragment colour.
+					colour = tile_colour;
+				}
+			)";
 
 
 		/**
@@ -83,12 +182,11 @@ namespace GPlatesOpenGL
 #ifdef DEBUG_LEVEL_OF_DETAIL_VISUALLY
 		void
 		visualise_level_of_detail_in_texture(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_to_const_type &tile_texture,
+				GL &gl,
+				const GLTexture::shared_ptr_type &tile_texture,
+				unsigned int tile_texel_dimension,
 				unsigned int level_of_detail)
 		{
-			const unsigned int tile_texel_dimension = tile_texture->get_width().get();
-
 #ifdef DEBUG_LEVEL_OF_DETAIL_WITH_TEXT
 
 			const QString debug_text = QString("LOD %1").arg(level_of_detail);
@@ -169,6 +267,9 @@ namespace GPlatesOpenGL
 					debug_image.convertToFormat(QImage::Format_ARGB32),
 					debug_rgba8_array);
 
+			// Make sure we leave the OpenGL global state the way it was.
+			GL::StateScope save_restore_state(gl);
+
 			gl.BindTexture(GL_TEXTURE_2D, tile_texture);
 
 			// Load cached image into tile texture.
@@ -185,28 +286,41 @@ const double GPlatesOpenGL::GLMultiResolutionRasterMapView::ERROR_VIEWPORT_PIXEL
 
 
 GPlatesOpenGL::GLMultiResolutionRasterMapView::GLMultiResolutionRasterMapView(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLMultiResolutionCubeRasterInterface::non_null_ptr_type &multi_resolution_cube_raster,
 		const GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh) :
 	d_multi_resolution_cube_raster(multi_resolution_cube_raster),
 	d_multi_resolution_map_cube_mesh(multi_resolution_map_cube_mesh),
 	d_tile_texel_dimension(multi_resolution_cube_raster->get_tile_texel_dimension()),
 	d_inverse_tile_texel_dimension(1.0f / multi_resolution_cube_raster->get_tile_texel_dimension()),
-	d_map_projection_central_meridian_longitude(0)
+	d_map_projection_central_meridian_longitude(0),
+	d_render_tile_to_scene_program(GLProgram::create(gl))
 {
-	create_shader_programs(renderer);
+	compile_link_shader_program(gl);
 }
 
 
 bool
 GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
-		GLRenderer &renderer,
+		GL &gl,
+		const GLViewProjection &view_projection,
 		cache_handle_type &cache_handle)
 {
 	PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
+
+	// We only have one shader program (for rendering each tile to the scene).
+	// Bind it early since we'll be setting state in it as we traverse the cube quad tree.
+	gl.UseProgram(d_render_tile_to_scene_program);
+
+	// Set view projection matrix in shader program.
+	GLfloat view_projection_float_matrix[16];
+	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
+	glUniformMatrix4fv(
+			d_render_tile_to_scene_program->get_uniform_location("view_projection"),
+			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// First see if the map projection central meridian has changed.
 	//
@@ -243,11 +357,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 	}
 
 	// Determine the size of a viewport pixel in map projection coordinates.
-	const double viewport_pixel_size_in_map_projection =
-			get_viewport_pixel_size_in_map_projection(
-					renderer.gl_get_viewport(),
-					renderer.gl_get_matrix(GL_MODELVIEW),
-					renderer.gl_get_matrix(GL_PROJECTION));
+	const double viewport_pixel_size_in_map_projection = get_viewport_pixel_size_in_map_projection(view_projection);
 
 	// The size of a tile of viewport pixels projected onto the map (ie, in map-projection coordinates).
 	// A tile is 'd_tile_texel_dimension' x 'd_tile_texel_dimension' pixels. When a tile of texels
@@ -256,9 +366,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 			d_tile_texel_dimension * viewport_pixel_size_in_map_projection;
 
 	// Get the view frustum planes.
-	const GLFrustum frustum_planes(
-			renderer.gl_get_matrix(GL_MODELVIEW),
-			renderer.gl_get_matrix(GL_PROJECTION));
+	const GLFrustum frustum_planes(view_projection.get_view_projection_transform());
 
 	// Create a subdivision cube quad tree traversal.
 	// No caching is required since we're only visiting each subdivision node once.
@@ -269,15 +377,15 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 	cube_subdivision_cache_type::non_null_ptr_type
 			cube_subdivision_cache =
 					cube_subdivision_cache_type::create(
-							GPlatesOpenGL::GLCubeSubdivision::create(
-									GPlatesOpenGL::GLCubeSubdivision::get_expand_frustum_ratio(
+							GLCubeSubdivision::create(
+									GLCubeSubdivision::get_expand_frustum_ratio(
 											d_tile_texel_dimension,
 											0.5/* half a texel */)));
 	// Cube subdivision cache for the clip texture (no frustum expansion here).
 	clip_cube_subdivision_cache_type::non_null_ptr_type
 			clip_cube_subdivision_cache =
 					clip_cube_subdivision_cache_type::create(
-							GPlatesOpenGL::GLCubeSubdivision::create());
+							GLCubeSubdivision::create());
 
 	// Keep track of how many tiles were rendered to the scene.
 	// Currently this is just used to determine if we rendered anything.
@@ -319,7 +427,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 						clip_cube_subdivision_cache->get_quad_tree_root_node(cube_face);
 
 		render_quad_tree(
-				renderer,
+				gl,
 				*source_raster_quad_tree_root,
 				mesh_quad_tree_root_node,
 				*cube_subdivision_cache,
@@ -343,7 +451,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 
 void
 GPlatesOpenGL::GLMultiResolutionRasterMapView::render_quad_tree(
-		GLRenderer &renderer,
+		GL &gl,
 		const raster_quad_tree_node_type &source_raster_quad_tree_node,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
 		cube_subdivision_cache_type &cube_subdivision_cache,
@@ -391,7 +499,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_quad_tree(
 		source_raster_quad_tree_node.is_leaf_node())
 	{
 		render_tile_to_scene(
-				renderer,
+				gl,
 				source_raster_quad_tree_node,
 				mesh_quad_tree_node,
 				cube_subdivision_cache,
@@ -447,7 +555,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_quad_tree(
 									child_v_offset);
 
 			render_quad_tree(
-					renderer,
+					gl,
 					*child_source_raster_quad_tree_node,
 					child_mesh_quad_tree_node,
 					cube_subdivision_cache,
@@ -466,7 +574,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_quad_tree(
 
 void
 GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
-		GLRenderer &renderer,
+		GL &gl,
 		const raster_quad_tree_node_type &source_raster_quad_tree_node,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
 		cube_subdivision_cache_type &cube_subdivision_cache,
@@ -478,20 +586,18 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
 {
 	// Get the tile texture from our source raster.
 	GLMultiResolutionCubeRasterInterface::cache_handle_type source_raster_cache_handle;
-	const boost::optional<GLTexture::shared_ptr_to_const_type> tile_texture_opt =
-			source_raster_quad_tree_node.get_tile_texture(
-					renderer,
-					source_raster_cache_handle);
+	const boost::optional<GLTexture::shared_ptr_type> tile_texture_opt =
+			source_raster_quad_tree_node.get_tile_texture(gl, source_raster_cache_handle);
 	// If there is no tile texture it means there's nothing to be drawn (eg, no raster covering this node).
 	if (!tile_texture_opt)
 	{
 		//qDebug() << "***************** Nothing render into cube quad tree tile *****************";
 		return;
 	}
-	const GLTexture::shared_ptr_to_const_type tile_texture = tile_texture_opt.get();
+	const GLTexture::shared_ptr_type tile_texture = tile_texture_opt.get();
 
-	// Make sure we leave the OpenGL state the way it was.
-	GL::StateScope save_restore_state(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
 
 #if 0
 	qDebug()
@@ -500,8 +606,9 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
 #endif
 #ifdef DEBUG_LEVEL_OF_DETAIL_VISUALLY
 	visualise_level_of_detail_in_texture(
-			renderer,
+			gl,
 			tile_texture,
+			d_tile_texel_dimension,
 			cube_subdivision_cache_node.get_level_of_detail());
 #endif
 
@@ -532,7 +639,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
 
 	// Prepare for rendering the current tile.
 	set_tile_state(
-			renderer,
+			gl,
 			tile_texture,
 			*projection_transform,
 			*clip_projection_transform,
@@ -540,7 +647,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
 			clip_to_tile_frustum);
 
 	// Draw the mesh covering the current quad tree node tile.
-	mesh_quad_tree_node.render_mesh_drawable(renderer);
+	mesh_quad_tree_node.render_mesh_drawable(gl);
 
 	// This is the only place we increment the rendered tile count.
 	++num_tiles_rendered_to_scene;
@@ -549,112 +656,77 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
 
 void
 GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
-		GLRenderer &renderer,
-		const GLTexture::shared_ptr_to_const_type &tile_texture,
+		GL &gl,
+		const GLTexture::shared_ptr_type &tile_texture,
 		const GLTransform &projection_transform,
 		const GLTransform &clip_projection_transform,
 		const GLTransform &view_transform,
 		bool clip_to_tile_frustum)
 {
-	// Used to transform texture coordinates to account for partial coverage of current tile.
-	GLMatrix scene_tile_texture_matrix;
-	scene_tile_texture_matrix.gl_mult_matrix(GLUtils::get_clip_space_to_texture_space_transform());
+	//
+	// Source raster.
+	//
+
+	// Bind tile texture to texture unit 0.
+	gl.ActiveTexture(GL_TEXTURE0);
+	gl.BindTexture(GL_TEXTURE_2D, tile_texture);
+
+	// Used to transform tile texture coordinates to account for partial coverage of current tile.
+	GLMatrix tile_texture_matrix;
+	tile_texture_matrix.gl_mult_matrix(GLUtils::get_clip_space_to_texture_space_transform());
 	// Set up the texture matrix to perform model-view and projection transforms of the frustum.
-	scene_tile_texture_matrix.gl_mult_matrix(projection_transform.get_matrix());
-	scene_tile_texture_matrix.gl_mult_matrix(view_transform.get_matrix());
-	// Load texture transform into texture unit 0.
-	renderer.gl_load_texture_matrix(GL_TEXTURE0, scene_tile_texture_matrix);
+	tile_texture_matrix.gl_mult_matrix(projection_transform.get_matrix());
+	tile_texture_matrix.gl_mult_matrix(view_transform.get_matrix());
 
-	// Bind the scene tile texture to texture unit 0.
-	renderer.gl_bind_texture(tile_texture, GL_TEXTURE0, GL_TEXTURE_2D);
+	// Transfer tile texture transform to shader program.
+	GLfloat tile_texture_float_matrix[16];
+	tile_texture_matrix.get_float_matrix(tile_texture_float_matrix);
+	glUniformMatrix4fv(
+			d_render_tile_to_scene_program->get_uniform_location("tile_texture_transform"),
+			1, GL_FALSE/*transpose*/, tile_texture_float_matrix);
 
-	// Use shader program (if supported), otherwise the fixed-function pipeline.
-	if (d_render_tile_to_scene_program && d_render_tile_to_scene_with_clipping_program)
+	// Set whether clipping is enabled.
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("using_clip_texture"),
+			clip_to_tile_frustum);
+
+	// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
+	// then the drawable starts to cover multiple quad tree nodes (instead of a single node)
+	// so we need to use a clip texture to mask off all but the node we're interested in.
+	if (clip_to_tile_frustum)
 	{
-		// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
-		// then the drawable starts to cover multiple quad tree nodes (instead of a single node)
-		// so we need to use a clip texture to mask off all but the node we're interested in.
-		if (clip_to_tile_frustum)
-		{
-			// State for the clip texture.
-			//
-			// NOTE: We also do *not* expand the tile frustum since the clip texture uses nearest
-			// filtering instead of bilinear filtering and hence we're not removing a seam between
-			// tiles (instead we are clipping adjacent tiles).
-			GLMatrix clip_texture_matrix(GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform());
-			// Set up the texture matrix to perform model-view and projection transforms of the frustum.
-			clip_texture_matrix.gl_mult_matrix(clip_projection_transform.get_matrix());
-			clip_texture_matrix.gl_mult_matrix(view_transform.get_matrix());
-			// Load texture transform into texture unit 1.
-			renderer.gl_load_texture_matrix(GL_TEXTURE1, clip_texture_matrix);
+		// Bind clip texture to texture unit 1.
+		gl.ActiveTexture(GL_TEXTURE1);
+		gl.BindTexture(GL_TEXTURE_2D, d_multi_resolution_map_cube_mesh->get_clip_texture());
 
-			// Bind the clip texture to texture unit 1.
-			renderer.gl_bind_texture(d_multi_resolution_map_cube_mesh->get_clip_texture(), GL_TEXTURE1, GL_TEXTURE_2D);
+		// State for the clip texture.
+		//
+		// NOTE: We also do *not* expand the tile frustum since the clip texture uses nearest
+		// filtering instead of bilinear filtering and hence we're not removing a seam between
+		// tiles (instead we are clipping adjacent tiles).
+		GLMatrix clip_texture_matrix(GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform());
+		// Set up the texture matrix to perform model-view and projection transforms of the frustum.
+		clip_texture_matrix.gl_mult_matrix(clip_projection_transform.get_matrix());
+		clip_texture_matrix.gl_mult_matrix(view_transform.get_matrix());
 
-
-			// Bind the shader program with clipping.
-			renderer.gl_bind_program_object(d_render_tile_to_scene_with_clipping_program.get());
-
-			// Set the tile texture sampler to texture unit 0.
-			d_render_tile_to_scene_with_clipping_program.get()->gl_uniform1i(
-					renderer, "tile_texture_sampler", 0/*texture unit*/);
-
-			// Set the clip texture sampler to texture unit 1.
-			d_render_tile_to_scene_with_clipping_program.get()->gl_uniform1i(
-					renderer, "clip_texture_sampler", 1/*texture unit*/);
-		}
-		else
-		{
-			// Bind the shader program.
-			renderer.gl_bind_program_object(d_render_tile_to_scene_program.get());
-
-			// Set the tile texture sampler to texture unit 0.
-			d_render_tile_to_scene_program.get()->gl_uniform1i(
-					renderer, "tile_texture_sampler", 0/*texture unit*/);
-		}
-	}
-	else // Fixed function...
-	{
-		// Enable texturing and set the texture function on texture unit 0.
-		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
-		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		// NOTE: Since our texture coordinates are 3D and contain the original point-on-sphere positions
-		// (before map projection) we don't need to set up texture coordinate generation from the vertices (x,y,z).
-
-		// However for the fixed-function pipeline clipping is not supported.
-		// We would need a second set of texture coordinates in the vertices that the clip texture
-		// transform could apply to - but the vertices come from GLMultiResolutionMapCubeMesh and
-		// it's too intrusive to add vertex variations in there - besides most hardware should have
-		// basic support for shaders.
-		if (clip_to_tile_frustum)
-		{
-			// Only emit warning message once.
-			static bool emitted_warning = false;
-			if (!emitted_warning)
-			{
-				qWarning() <<
-						"High zoom levels of map view NOT supported by this graphics hardware - \n"
-						"  requires shader programs - visual results will be incorrect.\n"
-						"  Most graphics hardware supports this - software renderer fallback "
-						"  might have occurred - possibly via remote desktop software.";
-				emitted_warning = true;
-			}
-		}
+		// Transfer clip texture transform to shader program.
+		GLfloat clip_texture_float_matrix[16];
+		clip_texture_matrix.get_float_matrix(clip_texture_float_matrix);
+		glUniformMatrix4fv(
+				d_render_tile_to_scene_program->get_uniform_location("clip_texture_transform"),
+				1, GL_FALSE/*transpose*/, clip_texture_float_matrix);
 	}
 
 #if 0
-	// Used to render as wire-frame meshes instead of filled textured meshes for
-	// visualising mesh density.
-	renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
+	// Used to render as wire-frame meshes instead of filled textured meshes for visualising mesh density.
+	gl.PolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #endif
 }
 
 
 double
 GPlatesOpenGL::GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_projection(
-		const GLViewport &viewport,
-		const GLMatrix &model_view_transform,
-		const GLMatrix &projection_transform) const
+		const GLViewProjection &view_projection) const
 {
 	// The map-projection coordinates of a viewport pixel (values at bottom-left and bottom-right corners of pixel).
 	double objx[2];
@@ -664,7 +736,6 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_pr
 	// Get map-projection coordinates of bottom-left viewport pixel.
 	// The depth doesn't actually matter since it's a 2D orthographic projection
 	// (for 'projection_transform' as opposed to the map projection which is handled elsewhere).
-	GLViewProjection view_projection(viewport, model_view_transform, projection_transform);
 	if (view_projection.glu_un_project(
 		// Bottom-left viewport pixel...
 		// The 'z' value does matter in 2D orthographic projection
@@ -704,101 +775,61 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_pr
 
 
 void
-GPlatesOpenGL::GLMultiResolutionRasterMapView::create_shader_programs(
-		GLRenderer &renderer)
+GPlatesOpenGL::GLMultiResolutionRasterMapView::compile_link_shader_program(
+		GL &gl)
 {
-	// Shader programs to render tiles to the scene.
-	// We fallback to the fixed-function pipeline when shader programs are not supported but
-	// we don't clip with the fixed-function pipeline which was the reason for using shader programs.
-	// The clipping is only needed for high zoom levels so for reasonable zoom levels the fixed-function
-	// pipeline (available on all hardware) should render fine.
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
 
-	const bool is_floating_point_source_raster =
-			GLTexture::is_format_floating_point(d_multi_resolution_cube_raster->get_tile_texture_internal_format());
+	// Vertex shader source.
+	GLShaderSource vertex_shader_source;
+	vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
+	vertex_shader_source.add_code_segment(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE);
 
-	//
-	// A version without clipping.
-	//
+	// Vertex shader.
+	GLShader::shared_ptr_type vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
+	vertex_shader->shader_source(vertex_shader_source);
+	vertex_shader->compile_shader();
 
-	GLShaderSource render_tile_to_scene_without_clipping_fragment_shader_source;
+	// Fragment shader source.
+	GLShaderSource fragment_shader_source;
+	fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
+	fragment_shader_source.add_code_segment(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
 
-	// Add the '#define's first.
-	if (is_floating_point_source_raster)
-	{
-		// Configure shader for floating-point rasters.
-		render_tile_to_scene_without_clipping_fragment_shader_source.add_code_segment(
-				"#define SOURCE_RASTER_IS_FLOATING_POINT\n");
-	}
+	// Fragment shader.
+	GLShader::shared_ptr_type fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
+	fragment_shader->shader_source(fragment_shader_source);
+	fragment_shader->compile_shader();
 
-	// Then add the GLSL function to bilinearly interpolate.
-	render_tile_to_scene_without_clipping_fragment_shader_source.add_code_segment_from_file(
-			GLShaderSource::UTILS_FILE_NAME);
-
-	// Then add the GLSL 'main()' function.
-	render_tile_to_scene_without_clipping_fragment_shader_source.add_code_segment_from_file(
-			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-
-	d_render_tile_to_scene_program =
-			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-					renderer,
-					GLShaderSource::create_shader_source_from_file(
-							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
-					render_tile_to_scene_without_clipping_fragment_shader_source);
-
-	if (d_render_tile_to_scene_program &&
-		is_floating_point_source_raster)
-	{
-		// We need to setup for bilinear filtering of floating-point texture in the fragment shader.
-		// Set the source tile texture dimensions (and inverse dimensions).
-		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-		d_render_tile_to_scene_program.get()->gl_uniform4f(
-				renderer,
-				"source_texture_dimensions",
-				d_tile_texel_dimension, d_tile_texel_dimension,
-				d_inverse_tile_texel_dimension, d_inverse_tile_texel_dimension);
-	}
+	// Vertex-fragment program.
+	d_render_tile_to_scene_program->attach_shader(vertex_shader);
+	d_render_tile_to_scene_program->attach_shader(fragment_shader);
+	d_render_tile_to_scene_program->link_program();
 
 	//
-	// A version with clipping.
+	// Set some shader program constants that don't change.
 	//
 
-	GLShaderSource render_tile_to_scene_with_clipping_fragment_shader_source;
+	gl.UseProgram(d_render_tile_to_scene_program);
 
-	// Add the '#define's first.
-	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment("#define ENABLE_CLIPPING\n");
-	if (is_floating_point_source_raster)
-	{
-		// Configure shader for floating-point rasters.
-		render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment(
-				"#define SOURCE_RASTER_IS_FLOATING_POINT\n");
-	}
+	// Use texture unit 0 for tile texture.
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("tile_texture_sampler"),
+			0/*texture unit*/);
+	// Use texture unit 1 for clip texture.
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("clip_texture_sampler"),
+			1/*texture unit*/);
 
-	// Then add the GLSL function to bilinearly interpolate.
-	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment_from_file(
-			GLShaderSource::UTILS_FILE_NAME);
+	// Set the tile tile texture dimensions (and inverse dimensions).
+	// This uniform is constant (only needs to be reloaded if shader program is re-linked).
+	glUniform4f(
+			d_render_tile_to_scene_program->get_uniform_location("tile_texture_dimensions"),
+			d_tile_texel_dimension, d_tile_texel_dimension,
+			d_inverse_tile_texel_dimension, d_inverse_tile_texel_dimension);
 
-	// Then add the GLSL 'main()' function.
-	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment_from_file(
-			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-
-	// Create the program object.
-	d_render_tile_to_scene_with_clipping_program =
-			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
-					renderer,
-					GLShaderSource::create_shader_source_from_file(
-							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
-					render_tile_to_scene_with_clipping_fragment_shader_source);
-
-	if (d_render_tile_to_scene_with_clipping_program &&
-		is_floating_point_source_raster)
-	{
-		// We need to setup for bilinear filtering of floating-point texture in the fragment shader.
-		// Set the source tile texture dimensions (and inverse dimensions).
-		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-		d_render_tile_to_scene_with_clipping_program.get()->gl_uniform4f(
-				renderer,
-				"source_texture_dimensions",
-				d_tile_texel_dimension, d_tile_texel_dimension,
-				d_inverse_tile_texel_dimension, d_inverse_tile_texel_dimension);
-	}
+	// Set whether tile raster is a data raster (ie, not visual).
+	glUniform1i(
+			d_render_tile_to_scene_program->get_uniform_location("using_data_raster_for_tile"),
+			!d_multi_resolution_cube_raster->tile_texture_is_visual());
 }

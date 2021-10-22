@@ -37,15 +37,15 @@
 #include "GLProgram.h"
 #include "GLTexture.h"
 #include "GLTransform.h"
-#include "GLViewport.h"
+#include "GLViewProjection.h"
 
 #include "utils/ReferenceCount.h"
 
 
 namespace GPlatesOpenGL
 {
+	class GL;
 	class GLFrustum;
-	class GLRenderer;
 
 	/**
 	 * Used to view multi-resolution cube raster in a 2D map projection of the globe.
@@ -80,21 +80,20 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLMultiResolutionCubeRasterInterface::non_null_ptr_type &multi_resolution_cube_raster,
 				const GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh)
 		{
 			return non_null_ptr_type(
 					new GLMultiResolutionRasterMapView(
-							renderer,
+							gl,
 							multi_resolution_cube_raster,
 							multi_resolution_map_cube_mesh));
 		}
 
 
 		/**
-		 * Renders the source raster, as a map projection, visible in the view frustum
-		 * (determined by the current viewport and model-view/projection transforms of @a renderer).
+		 * Renders the source raster, as a map projection, visible in the view frustum (determined by @a view_projection).
 		 *
 		 * @a cache_handle can be stored by the client to keep textures (and vertices), used during this render, cached.
 		 *
@@ -103,7 +102,8 @@ namespace GPlatesOpenGL
 		 */
 		bool
 		render(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLViewProjection &view_projection,
 				cache_handle_type &cache_handle);
 
 	private:
@@ -168,28 +168,18 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Shader program to render tiles to the scene.
-		 *
-		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
 		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_tile_to_scene_program;
-
-		/**
-		 * Shader program to render tiles to the scene with clipping.
-		 *
-		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used
-		 * but without clipping - so artifacts will appear when zoomed in far enough).
-		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_tile_to_scene_with_clipping_program;
+		GLProgram::shared_ptr_type d_render_tile_to_scene_program;
 
 
 		GLMultiResolutionRasterMapView(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLMultiResolutionCubeRasterInterface::non_null_ptr_type &multi_resolution_cube_raster,
 				const GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh);
 
 		void
 		render_quad_tree(
-				GLRenderer &renderer,
+				GL &gl,
 				const raster_quad_tree_node_type &source_raster_quad_tree_node,
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
 				cube_subdivision_cache_type &cube_subdivision_cache,
@@ -204,7 +194,7 @@ namespace GPlatesOpenGL
 
 		void
 		render_tile_to_scene(
-				GLRenderer &renderer,
+				GL &gl,
 				const raster_quad_tree_node_type &source_raster_quad_tree_node,
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
 				cube_subdivision_cache_type &cube_subdivision_cache,
@@ -216,8 +206,8 @@ namespace GPlatesOpenGL
 
 		void
 		set_tile_state(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_to_const_type &tile_texture,
+				GL &gl,
+				const GLTexture::shared_ptr_type &tile_texture,
 				const GLTransform &projection_transform,
 				const GLTransform &clip_projection_transform,
 				const GLTransform &view_transform,
@@ -225,13 +215,11 @@ namespace GPlatesOpenGL
 
 		double
 		get_viewport_pixel_size_in_map_projection(
-				const GLViewport &viewport,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform) const;
+				const GLViewProjection &view_projection) const;
 
 		void
-		create_shader_programs(
-				GLRenderer &renderer);
+		compile_link_shader_program(
+				GL &gl);
 	};
 }
 

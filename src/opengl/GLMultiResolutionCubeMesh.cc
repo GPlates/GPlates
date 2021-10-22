@@ -177,15 +177,15 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_vertex_and_index_arra
 	// Create a single OpenGL vertex array for the current cube face to contain the vertices
 	// (and vertex elements or indices) of *all* meshes.
 	GLVertexArray::shared_ptr_type vertex_array = GLVertexArray::create(gl);
-	GLBuffer::shared_ptr_type vertex_buffer = GPlatesOpenGL::GLBuffer::create(gl);
-	GLBuffer::shared_ptr_type vertex_element_buffer = GPlatesOpenGL::GLBuffer::create(gl);
+	GLBuffer::shared_ptr_type vertex_buffer = GLBuffer::create(gl);
+	GLBuffer::shared_ptr_type vertex_element_buffer = GLBuffer::create(gl);
 
 	d_meshes_vertex_array[cube_face] = vertex_array;
 	d_meshes_vertex_buffer[cube_face] = vertex_buffer;
 	d_meshes_vertex_element_buffer[cube_face] = vertex_element_buffer;
 
 	// Make sure we leave the OpenGL global state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+	GL::StateScope save_restore_state(gl);
 
 	// Bind vertex array object.
 	gl.BindVertexArray(vertex_array);

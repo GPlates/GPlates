@@ -156,7 +156,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 					attachment_state.renderbuffer,
 					GPLATES_ASSERTION_SOURCE);
 			glFramebufferRenderbuffer(
-					target,
+					target,  // attach to framebuffer currently bound to target
 					attachment,
 					attachment_state.renderbuffertarget,
 					attachment_state.renderbuffer.get()->get_resource_handle());
@@ -168,7 +168,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 					attachment_state.texture,
 					GPLATES_ASSERTION_SOURCE);
 			glFramebufferTexture(
-					target,
+					target,  // attach to framebuffer currently bound to target
 					attachment,
 					attachment_state.texture.get()->get_resource_handle(),
 					attachment_state.level);
@@ -180,7 +180,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 					attachment_state.texture,
 					GPLATES_ASSERTION_SOURCE);
 			glFramebufferTexture1D(
-					target,
+					target,  // attach to framebuffer currently bound to target
 					attachment,
 					attachment_state.textarget,
 					attachment_state.texture.get()->get_resource_handle(),
@@ -193,7 +193,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 					attachment_state.texture,
 					GPLATES_ASSERTION_SOURCE);
 			glFramebufferTexture2D(
-					target,
+					target,  // attach to framebuffer currently bound to target
 					attachment,
 					attachment_state.textarget,
 					attachment_state.texture.get()->get_resource_handle(),
@@ -206,7 +206,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 					attachment_state.texture,
 					GPLATES_ASSERTION_SOURCE);
 			glFramebufferTexture3D(
-					target,
+					target,  // attach to framebuffer currently bound to target
 					attachment,
 					attachment_state.textarget,
 					attachment_state.texture.get()->get_resource_handle(),
@@ -220,7 +220,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 					attachment_state.texture,
 					GPLATES_ASSERTION_SOURCE);
 			glFramebufferTextureLayer(
-					target,
+					target,  // attach to framebuffer currently bound to target
 					attachment,
 					attachment_state.texture.get()->get_resource_handle(),
 					attachment_state.level,
@@ -257,7 +257,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 		case ObjectState::Attachment::FRAMEBUFFER_RENDERBUFFER:
 			// Detach the currently attached renderbuffer.
 			glFramebufferRenderbuffer(
-					target,
+					target,  // detach from framebuffer currently bound to target
 					attachment,
 					context_attachment_state.renderbuffertarget,
 					0/*renderbuffer*/);
@@ -266,7 +266,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE:
 			// Detach the currently attached texture.
 			glFramebufferTexture(
-					target,
+					target,  // detach from framebuffer currently bound to target
 					attachment,
 					0/*texture*/,
 					context_attachment_state.level/*ignored*/);
@@ -275,7 +275,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_1D:
 			// Detach the currently attached texture.
 			glFramebufferTexture1D(
-					target,
+					target,  // detach from framebuffer currently bound to target
 					attachment,
 					context_attachment_state.textarget/*ignored*/,
 					0/*texture*/,
@@ -285,7 +285,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_2D:
 			// Detach the currently attached texture.
 			glFramebufferTexture2D(
-					target,
+					target,  // detach from framebuffer currently bound to target
 					attachment,
 					context_attachment_state.textarget/*ignored*/,
 					0/*texture*/,
@@ -295,7 +295,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_3D:
 			// Detach the currently attached texture.
 			glFramebufferTexture3D(
-					target,
+					target,  // detach from framebuffer currently bound to target
 					attachment,
 					context_attachment_state.textarget/*ignored*/,
 					0/*texture*/,
@@ -306,7 +306,7 @@ GPlatesOpenGL::GLFramebuffer::synchronise_current_context_attachment(
 		case ObjectState::Attachment::FRAMEBUFFER_TEXTURE_LAYER:
 			// Detach the currently attached texture.
 			glFramebufferTextureLayer(
-					target,
+					target,  // detach from framebuffer currently bound to target
 					attachment,
 					0/*texture*/,
 					context_attachment_state.level/*ignored*/,

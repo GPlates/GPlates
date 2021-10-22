@@ -300,7 +300,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_mesh(
 	}
 
 	// Make sure we leave the OpenGL global state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+	GL::StateScope save_restore_state(gl);
 
 	// Bind vertex array object.
 	gl.BindVertexArray(d_meshes_vertex_array[cube_face]);

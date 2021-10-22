@@ -54,7 +54,7 @@ uniform float ambient_lighting;
 uniform float ambient_and_diffuse_lighting_in_map_view_with_no_normal_map;
 uniform vec3 world_space_light_direction_in_globe_view;
 
-in vec4 source_raster_texture_coordinate;
+in vec4 source_texture_coordinate;
 in vec4 clip_texture_coordinate;
 in vec4 age_grid_texture_coordinate;
 in vec4 normal_map_texture_coordinate;
@@ -145,7 +145,7 @@ void main (void)
 	if (using_data_raster_for_source)
 	{
 		// Do the texture transform projective divide.
-		vec2 source_texture_coords = source_raster_texture_coordinate.st / source_raster_texture_coordinate.q;
+		vec2 source_texture_coords = source_texture_coordinate.st / source_texture_coordinate.q;
 		// Bilinearly filter the tile texture (data/coverage is in red/green channel).
 		// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
 		tile_colour = bilinearly_interpolate_data_coverage_RG(
@@ -169,7 +169,7 @@ void main (void)
 	else
 	{
 		// Use hardware bilinear interpolation of fixed-point texture.
-		tile_colour = textureProj(source_texture_sampler, source_raster_texture_coordinate);
+		tile_colour = textureProj(source_texture_sampler, source_texture_coordinate);
 
 		// Modulate the source texture's coverage with the age test result (whic is 1.0 if not using age grid).
 		//

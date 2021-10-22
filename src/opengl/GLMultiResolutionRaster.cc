@@ -32,7 +32,6 @@
 #include <boost/bind/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/cstdint.hpp>
-#include <boost/foreach.hpp>
 #include <boost/scoped_array.hpp>
 
 #include <QDebug>
@@ -46,6 +45,7 @@
 #include "GLIntersect.h"
 #include "GLNormalMapSource.h"
 #include "GLScalarFieldDepthLayersSource.h"
+#include "GLShader.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"
 #include "GLVertexUtils.h"
@@ -138,8 +138,7 @@ namespace GPlatesOpenGL
 				void main (void)
 				{
 					// Bilinearly filter the tile texture (data/coverage is in red/green channel).
-					// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
-					data = bilinearly_interpolate_data_coverge_RG(
+					data = bilinearly_interpolate_data_coverage_RG(
 						 source_texture_sampler, tex_coord, source_texture_dimensions);
 				}
 			)";
@@ -681,7 +680,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 	cached_tiles->reserve(tiles.size());
 
 	// Render each tile.
-	BOOST_FOREACH(GLMultiResolutionRaster::tile_handle_type tile_handle, tiles)
+	for (GLMultiResolutionRaster::tile_handle_type tile_handle : tiles)
 	{
 		const Tile tile = get_tile(tile_handle, gl);
 

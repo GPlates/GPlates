@@ -66,7 +66,7 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL state the way it was.
+	// Make sure we leave the OpenGL global state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
 	GLTexture::shared_ptr_type xy_clip_texture = GLTexture::create(gl);
@@ -114,7 +114,7 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL state the way it was.
+	// Make sure we leave the OpenGL global state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
 	GLTexture::shared_ptr_type z_clip_texture = GLTexture::create(gl);

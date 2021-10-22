@@ -73,8 +73,8 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::GLMultiResolutionCubeRe
 			// in the raster data if the source raster is floating-point).
 			// The nice thing is this works for both bilinear filtering and nearest neighbour filtering
 			// (ie, there'll be no visible seams in nearest neighbour filtering either).
-			GPlatesOpenGL::GLCubeSubdivision::create(
-					GPlatesOpenGL::GLCubeSubdivision::get_expand_frustum_ratio(
+			GLCubeSubdivision::create(
+					GLCubeSubdivision::get_expand_frustum_ratio(
 							d_tile_texel_dimension,
 							0.5/* half a texel */))),
 	d_cube_quad_tree(cube_quad_tree_type::create())

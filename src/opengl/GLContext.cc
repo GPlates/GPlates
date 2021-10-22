@@ -144,8 +144,8 @@ GPlatesOpenGL::GLContext::initialise()
 	// We require a main framebuffer with an alpha channel.
 	// A lot of main framebuffer and render-target rendering uses an alpha channel.
 	//
-	// TODO: Now that we're guaranteed support framebuffer objects we no longer need the main framebuffer
-	//       for render-target rendering. Maybe we don't need alpha in main buffer.
+	// TODO: Now that we're guaranteed support for framebuffer objects we no longer need the
+	//       main framebuffer for render-target rendering. Maybe we don't need alpha in main buffer.
 	//       But modern H/W will have it anyway.
 	if (!qgl_format.alpha())
 	{

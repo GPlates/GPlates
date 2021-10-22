@@ -318,7 +318,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	PROFILE_FUNC();
 
 	// Make sure we leave the OpenGL global state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+	GL::StateScope save_restore_state(gl);
 
 	// We only have one shader program (for rendering each tile to the scene).
 	// Bind it early since we'll be setting state in it as we traverse the cube quad tree.
@@ -420,8 +420,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	source_raster_cube_subdivision_cache_type::non_null_ptr_type
 			source_raster_cube_subdivision_cache =
 					source_raster_cube_subdivision_cache_type::create(
-							GPlatesOpenGL::GLCubeSubdivision::create(
-									GPlatesOpenGL::GLCubeSubdivision::get_expand_frustum_ratio(
+							GLCubeSubdivision::create(
+									GLCubeSubdivision::get_expand_frustum_ratio(
 											d_source_raster_tile_texel_dimension,
 											0.5/* half a texel */)),
 									1024/*max_num_cached_elements*/);
@@ -433,8 +433,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	{
 		age_grid_cube_subdivision_cache =
 				age_grid_cube_subdivision_cache_type::create(
-						GPlatesOpenGL::GLCubeSubdivision::create(
-								GPlatesOpenGL::GLCubeSubdivision::get_expand_frustum_ratio(
+						GLCubeSubdivision::create(
+								GLCubeSubdivision::get_expand_frustum_ratio(
 										d_age_grid_cube_raster->tile_texel_dimension,
 										0.5/* half a texel */)),
 								1024/*max_num_cached_elements*/);
@@ -447,8 +447,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	{
 		normal_map_cube_subdivision_cache =
 				normal_map_cube_subdivision_cache_type::create(
-						GPlatesOpenGL::GLCubeSubdivision::create(
-								GPlatesOpenGL::GLCubeSubdivision::get_expand_frustum_ratio(
+						GLCubeSubdivision::create(
+								GLCubeSubdivision::get_expand_frustum_ratio(
 										d_normal_map_cube_raster->tile_texel_dimension,
 										0.5/* half a texel */)),
 								1024/*max_num_cached_elements*/);
@@ -460,7 +460,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	clip_cube_subdivision_cache_type::non_null_ptr_type
 			clip_cube_subdivision_cache =
 					clip_cube_subdivision_cache_type::create(
-							GPlatesOpenGL::GLCubeSubdivision::create());
+							GLCubeSubdivision::create());
 
 	// Used to cache information (only during this 'render' method) that can be reused as we traverse
 	// the source raster for each transform in the reconstructed polygon meshes.
@@ -510,6 +510,13 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 				GLMatrix view_projection_transform_group(view_projection_transform);
 				view_projection_transform_group.gl_mult_matrix(transform_group_finite_rotation);
 
+				// Set view projection matrix for the current rotation group.
+				GLfloat view_projection_transform_group_float_matrix[16];
+				view_projection_transform_group.get_float_matrix(view_projection_transform_group_float_matrix);
+				glUniformMatrix4fv(
+						d_render_tile_to_scene_program->get_uniform_location("view_projection"),
+						1, GL_FALSE/*transpose*/, view_projection_transform_group_float_matrix);
+
 				render_transform_group(
 						gl,
 						view_projection_transform_group,
@@ -545,6 +552,13 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 				identity_finite_rotation.y().dval(),
 				identity_finite_rotation.z().dval(),
 				identity_finite_rotation.w().dval());
+
+		// Set view projection matrix.
+		GLfloat view_projection_float_matrix[16];
+		view_projection_transform.get_float_matrix(view_projection_float_matrix);
+		glUniformMatrix4fv(
+				d_render_tile_to_scene_program->get_uniform_location("view_projection"),
+				1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 		render_transform_group(
 				gl,
@@ -1554,7 +1568,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 	GLfloat source_raster_texture_float_matrix[16];
 	common_tile_draw_state.source_raster_texture_transform.get_float_matrix(source_raster_texture_float_matrix);
 	glUniformMatrix4fv(
-			d_render_tile_to_scene_program->get_uniform_location("source_raster_texture_transform"),
+			d_render_tile_to_scene_program->get_uniform_location("source_texture_transform"),
 			1, GL_FALSE/*transpose*/, source_raster_texture_float_matrix);
 
 	//
@@ -1763,22 +1777,22 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::compile_link_s
 	GL::StateScope save_restore_state(gl);
 
 	// Vertex shader source.
-	GPlatesOpenGL::GLShaderSource vertex_shader_source;
-	vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
+	GLShaderSource vertex_shader_source;
+	vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 	vertex_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 	// Vertex shader.
-	GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
+	GLShader::shared_ptr_type vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
 	vertex_shader->shader_source(vertex_shader_source);
 	vertex_shader->compile_shader();
 
 	// Fragment shader source.
-	GPlatesOpenGL::GLShaderSource fragment_shader_source;
-	fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
+	GLShaderSource fragment_shader_source;
+	fragment_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
 	fragment_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Fragment shader.
-	GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
+	GLShader::shared_ptr_type fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
 	fragment_shader->shader_source(fragment_shader_source);
 	fragment_shader->compile_shader();
 

@@ -163,7 +163,15 @@ namespace GPlatesOpenGL
 		 * each context since they cannot be shared across contexts) and now we're in a different
 		 * context so the native framebuffer object of the current context must be updated to match.
 		 *
-		 * NOTE: This framebuffer object must currently be bound.
+		 * NOTE: This framebuffer object must currently be bound to @a target.
+		 *
+		 * NOTE: @a target can be GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER or GL_FRAMEBUFFER.
+		 *       And while GL_FRAMEBUFFER is equivalent to both GL_DRAW_FRAMEBUFFER and GL_READ_FRAMEBUFFER
+		 *       for glBindFramebuffer, GL_FRAMEBUFFER is equivalent to only GL_DRAW_FRAMEBUFFER for
+		 *       glFramebufferRenderbuffer, etc. But this is OK because if GL_FRAMEBUFFER is the target
+		 *       for both glBindFramebuffer and glFramebufferRenderbuffer (for example) then the renderbuffer
+		 *       will be attached to the framebuffer bound to GL_DRAW_FRAMEBUFFER which will be the
+		 *       framebuffer bound to GL_FRAMEBUFFER (since bound to both GL_DRAW_FRAMEBUFFER and GL_READ_FRAMEBUFFER).
 		 */
 		void
 		synchronise_current_context(
