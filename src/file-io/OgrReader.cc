@@ -890,32 +890,6 @@ namespace
 
 
 	/**
-	 * This function is intended to replace the OGR macro 'wkbFlatten'.
-	 *
-	 * We need to replace OGR's 'wkbFlatten' because it uses an old-style cast, which causes
-	 * G++ to complain.  'wkbFlatten' is #defined in the OGR header file "ogr_core.h".
-	 * 
-	 * Beware:  Copying code out of header files sucks.  As time passes, we'll need to verify
-	 * that the code in this function still corresponds to the code in the macro.
-	 */
-	inline
-	OGRwkbGeometryType
-	wkb_flatten(
-			OGRwkbGeometryType type)
-	{
-		// The definition of 'wkbFlatten' is currently:
-		// #define wkbFlatten(x)  ((OGRwkbGeometryType) ((x) & (~wkb25DBit)))
-
-		// The symbol 'wkb25DBit' is a macro constant which is #defined in "ogr_core.h".
-		// Note that it's a little questionable to put the ~ operator *inside* the parens
-		// (since this could result in unintended expression evaluation due to operator
-		// precedence), but we'll copy OGR so that we'll get exactly the same behaviour,
-		// unintended expression evaluation and all.
-		return static_cast<OGRwkbGeometryType>(type & (~wkb25DBit));
-	}
-
-
-	/**
 	 * Loads a model-to-attribute map from the specified file reference object.
 	 */
 	void
@@ -1212,7 +1186,7 @@ GPlatesFileIO::OgrReader::read_features(
 		}
 
 		d_type = d_geometry_ptr->getGeometryType();
-		OGRwkbGeometryType flattened_type = wkb_flatten(d_type);
+		OGRwkbGeometryType flattened_type = wkbFlatten(d_type);
 
 		if( d_type != flattened_type){
 			read_errors.d_warnings.push_back(
