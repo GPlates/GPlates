@@ -11,6 +11,8 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    AdjustFittedPoleEstimate.cc
+    AdjustFittedPoleEstimate.h
     BuildTopology.cc
     BuildTopology.h
     CanvasTool.h
@@ -52,6 +54,8 @@ set(srcs
     PanMap.h
     ReorientGlobe.cc
     ReorientGlobe.h
+    SelectHellingerGeometries.cc
+    SelectHellingerGeometries.h
     SplitFeature.cc
     SplitFeature.h
     ZoomGlobe.cc

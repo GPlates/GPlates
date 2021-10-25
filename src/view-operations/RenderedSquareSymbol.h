@@ -34,7 +34,6 @@ namespace GPlatesViewOperations
 
 	/**
 	 * First attempt at rendered square. North-south aligned, i.e. one of the edges aligned north-south.
-	 * No control over size yet.
 	 */
 	class RenderedSquareSymbol :
 		public RenderedGeometryImpl
@@ -70,6 +69,14 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::ProximityCriteria &criteria) const
 		{
 			return d_centre.test_proximity(criteria);
+		}
+
+		virtual
+		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+				const GPlatesMaths::ProximityCriteria &criteria) const
+		{
+			return d_centre.test_vertex_proximity(criteria);
 		}
 
 

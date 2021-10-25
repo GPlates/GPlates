@@ -1,0 +1,28 @@
+# GPlates sample age model file.
+# This file format is experimental and is very likely to change. 
+#
+# Lines beginning with # are comment lines and are ignored by the parser.
+# The GEOTIMESCALE template from GPlates GROT format is:
+# @GEOTIMESCALE" ID | DOI/URL/ISSN (specify) | CiteKey | Bibliographic record/Comment"
+# Multiline information can be provided by using triple quotes """
+# All Geotimescales need to be specified before the chron/time data.
+@GEOTIMESCALE"CandeKent1995|||"
+@GEOTIMESCALE"Lourens2004|||"
+@GEOTIMESCALE"GeeKent2007|||"
+@GEOTIMESCALE"Ogg2012|||"
+# Column 1: Chron (string)
+# Columns 2 - N+1: Ages for each model (float)
+# Column N+2: Comment. The comment should begin with @C and be enclosed by double quotes, e.g. @C"A comment" 
+1no		NULL	0.781	0.780	0.781	@C"(Merkur'ev, DeMets et al. 2009)	Base of Middle Pleistocene-base of Brunhes Chron NGRN-FRAM"
+2ny 	NULL	1.778	1.770	1.778
+2An.1ny	NULL	2.581	2.581	2.581	@C"(Merkur'ev, DeMets et al. 2009) Base of Pleistocene is near base of Matuyama Chron"
+2An.3no	3.580	3.596	3.580	3.596	@C"Ehlers Base of Placentian is base of Chron C2An.3n NGRN-FRAM/ GRNSEA"
+3n.1ny	NULL	4.187	4.290	4.187
+3n.4no	NULL	5.235	5.230	5.235	@C"Ehlers Base of Miocene is in uppermost Chron C3r NGRN-FRAM/GRNSEA"
+3An.1ny	NULL	6.033	5.894	6.033	@C"(Merkur'ev, DeMets et al. 2009) (Benediktsdottir, Hey et al. 2012)-C3ro"
+4n.1ny	NULL	7.528	7.432	7.528	@C"(Merkur'ev, DeMets et al. 2009)"
+4n.2no	NULL	8.108	8.072	8.108
+4Any	8.699	8.769	NULL	8.771	@C"Ehlers NGRN-FRAM/GRNSEA"
+4Ao		NULL	9.098	9.025	9.105
+5n.1ny	NULL	9.779	9.740	9.786
+5n.2no	10.494	11.040	10.949	11-056	@C"(Benediktsdottir, Hey et al. 2012),(Gaina, Gernigon et al. 2009)"

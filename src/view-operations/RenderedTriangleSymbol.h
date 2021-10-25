@@ -1,11 +1,11 @@
 /* $Id: RenderedSmallCircle.h 9129 2010-08-06 13:17:39Z jcannon $ */
 
 /**
- * \file 
+ * \file
  * A @a RenderedGeometry derivation for @a PointOnSphere.
  * $Revision: 9129 $
  * $Date: 2010-08-06 23:17:39 +1000 (Fri, 06 Aug 2010) $
- * 
+ *
  * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -34,29 +34,29 @@
 
 namespace GPlatesViewOperations
 {
-        /**
-         * First attempt at rendered equilateral triangle. North-south aligned, i.e. an altitude is aligned north-south.
-         * May want some kind of "max triangle size" parameter, similar to arrowhead-style geometries. No control over
-         * size yet; not queryable.
-         */
+
+	/**
+	 * First attempt at rendered equilateral triangle. North-south aligned, i.e. an altitude is aligned north-south.
+	 * May want some kind of "max triangle size" parameter, similar to arrowhead-style geometries.
+	 */
 	class RenderedTriangleSymbol :
-		public RenderedGeometryImpl
+			public RenderedGeometryImpl
 	{
 	public:
 
 		RenderedTriangleSymbol(
-			const GPlatesMaths::PointOnSphere &centre,
-			const GPlatesGui::ColourProxy &colour,
-			unsigned int size,
-                        bool filled,
-                        float line_width_hint) :
-                    d_centre(centre),
-                    d_colour(colour),
-		    d_size(size),
-                    d_is_filled(filled),
-                    d_line_width_hint(line_width_hint)
+				const GPlatesMaths::PointOnSphere &centre,
+				const GPlatesGui::ColourProxy &colour,
+				unsigned int size,
+				bool filled,
+				float line_width_hint) :
+			d_centre(centre),
+			d_colour(colour),
+			d_size(size),
+			d_is_filled(filled),
+			d_line_width_hint(line_width_hint)
 
-		{  }		
+		{  }
 		
 
 		virtual
@@ -73,6 +73,14 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::ProximityCriteria &criteria) const
 		{
 			return d_centre.test_proximity(criteria);
+		}
+
+		virtual
+		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+				const GPlatesMaths::ProximityCriteria &criteria) const
+		{
+			return d_centre.test_vertex_proximity(criteria);
 		}
 		
 		
@@ -95,16 +103,16 @@ namespace GPlatesViewOperations
 			return d_line_width_hint;
 		}
 
-        bool
-        get_is_filled() const
-        {
-            return d_is_filled;
-        }
+		bool
+		get_is_filled() const
+		{
+			return d_is_filled;
+		}
 
 		unsigned int
 		get_size() const
 		{
-		    return d_size;
+			return d_size;
 		}
 
 	private:
@@ -113,8 +121,8 @@ namespace GPlatesViewOperations
 
 		GPlatesGui::ColourProxy d_colour;
 		unsigned int d_size;
-                bool d_is_filled;
-                float d_line_width_hint;
+		bool d_is_filled;
+		float d_line_width_hint;
 
 	};
 }

@@ -202,6 +202,7 @@
     <addaction name="action_Calculate_Reconstruction_Pole"/>
     <addaction name="action_Finite_Rotation_Calculator"/>
     <addaction name="action_Open_Kinematics_Tool"/>
+    <addaction name="action_Manage_Age_Models"/>
     <addaction name="separator"/>
     <addaction name="action_Open_Python_Console"/>
    </widget>
@@ -1126,6 +1127,11 @@
    </property>
    <property name="menuRole">
     <enum>QAction::ApplicationSpecificRole</enum>
+   </property>
+  </action>
+  <action name="action_Manage_Age_Models">
+   <property name="text">
+    <string>Manage &amp;Age Models</string>
    </property>
   </action>
   <action name="action_Configure_Geometry_Rendering">

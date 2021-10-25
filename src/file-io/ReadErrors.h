@@ -204,6 +204,10 @@ namespace GPlatesFileIO
 			PatternFillInLine,
 			MissingLabelSemiColon,
 
+			// The following are specific to Hellinger-fit-related file formats.
+			HellingerPickFormatError,
+			InvalidHellingerComFileFormat,
+
 			// The following are generic to all local files
 			ErrorOpeningFileForReading,
 			FileIsEmpty,
@@ -269,6 +273,10 @@ namespace GPlatesFileIO
 
 			// The following are specific to regular and categorical GMT CPT files.
 			CptLineIgnored,
+
+			// The following are specific to hellinger-fit-related files.
+			HellingerComFileNotImported,
+			HellingerPickIgnored,
 
 			// The following are generic to all local files
 			FileNotLoaded,

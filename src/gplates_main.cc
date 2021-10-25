@@ -98,8 +98,10 @@ namespace
 			enable_external_syncing(false),
 			enable_data_mining(true),//Enable data mining by default
 			enable_symbol_table(false),
+			enable_hellinger(false), // Enable hellinger by default for now - remove for release.
 			enable_deformation(false),
 			enable_scalar_field_import(false)
+
 		{
 #if defined(GPLATES_NO_PYTHON)
 			enable_python = false;
@@ -112,8 +114,10 @@ namespace
 		bool enable_external_syncing;
 		bool enable_data_mining;
 		bool enable_symbol_table;
+		bool enable_hellinger;
 		bool enable_deformation;
 		bool enable_scalar_field_import;
+
 	};
 	
 	//! Option name for loading feature collection file(s).
@@ -136,12 +140,15 @@ namespace
 	//! Enable communication with external programs
 	const char *ENABLE_EXTERNAL_SYNCING_OPTION_NAME = "enable-external-syncing";
 
+
+	//! Enable hellinger fitting tool
+	const char *ENABLE_HELLINGER_OPTION_NAME = "enable-hellinger";
+
 	//! Enable deformation.
 	const char *ENABLE_DEFORMATION_OPTION_NAME = "enable-deformation";
 
 	//! Enable import of 3D scalar fields.
 	const char *ENABLE_SCALAR_FIELD_IMPORT_OPTION_NAME = "enable-scalar-field-import";
-
 
 	/**
 	 * Prints program usage to @a os.
@@ -293,9 +300,13 @@ namespace
 		input_options.hidden_options.add_options()
 			(NO_PYTHON_OPTION_NAME, "Disable python");
 
-		// Add enable-external-syncing options
+		// Add secret enable-external-syncing options
 		input_options.hidden_options.add_options()
 			(ENABLE_EXTERNAL_SYNCING_OPTION_NAME, "Enable external syncing.");
+
+		// Add secret hellinger option
+		input_options.hidden_options.add_options()
+			(ENABLE_HELLINGER_OPTION_NAME, "Enable hellinger fitting tool.");
 
 		// Add enable-deformation options
 		input_options.hidden_options.add_options()
@@ -400,6 +411,11 @@ namespace
 		if(vm.count(ENABLE_EXTERNAL_SYNCING_OPTION_NAME))
 		{
 			command_line_options.enable_external_syncing = true;
+		}
+
+		if(vm.count(ENABLE_HELLINGER_OPTION_NAME))
+		{
+			command_line_options.enable_hellinger = true;
 		}
 
 		if (vm.count(ENABLE_DEFORMATION_OPTION_NAME))
@@ -734,6 +750,18 @@ internal_main(int argc, char* argv[])
 	{
 		GPlatesUtils::ComponentManager::instance().disable(
 			GPlatesUtils::ComponentManager::Component::python());
+	}
+
+	// Enable or disable hellinger tool.
+	if (gui_command_line_options->enable_hellinger)
+	{
+		GPlatesUtils::ComponentManager::instance().enable(
+			GPlatesUtils::ComponentManager::Component::hellinger());
+	}
+	else
+	{
+		GPlatesUtils::ComponentManager::instance().disable(
+			GPlatesUtils::ComponentManager::Component::hellinger());
 	}
 
 	// This will only install handler if any of the following conditions are satisfied:

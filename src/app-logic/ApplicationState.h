@@ -27,11 +27,13 @@
 #define GPLATES_APP_LOGIC_APPLICATIONSTATE_H
 
 #include <list>
+#include <map>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QObject>
+#include <QString>
 
 #include "FeatureCollectionFileState.h"
 #include "Layer.h"
@@ -74,6 +76,7 @@ namespace GPlatesFileIO
 
 namespace GPlatesAppLogic
 {
+	class AgeModelCollection;
 	class FeatureCollectionFileIO;
 	class LayerTask;
 	class LayerTaskRegistry;
@@ -96,6 +99,11 @@ namespace GPlatesAppLogic
 		ApplicationState();
 
 		~ApplicationState();
+
+		/**
+		 * Convenience typedef for the chron-to-time-interval map.
+		 */
+		typedef std::map<QString,std::pair<double,double> > chron_to_time_interval_map_type;
 
 		/**
 		 * Returns the centralised query point for the GPGIM.
@@ -218,6 +226,30 @@ namespace GPlatesAppLogic
 				bool suppress)
 		{
 			d_suppress_auto_layer_creation = suppress;
+		}
+
+		chron_to_time_interval_map_type &
+		get_chron_to_time_interval_map()
+		{
+			return d_chron_to_time_interval_map;
+		}
+
+		const chron_to_time_interval_map_type &
+		get_chron_to_time_interval_map() const
+		{
+			return d_chron_to_time_interval_map;
+		}
+
+		const AgeModelCollection &
+		get_age_model_collection() const
+		{
+			return *d_age_model_collection;
+		}
+
+		AgeModelCollection &
+		get_age_model_collection()
+		{
+			return *d_age_model_collection;
 		}
 
 
@@ -488,6 +520,16 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesModel::FeatureStoreRootHandle::const_weak_ref d_callback_feature_store;
 
+		/**
+		 * a std::map of type <QString, std::pair<double,double> > which represents
+		 * < chron, <younger-end-point, older-end-point> >
+		 *
+		 * The std::pair contains the youger and older end points (Ma) of the time interval which
+		 * corresponds to the chron represented by the QString.
+		 *
+		 */
+		chron_to_time_interval_map_type d_chron_to_time_interval_map;
+
 
 		/**
 		 * Make signal/slot connections that coordinate the application logic structure
@@ -513,8 +555,11 @@ namespace GPlatesAppLogic
 		// Make friend so can call @a begin_reconstruct_on_scope_exit and @a end_reconstruct_on_scope_exit.
 		friend class ScopedReconstructGuard;
 
-	private: // Transcribing...
+	private: 
 
+		boost::scoped_ptr<AgeModelCollection> d_age_model_collection;
+
+		// Transcribing...
 		GPlatesScribe::TranscribeResult
 		transcribe(
 				GPlatesScribe::Scribe &scribe,

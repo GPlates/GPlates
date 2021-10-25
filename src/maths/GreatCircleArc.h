@@ -362,6 +362,21 @@ namespace GPlatesMaths
 	arcs_are_undirected_equivalent(
 			const GreatCircleArc &arc1,
 			const GreatCircleArc &arc2);
+
+	/**
+	 * Calculates the angle, in radians, between two adjacent great circle arcs.
+	 *
+	 * Note that both edges must *not* be zero-length (ie, they must each have a rotation axis).
+	 *
+	 * Note that @a second_edge must be after @a first_edge in the sequence of edges *and*
+	 * only non-zero-length edges should be inbetween them.
+	 *
+	 * Copied from anonymous namespace of SphericalArea.cc
+	 */
+	double
+	calculate_angle_between_adjacent_non_zero_length_arcs(
+			const GreatCircleArc &first_gca,
+			const GreatCircleArc &second_gca);
 }
 
 #endif  // GPLATES_MATHS_GREATCIRCLEARC_H

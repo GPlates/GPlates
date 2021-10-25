@@ -1,0 +1,19 @@
+16 Feb 2015
+
+This folder contains sample data files for use with the GPlates 1.5 Hellinger tool.
+
+Please use the following citation for this dataset:
+Gaina, C., Roest, W. R., and Müller, R. D., 2002, Late Cretaceous Cenozoic deformation of northeast Asia, Earth Planet. Sci. Lett., 197, 273-286.
+
+Further Hellinger-tool compatible files can be found at:
+http://www.soest.hawaii.edu/PT/GSFML/HELL/index.html
+
+To load this datasets in GPlates:
+1. Open the Hellinger workflow (shortcut 7)
+2. Press the "Import" button and select the hellinger_sample_a5.com file.
+
+For further information about the Hellinger tool, see the documentation accompanying GPlates.
+
+For any questions about the Hellinger tool or this dataset, please email:
+                                    Robin Watson robin.watson@ngu.no
+                                    Carmen Gaina carmen.gaina@geo.uio.no

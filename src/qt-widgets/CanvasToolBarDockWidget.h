@@ -218,6 +218,9 @@ namespace GPlatesQtWidgets
 		void
 		set_up_small_circle_workflow();
 
+		void
+		set_up_hellinger_workflow();
+
 		Workflow
 		create_workflow(
 				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow_type,

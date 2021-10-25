@@ -31,6 +31,7 @@
 #include "CanvasToolWorkflow.h"
 #include "DigitisationCanvasToolWorkflow.h"
 #include "FeatureInspectionCanvasToolWorkflow.h"
+#include "HellingerCanvasToolWorkflow.h"
 #include "PoleManipulationCanvasToolWorkflow.h"
 #include "SmallCircleCanvasToolWorkflow.h"
 #include "TopologyCanvasToolWorkflow.h"
@@ -318,6 +319,13 @@ GPlatesGui::CanvasToolWorkflows::create_canvas_tool_workflows(
 					*this,
 					geometry_operation_state,
 					measure_distance_state,
+					status_bar_callback,
+					view_state,
+					viewport_window));
+
+	d_canvas_tool_workflows[WORKFLOW_HELLINGER].reset(
+			new HellingerCanvasToolWorkflow(
+					*this,
 					status_bar_callback,
 					view_state,
 					viewport_window));
