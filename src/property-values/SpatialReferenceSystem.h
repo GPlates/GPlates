@@ -27,7 +27,7 @@
 #define GPLATES_PROPERTY_VALUES_SPATIALREFERENCESYSTEM_H
 
 #include <memory>
-#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -111,7 +111,15 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		boost::scoped_ptr<OGRSpatialReference> d_ogr_srs;
+		//! Delete OGRSpatialReference objects using 'OSRDestroySpatialReference()'.
+		struct OGRSpatialReferenceDeleter
+		{
+			void
+			operator()(
+					OGRSpatialReference *ogr_srs);
+		};
+
+		boost::shared_ptr<OGRSpatialReference> d_ogr_srs;
 		
 
 		explicit

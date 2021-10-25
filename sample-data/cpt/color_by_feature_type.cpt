@@ -3,53 +3,57 @@
 # 
 # Column 1 has the base feature type without the 'gpml:' prefix
 # Column 2 has the colour name, or R/G/B valaues
-# Column 3 has the full feature type with the 'gpml:' prefix
+# Column 3 is the label(comment) leading by a ";"
 #
+# The categorical CPT entries look like this
+# 	key1	Fill	[;label]
+#	...	 	 
+#	keyn	Fill	[;label]
 # ------------------------------------------------------------------------
 # Basic tectonic features
 #
-TopologicalClosedPlateBoundary   orange       gpml:TopologicalClosedPlateBoundary
-TopologicalNetwork               blue         gpml:TopologicalNetwork
-Coastline                        green        gpml:Coastline
-ExtendedContinentalCrust         blue         gpml:ExtendedContinentalCrust
-TerraneBoundary                  blue         gpml:TerraneBoundary
-UnclassifiedFeature              green        gpml:UnclassifiedFeature
-MeshNode                         white        gpml:MeshNode
-HotSpot                          blue         gpml:HotSpot
+TopologicalClosedPlateBoundary   orange       ;gpml:TopologicalClosedPlateBoundary
+TopologicalNetwork               blue         ;gpml:TopologicalNetwork
+Coastline                        green        ;gpml:Coastline
+ExtendedContinentalCrust         blue         ;gpml:ExtendedContinentalCrust
+TerraneBoundary                  blue         ;gpml:TerraneBoundary
+UnclassifiedFeature              green        ;gpml:UnclassifiedFeature
+MeshNode                         white        ;gpml:MeshNode
+HotSpot                          blue         ;gpml:HotSpot
 #
-MidOceanRidge                    255/10/10    gpml:MidOceanRidge
-Isochron                         200/150/150  gpml:Isochron
-SubductionZone                   209/150/150  gpml:SubductionZone
+MidOceanRidge                    255/10/10    ;gpml:MidOceanRidge
+Isochron                         200/150/150  ;gpml:Isochron
+SubductionZone                   209/150/150  ;gpml:SubductionZone
 #
 # ------------------------------------------------------------------------
 # Macrostrat Features
 #
-RockUnit_carbonate               blue        gpml:RockUnit_carbonate
-RockUnit_siliciclastic           tan         gpml:RockUnit_siliciclastic
-RockUnit_evaporite               lightred    gpml:RockUnit_evaporite
-RockUnit_organic                 black       gpml:RockUnit_organic
-RockUnit_chemical                darkblue    gpml:RockUnit_chemical
-RockUnit_volcanic                lightgreen  gpml:RockUnit_volcanic
-RockUnit_plutonic                darkgreen   gpml:RockUnit_plutonic
-RockUnit_metamorphic             brown       gpml:RockUnit_metamorphic
-RockUnit_indeterminate_igneous   green       gpml:RockUnit_indeterminate_igneous
+RockUnit_carbonate               blue        ;gpml:RockUnit_carbonate
+RockUnit_siliciclastic           tan         ;gpml:RockUnit_siliciclastic
+RockUnit_evaporite               lightred    ;gpml:RockUnit_evaporite
+RockUnit_organic                 black       ;gpml:RockUnit_organic
+RockUnit_chemical                darkblue    ;gpml:RockUnit_chemical
+RockUnit_volcanic                lightgreen  ;gpml:RockUnit_volcanic
+RockUnit_plutonic                darkgreen   ;gpml:RockUnit_plutonic
+RockUnit_metamorphic             brown       ;gpml:RockUnit_metamorphic
+RockUnit_indeterminate_igneous   green       ;gpml:RockUnit_indeterminate_igneous
 # 
-FossilCollection_small           lightgreen  gpml:FossilCollection_small
-FossilCollection_medium          green       gpml:FossilCollection_medium
-FossilCollection_large           darkgreen   gpml:FossilCollection_large
+FossilCollection_small           lightgreen  ;gpml:FossilCollection_small
+FossilCollection_medium          green       ;gpml:FossilCollection_medium
+FossilCollection_large           darkgreen   ;gpml:FossilCollection_large
 #
 # ------------------------------------------------------------------------
 # NAVDAT Features
 #
-NavdatSampleMafic                red          gpml:NavdatSampleMafic
-NavdatSampleIntermediate         orange       gpml:NavdatSampleIntermediate
-NavdatSampleFelsicLow            yellow       gpml:NavdatSampleFelsicLow
-NavdatSampleFelsicHigh           gold         gpml:NavdatSampleFelsicHigh
+NavdatSampleMafic                red          ;gpml:NavdatSampleMafic
+NavdatSampleIntermediate         orange       ;gpml:NavdatSampleIntermediate
+NavdatSampleFelsicLow            yellow       ;gpml:NavdatSampleFelsicLow
+NavdatSampleFelsicHigh           gold         ;gpml:NavdatSampleFelsicHigh
 #
 # ------------------------------------------------------------------------
 # General mapping feature types
 #
-PoliticalBoundary                white        gpml:PoliticalBoundary
+PoliticalBoundary                white        ;gpml:PoliticalBoundary
 #
 # ------------------------------------------------------------------------
 # All other feature types:

@@ -300,16 +300,21 @@ namespace GPlatesUtils
 
 			// erase() that takes iterator as argument.
 #ifdef _MSC_VER
-#if _MSC_VER <= 1400
+	#if _MSC_VER <= 1400
 			// VS2005
 			typedef iterator_type (map_type::*erase1)(iterator_type);
-#else
+	#else
 			// VS2008
 			typedef iterator_type (map_type::*erase1)(const_iterator_type);
-#endif
+	#endif
 #else
+	#ifdef __clang__
+			// clang
+			typedef iterator_type (map_type::*erase1)(const_iterator_type);
+	#else
 			// G++
 			typedef void (map_type::*erase1)(iterator_type);
+	#endif
 #endif
 			
 			// non-const find().

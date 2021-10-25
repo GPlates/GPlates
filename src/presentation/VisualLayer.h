@@ -49,6 +49,11 @@ namespace GPlatesAppLogic
 	class ApplicationState;
 }
 
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryParameters;
+}
+
 namespace GPlatesPresentation
 {
 	class VisualLayerRegistry;
@@ -90,6 +95,7 @@ namespace GPlatesPresentation
 				const VisualLayerRegistry &visual_layer_registry,
 				GPlatesAppLogic::Layer &layer,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
 				int layer_number);
 
 		/**
@@ -235,6 +241,7 @@ namespace GPlatesPresentation
 
 		VisualLayers &d_visual_layers;
 		const VisualLayerRegistry &d_visual_layer_registry;
+		const GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
 
 		/**
 		 * The reconstruct graph layer for which this is the counterpart in the

@@ -314,21 +314,6 @@ GPlatesFileIO::CptReaderInternals::is_pattern_fill_specification(
 }
 
 
-boost::optional<QString>
-GPlatesFileIO::CptReaderInternals::parse_regular_cpt_label(
-		const QString &token)
-{
-	if (token.startsWith(';'))
-	{
-		return token.right(token.length() - 1);
-	}
-	else
-	{
-		throw BadTokenException();
-	}
-}
-
-
 /************************************************
 * New implementation of cpt reader.
 *************************************************/
@@ -347,66 +332,120 @@ GPlatesFileIO::CptParser::CptParser(const QString& file_path) :
 	QTextStream in(&file);
 	while (!in.atEnd()) 
 	{
-		QString line = in.readLine().simplified();
+		//Remove the white spaces from the start and the end.
+		//Keep the white spaces inside the line 
+		//because they could be a part of the "keys" enclosed in quotation marks.
+		//For example 'Marine   abyssal' 150/100/230,
+		//the white spaces enclosed by single quotes should be preserved.
+		QString line = in.readLine().trimmed();
 		if(line.length() > 0)
 		{
 			try
 			{
-			process_line(line);
-	}
+				process_line(line);
+			}
 			catch (GPlatesGlobal::LogException& e)
 			{
 				std::ostringstream ostr;
 				e.write(ostr);
 				qWarning() << ostr.str().c_str();
 			}
-					
 		}
 	}
 }
 
 
-void
-GPlatesFileIO::CptParser::concat_quoted_strings(
-		QStringList& tokens)
+QStringList
+GPlatesFileIO::CptParser::split_into_tokens(
+		const QString& line)
 {
-	QString buf;
-	QStringList::iterator it = tokens.begin(), it_tmp;
-	bool looking_string_end = false;
-	QChar quote;
-	for(; it != tokens.end(); it++)
+	QStringList tokens;
+	QString token;
+	bool inside_quotes = false, inside_token = false;
+	for(QString::const_iterator it=line.begin(); it!=line.end(); it++)
 	{
-		if(looking_string_end)
+		if((*it).isSpace())
 		{
-			buf += *it;
-			if(it->endsWith(quote) )
+			if(inside_quotes)
 			{
-				buf.remove(quote);
-				(*it_tmp) = buf;
-				looking_string_end = false;
+				token.append(*it);//preserve the spaces inside quotation marks.
 			}
-			*it="";
-		}
-		else
-		{
-			if(it->startsWith(QLatin1Char('\"')) || it->startsWith(QLatin1Char('\'')) )
+			else if(!inside_token)
 			{
-				quote = it->at(0); 
-				if(!it->endsWith(quote))
+				continue;//ignore the leading spaces and the spaces between tokens
+			}
+			else
+			{
+				qDebug() << "token: " << token;
+				tokens.append(token);//the current token ends.
+				token = "";
+				inside_token = false;
+			}
+		}
+		else if((*it)=='\"' || (*it)=='\'')
+		{
+			if(!inside_quotes)
+			{
+				if(inside_token)
 				{
-					looking_string_end = true;
-					buf = *it;
-					it_tmp = it;
+					token.append(*it);//the quote is a part of a token
 				}
 				else
 				{
-					it->remove(quote);
+					inside_quotes = true; // the begin of quotation marks
 				}
-				
+			}else
+			{
+				//the end of quotation marks
+				qDebug() << "token: " << token;
+				tokens.append(token);
+				token = "";
+				inside_quotes = false;
+			}
+		}
+		else if((*it)==';')
+		{
+			if(inside_token || inside_quotes)
+			{
+				token.append(*it);
+			}
+			else
+			{
+				for(;it!=line.end(); it++) //the rest of the line is "label"
+				{
+					token.append(*it);
+				}
+				qDebug() << "token: " << token;
+				tokens.append(token);
+				token = "";
+				break;
+			}
+		}
+		else //other characters
+		{
+			if(inside_token || inside_quotes)
+			{
+				token.append(*it); //normal characters inside token
+			}else
+			{
+				//start a new token
+				if(!token.isEmpty())
+				{
+					qDebug() << "token: " << token;
+					tokens.append(token);
+					token = "";
+				}
+				token.append(*it);
+				inside_token = true;
 			}
 		}
 	}
-	tokens.removeAll("");//remove all empty string left in the tokens.
+	if(!token.isEmpty())
+	{
+		qDebug() << "token: " << token;
+		tokens.append(token);
+	}
+	return tokens;
 }
 
 
@@ -415,7 +454,7 @@ GPlatesFileIO::CptParser::process_line(
 		const QString& line)
 {
 	//qDebug() << "Processing: " << line;
-	//we can use finite state machine here,
+	//we could use finite state machine here,
 	//however, since cpt file is so simple that FSM is a little bit overkilled...
 
 	if(line.startsWith('#'))
@@ -424,10 +463,8 @@ GPlatesFileIO::CptParser::process_line(
 		return;
 	}
 
-	QStringList tokens = line.split(' ');
+	QStringList tokens = split_into_tokens(line);
 	
-	concat_quoted_strings(tokens);
-
 	if(tokens.size() < 2) // no enough tokens
 	{
 		qWarning() << "Invalid line in cpt file: [" << line << "]";

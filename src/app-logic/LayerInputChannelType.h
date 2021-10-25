@@ -28,8 +28,8 @@
 
 #include <vector>
 #include <boost/optional.hpp>
-#include <QString>
 
+#include "LayerInputChannelName.h"
 #include "LayerTaskType.h"
 
 
@@ -68,7 +68,7 @@ namespace GPlatesAppLogic
 		 * Constructor for an input channel to be connected to an input file.
 		 */
 		LayerInputChannelType(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				ChannelDataArity channel_data_arity) :
 			d_input_channel_name(input_channel_name),
 			d_channel_data_arity(channel_data_arity)
@@ -80,7 +80,7 @@ namespace GPlatesAppLogic
 		 * The types of layers is specified in @a layer_input_types.
 		 */
 		LayerInputChannelType(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				ChannelDataArity channel_data_arity,
 				const std::vector<LayerTaskType::Type> &layer_input_types) :
 			d_input_channel_name(input_channel_name),
@@ -93,7 +93,7 @@ namespace GPlatesAppLogic
 		 * of *one* type of layer only.
 		 */
 		LayerInputChannelType(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				ChannelDataArity channel_data_arity,
 				LayerTaskType::Type layer_input_type) :
 			d_input_channel_name(input_channel_name),
@@ -105,7 +105,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the name of this input channel.
 		 */
-		const QString &
+		LayerInputChannelName::Type
 		get_input_channel_name() const
 		{
 			return d_input_channel_name;
@@ -149,7 +149,7 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-		QString d_input_channel_name;
+		LayerInputChannelName::Type d_input_channel_name;
 		ChannelDataArity d_channel_data_arity;
 
 		/**

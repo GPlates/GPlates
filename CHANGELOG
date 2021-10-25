@@ -1,3 +1,42 @@
+GPlates 1.5
+===========
+
+Changes since 1.4:
+
+ * Added project files:
+   * Implemented new scribe/serialisation system for backward/forward compatible transcribing of sessions/projects.
+   * Currently saves same session state as GPlates 1.4 (but also to project files) - future releases will save more.
+ * Added new kinematics tool:
+   * displays table of latitude, longitude, velocity, and velocity-related quantities for a given lat-lon point, plate ID, and range of times
+   * displays graph of above quantities against time	
+   * exports table to text file
+   * kinematic tool settings dialog to change details of the velocity calculations
+   * kinematic tool settings are saved in user preferences
+   * auto-fills point data from focussed feature
+   * auto-fills time ranges from animation settings
+ * Added support for import and export of GeoJSON format feature collections.
+ * Flag read error when OGR can't find geometries in a multi-geometry.
+ * Fixed issue with overwriting OGR-format files to multiple folders:
+   * i.e. when exporting collections with multiple geom types.
+ * Fixed crash on GPlates shutdown (in debug build) on Windows due to Windows using a separate memory heap per DLL.
+ * Fixed crash in raster colour scale when colour palette has no colour entries.
+ * Increased upper limit on Generated CitcomS Velocity Domain Points diamond size to essentially unlimited (2^30 + 1).
+ * Create Feature Dialog improvements:
+   * Allow user to create a conjugate feature for any feature that has a conjugate plate id.
+   * Remember all properties of previously digitised feature so can re-use for next feature (if same type).
+   * Select same feature type each time Create Feature dialog is invoked.
+   * Remember previous selection when choosing feature collection or choosing properties.
+ * PLATES format reads conjugate plate ids for feature types that support it (according to GPGIM) instead of just for Isochrons.
+ * Fixed features not getting highlighted in Modify Reconstruction Pole tool.
+ * Fixed incorrect position of stage pole in MovePoleWidget.
+ * Updated CPT parser for support GMT 5.
+ * Export GUI options for forcing polygon orientation during resolved topology (general) export.
+ * Partial support for Mac Retina displays (fixes blurry fonts/dialogs but not the globe/map view).
+ * Pop up warning message when 'surface polygons mask' is not supported for 3D scalar fields.
+ * Added dialog for configuring rendered geometry parameters for canvas tools.
+ * Fix crash on some graphics hardware when selecting 'surface polygons mask' on isosurfaces.
+ * Export a raster's spatial reference system (eg, for ArcGIS).
+
 GPlates 1.4
 ===========
 
@@ -8,7 +47,7 @@ Changes since 1.3:
      * User specified lat/lon export region and resolution.
    * Added GDAL and RGBA raster writers.
      * GDAL writes colour (as RGBA bands) or floating-point (with NaN no-data value).
-	 * RGBA writes only colour.
+    * RGBA writes only colour.
    * Supported numerical raster formats: NetCDF, GMT NetCDF, GeoTIFF and Erdas Imagine.
    * New supported colour raster formats: GeoTIFF and Erdas Imagine.
    * Surface relief lighting included in colour raster export.
@@ -59,7 +98,7 @@ Changes since 1.3:
    * User can set pole location to north pole ('constrain latitude') for Virtual Geomagnetic poles.
    * User can constrain pole location to moving/fixed stage pole of focused feature.
      * Shows current moving and fixed plate ids.
-	 * Checkbox to track and update stage pole location over time.
+     * Checkbox to track and update stage pole location over time.
  * New lighting canvas tool (currently disabled until official release of volume viz. in 1.5):
    * Enables/disables lighting per primitive type.
    * Optionally detach light direction from camera.
@@ -115,11 +154,11 @@ Changes since 1.3:
    * Support transparent colours when rendering isosurface and cross sections of 3D scalar fields.
    * Separate input channels for cross sections and surface polygons mask (no longer share same input channel).
      * Surface polygons mask can now apply to cross-sections.
-	 * Added option to disable surface polygons mask without having to disconnect input layers.
+    * Added option to disable surface polygons mask without having to disconnect input layers.
    * Colour palette improvements;
      * Optionally remap scalar/gradient palette range.
      * Adjust range using mean and standard deviation of scalar field.
-	   * Separate controls for scalar value and gradient magnitude value.
+    * Separate controls for scalar value and gradient magnitude value.
      * Separate colour palettes for scalar and gradient colour modes.
      * Added default colour palette for gradient magnitudes.
    * Increase iso-surface performance, when rotating globe with mouse, by reducing iso-surface sampling rate by a user-defined factor.

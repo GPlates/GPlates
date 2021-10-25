@@ -100,6 +100,13 @@ namespace GPlatesGui
 				const QString &key,
 				QAbstractButton *reset_button);
 
+		void
+		link_button_group_to_preference(
+				QButtonGroup *button_group,
+				GPlatesUtils::ConfigInterface &config,
+				const QString &key,
+				QAbstractButton *reset_button);
+
 
 		class ConfigWidgetAdapter :
 				public QObject
@@ -167,6 +174,58 @@ namespace GPlatesGui
 			
 		private:
 			QPointer<QWidget> d_widget_ptr;
+			GPlatesUtils::ConfigInterface &d_config;
+			QString d_key;
+		};
+
+		/**
+		 * @brief The ConfigButtonGroupAdapter class
+		 * - this is an awkward workaround for storing values from a group of radio buttons
+		 * in preferences.
+		 */
+		class ConfigButtonGroupAdapter :
+				public QObject
+		{
+			Q_OBJECT
+		public:
+			explicit
+			ConfigButtonGroupAdapter(
+					QButtonGroup *button_group,
+					GPlatesUtils::ConfigInterface &config,
+					const QString &key);
+
+			virtual
+			~ConfigButtonGroupAdapter()
+			{  }
+
+		Q_SIGNALS:
+
+
+			void
+			value_changed(
+					int value);
+
+
+		public Q_SLOTS:
+
+			void
+			handle_key_value_updated(
+					QString key);
+
+			void
+			handle_checked_button_changed(
+					int index);
+
+			void
+			set_checked_button(
+					int index);
+
+			void
+			handle_reset_clicked();
+
+
+		private:
+			QPointer<QButtonGroup> d_button_group_ptr;
 			GPlatesUtils::ConfigInterface &d_config;
 			QString d_key;
 		};

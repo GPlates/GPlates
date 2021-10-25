@@ -28,8 +28,10 @@
 #ifndef GPLATES_GUI_RASTERCOLOURPALETTE_H
 #define GPLATES_GUI_RASTERCOLOURPALETTE_H
 
+#include <utility>
 #include <vector>
 #include <boost/cstdint.hpp>
+#include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
 #include "Colour.h"
@@ -243,6 +245,12 @@ namespace GPlatesGui
 		double
 		get_upper_bound() const;
 
+		boost::optional< std::pair<double, double> >
+		get_range() const
+		{
+			return std::make_pair(get_lower_bound(), get_upper_bound());
+		}
+
 		const std::vector<ColourSlice> &
 		get_colour_slices() const
 		{
@@ -272,6 +280,7 @@ namespace GPlatesGui
 		DefaultRasterColourPalette(
 				double mean,
 				double std_dev);
+
 
 		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
 		double d_mean;
@@ -352,6 +361,12 @@ namespace GPlatesGui
 		double
 		get_upper_bound() const;
 
+		boost::optional< std::pair<double, double> >
+		get_range() const
+		{
+			return std::make_pair(get_lower_bound(), get_upper_bound());
+		}
+
 		const std::vector<ColourSlice> &
 		get_colour_slices() const
 		{
@@ -388,6 +403,7 @@ namespace GPlatesGui
 				GPlatesGui::Colour mid_colour,
 				GPlatesGui::Colour min_colour,
 				GPlatesGui::Colour bg_colour);
+
 
 		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
 
@@ -473,6 +489,12 @@ namespace GPlatesGui
 
 		double
 		get_upper_bound() const;
+
+		boost::optional< std::pair<double, double> >
+		get_range() const
+		{
+			return std::make_pair(get_lower_bound(), get_upper_bound());
+		}
 
 		const std::vector<ColourSlice> &
 		get_colour_slices() const
@@ -577,6 +599,12 @@ namespace GPlatesGui
 			return 1;
 		}
 
+		boost::optional< std::pair<double, double> >
+		get_range() const
+		{
+			return std::make_pair(get_lower_bound(), get_upper_bound());
+		}
+
 		const std::vector<ColourSlice> &
 		get_colour_slices() const
 		{
@@ -667,6 +695,12 @@ namespace GPlatesGui
 			return 1;
 		}
 
+		boost::optional< std::pair<double, double> >
+		get_range() const
+		{
+			return std::make_pair(get_lower_bound(), get_upper_bound());
+		}
+
 		const std::vector<ColourSlice> &
 		get_colour_slices() const
 		{
@@ -694,6 +728,7 @@ namespace GPlatesGui
 	private:
 
 		DefaultScalarFieldGradientColourPalette();
+
 
 		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
 	};

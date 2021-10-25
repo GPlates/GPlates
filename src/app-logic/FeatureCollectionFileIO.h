@@ -38,7 +38,7 @@
 #include <QList>
 #include <QtGlobal>
 
-#include "app-logic/FeatureCollectionFileState.h"
+#include "FeatureCollectionFileState.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/File.h"
@@ -83,7 +83,7 @@ namespace GPlatesAppLogic
 				const GPlatesModel::Gpgim &gpgim,
 				GPlatesModel::ModelInterface &model,
 				GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
-				GPlatesAppLogic::FeatureCollectionFileState &file_state);
+				FeatureCollectionFileState &file_state);
 
 
 		/**
@@ -98,7 +98,7 @@ namespace GPlatesAppLogic
 		 * require any referenced features to be loaded into the model (and they might
 		 * be in other files in the group).
 		 */
-		void
+		std::vector<FeatureCollectionFileState::file_reference>
 		load_files(
 				const QStringList &file_names);
 
@@ -115,7 +115,7 @@ namespace GPlatesAppLogic
 		 * The file is read using the default file configuration options for its file format
 		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
-		void
+		FeatureCollectionFileState::file_reference
 		load_file(
 				const QString &filename);
 
@@ -127,7 +127,7 @@ namespace GPlatesAppLogic
 		 * The file is read using the default file configuration options for its file format
 		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
 		 */
-		void
+		std::vector<FeatureCollectionFileState::file_reference>
 		load_urls(
 				const QList<QUrl> &urls);
 
@@ -139,7 +139,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		reload_file(
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
+				FeatureCollectionFileState::file_reference file);
 
 
 		/**
@@ -147,14 +147,14 @@ namespace GPlatesAppLogic
 		 */
 		void
 		unload_file(
-				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
+				FeatureCollectionFileState::file_reference file);
 
 
 		/**
 		 * Creates a fresh, empty, FeatureCollection. Associates a 'dummy'
 		 * FileInfo for it, and registers it with FeatureCollectionFileState.
 		 */
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference
+		FeatureCollectionFileState::file_reference
 		create_empty_file();
 
 
@@ -166,7 +166,7 @@ namespace GPlatesAppLogic
 		 * originally loaded from a file - and you want the new file to appear in the
 		 * list of loaded files maintained by FeatureCollectionFileState.
 		 */
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference
+		FeatureCollectionFileState::file_reference
 		create_file(
 				const GPlatesFileIO::File::non_null_ptr_type &file,
 				bool save = true);
@@ -230,7 +230,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The loaded feature collection files.
 		 */
-		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
+		FeatureCollectionFileState &d_file_state;
 
 
 		file_seq_type

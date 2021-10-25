@@ -221,3 +221,65 @@ GPlatesMaths::calculate_vector_components_magnitude_and_azimuth(
 
 	return std::make_pair(real_t(magnitude), real_t(azimuth));
 }
+
+
+std::pair<GPlatesMaths::Vector3D, GPlatesMaths::real_t>
+GPlatesMaths::calculate_velocity_vector_and_omega(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesMaths::FiniteRotation &fr_t1,
+		const GPlatesMaths::FiniteRotation &fr_t2,
+		const boost::optional<GPlatesMaths::UnitVector3D> &axis_hint)
+{
+	static const real_t radius_of_earth = 6.378e8;  // in centimetres.
+
+	const UnitQuaternion3D &q1 = fr_t1.unit_quat();
+	const UnitQuaternion3D &q2 = fr_t2.unit_quat();
+
+	// This quaternion represents a rotation from t2 to t1.
+	//
+	// Note the t1 is a more recent time (closer to present day) than t2.
+	//
+	// R(t2->t1,A->P)
+	//    = R(0->t1,A->P) * R(t2->0,A->P)
+	//    = R(0->t1,A->P) * inverse[R(0->t2,A->P)]
+	//
+	// ...where 'A' is the anchor plate and 'P' is the plate the point is in.
+	//
+	//
+	// NOTE: Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
+	// that q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
+	// So check if we're using the longer path and negate either quaternion in order to
+	// take the shorter path. It actually doesn't matter which one we negate.
+	// We don't normally make this correction because it limits the user's (who creates total poles
+	// in the rotation file) ability to select the short or the long path. However since the velocity
+	// calculation uses two adjacent times (separated by 1Ma usually) then the shortest path should
+	// be fine. And also the SLERP used in 'FiniteRotation::interpolate()' chooses the shortest path
+	// between two adjacent total poles (two different times for the same plate) so the calculated
+	// velocities should follow that interpolated motion anyway.
+	//
+	const UnitQuaternion3D q = dot(q1, q2).is_precisely_less_than(0)
+			? q1 * (-q2).get_inverse()
+			: q1 * q2.get_inverse();
+
+	if ( represents_identity_rotation( q ) )
+	{
+		// The finite rotations must be identical.
+		return std::make_pair(Vector3D(0, 0, 0),0.);
+	}
+
+	// The axis hint does not affect our results because, in our velocity calculation, the signs of
+	// the axis and angle cancel each other out so it doesn't matter if axis/angle or -axis/-angle.
+	const UnitQuaternion3D::RotationParams params = q.get_rotation_params(axis_hint);
+
+	// Angular velocity of rotation (radians per million years).
+	real_t omega = params.angle;
+
+	// Axis of roation
+	UnitVector3D rotation_axis = params.axis;
+
+	// Cartesian (x, y, z) velocity (cm/yr).
+	Vector3D velocity_xyz = omega * (radius_of_earth * 1.0e-6) *
+		cross(rotation_axis, point.position_vector() );
+
+	return std::make_pair(velocity_xyz,omega);
+}

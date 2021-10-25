@@ -75,9 +75,18 @@ namespace GPlatesQtWidgets
 				const QString &filename_template);
 
 	private Q_SLOTS:
+
 		void
-		react_check_box_state_changed(
+		react_export_resolved_geometry_check_box_state_changed(
 				int state);
+
+		void
+		react_force_polygon_orientation_check_box_state_changed(
+				int state);
+
+		void
+		react_polygon_orientation_combobox_state_changed(
+				int index);
 
 	private:
 		explicit

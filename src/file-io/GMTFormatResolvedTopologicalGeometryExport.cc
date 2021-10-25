@@ -34,6 +34,7 @@
 #include "GMTFormatGeometryExporter.h"
 #include "GMTFormatHeader.h"
 
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
 
 #include "file-io/FileInfo.h"
@@ -87,7 +88,8 @@ GPlatesFileIO::GMTFormatResolvedTopologicalGeometryExport::export_geometries(
 		const referenced_files_collection_type &referenced_files,
 		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation)
 {
 	// Open the file.
 	QFile output_file(file_info.filePath());
@@ -146,8 +148,16 @@ GPlatesFileIO::GMTFormatResolvedTopologicalGeometryExport::export_geometries(
 			// Print the header lines.
 			gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
 
+			// Orient polygon if forcing orientation and geometry is a polygon.
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geometry =
+					force_polygon_orientation
+					? GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
+							rtg->resolved_topology_geometry(),
+							force_polygon_orientation.get())
+					: rtg->resolved_topology_geometry();
+
 			// Write the resolved geometry.
-			geom_exporter.export_geometry(rtg->resolved_topology_geometry()); 
+			geom_exporter.export_geometry(resolved_geometry);
 		}
 	}
 }

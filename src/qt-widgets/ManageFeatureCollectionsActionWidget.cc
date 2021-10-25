@@ -89,7 +89,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsActionWidget::update(
 		button_save->setEnabled(false);
 	}
 
-	// Disable the edit configuration button if a edit configuration is not available.
+	// Disable the edit configuration button if an edit configuration is not available.
 	if (!enable_edit_configuration)
 	{
 		button_edit_configuration->setEnabled(false);

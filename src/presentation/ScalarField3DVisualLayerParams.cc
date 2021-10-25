@@ -25,15 +25,57 @@
 
 #include "ScalarField3DVisualLayerParams.h"
 
+#include "ViewState.h"
+
 #include "app-logic/ScalarField3DLayerTask.h"
 
 #include "file-io/ScalarField3DFileFormatReader.h"
 
 #include "gui/RasterColourPalette.h"
 
+#include "opengl/GLContext.h"
+#include "opengl/GLRenderer.h"
+#include "opengl/GLScalarField3D.h"
+
+#include "qt-widgets/GlobeAndMapWidget.h"
+#include "qt-widgets/ReconstructionViewWidget.h"
+#include "qt-widgets/ViewportWindow.h"
+
+
+namespace GPlatesPresentation
+{
+	namespace
+	{
+		/**
+		 * Returns true if 3D scalar fields support 'surface polygons mask'.
+		 */
+		bool
+		determine_if_surface_polygons_mask_supported(
+				ViewState &view_state)
+		{
+			// Get an OpenGL context.
+			GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
+					view_state.get_other_view_state().reconstruction_view_widget().globe_and_map_widget()
+							.get_active_gl_context();
+
+			// Make sure the context is currently active.
+			gl_context->make_current();
+
+			// We need an OpenGL renderer before we can query support.
+			GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
+
+			// Start a begin_render/end_render scope.
+			GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
+
+			return GPlatesOpenGL::GLScalarField3D::supports_surface_fill_mask(*renderer);
+		}
+	}
+}
+
 
 GPlatesPresentation::ScalarField3DVisualLayerParams::ScalarField3DVisualLayerParams(
-		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
+		GPlatesAppLogic::LayerTaskParams &layer_task_params,
+		GPlatesPresentation::ViewState &view_state) :
 	VisualLayerParams(layer_task_params),
 	d_render_mode(GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_ISOSURFACE),
 	d_isosurface_deviation_window_mode(GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_DEVIATION_WINDOW_MODE_NONE),
@@ -42,8 +84,14 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::ScalarField3DVisualLayerPar
 	d_scalar_colour_palette(GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette::SCALAR),
 	d_initialised_scalar_colour_palette_range_mapping(false),
 	d_gradient_colour_palette(GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette::GRADIENT),
-	d_initialised_gradient_colour_palette_range_mapping(false)
+	d_initialised_gradient_colour_palette_range_mapping(false),
+	d_is_surface_polygons_mask_supported(determine_if_surface_polygons_mask_supported(view_state))
 {
+	// If surface polygons mask not supported then disable it.
+	if (!d_is_surface_polygons_mask_supported)
+	{
+		d_surface_polygons_mask.enable_surface_polygons_mask = false;
+	}
 }
 
 

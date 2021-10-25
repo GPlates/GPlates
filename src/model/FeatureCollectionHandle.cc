@@ -31,6 +31,8 @@
 #include "FeatureStoreRootHandle.h"
 #include "WeakReferenceCallback.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 GPlatesModel::FeatureCollectionHandle::create()
@@ -70,3 +72,35 @@ GPlatesModel::FeatureCollectionHandle::FeatureCollectionHandle() :
 			revision_type::create())
 {  }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GPlatesModel::FeatureCollectionHandle> &construct_feature_collection_handle)
+{
+	if (scribe.is_saving())
+	{
+		// Default saves no data because load uses default constructor
+		// which has no arguments and hence loads no data.
+	}
+	else // loading...
+	{
+		// Get information that is not transcribed into the archive.
+		GPlatesScribe::TranscribeContext<GPlatesModel::FeatureCollectionHandle> &transcribe_context =
+				scribe.get_transcribe_context<GPlatesModel::FeatureCollectionHandle>();
+
+		construct_feature_collection_handle.construct_object();
+
+		GPlatesModel::FeatureCollectionHandle &feature_collection_handle =
+				construct_feature_collection_handle.get_object();
+
+		// Turn into a non-null pointer just so we can add it to the model.
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+				feature_collection_handle_non_null_ptr(&feature_collection_handle);
+
+		// Make sure the feature collection handle stays alive by adding it to the model.
+		transcribe_context.model_interface->root()->add(feature_collection_handle_non_null_ptr);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

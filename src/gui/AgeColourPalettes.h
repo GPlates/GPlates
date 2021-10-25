@@ -28,15 +28,15 @@
 #ifndef GPLATES_GUI_AGECOLOURPALETTES_H
 #define GPLATES_GUI_AGECOLOURPALETTES_H
 
+#include <utility>
+#include <boost/optional.hpp>
+
 #include "Colour.h"
 #include "ColourPalette.h"
 #include "ColourPaletteVisitor.h"
 
+#include "maths/Real.h"
 
-namespace GPlatesMaths
-{
-	class Real;
-}
 
 namespace GPlatesGui
 {
@@ -65,7 +65,7 @@ namespace GPlatesGui
 			d_lower_bound = d_default_lower_bound;
 		}
 
-		double
+		GPlatesMaths::Real
 		get_upper_bound() const
 		{
 			return d_upper_bound;
@@ -73,12 +73,12 @@ namespace GPlatesGui
 
 		void
 		set_upper_bound(
-				double upper_bound_)
+				const GPlatesMaths::Real &upper_bound_)
 		{
 			d_upper_bound = upper_bound_;
 		}
 
-		double
+		GPlatesMaths::Real
 		get_lower_bound() const
 		{
 			return d_lower_bound;
@@ -86,9 +86,23 @@ namespace GPlatesGui
 
 		void
 		set_lower_bound(
-				double lower_bound_)
+				const GPlatesMaths::Real &lower_bound_)
 		{
 			d_lower_bound = lower_bound_;
+		}
+
+		boost::optional< std::pair<GPlatesMaths::Real, GPlatesMaths::Real> >
+		get_range() const
+		{
+			return std::make_pair(d_lower_bound, d_upper_bound);
+		}
+
+		void
+		set_range(
+				const std::pair<GPlatesMaths::Real, GPlatesMaths::Real> &range)
+		{
+			d_lower_bound = range.first;
+			d_upper_bound = range.second;
 		}
 
 		virtual
@@ -125,11 +139,11 @@ namespace GPlatesGui
 
 	protected:
 
-		double d_upper_bound, d_lower_bound;
+		GPlatesMaths::Real d_upper_bound, d_lower_bound;
 
 	private:
 
-		const double d_default_upper_bound, d_default_lower_bound;
+		const GPlatesMaths::Real d_default_upper_bound, d_default_lower_bound;
 	};
 
 

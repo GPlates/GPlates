@@ -58,6 +58,7 @@ namespace GPlatesQtWidgets
 	class CalculateReconstructionPoleDialog;
 	class ChooseFeatureCollectionDialog;
 	class ColouringDialog;
+	class ConfigureCanvasToolGeometryRenderParametersDialog;
 	class ConfigureGraticulesDialog;
 	class ConfigureTextOverlayDialog;
 	class ConnectWFSDialog;
@@ -69,6 +70,7 @@ namespace GPlatesQtWidgets
 	class GenerateVelocityDomainCitcomsDialog;
 	class GenerateVelocityDomainLatLonDialog;
 	class GenerateVelocityDomainTerraDialog;
+	class KinematicGraphsDialog;
 	class LicenseDialog;
 	class LogDialog;
 	class ManageFeatureCollectionsDialog;
@@ -147,6 +149,9 @@ namespace GPlatesGui
 		GPlatesQtWidgets::ColouringDialog &
 		colouring_dialog();
 
+		GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog &
+		configure_canvas_tool_geometry_render_parameters_dialog();
+
 		GPlatesQtWidgets::ConfigureGraticulesDialog &
 		configure_graticules_dialog();
 
@@ -170,6 +175,9 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::FiniteRotationCalculatorDialog &
 		finite_rotation_calculator_dialog();
+
+		GPlatesQtWidgets::KinematicGraphsDialog &
+		kinematics_tool_dialog();
 
 		GPlatesQtWidgets::LicenseDialog &
 		license_dialog();
@@ -258,6 +266,9 @@ namespace GPlatesGui
 		pop_up_colouring_dialog();
 
 		void
+		pop_up_configure_canvas_tool_geometry_render_parameters_dialog();
+
+		void
 		pop_up_configure_graticules_dialog();
 
 		void
@@ -280,6 +291,9 @@ namespace GPlatesGui
 
 		void
 		pop_up_finite_rotation_calculator_dialog();
+
+		void
+		pop_up_kinematics_tool_dialog();
 
 		void
 		pop_up_license_dialog();
@@ -355,6 +369,7 @@ namespace GPlatesGui
 			DIALOG_CALCULATE_RECONSTRUCTION_POLE,
 			DIALOG_CHOOSE_FEATURE_COLLECTION,
 			DIALOG_COLOURING,
+			DIALOG_CONFIGURE_CANVAS_TOOL_GEOMETRY_RENDER_PARAMETERS,
 			DIALOG_CONFIGURE_GRATICULES,
 			DIALOG_CONFIGURE_TEXT_OVERLAY,
 			DIALOG_CONNECT_WFS,
@@ -363,6 +378,7 @@ namespace GPlatesGui
 			DIALOG_EXPORT_ANIMATION,
 			DIALOG_FEATURE_PROPERTIES,
 			DIALOG_FINITE_ROTATION_CALCULATOR_DIALOG,
+			DIALOG_KINEMATICS_TOOL,
 			DIALOG_LICENSE,
 			DIALOG_LOG,
 			DIALOG_MANAGE_FEATURE_COLLECTIONS,

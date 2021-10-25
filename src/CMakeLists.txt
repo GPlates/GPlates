@@ -1,12 +1,12 @@
 # Find our required libraries.
-set(required_libs "Qt4" "OpenGL" "GLEW" "GDAL" "GZIP" "PROJ4" "CGAL")
+set(required_libs "Qt4" "OpenGL" "GLEW" "GDAL" "GZIP" "PROJ4" "CGAL" "Qwt")
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
 
 # The following Boost libraries are both required and dynamically linked.
 set(Boost_USE_STATIC_LIBS FALSE)
-set(boost_components program_options thread)
+set(boost_components program_options thread system)
 if(NOT GPLATES_NO_PYTHON)
 	set(boost_components ${boost_components} python)
 endif(NOT GPLATES_NO_PYTHON)
@@ -145,14 +145,14 @@ include (GPlatesVersion)
 
 # Source files.
 set(GPlates_SRCS
-	gplates_main.cc)
+	gplates_main.cc ScribeExportGPlates.cc)
 
 set(GPlates_no_gui_SRCS
-	gplates_demo_no_gui_main.cc)
+	gplates_demo_no_gui_main.cc ScribeExportGPlatesDemoNoGui.cc)
 
 if (ADD_UNIT_TEST_TARGET)
     set(GPlates_unit_test_SRCS
-	    gplates_unit_test_main.cc)
+	    gplates_unit_test_main.cc ScribeExportGPlatesUnitTest.cc)
 endif (ADD_UNIT_TEST_TARGET)
 
 # N.B.  The order in which some of these subdirectories are
@@ -169,7 +169,7 @@ set(presentation_LIBS
 set(app_LIBS
 	app-logic file-io feature-visitors opengl property-values model data-mining api)
 set(util_LIBS
-	maths utils global)
+	maths scribe utils global)
 
 set(cli_LIBS
 	cli)
@@ -223,7 +223,8 @@ set(external_INCLUDE_DIRS
 	${GDAL_PORT_INCLUDE_DIR}
 	${GDAL_FRMTS_INCLUDE_DIR}
 	${Boost_INCLUDE_DIR}
-	${PROJ4_INCLUDE_DIR})
+        ${PROJ4_INCLUDE_DIR}
+        ${QWT_INCLUDE_DIR})
 if(NOT GPLATES_NO_PYTHON)
 	set(external_INCLUDE_DIRS
 		${external_INCLUDE_DIRS}
@@ -372,6 +373,10 @@ if (APPLE)
 	#
 	set_target_properties(${GPLATES_MAIN_TARGET}
 		PROPERTIES MACOSX_BUNDLE TRUE)
+	# Specify our own Info.plist template file.
+	# We add a couple of keys to ensure Qt 4.8.4 (and above) include support Mac Retina displays.
+	set_target_properties(${GPLATES_MAIN_TARGET}
+		PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/cmake/distribution/MacOSXBundleInfo.plist.in")
 	set_target_properties(${GPLATES_MAIN_TARGET}
 		PROPERTIES MACOSX_BUNDLE_INFO_STRING "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 	set_target_properties(${GPLATES_MAIN_TARGET}
@@ -401,7 +406,8 @@ set(dependency_LIBS
 	${QT_LIBRARIES}
 	${GLEW_LIBRARY}
 	${OPENGL_LIBRARIES}
-	${PROJ4_LIBRARY})
+        ${PROJ4_LIBRARY}
+        ${QWT_LIBRARY})
 	
 if(NOT GPLATES_NO_PYTHON)
 	set(dependency_LIBS

@@ -1341,7 +1341,7 @@ namespace
 					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 		elements.push_back(recon_method_element);
 
-		// Add a reconstruction method entry
+		// Add a spreading asymmetry method entry
 		it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::SPREADING_ASYMMETRY]);
 		key = GPlatesPropertyValues::XsString::create(
 					GPlatesUtils::make_icu_string_from_qstring(*it));

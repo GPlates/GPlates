@@ -121,6 +121,7 @@ namespace GPlatesFileIO
 			InvalidShapefileReconstructionMethod,
 			InvalidShapefileSpreadingAsymmetry,
 			UnableToMatchOgrGeometryWithFeature,
+                        NoGeometriesFoundInMultiGeometry,
 			
 			// The following relate to raster files in general.
 			InsufficientMemoryToLoadRaster,
@@ -201,6 +202,7 @@ namespace GPlatesFileIO
 			CptFileTypeNotDeduced,
 			UnrecognisedLabel,
 			PatternFillInLine,
+			MissingLabelSemiColon,
 
 			// The following are generic to all local files
 			ErrorOpeningFileForReading,

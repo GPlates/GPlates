@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QMessageBox>
+
 #include "EditTimePeriodWidget.h"
 
 #include "property-values/GmlTimePeriod.h"
@@ -215,6 +217,16 @@ GPlatesQtWidgets::EditTimePeriodWidget::update_property_value_from_widget()
 	// Remember that the property value pointer may be NULL!
 	if (d_time_period_ptr.get() != NULL) {
 		if (is_dirty()) {
+			// If the start-end time are not valid, do not update property value.
+			if (!valid())
+			{
+				QMessageBox::warning(this, tr("Time Period Invalid"),
+					tr("The begin-end time is not valid - time period was not updated."),
+					QMessageBox::Ok);
+				set_clean();
+				return false;
+			}
+
 			GPlatesPropertyValues::GeoTimeInstant begin = create_geo_time_instant_from_widgets(
 					spinbox_time_of_appearance,
 					checkbox_appearance_is_distant_past,

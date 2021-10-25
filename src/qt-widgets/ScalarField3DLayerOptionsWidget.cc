@@ -24,9 +24,11 @@
  */
 
 #include <algorithm>
+#include <QtGlobal>
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <QMessageBox>
 #include <QPalette>
 
 #include "ScalarField3DLayerOptionsWidget.h"
@@ -3042,6 +3044,25 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_surface_polygons_mask_
 			GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask surface_polygons_mask =
 					visual_layer_params->get_surface_polygons_mask();
 
+			// If surface polygons masking is not supported (by runtime graphics hardware), and the
+			// checkbox was checked, then popup a warning message and then disable the checkbox.
+			if (!visual_layer_params->is_surface_polygons_mask_supported() &&
+				!surface_polygons_mask.enable_surface_polygons_mask &&
+				enable_surface_polygons_mask_button->isChecked())
+			{
+				// Uncheck the checkbox and disable it so it cannot be checked again.
+				enable_surface_polygons_mask_button->setChecked(false);
+				enable_surface_polygons_mask_button->setDisabled(true);
+
+				QMessageBox::warning(this, tr("Cannot enable surface polygons mask"),
+						tr("Graphics driver reports unsupported render-to-texture-array."
+#ifndef Q_WS_MAC // Cannot actually update graphics driver explicitly on Mac OS X systems...
+							"\nUpgrading your graphics hardware driver may or may not help."
+#endif
+						),
+						QMessageBox::Ok);
+			}
+
 			surface_polygons_mask.enable_surface_polygons_mask = enable_surface_polygons_mask_button->isChecked();
 			surface_polygons_mask.show_polygon_walls = show_polygon_walls_button->isChecked();
 			surface_polygons_mask.treat_polylines_as_polygons = treat_polylines_as_polygons_button->isChecked();
@@ -3519,9 +3540,17 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::load_colour_palette(
 	}
 
 	// Copy the input value range to the caller.
+	boost::optional< std::pair<GPlatesMaths::Real, GPlatesMaths::Real> > regular_colour_palette_range =
+			regular_colour_palette_opt->get_range();
+	if (!regular_colour_palette_range)
+	{
+		// Shouldn't get here if the colour palette size is non-zero.
+		return boost::none;
+	}
+
 	colour_palette_range = std::make_pair(
-			regular_colour_palette_opt->get_lower_bound().dval(),
-			regular_colour_palette_opt->get_upper_bound().dval());
+			regular_colour_palette_range->first.dval(),
+			regular_colour_palette_range->second.dval());
 
 	GPlatesGui::ColourPalette<double>::non_null_ptr_type colour_palette =
 		GPlatesGui::convert_colour_palette<

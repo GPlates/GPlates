@@ -31,6 +31,7 @@
 #include "gui/ConfigModel.h"
 #include "gui/ConfigValueDelegate.h"
 
+#include "qt-widgets/KinematicGraphsDialog.h"
 #include "qt-widgets/PreferencesDialog.h"
 
 GPlatesQtWidgets::ConfigTableView *
@@ -165,6 +166,22 @@ GPlatesGui::ConfigGuiUtils::link_widget_to_preference(
 	adapter->handle_key_value_updated(key);
 }
 
+void
+GPlatesGui::ConfigGuiUtils::link_button_group_to_preference(
+		QButtonGroup *button_group,
+		GPlatesUtils::ConfigInterface &config,
+		const QString &key,
+		QAbstractButton *reset_button)
+{
+	ConfigGuiUtils::ConfigButtonGroupAdapter *adapter = new ConfigGuiUtils::ConfigButtonGroupAdapter(
+				button_group,config,key);
+	QObject::connect(adapter,SIGNAL(value_changed(int)),adapter,SLOT(set_checked_button(int)));
+
+	QObject::connect(button_group,SIGNAL(buttonClicked(int)),adapter,SLOT(handle_checked_button_changed(int)));
+
+	// Do a one-off fake update so widget has correct value in it.
+	adapter->handle_key_value_updated(key);
+}
 
 
 
@@ -267,3 +284,78 @@ GPlatesGui::ConfigGuiUtils::ConfigWidgetAdapter::handle_reset_clicked()
 
 
 
+
+
+GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::ConfigButtonGroupAdapter(
+		QButtonGroup *button_group,
+		GPlatesUtils::ConfigInterface &config,
+		const QString &key):
+	QObject(button_group),
+	d_button_group_ptr(button_group),
+	d_config(config),
+	d_key(key)
+{
+	connect(&config, SIGNAL(key_value_updated(QString)), this, SLOT(handle_key_value_updated(QString)));
+}
+
+void
+GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::handle_key_value_updated(
+		QString key)
+{
+	// Early exit if it's not the key we're following.
+	if (key != d_key) {
+		return;
+	}
+
+	// Otherwise re-emit signals that are more useful to the various widgets.
+	QVariant value = d_config.get_value(key);
+
+    static const GPlatesQtWidgets::KinematicGraphsDialog::velocity_method_description_map_type
+            map = GPlatesQtWidgets::KinematicGraphsDialog::build_velocity_method_description_map();
+
+    GPlatesQtWidgets::KinematicGraphsDialog::MapValueEquals map_value_equals(value.toString());
+
+    const GPlatesQtWidgets::KinematicGraphsDialog::velocity_method_description_map_type::const_iterator
+            it = std::find_if(map.begin(),map.end(),map_value_equals);
+
+
+    if (it != map.end())
+    {
+        Q_EMIT value_changed(it.key());
+    }
+}
+
+void
+GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::handle_checked_button_changed(
+		int index)
+{
+
+    static const GPlatesQtWidgets::KinematicGraphsDialog::velocity_method_description_map_type
+            map = GPlatesQtWidgets::KinematicGraphsDialog::build_velocity_method_description_map();
+
+    GPlatesQtWidgets::KinematicGraphsDialog::velocity_method_description_map_type::const_iterator
+            it = map.find(static_cast<GPlatesQtWidgets::KinematicGraphsDialog::VelocityMethod>(index));
+
+    if (it != map.end())
+    {
+        d_config.set_value(d_key,QVariant(*it));
+    }
+}
+
+void
+GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::set_checked_button(
+		int index)
+{
+	QAbstractButton *button = d_button_group_ptr->button(index);
+
+	if (button)
+	{
+		button->setChecked(true);
+	}
+}
+
+void
+GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::handle_reset_clicked()
+{
+	d_config.clear_value(d_key);
+}

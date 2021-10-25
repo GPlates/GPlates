@@ -102,7 +102,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none)
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
 		{
 			return non_null_ptr_type(
 					new ReconstructedVirtualGeomagneticPole(
@@ -113,7 +114,8 @@ namespace GPlatesAppLogic
 							feature_handle,
 							property_iterator_,
 							reconstruction_plate_id_,
-							time_of_formation_));
+							time_of_formation_,
+							reconstruct_handle_));
 		}
 
 
@@ -164,7 +166,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_):
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_):
 			ReconstructedFeatureGeometry(
 					reconstruction_tree_,
 					reconstruction_tree_creator,
@@ -173,7 +176,8 @@ namespace GPlatesAppLogic
 					geometry_ptr,
 					ReconstructMethod::VIRTUAL_GEOMAGNETIC_POLE,
 					reconstruction_plate_id_,
-					time_of_formation_),
+					time_of_formation_,
+					reconstruct_handle_),
 			d_VGP_params(params)
 		{  }
 

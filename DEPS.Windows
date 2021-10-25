@@ -96,6 +96,9 @@ Python
   6. Copy 'python.exe', 'python_d.exe', 'pythonw.exe', 'pythonw_d.exe', 'python27.dll' and 'python27_d.dll' to the base python directory.
   7. Add the base python directory and 'libs/' and 'Scripts/' sub-directories to the PATH environment variable.
   8. Add the 'libs/' directory to the PYTHONPATH environment variable.
+  9. Add the 'Include/' directory to the CMAKE_INCLUDE_PATH environment variable.
+  10. Add the 'libs/' directory to the CMAKE_LIBRARY_PATH environment variable.
+      * CMAKE_INCLUDE_PATH and CMAKE_LIBRARY_PATH prevent GPlates finding a different python installation such as inside ArcGIS.
 
 Boost
 
@@ -199,12 +202,13 @@ CGAL
 
   1. Get and install the CGAL 3.8 source code from http://www.cgal.org/:
      * Download and run 'CGAL-3.8-Setup.exe'.
-     * Under 'Select Default Variants' leave everything unticked (except for 'Platforms').
-     * Under 'Choose Components' untick everything ('Main CGAL' cannot be unticked).
+     * Under 'Choose Components' untick everything except:
+	     * 'GMP and MPFR precompiled libs' (note that 'Main CGAL' cannot be unticked).
      * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-3.8'.
          * In particular, do not install under Program Files on Windows Vista and
            above because you will likely run into permissions issues later.
      * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
+	 * Tick 'Add CGAL/auxiliary/gmp/lib to PATH'.
   2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
      * NOTE: Make sure you run 'cmake-gui.exe' as administrator (right-click and select 'Run as administrator').
      * Specify the CGAL installation location as the source and build directories.
@@ -212,7 +216,9 @@ CGAL
          * If an error dialog pops up and there's red text that complains it cannot find the boost library
            boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library
            versions of the boost libraries (the ones with the 'lib' prefix in the library filenames).
-     * Untick all 'WITH_*' options.
+     * Untick all 'WITH_*' options except:
+	     * WITH_CGAL_Core and
+		 * WITH_GMP.
      * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-3.8').
      * Click the 'Configure' button again.
      * Click the 'Generate' button.
@@ -227,6 +233,24 @@ CGAL
   Note: If you are compiling CGAL 3.7 or above using Visual Studio 2005 then you'll need to modify
   a few CGAL headers to get it to compile (because VS2005 no longer supported) - see the last post at
     http://cgal-discuss.949826.n4.nabble.com/Error-in-Delaunay-traingulation-2-h-td3063834.html
+
+qwt
+
+  1. Get the qwt source code zip package from http://sourceforge.net/projects/qwt/files/qwt/6.0.1/
+  2. Extract the files in the package to your preferred location (e.g. C:\SDK\qwt)
+  3. Open a Visual Studio command prompt and navigate to your qwt location
+	(e.g. C:\SDK\qwt\qwt-6.0.1 )
+  4. At the command prompt, do 
+	qmake
+	nmake
+     You should now have a "lib" folder containing .dll and .lib files.
+  5. (If you have a preferred installation location which is different from your build location, you can edit qwtconfig.pri to use your installation location, and then do "nmake install")
+  6. Define two new enviroment variables, QWT_INCLUDE_DIR and QWT_LIBRARY, with the paths of the qwt header files and the qwt library respectively - for example: 
+	QWT_INCLUDE_DIR could be  "C:\SDK\qwt\qwt-6.0.1\src" 
+	and 
+	QWT_LIBRARY could be "C:\SDK\qwt\qwt-6.0.1\lib\qwt.lib"
+  7. Add the QWT_LIBRARY location to your PATH environment variable.
+ 
 
 gzip
 

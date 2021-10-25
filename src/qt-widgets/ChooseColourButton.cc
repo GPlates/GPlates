@@ -60,6 +60,8 @@ GPlatesQtWidgets::ChooseColourButton::set_colour(
 	QPixmap pixmap(iconSize());
 	pixmap.fill(colour);
 	setIcon(QIcon(pixmap));
+
+	Q_EMIT colour_changed(*this);
 }
 
 

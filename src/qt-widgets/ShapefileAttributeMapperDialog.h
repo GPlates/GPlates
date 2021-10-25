@@ -35,6 +35,9 @@
 #include "ShapefileAttributeWidget.h"
 
 
+// TODO: this dialog is used for re-mapping other OGR formats too. We should eventually update the UI, and
+// file/class-names etc, to reflect this.
+
 namespace GPlatesQtWidgets
 {
 	class ShapefileAttributeMapperDialog: 

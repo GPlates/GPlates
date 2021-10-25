@@ -30,14 +30,19 @@
 #include <QAction>
 
 
-namespace GPlatesQtWidgets
-{
-	class ViewportWindow;
-}
-
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
+namespace GPlatesQtWidgets
+{
+	class ViewportWindow;
 }
 
 
@@ -61,6 +66,7 @@ namespace GPlatesGui
 		explicit
 		GuiDebug(
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
+				GPlatesPresentation::ViewState &view_state_,
 				GPlatesAppLogic::ApplicationState &app_state_,
 				QObject *parent_);
 
@@ -127,6 +133,11 @@ namespace GPlatesGui
 		 * Pointer to the ViewportWindow so we can access all manner of things.
 		 */
 		GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
+
+		/**
+		 * Pointer to the ViewState so we can access all manner of things.
+		 */
+		GPlatesPresentation::ViewState *d_view_state_ptr;
 
 		/**
 		 * Pointer to the ApplicationState so we can access all manner of things.

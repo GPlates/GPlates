@@ -51,7 +51,6 @@ namespace
 		COLUMN_ELEMENT, COLUMN_ACTION
 	};
 	
-	
 	/**
 	 * Fetches the appropriate action widget given a row number.
 	 * May return NULL.
@@ -73,7 +72,7 @@ namespace
 		return action_widget;
 	}
 	
-	
+
 	/**
 	 * Uses rowCount() and setRowCount() to ensure the table has at least
 	 * @a rows rows available. If the table has more rows currently allocated,
@@ -91,7 +90,7 @@ namespace
 		}
 		return table.rowCount();
 	}
-	
+
 	/**
 	 * Append the string @a str to @a table.
 	 *

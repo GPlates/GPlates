@@ -120,11 +120,11 @@ namespace GPlatesGui
 
 
 		/**
-		 * Called when the user wants to open a new Session. Returns true if unloading
-		 * the existing session is ok, false if the user wants to abort.
+		 * Called when the user wants to clear the session. Returns true if clearing
+		 * the existing session is ok, false if the user does not want to clear the session.
 		 */
 		bool
-		replace_session_event_hook();
+		clear_session_event_hook();
 
 	
 	public Q_SLOTS:

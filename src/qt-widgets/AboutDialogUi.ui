@@ -87,7 +87,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_GPGIM">
+      <widget class="QLabel" name="label_GPGIM_version">
        <property name="text">
         <string>(GPGIM version)</string>
        </property>
@@ -235,6 +235,7 @@ p, li { white-space: pre-wrap; }
   <tabstop>text_Copyright</tabstop>
  </tabstops>
  <resources>
+  <include location="../qt-resources/qt_widgets.qrc"/>
   <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections>

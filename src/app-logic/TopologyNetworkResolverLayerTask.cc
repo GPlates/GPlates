@@ -34,12 +34,6 @@
 #include "TopologyUtils.h"
 
 
-const QString GPlatesAppLogic::TopologyNetworkResolverLayerTask::TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME =
-		"Topological network features";
-const QString GPlatesAppLogic::TopologyNetworkResolverLayerTask::TOPOLOGICAL_SECTION_LAYERS_CHANNEL_NAME =
-		"Topological sections";
-
-
 bool
 GPlatesAppLogic::TopologyNetworkResolverLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
@@ -58,7 +52,7 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_input_channel_types() con
 	// Channel definition for the topological network features.
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME,
+					LayerInputChannelName::TOPOLOGICAL_NETWORK_FEATURES,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL));
 
 	// Channel definition for the topological section layers.
@@ -76,7 +70,7 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_input_channel_types() con
 	topological_section_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					TOPOLOGICAL_SECTION_LAYERS_CHANNEL_NAME,
+					LayerInputChannelName::TOPOLOGICAL_SECTION_LAYERS,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 					topological_section_channel_types));
 
@@ -84,10 +78,10 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_input_channel_types() con
 }
 
 
-QString
+GPlatesAppLogic::LayerInputChannelName::Type
 GPlatesAppLogic::TopologyNetworkResolverLayerTask::get_main_input_feature_collection_channel() const
 {
-	return TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME;
+	return LayerInputChannelName::TOPOLOGICAL_NETWORK_FEATURES;
 }
 
 
@@ -111,10 +105,10 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::activate(
 
 void
 GPlatesAppLogic::TopologyNetworkResolverLayerTask::add_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::TOPOLOGICAL_NETWORK_FEATURES)
 	{
 		d_topology_network_resolver_layer_proxy
 				->add_topological_network_feature_collection(feature_collection);
@@ -124,10 +118,10 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::add_input_file_connection(
 
 void
 GPlatesAppLogic::TopologyNetworkResolverLayerTask::remove_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::TOPOLOGICAL_NETWORK_FEATURES)
 	{
 		d_topology_network_resolver_layer_proxy
 				->remove_topological_network_feature_collection(feature_collection);
@@ -137,10 +131,10 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::remove_input_file_connection(
 
 void
 GPlatesAppLogic::TopologyNetworkResolverLayerTask::modified_input_file(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == TOPOLOGICAL_NETWORK_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::TOPOLOGICAL_NETWORK_FEATURES)
 	{
 		// Let the reconstruct layer proxy know that one of the network feature collections has been modified.
 		d_topology_network_resolver_layer_proxy
@@ -151,10 +145,10 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::modified_input_file(
 
 void
 GPlatesAppLogic::TopologyNetworkResolverLayerTask::add_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == TOPOLOGICAL_SECTION_LAYERS_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::TOPOLOGICAL_SECTION_LAYERS)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,
@@ -181,10 +175,10 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::add_input_layer_proxy_connect
 
 void
 GPlatesAppLogic::TopologyNetworkResolverLayerTask::remove_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == TOPOLOGICAL_SECTION_LAYERS_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::TOPOLOGICAL_SECTION_LAYERS)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,

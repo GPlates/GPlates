@@ -33,7 +33,6 @@
 #include <boost/bind.hpp>
 
 #include <QDebug>
-#include "Serialization.h"
 
 
 #include "ApplicationState.h"
@@ -44,12 +43,14 @@
 #include "ReconstructGraph.h"
 #include "ReconstructGraphImpl.h"
 #include "ReconstructionLayerProxy.h"
+#include "ReconstructLayerProxy.h"
 #include "ReconstructUtils.h"
-#include "Serialization.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
+
+#include "scribe/Scribe.h"
 
 #include "utils/Profile.h"
 
@@ -568,7 +569,7 @@ GPlatesAppLogic::ReconstructGraph::modified_input_file(
 
 		Layer layer(layer_receiving_file_input);
 
-		const QString main_input_channel = layer.get_main_input_feature_collection_channel();
+		const LayerInputChannelName::Type main_input_channel = layer.get_main_input_feature_collection_channel();
 
 		const std::vector<Layer::InputConnection> input_connections = layer.get_channel_inputs(main_input_channel);
 
@@ -700,7 +701,7 @@ GPlatesAppLogic::ReconstructGraph::auto_connect_layer(
 	//
 
 	// Get the main feature collection input channel for our layer.
-	const QString main_input_feature_collection_channel =
+	const LayerInputChannelName::Type main_input_feature_collection_channel =
 			layer.get_main_input_feature_collection_channel();
 
 	// Connect the input file to the main input channel of the new layer.
@@ -769,7 +770,7 @@ GPlatesAppLogic::ReconstructGraph::auto_destroy_layers_for_input_file_about_to_b
 			continue;
 		}
 
-		const QString main_input_channel = layer.get_main_input_feature_collection_channel();
+		const LayerInputChannelName::Type main_input_channel = layer.get_main_input_feature_collection_channel();
 
 		const std::vector<Layer::InputConnection> input_connections = layer.get_channel_inputs(main_input_channel);
 		// We only remove layers that currently have one input file on the main channel.
@@ -957,6 +958,121 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_removed_input_connection(
 		GPlatesAppLogic::Layer layer)
 {
 	Q_EMIT layer_removed_input_connection(*this, layer);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructGraph::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	//
+	// Set up some transcribe contexts to help construct/transcribe various objects.
+	//
+
+	// Set up transcribe context for InputFileInfo.
+	GPlatesScribe::TranscribeContext<InputFileInfo> input_file_info_transcribe_context(*this);
+	GPlatesScribe::Scribe::ScopedTranscribeContextGuard<InputFileInfo>
+			input_file_info_transcribe_context_guard(
+					scribe,
+					input_file_info_transcribe_context);
+	// Set up transcribe context for ReconstructGraphImpl::Layer.
+	GPlatesScribe::TranscribeContext<ReconstructGraphImpl::Layer> layer_impl_transcribe_context(*this);
+	GPlatesScribe::Scribe::ScopedTranscribeContextGuard<ReconstructGraphImpl::Layer>
+			layer_impl_transcribe_context_guard(
+					scribe,
+					layer_impl_transcribe_context);
+	// Set up transcribe context for ReconstructLayerProxy.
+	GPlatesScribe::TranscribeContext<ReconstructLayerProxy> reconstruct_layer_proxy_transcribe_context(
+			d_application_state.get_reconstruct_method_registry());
+	GPlatesScribe::Scribe::ScopedTranscribeContextGuard<ReconstructLayerProxy>
+			reconstruct_layer_proxy_transcribe_context_guard(
+					scribe,
+					reconstruct_layer_proxy_transcribe_context);
+
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_input_files, "d_input_files") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_layers, "d_layers") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_default_reconstruction_tree_layer_stack, "d_default_reconstruction_tree_layer_stack") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_identity_rotation_reconstruction_layer_proxy, "d_identity_rotation_reconstruction_layer_proxy"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	d_add_or_remove_layers_group_nested_count = 0;
+
+
+	// Make sure each layer addition is part of an add layers group.
+	AddOrRemoveLayersGroup add_layers_group(*this);
+	add_layers_group.begin_add_or_remove_layers();
+
+	BOOST_FOREACH(const layer_ptr_type &layer_impl, d_layers)
+	{
+		// Wrap in a weak ref for the caller and so we can use our own public interface.
+		const Layer layer(layer_impl);
+
+		// Let clients know of the new layer.
+		Q_EMIT layer_added(*this, layer);
+
+		// Ensure a full reconstruction each time the layer task parameters of this layer are modified.
+		QObject::connect(
+				&layer_impl->get_layer_task_params(), SIGNAL(modified()),
+				&d_application_state, SLOT(reconstruct()));
+	}
+
+	// End the add layers group.
+	add_layers_group.end_add_or_remove_layers();
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructGraph::InputFileInfo::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_input_file_ptr, "d_input_file_ptr"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructGraph::InputFileInfo::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<InputFileInfo> &input_file_info)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, input_file_info->d_input_file_ptr, "d_input_file_ptr");
+	}
+	else // loading...
+	{
+		GPlatesScribe::LoadRef<input_file_ptr_type> input_file_ptr =
+				scribe.load<input_file_ptr_type>(TRANSCRIBE_SOURCE, "d_input_file_ptr");
+		if (!input_file_ptr.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Get information that is not transcribed into the archive.
+		GPlatesScribe::TranscribeContext<InputFileInfo> &transcribe_context = scribe.get_transcribe_context<InputFileInfo>();
+		ReconstructGraph &reconstruct_graph = transcribe_context.reconstruct_graph;
+
+		// Construct the object from the constructor data.
+		input_file_info.construct_object(boost::ref(reconstruct_graph), input_file_ptr);
+
+		scribe.relocated(TRANSCRIBE_SOURCE, input_file_info->d_input_file_ptr, input_file_ptr);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

@@ -36,6 +36,9 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "scribe/Scribe.h"
+
+
 // uncomment to turn on warnings
 #if 0
 #def WARNINGS 
@@ -268,6 +271,20 @@ GPlatesMaths::Real
 GPlatesMaths::Real::negative_infinity()
 {
 	return -std::numeric_limits<double>::infinity();
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::Real::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, _dval, "_dval"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

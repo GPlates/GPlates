@@ -41,7 +41,10 @@
 #include "gui/Symbol.h"
 
 #include "view-operations/RenderedGeometryLayer.h"
+#include "view-operations/RenderedGeometryParameters.h"
+
 #include "utils/Profile.h"
+
 
 GPlatesPresentation::VisualLayers::VisualLayers(
 		GPlatesAppLogic::ApplicationState &application_state,
@@ -52,7 +55,7 @@ GPlatesPresentation::VisualLayers::VisualLayers(
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_next_visual_layer_number(1)
 {
-	connect_to_application_state_signals();
+	make_signal_slot_connections();
 
 	// Go through the reconstruct graph and add all the existing layers, if any.
 	GPlatesAppLogic::ReconstructGraph &reconstruct_graph = application_state.get_reconstruct_graph();
@@ -188,19 +191,13 @@ GPlatesPresentation::VisualLayers::get_layer_order() const
 
 
 void
-GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
+GPlatesPresentation::VisualLayers::make_signal_slot_connections()
 {
 	// Create rendered geometries each time a reconstruction has happened.
 	QObject::connect(
 			&d_application_state,
 			SIGNAL(reconstructed(
 					GPlatesAppLogic::ApplicationState &)),
-			this,
-			SLOT(create_rendered_geometries()));
-
-	QObject::connect(
-			GPlatesGui::DrawStyleManager::instance(),
-			SIGNAL(draw_style_changed()),
 			this,
 			SLOT(create_rendered_geometries()));
 
@@ -292,6 +289,20 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 					GPlatesAppLogic::FeatureCollectionFileState &)),
 			SLOT(handle_file_state_changed(
 					GPlatesAppLogic::FeatureCollectionFileState &)));
+
+	// Create new rendered geometries when RenderedGeometryParameters changes.
+	QObject::connect(
+			&d_view_state.get_rendered_geometry_parameters(),
+			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(create_rendered_geometries()));
+
+	// Connect to DrawStyleManager signals.
+	QObject::connect(
+			GPlatesGui::DrawStyleManager::instance(),
+			SIGNAL(draw_style_changed()),
+			this,
+			SLOT(create_rendered_geometries()));
 }
 
 
@@ -515,6 +526,7 @@ GPlatesPresentation::VisualLayers::create_visual_layer(
 				d_view_state.get_visual_layer_registry(),
 				layer,
 				d_rendered_geometry_collection,
+				d_view_state.get_rendered_geometry_parameters(),
 				d_next_visual_layer_number));
 
 	++d_next_visual_layer_number;

@@ -263,10 +263,10 @@ namespace GPlatesAppLogic
 		 * "relative pathnames" from the given root. It is assumed that
 		 * the prefix itself does not have a value stored.
 		 *
-		 * For example, you could get the keyvalues for prefix "session/recent/1"
+		 * For example, you could get the keyvalues for prefix "session/recent/sessions/1"
 		 * and this method would return a map containing keys such as "loaded_files"
-		 * and "date" - corresponding to "session/recent/1/loaded_files" and
-		 * "session/recent/1/date".
+		 * and "date" - corresponding to "session/recent/sessions/1/loaded_files" and
+		 * "session/recent/sessions/1/date".
 		 *
 		 * The ConfigBundle returned will be parented to the UserPreferences system,
 		 * and cleaned up when GPlates exits. If you want it to have a shorter lifespan,
@@ -302,16 +302,16 @@ namespace GPlatesAppLogic
 		 * Given a @a prefix to a set of keys, slurp all those keys and
 		 * values into a QMap<QString, QVariant>.
 		 * This is intended to make working with groups of related sub-keys as
-		 * a single "object" easier - for example, storing a GPlatesAppLogic::Session.
+		 * a single "object" easier - for example, storing a Session.
 		 *
 		 * All key names will have the prefix stripped - they will be
 		 * "relative pathnames" from the given root. It is assumed that
 		 * the prefix itself does not have a value stored.
 		 *
-		 * For example, you could get the keyvalues for prefix "session/recent/1"
+		 * For example, you could get the keyvalues for prefix "session/recent/sessions/1"
 		 * and this method would return a map containing keys such as "loaded_files"
-		 * and "date" - corresponding to "session/recent/1/loaded_files" and
-		 * "session/recent/1/date".
+		 * and "date" - corresponding to "session/recent/sessions/1/loaded_files" and
+		 * "session/recent/sessions/1/date".
 		 *
 		 * While there is probably no real application for applying this method
 		 * to key/values with defaults and system fallbacks, the returned map
@@ -329,7 +329,7 @@ namespace GPlatesAppLogic
 		 * Given a @a prefix in the key-value store, and a map of keyname->value
 		 * in a QMap<QString, QVariant>, set all the given keys in one pass.
 		 * This is intended to make working with groups of related sub-keys as
-		 * a single "object" easier - for example, storing a GPlatesAppLogic::Session.
+		 * a single "object" easier - for example, storing a Session.
 		 *
 		 * All key names should have the prefix stripped - they will be
 		 * "relative pathnames" from the given root. All pre-existing keys for that

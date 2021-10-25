@@ -36,6 +36,7 @@
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL.h>
 
+#include "GLCapabilities.h"
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
@@ -101,9 +102,20 @@ namespace GPlatesOpenGL
 		//! Typedef for a resource manager.
 		typedef GLObjectResourceManager<resource_handle_type, Allocator> resource_manager_type;
 
+		//! Types of attachments.
+		enum AttachmentType
+		{
+			ATTACHMENT_TEXTURE_1D,
+			ATTACHMENT_TEXTURE_2D,
+			ATTACHMENT_TEXTURE_3D,
+			ATTACHMENT_TEXTURE_ARRAY_LAYER,
+			ATTACHMENT_TEXTURE_ARRAY,
+			ATTACHMENT_RENDER_BUFFER
+		};
+
 
 		/**
-		 * Classifies a frame buffer object to assist with frame buffer switching efficiency.
+		 * Classifies a frame buffer object to, for example, assist with frame buffer switching efficiency.
 		 *
 		 * According to Nvidia in "The OpenGL Framebuffer Object Extension" at
 		 * http://http.download.nvidia.com/developer/presentations/2005/GDC/OpenGL_Day/OpenGL_FrameBuffer_Object.pdf
@@ -126,74 +138,101 @@ namespace GPlatesOpenGL
 		 * the same texture format and dimensions by sharing a single frame buffer object.
 		 * These parameters are specified in this class (@a Classification).
 		 *
+		 * Another application of this classification is caching expensive framebuffer completeness checks.
 		 */
 		class Classification
 		{
 		public:
 
-			//! Classification as a boost tuple (so can be used as a key in maps).
-			typedef boost::tuple<GLuint, GLuint, GLint, GLint, GLint> tuple_type;
+			//! Implementation detail of each attachment point.
+			typedef boost::tuple<
+					AttachmentType,
+					GLint, // texture or render buffer internal format
+					boost::optional<GLenum> > // optional texture target
+							attachment_point_type;
+
+			/**
+			 * Classification as a boost tuple (so can be used as a key in maps).
+			 */
+			typedef boost::tuple<
+					GLuint, // width
+					GLuint, // height
+					std::vector<attachment_point_type>
+				> tuple_type;
 
 
 			//! Default classification represents empty (un-attached) frame buffer.
 			Classification();
 
-			//! Set dimensions of frame buffer attachable textures/render-buffers.
-			void
-			set_dimensions(
-					GLuint width,
-					GLuint height);
-
-			/**
-			 * Set texture internal format if one or more textures are to be attached.
-			 *
-			 * Note that GL_EXT_framebuffer_object requires all textures attached to colour attachments
-			 * to have the same internal format so there's no need to specify the attachment point(s).
-			 */
-			void
-			set_texture_internal_format(
-					GLint texture_internal_format);
-
-			//! Set depth buffer internal format if a depth buffer is to be attached.
-			void
-			set_depth_buffer_internal_format(
-					GLint depth_buffer_internal_format);
-
-			//! Set stencil buffer internal format if a stencil buffer is to be attached.
-			void
-			set_stencil_buffer_internal_format(
-					GLint stencil_buffer_internal_format);
 
 			//! Return this classification object as a tuple.
 			tuple_type
-			get_tuple() const;
+			get_tuple() const
+			{
+				return d_tuple;
+			}
 
-			//
-			// Queries parameters...
-			//
 
-			GLuint
-			get_width() const;
+			/**
+			 * Set dimensions of frame buffer attachable textures/render-buffers.
+			 *
+			 * NOTE: Since we're using GL_EXT_framebuffer_object (and not GL_ARB_framebuffer_object) the
+			 * 2D dimensions of all attachment points must be the same, so this covers all attachments.
+			 */
+			void
+			set_dimensions(
+					GLRenderer &renderer,
+					GLuint width,
+					GLuint height);
 
-			GLuint
-			get_height() const;
+			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			void
+			set_attached_texture_1D(
+					GLRenderer &renderer,
+					GLint texture_internal_format,
+					GLenum texture_target = GL_TEXTURE_1D,
+					GLenum attachment = GLCapabilities::Framebuffer::gl_COLOR_ATTACHMENT0);
 
-			GLint
-			get_texture_internal_format() const;
+			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			void
+			set_attached_texture_2D(
+					GLRenderer &renderer,
+					GLint texture_internal_format,
+					GLenum texture_target = GL_TEXTURE_2D,
+					GLenum attachment = GLCapabilities::Framebuffer::gl_COLOR_ATTACHMENT0);
 
-			GLint
-			get_depth_buffer_internal_format() const;
+			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			void
+			set_attached_texture_3D(
+					GLRenderer &renderer,
+					GLint texture_internal_format,
+					GLenum texture_target,
+					GLenum attachment = GLCapabilities::Framebuffer::gl_COLOR_ATTACHMENT0);
 
-			GLint
-			get_stencil_buffer_internal_format() const;
+			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			void
+			set_attached_texture_array_layer(
+					GLRenderer &renderer,
+					GLint texture_internal_format,
+					GLenum attachment = GLCapabilities::Framebuffer::gl_COLOR_ATTACHMENT0);
+
+			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			void
+			set_attached_texture_array(
+					GLRenderer &renderer,
+					GLint texture_internal_format,
+					GLenum attachment = GLCapabilities::Framebuffer::gl_COLOR_ATTACHMENT0);
+
+			//! Equivalent of similarly named method in parent GLFrameBufferObject class.
+			void
+			set_attached_render_buffer(
+					GLRenderer &renderer,
+					GLint render_buffer_internal_format,
+					GLenum attachment);
 
 		private:
 
-			GLuint d_width;
-			GLuint d_height;
-			GLint d_texture_internal_format;
-			GLint d_depth_buffer_internal_format;
-			GLint d_stencil_buffer_internal_format;
+			tuple_type d_tuple;
 		};
 
 
@@ -253,6 +292,9 @@ namespace GPlatesOpenGL
 		/**
 		 * Performs same function as the glFramebufferTexture1D OpenGL function.
 		 *
+		 * NOTE: Since we're using GL_EXT_framebuffer_object (and not GL_ARB_framebuffer_object) the
+		 * 2D dimensions (height of 1D texture is one) of all attachment points must be the same.
+		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
 		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
@@ -270,6 +312,9 @@ namespace GPlatesOpenGL
 		/**
 		 * Performs same function as the glFramebufferTexture2D OpenGL function.
 		 *
+		 * NOTE: Since we're using GL_EXT_framebuffer_object (and not GL_ARB_framebuffer_object) the
+		 * 2D dimensions of all attachment points must be the same.
+		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
 		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
@@ -286,6 +331,9 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Performs same function as the glFramebufferTexture3D OpenGL function.
+		 *
+		 * NOTE: Since we're using GL_EXT_framebuffer_object (and not GL_ARB_framebuffer_object) the
+		 * 2D dimensions of all attachment points must be the same.
 		 *
 		 * NOTE: Use @a gl_attach_texture_array_layer for 2D array textures.
 		 *
@@ -310,6 +358,9 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: This also requires the GL_EXT_texture_array extension to be supported.
 		 *
+		 * NOTE: Since we're using GL_EXT_framebuffer_object (and not GL_ARB_framebuffer_object) the
+		 * 2D dimensions of all attachment points must be the same.
+		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
 		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
@@ -329,6 +380,9 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: This also requires the GL_EXT_geometry_shader4 extension to be supported.
 		 *
+		 * NOTE: Since we're using GL_EXT_framebuffer_object (and not GL_ARB_framebuffer_object) the
+		 * 2D dimensions of all attachment points must be the same.
+		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
 		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
@@ -344,6 +398,9 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Performs same function as the glFramebufferRenderbuffer OpenGL function.
+		 *
+		 * NOTE: Since we're using GL_EXT_framebuffer_object (and not GL_ARB_framebuffer_object) the
+		 * 2D dimensions of all attachment points must be the same.
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
@@ -385,7 +442,7 @@ namespace GPlatesOpenGL
 		 * Note that since the glDrawBuffer(s) state is stored inside the framebuffer object the
 		 * framebuffer object is temporarily bound inside this method (and reverted on return).
 		 *
-		 * The default state is buffer 0 is GL_COLOR_ATTACHMENT0_EXT with buffers
+		 * The default state of buffer 0 is GL_COLOR_ATTACHMENT0_EXT with buffers
 		 * [1, context.get_capabilities().framebuffer.gl_max_draw_buffers) being GL_NONE.
 		 *
 		 * There is also a glDrawBuffer(s) state that applies to the default window-system framebuffer
@@ -460,7 +517,7 @@ namespace GPlatesOpenGL
 		 * if an attachment has not had its storage specified.
 		 *
 		 * NOTE: Since we're using GL_EXT_framebuffer_object (and not GL_ARB_framebuffer_object) the
-		 * dimensions of all attachment points must be the same (hence no need for client to specify
+		 * 2D dimensions of all attachment points must be the same (hence no need for client to specify
 		 * a specific attachment point for this method).
 		 *
 		 * NOTE: This is a lower-level function used to help implement the OpenGL framework.
@@ -481,16 +538,6 @@ namespace GPlatesOpenGL
 		}
 
 	private:
-
-		enum AttachmentType
-		{
-			ATTACHMENT_TEXTURE_1D,
-			ATTACHMENT_TEXTURE_2D,
-			ATTACHMENT_TEXTURE_3D,
-			ATTACHMENT_TEXTURE_ARRAY_LAYER,
-			ATTACHMENT_TEXTURE_ARRAY,
-			ATTACHMENT_RENDER_BUFFER
-		};
 
 		/**
 		 * Information for a framebuffer object attachment point.

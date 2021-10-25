@@ -454,7 +454,7 @@
        <item>
         <widget class="QGroupBox" name="groupbox_controls">
          <property name="title">
-          <string>Animation Progress</string>
+          <string>Export Progress</string>
          </property>
          <layout class="QVBoxLayout">
           <item>
@@ -481,7 +481,7 @@
             <item>
              <widget class="QPushButton" name="button_export">
               <property name="text">
-               <string>&amp;Begin Animation</string>
+               <string>Begin Export</string>
               </property>
               <property name="icon">
                <iconset resource="../qt-resources/qt_widgets.qrc">
@@ -501,7 +501,7 @@
             <item>
              <widget class="QPushButton" name="button_abort">
               <property name="text">
-               <string>Abort A&amp;nimation</string>
+               <string>Abort Export</string>
               </property>
               <property name="icon">
                <iconset resource="../qt-resources/qt_widgets.qrc">
@@ -806,7 +806,7 @@
        <item>
         <widget class="QGroupBox" name="groupbox_controls_2">
          <property name="title">
-          <string>File Progress</string>
+          <string>Export Progress</string>
          </property>
          <layout class="QVBoxLayout">
           <item>

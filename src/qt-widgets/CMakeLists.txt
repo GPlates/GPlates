@@ -72,6 +72,9 @@ set(srcs
     ColouringDialogUi.ui
     ColourScaleWidget.cc
     ColourScaleWidget.h
+    ConfigureCanvasToolGeometryRenderParametersDialog.cc
+    ConfigureCanvasToolGeometryRenderParametersDialog.h
+    ConfigureCanvasToolGeometryRenderParametersDialogUi.ui
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
@@ -245,6 +248,8 @@ set(srcs
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
     FileDialogFilter.h
+    FilesNotLoadedWarningDialog.h
+    FilesNotLoadedWarningDialogUi.ui
     FiniteRotationCalculatorDialog.cc
     FiniteRotationCalculatorDialog.h
     FiniteRotationCalculatorDialogUi.ui
@@ -290,6 +295,17 @@ set(srcs
     InsertVGPReconstructionPoleDialog.h
     InsertVGPReconstructionPoleDialogUi.ui
     InvalidPropertyValueException.h
+    KinematicGraphPicker.h
+    KinematicGraphPicker.cc
+    KinematicGraphsConfigurationDialog.h
+    KinematicGraphsConfigurationDialog.cc
+    KinematicGraphsConfigurationDialogUi.ui
+    KinematicGraphsConfigurationWidget.h
+    KinematicGraphsConfigurationWidget.cc
+    KinematicGraphsConfigurationWidgetUi.ui
+    KinematicGraphsDialog.h
+    KinematicGraphsDialog.cc
+    KinematicGraphsDialogUi.ui
     LatLonCoordinatesTable.cc
     LatLonCoordinatesTable.h
     LayerOptionsWidget.h
@@ -346,6 +362,9 @@ set(srcs
     PreferencesPaneFiles.cc
     PreferencesPaneFiles.h
     PreferencesPaneFilesUi.ui
+    PreferencesPaneKinematicGraphs.cc
+    PreferencesPaneKinematicGraphs.h
+    PreferencesPaneKinematicGraphsUi.ui
     PreferencesPaneNetwork.cc
     PreferencesPaneNetwork.h
     PreferencesPaneNetworkUi.ui

@@ -27,17 +27,14 @@
 #ifndef GPLATES_FILEIO_GMTFORMATGEOMETRYEXPORTER_H
 #define GPLATES_FILEIO_GMTFORMATGEOMETRYEXPORTER_H
 
-#include <QTextStream>
 #include <boost/noncopyable.hpp>
+#include <QTextStream>
 
 #include "GeometryExporter.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
-// FIXME: For now, I'm defining this visitor as part of the GPlatesFileIO
-// namespace, and putting it in src/file-io/. It should probably be in src/geometry-visitors/,
-// but that requires non-trivial modifications to a build system which will (ideally) be
-// deprecated soon in favour of CMake.
+
 namespace GPlatesFileIO
 {
 	/**
@@ -49,18 +46,19 @@ namespace GPlatesFileIO
 	* pattern structure.
 	*/
 	class GMTFormatGeometryExporter :
-		public GPlatesMaths::ConstGeometryOnSphereVisitor,
-		public GeometryExporter,
-		private boost::noncopyable
+			public GPlatesMaths::ConstGeometryOnSphereVisitor,
+			public GeometryExporter,
+			private boost::noncopyable
 	{
 	public:
+
 		GMTFormatGeometryExporter(
-			QTextStream &output_stream,
-			bool reverse_coordinate_order = false,
-			bool polygon_terminating_point = true);
+				QTextStream &output_stream,
+				bool reverse_coordinate_order = false,
+				bool polygon_terminating_point = true);
 
 		virtual
-			~GMTFormatGeometryExporter()
+		~GMTFormatGeometryExporter()
 		{  }
 
 
@@ -71,9 +69,9 @@ namespace GPlatesFileIO
 		* dummy header?)
 		*/
 		virtual
-			void
-			export_geometry(
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr);
+		void
+		export_geometry(
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr);
 
 		// Please keep these geometries ordered alphabetically.
 
@@ -83,19 +81,19 @@ namespace GPlatesFileIO
 				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere);
 
 		virtual
-			void
-			visit_point_on_sphere(
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere);
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere);
 
 		virtual
-			void
-			visit_polygon_on_sphere(
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere);
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere);
 
 		virtual
-			void
-			visit_polyline_on_sphere(
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
 
 	private:
 

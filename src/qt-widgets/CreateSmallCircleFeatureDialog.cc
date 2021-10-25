@@ -90,7 +90,6 @@ namespace
 			GPlatesPropertyValues::XsString::create(
 			GPlatesUtils::UnicodeString(description.toStdString().c_str()))));
 	}
-
 }
 
 GPlatesQtWidgets::CreateSmallCircleFeatureDialog::CreateSmallCircleFeatureDialog(

@@ -594,6 +594,8 @@ GPlatesGui::register_default_export_animation_types(
 			/*export_to_multiple_files_*/true);
 	const bool default_resolved_topology_export_lines = true;
 	const bool default_resolved_topology_export_polygons = true;
+	const boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
+			default_resolved_topology_export_force_polygon_orientation = boost::none;
 	const bool default_resolved_topology_wrap_to_dateline = true;
 
 	registry.register_exporter(
@@ -607,6 +609,7 @@ GPlatesGui::register_default_export_animation_types(
 							default_resolved_topology_file_export_options,
 							default_resolved_topology_export_lines,
 							default_resolved_topology_export_polygons,
+							default_resolved_topology_export_force_polygon_orientation,
 							default_resolved_topology_wrap_to_dateline)),
 			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
 			boost::bind(
@@ -629,6 +632,7 @@ GPlatesGui::register_default_export_animation_types(
 							default_resolved_topology_file_export_options,
 							default_resolved_topology_export_lines,
 							default_resolved_topology_export_polygons,
+							default_resolved_topology_export_force_polygon_orientation,
 							default_resolved_topology_wrap_to_dateline)),
 			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
 			boost::bind(
@@ -646,11 +650,12 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::OGRGMT),
 			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
 					new ExportResolvedTopologyAnimationStrategy::Configuration(
-							add_export_filename_extension("topology_%02fMa", ExportAnimationType::OGRGMT),
+							add_export_filename_extension("topology_%0.2fMa", ExportAnimationType::OGRGMT),
 							ExportResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
 							default_resolved_topology_file_export_options,
 							default_resolved_topology_export_lines,
 							default_resolved_topology_export_polygons,
+							default_resolved_topology_export_force_polygon_orientation,
 							default_resolved_topology_wrap_to_dateline)),
 			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
             boost::bind(
@@ -754,7 +759,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::OGRGMT),
 			ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
 					new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
-							add_export_filename_extension("topology_%P_%02fMa", ExportAnimationType::OGRGMT),
+							add_export_filename_extension("topology_%P_%0.2fMa", ExportAnimationType::OGRGMT),
 							ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
 							default_citcoms_resolved_topology_export_options)),
 			&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,

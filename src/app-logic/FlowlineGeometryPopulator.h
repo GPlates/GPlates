@@ -48,6 +48,12 @@
 
 namespace GPlatesAppLogic
 {
+	namespace FlowlineUtils
+	{
+		class FlowlinePropertyFinder;
+	}
+
+
 	/**
 	 * Reconstructs flowline features.
 	 *
@@ -134,7 +140,7 @@ namespace GPlatesAppLogic
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 
-		FlowlineUtils::FlowlinePropertyFinder d_flowline_property_finder;
+		boost::scoped_ptr<FlowlineUtils::FlowlinePropertyFinder> d_flowline_property_finder;
 
 		
 		/**

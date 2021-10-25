@@ -818,6 +818,13 @@ namespace
 		georeferencing->set_lat_lon_extents(lat_lon_extents, export_raster_width, export_raster_height);
 		raster_writer->set_georeferencing(georeferencing);
 
+		// Set the exported raster's spatial reference system.
+		// This is needed by ArcGIS otherwise the user has to manually set the SRS in ArcGIS
+		// if they want the raster to display correctly in other projections (such as MollWeide).
+		// For now we just set it to WGS84.
+		raster_writer->set_spatial_reference_system(
+				GPlatesPropertyValues::SpatialReferenceSystem::get_WGS84());
+
 		// Write the entire raster (all the tiles) to the export raster file.
 		if (!raster_writer->write_file())
 		{
@@ -1046,6 +1053,13 @@ namespace
 				GPlatesPropertyValues::Georeferencing::create();
 		georeferencing->set_lat_lon_extents(lat_lon_extents, export_raster_width, export_raster_height);
 		raster_writer->set_georeferencing(georeferencing);
+
+		// Set the exported raster's spatial reference system.
+		// This is needed by ArcGIS otherwise the user has to manually set the SRS in ArcGIS
+		// if they want the raster to display correctly in other projections (such as MollWeide).
+		// For now we just set it to WGS84.
+		raster_writer->set_spatial_reference_system(
+				GPlatesPropertyValues::SpatialReferenceSystem::get_WGS84());
 
 		// Write the entire raster (all the tiles) to the export raster file.
 		if (!raster_writer->write_file())

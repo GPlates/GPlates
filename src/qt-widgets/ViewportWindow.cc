@@ -89,7 +89,6 @@
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
-#include "app-logic/SessionManagement.h"
 
 #include "canvas-tools/GeometryOperationState.h"
 #include "canvas-tools/MeasureDistanceState.h"
@@ -123,6 +122,7 @@
 #include "model/Model.h"
 #include "model/types.h"
 
+#include "presentation/SessionManagement.h"
 #include "presentation/ViewState.h"
 
 #include "utils/ComponentManager.h"
@@ -221,6 +221,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_session_menu_ptr(
 			new GPlatesGui::SessionMenu(
 				get_application_state(),
+				get_view_state(),
 				*d_file_io_feedback_ptr,
 				this)),
 	d_import_menu_ptr(NULL), // Needs to be set up after call to setupUi.
@@ -535,6 +536,15 @@ GPlatesQtWidgets::ViewportWindow::connect_file_menu_actions()
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
 			d_file_io_feedback_ptr, SLOT(open_files()));
 
+	QObject::connect(action_Open_Project, SIGNAL(triggered()),
+			d_file_io_feedback_ptr, SLOT(open_project()));
+
+	QObject::connect(action_Save_Project, SIGNAL(triggered()),
+			d_file_io_feedback_ptr, SLOT(save_project()));
+
+	QObject::connect(action_Clear_Session, SIGNAL(triggered()),
+			d_file_io_feedback_ptr, SLOT(clear_session()));
+
 	// ----
 	// Import submenu logic is handled by the ImportMenu class.
 	// Note: items to the Import submenu should be added programmatically, through
@@ -765,6 +775,9 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 
 	QObject::connect(action_Finite_Rotation_Calculator, SIGNAL(triggered()),
 		&dialogs(), SLOT(pop_up_finite_rotation_calculator_dialog()));
+
+	QObject::connect(action_Open_Kinematics_Tool, SIGNAL(triggered()),
+					 &dialogs(), SLOT(pop_up_kinematics_tool_dialog()));
 	
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
@@ -795,6 +808,8 @@ GPlatesQtWidgets::ViewportWindow::connect_tools_menu_actions()
 	// extras which aren't regular canvas tools and should be connected here:-
 	QObject::connect(action_Use_Small_Icons, SIGNAL(toggled(bool)),
 		d_canvas_tools_dock_ptr, SLOT(use_small_canvas_tool_icons(bool)));
+	QObject::connect(action_Configure_Geometry_Rendering, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_configure_canvas_tool_geometry_render_parameters_dialog()));
 
 	// Populate the Tools menu with a sub-menu for each canvas tool workflow.
 	// And for each workflow populate its sub-menu with the workflow tool actions.
@@ -1132,9 +1147,9 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(
 	
 	// Unload all empty-filename feature collections, triggering the removal of their layer info,
 	// so that the Session we record as being the user's previous session is self-consistent.
-	get_application_state().get_session_management().unload_all_unnamed_files();
+	get_view_state().get_session_management().unload_all_unnamed_files();
 	// Remember the current set of loaded files for next time.
-	get_application_state().get_session_management().close_event_hook();
+	get_view_state().get_session_management().close_event_hook();
 
 	// STEP 3: FINAL TIDY-UP BEFORE QUITTING
 
@@ -1400,8 +1415,9 @@ GPlatesQtWidgets::ViewportWindow::install_gui_debug_menu()
 	// to ViewportWindow and cleans up after us. We don't really need to keep
 	// a reference to this class around afterwards, which will help keep us
 	// be free of header and initialiser list spaghetti.
-	static GPlatesGui::GuiDebug *gui_debug = new GPlatesGui::GuiDebug(*this,
-			get_application_state(), this);
+	static GPlatesGui::GuiDebug *gui_debug =
+			new GPlatesGui::GuiDebug(*this, get_view_state(), get_application_state(), this);
+
 	gui_debug->setObjectName("GuiDebug");
 }
 
@@ -1651,7 +1667,8 @@ GPlatesQtWidgets::ViewportWindow::pop_up_python_console()
 void
 GPlatesQtWidgets::ViewportWindow::open_dataset_webpage()
 {
-	QDesktopServices::openUrl(QUrl("http://www.earthbyte.org/Resources/earthbyte_gplates_data_sources.html"));
+	QDesktopServices::openUrl(
+			QUrl("http://www.earthbyte.org/Resources/earthbyte_gplates_1.5_data_sources.html"));
 }
 
 

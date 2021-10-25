@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009, 2011, 2012 Geological Survey of Norway
+ * Copyright (C) 2009, 2011, 2012, 2015 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -41,11 +41,22 @@
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 
+const QString POINT_SUFFIX("_point");
+const QString POLYLINE_SUFFIX("_polyline");
+const QString POLYGON_SUFFIX("_polygon");
+
 namespace{
 
 	typedef std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> element_type;
 	typedef element_type::const_iterator element_iterator_type;
 	typedef std::map<QString, QStringList> file_to_driver_map_type;
+
+	bool
+	file_type_does_not_support_layer_deletion(
+			const QString &extension)
+	{
+		return ((extension == "GMT") || (extension == "gmt"));
+	}
 
 	enum ogr_driver_string
 	{
@@ -71,6 +82,10 @@ namespace{
 		QStringList gmt_driver;
 		gmt_driver << "GMT" << "GMT";
 		map["gmt"] = gmt_driver;
+
+		QStringList geojson_driver;
+		geojson_driver << "GeoJSON" << "GeoJSON";
+		map["geojson"] = geojson_driver;
 
 		return map;
 	}
@@ -189,7 +204,9 @@ namespace{
 				iter = key_value_dictionary->elements().begin(),
 				end = key_value_dictionary->elements().end();
 
-			for (int count = 0; (count < num_attributes_in_layer) && (iter != end) ; count++, ++iter)
+			int initial_count = 0;
+
+			for (int count = initial_count; (count < num_attributes_in_layer) && (iter != end) ; count++, ++iter)
 			{
 				QString model_string = GPlatesUtils::make_qstring_from_icu_string(iter->key()->value().get());
 				QString layer_string = QString::fromStdString(
@@ -325,6 +342,61 @@ namespace{
 			ogr_data_source_ptr->DeleteLayer(0);
 		}
 
+	}
+
+	/**
+	 * @brief remove_multiple_geometry_type_files
+	 *
+	 * Shapefiles can only have one geometry type (point, polyline) in the file, hence export of mixed geometry types must
+	 * be to separate files. We currently export all these files to a subfolder. For example:
+	 *
+	 * if a collection contained points and lines, and the collection name and path was
+	 * "path-name/collection-name", and .shp export has been requested, then the layers would be
+	 * exported to "path-name/collection-name/collection-name_point.shp" and
+	 * "path-name/collection-name/collection-name_polyline.shp".
+	 *
+	 * This function deletes (or removes the layers from) these files.
+	 *
+	 * @param driver - the OGR driver
+	 * @param folder_name - the subfolder name (e.g. path-name/collection-name/ from the example above)
+	 * @param basename - the basename (e.g. collection-name from the example above)
+	 * @param extension - the extension indicating the file type (e.g. .shp)
+	 */
+	void
+	remove_multiple_geometry_type_files(
+			OGRSFDriver *driver,
+			const QString &folder_name,
+			const QString &basename,
+			const QString &extension)
+	{
+
+		QString point_name = basename + POINT_SUFFIX + "." + extension;
+		QString polygon_name = basename + POLYGON_SUFFIX + "." + extension;
+		QString polyline_name = basename + POLYLINE_SUFFIX + "." + extension;
+
+		QStringList filenames;
+		filenames << point_name << polygon_name << polyline_name;
+		QDir folder(folder_name);
+		if (!folder.exists())
+		{
+			return;
+		}
+
+
+		Q_FOREACH(const QString &filename, filenames)
+		{
+			if (folder.exists(filename)){
+				QString full_name = folder.absoluteFilePath(filename);
+				if (file_type_does_not_support_layer_deletion(extension))
+				{
+					QFile::remove(filename);
+				}
+				else
+				{
+					remove_OGR_layers(driver,full_name);
+				}
+			}
+		}
 	}
 
 	void
@@ -616,6 +688,17 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 
 
 	// Adjust the filename to include a sub-folder if necessary.
+	// For multiple geometry types we need to export to separate layers, one for each geometry type.
+	// Shapefiles can have only one layer, hence we need to export to separate files. Our current behaviour
+	// is to export these files to a new folder. The folder name is taken from the collection name.
+	// The individual files in the folder use the collection name with a suffix indicating which
+	// geometry type is contained in the file. The suffix is appended later in the process, in
+	// functions such as "write_point_feature" etc, where the data source is created.
+	//
+	// For example if a collection contained points and lines, and the collection name and path was
+	// "path-name/collection-name", and .shp export has been requested, then the layers would be
+	// exported to "path-name/collection-name/collection-name_point.shp" and
+	// "path-name/collection-name/collection-name_polyline.shp".
 	QString path = q_file_info_original.absolutePath();
 
 	QString basename = q_file_info_original.completeBaseName();
@@ -623,10 +706,6 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 	{
 		QString folder_name = path + QDir::separator() + basename;
 		QDir qdir(folder_name);
-		
-		//qDebug() << "Path: " << path;
-		//qDebug() << "Basename: " << basename;
-		//qDebug() << "Folder name: " << folder_name;
 		
 		if (!qdir.exists())
 		{
@@ -644,36 +723,33 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 
 	d_layer_basename = basename;
 
-	// FIXME: Consider saving the file to a temporary name, and rename it once export is complete. 
-
-
-	QString full_filename = d_filename + "." + d_extension;
-	QFileInfo q_file_info_modified(full_filename);
-	if (q_file_info_modified.exists())
+	QString full_filename;
+	if (!d_multiple_geometry_types)
 	{
-		// Note: GMT driver does not support DeleteLayer.....
-		remove_OGR_layers(d_ogr_driver_ptr,full_filename);
-	}
-
-
-#if 0
-	// Experiment with delaying data source creation until we need to create each type of layer. 
-	d_ogr_data_source_ptr = ogr_driver->CreateDataSource(d_filename.toStdString().c_str(), NULL );
-#endif
-
-#if 0
-	if (!q_file_info.exists())
-	{
-		// Create new file / folder
-		d_ogr_data_source_ptr = ogr_driver->CreateDataSource(d_filename.toStdString().c_str(), NULL );
+		full_filename = d_filename + "." + d_extension;
+		QFileInfo q_file_info_modified(full_filename);
+		if (q_file_info_modified.exists())
+		{
+			if (file_type_does_not_support_layer_deletion(d_extension))
+			{
+				QFile::remove(full_filename);
+			}
+			else
+			{
+				remove_OGR_layers(d_ogr_driver_ptr,full_filename);
+			}
+		}
 	}
 	else
 	{
-		// File already exists; check if the user wants to overwrite.
+		QString folder_name = path + QDir::separator() + basename;
 
-		d_ogr_data_source_ptr = ogr_driver->Open(d_filename.toStdString().c_str(),true /* true to allow updates */);
+		QDir dir(folder_name);
+		if (dir.exists())
+		{
+			remove_multiple_geometry_type_files(d_ogr_driver_ptr,folder_name,basename,d_extension);
+		}
 	}
-#endif
 
 }
 
@@ -698,7 +774,7 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 		QString data_source_name = d_filename;
 		if (d_multiple_geometry_types)
 		{
-			data_source_name.append("_point");
+			data_source_name.append(POINT_SUFFIX);
 		}
 		data_source_name.append(".").append(d_extension);
 
@@ -757,7 +833,7 @@ GPlatesFileIO::OgrWriter::write_multi_point_feature(
 		QString data_source_name = d_filename;
 		if (d_multiple_geometry_types)
 		{
-			data_source_name.append("_point");
+			data_source_name.append(POINT_SUFFIX);
 		}
 		data_source_name.append(".").append(d_extension);
 
@@ -862,7 +938,7 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 		QString data_source_name = d_filename;
 		if (d_multiple_geometry_types)
 		{
-			data_source_name.append("_polyline");
+			data_source_name.append(POLYLINE_SUFFIX);
 		}
 		data_source_name.append(".").append(d_extension);
 
@@ -956,7 +1032,7 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 		QString data_source_name = d_filename;
 		if (d_multiple_geometry_types)
 		{
-			data_source_name.append("_polygon");
+			data_source_name.append(POLYGON_SUFFIX);
 		}
 		data_source_name.append(".").append(d_extension);
 

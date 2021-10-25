@@ -67,8 +67,9 @@ GPlatesOpenGL::GLRenderTargetImpl::is_supported(
 
 	// Classify our frame buffer object according to texture format/dimensions, etc.
 	GLFrameBufferObject::Classification frame_buffer_object_classification;
-	frame_buffer_object_classification.set_dimensions(render_target_test_dimension, render_target_test_dimension);
-	frame_buffer_object_classification.set_texture_internal_format(texture_internalformat);
+	frame_buffer_object_classification.set_dimensions(
+			renderer, render_target_test_dimension, render_target_test_dimension);
+	frame_buffer_object_classification.set_attached_texture_2D(renderer, texture_internalformat);
 	if (include_stencil_buffer)
 	{
 		// We need support for GL_EXT_packed_depth_stencil because, for the most part, consumer
@@ -80,8 +81,10 @@ GPlatesOpenGL::GLRenderTargetImpl::is_supported(
 
 		// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
 		// And both must be enabled for the frame buffer completeness check to succeed.
-		frame_buffer_object_classification.set_stencil_buffer_internal_format(GL_DEPTH24_STENCIL8_EXT);
-		frame_buffer_object_classification.set_depth_buffer_internal_format(GL_DEPTH24_STENCIL8_EXT);
+		frame_buffer_object_classification.set_attached_render_buffer(
+				renderer, GL_DEPTH24_STENCIL8_EXT, GL_STENCIL_ATTACHMENT_EXT);
+		frame_buffer_object_classification.set_attached_render_buffer(
+				renderer, GL_DEPTH24_STENCIL8_EXT, GL_DEPTH_ATTACHMENT_EXT);
 	}
 	else if (include_depth_buffer)
 	{
@@ -91,12 +94,15 @@ GPlatesOpenGL::GLRenderTargetImpl::is_supported(
 		{
 			// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
 			// And both must be enabled for the frame buffer completeness check to succeed.
-			frame_buffer_object_classification.set_depth_buffer_internal_format(GL_DEPTH24_STENCIL8_EXT);
-			frame_buffer_object_classification.set_stencil_buffer_internal_format(GL_DEPTH24_STENCIL8_EXT);
+			frame_buffer_object_classification.set_attached_render_buffer(
+					renderer, GL_DEPTH24_STENCIL8_EXT, GL_STENCIL_ATTACHMENT_EXT);
+			frame_buffer_object_classification.set_attached_render_buffer(
+					renderer, GL_DEPTH24_STENCIL8_EXT, GL_DEPTH_ATTACHMENT_EXT);
 		}
 		else
 		{
-			frame_buffer_object_classification.set_depth_buffer_internal_format(GL_DEPTH_COMPONENT);
+			frame_buffer_object_classification.set_attached_render_buffer(
+					renderer, GL_DEPTH_COMPONENT, GL_DEPTH_ATTACHMENT_EXT);
 		}
 	}
 

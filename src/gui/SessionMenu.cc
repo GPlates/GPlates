@@ -29,26 +29,29 @@
 #include <QAction>
 
 #include "app-logic/ApplicationState.h"
-#include "app-logic/SessionManagement.h"
 
 #include "gui/FileIOFeedback.h"
+
+#include "presentation/InternalSession.h"
+#include "presentation/SessionManagement.h"
+#include "presentation/ViewState.h"
 
 
 namespace
 {
 	QString
 	create_tooltip_from_session(
-			const GPlatesAppLogic::Session &session)
+			const GPlatesPresentation::Session &session)
 	{
-		QStringList files = QStringList::fromSet(session.loaded_files());
+		QStringList files = session.get_loaded_files();
 		return files.join("\n");
 	}
 
 	QString
 	create_statustip_from_session(
-			const GPlatesAppLogic::Session &session)
+			const GPlatesPresentation::Session &session)
 	{
-		QStringList files = QStringList::fromSet(session.loaded_files());
+		QStringList files = session.get_loaded_files();
 		return files.join(", ");
 	}
 }
@@ -56,10 +59,11 @@ namespace
 
 GPlatesGui::SessionMenu::SessionMenu(
 		GPlatesAppLogic::ApplicationState &app_state_,
+		GPlatesPresentation::ViewState &view_state_,
 		GPlatesGui::FileIOFeedback &file_io_feedback_,
 		QObject *parent_):
 	QObject(parent_),
-	d_session_management_ptr(&(app_state_.get_session_management())),
+	d_session_management_ptr(&(view_state_.get_session_management())),
 	d_file_io_feedback_ptr(&file_io_feedback_),
 	d_no_sessions_action(new QAction(tr("<No sessions to load>"), d_menu_ptr)),
 	d_recent_session_action_group(NULL)
@@ -109,7 +113,7 @@ GPlatesGui::SessionMenu::init(
 void
 GPlatesGui::SessionMenu::regenerate_menu()
 {
-	QList<GPlatesAppLogic::Session> recent_sessions =
+	QList<GPlatesPresentation::InternalSession::non_null_ptr_to_const_type> recent_sessions =
 			d_session_management_ptr->get_recent_session_list();
 	
 	if (recent_sessions.isEmpty()) {
@@ -128,11 +132,15 @@ GPlatesGui::SessionMenu::regenerate_menu()
 		for (int i = 0; i < d_recent_session_actions.size(); ++i) {
 			QAction *act = d_recent_session_actions.at(i);
 			if (i < recent_sessions.size()) {
+				const GPlatesPresentation::InternalSession &session = *recent_sessions.at(i);
+
 				// This menu slot corresponds to a Session on the list.
 				act->setVisible(true);
-				act->setText(recent_sessions.at(i).description());
-				act->setToolTip(create_tooltip_from_session(recent_sessions.at(i)));
-				act->setStatusTip(create_statustip_from_session(recent_sessions.at(i)));
+
+				act->setText(session.get_description());
+
+				act->setToolTip(create_tooltip_from_session(session));
+				act->setStatusTip(create_statustip_from_session(session));
 			} else {
 				// This menu slot has no associated Session.
 				act->setVisible(false);

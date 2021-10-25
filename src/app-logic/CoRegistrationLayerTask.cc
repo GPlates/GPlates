@@ -37,11 +37,6 @@
 #include "data-mining/DataTable.h"
 #include "data-mining/DataSelector.h"
 
-const QString GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME =
-		"Reconstructed seed geometries";
-const QString GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME =
-		"Reconstructed target geometries/rasters";
-
 
 bool
 GPlatesAppLogic::CoRegistrationLayerTask::can_process_feature_collection(
@@ -60,7 +55,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::get_input_channel_types() const
 
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME,
+					LayerInputChannelName::CO_REGISTRATION_SEED_GEOMETRIES,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 					LayerTaskType::RECONSTRUCT));
 
@@ -72,7 +67,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::get_input_channel_types() const
 	target_input_channel_types.push_back(LayerTaskType::RASTER);
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME,
+					LayerInputChannelName::CO_REGISTRATION_TARGET_GEOMETRIES,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 					target_input_channel_types));
 
@@ -80,18 +75,17 @@ GPlatesAppLogic::CoRegistrationLayerTask::get_input_channel_types() const
 }
 
 
-QString
+GPlatesAppLogic::LayerInputChannelName::Type
 GPlatesAppLogic::CoRegistrationLayerTask::get_main_input_feature_collection_channel() const
 {
-	// The main input feature collection channel is not used because we only accept
-	// input from other layers - so this string should never be seen by users.
-	return QString("Unused Input File Channel");
+	// The main input feature collection channel is not used because we only accept input from other layers.
+	return LayerInputChannelName::UNUSED;
 }
 
 
 void
 GPlatesAppLogic::CoRegistrationLayerTask::add_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// This layer type does not connect to any input files so nothing to do.
@@ -100,7 +94,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::add_input_file_connection(
 
 void
 GPlatesAppLogic::CoRegistrationLayerTask::remove_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// This layer type does not connect to any input files so nothing to do.
@@ -109,7 +103,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::remove_input_file_connection(
 
 void
 GPlatesAppLogic::CoRegistrationLayerTask::modified_input_file(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// This layer type does not connect to any input files so nothing to do.
@@ -118,10 +112,10 @@ GPlatesAppLogic::CoRegistrationLayerTask::modified_input_file(
 
 void
 GPlatesAppLogic::CoRegistrationLayerTask::add_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::CO_REGISTRATION_SEED_GEOMETRIES)
 	{
 		// The seed geometries layer proxy.
 		boost::optional<ReconstructLayerProxy *> reconstructed_seed_geometries_layer_proxy =
@@ -132,7 +126,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::add_input_layer_proxy_connection(
 					GPlatesUtils::get_non_null_pointer(reconstructed_seed_geometries_layer_proxy.get()));
 		}
 	}
-	else if (input_channel_name == CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::CO_REGISTRATION_TARGET_GEOMETRIES)
 	{
 		// The target reconstructed geometries layer proxy.
 		boost::optional<ReconstructLayerProxy *> target_reconstructed_geometries_layer_proxy =
@@ -157,10 +151,10 @@ GPlatesAppLogic::CoRegistrationLayerTask::add_input_layer_proxy_connection(
 
 void
 GPlatesAppLogic::CoRegistrationLayerTask::remove_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::CO_REGISTRATION_SEED_GEOMETRIES)
 	{
 		// The seed geometries layer proxy.
 		boost::optional<ReconstructLayerProxy *> reconstructed_seed_geometries_layer_proxy =
@@ -171,7 +165,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::remove_input_layer_proxy_connection(
 					GPlatesUtils::get_non_null_pointer(reconstructed_seed_geometries_layer_proxy.get()));
 		}
 	}
-	else if (input_channel_name == CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::CO_REGISTRATION_TARGET_GEOMETRIES)
 	{
 		// The target reconstructed geometries layer proxy.
 		boost::optional<ReconstructLayerProxy *> target_reconstructed_geometries_layer_proxy =

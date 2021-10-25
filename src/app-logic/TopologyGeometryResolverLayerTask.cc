@@ -34,12 +34,6 @@
 #include "TopologyUtils.h"
 
 
-const QString GPlatesAppLogic::TopologyGeometryResolverLayerTask::TOPOLOGICAL_GEOMETRY_FEATURES_CHANNEL_NAME =
-		"Topological geometry features";
-const QString GPlatesAppLogic::TopologyGeometryResolverLayerTask::TOPOLOGICAL_SECTION_LAYERS_CHANNEL_NAME =
-		"Topological sections";
-
-
 bool
 GPlatesAppLogic::TopologyGeometryResolverLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
@@ -57,14 +51,14 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::get_input_channel_types() co
 	// Channel definition for the reconstruction tree.
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					get_reconstruction_tree_channel_name(),
+					LayerInputChannelName::RECONSTRUCTION_TREE,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RECONSTRUCTION));
 
 	// Channel definition for the topological geometry features.
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					TOPOLOGICAL_GEOMETRY_FEATURES_CHANNEL_NAME,
+					LayerInputChannelName::TOPOLOGICAL_GEOMETRY_FEATURES,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL));
 
 	// Channel definition for the topological section layers.
@@ -82,7 +76,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::get_input_channel_types() co
 	topological_section_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					TOPOLOGICAL_SECTION_LAYERS_CHANNEL_NAME,
+					LayerInputChannelName::TOPOLOGICAL_SECTION_LAYERS,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 					topological_section_channel_types));
 
@@ -90,10 +84,10 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::get_input_channel_types() co
 }
 
 
-QString
+GPlatesAppLogic::LayerInputChannelName::Type
 GPlatesAppLogic::TopologyGeometryResolverLayerTask::get_main_input_feature_collection_channel() const
 {
-	return TOPOLOGICAL_GEOMETRY_FEATURES_CHANNEL_NAME;
+	return LayerInputChannelName::TOPOLOGICAL_GEOMETRY_FEATURES;
 }
 
 
@@ -117,10 +111,10 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::activate(
 
 void
 GPlatesAppLogic::TopologyGeometryResolverLayerTask::add_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == TOPOLOGICAL_GEOMETRY_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::TOPOLOGICAL_GEOMETRY_FEATURES)
 	{
 		d_topology_geometry_resolver_layer_proxy
 				->add_topological_geometry_feature_collection(feature_collection);
@@ -130,10 +124,10 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::add_input_file_connection(
 
 void
 GPlatesAppLogic::TopologyGeometryResolverLayerTask::remove_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == TOPOLOGICAL_GEOMETRY_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::TOPOLOGICAL_GEOMETRY_FEATURES)
 	{
 		d_topology_geometry_resolver_layer_proxy
 				->remove_topological_geometry_feature_collection(feature_collection);
@@ -143,10 +137,10 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::remove_input_file_connection
 
 void
 GPlatesAppLogic::TopologyGeometryResolverLayerTask::modified_input_file(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == TOPOLOGICAL_GEOMETRY_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::TOPOLOGICAL_GEOMETRY_FEATURES)
 	{
 		// Let the reconstruct layer proxy know that one of the topological geometry feature collections has been modified.
 		d_topology_geometry_resolver_layer_proxy
@@ -157,10 +151,10 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::modified_input_file(
 
 void
 GPlatesAppLogic::TopologyGeometryResolverLayerTask::add_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == get_reconstruction_tree_channel_name())
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTION_TREE)
 	{
 		// Make sure the input layer proxy is a reconstruction layer proxy.
 		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
@@ -175,7 +169,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::add_input_layer_proxy_connec
 					GPlatesUtils::get_non_null_pointer(reconstruction_layer_proxy.get()));
 		}
 	}
-	else if (input_channel_name == TOPOLOGICAL_SECTION_LAYERS_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::TOPOLOGICAL_SECTION_LAYERS)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,
@@ -202,10 +196,10 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::add_input_layer_proxy_connec
 
 void
 GPlatesAppLogic::TopologyGeometryResolverLayerTask::remove_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == get_reconstruction_tree_channel_name())
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTION_TREE)
 	{
 		// Make sure the input layer proxy is a reconstruction layer proxy.
 		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
@@ -220,7 +214,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerTask::remove_input_layer_proxy_con
 					d_default_reconstruction_layer_proxy);
 		}
 	}
-	else if (input_channel_name == TOPOLOGICAL_SECTION_LAYERS_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::TOPOLOGICAL_SECTION_LAYERS)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,

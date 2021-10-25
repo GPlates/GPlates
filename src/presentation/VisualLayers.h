@@ -396,7 +396,7 @@ namespace GPlatesPresentation
 		> index_map_type;
 
 		void
-		connect_to_application_state_signals();
+		make_signal_slot_connections();
 
 		visual_layer_ptr_type
 		create_visual_layer(

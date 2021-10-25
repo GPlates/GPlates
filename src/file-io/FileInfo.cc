@@ -26,6 +26,8 @@
 
 #include "FileInfo.h"
 
+#include "scribe/Scribe.h"
+
 
 const QString
 GPlatesFileIO::FileInfo::get_display_name(
@@ -58,6 +60,31 @@ GPlatesFileIO::FileInfo::get_file_name_without_extension() const
 	return file_info.completeBaseName();
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesFileIO::FileInfo::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	QString absolute_file_path;
+
+	if (scribe.is_saving())
+	{
+		absolute_file_path = d_file_info.absoluteFilePath();
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, absolute_file_path, "absolute_file_path", GPlatesScribe::DONT_TRACK))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	if (scribe.is_loading())
+	{
+		d_file_info.setFile(absolute_file_path);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
 
 
 bool

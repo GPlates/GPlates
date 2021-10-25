@@ -26,6 +26,9 @@
 #ifndef GPLATES_APP_LOGIC_LAYERTASKTYPE_H
 #define GPLATES_APP_LOGIC_LAYERTASKTYPE_H
 
+#include "scribe/Transcribe.h"
+#include "scribe/TranscribeEnumProtocol.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -59,6 +62,38 @@ namespace GPlatesAppLogic
 
 			NUM_TYPES // This must be the last entry.
 		};
+
+
+		/**
+		 * Transcribe for sessions/projects.
+		 */
+		inline
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				Type &layer_task_type,
+				bool transcribed_construct_data)
+		{
+			// WARNING: Changing the string ids will break backward/forward compatibility.
+			static const GPlatesScribe::EnumValue enum_values[] =
+			{
+				GPlatesScribe::EnumValue("RECONSTRUCTION", RECONSTRUCTION),
+				GPlatesScribe::EnumValue("RECONSTRUCT", RECONSTRUCT),
+				GPlatesScribe::EnumValue("RASTER", RASTER),
+				GPlatesScribe::EnumValue("SCALAR_FIELD_3D", SCALAR_FIELD_3D),
+				GPlatesScribe::EnumValue("TOPOLOGY_GEOMETRY_RESOLVER", TOPOLOGY_GEOMETRY_RESOLVER),
+				GPlatesScribe::EnumValue("TOPOLOGY_NETWORK_RESOLVER", TOPOLOGY_NETWORK_RESOLVER),
+				GPlatesScribe::EnumValue("VELOCITY_FIELD_CALCULATOR", VELOCITY_FIELD_CALCULATOR),
+				GPlatesScribe::EnumValue("CO_REGISTRATION", CO_REGISTRATION)
+			};
+
+			return GPlatesScribe::transcribe_enum_protocol(
+					TRANSCRIBE_SOURCE,
+					scribe,
+					layer_task_type,
+					enum_values,
+					enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
+		}
 	}
 }
 

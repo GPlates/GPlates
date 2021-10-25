@@ -80,7 +80,10 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 	d_log_file(log_filename),
 	// For File logs, default to "Warning or above", no Debug messages.
 	// Rationale: File-IO for lots of debug messages may suck.
-	d_log_level(adjust_default_log_level(QtWarningMsg))
+	//
+	// UPDATE: We now log debug messages so when users send us their log files they
+	// contain more info - at least for internal (non-public) builds...
+	d_log_level(adjust_default_log_level(QtDebugMsg))
 {
 	// Open the QFile QIODevice that we'll use to write to a file on disk.
 	if (log_filename.isEmpty()) {

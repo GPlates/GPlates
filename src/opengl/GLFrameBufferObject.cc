@@ -50,6 +50,15 @@ namespace GPlatesOpenGL
 {
 	namespace
 	{
+		/**
+		 * The maximum number of attachments (supported by GL_EXT_framebuffer_object).
+		 *
+		 * This is 16 colour attachments, a depth attachment and a stencil attachment.
+		 * NOTE: This is more than the runtime system may support depending on GL_MAX_COLOR_ATTACHMENTS_EXT.
+		 */
+		const unsigned int MAX_NUM_ATTACHMENTS = 16 + 2;
+
+
 		//! Converts attachment GLenum into an index starting at GL_COLOR_ATTACHMENT0_EXT.
 		unsigned int
 		get_attachment_index(
@@ -71,6 +80,23 @@ namespace GPlatesOpenGL
 			// Note that if the GL_MAX_COLOR_ATTACHMENTS_EXT query is less than GL_COLOR_ATTACHMENT15_EXT
 			// then there will be unused slots in 'd_attachment_points'.
 			return attachment - GL_COLOR_ATTACHMENT0_EXT;
+		}
+
+
+		void
+		assert_valid_attachment(
+				GLRenderer &renderer,
+				GLenum attachment,
+				const GPlatesUtils::CallStack::Trace &assert_location)
+		{
+			// Attachment must be a valid value.
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
+						attachment < GL_COLOR_ATTACHMENT0_EXT +
+								renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
+						(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
+						(attachment == GL_STENCIL_ATTACHMENT_EXT),
+					assert_location);
 		}
 	}
 }
@@ -147,9 +173,7 @@ GPlatesOpenGL::GLFrameBufferObject::GLFrameBufferObject(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Resize to the maximum number of colour attachments supported by GL_EXT_framebuffer_object.
-	// This is 16 colour attachments (supported by GL_EXT_framebuffer_object), a depth attachment and a stencil attachment.
-	// NOTE: This is more than the runtime system may support depending on GL_MAX_COLOR_ATTACHMENTS_EXT.
-	d_attachment_points.resize(16 + 2);
+	d_attachment_points.resize(MAX_NUM_ATTACHMENTS);
 }
 
 
@@ -174,12 +198,9 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_1D(
 	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
 
 	// Attachment must be a valid value.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
-			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
-			(attachment == GL_STENCIL_ATTACHMENT_EXT),
+	assert_valid_attachment(
+			renderer,
+			attachment,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Attach to the texture.
@@ -222,12 +243,9 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_2D(
 	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
 
 	// Attachment must be a valid value.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
-			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
-			(attachment == GL_STENCIL_ATTACHMENT_EXT),
+	assert_valid_attachment(
+			renderer,
+			attachment,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Attach to the texture.
@@ -271,12 +289,9 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_3D(
 	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
 
 	// Attachment must be a valid value.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
-			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
-			(attachment == GL_STENCIL_ATTACHMENT_EXT),
+	assert_valid_attachment(
+			renderer,
+			attachment,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Attach to the texture.
@@ -324,12 +339,9 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array_layer(
 	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
 
 	// Attachment must be a valid value.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
-			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
-			(attachment == GL_STENCIL_ATTACHMENT_EXT),
+	assert_valid_attachment(
+			renderer,
+			attachment,
 			GPLATES_ASSERTION_SOURCE);
 
 	// The GL_EXT_texture_array extension is required for this call.
@@ -378,12 +390,9 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
 	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
 
 	// Attachment must be a valid value.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
-			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
-			(attachment == GL_STENCIL_ATTACHMENT_EXT),
+	assert_valid_attachment(
+			renderer,
+			attachment,
 			GPLATES_ASSERTION_SOURCE);
 
 	// The GL_EXT_geometry_shader4 extension is required for this call.
@@ -425,12 +434,9 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_render_buffer(
 	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
 
 	// Attachment must be a valid value.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
-			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
-			(attachment == GL_STENCIL_ATTACHMENT_EXT),
+	assert_valid_attachment(
+			renderer,
+			attachment,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Attach to the render buffer.
@@ -458,12 +464,9 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
 
 	// Attachment must be a valid value.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
-			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
-			(attachment == GL_STENCIL_ATTACHMENT_EXT),
+	assert_valid_attachment(
+			renderer,
+			attachment,
 			GPLATES_ASSERTION_SOURCE);
 
 	const boost::optional<AttachmentPoint> &attachment_point = d_attachment_points[get_attachment_index(attachment)];
@@ -541,11 +544,34 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				attachment_point->texture && attachment_point->texture_level,
 				GPLATES_ASSERTION_SOURCE);
+		//
+		// Some graphics systems generate an 'invalid value' error here
+		// (eg, nVidia driver 275.33 on 460SE hardware).
+		// So we'll use glFramebufferRenderbufferEXT instead of glFramebufferTextureEXT
+		// to detach the attachment point.
+		//
+		// According to the '' spec...
+		//
+		// "If the user calls either FramebufferTexture with a zero
+        // texture name, or FramebufferRenderbuffer with a zero
+		// renderbuffer name, then the it as if nothing is attached to
+        // the specified attachment point."
+		//
+		// ...so we should be able to use either to 'detach' an attachment point.
+		//
+#if 0
 		glFramebufferTextureEXT(
 				GL_FRAMEBUFFER_EXT,
 				attachment_point->attachment,
 				0/*texture*/,
 				attachment_point->texture_level.get());
+#else
+		glFramebufferRenderbufferEXT(
+				GL_FRAMEBUFFER_EXT,
+				attachment_point->attachment,
+				GL_RENDERBUFFER_EXT, // value ignored for zero render buffer
+				0/*render buffer*/);
+#endif
 		break;
 
 	case ATTACHMENT_RENDER_BUFFER:
@@ -708,93 +734,124 @@ GPlatesOpenGL::GLFrameBufferObject::get_frame_buffer_dimensions() const
 
 
 GPlatesOpenGL::GLFrameBufferObject::Classification::Classification() :
-	d_width(0),
-	d_height(0),
-	d_texture_internal_format(-1),
-	d_depth_buffer_internal_format(-1),
-	d_stencil_buffer_internal_format(-1)
+	// Using arbitrary default parameters - default tuple indicates non-specified classification.
+	d_tuple(
+			0, // width
+			0, // height
+			std::vector<attachment_point_type>(
+					MAX_NUM_ATTACHMENTS,
+					attachment_point_type(ATTACHMENT_TEXTURE_1D, -1, boost::none)))
 {
 }
 
 
 void
 GPlatesOpenGL::GLFrameBufferObject::Classification::set_dimensions(
+		GLRenderer &renderer,
 		GLuint width,
 		GLuint height)
 {
-	d_width = width;
-	d_height = height;
+	boost::tuples::get<0>(d_tuple) = width;
+	boost::tuples::get<1>(d_tuple) = height;
 }
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::Classification::set_texture_internal_format(
-		GLint texture_internal_format)
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_1D(
+		GLRenderer &renderer,
+		GLint texture_internal_format,
+		GLenum texture_target,
+		GLenum attachment)
 {
-	d_texture_internal_format = texture_internal_format;
+	assert_valid_attachment(
+			renderer,
+			attachment,
+			GPLATES_ASSERTION_SOURCE);
+
+	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
+			attachment_point_type(ATTACHMENT_TEXTURE_1D, texture_internal_format, texture_target);
 }
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::Classification::set_depth_buffer_internal_format(
-		GLint depth_buffer_internal_format)
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_2D(
+		GLRenderer &renderer,
+		GLint texture_internal_format,
+		GLenum texture_target,
+		GLenum attachment)
 {
-	d_depth_buffer_internal_format = depth_buffer_internal_format;
+	assert_valid_attachment(
+			renderer,
+			attachment,
+			GPLATES_ASSERTION_SOURCE);
+
+	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
+			attachment_point_type(ATTACHMENT_TEXTURE_2D, texture_internal_format, texture_target);
 }
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::Classification::set_stencil_buffer_internal_format(
-		GLint stencil_buffer_internal_format)
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_3D(
+		GLRenderer &renderer,
+		GLint texture_internal_format,
+		GLenum texture_target,
+		GLenum attachment)
 {
-	d_stencil_buffer_internal_format = stencil_buffer_internal_format;
+	assert_valid_attachment(
+			renderer,
+			attachment,
+			GPLATES_ASSERTION_SOURCE);
+
+	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
+			attachment_point_type(ATTACHMENT_TEXTURE_3D, texture_internal_format, texture_target);
 }
 
 
-GPlatesOpenGL::GLFrameBufferObject::Classification::tuple_type
-GPlatesOpenGL::GLFrameBufferObject::Classification::get_tuple() const
+void
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_array_layer(
+		GLRenderer &renderer,
+		GLint texture_internal_format,
+		GLenum attachment)
 {
-	return tuple_type(
-			d_width,
-			d_height,
-			d_texture_internal_format,
-			d_depth_buffer_internal_format,
-			d_stencil_buffer_internal_format);
+	assert_valid_attachment(
+			renderer,
+			attachment,
+			GPLATES_ASSERTION_SOURCE);
+
+	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
+			attachment_point_type(ATTACHMENT_TEXTURE_ARRAY_LAYER, texture_internal_format, boost::none/*texture_target*/);
 }
 
 
-GLuint
-GPlatesOpenGL::GLFrameBufferObject::Classification::get_width() const
+void
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_texture_array(
+		GLRenderer &renderer,
+		GLint texture_internal_format,
+		GLenum attachment)
 {
-	return d_width;
+	assert_valid_attachment(
+			renderer,
+			attachment,
+			GPLATES_ASSERTION_SOURCE);
+
+	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
+			attachment_point_type(ATTACHMENT_TEXTURE_ARRAY, texture_internal_format, boost::none/*texture_target*/);
 }
 
 
-GLuint
-GPlatesOpenGL::GLFrameBufferObject::Classification::get_height() const
+void
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_attached_render_buffer(
+		GLRenderer &renderer,
+		GLint render_buffer_internal_format,
+		GLenum attachment)
 {
-	return d_height;
-}
+	assert_valid_attachment(
+			renderer,
+			attachment,
+			GPLATES_ASSERTION_SOURCE);
 
-
-GLint
-GPlatesOpenGL::GLFrameBufferObject::Classification::get_texture_internal_format() const
-{
-	return d_texture_internal_format;
-}
-
-
-GLint
-GPlatesOpenGL::GLFrameBufferObject::Classification::get_depth_buffer_internal_format() const
-{
-	return d_depth_buffer_internal_format;
-}
-
-
-GLint
-GPlatesOpenGL::GLFrameBufferObject::Classification::get_stencil_buffer_internal_format() const
-{
-	return d_stencil_buffer_internal_format;
+	boost::tuples::get<2>(d_tuple)[get_attachment_index(attachment)] =
+			attachment_point_type(ATTACHMENT_RENDER_BUFFER, render_buffer_internal_format, boost::none/*texture_target*/);
 }
 
 

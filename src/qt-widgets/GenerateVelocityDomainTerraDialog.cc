@@ -651,7 +651,7 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::save_velocity_domain_file(
 	np_stream << processor_number;
 
 	// Generate the filename from the template by replacing the place holders with parameter values.
-	std::string file_name = d_file_name_template;	
+	std::string file_name = d_file_name_template;
 	file_name.append(".gpml");
 	replace_place_holder(file_name, MT_PLACE_HOLDER, mt_stream.str());
 	replace_place_holder(file_name, NT_PLACE_HOLDER, nt_stream.str());

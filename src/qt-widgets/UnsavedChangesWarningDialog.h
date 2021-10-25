@@ -59,7 +59,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
-		enum ActionRequested { CLOSE_GPLATES, REPLACE_SESSION };
+		enum ActionRequested { CLOSE_GPLATES, CLEAR_SESSION };
 
 		explicit
 		UnsavedChangesWarningDialog(
@@ -142,12 +142,12 @@ namespace GPlatesQtWidgets
 					abort->setIconSize(QSize(22, 22));
 					break;
 
-			case REPLACE_SESSION:
-					discard->setText(tr("&Discard changes, load session"));
+			case CLEAR_SESSION:
+					discard->setText(tr("&Discard changes"));
 					discard->setIcon(QIcon(":/discard_changes_22.png"));
 					discard->setIconSize(QSize(22, 22));
 
-					abort->setText(tr("D&on't open the new session"));
+					abort->setText(tr("D&on't clear"));
 					abort->setIcon(QIcon(":/tango_process_stop_22.png"));
 					abort->setIconSize(QSize(22, 22));
 					break;
@@ -170,11 +170,11 @@ namespace GPlatesQtWidgets
 					label_context->setText(tr("GPlates is closing."));
 					break;
 
-			case REPLACE_SESSION:
+			case CLEAR_SESSION:
 					label_context->setText(tr(
-							"Opening a previous session will replace all currently loaded"
-							" feature collections. You may wish to save changes you have made"
-							" before continuing."));
+						"Clearing session.\n"
+						"Clearing the current session will unload all"
+						" currently loaded feature collections."));
 					break;
 			}
 		}

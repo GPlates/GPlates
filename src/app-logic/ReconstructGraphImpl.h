@@ -39,6 +39,7 @@
 
 
 #include "FeatureCollectionFileState.h"
+#include "LayerInputChannelName.h"
 #include "LayerProxy.h"
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
@@ -46,6 +47,9 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 #include "model/WeakReferenceCallback.h"
+
+#include "scribe/Transcribe.h"
+#include "scribe/TranscribeContext.h"
 
 
 namespace GPlatesAppLogic
@@ -165,11 +169,36 @@ namespace GPlatesAppLogic
 					LayerProxy::non_null_ptr_type>
 							data_type;
 
+
 			data_type d_data;
 			connection_seq_type d_output_connections;
 
 			// Only used if this data object is the output of a layer.
 			boost::optional< boost::weak_ptr<Layer> > d_outputting_layer;
+
+		private: // Transcribing...
+
+			//! Constructor data members that do not have a default constructor - the rest are transcribed.
+			explicit
+			Data(
+					const data_type &data) :
+				d_data(data)
+			{  }
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			static
+			GPlatesScribe::TranscribeResult
+			transcribe_construct_data(
+					GPlatesScribe::Scribe &scribe,
+					GPlatesScribe::ConstructObject<Data> &data);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
+
 		};
 
 
@@ -186,7 +215,7 @@ namespace GPlatesAppLogic
 			LayerInputConnection(
 					const boost::shared_ptr<Data> &input_data,
 					const boost::weak_ptr<Layer> &layer_receiving_input,
-					const QString &layer_input_channel_name,
+					LayerInputChannelName::Type layer_input_channel_name,
 					bool is_input_layer_active = true);
 
 			~LayerInputConnection();
@@ -203,7 +232,7 @@ namespace GPlatesAppLogic
 				return d_layer_receiving_input;
 			}
 
-			const QString &
+			LayerInputChannelName::Type
 			get_input_channel_name() const
 			{
 				return d_layer_input_channel_name;
@@ -237,6 +266,7 @@ namespace GPlatesAppLogic
 					bool active);
 			
 		private:
+
 			/**
 			 * Receives notifications when input file, if connected to one, is modified.
 			 */
@@ -260,7 +290,24 @@ namespace GPlatesAppLogic
 
 			private:
 				LayerInputConnection *d_layer_input_connection;
+
+			private: // Transcribing...
+
+				GPlatesScribe::TranscribeResult
+				transcribe(
+						GPlatesScribe::Scribe &scribe,
+						bool transcribed_construct_data);
+
+				static
+				GPlatesScribe::TranscribeResult
+				transcribe_construct_data(
+						GPlatesScribe::Scribe &scribe,
+						GPlatesScribe::ConstructObject<FeatureCollectionModified> &callback);
+
+				// Only the scribe system should be able to transcribe.
+				friend class GPlatesScribe::Access;
 			};
+
 
 			void
 			modified_input_feature_collection();
@@ -268,7 +315,7 @@ namespace GPlatesAppLogic
 
 			boost::shared_ptr<Data> d_input_data;
 			boost::weak_ptr<Layer> d_layer_receiving_input;
-			QString d_layer_input_channel_name;
+			LayerInputChannelName::Type d_layer_input_channel_name;
 			bool d_is_input_layer_active;
 
 			/**
@@ -280,6 +327,21 @@ namespace GPlatesAppLogic
 			 * copies of the callback thus allowing it to get called more than once per modification.
 			 */
 			GPlatesModel::FeatureCollectionHandle::const_weak_ref d_callback_input_feature_collection;
+
+		private: // Transcribing...
+
+			LayerInputConnection() :
+				d_is_input_layer_active(false)
+			{  }
+
+			//! Transcribe to/from serialization archives.
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
 		};
 
 
@@ -290,19 +352,19 @@ namespace GPlatesAppLogic
 			typedef std::vector< boost::shared_ptr<LayerInputConnection> > connection_seq_type;
 
 			typedef std::multimap<
-					QString,
+					LayerInputChannelName::Type,
 					boost::shared_ptr<LayerInputConnection> > input_connection_map_type;
 
 			//! NOTE: should only be called by class LayerInputConnection.
 			void
 			add_input_connection(
-					const QString &input_channel_name,
+					LayerInputChannelName::Type input_channel_name,
 					const boost::shared_ptr<LayerInputConnection> &input_connection);
 
 			//! NOTE: should only be called by class LayerInputConnection.
 			void
 			remove_input_connection(
-					const QString &input_channel_name,
+					LayerInputChannelName::Type input_channel_name,
 					LayerInputConnection *input_connection);
 
 			/**
@@ -317,7 +379,7 @@ namespace GPlatesAppLogic
 			 */
 			connection_seq_type
 			get_input_connections(
-					const QString &input_channel_name) const;
+					LayerInputChannelName::Type input_channel_name) const;
 
 			/**
 			 * Returns all input connections as a sequence of @a LayerInputConnection pointers.
@@ -331,6 +393,17 @@ namespace GPlatesAppLogic
 		private:
 
 			input_connection_map_type d_connections;
+
+		private: // Transcribing...
+
+			//! Transcribe to/from serialization archives.
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
 		};
 
 
@@ -438,6 +511,31 @@ namespace GPlatesAppLogic
 			boost::shared_ptr<Data> d_output_data;
 			bool d_active;
 			bool d_auto_created;
+
+		private: // Transcribing...
+
+			//! Constructor data members that do not have a default constructor - the rest are transcribed.
+			explicit
+			Layer(
+					ReconstructGraph *reconstruct_graph) :
+				d_reconstruct_graph(reconstruct_graph),
+				d_active(false),
+				d_auto_created(false)
+			{  }
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			static
+			GPlatesScribe::TranscribeResult
+			transcribe_construct_data(
+					GPlatesScribe::Scribe &scribe,
+					GPlatesScribe::ConstructObject<Layer> &layer);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
 		};
 
 		/**
@@ -474,5 +572,24 @@ namespace GPlatesAppLogic
 	}
 }
 
+namespace GPlatesScribe
+{
+	//
+	// ReconstructGraphImpl::Layer ...
+	//
+
+	template <>
+	class TranscribeContext<GPlatesAppLogic::ReconstructGraphImpl::Layer>
+	{
+	public:
+		explicit
+		TranscribeContext(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph_) :
+			reconstruct_graph(&reconstruct_graph_)
+		{  }
+
+		GPlatesAppLogic::ReconstructGraph *reconstruct_graph;
+	};
+}
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCTGRAPHIMPL_H

@@ -450,8 +450,10 @@ int main(int argc, char *argv[])
 	}
 
 	QString version_number, branch_name;
-	QFileInfo svn_file(QString(working_directory)+"/.svn/entries");
-	if(svn_file.isFile())
+	// Update: we test for the presence of directory ".svn/" instead of file ".svn/entries"
+	// because the latter has been removed as of Subversion 1.7.
+	QFileInfo svn_file(QString(working_directory)+"/.svn");
+	if (svn_file.isDir())
 	{
 		// Compute the version number and branch name if required.
 		version_number = custom_version_number ?

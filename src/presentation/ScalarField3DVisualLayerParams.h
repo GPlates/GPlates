@@ -38,9 +38,10 @@
 
 #include "view-operations/ScalarField3DRenderParameters.h"
 
-
 namespace GPlatesPresentation
 {
+	class ViewState;
+
 	class ScalarField3DVisualLayerParams :
 			public VisualLayerParams
 	{
@@ -53,9 +54,10 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params)
+				GPlatesAppLogic::LayerTaskParams &layer_task_params,
+				GPlatesPresentation::ViewState &view_state)
 		{
-			return new ScalarField3DVisualLayerParams(layer_task_params);
+			return new ScalarField3DVisualLayerParams(layer_task_params, view_state);
 		}
 
 		/**
@@ -252,6 +254,15 @@ namespace GPlatesPresentation
 			emit_modified();
 		}
 
+		/**
+		 * Returns whether the runtime graphics hardware can support surface polygons mask.
+		 */
+		bool
+		is_surface_polygons_mask_supported() const
+		{
+			return d_is_surface_polygons_mask_supported;
+		}
+
 		const GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask &
 		get_surface_polygons_mask() const
 		{
@@ -318,7 +329,8 @@ namespace GPlatesPresentation
 
 		explicit
 		ScalarField3DVisualLayerParams(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params);
+				GPlatesAppLogic::LayerTaskParams &layer_task_params,
+				GPlatesPresentation::ViewState &view_state);
 
 	private:
 
@@ -354,6 +366,7 @@ namespace GPlatesPresentation
 
 		GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions d_deviation_window_render_options;
 
+		bool d_is_surface_polygons_mask_supported;
 		GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask d_surface_polygons_mask;
 
 		// This is optional because the default depth restriction range cannot be set until a

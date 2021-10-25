@@ -38,6 +38,8 @@
 
 #include "MathsUtils.h"
 
+#include "scribe/Transcribe.h"
+
 #include "utils/QtStreamable.h"
 
 
@@ -159,6 +161,16 @@ namespace GPlatesMaths
 		friend bool operator<(const Real &, const Real &);
 		friend std::ostream &operator<<(std::ostream &, const Real &);
 		friend std::istream &operator>>(std::istream &, Real &);
+
+	private: // Transcribing...
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		// Only the scribe system should be able to transcribe.
+		friend class GPlatesScribe::Access;
 	};
 
 

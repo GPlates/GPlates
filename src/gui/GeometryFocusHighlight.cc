@@ -48,6 +48,7 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 		FeatureFocus &feature_focus,
 		GPlatesViewOperations::RenderedGeometryLayer &render_geom_layer,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
 		const symbol_map_type &symbol_map)
 {
 	// Clear all geometries from layer before adding them.
@@ -95,11 +96,12 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 
 	// FIXME: Probably should use the same styling params used to draw
 	// the original geometries rather than use some of the defaults.
-	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params;
+	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params(
+			rendered_geometry_parameters);
 	render_style_params.reconstruction_line_width_hint =
-			GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
+			rendered_geometry_parameters.get_choose_feature_tool_line_width_hint();
 	render_style_params.reconstruction_point_size_hint =
-			GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT;
+			rendered_geometry_parameters.get_choose_feature_tool_point_size_hint();;
 
 	// Iterate over the reconstruction geometries of the focused features.
 	BOOST_FOREACH(
@@ -110,8 +112,8 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 		// user clicked on) then highlight it in a different colour.
 		const GPlatesGui::Colour &highlight_colour =
 				(reconstruction_geometry == focused_geometry.get())
-				? GPlatesViewOperations::FocusedFeatureParameters::CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR
-				: GPlatesViewOperations::FocusedFeatureParameters::NON_CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR;
+				? rendered_geometry_parameters.get_choose_feature_tool_clicked_geometry_of_focused_feature_colour()
+				: rendered_geometry_parameters.get_choose_feature_tool_non_clicked_geometry_of_focused_feature_colour();
 
 		// This creates the RenderedGeometry's using the highlight colour.
 		GPlatesPresentation::ReconstructionGeometryRenderer highlighted_geometry_renderer(

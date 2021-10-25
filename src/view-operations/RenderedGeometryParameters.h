@@ -27,10 +27,330 @@
 #ifndef GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYPARAMETERS_H
 #define GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYPARAMETERS_H
 
-#include "gui/Colour.h"
+#include <QObject>
 
 #include "RenderedGeometryFactory.h"
 
+#include "gui/Colour.h"
+
+#include "maths/MathsUtils.h"
+
+
+namespace GPlatesViewOperations
+{
+	/**
+	 * Parameters that specify how to draw geometry in the various canvas tools, and also some aspects
+	 * (not covered by symboling/colouring/etc) of drawing the main reconstruction rendered layer.
+	 */
+	class RenderedGeometryParameters :
+			public QObject
+	{
+		Q_OBJECT
+
+	public:
+
+		//! Constructor sets the default parameter values.
+		RenderedGeometryParameters() :
+			d_reconstruction_layer_point_size_hint(4.0f),
+			d_reconstruction_layer_line_width_hint(1.5f),
+			d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius(0.05f),
+			d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius(
+					RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS),
+			d_reconstruction_layer_arrow_spacing(0.175f),
+			d_choose_feature_tool_point_size_hint(4.0f),
+			d_choose_feature_tool_line_width_hint(2.5f),
+			d_choose_feature_tool_clicked_geometry_of_focused_feature_colour(GPlatesGui::Colour::get_white()),
+			d_choose_feature_tool_non_clicked_geometry_of_focused_feature_colour(GPlatesGui::Colour::get_grey()),
+			d_topology_tool_focused_geometry_colour(GPlatesGui::Colour::get_white()),
+			d_topology_tool_focused_geometry_point_size_hint(4.0f),
+			d_topology_tool_focused_geometry_line_width_hint(2.5f),
+			d_topology_tool_topological_sections_colour(GPlatesGui::Colour(0.05f, 0.05f, 0.05f, 1.0f)), // dark grey
+			d_topology_tool_topological_sections_point_size_hint(4.0f),
+			d_topology_tool_topological_sections_line_width_hint(2.5f)
+
+		{  }
+
+
+		//! Point size for reconstruction layer.
+		float
+		get_reconstruction_layer_point_size_hint() const
+		{
+			return d_reconstruction_layer_point_size_hint;
+		}
+
+		void
+		set_reconstruction_layer_point_size_hint(
+				float reconstruction_layer_point_size_hint)
+		{
+			d_reconstruction_layer_point_size_hint = reconstruction_layer_point_size_hint;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Line width for reconstruction layer.
+		float
+		get_reconstruction_layer_line_width_hint() const
+		{
+			return d_reconstruction_layer_line_width_hint;
+		}
+
+		void
+		set_reconstruction_layer_line_width_hint(
+				float reconstruction_layer_line_width_hint)
+		{
+			d_reconstruction_layer_line_width_hint = reconstruction_layer_line_width_hint;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Scaling for arrow bodies in reconstruction layer.
+		float
+		get_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius() const
+		{
+			return d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius;
+		}
+
+		void
+		set_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius(
+				float reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius)
+		{
+			d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius =
+					reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Scaling for arrowheads in reconstruction layer.
+		float
+		get_reconstruction_layer_ratio_arrowhead_size_to_globe_radius() const
+		{
+			return d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius;
+		}
+
+		void
+		set_reconstruction_layer_ratio_arrowhead_size_to_globe_radius(
+				float reconstruction_layer_ratio_arrowhead_size_to_globe_radius)
+		{
+			d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius =
+					reconstruction_layer_ratio_arrowhead_size_to_globe_radius;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! The screen-space spacing of rendered arrows in reconstruction layer.
+		float
+		get_reconstruction_layer_arrow_spacing() const
+		{
+			return d_reconstruction_layer_arrow_spacing;
+		}
+
+		void
+		set_reconstruction_layer_arrow_spacing(
+				float reconstruction_layer_arrow_spacing)
+		{
+			d_reconstruction_layer_arrow_spacing = reconstruction_layer_arrow_spacing;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Point size for rendering the actual focus geometry clicked by user.
+		float
+		get_choose_feature_tool_point_size_hint() const
+		{
+			return d_choose_feature_tool_point_size_hint;
+		}
+
+		void
+		set_choose_feature_tool_point_size_hint(
+				float point_size)
+		{
+			d_choose_feature_tool_point_size_hint = point_size;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Line width for rendering the actual focus geometry clicked by user.
+		float
+		get_choose_feature_tool_line_width_hint() const
+		{
+			return d_choose_feature_tool_line_width_hint;
+		}
+
+		void
+		set_choose_feature_tool_line_width_hint(
+				float line_width)
+		{
+			d_choose_feature_tool_line_width_hint = line_width;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		/**
+		 * Colour to use for rendering the actual focus geometry clicked by user.
+		 *
+		 * Since there can be multiple geometry properties associated with a single feature
+		 * only one of them (the clicked geometry) gets rendered in this colour.
+		 */
+		const GPlatesGui::Colour &
+		get_choose_feature_tool_clicked_geometry_of_focused_feature_colour() const
+		{
+			return d_choose_feature_tool_clicked_geometry_of_focused_feature_colour;
+		}
+
+		void
+		set_choose_feature_toolr_clicked_geometry_of_focused_feature_colour(
+				const GPlatesGui::Colour &colour)
+		{
+			d_choose_feature_tool_clicked_geometry_of_focused_feature_colour = colour;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		/**
+		 * Colour to use for rendering the geometries of focused feature that the user did not click on.
+		 *
+		 * When the user clicks on a geometry it focuses the feature that the geometry
+		 * belongs to. If there are other geometries associated with that feature then
+		 * they will get rendered in this colour.
+		 */
+		const GPlatesGui::Colour &
+		get_choose_feature_tool_non_clicked_geometry_of_focused_feature_colour() const
+		{
+			return d_choose_feature_tool_non_clicked_geometry_of_focused_feature_colour;
+		}
+
+		void
+		set_choose_feature_tool_non_clicked_geometry_of_focused_feature_colour(
+				const GPlatesGui::Colour &colour)
+		{
+			d_choose_feature_tool_non_clicked_geometry_of_focused_feature_colour = colour;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Colour for rendering focus geometry in topology tools.
+		const GPlatesGui::Colour &
+		get_topology_tool_focused_geometry_colour() const
+		{
+			return d_topology_tool_focused_geometry_colour;
+		}
+
+		void
+		set_topology_tool_focused_geometry_colour(
+				const GPlatesGui::Colour &colour)
+		{
+			d_topology_tool_focused_geometry_colour = colour;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Point size for rendering focus geometry in topology tools.
+		float
+		get_topology_tool_focused_geometry_point_size_hint() const
+		{
+			return d_topology_tool_focused_geometry_point_size_hint;
+		}
+
+		void
+		set_topology_tool_focused_geometry_point_size_hint(
+				float point_size_hint)
+		{
+			d_topology_tool_focused_geometry_point_size_hint = point_size_hint;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Line width for rendering focus geometry in topology tools.
+		float
+		get_topology_tool_focused_geometry_line_width_hint() const
+		{
+			return d_topology_tool_focused_geometry_line_width_hint;
+		}
+
+		void
+		set_topology_tool_focused_geometry_line_width_hint(
+				float line_width_hint)
+		{
+			d_topology_tool_focused_geometry_line_width_hint = line_width_hint;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Colour for rendering topological sections in topology tools.
+		const GPlatesGui::Colour &
+		get_topology_tool_topological_sections_colour() const
+		{
+			return d_topology_tool_topological_sections_colour;
+		}
+
+		void
+		set_topology_tool_topological_sections_colour(
+				const GPlatesGui::Colour &colour)
+		{
+			d_topology_tool_topological_sections_colour = colour;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Point size for rendering topological sections in topology tools.
+		float
+		get_topology_tool_topological_sections_point_size_hint() const
+		{
+			return d_topology_tool_topological_sections_point_size_hint;
+		}
+
+		void
+		set_topology_tool_topological_sections_point_size_hint(
+				float point_size_hint)
+		{
+			d_topology_tool_topological_sections_point_size_hint = point_size_hint;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Line width for rendering topological sections in topology tools.
+		float
+		get_topology_tool_topological_sections_line_width_hint() const
+		{
+			return d_topology_tool_topological_sections_line_width_hint;
+		}
+
+		void
+		set_topology_tool_topological_sections_line_width_hint(
+				float line_width_hint)
+		{
+			d_topology_tool_topological_sections_line_width_hint = line_width_hint;
+			Q_EMIT parameters_changed(*this);
+		}
+
+	Q_SIGNALS:
+
+		void
+		parameters_changed(
+				GPlatesViewOperations::RenderedGeometryParameters &);
+
+	private:
+
+		float d_reconstruction_layer_point_size_hint;
+		float d_reconstruction_layer_line_width_hint;
+		float d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius;
+		float d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius;
+		float d_reconstruction_layer_arrow_spacing;
+
+		float d_choose_feature_tool_point_size_hint;
+		float d_choose_feature_tool_line_width_hint;
+		GPlatesGui::Colour d_choose_feature_tool_clicked_geometry_of_focused_feature_colour;
+		GPlatesGui::Colour d_choose_feature_tool_non_clicked_geometry_of_focused_feature_colour;
+
+		GPlatesGui::Colour d_topology_tool_focused_geometry_colour;
+		float d_topology_tool_focused_geometry_point_size_hint;
+		float d_topology_tool_focused_geometry_line_width_hint;
+		GPlatesGui::Colour d_topology_tool_topological_sections_colour;
+		float d_topology_tool_topological_sections_point_size_hint;
+		float d_topology_tool_topological_sections_line_width_hint;
+
+	};
+}
 
 namespace GPlatesViewOperations
 {
@@ -50,31 +370,6 @@ namespace GPlatesViewOperations
 		const float DEFAULT_LINE_WIDTH_HINT = 1.5f;
 
 		//! Point size for reconstruction layer.
-		const float RECONSTRUCTION_POINT_SIZE_HINT = DEFAULT_POINT_SIZE_HINT;
-
-		//! Line width for reconstruction layer.
-		const float RECONSTRUCTION_LINE_WIDTH_HINT = 1.5f;
-
-		//! Default scaling for arrow bodies.
-		const float RECONSTRUCTION_RATIO_ARROW_UNIT_VECTOR_DIRECTION_TO_GLOBE_RADIUS = 0.05f;
-
-		//! Default scaling for arrowheads.
-		const float RECONSTRUCTION_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS =
-				RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS;
-
-		//! Point size for reconstruction layer.
-		const float DIGITISATION_POINT_SIZE_HINT = DEFAULT_POINT_SIZE_HINT;
-
-		//! Line width for reconstruction layer.
-		const float DIGITISATION_LINE_WIDTH_HINT = 2.0f;
-
-		//! Point size for reconstruction layer.
-		const float GEOMETRY_FOCUS_POINT_SIZE_HINT = DEFAULT_POINT_SIZE_HINT;
-
-		//! Line width for reconstruction layer.
-		const float GEOMETRY_FOCUS_LINE_WIDTH_HINT = 2.5f;
-
-		//! Point size for reconstruction layer.
 		const float POLE_MANIPULATION_POINT_SIZE_HINT = DEFAULT_POINT_SIZE_HINT;
 
 		//! Line width for reconstruction layer.
@@ -82,37 +377,6 @@ namespace GPlatesViewOperations
 
 		//! Line width for reconstruction layer.
 		const float TOPOLOGY_TOOL_LINE_WIDTH_HINT = 4.0f;
-
-		//! Default arrow spacing velocity layer.
-		const float VELOCITY_ARROW_SPACING = 0.175f;
-	}
-
-	/**
-	 * Parameters that specify how geometry operations should draw geometry.
-	 */
-	namespace FocusedFeatureParameters
-	{
-		/////////////
-		// Colours //
-		/////////////
-
-		/**
-		 * Colour to use for rendering the actual focus geometry clicked by user.
-		 * Since there can be multiple geometry properties associated with a single feature
-		 * only one of them (the clicked geometry) gets rendered in this colour.
-		 */
-		const GPlatesGui::Colour CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR =
-				GPlatesGui::Colour::get_white();
-
-		/**
-		 * Colour to use for rendering the geometries of focused feature that the user
-		 * did not click on.
-		 * When the user clicks on a geometry it focuses the feature that the geometry
-		 * belongs to. If there are other geometries associated with that feature then
-		 * they will get rendered in this colour.
-		 */
-		const GPlatesGui::Colour NON_CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR =
-				GPlatesGui::Colour::get_grey();
 	}
 
 	/**

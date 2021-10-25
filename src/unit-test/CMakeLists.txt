@@ -60,6 +60,9 @@ set(srcs
     PropertyValuesTestSuite.h
     RealTest.cc
     RealTest.h
+    ScribeExportUnitTest.h
+    ScribeTestSuite.cc
+    ScribeTestSuite.h
     SmartNodeLinkedListTest.cc
     SmartNodeLinkedListTest.h
     SphericalDistanceTest.cc
@@ -70,6 +73,8 @@ set(srcs
     TestSuiteFilter.h
     TestSuiteFilterTest.cc
     TestSuiteFilterTest.h
+    TranscribeTest.cc
+    TranscribeTest.h
     UnitTestTestSuite.cc
     UnitTestTestSuite.h
     UtilsTestSuite.cc

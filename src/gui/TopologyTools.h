@@ -79,8 +79,13 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	class CreateFeatureDialog;
-	class ViewportWindow;
 	class TopologyToolsWidget;
+	class ViewportWindow;
+}
+
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryParameters;
 }
 
 namespace GPlatesGui
@@ -196,6 +201,9 @@ namespace GPlatesGui
 		void
 		display_feature_focus_modified(
 			GPlatesGui::FeatureFocus &feature_focus);
+
+		void
+		draw_all_layers();
 
 
 		/**
@@ -402,6 +410,9 @@ namespace GPlatesGui
 		 * Used to draw rendered geometries.
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
+
+		//! Parameters for rendering geometries in canvas tool.
+		const GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
 
 		/**
 		 * Rendered geometry layers to draw into 
@@ -763,9 +774,6 @@ namespace GPlatesGui
 		void
 		draw_all_layers_clear();
 
-		void
-		draw_all_layers();
-
 		void 
 		draw_topology_geometry();
 
@@ -791,11 +799,6 @@ namespace GPlatesGui
 
 		void 
 		draw_focused_geometry( bool draw);
-
-		void 
-		draw_focused_geometry_end_points(
-				const GPlatesMaths::PointOnSphere &start_point,
-				const GPlatesMaths::PointOnSphere &end_point);
 
 	};
 }

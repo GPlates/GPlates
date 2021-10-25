@@ -54,12 +54,13 @@ set(srcs
     GPlatesQtMsgHandler.h
     Layer.cc
     Layer.h
+    LayerInputChannelName.cc
+    LayerInputChannelName.h
     LayerInputChannelType.h
     LayerProxy.h
     LayerProxyUtils.cc
     LayerProxyUtils.h
     LayerProxyVisitor.h
-    LayerTask.cc
     LayerTask.h
     LayerTaskParams.h
     LayerTaskRegistry.cc
@@ -182,12 +183,7 @@ set(srcs
     ScalarField3DLayerProxy.h
     ScalarField3DLayerTask.cc
     ScalarField3DLayerTask.h
-    Serialization.cc
-    Serialization.h
-    Session.cc
-    Session.h
-    SessionManagement.cc
-    SessionManagement.h
+    ScribeExportAppLogic.h
     SmallCircleGeometryPopulator.cc
     SmallCircleGeometryPopulator.h
     TopologyGeometryResolver.cc

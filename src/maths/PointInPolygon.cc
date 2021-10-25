@@ -57,7 +57,7 @@ namespace GPlatesMaths
 		/**
 		 * Finds the point antipodal to the centroid (average vertex) of the polygon.
 		 *
-		 * If the centroid is the origin then attempts to recalculate centroid by summing
+		 * If the centroid is (near) the origin then attempts to recalculate centroid by summing
 		 * the edge midpoints.
 		 *
 		 * FIXME: Use a more accurate heuristic to determine the antipodal point such as

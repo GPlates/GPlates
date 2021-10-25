@@ -166,11 +166,16 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 			if (CXX_MINOR_VERSION STRLESS "4")
 				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
 			endif (CXX_MINOR_VERSION STRLESS "4")
-			if ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8"))
-				#The gcc 4.7 and 4.8.1 report maybe-uninitialized warning when the default boost::optional<> declaration is present.
-				#The boost::optional<> has been used widely throughout gplates. So supress the error for now. 
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
-            endif ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8"))
+                        if ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
+                                #The gcc 4.7, 4.8.1 and 4.9.1 report maybe-uninitialized warning when the default boost::optional<> declaration is present.
+                                #The boost::optional<> has been used widely throughout gplates. So supress the error for now.
+                                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+                        endif ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
+                        if (CXX_MINOR_VERSION EQUAL "9")
+                                # gcc 4.9.1 reports warnings on unused functions. We prefer to keep unused functions available,
+                                # so suppress the warning.
+                                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wno-clobbered")
+                        endif (CXX_MINOR_VERSION EQUAL "9")
 		endif (CXX_MAJOR_VERSION EQUAL "4")
     endif (GPLATES_PUBLIC_RELEASE)
 

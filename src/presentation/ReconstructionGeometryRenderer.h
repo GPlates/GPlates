@@ -41,6 +41,7 @@
 #include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
+#include "gui/ColourProxy.h"
 #include "gui/ColourPalette.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/RasterColourPalette.h"
@@ -53,13 +54,13 @@
 #include "presentation/VisualLayer.h"
 
 #include "view-operations/RenderedGeometry.h"
-#include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/ScalarField3DRenderParameters.h"
 
 
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryLayer;
+	class RenderedGeometryParameters;
 }
 
 namespace GPlatesPresentation
@@ -78,17 +79,10 @@ namespace GPlatesPresentation
 		struct RenderParams
 		{
 			RenderParams(
-					float reconstruction_line_width_hint_ =
-							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_LINE_WIDTH_HINT,
-					float reconstruction_point_size_hint_ =
-							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
+					const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters_,
 					bool fill_polygons_ = false,
 					bool fill_polylines_ = false,
 					float ratio_zoom_dependent_bin_dimension_to_globe_radius_ = 0,
-					float ratio_arrow_unit_vector_direction_to_globe_radius_ =
-							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_RATIO_ARROW_UNIT_VECTOR_DIRECTION_TO_GLOBE_RADIUS,
-					float ratio_arrowhead_size_to_globe_radius_ =
-							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS,
 
 					bool show_deformed_feature_geometries_ = true,
 					bool show_strain_accumulation_ = false,
@@ -175,6 +169,12 @@ namespace GPlatesPresentation
 		{
 		public:
 
+			explicit
+			RenderParamsPopulator(
+					const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters) :
+				d_render_params(rendered_geometry_parameters)
+			{  }
+
 			const RenderParams &
 			get_render_params() const
 			{
@@ -237,7 +237,7 @@ namespace GPlatesPresentation
 		 * from the layer and activating the layer.
 		 */
 		ReconstructionGeometryRenderer(
-				const RenderParams &render_params = RenderParams(),
+				const RenderParams &render_params,
 				const boost::optional<GPlatesGui::Colour> &colour = boost::none,
 				const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment = boost::none,
 				const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none,

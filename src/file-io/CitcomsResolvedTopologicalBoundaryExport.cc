@@ -74,6 +74,7 @@ namespace GPlatesFileIO
 	{
 		namespace
 		{
+
 			QString
 			append_suffix_to_template_filebasename(
 					const QFileInfo &original_template_filename,
@@ -91,7 +92,6 @@ namespace GPlatesFileIO
 
 				return template_filebasename + suffix + '.' + ext;
 			}
-
 
 			QString
 			substitute_placeholder(

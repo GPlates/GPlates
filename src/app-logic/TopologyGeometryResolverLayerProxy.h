@@ -37,6 +37,8 @@
 #include "ReconstructLayerProxy.h"
 #include "ResolvedTopologicalGeometry.h"
 
+#include "global/PointerTraits.h"
+
 #include "utils/SubjectObserverToken.h"
 
 
@@ -237,7 +239,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		set_current_reconstructed_geometry_topological_sections_layer_proxies(
-				const std::vector<ReconstructLayerProxy::non_null_ptr_type> &
+				const std::vector<GPlatesGlobal::PointerTraits<ReconstructLayerProxy>::non_null_ptr_type> &
 						reconstructed_geometry_topological_sections_layer_proxies);
 
 		/**

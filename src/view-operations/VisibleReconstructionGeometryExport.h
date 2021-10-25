@@ -27,9 +27,12 @@
 #define GPLATES_VIEWOPERATIONS_VISIBLERECONSTRUCTIONGEOMETRYEXPORT_H
 
 #include <vector>
+#include <boost/optional.hpp>
 #include <QString>
 
 #include "file-io/File.h"
+
+#include "maths/PolygonOrientation.h"
 
 #include "model/types.h"
 
@@ -158,9 +161,10 @@ namespace GPlatesViewOperations
 		 * @param export_single_output_file write all geometries to a single file.
 		 * @param export_per_input_file write output files corresponding to input files.
 		 * @param export_separate_output_directory_per_input_file save each file to a different directory.
-		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to the dateline.
 		 * @param export_topological_lines export resolved topological lines.
 		 * @param export_topological_polygons export resolved topological polygons.
+		 * @param force_polygon_orientation optionally force polygon orientation (clockwise or counter-clockwise).
+		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to the dateline.
 		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 * @throws FileFormatNotSupportedException if file format not supported.
@@ -179,6 +183,8 @@ namespace GPlatesViewOperations
 				bool export_separate_output_directory_per_input_file,
 				bool export_topological_lines,
 				bool export_topological_polygons,
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
+						force_polygon_orientation = boost::none,
 				bool wrap_to_dateline = true);
 	}
 }

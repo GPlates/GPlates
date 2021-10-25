@@ -71,7 +71,7 @@ namespace GPlatesOpenGL
 			 * Simply GL_COLOR_ATTACHMENT0_EXT.
 			 *
 			 * This is here solely so we can include <GL/glew.h>, which defines
-			 * GL_COLOR_ATTACHMENT0_EXT, in "GLContext.cc" and hence avoid problems caused by
+			 * GL_COLOR_ATTACHMENT0_EXT, in "GLCapabilities.cc" and hence avoid problems caused by
 			 * including <GL/glew.h> in header files (because <GL/glew.h> must be included
 			 * before OpenGL headers which means before Qt headers which is difficult).
 			 */
@@ -176,7 +176,7 @@ namespace GPlatesOpenGL
 			 * Simply GL_TEXTURE0.
 			 *
 			 * This is here solely so we can include <GL/glew.h>, which defines
-			 * GL_TEXTURE0, in "GLContext.cc" and hence avoid problems caused by
+			 * GL_TEXTURE0, in "GLCapabilities.cc" and hence avoid problems caused by
 			 * including <GL/glew.h> in header files (because <GL/glew.h> must be included
 			 * before OpenGL headers which means before Qt headers which is difficult).
 			 */

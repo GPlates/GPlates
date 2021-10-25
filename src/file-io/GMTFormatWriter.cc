@@ -32,18 +32,21 @@
 
 #include "GMTFormatWriter.h"
 
+#include "ErrorOpeningFileForWritingException.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileInfo.h"
 #include "GMTFormatGeometryExporter.h"
 #include "PlatesLineFormatHeaderVisitor.h"
-#include "ErrorOpeningFileForWritingException.h"
 
-#include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 #include "global/unicode.h"
 
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
+
+#include "scribe/Scribe.h"
+#include "scribe/TranscribeEnumProtocol.h"
 
 #include "utils/StringFormattingUtils.h"
 
@@ -200,4 +203,28 @@ GPlatesFileIO::GMTFormatWriter::visit_gpml_constant_value(
 	const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesFileIO::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		GMTFormatWriter::HeaderFormat &header_format,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		GPlatesScribe::EnumValue("PLATES4_STYLE_HEADER", GMTFormatWriter::PLATES4_STYLE_HEADER),
+		GPlatesScribe::EnumValue("VERBOSE_HEADER", GMTFormatWriter::VERBOSE_HEADER),
+		GPlatesScribe::EnumValue("PREFER_PLATES4_STYLE_HEADER", GMTFormatWriter::PREFER_PLATES4_STYLE_HEADER),
+		GPlatesScribe::EnumValue("NUM_FORMATS", GMTFormatWriter::NUM_FORMATS)
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			header_format,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
 }

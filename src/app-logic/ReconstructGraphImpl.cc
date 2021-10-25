@@ -37,6 +37,9 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "scribe/Scribe.h"
+
+
 GPlatesAppLogic::ReconstructGraphImpl::Data::Data(
 		const FeatureCollectionFileState::file_reference &file) :
 	d_data(file)
@@ -168,10 +171,60 @@ GPlatesAppLogic::ReconstructGraphImpl::Data::remove_output_connection(
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructGraphImpl::Data::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_data, "d_data"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_output_connections, "d_output_connections") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_outputting_layer, "d_outputting_layer"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructGraphImpl::Data::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<Data> &data)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, data->d_data, "d_data");
+	}
+	else // loading...
+	{
+		GPlatesScribe::LoadRef<Data::data_type> data_type_object =
+				scribe.load<Data::data_type>(TRANSCRIBE_SOURCE, "d_data");
+		if (!data_type_object.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		data.construct_object(data_type_object);
+
+		scribe.relocated(TRANSCRIBE_SOURCE, data->d_data, data_type_object);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::LayerInputConnection(
 		const boost::shared_ptr<Data> &input_data,
 		const boost::weak_ptr<Layer> &layer_receiving_input,
-		const QString &layer_input_channel_name,
+		LayerInputChannelName::Type layer_input_channel_name,
 		bool is_input_layer_active) :
 	d_input_data(input_data),
 	d_layer_receiving_input(layer_receiving_input),
@@ -392,9 +445,93 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::modified_input_feat
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_input_data, "d_input_data") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_layer_receiving_input, "d_layer_receiving_input") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_layer_input_channel_name, "d_layer_input_channel_name") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_is_input_layer_active, "d_is_input_layer_active"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_callback_input_feature_collection, "d_callback_input_feature_collection"))
+	{
+		// Transcribe failed so recover by manually setting up the callback.
+
+		// See if the input data refers to an input file.
+		const boost::optional<FeatureCollectionFileState::file_reference> input_file = d_input_data->get_input_file();
+		if (input_file)
+		{
+			// Register a model callback so we know when the input file has been modified.
+			d_callback_input_feature_collection = input_file->get_file().get_feature_collection();
+			d_callback_input_feature_collection.attach_callback(new FeatureCollectionModified(this));
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::FeatureCollectionModified::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_layer_input_connection, "d_layer_input_connection"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	if (!scribe.transcribe_base<
+			GPlatesModel::WeakReferenceCallback<const GPlatesModel::FeatureCollectionHandle>,
+			FeatureCollectionModified>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::FeatureCollectionModified::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<FeatureCollectionModified> &callback)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, callback->d_layer_input_connection, "d_layer_input_connection");
+	}
+	else // loading...
+	{
+		GPlatesScribe::LoadRef<LayerInputConnection *> layer_input_connection =
+				scribe.load<LayerInputConnection *>(TRANSCRIBE_SOURCE, "d_layer_input_connection");
+		if (!layer_input_connection.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Construct the object from the constructor data.
+		callback.construct_object(layer_input_connection);
+
+		scribe.relocated(TRANSCRIBE_SOURCE, callback->d_layer_input_connection, layer_input_connection);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
 void
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::add_input_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const boost::shared_ptr<LayerInputConnection> &input_connection)
 {
 	d_connections.insert(
@@ -404,7 +541,7 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::add_input_connecti
 
 void
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::remove_input_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		LayerInputConnection *input_connection)
 {
 	// Get range of connections assigned to 'input_channel_name'.
@@ -445,7 +582,7 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::get_input_connecti
 
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::connection_seq_type
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::get_input_connections(
-		const QString &input_channel_name) const
+		LayerInputChannelName::Type input_channel_name) const
 {
 	connection_seq_type connections;
 
@@ -462,6 +599,20 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::get_input_connecti
 	}
 
 	return connections;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_connections, "d_connections"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 
@@ -489,7 +640,10 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::~Layer()
 	// We need to do this because the output data object ownership is shared with input connections
 	// to other layers - if we don't disconnect it then those other layers will still reference
 	// the output of 'this' layer.
-	d_output_data->disconnect_output_connections();
+	if (d_output_data) // In case transcribe failed.
+	{
+		d_output_data->disconnect_output_connections();
+	}
 }
 
 
@@ -524,6 +678,48 @@ GPlatesAppLogic::LayerTaskParams &
 GPlatesAppLogic::ReconstructGraphImpl::Layer::get_layer_task_params()
 {
 	return d_layer_task->get_layer_task_params();
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructGraphImpl::Layer::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_layer_task, "d_layer_task") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_output_data, "d_output_data") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_input_data, "d_input_data") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_active, "d_active") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, d_auto_created, "d_auto_created"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructGraphImpl::Layer::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<Layer> &layer)
+{
+	if (scribe.is_saving())
+	{
+		// Nothing to do.
+	}
+	else // loading...
+	{
+		// Get information that is not transcribed into the archive.
+		GPlatesScribe::TranscribeContext<Layer> &transcribe_context = scribe.get_transcribe_context<Layer>();
+		ReconstructGraph *reconstruct_graph = transcribe_context.reconstruct_graph;
+
+		// Construct the object from the constructor data.
+		layer.construct_object(reconstruct_graph);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

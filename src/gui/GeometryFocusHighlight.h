@@ -39,6 +39,7 @@ namespace GPlatesViewOperations
 {
 	class RenderedGeometryLayer;
 	class RenderedGeometryCollection;
+	class RenderedGeometryParameters;
 }
 
 namespace GPlatesGui
@@ -59,6 +60,7 @@ namespace GPlatesGui
 				FeatureFocus &feature_focus,
 				GPlatesViewOperations::RenderedGeometryLayer &render_geom_layer,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
 				const symbol_map_type &symbol_map);
 	}
 }

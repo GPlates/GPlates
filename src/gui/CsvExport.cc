@@ -67,19 +67,43 @@ namespace {
 		}
 	}
 
+	void
+	export_table_view_header(
+			const QTableView &table_view,
+			std::ofstream &os,
+			const GPlatesGui::CsvExport::ExportOptions &options)
+	{
+		int num_columns = table_view.model()->columnCount();
+		QString header_item_as_string;
+		for (int column = 0; column < num_columns ; ++column)
+		{
+			QVariant header = table_view.model()->headerData(column,Qt::Horizontal);
+
+			header_item_as_string = csv_quote_if_necessary(header.toString(), options);
+			os << header_item_as_string.toStdString().c_str();
+
+			// Separate fields with a delimiter.
+			if (column < (num_columns - 1)) {
+				os << options.delimiter;
+			}
+		}
+		os << std::endl;
+
+	}
+
 } // anonymous namespace
 
 
 namespace GPlatesGui
 {
 	void
-	GPlatesGui::CsvExport::export_table(
-		const QString &filename,
-		const GPlatesGui::CsvExport::ExportOptions &options,
-		const QTableWidget &table)
+	GPlatesGui::CsvExport::export_table_widget(
+			const QString &filename,
+			const GPlatesGui::CsvExport::ExportOptions &options,
+			const QTableWidget &table)
 	{
 		QFileInfo file_info(filename);
-		try{	
+		try{
 
 			std::ofstream os;
 			os.exceptions(std::ios::badbit | std::ios::failbit);
@@ -109,7 +133,7 @@ namespace GPlatesGui
 					if (column < (num_columns - 1)) {
 						os << options.delimiter;
 					}
-	
+
 				}
 
 				os << std::endl;
@@ -121,14 +145,80 @@ namespace GPlatesGui
 			QString message = QObject::tr("Error writing to file '%1': %2")
 					.arg(file_info.filePath()).arg(exc.what());
 			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
-					QMessageBox::Ok, QMessageBox::Ok);					
+								  QMessageBox::Ok, QMessageBox::Ok);
 		}
 		catch(...)
 		{
 			QString message = QObject::tr("An error occurred while writing to file '%1'")
 					.arg(file_info.filePath());
 			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
-					QMessageBox::Ok, QMessageBox::Ok);					
+								  QMessageBox::Ok, QMessageBox::Ok);
+		}
+
+		return;
+
+	}
+
+	void
+	CsvExport::export_table_view(
+			const QString &filename,
+			const CsvExport::ExportOptions &options,
+			const QTableView &table)
+	{
+		QFileInfo file_info(filename);
+		try{
+
+			std::ofstream os;
+			os.exceptions(std::ios::badbit | std::ios::failbit);
+			os.open(filename.toStdString().c_str());
+
+
+			QAbstractItemModel *model = table.model();
+
+			if (model)
+			{
+				int num_columns = model->columnCount();
+				int num_rows = model->rowCount();
+
+				QString item_as_str;
+
+				export_table_view_header(table,os,options);
+
+				for(int row = 0 ; row < num_rows; ++row)
+				{
+					for (int column = 0 ; column < num_columns; ++column)
+					{
+						// Beware:  QTableWidget::item returns a NULL pointer
+						// if no item has been set at the (row, column) position.
+						QVariant data = model->index(row,column).data();
+						item_as_str = csv_quote_if_necessary(data.toString(), options);
+						os << item_as_str.toStdString().c_str();
+
+						// Separate fields with a delimiter.
+						if (column < (num_columns - 1)) {
+							os << options.delimiter;
+						}
+
+					}
+
+					os << std::endl;
+
+				}
+			}
+		}
+		catch (std::exception &exc)
+		{
+			QString message = QObject::tr("Error writing to file '%1': %2")
+					.arg(file_info.filePath()).arg(exc.what());
+			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
+								  QMessageBox::Ok, QMessageBox::Ok);
+		}
+		catch(...)
+		{
+			QString message = QObject::tr("An error occurred while writing to file '%1'")
+					.arg(file_info.filePath());
+			QMessageBox::critical(0, QObject::tr("Error Saving File"), message,
+								  QMessageBox::Ok, QMessageBox::Ok);
 		}
 
 		return;

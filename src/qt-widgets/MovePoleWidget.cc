@@ -441,12 +441,18 @@ GPlatesQtWidgets::MovePoleWidget::get_stage_pole_location() const
 	const GPlatesModel::integer_plate_id_type fixed_plate_id = moving_fixed_plate_ids->second;
 
 	// Get stage pole.
+	//
+    // NOTE: The fixed plate, in the stage pole calculation, is the moving plate because we need
+    // the stage pole to be relative to the moving plate since the adjustment rotation is in the
+    // moving plate reference frame (see below). Note that swapping the fixed and moving plate ids
+    // in the stage pole calculation does not produce inverse/reverse rotations - only
+    // swapping the from and to times will do that.
 	const GPlatesMaths::FiniteRotation stage_pole =
 			GPlatesAppLogic::RotationUtils::get_stage_pole(
-					*reconstruction_tree,
 					*reconstruction_tree_2,
-					moving_plate_id,
-					fixed_plate_id);
+					*reconstruction_tree,
+					fixed_plate_id,
+					moving_plate_id);
 
 	// Get stage pole axis.
 	// We want to indicate an identity stage rotation (with none) so caller can indicate this to the user.
@@ -463,7 +469,7 @@ GPlatesQtWidgets::MovePoleWidget::get_stage_pole_location() const
 	//
 	// R(0->t,A->M)' = Adj * R(0->t,A->M)
 	//
-	// ...where t is reconstruction time, A is anchor plate and F and M are fixed and moving plates.
+	// ...where t is reconstruction time, A is anchor plate and M is the moving plate.
 	// R' is after adjustment and R is prior to adjustment.
 	//
 	// So we need to rotate the stage pole axis into the frame of reference that the adjustment

@@ -77,6 +77,35 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::ExportResolvedTopologyOpt
 			? Qt::Checked
 			: Qt::Unchecked);
 
+	// Enable polygons options only if exporting resolved polygons.
+	polygon_options->setEnabled(d_export_configuration.export_topological_polygons);
+	force_polygon_orientation_checkbox->setCheckState(
+			d_export_configuration.force_polygon_orientation
+			? Qt::Checked
+			: Qt::Unchecked);
+	// Show shapefile and non-shapefile options based on the file format.
+	non_shapefile_polygon_options->setVisible(
+			d_export_configuration.file_format !=
+				GPlatesGui::ExportResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE);
+	shapefile_polygon_options_label->setVisible(
+			d_export_configuration.file_format ==
+				GPlatesGui::ExportResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE);
+	// Enable polygon orientation combobox only if forcing polygon orientation.
+	polygon_orientation_combobox->setEnabled(d_export_configuration.force_polygon_orientation);
+	// Add polygon orientation combobox values.
+	polygon_orientation_combobox->insertItem(
+			GPlatesMaths::PolygonOrientation::CLOCKWISE,
+			tr("Clockwise"));
+	polygon_orientation_combobox->insertItem(
+			GPlatesMaths::PolygonOrientation::COUNTERCLOCKWISE,
+			tr("Counter-clockwise"));
+	// Set the current polygon orientation combobox value.
+	polygon_orientation_combobox->setCurrentIndex(
+			d_export_configuration.force_polygon_orientation
+			? d_export_configuration.force_polygon_orientation.get()
+			// Default to clockwise if polygon orientation not specified (not forced)...
+			: GPlatesMaths::PolygonOrientation::CLOCKWISE);
+
 	make_signal_slot_connections();
 }
 
@@ -109,19 +138,82 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::make_signal_slot_connecti
 			export_resolved_lines_checkbox,
 			SIGNAL(stateChanged(int)),
 			this,
-			SLOT(react_check_box_state_changed(int)));
+			SLOT(react_export_resolved_geometry_check_box_state_changed(int)));
 	QObject::connect(
 			export_resolved_polygons_checkbox,
 			SIGNAL(stateChanged(int)),
 			this,
-			SLOT(react_check_box_state_changed(int)));
+			SLOT(react_export_resolved_geometry_check_box_state_changed(int)));
+	QObject::connect(
+			force_polygon_orientation_checkbox,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_force_polygon_orientation_check_box_state_changed(int)));
+	QObject::connect(
+			polygon_orientation_combobox,
+			SIGNAL(currentIndexChanged(int)),
+			this,
+			SLOT(react_polygon_orientation_combobox_state_changed(int)));
 }
 
 
 void
-GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::react_check_box_state_changed(
+GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::react_export_resolved_geometry_check_box_state_changed(
 		int state)
 {
 	d_export_configuration.export_topological_lines = export_resolved_lines_checkbox->isChecked();
 	d_export_configuration.export_topological_polygons = export_resolved_polygons_checkbox->isChecked();
+
+	// Enable polygons options only if exporting resolved polygons.
+	polygon_options->setEnabled(export_resolved_polygons_checkbox->isChecked());
+}
+
+
+void
+GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::react_force_polygon_orientation_check_box_state_changed(
+		int state)
+{
+	// Set polygon orientation only if forcing polygon orientation.
+	if (force_polygon_orientation_checkbox->isChecked())
+	{
+		switch (polygon_orientation_combobox->currentIndex())
+		{
+		case GPlatesMaths::PolygonOrientation::CLOCKWISE:
+			d_export_configuration.force_polygon_orientation = GPlatesMaths::PolygonOrientation::CLOCKWISE;
+			break;
+
+		case GPlatesMaths::PolygonOrientation::COUNTERCLOCKWISE:
+			d_export_configuration.force_polygon_orientation = GPlatesMaths::PolygonOrientation::COUNTERCLOCKWISE;
+			break;
+		}
+	}
+	else
+	{
+		d_export_configuration.force_polygon_orientation = boost::none;
+	}
+
+	// Enable polygon orientation combobox only if forcing polygon orientation.
+	polygon_orientation_combobox->setEnabled(force_polygon_orientation_checkbox->isChecked());
+}
+
+
+void
+GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::react_polygon_orientation_combobox_state_changed(
+		int index)
+{
+	// Set polygon orientation only if forcing polygon orientation.
+	// Note: Shouldn't be able to get here anyway if not forcing (since then combobox should be disabled).
+	if (force_polygon_orientation_checkbox->isChecked())
+	{
+		switch (index)
+		{
+		case GPlatesMaths::PolygonOrientation::CLOCKWISE:
+			d_export_configuration.force_polygon_orientation = GPlatesMaths::PolygonOrientation::CLOCKWISE;
+			break;
+
+		case GPlatesMaths::PolygonOrientation::COUNTERCLOCKWISE:
+			d_export_configuration.force_polygon_orientation = GPlatesMaths::PolygonOrientation::COUNTERCLOCKWISE;
+			break;
+		}
+	}
 }

@@ -35,6 +35,7 @@
 #include "OgrGeometryExporter.h"
 #include "OgrUtils.h"
 
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 
@@ -85,6 +86,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries(
 		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
+		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 		bool wrap_to_dateline)
 {
 
@@ -167,8 +169,20 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries(
 		{
 			const GPlatesAppLogic::ResolvedTopologicalGeometry *rtg = *rtg_iter;
 
+			// Orient polygon if forcing orientation and geometry is a polygon.
+			//
+			// NOTE: This only works for non-Shapefile OGR formats because the OGR Shapefile
+			// driver stores exterior rings as clockwise and interior as counter-clockwise -
+			// so whatever we do here could just get undone by the Shapefile driver.
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geometry =
+					force_polygon_orientation
+					? GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
+							rtg->resolved_topology_geometry(),
+							force_polygon_orientation.get())
+					: rtg->resolved_topology_geometry();
+
 			// Write the resolved geometry.
-			geom_exporter.export_geometry(rtg->resolved_topology_geometry(),kvd_for_export); 
+			geom_exporter.export_geometry(resolved_geometry, kvd_for_export); 
 		}
 	}
 
@@ -183,6 +197,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries_per
 		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
+		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 		bool wrap_to_dateline)
 {
 
@@ -286,8 +301,20 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries_per
 		{
 			const GPlatesAppLogic::ResolvedTopologicalGeometry *rtg = *rtg_iter;
 
-			// Write the reconstructed geometry.
-			geom_exporter.export_geometry(rtg->resolved_topology_geometry(), kvd_for_export); 
+			// Orient polygon if forcing orientation and geometry is a polygon.
+			//
+			// NOTE: This only works for non-Shapefile OGR formats because the OGR Shapefile
+			// driver stores exterior rings as clockwise and interior as counter-clockwise -
+			// so whatever we do here could just get undone by the Shapefile driver.
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geometry =
+					force_polygon_orientation
+					? GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
+							rtg->resolved_topology_geometry(),
+							force_polygon_orientation.get())
+					: rtg->resolved_topology_geometry();
+
+			// Write the resolved geometry.
+			geom_exporter.export_geometry(resolved_geometry, kvd_for_export); 
 		}
 	}
 }

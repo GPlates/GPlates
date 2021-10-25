@@ -697,7 +697,7 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::handle_export(
 		if (filter_map.contains(filter))
 		{
 			GPlatesGui::CsvExport::ExportOptions options = filter_map.value(filter);
-			GPlatesGui::CsvExport::export_table(*filename, options, table);
+			GPlatesGui::CsvExport::export_table_widget(*filename, options, table);
 		}
 		else
 		{
