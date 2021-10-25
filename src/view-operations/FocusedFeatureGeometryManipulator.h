@@ -34,14 +34,19 @@
 #include "GeometryBuilder.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
+
 #include "gui/FeatureFocus.h"
+
 #include "maths/GeometryOnSphere.h"
+
 #include "model/types.h"
 
 
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+	class ReconstructionTree;
+	class ReconstructParams;
 }
 
 namespace GPlatesPresentation
@@ -67,7 +72,7 @@ namespace GPlatesViewOperations
 				GeometryBuilder &focused_feature_geom_builder,
 				GPlatesPresentation::ViewState &view_state);
 
-	public slots:
+	public Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -204,6 +209,8 @@ namespace GPlatesViewOperations
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
+				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
+				const GPlatesAppLogic::ReconstructParams &reconstruct_params,
 				bool reverse_reconstruct);
 
 		/**

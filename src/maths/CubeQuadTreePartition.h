@@ -508,6 +508,10 @@ namespace GPlatesMaths
 		typedef NodeReference<const cube_quad_tree_node_type> const_node_reference_type;
 
 
+		//! Typedef for a location in the cube quad tree.
+		typedef CubeQuadTreeLocation location_type;
+
+
 		/**
 		 * Iterator over the spatial partition.
 		 *
@@ -546,6 +550,12 @@ namespace GPlatesMaths
 			ElementQualifiedType &
 			get_element() const;
 
+			/**
+			 * Returns the CubeQuadTreeLocation of the current element (returned by @a get_element).
+			 */
+			const location_type &
+			get_location() const;
+
 			void
 			next();
 
@@ -577,10 +587,6 @@ namespace GPlatesMaths
 
 		//! Typedef for const iterator.
 		typedef Iterator<const element_type> const_iterator;
-
-
-		//! Typedef for a location in the cube quad tree.
-		typedef CubeQuadTreeLocation location_type;
 
 
 		/**
@@ -1656,8 +1662,9 @@ namespace GPlatesMaths
 						circle_centre_y_in_cube_face_coords,
 						circle_centre_z_in_cube_face_coords);
 
-		const double inv_circle_centre_z_in_cube_face_coords =
-				1.0 / circle_centre_z_in_cube_face_coords;
+		// Negate the local z coordinate to convert it to global coordinate.
+		double circle_centre_z_in_global_coords = -circle_centre_z_in_cube_face_coords;
+		const double inv_circle_centre_z_in_global_coords = 1.0 / circle_centre_z_in_global_coords;
 
 		//
 		// Since the point geometry has no spatial extents we put it in the deepest
@@ -1674,10 +1681,10 @@ namespace GPlatesMaths
 		//
 		const int node_x_offset_at_max_depth = static_cast<int>(
 				(0.5 - 1e-6) * max_level_width_in_nodes *
-					(1 + inv_circle_centre_z_in_cube_face_coords * circle_centre_x_in_cube_face_coords));
+					(1 + inv_circle_centre_z_in_global_coords * circle_centre_x_in_cube_face_coords));
 		const int node_y_offset_at_max_depth = static_cast<int>(
 				(0.5 - 1e-6) * max_level_width_in_nodes *
-					(1 + inv_circle_centre_z_in_cube_face_coords * circle_centre_y_in_cube_face_coords));
+					(1 + inv_circle_centre_z_in_global_coords * circle_centre_y_in_cube_face_coords));
 
 		// We need to make sure the appropriate interior quad tree nodes are generated,
 		// if they've not already been, along the way.
@@ -1747,6 +1754,9 @@ namespace GPlatesMaths
 						circle_centre_y_in_cube_face_coords,
 						circle_centre_z_in_cube_face_coords);
 
+		// Negate the local z coordinate to convert it to global coordinate.
+		double circle_centre_z_in_global_coords = -circle_centre_z_in_cube_face_coords;
+
 		//
 		// Project the bounding circle centre vector onto the cube face.
 		//
@@ -1767,17 +1777,17 @@ namespace GPlatesMaths
 		}
 
 		const double sin_e =
-				std::sqrt(1+1e-12f - circle_centre_z_in_cube_face_coords * circle_centre_z_in_cube_face_coords);
+				std::sqrt(1+1e-12f - circle_centre_z_in_global_coords * circle_centre_z_in_global_coords);
 		const double sin_a = bounding_circle_extent.sine_extend_angle;
 
 		const double sin_e_sin_a = sin_e * sin_a;
 		const double cos_e_cos_a =
-				circle_centre_z_in_cube_face_coords * bounding_circle_extent.cosine_extend_angle;
+				circle_centre_z_in_global_coords * bounding_circle_extent.cosine_extend_angle;
 
 		// See if we can even calculate the maximum projected radius on the cube face.
 		// If we can't then it means the bounding circle has a position and extent that
 		// cannot be projected onto the cube face (ie, it wraps around the globe enough away
-		// from the cube face enough that projected into onto the cube face is no longer well-defined).
+		// from the cube face enough that the projection onto the cube face is no longer well-defined).
 		if (cos_e_cos_a < sin_e_sin_a + 1e-6)
 		{
 			add(element, d_cube_quad_tree->get_or_create_root_element());
@@ -1792,7 +1802,7 @@ namespace GPlatesMaths
 		}
 
 		const double max_projected_radius_on_cube_face =
-				sin_a / (circle_centre_z_in_cube_face_coords * (cos_e_cos_a - sin_e_sin_a));
+				sin_a / (circle_centre_z_in_global_coords * (cos_e_cos_a - sin_e_sin_a));
 
 		// The half-width of a quad tree node.
 		// The root node is a whole cube face which has a half-width of 1.0 for a unit sphere.
@@ -1816,8 +1826,7 @@ namespace GPlatesMaths
 			return;
 		}
 
-		const double inv_circle_centre_z_in_cube_face_coords =
-				1.0 / circle_centre_z_in_cube_face_coords;
+		const double inv_circle_centre_z_in_global_coords = 1.0 / circle_centre_z_in_global_coords;
 
 		// Calculate the x,y offsets of the quad tree node position as if it was
 		// in the deepest level.
@@ -1829,10 +1838,10 @@ namespace GPlatesMaths
 		//
 		const int node_x_offset_at_max_depth = static_cast<int>(
 				(0.5 - 1e-6) * max_level_width_in_nodes *
-					(1 + inv_circle_centre_z_in_cube_face_coords * circle_centre_x_in_cube_face_coords));
+					(1 + inv_circle_centre_z_in_global_coords * circle_centre_x_in_cube_face_coords));
 		const int node_y_offset_at_max_depth = static_cast<int>(
 				(0.5 - 1e-6) * max_level_width_in_nodes *
-					(1 + inv_circle_centre_z_in_cube_face_coords * circle_centre_y_in_cube_face_coords));
+					(1 + inv_circle_centre_z_in_global_coords * circle_centre_y_in_cube_face_coords));
 
 		// Using the max projected radius (onto cube face) determine the level at which
 		// to store in the cube face's quad tree.
@@ -1901,7 +1910,7 @@ namespace GPlatesMaths
 			return;
 		}
 
-		CubeQuadTreeLocation::NodeLocation node_location = location.get_node_location().get();
+		location_type::NodeLocation node_location = location.get_node_location().get();
 		// Adjust the location to add if it specifies a depth greater than our maximum depth.
 		if (node_location.quad_tree_depth > d_maximum_quad_tree_depth)
 		{
@@ -2021,6 +2030,15 @@ namespace GPlatesMaths
 	CubeQuadTreePartition<ElementType>::Iterator<ElementQualifiedType>::get_element() const
 	{
 		return d_current_element_list_iterator->get_element();
+	}
+
+
+	template <typename ElementType>
+	template <typename ElementQualifiedType>
+	const typename CubeQuadTreePartition<ElementType>::location_type &
+	CubeQuadTreePartition<ElementType>::Iterator<ElementQualifiedType>::get_location() const
+	{
+		return d_cube_quad_tree_iterator.get_location();
 	}
 
 

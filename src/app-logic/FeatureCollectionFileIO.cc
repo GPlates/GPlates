@@ -30,7 +30,7 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/GeoscimlProfile.h"
-#include "file-io/ShapefileReader.h"
+#include "file-io/OgrReader.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -64,9 +64,11 @@ namespace
 
 
 GPlatesAppLogic::FeatureCollectionFileIO::FeatureCollectionFileIO(
+		const GPlatesModel::Gpgim &gpgim,
 		GPlatesModel::ModelInterface &model,
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state) :
+	d_gpgim(gpgim),
 	d_model(model),
 	d_file_format_registry(file_format_registry),
 	d_file_state(file_state)
@@ -175,6 +177,23 @@ void
 GPlatesAppLogic::FeatureCollectionFileIO::unload_file(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference loaded_file)
 {
+	// FIXME: Currently disabling the model notification guard because we are losing the
+	// publisher deactivated events in any model callbacks when the file is removed.
+	// This is because the model is delaying notification until the notification guard goes
+	// out of scope, and when that happens the model goes back over the feature store to flush
+	// pending notifications, but the removed feature collection is no longer a child of the
+	// feature store and hence is not visited to flush its pending events (so they get lost).
+	//
+	// This needs to be fixed in the model.
+	//
+	// NOTE: Until this is fixed we also have to be careful there are no notification guards
+	// higher up in the call chain (these guards can be nested).
+#if 0
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many in case we incrementally modify the features below.
+	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+#endif
+
 	// Remove the loaded file from the file state - also removes it from the model.
 	d_file_state.remove_file(loaded_file);
 }
@@ -220,22 +239,19 @@ GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::FeatureCollectionFileIO::create_empty_file()
 {
 	// Create a file with an empty feature collection and no filename.
-	GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file();
-
-	return d_file_state.add_file(file);
+	return create_file(GPlatesFileIO::File::create_file(), false/*save*/);
 }
 
 
 GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::FeatureCollectionFileIO::create_file(
-		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
-		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration)
+		const GPlatesFileIO::File::non_null_ptr_type &file,
+		bool save)
 {
-	const GPlatesFileIO::File::non_null_ptr_type file =
-			GPlatesFileIO::File::create_file(file_info, feature_collection, file_configuration);
-
-	save_file(file->get_reference());
+	if (save)
+	{
+		save_file(file->get_reference());
+	}
 
 	return d_file_state.add_file(file);
 }
@@ -251,6 +267,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::count_features_in_xml_data(
 	int i = ArbitraryXmlReader::instance()->count_features(
 			boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
 			data,
+			d_gpgim,
 			read_errors);
 
 	emit_handle_read_errors_signal(read_errors);
@@ -281,6 +298,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 			boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
 			d_model,
 			data,
+			d_gpgim,
 			read_errors);
 	d_file_state.add_file(file);
 
@@ -359,6 +377,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::emit_handle_read_errors_signal(
 	// This is useful for client code interested in displaying errors to the user.
 	if (!read_errors.is_empty())
 	{
-		emit handle_read_errors(*this, read_errors);
+		Q_EMIT handle_read_errors(*this, read_errors);
 	}
 }

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ExportResolvedTopologyOptionsWidget</class>
+ <widget class="QWidget" name="ExportResolvedTopologyOptionsWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>533</width>
+    <height>362</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="margin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QWidget" name="widget_shapefile_dateline_wrap" native="true"/>
+   </item>
+   <item>
+    <widget class="QWidget" name="widget_file_options" native="true"/>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="resolved_geometry_type_options">
+     <property name="title">
+      <string>Resolved Geometry Types</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="spacing">
+       <number>1</number>
+      </property>
+      <property name="topMargin">
+       <number>1</number>
+      </property>
+      <property name="bottomMargin">
+       <number>1</number>
+      </property>
+      <item>
+       <widget class="QCheckBox" name="export_resolved_lines_checkbox">
+        <property name="text">
+         <string>Export resolved topological lines</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="export_resolved_polygons_checkbox">
+        <property name="text">
+         <string>Export resolved topological polygons</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -37,8 +37,8 @@
 #include "FeatureCollectionFileState.h"
 #include "FeatureCollectionFileIO.h"
 #include "Serialization.h"
-#include "file-io/FileInfo.h"
 
+#include "file-io/FileInfo.h"
 
 namespace
 {
@@ -140,6 +140,11 @@ GPlatesAppLogic::SessionManagement::clear_session()
 	ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
 			*d_app_state_ptr, true/*reconstruct_on_scope_exit*/);
 
+	// Put all layer removals in a single remove layers group.
+	// We also start this before unloading files since that can trigger removal of auto-created layers.
+	ReconstructGraph::AddOrRemoveLayersGroup remove_layers_group(d_app_state_ptr->get_reconstruct_graph());
+	remove_layers_group.begin_add_or_remove_layers();
+
 	// Unloading all files should remove all auto-created layers but any user-created layers
 	// will not be removed so we'll have to remove them explicitly - if we don't then the number
 	// of user-created layers increases continuously as we switch between sessions.
@@ -153,6 +158,9 @@ GPlatesAppLogic::SessionManagement::clear_session()
 	{
 		d_app_state_ptr->get_reconstruct_graph().remove_layer(layer);
 	}
+
+	// End the remove layers group.
+	remove_layers_group.end_add_or_remove_layers();
 }
 
 
@@ -411,7 +419,7 @@ GPlatesAppLogic::SessionManagement::store_recent_session_list(
 	}
 
 	// Ensure menu is updated.
-	emit session_list_updated();
+	Q_EMIT session_list_updated();
 }
 
 

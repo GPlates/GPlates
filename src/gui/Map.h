@@ -33,13 +33,13 @@
 #include <boost/shared_ptr.hpp>
 
 #include "ColourScheme.h"
+#include "MapBackground.h"
 #include "MapGrid.h"
 #include "MapProjection.h"
 #include "MapRenderedGeometryCollectionPainter.h"
-#include "TextRenderer.h"
+#include "ViewportZoom.h"
 
-#include "gui/ViewportZoom.h"
-#include "gui/PersistentOpenGLObjects.h"
+#include "opengl/GLVisualLayers.h"
 
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayers.h"
@@ -70,13 +70,12 @@ namespace GPlatesGui
 
 		Map(
 				GPlatesPresentation::ViewState &view_state,
-				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
 				ViewportZoom &viewport_zoom,
-				const ColourScheme::non_null_ptr_type &colour_scheme,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer);
+				const ColourScheme::non_null_ptr_type &colour_scheme);
 
 		/**
 		 * Initialise any OpenGL state.
@@ -125,6 +124,11 @@ namespace GPlatesGui
 
 		GPlatesPresentation::ViewState &d_view_state;
 
+		/**
+		 * Keeps track of OpenGL-related objects that persist from one render to the next.
+		 */
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
+
 		//! A pointer to the state's RenderedGeometryCollection
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 
@@ -139,8 +143,12 @@ namespace GPlatesGui
 		//! For giving colour to RenderedGeometry
 		GPlatesGui::ColourScheme::non_null_ptr_type d_colour_scheme;
 
-		//! Used for rendering text
-		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
+		/**
+		 * The coloured map background (behind the grid and rendered geometry data).
+		 *
+		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
+		 */
+		boost::optional<MapBackground> d_background;
 
 		/**
 		 * Lines of lat and lon on the map.

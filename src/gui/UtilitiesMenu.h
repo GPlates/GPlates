@@ -70,7 +70,7 @@ namespace GPlatesGui
 				const QString &name,
 				const boost::function< void () > &callback);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_action_triggered();

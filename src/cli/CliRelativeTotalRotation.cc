@@ -41,10 +41,11 @@
 #include "file-io/FileInfo.h"
 #include "file-io/ReadErrorAccumulation.h"
 
+#include "global/LogException.h"
+
 #include "maths/LatLonPoint.h"
 
 #include "model/Model.h"
-
 
 namespace
 {
@@ -62,16 +63,19 @@ namespace
 	//! Option name for moving plate id with short version.
 	const char *MOVING_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "moving-plate-id,m";
 
-	//! Option name for anchor plate id with short version.
-	const char *ANCHOR_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "anchor-plate-id,a";
+	//! Option name for replacing 'Indeterminate' rotations with zero-angle north pole.
+	const char *INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME =
+			"indeterminate-is-zero-angle-north-pole";
+	//! Option name for replacing 'Indeterminate' rotations with zero-angle north pole with short version.
+	const char *INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME_WITH_SHORT_OPTION =
+			"indeterminate-is-zero-angle-north-pole,i";
 }
 
 
 GPlatesCli::RelativeTotalRotationCommand::RelativeTotalRotationCommand() :
 	d_recon_time(0),
 	d_fixed_plate_id(0),
-	d_moving_plate_id(0),
-	d_anchor_plate_id(0)
+	d_moving_plate_id(0)
 {
 }
 
@@ -89,7 +93,7 @@ GPlatesCli::RelativeTotalRotationCommand::add_options(
 			// std::vector allows multiple load files and
 			// 'composing()' allows merging of command-line and config files.
 			boost::program_options::value< std::vector<std::string> >()->composing(),
-			"load reconstruction feature collection file (multiple options allowed)"
+			"load reconstruction feature collection (rotation) file (multiple options allowed)"
 		)
 		(
 			RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION,
@@ -109,10 +113,8 @@ GPlatesCli::RelativeTotalRotationCommand::add_options(
 			"set moving plate id (defaults to zero)"
 		)
 		(
-			ANCHOR_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION,
-			boost::program_options::value<GPlatesModel::integer_plate_id_type>(
-					&d_anchor_plate_id)->default_value(0),
-			"set anchor plate id (defaults to zero)"
+			INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME_WITH_SHORT_OPTION,
+			"output '(90.0, 0.0, 0.0)' instead of 'Indeterminate' for identity rotations"
 		)
 		;
 
@@ -123,15 +125,23 @@ GPlatesCli::RelativeTotalRotationCommand::add_options(
 }
 
 
-int
+void
 GPlatesCli::RelativeTotalRotationCommand::run(
 		const boost::program_options::variables_map &vm)
 {
+	// Output 'Indeterminate' unless specified otherwise.
+	const bool output_indeterminate_for_identity_rotations =
+			vm.count(INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME) == 0;
+
 	FeatureCollectionFileIO file_io(d_model, vm);
+	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
 	// Load the reconstruction feature collection files
 	FeatureCollectionFileIO::feature_collection_file_seq_type reconstruction_files =
-			file_io.load_files(LOAD_RECONSTRUCTION_OPTION_NAME);
+			file_io.load_files(LOAD_RECONSTRUCTION_OPTION_NAME, read_errors);
+
+	// Report all file load errors (if any).
+	FeatureCollectionFileIO::report_load_file_errors(read_errors);
 
 	// Extract the feature collections from the owning files.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruction_feature_collections;
@@ -139,10 +149,12 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 			reconstruction_feature_collections, reconstruction_files);
 
 	// Create a reconstruction tree from the rotation features.
+	// Note that we set the anchor plate id to zero - it doesn't matter what the value is
+	// because we're only returning a *relative* rotation between a moving/fixed plate pair.
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type reconstruction_tree =
 			GPlatesAppLogic::create_reconstruction_tree(
 					d_recon_time,
-					d_anchor_plate_id,
+					0/*anchor_plate_id*/,
 					reconstruction_feature_collections);
 
 	// Find those edges matching the user-specified moving plate id.
@@ -172,7 +184,9 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 	if (!reconstruction_tree_edge)
 	{
 		// Return failure if fixed/moving plate pair was not found in the reconstruction tree.
-		return 1;
+		throw GPlatesGlobal::LogException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Unable to find moving/fixed plate pair.");
 	}
 
 	// Get the relative rotation.
@@ -181,7 +195,14 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 	
 	if (GPlatesMaths::represents_identity_rotation(unit_quaternion)) 
 	{
-		std::cout << "Indeterminate" << std::endl;
+		if (output_indeterminate_for_identity_rotations)
+		{
+			std::cout << "Indeterminate" << std::endl;
+		}
+		else
+		{
+			std::cout << "(90.0, 0.0, 0.0)" << std::endl;
+		}
 	} 
 	else 
 	{
@@ -197,6 +218,4 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 				<< GPlatesMaths::convert_rad_to_deg(finite_rotation_params.angle).dval()
 				<< ")" << std::endl;
 	}
-
-	return 0;
 }

@@ -27,15 +27,22 @@
 #include "QueryFeaturePropertiesWidget.h"
 
 #include "app-logic/ApplicationState.h"
-#include "gui/FeatureFocus.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
 #include "feature-visitors/QueryFeaturePropertiesWidgetPopulator.h"
-#include "maths/types.h"
-#include "maths/UnitVector3D.h"
+
+#include "gui/FeatureFocus.h"
+
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
+#include "maths/types.h"
+#include "maths/UnitVector3D.h"
+
 #include "presentation/ViewState.h"
+
 #include "property-values/GpmlPlateId.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -156,46 +163,47 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 	lineedit_revision_id->setText(
 			GPlatesUtils::make_qstring_from_icu_string(d_feature_ref->revision_id().get()));
 
+	const GPlatesModel::integer_plate_id_type root_plate_id =
+				d_application_state_ptr->get_current_anchored_plate_id();
+	const double reconstruction_time = d_application_state_ptr->get_current_reconstruction_time();
+
 	// These next few fields only make sense if the feature is reconstructable, ie. if it has a
 	// reconstruction plate ID.
-	static const GPlatesModel::PropertyName plate_id_property_name = 
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+	QString euler_pole_as_string = QObject::tr("indeterminate");
+	double angle = 0;
+	GPlatesModel::integer_plate_id_type plate_id = 0;
 
-	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-	if (GPlatesFeatureVisitors::get_property_value(
-			d_feature_ref, plate_id_property_name, recon_plate_id))
+	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> focused_rfg =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const GPlatesAppLogic::ReconstructedFeatureGeometry>(d_focused_rg);
+	if (focused_rfg &&
+		// We explicitly calculate finite rotation by plate id (so not interested in half-stage, etc)...
+		focused_rfg.get()->get_reconstruct_method_type() == GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID &&
+		focused_rfg.get()->reconstruction_plate_id())
 	{
 		// The feature has a reconstruction plate ID.
-		set_plate_id(recon_plate_id->value());
-
-		GPlatesModel::integer_plate_id_type root_plate_id =
-				d_application_state_ptr->get_current_anchored_plate_id();
-		set_root_plate_id(root_plate_id);
-		set_reconstruction_time(
-				d_application_state_ptr->get_current_reconstruction_time());
+		plate_id = focused_rfg.get()->reconstruction_plate_id().get();
 
 		// Now let's use the reconstruction plate ID of the feature to find the appropriate 
 		// absolute rotation in the reconstruction tree.
-		const GPlatesAppLogic::ReconstructionTree &recon_tree = *d_focused_rg->reconstruction_tree();
+		const GPlatesAppLogic::ReconstructionTree &recon_tree = *focused_rfg.get()->get_reconstruction_tree();
 		std::pair<GPlatesMaths::FiniteRotation,
 				GPlatesAppLogic::ReconstructionTree::ReconstructionCircumstance>
 				absolute_rotation =
-						recon_tree.get_composed_absolute_rotation(recon_plate_id->value());
+						recon_tree.get_composed_absolute_rotation(plate_id);
 
 		// FIXME:  Do we care about the reconstruction circumstance?
 		// (For example, there may have been no match for the reconstruction plate ID.)
 		const GPlatesMaths::UnitQuaternion3D &uq = absolute_rotation.first.unit_quat();
-		if (GPlatesMaths::represents_identity_rotation(uq)) {
-			set_euler_pole(QObject::tr("indeterminate"));
-			set_angle(0.0);
-		} else {
+		if (!GPlatesMaths::represents_identity_rotation(uq))
+		{
 			using namespace GPlatesMaths;
 
-			UnitQuaternion3D::RotationParams params =
+			GPlatesMaths::UnitQuaternion3D::RotationParams params =
 					uq.get_rotation_params(absolute_rotation.first.axis_hint());
 
-			PointOnSphere euler_pole(params.axis);
-			LatLonPoint llp = make_lat_lon_point(euler_pole);
+			GPlatesMaths::PointOnSphere euler_pole(params.axis);
+			GPlatesMaths::LatLonPoint llp = make_lat_lon_point(euler_pole);
 
 			// Use the default locale for the floating-point-to-string conversion.
 			// (We need the underscore at the end of the variable name, because
@@ -203,17 +211,20 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 			QLocale locale_;
 			QString euler_pole_lat = locale_.toString(llp.latitude());
 			QString euler_pole_lon = locale_.toString(llp.longitude());
-			QString euler_pole_as_string;
+			euler_pole_as_string.clear();
 			euler_pole_as_string.append(euler_pole_lat);
 			euler_pole_as_string.append(QObject::tr(" ; "));
 			euler_pole_as_string.append(euler_pole_lon);
 
-			set_euler_pole(euler_pole_as_string);
-
-			const double &angle = GPlatesMaths::convert_rad_to_deg(params.angle).dval();
-			set_angle(angle);
+			angle = GPlatesMaths::convert_rad_to_deg(params.angle).dval();
 		}
 	}
+
+	set_reconstruction_time(reconstruction_time);
+	set_root_plate_id(root_plate_id);
+	set_plate_id(plate_id);
+	set_euler_pole(euler_pole_as_string);
+	set_angle(angle);
 
 	//PROFILE_BLOCK("QueryFeaturePropertiesWidgetPopulator");
 

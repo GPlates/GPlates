@@ -30,6 +30,9 @@
 
 #include "ConfigureTextOverlayDialogUi.h"
 
+#include "GPlatesDialog.h"
+
+
 namespace GPlatesGui
 {
 	class TextOverlaySettings;
@@ -41,7 +44,7 @@ namespace GPlatesQtWidgets
 	class ChooseFontButton;
 
 	class ConfigureTextOverlayDialog : 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_ConfigureTextOverlayDialog 
 	{
 		Q_OBJECT

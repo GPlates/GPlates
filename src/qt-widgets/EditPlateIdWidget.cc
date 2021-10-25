@@ -131,6 +131,6 @@ GPlatesQtWidgets::EditPlateIdWidget::set_null(
 void
 GPlatesQtWidgets::EditPlateIdWidget::handle_value_changed()
 {
-	emit value_changed();
+	Q_EMIT value_changed();
 }
 

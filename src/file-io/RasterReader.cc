@@ -48,6 +48,8 @@
 #include "RgbaRasterReader.h"
 #include "ReadErrorAccumulation.h"
 
+#include "global/GPlatesAssert.h"
+
 #include "opengl/OpenGLBadAllocException.h"
 #include "opengl/OpenGLException.h"
 
@@ -120,80 +122,83 @@ namespace
 	}
 
 
-	std::map<QString, RasterReader::FormatInfo>
-	create_supported_formats_map()
+	void
+	add_supported_formats_to_map(
+			std::map<QString, RasterReader::FormatInfo> &formats,
+			RasterReader::FormatHandler format_handler)
 	{
 		using namespace GPlatesUtils::OverloadResolution;
 
-		typedef std::map<QString, RasterReader::FormatInfo> formats_map_type;
-		formats_map_type formats;
-
 		// Add formats that we support via the RGBA reader.
 		// Note: The descriptions are those used by the GIMP.
-		formats.insert(std::make_pair(
-				"bmp",
-				RasterReader::FormatInfo(
-					"Windows BMP image",
-					"image/bmp",
-					RasterReader::RGBA)));
-		formats.insert(std::make_pair(
-				"gif",
-				RasterReader::FormatInfo(
-					"GIF image",
-					"image/gif",
-					RasterReader::RGBA)));
-		formats.insert(std::make_pair(
-				"jpg",
-				RasterReader::FormatInfo(
-					"JPEG image",
-					"image/jpeg",
-					RasterReader::RGBA)));
-		formats.insert(std::make_pair(
-				"jpeg",
-				RasterReader::FormatInfo(
-					"JPEG image",
-					"image/jpeg",
-					RasterReader::RGBA)));
-		formats.insert(std::make_pair(
-				"png",
-				RasterReader::FormatInfo(
-					"PNG image",
-					"image/png",
-					RasterReader::RGBA)));
-		formats.insert(std::make_pair(
-				"svg",
-				RasterReader::FormatInfo(
-					"SVG image",
-					"image/svg+xml",
-					RasterReader::RGBA)));
-		formats.insert(std::make_pair(
-				"tif",
-				RasterReader::FormatInfo(
-					"TIFF image",
-					"image/tiff",
-					RasterReader::RGBA)));
-		formats.insert(std::make_pair(
-				"tiff",
-				RasterReader::FormatInfo(
-					"TIFF image",
-					"image/tiff",
-					RasterReader::RGBA)));
+		if (format_handler == RasterReader::RGBA)
+		{
+			formats.insert(std::make_pair(
+					"bmp",
+					RasterReader::FormatInfo(
+						"Windows BMP image",
+						"image/bmp",
+						RasterReader::RGBA)));
+			formats.insert(std::make_pair(
+					"gif",
+					RasterReader::FormatInfo(
+						"GIF image",
+						"image/gif",
+						RasterReader::RGBA)));
+			formats.insert(std::make_pair(
+					"jpg",
+					RasterReader::FormatInfo(
+						"JPEG image",
+						"image/jpeg",
+						RasterReader::RGBA)));
+			formats.insert(std::make_pair(
+					"jpeg",
+					RasterReader::FormatInfo(
+						"JPEG image",
+						"image/jpeg",
+						RasterReader::RGBA)));
+			formats.insert(std::make_pair(
+					"png",
+					RasterReader::FormatInfo(
+						"PNG image",
+						"image/png",
+						RasterReader::RGBA)));
+			formats.insert(std::make_pair(
+					"svg",
+					RasterReader::FormatInfo(
+						"SVG image",
+						"image/svg+xml",
+						RasterReader::RGBA)));
+			formats.insert(std::make_pair(
+					"tif",
+					RasterReader::FormatInfo(
+						"TIFF image",
+						"image/tiff",
+						RasterReader::RGBA)));
+			formats.insert(std::make_pair(
+					"tiff",
+					RasterReader::FormatInfo(
+						"TIFF image",
+						"image/tiff",
+						RasterReader::RGBA)));
+		}
 
 		// Also add GMT grid/NetCDF files, read by GDAL.
-		formats.insert(std::make_pair(
-				"grd",
-				RasterReader::FormatInfo(
-					"NetCDF/GMT grid data",
-					"application/x-netcdf",
-					RasterReader::GDAL)));
-		formats.insert(std::make_pair(
-				"nc",
-				RasterReader::FormatInfo(
-					"NetCDF/GMT grid data",
-					"application/x-netcdf",
-					RasterReader::GDAL)));
-
-		return formats;
+		if (format_handler == RasterReader::GDAL)
+		{
+			formats.insert(std::make_pair(
+					"grd",
+					RasterReader::FormatInfo(
+						"NetCDF/GMT grid data",
+						"application/x-netcdf",
+						RasterReader::GDAL)));
+			formats.insert(std::make_pair(
+					"nc",
+					RasterReader::FormatInfo(
+						"NetCDF/GMT grid data",
+						"application/x-netcdf",
+						RasterReader::GDAL)));
+		}
 	}
 
 
@@ -289,19 +294,43 @@ namespace
 }  // anonymous namespace
 
 
-const std::map<QString, GPlatesFileIO::RasterReader::FormatInfo> &
+std::map<QString, GPlatesFileIO::RasterReader::FormatInfo>
 GPlatesFileIO::RasterReader::get_supported_formats()
 {
-	static const std::map<QString, FormatInfo> supported_formats = create_supported_formats_map();
+	std::map<QString, FormatInfo> supported_formats;
+
+	for (unsigned int format_handler = 0; format_handler < NUM_FORMAT_HANDLERS; ++format_handler)
+	{
+		add_supported_formats_to_map(supported_formats, static_cast<FormatHandler>(format_handler));
+	}
+
 	return supported_formats;
 }
 
 
-const QString &
+std::map<QString, GPlatesFileIO::RasterReader::FormatInfo>
+GPlatesFileIO::RasterReader::get_supported_formats(
+		FormatHandler format_handler)
+{
+	std::map<QString, FormatInfo> supported_formats;
+	add_supported_formats_to_map(supported_formats, format_handler);
+	return supported_formats;
+}
+
+
+QString
 GPlatesFileIO::RasterReader::get_file_dialog_filters()
 {
 	static const QString file_dialog_filters = create_file_dialog_filters_string(get_supported_formats());
 	return file_dialog_filters;
+}
+
+
+QString
+GPlatesFileIO::RasterReader::get_file_dialog_filters(
+		FormatHandler format_handler)
+{
+	return create_file_dialog_filters_string(get_supported_formats(format_handler));
 }
 
 
@@ -347,8 +376,24 @@ GPlatesFileIO::RasterReader::RasterReader(
 
 	const std::map<QString, FormatInfo> &supported_formats = get_supported_formats();
 	std::map<QString, FormatInfo>::const_iterator iter = supported_formats.find(suffix);
-	FormatHandler handler =
-		(iter != supported_formats.end()) ? iter->second.handler : UNKNOWN;
+
+	// If a supported format was not found...
+	if (iter == supported_formats.end())
+	{
+		if (read_errors)
+		{
+			read_errors->d_failures_to_begin.push_back(
+					make_read_error_occurrence(
+						filename,
+						DataFormats::RasterImage,
+						0,
+						ReadErrors::UnrecognisedRasterFileType,
+						ReadErrors::FileNotLoaded));
+		}
+		return;
+	}
+
+	const FormatHandler handler = iter->second.handler;
 
 	switch (handler)
 	{
@@ -361,16 +406,8 @@ GPlatesFileIO::RasterReader::RasterReader(
 			break;
 
 		default:
-			if (read_errors)
-			{
-				read_errors->d_failures_to_begin.push_back(
-						make_read_error_occurrence(
-							filename,
-							DataFormats::RasterImage,
-							0,
-							ReadErrors::UnrecognisedRasterFileType,
-							ReadErrors::FileNotLoaded));
-			}
+			// Shouldn't get here.
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 	}
 }
 

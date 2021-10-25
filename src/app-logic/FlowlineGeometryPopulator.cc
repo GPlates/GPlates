@@ -334,11 +334,13 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon
 
 	    GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type seed_point_rfg =
 		    ReconstructedFeatureGeometry::create(
-			reconstruction_tree,
-			*(current_top_level_propiter()->handle_weak_ref()),
-			*(current_top_level_propiter()),
-			geom,
-			d_flowline_property_finder.get_reconstruction_plate_id());
+				reconstruction_tree,
+				d_reconstruction_tree_creator,
+				*(current_top_level_propiter()->handle_weak_ref()),
+				*(current_top_level_propiter()),
+				geom,
+				ReconstructMethod::FLOWLINE,
+				d_flowline_property_finder.get_reconstruction_plate_id());
 
 	    d_reconstructed_feature_geometries.push_back(seed_point_rfg);
 
@@ -425,6 +427,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 			GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type rf_ptr =
 				ReconstructedFlowline::create(
 				reconstruction_tree,
+				d_reconstruction_tree_creator,
 				present_day_seed_point_geometry,
 				reconstructed_seed_geometry,
 				left_flowline_points,

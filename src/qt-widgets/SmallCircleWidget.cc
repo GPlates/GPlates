@@ -52,7 +52,7 @@ GPlatesQtWidgets::SmallCircleWidget::SmallCircleWidget(
 	d_application_state_ptr(&view_state.get_application_state()),
         d_create_small_circle_dialog_ptr(new CreateSmallCircleDialog(this,view_state.get_application_state(),this)),
 	d_small_circle_layer(view_state.get_rendered_geometry_collection().get_main_rendered_layer(
-                GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_LAYER))
+                GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_CANVAS_TOOL_WORKFLOW_LAYER))
 {
 	setupUi(this);
 	
@@ -61,7 +61,11 @@ GPlatesQtWidgets::SmallCircleWidget::SmallCircleWidget(
 	QObject::connect(this, SIGNAL(feature_created()),d_application_state_ptr,SLOT(reconstruct()));
         QObject::connect(button_specify,SIGNAL(clicked()),this,SLOT(handle_specify()));
 
-	d_small_circle_layer->set_active();
+	// Disable the task panel widget.
+	// It will get enabled when the Create Small Circle canvas tool is activated.
+	// This prevents the user from interacting with the task panel widget if the
+	// canvas tool happens to be disabled at startup.
+	setEnabled(false);
 }
 
 void
@@ -91,14 +95,11 @@ GPlatesQtWidgets::SmallCircleWidget::hideEvent(
 {
 	// If the small circle canvas tool gets deactivated, then we 
 	// want to hide the stage pole dialog too.
-        if (d_create_small_circle_dialog_ptr)
+	if (d_create_small_circle_dialog_ptr)
 	{
-                d_create_small_circle_dialog_ptr->close();
+		d_create_small_circle_dialog_ptr->close();
 	}
-
-	d_small_circle_layer->set_active(false);
 }
-
 
 
 void
@@ -112,8 +113,9 @@ GPlatesQtWidgets::SmallCircleWidget::update_small_circle_layer()
 
 	for ( ; it != end ; ++it)
 	{
-		GPlatesViewOperations::RenderedGeometry circle = GPlatesViewOperations::create_rendered_small_circle(
-			GPlatesMaths::SmallCircle::create_colatitude(it->axis_vector(),it->colatitude()));
+		GPlatesViewOperations::RenderedGeometry circle =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
+					GPlatesMaths::SmallCircle::create_colatitude(it->axis_vector(),it->colatitude()));
 
 		d_small_circle_layer->add_rendered_geometry(circle);
 	}
@@ -124,7 +126,6 @@ GPlatesQtWidgets::SmallCircleWidget::update_small_circle_layer()
 void
 GPlatesQtWidgets::SmallCircleWidget::handle_activation()
 {
-	d_small_circle_layer->set_active();
 }
 
 void
@@ -136,7 +137,7 @@ GPlatesQtWidgets::SmallCircleWidget::handle_clear()
 	update_small_circle_layer();
 
 	// The canvas tool will listen for this and reset any of its circles. 
-	emit clear_geometries();
+	Q_EMIT clear_geometries();
 }
 
 
@@ -220,7 +221,7 @@ void
 GPlatesQtWidgets::SmallCircleWidget::update_circles(
         small_circle_collection_type &small_circle_collection_)
 {
-    emit clear_geometries();
+    Q_EMIT clear_geometries();
     d_small_circles = small_circle_collection_;
     update_current_circles();
 }

@@ -45,7 +45,7 @@ namespace GPlatesDataMining
 {
 	using namespace GPlatesMaths;
 
-	const double DEFAULT_RADIUS_OF_EARTH = 6378.1;
+	const double DEFAULT_RADIUS_OF_EARTH_KMS = 6378.1;
 
 	/*
 	* TODO: more comments

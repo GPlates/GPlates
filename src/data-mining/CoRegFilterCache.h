@@ -27,7 +27,11 @@
 #define GPLATESDATAMINING_COREGFILTERCACHE_H
 
 #include <vector>
+
 #include "CoRegConfigurationTable.h"
+
+#include "app-logic/ReconstructContext.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -39,10 +43,14 @@ namespace GPlatesDataMining
 	class CoRegFilterCache
 	{
 	public:
+		typedef std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature>
+				reconstructed_feature_vector_type;
+
+
 		void
 		insert(
 				const ConfigurationTableRow& key,
-				const std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& value)
+				const reconstructed_feature_vector_type &value)
 		{
 			d_data.push_back(CacheItem(key,value));
 		}
@@ -50,7 +58,7 @@ namespace GPlatesDataMining
 		bool
 		find(
 				const ConfigurationTableRow& key,
-				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& values);
+				reconstructed_feature_vector_type &value);
 
 		void
 		insert(const ConfigurationTableRow& key)
@@ -58,7 +66,7 @@ namespace GPlatesDataMining
 			d_data.push_back(CacheItem(key));
 		}
 
-		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>&
+		const reconstructed_feature_vector_type &
 		front_value()
 		{
 			return d_data.front().d_value;
@@ -76,7 +84,7 @@ namespace GPlatesDataMining
 		public:
 			CacheItem(
 					const ConfigurationTableRow k,
-					std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> v) : 
+					const reconstructed_feature_vector_type &v) : 
 				d_key(k),
 				d_value(v)
 			{ }
@@ -86,7 +94,7 @@ namespace GPlatesDataMining
 			{ }
 
 			ConfigurationTableRow d_key;
-			std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> d_value;
+			reconstructed_feature_vector_type d_value;
 		};
 		std::vector<CacheItem> d_data;
 	};

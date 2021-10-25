@@ -75,15 +75,15 @@ namespace GPlatesOpenGL
 		//
 		static const target_type TARGET_ARRAY_BUFFER;          // When reading/writing vertex attribute data (vertices).
 		static const target_type TARGET_ELEMENT_ARRAY_BUFFER;  // When reading/writing vertex element data (indices).
-		static const target_type TARGET_PIXEL_UNPACK_BUFFER;   // When reading pixel data.
-		static const target_type TARGET_PIXEL_PACK_BUFFER;     // When writing pixel data.
+		static const target_type TARGET_PIXEL_UNPACK_BUFFER;   // When writing pixel data.
+		static const target_type TARGET_PIXEL_PACK_BUFFER;     // When reading pixel data.
 
 
 		//! Typedef for the usage of the buffer.
 		typedef unsigned int usage_type;
 
 		//
-		// STATIC - You will specify the data only once,
+		// STATIC - You will specify the data only once (or possibly very rarely),
 		// then use it many times without modifying it.
 		//
 		static const usage_type USAGE_STATIC_DRAW; // Application -> GL (data sent to the GPU)
@@ -92,6 +92,7 @@ namespace GPlatesOpenGL
 		//
 		// DYNAMIC - You will specify or modify the data repeatedly,
 		// and use it repeatedly after each time you do this.
+		// Such as modifying the data every few frames or so.
 		//
 		static const usage_type USAGE_DYNAMIC_DRAW; // Application -> GL (data sent to the GPU)
 		static const usage_type USAGE_DYNAMIC_READ; // GL -> Application (data read from the GPU)
@@ -238,10 +239,11 @@ namespace GPlatesOpenGL
 		 * the GPU is currently accessing the buffer data (eg, for a draw call).
 		 * To avoid the block you would first need to call 'glBufferData()' with a NULL data pointer
 		 * to get a new buffer allocation (allows GPU to continue accessing the previous buffer contents
-		 * will you write data to the new buffer allocation).
+		 * while you write data to the new buffer allocation).
 		 *
 		 * So this method is probably best used if you're writing buffer data only once or
-		 * infrequently enough that blocking is not a concern.
+		 * infrequently enough that blocking is not a concern or first calling 'glBufferData()'
+		 * with a NULL data pointer to avoid blocking (and then write the entire buffer).
 		 *
 		 * NOTE: Unlike @a gl_map_buffer_dynamic and @a gl_map_buffer_stream,
 		 * @a gl_map_buffer_static is always supported.
@@ -356,6 +358,11 @@ namespace GPlatesOpenGL
 		 * @a minimum_bytes_to_stream must be in the half-open range (0, buffer_size] where
 		 * 'buffer_size' is determined by @a gl_buffer_data.
 		 *
+		 * @a stream_alignment ensures the returned pointer is an integer multiple of @a stream_alignment
+		 * bytes from the beginning of the internal buffer. This also means @a stream_offset will
+		 * be an integer multiple of @a stream_alignment. This is useful for ensuring vertices are
+		 * indexed correctly - in which case the alignment should be set to the size of the vertex.
+		 *
 		 * This call must be followed up with a single call to @a gl_flush_buffer_stream
 		 * (before @a gl_unmap_buffer is called but after modifying the buffer) to specify the
 		 * number of bytes that were streamed.
@@ -367,10 +374,11 @@ namespace GPlatesOpenGL
 		 * for a large buffer when only a small portion of it is actually used could lead to the
 		 * OpenGL driver using excessive amounts of memory (or perhaps even just blocking) - actually
 		 * this is what happens if @a asynchronous_map_buffer_stream_supported returns false.
-		 * The solution is to call 'gl_map_buffer_stream()' and modify only unused parts of the
+		 * Internally this is implemented by allowing clients to modify only unused parts of the
 		 * buffer (since the last time the buffer was orphaned) - this is done by incrementally filling
-		 * up the buffer and issuing draw calls and then when the buffer is full simply orphaning/discarding
-		 * it (the driver returns a new underlying buffer allocation) and do the same thing again.
+		 * up the buffer (and the client issuing draw calls) and then, when the buffer, is full simply
+		 * orphaning/discarding it (the driver returns a new underlying buffer allocation) and do the
+		 * same thing again.
 		 * This is the way Direct3D does it (using D3DLOCK_NOOVERWRITE and D3DLOCK_DISCARD) -
 		 * see http://msdn.microsoft.com/en-us/library/windows/desktop/bb147263%28v=vs.85%29.aspx#Using_Dynamic_Vertex_and_Index_Buffers
 		 *
@@ -382,6 +390,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				target_type target,
 				unsigned int minimum_bytes_to_stream,
+				unsigned int stream_alignment,
 				unsigned int &stream_offset,
 				unsigned int &stream_bytes_available) = 0;
 
@@ -412,7 +421,8 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Unmaps the buffer mapped with @a gl_map_buffer_static - indicates updates or reading is complete.
+		 * Unmaps the buffer mapped with @a gl_map_buffer_static, @a gl_map_buffer_dynamic or
+		 * @a gl_map_buffer_stream.
 		 *
 		 * This mirrors the behaviour of glUnmapBuffer (included returning GL_FALSE if the buffer
 		 * contents were corrupted during the mapping, eg, video memory corruption during ALT+TAB).
@@ -455,16 +465,33 @@ namespace GPlatesOpenGL
 			gl_map_buffer_static(
 					access_type access);
 
-			//! Maps buffer for dynamic *write* access - check if supported using @a asynchronous_map_buffer_dynamic_supported.
+			//! Maps buffer for dynamic *write* access.
 			GLvoid *
 			gl_map_buffer_dynamic();
 
-			//! Maps buffer for streaming *write* access - check if supported using @a asynchronous_map_buffer_stream_supported.
+			//! Maps buffer for streaming *write* access.
 			GLvoid *
 			gl_map_buffer_stream(
 					unsigned int minimum_bytes_to_stream,
+					unsigned int stream_alignment,
 					unsigned int &stream_offset,
 					unsigned int &stream_bytes_available);
+
+
+			//! Flushes a range of a currently mapped buffer (mapped via @a gl_map_buffer_dynamic).
+			void
+			gl_flush_buffer_dynamic(
+					unsigned int offset,
+					unsigned int length/*in bytes*/);
+
+			/**
+			 * Specifies the number of bytes streamed after calling @a gl_map_buffer_stream and
+			 * writing data into the region mapped for streaming.
+			 */
+			void
+			gl_flush_buffer_stream(
+					unsigned int bytes_written);
+
 
 			//! Unmaps buffer using parameters passed into constructor.
 			GLboolean

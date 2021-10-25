@@ -61,13 +61,13 @@ namespace GPlatesQtWidgets
 		bool
 		update_property_value_from_widget();
 
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_combobox_change()
 		{
 			set_dirty();
-			emit commit_me();
+			Q_EMIT commit_me();
 		}
 	
 	private:

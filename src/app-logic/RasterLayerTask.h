@@ -222,6 +222,7 @@ namespace GPlatesAppLogic
 		static const QString RASTER_FEATURE_CHANNEL_NAME;
 		static const QString RECONSTRUCTED_POLYGONS_CHANNEL_NAME;
 		static const QString AGE_GRID_RASTER_CHANNEL_NAME;
+		static const QString NORMAL_MAP_RASTER_CHANNEL_NAME;
 
 
 		/**

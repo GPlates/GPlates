@@ -169,6 +169,6 @@ void
 GPlatesQtWidgets::VisualLayersDelegate::emit_size_hint_changed(
 		const QModelIndex &index)
 {
-	emit sizeHintChanged(index);
+	Q_EMIT sizeHintChanged(index);
 }
 

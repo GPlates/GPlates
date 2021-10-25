@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>724</width>
+    <width>780</width>
     <height>688</height>
    </rect>
   </property>
@@ -32,8 +32,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>724</width>
-     <height>23</height>
+     <width>780</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -43,6 +43,7 @@
     <addaction name="action_View_Online_Documentation"/>
     <addaction name="separator"/>
     <addaction name="action_About"/>
+    <addaction name="action_About_GPlates_Dataset"/>
    </widget>
    <widget class="QMenu" name="menu_File">
     <property name="title">
@@ -62,8 +63,6 @@
     <addaction name="action_Open_Feature_Collection"/>
     <addaction name="menu_Open_Recent_Session"/>
     <addaction name="separator"/>
-    <addaction name="action_Import_Raster"/>
-    <addaction name="action_Import_Time_Dependent_Raster"/>
     <addaction name="menu_Import"/>
     <addaction name="separator"/>
     <addaction name="actionConnect_WFS"/>
@@ -172,6 +171,14 @@
     <property name="title">
      <string>Fe&amp;atures</string>
     </property>
+    <widget class="QMenu" name="menuGenerate_Velocity_Point_Locations">
+     <property name="title">
+      <string>Generate Velocity &amp;Domain Points</string>
+     </property>
+     <addaction name="action_Generate_Citcoms_Velocity_Domain"/>
+     <addaction name="action_Generate_Terra_Velocity_Domain"/>
+     <addaction name="action_Generate_LatitudeLongitude_Velocity_Domain"/>
+    </widget>
     <addaction name="action_Manage_Colouring"/>
     <addaction name="separator"/>
     <addaction name="action_Load_Symbol"/>
@@ -182,13 +189,14 @@
     <addaction name="separator"/>
     <addaction name="action_Create_VGP"/>
     <addaction name="action_Assign_Plate_IDs"/>
-    <addaction name="action_Generate_Mesh_Cap"/>
+    <addaction name="menuGenerate_Velocity_Point_Locations"/>
    </widget>
    <widget class="QMenu" name="menu_Utilities">
     <property name="title">
      <string>&amp;Utilities</string>
     </property>
     <addaction name="action_Calculate_Reconstruction_Pole"/>
+    <addaction name="action_Finite_Rotation_Calculator"/>
     <addaction name="separator"/>
     <addaction name="action_Open_Python_Console"/>
    </widget>
@@ -215,164 +223,6 @@
    <addaction name="menu_Help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <widget class="QToolBar" name="toolbar_canvas_tools">
-   <property name="contextMenuPolicy">
-    <enum>Qt::CustomContextMenu</enum>
-   </property>
-   <property name="windowTitle">
-    <string>Tools</string>
-   </property>
-   <property name="allowedAreas">
-    <set>Qt::AllToolBarAreas</set>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Vertical</enum>
-   </property>
-   <property name="iconSize">
-    <size>
-     <width>35</width>
-     <height>35</height>
-    </size>
-   </property>
-   <attribute name="toolBarArea">
-    <enum>LeftToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-   <addaction name="action_Drag_Globe"/>
-   <addaction name="action_Zoom_Globe"/>
-   <addaction name="action_Measure_Distance"/>
-   <addaction name="action_Click_Geometry"/>
-   <addaction name="action_Digitise_New_Polyline"/>
-   <addaction name="action_Digitise_New_MultiPoint"/>
-   <addaction name="action_Digitise_New_Polygon"/>
-   <addaction name="action_Move_Geometry"/>
-   <addaction name="action_Move_Vertex"/>
-   <addaction name="action_Insert_Vertex"/>
-   <addaction name="action_Delete_Vertex"/>
-   <addaction name="action_Split_Feature"/>
-   <addaction name="action_Manipulate_Pole"/>
-   <addaction name="action_Build_Topology"/>
-   <addaction name="action_Edit_Topology"/>
-   <addaction name="action_Create_Small_Circle"/>
-  </widget>
-  <widget class="QDockWidget" name="dock_search_results">
-   <property name="minimumSize">
-    <size>
-     <width>170</width>
-     <height>300</height>
-    </size>
-   </property>
-   <property name="contextMenuPolicy">
-    <enum>Qt::ActionsContextMenu</enum>
-   </property>
-   <property name="features">
-    <set>QDockWidget::DockWidgetFeatureMask</set>
-   </property>
-   <property name="allowedAreas">
-    <set>Qt::BottomDockWidgetArea|Qt::TopDockWidgetArea</set>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>8</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents">
-    <property name="contextMenuPolicy">
-     <enum>Qt::PreventContextMenu</enum>
-    </property>
-    <layout class="QVBoxLayout">
-     <property name="spacing">
-      <number>0</number>
-     </property>
-     <property name="margin">
-      <number>0</number>
-     </property>
-     <item>
-      <widget class="QTabWidget" name="tabWidget">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>130</height>
-        </size>
-       </property>
-       <property name="contextMenuPolicy">
-        <enum>Qt::PreventContextMenu</enum>
-       </property>
-       <property name="tabPosition">
-        <enum>QTabWidget::North</enum>
-       </property>
-       <property name="currentIndex">
-        <number>0</number>
-       </property>
-       <widget class="QWidget" name="tab_clicked">
-        <attribute name="title">
-         <string>Clicked</string>
-        </attribute>
-        <layout class="QHBoxLayout">
-         <property name="spacing">
-          <number>2</number>
-         </property>
-         <property name="margin">
-          <number>2</number>
-         </property>
-         <item>
-          <widget class="QTreeView" name="tree_view_clicked_geometries">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="tab_topology">
-        <attribute name="title">
-         <string>Topology Sections</string>
-        </attribute>
-        <layout class="QHBoxLayout">
-         <property name="spacing">
-          <number>2</number>
-         </property>
-         <property name="margin">
-          <number>2</number>
-         </property>
-         <item>
-          <widget class="QTableWidget" name="table_widget_topology_sections">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="selectionMode">
-            <enum>QAbstractItemView::SingleSelection</enum>
-           </property>
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <property name="verticalScrollMode">
-            <enum>QAbstractItemView::ScrollPerItem</enum>
-           </property>
-           <property name="horizontalScrollMode">
-            <enum>QAbstractItemView::ScrollPerPixel</enum>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-  </widget>
   <action name="action_Cut">
    <property name="enabled">
     <bool>false</bool>
@@ -502,27 +352,6 @@
     <enum>QAction::NoRole</enum>
    </property>
   </action>
-  <action name="action_Drag_Globe">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/drag_globe_35.png</normaloff>:/drag_globe_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Drag Globe</string>
-   </property>
-   <property name="toolTip">
-    <string>Drag Globe  D</string>
-   </property>
-   <property name="shortcut">
-    <string>D</string>
-   </property>
-  </action>
   <action name="action_Query_Feature">
    <property name="checkable">
     <bool>false</bool>
@@ -545,14 +374,6 @@
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
-   </property>
-  </action>
-  <action name="action_Docks">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Docks</string>
    </property>
   </action>
   <action name="action_File_Errors">
@@ -602,25 +423,7 @@
     <string>&amp;Reset Zoom</string>
    </property>
    <property name="shortcut">
-    <string>1</string>
-   </property>
-  </action>
-  <action name="action_Zoom_Globe">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/zoom_globe_35.png</normaloff>:/zoom_globe_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Zoom In</string>
-   </property>
-   <property name="toolTip">
-    <string>Zoom In  Z</string>
-   </property>
-   <property name="shortcut">
-    <string>Z</string>
+    <string>0</string>
    </property>
   </action>
   <action name="action_Export_Geometry_Snapshot">
@@ -859,54 +662,6 @@
     <string>A toggle operation which controls whether arrow decorations are shown.</string>
    </property>
   </action>
-  <action name="action_Digitise_New_Polyline">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/digitise_polyline_35.png</normaloff>:/digitise_polyline_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Digitise New Poly&amp;line Geometry</string>
-   </property>
-   <property name="iconText">
-    <string>Digitise New Poly&amp;line Geometry</string>
-   </property>
-   <property name="toolTip">
-    <string>Digitise New Polyline Geometry  L</string>
-   </property>
-   <property name="shortcut">
-    <string>L</string>
-   </property>
-  </action>
-  <action name="action_Click_Geometry">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Choose &amp;Feature</string>
-   </property>
-   <property name="iconText">
-    <string>Choose &amp;Feature</string>
-   </property>
-   <property name="toolTip">
-    <string>Choose Feature  F</string>
-   </property>
-   <property name="shortcut">
-    <string>F</string>
-   </property>
-  </action>
   <action name="action_Delete_Feature">
    <property name="icon">
     <iconset resource="../qt-resources/qt_widgets.qrc">
@@ -1002,54 +757,6 @@
     <string>Dock at &amp;Right</string>
    </property>
   </action>
-  <action name="action_Digitise_New_Polygon">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/digitise_polygon_35.png</normaloff>:/digitise_polygon_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Digitise New Polygon &amp;Geometry</string>
-   </property>
-   <property name="iconText">
-    <string>Digitise New Polygon &amp;Geometry</string>
-   </property>
-   <property name="toolTip">
-    <string>Digitise New Polygon Geometry  G</string>
-   </property>
-   <property name="shortcut">
-    <string>G</string>
-   </property>
-  </action>
-  <action name="action_Digitise_New_MultiPoint">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/digitise_multipoint_35.png</normaloff>:/digitise_multipoint_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Digitise New &amp;Multi-point Geometry</string>
-   </property>
-   <property name="iconText">
-    <string>Digitise New &amp;Multi-point Geometry</string>
-   </property>
-   <property name="toolTip">
-    <string>Digitise New Multi-point Geometry  M</string>
-   </property>
-   <property name="shortcut">
-    <string>M</string>
-   </property>
-  </action>
   <action name="action_Undo_Placeholder">
    <property name="icon">
     <iconset resource="../qt-resources/qt_widgets.qrc">
@@ -1072,171 +779,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Y</string>
-   </property>
-  </action>
-  <action name="action_Move_Geometry">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/move_geometry_35.png</normaloff>:/move_geometry_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Move Geometr&amp;y</string>
-   </property>
-   <property name="iconText">
-    <string>Move Geometr&amp;y</string>
-   </property>
-   <property name="toolTip">
-    <string>Move Geometry  Y</string>
-   </property>
-   <property name="shortcut">
-    <string>Y</string>
-   </property>
-  </action>
-  <action name="action_Move_Vertex">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/move_vertex_35.png</normaloff>:/move_vertex_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Mo&amp;ve Vertex</string>
-   </property>
-   <property name="iconText">
-    <string>Mo&amp;ve Vertex</string>
-   </property>
-   <property name="toolTip">
-    <string>Move Vertex  V</string>
-   </property>
-   <property name="shortcut">
-    <string>V</string>
-   </property>
-  </action>
-  <action name="action_Delete_Vertex">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/delete_vertex_35.png</normaloff>:/delete_vertex_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Delete Verte&amp;x</string>
-   </property>
-   <property name="iconText">
-    <string>Delete Verte&amp;x</string>
-   </property>
-   <property name="toolTip">
-    <string>Delete Vertex  X</string>
-   </property>
-   <property name="shortcut">
-    <string>X</string>
-   </property>
-  </action>
-  <action name="action_Insert_Vertex">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/insert_vertex_35.png</normaloff>:/insert_vertex_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Insert Vertex</string>
-   </property>
-   <property name="iconText">
-    <string>&amp;Insert Vertex</string>
-   </property>
-   <property name="toolTip">
-    <string>Insert Vertex  I</string>
-   </property>
-   <property name="shortcut">
-    <string>I</string>
-   </property>
-  </action>
-  <action name="action_Manipulate_Pole">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Modify Reconstruction &amp;Pole</string>
-   </property>
-   <property name="toolTip">
-    <string>Modify Reconstruction Pole  P</string>
-   </property>
-   <property name="shortcut">
-    <string>P</string>
-   </property>
-  </action>
-  <action name="action_Build_Topology">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/topology_build_35.png</normaloff>:/topology_build_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Build New Topology</string>
-   </property>
-   <property name="iconText">
-    <string>Build New Topology</string>
-   </property>
-   <property name="toolTip">
-    <string>Build New Topology  B</string>
-   </property>
-   <property name="shortcut">
-    <string>B</string>
-   </property>
-  </action>
-  <action name="action_Edit_Topology">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/topology_edit_35.png</normaloff>:/topology_edit_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Edit Topology Sections</string>
-   </property>
-   <property name="iconText">
-    <string>Edit Topology Sections</string>
-   </property>
-   <property name="toolTip">
-    <string>Edit Topology Sections  E</string>
-   </property>
-   <property name="shortcut">
-    <string>E</string>
    </property>
   </action>
   <action name="action_View_Shapefile_Attributes">
@@ -1303,9 +845,9 @@
     <string>Assign &amp;Plate IDs...</string>
    </property>
   </action>
-  <action name="action_Generate_Mesh_Cap">
+  <action name="action_Generate_Citcoms_Velocity_Domain">
    <property name="text">
-    <string>Generate &amp;Mesh Caps...</string>
+    <string>&amp;CitcomS...</string>
    </property>
   </action>
   <action name="action_Export_Reconstruction">
@@ -1325,24 +867,6 @@
   <action name="action_Set_Projection">
    <property name="text">
     <string>Set &amp;Projection...</string>
-   </property>
-  </action>
-  <action name="action_Measure_Distance">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/measure_distance_35.png</normaloff>:/measure_distance_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Mea&amp;sure</string>
-   </property>
-   <property name="toolTip">
-    <string>Measure  S</string>
-   </property>
-   <property name="shortcut">
-    <string>S</string>
    </property>
   </action>
   <action name="action_Full_Screen">
@@ -1390,24 +914,6 @@
    </property>
    <property name="text">
     <string>Manage &amp;Colouring</string>
-   </property>
-  </action>
-  <action name="action_Split_Feature">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/split_geometry_35.png</normaloff>:/split_geometry_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Spli&amp;t Feature</string>
-   </property>
-   <property name="toolTip">
-    <string>Split Feature  T</string>
-   </property>
-   <property name="shortcut">
-    <string>T</string>
    </property>
   </action>
   <action name="action_Create_VGP">
@@ -1590,22 +1096,31 @@
     <string>Lo&amp;g</string>
    </property>
   </action>
-  <action name="action_Create_Small_Circle">
-   <property name="checkable">
-    <bool>true</bool>
+  <action name="action_Finite_Rotation_Calculator">
+   <property name="text">
+    <string>Calculate Finite Rotation...</string>
    </property>
+  </action>
+  <action name="action_Generate_Terra_Velocity_Domain">
+   <property name="text">
+    <string>&amp;Terra...</string>
+   </property>
+  </action>
+  <action name="action_Generate_LatitudeLongitude_Velocity_Domain">
+   <property name="text">
+    <string>&amp;Latitude Longitude...</string>
+   </property>
+  </action>
+  <action name="action_About_GPlates_Dataset">
    <property name="icon">
     <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/small_circle_35.png</normaloff>:/small_circle_35.png</iconset>
+     <normaloff>:/human_gtk_about_16.png</normaloff>:/human_gtk_about_16.png</iconset>
    </property>
    <property name="text">
-    <string>Create Small Circle</string>
+    <string>About Data Sources</string>
    </property>
-   <property name="toolTip">
-    <string>Create Small Circle  C</string>
-   </property>
-   <property name="shortcut">
-    <string>C</string>
+   <property name="menuRole">
+    <enum>QAction::ApplicationSpecificRole</enum>
    </property>
   </action>
  </widget>

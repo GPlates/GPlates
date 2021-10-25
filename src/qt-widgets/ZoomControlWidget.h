@@ -56,7 +56,7 @@ namespace GPlatesQtWidgets
 				GPlatesGui::ViewportZoom &vzoom,
 				QWidget *parent_);
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when the user has entered a new zoom value in the spinbox.
@@ -66,7 +66,7 @@ namespace GPlatesQtWidgets
 		void
 		editing_finished();
 	
-	public slots:
+	public Q_SLOTS:
 		
 		/**
 		 * Focuses the spinbox and highlights text, ready to be replaced.
@@ -90,7 +90,7 @@ namespace GPlatesQtWidgets
 		show_label(
 				bool show_);
 
-	private slots:
+	private Q_SLOTS:
 		
 		/**
 		 * In response to a zoom event, this will set the spinbox to reflect the new

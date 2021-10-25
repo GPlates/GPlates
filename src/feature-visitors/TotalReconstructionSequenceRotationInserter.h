@@ -35,8 +35,13 @@
 #include "model/PropertyName.h"
 #include "model/types.h"
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GpmlTotalReconstructionPole.h"
 #include "maths/FiniteRotation.h"
 
+namespace GPlatesFileIO
+{
+	class PlatesRotationFileProxy;
+}
 
 namespace GPlatesFeatureVisitors
 {
@@ -84,6 +89,13 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_irregular_sampling(
 				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
+		void
+		visit_gpml_total_reconstruction_pole(
+				GPlatesPropertyValues::GpmlTotalReconstructionPole &pole)
+		{
+			visit_gpml_finite_rotation(pole);
+		}
+
 	private:
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
@@ -92,6 +104,8 @@ namespace GPlatesFeatureVisitors
 		bool d_trp_time_matches_exactly;
 		boost::optional<GPlatesMaths::FiniteRotation> d_finite_rotation;
 		QString d_comment;
+		GPlatesFileIO::PlatesRotationFileProxy* d_grot_proxy;
+		int d_moving_plate_id, d_fixed_plate_id;
 
 		// This constructor should never be defined, because we don't want to allow
 		// copy-construction.

@@ -36,26 +36,38 @@
 #include "GeometryOperation.h"
 #include "RenderedGeometryCollection.h"
 #include "UndoRedo.h"
+
 #include "gui/FeatureFocus.h"
+
+#include "model/ModelInterface.h"
+
 #include "presentation/ViewState.h"
+
+
+namespace GPlatesCanvasTools
+{
+	class GeometryOperationState;
+}
 
 namespace GPlatesMaths
 {
 	class PointOnSphere;
 }
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
+	class CanvasToolWorkflows;
 }
 
 namespace GPlatesViewOperations
 {
-	class ActiveGeometryOperation;
 	class GeometryBuilder;
-	class GeometryOperationTarget;
 	class QueryProximityThreshold;
-	class RenderedGeometryCollection;
 	class RenderedGeometryLayer;
 	struct RenderedGeometryProximityHit;
 
@@ -71,22 +83,21 @@ namespace GPlatesViewOperations
 	public:
 		SplitFeatureGeometryOperation(
 				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesPresentation::ViewState	&view_state,
-				GeometryOperationTarget &geometry_operation_target,
-				ActiveGeometryOperation &active_geometry_operation,
-				RenderedGeometryCollection *rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				const GPlatesModel::Gpgim &gpgim,
+				GPlatesModel::ModelInterface model_interface,
+				GeometryBuilder &geometry_builder,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
+				RenderedGeometryCollection &rendered_geometry_collection,
+				RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				const QueryProximityThreshold &query_proximity_threshold);
 
 		/**
-		 * Activate this operation and attach to specified @a GeometryBuilder
-		 * and render into specified main rendered layer.
+		 * Activate this operation.
 		 */
 		virtual
 		void
-		activate(
-				GeometryBuilder *,
-				RenderedGeometryCollection::MainLayerType main_layer_type);
+		activate();
 
 		//! Deactivate this operation.
 		virtual
@@ -105,7 +116,7 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
 				const double &closeness_inclusion_threshold);
 
-	public slots:
+	public Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -115,35 +126,31 @@ namespace GPlatesViewOperations
 
 	private:
 
-		/**
-		 * This is used to build geometry. 
-		 */
-		GeometryBuilder *d_geometry_builder;
+		GPlatesGui::FeatureFocus &d_feature_focus;
 
-		GPlatesGui::FeatureFocus *d_feature_focus;
-		
-		GPlatesPresentation::ViewState *d_view_state;
-		
+		const GPlatesModel::Gpgim &d_gpgim;
+
+		GPlatesModel::ModelInterface d_model_interface;
 
 		/**
-		 * Used by undo/redo.
+		 * This is used to build geometry. We delete vertices with it.
 		 */
-		GeometryOperationTarget *d_geometry_operation_target;
+		GeometryBuilder &d_geometry_builder;
 
 		/**
 		 * We call this when we activate/deactivate.
 		 */
-		ActiveGeometryOperation *d_active_geometry_operation;
+		GPlatesCanvasTools::GeometryOperationState &d_geometry_operation_state;
 
 		/**
 		 * This is where we render our geometries and activate our render layer.
 		 */
-		RenderedGeometryCollection *d_rendered_geometry_collection;
+		RenderedGeometryCollection &d_rendered_geometry_collection;
 
 		/**
 		 * The main rendered layer we're currently rendering into.
 		 */
-		RenderedGeometryCollection::MainLayerType d_main_layer_type;
+		RenderedGeometryCollection::MainLayerType d_main_rendered_layer_type;
 
 		/**
 		 * Rendered geometry layer used for line segments.
@@ -173,12 +180,12 @@ namespace GPlatesViewOperations
 		 * Used by undo/redo to make sure appropriate tool is active
 		 * when the undo/redo happens.
 		 */
-		GPlatesGui::ChooseCanvasTool *d_choose_canvas_tool;
+		GPlatesGui::CanvasToolWorkflows &d_canvas_tool_workflows;
 
 		/**
 		 * Used to query the proximity threshold based on position on globe.
 		 */
-		const QueryProximityThreshold *d_query_proximity_threshold;
+		const QueryProximityThreshold &d_query_proximity_threshold;
 
 		/**
 		* .
@@ -264,7 +271,7 @@ namespace GPlatesViewOperations
 		void
 		add_rendered_lines(
 				GeometryBuilder::GeometryIndex geom_index,
-				const GeometryType::Value actual_geom_type);
+				const GPlatesMaths::GeometryType::Value actual_geom_type);
 
 		void
 		update_highlight_rendered_layer(

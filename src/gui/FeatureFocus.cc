@@ -28,23 +28,30 @@
 
 #include "FeatureFocus.h"
 #include "PythonManager.h"
+
 #include "app-logic/ApplicationState.h"
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ReconstructionGeometryFinder.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ReconstructionGeometryVisitor.h"
 #include "app-logic/GeometryUtils.h"
+
 #include "feature-visitors/GeometryFinder.h"
+
 #include "model/FeatureHandle.h"
 #include "model/WeakReferenceCallback.h"
+
 #include "presentation/Application.h"
+#include "presentation/ViewState.h"
+
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/SceneView.h"
-#include "utils/FeatureUtils.h"
 
-#include "presentation/ViewState.h"
+#include "utils/FeatureUtils.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryUtils.h"
@@ -79,12 +86,78 @@ namespace
 
 		GPlatesGui::FeatureFocus &d_feature_focus;
 	};
+
+
+	class ReconstructionGeometryLocator :
+			public GPlatesAppLogic::ConstReconstructionGeometryVisitor
+	{
+	public:
+
+		boost::optional<GPlatesMaths::LatLonPoint>
+		get_location() const
+		{
+			return d_location;
+		}
+
+	private:
+
+		// Bring base class visit methods into scope of current class.
+		using GPlatesAppLogic::ConstReconstructionGeometryVisitor::visit;
+
+
+		// Derivations of ReconstructedFeatureGeometry default to its implementation...
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+		{
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rfg->reconstructed_geometry(), points);
+			if (!points.empty())
+			{
+				d_location = GPlatesMaths::make_lat_lon_point(points.front());
+			}
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+		{
+			// We want the first vertex.
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtg->resolved_topology_geometry(), points);
+
+			if (!points.empty())
+			{
+				d_location = GPlatesMaths::make_lat_lon_point(points.front());
+			}
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+		{
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtn->boundary_polygon(), points);
+
+			if (!points.empty())
+			{
+				d_location = GPlatesMaths::make_lat_lon_point(points.front());
+			}
+		}
+
+	private:
+		boost::optional<GPlatesMaths::LatLonPoint> d_location;
+	};
 }
 
 
 GPlatesGui::FeatureFocus::FeatureFocus(
-		GPlatesPresentation::ViewState &view_state):
-	d_rendered_geometry_collection(view_state.get_rendered_geometry_collection())
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection):
+	d_rendered_geometry_collection(rendered_geometry_collection)
 {
 	// Get notified whenever the rendered geometry collection gets updated.
 	QObject::connect(
@@ -115,10 +188,12 @@ GPlatesGui::FeatureFocus::set_focus(
 		return;
 	}
 
-	d_focused_feature = new_feature_ref;
+	d_focused_feature = d_callback_focused_feature = new_feature_ref;
 	// Attach callback to feature handle weak-ref so we can unset the focus when
 	// the feature is deactivated in the model.
-	d_focused_feature.attach_callback(new FocusedFeatureDeactivatedCallback(*this));
+	// NOTE: See data member comment for 'd_callback_focused_feature' for an explanation of
+	// why there's a separate callback weak ref.
+	d_callback_focused_feature.attach_callback(new FocusedFeatureDeactivatedCallback(*this));
 
 	d_associated_reconstruction_geometry = new_associated_rg.get();
 
@@ -132,7 +207,7 @@ GPlatesGui::FeatureFocus::set_focus(
 	d_associated_geometry_property = new_geometry_property
 			? new_geometry_property.get() : GPlatesModel::FeatureHandle::iterator();
 
-	emit focus_changed(*this);
+	Q_EMIT focus_changed(*this);
 }
 
 
@@ -154,10 +229,12 @@ GPlatesGui::FeatureFocus::set_focus(
 		return;
 	}
 
-	d_focused_feature = new_feature_ref;
+	d_focused_feature = d_callback_focused_feature = new_feature_ref;
 	// Attach callback to feature handle weak-ref so we can unset the focus when
 	// the feature is deactivated in the model.
-	d_focused_feature.attach_callback(new FocusedFeatureDeactivatedCallback(*this));
+	// NOTE: See data member comment for 'd_callback_focused_feature' for an explanation of
+	// why there's a separate callback weak ref.
+	d_callback_focused_feature.attach_callback(new FocusedFeatureDeactivatedCallback(*this));
 
 	d_associated_reconstruction_geometry = NULL;
 	d_associated_geometry_property = new_associated_property;
@@ -166,7 +243,7 @@ GPlatesGui::FeatureFocus::set_focus(
 	find_new_associated_reconstruction_geometry();
 
 	// tell the rest of the application about the new focus
-	emit focus_changed(*this);
+	Q_EMIT focus_changed(*this);
 }
 
 
@@ -202,11 +279,11 @@ GPlatesGui::FeatureFocus::set_focus(
 void
 GPlatesGui::FeatureFocus::unset_focus()
 {
-	d_focused_feature = GPlatesModel::FeatureHandle::weak_ref();
+	d_focused_feature = d_callback_focused_feature = GPlatesModel::FeatureHandle::weak_ref();
 	d_associated_reconstruction_geometry = NULL;
 	d_associated_geometry_property = GPlatesModel::FeatureHandle::iterator();
 
-	emit focus_changed(*this);
+	Q_EMIT focus_changed(*this);
 }
 
 
@@ -254,7 +331,7 @@ GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry()
 		return;
 	}
 
-	// Actually we don't want to generate a debug message because it'll get output for every
+	// NOTE: We don't want to generate a debug message because it'll get output for every
 	// reconstruction time change while the current feature is focused.
 #if 0
 	if (reconstruction_geometries_observing_feature.size() > 1)
@@ -266,6 +343,11 @@ GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry()
 #endif
 
 	// Assign the new associated reconstruction geometry.
+	//
+	// NOTE: We can get more than one match if the same (focused) feature is reconstructed in two
+	// different layers - each layer will produce a different RG. Since we're arbitrarily picking
+	// the first match we might not pick the one associated with the originally selected RG.
+	// To fix this will require a way to identify which layer the original RG came from.
 	d_associated_reconstruction_geometry = reconstruction_geometries_observing_feature.front().get();
 }
 
@@ -285,7 +367,7 @@ GPlatesGui::FeatureFocus::announce_modification_of_focused_feature()
 		unset_focus();
 	}
 
-	emit focused_feature_modified(*this);
+	Q_EMIT focused_feature_modified(*this);
 }
 
 
@@ -296,7 +378,7 @@ GPlatesGui::FeatureFocus::announce_deletion_of_focused_feature()
 		// You can't have deleted it, nothing is focused!
 		return;
 	}
-	emit focused_feature_deleted(*this);
+	Q_EMIT focused_feature_deleted(*this);
 	unset_focus();
 }
 
@@ -313,89 +395,23 @@ GPlatesGui::FeatureFocus::handle_rendered_geometry_collection_update()
 	{
 		// A new ReconstructionGeometry has been found so we should
 		// emit a signal in case clients need to know this.
-		emit focus_changed(*this);
+		Q_EMIT focus_changed(*this);
 	}
 }
 
-class ReconstructionGeometryLocator :
-	public GPlatesAppLogic::ConstReconstructionGeometryVisitor
-{
-public:
-	boost::optional<const GPlatesMaths::LatLonPoint>
-	location()
-	{
-		return *d_location;
-	}
 
-protected:
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
-		{ }
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
-		{
-			std::vector<GPlatesMaths::PointOnSphere> points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rfg->reconstructed_geometry(),points);
-			if(points.size())
-				d_location =  GPlatesMaths::make_lat_lon_point(points[0]);
-		}
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
-		{ }
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
-		{ }
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
-		{ }
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_raster_type> &rr)
-		{ }
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
-		{
-			d_location = GPlatesMaths::make_lat_lon_point(rtb->resolved_topology_geometry()->first_vertex());
-		}
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
-		{
-			std::vector<GPlatesMaths::PointOnSphere> points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtn->nodes_begin()->get_geometry(),points);
-			if(points.size())
-				d_location =  GPlatesMaths::make_lat_lon_point(points[0]);
-		}
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr)
-		{ }
-
-                void
-                visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
-                { }
-private:
-	boost::optional<GPlatesMaths::LatLonPoint> d_location;
-};
-
-
-boost::optional<const GPlatesMaths::LatLonPoint>
+boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesGui::locate_focus()
 {
-	GPlatesPresentation::Application* app = GPlatesPresentation::Application::instance();
-	FeatureFocus& focus = app->get_view_state().get_feature_focus();
+	GPlatesPresentation::Application &app = GPlatesPresentation::Application::instance();
+	FeatureFocus& focus = app.get_view_state().get_feature_focus();
 			
 	ReconstructionGeometryLocator locator;
 	GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type geo = focus.associated_reconstruction_geometry();
-	if(geo)
+	if (geo)
 	{
 		geo->accept_visitor(locator);
-		return locator.location();
+		return locator.get_location();
 	}
 	else
 	{

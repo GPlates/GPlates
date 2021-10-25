@@ -60,38 +60,37 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Creates a @a ReconstructMethodHalfStageRotation object.
+		 * Creates a @a ReconstructMethodHalfStageRotation object associated with the specified feature.
 		 */
 		static
 		ReconstructMethodVirtualGeomagneticPole::non_null_ptr_type
-		create()
+		create(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const Context &context)
 		{
-			return non_null_ptr_type(new ReconstructMethodVirtualGeomagneticPole());
+			return non_null_ptr_type(new ReconstructMethodVirtualGeomagneticPole(feature_ref, context));
 		}
 
 
 		/**
-		 * Returns the present day geometries of the specified feature.
+		 * Returns the present day geometries of the feature associated with this reconstruct method.
 		 */
 		virtual
 		void
-		get_present_day_geometries(
-				std::vector<Geometry> &present_day_geometries,
-				const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref) const;
+		get_present_day_feature_geometries(
+				std::vector<Geometry> &present_day_geometries) const;
 
 
 		/**
-		 * Reconstructs the specified feature at the specified reconstruction time and returns
-		 * one more more reconstructed feature geometries.
+		 * Reconstructs the feature associated with this reconstruct method to the specified
+		 * reconstruction time and returns one or more reconstructed feature geometries.
 		 */
 		virtual
 		void
-		reconstruct_feature(
+		reconstruct_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
-				const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref,
 				const ReconstructHandle::type &reconstruct_handle,
-				const ReconstructParams &reconstruct_params,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const Context &context,
 				const double &reconstruction_time);
 
 
@@ -105,13 +104,17 @@ namespace GPlatesAppLogic
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct_geometry(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const Context &context,
 				const double &reconstruction_time,
 				bool reverse_reconstruct);
 
 	private:
-		ReconstructMethodVirtualGeomagneticPole()
+
+		explicit
+		ReconstructMethodVirtualGeomagneticPole(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const Context &context) :
+			ReconstructMethodInterface(ReconstructMethod::VIRTUAL_GEOMAGNETIC_POLE, feature_ref)
 		{  }
 	};
 }

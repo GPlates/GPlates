@@ -27,13 +27,13 @@
 #define GPLATES_OPENGL_GLSHADEROBJECT_H
 
 #include <memory> // For std::auto_ptr
-#include <string>
 #include <vector>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL.h>
+#include <QByteArray>
 
 #include "GLObject.h"
 #include "GLObjectResource.h"
@@ -54,7 +54,7 @@ namespace GPlatesOpenGL
 	 * three currently supported shader types, the following extensions must also be supported:
 	 *  - GL_ARB_vertex_shader (for GL_VERTEX_SHADER_ARB)... this is also core in OpenGL 2.0,
 	 *  - GL_ARB_fragment_shader (for GL_FRAGMENT_SHADER_ARB)... this is also core in OpenGL 2.0,
-	 *  - GL_ARB_geometry_shader4 (for GL_GEOMETRY_SHADER_ARB)... this is also core in OpenGL 3.2.
+	 *  - GL_EXT_geometry_shader4 (for GL_GEOMETRY_SHADER_EXT)... this is also core in OpenGL 3.2.
 	 */
 	class GLShaderObject :
 			public GLObject,
@@ -91,7 +91,8 @@ namespace GPlatesOpenGL
 			{  }
 
 			resource_handle_type
-			allocate();
+			allocate(
+					const GLCapabilities &capabilities);
 
 			void
 			deallocate(
@@ -142,7 +143,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The default shader version to compile.
 		 *
-		 * Version 1.2 is chosen instead of 1.1 since most hardware supporting OpenGL 2.0 supports 2.1.
+		 * Version 1.2 is chosen instead of 1.1 since most hardware supporting OpenGL 2.0 also supports OpenGL 2.1.
 		 */
 		static const ShaderVersion DEFAULT_SHADER_VERSION = GLSL_1_2;
 
@@ -150,7 +151,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns true if @a shader_type is supported on the runtime system.
 		 *
-		 * Currently @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_ARB.
+		 * Currently @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_EXT.
 		 */
 		static
 		bool
@@ -162,7 +163,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Creates a shared pointer to a @a GLShaderObject object.
 		 *
-		 * @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_ARB.
+		 * @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_EXT.
 		 *
 		 * Note that @a is_supported must returned true for @a shader_type.
 		 */
@@ -209,7 +210,7 @@ namespace GPlatesOpenGL
 		void
 		gl_shader_source(
 				GLRenderer &renderer,
-				const std::vector<std::string> &source_strings,
+				const std::vector<QByteArray> &source_strings,
 				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
 
 		/**
@@ -231,7 +232,7 @@ namespace GPlatesOpenGL
 		void
 		gl_shader_source(
 				GLRenderer &renderer,
-				const std::string &source_string,
+				const QByteArray &source_string,
 				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
 
 

@@ -30,8 +30,9 @@
 
 #include "FeaturePropertiesDialogUi.h"
 
-#include "QueryFeaturePropertiesWidget.h"
 #include "EditFeaturePropertiesWidget.h"
+#include "GPlatesDialog.h"
+#include "QueryFeaturePropertiesWidget.h"
 #include "ViewFeatureGeometriesWidget.h"
 
 #include "gui/FeatureFocus.h"
@@ -49,7 +50,7 @@ namespace GPlatesQtWidgets
 	class ChangeFeatureTypeDialog;
 
 	class FeaturePropertiesDialog :
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_FeaturePropertiesDialog
 	{
 		Q_OBJECT
@@ -65,7 +66,7 @@ namespace GPlatesQtWidgets
 		~FeaturePropertiesDialog()
 		{  }
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Display the given feature, which may or may not be different
@@ -104,7 +105,7 @@ namespace GPlatesQtWidgets
 		setVisible(
 				bool visible);
 	
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_tab_change(
@@ -115,9 +116,6 @@ namespace GPlatesQtWidgets
 
 	private:
 		
-		void
-		pop_up();
-
 		/**
 		 * The Feature observed by the dialog.
 		 * Note that this could become invalid at any time.

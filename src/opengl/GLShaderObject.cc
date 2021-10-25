@@ -50,11 +50,12 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
 GPlatesOpenGL::GLShaderObject::resource_handle_type
-GPlatesOpenGL::GLShaderObject::Allocator::allocate()
+GPlatesOpenGL::GLShaderObject::Allocator::allocate(
+		const GLCapabilities &capabilities)
 {
 	// We should only get here if the shader objects extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 
 	const resource_handle_type shader_object = glCreateShaderObjectARB(d_shader_type);
@@ -72,11 +73,6 @@ void
 GPlatesOpenGL::GLShaderObject::Allocator::deallocate(
 		resource_handle_type shader_object)
 {
-	// We should only get here if the shader objects extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
-			GPLATES_ASSERTION_SOURCE);
-
 	glDeleteObjectARB(shader_object);
 }
 
@@ -100,7 +96,9 @@ GPlatesOpenGL::GLShaderObject::is_supported(
 		GLRenderer &renderer,
 		GLenum shader_type)
 {
-	if (!GLEW_ARB_shader_objects)
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
+	if (!capabilities.shader.gl_ARB_shader_objects)
 	{
 		return false;
 	}
@@ -108,14 +106,14 @@ GPlatesOpenGL::GLShaderObject::is_supported(
 	switch (shader_type)
 	{
 	case GL_VERTEX_SHADER_ARB:
-		return GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_shader);
+		return capabilities.shader.gl_ARB_vertex_shader;
 
 	case GL_FRAGMENT_SHADER_ARB:
-		return GPLATES_OPENGL_BOOL(GLEW_ARB_fragment_shader);
+		return capabilities.shader.gl_ARB_fragment_shader;
 
-#ifdef GL_ARB_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
-	case GL_GEOMETRY_SHADER_ARB:
-		return GPLATES_OPENGL_BOOL(GLEW_ARB_geometry_shader4);
+#ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
+	case GL_GEOMETRY_SHADER_EXT:
+		return capabilities.shader.gl_EXT_geometry_shader4;
 #endif
 
 	default:
@@ -135,11 +133,16 @@ GPlatesOpenGL::GLShaderObject::GLShaderObject(
 		GLenum shader_type) :
 	d_resource(
 			resource_type::create(
-					renderer.get_context().get_shared_state()->get_shader_object_resource_manager(shader_type)))
+					renderer.get_capabilities(),
+					renderer.get_context().get_shared_state()->get_shader_object_resource_manager(
+							renderer,
+							shader_type)))
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// We should only get here if the shader objects extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -175,7 +178,7 @@ GPlatesOpenGL::GLShaderObject::gl_shader_source(
 void
 GPlatesOpenGL::GLShaderObject::gl_shader_source(
 		GLRenderer &renderer,
-		const std::vector<std::string> &source_strings,
+		const std::vector<QByteArray> &source_strings,
 		ShaderVersion shader_version)
 {
 	const GLsizei count = source_strings.size();
@@ -193,7 +196,7 @@ GPlatesOpenGL::GLShaderObject::gl_shader_source(
 	// Add the caller's shader source segments.
 	for (GLsizei n = 0; n < count; ++n)
 	{
-		strings[n + 1] = source_strings[n].c_str();
+		strings[n + 1] = source_strings[n].constData();
 	}
 
 	// 'length' is NULL indicating the source strings are null-terminated.
@@ -217,10 +220,10 @@ GPlatesOpenGL::GLShaderObject::gl_shader_source(
 void
 GPlatesOpenGL::GLShaderObject::gl_shader_source(
 		GLRenderer &renderer,
-		const std::string &source_string,
+		const QByteArray &source_string,
 		ShaderVersion shader_version)
 {
-	gl_shader_source(renderer, source_string.c_str(), shader_version);
+	gl_shader_source(renderer, source_string.constData(), shader_version);
 }
 
 
@@ -249,8 +252,8 @@ GPlatesOpenGL::GLShaderObject::gl_compile_shader(
 		// ...the returned string is null-terminated.
 
 		// Log the shader info log.
-		qWarning() << "Unable to compile OpenGL shader source code: ";
-		qWarning() << info_log.get();
+		qDebug() << "Unable to compile OpenGL shader source code: ";
+		qDebug() << info_log.get();
 
 		return false;
 	}

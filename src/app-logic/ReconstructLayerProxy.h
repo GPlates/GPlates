@@ -28,13 +28,19 @@
 
 #include <utility>
 #include <vector>
+#include <map>
 #include <boost/optional.hpp>
+
+#include "AppLogicFwd.h"
 
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
+#include "MultiPointVectorField.h"
 #include "ReconstructContext.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionLayerProxy.h"
+
+#include "opengl/GLReconstructedStaticPolygonMeshes.h"
 
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/GeometryOnSphere.h"
@@ -429,6 +435,103 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time);
 
 
+		/**
+		 * The (reconstructed) present day polygon meshes in OpenGL form at the specified reconstruction time.
+		 *
+		 * If @a reconstructing_with_age_grid is true then the polygon meshes are expected to be
+		 * used to reconstruct a raster (in another layer) with the assistance of an age grid
+		 * (in yet another layer).
+		 *
+		 * NOTE: Only those polygons that are reconstructed with finite rotations are returned
+		 * since the polygon mesh is static and hence can only be rigidly rotated (eg, no deformation).
+		 */
+		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
+		get_reconstructed_static_polygon_meshes(
+				GPlatesOpenGL::GLRenderer &renderer,
+				bool reconstructing_with_age_grid,
+				const double &reconstruction_time);
+
+		/**
+		 * The (reconstructed) present day polygon meshes in OpenGL form at the current reconstruction time.
+		 */
+		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
+		get_reconstructed_static_polygon_meshes(
+				GPlatesOpenGL::GLRenderer &renderer,
+				bool reconstructing_with_age_grid)
+		{
+			return get_reconstructed_static_polygon_meshes(
+					renderer, reconstructing_with_age_grid, d_current_reconstruction_time);
+		}
+
+
+		//
+		// Getting a sequence of velocities (@a MultiPointVectorField objects) corresponding
+		// to the reconstructed feature geometries of @a get_reconstructed_feature_geometries.
+		//
+		// NOTE: It actually makes more sense to calculate velocities here rather than in
+		// VelocityFieldCalculatorLayerProxy since the velocities are so closely coupled to the
+		// generation of reconstructed feature geometries.
+		// However VelocityFieldCalculatorLayerProxy is more suitable for calculating velocities
+		// at positions where *un-reconstructed* geometries intersect surfaces (eg, static polygons,
+		// and topological plates/network) from another layer.
+		//
+
+
+		/**
+		 * Returns the velocities associated with reconstructed feature geometries, for the current
+		 * reconstruct params and current reconstruction time, by appending them to
+		 * @a reconstructed_feature_velocities.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities)
+		{
+			return get_reconstructed_feature_velocities(
+					reconstructed_feature_velocities, d_current_reconstruct_params, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the velocities associated with reconstructed feature geometries, for the specified
+		 * reconstruct params and current reconstruction time, by appending them to
+		 * @a reconstructed_feature_velocities.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				const ReconstructParams &reconstruct_params)
+		{
+			return get_reconstructed_feature_velocities(
+					reconstructed_feature_velocities, reconstruct_params, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the velocities associated with reconstructed feature geometries, for the current
+		 * reconstruct params and specified reconstruction time, by appending them to
+		 * @a reconstructed_feature_velocities.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				const double &reconstruction_time)
+		{
+			return get_reconstructed_feature_velocities(
+					reconstructed_feature_velocities, d_current_reconstruct_params, reconstruction_time);
+		}
+
+		/**
+		 * Returns the velocities associated with reconstructed feature geometries, for the specified
+		 * reconstruct params and reconstruction time, by appending them to
+		 * @a reconstructed_feature_velocities.
+		 *
+		 * Returns the reconstruct handle that identifies the reconstructed feature velocities.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				const ReconstructParams &reconstruct_params,
+				const double &reconstruction_time);
+
+
 		//
 		// Getting current reconstruct params and reconstruction time as set by the layer system.
 		//
@@ -481,9 +584,6 @@ namespace GPlatesAppLogic
 		 * corresponding entry in the returned sequence will be boost::none.
 		 * Current reasons for this include:
 		 * - polygon has too few vertices (includes case where geometry is a @a PointOnSphere),
-		 * - polygon is self-intersecting,
-		 * - polygon is too big and does not project onto a 2D plane.
-		 * FIXME: Remove the constraints of the last two cases.
 		 *
 		 * Use @a get_reconstructable_feature_collections_subject_token to determine
 		 * when these present day polygon meshes have been updated.
@@ -621,6 +721,26 @@ namespace GPlatesAppLogic
 		modified_reconstructable_feature_collection(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
+		/**
+		 * Add a topological network resolver layer proxy.
+		 */
+		void
+		add_topological_network_resolver_layer_proxy(
+				const topology_network_resolver_layer_proxy_non_null_ptr_type &topological_network_resolver_layer_proxy);
+
+		/**
+		 * Remove a topological network resolver layer proxy.
+		 */
+		void
+		remove_topological_network_resolver_layer_proxy(
+				const topology_network_resolver_layer_proxy_non_null_ptr_type &topological_network_resolver_layer_proxy);
+
+		/**
+		 * Returns true if one or more topological network resolver layers are currently connected.
+		 */
+		bool
+		connected_to_topological_layer_proxies() const;		
+
 	private:
 		/**
 		 * Contains optional reconstructed feature geometries as sequences and spatial partitions.
@@ -630,11 +750,30 @@ namespace GPlatesAppLogic
 		 */
 		struct ReconstructionInfo
 		{
+			explicit
+			ReconstructionInfo(
+					const ReconstructContext::context_state_reference_type &context_state_) :
+				context_state(context_state_)
+			{  }
+
+			/**
+			 * The reconstruct context state that was used to reconstruct our cached geometries.
+			 *
+			 * We maintain a strong reference to the context state to keep it alive so it can be used
+			 * for reconstructions at a *different* time, but with the *same* reconstruct context state.
+			 *
+			 * The context state may be quite expensive to generate (it could contain deformation
+			 * tables) so we want to re-use it. However we also want to release it if no cached
+			 * reconstructions reference it anymore.
+			 */
+			ReconstructContext::context_state_reference_type context_state;
+
+
 			/**
 			 * The reconstruct handle that identifies all cached reconstructed feature geometries
 			 * in this structure.
 			 */
-			boost::optional<ReconstructHandle::type> cached_reconstruct_handle;
+			boost::optional<ReconstructHandle::type> cached_reconstructed_feature_geometries_handle;
 
 			/**
 			 * The cached reconstructed features (RFGs grouped by feature).
@@ -665,6 +804,19 @@ namespace GPlatesAppLogic
 			 */
 			boost::optional<reconstructions_spatial_partition_type::non_null_ptr_type>
 					cached_reconstructions_spatial_partition;
+
+
+			/**
+			 * The reconstruct handle that identifies all cached reconstructed feature *velocities*
+			 * in this structure.
+			 */
+			boost::optional<ReconstructHandle::type> cached_reconstructed_feature_velocities_handle;
+
+			/**
+			 * The cached reconstructed feature velocities.
+			 */
+			boost::optional< std::vector<MultiPointVectorField::non_null_ptr_type> >
+					cached_reconstructed_feature_velocities;
 		};
 
 		//! Typedef for the key type to the reconstruction cache (reconstruction time and reconstruct params).
@@ -681,6 +833,102 @@ namespace GPlatesAppLogic
 				reconstruction_cache_value_type>
 						reconstruction_cache_type;
 
+		/**
+		 * Typedef for mapping reconstruct parameters to their associated reconstruct context state.
+		 *
+		 * A *weak* reference is used because we don't want to influence the lifetime of the
+		 * context state objects - we just want to see if one already exists, for a specific
+		 * @a ReconstructParams, before we create a new context state.
+		 */
+		typedef std::map<ReconstructParams, ReconstructContext::context_state_weak_reference_type>
+				reconstruct_context_state_map_type;
+
+
+		/**
+		 * Contains optional cached present day geometries and polygon meshes.
+		 */
+		struct PresentDayInfo
+		{
+			void
+			invalidate()
+			{
+				cached_present_day_geometries = boost::none;
+				cached_present_day_polygon_meshes = boost::none;
+				cached_present_day_geometries_spatial_partition = boost::none;
+				cached_present_day_geometries_spatial_partition_locations = boost::none;
+			}
+
+			/**
+			 * The cached present day geometries of the reconstructable features.
+			 */
+			boost::optional<const std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> &>
+					cached_present_day_geometries;
+
+			/**
+			 * The cached present day polygon meshes of the reconstructable features (where applicable).
+			 */
+			boost::optional<std::vector<boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> > >
+					cached_present_day_polygon_meshes;
+
+			/**
+			 * The cached present day geometries spatial partition.
+			 */
+			boost::optional<geometries_spatial_partition_type::non_null_ptr_type>
+					cached_present_day_geometries_spatial_partition;
+
+			/**
+			 * The cached locations of the present day geometries in the spatial partition.
+			 */
+			boost::optional<std::vector<GPlatesMaths::CubeQuadTreeLocation> >
+					cached_present_day_geometries_spatial_partition_locations;
+		};
+
+
+		/**
+		 * Contains optional cached reconstructed polygon meshes.
+		 *
+		 * NOTE: Even though it generates *reconstructed* polygon meshes (and hence it not purely
+		 * a present day cache) we don't store it in @a ReconstructionInfo which means it doesn't
+		 * get cleared (to boost::none) when the reconstruction time changes (instead it gets
+		 * updated with the new time).
+		 * Putting it here also means we have only one instance instead of multiple instances
+		 * which would be the case with the @a ReconstructionInfo cache.
+		 */
+		struct GLReconstructedPolygonMeshes
+		{
+			void
+			invalidate()
+			{
+				cached_reconstructed_static_polygon_meshes = boost::none;
+				cached_reconstruction_time = boost::none;
+				cached_reconstructing_with_age_grid = boost::none;
+			}
+
+			/**
+			 * The cached reconstructed polygon meshes in OpenGL vertex array form - used to render
+			 * a reconstructed raster.
+			 */
+			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
+					cached_reconstructed_static_polygon_meshes;
+
+			/**
+			 * The reconstruction time of the cached reconstructed polygon meshes.
+			 */
+			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
+
+			/**
+			 * Were cached reconstructed polygon meshes last updated for use with age grids ?
+			 */
+			boost::optional<bool> cached_reconstructing_with_age_grid;
+
+			/**
+			 * Used to determine if the reconstructed polygon geometries have changed (aside from
+			 * a change in reconstruction time) - for example, if the input reconstruction tree layer
+			 * has been modified, forcing us to 'update' the reconstructed polygon meshes.
+			 */
+			GPlatesUtils::ObserverToken cached_reconstructed_polygons_observer_token;
+		};
+
 
 		/**
 		 * Used to associate features with reconstruct methods.
@@ -695,6 +943,15 @@ namespace GPlatesAppLogic
 		ReconstructContext d_reconstruct_context;
 
 		/**
+		 * A mapping of reconstruct parameters to their associated reconstruct context state.
+		 *
+		 * This can end up with weak references to context state that no longer exist because there
+		 * are no @a ReconstructionInfo objects (holding strong references to the context state)
+		 * because they have been expelled from the least-recently used reconstructions cache.
+		 */
+		reconstruct_context_state_map_type d_reconstruct_context_state_map;
+
+		/**
 		 * The input feature collections to reconstruct.
 		 */
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_reconstructable_feature_collections;
@@ -703,6 +960,12 @@ namespace GPlatesAppLogic
 		 * Used to get reconstruction trees at desired reconstruction times.
 		 */
 		LayerProxyUtils::InputLayerProxy<ReconstructionLayerProxy> d_current_reconstruction_layer_proxy;
+
+		/**
+		 * Used to get resolved topology network
+		 */
+		LayerProxyUtils::InputLayerProxySequence<TopologyNetworkResolverLayerProxy> 
+			d_current_topological_network_resolver_layer_proxies;
 
 		/**
 		 * The current reconstruction time as set by the layer system.
@@ -717,31 +980,28 @@ namespace GPlatesAppLogic
 		/**
 		 * The various reconstructions cached according to reconstruction time and reconstruct params.
 		 */
-		reconstruction_cache_type d_reconstruction_cache;
+		reconstruction_cache_type d_cached_reconstructions;
 
 		/**
-		 * The cached present day geometries of the reconstructable features.
+		 * The default maximum size of the reconstructions cache.
+		 *
+		 * We temporarily reduce this to one when topologies are connected to reduce memory usage.
 		 */
-		boost::optional<const std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> &>
-				d_cached_present_day_geometries;
+		unsigned int d_cached_reconstructions_default_maximum_size;
 
 		/**
-		 * The cached present day polygon meshes of the reconstructable features (where applicable).
+		 * The cached present day geometries and polygon meshes.
 		 */
-		boost::optional<std::vector<boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> > >
-				d_cached_present_day_polygon_meshes;
+		PresentDayInfo d_cached_present_day_info;
 
 		/**
-		 * The cached present day geometries spatial partition.
+		 * The cached present day polygon meshes in OpenGL vertex array form.
+		 *
+		 * NOTE: They are also reconstructed to a reconstruction time without having to
+		 * re-create the present day polygon meshes vertex array (which is why it is here
+		 * instead of in @a ReconstructionInfo).
 		 */
-		boost::optional<geometries_spatial_partition_type::non_null_ptr_type>
-				d_cached_present_day_geometries_spatial_partition;
-
-		/**
-		 * The cached locations of the present day geometries in the spatial partition.
-		 */
-		boost::optional<std::vector<GPlatesMaths::CubeQuadTreeLocation> >
-				d_cached_present_day_geometries_spatial_partition_locations;
+		GLReconstructedPolygonMeshes d_cached_reconstructed_polygon_meshes;
 
 		/**
 		 * Used to notify polling observers that we've been updated.
@@ -764,15 +1024,19 @@ namespace GPlatesAppLogic
 
 	// This method is public so that @a ReconstructLayerTask can flush any RFGs when
 	// it is deactivated - this is done so that topologies will no longer find the RFGs
-	// when they lookup observers of topological section features.
-	// This issue exists because the topology layers do not restrict topological sections
-	// to their input channels (and hence have no input channels for topological sections).
+	// when they look up observers of topological section features.
+	// This issue exists because the topology layers do not necessarily restrict topological sections
+	// to their input channels (unless topological sections input channels are connected), instead
+	// using an unrestricted global feature id lookup even though this 'reconstruct' layer has
+	// been disconnected from the topology layer in question.
 	public:
+
 		/**
-		 * Resets any cached variables forcing them to be recalculated next time they're accessed.
+		 * Resets any cached *reconstruction* variables forcing them to be recalculated next time they're accessed.
 		 */
 		void
-		reset_reconstructed_feature_geometry_caches();
+		reset_reconstruction_cache();
+
 	private:
 
 
@@ -802,7 +1066,6 @@ namespace GPlatesAppLogic
 		void
 		check_input_layer_proxies();
 
-
 		/**
 		 * Generates reconstructed features for the specified reconstruct params and
 		 * reconstruction time if they're not already cached.
@@ -810,7 +1073,6 @@ namespace GPlatesAppLogic
 		std::vector<ReconstructContext::ReconstructedFeature> &
 		cache_reconstructed_features(
 				ReconstructionInfo &reconstruction_info,
-				const ReconstructParams &reconstruct_params,
 				const double &reconstruction_time);
 
 
@@ -821,7 +1083,15 @@ namespace GPlatesAppLogic
 		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
 		cache_reconstructions_spatial_partition(
 				ReconstructionInfo &reconstruction_info,
-				const ReconstructParams &reconstruct_params,
+				const double &reconstruction_time);
+
+		/**
+		 * Generates reconstructed feature *velocities* for the specified reconstruct params and
+		 * reconstruction time if they're not already cached.
+		 */
+		std::vector<MultiPointVectorField::non_null_ptr_type> &
+		cache_reconstructed_feature_velocities(
+				ReconstructionInfo &reconstruction_info,
 				const double &reconstruction_time);
 
 
@@ -829,16 +1099,18 @@ namespace GPlatesAppLogic
 		 * Utility method used by @a reconstruction_cache_type when it needs a new @a ReconstructionInfo
 		 * for a new reconstruction time / reconstruct params input pair.
 		 *
-		 * It is empty because we will cache the optional members as needed.
+		 * It starts out empty because we will cache the optional members as needed.
 		 * We're just using @a reconstruction_cache_type to evict least-recently requested reconstructions.
 		 */
-		static
 		ReconstructionInfo
-		create_empty_reconstruction_info(
-				const reconstruction_cache_key_type &)
-		{
-			return ReconstructionInfo();
-		}
+		create_reconstruction_info(
+				const reconstruction_cache_key_type &reconstruction_cache_key);
+
+
+		ReconstructContext::context_state_reference_type
+		create_reconstruct_context_state(
+				const double &reconstruction_time,
+				const ReconstructParams &reconstruct_params);
 	};
 }
 

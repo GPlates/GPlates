@@ -22,7 +22,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include <boost/foreach.hpp>
 
 #include "CliReconstructCommand.h"
@@ -41,7 +40,6 @@
 #include "file-io/ReadErrorAccumulation.h"
 
 #include "model/Model.h"
-
 
 namespace
 {
@@ -72,6 +70,13 @@ namespace
 	//! Option name for outputting to a single file with short version.
 	const char *SINGLE_OUTPUT_FILE_OPTION_NAME_WITH_SHORT_OPTION = "single-output-file,s";
 
+	//! Option name for outputting each file to a separate directory with short version.
+	const char *SEPARATE_OUTPUT_DIRECTORY_OPTION_NAME_WITH_SHORT_OPTION = "separate-output-dir,d";
+
+
+	//! Option name for wrapping-to-dateline with short version.
+	const char *WRAP_TO_DATELINE_OPTION_NAME_WITH_SHORT_OPTION = "wrap-to-dateline,w";
+
 
 	/**
 	 * Parses command-line option to get the export file type.
@@ -100,7 +105,9 @@ namespace
 GPlatesCli::ReconstructCommand::ReconstructCommand() :
 	d_recon_time(0),
 	d_anchor_plate_id(0),
-	d_export_single_output_file(true)
+	d_export_single_output_file(true),
+	d_export_separate_output_directory_per_input_file(true),
+	d_wrap_to_dateline(false)
 {
 }
 
@@ -125,7 +132,7 @@ GPlatesCli::ReconstructCommand::add_options(
 			// std::vector allows multiple load files and
 			// 'composing()' allows merging of command-line and config files.
 			boost::program_options::value< std::vector<std::string> >()->composing(),
-			"load reconstruction feature collection file (multiple options allowed)"
+			"load reconstruction feature collection (rotation) file (multiple options allowed)"
 		)
 		(
 			EXPORT_FILENAME_OPTION_NAME_WITH_SHORT_OPTION,
@@ -164,6 +171,18 @@ GPlatesCli::ReconstructCommand::add_options(
 			"  NOTE: Only applies if export file type is Shapefile in which case\n"
 			"  'false' will generate a matching output file for each input file."
 		)
+		(
+			SEPARATE_OUTPUT_DIRECTORY_OPTION_NAME_WITH_SHORT_OPTION,
+			boost::program_options::value<bool>(&d_export_separate_output_directory_per_input_file)->default_value(true),
+			"output to a separate directory for each file (defaults to 'true')\n"
+			"  NOTE: Only applies if outputting multiple files."
+		)
+		(
+			WRAP_TO_DATELINE_OPTION_NAME_WITH_SHORT_OPTION,
+			boost::program_options::value<bool>(&d_wrap_to_dateline)->default_value(false),
+			"wrap geometries to the dateline (defaults to 'false')\n"
+			"  NOTE: Only applies if export file type is Shapefile."
+		)
 		;
 
 	// The feature collection files can also be specified directly on command-line
@@ -173,22 +192,26 @@ GPlatesCli::ReconstructCommand::add_options(
 }
 
 
-int
+void
 GPlatesCli::ReconstructCommand::run(
 		const boost::program_options::variables_map &vm)
 {
 	FeatureCollectionFileIO file_io(d_model, vm);
+	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
 	//
 	// Load the feature collection files
 	//
 
-	qDebug() << "Single: " << d_export_single_output_file;
+	//qDebug() << "Single: " << d_export_single_output_file;
 
 	FeatureCollectionFileIO::feature_collection_file_seq_type reconstructable_files =
-			file_io.load_files(LOAD_RECONSTRUCTABLE_OPTION_NAME);
+			file_io.load_files(LOAD_RECONSTRUCTABLE_OPTION_NAME, read_errors);
 	FeatureCollectionFileIO::feature_collection_file_seq_type reconstruction_files =
-			file_io.load_files(LOAD_RECONSTRUCTION_OPTION_NAME);
+			file_io.load_files(LOAD_RECONSTRUCTION_OPTION_NAME, read_errors);
+
+	// Report all file load errors (if any).
+	FeatureCollectionFileIO::report_load_file_errors(read_errors);
 
 	// Extract the feature collections from the owning files.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
@@ -203,8 +226,7 @@ GPlatesCli::ReconstructCommand::run(
 	const std::string export_file_type = get_export_file_type(vm);
 
 	//
-	// Currently we just reconstruct feature collections
-	// and export reconstructed geometries to GMT format.
+	// Reconstruct feature collections and export reconstructed geometries.
 	//
 
 	// Perform reconstruction.
@@ -232,7 +254,7 @@ GPlatesCli::ReconstructCommand::run(
 	loaded_feature_collection_file_seq_type::const_iterator file_end = reconstructable_files.end();
 	for ( ; file_iter != file_end; ++file_iter)
 	{
-		reconstructable_file_ptrs.push_back(&(*file_iter)->get_reference());
+		reconstructable_file_ptrs.push_back(file_iter->get());
 	}
 
 	// Export filename.
@@ -252,7 +274,7 @@ GPlatesCli::ReconstructCommand::run(
 				d_anchor_plate_id,
 				d_recon_time,
 				d_export_single_output_file/*export_single_output_file*/,
-				!d_export_single_output_file/*export_per_input_file*/);
-
-	return 0;
+				!d_export_single_output_file/*export_per_input_file*/,
+				d_export_separate_output_directory_per_input_file,
+				d_wrap_to_dateline);
 }

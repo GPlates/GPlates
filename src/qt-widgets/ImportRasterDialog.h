@@ -193,6 +193,8 @@ namespace GPlatesQtWidgets
 		OpenFileDialog d_open_file_dialog;
 
 		// For communication between pages.
+		unsigned int d_raster_width;
+		unsigned int d_raster_height;
 		TimeDependentRasterSequence d_raster_sequence;
 		std::vector<QString> d_band_names;
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_type d_georeferencing;

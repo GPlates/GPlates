@@ -28,14 +28,35 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTIONGEOMETRY_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTIONGEOMETRY_H
 
-#include "ReconstructionTree.h"
-#include "ReconstructionGeometryVisitor.h"
+#include <boost/optional.hpp>
+
+#include "ReconstructHandle.h"
 
 #include "utils/ReferenceCount.h"
 
 
 namespace GPlatesAppLogic
 {
+	// Forward declaration.
+	class ReconstructionGeometry;
+
+	// Forward declaration of template visitor class.
+	template <class ReconstructionGeometryType>
+	class ReconstructionGeometryVisitorBase;
+
+	/**
+	 * Typedef for visitor over non-const @a ReconstructionGeometry objects.
+	 */
+	typedef ReconstructionGeometryVisitorBase<ReconstructionGeometry>
+			ReconstructionGeometryVisitor;
+
+	/**
+	 * Typedef for visitor over const @a ReconstructionGeometry objects.
+	 */
+	typedef ReconstructionGeometryVisitorBase<const ReconstructionGeometry>
+			ConstReconstructionGeometryVisitor;
+
+
 	/**
 	 * Classes derived from @a ReconstructionGeometry contain geometry that has been
 	 * reconstructed to a particular geological time-instant.
@@ -44,6 +65,7 @@ namespace GPlatesAppLogic
 			public GPlatesUtils::ReferenceCount<ReconstructionGeometry>
 	{
 	public:
+
 		//! A convenience typedef for a shared pointer to a non-const @a ReconstructionGeometry.
 		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionGeometry> non_null_ptr_type;
 
@@ -63,12 +85,27 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Access the ReconstructionTree that was used to reconstruct this ReconstructionGeometry.
+		 * Return the reconstruction time of this reconstruction geometry.
 		 */
-		ReconstructionTree::non_null_ptr_to_const_type
-		reconstruction_tree() const
+		const double &
+		get_reconstruction_time() const
 		{
-			return d_reconstruction_tree;
+			return d_reconstruction_time;
+		}
+
+		/**
+		 * Returns the optional reconstruct handle that this reconstruction geometry was created with.
+		 *
+		 * The main reason this was added was to enable identification of a reconstruction geometry
+		 * among a list - this is useful when searching for a reconstruction geometry that was
+		 * generated in a specific scenario (reconstruct handle) such as topological section
+		 * geometries that are found via the topological section feature.
+		 * This is useful to avoid outdated reconstruction geometries still in existence (among other scenarios).
+		 */
+		const boost::optional<ReconstructHandle::type> &
+		get_reconstruct_handle() const
+		{
+			return d_reconstruct_handle;
 		}
 
 		/**
@@ -88,6 +125,7 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryVisitor &visitor) = 0;
 
 	protected:
+
 		/**
 		 * Construct a ReconstructionGeometry instance.
 		 *
@@ -98,15 +136,23 @@ namespace GPlatesAppLogic
 		 */
 		explicit
 		ReconstructionGeometry(
-				ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_) :
-			d_reconstruction_tree(reconstruction_tree_)
+				const double &reconstruction_time_,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none) :
+			d_reconstruction_time(reconstruction_time_),
+			d_reconstruct_handle(reconstruct_handle_)
 		{  }
 
 	private:
+
 		/**
-		 * The reconstruction tree used to reconstruct us.
+		 * The reconstruction time of this reconstruction geometry.
 		 */
-		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
+		double d_reconstruction_time;
+
+		/**
+		 * An optional reconstruct handle that can be used by clients to identify where this RG came from.
+		 */
+		boost::optional<ReconstructHandle::type> d_reconstruct_handle;
 	};
 }
 

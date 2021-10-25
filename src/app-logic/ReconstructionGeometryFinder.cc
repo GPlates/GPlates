@@ -32,23 +32,13 @@
 #include "ReconstructedSmallCircle.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "Reconstruction.h"
-#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalNetwork.h"
 
 
 
 namespace
 {
-	inline
-	bool
-	reconstruction_tree_matches(
-			const GPlatesAppLogic::ReconstructionGeometry &rg,
-			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_to_match)
-	{
-		return (rg.reconstruction_tree() == reconstruction_tree_to_match);
-	}
-
-
 	template <class ReconstructionGeometryDerivedType>
 	inline
 	bool
@@ -71,6 +61,43 @@ namespace
 		const GPlatesModel::FeatureHandle::iterator &iter = rg.property();
 		return iter.is_still_valid() &&
 			(iter == properties_iterator_to_match);
+	}
+
+
+	/**
+	 * Returns true if the reconstruct handle of @a rg matches any of the handles in @a reconstruct_handles_to_match.
+	 */
+	bool
+	reconstruct_handle_matches(
+			const GPlatesAppLogic::ReconstructionGeometry &rg,
+			const std::vector<GPlatesAppLogic::ReconstructHandle::type> &reconstruct_handles_to_match)
+	{
+		// Get the RG's reconstruct handle.
+		const boost::optional<GPlatesAppLogic::ReconstructHandle::type> &rg_reconstruct_handle_opt =
+				rg.get_reconstruct_handle();
+
+		// If the RG does not have a reconstruct handle then it cannot be matched so return false.
+		if (!rg_reconstruct_handle_opt)
+		{
+			return false;
+		}
+		const GPlatesAppLogic::ReconstructHandle::type &rg_reconstruct_handle = rg_reconstruct_handle_opt.get();
+
+		// Search the sequence of restricted reconstruct handles for a match.
+		std::vector<GPlatesAppLogic::ReconstructHandle::type>::const_iterator reconstruct_handle_iter =
+				reconstruct_handles_to_match.begin();
+		std::vector<GPlatesAppLogic::ReconstructHandle::type>::const_iterator reconstruct_handle_end =
+				reconstruct_handles_to_match.end();
+		for ( ; reconstruct_handle_iter != reconstruct_handle_end; ++reconstruct_handle_iter)
+		{
+			if (rg_reconstruct_handle == *reconstruct_handle_iter)
+			{
+				// We found a match.
+				return true;
+			}
+		}
+
+		return false;
 	}
 }
 
@@ -111,8 +138,8 @@ GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_virtual_geoma
 }
 
 void
-GPlatesAppLogic::ReconstructionGeometryFinder::visit_resolved_topological_boundary(
-		ResolvedTopologicalBoundary &rtb)
+GPlatesAppLogic::ReconstructionGeometryFinder::visit_resolved_topological_geometry(
+		ResolvedTopologicalGeometry &rtb)
 {
 	visit_reconstruction_geometry_derived_type(rtb);
 }
@@ -131,14 +158,6 @@ void
 GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstruction_geometry_derived_type(
 		ReconstructionGeometryDerivedType &rg)
 {
-	// If a ReconstructionTree-to-match was supplied then limit the results to those RGs which
-	// reference that ReconstructionTree.
-	if (d_reconstruction_tree_to_match &&
-		!reconstruction_tree_matches(rg, d_reconstruction_tree_to_match.get()))
-	{
-		return;
-	}
-
 	// If a property-name-to-match was supplied then limit the results to those RGs which
 	// were reconstructed from a geometry with that property name.
 	if (d_property_name_to_match &&
@@ -151,6 +170,14 @@ GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstruction_geometry_der
 	// were reconstructed from a geometry with that properties iterator.
 	if (d_properties_iterator_to_match &&
 		!properties_iterator_matches(rg, d_properties_iterator_to_match.get()))
+	{
+		return;
+	}
+
+	// If a reconstruct-handles-to-match was supplied then limit the results to those RGs which
+	// has a reconstruct handle matching one of those supplied.
+	if (d_reconstruct_handles_to_match &&
+		!reconstruct_handle_matches(rg, d_reconstruct_handles_to_match.get()))
 	{
 		return;
 	}

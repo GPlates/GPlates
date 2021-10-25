@@ -571,8 +571,10 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh_ver
 
 			// If the other two points (not on the diagonal) are on opposite sides of the diagonal
 			// then we've found a suitable diagonal, otherwise choose the other diagonal.
-			if (diag_00_11.signed_distance(GPlatesMaths::Vector3D(point01.point_2D.x, point01.point_2D.y, 0)) *
-				diag_00_11.signed_distance(GPlatesMaths::Vector3D(point10.point_2D.x, point10.point_2D.y, 0)) < 0)
+			if (diag_00_11.signed_distance_unnormalised(
+					GPlatesMaths::Vector3D(point01.point_2D.x, point01.point_2D.y, 0)) *
+				diag_00_11.signed_distance_unnormalised(
+					GPlatesMaths::Vector3D(point10.point_2D.x, point10.point_2D.y, 0)) < 0)
 			{
 				// 00-01
 				// | \ |

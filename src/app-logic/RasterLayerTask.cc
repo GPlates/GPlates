@@ -31,13 +31,11 @@
 
 #include "ExtractRasterFeatureProperties.h"
 #include "RasterLayerProxy.h"
-#include "ResolvedRaster.h"
 
 #include "model/FeatureVisitor.h"
 
 #include "property-values/Georeferencing.h"
 #include "property-values/TextContent.h"
-
 
 const QString GPlatesAppLogic::RasterLayerTask::RASTER_FEATURE_CHANNEL_NAME =
 		"Raster feature";
@@ -45,6 +43,8 @@ const QString GPlatesAppLogic::RasterLayerTask::RECONSTRUCTED_POLYGONS_CHANNEL_N
 		"Reconstructed polygons";
 const QString GPlatesAppLogic::RasterLayerTask::AGE_GRID_RASTER_CHANNEL_NAME =
 		"Age grid raster";
+const QString GPlatesAppLogic::RasterLayerTask::NORMAL_MAP_RASTER_CHANNEL_NAME =
+		"Surface relief raster";
 
 
 bool
@@ -74,6 +74,8 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_types() const
 {
 	std::vector<LayerInputChannelType> input_channel_types;
 
+	// NOTE: There's no channel definition for a reconstruction tree - a rotation layer is not needed.
+
 	// Channel definition for the raster feature.
 	input_channel_types.push_back(
 			LayerInputChannelType(
@@ -91,6 +93,13 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_types() const
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					AGE_GRID_RASTER_CHANNEL_NAME,
+					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
+					LayerTaskType::RASTER));
+	
+	// Channel definition for the normal map raster.
+	input_channel_types.push_back(
+			LayerInputChannelType(
+					NORMAL_MAP_RASTER_CHANNEL_NAME,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RASTER));
 
@@ -245,6 +254,18 @@ GPlatesAppLogic::RasterLayerTask::add_input_layer_proxy_connection(
 					GPlatesUtils::get_non_null_pointer(raster_layer_proxy.get()));
 		}
 	}
+	else if (input_channel_name == NORMAL_MAP_RASTER_CHANNEL_NAME)
+	{
+		// Make sure the input layer proxy is a raster layer proxy.
+		boost::optional<RasterLayerProxy *> raster_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						RasterLayerProxy>(layer_proxy);
+		if (raster_layer_proxy)
+		{
+			d_raster_layer_proxy->set_current_normal_map_raster_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(raster_layer_proxy.get()));
+		}
+	}
 }
 
 
@@ -274,6 +295,17 @@ GPlatesAppLogic::RasterLayerTask::remove_input_layer_proxy_connection(
 		if (raster_layer_proxy)
 		{
 			d_raster_layer_proxy->set_current_age_grid_raster_layer_proxy(boost::none);
+		}
+	}
+	else if (input_channel_name == NORMAL_MAP_RASTER_CHANNEL_NAME)
+	{
+		// Make sure the input layer proxy is a raster layer proxy.
+		boost::optional<RasterLayerProxy *> raster_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						RasterLayerProxy>(layer_proxy);
+		if (raster_layer_proxy)
+		{
+			d_raster_layer_proxy->set_current_normal_map_raster_layer_proxy(boost::none);
 		}
 	}
 }
@@ -316,6 +348,7 @@ GPlatesAppLogic::RasterLayerTask::Params::set_band_name(
 	d_band_name = band_name;
 
 	d_set_band_name_called = true;
+	emit_modified();
 }
 
 

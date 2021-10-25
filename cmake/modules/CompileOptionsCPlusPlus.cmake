@@ -46,7 +46,11 @@ if(MSVC)
     	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
     endif (GPLATES_MSVC80_PARALLEL_BUILD)
 
-    #set(CMAKE_EXE_LINKER_FLAGS )
+	# Enable 4Gb of virtual address space instead of 2Gb (default for Windows).
+	# This doubles addressable memory if GPlates is compiled as 32-bit but run on a 64-bit Windows OS.
+	# On a 32-bit Windows OS this won't help because only 2Gb (by default) is accessible
+	# (the 2-4Gb process address range is reserved for the system).
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
     #set(CMAKE_SHARED_LINKER_FLAGS )
     #set(CMAKE_MODULE_LINKER_FLAGS )
 
@@ -158,6 +162,9 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 			if (CXX_MINOR_VERSION STRLESS "4")
 				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
 			endif (CXX_MINOR_VERSION STRLESS "4")
+			if (CXX_MINOR_VERSION EQUAL "7")#Due to G++4.7 bug, not treat maybe-uninitialized warning as error.
+                                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=maybe-uninitialized")
+                        endif (CXX_MINOR_VERSION EQUAL "7")
 		endif (CXX_MAJOR_VERSION EQUAL "4")
     endif (GPLATES_PUBLIC_RELEASE)
 
@@ -196,6 +203,12 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     # There are _DEBUG, _RELEASE, _RELWITHDEBINFO, _MINSIZEREL and _PROFILEGPROF suffixes for CMAKE_*_LINKER_FLAGS
     # where '*' is EXE, SHARED and MODULE.
 endif(CMAKE_COMPILER_IS_GNUCXX)
+
+# The 64-bit C99 macro UINT64_C macro fails to compile on Visual Studio 2005 using boost 1.36.
+# Boost 1.42 defines __STDC_CONSTANT_MACROS in <boost/cstdint.hpp> but prior to that the application
+# is required to define it and it needs to be defined before any header inclusion to ensure it is defined
+# before it is accessed (which means before pre-compiled headers). So we define it on the compiler command-line.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
 
 # Create our own build type for profiling with GPlates inbuilt profiler.
 # Use '-DCMAKE_BUILD_TYPE:STRING=profilegplates' option to 'cmake' to generate a gplates profile

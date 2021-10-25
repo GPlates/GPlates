@@ -39,6 +39,11 @@
 #include "opengl/GLVertexArray.h"
 
 
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+}
+
 namespace GPlatesPresentation
 {
 	class ViewState;
@@ -69,7 +74,7 @@ namespace GPlatesGui
 				const GPlatesPresentation::ViewState &view_state);
 
 		/**
-		 * Creates child render graph node and attaches it to @a render_graph_parent_node.
+		 * Paints sphere.
 		 */
 		void
 		paint(

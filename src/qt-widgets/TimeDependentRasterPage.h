@@ -66,6 +66,8 @@ namespace GPlatesQtWidgets
 		explicit
 		TimeDependentRasterPage(
 				GPlatesPresentation::ViewState &view_state,
+				unsigned int &raster_width,
+				unsigned int &raster_height,
 				TimeDependentRasterSequence &raster_sequence,
 				const boost::function<void (unsigned int)> &set_number_of_bands_function,
 				QWidget *parent_ = NULL);
@@ -86,7 +88,7 @@ namespace GPlatesQtWidgets
 		dropEvent(
 				QDropEvent *ev);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_add_directory_button_clicked();
@@ -138,6 +140,8 @@ namespace GPlatesQtWidgets
 		deduce_time(
 				const QFileInfo &file_info);
 
+		unsigned int &d_raster_width;
+		unsigned int &d_raster_height;
 		TimeDependentRasterSequence &d_raster_sequence;
 		boost::function<void (unsigned int)> d_set_number_of_bands_function;
 

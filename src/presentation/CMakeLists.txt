@@ -21,7 +21,10 @@ set(srcs
     ReconstructionGeometryRenderer.h
     ReconstructVisualLayerParams.cc
     ReconstructVisualLayerParams.h
+    ScalarField3DVisualLayerParams.cc
+    ScalarField3DVisualLayerParams.h
     TopologyBoundaryVisualLayerParams.h
+    TopologyNetworkVisualLayerParams.cc
     TopologyNetworkVisualLayerParams.h
     VelocityFieldCalculatorVisualLayerParams.h
     ViewState.cc

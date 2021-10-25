@@ -55,6 +55,9 @@ namespace GPlatesGui
 		boost::optional<GPlatesGui::Colour>
 		get_colour_at(double position) const;
 
+		boost::optional<GPlatesGui::Colour>
+		get_colour_or_bound_colour(double position) const;
+
 	protected:
 		Colour d_upper_colour;
 		Colour d_lower_colour;

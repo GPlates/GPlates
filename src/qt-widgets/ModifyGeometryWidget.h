@@ -39,12 +39,14 @@
 #include "maths/GeometryOnSphere.h"
 
 
+namespace GPlatesCanvasTools
+{
+	class GeometryOperationState;
+}
+
 namespace GPlatesViewOperations
 {
-	class ActiveGeometryOperation;
 	class GeometryBuilder;
-	class GeometryOperationTarget;
-
 }
 
 namespace GPlatesQtWidgets
@@ -61,8 +63,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ModifyGeometryWidget(
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 				QWidget *parent_ = NULL);
 
 		~ModifyGeometryWidget();
@@ -77,23 +78,7 @@ namespace GPlatesQtWidgets
 		void
 		handle_activation();
 
-	public slots:
-		// NOTE: all signals/slots should use namespace scope for all arguments
-		//       otherwise differences between signals and slots will cause Qt
-		//       to not be able to connect them at runtime.
-
-		/**
-		 * Listen for changes to the geometry builder targeted geometry operations.
-		 */
-		void
-		switched_geometry_builder(
-				GPlatesViewOperations::GeometryOperationTarget &,
-				GPlatesViewOperations::GeometryBuilder *);
-
 	private:
-		void
-		connect_to_geometry_builder_tool_target(
-				GPlatesViewOperations::GeometryOperationTarget &);
 
 		QTreeWidget *
 		coordinates_table()

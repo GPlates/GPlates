@@ -40,6 +40,7 @@
 #include "GLStateStore.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
+#include "OpenGLException.h"
 
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -50,10 +51,50 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
 bool GPlatesOpenGL::GLContext::s_initialised_GLEW = false;
-boost::optional<GPlatesOpenGL::GLContext::Parameters> GPlatesOpenGL::GLContext::s_parameters;
+GPlatesOpenGL::GLCapabilities GPlatesOpenGL::GLContext::s_capabilities;
 
-// Set the GL_TEXTURE0 constant.
-const GLenum GPlatesOpenGL::GLContext::Parameters::Texture::gl_texture0 = GL_TEXTURE0;
+
+QGLFormat
+GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
+{
+	// We turn *off* multisampling because lines actually look better without it...
+	// We need a stencil buffer for filling polygons.
+	// We need an alpha channel in case falling back to main frame buffer for render textures.
+	QGLFormat format(/*QGL::SampleBuffers |*/ QGL::StencilBuffer | QGL::AlphaChannel);
+
+#if QT_VERSION >= 0x040700 // Functions introduced in Qt 4.7...
+	// We use features deprecated in OpenGL 3 so use compatibility profile and allowed deprecated functions.
+	format.setProfile(QGLFormat::CompatibilityProfile);
+	format.setOption(QGL::DeprecatedFunctions);
+
+	const QGLFormat::OpenGLVersionFlags opengl_version_flags = QGLFormat::openGLVersionFlags();
+
+	// We use OpenGL extensions in GPlates and hence don't rely on a particular OpenGL core version.
+	// So we just set the version to OpenGL 1.1 which is supported by everything and is the
+	// only version supported by the Microsoft software renderer (fallback from hardware).
+	//
+	// NOTE: If GL_EXT_framebuffer_object is not supported (but the newer GL_ARB_framebuffer_object is)
+	// then a possible reason for this could be...
+	//
+	// From http://stackoverflow.com/questions/15017911/oes-ext-arb-framebuffer-object:
+	//  Issues with GL_EXT_framebuffer_object a) GL_EXT_framebuffer_object might not be listed in
+	//  GL 3.x contexts because FBO's are core. b) also, if have a GL 2.x context with newer hardware,
+	//  possible that GL_EXT_framebuffer_object is not listed but GL_ARB_framebuffer_object is.
+	//
+	// ...so this is another reason to set the OpenGL version to 1.1 (instead of 2.x, or 3.x) below.
+	// But it's possible (according to the above comment) that it may not be enough.
+	// Note that we use GL_EXT_framebuffer_object only, and not GL_ARB_framebuffer_object, due to
+	// widespread hardware support of the (less flexible) GL_EXT_framebuffer_object.
+	//
+	if (opengl_version_flags.testFlag(QGLFormat::OpenGL_Version_1_1))
+	{
+		format.setVersion(1, 1);
+	}
+#endif
+
+	return format;
+}
+
 
 void
 GPlatesOpenGL::GLContext::initialise()
@@ -73,7 +114,7 @@ GPlatesOpenGL::GLContext::initialise()
 			// glewInit failed.
 			//
 			// We'll assume all calls to test whether an extension is available
-			// (such as "if (GLEW_ARB_multitexture) ..." will fail since they just
+			// (such as "if (get_capabilities().gl_ARB_multitexture) ..." will fail since they just
 			// test boolean variables which are assumed to be initialised by GLEW to zero.
 			// This just means we will be forced to fall back to OpenGL version 1.1.
 			qWarning() << "Error: " << reinterpret_cast<const char *>(glewGetErrorString(err));
@@ -88,23 +129,35 @@ GPlatesOpenGL::GLContext::initialise()
 		//     without the extension (an example is vertex array objects).
 		disable_opengl_extensions();
 
-		// Get the API parameters from the current OpenGL implementation.
-		initialise_parameters();
+		// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
+		s_capabilities.initialise();
 
 		// Provide information about lack of framebuffer object support.
-		if (!GLEW_EXT_framebuffer_object)
+		if (!s_capabilities.framebuffer.gl_EXT_framebuffer_object)
 		{
 			qDebug() << "Falling back to main frame buffer for render targets.";
-
-			// A lot of render-target rendering uses an alpha channel so emit a warning if
-			// the frame buffer doesn't have an alpha channel.
-			if (!static_cast<QGLWidgetImpl *>(d_context_impl.get())->d_qgl_widget.format().alpha())
-			{
-				qWarning(
-						"Could not get alpha channel on main frame buffer; "
-						"render-target results will be suboptimal");
-			}
 		}
+	}
+
+	// A lot of main frame buffer and render-target rendering uses an alpha channel so emit
+	// a warning if the frame buffer doesn't have an alpha channel.
+	if (!get_qgl_format().alpha())
+	{
+		qWarning("Could not get alpha channel on main frame buffer.");
+
+		// If there's no framebuffer object support then the main framebuffer will be used
+		// to emulate render targets and lack of an alpha channel will affects the results.
+		if (!get_capabilities().framebuffer.gl_EXT_framebuffer_object)
+		{
+			qDebug("Render-target results will be suboptimal.");
+		}
+	}
+
+	// A lot of main frame buffer and render-target rendering uses a stencil buffer so emit
+	// a warning if the frame buffer doesn't have a stencil buffer.
+	if (!get_qgl_format().stencil())
+	{
+		qWarning("Could not get a stencil buffer on the main frame buffer.");
 	}
 }
 
@@ -114,396 +167,19 @@ GPlatesOpenGL::GLContext::create_renderer()
 {
 	return GLRenderer::create(
 			get_non_null_pointer(this),
-			get_shared_state()->get_state_store());
+			get_shared_state()->get_state_store(get_capabilities()));
 }
 
 
-void
-GPlatesOpenGL::GLContext::initialise_parameters()
-{
-	// Start off with default parameters.
-	s_parameters = Parameters();
-
-	qDebug() << "On this system GPlates supports the following OpenGL extensions...";
-
-	initialise_viewport_parameters(s_parameters->viewport);
-	initialise_framebuffer_parameters(s_parameters->framebuffer);
-	initialise_shader_parameters(s_parameters->shader);
-	initialise_texture_parameters(s_parameters->texture);
-	initialise_buffer_parameters(s_parameters->buffer);
-
-	qDebug() << "...end of OpenGL extension list.";
-}
-
-
-void
-GPlatesOpenGL::GLContext::initialise_viewport_parameters(
-		Parameters::Viewport &viewport_parameters)
-{
-#ifdef GL_ARB_viewport_array // In case old 'glew.h' header (GL_ARB_viewport_array is fairly recent)
-	if (GLEW_ARB_viewport_array)
-	{
-		// Get the maximum number of viewports.
-		GLint max_viewports;
-		glGetIntegerv(GL_MAX_VIEWPORTS, &max_viewports);
-		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
-		viewport_parameters.gl_max_viewports = max_viewports;
-
-		qDebug() << "  GL_ARB_viewport_array";
-	}
-#endif
-
-	// Query the maximum viewport dimensions supported.
-	GLint max_viewport_dimensions[2];
-	glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &max_viewport_dimensions[0]);
-	viewport_parameters.gl_max_viewport_width = max_viewport_dimensions[0];
-	viewport_parameters.gl_max_viewport_height = max_viewport_dimensions[1];
-}
-
-
-void
-GPlatesOpenGL::GLContext::initialise_framebuffer_parameters(
-		Parameters::Framebuffer &framebuffer_parameters)
-{
-	if (GLEW_EXT_framebuffer_object)
-	{
-		framebuffer_parameters.gl_EXT_framebuffer_object = true;
-
-		// Get the maximum number of color attachments.
-		GLint max_color_attachments;
-		glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS_EXT, &max_color_attachments);
-		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
-		framebuffer_parameters.gl_max_color_attachments = max_color_attachments;
-
-		qDebug() << "  GL_EXT_framebuffer_object";
-	}
-}
-
-
-void
-GPlatesOpenGL::GLContext::initialise_shader_parameters(
-		Parameters::Shader &shader_parameters)
-{
-	if (GLEW_ARB_shader_objects)
-	{
-		shader_parameters.gl_ARB_shader_objects = true;
-
-		qDebug() << "  GL_ARB_shader_objects";
-	}
-
-	if (GLEW_ARB_vertex_shader)
-	{
-		shader_parameters.gl_ARB_vertex_shader = true;
-
-		// Get the maximum supported number of generic vertex attributes.
-		GLint max_vertex_attribs;
-		glGetIntegerv(GL_MAX_VERTEX_ATTRIBS_ARB, &max_vertex_attribs);
-		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
-		shader_parameters.gl_max_vertex_attribs = max_vertex_attribs;
-
-		qDebug() << "  GL_ARB_vertex_shader";
-	}
-
-	if (GLEW_ARB_fragment_shader)
-	{
-		shader_parameters.gl_ARB_fragment_shader = true;
-
-		qDebug() << "  GL_ARB_fragment_shader";
-	}
-
-#ifdef GL_ARB_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
-	if (GLEW_ARB_geometry_shader4)
-	{
-		shader_parameters.gl_ARB_geometry_shader4 = true;
-
-		qDebug() << "  GL_ARB_geometry_shader4";
-	}
-#endif
-
-#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
-	if (GLEW_EXT_gpu_shader4)
-	{
-		shader_parameters.gl_EXT_gpu_shader4 = true;
-
-		qDebug() << "  GL_EXT_gpu_shader4";
-	}
-#endif
-
-// In case old 'glew.h' (since extension added relatively recently).
-#ifdef GL_ARB_gpu_shader_fp64
-	// Some versions of 'glew.h' appear to define 'GL_ARB_gpu_shader_fp64' but not the 'glUniform...' API functions.
-	// And there are also some run-time systems that report 'GLEW_ARB_gpu_shader_fp64' as 'false', indicating
-	// they don't support the extension, yet still provide non-null 'glUniform...' API functions.
-	// Oddly this extension can report unsupported if functions like 'glProgramUniform1dEXT' are not found.
-	// However we don't need these 'direct access state' functions - as long as we have the
-	// regular uniform function like 'glUniform1d' that's all we need.
-	// Note that Mac OSX (even Lion) doesn't support this extension so this is a
-	// Windows and Linux only extension.
-	//
-	// So our way of detecting this extension is just to look for non-null 'glUniform...' API functions.
-	// If they are there then we turn the extension on, otherwise we turn it off.
-	//
-	// FIXME: Find a better way to override the extension (to disable it).
-	// This is the global flag used by 'GLEW_ARB_gpu_shader_fp64'.
-	__GLEW_ARB_gpu_shader_fp64 = false;
-
-	#if defined(glUniform1d) && \
-		defined(glUniform1dv) && \
-		defined(glUniform2d) && \
-		defined(glUniform2dv) && \
-		defined(glUniform3d) && \
-		defined(glUniform3dv) && \
-		defined(glUniform4d) && \
-		defined(glUniform4dv) && \
-		defined(glUniformMatrix2dv) && \
-		defined(glUniformMatrix2x3dv) && \
-		defined(glUniformMatrix2x4dv) && \
-		defined(glUniformMatrix3dv) && \
-		defined(glUniformMatrix3x2dv) && \
-		defined(glUniformMatrix3x4dv) && \
-		defined(glUniformMatrix4dv) && \
-		defined(glUniformMatrix4x2dv) && \
-		defined(glUniformMatrix4x3dv)
-
-		// We know they've been defined in the 'glew.h' file so check that they return non-null
-		// indicating they are available on the run-time system...
-		if (
-			GPLATES_OPENGL_BOOL(glUniform1d) &&
-			GPLATES_OPENGL_BOOL(glUniform1dv) &&
-			GPLATES_OPENGL_BOOL(glUniform2d) &&
-			GPLATES_OPENGL_BOOL(glUniform2dv) &&
-			GPLATES_OPENGL_BOOL(glUniform3d) &&
-			GPLATES_OPENGL_BOOL(glUniform3dv) &&
-			GPLATES_OPENGL_BOOL(glUniform4d) &&
-			GPLATES_OPENGL_BOOL(glUniform4dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix2dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix2x3dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix2x4dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix3dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix3x2dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix3x4dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix4dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix4x2dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix4x3dv))
-		{
-			shader_parameters.gl_ARB_gpu_shader_fp64 = true;
-
-			// FIXME: Find a better way to override the extension (to enable it).
-			// This is the global flag used by 'GLEW_ARB_gpu_shader_fp64'.
-			__GLEW_ARB_gpu_shader_fp64 = true;
-
-			qDebug() << "  GL_ARB_gpu_shader_fp64";
-		}
-	#endif
-#endif
-
-#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
-	if (GLEW_ARB_vertex_attrib_64bit)
-	{
-		shader_parameters.gl_ARB_vertex_attrib_64bit = true;
-
-		qDebug() << "  GL_ARB_vertex_attrib_64bit";
-	}
-#endif
-}
-
-
-void
-GPlatesOpenGL::GLContext::initialise_texture_parameters(
-		Parameters::Texture &texture_parameters)
-{
-	// Get the maximum texture size (dimension).
-	GLint max_texture_size;
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
-	// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
-	texture_parameters.gl_max_texture_size = max_texture_size;
-
-	// Are non-power-of-two dimension textures supported?
-	if (GLEW_ARB_texture_non_power_of_two)
-	{
-		texture_parameters.gl_ARB_texture_non_power_of_two = true;;
-
-		qDebug() << "  GL_ARB_texture_non_power_of_two";
-	}
-
-	// Get the maximum number of texture units supported.
-	if (GLEW_ARB_multitexture)
-	{
-		GLint max_texture_units;
-		glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &max_texture_units);
-		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
-		texture_parameters.gl_max_texture_units = max_texture_units;
-
-		qDebug() << "  GL_ARB_multitexture";
-	}
-
-	// Get the maximum number of texture *image* units and texture coordinates supported by fragment shaders.
-	if (GLEW_ARB_fragment_shader)
-	{
-		GLint max_texture_image_units;
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_image_units);
-		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
-		texture_parameters.gl_max_texture_image_units = max_texture_image_units;
-
-		GLint max_texture_coords;
-		glGetIntegerv(GL_MAX_TEXTURE_COORDS_ARB, &max_texture_coords);
-		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
-		texture_parameters.gl_max_texture_coords = max_texture_coords;
-	}
-	else if (GLEW_ARB_multitexture)
-	{
-		// Fallback to the 'old-style' way of reporting texture units...
-		GLint max_texture_units;
-		glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &max_texture_units);
-		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
-		texture_parameters.gl_max_texture_image_units = max_texture_units;
-		texture_parameters.gl_max_texture_coords = max_texture_units;
-	}
-	// ...else they are both left as their default values of 1
-
-	// Is clamping to the centre of texture edge pixels supported?
-	//
-	// This is the standard texture clamping in Direct3D - it's easier for hardware to implement
-	// since it avoids accessing the texture border colour (even in (bi)linear filtering mode).
-	//
-	// Seems Mac OSX use the SGIS version exclusively but in general the EXT version is more common.
-	if (GLEW_EXT_texture_edge_clamp)
-	{
-		texture_parameters.gl_EXT_texture_edge_clamp = true;;
-
-		qDebug() << "  GL_EXT_texture_edge_clamp";
-	}
-	if (GLEW_SGIS_texture_edge_clamp)
-	{
-		texture_parameters.gl_SGIS_texture_edge_clamp = true;;
-
-		qDebug() << "  GL_SGIS_texture_edge_clamp";
-	}
-
-	// Get the maximum texture anisotropy supported.
-	if (GLEW_EXT_texture_filter_anisotropic)
-	{
-		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &texture_parameters.gl_texture_max_anisotropy);
-
-		qDebug() << "  GL_EXT_texture_filter_anisotropic";
-	}
-
-	// Are 3D textures supported?
-	if (GLEW_EXT_texture3D)
-	{
-		texture_parameters.gl_EXT_texture3D = true;
-
-		qDebug() << "  GL_EXT_texture3D";
-	}
-
-#ifdef GL_EXT_texture_array // In case old 'glew.h' header
-	if (GLEW_EXT_texture_array)
-	{
-		texture_parameters.gl_EXT_texture_array = true;
-
-		// Get the maximum number of texture array layers.
-		GLint max_texture_array_layers;
-		glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS_EXT, &max_texture_array_layers);
-		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
-		texture_parameters.gl_max_texture_array_layers = max_texture_array_layers;
-
-		qDebug() << "  GL_EXT_texture_array";
-	}
-#endif
-
-	// Are texture buffer objects supported?
-#ifdef GL_EXT_texture_buffer_object
-	if (GLEW_EXT_texture_buffer_object)
-	{
-		texture_parameters.gl_EXT_texture_buffer_object = true;
-
-		qDebug() << "  GL_EXT_texture_buffer_object";
-	}
-#endif
-
-	// Is GLEW_ARB_texture_float supported?
-	if (GLEW_ARB_texture_float)
-	{
-		texture_parameters.gl_ARB_texture_float = true;
-
-		qDebug() << "  GL_ARB_texture_float";
-	}
-
-	// Is GLEW_ARB_texture_rg supported?
-#ifdef GL_ARB_texture_rg
-	if (GLEW_ARB_texture_rg)
-	{
-		texture_parameters.gl_ARB_texture_rg = true;
-
-		qDebug() << "  GL_ARB_texture_rg";
-	}
-#endif
-
-	// Is GLEW_ARB_color_buffer_float supported?
-	// This affects things other than floating-point textures (samplers or render-targets) but
-	// we put it with the texture parameters since it's most directly related to floating-point
-	// colour buffers (eg, floating-point textures attached to a framebuffer object).
-	if (GLEW_ARB_color_buffer_float)
-	{
-		texture_parameters.gl_ARB_color_buffer_float = true;
-
-		qDebug() << "  GL_ARB_color_buffer_float";
-	}
-}
-
-
-void
-GPlatesOpenGL::GLContext::initialise_buffer_parameters(
-		Parameters::Buffer &buffer_parameters)
-{
-	if (GLEW_ARB_vertex_buffer_object)
-	{
-		buffer_parameters.gl_ARB_vertex_buffer_object = true;
-
-		qDebug() << "  GL_ARB_vertex_buffer_object";
-	}
-
-#ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
-	if (GLEW_ARB_vertex_array_object)
-	{
-		buffer_parameters.gl_ARB_vertex_array_object = true;
-
-		qDebug() << "  GL_ARB_vertex_array_object";
-	}
-#endif
-
-	if (GLEW_ARB_pixel_buffer_object)
-	{
-		buffer_parameters.gl_ARB_pixel_buffer_object = true;
-
-		qDebug() << "  GL_ARB_pixel_buffer_object";
-	}
-
-	if (GLEW_ARB_map_buffer_range)
-	{
-		buffer_parameters.gl_ARB_map_buffer_range = true;
-
-		qDebug() << "  GL_ARB_map_buffer_range";
-	}
-
-	if (GLEW_APPLE_flush_buffer_range)
-	{
-		buffer_parameters.gl_APPLE_flush_buffer_range = true;
-
-		qDebug() << "  GL_APPLE_flush_buffer_range";
-	}
-}
-
-
-const GPlatesOpenGL::GLContext::Parameters &
-GPlatesOpenGL::GLContext::get_parameters()
+const GPlatesOpenGL::GLCapabilities &
+GPlatesOpenGL::GLContext::get_capabilities() const
 {
 	// GLEW must have been initialised.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			s_initialised_GLEW && s_parameters,
+			s_initialised_GLEW,
 			GPLATES_ASSERTION_SOURCE);
 
-	return s_parameters.get();
+	return s_capabilities;
 }
 
 
@@ -545,12 +221,15 @@ GPlatesOpenGL::GLContext::disable_opengl_extensions()
 	//
 	//__GLEW_ARB_vertex_buffer_object = 0;
 	//__GLEW_EXT_framebuffer_object = 0;
+	//__GLEW_EXT_packed_depth_stencil = 0;
 	//__GLEW_ARB_vertex_shader = 0;
 	//__GLEW_ARB_multitexture = 0;
 	//__GLEW_ARB_texture_non_power_of_two = 0;
+	//__GLEW_ARB_texture_float = 0;
 	//__GLEW_ARB_shader_objects = 0;
 	//__GLEW_ARB_fragment_shader = 0;
 	//__GLEW_EXT_texture_edge_clamp = 0; __GLEW_SGIS_texture_edge_clamp = 0;
+	//__GLEW_ARB_map_buffer_range = 0; __GLEW_APPLE_flush_buffer_range = 0;
 }
 
 
@@ -565,36 +244,39 @@ GPlatesOpenGL::GLContext::SharedState::SharedState() :
 					GLShaderObject::allocator_type(GL_FRAGMENT_SHADER_ARB))),
 	d_program_object_resource_manager(GLProgramObject::resource_manager_type::create())
 {
-#ifdef GL_ARB_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
+#ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
 	d_geometry_shader_object_resource_manager =
 			GLShaderObject::resource_manager_type::create(
-					GLShaderObject::allocator_type(GL_GEOMETRY_SHADER_ARB));
+					GLShaderObject::allocator_type(GL_GEOMETRY_SHADER_EXT));
 #endif
 }
 
 
 const boost::shared_ptr<GPlatesOpenGL::GLShaderObject::resource_manager_type> &
 GPlatesOpenGL::GLContext::SharedState::get_shader_object_resource_manager(
+		GLRenderer &renderer,
 		GLenum shader_type) const
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	switch (shader_type)
 	{
 	case GL_VERTEX_SHADER_ARB:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_shader),
+				capabilities.shader.gl_ARB_vertex_shader,
 				GPLATES_ASSERTION_SOURCE);
 		return d_vertex_shader_object_resource_manager;
 
 	case GL_FRAGMENT_SHADER_ARB:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GPLATES_OPENGL_BOOL(GLEW_ARB_fragment_shader),
+				capabilities.shader.gl_ARB_fragment_shader,
 				GPLATES_ASSERTION_SOURCE);
 		return d_fragment_shader_object_resource_manager;
 
-#ifdef GL_ARB_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
-	case GL_GEOMETRY_SHADER_ARB:
+#ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
+	case GL_GEOMETRY_SHADER_EXT:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GPLATES_OPENGL_BOOL(GLEW_ARB_geometry_shader4),
+				capabilities.shader.gl_EXT_geometry_shader4,
 				GPLATES_ASSERTION_SOURCE);
 		return d_geometry_shader_object_resource_manager.get();
 #endif
@@ -609,10 +291,13 @@ GPlatesOpenGL::GLContext::SharedState::get_shader_object_resource_manager(
 
 
 const boost::shared_ptr<GPlatesOpenGL::GLProgramObject::resource_manager_type> &
-GPlatesOpenGL::GLContext::SharedState::get_program_object_resource_manager() const
+GPlatesOpenGL::GLContext::SharedState::get_program_object_resource_manager(
+		GLRenderer &renderer) const
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 
 	return d_program_object_resource_manager;
@@ -639,7 +324,18 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 	boost::optional<GLTexture::shared_ptr_type> texture_object_opt = texture_cache->allocate_object();
 	if (texture_object_opt)
 	{
-		return texture_object_opt.get();
+		const GLTexture::shared_ptr_type texture_object = texture_object_opt.get();
+
+		// Make sure the previous client did not change the texture dimensions before recycling the texture.
+		GPlatesGlobal::Assert<OpenGLException>(
+				texture_object->get_width() == GLuint(width) &&
+					texture_object->get_height() == boost::optional<GLuint>(height_opt) &&
+					texture_object->get_depth() == boost::optional<GLuint>(depth_opt) &&
+					texture_object->get_internal_format() == internalformat,
+				GPLATES_ASSERTION_SOURCE,
+				"GLContext::SharedState::acquire_texture: Dimensions/format of recycled texture were changed.");
+
+		return texture_object;
 	}
 
 	// Create a new object and add it to the cache.
@@ -680,6 +376,52 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 }
 
 
+GPlatesOpenGL::GLPixelBuffer::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
+		GLRenderer &renderer,
+		unsigned int size,
+		GLBuffer::usage_type usage)
+{
+	// Lookup the correct pixel buffer cache (matching the specified client parameters).
+	const pixel_buffer_key_type pixel_buffer_key(size, usage);
+
+	const pixel_buffer_cache_type::shared_ptr_type pixel_buffer_cache =
+			get_pixel_buffer_cache(pixel_buffer_key);
+
+	// Attempt to acquire a recycled object.
+	boost::optional<GLPixelBuffer::shared_ptr_type> pixel_buffer_opt = pixel_buffer_cache->allocate_object();
+	if (pixel_buffer_opt)
+	{
+		const GLPixelBuffer::shared_ptr_type pixel_buffer = pixel_buffer_opt.get();
+
+		// Make sure the previous client did not change the pixel buffer before recycling.
+		GPlatesGlobal::Assert<OpenGLException>(
+				pixel_buffer->get_buffer()->get_buffer_size() == size,
+				GPLATES_ASSERTION_SOURCE,
+				"GLContext::SharedState::acquire_pixel_buffer: Size of recycled pixel buffer was changed.");
+
+		return pixel_buffer;
+	}
+
+	// Create a new buffer with the specified parameters.
+	GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer);
+	buffer->gl_buffer_data(
+			renderer,
+			// Could be 'TARGET_PIXEL_UNPACK_BUFFER' or 'TARGET_PIXEL_PACK_BUFFER'.
+			// Doesn't really matter because only used internally as a temporary bind target...
+			GLBuffer::TARGET_PIXEL_PACK_BUFFER,
+			size,
+			NULL/*Uninitialised memory*/,
+			usage);
+
+	// Create a new object and add it to the cache.
+	const GLPixelBuffer::shared_ptr_type pixel_buffer = pixel_buffer_cache->allocate_object(
+			GLPixelBuffer::create_as_auto_ptr(renderer, buffer));
+
+	return pixel_buffer;
+}
+
+
 GPlatesOpenGL::GLVertexArray::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
 		GLRenderer &renderer)
@@ -699,6 +441,109 @@ GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
 	vertex_array->clear(renderer);
 
 	return vertex_array;
+}
+
+
+GPlatesOpenGL::GLRenderBufferObject::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::acquire_render_buffer_object(
+		GLRenderer &renderer,
+		GLint internalformat,
+		GLsizei width,
+		GLsizei height)
+{
+	// Must support GL_EXT_framebuffer_object.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			renderer.get_capabilities().framebuffer.gl_EXT_framebuffer_object,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Lookup the correct render buffer object cache (matching the specified client parameters).
+	const render_buffer_object_key_type render_buffer_object_key(internalformat, width, height);
+
+	const render_buffer_object_cache_type::shared_ptr_type render_buffer_object_cache =
+			get_render_buffer_object_cache(render_buffer_object_key);
+
+	// Attempt to acquire a recycled object.
+	boost::optional<GLRenderBufferObject::shared_ptr_type> render_buffer_object_opt =
+			render_buffer_object_cache->allocate_object();
+	if (render_buffer_object_opt)
+	{
+		const GLRenderBufferObject::shared_ptr_type render_buffer_object = render_buffer_object_opt.get();
+
+		// Make sure the previous client did not change the render buffer dimensions before
+		// recycling the render buffer.
+		GPlatesGlobal::Assert<OpenGLException>(
+				render_buffer_object->get_dimensions() == std::pair<GLuint,GLuint>(width, height) &&
+					render_buffer_object->get_internal_format() == internalformat,
+				GPLATES_ASSERTION_SOURCE,
+				"GLContext::SharedState::acquire_render_buffer_object: Dimensions/format of "
+					"recycled render buffer were changed.");
+
+		return render_buffer_object;
+	}
+
+	// Create a new object and add it to the cache.
+	const GLRenderBufferObject::shared_ptr_type render_buffer_object = render_buffer_object_cache->allocate_object(
+			GLRenderBufferObject::create_as_auto_ptr(renderer));
+
+	// Initialise the newly created render buffer object.
+	render_buffer_object->gl_render_buffer_storage(renderer, internalformat, width, height);
+
+	return render_buffer_object;
+}
+
+
+boost::optional<GPlatesOpenGL::GLRenderTarget::shared_ptr_type>
+GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
+		GLRenderer &renderer,
+		GLint texture_internalformat,
+		bool include_depth_buffer,
+		bool include_stencil_buffer,
+		unsigned int render_target_width,
+		unsigned int render_target_height)
+{
+	// Render targets must be supported.
+	if (!GLRenderTarget::is_supported(
+		renderer,
+		texture_internalformat,
+		include_depth_buffer,
+		include_stencil_buffer,
+		render_target_width,
+		render_target_height))
+	{
+		return boost::none;
+	}
+
+	// Lookup the correct render target cache (matching the specified client parameters).
+	const render_target_key_type render_target_key(
+			texture_internalformat,
+			include_depth_buffer,
+			include_stencil_buffer,
+			render_target_width,
+			render_target_height);
+
+	const render_target_cache_type::shared_ptr_type render_target_cache =
+			get_render_target_cache(render_target_key);
+
+	// Attempt to acquire a recycled object.
+	boost::optional<GLRenderTarget::shared_ptr_type> render_target_opt =
+			render_target_cache->allocate_object();
+	if (render_target_opt)
+	{
+		return render_target_opt.get();
+	}
+
+	// Create a new object and add it to the cache.
+	const GLRenderTarget::shared_ptr_type render_target =
+			render_target_cache->allocate_object(
+					GLRenderTarget::create_as_auto_ptr(
+							renderer,
+							texture_internalformat,
+							include_depth_buffer,
+							include_stencil_buffer,
+							render_target_width,
+							render_target_height));
+
+	return render_target;
 }
 
 
@@ -747,7 +592,7 @@ GPlatesOpenGL::GLContext::SharedState::get_unbound_vertex_array_compiled_draw_st
 		renderer.gl_enable_client_state(GL_COLOR_ARRAY, false);
 		renderer.gl_enable_client_state(GL_NORMAL_ARRAY, false);
 		// Iterate over the enable texture coordinate client state flags.
-		const unsigned int MAX_TEXTURE_COORDS = GLContext::get_parameters().texture.gl_max_texture_coords;
+		const unsigned int MAX_TEXTURE_COORDS = renderer.get_capabilities().texture.gl_max_texture_coords;
 		for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_COORDS; ++texture_coord_index)
 		{
 			renderer.gl_enable_client_texture_state(GL_TEXTURE0 + texture_coord_index, false);
@@ -789,7 +634,7 @@ GPlatesOpenGL::GLContext::SharedState::get_unbound_vertex_array_compiled_draw_st
 		//
 		// Disable all *generic* vertex attribute arrays.
 		//
-		const GLuint MAX_VERTEX_ATTRIBS = GLContext::get_parameters().shader.gl_max_vertex_attribs;
+		const GLuint MAX_VERTEX_ATTRIBS = renderer.get_capabilities().shader.gl_max_vertex_attribs;
 		// Iterate over the supported number of generic vertex attribute arrays.
 		for (GLuint attribute_index = 0; attribute_index < MAX_VERTEX_ATTRIBS; ++attribute_index)
 		{
@@ -859,12 +704,92 @@ GPlatesOpenGL::GLContext::SharedState::get_texture_cache(
 }
 
 
+GPlatesOpenGL::GLContext::SharedState::pixel_buffer_cache_type::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::get_pixel_buffer_cache(
+		const pixel_buffer_key_type &pixel_buffer_key)
+{
+	// Attempt to insert the pixel buffer key into the pixel buffer cache map.
+	const std::pair<pixel_buffer_cache_map_type::iterator, bool> insert_result =
+			d_pixel_buffer_cache_map.insert(
+					pixel_buffer_cache_map_type::value_type(
+							pixel_buffer_key,
+							// Dummy (NULL) pixel buffer cache...
+							pixel_buffer_cache_type::shared_ptr_type()));
+
+	pixel_buffer_cache_map_type::iterator pixel_buffer_cache_map_iter = insert_result.first;
+
+	// If the pixel buffer key was inserted into the map then create the corresponding pixel buffer cache.
+	if (insert_result.second)
+	{
+		// Start off with an initial cache size of 1 - it'll grow as needed...
+		pixel_buffer_cache_map_iter->second = pixel_buffer_cache_type::create();
+	}
+
+	return pixel_buffer_cache_map_iter->second;
+}
+
+
+GPlatesOpenGL::GLContext::SharedState::render_buffer_object_cache_type::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::get_render_buffer_object_cache(
+		const render_buffer_object_key_type &render_buffer_object_key)
+{
+	// Attempt to insert the pixel buffer key into the pixel buffer cache map.
+	const std::pair<render_buffer_object_cache_map_type::iterator, bool> insert_result =
+			d_render_buffer_object_cache_map.insert(
+					render_buffer_object_cache_map_type::value_type(
+							render_buffer_object_key,
+							// Dummy (NULL) pixel buffer cache...
+							render_buffer_object_cache_type::shared_ptr_type()));
+
+	render_buffer_object_cache_map_type::iterator render_buffer_object_cache_map_iter = insert_result.first;
+
+	// If the pixel buffer key was inserted into the map then create the corresponding pixel buffer cache.
+	if (insert_result.second)
+	{
+		// Start off with an initial cache size of 1 - it'll grow as needed...
+		render_buffer_object_cache_map_iter->second = render_buffer_object_cache_type::create();
+	}
+
+	return render_buffer_object_cache_map_iter->second;
+}
+
+
+GPlatesOpenGL::GLContext::SharedState::render_target_cache_type::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::get_render_target_cache(
+		const render_target_key_type &render_target_key)
+{
+	// Attempt to insert the render target key into the render target cache map.
+	const std::pair<render_target_cache_map_type::iterator, bool> insert_result =
+			d_render_target_cache_map.insert(
+					render_target_cache_map_type::value_type(
+							render_target_key,
+							// Dummy (NULL) render target cache...
+							render_target_cache_type::shared_ptr_type()));
+
+	render_target_cache_map_type::iterator render_target_cache_map_iter = insert_result.first;
+
+	// If the render target key was inserted into the map then
+	// create the corresponding render target cache.
+	if (insert_result.second)
+	{
+		// Start off with an initial cache size of 1 - it'll grow as needed...
+		render_target_cache_map_iter->second = render_target_cache_type::create();
+	}
+
+	return render_target_cache_map_iter->second;
+}
+
+
 GPlatesOpenGL::GLStateStore::shared_ptr_type
-GPlatesOpenGL::GLContext::SharedState::get_state_store()
+GPlatesOpenGL::GLContext::SharedState::get_state_store(
+		const GLCapabilities &capabilities)
 {
 	if (!d_state_store)
 	{
-		d_state_store = GLStateStore::create(GLStateSetStore::create(), GLStateSetKeys::create());
+		d_state_store = GLStateStore::create(
+				capabilities,
+				GLStateSetStore::create(),
+				GLStateSetKeys::create(capabilities));
 	}
 
 	return d_state_store.get();
@@ -874,7 +799,7 @@ GPlatesOpenGL::GLContext::SharedState::get_state_store()
 GPlatesOpenGL::GLContext::NonSharedState::NonSharedState() :
 	d_frame_buffer_object_resource_manager(GLFrameBufferObject::resource_manager_type::create()),
 	// Start off with an initial cache size of 1 - it'll grow as needed...
-	d_frame_buffer_object_cache(GPlatesUtils::ObjectCache<GLFrameBufferObject>::create()),
+	d_render_buffer_object_resource_manager(GLRenderBufferObject::resource_manager_type::create()),
 	d_vertex_array_object_resource_manager(GLVertexArrayObject::resource_manager_type::create())
 {
 }
@@ -882,79 +807,180 @@ GPlatesOpenGL::GLContext::NonSharedState::NonSharedState() :
 
 GPlatesOpenGL::GLFrameBufferObject::shared_ptr_type
 GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object(
-		GLRenderer &renderer)
+		GLRenderer &renderer,
+		const GLFrameBufferObject::Classification &classification)
 {
+	// Must support GL_EXT_framebuffer_object.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			renderer.get_capabilities().framebuffer.gl_EXT_framebuffer_object,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Lookup the correct framebuffer object cache (matching the specified classification).
+	const frame_buffer_object_key_type frame_buffer_object_key = classification.get_tuple();
+
+	const frame_buffer_object_cache_type::shared_ptr_type frame_buffer_object_cache =
+			get_frame_buffer_object_cache(frame_buffer_object_key);
+
 	// Attempt to acquire a recycled object.
 	boost::optional<GLFrameBufferObject::shared_ptr_type> frame_buffer_object_opt =
-			d_frame_buffer_object_cache->allocate_object();
-	if (!frame_buffer_object_opt)
+			frame_buffer_object_cache->allocate_object();
+	if (frame_buffer_object_opt)
 	{
-		// Create a new object and add it to the cache.
-		frame_buffer_object_opt = d_frame_buffer_object_cache->allocate_object(
-				GLFrameBufferObject::create_as_auto_ptr(d_frame_buffer_object_resource_manager));
-	}
-	const GLFrameBufferObject::shared_ptr_type &frame_buffer_object = frame_buffer_object_opt.get();
+		const GLFrameBufferObject::shared_ptr_type frame_buffer_object = frame_buffer_object_opt.get();
 
-	// First clear the framebuffer attachments before returning to the client.
-	frame_buffer_object->gl_detach_all(renderer);
+		// First clear the framebuffer attachments before returning to the client.
+		frame_buffer_object->gl_detach_all(renderer);
+
+		// Also reset the glDrawBuffer(s)/glReadBuffer state to the default state for
+		// a non-default, application-created framebuffer object.
+		frame_buffer_object->gl_draw_buffers(renderer);
+		frame_buffer_object->gl_read_buffer(renderer);
+
+		return frame_buffer_object;
+	}
+
+	// Create a new object and add it to the cache.
+	const GLFrameBufferObject::shared_ptr_type frame_buffer_object =
+			frame_buffer_object_cache->allocate_object(
+					GLFrameBufferObject::create_as_auto_ptr(renderer));
 
 	return frame_buffer_object;
 }
 
 
-GPlatesOpenGL::GLContext::Parameters::Viewport::Viewport() :
-	gl_max_viewports(1),
-	gl_max_viewport_width(0),
-	gl_max_viewport_height(0)
+bool
+GPlatesOpenGL::GLContext::NonSharedState::check_framebuffer_object_completeness(
+		GLRenderer &renderer,
+		const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object,
+		const GLFrameBufferObject::Classification &frame_buffer_object_classification) const
 {
+	// See if we've already cached the framebuffer completeness status for the specified
+	// frame buffer object classification.
+	frame_buffer_state_to_status_map_type::iterator framebuffer_status_iter =		
+			d_frame_buffer_state_to_status_map.find(frame_buffer_object_classification.get_tuple());
+	if (framebuffer_status_iter == d_frame_buffer_state_to_status_map.end())
+	{
+		const bool framebuffer_status = frame_buffer_object->gl_check_frame_buffer_status(renderer);
+
+		if (!framebuffer_status)
+		{
+			// This only emits one warning (per classification) since the result is cached.
+			qWarning() << "Texture internal format '"
+				<< frame_buffer_object_classification.get_texture_internal_format()
+				<< "' failed frame buffer object completeness check.";
+
+			// Also emit a warning if the texture is floating-point.
+			// This is because the caller might fall back to using the main framebuffer as a
+			// render target, but the main framebuffer is fixed-point (not floating-point).
+			if (GLTexture::is_format_floating_point(frame_buffer_object_classification.get_texture_internal_format()))
+			{
+				qWarning() << "...incorrect results likely if floating-point render-texture "
+					"is emulated with (fixed-point) main framebuffer.";
+			}
+		}
+
+		d_frame_buffer_state_to_status_map[frame_buffer_object_classification.get_tuple()] = framebuffer_status;
+
+		return framebuffer_status;
+	}
+
+	return framebuffer_status_iter->second;
 }
 
 
-GPlatesOpenGL::GLContext::Parameters::Framebuffer::Framebuffer() :
-	gl_EXT_framebuffer_object(false),
-	gl_max_color_attachments(0)
+boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type>
+GPlatesOpenGL::GLContext::NonSharedState::acquire_screen_render_target(
+		GLRenderer &renderer,
+		GLint texture_internalformat,
+		bool include_depth_buffer,
+		bool include_stencil_buffer)
 {
+	// Screen render targets must be supported.
+	if (!GLScreenRenderTarget::is_supported(
+			renderer,
+			texture_internalformat,
+			include_depth_buffer,
+			include_stencil_buffer))
+	{
+		return boost::none;
+	}
+
+	// Lookup the correct screen render target cache (matching the specified client parameters).
+	const screen_render_target_key_type screen_render_target_key(
+			texture_internalformat,
+			include_depth_buffer,
+			include_stencil_buffer);
+
+	const screen_render_target_cache_type::shared_ptr_type screen_render_target_cache =
+			get_screen_render_target_cache(screen_render_target_key);
+
+	// Attempt to acquire a recycled object.
+	boost::optional<GLScreenRenderTarget::shared_ptr_type> screen_render_target_opt =
+			screen_render_target_cache->allocate_object();
+	if (screen_render_target_opt)
+	{
+		return screen_render_target_opt.get();
+	}
+
+	// Create a new object and add it to the cache.
+	const GLScreenRenderTarget::shared_ptr_type screen_render_target =
+			screen_render_target_cache->allocate_object(
+					GLScreenRenderTarget::create_as_auto_ptr(
+							renderer,
+							texture_internalformat,
+							include_depth_buffer,
+							include_stencil_buffer));
+
+	return screen_render_target;
 }
 
 
-GPlatesOpenGL::GLContext::Parameters::Shader::Shader() :
-	gl_ARB_shader_objects(false),
-	gl_ARB_vertex_shader(false),
-	gl_ARB_fragment_shader(false),
-	gl_ARB_geometry_shader4(false),
-	gl_EXT_gpu_shader4(false),
-	gl_ARB_gpu_shader_fp64(false),
-	gl_ARB_vertex_attrib_64bit(false),
-	gl_max_vertex_attribs(0)
+GPlatesOpenGL::GLContext::NonSharedState::screen_render_target_cache_type::shared_ptr_type
+GPlatesOpenGL::GLContext::NonSharedState::get_screen_render_target_cache(
+		const screen_render_target_key_type &screen_render_target_key)
 {
+	// Attempt to insert the screen render target key into the screen render target cache map.
+	const std::pair<screen_render_target_cache_map_type::iterator, bool> insert_result =
+			d_screen_render_target_cache_map.insert(
+					screen_render_target_cache_map_type::value_type(
+							screen_render_target_key,
+							// Dummy (NULL) screen render target cache...
+							screen_render_target_cache_type::shared_ptr_type()));
+
+	screen_render_target_cache_map_type::iterator screen_render_target_cache_map_iter = insert_result.first;
+
+	// If the screen render target key was inserted into the map then
+	// create the corresponding screen render target cache.
+	if (insert_result.second)
+	{
+		// Start off with an initial cache size of 1 - it'll grow as needed...
+		screen_render_target_cache_map_iter->second = screen_render_target_cache_type::create();
+	}
+
+	return screen_render_target_cache_map_iter->second;
 }
 
 
-GPlatesOpenGL::GLContext::Parameters::Texture::Texture() :
-	gl_max_texture_size(gl_min_texture_size),
-	gl_ARB_texture_non_power_of_two(false),
-	gl_max_texture_units(1),
-	gl_max_texture_image_units(1),
-	gl_max_texture_coords(1),
-	gl_texture_max_anisotropy(1.0f),
-	gl_EXT_texture_edge_clamp(false),
-	gl_SGIS_texture_edge_clamp(false),
-	gl_EXT_texture3D(false),
-	gl_EXT_texture_array(false),
-	gl_max_texture_array_layers(1),
-	gl_EXT_texture_buffer_object(false),
-	gl_ARB_texture_float(false),
-	gl_ARB_texture_rg(false),
-	gl_ARB_color_buffer_float(false)
+GPlatesOpenGL::GLContext::NonSharedState::frame_buffer_object_cache_type::shared_ptr_type
+GPlatesOpenGL::GLContext::NonSharedState::get_frame_buffer_object_cache(
+		const frame_buffer_object_key_type &frame_buffer_object_key)
 {
-}
+	// Attempt to insert the frame buffer object key into the frame buffer object cache map.
+	const std::pair<frame_buffer_object_cache_map_type::iterator, bool> insert_result =
+			d_frame_buffer_object_cache_map.insert(
+					frame_buffer_object_cache_map_type::value_type(
+							frame_buffer_object_key,
+							// Dummy (NULL) frame buffer object cache...
+							frame_buffer_object_cache_type::shared_ptr_type()));
 
+	frame_buffer_object_cache_map_type::iterator frame_buffer_object_cache_map_iter = insert_result.first;
 
-GPlatesOpenGL::GLContext::Parameters::Buffer::Buffer() :
-	gl_ARB_vertex_buffer_object(false),
-	gl_ARB_vertex_array_object(false),
-	gl_ARB_pixel_buffer_object(false),
-	gl_ARB_map_buffer_range(false),
-	gl_APPLE_flush_buffer_range(false)
-{
+	// If the frame buffer object key was inserted into the map then create the corresponding frame buffer object cache.
+	if (insert_result.second)
+	{
+		// Start off with an initial cache size of 1 - it'll grow as needed...
+		frame_buffer_object_cache_map_iter->second = frame_buffer_object_cache_type::create();
+	}
+
+	return frame_buffer_object_cache_map_iter->second;
 }

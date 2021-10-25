@@ -27,6 +27,7 @@
 #include <boost/version.hpp>
 
 #include <QDebug>
+#include <QDir>
 
 #include "unit-test/GPlatesGlobalFixture.h"
 #include "unit-test/MainTestSuite.h"
@@ -114,6 +115,11 @@ boost::unit_test::test_suite*
 init_unit_test_suite(
 		int argc, char* argv[])
 {
+	// Initialise Qt resources that exist in the static 'qt-resources' library.
+	Q_INIT_RESOURCE(gpgim);
+	Q_INIT_RESOURCE(qt_widgets);
+	Q_INIT_RESOURCE(opengl);
+
 	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler("GPlates_unit_test_QT.log");
 
 	BOOST_GLOBAL_FIXTURE( GPlatesGlobalFixture );

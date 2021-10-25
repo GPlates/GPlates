@@ -128,7 +128,7 @@ GPlatesCli::CommandDispatcher::add_options_for_command(
 }
 
 
-int
+void
 GPlatesCli::CommandDispatcher::run(
 		const std::string &command_name,
 		const boost::program_options::variables_map &vm)
@@ -141,23 +141,8 @@ GPlatesCli::CommandDispatcher::run(
 		throw GPlatesGlobal::PreconditionViolationError(GPLATES_EXCEPTION_SOURCE);
 	}
 
-	try
-	{
-		// Get the command to run.
-		return cmd->run(vm);
-	}
-	catch(RequiredOptionNotPresent &exc)
-	{
-		std::cerr << exc << std::endl;
-		return 1; // Zero is success
-	}
-	catch(InvalidOptionValue &exc)
-	{
-		std::cerr << exc << std::endl;
-		return 1; // Zero is success
-	}
-
-	return 0; // Zero is success
+	// Get the command to run.
+	cmd->run(vm);
 }
 
 

@@ -93,7 +93,7 @@ namespace GPlatesAppLogic
 				const GPlatesAppLogic::Session::LayersStateType &dom,
 				int session_version);
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * For testing during serialisation development, do a test-run of XML serialisation and print output.

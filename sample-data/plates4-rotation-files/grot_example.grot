@@ -1,0 +1,291 @@
+@GPLATESROTATIONFILE:version"1.0"
+@GPLATESROTATIONFILE:documentation"http://www.gplates.org/grot/"
+# ---- SUPPORTED ATTRIBUTE ALIASES
+#
+# CHRONID --> GPML:MagneticAnomalyIdentification:polarityChronID
+# AU --> DC:contributor:id (Author)
+# REF --> BIBINFO:bibliographyfile:citekey (Reference)
+# DOI --> BIBINFO:doibase:doi
+# GTS --> GEOTIMESCALE:id
+#
+# ----------+--------------------------------------------------------------------
+# KEYWORDS | starting with ATTRIBUTE"Value" -- ALLOWS MULTIPLE VALUE FIELDS BY
+# | separating them with a | (vertical bar). Values can be enclosed in
+# | single quotes.
+# | PLEASE CONSULT http://www.gplates.org/grot/ for valid attributes
+# ----------+--------------------------------------------------------------------
+# C | Comment
+# DC:subattr| DublinCore document description metadata (see documentation)
+# GPML | GPlates Markup Language Schema (can use GPML:FeatureType as subset)
+# MPRS:pid | Denotes Moving Plate ID
+# MPRS:name | Moving plate full name
+# MPRS:code | Moving plate letter code, usually 3-4 capital letters
+# PP | Plate pair with Plates denoted as letter acronyms separated by minus sign (-)
+# T | Modification date/time in YYYY-MM-DD [TZ HH:MM:SS]
+#
+# ---- FILE METADATA ----------------------------------------------------
+#
+@DC:namespace"http://purl.org/dc/elements/1.1/"
+@DC:title"GPlates rotation file - NEW ROTATION FORMAT SAMPLE FILE"
+@DC:creator"""Christian Heine|
+mailto:christian.heine@sydney.edu.au|
+http://www.gplates.org|
+EarthByte Research Group, School of Geosciences 
+The University of Sydney, NSW 2006, Australia"""
+@DC:rights:license"Attribution-NonCommercial-ShareAlike 3.0 Unported (CC BY-NC-SA 3.0)"
+@DC:rights:url"http://creativecommons.org/licenses/by-nc-sa/3.0/"
+@DC:date:created"2/06/11 4:08:05 PM"
+@DC:date:modified"$Date: 2012-05-11 08:10:42 +1000 (Fri, 11 May 2012) $"
+@DC:coverage:temporal"0-600 Ma"
+@DC:bibliographicCitation"""Chin, Mueller, Cannon, Landgrebe, Heine,
+Watson, Turner (2012) The GPGIM vol:pp-pp,
+J. Digitial Earth. doi:xxxxxxxxx """
+@DC:description"""
+A sample rotation file in the new GPlates rotation file format v1.1
+Taken from the current GPlates release rot file
+Based on moving Indian/Atlantic hotspots (O Neill et. al. 2005)
+to 100 Ma and true polar wander corrected palaeomagnetic
+reference frame (derived from Steinberger and Torsvik 2008)
+from 100 - 200 Ma. 250 Ma is the extent of this rotation model.
+Pacific absolute reference frame based on Wessell and Kroenke 2008
+with a switch to Wessel et. al. 2006 at 118.4 Ma"""
+#
+# ---- REVISION HISTORY INFORMATION ------------------------------------------
+#
+@REVISIONHIST"$Id: rotationfile_1-0.grot 1789 2012-05-10 22:10:42Z christian $"
+#
+# ---- BIBLIOGRAPHIC AND DATA REFERENCE INFORMATION --------------------------
+#
+@BIBINFO:bibfile"file://rotationfile_v2.bib"
+@BIBINFO:doibase"http://dx.doi.org/"
+@GPML:namespace"http://www.earthbyte.org/Resources/GPGIM/public/"
+#
+# ----- AUTHOR INFORMATION ---------------------------------------------------
+#
+@DC:contributor"RDM | R. Dietmar Muller | dietmar.muller@sydney.edu.au | http://www.earthbyte.org | Geosciences, The University of Sydney, Australia"
+@DC:contributor"MS | Maria Seton (Sdrolias) | maria.seton@sydney.edu.au | http://www.earthbyte.org | Geosciences, The University of Sydney, Australia"
+@DC:contributor"CG | Carmen Gaina | carmen.gaina@fys.uio.no | http://www.geodynamics.no | University of Oslo, Norway"
+@DC:contributor"""CHHEI |
+Christian Heine |
+christian.heine@sydney.edu.au |
+http://www.earthbyte.org |
+EarthByte Group, School of Geosciences, The University of Sydney, Australia"""
+@DC:contributor"CRS | Christopher R. Scotese | | | UT/Paleomap Project"
+@DC:contributor"LAL | Larry A. Lawver | | | UTIG PLATES Project"
+@DC:contributor"IWD | Ian W. Dalziel | | | UTIG PLATES Project"
+@DC:contributor"LMG | Lisa M. Gahagan | | | UTIG PLATES Project"
+@DC:contributor"DN | Dirk Nuernberg | | | CAU-Kiel University, Germany"
+@DC:contributor"EBYTE | EarthByte Group | | http://www.earthbyte.org | School of Geosciences, Sydney Uni"
+@DC:contributor"THT | Trond Helge Torsvik | Trond.Torsvik@fys.uio.no | http://www.geodynamics.no | PGP, University of Oslo, Norway"
+#
+#---- GEOLOGICAL TIME SCALE INFORMATION --------------------------
+#
+@GEOTIMESCALE""" GeeK07 |
+doi:10.1016/B978-044452748-6.00097-3 |
+Gee.ToC.07 |
+Gee, J.S. and Kent, D.V. (2012) 5.12 - Source of Oceanic Magnetic 
+Anomalies and the Geomagnetic Polarity Timescale, in: Treatise on 
+Geophysics, Volume 5, Pages 455, S507, Elsevier, Amsterdam"""
+@GEOTIMESCALE""" CK95G94 |
+doi:10.1029/94JB03098; doi:10.1029/94JB01889 |
+|
+S. C. Cande and D. V. Kent. Revised Calbration of the geomagnetic
+polarity timescale for the Late Cretaceous and Cenozoic. J. Geophys. 
+Res., 100(B4):6093, S6095, 1995; 
+F. M. Gradstein, F. P. Agterberg, J. G. Ogg, J. Hardenbol, P. van Veen, 
+J. Thierry, and Z. Huang. A Mesozoic time scale. J. Geophys. Res., 
+99:24051A, S24074, 1994. doi:10.1029/94JB01889. 
+GPlates rotation File Format Specification Version 1.0 
+CHHEI_RotFileStd.tex 1789 2012-05-10 22:10:42Z christian 
+The *.grot File Format 19
+"""
+@GEOTIMESCALE""" Absolute|
+|
+|
+Absolute numerical time in Ma"""
+# ----------------------------------------------------------------
+# --- END ROTATION FILE HEADER -----------------------------------
+# ----------------------------------------------------------------
+# This comment will be ignored by GPlates
+> @MPRS:pid"001" @MPRS:code"AHS" @MPRS:name"Present day Atlantic-Indian hotspots" 
+> @C"This comment will be read by GPlates and will appear at Moving plate rotation sequence level"
+> @PP"AHS-HOT"
+001  0.0000    0.0000    0.0000    0.0000    000   @C"This comment will only appear at this rotation"
+001  200.0000  0.0000    0.0000    0.0000    000  
+001  600.0000  0.0000    0.0000    0.0000    000  
+> @C"Below an example of the new MOVING_PLATE_ROTATION_SEQUENCE (MPRS)"
+> @C"The comment applies to the MPRS below"
+# @C"This comment flags a warning and is ignored"
+> @MPRS:pid"002"
+> @MPRS:code"PHS"
+> @MPRS:name"Pacific Hotspots"
+> @PP"PHS-PAC" @REF"Wessel.JGR.08" @DOI"10.1029/2007JB005499" @C"Model WK08-A" @GTS"GeeK07"
+002  0.0000    0.0000    0.0000    0.0000    901  
+
+# Compact single line
+@HELL"41.1911338 |75,16 | 40.| 0.971082763|\
+(8.71113084E-07,-4.33230877E-07,-4.97091355E-07) \
+(4.01436998E-07,3.23033819E-07)(3.6493551E-07)"
+002  0.7800    49.3000   -49.5000  -1.0200   901  
+
+
+# Multi line version
+@HELL:r"41.1911338"
+@HELL:Ns"75,16"
+@HELL:dF"40."
+@HELL:kappahat"0.971082763"
+@HELL:cov"(8.71113084E-07,-4.33230877E-07,-4.97091355E-07) \
+(4.01436998E-07,3.23033819E-07)(3.6493551E-07)"
+002  2.5800    53.7200   -56.8800  -2.6600   901  
+
+
+002  5.8900    59.6500   -66.0500  -5.3900   901  
+002  8.8600    62.8700   -70.8700  -8.2300   901  
+002  12.2900   65.3700   -68.6800  -10.3000  901  
+002  17.4700   68.2500   -61.5300  -15.5000  901  
+# The foo pole by John
+002  24.0600   68.7800   -69.8300  -20.4000  901  
+002  28.2800   67.7200   -70.8000  -23.6000  901  
+002  33.5400   66.5700   -68.7300  -27.7000  901  
+
+
+002  40.1000   65.4300   -64.2500  -31.6000  901  
+002  47.9100   63.0200   -66.6800  -34.6000  901  
+002  53.3500   60.6000   -69.6700  -36.1000  901  
+002  61.1000   56.9300   -72.9300  -38.4000  901  
+002  74.5000   50.0300   -78.3500  -44.0000  901  
+002  83.5000   47.3000   -82.1000  -48.8000  901  
+002  95.0000   46.9000   -82.6800  -54.1000  901  
+002  106.2000  51.3200   -85.1200  -60.1000  901  
+002  112.3000  52.1700   -85.8000  -62.4000  901  
+002  118.4000  52.5300   -80.3300  -66.5000  901  
+002  125.0000  54.1300   -88.1800  -69.6000  901  
+002  131.9000  56.2200   -112.2500  -78.6000  901  
+002  144.0000  54.4300   -123.5700  -84.4000  901  
+> @MPRS:pid"003" @MPRS:code"PPH" @MPRS:name"Present day Pacific hotspots"
+> @PP"PPH-HOT"
+003  0.0000    0.0000    0.0000    0.0000    000  
+003  600.0000  0.0000    0.0000    0.0000    000  
+> @MPRS:pid"101" @MPRS:code"NAM" @MPRS:name"North America"
+> @PP"NAM-NWA" @REF"Mueller.99" @DOI"10.1016/S1874-5997(99)80036-7" @CHRONID"An5" @GTS"GEEK07"
+101  0.0000    0.0000    0.0000    0.0000    714  
+101  10.9000   81.0000   22.9000   2.8400    714   @CHRONID"C5" @GTS"GEEK07"
+101  20.1000   80.6000   24.5000   5.5300    714   @CHRONID"C6"
+101  33.1000   75.9900   5.9800    9.7700    714   @CHRONID"C13"
+101  40.1000   74.5000   -1.2000   12.6000   714   @CHRONID"C18"
+101  47.9000   74.9000   -4.6000   15.6100   714   @CHRONID"C21"
+101  55.9000   80.6400   6.5700    17.9000   714   @CHRONID"C25"
+101  67.7000   82.3000   -1.7000   21.5100   714   @CHRONID"C30"
+@CHRONID"C34"
+101  83.5000   76.8100   -20.5900  29.5100   714  
+101  120.4000  66.2800   -19.8200  54.4400   714   @REF"Mueller.97" @DOI"10.1029/96JB01781"
+101  126.7000  66.1100   -18.9500  56.4800   714   @REF"Mueller.97" @DOI"10.1029/96JB01781"
+101  131.9000  65.9500   -18.5000  57.4500   714   @REF"Mueller.97" @DOI"10.1029/96JB01781"
+101  139.6000  66.1200   -18.3800  59.9000   714   @REF"Mueller.97" @DOI"10.1029/96JB01781"
+101  147.7000  66.5400   -17.9800  62.0800   714   @REF"Mueller.97" @DOI"10.1029/96JB01781"
+101  154.3000  67.1500   -15.9800  64.7500   714   @REF"Mueller.97" @DOI"10.1029/96JB01781"
+101  170.0000  67.0900   -13.8600  70.5500   714   @REF"Labails.EPSL.10" @DOI"10.1016/j.epsl.2010.06.024" @C"BSMA"
+101  190.0000  64.3100   -15.1900  77.0900   714   @REF"Labails.EPSL.10" @DOI"10.1016/j.epsl.2010.06.024" @C"min closure"
+101  203.0000  64.2800   -14.7400  78.0500   714   @REF"Labails.EPSL.10" @DOI"10.1016/j.epsl.2010.06.024" @C"min closure"
+101  215.0000  67.0000   -12.0000  79.0000   714   @REF"Torsvik.Tectp.02" @DOI"10.1016/S1874-5997(99)80036-7" @C"Torsvik et.al 2002"
+101  320.0000  67.0000   -12.0000  79.0000   714   @REF"Torsvik.Tectp.02" @DOI"10.1016/S1874-5997(99)80036-7" @C"Torsvik et.al 2002"
+101  600.0000  67.0000   -12.0000  79.0000   714   @REF"Torsvik.Tectp.02" @DOI"10.1016/S1874-5997(99)80036-7" @C"Torsvik et.al 2002"
+> @MPRS:pid"102" @MPRS:code"GRN" @MPRS:name"Greenland"
+> @PP"GRN-NAM" @C"""this
+is
+a
+very
+long
+comment
+"""
+102  0.0000    0.0000    0.0000    0.0000    101  
+102  33.1000   0.0000    0.0000    0.0000    101   @REF"Gaina.EPSL.02" @DOI"10.1016/S0012-821X(02)00499-5" @CHRONID"C13 Derived"
+102  40.1000   62.4600   -28.0200  -1.2500   101   @REF"Gaina.EPSL.02" @DOI"10.1016/S0012-821X(02)00499-5" @CHRONID"C13 Derived"
+102  43.8000   63.2500   -79.5800  -1.8100   101   @REF"Gaina.EPSL.02" @DOI"10.1016/S0012-821X(02)00499-5" @CHRONID"C20 Derived"
+102  47.9000   60.6600   -97.2600  -2.8100   101   @REF"Gaina.EPSL.02" @DOI"10.1016/S0012-821X(02)00499-5" @CHRONID"C21 Derived"
+102  49.7000   61.5800   -97.0900  -3.3300   101   @REF"Gaina.EPSL.02" @DOI"10.1016/S0012-821X(02)00499-5" @CHRONID"C21 Derived"
+102  53.3000   39.6800   -116.1600  -3.7400   101   @REF"Gaina.EPSL.02" @DOI"10.1016/S0012-821X(02)00499-5" @CHRONID"C24 Derived"
+102  55.9000   19.2800   -136.1900  -3.1600   101   @REF"Gaina.EPSL.02" @DOI"10.1016/S0012-821X(02)00499-5" @CHRONID"C25 Derived"
+102  68.7000   41.1900   -169.5800  -5.7100   101   @REF"Gaina.EPSL.02" @DOI"10.1016/S0012-821X(02)00499-5" @CHRONID"C31 Derived"
+102  79.1000   61.3800   -157.7000  -8.4300   101   @REF"Gaina.EPSL.02" @DOI"10.1016/S0012-821X(02)00499-5" @CHRONID"C33o Derived"
+102  83.5000   65.3000   -122.4500  -11.0000  101   @REF"Roest.G.89" @DOI"10.1130/0091-7613(1989)017<1000:SFSITL>2.3.CO;2" @GTS"CK95G94" @CHRONID"C34"
+102  92.0000   66.6000   -119.4800  -12.2000  101   @REF"Roest.G.89" @DOI"10.1130/0091-7613(1989)017<1000:SFSITL>2.3.CO;2" @C"Start of seafloor spreading"
+102  125.0000  67.5000   -118.4800  -14.0000  101   @PP"GRN-NWA" @REF"Torsvik.RG.10" @DOI"10.1029/2007RG000227" @C"FITRECON"
+102  600.0000  67.5000   -118.4800  -14.0000  101   @PP"GRN-NWA" @REF"Torsvik.RG.10" @DOI"10.1029/2007RG000227"
+> @MPRS:pid"103" @MPRS:code"NSL" @MPRS:name"North Slope Alaska"
+103  0.0000    0.0000    0.0000    0.0000    101   ! @PP"NSL-NAM"
+103  126.0000  0.0000    0.0000    0.0000    101   ! @PP"NSL-NAM"
+103  132.0000  60.0000   -126.0000  -3.0000   101   ! @PP"NSL-NAM" @REF"Alvey.EPSL.08" @DOI"10.1016/j.epsl.2008.07.036" @C"Derived"
+103  136.5000  60.0000   -126.0000  -6.5000   101   ! @PP"NSL-NAM" @REF"Alvey.EPSL.08" @DOI"10.1016/j.epsl.2008.07.036" @C"Derived"
+103  139.6000  60.0000   -126.0000  -10.0000  101   ! @PP"NSL-NAM" @REF"Alvey.EPSL.08" @DOI"10.1016/j.epsl.2008.07.036" @C"Derived"
+103  142.5000  65.0000   -130.2000  -30.0000  101   ! @PP"NSL-NAM" @AU"CG" @T"2008-06-xx" @C"FITRECON | Derived"
+GPlates rotation File Format Specification Version 1.0
+CHHEI_RotFileStd.tex 1789 2012-05-10 22:10:42Z christian
+The *.grot File Format 20
+103  145.0000  65.0000   -130.2000  -34.0000  101   ! @PP"NSL-NAM" @REF"Lawver.90"
+103  600.0000  65.0000   -130.2000  -34.0000  101   ! @PP"NSL-NAM" @REF"Lawver.90" @C"FITRECON"
+> @MPRS:pid"201" @MPRS:code"SAM" @MPRS:name"South America"
+> @PP"SAM-AFR" @REF"Mueller.99" @DOI"10.1016/S1874-5997(99)80036-7"
+201  0.0000    0.0000    0.0000    0.0000    701  
+201  10.9000   61.2000   -39.7000  3.6800    701   @CHRONID"C5"
+201  20.1000   58.5000   -37.1000  7.5200    701   @CHRONID"C6"
+201  33.1000   56.1700   -33.6400  13.4100   701   @CHRONID"C13"
+#201  40.1000   57.1000   -32.5000  16.6000   701   @CHRONID"C18"
+201 47.9 57.5 -31.2 19.7 701 @CHRONID"C21"
+201  55.9000   61.3500   -32.2100  22.2700   701   @CHRONID"C25"
+201  67.7000   63.7000   -33.5000  25.3900   701   @CHRONID"C30"
+# Another example for comment data BEFORE the actual rotation line
+# @PP"SAM-AFR" @REF"Mueller.99" @DOI"10.1016/S1874-5997(99)80036-7"
+# @CHRONID"An34"
+# @HELL:r"41.1911338" @HELL:Ns"75,16" @HELL:dF"40." @HELL:kappahat"0.971082763"
+# @HELL:matrix"((8.71113084E-07,-4.33230877E-07,-4.97091355E-07)(4.01436998E-07,3.23033819E-07)(3.6493551E-07))"
+201  83.5000   61.8800   -34.2600  33.5100   701  
+#
+# If you want you can put each comment for a following
+# rotation on a single line.
+# @PP"SAM-AFR"
+# @REF"Torsvik.GJI.09"
+# @DOI"10.1111/j.1365-246X.2009.04137.x"
+# @C"Forced break North of PEFZ/FFZ"
+201  112.0000  52.4000   -35.0000  51.3000   701  
+201  120.4000  51.6000   -35.0000  52.9200   701   @PP"SAM-AFR" @REF"Nuernberg.Tectp.91" @DOI"10.1016/0040-1951(91)90231-G"
+201  126.7000  50.4000   -33.5000  54.4200   701   @PP"SAM-AFR" @REF"Nuernberg.Tectp.91" @DOI"10.1016/0040-1951(91)90231-G"
+201  131.7000  50.0000   -32.5000  55.0800   701   @PP"SAM-AFR" @REF"Nuernberg.Tectp.91" @DOI"10.1016/0040-1951(91)90231-G" @FITRECON
+201  600.0000  50.0000   -32.5000  55.5200   701   @PP"SAM-AFR" @REF"Nuernberg.Tectp.91" @DOI"10.1016/0040-1951(91)90231-G"
+> @MPRS:pid"203" @MPRS:code"PAT" @MPRS:name"Patagonia"
+> @REF"Torsvik.GJI.09" @DOI"10.1016/0040-1951(91)90231-G"
+203  0.0000    0.0000    0.0000    0.0000    201   @PP"PAT-SAM"
+203  126.7000  0.0000    0.0000    0.0000    201   @PP"PAT-SAM" @C"adjusted timescale"
+203  126.7000  50.4000   -33.5000  54.4200   701   @PP"PAT-AFR" @C"adjusted timescale"
+203  131.7000  47.5000   -33.3000  57.0000   701   @PP"PAT-AFR"
+203  150.0000  47.5000   -33.3000  58.0000   701   @PP"PAT-AFR" @REF"Torsvik.RG.08" @DOI"10.1029/2007RG000227"
+203  160.0000  47.5000   -33.3000  58.0000   701   @PP"PAT-AFR" @REF"Torsvik.RG.08" @DOI"10.1029/2007RG000227"
+203  190.0000  47.5000   -33.3000  63.0000   701   @PP"PAT-AFR" @REF"Torsvik.RG.08" @DOI"10.1029/2007RG000227"
+203  600.0000  47.5000   -33.3000  63.0000   701   @PP"PAT-AFR" @REF"Torsvik.RG.08" @DOI"10.1029/2007RG000227"
+> @MPRS:pid"833" @MPRS:code"LHR" @MPRS:name"Lord Howe Rise"
+> @REF"Gaina.JGR.98" @DOI"10.1029/98JB00386"
+833  0.0000    0.0000    0.0000    0.0000    801   @PP"LHR-AUS"
+833  52.0000   0.0000    0.0000    0.0000    801   @PP"LHR-AUS"
+833  53.3000   -14.1900  130.4100  -0.7200   801   @PP"LHR-AUS"
+833  55.8000   -15.9300  133.4700  -2.1100   801   @PP"LHR-AUS"
+833  57.9000   -16.9300  136.2300  -3.7900   801   @PP"LHR-AUS"
+833  61.2000   -4.6500   131.5100  -4.4300   801   @PP"LHR-AUS"
+833  62.5000   -4.7100   132.6800  -5.1700   801   @PP"LHR-AUS"
+833  64.0000   -0.1900   130.3700  -5.4600   801   @PP"LHR-AUS"
+833  65.6000   -3.9900   131.8000  -6.7300   801   @PP"LHR-AUS"
+833  67.7000   -9.0400   134.4600  -8.8300   801   @PP"LHR-AUS"
+833  71.1000   -14.7200  139.0400  -13.0800  801   @PP"LHR-AUS"
+833  73.6000   -9.5300   137.2000  -12.9400  801   @PP"LHR-AUS"
+833  79.0000   0.3700    133.8200  -13.0000  801   @PP"LHR-AUS" @C"eliminated"
+833  86.0000   4.0600    -42.3500  15.5100   801   @PP"LHR-AUS"
+
+
+833  90.0000   3.2700    -42.5900  18.3400   801   @PP"CLHR/AUS"
+833  99.0000   3.2700    -42.5900  18.3400   801   @PP"CLHR/AUS" @REF"Mueller.G3.08" @DOI"10.1029/2007GC001743"
+833  600.0000  3.2700    -42.5900  18.3400   801   @PP"CLHR/AUS" @REF"Mueller.G3.08" @DOI"10.1029/2007GC001743"
+
+714  0.0000    0.0000    0.0000    0.0000    000  0
+714  600.0000  -14.1900  130.4100  120.0000  000  0
+
+
+# EOF

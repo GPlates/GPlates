@@ -166,6 +166,33 @@ namespace GPlatesGlobal
 	};
 
 
+	class NeedExitException : 
+		public GPlatesGlobal::Exception
+	{
+
+	public:
+		
+		NeedExitException(
+				const GPlatesUtils::CallStack::Trace &exception_source) :
+			GPlatesGlobal::Exception(exception_source)
+		{ }
+		
+	protected:
+		const char *
+			exception_name() const
+		{
+			return "Need Exit Exception";
+		}
+
+		void
+			write_message(
+			std::ostream &os) const
+		{
+			os << "GPlates needs to exit now.";
+		}
+	};
+
+
 	/**
 	 * Insert a string representation of the exception @a ex into the output stream @a os.
 	 */

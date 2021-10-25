@@ -41,6 +41,7 @@
 
 #include "utils/XQueryUtils.h"
 
+
 void
 GPlatesFileIO::GeoscimlProfile::populate(
 		File::Reference& file_ref)

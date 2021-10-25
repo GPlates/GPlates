@@ -30,10 +30,14 @@
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 
+#include "GeometryDeformation.h"
+#include "MultiPointVectorField.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
+#include "ReconstructMethodType.h"
+#include "ReconstructParams.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -44,10 +48,8 @@
 
 namespace GPlatesAppLogic
 {
-	class ReconstructParams;
-
 	/**
-	 * Registry for information required to find and create @a ReconstructMethodInterface objects.
+	 * Interface for reconstructing feature geometries (derived classes handle different methods of reconstruction).
 	 */
 	class ReconstructMethodInterface :
 			public GPlatesUtils::ReferenceCount<ReconstructMethodInterface>
@@ -79,77 +81,156 @@ namespace GPlatesAppLogic
 		};
 
 
+		/**
+		 * Extrinsic reconstruction state that features are reconstructed with - this is information
+		 * that is "passed into" a reconstruct method during reconstruction (and initialisation).
+		 *
+		 * The intrinsic state is the properties of the features being reconstructed.
+		 *
+		 * Both types of state are needed to reconstruct features.
+		 *
+		 * For initialisation this is currently passed into the constructors of derived classes
+		 * by the reconstruct method registry.
+		 *
+		 * @a geometry_deformation is optional - if set to boost::none then no deformation will occur.
+		 *
+		 * NOTE: If these parameters change then a new reconstruct method instance should be created.
+		 */
+		struct Context
+		{
+			Context(
+					const ReconstructParams &reconstruct_params_,
+					const ReconstructionTreeCreator &reconstruction_tree_creator_,
+					boost::optional<const GeometryDeformation::ResolvedNetworkTimeSpan &>
+							geometry_deformation_ = boost::none) :
+				reconstruct_params(reconstruct_params_),
+				reconstruction_tree_creator(reconstruction_tree_creator_)
+			{
+				if (geometry_deformation_)
+				{
+					geometry_deformation = geometry_deformation_.get();
+				}
+			}
+
+			ReconstructParams reconstruct_params;
+			ReconstructionTreeCreator reconstruction_tree_creator;
+			boost::optional<GeometryDeformation::ResolvedNetworkTimeSpan> geometry_deformation;
+		};
+
+
 		virtual
 		~ReconstructMethodInterface()
 		{  }
 
 
 		/**
-		 * The same as @a get_resolved_geometries with a reconstruction time of zero
-		 * except there *must* be one geometry for *each* geometry property in the specified
-		 * feature that is reconstructable when @a reconstruct_feature is called - but they do
-		 * not have to be returned in any particular order.
+		 * Returns the type of 'this' reconstruct method.
+		 */
+		ReconstructMethod::Type
+		get_reconstruction_method_type() const
+		{
+			return d_reconstruction_method_type;
+		}
+
+
+		/**
+		 * Returns the feature associated with this reconstruct method.
+		 *
+		 * Methods called on 'this' interface will apply to this feature.
+		 */
+		const GPlatesModel::FeatureHandle::weak_ref &
+		get_feature_ref() const
+		{
+			return d_feature_weak_ref;
+		}
+
+
+		/**
+		 * The same as @a get_resolved_feature_geometries with a reconstruction time of zero except there
+		 * *must* be one geometry for *each* geometry property in the feature (associated with this
+		 * reconstruct method) that is reconstructable when @a reconstruct_feature_geometries is called -
+		 * but they do not have to be returned in any particular order.
 		 *
 		 * So this means if the geometry is *not* active at present day it is still returned.
-		 * And this means it could return a different result than @a get_resolved_geometries (with a time of zero).
+		 * And this means it could return a different result than @a get_resolved_feature_geometries (with a time of zero).
 		 * TODO: May need to revisit this.
 		 */
 		virtual
 		void
-		get_present_day_geometries(
-				std::vector<Geometry> &present_day_geometries,
-				const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref) const = 0;
+		get_present_day_feature_geometries(
+				std::vector<Geometry> &present_day_geometries) const = 0;
 
 
 #if 0
 		/**
-		 * Returns the resolved geometries for the geometry properties of the feature specified,
-		 * at the specified reconstruction time.
+		 * Returns the resolved geometries for the geometry properties of the feature associated
+		 * with this reconstruct method, to the specified reconstruction time.
 		 *
-		 * NOTE: Unlike @a get_present_day_geometries, this method can return fewer geometries
+		 * NOTE: Unlike @a get_present_day_feature_geometries, this method can return fewer geometries
 		 * than there are geometry feature properties that can be reconstructed.
 		 * If a geometry property is time-dependent and is not active at @a reconstruction_time
 		 * then a corresponding resolved geometry will not be returned.
 		 */
 		virtual
 		void
-		get_resolved_geometries(
+		get_resolved_feature_geometries(
 				std::vector<Geometry> &resolved_geometries,
-				const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref,
 				const double &reconstruction_time) const = 0;
 #endif
 
 
 		/**
-		 * Reconstructs the specified feature at the specified reconstruction time and returns
-		 * one or more reconstructed feature geometries.
-		 *
-		 * NOTE: Only features that exist at the specified @a reconstruction_time will be reconstructed.
+		 * Reconstructs the feature associated with this reconstruct method to the specified
+		 * reconstruction time and returns one or more reconstructed feature geometries.
 		 *
 		 * The reconstructed feature geometries are appended to @a reconstructed_feature_geometries.
-		 *
-		 * Note that @a reconstruction_tree_creator can be used to get reconstruction trees at times
-		 * other than @a reconstruction_time.
-		 * This is useful for reconstructing flowlines since the function might be hooked up
-		 * to a reconstruction tree cache.
-		 * NOTE: Calling 'set_default_reconstruction_time()' or 'set_default_anchor_plate_id'
-		 * can result in a thrown exception. These defaults are managed by the caller and
-		 * should not be altered.
 		 *
 		 * @a reconstruct_handle can be stored in any generated @a ReconstructedFeatureGeometry
 		 * instances to identify it as having been generated by our caller (ie, the caller might
 		 * get the next global reconstruct handle and use it to identify all RFGs that it generates
-		 * through these calls to @a reconstruct_feature).
+		 * through these calls to @a reconstruct_feature_geometries).
+		 *
+		 * Note that the reconstruction tree creator can be used to get reconstruction trees at times
+		 * other than @a reconstruction_time.
+		 * This is useful for reconstructing flowlines since the function might be hooked up
+		 * to a reconstruction tree cache.
 		 */
 		virtual
 		void
-		reconstruct_feature(
+		reconstruct_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
-				const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref,
 				const ReconstructHandle::type &reconstruct_handle,
-				const ReconstructParams &reconstruct_params,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const Context &context,
 				const double &reconstruction_time) = 0;
+
+
+		/**
+		 * Calculates velocities at the positions of the reconstructed feature geometries, of the feature
+		 * associated with this reconstruct method, at the specified reconstruction time and returns
+		 * one or more reconstructed feature *velocities*.
+		 *
+		 * The reconstructed feature velocities are appended to @a reconstructed_feature_velocities.
+		 *
+		 * @a reconstruct_handle can be stored in any generated @a MultiPointVectorField
+		 * instances to identify it as having been generated by our caller (ie, the caller might
+		 * get the next global reconstruct handle and use it to identify all velocities that it
+		 * generates through these calls to @a reconstruct_feature_velocities).
+		 */
+		virtual
+		void
+		reconstruct_feature_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				const ReconstructHandle::type &reconstruct_handle,
+				const Context &context,
+				const double &reconstruction_time)
+		{
+			// The default implementation is sufficient for some derived classes.
+			reconstruct_feature_velocities_by_plate_id(
+					reconstructed_feature_velocities,
+					reconstruct_handle,
+					context,
+					reconstruction_time);
+		}
 
 
 		/**
@@ -158,31 +239,55 @@ namespace GPlatesAppLogic
 		 * the reconstructed geometry (at the reconstruction time) and the returned geometry will
 		 * then be the present day geometry.
 		 *
-		 * NOTE: The specified feature is called @a reconstruction_properties since its geometry(s)
-		 * is not reconstructed - it is only used as a source of properties that determine how
-		 * to perform the reconstruction (for example, a reconstruction plate ID).
+		 * NOTE: The feature associated with this reconstruct method is used as a source of
+		 * feature properties that determine how to perform the reconstruction (for example,
+		 * a reconstruction plate ID) - the feature's geometries are not reconstructed.
 		 *
 		 * This is mainly useful when you have a feature and are modifying its geometry at some
 		 * reconstruction time (not present day). After each modification the geometry needs to be
 		 * reverse reconstructed to present day before it can be attached back onto the feature
 		 * because feature's typically store present day geometry in their geometry properties.
 		 *
-		 * Note that @a reconstruction_tree_creator can be used to get reconstruction trees at times
+		 * Note that the reconstruction tree creator can be used to get reconstruction trees at times
 		 * other than @a reconstruction_time.
 		 * This is useful for reconstructing flowlines since the function might be hooked up
 		 * to a reconstruction tree cache.
-		 * NOTE: Calling 'set_default_reconstruction_time()' or 'set_default_anchor_plate_id'
-		 * can result in a thrown exception. These defaults are managed by the caller and
-		 * should not be altered.
 		 */
 		virtual
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct_geometry(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const Context &context,
 				const double &reconstruction_time,
 				bool reverse_reconstruct) = 0;
+
+	protected:
+
+		/**
+		 * Constructor associates a feature with this (derived) reconstruct method instance.
+		 */
+		ReconstructMethodInterface(
+				ReconstructMethod::Type reconstruction_method_type,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref) :
+			d_reconstruction_method_type(reconstruction_method_type),
+			d_feature_weak_ref(feature_weak_ref)
+		{  }
+
+
+		/**
+		 * The default method of calculating velocities that is suitable for some derived classes.
+		 */
+		void
+		reconstruct_feature_velocities_by_plate_id(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				const ReconstructHandle::type &reconstruct_handle,
+				const Context &context,
+				const double &reconstruction_time);
+
+	private:
+
+		ReconstructMethod::Type d_reconstruction_method_type;
+		GPlatesModel::FeatureHandle::weak_ref d_feature_weak_ref;
 	};
 }
 

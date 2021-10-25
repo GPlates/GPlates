@@ -106,7 +106,6 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 		FILE *output_file_ptr):
 	d_log_file(),
 	// For IO-stream logs, default to "Everything", since this output will be going to the terminal.
-	// Rationale: File-IO for lots of debug messages may suck.
 	d_log_level(adjust_default_log_level())
 {
 	// We don't need to open an actual QFile in this case, just create the QTextStream wrapper around

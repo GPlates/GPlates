@@ -79,6 +79,7 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_line_string(
 		const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	d_found_geometries.push_back(gml_line_string.polyline());
+	d_found_polyline_geometries.push_back(gml_line_string.polyline());
 }
 
 
@@ -87,6 +88,7 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_multi_point(
 		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	d_found_geometries.push_back(gml_multi_point.multipoint());
+	d_found_multi_point_geometries.push_back(gml_multi_point.multipoint());
 }
 
 
@@ -103,6 +105,7 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	d_found_geometries.push_back(gml_point.point());
+	d_found_point_geometries.push_back( gml_point.point() );
 }
 
 
@@ -112,12 +115,15 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_polygon(
 {
 	// First, the exterior ring.
 	d_found_geometries.push_back(gml_polygon.exterior());
+	d_found_polygon_geometries.push_back(gml_polygon.exterior());
 
 	// Next, the interior rings (if there are any).
 	GPlatesPropertyValues::GmlPolygon::ring_const_iterator iter = gml_polygon.interiors_begin();
 	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
-	for ( ; iter != end; ++iter) {
+	for ( ; iter != end; ++iter) 
+	{
 		d_found_geometries.push_back(*iter);
+		d_found_polygon_geometries.push_back(*iter);
 	}
 }
 

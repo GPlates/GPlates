@@ -33,9 +33,8 @@
 #include "PlateIdColourPalettes.h"
 #include "SingleColourScheme.h"
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/PropertyExtractors.h"
-
-#include "presentation/ViewState.h"
 
 
 GPlatesGui::ColourSchemeInfo::ColourSchemeInfo(
@@ -90,10 +89,10 @@ GPlatesGui::ColourSchemeCategory::get_description(
 
 
 GPlatesGui::ColourSchemeContainer::ColourSchemeContainer(
-		GPlatesPresentation::ViewState &view_state) :
+		GPlatesAppLogic::ApplicationState &application_state) :
 	d_next_id(0)
 {
-	create_built_in_colour_schemes(view_state);
+	create_built_in_colour_schemes(application_state);
 }
 
 
@@ -149,7 +148,7 @@ GPlatesGui::ColourSchemeContainer::get(
 
 void
 GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
-		GPlatesPresentation::ViewState &view_state)
+		GPlatesAppLogic::ApplicationState &application_state)
 {
 	// Plate ID colouring schemes:
 	add(
@@ -222,7 +221,7 @@ GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
 			ColourSchemeCategory::FEATURE_TYPE,
 			ColourSchemeInfo(
 				make_colour_scheme(
-					FeatureTypeColourPalette::create(),
+					FeatureTypeColourPalette::create(application_state.get_gpgim()),
 					GPlatesAppLogic::FeatureTypePropertyExtractor()),
 				"Default",
 				"Colour geometries by feature type",
@@ -256,7 +255,7 @@ GPlatesGui::ColourSchemeContainer::edit_single_colour_scheme(
 				colour_name,
 				false /* should only edit non-built-in single colour schemes */);
 
-		emit colour_scheme_edited(ColourSchemeCategory::SINGLE_COLOUR, id);
+		Q_EMIT colour_scheme_edited(ColourSchemeCategory::SINGLE_COLOUR, id);
 	}
 }
 

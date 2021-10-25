@@ -118,7 +118,7 @@ void
 GPlatesQtWidgets::TimeControlWidget::handle_time_spinbox_editing_finished()
 {
 	d_animation_controller_ptr->set_view_time(spinbox_current_time->value());
-	emit editing_finished();
+	Q_EMIT editing_finished();
 }
 
 

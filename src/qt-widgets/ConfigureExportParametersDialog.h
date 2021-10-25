@@ -26,7 +26,6 @@
 #ifndef GPLATES_QTWIDGETS_CONFIGUREEXPORTPARAMETERSDIALOG_H
 #define GPLATES_QTWIDGETS_CONFIGUREEXPORTPARAMETERSDIALOG_H
 
-#include <set>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
@@ -45,6 +44,7 @@
 
 namespace GPlatesQtWidgets
 {
+	class ExportFileNameTemplateWidget;
 	class ExportOptionsWidget;
 
 	class ConfigureExportParametersDialog : 
@@ -216,7 +216,7 @@ namespace GPlatesQtWidgets
 			}
 		}
 
-	private slots:
+	private Q_SLOTS:
 		void
 		react_add_item_clicked();
 
@@ -227,18 +227,10 @@ namespace GPlatesQtWidgets
 		react_export_format_selection_changed();
 
 		void
-		react_filename_template_changed();
-		
-		void
-		react_filename_template_changing();
-
-		void
 		focus_on_listwidget_format();
-
-		void
-		focus_on_lineedit_filename();
 	
 	private:
+
 		/**
 		 * A QListWidget that resizes to its contents - this ensures that the QScrollArea just below
 		 * the list of formats can use as much available space as it can for export configuration options.
@@ -246,12 +238,12 @@ namespace GPlatesQtWidgets
 		 * All manner of experimenting with layouts, etc didn't work, but overriding the
 		 * 'sizeHint()' method did.
 		 */
-		class ResizeToContentsListWidget :
+		class ExportFormatListWidget :
 				public QListWidget
 		{
 		public:
 			explicit
-			ResizeToContentsListWidget(
+			ExportFormatListWidget(
 					QWidget *parent_ = 0) :
 				QListWidget(parent_)
 			{  }
@@ -261,10 +253,14 @@ namespace GPlatesQtWidgets
 			{
 				return contentsSize();
 			}
-		};
 
-		//! Typedef for a set of exporters - identified by their export IDs.
-		typedef std::set<GPlatesGui::ExportAnimationType::ExportID> exporter_set_type;
+			QSize
+			minimumSizeHint() const
+			{
+				// The minimum size in the vertical direction is contents size plus a small amount.
+				return QSize(QListWidget::minimumSizeHint().width(), contentsSize().height() + 10);
+			}
+		};
 
 
 		/**
@@ -275,12 +271,14 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesGui::ExportAnimationContext::non_null_ptr_type d_export_animation_context_ptr;
 
-		//! The currently added exporters - added by the user.
-		exporter_set_type d_exporters_added;
-
 		bool d_is_single_frame;
 
-		ResizeToContentsListWidget *d_listWidget_format;
+		ExportFormatListWidget *d_export_format_list_widget;
+
+		/**
+		 * Used to set and retrieve the filename template.
+		 */
+		ExportFileNameTemplateWidget *d_export_file_name_template_widget;
 
 		/**
 		 * The current widget, if any, used to select export options.

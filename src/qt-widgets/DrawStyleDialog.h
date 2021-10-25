@@ -1,9 +1,9 @@
-/* $Id: ColouringDialog.h 10521 2010-12-11 06:33:37Z elau $ */
+/* $Id$ */
 
 /**
  * \file 
- * $Revision: 10521 $
- * $Date: 2010-12-11 17:33:37 +1100 (Sat, 11 Dec 2010) $ 
+ * $Revision$
+ * $Date$ 
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
  *
@@ -25,18 +25,21 @@
  
 #ifndef GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
 #define GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
+
 #include <boost/thread/mutex.hpp>
 #include <boost/weak_ptr.hpp>
 
 #include <QMutex>
 #include <QMutexLocker>
 
-#include "presentation/Application.h"
 #include "DrawStyleDialogUi.h"
-#include "gui/PythonConfiguration.h"
+#include "GPlatesDialog.h"
 #include "PythonArgumentWidget.h"
 #include "VisualLayersComboBox.h"
 
+#include "gui/PythonConfiguration.h"
+
+#include "presentation/Application.h"
 
 namespace GPlatesAppLogic
 {
@@ -47,7 +50,7 @@ namespace GPlatesGui
 {
 	class ColourSchemeContainer;
 	class DrawStyleManager;
-	class StyleCatagory;
+	class StyleCategory;
 	class StyleAdapter;
 	class Configuration;
 }
@@ -88,15 +91,11 @@ namespace GPlatesQtWidgets
 		insert_all();
 	};
 	
-	class PreviewGuard;
-
 	class DrawStyleDialog  : 
-			public QDialog, 
+			public GPlatesDialog, 
 			protected Ui_DrawStyleDialog
 	{
 		Q_OBJECT
-
-		friend class PreviewGuard;
 
 	public:
 		DrawStyleDialog(
@@ -106,15 +105,22 @@ namespace GPlatesQtWidgets
 		~DrawStyleDialog();
 		
 		void
-		init_catagory_table();
+		init_category_table();
 
 		void
 		init_dlg();
 
 		void
-		reset(boost::weak_ptr<GPlatesPresentation::VisualLayer> layer);
+		reset(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer);
 
 	protected:
+
+		virtual
+		void
+		showEvent(
+				QShowEvent *show_event);
+
 		void
 		make_signal_slot_connections();
 
@@ -122,23 +128,27 @@ namespace GPlatesQtWidgets
 		set_style();
 
 		void
-		set_style(GPlatesGui::StyleAdapter* style);
+		set_style(
+				GPlatesGui::StyleAdapter* style);
 
 		void
-		load_category(const GPlatesGui::StyleCatagory& );
+		load_category(
+				const GPlatesGui::StyleCategory& );
 
 		void
-		show_preview_icon();
+		show_preview_icons();
 
-		GPlatesGui::StyleCatagory*
-		get_catagory(QTableWidgetItem& item)
+		GPlatesGui::StyleCategory*
+		get_catagory(
+				QTableWidgetItem& item)
 		{
 			QVariant qv = item.data(Qt::UserRole);
-			return static_cast<GPlatesGui::StyleCatagory*>(qv.value<void*>());
+			return static_cast<GPlatesGui::StyleCategory*>(qv.value<void*>());
 		}
 
 		GPlatesGui::StyleAdapter*
-		get_style(QListWidgetItem* item)
+		get_style(
+				QListWidgetItem* item)
 		{
 			QVariant qv = item->data(Qt::UserRole);
 			return static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
@@ -149,7 +159,8 @@ namespace GPlatesQtWidgets
 
 #if !defined(GPLATES_NO_PYTHON)			
 		QWidget *
-		create_cfg_widget(GPlatesGui::PythonCfgItem* item)
+		create_cfg_widget(
+				GPlatesGui::PythonCfgItem* item)
 		{
 			//this function is temporary.
 			if(dynamic_cast<GPlatesGui::PythonCfgColor*>(item) != 0)
@@ -190,13 +201,13 @@ namespace GPlatesQtWidgets
 
 		bool
 		is_style_name_valid(
-				const GPlatesGui::StyleCatagory&,
+				const GPlatesGui::StyleCategory&,
 				const QString&);
 
 
 		const QString
 		generate_new_valid_style_name(
-				const GPlatesGui::StyleCatagory&,
+				const GPlatesGui::StyleCategory&,
 				const QString&);
 
 		void
@@ -206,7 +217,8 @@ namespace GPlatesQtWidgets
 		void
 		apply_style_to_all_layers();
 
-	private slots:
+
+	private Q_SLOTS:
 		void
 		handle_close_button_clicked();
 
@@ -226,52 +238,21 @@ namespace GPlatesQtWidgets
 				QListWidgetItem* previous);
 
 		void
-		handle_repaint(
-				bool);
-
-		void
 		handle_main_repaint(
 				bool);
-
-		void
-		refresh_preview_icons()
-		{
-			if(isVisible())
-			{
-				show_preview_icon();
-			}
-		}
-
-		void
-		handle_release_after_drag()
-		{
-		#if defined(Q_OS_MAC)
-			d_refresh_preview = true;
-		#else
-			refresh_preview_icons();
-		#endif
-		}
-
-		void
-		handle_change_projection()
-		{
-		#if defined(Q_OS_MAC)
-			QApplication::processEvents();
-		#endif
-			refresh_preview_icons();
-		}
 
 		void
 		focus_style();
 
 		void
-		handle_show_thumbnails_changed(int state)
+		handle_show_thumbnails_changed(
+				int state)
 		{
 			d_show_thumbnails = (state == Qt::Checked);
 			QTableWidgetItem* item = categories_table->currentItem();
 			if(item)
 			{
-				GPlatesGui::StyleCatagory* cata = get_catagory(*item);
+				GPlatesGui::StyleCategory* cata = get_catagory(*item);
 				if(cata)
 				{
 					load_category(*cata);
@@ -281,55 +262,54 @@ namespace GPlatesQtWidgets
 
 		
 		void
-		handle_cfg_name_changed(const QString& new_cfg_name);
+		handle_cfg_name_changed(
+				const QString& new_cfg_name);
 
 		void
-		handle_add_button_clicked(bool);
+		handle_add_button_clicked(
+				bool);
 
 		void
-		handle_configuration_changed()
-		{
-			refresh_current_icon();
-		}
+		handle_configuration_changed();
 
+		
 		void
 		handle_layer_changed(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer>);
-
+	
 	private:
+
+		class PreviewGuard
+		{
+		public:
+			PreviewGuard(
+					DrawStyleDialog &draw_style_dialog);
+
+			~PreviewGuard();
+
+		private:
+			DrawStyleDialog &d_draw_style_dialog;
+			int d_current_idx;
+		};
+
+
 		static const int ICON_SIZE = 145;
+
+
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
 		QIcon d_blank_icon;
 		GPlatesGui::DrawStyleManager* d_style_mgr;
 		bool d_show_thumbnails;
+		bool d_ignore_next_main_repaint;
 		GlobeAndMapWidget *d_globe_and_map_widget_ptr;
-		bool d_repaint_flag;
-		QImage d_image;
 		QString d_last_open_directory;
 		std::vector<QWidget*> d_cfg_widgets;
 		GPlatesPresentation::ViewState& d_view_state;
 		LayerGroupComboBox* d_combo_box;
 		GPlatesGui::StyleAdapter* d_style_of_all;
-		bool d_refresh_preview;
-		QMutex d_preview_lock;
 	};
-
-
-	class PreviewGuard
-	{
-	public:
-		PreviewGuard(
-				DrawStyleDialog& dlg) ;
-
-		~PreviewGuard();
-
-	private:
-		DrawStyleDialog& d_dlg;
-		int d_current_idx;
-	};
-
-
 }
 
 
 #endif  // GPLATES_QTWIDGETS_RENDERSETTINGDIALOG_H
+

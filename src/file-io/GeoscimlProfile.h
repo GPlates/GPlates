@@ -38,6 +38,7 @@
 namespace GPlatesFileIO
 {
 	class GeoscimlProfile :
+			public QObject,
 			public ArbitraryXmlProfile
 	{
 		Q_OBJECT
@@ -45,16 +46,12 @@ namespace GPlatesFileIO
 	public:
 
 		GeoscimlProfile()
-		{
-			init();
-		}
+		{ }
 
 		explicit
 		GeoscimlProfile(
 				const QString& profile_name)
-		{
-			init();
-		}
+		{ }
 		
 		void
 		populate(
@@ -70,15 +67,11 @@ namespace GPlatesFileIO
 		count_features(
 				QByteArray& xml_data);
 
-	public slots:
+	public Q_SLOTS:
 
 		void cancel(); // will cancel read process
 
 	protected:
-		inline
-		void
-		init()
-		{ }
 		GeoscimlProfile(
 					const GeoscimlProfile&);
 

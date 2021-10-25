@@ -56,7 +56,7 @@ namespace GPlatesDataMining
 		virtual
 		~PopulateShapeFileAttributesVisitor() {  }
 
-		std::vector < QString >&
+		const std::vector < QString >&
 		get_shape_file_attr_names()
 		{
 			return d_names;

@@ -38,11 +38,8 @@
 namespace GPlatesFileIO
 {
 
-	class ArbitraryXmlProfile:
-		public QObject
+	class ArbitraryXmlProfile
 	{
-		Q_OBJECT
-		
 	public:
 
 		virtual
@@ -62,7 +59,7 @@ namespace GPlatesFileIO
 				QByteArray& xml_data) = 0;
 		
 		virtual
-			~ArbitraryXmlProfile(){}
+		~ArbitraryXmlProfile(){}
 
 	};
 }

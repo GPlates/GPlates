@@ -31,8 +31,8 @@
 
 #include "RasterVisualLayerParams.h"
 #include "ReconstructVisualLayerParams.h"
+#include "ScalarField3DVisualLayerParams.h"
 #include "TopologyBoundaryVisualLayerParams.h"
-
 #include "TopologyNetworkVisualLayerParams.h"
 #include "VelocityFieldCalculatorVisualLayerParams.h"
 
@@ -47,12 +47,13 @@
 #include "qt-widgets/RasterLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructionLayerOptionsWidget.h"
+#include "qt-widgets/ScalarField3DLayerOptionsWidget.h"
 #include "qt-widgets/TopologyBoundaryResolverLayerOptionsWidget.h"
-
 #include "qt-widgets/TopologyNetworkResolverLayerOptionsWidget.h"
 #include "qt-widgets/VelocityFieldCalculatorLayerOptionsWidget.h"
-#include "qt-widgets/CoRegistrationOptionsWidget.h"
+
 #include "utils/ComponentManager.h"
+
 
 namespace
 {
@@ -458,19 +459,33 @@ GPlatesPresentation::register_default_visual_layers(
 			&RasterVisualLayerParams::create,
 			true);
 
+	registry.register_visual_layer_type(
+			VisualLayerType::Type(SCALAR_FIELD_3D),
+			VisualLayerGroup::SCALAR_FIELDS,
+			"3D Scalar Field",
+			"A sub-surface scalar field visualised using volume rendering.",
+			*html_colours.get_colour("teal"),
+			CreateAppLogicLayer(
+				reconstruct_graph,
+				layer_task_registry,
+				SCALAR_FIELD_3D),
+			&GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::create,
+			&ScalarField3DVisualLayerParams::create,
+			true);
+
 	// DERIVED_DATA group.
 	registry.register_visual_layer_type(
-			VisualLayerType::Type(TOPOLOGY_BOUNDARY_RESOLVER),
+			VisualLayerType::Type(TOPOLOGY_GEOMETRY_RESOLVER),
 			VisualLayerGroup::DERIVED_DATA,
-			"Resolved Topological Closed Plate Boundaries",
-			"Plate boundaries will be generated dynamically by referencing topological section "
-			"features, that have been reconstructed to a geological time, and joining them to "
-			"form a closed polygon boundary.",
+			"Resolved Topological Geometries",
+			"Topological plate boundaries and lines will be generated dynamically by referencing "
+			"topological section features, that have been reconstructed to a geological time, and "
+			"joining them to form a closed polygon boundary or a polyline.",
 			*html_colours.get_colour("plum"),
 			CreateAppLogicLayer(
 				reconstruct_graph,
 				layer_task_registry,
-				TOPOLOGY_BOUNDARY_RESOLVER),
+				TOPOLOGY_GEOMETRY_RESOLVER),
 			&GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::create,
 			&TopologyBoundaryVisualLayerParams::create,
 			true);
@@ -513,7 +528,7 @@ GPlatesPresentation::register_default_visual_layers(
 		registry.register_visual_layer_type(
 				VisualLayerType::Type(CO_REGISTRATION),
 				VisualLayerGroup::DERIVED_DATA,
-				"Co-registration layer",
+				"Co-registration",
 				"Co-registration layer for data mining.",
 				*html_colours.get_colour("sandybrown"),
 				CreateAppLogicLayer(

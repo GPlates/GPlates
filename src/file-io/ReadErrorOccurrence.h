@@ -42,12 +42,13 @@ namespace GPlatesFileIO
 	{
 		enum DataFormat
 		{
-			GpmlOnePointSix,
+			Gpml,
 			PlatesRotation,
 			PlatesLine,
 			Shapefile,
 			Gmap,
 			RasterImage,
+			ScalarField3D,
 			Cpt,
 			Unspecified
 		};

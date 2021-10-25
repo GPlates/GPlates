@@ -209,4 +209,68 @@ namespace GPlatesOpenGL
 				sizeof(GLColourTextureVertex),
 				offset + 5 * sizeof(GLfloat));
 	}
+
+
+	template <>
+	void
+	bind_vertex_buffer_to_vertex_array<GLTextureTangentSpaceVertex>(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+			GLint offset)
+	{
+		//
+		// The following reflects the structure of 'struct GLTextureVertex'.
+		// It tells OpenGL how the elements of the vertex are packed together in the vertex.
+		//
+
+		vertex_array.set_enable_client_state(renderer, GL_VERTEX_ARRAY, true/*enable*/);
+		vertex_array.set_vertex_pointer(
+				renderer,
+				vertex_buffer,
+				3,
+				GL_FLOAT,
+				sizeof(GLTextureTangentSpaceVertex),
+				offset);
+
+		vertex_array.set_enable_client_texture_state(renderer, GL_TEXTURE0, true/*enable*/);
+		vertex_array.set_tex_coord_pointer(
+				renderer,
+				vertex_buffer,
+				GL_TEXTURE0,
+				2,
+				GL_FLOAT,
+				sizeof(GLTextureTangentSpaceVertex),
+				offset + 3 * sizeof(GLfloat));
+
+		vertex_array.set_enable_client_texture_state(renderer, GL_TEXTURE1, true/*enable*/);
+		vertex_array.set_tex_coord_pointer(
+				renderer,
+				vertex_buffer,
+				GL_TEXTURE1,
+				3,
+				GL_FLOAT,
+				sizeof(GLTextureTangentSpaceVertex),
+				offset + 5 * sizeof(GLfloat));
+
+		vertex_array.set_enable_client_texture_state(renderer, GL_TEXTURE2, true/*enable*/);
+		vertex_array.set_tex_coord_pointer(
+				renderer,
+				vertex_buffer,
+				GL_TEXTURE2,
+				3,
+				GL_FLOAT,
+				sizeof(GLTextureTangentSpaceVertex),
+				offset + 8 * sizeof(GLfloat));
+
+		vertex_array.set_enable_client_texture_state(renderer, GL_TEXTURE3, true/*enable*/);
+		vertex_array.set_tex_coord_pointer(
+				renderer,
+				vertex_buffer,
+				GL_TEXTURE3,
+				3,
+				GL_FLOAT,
+				sizeof(GLTextureTangentSpaceVertex),
+				offset + 11 * sizeof(GLfloat));
+	}
 }

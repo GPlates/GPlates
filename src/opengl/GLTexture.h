@@ -83,7 +83,8 @@ namespace GPlatesOpenGL
 		{
 		public:
 			resource_handle_type
-			allocate()
+			allocate(
+					const GLCapabilities &capabilities)
 			{
 				resource_handle_type texture;
 				glGenTextures(1, &texture);
@@ -197,6 +198,9 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: If @a pixels is NULL then the texture is created but the image data is left uninitialised.
 		 *
+		 * NOTE: For cube map textures @a target is one of GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, etc
+		 * specifying the cube face (and not the bind target GL_TEXTURE_CUBE_MAP_ARB).
+		 *
 		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
 		 * because that is taken care of internally.
 		 */
@@ -215,6 +219,9 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Performs same function as the glTexImage2D OpenGL function.
+		 *
+		 * NOTE: For cube map textures @a target is one of GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, etc
+		 * specifying the cube face (and not the bind target GL_TEXTURE_CUBE_MAP_ARB).
 		 *
 		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
 		 */
@@ -240,7 +247,7 @@ namespace GPlatesOpenGL
 		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
 		 * because that is taken care of internally.
 		 *
-		 * NOTE: The GL_EXT_texture3D extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 */
 		void
 		gl_tex_image_3D(
@@ -261,7 +268,7 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
 		 *
-		 * NOTE: The GL_EXT_texture3D extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 */
 		void
 		gl_tex_image_3D(
@@ -303,6 +310,9 @@ namespace GPlatesOpenGL
 		 * Note that this is part of @a GLTexture instead of @a GLRenderer because it initialises
 		 * the texture (sets up the internal object storage, etc) as opposed to
 		 * GLRenderer::gl_copy_tex_sub_image_2D which copies into an already initialised texture object.
+		 *
+		 * NOTE: For cube map textures @a target is one of GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, etc
+		 * specifying the cube face (and not the bind target GL_TEXTURE_CUBE_MAP_ARB).
 		 */
 		void
 		gl_copy_tex_image_2D(
@@ -363,6 +373,9 @@ namespace GPlatesOpenGL
 		/**
 		 * Performs same function as the glTexSubImage2D OpenGL function.
 		 *
+		 * NOTE: For cube map textures @a target is one of GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, etc
+		 * specifying the cube face (and not the bind target GL_TEXTURE_CUBE_MAP_ARB).
+		 *
 		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
 		 * because that is taken care of internally.
 		 *
@@ -383,6 +396,9 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Performs same function as the glTexSubImage2D OpenGL function.
+		 *
+		 * NOTE: For cube map textures @a target is one of GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, etc
+		 * specifying the cube face (and not the bind target GL_TEXTURE_CUBE_MAP_ARB).
 		 *
 		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
 		 *
@@ -408,7 +424,7 @@ namespace GPlatesOpenGL
 		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
 		 * because that is taken care of internally.
 		 *
-		 * NOTE: The GL_EXT_subtexture extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 *
 		 * @throws PreconditionViolationError if @a texture is not initialised.
 		 */
@@ -432,7 +448,7 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
 		 *
-		 * NOTE: The GL_EXT_subtexture extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 *
 		 * @throws PreconditionViolationError if @a texture is not initialised.
 		 */
@@ -473,6 +489,8 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the height of the texture (level 0).
 		 *
+		 * Note that this is also the number of array layers for a 1D texture array (GL_TEXTURE_1D_ARRAY target).
+		 *
 		 * Returns boost::none unless @a gl_tex_image_2D, @a gl_tex_image_3D or @a gl_copy_tex_image_2D have been called.
 		 */
 		boost::optional<GLuint>
@@ -483,6 +501,8 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Returns the depth of the texture (level 0).
+		 *
+		 * Note that this is also the number of array layers for a 2D texture array (GL_TEXTURE_2D_ARRAY target).
 		 *
 		 * Returns boost::none unless @a gl_tex_image_3D has been called.
 		 */
@@ -498,7 +518,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Returns boost::none unless none of the texture image specification methods have been called.
 		 */
-		boost::optional<GLenum>
+		boost::optional<GLint>
 		get_internal_format() const
 		{
 			return d_internal_format;
@@ -554,7 +574,7 @@ namespace GPlatesOpenGL
 		boost::optional<GLuint> d_height;
 		boost::optional<GLuint> d_depth;
 
-		boost::optional<GLenum> d_internal_format;
+		boost::optional<GLint> d_internal_format;
 
 		//! Constructor.
 		explicit

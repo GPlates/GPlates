@@ -31,6 +31,8 @@
 #include <iosfwd>
 #include <boost/cstdint.hpp>
 
+#include "property-values/StructuralType.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/QtStreamable.h"
@@ -143,6 +145,18 @@ namespace GPlatesModel
 		virtual
 		const non_null_ptr_type
 		deep_clone_as_prop_val() const = 0;
+
+		/**
+		 * Returns the structural type associated with the type of the derived property value class.
+		 *
+		 * NOTE: This is actually a per-class, rather than per-instance, method but
+		 * it's most accessible when implemented as a virtual method.
+		 * Derived property value classes ideally should return a 'static' variable rather than
+		 * an instance variable (data member) in order to reduce memory usage.
+		 */
+		virtual
+		GPlatesPropertyValues::StructuralType
+		get_structural_type() const = 0;
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

@@ -22,19 +22,25 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <boost/algorithm/string.hpp>
 #include <iostream>
+#include <boost/algorithm/string.hpp>
+#include <QDebug>
+
+#include "app-logic/CoRegistrationData.h"
 
 #include "data-mining/DataMiningUtils.h"
-#include "app-logic/CoRegistrationData.h"
 #include "data-mining/DataSelector.h"
-#include "data-mining/DataMiningUtils.h"
 #include "data-mining/OpaqueDataToQString.h"
 #include "data-mining/RegionOfInterestFilter.h"
-#include "global/python.h"
-#include "model/ModelInterface.h"
+
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
+
+#include "global/NotYetImplementedException.h"
+#include "global/python.h"
+
+#include "model/ModelInterface.h"
+
 
 using namespace GPlatesAppLogic;
 using namespace GPlatesFileIO;
@@ -44,6 +50,9 @@ using namespace GPlatesModel;
 #if !defined(GPLATES_NO_PYTHON)
 using namespace boost::python;
 
+// TODO: Re-implement this when the lower-level python API is implemented.
+// This will use the same functionality to access co-registration without reference to layers.
+#if 0
 namespace
 {
 	class CoRegistration
@@ -300,6 +309,7 @@ namespace
 			{
 				ret_list.append(boost::python::object(s.toStdString()));
 			}
+
 			return ret_list;
 		}
 
@@ -391,7 +401,6 @@ namespace
 			selector->select(reconstructed_seeds, reconstructed_coreg, result);
 			result.set_reconstruction_time(time);
 			d_result_table.push_back(result);
-			return;
 		}
 
 		void
@@ -494,7 +503,7 @@ namespace
 				if(file->get_reference().get_file_info().get_display_name(false) == items[FC_NAME])
 				{
 					qDebug() << "Find the feature collection.";
-					row.target_fc = file->get_reference().get_feature_collection();
+					row.target_layer = file->get_reference().get_feature_collection();
 				} 
 			}
 			QString& s_ref = items[COREG_OP];
@@ -507,13 +516,14 @@ namespace
 			row.filter_cfg.reset(new RegionOfInterestFilter::Config(d));
 
 			std::map<QString, AttributeType>::iterator it = attr_map.find(items[ATTR_NAME].trimmed().toUpper());
-			row.attr_type = it != attr_map.end() ?  it->second : CO_REGISTRATION_ATTRIBUTE;
+			row.attr_type = it != attr_map.end() ?  it->second : CO_REGISTRATION_GPML_ATTRIBUTE;
 			row.attr_name = items[ATTR_NAME].trimmed();
 
 			row.reducer_type = reducer_map[items[DATA_OP].trimmed().toUpper()];
 
 			if(items[SHAPE_ATTR].trimmed() == "true")
-				row.attr_type =  SHAPE_FILE_ATTRIBUTE;
+				row.attr_type =  CO_REGISTRATION_SHAPEFILE_ATTRIBUTE;
+
 			return row;
 		}
 		
@@ -527,10 +537,18 @@ namespace
 		FeatureCollectionFileFormat::Registry* d_registry;  
 	};
 }
+#endif
 
 void
 export_co_registration()
 {
+#if 1
+	// TODO: Re-implement this when the lower-level python API is implemented.
+	// This will use the same functionality to access co-registration without reference to layers.
+	qWarning() << "export_co_registration: not implemented.";
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+
+#else
 	bool    (CoRegistration::*exec)()				 	 = &CoRegistration::exec;
 	bool    (CoRegistration::*exec_file)(const char*)    = &CoRegistration::exec;
 	bool    (CoRegistration::*exec_time)(double)		 = &CoRegistration::exec;
@@ -559,6 +577,7 @@ export_co_registration()
 		.def("get_result_data_from_layer",	&CoRegistration::get_result_data_from_layer)
 		.def("get_data_header",				&CoRegistration::get_data_header)
 		;
+#endif
 }
 #endif
 

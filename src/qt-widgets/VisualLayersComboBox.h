@@ -76,13 +76,13 @@ namespace GPlatesQtWidgets
 		set_selected_visual_layer(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		selected_visual_layer_changed(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 
-	protected slots:
+	protected Q_SLOTS:
 
 		/**
 		 * Called when anything in the visual layers state is changed.

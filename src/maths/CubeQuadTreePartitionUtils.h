@@ -632,7 +632,7 @@ namespace GPlatesMaths
 			}
 
 			// Now find the child intersecting nodes using the reduced set of parent intersecting nodes.
-			find_intersecting_nodes(d_parent_intersecting_nodes);
+			this->find_intersecting_nodes(d_parent_intersecting_nodes);
 		}
 	}
 }

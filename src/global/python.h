@@ -27,6 +27,8 @@
 #ifndef GPLATES_GLOBAL_PYTHON_H
 #define GPLATES_GLOBAL_PYTHON_H
 
+#ifndef Q_MOC_RUN //workaround. Qt moc doesn't like BOOST_JOIN. Make them not seeing each other.
+
 #include "global/config.h" // GPLATES_NO_PYTHON
 
 // The undef's are compile fixes for Windows.
@@ -42,6 +44,8 @@
 #		undef ssize_t
 #	endif
 #	include <boost/python.hpp>
-#endif
+#endif //GPLATES_NO_PYTHON
+
+#endif //Q_MOC_RUN
 
 #endif  // GPLATES_GLOBAL_PYTHON_H

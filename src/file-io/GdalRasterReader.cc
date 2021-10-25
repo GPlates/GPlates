@@ -87,35 +87,10 @@ namespace
 	}
 
 	template<class RawRasterType>
-	bool
-	add_statistics(
-			RawRasterType &raster,
-			GDALRasterBand *band)
-	{
-		GPlatesPropertyValues::RasterStatistics &statistics = raster.statistics();
-
-		double min, max, mean, std_dev;
-		if (band->GetStatistics(
-				false /* approx ok */,
-				true /* force */,
-				&min, &max, &mean, &std_dev) != CE_None)
-		{
-			// Failed to read statistics.
-			return false;
-		}
-
-		statistics.minimum = min;
-		statistics.maximum = max;
-		statistics.mean = mean;
-		statistics.standard_deviation = std_dev;
-
-		return true;
-	}
-
-	template<class RawRasterType>
-	boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
+	GPlatesPropertyValues::RawRaster::non_null_ptr_type
 	create_proxied_raw_raster(
 			GDALRasterBand *band,
+			const GPlatesPropertyValues::RasterStatistics &raster_statistics,
 			const GPlatesFileIO::RasterBandReaderHandle &raster_band_reader_handle)
 	{
 		// Create a proxied raster.
@@ -128,17 +103,8 @@ namespace
 		// OK if no-data value not added.
 		add_no_data_value(*result, band);
 
-		// Attempt to add statistics.
-		// Not OK if statistics not added, as all rasters read through GDAL
-		// should be able to report back statistics.
-		if (!add_statistics(*result, band))
-		{
-			// Log an error message so we know why a raster is not being displayed.
-			qWarning() << "Failed to read GDAL statistics from '"
-					<< raster_band_reader_handle.get_filename() << "'.";
-
-			return boost::none;
-		}
+		// Add the statistics.
+		result->statistics() = raster_statistics;
 
 		return GPlatesPropertyValues::RawRaster::non_null_ptr_type(result.get());
 	}
@@ -309,6 +275,43 @@ GPlatesFileIO::GDALRasterReader::GDALRasterReader(
 	}
 #endif
 
+	//
+	// UPDATE:
+	//
+	// It looks like there's a few bugs in GDAL related to flipping.
+	// The changesets related to image flipping in the netCDF driver...
+	//
+	//  http://trac.osgeo.org/gdal/log/trunk/gdal/frmts/netcdf/netcdfdataset.cpp
+	//
+	// ...are...
+	//
+	//  http://trac.osgeo.org/gdal/changeset/18151/trunk/gdal/frmts/netcdf/netcdfdataset.cpp
+	//     (the fix we currently work around in GPlates)
+	//  http://trac.osgeo.org/gdal/changeset/20006/trunk/gdal/frmts/netcdf/netcdfdataset.cpp
+	//  http://trac.osgeo.org/gdal/changeset/23615/trunk/gdal/frmts/netcdf/netcdfdataset.cpp
+	//  http://trac.osgeo.org/gdal/changeset/23617/trunk/gdal/frmts/netcdf/netcdfdataset.cpp
+	//
+	// So it looks like any workarounds we come up with might depend on the content of each netCDF
+	// raster file and we don't want to analyse that in GPlates.
+	// Probably the best bet is to increase the minimum GDAL requirement
+	// (although that may be difficult with the Ubuntu systems).
+	// Which means avoiding certain GDAL versions between the first bug-fix changeset listed above
+	// and the last (and write that off as unknown territory).
+	//
+	// According to the history of GDAL releases...
+	//
+	//   http://trac.osgeo.org/gdal/browser/tags
+	//
+	// ...it looks like the above changesets probably went into the following releases...
+	//
+	// 18151 -> 1.7.0
+	// 20006 -> 1.7.3
+	// 23615 -> 1.9.0
+	// 23617 -> 1.9.0
+	//
+	// Testing with GDAL 1.9.0 worked on two rasters where one of those rasters was incorrectly
+	// flipped on GDAL 1.7.
+
 	if (!can_read())
 	{
 		report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
@@ -424,12 +427,69 @@ GPlatesFileIO::GDALRasterReader::get_proxied_raw_raster(
 		unsigned int band_number,
 		ReadErrorAccumulation *read_errors)
 {
+	if (!can_read())
+	{
+		return boost::none;
+	}
+
 	// Memory managed by GDAL.
 	GDALRasterBand *band = get_raster_band(band_number, read_errors);
 
 	if (!band)
 	{
 		return boost::none;
+	}
+
+	if (band_number == 0 ||
+		band_number > d_raster_band_file_cache_format_readers.size())
+	{
+		report_recoverable_error(read_errors, ReadErrors::ErrorReadingRasterBand);
+		return boost::none;
+	}
+
+	if (!d_raster_band_file_cache_format_readers[band_number - 1])
+	{
+		return boost::none;
+	}
+
+	// Read the raster statistics from the raster file cache.
+	//
+	// NOTE: We avoid reading them directly using GDAL since that can require rescanning the source
+	// data which is not necessary since we've cached the statistics in the cache format reader.
+	// This saves a few seconds when the raster is first loaded into GPlates.
+	boost::optional<GPlatesPropertyValues::RasterStatistics> raster_statistics =
+			d_raster_band_file_cache_format_readers[band_number - 1]->get_raster_statistics();
+	if (!raster_statistics)
+	{
+		// We normally wouldn't get here since GDAL should always be able to provide statistics
+		// which should have been stored in the raster cache file.
+		// However there was a bug in GPlates 1.2 that failed to store the raster statistics in the
+		// cache file, so we need to get the statistics here.
+		double min, max, mean, std_dev;
+		if (band->GetStatistics(
+				false /* approx ok */,
+				true /* force */,
+				&min, &max, &mean, &std_dev) != CE_None)
+		{
+			// Not OK if statistics not added, as all rasters read through GDAL should be able to
+			// report back statistics even if it involves GDAL scanning the image data.
+
+			// Log an error message so we know why a raster is not being displayed.
+			// NOTE: This failure actually didn't happen now - it happened when GPlates created the
+			// raster cache file (which could've been a different instance of GPlates).
+			qWarning() << "Failed to read GDAL statistics from '"
+					<< d_raster_band_file_cache_format_readers[band_number - 1]->get_filename() << "'.";
+
+
+			report_recoverable_error(read_errors, ReadErrors::ErrorReadingRasterBand);
+			return boost::none;
+		}
+
+		raster_statistics = GPlatesPropertyValues::RasterStatistics();
+		raster_statistics->minimum = min;
+		raster_statistics->maximum = max;
+		raster_statistics->mean = mean;
+		raster_statistics->standard_deviation = std_dev;
 	}
 
 	GDALDataType data_type = band->GetRasterDataType();
@@ -440,31 +500,31 @@ GPlatesFileIO::GDALRasterReader::get_proxied_raw_raster(
 	{
 		case GDT_Byte:
 			return create_proxied_raw_raster<GPlatesPropertyValues::ProxiedUInt8RawRaster>(
-				band, raster_band_reader_handle);
+				band, raster_statistics.get(), raster_band_reader_handle);
 
 		case GDT_UInt16:
 			return create_proxied_raw_raster<GPlatesPropertyValues::ProxiedUInt16RawRaster>(
-				band, raster_band_reader_handle);
+				band, raster_statistics.get(), raster_band_reader_handle);
 
 		case GDT_Int16:
 			return create_proxied_raw_raster<GPlatesPropertyValues::ProxiedInt16RawRaster>(
-				band, raster_band_reader_handle);
+				band, raster_statistics.get(), raster_band_reader_handle);
 
 		case GDT_UInt32:
 			return create_proxied_raw_raster<GPlatesPropertyValues::ProxiedUInt32RawRaster>(
-				band, raster_band_reader_handle);
+				band, raster_statistics.get(), raster_band_reader_handle);
 
 		case GDT_Int32:
 			return create_proxied_raw_raster<GPlatesPropertyValues::ProxiedInt32RawRaster>(
-				band, raster_band_reader_handle);
+				band, raster_statistics.get(), raster_band_reader_handle);
 
 		case GDT_Float32:
 			return create_proxied_raw_raster<GPlatesPropertyValues::ProxiedFloatRawRaster>(
-				band, raster_band_reader_handle);
+				band, raster_statistics.get(), raster_band_reader_handle);
 
 		case GDT_Float64:
 			return create_proxied_raw_raster<GPlatesPropertyValues::ProxiedDoubleRawRaster>(
-				band, raster_band_reader_handle);
+				band, raster_statistics.get(), raster_band_reader_handle);
 
 		default:
 			return boost::none;
@@ -966,7 +1026,7 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache(
 	if (band->GetStatistics(
 			false /* approx ok */,
 			true /* force */,
-			&min, &max, &mean, &std_dev) != CE_None)
+			&min, &max, &mean, &std_dev) == CE_None)
 	{
 		out << static_cast<quint32>(true); // has_raster_statistics
 		out << static_cast<quint32>(true); // has_raster_minimum
@@ -1115,6 +1175,12 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache_image_data(
 		}
 	}
 
+	// Some rasters have dimensions less than RasterFileCacheFormat::BLOCK_SIZE.
+	const unsigned int dimension =
+			(source_raster_dimension_next_power_of_two > RasterFileCacheFormat::BLOCK_SIZE)
+			? source_raster_dimension_next_power_of_two
+			: RasterFileCacheFormat::BLOCK_SIZE;
+
 	// Traverse the Hilbert curve of blocks of the source raster using quad-tree recursion.
 	// The leaf nodes of the traversal correspond to the blocks in the source raster.
 	hilbert_curve_traversal(
@@ -1124,7 +1190,7 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache_image_data(
 			write_source_raster_depth,
 			0/*x_offset*/,
 			0/*y_offset*/,
-			source_raster_dimension_next_power_of_two/*dimension*/,
+			dimension,
 			0/*hilbert_start_point*/,
 			0/*hilbert_end_point*/,
 			out,
@@ -1207,7 +1273,7 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 			// then report insufficient memory.
 			if (// Using 64-bit integer in case uncompressed image is larger than 4Gb...
 				qint64(source_region.width() / 2) * (source_region.height() / 2) * sizeof(RasterElementType) <
-					MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT ||
+					static_cast<qint64>(MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT) ||
 				read_source_raster_depth == write_source_raster_depth)
 			{
 				// Report insufficient memory to load raster.

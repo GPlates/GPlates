@@ -42,6 +42,11 @@ namespace GPlatesUtils
 			// These need to be functions because C++ does not otherwise guarantee the
 			// order of initialisation of non-local static objects.
 
+			// NOTE: The GPGIM namespace is not part of the feature readers but is placed here
+			// in order to re-use a lot of the XML parsing machinery when reading the GPGIM XML file.
+			const char *
+			gpgim_namespace();
+
 			const char *
 			gpml_namespace();
 
@@ -50,6 +55,12 @@ namespace GPlatesUtils
 			
 			const char *
 			xsi_namespace();
+
+
+			// NOTE: The GPGIM namespace is not part of the feature readers but is placed here
+			// in order to re-use a lot of the XML parsing machinery when reading the GPGIM XML file.
+			const char *
+			gpgim_standard_alias();
 
 			const char *
 			gpml_standard_alias();
@@ -65,10 +76,12 @@ namespace GPlatesUtils
 		/**
 		 * Standard namespaces.
 		 */
+		const GPlatesUtils::UnicodeString GPGIM_NAMESPACE = Internals::gpgim_namespace();
 		const GPlatesUtils::UnicodeString GPML_NAMESPACE = Internals::gpml_namespace();
 		const GPlatesUtils::UnicodeString GML_NAMESPACE = Internals::gml_namespace();
 		const GPlatesUtils::UnicodeString XSI_NAMESPACE = Internals::xsi_namespace();
 
+		const QString GPGIM_NAMESPACE_QSTRING = Internals::gpgim_namespace();
 		const QString GPML_NAMESPACE_QSTRING = Internals::gpml_namespace();
 		const QString GML_NAMESPACE_QSTRING = Internals::gml_namespace();
 		const QString XSI_NAMESPACE_QSTRING = Internals::xsi_namespace();
@@ -77,10 +90,12 @@ namespace GPlatesUtils
 		/**
 		 * Standard namespace aliases.
 		 */
+		const GPlatesUtils::UnicodeString GPGIM_STANDARD_ALIAS = Internals::gpgim_standard_alias();
 		const GPlatesUtils::UnicodeString GPML_STANDARD_ALIAS = Internals::gpml_standard_alias();
 		const GPlatesUtils::UnicodeString GML_STANDARD_ALIAS = Internals::gml_standard_alias();
 		const GPlatesUtils::UnicodeString XSI_STANDARD_ALIAS = Internals::xsi_standard_alias();
 
+		const QString GPGIM_STANDARD_ALIAS_QSTRING = Internals::gpgim_standard_alias();
 		const QString GPML_STANDARD_ALIAS_QSTRING = Internals::gpml_standard_alias();
 		const QString GML_STANDARD_ALIAS_QSTRING = Internals::gml_standard_alias();
 		const QString XSI_STANDARD_ALIAS_QSTRING = Internals::xsi_standard_alias();
@@ -88,7 +103,8 @@ namespace GPlatesUtils
 
 		/**
 		 * Returns the standard namespace alias for the given namespace URI.
-		 * Returns "gpml" for any namespace URI that is not recognised.
+		 *
+		 * NOTE: Returns "gpml" for any namespace URI that is not recognised.
 		 */
 		StringSet::SharedIterator
 		get_standard_alias_for_namespace(
@@ -96,8 +112,9 @@ namespace GPlatesUtils
 
 
 		/**
-		 * Returns the namespace URI when given a standard namespace alias.
-		 * Returns @a namespace_alias if the alias is not recognised. 
+		 * Returns the namespace URI for the given standard namespace alias.
+		 *
+		 * NOTE: Returns namespace associated with the "gpml" alias if the specified alias is not recognised. 
 		 */
 		StringSet::SharedIterator
 		get_namespace_for_standard_alias(

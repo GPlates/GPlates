@@ -60,10 +60,6 @@
  * @code
  *  TRACK_CALL_STACK()
  * @endcode
- *
- * When the program is executed, whenever a tracked block begins (ie, whenever the code in this
- * macro is executed), a message will be printed to the standard error stream.  When the tracked
- * block ends, another message will be printed.
  */
 #define TRACK_CALL_STACK() CALL_STACK_MAGIC1(__LINE__)
 

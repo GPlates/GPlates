@@ -300,7 +300,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Note that, as dictated by OpenGL, @a attribute_index must be in the half-closed range
 		 * [0, GL_MAX_VERTEX_ATTRIBS_ARB).
-		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'GLContext::get_parameters().shader.gl_max_vertex_attribs'.
+		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'context.get_capabilities().shader.gl_max_vertex_attribs'.
 		 *
 		 * NOTE: The 'GL_ARB_vertex_shader' extension must be supported.
 		 */
@@ -329,7 +329,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Note that, as dictated by OpenGL, @a attribute_index must be in the half-closed range
 		 * [0, GL_MAX_VERTEX_ATTRIBS_ARB).
-		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'GLContext::get_parameters().shader.gl_max_vertex_attribs'.
+		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'context.get_capabilities().shader.gl_max_vertex_attribs'.
 		 *
 		 * NOTE: You still need to call the appropriate @a set_enable_vertex_attrib_array.
 		 *

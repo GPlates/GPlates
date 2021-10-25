@@ -30,6 +30,8 @@
 
 #include "SetProjectionDialogUi.h"
 
+#include "GPlatesDialog.h"
+
 #include "gui/MapProjection.h"
 
 
@@ -39,7 +41,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 
 	class SetProjectionDialog: 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_SetProjectionDialog
 	{
 		Q_OBJECT
@@ -75,7 +77,7 @@ namespace GPlatesQtWidgets
 		double
 		central_meridian();
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * Disables the central_meridian spinbox when the Orthographic projection is selected. 

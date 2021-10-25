@@ -44,7 +44,7 @@
 #include "model/XmlAttributeValue.h"
 
 
-// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlRectifiedGrid, visit_gml_rectified_grid)
@@ -209,6 +209,17 @@ namespace GPlatesPropertyValues
 
 		const boost::optional<Georeferencing::non_null_ptr_to_const_type> &
 		convert_to_georeferencing() const;
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gml("RectifiedGrid");
+			return STRUCTURAL_TYPE;
+		}
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

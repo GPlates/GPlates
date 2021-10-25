@@ -43,6 +43,7 @@ namespace GPlatesFileIO
 	{
 		// Forward declarations of all @a Format types.
 		class DateTimeFormat;
+		class DefaultReconstructionTreeLayerNameFormat;
 		class FrameNumberFormat;
 		class PercentCharacterFormat;
 		class PlaceholderFormat;
@@ -59,6 +60,7 @@ namespace GPlatesFileIO
 				PercentCharacterFormat,
 				PlaceholderFormat,
 				ReconstructionAnchorPlateIdFormat,
+				DefaultReconstructionTreeLayerNameFormat,
 				FrameNumberFormat,
 				DateTimeFormat,
 				// NOTE: Extract the printf-style format last in case we mistakenly add
@@ -264,6 +266,59 @@ namespace GPlatesFileIO
 
 
 		/**
+		 * Simple format pattern for the layer name of the default reconstruction tree layer.
+		 */
+		class DefaultReconstructionTreeLayerNameFormat :
+				public Format
+		{
+		public:
+			//! How this format varies.
+			static const Variation VARIATION_TYPE = IS_CONSTANT;
+
+
+			/**
+			 * Returns true if the start of @a rest_of_filename_template matches
+			 * the format specifier for this class.
+			 *
+			 * If so then also returns length of matched format string.
+			 */
+			static
+			boost::optional<int>
+			match_format(
+					const QString &rest_of_filename_template);
+
+
+			DefaultReconstructionTreeLayerNameFormat(
+					const QString &default_recon_tree_layer_name) :
+				d_default_recon_tree_layer_name(default_recon_tree_layer_name)
+			{
+				// Some Operating Systems may have trouble with spaces in filenames.
+				// For now we'll just replace spaces with underscores.
+				// TODO: Replace other whitespace characters also.
+				d_default_recon_tree_layer_name.replace(' ', '_');
+			}
+
+			//! The format variation type.
+			virtual
+			Variation
+			get_variation_type() const
+			{
+				return VARIATION_TYPE;
+			}
+
+			virtual
+			QString
+			expand_format_string(
+					std::size_t sequence_index,
+					const double &reconstruction_time,
+					const QDateTime &date_time) const;
+
+		private:
+			QString d_default_recon_tree_layer_name;
+		};
+
+
+		/**
 		 * Format pattern for frame number or index.
 		 */
 		class FrameNumberFormat :
@@ -428,7 +483,6 @@ namespace GPlatesFileIO
 			QString d_date_time_format;
 
 			static const QString HOURS_MINS_SECS_WITH_DASHES_SPECIFIER;
-			static const QString HOURS_MINS_SECS_WITH_COLONS_SPECIFIER;
 			static const QString YEAR_MONTH_DAY_WITH_DASHES_SPECIFIER;
 		};
 	}

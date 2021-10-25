@@ -166,7 +166,7 @@ GPlatesQtWidgets::CreateTotalReconstructionSequenceDialog::handle_create()
 	trs_feature->add(trs);
 
 	d_trs_feature.reset(trs_feature);
-
+	d_trs_dialog.insert_feature_to_proxy(*d_trs_feature, (collection_file_iter.first).get_file());
     accept();
 }
 
@@ -267,3 +267,4 @@ GPlatesQtWidgets::CreateTotalReconstructionSequenceDialog::make_feature_collecti
     d_choose_feature_collection_widget_ptr->initialise();
 	d_choose_feature_collection_widget_ptr->setFocus();
 }
+

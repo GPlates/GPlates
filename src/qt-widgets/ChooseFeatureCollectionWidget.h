@@ -106,12 +106,12 @@ namespace GPlatesQtWidgets
 		select_feature_collection(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		item_activated();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_listwidget_item_activated(

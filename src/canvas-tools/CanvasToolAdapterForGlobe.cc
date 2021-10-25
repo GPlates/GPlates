@@ -67,7 +67,7 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_press(
 			oriented_click_pos_on_globe,
 			is_on_globe,
 			globe_canvas().current_proximity_inclusion_threshold(
-			click_pos_on_globe));
+				click_pos_on_globe));
 	}
 }
 

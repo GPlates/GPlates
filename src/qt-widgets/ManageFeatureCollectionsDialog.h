@@ -27,21 +27,28 @@
 #define GPLATES_GUI_MANAGEFEATURECOLLECTIONSDIALOG_H
 
 #include <map>
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <Qt>
 #include <QObject>
 #include <QPointer>
 #include <QString>
 
 #include "ManageFeatureCollectionsDialogUi.h"
+
+#include "GPlatesDialog.h"
 #include "SaveFileDialog.h"
+
 #include "app-logic/FeatureCollectionFileState.h"
+
 #include "file-io/FeatureCollectionFileFormat.h"
 
 
 namespace GPlatesAppLogic
 {
 	class FeatureCollectionFileIO;
+	class ReconstructGraph;
 }
 
 namespace GPlatesFileIO
@@ -73,7 +80,7 @@ namespace GPlatesQtWidgets
 	}
 
 	class ManageFeatureCollectionsDialog:
-			public QDialog, 
+			public GPlatesDialog, 
 			protected Ui_ManageFeatureCollectionsDialog
 	{
 		Q_OBJECT
@@ -85,6 +92,7 @@ namespace GPlatesQtWidgets
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 				GPlatesGui::FileIOFeedback &gui_file_io_feedback,
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 				GPlatesPresentation::ViewState& d_view_state,
 				QWidget *parent_ = NULL);
 		
@@ -150,7 +158,7 @@ namespace GPlatesQtWidgets
 		unload_file(
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
 	
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Recolours table rows' background colours based on saved/unsaved state.
@@ -167,9 +175,9 @@ namespace GPlatesQtWidgets
 		 * have not yet been given filenames.
 		 */
 		void
-		save_all_named();
+		save_all_named_changes();
 
-	private slots:
+	private Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -188,6 +196,25 @@ namespace GPlatesQtWidgets
 		handle_file_state_file_info_changed(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
+
+		void
+		header_section_clicked(
+				int section_index);
+
+		void
+		handle_selection_changed();
+
+		void
+		save_selected();
+
+		void
+		reload_selected();
+
+		void
+		unload_selected();
+
+		void
+		clear_selection();
 
 	protected:
 	
@@ -254,12 +281,16 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * Goes through each loaded file and saves-in-place each one that needs saving.
+		 * Goes through each loaded file and saves-in-place.
+		 *
+		 * If @a only_unsaved_changes is true then only files with unsaved changes will be saved.
+		 *
 		 * Will prompt for filenames on unnamed collections if @a include_unnamed_files.
 		 */
 		void
 		save_all(
-				bool include_unnamed_files);
+				bool include_unnamed_files,
+				bool only_unsaved_changes);
 
 		/**
 		 * Recolours a single row's background based on saved/unsaved state.
@@ -291,6 +322,18 @@ namespace GPlatesQtWidgets
 				boost::shared_ptr<ManageFeatureCollections::EditConfiguration> >
 						edit_configuration_map_type;
 
+		//! Identifies which column (if any) is sorted and whether it's sorted ascending or descending.
+		struct ColumnSort
+		{
+			ColumnSort() :
+				column_index(0),
+				sort_order(Qt::AscendingOrder)
+			{  }
+
+			int column_index;
+			Qt::SortOrder sort_order;
+		};
+
 
 		/**
 		 * Registry of file formats.
@@ -314,12 +357,24 @@ namespace GPlatesQtWidgets
 		 */
 		QPointer<GPlatesGui::FileIOFeedback> d_gui_file_io_feedback_ptr;
 
+		/**
+		 * As an optimisation, group a sequence of file unloads into a single remove layers group.
+		 *
+		 * File unloading can trigger layer removals.
+		 */
+		GPlatesAppLogic::ReconstructGraph &d_reconstruct_graph;
+
 		GPlatesPresentation::ViewState& d_view_state;
 
 		/**
 		 * The registered edit configurations (mapped to file formats).
 		 */
 		edit_configuration_map_type d_edit_configurations;
+
+		/**
+		 * The column (and sort order) currently used for sorting, if sorting enabled.
+		 */
+		boost::optional<ColumnSort> d_column_sort;
 
 
 		/**

@@ -170,7 +170,7 @@ namespace GPlatesQtWidgets
 		QWidget* 
 		hide_cancel_widget();
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Prompts the user to select a Python script, and runs that Python script.
@@ -185,7 +185,7 @@ namespace GPlatesQtWidgets
 		void
 		clear();
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when the text has been added to the console via stdout or stderr.
@@ -210,7 +210,7 @@ namespace GPlatesQtWidgets
 		closeEvent(
 				QCloseEvent *ev);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_return_pressed(
@@ -379,7 +379,7 @@ namespace GPlatesQtWidgets
 		const QString &
 		get_prompt() const;
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		return_pressed(
@@ -422,7 +422,7 @@ namespace GPlatesQtWidgets
 			return false;
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_text_changed();
@@ -491,7 +491,7 @@ namespace GPlatesQtWidgets
 		get_last_non_blank_line(
 				int num_banner_lines) const;
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		return_pressed(
@@ -524,7 +524,7 @@ namespace GPlatesQtWidgets
 				QObject *watched,
 				QEvent *ev);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_text_changed();

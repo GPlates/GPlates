@@ -70,7 +70,7 @@ namespace GPlatesQtWidgets
 		populate(
 				const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer);
 
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_always_visible();

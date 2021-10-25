@@ -28,10 +28,15 @@
 #include "ZoomGlobe.h"
 
 #include "gui/ViewportZoom.h"
+
 #include "maths/LatLonPoint.h"
+
+#include "presentation/ViewState.h"
+
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
-#include "presentation/ViewState.h"
+
+#include "view-operations/RenderedGeometryCollection.h"
 
 
 void
@@ -45,6 +50,12 @@ GPlatesCanvasTools::ZoomGlobe::handle_activation()
 				" Ctrl+drag to re-orient the globe."));
 
 	}
+}
+
+
+void
+GPlatesCanvasTools::ZoomGlobe::handle_deactivation()
+{
 }
 
 

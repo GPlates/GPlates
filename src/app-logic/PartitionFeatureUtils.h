@@ -145,7 +145,7 @@ namespace GPlatesAppLogic
 			void
 			assign_property_values(
 					const GPlatesModel::FeatureHandle::weak_ref &partitioned_feature,
-					const boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> &partitioning_feature) = 0;
+					boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> partitioning_feature) = 0;
 		};
 
 
@@ -170,7 +170,7 @@ namespace GPlatesAppLogic
 			void
 			assign_property_values(
 					const GPlatesModel::FeatureHandle::weak_ref &partitioned_feature,
-					const boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> &partitioning_feature);
+					boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> partitioning_feature);
 
 		private:
 			boost::optional<GPlatesModel::integer_plate_id_type> d_default_reconstruction_plate_id;
@@ -207,8 +207,7 @@ namespace GPlatesAppLogic
 			 */
 			GPlatesModel::FeatureHandle::weak_ref
 			get_feature_for_partition(
-					const boost::optional<const ReconstructionGeometry *> &
-							partition = boost::none);
+					boost::optional<const ReconstructionGeometry *> partition = boost::none);
 
 		private:
 			/**
@@ -261,7 +260,7 @@ namespace GPlatesAppLogic
 			void
 			assign_property_values(
 					const GPlatesModel::FeatureHandle::weak_ref &partitioned_feature,
-					const boost::optional<const ReconstructionGeometry *> &partition);
+					boost::optional<const ReconstructionGeometry *> partition);
 		};
 
 
@@ -281,7 +280,7 @@ namespace GPlatesAppLogic
 				const GPlatesModel::PropertyName &geometry_property_name,
 				PartitionedFeatureManager &partitioned_feature_manager,
 				const ReconstructionTree &reconstruction_tree,
-				const boost::optional<const ReconstructionGeometry *> &partition = boost::none);
+				boost::optional<const ReconstructionGeometry *> partition = boost::none);
 
 
 		/**
@@ -311,7 +310,7 @@ namespace GPlatesAppLogic
 				const GPlatesModel::TopLevelProperty::non_null_ptr_type &geometry_property,
 				PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager,
 				const ReconstructionTree &reconstruction_tree,
-				const boost::optional<const ReconstructionGeometry *> &partition = boost::none);
+				boost::optional<const ReconstructionGeometry *> partition = boost::none);
 
 
 		/**
@@ -357,7 +356,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesMaths::FiniteRotation>
 		get_reverse_reconstruction(
-				const boost::optional<const ReconstructionGeometry *> &partition,
+				boost::optional<const ReconstructionGeometry *> partition,
 				const ReconstructionTree &reconstruction_tree);
 
 
@@ -378,7 +377,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		assign_reconstruction_plate_id_to_feature(
-				const boost::optional<GPlatesModel::integer_plate_id_type> &reconstruction_plate_id,
+				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
 
 
@@ -398,7 +397,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		assign_valid_time_to_feature(
-				const boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> &valid_time,
+				boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> valid_time,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
 
 

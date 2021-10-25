@@ -29,10 +29,12 @@
 
 #include "CanvasTool.h"
 
+#include "gui/AddClickedGeometriesToFeatureTable.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
 #include "gui/TopologySectionsContainer.h"
-#include "gui/TopologyTools.h"
+
+#include "model/FeatureHandle.h"
 
 
 namespace GPlatesAppLogic
@@ -137,6 +139,16 @@ namespace GPlatesCanvasTools
 		GPlatesGui::FeatureTableModel *d_clicked_table_model_ptr;
 
 		/**
+		 * The focused feature (if any) to restore upon deactivation.
+		 */
+		GPlatesModel::FeatureHandle::weak_ref d_save_restore_focused_feature;
+
+		/**
+		 * The focused feature geometry property (if any) to restore upon deactivation.
+		 */
+		GPlatesModel::FeatureHandle::iterator d_save_restore_focused_feature_geometry_property;
+
+		/**
 		 * This is the external table of selected features for the closed boundary
 		 */
 		// GPlatesGui::TopologySectionsContainer *d_topology_sections_container_ptr;
@@ -157,6 +169,11 @@ namespace GPlatesCanvasTools
 		 * Used when adding reconstruction geometries to the clicked feature table.
 		 */
 		const GPlatesAppLogic::ReconstructGraph &d_reconstruct_graph;
+
+		/**
+		 * Determines which reconstructed/resolved feature geometries can be used as topological sections.
+		 */
+		GPlatesGui::filter_reconstruction_geometry_predicate_type d_topology_sections_filter;
 
 	};
 }

@@ -36,6 +36,7 @@
 
 #include "AssignReconstructionPlateIdsDialogUi.h"
 
+#include "GPlatesDialog.h"
 #include "InformationDialog.h"
 
 #include "app-logic/AssignPlateIds.h"
@@ -69,7 +70,7 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	class AssignReconstructionPlateIdsDialog:
-			public QDialog, 
+			public GPlatesDialog, 
 			protected Ui_AssignReconstructionPlateIdsDialog
 	{
 		Q_OBJECT
@@ -88,11 +89,11 @@ namespace GPlatesQtWidgets
 		void
 		exec_partition_features_dialog();
 
-	public slots:
+	public Q_SLOTS:
 		void
 		reject();
 
-	private slots:
+	private Q_SLOTS:
 		void
 		apply();
 

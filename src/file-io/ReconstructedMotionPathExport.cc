@@ -190,6 +190,7 @@ GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 		const double &reconstruction_time,
 		bool export_single_output_file,
 		bool export_per_input_file,
+		bool export_separate_output_directory_per_input_file,
 		bool wrap_to_dateline)
 {
 	// Get the list of active reconstructable feature collection files that contain
@@ -227,7 +228,11 @@ GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 				grouped_recon_geom_seq);
 
 		std::vector<QString> output_filenames;
-		get_output_filenames(output_filenames, filename, grouped_features_seq);
+		get_output_filenames(
+				output_filenames,
+				filename,
+				grouped_features_seq,
+				export_separate_output_directory_per_input_file);
 
 		grouped_features_seq_type::const_iterator grouped_features_iter = grouped_features_seq.begin();
 		grouped_features_seq_type::const_iterator grouped_features_end = grouped_features_seq.end();

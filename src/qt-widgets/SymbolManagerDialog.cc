@@ -24,8 +24,8 @@
 #include "SymbolManagerDialog.h"
 
 GPlatesQtWidgets::SymbolManagerDialog::SymbolManagerDialog(
-    QWidget *parent_) :
-    QDialog(parent_)
+		QWidget *parent_) :
+    GPlatesDialog(parent_)
 {
     setupUi(this);
 

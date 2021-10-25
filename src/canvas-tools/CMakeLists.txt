@@ -18,7 +18,6 @@ set(srcs
     CanvasToolAdapterForGlobe.h
     CanvasToolAdapterForMap.cc
     CanvasToolAdapterForMap.h
-    CanvasToolType.h
     ClickGeometry.cc
     ClickGeometry.h
     CreateSmallCircle.cc
@@ -29,6 +28,7 @@ set(srcs
     DigitiseGeometry.h
     EditTopology.cc
     EditTopology.h
+    GeometryOperationState.h
     InsertVertex.cc
     InsertVertex.h
     ManipulatePole.cc
@@ -37,6 +37,7 @@ set(srcs
     MeasureDistance.h
     MeasureDistanceState.cc
     MeasureDistanceState.h
+    ModifyGeometryState.h
     MoveVertex.cc
     MoveVertex.h
     PanMap.cc

@@ -42,8 +42,6 @@
 
 #include "app-logic/Reconstruction.h"
 
-#include "global/types.h"
-
 #include "gui/TopologySectionsContainer.h"
 
 #include "maths/PointOnSphere.h"
@@ -61,6 +59,7 @@
 #include "model/WeakReference.h"
 
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalSection.h"
 
 namespace GPlatesPropertyValues
@@ -107,13 +106,22 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_gpml_topological_polygon(
-		 		const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+		visit_gpml_topological_line(
+		 		const GPlatesPropertyValues::GpmlTopologicalLine &gpml_toplogical_line);
 
 		virtual
 		void
-		visit_gpml_topological_interior(
-		 		const GPlatesPropertyValues::GpmlTopologicalInterior &gpml_toplogical_interior);
+		visit_gpml_topological_network(
+				const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_toplogical_network);
+
+		void
+		visit_gpml_topological_network_interior(
+		 		const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_toplogical_network_interior);
+
+		virtual
+		void
+		visit_gpml_topological_polygon(
+		 		const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
 
 		virtual
 		void

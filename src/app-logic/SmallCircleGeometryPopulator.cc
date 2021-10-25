@@ -64,19 +64,22 @@ GPlatesAppLogic::SmallCircleGeometryPopulator::finalise_post_feature_properties(
 		// The reconstruction tree for the current reconstruction time.
 		ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			d_reconstruction_tree_creator.get_reconstruction_tree(d_reconstruction_time.value());		
-		
-                if (d_reconstruction_plate_id)
-                {
-                        *d_centre = reconstruction_tree->get_composed_absolute_rotation(
-                                    d_reconstruction_plate_id.get()).first *
-                                    *d_centre;
-                }
 
+		// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
+		// which can still give a non-identity rotation if the anchor plate id is non-zero.
+		GPlatesModel::integer_plate_id_type reconstruction_plate_id = 0;
+		if (d_reconstruction_plate_id)
+		{
+			reconstruction_plate_id = d_reconstruction_plate_id.get();
+		}
 
+		*d_centre = reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first *
+				*d_centre;
 
 		GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type small_circle_rg =
 			ReconstructedSmallCircle::create(
 				reconstruction_tree,
+				d_reconstruction_tree_creator,
 				*d_centre,
 				GPlatesMaths::convert_deg_to_rad(*d_radius_in_degrees),
 				feature_handle,

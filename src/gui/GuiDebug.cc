@@ -47,7 +47,6 @@
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/TaskPanel.h"
 
-
 namespace
 {
 

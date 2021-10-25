@@ -27,7 +27,6 @@
 #include <QDateTime>
 #include <boost/shared_ptr.hpp>
 
-#include "GPlatesQtMsgHandler.h"
 #include "LogToModelHandler.h"
 #include "global/SubversionInfo.h"
 
@@ -139,7 +138,16 @@ GPlatesAppLogic::LogModel::LogModel(
 	// As we get created by ApplicationState, we should now be ready to install
 	// our LogToModelHandler to the GPlatesQtMsgHandler.
 	boost::shared_ptr<GPlatesQtMsgHandler::MessageHandler> handler(new LogToModelHandler(*this));
-	GPlatesQtMsgHandler::instance().add_handler(handler);
+	d_message_handler_id = GPlatesQtMsgHandler::instance().add_handler(handler);
+}
+
+
+GPlatesAppLogic::LogModel::~LogModel()
+{
+	if (d_message_handler_id)
+	{
+		GPlatesQtMsgHandler::instance().remove_handler(d_message_handler_id.get());
+	}
 }
 
 

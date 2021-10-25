@@ -25,9 +25,9 @@
 #ifndef GPLATESDATAMINING_MINREDUCER_H
 #define GPLATESDATAMINING_MINREDUCER_H
 
+#include <algorithm>
 #include <vector>
 #include <QDebug>
-#include <boost/foreach.hpp>
 
 #include "CoRegReducer.h"
 #include "DataMiningUtils.h"
@@ -64,8 +64,9 @@ namespace GPlatesDataMining
 			std::vector<double> buf;
 			DataMiningUtils::convert_to_double_vector(data.begin(), data.end(), buf);
 			
-			return (buf.size() > 0) ? 
-				OpaqueData(*min_element(buf.begin(),buf.end())) : OpaqueData(EmptyData);
+			return buf.empty()
+					? OpaqueData(EmptyData)
+					: OpaqueData(*std::min_element(buf.begin(),buf.end()));
 		}
 	};
 }

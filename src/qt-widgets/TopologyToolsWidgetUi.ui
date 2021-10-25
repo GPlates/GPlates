@@ -23,7 +23,7 @@
    <item>
     <widget class="QTabWidget" name="tabwidget_main">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab_topology">
       <attribute name="title">
@@ -38,7 +38,11 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineedit_name"/>
+        <widget class="QLineEdit" name="lineedit_name">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QLabel" name="label_plate_id">
@@ -48,7 +52,11 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineedit_plate_id"/>
+        <widget class="QLineEdit" name="lineedit_plate_id">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QLabel" name="label_valid_time">
@@ -58,7 +66,7 @@
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout">
+        <layout class="QHBoxLayout" name="layout_valid_time">
          <property name="spacing">
           <number>4</number>
          </property>
@@ -103,9 +111,9 @@
         </layout>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout">
+        <layout class="QHBoxLayout" name="widget_num_sections">
          <item>
-          <widget class="QLabel" name="label_number_of_sections">
+          <widget class="QLabel" name="label_sections">
            <property name="font">
             <font>
              <pointsize>11</pointsize>
@@ -117,7 +125,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="label_num_sections_boundary">
+          <widget class="QLabel" name="label_num_sections">
            <property name="text">
             <string>0</string>
            </property>
@@ -129,104 +137,160 @@
         </layout>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
-         <item>
-          <widget class="QLabel" name="label_3">
-           <property name="font">
-            <font>
-             <pointsize>11</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>Interior Sections:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_num_sections_interior">
-           <property name="text">
-            <string>0</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <widget class="QWidget" name="widget_num_sections_interior" native="true">
+         <layout class="QHBoxLayout" name="layout_num_sections_interior">
+          <property name="margin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="label_sections_interior">
+            <property name="font">
+             <font>
+              <pointsize>11</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Interior Sections:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_num_sections_interior">
+            <property name="text">
+             <string>0</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout">
+        <widget class="QWidget" name="widget_sections_table_select" native="true">
+         <layout class="QVBoxLayout" name="layout_sections_table_select">
+          <property name="margin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="label_sections_table_select">
+            <property name="font">
+             <font>
+              <pointsize>11</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string>Sections Table shows:</string>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="sections_table_combobox">
+            <property name="currentIndex">
+             <number>0</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>Boundary</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Interior</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="layout_action_button_box">
          <item>
-          <widget class="QLabel" name="label_4">
-           <property name="font">
-            <font>
-             <pointsize>11</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>Sections Table shows:</string>
-           </property>
-           <property name="scaledContents">
+          <widget class="QWidget" name="action_button_box_placeholder_widget" native="true">
+           <property name="enabled">
             <bool>true</bool>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="sections_combobox">
-           <property name="currentIndex">
-            <number>0</number>
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
            </property>
-           <item>
-            <property name="text">
-             <string>Boundary</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Interior</string>
-            </property>
-           </item>
-          </widget>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </item>
        <item>
-        <widget class="QPushButton" name="button_remove_all_sections">
-         <property name="text">
-          <string>Remove All</string>
+        <layout class="QVBoxLayout" name="widget_create_apply">
+         <property name="margin">
+          <number>0</number>
          </property>
-        </widget>
+         <item>
+          <layout class="QHBoxLayout" name="layer_create_apply">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QPushButton" name="button_create">
+             <property name="toolTip">
+              <string>Create a new feature from the topological geometry</string>
+             </property>
+             <property name="text">
+              <string>Create...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="button_apply">
+             <property name="toolTip">
+              <string>Apply topological edits to existing feature</string>
+             </property>
+             <property name="text">
+              <string>Apply...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontal_spacer_create_apply">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </item>
        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <property name="margin">
-           <number>4</number>
-          </property>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <widget class="QPushButton" name="button_create">
-              <property name="text">
-               <string>Apply/Create...</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_2">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-         </layout>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </widget>
@@ -249,23 +313,32 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="button_add_feature_boundary">
+        <widget class="QPushButton" name="button_add_section">
+         <property name="toolTip">
+          <string>Add To Boundary A</string>
+         </property>
          <property name="text">
           <string>Add to Boundary</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="button_add_feature_interior">
+        <widget class="QPushButton" name="button_add_interior">
+         <property name="toolTip">
+          <string/>
+         </property>
          <property name="text">
           <string>Add to Interior</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="button_remove_feature">
+        <widget class="QPushButton" name="button_remove_section">
+         <property name="toolTip">
+          <string>Remove R</string>
+         </property>
          <property name="text">
-          <string>Remove Feature</string>
+          <string>Remove</string>
          </property>
         </widget>
        </item>

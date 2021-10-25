@@ -52,9 +52,10 @@ GPlatesPropertyValues::GpmlTopologicalLine::deep_clone() const
 	// Now we need to clear the topological-section vector in the duplicate, before we
 	// push-back the cloned sections.
 	dup->d_sections.clear();
-	std::vector<GpmlTopologicalSection::non_null_ptr_type>::const_iterator iter,
-			end = d_sections.end();
-	for (iter = d_sections.begin(); iter != end; ++iter) {
+	sections_const_iterator iter = d_sections.begin();
+	sections_const_iterator end = d_sections.end();
+	for ( ; iter != end; ++iter)
+	{
 		GpmlTopologicalSection::non_null_ptr_type cloned_section =
 				(*iter)->deep_clone_as_topo_section();
 		dup->d_sections.push_back(cloned_section);
@@ -70,8 +71,7 @@ GPlatesPropertyValues::GpmlTopologicalLine::print_to(
 {
 	os << "[ ";
 
-	typedef std::vector<GpmlTopologicalSection::non_null_ptr_type>::const_iterator iterator_type;
-	for (iterator_type iter = d_sections.begin(); iter != d_sections.end(); ++iter)
+	for (sections_const_iterator iter = d_sections.begin(); iter != d_sections.end(); ++iter)
 	{
 		os << **iter;
 	}
@@ -87,7 +87,7 @@ GPlatesPropertyValues::GpmlTopologicalLine::directly_modifiable_fields_equal(
 	try
 	{
 		const GpmlTopologicalLine &other_casted =
-			dynamic_cast<const GpmlTopologicalLine &>(other);
+				dynamic_cast<const GpmlTopologicalLine &>(other);
 		if (d_sections.size() == other_casted.d_sections.size())
 		{
 			return std::equal(
@@ -107,4 +107,3 @@ GPlatesPropertyValues::GpmlTopologicalLine::directly_modifiable_fields_equal(
 		return false;
 	}
 }
-

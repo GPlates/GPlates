@@ -183,7 +183,11 @@ namespace GPlatesAppLogic
 		}
 
 	private:
+
 		static const QString RECONSTRUCTABLE_FEATURES_CHANNEL_NAME;
+
+		//! This is a human-readable name for the reconstructed static/dynamic polygons/networks input channel.
+		static const QString DEFORMATION_SURFACES_CHANNEL_NAME;
 
 		/**
 		 * Parameters used when reconstructing.

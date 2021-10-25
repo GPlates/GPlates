@@ -33,6 +33,7 @@
 #include "CoRegReducer.h"
 #include "OpaqueDataToQString.h"
 
+
 namespace GPlatesDataMining
 {
 	class VoteReducer : public CoRegReducer

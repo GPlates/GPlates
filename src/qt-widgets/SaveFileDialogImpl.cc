@@ -27,13 +27,13 @@
  */
 
 #include <boost/foreach.hpp>
+
 #include <QStringList>
 #include <QFileInfo>
 
 #include "SaveFileDialogImpl.h"
 
 #include "presentation/ViewState.h"
-
 
 namespace
 {

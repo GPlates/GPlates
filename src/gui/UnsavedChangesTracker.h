@@ -127,7 +127,7 @@ namespace GPlatesGui
 		replace_session_event_hook();
 
 	
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Slot called after some changes have been made to the Model.
@@ -137,7 +137,7 @@ namespace GPlatesGui
 		handle_model_has_changed();
 
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_file_state_files_added(
@@ -161,9 +161,7 @@ namespace GPlatesGui
 		}
 		
 		/**
-		 * Sneaky method to find the ManageFeatureCollectionsDialog via
-		 * ViewportWindow and the Qt object tree. Means we don't have
-		 * to pass yet more things in through the constructor.
+		 * Returns the ManageFeatureCollectionsDialog via ViewportWindow.
 		 */
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &
 		manage_feature_collections_dialog();

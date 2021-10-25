@@ -43,7 +43,6 @@
 
 #include "utils/StringUtils.h"
 
-
 #if !defined(GPLATES_NO_PYTHON)
 using namespace boost::python;
 

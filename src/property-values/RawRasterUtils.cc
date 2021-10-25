@@ -354,6 +354,24 @@ GPlatesPropertyValues::RawRasterUtils::get_raster_type(
 }
 
 
+bool
+GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(
+		RawRaster &raster)
+{
+	const RasterType::Type raster_type = get_raster_type(raster);
+
+	return
+		raster_type == GPlatesPropertyValues::RasterType::FLOAT ||
+		raster_type == GPlatesPropertyValues::RasterType::DOUBLE ||
+		raster_type == GPlatesPropertyValues::RasterType::INT8 ||
+		raster_type == GPlatesPropertyValues::RasterType::UINT8 ||
+		raster_type == GPlatesPropertyValues::RasterType::INT16 ||
+		raster_type == GPlatesPropertyValues::RasterType::UINT16 ||
+		raster_type == GPlatesPropertyValues::RasterType::INT32 ||
+		raster_type == GPlatesPropertyValues::RasterType::UINT32;
+}
+
+
 void
 GPlatesPropertyValues::RawRasterUtils::apply_coverage_raster(
 		const Rgba8RawRaster::non_null_ptr_type &source_raster,

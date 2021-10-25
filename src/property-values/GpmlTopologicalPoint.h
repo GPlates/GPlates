@@ -32,6 +32,11 @@
 #include "GpmlPropertyDelegate.h"
 
 
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlTopologicalPoint, visit_gpml_topological_point)
+
 namespace GPlatesPropertyValues
 {
 
@@ -87,6 +92,17 @@ namespace GPlatesPropertyValues
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_TOPO_SECTION()
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("TopologicalPoint");
+			return STRUCTURAL_TYPE;
+		}
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

@@ -99,7 +99,7 @@ namespace GPlatesQtWidgets
 			set_clickable(
 					bool is_clickable = true);
 		
-		signals:
+		Q_SIGNALS:
 
 			void
 			clicked();
@@ -318,7 +318,7 @@ namespace GPlatesQtWidgets
 		mousePressEvent(
 				QMouseEvent *event_);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_expand_icon_clicked();

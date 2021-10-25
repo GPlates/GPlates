@@ -46,7 +46,7 @@ GPlatesGui::SimpleGlobeOrientation::move_handle_to_pos(
 	d_rev_accum_rot = d_accum_rot.get_reverse();
 	d_handle_pos = pos;
 
-	emit orientation_changed();
+	Q_EMIT orientation_changed();
 }
 
 void
@@ -60,7 +60,7 @@ GPlatesGui::SimpleGlobeOrientation::move_camera_up(
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
 
-	emit orientation_changed();
+	Q_EMIT orientation_changed();
 }
 
 void
@@ -74,7 +74,7 @@ GPlatesGui::SimpleGlobeOrientation::move_camera_down(
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
 
-	emit orientation_changed();
+	Q_EMIT orientation_changed();
 }
 
 void
@@ -88,7 +88,7 @@ GPlatesGui::SimpleGlobeOrientation::move_camera_left(
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
 
-	emit orientation_changed();
+	Q_EMIT orientation_changed();
 }
 
 void
@@ -102,7 +102,7 @@ GPlatesGui::SimpleGlobeOrientation::move_camera_right(
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
 
-	emit orientation_changed();
+	Q_EMIT orientation_changed();
 }
 
 void
@@ -115,7 +115,7 @@ GPlatesGui::SimpleGlobeOrientation::rotate_camera_clockwise()
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
 
-	emit orientation_changed();
+	Q_EMIT orientation_changed();
 }
 
 void
@@ -128,7 +128,7 @@ GPlatesGui::SimpleGlobeOrientation::rotate_camera_anticlockwise()
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
 
-	emit orientation_changed();
+	Q_EMIT orientation_changed();
 }
 
 void
@@ -142,7 +142,7 @@ GPlatesGui::SimpleGlobeOrientation::rotate_camera(
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
 
-	emit orientation_changed();
+	Q_EMIT orientation_changed();
 }
 
 namespace
@@ -227,7 +227,7 @@ GPlatesGui::SimpleGlobeOrientation::orient_poles_vertically()
 	d_accum_rot = rot * d_accum_rot;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
 
-	emit orientation_changed();
+	Q_EMIT orientation_changed();
 }
 
 void
@@ -238,5 +238,5 @@ GPlatesGui::SimpleGlobeOrientation::set_rotation(
 	d_accum_rot = rotation_;
 	d_rev_accum_rot = d_accum_rot.get_reverse();
 
-	emit orientation_changed(/*should_emit_external_signal*/);
+	Q_EMIT orientation_changed(/*should_emit_external_signal*/);
 }

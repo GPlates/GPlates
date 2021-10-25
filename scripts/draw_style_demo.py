@@ -89,8 +89,11 @@ class FeatureAge:
 		pass
 				
 	def get_style(self, feature, style):
-		age = feature.begin_time()
-		style.colour = self.cfg['Palette'].get_color(pygplates.PaletteKey(float(age)))
+		bt = feature.begin_time()
+		ct = pygplates.Application().current_time()
+		if(bt >= ct):
+			age = bt - ct
+			style.colour = self.cfg['Palette'].get_color(pygplates.PaletteKey(float(age)))
 		
 	def get_config(self):
 		self.cfg_dict = {}
@@ -145,10 +148,10 @@ class ColorByProperty:
 
 		
 def register():
-	pygplates.Application().register_draw_style(PlateId())
-	pygplates.Application().register_draw_style(SingleColour())
-	pygplates.Application().register_draw_style(FeatureAge())
 	pygplates.Application().register_draw_style(FeatureType())
+	pygplates.Application().register_draw_style(FeatureAge())
+	pygplates.Application().register_draw_style(SingleColour())
+	pygplates.Application().register_draw_style(PlateId())
 	#pygplates.Application().register_draw_style(ColorByProperty())
 	#pygplates.Application().register_draw_style(Random1())
 	#pygplates.Application().register_draw_style(Random2())

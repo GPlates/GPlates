@@ -93,7 +93,6 @@ void
 GPlatesGui::ExportMotionPathAnimationStrategy::set_template_filename(
 		const QString &filename)
 {
-
 	ExportAnimationStrategy::set_template_filename(filename);
 }
 
@@ -128,6 +127,7 @@ GPlatesGui::ExportMotionPathAnimationStrategy::do_export_iteration(
 			d_export_animation_context_ptr->view_time(),
 			d_configuration->file_options.export_to_a_single_file,
 			d_configuration->file_options.export_to_multiple_files,
+			d_configuration->file_options.separate_output_directory_per_file,
 			d_configuration->wrap_to_dateline);
 
 	}

@@ -193,7 +193,7 @@ namespace GPlatesQtWidgets
 			return -1;
 		}
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when the user clicks or double clicks on an item (depending on
@@ -220,7 +220,7 @@ namespace GPlatesQtWidgets
 		focusInEvent(
 				QFocusEvent *ev);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_listwidget_item_activated(

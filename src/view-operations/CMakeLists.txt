@@ -11,7 +11,6 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
-    ActiveGeometryOperation.h
     AddPointGeometryOperation.cc
     AddPointGeometryOperation.h
     CloneOperation.cc
@@ -28,11 +27,8 @@ set(srcs
     GeometryBuilderUndoCommands.h
     GeometryOperation.cc
     GeometryOperation.h
-    GeometryOperationTarget.cc
-    GeometryOperationTarget.h
     GeometryOperationUndo.cc
     GeometryOperationUndo.h
-    GeometryType.h
     InsertVertexGeometryOperation.cc
     InsertVertexGeometryOperation.h
     InternalGeometryBuilder.cc
@@ -42,6 +38,8 @@ set(srcs
     QueryProximityThreshold.h
     RenderedArrowedPolyline.h
     RenderedCircleSymbol.h
+    RenderedColouredEdgeSurfaceMesh.h
+    RenderedColouredTriangleSurfaceMesh.h
     RenderedCrossSymbol.h
     RenderedDirectionArrow.h
     RenderedEllipse.h
@@ -68,11 +66,15 @@ set(srcs
     RenderedPolylineOnSphere.h
     RenderedReconstructionGeometry.h
     RenderedResolvedRaster.h
+    RenderedResolvedScalarField3D.h
     RenderedSmallCircle.h
     RenderedSmallCircleArc.h
     RenderedSquareSymbol.h
+    RenderedStrainMarkerSymbol.h
     RenderedString.h
     RenderedTriangleSymbol.h
+    ScalarField3DRenderParameters.cc
+    ScalarField3DRenderParameters.h
     SplitFeatureGeometryOperation.cc
     SplitFeatureGeometryOperation.h
     SplitFeatureUndoCommand.cc

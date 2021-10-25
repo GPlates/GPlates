@@ -68,6 +68,32 @@ namespace GPlatesModel
 	{
 	public:
 
+		// NOTE: The GPGIM namespace is not part of the feature readers but is placed here
+		// in order to re-use a lot of the XML parsing machinery when reading the GPGIM XML file.
+		static
+		const QualifiedXmlName
+		create_gpgim(
+				const QString &name) {
+			return QualifiedXmlName(
+					GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE,
+					GPlatesUtils::make_icu_string_from_qstring(name));
+		}
+
+
+		// NOTE: The GPGIM namespace is not part of the feature readers but is placed here
+		// in order to re-use a lot of the XML parsing machinery when reading the GPGIM XML file.
+		static
+		const QualifiedXmlName
+		create_gpgim(
+				const QString &namespace_alias,
+				const QString &name) {
+			return QualifiedXmlName(
+					GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE, 
+					GPlatesUtils::make_icu_string_from_qstring(namespace_alias),
+					GPlatesUtils::make_icu_string_from_qstring(name));
+		}
+
+
 		static
 		const QualifiedXmlName
 		create_gpml(
@@ -122,6 +148,11 @@ namespace GPlatesModel
 		}
 
 
+		/**
+		 * Constructor for when other QualifiedXmlName<U> type is different to 'this'.
+		 *
+		 * Compiler should only use this when U != SingletonType (see http://www.gotw.ca/gotw/016.htm).
+		 */
 		template<typename U>
 		explicit 
 		QualifiedXmlName(
@@ -129,6 +160,24 @@ namespace GPlatesModel
 			d_namespace(other.get_namespace_iterator()), 
 			d_namespace_alias(other.get_namespace_alias_iterator()),
 			d_name(SingletonType::instance().insert(other.get_name()))
+		{ }
+
+
+		/**
+		 * Copy constructor for when other type is same as 'this'.
+		 *
+		 * Compiler should implicitly generate this for us even though we've defined the
+		 * templated constructor above (that looks like a copy-constructor but is not).
+		 * However we'll explicitly define a copy constructor just in case.
+		 *
+		 * This is more efficient than the template constructor above since it doesn't require
+		 * an insertion (because 'other' object references the same string set singletons as 'this').
+		 */
+		QualifiedXmlName(
+				const QualifiedXmlName &other) :
+			d_namespace(other.d_namespace), 
+			d_namespace_alias(other.d_namespace_alias),
+			d_name(other.d_name)
 		{ }
 
 
@@ -246,7 +295,7 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Determine whether another QualifiedXmlName instance contains the same property name
+		 * Determine whether another QualifiedXmlName instance contains the same qualified name
 		 * as this instance.
 		 */
 		bool
@@ -254,6 +303,48 @@ namespace GPlatesModel
 				const QualifiedXmlName<SingletonType> &other) const {
 			return (d_name == other.d_name)
 				&& (d_namespace == other.d_namespace);
+		}
+
+		/**
+		 * Equality comparison operator.
+		 */
+		bool
+		operator==(
+				const QualifiedXmlName &other) const {
+			return is_equal_to(other);
+		}
+
+		/**
+		 * Inequality comparison operator.
+		 */
+		bool
+		operator!=(
+				const QualifiedXmlName &other) const {
+			return !is_equal_to(other);
+		}
+
+		/**
+		 * Less-than operator - provided so @a QualifiedXmlName can be used as a key in std::map.
+		 */
+		bool
+		operator<(
+				const QualifiedXmlName &other) const
+		{
+			// Test optimised code path first (where both namespaces match) since this is an
+			// efficient shared iterator comparison.
+			if (d_namespace == other.d_namespace)
+			{
+				// Do a string comparison on the unqualified names.
+				return GPLATES_ICU_BOOL(*d_name < *other.d_name);
+			}
+
+			// Do expensive namespace string comparison second.
+			//
+			// We can't use the shorter namespace alias because it's not fully qualified
+			// (ie, it's possible, although shouldn't happen, that two different aliases refer
+			// to the same namespace or the same alias referred to two different namespaces
+			// in two different parts of the XML file).
+			return GPLATES_ICU_BOOL(*d_namespace < *other.d_namespace);
 		}
 
 	private:
@@ -270,38 +361,57 @@ namespace GPlatesModel
 	};
 
 
-	template<typename SingletonType>
-	inline
-	bool
-	operator==(
-			const QualifiedXmlName<SingletonType> &qn1,
-			const QualifiedXmlName<SingletonType> &qn2) {
-		return qn1.is_equal_to(qn2);
-	}
-
-
-	template<typename SingletonType>
-	inline
-	bool
-	operator!=(
-			const QualifiedXmlName<SingletonType> &qn1,
-			const QualifiedXmlName<SingletonType> &qn2) {
-		return ! qn1.is_equal_to(qn2);
+	/**
+	 * Convenience function to convert a @a QualifiedXmlName to a QString as:
+	 *    "<namespace_alias>:<name>".
+	 */
+	template <class SingletonType>
+	QString
+	convert_qualified_xml_name_to_qstring(
+			const QualifiedXmlName<SingletonType> &qualified_xml_name)
+	{
+		return GPlatesUtils::make_qstring_from_icu_string(
+				qualified_xml_name.build_aliased_name());
 	}
 
 
 	/**
-	 * Used when QualifiedXmlNames are used as keys in a @c std::map.
+	 * Converts a QString, represented as "<namespace_alias>:<name>", to a @a QualifiedXmlName.
+	 *
+	 * For example:
+	 *     convert_qstring_to_qualified_xml_name<FeatureType>(qualified_string);
+	 *
+	 * If the "<namespace_alias>" part of the specified string is not one of the standard namespaces
+	 * used in GPlates then the "gpml" namespace is assumed.
 	 */
-	template<typename SingletonType>
-	inline
-	bool
-	operator<(
-			const QualifiedXmlName<SingletonType> &qn1,
-			const QualifiedXmlName<SingletonType> &qn2) {
-		return GPLATES_ICU_BOOL(qn1.get_name() < qn2.get_name());
-	}
+	template <class QualifiedXmlNameType>
+	boost::optional<QualifiedXmlNameType>
+	convert_qstring_to_qualified_xml_name(
+			const QString &qualified_string)
+	{
+		QStringList tokens = qualified_string.split(':');
 
+		// We expect the string to be qualified.
+		if (tokens.count() == 2)
+		{
+			return QualifiedXmlNameType(
+					*GPlatesUtils::XmlNamespaces::get_namespace_for_standard_alias(
+							GPlatesUtils::make_icu_string_from_qstring(tokens.at(0))),
+					GPlatesUtils::make_icu_string_from_qstring(tokens.at(1)));
+		}
+
+		// If the string is not qualified then assume the "gpml" namespace - which is pretty much
+		// what 'XmlNamespaces::get_namespace_for_standard_alias()' does.
+		if (tokens.count() == 1)
+		{
+			return QualifiedXmlNameType(
+					GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING,
+					tokens.at(0));
+		}
+
+		// Some 'overqualified' name.
+		return boost::none;
+	}
 }
 
 
@@ -311,22 +421,20 @@ namespace GPlatesUtils
 	template<typename SingletonType>
 	struct Parse<GPlatesModel::QualifiedXmlName<SingletonType> >
 	{
-		GPlatesModel::QualifiedXmlName<SingletonType>
+		typedef GPlatesModel::QualifiedXmlName<SingletonType> qualified_xml_name_type;
+
+		qualified_xml_name_type
 		operator()(
 				const QString &s)
 		{
-			QStringList tokens = s.split(':');
-			if (tokens.count() == 2)
-			{
-				return GPlatesModel::QualifiedXmlName<SingletonType>(
-						*GPlatesUtils::XmlNamespaces::get_namespace_for_standard_alias(
-							GPlatesUtils::make_icu_string_from_qstring(tokens.at(0))),
-						GPlatesUtils::make_icu_string_from_qstring(tokens.at(1)));
-			}
-			else
+			boost::optional<qualified_xml_name_type> qualified_xml_name =
+					GPlatesModel::convert_qstring_to_qualified_xml_name<qualified_xml_name_type>(s);
+			if (!qualified_xml_name)
 			{
 				throw ParseError();
 			}
+
+			return qualified_xml_name.get();
 		}
 	};
 }

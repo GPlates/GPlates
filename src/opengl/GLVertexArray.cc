@@ -44,9 +44,11 @@ std::auto_ptr<GPlatesOpenGL::GLVertexArray>
 GPlatesOpenGL::GLVertexArray::create_as_auto_ptr(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Create an OpenGL vertex array object if we can.
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
-	if (GLEW_ARB_vertex_array_object)
+	if (capabilities.buffer.gl_ARB_vertex_array_object)
 	{
 		return std::auto_ptr<GPlatesOpenGL::GLVertexArray>(
 				GLVertexArrayObject::create_as_auto_ptr(renderer));

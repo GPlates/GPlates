@@ -31,27 +31,25 @@
 #include <QUndoCommand>
 #include <QString>
 
-#include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/UndoRedo.h"
 
 
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
+	class CanvasToolWorkflows;
 	class ChooseCanvasToolUndoCommand;
 }
 
 namespace GPlatesViewOperations
 {
 	class GeometryOperation;
-	class GeometryOperationTarget;
-	class GeometryOperationTargetUndoCommand;
 
 	/**
-	 * Undo/redo command for handling geometry operation target undo/redo,
-	 * canvas tool choice undo/redo,
+	 * Undo/redo command for handling canvas tool choice undo/redo,
 	 * geometry operation activation/deactivation and
 	 * the specific geometry operation undo/redo itself.
+	 *
+	 * NOTE: The canvas tool used for undo/redo is the currently active canvas tool.
 	 */
 	class GeometryOperationUndoCommand :
 		public QUndoCommand
@@ -61,10 +59,7 @@ namespace GPlatesViewOperations
 				const QString &text_,
 				std::auto_ptr<QUndoCommand> geometry_operation_command,
 				GeometryOperation *geometry_operation,
-				GeometryOperationTarget *geometry_operation_target,
-				RenderedGeometryCollection::MainLayerType main_layer_type,
-				GPlatesGui::ChooseCanvasTool *choose_canvas_tool,
-				void (GPlatesGui::ChooseCanvasTool::*choose_geometry_operation_tool)(),
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				UndoRedo::CommandId command_id = UndoRedo::CommandId(),
 				QUndoCommand *parent_ = 0);
 
@@ -104,9 +99,6 @@ namespace GPlatesViewOperations
 		UndoRedo::CommandId d_command_id;
 		boost::scoped_ptr<QUndoCommand> d_geometry_operation_command;
 		GeometryOperation *d_geometry_operation;
-		GeometryOperationTarget *d_geometry_operation_target;
-		boost::scoped_ptr<GeometryOperationTargetUndoCommand> d_geometry_operation_target_undo_command;
-		RenderedGeometryCollection::MainLayerType d_main_layer_type;
 		boost::scoped_ptr<GPlatesGui::ChooseCanvasToolUndoCommand> d_choose_canvas_tool_command;
 	};
 }

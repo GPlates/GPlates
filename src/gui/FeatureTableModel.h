@@ -42,11 +42,6 @@ namespace GPlatesAppLogic
 	class ReconstructGraph;
 }
 
-namespace GPlatesPresentation
-{
-	class ViewState;
-}
-
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
@@ -98,7 +93,8 @@ namespace GPlatesGui
 	
 		explicit
 		FeatureTableModel(
-				GPlatesPresentation::ViewState &view_state,
+				FeatureFocus &feature_focus,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				QObject *parent_ = NULL);
 		
 		/**
@@ -322,7 +318,7 @@ namespace GPlatesGui
 		get_index_for_geometry(
 				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry);
 
-	public slots:
+	public Q_SLOTS:
 		
 		/**
 		 * ViewportWindow connects the QTableView's selection model's change event to this

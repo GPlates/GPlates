@@ -29,15 +29,16 @@
 #include <QWidget>
 
 #include "maths/GeometryOnSphere.h"
+
 #include "model/FeatureHandle.h"
 #include "model/PropertyValue.h"
 
-/**
- *  An abstract base class for the creation of customised feature properties 
- */
+
 namespace GPlatesQtWidgets
 {
-
+	/**
+	 *  An abstract base class for special handling of feature properties.
+	 */
 	class AbstractCustomPropertiesWidget:
 		public QWidget
 	{
@@ -53,36 +54,15 @@ namespace GPlatesQtWidgets
 		virtual
 		~AbstractCustomPropertiesWidget()
 		{  }
-		
-		virtual
-		void
-		add_properties_to_feature(
-			GPlatesModel::FeatureHandle::weak_ref feature_handle) = 0;
 
-		virtual
-		void
-		add_geometry_properties_to_feature(
-                        GPlatesModel::FeatureHandle::weak_ref feature_handle) = 0;
-			
-		virtual
-		void
-		update()
-		{ }
-		
-		virtual
-		void
-		do_custom_tasks(
-			GPlatesModel::FeatureHandle::weak_ref feature_handle)
-		{ }
-
-                virtual
-                GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-                do_geometry_tasks(
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry_,
-			const GPlatesModel::FeatureHandle::weak_ref &feature_handle)
-                {
-                    return geometry_;
-                }
+        virtual
+        GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+        do_geometry_tasks(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstruction_time_geometry_,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_handle)
+        {
+            return reconstruction_time_geometry_;
+        }
 
 	};
 }

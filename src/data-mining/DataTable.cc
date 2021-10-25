@@ -56,7 +56,8 @@ GPlatesDataMining::DataTable::export_as_CSV(
 }
 
 void
-GPlatesDataMining::DataTable::to_qstring_table(std::vector<std::vector<QString> >& table) const
+GPlatesDataMining::DataTable::to_qstring_table(
+		std::vector<std::vector<QString> >& table) const
 {
 	const_iterator iter = begin(), iter_end = end();
 

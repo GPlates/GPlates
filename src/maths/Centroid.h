@@ -69,7 +69,7 @@ namespace GPlatesMaths
 		/**
 		 * Calculates the centroid of the sequence of @a PointOnSphere objects.
 		 *
-		 * Returns false if centroid cannot be determined because points sum to the zero vector.
+		 * Returns first vertex if centroid cannot be determined because points sum to the zero vector.
 		 *
 		 * @throws @a PreconditionViolationError if @a begin equals @a end.
 		 */
@@ -82,7 +82,7 @@ namespace GPlatesMaths
 		/**
 		 * Calculates the centroid of the sequence of @a UnitVector3D objects.
 		 *
-		 * Returns false if centroid cannot be determined because points sum to the zero vector.
+		 * Returns first vertex if centroid cannot be determined because points sum to the zero vector.
 		 *
 		 * @throws @a PreconditionViolationError if @a begin equals @a end.
 		 */
@@ -96,7 +96,7 @@ namespace GPlatesMaths
 		/**
 		 * Calculates the centroid of points on @a polygon.
 		 *
-		 * Returns false if centroid cannot be determined because points sum to the zero vector.
+		 * Returns first vertex if centroid cannot be determined because points sum to the zero vector.
 		 */
 		inline
 		GPlatesMaths::UnitVector3D
@@ -110,7 +110,7 @@ namespace GPlatesMaths
 		/**
 		 * Calculates the centroid of points on @a polyline.
 		 *
-		 * Returns false if centroid cannot be determined because points sum to the zero vector.
+		 * Returns first vertex if centroid cannot be determined because points sum to the zero vector.
 		 */
 		inline
 		GPlatesMaths::UnitVector3D
@@ -124,7 +124,7 @@ namespace GPlatesMaths
 		/**
 		 * Calculates the centroid of points on @a multi_point.
 		 *
-		 * Returns false if centroid cannot be determined because points sum to the zero vector.
+		 * Returns first vertex if centroid cannot be determined because points sum to the zero vector.
 		 */
 		inline
 		GPlatesMaths::UnitVector3D

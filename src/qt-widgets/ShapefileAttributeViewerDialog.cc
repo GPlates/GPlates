@@ -23,7 +23,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include <boost/foreach.hpp>
 
 #include "ShapefileAttributeViewerDialog.h"
@@ -34,7 +33,6 @@
 #include "feature-visitors/ToQvariantConverter.h"
 
 #include "file-io/FileInfo.h"
-
 
 namespace
 {
@@ -212,7 +210,7 @@ namespace
 GPlatesQtWidgets::ShapefileAttributeViewerDialog::ShapefileAttributeViewerDialog(
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		QWidget *parent_):
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
+	GPlatesDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 {
 	setupUi(this);
 

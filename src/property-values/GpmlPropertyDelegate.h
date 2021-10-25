@@ -28,7 +28,7 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLPROPERTYDELEGATE_H
 #define GPLATES_PROPERTYVALUES_GPMLPROPERTYDELEGATE_H
 
-#include "TemplateTypeParameterType.h"
+#include "StructuralType.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
@@ -37,7 +37,7 @@
 #include "utils/UnicodeStringUtils.h"
 
 
-// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlPropertyDelegate, visit_gpml_property_delegate)
@@ -90,7 +90,7 @@ namespace GPlatesPropertyValues
 		create(
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::PropertyName &property_,
-				const TemplateTypeParameterType &value_type_)
+				const StructuralType &value_type_)
 		{
 			non_null_ptr_type ptr(
 					new GpmlPropertyDelegate(feature_, property_, value_type_));
@@ -114,13 +114,13 @@ namespace GPlatesPropertyValues
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
-		const GPlatesModel::FeatureId
+		const GPlatesModel::FeatureId &
 		feature_id() const
 		{
 			return d_feature;
 		}
 
-		const GPlatesModel::PropertyName
+		const GPlatesModel::PropertyName &
 		target_property() const
 		{
 			return d_property;
@@ -128,10 +128,21 @@ namespace GPlatesPropertyValues
 
 		// Note that no "setter" is provided:  The value type of a GpmlPropertyDelegate
 		// instance should never be changed.
-		const TemplateTypeParameterType &
+		const StructuralType &
 		value_type() const
 		{
 			return d_value_type;
+		}
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("PropertyDelegate");
+			return STRUCTURAL_TYPE;
 		}
 
 		/**
@@ -174,7 +185,7 @@ namespace GPlatesPropertyValues
 		GpmlPropertyDelegate(
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::PropertyName &property_,
-				const TemplateTypeParameterType &value_type_):
+				const StructuralType &value_type_):
 			PropertyValue(),
 			d_feature(feature_),
 			d_property(property_),
@@ -198,7 +209,7 @@ namespace GPlatesPropertyValues
 
 		GPlatesModel::FeatureId d_feature;
 		GPlatesModel::PropertyName d_property;
-		TemplateTypeParameterType d_value_type;
+		StructuralType d_value_type;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

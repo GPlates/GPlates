@@ -176,7 +176,6 @@ namespace
 
 
 GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
-		GPlatesGui::AnimationController &animation_controller,
 		ViewportWindow &viewport_window,
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
@@ -192,7 +191,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// down so it goes to the left of the splitter, giving the TaskPanel some more
 	// room.
 	std::auto_ptr<QWidget> awesomebar_one = construct_awesomebar_one(
-			animation_controller, viewport_window);
+			view_state.get_animation_controller(), viewport_window);
 
 	// Construct the "View Bar" for the bottom.
 	std::auto_ptr<QWidget> viewbar = 
@@ -393,7 +392,7 @@ void
 GPlatesQtWidgets::ReconstructionViewWidget::handle_update_tools_and_status_message()
 {
 	recalc_camera_position();
-	emit update_tools_and_status_message();
+	Q_EMIT update_tools_and_status_message();
 }
 
 
@@ -577,11 +576,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::insert_task_panel(
-		std::auto_ptr<GPlatesQtWidgets::TaskPanel> task_panel)
+		GPlatesQtWidgets::TaskPanel *task_panel)
 {
 	// Add the Task Panel to the right-hand edge of the QSplitter in
 	// the middle of the ReconstructionViewWidget.
-	d_splitter_widget->addWidget(task_panel.release());
+	d_splitter_widget->addWidget(task_panel);
 }
 
 
@@ -642,7 +641,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 	{
 		if (llp)
 		{
-			emit send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
+			Q_EMIT send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
 		}
 	}
 	else if (globe_is_active())
@@ -650,10 +649,10 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 		boost::optional<GPlatesMaths::Rotation> rotation = active_view().orientation();
 		if (rotation)
 		{
-			emit send_orientation_to_stdout(*rotation);
+			Q_EMIT send_orientation_to_stdout(*rotation);
 #if 0
 			// For now, continue to emit llp as well. 
-			emit send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
+			Q_EMIT send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
 #endif
 		}
 	}

@@ -34,6 +34,7 @@
 
 #include "TotalReconstructionPolesDialogUi.h"
 
+#include "GPlatesDialog.h"
 #include "SaveFileDialog.h"
 
 #include "presentation/VisualLayer.h"
@@ -55,7 +56,7 @@ namespace GPlatesQtWidgets
 	class VisualLayersComboBox;
 
 	class TotalReconstructionPolesDialog:
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_TotalReconstructionPolesDialog
 	{
 		Q_OBJECT
@@ -67,7 +68,7 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Updates the dialog. (After the reconstruction time/plate has been
@@ -89,7 +90,7 @@ namespace GPlatesQtWidgets
 		showEvent(
 				QShowEvent *event_);
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * Export the relative-rotation data in csv form. 

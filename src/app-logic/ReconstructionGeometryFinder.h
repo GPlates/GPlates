@@ -29,8 +29,8 @@
 #include <vector>
 #include <boost/optional.hpp>
 
+#include "ReconstructHandle.h"
 #include "ReconstructionGeometry.h"
-#include "ReconstructionTree.h"
 
 #include "model/FeatureHandle.h"
 #include "model/PropertyName.h"
@@ -41,11 +41,10 @@ namespace GPlatesAppLogic
 {
 	/**
 	 * This weak observer visitor finds all the reconstruction geometries (RGs) which
-	 * are observing a given feature (eg, ReconstructedFeatureGeometry
-	 * and ResolvedTopologicalBoundary).
+	 * are observing a given feature (eg, ReconstructedFeatureGeometry and ResolvedTopologicalGeometry).
 	 *
 	 * Optionally, it can limit its results to those RG instances which are contained within a
-	 * particular Reconstruction, which were reconstructed from geometries with a particular
+	 * particular reconstruction group, which were reconstructed from geometries with a particular
 	 * property name, or both.
 	 */
 	class ReconstructionGeometryFinder :
@@ -60,13 +59,12 @@ namespace GPlatesAppLogic
 		/**
 		 * Constructor.
 		 *
-		 * If a ReconstructionTree is supplied to the optional parameter @a reconstruction_tree_to_match,
-		 * the results will be limited to those RGs that reference that ReconstructionTree instance.
+		 * If @a reconstruct_handles_to_match is specified then only matching RGs will be returned.
 		 */
 		explicit
 		ReconstructionGeometryFinder(
-				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none) :
-			d_reconstruction_tree_to_match(reconstruction_tree_to_match)
+				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles_to_match = boost::none) :
+			d_reconstruct_handles_to_match(reconstruct_handles_to_match)
 		{  }
 
 		/**
@@ -75,15 +73,14 @@ namespace GPlatesAppLogic
 		 * Limit the results to those RGs reconstructed from a geometry with the property
 		 * name @a property_name_to_match.
 		 *
-		 * If a ReconstructionTree is supplied to the optional parameter @a reconstruction_tree_to_match,
-		 * the results will be limited to those RFGs that reference that ReconstructionTree instance.
+		 * If @a reconstruct_handles_to_match is specified then only matching RGs will be returned.
 		 */
 		explicit
 		ReconstructionGeometryFinder(
 				const GPlatesModel::PropertyName &property_name_to_match,
-				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none) :
+				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles_to_match = boost::none) :
 			d_property_name_to_match(property_name_to_match),
-			d_reconstruction_tree_to_match(reconstruction_tree_to_match)
+			d_reconstruct_handles_to_match(reconstruct_handles_to_match)
 		{  }
 
 		/**
@@ -96,15 +93,14 @@ namespace GPlatesAppLogic
 		 * a single feature, we can find at most one matching RG (so @a num_rgs_found should
 		 * only return zero or one).
 		 *
-		 * If a ReconstructionTree is supplied to the optional parameter @a reconstruction_tree_to_match,
-		 * the results will be limited to those RGs that reference that ReconstructionTree instance.
+		 * If @a reconstruct_handles_to_match is specified then only matching RGs will be returned.
 		 */
 		explicit
 		ReconstructionGeometryFinder(
 				const GPlatesModel::FeatureHandle::iterator &properties_iterator_to_match,
-				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree_to_match = boost::none):
+				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles_to_match = boost::none):
 			d_properties_iterator_to_match(properties_iterator_to_match),
-			d_reconstruction_tree_to_match(reconstruction_tree_to_match)
+			d_reconstruct_handles_to_match(reconstruct_handles_to_match)
 		{  }
 
 		/**
@@ -195,8 +191,8 @@ namespace GPlatesAppLogic
 
 		virtual
 		void
-		visit_resolved_topological_boundary(
-				ResolvedTopologicalBoundary &rtb);
+		visit_resolved_topological_geometry(
+				ResolvedTopologicalGeometry &rtb);
 
 		virtual
 		void
@@ -206,7 +202,7 @@ namespace GPlatesAppLogic
 	private:
 		boost::optional<GPlatesModel::PropertyName> d_property_name_to_match;
 		boost::optional<GPlatesModel::FeatureHandle::iterator> d_properties_iterator_to_match;
-		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> d_reconstruction_tree_to_match;
+		boost::optional<std::vector<ReconstructHandle::type> > d_reconstruct_handles_to_match;
 
 		rg_container_type d_found_rgs;
 

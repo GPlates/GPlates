@@ -42,6 +42,7 @@
 
 #include "GLContext.h"
 #include "GLFrustum.h"
+#include "GLImageUtils.h"
 #include "GLIntersect.h"
 #include "GLMatrix.h"
 #include "GLProjectionUtils.h"
@@ -69,42 +70,14 @@ namespace GPlatesOpenGL
 	namespace
 	{
 		//! Vertex shader source code to render a tile to the scene.
-		const char *RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE =
-				"void main (void)\n"
-				"{\n"
-
-				"	// Position gets transformed exactly same as fixed-function pipeline.\n"
-				"	gl_Position = ftransform(); //gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
-
-				"	// Transform 3D texture coords (present day posisiont) by cube map projection and\n"
-				"	// any texture coordinate adjustments before accessing textures.\n"
-				"	// We have two texture transforms but only one texture coordinate.\n"
-				"	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;\n"
-				"	gl_TexCoord[1] = gl_TextureMatrix[1] * gl_MultiTexCoord0;\n"
-
-				"}\n";
+		const QString RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME =
+				":/opengl/multi_resolution_raster_map_view/render_tile_to_scene_vertex_shader.glsl";
 
 		/**
 		 * Fragment shader source code to render a tile to the scene.
 		 */
-		const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
-				"uniform sampler2D tile_texture_sampler;\n"
-
-				"#ifdef ENABLE_CLIPPING\n"
-				"uniform sampler2D clip_texture_sampler;\n"
-				"#endif // ENABLE_CLIPPING\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	// Projective texturing to handle cube map projection.\n"
-				"	gl_FragColor = texture2DProj(tile_texture_sampler, gl_TexCoord[0]);\n"
-
-				"#ifdef ENABLE_CLIPPING\n"
-				"	gl_FragColor *= texture2DProj(clip_texture_sampler, gl_TexCoord[1]);\n"
-				"#endif // ENABLE_CLIPPING\n"
-
-				"}\n";
+		const QString RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/multi_resolution_raster_map_view/render_tile_to_scene_fragment_shader.glsl";
 
 
 		/**
@@ -124,7 +97,7 @@ namespace GPlatesOpenGL
 			const QString debug_text = QString("LOD %1").arg(level_of_detail);
 
 			// Draw text into an image.
-			const QImage debug_image = GLTextureUtils::draw_text_into_qimage(
+			const QImage debug_image = GLImageUtils::draw_text_into_qimage(
 					debug_text,
 					tile_texel_dimension, tile_texel_dimension,
 					3.0f/*text scale*/,
@@ -230,6 +203,9 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 {
 	PROFILE_FUNC();
 
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
 	// First see if the map projection central meridian has changed.
 	// If so then we need to invalidate the source raster cube map cache because it is aligned with
 	// the central meridian and must be regenerated.
@@ -258,10 +234,6 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 		// Note that this invalidates all cached textures so we only want to call it if the transform changed.
 		d_multi_resolution_cube_raster->set_world_transform(GLMatrix(world_transform.quat()));
 	}
-
-
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// Determine the size of a viewport pixel in map projection coordinates.
 	const double viewport_pixel_size_in_map_projection =
@@ -662,13 +634,6 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 		}
 	}
 
-	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
-	// might not be rendering directly to the final render target and hence we don't
-	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
-	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
-	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
-	// which is not what we want - we want (A*R,A*G,A*B,A*A).
-
 #if 0
 	// Used to render as wire-frame meshes instead of filled textured meshes for
 	// visualising mesh density.
@@ -749,19 +714,23 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::create_shader_programs(
 	d_render_tile_to_scene_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE,
-					RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME));
 
 	// A version with clipping.
 	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_clipping_shader_source;
 	// Add the '#define' first.
 	render_tile_to_scene_with_clipping_shader_source.add_shader_source("#define ENABLE_CLIPPING\n");
 	// Then add the GLSL 'main()' function.
-	render_tile_to_scene_with_clipping_shader_source.add_shader_source(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+	render_tile_to_scene_with_clipping_shader_source.add_shader_source_from_file(
+			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Create the program object.
 	d_render_tile_to_scene_with_clipping_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE,
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
 					render_tile_to_scene_with_clipping_shader_source);
 }

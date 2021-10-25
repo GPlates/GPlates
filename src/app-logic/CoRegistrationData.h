@@ -57,9 +57,9 @@ namespace GPlatesAppLogic
 		static
 		non_null_ptr_type
 		create(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_)
+				const double &reconstruction_time)
 		{
-			return non_null_ptr_type(new CoRegistrationData(reconstruction_tree_));
+			return non_null_ptr_type(new CoRegistrationData(reconstruction_time));
 		}
 
 
@@ -121,8 +121,8 @@ namespace GPlatesAppLogic
 		 */
 		explicit
 		CoRegistrationData(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_):
-			ReconstructionGeometry(reconstruction_tree_)
+				const double &reconstruction_time_):
+			ReconstructionGeometry(reconstruction_time_)
 		{  }
 	};
 		

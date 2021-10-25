@@ -35,6 +35,6 @@ class FeatureCollectionSizeUtility:
 				print f.get_properties() #get all properties in a particular feature
 
 def register():
-	print "registering..."
+	pass
 	#pygplates.Application().register_utility(FeatureCollectionSizeUtility())
 

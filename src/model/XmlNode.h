@@ -27,21 +27,23 @@
 #ifndef GPLATES_MODEL_XMLNODE_H
 #define GPLATES_MODEL_XMLNODE_H
 
-#include <QtXml/QXmlStreamReader>
 #include <map>
 #include <list>
 #include <utility>
-
 #include <boost/shared_ptr.hpp>
+#include <QtXml/QXmlStreamReader>
+
+#include "XmlAttributeName.h"
+#include "XmlAttributeValue.h"
+#include "XmlElementName.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
 #include "utils/StringSet.h"
-#include "PropertyName.h"
-#include "XmlAttributeName.h"
-#include "XmlAttributeValue.h"
 
-namespace GPlatesModel {
+namespace GPlatesModel
+{
 
 	class XmlNodeVisitor;
 
@@ -132,7 +134,8 @@ namespace GPlatesModel {
 						non_null_ptr_to_const_type;
 
 		const QString &
-		get_text() const {
+		get_text() const
+		{
 			return d_text;
 		}
 
@@ -208,24 +211,28 @@ namespace GPlatesModel {
 
 		typedef std::map<QString, QString> AliasToNamespaceMap;
 
-		const PropertyName &
-		get_name() const {
+		const XmlElementName &
+		get_name() const
+		{
 			return d_name;
 		}
 
 		const attribute_const_iterator
 		get_attribute_by_name(
-				const XmlAttributeName &name) const {
+				const XmlAttributeName &name) const
+		{
 			return d_attributes.find(name);
 		}
 
 		const attribute_const_iterator
-		attributes_begin() const {
+		attributes_begin() const
+		{
 			return d_attributes.begin();
 		}
 
 		const attribute_const_iterator
-		attributes_end() const {
+		attributes_end() const
+		{
 			return d_attributes.end();
 		}
 
@@ -233,31 +240,35 @@ namespace GPlatesModel {
 		 * Warning: O(n).  Map should be small though...
 		 */
 		size_t
-		number_of_attributes() const {
+		number_of_attributes() const
+		{
 			return d_attributes.size();
 		}
 
 		bool
-		attributes_empty() const {
+		attributes_empty() const
+		{
 			return d_attributes.empty();
 		}
 
 		boost::optional<non_null_ptr_type>
 		get_child_by_name(
-				const PropertyName &name) const;
+				const XmlElementName &name) const;
 
 		named_child_const_iterator
 		get_next_child_by_name(
-				const PropertyName &name,
+				const XmlElementName &name,
 				const child_const_iterator &begin) const;
 
 		const child_const_iterator
-		children_begin() const {
+		children_begin() const
+		{
 			return d_children.begin();
 		}
 
 		const child_const_iterator
-		children_end() const {
+		children_end() const
+		{
 			return d_children.end();
 		}
 
@@ -265,21 +276,25 @@ namespace GPlatesModel {
 		 * Warning: O(n).  List should be small though...
 		 */
 		size_t
-		number_of_children() const {
+		number_of_children() const
+		{
 			return d_children.size();
 		}
 
 		bool
-		children_empty() const {
+		children_empty() const
+		{
 			return d_children.empty();
 		}
 
 		const boost::optional<QString>
 		get_namespace_from_alias(
-				const QString &alias) const {
+				const QString &alias) const
+		{
 			boost::optional<QString> ns_for_alias;
 			AliasToNamespaceMap::const_iterator iter = d_alias_map->find(alias);
-			if (iter != d_alias_map->end()) {
+			if (iter != d_alias_map->end())
+			{
 				ns_for_alias = iter->second;
 			}
 			return ns_for_alias;
@@ -300,7 +315,7 @@ namespace GPlatesModel {
 		const non_null_ptr_type
 		create(
 				const XmlTextNode::non_null_ptr_type &text,
-				const PropertyName &prop_name);
+				const XmlElementName &element_name);
 
 		virtual
 		void
@@ -317,7 +332,8 @@ namespace GPlatesModel {
 				const XmlElementNode &other) const;
 
 	private:
-		PropertyName d_name;
+
+		XmlElementName d_name;
 		AttributeCollection d_attributes;
 		ChildCollection d_children;
 		boost::shared_ptr<AliasToNamespaceMap> d_alias_map;
@@ -325,7 +341,7 @@ namespace GPlatesModel {
 		XmlElementNode(
 				const qint64 &line_num,
 				const qint64 &col_num,
-				const PropertyName &name):
+				const XmlElementName &name):
 			XmlNode(line_num, col_num), d_name(name)
 		{ }
 

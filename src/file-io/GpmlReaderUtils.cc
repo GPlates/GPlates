@@ -24,8 +24,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-
 #include "GpmlReaderUtils.h"
+
 
 namespace 
 {
@@ -38,7 +38,8 @@ namespace
 			GPlatesFileIO::ReadErrors::Description desc,
 			GPlatesFileIO::ReadErrors::Result res)
 	{
-		if (condition) {
+		if (condition)
+		{
 			boost::shared_ptr<GPlatesFileIO::LocationInDataSource> loc(
 				new GPlatesFileIO::LineNumber(current_elem->line_number()));
 			errors.push_back(
@@ -57,7 +58,8 @@ namespace
 			GPlatesFileIO::ReadErrors::Description desc,
 			GPlatesFileIO::ReadErrors::Result res)
 	{
-		if (condition) {
+		if (condition)
+		{
 			boost::shared_ptr<GPlatesFileIO::LocationInDataSource> loc(
 				new GPlatesFileIO::LineNumber(params.reader.lineNumber()));
 			errors.push_back(

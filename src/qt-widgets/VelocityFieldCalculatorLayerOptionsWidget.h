@@ -28,6 +28,7 @@
 
 #include "VelocityFieldCalculatorLayerOptionsWidgetUi.h"
 
+#include "InformationDialog.h"
 #include "LayerOptionsWidget.h"
 
 
@@ -75,13 +76,26 @@ namespace GPlatesQtWidgets
 		const QString &
 		get_title();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
-		handle_constrained_clicked();
+		handle_solve_velocity_method_combobox_activated(
+				int index);
 
 		void
-		handle_triangulation_clicked();
+		handle_arrow_spacing_value_changed(
+				double arrow_spacing);
+
+		void
+		handle_unlimited_arrow_spacing_clicked();
+
+		void
+		handle_arrow_body_scale_value_changed(
+				double arrow_body_scale_log10);
+
+		void
+		handle_arrowhead_scale_value_changed(
+				double arrowhead_scale_log10);
 
 	private:
 
@@ -99,6 +113,10 @@ namespace GPlatesQtWidgets
 		 * The visual layer for which we are currently displaying options.
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
+
+		GPlatesQtWidgets::InformationDialog *d_help_solve_velocities_method_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_arrow_spacing_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_arrow_scale_dialog;
 	};
 }
 

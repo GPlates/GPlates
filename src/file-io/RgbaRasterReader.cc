@@ -513,7 +513,7 @@ GPlatesFileIO::RgbaRasterReader::write_source_raster_file_cache(
 	//
 	// NOTE: The source raster is RGBA which does not have a no-data value.
 	out << static_cast<quint32>(false);
-	out << GPlatesPropertyValues::Rgba8RawRaster::element_type(); // Doesn't matter what gets stored.
+	out << GPlatesPropertyValues::Rgba8RawRaster::element_type(0, 0, 0, 0/*RGBA*/); // Doesn't matter what gets stored.
 
 	// Write the (optional) raster statistics.
 	//
@@ -656,6 +656,12 @@ GPlatesFileIO::RgbaRasterReader::write_source_raster_file_cache_image_data(
 		}
 	}
 
+	// Some rasters have dimensions less than RasterFileCacheFormat::BLOCK_SIZE.
+	const unsigned int dimension =
+			(source_raster_dimension_next_power_of_two > RasterFileCacheFormat::BLOCK_SIZE)
+			? source_raster_dimension_next_power_of_two
+			: RasterFileCacheFormat::BLOCK_SIZE;
+
 	// Traverse the Hilbert curve of blocks of the source raster using quad-tree recursion.
 	// The leaf nodes of the traversal correspond to the blocks in the source raster.
 	hilbert_curve_traversal(
@@ -664,7 +670,7 @@ GPlatesFileIO::RgbaRasterReader::write_source_raster_file_cache_image_data(
 			write_source_raster_depth,
 			0/*x_offset*/,
 			0/*y_offset*/,
-			source_raster_dimension_next_power_of_two/*dimension*/,
+			dimension,
 			0/*hilbert_start_point*/,
 			0/*hilbert_end_point*/,
 			out,
@@ -747,7 +753,7 @@ GPlatesFileIO::RgbaRasterReader::hilbert_curve_traversal(
 			if (!source_reader.supportsOption(QImageIOHandler::ClipRect) ||
 				// Using 64-bit integer in case uncompressed image is larger than 4Gb...
 				qint64(source_region.width() / 2) * (source_region.height() / 2) * sizeof(GPlatesGui::rgba8_t) <
-					MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT ||
+					static_cast<qint64>(MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT) ||
 				read_source_raster_depth == write_source_raster_depth)
 			{
 				// Report insufficient memory to load raster.

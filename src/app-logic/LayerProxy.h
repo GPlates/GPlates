@@ -72,6 +72,7 @@ namespace GPlatesAppLogic
 	 * an interface as is appropriate for that layer.
 	 *
 	 * The hierarchy of layer proxy objects is visitable with the @a LayerProxyVisitor hierarchy.
+	 * See also @a LayerProxyUtils for convenient ways to access derived layer proxy classes.
 	 */
 	class LayerProxy :
 			public LayerProxyHandle

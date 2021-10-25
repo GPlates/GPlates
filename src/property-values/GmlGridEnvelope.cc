@@ -33,7 +33,6 @@
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
-
 const GPlatesPropertyValues::GmlGridEnvelope::non_null_ptr_type
 GPlatesPropertyValues::GmlGridEnvelope::create(
 		const integer_list_type &low_,

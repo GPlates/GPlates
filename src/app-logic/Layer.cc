@@ -34,7 +34,6 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-
 GPlatesAppLogic::Layer::Layer(
 		const boost::weak_ptr<ReconstructGraphImpl::Layer> &layer_impl) :
 	d_impl(layer_impl)

@@ -33,7 +33,11 @@
 #include "RenderedGeometryCollectionVisitor.h"
 #include "RenderedGeometryProximity.h"
 
+#include "app-logic/ReconstructHandle.h"
 #include "app-logic/ReconstructionGeometry.h"
+
+#include "model/FeatureHandle.h"
+
 
 namespace GPlatesViewOperations
 {
@@ -167,7 +171,7 @@ namespace GPlatesViewOperations
 
 		/**
 		 * Finds the @a ReconstructionGeometry objects that were generated from the same geometry property
-		 * as @a reconstruction_geometry and that were optionally reconstructed using @a reconstruction_tree
+		 * as @a reconstruction_geometry and that were optionally reconstructed using @a reconstruct_handles
 		 * and that are from the reconstruction layer in @a rendered_geom_collection.
 		 *
 		 * Returns true if any were found.
@@ -177,13 +181,13 @@ namespace GPlatesViewOperations
 				reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
 				const RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry,
-				boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree = boost::none,
+				boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles = boost::none,
 				bool only_if_reconstruction_layer_active = true);
 
 
 		/**
 		 * Finds the @a ReconstructionGeometry objects from feature @a feature_ref and that were optionally
-		 * reconstructed using @a reconstruction_tree and that are from the reconstruction layer
+		 * reconstructed using @a reconstruct_handles and that are from the reconstruction layer
 		 * in @a rendered_geom_collection.
 		 *
 		 * Returns true if any were found.
@@ -193,14 +197,14 @@ namespace GPlatesViewOperations
 				reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
 				const RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-				boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree = boost::none,
+				boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles = boost::none,
 				bool only_if_reconstruction_layer_active = true);
 
 
 		/**
 		 * Finds the @a ReconstructionGeometry objects that were generated from the geometry property
 		 * @a geometry_property_iterator in feature @a feature_ref and that were optionally
-		 * reconstructed using @a reconstruction_tree and that are from the reconstruction layer
+		 * reconstructed using @a reconstruct_handles and that are from the reconstruction layer
 		 * in @a rendered_geom_collection.
 		 *
 		 * Returns true if any were found.
@@ -211,7 +215,7 @@ namespace GPlatesViewOperations
 				const RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
-				boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree = boost::none,
+				boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles = boost::none,
 				bool only_if_reconstruction_layer_active = true);
 
 

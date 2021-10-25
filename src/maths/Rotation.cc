@@ -279,7 +279,8 @@ GPlatesMaths::operator*(
 		 * and a non-zero angle of rotation.
 		 */
 		UnitQuaternion3D::RotationParams params =
-				 resultant_uq.get_rotation_params(boost::none);
+				// Use the axis of 'r1' as the axis hint...
+				resultant_uq.get_rotation_params(r1.axis());
 
 		return Rotation::create(resultant_uq, params.axis, params.angle);
 	}

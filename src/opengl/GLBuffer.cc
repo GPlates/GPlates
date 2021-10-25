@@ -34,6 +34,7 @@
 
 #include "GLBufferImpl.h"
 #include "GLContext.h"
+#include "GLRenderer.h"
 
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -65,8 +66,10 @@ std::auto_ptr<GPlatesOpenGL::GLBuffer>
 GPlatesOpenGL::GLBuffer::create_as_auto_ptr(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Create an OpenGL buffer object if we can.
-	if (GLEW_ARB_vertex_buffer_object)
+	if (capabilities.buffer.gl_ARB_vertex_buffer_object)
 	{
 		return std::auto_ptr<GPlatesOpenGL::GLBuffer>(
 				GLBufferObject::create_as_auto_ptr(renderer));
@@ -137,6 +140,7 @@ GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_dynamic()
 GLvoid *
 GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_stream(
 		unsigned int minimum_bytes_to_stream,
+		unsigned int stream_alignment,
 		unsigned int &stream_offset,
 		unsigned int &stream_bytes_available)
 {
@@ -146,9 +150,41 @@ GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_stream(
 			GPLATES_ASSERTION_SOURCE);
 
 	d_data = d_buffer.gl_map_buffer_stream(
-			d_renderer, d_target, minimum_bytes_to_stream, stream_offset, stream_bytes_available);
+			d_renderer,
+			d_target,
+			minimum_bytes_to_stream,
+			stream_alignment,
+			stream_offset,
+			stream_bytes_available);
 
 	return d_data;
+}
+
+
+void
+GPlatesOpenGL::GLBuffer::MapBufferScope::gl_flush_buffer_dynamic(
+		unsigned int offset,
+		unsigned int length/*in bytes*/)
+{
+	// Make sure 'gl_map_buffer_dynamic' was called and was successful.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_data,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_buffer.gl_flush_buffer_dynamic(d_renderer, d_target, offset, length);
+}
+
+
+void
+GPlatesOpenGL::GLBuffer::MapBufferScope::gl_flush_buffer_stream(
+		unsigned int bytes_written)
+{
+	// Make sure 'gl_map_buffer_stream' was called and was successful.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_data,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_buffer.gl_flush_buffer_stream(d_renderer, d_target, bytes_written);
 }
 
 

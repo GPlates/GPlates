@@ -62,6 +62,17 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructionFeatureProperties();
 
+
+		/**
+		 * Returns the reconstruction time passed into constructor, or boost::none if none passed in.
+		 */
+		const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
+		get_reconstruction_time() const
+		{
+			return d_recon_time;
+		}
+
+
 		/**
 		 * Returns true unless a "gml:validTime" property in the feature has
 		 * a time period that does not include the time passed into constructor
@@ -107,7 +118,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns optional reconstruction method if "gpml:reonstructionMethod" property is found.
 		 */
-		const boost::optional<GPlatesAppLogic::ReconstructMethod::Type> &
+		const boost::optional<ReconstructMethod::Type> &
 		get_reconstruction_method() const
 		{
 			return d_recon_method;
@@ -132,6 +143,7 @@ namespace GPlatesAppLogic
 		{
 			return d_time_of_dissappearance;
 		}
+
 
 		virtual
 		void
@@ -178,7 +190,7 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_appearance;
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_dissappearance;
 
-		boost::optional<GPlatesAppLogic::ReconstructMethod::Type> d_recon_method;
+		boost::optional<ReconstructMethod::Type> d_recon_method;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_right_plate_id;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_left_plate_id;
 	};

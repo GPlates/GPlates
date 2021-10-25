@@ -32,24 +32,26 @@
 
 #include "model/FeatureHandle.h"
 
+#include "view-operations/RenderedGeometryCollection.h"
+
+
+namespace GPlatesCanvasTools
+{
+	class GeometryOperationState;
+	class ModifyGeometryState;
+}
 
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
-}
-
-namespace GPlatesQtWidgets
-{
-	class ViewportWindow;
+	class CanvasToolWorkflows;
+	class FeatureFocus;
 }
 
 namespace GPlatesViewOperations
 {
-	class ActiveGeometryOperation;
+	class GeometryBuilder;
 	class MoveVertexGeometryOperation;
-	class GeometryOperationTarget;
 	class QueryProximityThreshold;
-	class RenderedGeometryCollection;
 }
 
 namespace GPlatesCanvasTools
@@ -71,21 +73,25 @@ namespace GPlatesCanvasTools
 		const non_null_ptr_type
 		create(
 				const status_bar_callback_type &status_bar_callback,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::GeometryBuilder &geometry_builder,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
+				GPlatesCanvasTools::ModifyGeometryState &modify_geometry_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-				const GPlatesQtWidgets::ViewportWindow *viewport_window)
+				GPlatesGui::FeatureFocus &feature_focus)
 		{
 			return new MoveVertex(
 					status_bar_callback,
-					geometry_operation_target,
-					active_geometry_operation,
+					geometry_builder,
+					geometry_operation_state,
+					modify_geometry_state,
 					rendered_geometry_collection,
-					choose_canvas_tool,
+					main_rendered_layer_type,
+					canvas_tool_workflows,
 					query_proximity_threshold,
-					viewport_window);
+					feature_focus);
 		}
 
 		virtual
@@ -148,38 +154,24 @@ namespace GPlatesCanvasTools
 		 */
 		MoveVertex(
 				const status_bar_callback_type &status_bar_callback,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::GeometryBuilder &geometry_builder,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
+				GPlatesCanvasTools::ModifyGeometryState &modify_geometry_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold,
-				const GPlatesQtWidgets::ViewportWindow *viewport_window);
-
-		/**
-		 * Used to set main rendered layer.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
-		
-		/**
-		 * Used to select target of our move vertex operation.
-		 */
-		GPlatesViewOperations::GeometryOperationTarget *d_geometry_operation_target;
+				GPlatesGui::FeatureFocus &feature_focus);
 
 		/**
 		 * Digitise operation for moving a vertex in digitised geometry.
 		 */
-		boost::scoped_ptr<GPlatesViewOperations::MoveVertexGeometryOperation>
-			d_move_vertex_geometry_operation;
+		boost::scoped_ptr<GPlatesViewOperations::MoveVertexGeometryOperation> d_move_vertex_geometry_operation;
 
 		/**
 		 * Whether or not this tool is currently in the midst of a drag.
 		 */
 		bool d_is_in_drag;
-
-		void
-		handle_activation(
-				GPlatesViewOperations::GeometryOperationTarget *geometry_operation_target,
-				GPlatesViewOperations::MoveVertexGeometryOperation *move_vertex_geometry_operation);
 
 		void
 		handle_left_drag(

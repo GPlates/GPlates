@@ -58,6 +58,11 @@ namespace GPlatesFileIO
 	struct ReadErrorAccumulation;
 }
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesAppLogic
 {
 	/**
@@ -75,6 +80,7 @@ namespace GPlatesAppLogic
 
 	public:
 		FeatureCollectionFileIO(
+				const GPlatesModel::Gpgim &gpgim,
 				GPlatesModel::ModelInterface &model,
 				GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				GPlatesAppLogic::FeatureCollectionFileState &file_state);
@@ -153,7 +159,7 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Creates a file named @a file_info, saves @a feature_collection to the file and
+		 * Optionally saves the feature collection in @a file to the filename in @a file, and
 		 * registers the file with FeatureCollectionFileState.
 		 *
 		 * This method is useful when you want to save a feature collection that was not
@@ -162,10 +168,8 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference
 		create_file(
-				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
-				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
-						file_configuration = boost::none);
+				const GPlatesFileIO::File::non_null_ptr_type &file,
+				bool save = true);
 
 
 		/**
@@ -199,7 +203,7 @@ namespace GPlatesAppLogic
 				const QString& filename,
 				QByteArray &data);
 
-	signals:
+	Q_SIGNALS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -213,6 +217,8 @@ namespace GPlatesAppLogic
 		//! Typedef for a sequence of file shared refs.
 		typedef std::vector<GPlatesFileIO::File::non_null_ptr_type> file_seq_type;
 
+
+		const GPlatesModel::Gpgim &d_gpgim;
 
 		GPlatesModel::ModelInterface d_model;
 

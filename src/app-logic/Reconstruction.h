@@ -41,7 +41,6 @@
 
 #include "utils/ReferenceCount.h"
 
-
 namespace GPlatesAppLogic
 {
 	/**

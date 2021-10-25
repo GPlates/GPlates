@@ -1,3 +1,239 @@
+GPlates 1.3
+===========
+
+Changes since 1.2:
+
+ * New GROT (GPlates Rotation) file format:
+   * Extended PLATES4 rotation format to include a much richer set of metadata attributes.
+   * Metadata is specified using @Attribute"Value".
+     * Can have multi-valued attributes @Attribute"Value1|Value2|Value3" such as @MPRS"101|NAM|North America".
+     * Nested attributes can be specified as @Attribute:subattribute"Value" such as @MPRS:pid"101".
+	 * Can nest even further with @Attribute:subattribute:subsubattribute"Value" such as @DC:contributor:id"RDM".
+   * Dublin Core Document Metadata describing file content (attribute @DC).
+   * Supports standard attribute aliases such as AU --> DC:contributor:id (Author).
+   * Inclusion of Hellinger rotation statistics for the individual rotation poles.
+   * Simple commenting/uncommenting of rotation poles using '#' (previously: 999).
+   * Inclusion of bibliographic and reference data for the whole rotation file and individual rotations.
+   * Information on Geological Time Scales.
+   * New "Moving plate rotation sequences" and associated metadata.
+   * Display and edit metadata.
+   * Load and save ".grot" file retaining non-metadata comments in original line sequence in file.
+ * Surface relief lighting:
+   * A single channel height field raster is converted into a (multi-resolution) surface normal map.
+     * Conversion performed on GPU for improved performance on systems with sufficient OpenGL support.
+   * The diffuse lighting of this normal map modulates the colour of a second raster.
+   * Default heightfield scale based on raster statistics.
+   * User can adjust default heightfield scale to increase/decrease relief lighting effect.
+   * Currently lighting is non-directional.
+ * Integrated Orange and GPlates using socket-based command server built into GPlates. Orange widgets include:
+   * Getting the birth time of seed features.
+   * Getting the co-registration result, at a specified time and specified association, for all seed features.
+   * Getting a time sequence of co-registration results for a specified association for all seed features.
+   * Getting the co-registration result of a specified association for all seed features each at their respective birth time.
+ * Added socket-based command server:
+   * Clients can connect to a running GPlates executable and issue commands.
+   * Currently commands are co-registration based including retrieving seed and associations, begin time, etc.
+   * Is used by Orange data mining widgets to query co-registrations results from GPlates.
+   * Defaults to localhost and port 9777.
+ * Completed raster co-registration data mining front-end.
+ * Volume visualisation:
+   * Extended OpenGL support for ray-tracing shader (multiple render targets, texture arrays, geometry shaders).
+   * Import sequence of 2D floating-point rasters (one per depth layer) representing scalar field.
+     * GPML file linked to GPSF file containing cube map format 3D scalar field data and statistics.
+   * Load colour palette used to convert scalar value or gradient magnitude to colour.
+   * Colour by depth (iso-surface only) or scalar value or gradient magnitude.
+   * Colour-by-depth:
+     * Front side of iso-surface blends from blue at core to cyan at surface.
+     * Back side of iso-surface blends from red at core to yellow at surface.
+     * Front side faces regions with higher scalar value than the iso-surface.
+   * Render vertical cross-sections (depth-extruded surface polylines).
+   * Interactively manipulate surface polylines to change cross-sections.
+   * Render surfaces of constant scalar value (iso-surfaces).
+   * Render single deviation window:
+     * One opaque iso-surface and two surrounding (+/- delta) semi-transparent iso-surfaces.
+   * Render double deviation window:
+     * Two single deviation windows at different isovalues.
+   * 'Surface' deviation window renders intersection of deviation window with surface of globe:
+     * Rendered as solid fill or isolines.
+   * Supports limiting iso-surface rendering to a specific depth range.
+   * Supports limiting iso-surface rendering to regions under surface polygons:
+     * Supports vertically-extruded walls at surface polygon boundaries.
+     * Render iso-surface single/double deviation window on vertical walls as isolines.
+   * Globe is semi-transparent when rendering 3D scalar field:
+     * Opaque surface geometries (polylines, rasters, filled polygons) can occlude scalar field.
+     * Scalar field is not ray-traced for those pixels occluded by surface geometries.
+ * Deformation:
+   * Calculates instantaneous strain rates for each triangle in topological network triangulation.
+   * Displays dilitation (and second invariant of) strain rate as palette coloured triangles.
+   * Points of feature geometry falling inside a topological network are incrementally deformed over time span:
+     * Time span and increment determined by user.
+	 * Rigidly reconstructed outside time span and outside network's deformation time period(s).
+	   * Or inside a rigid interior block of an active topological network.
+	 * Incremental deformation due to interpolation of rotations of nodes of network's triangulation.
+	 * Geometry deformation stored in a look up table containing deformation time spans.
+     * Can calculate/display velocities at deformed geometry points.
+	 * Deformed geometry points accumulate strain over time.
+	   * Accumulated principle strain can be displayed as cross symbol.
+   * Avoid topological network dateline/pole issues by using azimuthal equal area projection.
+   * Fixed occasional missing network node velocities:
+     * Velocities at topological network nodes no longer need a velocity layer to calculate.
+   * Velocity now calculated using rotation tree(s) of plate/network-nodes (that velocity point is inside).
+     * Previously used default rotation layer.
+   * Velocities work with network interiors that are resolved topological *lines* (ie, two levels of velocity indirection).
+   * "Reconstructed Geometries" layers connected to (deformed by) topological network layers cannot provide topological sections for any topology layers.
+   * Added optional topological sections layer connections to topology layers.
+     * Enables duplicating topology layers but with different topological sections.
+     * No connections defaults to global lookup of topological sections.
+	 * One or more connections limits search to connected layers.
+   * Performance optimisations including:
+     * Filled topological network rendering performance improved significantly.
+     * Avoid expensive generation of 'constrained' delaunay triangulation where possible.
+       * Such as PolygonOnSphere network boundary for point inclusion test instead.
+     * Use spatial sort when generating delaunay triangulation.
+	 * Avoid velocity/deformation calculations unless needed.
+   * Handle points falling in sliver between polygon-on-sphere network boundary and convex hull of delaunay triangulation.
+     * Due to convex hull in 2D non-gnomic projection.
+ * Added support for reading OGR GMT format files:
+   * Currently supports Shapefile and OGRGMT formats.
+   * Re-factored Shapefile I/O to support generalised OGR library formats:
+   * Fixed Shapefile loading prematurely finishing when encountering null geometry.
+   * Avoid exporting flowline/motion-path seed points during reconstructed feature geometry export.
+   * Only require either a begin or end time Shapefile/OGR attribute in read file to generate a GML time period property.
+   * Support half-stage rotation feature types in Shapefile/OGR (save/load reconstruction method and left/right plate ids).
+ * Added 'GPGIM_TYPE' field to Shapefile/OGR containing full GPGIM feature type (in addition to regular 2-letter code).
+   * Preference given to 'GPGIM_TYPE' if present with fall back to 'TYPE'.
+   * Both saved on writing with 'TYPE' to eventually be phased out in a future release.
+ * New resolved topological 'lines':
+   * Used to create dynamic polylines (instead of dynamic polygons).
+   * Can only reference static reconstructed features.
+   * Dynamic plate polygons and networks can reference dynamic lines in their boundaries (and interiors).
+ * Separated Build Topology tool into three tools (for lines, polygons and networks).
+ * Improved performance when building/editing a topology with lots of sections.
+ * Canvas tool workflows:
+   * Canvas tool bar has a tab for each workflow.
+     * Avoids running out of space for canvas tool buttons.
+	 * Groups workflow related tools together.
+   * Canvas tool bar is dockable.
+ * SVG export:
+   * Includes rasters, 3D scalar fields and filled polygons:
+   * Each raster and scalar field and filled polygon layer is embedded as a single image.
+   * Image dimensions are user-specified and can be arbitrarily large.
+ * Centralised GPlates Geological Information Model (GPGIM):
+   * GPGIM stored in a single XML file.
+   * GPGIM XML file stored in GPlates executable as resource and read in at startup.
+   * All dialogs, etc, in GPlates query the centralised GPGIM.
+   * Create Feature dialog provides list of non-common properties to add to created feature.
+     * Also forces user to create non-optional properties.
+   * Add Property dialog highlights those properties allowed by the feature's type.
+   * Change Feature Type dialog allows user to change property names of non-geometry properties.
+     * If property type is same in previous and new feature type.
+   * Topological lines/polygons no longer feature-type-specific.
+     * Can be used in place of regular static geometries.
+   * Support for upgrading a feature (such as merging topological network boundary and interior properties into single network property).
+   * Attempts to fix time-dependent property errors on reading by converting between time-dependent types where possible.
+   * 'gpml:UnclassifiedFeature' is now special case and can accept 'any' number of 'any' GPGIM properties.
+ * Added finite rotation calculator dialog:
+   * Add and subtract finite rotations, calculate a finite rotation between two points and rotate a point using a finite rotation.
+ * Added velocity domain generators for Terra and Lat/Lon meshes.
+ * Export velocities to Terra (text) format.
+ * Export velocities to CitcomS global format.
+ * Added GMT velocity export. Exports domain point (lon/lat), velocity as X/Y/Z or colat/lon or magnitude/angle, and plate id.
+ * Added file output options to velocity export.
+ * New About Data Sources menu item opens web page.
+ * Sort by filename in Manage Feature Collections dialog.
+ * Added save, reload and unload 'selected' groups of files in Manage Feature Collections dialog.
+ * Save only modified files when Save All button clicked in Manage Feature Collections dialog.
+ * Filled polygons in 2D map views.
+ * Map background restricted to map lat/lon region - outside the map region is now black.
+ * Improved filled polygon performance.
+   * Now use stencil buffer to generate polygon interior fill mask.
+ * Fixed filled polygons not always sorting by plate ID.
+   * Ensure rendered geometries draw order not affected by using spatial partition.
+   * Reconstructed feature geometries now sorted by plate ID.
+ * Calculate velocities in "Calculated Velocity Fields" layer:
+   * 'of domain points' - calculate velocities of reconstructed points.
+   * 'of surfaces' - calculate velocities of surfaces that intersect domain points.
+ * Velocity layer inputs connections are now green "Reconstructed Geometries" layers instead of feature collections.
+ * Velocity layer no longer has rotation tree input connection (rotations provided by velocity domain input layers.
+ * Can calculate velocities at half-stage rotation features (eg, mid-ocean ridge) and at seed points of flowlines.
+ * Fixed incorrect velocities when anchor plate id is non-zero.
+ * Allow velocity domain points with non-zero plate id to rotate when calculating velocity 'by surfaces'.
+ * Added velocity arrow screen space density controls.
+ * Added velocity arrow body/head size controls.
+ * Improved performance of velocity arrow rendering at high zoom levels (view frustum culling).
+ * Fixed out-of-memory crash when zooming to high levels with velocity arrows loaded.
+ * Merged command-line version of GPlates into main GUI version of GPlates.
+ * Added command-line command 'equivalent-total-rotation'.
+ * Added stage rotation command-line command with asymmetric spreading rate option.
+ * More GUI options for rotation export (stage and total).
+ * Added "%R" for default reconstruction tree layer in export dialog template filename.
+ * Add export file option to save each exported file to its own directory.
+ * Separated resolved topology export into a 'Citcoms' specific export (the current export) and a new generic export:
+   * Generic export similar to reconstructed feature geometries export.
+ * Support filled polylines (in addition to filled polygons).
+ * Can choose focused feature by clicking interior of filled polyline/polygon (including filled topological networks).
+ * Added fill polygon opacity and intensity.
+ * Raster reconstruction now works with 'self-intersecting' polygons.
+ * Added age CPT button in raster layer (for when loaded raster is an age grid).
+ * Age grid test done in hardware shader program for runtime systems that support OpenGL shaders.
+ * Age grid masking now also works for un-reconstructed rasters.
+ * Exposed unexpected highest detail level in reconstructed raster (due to cube map non-uniformity).
+ * Using pre-multiplied alpha for rasters to solve the alpha-blending artifacts (due to intermediate render textures).
+ * A layer can now connect to itself.
+ * Allow multiple exports of the same export format and type.
+ * Ability to edit an export configuration.
+ * Increased zoom level by a factor of 10.
+ * Added tiled rendering to enable rendering to arbitrary dimension images.
+ * Export arbitrary resolution rasters.
+ * Fixed issues with low-resolution rasters:
+   * Fixed holes in rasters in the map views.
+   * Fixed assertion failure for rasters of dimension < 128 pixels.
+   * Fixed too low raster mesh tessellation.
+ * Improved performance of geometry reconstruction on Windows platform.
+ * Enable 4Gb of virtual address space for GPlates on Windows instead of 2Gb (default for Windows).
+ * Symbols for point geometries:
+   * Symbols are mapped to feature types.
+   * Symbol types include squares, circles, triangles and crosses.
+   * Symbols are scaled and can be filled or outline.
+   * Mapping of feature types to symbol type, scale and fill are controlled by loading a symbol file that applies globally.
+ * Fixed GPlates continually restarting itself if malfunctioning python installation set to GPlates->Preference->Python->Python Home.
+ * Copy python framework into MacOS bundle and fixup internal references.
+ * Fixed crash if quit GPlates just after splitting a feature.
+ * Workaround for pixmap corruption in Manage Colouring dialog when using VirtualGL.
+ * Fixed Click Geometry tool not sorting closest to furthest from mouse click position.
+ * Fixed topological features being included in green "Reconstruct Geometries" layer.
+ * Fixed raster seam along bottom and right edges when reconstructed.
+ * Fixed incorrect view-frustum culling of lowest resolution raster level-of-detail.
+ * Fixed bug storing GDAL raster statistics in raster cache file.
+ * Fixes for trying to access rotation axis of a great circle arc in polyline intersection code.
+ * Fixed reconstructed raster with age grid showing regions outside age grid coverage once their plate ID rotation ran out and became identity.
+ * Fixed visual artifacts in age-masked reconstructed rasters due to combining source raster and age mask into a render texture before rendering to the screen.
+ * In co-registration, if seed is inactive at a reconstruction then seed row is NaN.
+ * Fixed issues with command-line assign-plate-ids command crashing and not assigning plate ids outside valid time period.
+ * Fixed export of resolved topologies to individual files (separated by plate id) only writing one resolved geometry per plate id file.
+ * Fixed colour-by-age should be relative to feature's begin time instead of present day.
+ * Fixed CPT parsing error at space in quoted strings.
+ * Fixed PLATES line format having multiple "<identity>" tags.
+ * Fixed lat/lon exception when importing rasters.
+ * Store all OpenGL shader source files as resources in GPlates executable.
+ * Fixed reading wrong header lines after PLATES features with no geometry.
+ * Fixed long shutdown time for GPlates when lots of features are loaded (due to O(N^2) sort of reconstructed geometries).
+ * Greatly improved load time when adding tens of files (or layers) - temporarily disconnect from Qt layout management.
+ * Fixed slow file unloading for many files (avoid reconstructing after each file is unloaded).
+ * Added projection shortcuts Ctrl+1, Ctrl+2, etc for switching between projection views.
+ * Fixed incorrect zoom and camera location when switching from a map view back to the 3D globe view.
+ * Prevent saving 4-digits plate ids to PLATES format files (pops up messages and deletes file).
+ * Fixed visual layers dialog not positioned correctly relative to the main window on MacOS.
+ * DrawStyleDialog no longer relies on updating a canvas - instead gets canvas to render directly to an image.
+ * Fixed incorrect velocities and incorrect positions of mid-ocean ridges (and flowlines):
+   * Occurred when wrapping the rotation angle of a total reconstruction pole (in rotation file) at -180 or 180 degrees.
+ * Fixed bug in half-stage rotation where left plate rotation was not getting composed into result:
+   * Occurred when the relative rotation between left and right plates wais the identity rotation.
+ * Display and export motion paths even if the current reconstruction time is not between the end samples of the times array.
+   * This is useful when creating multiple motion paths to represent a single hotspot trail (the various plates that the hot spot intersects).
+ * Fixed isochons colouring by first found plate id instead of 'reconstruction' plate id.
+ * Fixed pole manipulation tool not re-populating geometries when new focused feature (with a different plate id) is selected from the Click Feature table.
+
 GPlates 1.2
 ===========
 

@@ -35,9 +35,12 @@
 #include <opengl/OpenGL.h>
 #include <QColor>
 #include <QDataStream>
+#include <QDebug>
+#include <QTextStream>
 
 #include "maths/MathsUtils.h"
 
+#include "utils/Endian.h"
 #include "utils/QtStreamable.h"
 
 
@@ -92,6 +95,9 @@ namespace GPlatesGui
 	struct rgba8_t :
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
 			public GPlatesUtils::QtStreamable<rgba8_t>
+			// NOTE: Be careful *not* to multiply inherit in order to avoid bloating sizeof(rgba8_t)
+			// due to multiple inheritance (even from empty base class).
+			// sizeof(rgba_t) should remain at 4 bytes.
 	{
 		static const int NUM_COMPONENTS = 4;
 
@@ -178,6 +184,7 @@ namespace GPlatesGui
 	 * Also note that QImage::Format_ARGB32 means the 32-bit integer 0xAARRGGBB and
 	 * not necessarily (B,G,R,A) - they're only the same on little-endian machines where
 	 * the least significant part of the integer (litte end) goes into the byte array first.
+	 * QImage::Format_ARGB32_Premultiplied can also be used as a destination.
 	 *
 	 * Also note that GL_RGBA means (R,G,B,A) on both little and big endian machines -
 	 * in other words it specifies byte ordering in memory (not in a 32-bit integer like Qt).
@@ -292,9 +299,16 @@ namespace GPlatesGui
 
 
 	class Colour :
-			public boost::equality_comparable<Colour>,
-			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
-			public GPlatesUtils::QtStreamable<Colour>
+			public boost::equality_comparable<Colour>
+			// NOTE: We are *not* inheriting from 'GPlatesUtils::QtStreamable<Colour>' in order to
+			// avoid bloating sizeof(Colour) due to multiple inheritance (even from empty
+			// base class) - this reduces sizeof(Colour) from 20 to 16.
+			// Instead we explicitly provide 'operator <<' overloads as non-member functions.
+			//
+			// And this is important since this class can be passed to OpenGL as an array and there
+			// it is expected to be 4 floats (16 bytes).
+			//
+			//public GPlatesUtils::QtStreamable<Colour>
 	{
 	public:
 		/*
@@ -462,6 +476,15 @@ namespace GPlatesGui
 				const double &position);
 
 		/**
+		 * Modulate/multiply two colours (including alpha channel).
+		 */
+		static
+		Colour
+		modulate(
+				const Colour &first,
+				const Colour &second);
+
+		/**
 		 * Converts a CMYK colour to a Colour (which is RGBA). The cyan,
 		 * magenta, yellow and black components of the colour must be in the range
 		 * 0.0-1.0 inclusive. Alpha value of colour is set to 1.0.
@@ -567,6 +590,50 @@ namespace GPlatesGui
 	operator<<(
 			std::ostream &os,
 			const Colour &c);
+
+
+	/**
+	 * Gives us:
+	 *    qDebug() << p;
+	 *    qWarning() << p;
+	 *    qCritical() << p;
+	 *    qFatal() << p;
+	 */
+	QDebug
+	operator <<(
+			QDebug dbg,
+			const Colour &c);
+
+
+	/**
+	 * Gives us:
+	 *    QTextStream text_stream(device);
+	 *    text_stream << p;
+	 */
+	QTextStream &
+	operator <<(
+			QTextStream &stream,
+			const Colour &c);
+}
+
+namespace GPlatesUtils
+{
+	//
+	// Specialised endian-swapping functions.
+	//
+	namespace Endian
+	{
+		template<>
+		inline
+		void
+		swap<GPlatesGui::rgba8_t>(
+				GPlatesGui::rgba8_t &colour)
+		{
+			// Note that GPlatesGui::rgba8_t stores 4 bytes in memory as (R,G,B,A) and the
+			// data is read from the stream as bytes (not 32-bit integers) so there's
+			// no need to re-order the bytes according to the endianess of the current system.
+		}
+	}
 }
 
 #endif  // GPLATES_GUI_COLOUR_H

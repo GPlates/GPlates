@@ -44,9 +44,10 @@ namespace GPlatesAppLogic
 	/**
 	 * A type of @a ReconstructionGeometry representing a raster.
 	 *
-	 * Used to represent a constant or time-dependent raster, but not
-	 * a reconstructed raster (a raster divided into polygons where each polygon
-	 * is rotated independently according to its plate id).
+	 * Used to represent a constant or time-dependent (possibly reconstructed) raster.
+	 * This currently just references the raster layer proxy and the optional age grid and
+	 * reconstructed polygon layer proxies (if raster is reconstructed) - clients will be required
+	 * to use those layer proxy interfaces.
 	 */
 	class ResolvedRaster :
 			public ReconstructionGeometry,
@@ -65,31 +66,25 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Create a @a ResolvedRaster.
-		 *
-		 * @a created_from_layer is the layer this resolved raster was created in.
-		 * This is currently used so we can keep track of which persistent OpenGL objects
-		 * were created for which layer so that we can destroy them when the layer is destroyed.
-		 * FIXME: This is temporary until we implement a better way to handle persistent
-		 * objects downstream from the reconstruction process.
 		 */
 		static
 		const non_null_ptr_type
 		create(
 				GPlatesModel::FeatureHandle &feature_handle,
 				const double &reconstruction_time,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const raster_layer_proxy_non_null_ptr_type &raster_layer_proxy,
 				const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxy,
-				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy)
+				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy,
+				const boost::optional<raster_layer_proxy_non_null_ptr_type> &normal_map_raster_layer_proxy)
 		{
 			return non_null_ptr_type(
 					new ResolvedRaster(
 							feature_handle,
 							reconstruction_time,
-							reconstruction_tree_,
 							raster_layer_proxy,
 							reconstructed_polygons_layer_proxy,
-							age_grid_raster_layer_proxy));
+							age_grid_raster_layer_proxy,
+							normal_map_raster_layer_proxy));
 		}
 
 
@@ -134,6 +129,16 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the optional normal map layer proxy.
+		 */
+		const boost::optional<raster_layer_proxy_non_null_ptr_type> &
+		get_normal_map_layer_proxy() const
+		{
+			return d_normal_map_raster_layer_proxy;
+		}
+
+
+		/**
 		 * Accept a ConstReconstructionGeometryVisitor instance.
 		 */
 		virtual
@@ -165,10 +170,10 @@ namespace GPlatesAppLogic
 		ResolvedRaster(
 				GPlatesModel::FeatureHandle &feature_handle,
 				const double &reconstruction_time,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const raster_layer_proxy_non_null_ptr_type &raster_layer_proxy,
 				const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxy,
-				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy);
+				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy,
+				const boost::optional<raster_layer_proxy_non_null_ptr_type> &normal_map_raster_layer_proxy);
 
 	private:
 		/**
@@ -190,6 +195,11 @@ namespace GPlatesAppLogic
 		 * The optional age grid layer proxy.
 		 */
 		boost::optional<raster_layer_proxy_non_null_ptr_type> d_age_grid_raster_layer_proxy;
+
+		/**
+		 * The optional normal map layer proxy.
+		 */
+		boost::optional<raster_layer_proxy_non_null_ptr_type> d_normal_map_raster_layer_proxy;
 	};
 }
 

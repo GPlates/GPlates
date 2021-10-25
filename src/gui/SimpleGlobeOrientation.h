@@ -161,7 +161,7 @@ namespace GPlatesGui
 		move_handle_to_pos(
 				const GPlatesMaths::PointOnSphere &pos);
 
-	public slots:
+	public Q_SLOTS:
 	
 		/**
 		 * For keyboard camera controls to use: nudge the camera 'up' by a few degrees.
@@ -217,7 +217,7 @@ namespace GPlatesGui
 		void
 		orient_poles_vertically();
 
-	signals:
+	Q_SIGNALS:
 		void
 		orientation_changed();
 

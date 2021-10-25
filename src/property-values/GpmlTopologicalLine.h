@@ -30,89 +30,102 @@
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
 
+#include "GpmlTopologicalSection.h"
+
+#include "feature-visitors/PropertyValueFinder.h"
+
+#include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
-#include "GpmlTopologicalLineSection.h"
+
+
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlTopologicalLine, visit_gpml_topological_line)
 
 namespace GPlatesPropertyValues
-{
-
+{	/**
+	 * This class implements the PropertyValue which corresponds to "gpml:TopologicalLine".
+	 */
 	class GpmlTopologicalLine:
 			public GPlatesModel::PropertyValue
 	{
 
 	public:
 
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalLine>.
-		 */
+		//! A convenience typedef for a shared pointer to a non-const @a GpmlTopologicalLine.
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalLine> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalLine>.
-		 */
+		//! A convenience typedef for a shared pointer to a const @a GpmlTopologicalLine.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalLine> non_null_ptr_to_const_type;
+
+		//! Typedef for a sequence of topological sections.
+		typedef std::vector<GpmlTopologicalSection::non_null_ptr_type> sections_seq_type;
+
+		//! Typedef for a const iterator over the topological sections.
+		typedef sections_seq_type::const_iterator sections_const_iterator;
+
 
 		virtual
 		~GpmlTopologicalLine()
 		{  }
 
-		static
-		const non_null_ptr_type
-		create( 
-			const GpmlTopologicalSection::non_null_ptr_type &first_section)
-		{
-			non_null_ptr_type ptr(
-					new GpmlTopologicalLine( first_section ));
-			return ptr;
-		}
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
+		/**
+		 * Create a @a GpmlTopologicalLine instance from the specified sequence of topological sections.
+		 */
+		template <typename TopologicalSectionsIterator>
 		static
 		const non_null_ptr_type
-		create( const std::vector<GpmlTopologicalSection::non_null_ptr_type> &sections_ )
+		create(
+				const TopologicalSectionsIterator &sections_begin_,
+				const TopologicalSectionsIterator &sections_end_)
 		{
-			non_null_ptr_type ptr(
-					new GpmlTopologicalLine( sections_ ));
-			return ptr;
+			return non_null_ptr_type(
+					new GpmlTopologicalLine(sections_begin_, sections_end_));
 		}
 
 		const GpmlTopologicalLine::non_null_ptr_type
 		clone() const
 		{
-			GpmlTopologicalLine::non_null_ptr_type dup(
-					new GpmlTopologicalLine(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlTopologicalLine(*this));
 		}
 
 		const GpmlTopologicalLine::non_null_ptr_type
 		deep_clone() const;
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
+		
 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the time sample vector?  (For consistency with the non-const
-		// overload...)
-		const std::vector<GpmlTopologicalSection::non_null_ptr_type> &
-		sections() const
+		/**
+		 * Return the "begin" const iterator to iterate over the topological sections.
+		 */
+		sections_const_iterator
+		sections_begin() const
 		{
-			return d_sections;
+			return d_sections.begin();
 		}
 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the time sample vector, well as per-index assignment (setter) and
-		// removal operations?  This would ensure that revisioning is correctly handled...
-		std::vector<GpmlTopologicalSection::non_null_ptr_type> &
-		sections()
+		/**
+		 * Return the "end" const iterator for iterating over the topological sections.
+		 */
+		sections_const_iterator
+		sections_end() const
 		{
-			return d_sections;
+			return d_sections.end();
 		}
 
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("TopologicalLine");
+			return STRUCTURAL_TYPE;
+		}
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -151,20 +164,12 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
+		template <typename TopologicalSectionsIterator>
 		GpmlTopologicalLine(
-				const GpmlTopologicalSection::non_null_ptr_type &first_section):
+				const TopologicalSectionsIterator &sections_begin_,
+				const TopologicalSectionsIterator &sections_end_) :
 			PropertyValue(), 
-			d_sections()
-		{
-			d_sections.push_back(first_section);
-		}
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		GpmlTopologicalLine(
-				const std::vector<GpmlTopologicalSection::non_null_ptr_type> &s):
-			PropertyValue(), 
-			d_sections(s)
+			d_sections(sections_begin_, sections_end_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -178,6 +183,14 @@ namespace GPlatesPropertyValues
 			d_sections(other.d_sections)
 		{  }
 
+		/**
+		 * Need to compare all data members (recursively) since our sections are
+		 * *non-const* non_null_intrusive_ptr and hence can be modified by clients.
+		 *
+		 * FIXME: Use *const* non_null_intrusive_ptr to avoid this.
+		 * Although that means use *const* feature visitors which is currently means changes
+		 * will propagate quite far across GPlates - ie, won't be a trivial task to make this change.
+		 */
 		virtual
 		bool
 		directly_modifiable_fields_equal(
@@ -185,18 +198,17 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		/** Because GpmlTopologicalSection is abstract we use non_null_ptr_type */
-		std::vector<GpmlTopologicalSection::non_null_ptr_type> d_sections;
+		sections_seq_type d_sections;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
 		// only be assignment of one intrusive_ptr to another.
 		GpmlTopologicalLine &
-		operator=(const GpmlTopologicalLine &);
+		operator=(
+				const GpmlTopologicalLine &);
 
 	};
-
 }
 
 #endif  // GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALLINE_H

@@ -97,6 +97,29 @@ GPlatesFileIO::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::expand
 
 
 boost::optional<int>
+GPlatesFileIO::ExportTemplateFilename::DefaultReconstructionTreeLayerNameFormat::match_format(
+		const QString &rest_of_filename_template)
+{
+	if (rest_of_filename_template.startsWith("%R"))
+	{
+		return 2;
+	}
+
+	return boost::none;
+}
+
+
+QString
+GPlatesFileIO::ExportTemplateFilename::DefaultReconstructionTreeLayerNameFormat::expand_format_string(
+		std::size_t /*sequence_index*/,
+		const double &/*reconstruction_time*/,
+		const QDateTime &/*date_time*/) const
+{
+	return d_default_recon_tree_layer_name;
+}
+
+
+boost::optional<int>
 GPlatesFileIO::ExportTemplateFilename::FrameNumberFormat::match_format(
 		const QString &rest_of_filename_template)
 {
@@ -240,7 +263,6 @@ GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::get_integ
 
 
 const QString GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::HOURS_MINS_SECS_WITH_DASHES_SPECIFIER = "%T";
-const QString GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::HOURS_MINS_SECS_WITH_COLONS_SPECIFIER = "%:";
 const QString GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::YEAR_MONTH_DAY_WITH_DASHES_SPECIFIER = "%D";
 
 
@@ -251,11 +273,6 @@ GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::match_format(
 	if (rest_of_filename_template.startsWith(HOURS_MINS_SECS_WITH_DASHES_SPECIFIER))
 	{
 		return HOURS_MINS_SECS_WITH_DASHES_SPECIFIER.size();
-	}
-
-	if (rest_of_filename_template.startsWith(HOURS_MINS_SECS_WITH_COLONS_SPECIFIER))
-	{
-		return HOURS_MINS_SECS_WITH_COLONS_SPECIFIER.size();
 	}
 
 	if (rest_of_filename_template.startsWith(YEAR_MONTH_DAY_WITH_DASHES_SPECIFIER))
@@ -273,10 +290,6 @@ GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::DateTimeFormat(
 	if (format_string == HOURS_MINS_SECS_WITH_DASHES_SPECIFIER)
 	{
 		d_date_time_format = "hh-mm-ss";
-	}
-	else if (format_string == HOURS_MINS_SECS_WITH_COLONS_SPECIFIER)
-	{
-		d_date_time_format = "hh:mm:ss";
 	}
 	else if (format_string == YEAR_MONTH_DAY_WITH_DASHES_SPECIFIER)
 	{

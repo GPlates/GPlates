@@ -38,7 +38,8 @@ namespace GPlatesAppLogic
 	class ReconstructedSmallCircle;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
-	class ResolvedTopologicalBoundary;
+	class ResolvedScalarField3D;
+	class ResolvedTopologicalGeometry;
 	class ResolvedTopologicalNetwork;
 }
 
@@ -205,8 +206,17 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
-		visit_resolved_topological_boundary(
-				GPlatesAppLogic::ResolvedTopologicalBoundary &rtb)
+		visit_resolved_scalar_field_3d(
+				GPlatesAppLogic::ResolvedScalarField3D &rsf)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_resolved_topological_geometry(
+				GPlatesAppLogic::ResolvedTopologicalGeometry &rtb)
 		{  }
 
 		/**

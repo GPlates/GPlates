@@ -46,6 +46,7 @@
 
 #include "gui/Colour.h"
 
+#include "maths/UnitQuaternion3D.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
@@ -93,7 +94,8 @@ namespace GPlatesOpenGL
 		{
 		public:
 			resource_handle_type
-			allocate();
+			allocate(
+					const GLCapabilities &capabilities);
 
 			void
 			deallocate(
@@ -175,7 +177,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Note that, as dictated by OpenGL, @a attribute_index must be in the half-closed range
 		 * [0, GL_MAX_VERTEX_ATTRIBS_ARB).
-		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'GLContext::get_parameters().shader.gl_max_vertex_attribs'.
+		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'context.get_capabilities().shader.gl_max_vertex_attribs'.
 		 *
 		 * NOTE: As dictated by OpenGL, generic vertex attributes won't get bound to this program object
 		 * until the next call to @a gl_link_program. So when you use a program it uses the bindings
@@ -212,15 +214,36 @@ namespace GPlatesOpenGL
 		 *   gl_MultiTexCoord6  14
 		 *   gl_MultiTexCoord7  15
 		 *
-		 * Also this means if you are using the fixed function pipeline don't use
-		 * 'glVertexAttribPointer(0, ...)' even though, on nVidia hardware, this maps to
-		 * 'glVertexPointer'. I did this and it worked on nVidia hardware, but not other hardware,
-		 * most likely due to the above aliasing.
+		 * NOTE: Ensure you use attribute index zero for one of your vertex attributes - it appears
+		 * that some hardware will not work unless this is the case.
+		 * This was discovered on a nVidia 7400M - probably it's expecting either 'glVertexPointer'
+		 * which aliases to index zero or 'glVertexAttribPointer(0, ...)' which specifically uses index zero.
+		 *
+		 * Also, if you are using the fixed function vertex pipeline (ie, not using a vertex shader)
+		 * then don't use 'glVertexAttribPointer(0, ...)' to set vertex data (for the fixed function
+		 * pipeline) even though, on nVidia hardware, this maps to 'glVertexPointer'.
+		 * This worked on nVidia hardware, but not other hardware, most likely due to the above aliasing.
 		 */
 		void
 		gl_bind_attrib_location(
 				const char *attribute_name,
 				GLuint attribute_index);
+
+
+		/**
+		 * Performs same function as the glProgramParameteri OpenGL function.
+		 *
+		 * NOTE: The 'GL_EXT_geometry_shader4' extension must be supported.
+		 *
+		 * NOTE: As dictated by OpenGL, program parameters won't affect this program object
+		 * until the next call to @a gl_link_program. So when you use a program it uses the
+		 * program parameters that were in effect at the last @a gl_link_program call.
+		 */
+		void
+		gl_program_parameteri(
+				GLRenderer &renderer,
+				GLenum pname,
+				GLint value);
 
 
 		/**
@@ -255,10 +278,28 @@ namespace GPlatesOpenGL
 		//////////////////////////////
 		// SETING UNIFORM VARIABLES //
 		//////////////////////////////
+
+
+		/**
+		 * Returns true if the specified uniform name corresponds to an active uniform variable in
+		 * the most recent linking of this program (see @a gl_link_program).
+		 *
+		 * Returns false for any of the following:
+		 *  (1) variable does not exist,
+		 *  (2) variable is not actively used in the linked shader program or
+		 *  (3) variable is a reserved name.
+		 */
+		bool
+		is_active_uniform(
+				const char *uniform_name) const;
+
+
 		//
-		// NOTE: Only *active* uniform variables should be set with @a gl_uniform.
+		// NOTE: Only *active* uniform variables should be set with the following 'gl_uniform*()' functions.
 		// Active variables are those declared in the shader source code that are actually used by the
 		// currently linked program (this is determined at compile/link time by the shader compiler/linker).
+		// The 'gl_uniform*()' functions return false if the uniform variable does not exist or
+		// is not *active* or is a reserved name (a warning is also logged once per uniform name per link).
 		//
 		// NOTE: As dictated by OpenGL, when you (re)link a program object you will have to
 		// load the uniform variables again (because the link initialises them to zero).
@@ -269,32 +310,33 @@ namespace GPlatesOpenGL
 		// NOTE: The methods that set *unsigned* integer and *double* uniforms require extra extensions:
 		//  - 'GL_EXT_gpu_shader4' for setting *unsigned* integer uniform variables, and
 		//  - 'GL_ARB_gpu_shader_fp64' for setting *double* uniform variables.
+		//
 
 
-		//! Performs same function as the glUniform1f OpenGL function.
-		void
+		//! Performs same function as the glUniform1f OpenGL function - returns false if not active.
+		bool
 		gl_uniform1f(
 				GLRenderer &renderer,
 				const char *name,
 				GLfloat v0);
 
-		//! Performs same function as the glUniform1fv OpenGL function.
-		void
+		//! Performs same function as the glUniform1fv OpenGL function - returns false if not active.
+		bool
 		gl_uniform1f(
 				GLRenderer &renderer,
 				const char *name,
 				const GLfloat *value,
 				unsigned int count);
 
-		//! Performs same function as the glUniform1i OpenGL function.
-		void
+		//! Performs same function as the glUniform1i OpenGL function - returns false if not active.
+		bool
 		gl_uniform1i(
 				GLRenderer &renderer,
 				const char *name,
 				GLint v0);
 
-		//! Performs same function as the glUniform1iv OpenGL function.
-		void
+		//! Performs same function as the glUniform1iv OpenGL function - returns false if not active.
+		bool
 		gl_uniform1i(
 				GLRenderer &renderer,
 				const char *name,
@@ -302,22 +344,22 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 		/**
-		 * Performs same function as the glUniform1d OpenGL function.
+		 * Performs same function as the glUniform1d OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform1d(
 				GLRenderer &renderer,
 				const char *name,
 				GLdouble v0);
 
 		/**
-		 * Performs same function as the glUniform1dv OpenGL function.
+		 * Performs same function as the glUniform1dv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform1d(
 				GLRenderer &renderer,
 				const char *name,
@@ -325,22 +367,22 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 		/**
-		 * Performs same function as the glUniform1ui OpenGL function.
+		 * Performs same function as the glUniform1ui OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
 		 */
-		void
+		bool
 		gl_uniform1ui(
 				GLRenderer &renderer,
 				const char *name,
 				GLuint v0);
 
 		/**
-		 * Performs same function as the glUniform1uiv OpenGL function.
+		 * Performs same function as the glUniform1uiv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
 		 */
-		void
+		bool
 		gl_uniform1ui(
 				GLRenderer &renderer,
 				const char *name,
@@ -348,32 +390,32 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 
-		//! Performs same function as the glUniform2f OpenGL function.
-		void
+		//! Performs same function as the glUniform2f OpenGL function - returns false if not active.
+		bool
 		gl_uniform2f(
 				GLRenderer &renderer,
 				const char *name,
 				GLfloat v0,
 				GLfloat v1);
 
-		//! Performs same function as the glUniform2fv OpenGL function.
-		void
+		//! Performs same function as the glUniform2fv OpenGL function - returns false if not active.
+		bool
 		gl_uniform2f(
 				GLRenderer &renderer,
 				const char *name,
 				const GLfloat *value,
 				unsigned int count);
 
-		//! Performs same function as the glUniform2i OpenGL function.
-		void
+		//! Performs same function as the glUniform2i OpenGL function - returns false if not active.
+		bool
 		gl_uniform2i(
 				GLRenderer &renderer,
 				const char *name,
 				GLint v0,
 				GLint v1);
 
-		//! Performs same function as the glUniform2iv OpenGL function.
-		void
+		//! Performs same function as the glUniform2iv OpenGL function - returns false if not active.
+		bool
 		gl_uniform2i(
 				GLRenderer &renderer,
 				const char *name,
@@ -381,11 +423,11 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 		/**
-		 * Performs same function as the glUniform2d OpenGL function.
+		 * Performs same function as the glUniform2d OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform2d(
 				GLRenderer &renderer,
 				const char *name,
@@ -393,11 +435,11 @@ namespace GPlatesOpenGL
 				GLdouble v1);
 
 		/**
-		 * Performs same function as the glUniform2dv OpenGL function.
+		 * Performs same function as the glUniform2dv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform2d(
 				GLRenderer &renderer,
 				const char *name,
@@ -405,11 +447,11 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 		/**
-		 * Performs same function as the glUniform2ui OpenGL function.
+		 * Performs same function as the glUniform2ui OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
 		 */
-		void
+		bool
 		gl_uniform2ui(
 				GLRenderer &renderer,
 				const char *name,
@@ -417,11 +459,11 @@ namespace GPlatesOpenGL
 				GLuint v1);
 
 		/**
-		 * Performs same function as the glUniform2uiv OpenGL function.
+		 * Performs same function as the glUniform2uiv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
 		 */
-		void
+		bool
 		gl_uniform2ui(
 				GLRenderer &renderer,
 				const char *name,
@@ -429,8 +471,8 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 
-		//! Performs same function as the glUniform3f OpenGL function.
-		void
+		//! Performs same function as the glUniform3f OpenGL function - returns false if not active.
+		bool
 		gl_uniform3f(
 				GLRenderer &renderer,
 				const char *name,
@@ -438,16 +480,16 @@ namespace GPlatesOpenGL
 				GLfloat v1,
 				GLfloat v2);
 
-		//! Performs same function as the glUniform3fv OpenGL function.
-		void
+		//! Performs same function as the glUniform3fv OpenGL function - returns false if not active.
+		bool
 		gl_uniform3f(
 				GLRenderer &renderer,
 				const char *name,
 				const GLfloat *value,
 				unsigned int count);
 
-		//! Performs same function as the glUniform3i OpenGL function.
-		void
+		//! Performs same function as the glUniform3i OpenGL function - returns false if not active.
+		bool
 		gl_uniform3i(
 				GLRenderer &renderer,
 				const char *name,
@@ -455,8 +497,8 @@ namespace GPlatesOpenGL
 				GLint v1,
 				GLint v2);
 
-		//! Performs same function as the glUniform3iv OpenGL function.
-		void
+		//! Performs same function as the glUniform3iv OpenGL function - returns false if not active.
+		bool
 		gl_uniform3i(
 				GLRenderer &renderer,
 				const char *name,
@@ -464,11 +506,11 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 		/**
-		 * Performs same function as the glUniform3d OpenGL function.
+		 * Performs same function as the glUniform3d OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform3d(
 				GLRenderer &renderer,
 				const char *name,
@@ -477,11 +519,11 @@ namespace GPlatesOpenGL
 				GLdouble v2);
 
 		/**
-		 * Performs same function as the glUniform3dv OpenGL function.
+		 * Performs same function as the glUniform3dv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform3d(
 				GLRenderer &renderer,
 				const char *name,
@@ -489,11 +531,11 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 		/**
-		 * Performs same function as the glUniform3ui OpenGL function.
+		 * Performs same function as the glUniform3ui OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
 		 */
-		void
+		bool
 		gl_uniform3ui(
 				GLRenderer &renderer,
 				const char *name,
@@ -502,11 +544,11 @@ namespace GPlatesOpenGL
 				GLuint v2);
 
 		/**
-		 * Performs same function as the glUniform3uiv OpenGL function.
+		 * Performs same function as the glUniform3uiv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
 		 */
-		void
+		bool
 		gl_uniform3ui(
 				GLRenderer &renderer,
 				const char *name,
@@ -514,13 +556,13 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 		//! Writes @a UnitVector3D as single-precision (x,y,z).
-		void
+		bool
 		gl_uniform3f(
 				GLRenderer &renderer,
 				const char *name,
 				const GPlatesMaths::UnitVector3D &value)
 		{
-			gl_uniform3f(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
+			return gl_uniform3f(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
 		}
 
 		/**
@@ -528,23 +570,23 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform3d(
 				GLRenderer &renderer,
 				const char *name,
 				const GPlatesMaths::UnitVector3D &value)
 		{
-			gl_uniform3d(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
+			return gl_uniform3d(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
 		}
 
 		//! Writes @a Vector3D as (x,y,z).
-		void
+		bool
 		gl_uniform3f(
 				GLRenderer &renderer,
 				const char *name,
 				const GPlatesMaths::Vector3D &value)
 		{
-			gl_uniform3f(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
+			return gl_uniform3f(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
 		}
 
 		/**
@@ -552,18 +594,18 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform3d(
 				GLRenderer &renderer,
 				const char *name,
 				const GPlatesMaths::Vector3D &value)
 		{
-			gl_uniform3d(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
+			return gl_uniform3d(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
 		}
 
 
-		//! Performs same function as the glUniform4f OpenGL function.
-		void
+		//! Performs same function as the glUniform4f OpenGL function - returns false if not active.
+		bool
 		gl_uniform4f(
 				GLRenderer &renderer,
 				const char *name,
@@ -572,16 +614,16 @@ namespace GPlatesOpenGL
 				GLfloat v2,
 				GLfloat v3);
 
-		//! Performs same function as the glUniform4fv OpenGL function.
-		void
+		//! Performs same function as the glUniform4fv OpenGL function - returns false if not active.
+		bool
 		gl_uniform4f(
 				GLRenderer &renderer,
 				const char *name,
 				const GLfloat *value,
 				unsigned int count);
 
-		//! Performs same function as the glUniform4i OpenGL function.
-		void
+		//! Performs same function as the glUniform4i OpenGL function - returns false if not active.
+		bool
 		gl_uniform4i(
 				GLRenderer &renderer,
 				const char *name,
@@ -590,8 +632,8 @@ namespace GPlatesOpenGL
 				GLint v2,
 				GLint v3);
 
-		//! Performs same function as the glUniform4iv OpenGL function.
-		void
+		//! Performs same function as the glUniform4iv OpenGL function - returns false if not active.
+		bool
 		gl_uniform4i(
 				GLRenderer &renderer,
 				const char *name,
@@ -599,11 +641,11 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 		/**
-		 * Performs same function as the glUniform4d OpenGL function.
+		 * Performs same function as the glUniform4d OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform4d(
 				GLRenderer &renderer,
 				const char *name,
@@ -613,11 +655,11 @@ namespace GPlatesOpenGL
 				GLdouble v3);
 
 		/**
-		 * Performs same function as the glUniform4dv OpenGL function.
+		 * Performs same function as the glUniform4dv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform4d(
 				GLRenderer &renderer,
 				const char *name,
@@ -625,11 +667,11 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 		/**
-		 * Performs same function as the glUniform4ui OpenGL function.
+		 * Performs same function as the glUniform4ui OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
 		 */
-		void
+		bool
 		gl_uniform4ui(
 				GLRenderer &renderer,
 				const char *name,
@@ -639,11 +681,11 @@ namespace GPlatesOpenGL
 				GLuint v3);
 
 		/**
-		 * Performs same function as the glUniform4uiv OpenGL function.
+		 * Performs same function as the glUniform4uiv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
 		 */
-		void
+		bool
 		gl_uniform4ui(
 				GLRenderer &renderer,
 				const char *name,
@@ -652,14 +694,14 @@ namespace GPlatesOpenGL
 
 
 		//! Writes @a UnitVector3D as single-precision (x,y,z,w).
-		void
+		bool
 		gl_uniform4f(
 				GLRenderer &renderer,
 				const char *name,
 				const GPlatesMaths::UnitVector3D &value_xyz,
 				GLfloat value_w = 1)
 		{
-			gl_uniform4f(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
+			return gl_uniform4f(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
 		}
 
 		/**
@@ -667,25 +709,25 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform4d(
 				GLRenderer &renderer,
 				const char *name,
 				const GPlatesMaths::UnitVector3D &value_xyz,
 				GLdouble value_w = 1)
 		{
-			gl_uniform4d(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
+			return gl_uniform4d(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
 		}
 
 		//! Writes @a Vector3D as single-precision (x,y,z,w).
-		void
+		bool
 		gl_uniform4f(
 				GLRenderer &renderer,
 				const char *name,
 				const GPlatesMaths::Vector3D &value_xyz,
 				GLfloat value_w = 1)
 		{
-			gl_uniform4f(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
+			return gl_uniform4f(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
 		}
 
 		/**
@@ -693,33 +735,57 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform4d(
 				GLRenderer &renderer,
 				const char *name,
 				const GPlatesMaths::Vector3D &value_xyz,
 				GLdouble value_w = 1)
 		{
-			gl_uniform4d(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
+			return gl_uniform4d(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
+		}
+
+		//! Writes @a UnitQuaternion as single-precision (x,y,z,w).
+		bool
+		gl_uniform4f(
+				GLRenderer &renderer,
+				const char *name,
+				const GPlatesMaths::UnitQuaternion3D &unit_quat)
+		{
+			return gl_uniform4f(renderer, name, unit_quat.x().dval(), unit_quat.y().dval(), unit_quat.z().dval(), unit_quat.w().dval());
+		}
+
+		/**
+		 * Writes @a UnitQuaternion as double-precision (x,y,z,w).
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		bool
+		gl_uniform4d(
+				GLRenderer &renderer,
+				const char *name,
+				const GPlatesMaths::UnitQuaternion3D &unit_quat)
+		{
+			return gl_uniform4d(renderer, name, unit_quat.x().dval(), unit_quat.y().dval(), unit_quat.z().dval(), unit_quat.w().dval());
 		}
 
 		//! Writes @a value as single-precision (r,g,b,a).
-		void
+		bool
 		gl_uniform4f(
 				GLRenderer &renderer,
 				const char *name,
 				const GPlatesGui::Colour &colour)
 		{
-			gl_uniform4f(renderer, name, colour, 1/*count*/);
+			return gl_uniform4f(renderer, name, colour, 1/*count*/);
 		}
 
 
 		/**
-		 * Performs same function as the glUniformMatrix2fv OpenGL function.
+		 * Performs same function as the glUniformMatrix2fv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1).
 		 */
-		void
+		bool
 		gl_uniform_matrix2x2f(
 				GLRenderer &renderer,
 				const char *name,
@@ -728,13 +794,13 @@ namespace GPlatesOpenGL
 				GLboolean transpose);
 
 		/**
-		 * Performs same function as the glUniformMatrix2dv OpenGL function.
+		 * Performs same function as the glUniformMatrix2dv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1).
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform_matrix2x2d(
 				GLRenderer &renderer,
 				const char *name,
@@ -743,11 +809,11 @@ namespace GPlatesOpenGL
 				GLboolean transpose);
 
 		/**
-		 * Performs same function as the glUniformMatrix3fv OpenGL function.
+		 * Performs same function as the glUniformMatrix3fv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1, col2).
 		 */
-		void
+		bool
 		gl_uniform_matrix3x3f(
 				GLRenderer &renderer,
 				const char *name,
@@ -756,13 +822,13 @@ namespace GPlatesOpenGL
 				GLboolean transpose);
 
 		/**
-		 * Performs same function as the glUniformMatrix3dv OpenGL function.
+		 * Performs same function as the glUniformMatrix3dv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1, col2).
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform_matrix3x3d(
 				GLRenderer &renderer,
 				const char *name,
@@ -771,11 +837,11 @@ namespace GPlatesOpenGL
 				GLboolean transpose);
 
 		/**
-		 * Performs same function as the glUniformMatrix4fv OpenGL function.
+		 * Performs same function as the glUniformMatrix4fv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1, col2, col3).
 		 */
-		void
+		bool
 		gl_uniform_matrix4x4f(
 				GLRenderer &renderer,
 				const char *name,
@@ -784,13 +850,13 @@ namespace GPlatesOpenGL
 				GLboolean transpose);
 
 		/**
-		 * Performs same function as the glUniformMatrix4dv OpenGL function.
+		 * Performs same function as the glUniformMatrix4dv OpenGL function - returns false if not active.
 		 *
 		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1, col2, col3).
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform_matrix4x4d(
 				GLRenderer &renderer,
 				const char *name,
@@ -799,37 +865,37 @@ namespace GPlatesOpenGL
 				GLboolean transpose);
 
 
-		//! Performs same function as the glUniformMatrix4fv OpenGL function with a single matrix.
-		void
+		//! Performs same function as the glUniformMatrix4fv OpenGL function with a single matrix - returns false if not active.
+		bool
 		gl_uniform_matrix4x4f(
 				GLRenderer &renderer,
 				const char *name,
 				const GLMatrix &matrix);
 
 		/**
-		 * Performs same function as the glUniformMatrix4dv OpenGL function with a single matrix.
+		 * Performs same function as the glUniformMatrix4dv OpenGL function with a single matrix - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform_matrix4x4d(
 				GLRenderer &renderer,
 				const char *name,
 				const GLMatrix &matrix);
 
-		//! Performs same function as the glUniformMatrix4fv OpenGL function with one or more matrices.
-		void
+		//! Performs same function as the glUniformMatrix4fv OpenGL function with one or more matrices - returns false if not active.
+		bool
 		gl_uniform_matrix4x4f(
 				GLRenderer &renderer,
 				const char *name,
 				const std::vector<GLMatrix> &matrices);
 
 		/**
-		 * Performs same function as the glUniformMatrix4dv OpenGL function with one or more matrices.
+		 * Performs same function as the glUniformMatrix4dv OpenGL function with one or more matrices - returns false if not active.
 		 *
 		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
-		void
+		bool
 		gl_uniform_matrix4x4d(
 				GLRenderer &renderer,
 				const char *name,

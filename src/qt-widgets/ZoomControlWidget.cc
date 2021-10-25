@@ -34,6 +34,10 @@ GPlatesQtWidgets::ZoomControlWidget::ZoomControlWidget(
 	d_viewport_zoom_ptr(&vzoom)
 {
 	setupUi(this);
+
+	spinbox_zoom_percent->setMinimum(vzoom.s_min_zoom_percent);
+	spinbox_zoom_percent->setMaximum(vzoom.s_max_zoom_percent);
+
 	show_buttons(false);
 	show_label(false);
 
@@ -92,6 +96,6 @@ void
 GPlatesQtWidgets::ZoomControlWidget::handle_spinbox_changed()
 {
 	d_viewport_zoom_ptr->set_zoom_percent(spinbox_zoom_percent->value());
-	emit editing_finished();
+	Q_EMIT editing_finished();
 }
 

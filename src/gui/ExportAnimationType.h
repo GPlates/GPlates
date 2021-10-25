@@ -46,11 +46,13 @@ namespace GPlatesGui
 		{
 			RECONSTRUCTED_GEOMETRIES,
 			PROJECTED_GEOMETRIES,
-			MESH_VELOCITIES,
-			RESOLVED_TOPOLOGIES,
-			RELATIVE_ROTATION,
-			EQUIVALENT_ROTATION,
-			ROTATION_PARAMS,
+			VELOCITIES,
+			RESOLVED_TOPOLOGIES, // General (non-CitcomS-specific) resolved topology exports
+			RESOLVED_TOPOLOGIES_CITCOMS, // CitcomS-specific resolved topology exports
+			RELATIVE_TOTAL_ROTATION,
+			EQUIVALENT_TOTAL_ROTATION,
+			RELATIVE_STAGE_ROTATION,
+			EQUIVALENT_STAGE_ROTATION,
 			RASTER,
 			FLOWLINES,
 			MOTION_PATHS,
@@ -88,6 +90,9 @@ namespace GPlatesGui
 			XBM,
 			XPM,
 
+			CITCOMS_GLOBAL,  // CitcomS global velocity file.
+			TERRA_TEXT,      // Terra velocity text file.
+
 			NUM_FORMATS,
 
 			INVALID_FORMAT // Must be after NUM_FORMATS.
@@ -121,6 +126,16 @@ namespace GPlatesGui
 		 */
 		const QString &
 		get_export_format_description(
+				Format format);
+
+
+		/**
+		 * Returns the filename extension of the specified export format.
+		 *
+		 * Note that some formats (like CitcomS velocity or Terra velocity) have no filename extension.
+		 */
+		const QString &
+		get_export_format_filename_extension(
 				Format format);
 
 

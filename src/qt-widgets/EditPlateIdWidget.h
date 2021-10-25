@@ -113,12 +113,12 @@ namespace GPlatesQtWidgets
 		set_null(
 				bool should_nullify);
 
-	signals:
+	Q_SIGNALS:
 		
 		void
 		value_changed();
 	
-	private slots:
+	private Q_SLOTS:
 	
 		/**
 		 * Triggered from button.

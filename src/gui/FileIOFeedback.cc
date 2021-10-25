@@ -28,12 +28,14 @@
 #include <boost/foreach.hpp>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QFile>
 #include <QMessageBox>
 #include <QString>
 #include <QTextStream>
 
 #include "FileIOFeedback.h"
 
+#include "Dialogs.h"
 #include "FeatureFocus.h"
 #include "UnsavedChangesTracker.h"
 
@@ -49,8 +51,10 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
+#include "file-io/ErrorWritingFeatureCollectionToFileFormatException.h"
 #include "file-io/FileFormatNotSupportedException.h"
-#include "file-io/GpmlOnePointSixOutputVisitor.h"
+#include "file-io/FileLoadAbortedException.h"
+#include "file-io/GpmlOutputVisitor.h"
 #include "file-io/OgrException.h"
 #include "file-io/File.h"
 
@@ -59,10 +63,13 @@
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 
-#include "qt-widgets/FileDialogFilter.h"
-#include "qt-widgets/ViewportWindow.h"
-#include "qt-widgets/ManageFeatureCollectionsDialog.h"
+#include "model/Gpgim.h"
+#include "model/GpgimVersion.h"
 
+#include "qt-widgets/GpgimVersionWarningDialog.h"
+#include "qt-widgets/FileDialogFilter.h"
+#include "qt-widgets/ManageFeatureCollectionsDialog.h"
+#include "qt-widgets/ViewportWindow.h"
 
 namespace
 {
@@ -208,6 +215,160 @@ namespace
 		const QFileInfo &qfileinfo = file.get_file().get_file_info().get_qfileinfo();
 		return qfileinfo.fileName().isEmpty();
 	}
+
+
+	/**
+	 * Returns the list of filenames for files with a different GPGIM version than the current
+	 * GPGIM version (built into this GPlates).
+	 *
+	 * If @a only_unsaved_changes is true then only files with unsaved changes will be checked.
+	 *
+	 * Returns true if there are any files in the list(s).
+	 */
+	bool
+	get_files_with_different_gpgim_version(
+			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
+			bool only_unsaved_changes,
+			const GPlatesModel::Gpgim &gpgim,
+			QStringList &older_version_filenames,
+			QStringList &newer_version_filenames)
+	{
+		const GPlatesModel::GpgimVersion &current_gpgim_version = gpgim.get_version();
+
+		// Iterate over the files.
+		BOOST_FOREACH(const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file, files)
+		{
+			const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+					file.get_file().get_feature_collection();
+
+			// If we are only getting files with unsaved changes then skip those that have no changes.
+			if (only_unsaved_changes && !feature_collection_ref->contains_unsaved_changes())
+			{
+				continue;
+			}
+
+			// Look for the GPGIM version tag in the feature collection.
+			GPlatesModel::FeatureCollectionHandle::tags_type::const_iterator tag_iter =
+					feature_collection_ref->tags().find(GPlatesModel::GpgimVersion::FEATURE_COLLECTION_TAG);
+
+			// If the feature collection does not contain this tag then it is assumed to be current
+			// GPGIM version since new (empty) feature collections created by this instance of GPlates
+			// will have features added according to the GPGIM version built into this instance of GPlates.
+			if (tag_iter == feature_collection_ref->tags().end())
+			{
+				continue;
+			}
+
+			// Get the GPGIM version of the current file.
+			const boost::any &tag = tag_iter->second;
+			const GPlatesModel::GpgimVersion &file_gpgim_version =
+					boost::any_cast<const GPlatesModel::GpgimVersion &>(tag);
+
+			// If the file GPGIM version does not match the current GPGIM version then we
+			// need to warn the user.
+			if (file_gpgim_version == current_gpgim_version)
+			{
+				continue;
+			}
+
+			const QString filename = file.get_file().get_file_info().get_display_name(false) +
+					" (" + file_gpgim_version.version_string() + ")";
+
+			if (file_gpgim_version < current_gpgim_version)
+			{
+				older_version_filenames.append(filename);
+			}
+			else
+			{
+				newer_version_filenames.append(filename);
+			}
+		}
+
+		return older_version_filenames.count() > 0 || newer_version_filenames.count() > 0;
+	}
+
+
+	/**
+	 * Shows the GPGIM version warning dialog, if necessary, to inform the user that there exist
+	 * files with a different GPGIM version than the current GPGIM version (built into this GPlates).
+	 *
+	 * If @a only_unsaved_changes is true then only files with unsaved changes will be saved.
+	 *
+	 * Returns true if the files should be saved.
+	 */
+	bool
+	show_save_files_gpgim_version_dialog_if_necessary(
+			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
+			bool only_unsaved_changes,
+			GPlatesQtWidgets::GpgimVersionWarningDialog *gpgim_version_warning_dialog,
+			const GPlatesModel::Gpgim &gpgim)
+	{
+		QStringList older_version_filenames;
+		QStringList newer_version_filenames;
+
+		// If there are no older or newer versions then we can save the files without querying the user.
+		if (!get_files_with_different_gpgim_version(
+			files,
+			only_unsaved_changes,
+			gpgim,
+			older_version_filenames,
+			newer_version_filenames))
+		{
+			return true;
+		}
+
+		// Set up the GPGIM version warning dialog.
+		gpgim_version_warning_dialog->set_action_requested(
+				GPlatesQtWidgets::GpgimVersionWarningDialog::SAVE_FILES,
+				older_version_filenames,
+				newer_version_filenames);
+
+		// Exec the dialog and return true if the files should be saved.
+		return gpgim_version_warning_dialog->exec() == QDialogButtonBox::Save;
+	}
+
+
+	/**
+	 * Shows the GPGIM version warning dialog, if necessary, to inform the user that there exist
+	 * files with a different GPGIM version than the current GPGIM version (built into this GPlates).
+	 */
+	void
+	show_open_files_gpgim_version_dialog_if_necessary(
+			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
+			GPlatesQtWidgets::GpgimVersionWarningDialog *gpgim_version_warning_dialog,
+			const GPlatesModel::Gpgim &gpgim)
+	{
+		// Do not warn the user if requested us to stop bothering them.
+		// Not that we only have this option for loading files.
+		// When saving files the user is always warned.
+		if (gpgim_version_warning_dialog->do_not_show_dialog_on_loading_files())
+		{
+			return;
+		}
+
+		QStringList older_version_filenames;
+		QStringList newer_version_filenames;
+
+		// If there are no older or newer versions then we don't need to warn the user.
+		if (!get_files_with_different_gpgim_version(
+			files,
+			false/*only_unsaved_changes*/, // Include all files (saved or unsaved).
+			gpgim,
+			older_version_filenames,
+			newer_version_filenames))
+		{
+			return;
+		}
+
+		// Set up the GPGIM version warning dialog.
+		gpgim_version_warning_dialog->set_action_requested(
+				GPlatesQtWidgets::GpgimVersionWarningDialog::LOAD_FILES,
+				older_version_filenames,
+				newer_version_filenames);
+
+		// Exec the dialog - it's just an informational dialog so we're not interested in the return code.
+		gpgim_version_warning_dialog->exec();
+	}
 }
 
 
@@ -238,7 +399,11 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 			d_viewport_window_ptr,
 			tr("Open Files"),
 			get_input_filters(app_state_.get_feature_collection_file_format_registry()),
-			view_state_)
+			view_state_),
+	d_gpgim_version_warning_dialog_ptr(
+			new GPlatesQtWidgets::GpgimVersionWarningDialog(
+					app_state_.get_gpgim(),
+					&viewport_window()))
 {
 	setObjectName("FileIOFeedback");
 }
@@ -261,13 +426,23 @@ GPlatesGui::FileIOFeedback::open_files(
 		return;
 	}
 
+	// Collect the files loaded over the current scope.
+	CollectLoadedFilesScope collect_loaded_files_scope(d_file_state_ptr);
+
 	try_catch_file_or_session_load_with_feedback(
 			boost::bind(
 					&GPlatesAppLogic::FeatureCollectionFileIO::load_files,
 					d_feature_collection_file_io_ptr,
 					filenames));
 
-	// FIXME: Dropped during refactoring. Was probably unnecessary.. right? //highlight_unsaved_changes();
+	// Warn the user if they have loaded files with different GPGIM versions than the files
+	// were originally created with. The user might then decide not to modify files since they
+	// could then only be saved using the current GPGIM version potentially causing problems for
+	// other (older) versions of GPlates.
+	show_open_files_gpgim_version_dialog_if_necessary(
+			collect_loaded_files_scope.get_loaded_files(),
+			d_gpgim_version_warning_dialog_ptr,
+			d_app_state_ptr->get_gpgim());
 }
 
 
@@ -302,6 +477,13 @@ GPlatesGui::FileIOFeedback::open_previous_session(
 		// so that the Session we record as being the user's previous session is self-consistent.
 		sm.unload_all_unnamed_files();
 		
+		// Collect the files loaded over the current scope.
+		//
+		// TODO: Once the Scribe session save/restore functionality is merged we won't be able
+		// to rely on file added signals so we'll then need to query all loaded files (since the
+		// session restore replaces all loaded files).
+		CollectLoadedFilesScope collect_loaded_files_scope(d_file_state_ptr);
+
 		// Load the new session.
 		try_catch_file_or_session_load_with_feedback(
 				boost::bind(
@@ -309,6 +491,14 @@ GPlatesGui::FileIOFeedback::open_previous_session(
 						&sm,
 						session_slot_to_load));
 
+		// Warn the user if they have loaded files with different GPGIM versions than the files
+		// were originally created with. The user might then decide not to modify files since they
+		// could then only be saved using the current GPGIM version potentially causing problems for
+		// other (older) versions of GPlates.
+		show_open_files_gpgim_version_dialog_if_necessary(
+				collect_loaded_files_scope.get_loaded_files(),
+				d_gpgim_version_warning_dialog_ptr,
+				d_app_state_ptr->get_gpgim());
 	}
 }
 
@@ -383,7 +573,7 @@ GPlatesGui::FileIOFeedback::save_file_as_appropriate(
 	if (file_is_unnamed(file)) {
 		return save_file_as(file);
 	} else {
-		return save_file_in_place(file);
+		return save_file(file);
 	}
 }
 
@@ -392,6 +582,21 @@ bool
 GPlatesGui::FileIOFeedback::save_file_in_place(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
+	// Warn the user if they are about to save the file using a different GPGIM version than the file
+	// was originally created with.
+	if (!show_save_files_gpgim_version_dialog_if_necessary(
+			std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>(1, file),
+			// We're saving whether the file has unsaved changes or not...
+			false/*only_unsaved_changes*/,
+			d_gpgim_version_warning_dialog_ptr,
+			d_app_state_ptr->get_gpgim()))
+	{
+		// Return without saving.
+		return false;
+	}
+
+	file.get_file().get_feature_collection();
+
 	// Save the feature collection with GUI feedback.
 	return save_file(file.get_file());
 }
@@ -604,6 +809,21 @@ GPlatesGui::FileIOFeedback::save_file(
 		qWarning() << message; // Also log the detailed error message.
 		return false;
 	}
+	catch (GPlatesFileIO::ErrorWritingFeatureCollectionToFileFormatException &exc)
+	{
+		// Remove the file on disk in case it was partially written.
+		QFile(file_ref.get_file_info().get_qfileinfo().filePath()).remove();
+
+		QString message;
+		QTextStream(&message)
+			<< tr("Error: Unable to write the file '%1' due to a file format limitation: \n")
+						.arg(file_ref.get_file_info().get_display_name(false/*use_absolute_path_name*/))
+				<< exc;
+		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
+		return false;
+	}
 
 	// Since a file has just been saved (successfully), we should let UnsavedChangesTracker know.
 	unsaved_changes_tracker().handle_model_has_changed();
@@ -613,55 +833,121 @@ GPlatesGui::FileIOFeedback::save_file(
 
 
 bool
-GPlatesGui::FileIOFeedback::save_all(
-		bool include_unnamed_files)
+GPlatesGui::FileIOFeedback::save_files(
+		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
+		bool include_unnamed_files,
+		bool only_unsaved_changes)
 {
-	viewport_window().status_message("GPlates is saving files...");
+	// Warn the user if they are about to save files using a different GPGIM version than the files
+	// were originally created with.
+	if (!show_save_files_gpgim_version_dialog_if_necessary(
+			files,
+			only_unsaved_changes,
+			d_gpgim_version_warning_dialog_ptr,
+			d_app_state_ptr->get_gpgim()))
+	{
+		// Return without saving.
+		//
+		// Even if some of the files have the current GPGIM version (and hence would normally have
+		// been saved without warning) those files should not be saved because we shouldn't save
+		// some files but not others because it may not make logical sense to partially save
+		// a group of files (they may become inconsistent with each other).
+		return false;
+	}
 
-	// For each loaded file; if it has unsaved changes, behave as though 'save in place' was clicked.
-	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
-			d_file_state_ptr->get_loaded_files();
+	viewport_window().status_message("GPlates is saving files...");
 
 	// Return true only if all files saved without issue.
 	bool all_ok = true;
 
 	BOOST_FOREACH(
-			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &loaded_file,
-			loaded_files)
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file,
+			files)
 	{
 		// Attempt to ensure GUI still gets updates... FIXME, it's not enough.
 		QCoreApplication::processEvents();
 
 		// Get the FeatureCollectionHandle, to determine unsaved state.
 		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
-				loaded_file.get_file().get_feature_collection();
+				file.get_file().get_feature_collection();
+		if (!feature_collection_ref.is_valid())
+		{
+			continue;
+		}
+		
+		// If we are only saving files with unsaved changes then skip those that have no changes.
+		if (only_unsaved_changes && !feature_collection_ref->contains_unsaved_changes())
+		{
+			continue;
+		}
 
-		// Does this file need saving?
-		if (feature_collection_ref.is_valid() && feature_collection_ref->contains_unsaved_changes()) {
-			// For now, to avoid pointless 'give me a name for this file (which you can't identify)'
-			// situations, only save the files which we have a name for already (unless @a include_unnamed_files)
-			if (file_is_unnamed(loaded_file) && ! include_unnamed_files) {
-				// Skip the unnamed file.
-			} else {
-				// Save the feature collection, in place or with dialog, with GUI feedback.
-				bool ok = save_file_as_appropriate(loaded_file);
-				// save_all() needs to report any failures.
-				if ( ! ok) {
-					all_ok = false;
-				}
+		// Previously we only saved the file if there were unsaved changes.
+		// However we now save regardless to ensure that the GPGIM version written to the file
+		// is the current GPGIM version. It's possible the user loaded an old GPGIM-version file
+		// and are now attempting to save it as the current GPGIM version.
 
+		// For now, to avoid pointless 'give me a name for this file (which you can't identify)'
+		// situations, only save the files which we have a name for already (unless @a include_unnamed_files)
+		if (file_is_unnamed(file) && ! include_unnamed_files)
+		{
+			// Skip the unnamed file.
+		}
+		else
+		{
+			// Save the feature collection, in place or with dialog, with GUI feedback.
+			bool ok = save_file_as_appropriate(file);
+			// save_all() needs to report any failures.
+			if ( ! ok)
+			{
+				all_ok = false;
 			}
+
 		}
 	}
 
 	// Some more user feedback in the status message.
-	if (all_ok) {
+	if (all_ok)
+	{
 		viewport_window().status_message("Files were saved successfully.", 2000);
-	} else {
+	}
+	else
+	{
 		viewport_window().status_message("Some files could not be saved.");
 	}
 
 	return all_ok;
+}
+
+
+bool
+GPlatesGui::FileIOFeedback::save_all(
+		bool include_unnamed_files,
+		bool only_unsaved_changes)
+{
+	// For each loaded file; if it has unsaved changes, behave as though 'save in place' was clicked.
+	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
+			d_file_state_ptr->get_loaded_files();
+
+	return save_files(loaded_files, include_unnamed_files, only_unsaved_changes);
+}
+
+
+bool
+GPlatesGui::FileIOFeedback::create_file(
+		const GPlatesFileIO::File::non_null_ptr_type &file)
+{
+	const bool saved = save_file(file->get_reference());
+
+	// Add the new file to the feature collection file state.
+	// We don't save it because we've already saved it above.
+	// The reason we save above is to pop up an error dialog if saving fails -
+	// this won't happen if we save directly through 'FeatureCollectionFileIO'.
+	if (saved)
+	{
+		d_feature_collection_file_io_ptr->create_file(file, false/*save*/);
+	}
+
+	return saved;
 }
 
 
@@ -718,8 +1004,22 @@ GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
 				<< tr("Error: GPlates was unable to read the file '%1': \n").arg(exc.filename())
 				<< exc;
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
+							  QMessageBox::Ok, QMessageBox::Ok);
 		qWarning() << message; // Also log the detailed error message.
+	}
+	catch (GPlatesFileIO::FileLoadAbortedException &exc)
+	{
+		QString message;
+		QTextStream(&message)
+				<< tr("File load aborted when reading file '%1': \n").arg(exc.filename())
+				<< exc;
+		// Don't display a message box here. The only way this exception is thrown
+		// at present is if the user cancels shapefile import (by cancelling the mapping dialog),
+		// and this doesn't need message box -it makes it look like something bad has happened.
+		//
+		// Abandoning the mapping process isn't really an error so probably shouldn't throw,
+		// but that's the easiest way of getting out of the file-load procedure at the moment.
+		qWarning() << message; // Log the detailed error message.
 	}
 	catch (GPlatesGlobal::Exception &exc)
 	{
@@ -753,15 +1053,7 @@ GPlatesGui::FileIOFeedback::app_state()
 GPlatesQtWidgets::ManageFeatureCollectionsDialog &
 GPlatesGui::FileIOFeedback::manage_feature_collections_dialog()
 {
-	// Obtain a pointer to the dialog once, via the ViewportWindow and Qt magic.
-	static GPlatesQtWidgets::ManageFeatureCollectionsDialog *dialog_ptr = 
-			viewport_window().findChild<GPlatesQtWidgets::ManageFeatureCollectionsDialog *>(
-					"ManageFeatureCollectionsDialog");
-	// The dialog not existing is a serious error.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			dialog_ptr != NULL,
-			GPLATES_ASSERTION_SOURCE);
-	return *dialog_ptr;
+	return d_viewport_window_ptr->dialogs().manage_feature_collections_dialog();
 }
 
 
@@ -781,3 +1073,33 @@ GPlatesGui::FileIOFeedback::unsaved_changes_tracker()
 }
 
 
+GPlatesGui::CollectLoadedFilesScope::CollectLoadedFilesScope(
+		GPlatesAppLogic::FeatureCollectionFileState *feature_collection_file_state)
+{
+	QObject::connect(
+			feature_collection_file_state,
+			SIGNAL(file_state_files_added(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &)),
+			this,
+			SLOT(handle_file_state_files_added(
+					GPlatesAppLogic::FeatureCollectionFileState &,
+					const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &)));
+}
+
+
+const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &
+GPlatesGui::CollectLoadedFilesScope::get_loaded_files() const
+{
+	return d_loaded_files;
+}
+
+
+void
+GPlatesGui::CollectLoadedFilesScope::handle_file_state_files_added(
+		GPlatesAppLogic::FeatureCollectionFileState &file_state,
+		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files)
+{
+	// Add to the list of new files.
+	d_loaded_files.insert(d_loaded_files.end(), new_files.begin(), new_files.end());
+}

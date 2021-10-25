@@ -25,9 +25,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 #include <limits>
+#include <sstream>
 #include <QDataStream>
 #include <QSysInfo>
 
@@ -225,6 +226,34 @@ GPlatesGui::operator<<(
 }
 
 
+QDebug
+GPlatesGui::operator <<(
+		QDebug dbg,
+		const Colour &c)
+{
+	std::ostringstream output_string_stream;
+	output_string_stream << c;
+
+	dbg.nospace() << QString::fromStdString(output_string_stream.str());
+
+	return dbg.space();
+}
+
+
+QTextStream &
+GPlatesGui::operator <<(
+		QTextStream &stream,
+		const Colour &c)
+{
+	std::ostringstream output_string_stream;
+	output_string_stream << c;
+
+	stream << QString::fromStdString(output_string_stream.str());
+
+	return stream;
+}
+
+
 GPlatesGui::Colour
 GPlatesGui::Colour::linearly_interpolate(
 		const GPlatesGui::Colour &first,
@@ -240,6 +269,19 @@ GPlatesGui::Colour::linearly_interpolate(
 				second.green() * position),
 			static_cast<GLfloat>(first.blue() * one_minus_position +
 				second.blue() * position));
+}
+
+
+GPlatesGui::Colour
+GPlatesGui::Colour::modulate(
+		const Colour &first,
+		const Colour &second)
+{
+	return Colour(
+			static_cast<GLfloat>(first.red()   * second.red()),
+			static_cast<GLfloat>(first.green() * second.green()),
+			static_cast<GLfloat>(first.blue()  * second.blue()),
+			static_cast<GLfloat>(first.alpha() * second.alpha()));
 }
 
 

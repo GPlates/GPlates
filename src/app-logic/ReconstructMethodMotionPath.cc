@@ -120,60 +120,58 @@ GPlatesAppLogic::ReconstructMethodMotionPath::can_reconstruct_feature(
 
 
 void
-GPlatesAppLogic::ReconstructMethodMotionPath::get_present_day_geometries(
-		std::vector<Geometry> &present_day_geometries,
-		const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref) const
+GPlatesAppLogic::ReconstructMethodMotionPath::get_present_day_feature_geometries(
+		std::vector<Geometry> &present_day_geometries) const
 {
 	GetPresentDayGeometries visitor(present_day_geometries);
 
-	visitor.visit_feature(feature_weak_ref);
+	visitor.visit_feature(get_feature_ref());
 }
 
 
 void
-GPlatesAppLogic::ReconstructMethodMotionPath::reconstruct_feature(
+GPlatesAppLogic::ReconstructMethodMotionPath::reconstruct_feature_geometries(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
-		const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref,
-		const ReconstructHandle::type &/*reconstruct_handle*/,
-		const ReconstructParams &/*reconstruct_params*/,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const ReconstructHandle::type &reconstruct_handle,
+		const Context &context,
 		const double &reconstruction_time)
 {
 	MotionPathGeometryPopulator visitor(
 			reconstructed_feature_geometries,
-			reconstruction_tree_creator,
+			context.reconstruction_tree_creator,
 			reconstruction_time);
 
-	visitor.visit_feature(feature_weak_ref);
+	visitor.visit_feature(get_feature_ref());
 }
 
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 GPlatesAppLogic::ReconstructMethodMotionPath::reconstruct_geometry(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const Context &context,
 		const double &reconstruction_time,
 		bool reverse_reconstruct)
 {
 	// Get the values of the properties at present day.
 	ReconstructionFeatureProperties reconstruction_feature_properties(0/*reconstruction_time*/);
 
-	reconstruction_feature_properties.visit_feature(reconstruction_properties);
+	reconstruction_feature_properties.visit_feature(get_feature_ref());
 
-	// If we found a reconstruction plate ID then reconstruct (or reverse reconstruct the geometry).
+	// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
+	// which can still give a non-identity rotation if the anchor plate id is non-zero.
+	GPlatesModel::integer_plate_id_type reconstruction_plate_id = 0;
 	if (reconstruction_feature_properties.get_recon_plate_id())
 	{
-		ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-				reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
-
-		return ReconstructUtils::reconstruct_by_plate_id(
-				geometry,
-				reconstruction_feature_properties.get_recon_plate_id().get(),
-				*reconstruction_tree,
-				reverse_reconstruct);
+		reconstruction_plate_id = reconstruction_feature_properties.get_recon_plate_id().get();
 	}
 
-	// Otherwise just return the original geometry.
-	return geometry;
+	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+			context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
+
+	// We obtained the reconstruction plate ID so reconstruct (or reverse reconstruct) the geometry.
+	return ReconstructUtils::reconstruct_by_plate_id(
+			geometry,
+			reconstruction_plate_id,
+			*reconstruction_tree,
+			reverse_reconstruct);
 }

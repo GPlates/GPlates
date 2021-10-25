@@ -46,7 +46,6 @@
 #include "utils/Select.h"
 #include "utils/TypeTraits.h"
 
-
 namespace GPlatesGui
 {
 	/**

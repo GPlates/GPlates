@@ -67,7 +67,8 @@ namespace GPlatesFileIO
 		{
 			RGBA,
 			GDAL,
-			UNKNOWN
+
+			NUM_FORMAT_HANDLERS // This must be last.
 		};
 
 		/**
@@ -194,8 +195,17 @@ namespace GPlatesFileIO
 		 * Note that "jpg" and "jpeg" appear as two separate elements in the map.
 		 */
 		static
-		const std::map<QString, FormatInfo> &
+		std::map<QString, FormatInfo>
 		get_supported_formats();
+
+		/**
+		 * Retrieves information about formats supported by @a format_handler when reading rasters.
+		 */
+		static
+		std::map<QString, FormatInfo>
+		get_supported_formats(
+				FormatHandler format_handler);
+
 
 		/**
 		 * Gets a string that can be used as the filter string in a eQFileDialog.
@@ -205,8 +215,21 @@ namespace GPlatesFileIO
 		 * alphabetic order by description.
 		 */
 		static
-		const QString &
+		QString
 		get_file_dialog_filters();
+
+		/**
+		 * Gets a string that can be used as the filter string in a eQFileDialog.
+		 *
+		 * The first filter is an all-inclusive filter that matches all supported
+		 * raster formats handled by @a format_handler. The other filters are for
+		 * the individual formats (supported by @a format_handler), sorted in
+		 * alphabetic order by description.
+		 */
+		static
+		QString
+		get_file_dialog_filters(
+				FormatHandler format_handler);
 
 
 	private:

@@ -100,6 +100,16 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Returns the partitioning polygon (passed into constructor).
+		 */
+		const PolygonOnSphere::non_null_ptr_to_const_type &
+		get_partitioning_polygon() const
+		{
+			return d_partitioning_polygon;
+		}
+
+
+		/**
 		 * Partition @a geometry_to_be_partitioned into geometries inside and outside
 		 * the partitioning polygon.
 		 */

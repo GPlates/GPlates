@@ -131,10 +131,9 @@ namespace GPlatesFileIO
 		 *            %f - the reconstruction-time instant of the frame, in printf-style %f format.
 		 *            %d - the reconstruction-time instant of the frame, in printf-style %d format,
 		 *               - rounded to the closest integer.
+		 *            %R - the layer name of the default reconstruction tree layer,
 		 *            %T - the user-time instant at which the iterator is first dereferenced,
 		 *                 in the format "HH-mm-ss" (HH is 24-hour format).
-		 *            %: - the user-time instant at which the iterator is first dereferenced,
-		 *                 in the format "HH:mm:ss" (HH is 24-hour format).
 		 *            %D - the user-date at which the iterator is first dereferenced, in the format "YYYY-MM-DD".
 		 *            %A - the current anchored plate ID.
 		 *
@@ -173,6 +172,7 @@ namespace GPlatesFileIO
 		ExportTemplateFilenameSequence(
 				const QString &filename_template,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const QString &default_recon_tree_layer_name,
 				const GPlatesMaths::real_t &begin_reconstruction_time,
 				const GPlatesMaths::real_t &end_reconstruction_time,
 				const GPlatesMaths::real_t &reconstruction_time_increment,

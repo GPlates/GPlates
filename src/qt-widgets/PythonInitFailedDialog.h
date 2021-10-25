@@ -28,7 +28,6 @@
 
 #include "PythonInitFailedDialogUi.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace GPlatesQtWidgets
 {
@@ -55,6 +54,5 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif // GPLATES_NO_PYTHON
 
 #endif  // GPLATES_QTWIDGETS_PYTHONCONSOLEDIALOG_H

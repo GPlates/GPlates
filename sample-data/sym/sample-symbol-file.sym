@@ -1,5 +1,7 @@
 # Test GPlates symbol definition file 
 # Robin Watson, NGU, 21.12.10
+# Updated 06.12.12 (added CIRCLE to allowed list of symbols, removed comment about
+# availability only on globe). 
 # 
 # This file format will be short-lived. 
 #
@@ -14,9 +16,10 @@
 # features with 'Position' in the Geometry Property panel of the Feature Creation Dialog
 #
 # symbol-type (text) must be one of:
-# TRIANGLE
-# SQUARE
+# CIRCLE
 # CROSS
+# SQUARE
+# TRIANGLE
 #
 # symbol-size should be a positive integer. 
 # 
@@ -34,13 +37,27 @@
 # * Symbol rules in the file will apply to all loaded collections.
 # * Only point features will be drawn with symbols.
 # * Symbol mapping is only by feature type.
-# * Symbols are only drawn on the globe projection.
 #
 MagneticAnomalyIdentification CROSS 2
-Volcano TRIANGLE 2 FILLED
+Volcano TRIANGLE 4 FILLED
 HotSpot SQUARE 3 FILLED
-Seamount TRIANGLE 2 UNFILLED 
+Seamount CIRCLE 2 UNFILLED 
 #
-# END
+StrainMarker CROSS 50
 #
+# NAVDAT Symobols 
+#
+NavdatSampleMafic TRIANGLE 1 UNFILLED
+NavdatSampleIntermediate TRIANGLE 1 UNFILLED
+NavdatSampleFelsicLow TRIANGLE 1 UNFILLED
+NavdatSampleFelsicHigh TRIANGLE 1 UNFILLED
+#
+# Macrostrat symbols
+#
+FossilCollection_large CROSS 10 FILLED
+FossilCollection_medium CROSS 3 FILLED
+FossilCollection_small CROSS 1 FILLED
+#
+#
+
 

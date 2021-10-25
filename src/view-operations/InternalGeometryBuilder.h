@@ -30,9 +30,8 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "GeometryType.h"
-
 #include "maths/GeometryOnSphere.h"
+#include "maths/GeometryType.h"
 #include "maths/PointOnSphere.h"
 
 namespace GPlatesViewOperations
@@ -66,14 +65,14 @@ namespace GPlatesViewOperations
 		 */
 		InternalGeometryBuilder(
 				GeometryBuilder *geometry_builder,
-				GeometryType::Value desired_geom_type);
+				GPlatesMaths::GeometryType::Value desired_geom_type);
 
 		/**
 		 * Sets the type of geometry we'd like to build.
 		 */
 		void
 		set_desired_geometry_type(
-				GeometryType::Value geom_type)
+				GPlatesMaths::GeometryType::Value geom_type)
 		{
 			d_desired_geometry_type = geom_type;
 
@@ -89,7 +88,7 @@ namespace GPlatesViewOperations
 		 * This may differ from the desired geometry due to insufficient number
 		 * of points for example.
 		 */
-		GeometryType::Value
+		GPlatesMaths::GeometryType::Value
 		get_actual_geometry_type() const
 		{
 			return d_actual_geometry_type;
@@ -148,7 +147,7 @@ namespace GPlatesViewOperations
 		 * For example, if there are not enough points to make a gml:LineString
 		 * but there are enough for a gml:Point.
 		 */
-		GeometryType::Value d_desired_geometry_type;
+		GPlatesMaths::GeometryType::Value d_desired_geometry_type;
 
 		point_seq_type d_point_seq;
 
@@ -167,7 +166,7 @@ namespace GPlatesViewOperations
 		/**
 		* The actual type of geometry as it currently stands.
 		*/
-		mutable GeometryType::Value d_actual_geometry_type;
+		mutable GPlatesMaths::GeometryType::Value d_actual_geometry_type;
 
 		//! Does @a d_geometry_opt_ptr or @a d_actual_geometry_type need updating?
 		mutable bool d_update;
@@ -177,7 +176,7 @@ namespace GPlatesViewOperations
 		 */
 		void
 		create_geometry_on_sphere(
-				GeometryType::Value) const;
+				GPlatesMaths::GeometryType::Value) const;
 	};
 }
 

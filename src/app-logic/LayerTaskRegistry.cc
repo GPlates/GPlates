@@ -35,13 +35,13 @@
 #include "RasterLayerTask.h"
 #include "ReconstructionLayerTask.h"
 #include "ReconstructLayerTask.h"
-#include "TopologyBoundaryResolverLayerTask.h"
+#include "ScalarField3DLayerTask.h"
+#include "TopologyGeometryResolverLayerTask.h"
 #include "TopologyNetworkResolverLayerTask.h"
 #include "VelocityFieldCalculatorLayerTask.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
-
 
 GPlatesAppLogic::LayerTaskRegistry::LayerTaskType
 GPlatesAppLogic::LayerTaskRegistry::register_layer_task_type(
@@ -189,11 +189,17 @@ GPlatesAppLogic::register_default_layer_task_types(
 			&RasterLayerTask::can_process_feature_collection,
 			GPlatesAppLogic::LayerTaskType::RASTER);
 
-	// Layer task to resolve topological closed plate boundaries.
+	// Layer task that reconstructs rasters.
 	layer_task_registry.register_layer_task_type(
-			&TopologyBoundaryResolverLayerTask::create_layer_task,
-			&TopologyBoundaryResolverLayerTask::can_process_feature_collection,
-			GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER);
+			&ScalarField3DLayerTask::create_layer_task,
+			&ScalarField3DLayerTask::can_process_feature_collection,
+			GPlatesAppLogic::LayerTaskType::SCALAR_FIELD_3D);
+
+	// Layer task to resolve topological geometries.
+	layer_task_registry.register_layer_task_type(
+			&TopologyGeometryResolverLayerTask::create_layer_task,
+			&TopologyGeometryResolverLayerTask::can_process_feature_collection,
+			GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
 
 	// Layer task to resolve topological networks.
 	layer_task_registry.register_layer_task_type(

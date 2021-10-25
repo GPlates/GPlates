@@ -27,14 +27,18 @@
 #define GPLATES_QTWIDGETS_SETCAMERAVIEWPOINTDIALOG_H
 
 #include <QDialog>
+
 #include "SetCameraViewpointDialogUi.h"
+
+#include "GPlatesDialog.h"
+
 
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
 	
 	class SetCameraViewpointDialog: 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_SetCameraViewpointDialog 
 	{
 		Q_OBJECT
@@ -61,13 +65,6 @@ namespace GPlatesQtWidgets
 		{
 			return spinbox_longitude->value();
 		}
-		
-		/**
-		 * Call this prior to displaying the dialog, so we can set the widgets to their
-		 * appropriate states.
-		 */
-		void
-		setup();
 
 	private:
 

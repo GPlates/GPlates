@@ -66,6 +66,7 @@ set(srcs
     GpmlKeyValueDictionaryElement.h
     GpmlMeasure.cc
     GpmlMeasure.h
+    GpmlMetadata.h
     GpmlOldPlatesHeader.cc
     GpmlOldPlatesHeader.h
     GpmlPiecewiseAggregation.cc
@@ -80,26 +81,29 @@ set(srcs
     GpmlRasterBandNames.h
     GpmlRevisionId.cc
     GpmlRevisionId.h
+    GpmlScalarField3DFile.cc
+    GpmlScalarField3DFile.h
     GpmlStringList.cc
     GpmlStringList.h
     GpmlTimeSample.cc
     GpmlTimeSample.h
     GpmlTimeWindow.cc
     GpmlTimeWindow.h
-    GpmlTopologicalInterior.cc
-    GpmlTopologicalInterior.h
-    GpmlTopologicalIntersection.cc
-    GpmlTopologicalIntersection.h
     GpmlTopologicalLine.cc
     GpmlTopologicalLine.h
     GpmlTopologicalLineSection.cc
     GpmlTopologicalLineSection.h
+    GpmlTopologicalNetwork.cc
+    GpmlTopologicalNetwork.h
     GpmlTopologicalPoint.cc
     GpmlTopologicalPoint.h
     GpmlTopologicalPolygon.cc
     GpmlTopologicalPolygon.h
     GpmlTopologicalSection.cc
     GpmlTopologicalSection.h
+    GpmlTotalReconstructionPole.h
+    OldVersionPropertyValue.cc
+    OldVersionPropertyValue.h
     PropertyValues.cc
     PropertyValues.h
     ProxiedRasterCache.cc
@@ -113,7 +117,7 @@ set(srcs
     RawRaster.h
     RawRasterUtils.cc
     RawRasterUtils.h
-    TemplateTypeParameterType.h
+    StructuralType.h
     TextContent.h
     UninterpretedPropertyValue.cc
     UninterpretedPropertyValue.h

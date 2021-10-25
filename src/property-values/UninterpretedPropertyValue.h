@@ -29,72 +29,79 @@
 #define GPLATES_PROPERTYVALUES_UNINTERPRETEDPROPERTYVALUE_H
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
 #include "model/XmlNode.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
-// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::UninterpretedPropertyValue, visit_uninterpreted_property_value)
 
 namespace GPlatesPropertyValues
 {
-
+	/**
+	 * This class implements an uninterpreted PropertyValue.
+	 */
 	class UninterpretedPropertyValue:
 			public GPlatesModel::PropertyValue
 	{
 
 	public:
 
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<UninterpretedPropertyValue>.
-		 */
+		//! A convenience typedef for a shared pointer to a non-const @a UninterpretedPropertyValue.
 		typedef GPlatesUtils::non_null_intrusive_ptr<UninterpretedPropertyValue> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue>.
-		 */
+		//! A convenience typedef for a shared pointer to a const @a UninterpretedPropertyValue.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue> non_null_ptr_to_const_type;
 
 		virtual
 		~UninterpretedPropertyValue()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
+
 		static
 		const non_null_ptr_type
 		create(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &value_)
+				const GPlatesModel::XmlElementNode::non_null_ptr_to_const_type &value)
 		{
-			non_null_ptr_type ptr(new UninterpretedPropertyValue(value_));
-			return ptr;
+			return non_null_ptr_type(new UninterpretedPropertyValue(value));
 		}
 
 		const UninterpretedPropertyValue::non_null_ptr_type
 		clone() const
 		{
-			UninterpretedPropertyValue::non_null_ptr_type dup(
-					new UninterpretedPropertyValue(*this));
-			return dup;
+			return non_null_ptr_type(new UninterpretedPropertyValue(*this));
 		}
 
 		const UninterpretedPropertyValue::non_null_ptr_type
-		deep_clone() const;
+		deep_clone() const
+		{
+			// This class doesn't reference any mutable objects by pointer, so there's
+			// no need for any recursive cloning.  Hence, regular clone will suffice.
+			return clone();
+		}
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &
+		const GPlatesModel::XmlElementNode::non_null_ptr_to_const_type &
 		value() const
 		{
 			return d_value;
+		}
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("UninterpretedPropertyValue");
+			return STRUCTURAL_TYPE;
 		}
 
 		/**
@@ -136,7 +143,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		UninterpretedPropertyValue(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &value_):
+				const GPlatesModel::XmlElementNode::non_null_ptr_to_const_type &value_) :
 			PropertyValue(),
 			d_value(value_)
 		{  }
@@ -152,21 +159,17 @@ namespace GPlatesPropertyValues
 			d_value(other.d_value)
 		{  }
 
-		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
-
 	private:
 
-		GPlatesModel::XmlElementNode::non_null_ptr_type d_value;
+		GPlatesModel::XmlElementNode::non_null_ptr_to_const_type d_value;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
 		// only be assignment of one intrusive_ptr to another.
 		UninterpretedPropertyValue &
-		operator=(const UninterpretedPropertyValue &);
+		operator=(
+				const UninterpretedPropertyValue &);
 
 	};
 

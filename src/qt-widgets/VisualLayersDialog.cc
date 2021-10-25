@@ -35,7 +35,7 @@ GPlatesQtWidgets::VisualLayersDialog::VisualLayersDialog(
 		GPlatesPresentation::ViewState &view_state,
 		ViewportWindow *viewport_window,
 		QWidget *parent_) :
-	QDialog(parent_, Qt::Window)
+	GPlatesDialog(parent_, Qt::Window)
 {
 	setWindowTitle(tr("Layers"));
 	resize(375, 675);

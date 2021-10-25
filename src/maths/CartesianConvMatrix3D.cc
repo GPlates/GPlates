@@ -35,28 +35,36 @@
 #include "MathsUtils.h"
 
 
-GPlatesMaths::CartesianConvMatrix3D::CartesianConvMatrix3D(const PointOnSphere
-	&pos)
+GPlatesMaths::CartesianConvMatrix3D::CartesianConvMatrix3D(
+		const PointOnSphere &pos)
 {
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
+	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
 
-	real_t lam = convert_deg_to_rad(llp.latitude()),
-	       phi = convert_deg_to_rad(llp.longitude());
+	const real_t lam = convert_deg_to_rad(llp.latitude());
+	const real_t phi = convert_deg_to_rad(llp.longitude());
 
-	_nx = -sin(lam) * cos(phi);
-	_ny = -sin(lam) * sin(phi);
-	_nz =  cos(lam);
-	_ex = -sin(phi);
-	_ey =  cos(phi);
+	const real_t sin_lam = sin(lam);
+	const real_t cos_lam = cos(lam);
+
+	const real_t sin_phi = sin(phi);
+	const real_t cos_phi = cos(phi);
+
+	_nx = -sin_lam * cos_phi;
+	_ny = -sin_lam * sin_phi;
+	_nz =  cos_lam;
+	_ex = -sin_phi;
+	_ey =  cos_phi;
 	_ez =  0;
-	_dx = -cos(lam) * cos(phi);
-	_dy = -cos(lam) * sin(phi);
-	_dz = -sin(lam);
+	_dx = -cos_lam * cos_phi;
+	_dy = -cos_lam * sin_phi;
+	_dz = -sin_lam;
 }
 
 
 GPlatesMaths::Vector3D
-GPlatesMaths::operator*(const CartesianConvMatrix3D &ccm, const Vector3D &v)
+GPlatesMaths::operator*(
+		const CartesianConvMatrix3D &ccm,
+		const Vector3D &v)
 {
 	real_t n = ccm.nx() * v.x() +
 	           ccm.ny() * v.y() +
@@ -76,7 +84,9 @@ GPlatesMaths::operator*(const CartesianConvMatrix3D &ccm, const Vector3D &v)
 
 
 GPlatesMaths::Vector3D
-GPlatesMaths::inverse_multiply(const CartesianConvMatrix3D &ccm, const Vector3D &v)
+GPlatesMaths::inverse_multiply(
+		const CartesianConvMatrix3D &ccm,
+		const Vector3D &v)
 {
 	real_t n = v.x();
 	real_t e = v.y();
@@ -96,8 +106,3 @@ GPlatesMaths::inverse_multiply(const CartesianConvMatrix3D &ccm, const Vector3D 
 
 	return Vector3D(x, y, z);
 }
-
-
-
-
-

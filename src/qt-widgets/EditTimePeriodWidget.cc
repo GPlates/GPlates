@@ -260,7 +260,7 @@ GPlatesQtWidgets::EditTimePeriodWidget::handle_appearance_is_distant_past_check(
 
 	// Checking one of these checkboxes can cause an update.
 	if (is_checked) {
-		emit commit_me();
+		Q_EMIT commit_me();
 	}
 }
 
@@ -281,7 +281,7 @@ GPlatesQtWidgets::EditTimePeriodWidget::handle_appearance_is_distant_future_chec
 
 	// Checking one of these checkboxes can cause an update.
 	if (is_checked) {
-		emit commit_me();
+		Q_EMIT commit_me();
 	}
 }
 
@@ -302,7 +302,7 @@ GPlatesQtWidgets::EditTimePeriodWidget::handle_disappearance_is_distant_past_che
 
 	// Checking one of these checkboxes can cause an update.
 	if (is_checked) {
-		emit commit_me();
+		Q_EMIT commit_me();
 	}
 }
 
@@ -323,7 +323,7 @@ GPlatesQtWidgets::EditTimePeriodWidget::handle_disappearance_is_distant_future_c
 
 	// Checking one of these checkboxes can cause an update.
 	if (is_checked) {
-		emit commit_me();
+		Q_EMIT commit_me();
 	}
 }
 

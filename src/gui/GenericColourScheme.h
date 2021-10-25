@@ -58,7 +58,7 @@ namespace GPlatesGui
 		get_colour(
 				const GPlatesModel::FeatureHandle& feature) const
 		{
-			return get_colour(GPlatesUtils::get_int_plate_id(&feature));
+			return get_colour(GPlatesUtils::get_recon_plate_id_as_int(&feature));
 		}
 	protected:
 		boost::optional<Colour>

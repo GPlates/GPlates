@@ -65,10 +65,15 @@ namespace GPlatesMaths {
 		 */
 		explicit
 		PointLiesOnGreatCircleArc(
-		 const GreatCircleArc &arc) :
-		 d_arc_start(arc.start_point()),
-		 d_arc_normal(arc.rotation_axis()),
-		 d_arc_dot(arc.dot_of_endpoints()) {  }
+				const GreatCircleArc &arc) :
+			d_arc_start(arc.start_point()),
+			d_arc_dot(arc.dot_of_endpoints())
+		{
+			if (!arc.is_zero_length())
+			{
+				d_arc_normal = arc.rotation_axis();
+			}
+		}
 
 		/**
 		 * Test whether @a test_point lies on the arc supplied to the
@@ -90,7 +95,7 @@ namespace GPlatesMaths {
 		 *
 		 * Note that this might be an undefined boost::optional.
 		 */
-		const boost::optional<UnitVector3D> d_arc_normal;
+		boost::optional<UnitVector3D> d_arc_normal;
 
 		/**
 		 * The dot-product of the unit-vectors of the start-point and

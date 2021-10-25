@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>500</width>
-    <height>420</height>
+    <height>550</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -50,7 +50,6 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
   <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections/>

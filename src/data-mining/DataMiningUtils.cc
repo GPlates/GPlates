@@ -23,8 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <fstream>
+#include <utility>
 #include <boost/foreach.hpp>
 
+#include "app-logic/AppLogicFwd.h"
+#include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/ShapefileAttributeFinder.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
@@ -38,7 +41,15 @@
 #include "GetValueFromPropertyVisitor.h"
 #include "IsCloseEnoughChecker.h"
 
+
 using namespace GPlatesUtils;
+
+// Undefine the min and max macros as they can interfere with the min and
+// max functions in std::numeric_limits<T>, on Visual Studio.
+#if defined(_MSC_VER)
+	#undef min
+	#undef max
+#endif
 
 boost::optional< double > 
 GPlatesDataMining::DataMiningUtils::minimum(
@@ -50,7 +61,7 @@ GPlatesDataMining::DataMiningUtils::minimum(
 	boost::optional<double> ret=boost::none;
 	for(; it != it_end;	it++)
 	{
-		ret = ret ?  std::min(*ret, *it) :  *it;
+		ret = ret ?  (std::min)(*ret, *it) :  *it;
 	}
 	return ret;
 }
@@ -84,8 +95,8 @@ GPlatesDataMining::DataMiningUtils::shortest_distance(
 	double dist = -1;
 	BOOST_FOREACH(const GPlatesAppLogic::ReconstructedFeatureGeometry* seed, seed_geos)
 	{
-		//use (DEFAULT_RADIUS_OF_EARTH * PI) as range, so the distance can always be calculated.
-		IsCloseEnoughChecker checker((DEFAULT_RADIUS_OF_EARTH * PI), true);
+		//use (DEFAULT_RADIUS_OF_EARTH_KMS * PI) as range, so the distance can always be calculated.
+		IsCloseEnoughChecker checker((DEFAULT_RADIUS_OF_EARTH_KMS * PI), true);
 		DualGeometryVisitor< IsCloseEnoughChecker > dual_visitor(
 				*(geo->reconstructed_geometry()),
 				*(seed->reconstructed_geometry()),
@@ -188,9 +199,9 @@ GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
 			(*it)->accept_visitor(visitor);
 			if(1 < std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
 			{
-				qDebug() << "More than one property found in shape file attribute.";
-				qDebug() << "But this is a one to one mapping. So, only return the first value.";
-				qDebug() << "More than one shape file attributes have the same name. Please check you data.";
+				qWarning() << "Found more than one shape file attribute with same attribute name.";
+				qWarning() << "Since this is a one-to-one mapping only the first value will be used.";
+				qWarning() << "Please check your data.";
 			}
 			if(0 == std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
 			{
@@ -278,6 +289,36 @@ GPlatesDataMining::DataMiningUtils::load_cfg(
 	}
 	return ret;
 }
+
+
+std::vector<GPlatesModel::FeatureHandle::weak_ref>
+GPlatesDataMining::DataMiningUtils::get_all_seed_features(
+		GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type co_proxy)
+{
+	using namespace GPlatesAppLogic;
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> ret;
+
+	std::vector<reconstruct_layer_proxy_non_null_ptr_type> seed_proxies =
+		co_proxy->get_coregistration_seed_layer_proxy();
+
+	std::vector<ReconstructContext::ReconstructedFeature> reconstructed_seed_features;
+	BOOST_FOREACH(reconstruct_layer_proxy_non_null_ptr_type p, seed_proxies)
+	{
+		p->get_reconstructed_features(reconstructed_seed_features);
+
+		BOOST_FOREACH(ReconstructContext::ReconstructedFeature rsf, reconstructed_seed_features)
+		{
+			const GPlatesModel::FeatureHandle::weak_ref f = rsf.get_feature();
+			if(f.is_valid())
+				ret.push_back(f);
+		}
+	}
+	return ret;
+}
+
+
+
+
 
 
 

@@ -62,12 +62,16 @@ namespace GPlatesAppLogic
 		/**
 		 * Convenience typedef for a function that creates a @a ReconstructMethodInterface.
 		 *
-		 * The function takes no arguments.
+		 * The function takes the following arguments:
+		 * - A weak reference to a feature associated with the reconstruct method.
+		 * - Data to initialise the reconstruction method with.
 		 *
 		 * Returns the created @a ReconstructMethodInterface.
 		 */
 		typedef boost::function<
-				ReconstructMethodInterface::non_null_ptr_type ()>
+				ReconstructMethodInterface::non_null_ptr_type (
+						const GPlatesModel::FeatureHandle::weak_ref &,
+						const ReconstructMethodInterface::Context &)>
 								create_reconstruct_method_function_type;
 
 
@@ -124,51 +128,79 @@ namespace GPlatesAppLogic
 		 * This is because 'BY_PLATE_ID' is a bit of a catch-all so preference is given to more
 		 * specialised reconstruct methods where available.
 		 *
-		 * Returns boost::none if no reconstruct method types could be found.
+		 * Returns boost::none if no matching reconstruct method types could be found.
 		 */
 		boost::optional<ReconstructMethod::Type>
 		get_reconstruct_method_type(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref) const;
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref) const;
 
 
 		/**
-		 * Same as @a get_reconstruct_method_type but returns 'BY_PLATE_ID' if no reconstruct
-		 * method types could be found.
+		 * Creates a reconstruct method of the first type that can reconstruct the specified feature.
+		 *
+		 * NOTE: If reconstruct method 'BY_PLATE_ID' *and* another reconstruct method can both
+		 * reconstruct the specified feature then preference is given to the other reconstruct method.
+		 * This is because 'BY_PLATE_ID' is a bit of a catch-all so preference is given to more
+		 * specialised reconstruct methods where available.
+		 *
+		 * @a reconstruct_method_context is the context in which the reconstruct method performs reconstructions.
+		 *
+		 * Returns boost::none if no matching reconstruct method types could be found.
+		 */
+		boost::optional<ReconstructMethodInterface::non_null_ptr_type>
+		create_reconstruct_method(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const ReconstructMethodInterface::Context &reconstruct_method_context) const;
+
+
+		/**
+		 * Same as @a get_reconstruct_method_type but returns a 'BY_PLATE_ID' reconstruct method type
+		 * if no reconstruct method types could be found.
 		 */
 		ReconstructMethod::Type
-		get_reconstruct_method_type_or_default(
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref) const;
+		get_reconstruct_method_or_default_type(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref) const;
 
 
 		/**
-		 * Returns an internally stored reconstruct method associated with the specified
-		 * reconstruct method type.
+		 * Same as @a create_reconstruct_method but creates a 'BY_PLATE_ID' reconstruct method
+		 * if no reconstruct method types could be found.
 		 *
-		 * Since reconstruct methods don't store any state they can be shared by many different clients.
+		 * @a reconstruct_method_context is the context in which the reconstruct method performs reconstructions.
 		 *
-		 * The reconstruct method type must have been already registered.
-		 *
-		 * @throws PreconditionViolationError if @a reconstruct_method_type has not been registered.
+		 * @throws PreconditionViolationError if BY_PLATE_ID reconstruction method type has not been registered.
 		 */
 		ReconstructMethodInterface::non_null_ptr_type
-		get_reconstruct_method(
-				ReconstructMethod::Type reconstruct_method_type) const;
+		create_reconstruct_method_or_default(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const ReconstructMethodInterface::Context &reconstruct_method_context) const;
 
 
 		/**
-		 * Causes a new reconstruct method of the given type.
+		 * Creates a new reconstruct method of the same type, and associated with the same feature,
+		 * as the specified reconstruct method but with the specified context data.
+		 */
+		ReconstructMethodInterface::non_null_ptr_type
+		create_reconstruct_method(
+				const ReconstructMethodInterface &reconstruct_method,
+				const ReconstructMethodInterface::Context &reconstruct_method_context) const;
+
+
+		/**
+		 * Creates a new reconstruct method of the specified type, and associated with the
+		 * specified feature, but with the context data specified.
 		 *
-		 * This is only useful if you want to create and own your own reconstruct method,
-		 * otherwise using the internal reconstruct method returned by @a get_reconstruct_method
-		 * is easier.
-		 *
-		 * The reconstruct method type must have been already registered.
+		 * NOTE: The reconstruct method type must be the type associated with the specified feature.
+		 * For example, calling @a get_reconstruct_method_type on the specified feature should
+		 * return the specified reconstruction method type (although this is not checked internally).
 		 *
 		 * @throws PreconditionViolationError if @a reconstruct_method_type has not been registered.
 		 */
 		ReconstructMethodInterface::non_null_ptr_type
 		create_reconstruct_method(
-				ReconstructMethod::Type reconstruct_method_type) const;
+				ReconstructMethod::Type reconstruct_method_type,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const ReconstructMethodInterface::Context &reconstruct_method_context) const;
 
 
 	private:
@@ -178,14 +210,11 @@ namespace GPlatesAppLogic
 					const can_reconstruct_feature_function_type &can_reconstruct_feature_function_,
 					const create_reconstruct_method_function_type &create_reconstruct_method_function_) :
 				can_reconstruct_feature_function(can_reconstruct_feature_function_),
-				create_reconstruct_method_function(create_reconstruct_method_function_),
-				// Create a reconstruct method that can be shared by all clients.
-				shared_reconstruct_method(create_reconstruct_method_function_())
+				create_reconstruct_method_function(create_reconstruct_method_function_)
 			{  }
 
 			can_reconstruct_feature_function_type can_reconstruct_feature_function;
 			create_reconstruct_method_function_type create_reconstruct_method_function;
-			ReconstructMethodInterface::non_null_ptr_type shared_reconstruct_method;
 		};
 
 		typedef std::map<ReconstructMethod::Type, ReconstructMethodInfo> reconstruct_method_info_map_type;

@@ -35,6 +35,7 @@
 
 #include "unit-test/TestSuiteFilter.h"
 
+
 void
 GPlatesUnitTest::TestSuiteFilter::set_filter_string(
 		std::string filter_str)

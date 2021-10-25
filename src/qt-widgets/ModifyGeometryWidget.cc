@@ -31,12 +31,10 @@
 
 #include "ModifyGeometryWidget.h"
 #include "LatLonCoordinatesTable.h"
-#include "view-operations/GeometryOperationTarget.h"
 
 
 GPlatesQtWidgets::ModifyGeometryWidget::ModifyGeometryWidget(
-		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 		QWidget *parent_):
 	TaskPanelWidget(parent_)
 {
@@ -47,45 +45,15 @@ GPlatesQtWidgets::ModifyGeometryWidget::ModifyGeometryWidget(
 
 	// Get a wrapper around coordinates table that listens to a GeometryBuilder
 	// and fills in the table accordingly.
-	d_lat_lon_coordinates_table.reset(new LatLonCoordinatesTable(
-			coordinates_table(),
-			geometry_operation_target.get_current_geometry_builder(),
-			&active_geometry_operation));
+	d_lat_lon_coordinates_table.reset(
+			new LatLonCoordinatesTable(coordinates_table(), geometry_operation_state));
 
-	connect_to_geometry_builder_tool_target(geometry_operation_target);
-	
 }
 
 
 GPlatesQtWidgets::ModifyGeometryWidget::~ModifyGeometryWidget()
 {
 	// boost::scoped_ptr destructor needs complete type.
-}
-
-
-void
-GPlatesQtWidgets::ModifyGeometryWidget::connect_to_geometry_builder_tool_target(
-		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target)
-{
-	// Change geometry type in our table.
-	QObject::connect(
-			&geometry_operation_target,
-			SIGNAL(switched_geometry_builder(
-					GPlatesViewOperations::GeometryOperationTarget &,
-					GPlatesViewOperations::GeometryBuilder *)),
-			this,
-			SLOT(switched_geometry_builder(
-					GPlatesViewOperations::GeometryOperationTarget &,
-					GPlatesViewOperations::GeometryBuilder *)));
-}
-
-
-void
-GPlatesQtWidgets::ModifyGeometryWidget::switched_geometry_builder(
-		GPlatesViewOperations::GeometryOperationTarget &,
-		GPlatesViewOperations::GeometryBuilder *new_geom_builder)
-{
-	d_lat_lon_coordinates_table->set_geometry_builder(new_geom_builder);
 }
 
 

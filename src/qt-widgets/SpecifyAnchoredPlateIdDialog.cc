@@ -69,8 +69,7 @@ namespace
 		{
 			if (current_top_level_propname())
 			{
-				QString property_name = GPlatesUtils::make_qstring_from_icu_string(
-						current_top_level_propname()->build_aliased_name());
+				QString property_name = convert_qualified_xml_name_to_qstring(current_top_level_propname().get());
 				d_plate_ids.insert(std::make_pair(property_name, gpml_plate_id.value()));
 			}
 		}
@@ -84,7 +83,7 @@ namespace
 
 GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::SpecifyAnchoredPlateIdDialog(
 		QWidget *parent_):
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
+	GPlatesDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
 	d_fill_menu(new QMenu(this))
 {
 	setupUi(this);
@@ -148,7 +147,7 @@ GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::showEvent(
 void
 GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::propagate_value()
 {
-	emit value_changed(
+	Q_EMIT value_changed(
 			static_cast<GPlatesModel::integer_plate_id_type>(
 				fixed_plate_spinbox->value()));
 }

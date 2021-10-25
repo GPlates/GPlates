@@ -24,6 +24,8 @@
  */
 
 #include <boost/foreach.hpp>
+
+#include <set>
 #include <QCoreApplication>
 #include <QTableWidget>
 #include <QHeaderView>
@@ -34,9 +36,15 @@
 #include <QDir>
 #include <QDebug>
 
+#include "ManageFeatureCollectionsDialog.h"
+
+#include "ManageFeatureCollectionsActionWidget.h"
+#include "ManageFeatureCollectionsEditConfigurations.h"
+
 #include "app-logic/ApplicationState.h"
-#include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
+#include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/ReconstructGraph.h"
 
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
@@ -60,10 +68,7 @@
 
 #include "presentation/ViewState.h"
 
-#include "ManageFeatureCollectionsActionWidget.h"
-#include "ManageFeatureCollectionsEditConfigurations.h"
-
-#include "ManageFeatureCollectionsDialog.h"
+#include "utils/Profile.h"
 
 
 namespace
@@ -137,6 +142,65 @@ namespace
 
 
 	/**
+	 * Returns a list of selected files (rows) by returning the action widget in each selected row.
+	 *
+	 * Note that only rows with non-null action widgets are included (there shouldn't be any null widgets though).
+	 */
+	std::vector<GPlatesQtWidgets::ManageFeatureCollectionsActionWidget *>
+	get_selected_action_widgets(
+			QTableWidget *qtable_widget)
+	{
+		std::vector<GPlatesQtWidgets::ManageFeatureCollectionsActionWidget *> selected_files;
+
+		// Iterate over the selected files.
+		const QList<QTableWidgetSelectionRange> selected_ranges = qtable_widget->selectedRanges();
+		const int num_selected_ranges = selected_ranges.count();
+		for (int range_index = 0; range_index < num_selected_ranges; ++range_index)
+		{
+			const QTableWidgetSelectionRange &selection_range = selected_ranges.at(range_index);
+
+			// Iterate over the rows in the current selection range.
+			for (int selected_row = selection_range.topRow();
+				selected_row <= selection_range.bottomRow();
+				++selected_row)
+			{
+				// Get the file_reference corresponding to this table row.
+				GPlatesQtWidgets::ManageFeatureCollectionsActionWidget *action_widget =
+						get_action_widget(qtable_widget, selected_row);
+				if (!action_widget)
+				{
+					continue;
+				}
+
+				selected_files.push_back(action_widget);
+			}
+		}
+
+		return selected_files;
+	}
+
+
+	/**
+	 * Returns a list of selected files (rows) by returning the file reference in each selected row.
+	 */
+	std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
+	get_selected_files(
+			QTableWidget *qtable_widget)
+	{
+		std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> selected_files;
+
+		std::vector<GPlatesQtWidgets::ManageFeatureCollectionsActionWidget *> selected_action_widgets =
+				get_selected_action_widgets(qtable_widget);
+		for (unsigned int n = 0; n < selected_action_widgets.size(); ++n)
+		{
+			selected_files.push_back(selected_action_widgets[n]->get_file_reference());
+		}
+
+		return selected_files;
+	}
+
+
+	/**
 	 * Convenience function to change the background for all table cells on
 	 * a given @a row.
 	 */
@@ -178,17 +242,23 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 		GPlatesGui::FileIOFeedback &gui_file_io_feedback,
+		GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 		GPlatesPresentation::ViewState &view_state, 
 		QWidget *parent_):
-	QDialog(parent_, Qt::Window),
+	GPlatesDialog(parent_, Qt::Window),
 	d_file_format_registry(view_state.get_application_state().get_feature_collection_file_format_registry()),
 	d_file_state(file_state),
 	d_feature_collection_file_io(&feature_collection_file_io),
 	d_gui_file_io_feedback_ptr(&gui_file_io_feedback),
+	d_reconstruct_graph(reconstruct_graph),
 	d_view_state(view_state)
 {
 	setupUi(this);
-	
+
+	// Focus on the list of feature collections so that any selected files (rows) are more visible
+	// (the row highlights are darker, and hence more noticeable, when the QTableWidget has focus).
+	setFocusProxy(table_feature_collections);
+
 	// Try to adjust column widths.
 	QHeaderView *header = table_feature_collections->horizontalHeader();
 	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
@@ -211,12 +281,31 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	label_unsaved_changes_swatch->setPixmap(create_pixmap_from_colour(bg_colour_unsaved));
 	label_no_presence_on_disk_swatch->setPixmap(create_pixmap_from_colour(bg_colour_new_feature_collection));
 
+	// Gray out all buttons that have to do with selected feature collections (initially no collections selected).
+	selection_buttons->setEnabled(false);
+
 	// Set up slots for Open File and Save All
 	QObject::connect(button_open_file, SIGNAL(clicked()), d_gui_file_io_feedback_ptr, SLOT(open_files()));
-	QObject::connect(button_save_all, SIGNAL(clicked()), this, SLOT(save_all_named()));
-	
+	QObject::connect(button_save_all_changes, SIGNAL(clicked()), this, SLOT(save_all_named_changes()));
+
+	// Set up slots for Save Selected, Unload Selected, Reload Selected and Clear Selection.
+	QObject::connect(button_save_selected, SIGNAL(clicked()), this, SLOT(save_selected()));
+	QObject::connect(button_reload_selected, SIGNAL(clicked()), this, SLOT(reload_selected()));
+	QObject::connect(button_unload_selected, SIGNAL(clicked()), this, SLOT(unload_selected()));
+	QObject::connect(button_clear_selection, SIGNAL(clicked()), this, SLOT(clear_selection()));
+
+	QObject::connect(
+			table_feature_collections, SIGNAL(itemSelectionChanged()),
+			this, SLOT(handle_selection_changed()));
+	QObject::connect(
+			table_feature_collections->horizontalHeader(), SIGNAL(sectionClicked(int)),
+			this, SLOT(header_section_clicked(int)));
+
 	// Set up slots for file load/unload notifications.
 	connect_to_file_state_signals();
+
+	// The close button has the initial focus.
+	button_close->setFocus();
 }
 
 
@@ -335,10 +424,18 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::unload_file(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
+	// Block any calls to 'ApplicationState::reconstruct()' because we're going to
+	// call it at the end of this method.
+	GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			d_view_state.get_application_state());
+
 	GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it =
 			action_widget_ptr->get_file_reference();
 	
 	d_feature_collection_file_io->unload_file(file_it);
+
+	// Make sure 'ApplicationState::reconstruct()' gets called when all scopes exit.
+	scoped_reconstruct_guard.call_reconstruct_on_scope_exit();
 }
 
 
@@ -354,6 +451,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_files_added(
 		add_row(file_ref, false/*should_highlight_unsaved_changes*/);
 	}
 
+	// Highlight unsaved changes all in one go instead of individually for each file.
 	highlight_unsaved_changes();
 }
 
@@ -389,6 +487,104 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_file_info_ch
 	// Row text needs to be updated to reflect a new filename and a new default file configuration
 	// if the file's format needs a file configuration.
 	update_row(row, file_ref);
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::header_section_clicked(
+		int section_index)
+{
+	// We only sort by filename or file format.
+	if (section_index != ColumnNames::FILENAME &&
+		section_index != ColumnNames::FORMAT)
+	{
+		// Make sure the sort indicator remains drawn on the previously sorted column, if any,
+		// otherwise it'll be drawn on the currently selected column (the column we're ignoring).
+		if (d_column_sort)
+		{
+			table_feature_collections->horizontalHeader()->setSortIndicator(
+					d_column_sort->column_index, d_column_sort->sort_order);
+		}
+
+		return;
+	}
+
+	if (d_column_sort)
+	{
+		// If the column is the same as before then turn off sorting.
+		if (d_column_sort->column_index == section_index)
+		{
+			// Turn off sorting.
+			d_column_sort = boost::none;
+			table_feature_collections->horizontalHeader()->setSortIndicatorShown(false);
+
+			//
+			// Sort by original file order (the order in which files were loaded).
+			//
+			// This is most easily done by clearing all rows and adding them in the original order.
+
+			// First get a list of all selected files, if any.
+			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> selected_files =
+					get_selected_files(table_feature_collections);
+			const std::set<GPlatesAppLogic::FeatureCollectionFileState::file_reference> selected_files_set(
+					selected_files.begin(), selected_files.end());
+
+			clear_rows();
+
+			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> file_references =
+					d_file_state.get_loaded_files();
+			BOOST_FOREACH(
+					const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
+					file_references)
+			{
+				add_row(file_ref, false/*should_highlight_unsaved_changes*/);
+
+				// If the current file was previously selected then add it to the selection.
+				if (selected_files_set.find(file_ref) != selected_files_set.end())
+				{
+					// Select the row just added.
+					table_feature_collections->setRangeSelected(
+							QTableWidgetSelectionRange(
+									table_feature_collections->rowCount() - 1,
+									0,
+									table_feature_collections->rowCount() - 1,
+									table_feature_collections->columnCount() - 1),
+							true);
+				}
+			}
+
+			// Highlight unsaved changes all in one go instead of individually for each file.
+			highlight_unsaved_changes();
+
+			return;
+		}
+	}
+	else // Sorting is currently disabled, so enable it...
+	{
+		d_column_sort = ColumnSort();
+	}
+
+	// Set the column to sort and the sort order (currently sort order is always ascending anyway).
+	d_column_sort->column_index = section_index;
+	d_column_sort->sort_order = Qt::AscendingOrder;
+
+	// Sort the table.
+	table_feature_collections->sortItems(d_column_sort->column_index, d_column_sort->sort_order);
+
+	// Draw the sort indicator.
+	table_feature_collections->horizontalHeader()->setSortIndicator(
+			d_column_sort->column_index, d_column_sort->sort_order);
+	table_feature_collections->horizontalHeader()->setSortIndicatorShown(true);
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_selection_changed()
+{
+	const QList<QTableWidgetSelectionRange> selected_ranges = table_feature_collections->selectedRanges();
+
+	// Enable/disable all buttons related to selections based on whether any files/rows are selected.
+	selection_buttons->setEnabled(!selected_ranges.isEmpty());
 }
 
 
@@ -443,7 +639,14 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::add_row(
 	// Add blank row.
 	const int row = table_feature_collections->rowCount();
 	table_feature_collections->insertRow(row);
-	
+
+	// Set the actions item so that we can mark the cell as non-selectable.
+	// This way the row colour show through selected rows (files) from behind the action buttons.
+	// Otherwise the row colour is not visible for selected rows.
+	QTableWidgetItem *actions_item = new QTableWidgetItem("");
+	actions_item->setFlags(Qt::ItemIsEnabled); // Not selectable.
+	table_feature_collections->setItem(row, ColumnNames::ACTIONS, actions_item);
+
 	// Add action buttons widget.
 	ManageFeatureCollectionsActionWidget *action_widget_ptr =
 			new ManageFeatureCollectionsActionWidget(
@@ -489,12 +692,12 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_row(
 	// Set the filename item.
 	QTableWidgetItem *filename_item = new QTableWidgetItem(display_name);
 	filename_item->setToolTip(tr("Location: %1").arg(filepath_str));
-	filename_item->setFlags(Qt::ItemIsEnabled);
+	filename_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 	table_feature_collections->setItem(row, ColumnNames::FILENAME, filename_item);
 
 	// Set the file format item.
 	QTableWidgetItem *format_item = new QTableWidgetItem(format_str);
-	format_item->setFlags(Qt::ItemIsEnabled);
+	format_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
 	table_feature_collections->setItem(row, ColumnNames::FORMAT, format_item);
 	
 	// Update the action buttons widget.
@@ -515,6 +718,12 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_row(
 	if (should_highlight_unsaved_changes)
 	{
 		highlight_unsaved_changes();
+	}
+
+	// Sort the table if sorting has been enabled (if the user clicked on the filename or format header).
+	if (d_column_sort)
+	{
+		table_feature_collections->sortItems(d_column_sort->column_index, d_column_sort->sort_order);
 	}
 }
 
@@ -578,33 +787,164 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::remove_row(
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_all_named()
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_all_named_changes()
 {
-	save_all(false);
+	save_all(false/*include_unnamed_files*/, true/*only_unsaved_changes*/);
 }
 
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_all(
-		bool include_unnamed_files)
+		bool include_unnamed_files,
+		bool only_unsaved_changes)
 {
 	// Instant feedback is nice for such a long operation with no progress bars (yet).
-	QString button_text_normal = button_save_all->text();
-	button_save_all->setText(tr("Saving..."));
-	button_save_all->setEnabled(false);
+	QString button_text_normal = button_save_all_changes->text();
+	button_save_all_changes->setText(tr("Saving..."));
+	button_save_all_changes->setEnabled(false);
 	// Attempting to make the GUI actually update...
-	button_save_all->update();
+	button_save_all_changes->update();
 	QCoreApplication::processEvents();
 
 	// Save all, with feedback.
-	d_gui_file_io_feedback_ptr->save_all(include_unnamed_files);
-	
+	d_gui_file_io_feedback_ptr->save_all(include_unnamed_files, only_unsaved_changes);
+
 	// Update each row.
 	highlight_unsaved_changes();
 
 	// Re-enable button.
-	button_save_all->setText(button_text_normal);
-	button_save_all->setEnabled(true);
+	button_save_all_changes->setText(button_text_normal);
+	button_save_all_changes->setEnabled(true);
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_selected()
+{
+	// Instant feedback is nice for such a long operation with no progress bars (yet).
+	QString button_text_normal = button_save_selected->text();
+	button_save_selected->setText(tr("Saving..."));
+	button_save_selected->setEnabled(false);
+	// Attempting to make the GUI actually update...
+	button_save_selected->update();
+	QCoreApplication::processEvents();
+
+	// Get a list of all selected files.
+	std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> selected_files =
+			get_selected_files(table_feature_collections);
+
+	// Save selected files, with feedback.
+	d_gui_file_io_feedback_ptr->save_files(
+			selected_files,
+			false/*include_unnamed_files*/,
+			// We're saving whether the files have unsaved changes or not...
+			false/*only_unsaved_changes*/);
+
+	// Update each row.
+	highlight_unsaved_changes();
+
+	// Re-enable button.
+	button_save_selected->setText(button_text_normal);
+	button_save_selected->setEnabled(true);
+
+	// Set the focus back to the table widget so the user can see the selected highlights more easily.
+	table_feature_collections->setFocus();
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::reload_selected()
+{
+	// Block any calls to 'ApplicationState::reconstruct()' because we're going to
+	// call it at the end of this method.
+	GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			d_view_state.get_application_state());
+
+	// Reloading files can, under certain circumstances, trigger layer additions.
+	// This is only when the type of features in the reloaded files has changed such that
+	// new types of layers are required.
+	// As an optimisation, put all layer additions in a single add layers group.
+	GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup add_layers_group(d_reconstruct_graph);
+	add_layers_group.begin_add_or_remove_layers();
+
+	// Get a list of all selected files.
+	const std::vector<ManageFeatureCollectionsActionWidget *> selected_files =
+			get_selected_action_widgets(table_feature_collections);
+
+	// Now that we've collected all the selected files we can safely unload them
+	// without causing problem with row indices due to row removal.
+	for (unsigned int n = 0; n < selected_files.size(); ++n)
+	{
+		ManageFeatureCollectionsActionWidget *selected_file = selected_files[n];
+
+		GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref =
+				selected_file->get_file_reference();
+
+		// Skip files that don't exist yet (new files that the user has not yet assigned filenames).
+		if (!GPlatesFileIO::file_exists(file_ref.get_file().get_file_info()))
+		{
+			continue;
+		}
+
+		reload_file(selected_file);
+	}
+
+	// Set the focus back to the table widget so the user can see the selected highlights more easily.
+	table_feature_collections->setFocus();
+
+	add_layers_group.end_add_or_remove_layers();
+
+	// Make sure 'ApplicationState::reconstruct()' gets called when all scopes exit.
+	scoped_reconstruct_guard.call_reconstruct_on_scope_exit();
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::unload_selected()
+{
+	// Block any calls to 'ApplicationState::reconstruct()' because we're going to
+	// call it at the end of this method.
+	GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			d_view_state.get_application_state());
+
+	// Unloading files can trigger layer removals.
+	// As an optimisation, put all layer removals in a single remove layers group.
+	GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup remove_layers_group(d_reconstruct_graph);
+	remove_layers_group.begin_add_or_remove_layers();
+
+	// First get a list of all selected files before we unload any of them.
+	const std::vector<ManageFeatureCollectionsActionWidget *> selected_files =
+			get_selected_action_widgets(table_feature_collections);
+
+	// Now that we've collected all the selected files we can safely unload them
+	// without causing problem with row indices due to row removal.
+	for (unsigned int n = 0; n < selected_files.size(); ++n)
+	{
+		ManageFeatureCollectionsActionWidget *selected_file = selected_files[n];
+
+		// Note that we unload a file even if the user has not yet assigned a filename and hence
+		// doesn't exist of disk yet.
+		unload_file(selected_file);
+	}
+
+	remove_layers_group.end_add_or_remove_layers();
+
+	// Make sure 'ApplicationState::reconstruct()' gets called when all scopes exit.
+	scoped_reconstruct_guard.call_reconstruct_on_scope_exit();
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::clear_selection()
+{
+	// Deselect the entire table.
+	table_feature_collections->setRangeSelected(
+			QTableWidgetSelectionRange(
+					0,
+					0,
+					table_feature_collections->rowCount() - 1,
+					table_feature_collections->columnCount() - 1),
+			false);
 }
 
 
@@ -619,7 +959,8 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::highlight_unsaved_changes()
 	// Change all row background colours to reflect unsavitivity.
 	// As a side effect, if there are any rows of that particular colour,
 	// the corresponding label will be shown.
-	for (int row = 0; row < table_feature_collections->rowCount(); ++row) {
+	for (int row = 0; row < table_feature_collections->rowCount(); ++row)
+	{
 		set_row_background_colour(row);
 	}
 }

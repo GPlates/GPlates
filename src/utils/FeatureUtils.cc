@@ -91,23 +91,29 @@ private:
 
 
 boost::optional<GPlatesModel::integer_plate_id_type>
-GPlatesUtils::get_int_plate_id(const GPlatesModel::FeatureHandle* feature_ptr)
+GPlatesUtils::get_recon_plate_id_as_int(
+		const GPlatesModel::FeatureHandle *feature_ptr)
 {
-	PropertyFinder finder;
+	using namespace GPlatesModel;
 	boost::optional<GPlatesModel::integer_plate_id_type> id = boost::none;
-	GPlatesModel::FeatureHandle::const_iterator 
-		iter = feature_ptr->begin(),
-		end = feature_ptr->end();
-	
-	for ( ; iter != end; ++iter)
+	if(feature_ptr)
 	{
-		(*iter)->accept_visitor(finder);
-		id = finder.int_plate_id();
-		if(id)
-			return id;
+		static const PropertyName recon_pid_name = PropertyName::create_gpml("reconstructionPlateId");
+		PropertyFinder finder;
+		FeatureHandle::const_iterator iter = feature_ptr->begin(), end = feature_ptr->end();
+		for ( ; iter != end; ++iter)
+		{
+			if((*iter)->property_name() == recon_pid_name)
+			{
+				(*iter)->accept_visitor(finder);
+				id = finder.int_plate_id();
+				break;
+			}
+		}
 	}
 	return id;
 }
+
 
 boost::optional<GPlatesMaths::Real>
 GPlatesUtils::get_age(
@@ -196,6 +202,37 @@ GPlatesUtils::get_start_end_time(
 		et = to_real(*e_time);
 	}
 	return boost::make_tuple(st,et);
+}
+
+
+boost::optional<GPlatesMaths::Real>
+GPlatesUtils::get_begin_time(
+		const GPlatesModel::FeatureHandle* feature_ptr)
+{
+	PropertyFinder finder;
+	
+	boost::optional<GPlatesPropertyValues::GeoTimeInstant> s_time = GPlatesPropertyValues::GeoTimeInstant(0.0);
+	s_time = boost::none; // This strange initialization is a workaround for Ubuntu Precise 32-bit. The g++ doesn't like boost::optional.
+	
+	GPlatesModel::FeatureHandle::const_iterator 
+		iter = feature_ptr->begin(),
+		end = feature_ptr->end();
+
+	for ( ; iter != end; ++iter)
+	{
+		(*iter)->accept_visitor(finder);
+		s_time = finder.start_time();
+		if(s_time)
+			break;
+	}
+	if(s_time)
+	{
+		return to_real(*s_time);
+	}
+	else
+	{
+		return boost::none;
+	}
 }
 
 

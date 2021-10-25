@@ -26,19 +26,21 @@
 #ifndef GPLATES_GUI_FILEIOFEEDBACK_H
 #define GPLATES_GUI_FILEIOFEEDBACK_H
 
+#include <vector>
+#include <boost/function.hpp>
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QObject>
 #include <QPointer>
 #include <QString>
 #include <QList>
 #include <QUrl>
-#include <boost/function.hpp>
-#include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include "app-logic/FeatureCollectionFileState.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatConfiguration.h"
+#include "file-io/File.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -65,11 +67,12 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
+	class GpgimVersionWarningDialog;
+	class ManageFeatureCollectionsDialog;
 	// Forward declaration of ViewportWindow and MFCD to avoid spaghetti.
 	// Yes, this is ViewportWindow, not the "View State"; we need
 	// this to pop dialogs up from, and maybe some progress bars.
 	class ViewportWindow;
-	class ManageFeatureCollectionsDialog;
 }
 
 
@@ -191,15 +194,49 @@ namespace GPlatesGui
 
 
 		/**
-		 * Save all files as though the 'save in place' button was used.
+		 * Save the specified files as though the 'save in place' button was used.
+		 *
 		 * If @a include_unnamed_files, we'll also try to save files that don't have names yet,
 		 * which will mean popping up save dialogs.
+		 *
+		 * If @a only_unsaved_changes is true then only files with unsaved changes will be saved.
+		 */
+		bool
+		save_files(
+				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
+				bool include_unnamed_files,
+				bool only_unsaved_changes);
+
+
+		/**
+		 * Save all files as though the 'save in place' button was used.
+		 *
+		 * If @a include_unnamed_files, we'll also try to save files that don't have names yet,
+		 * which will mean popping up save dialogs.
+		 *
+		 * If @a only_unsaved_changes is true then only files with unsaved changes will be saved.
 		 */
 		bool
 		save_all(
-				bool include_unnamed_files);
+				bool include_unnamed_files,
+				bool only_unsaved_changes);
 
-	public slots:
+
+		/**
+		 * Creates, and saves, a file named @a filename and saves @a feature_collection to the file,
+		 * handling any exceptions thrown by popping up appropriate error dialogs (and returning false).
+		 *
+		 * This method is useful when you want to save a feature collection that was not
+		 * originally loaded from a file.
+		 *
+		 * NOTE: This should not be used for a file with an empty filename since it cannot be saved
+		 * to the file system - use 'FeatureCollectionFileIO::create_empty_file()' for that instead.
+		 */
+		bool
+		create_file(
+				const GPlatesFileIO::File::non_null_ptr_type &file);
+
+	public Q_SLOTS:
 
 		/**
 		 * Opens an Open File dialog allowing the user to select zero or more files,
@@ -231,6 +268,7 @@ namespace GPlatesGui
 
 
 	private:
+
 		/**
 		 * Saves the feature collection in @a file_ref to the filename in @a file_ref.
 		 * Pops up simple dialogs if there are problems, and returns false.
@@ -274,9 +312,7 @@ namespace GPlatesGui
 
 		
 		/**
-		 * Sneaky method to find the ManageFeatureCollectionsDialog via
-		 * ViewportWindow and the Qt object tree. Means we don't have
-		 * to pass yet more things in through the constructor.
+		 * Returns the ManageFeatureCollectionsDialog via ViewportWindow.
 		 */
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &
 		manage_feature_collections_dialog();
@@ -333,6 +369,46 @@ namespace GPlatesGui
 		 * The open files dialog box.
 		 */
 		GPlatesQtWidgets::OpenFileDialog d_open_files_dialog;
+
+		/**
+		 * Pointer to the dialog we use to notify users of files with different GPGIM versions .
+		 * This dialog is parented to ViewportWindow so Qt takes care of the cleanup.
+		 */
+		GPlatesQtWidgets::GpgimVersionWarningDialog *d_gpgim_version_warning_dialog_ptr;
+	};
+
+
+	/**
+	 * Used to collect the files loaded during the lifetime of a @a CollectLoadFilesScope object.
+	 *
+	 * This class cannot be nested since Qt meta objects features are not supported for nested classes.
+	 */
+	class CollectLoadedFilesScope :
+			public QObject
+	{
+		Q_OBJECT
+
+	public:
+
+		explicit
+		CollectLoadedFilesScope(
+				GPlatesAppLogic::FeatureCollectionFileState *feature_collection_file_state);
+
+		//! Get the files loaded during the lifetime of 'this' object.
+		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &
+		get_loaded_files() const;
+
+	private Q_SLOTS:
+
+		void
+		handle_file_state_files_added(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files);
+
+	private:
+
+		std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> d_loaded_files;
+
 	};
 }
 

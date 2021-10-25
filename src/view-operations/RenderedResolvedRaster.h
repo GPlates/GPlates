@@ -53,10 +53,12 @@ namespace GPlatesViewOperations
 		RenderedResolvedRaster(
 				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &resolved_raster,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
-				const GPlatesGui::Colour &raster_modulate_colour) :
+				const GPlatesGui::Colour &raster_modulate_colour,
+				float normal_map_height_field_scale_factor) :
 			d_resolved_raster(resolved_raster),
 			d_raster_colour_palette(raster_colour_palette),
-			d_raster_modulate_colour(raster_modulate_colour)
+			d_raster_modulate_colour(raster_modulate_colour),
+			d_normal_map_height_field_scale_factor(normal_map_height_field_scale_factor)
 		{  }
 
 		virtual
@@ -64,7 +66,7 @@ namespace GPlatesViewOperations
 		accept_visitor(
 				ConstRenderedGeometryVisitor& visitor)
 		{
-			visitor.visit_resolved_raster(*this);
+			visitor.visit_rendered_resolved_raster(*this);
 		}
 
 		virtual
@@ -94,6 +96,12 @@ namespace GPlatesViewOperations
 			return d_raster_modulate_colour;
 		}
 
+		float
+		get_normal_map_height_field_scale_factor() const
+		{
+			return d_normal_map_height_field_scale_factor;
+		}
+
 		/**
 		 * Returns the reconstruction time at which raster is resolved/reconstructed.
 		 */
@@ -119,6 +127,11 @@ namespace GPlatesViewOperations
 		 * The modulation colour to multiply the raster with.
 		 */
 		GPlatesGui::Colour d_raster_modulate_colour;
+
+		/**
+		 * Alters the surface lighting if a normal map is used.
+		 */
+		float d_normal_map_height_field_scale_factor;
 	};
 }
 

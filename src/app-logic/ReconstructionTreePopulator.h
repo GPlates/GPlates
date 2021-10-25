@@ -36,6 +36,7 @@
 #include "model/PropertyName.h"
 #include "model/types.h"
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GpmlTotalReconstructionPole.h"
 
 
 namespace GPlatesAppLogic
@@ -122,6 +123,13 @@ namespace GPlatesAppLogic
 		void
 		visit_gpml_plate_id(
 				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
+
+		void
+		visit_gpml_total_reconstruction_pole(
+				GPlatesPropertyValues::GpmlTotalReconstructionPole &pole)
+		{
+			visit_gpml_finite_rotation(pole);
+		}
 
 	private:
 

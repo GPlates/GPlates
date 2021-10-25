@@ -31,9 +31,10 @@
 #include <iosfwd>
 
 #include "GmlTimePeriod.h"
-#include "model/PropertyValue.h"
-#include "TemplateTypeParameterType.h"
+#include "StructuralType.h"
+
 #include "model/FeatureVisitor.h"
+#include "model/PropertyValue.h"
 
 #include "utils/QtStreamable.h"
 
@@ -42,7 +43,7 @@ namespace GPlatesPropertyValues
 {
 
 	// Since all the members of this class are of type boost::intrusive_ptr or
-	// TemplateTypeParameterType (which wraps an StringSet::SharedIterator instance which
+	// StructuralType (which wraps an StringSet::SharedIterator instance which
 	// points to a pre-allocated node in a StringSet), none of the construction,
 	// copy-construction or copy-assignment operations for this class should throw.
 	class GpmlTimeWindow :
@@ -55,7 +56,7 @@ namespace GPlatesPropertyValues
 		GpmlTimeWindow(
 				GPlatesModel::PropertyValue::non_null_ptr_type time_dependent_value_,
 				GmlTimePeriod::non_null_ptr_type valid_time_,
-				const TemplateTypeParameterType &value_type_) :
+				const StructuralType &value_type_) :
 			d_time_dependent_value(time_dependent_value_),
 			d_valid_time(valid_time_),
 			d_value_type(value_type_)
@@ -133,7 +134,7 @@ namespace GPlatesPropertyValues
 
 		// Note that no "setter" is provided:  The value type of a GpmlTimeWindow instance
 		// should never be changed.
-		const TemplateTypeParameterType &
+		const StructuralType &
 		value_type() const
 		{
 			return d_value_type;
@@ -149,7 +150,7 @@ namespace GPlatesPropertyValues
 
 		GmlTimePeriod::non_null_ptr_type d_valid_time;
 
-		TemplateTypeParameterType d_value_type;
+		StructuralType d_value_type;
 	};
 
 	// operator<< for GpmlTimeWindow.

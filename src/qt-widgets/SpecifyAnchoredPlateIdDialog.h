@@ -31,6 +31,8 @@
 
 #include "SpecifyAnchoredPlateIdDialogUi.h"
 
+#include "GPlatesDialog.h"
+
 #include "model/FeatureHandle.h"
 #include "model/types.h"
 
@@ -38,7 +40,7 @@
 namespace GPlatesQtWidgets
 {
 	class SpecifyAnchoredPlateIdDialog : 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_SpecifyAnchoredPlateIdDialog 
 	{
 		Q_OBJECT
@@ -65,7 +67,7 @@ namespace GPlatesQtWidgets
 		showEvent(
 				QShowEvent *ev);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		propagate_value();
@@ -77,7 +79,7 @@ namespace GPlatesQtWidgets
 		void
 		reset_to_zero();
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		value_changed(

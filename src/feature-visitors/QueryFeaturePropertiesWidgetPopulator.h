@@ -170,6 +170,11 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
+		visit_uninterpreted_property_value(
+				const GPlatesPropertyValues::UninterpretedPropertyValue &uninterpreted_prop_val);
+
+		virtual
+		void
 		visit_gpml_string_list(
 				const GPlatesPropertyValues::GpmlStringList &gpml_string_list);
 

@@ -25,6 +25,7 @@
 
 #ifndef GPLATES_API_PYTHONRUNNER_H
 #define GPLATES_API_PYTHONRUNNER_H
+
 #include <boost/any.hpp>
 #include <QString>
 #include <QObject>
@@ -100,7 +101,7 @@ namespace GPlatesApi
 				const boost::function< boost::python::object () > &function,
 				PythonExecutionMonitor *monitor);
 		
-	signals:
+	Q_SIGNALS:
 		void
 		system_exit_exception_raised(
 				int exit_status,
@@ -139,7 +140,7 @@ namespace GPlatesApi
 
 		friend class PythonExecGuard;
 
-	public slots:
+	public Q_SLOTS:
 		void
 		exec_function_slot(
 				const boost::function< void () > &f)

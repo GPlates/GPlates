@@ -132,7 +132,7 @@ GPlatesOpenGL::GLVertexArrayImpl::set_enable_client_texture_state(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_coords,
+					texture_unit < GL_TEXTURE0 + renderer.get_capabilities().texture.gl_max_texture_coords,
 			GPLATES_ASSERTION_SOURCE);
 
 	GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_compiled_bind_state);
@@ -196,7 +196,7 @@ GPlatesOpenGL::GLVertexArrayImpl::set_tex_coord_pointer(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_coords,
+					texture_unit < GL_TEXTURE0 + renderer.get_capabilities().texture.gl_max_texture_coords,
 			GPLATES_ASSERTION_SOURCE);
 
 	GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_compiled_bind_state);
@@ -229,7 +229,7 @@ GPlatesOpenGL::GLVertexArrayImpl::set_vertex_attrib_pointer(
 		GLint offset)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			attribute_index < GLContext::get_parameters().shader.gl_max_vertex_attribs,
+			attribute_index < renderer.get_capabilities().shader.gl_max_vertex_attribs,
 			GPLATES_ASSERTION_SOURCE);
 
 	GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_compiled_bind_state);
@@ -249,7 +249,7 @@ GPlatesOpenGL::GLVertexArrayImpl::set_vertex_attrib_i_pointer(
 		GLint offset)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			attribute_index < GLContext::get_parameters().shader.gl_max_vertex_attribs,
+			attribute_index < renderer.get_capabilities().shader.gl_max_vertex_attribs,
 			GPLATES_ASSERTION_SOURCE);
 
 	GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_compiled_bind_state);
@@ -269,7 +269,7 @@ GPlatesOpenGL::GLVertexArrayImpl::set_vertex_attrib_l_pointer(
 		GLint offset)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			attribute_index < GLContext::get_parameters().shader.gl_max_vertex_attribs,
+			attribute_index < renderer.get_capabilities().shader.gl_max_vertex_attribs,
 			GPLATES_ASSERTION_SOURCE);
 
 	GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_compiled_bind_state);

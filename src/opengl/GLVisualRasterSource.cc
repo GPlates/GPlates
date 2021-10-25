@@ -36,6 +36,7 @@
 #include "GLVisualRasterSource.h"
 
 #include "GLContext.h"
+#include "GLImageUtils.h"
 #include "GLRenderer.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
@@ -78,6 +79,8 @@ GPlatesOpenGL::GLVisualRasterSource::create(
 		const GPlatesGui::Colour &raster_modulate_colour,
 		unsigned int tile_texel_dimension)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
 			GPlatesPropertyValues::ProxiedRasterResolver::create(raster);
 	if (!proxy_resolver_opt)
@@ -99,9 +102,9 @@ GPlatesOpenGL::GLVisualRasterSource::create(
 	const unsigned int raster_height = raster_dimensions->second;
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (tile_texel_dimension > capabilities.texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+		tile_texel_dimension = capabilities.texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
@@ -141,6 +144,7 @@ GPlatesOpenGL::GLVisualRasterSource::GLVisualRasterSource(
 			GLUtils::create_full_screen_2D_coloured_textured_quad(
 					renderer,
 					GPlatesGui::Colour::to_rgba8(raster_modulate_colour))),
+	d_tile_edge_working_space(new GPlatesGui::rgba8_t[tile_texel_dimension]),
 	d_logged_tile_load_failure_warning(false)
 {
 	initialise_level_of_detail_pyramid();
@@ -392,7 +396,7 @@ GPlatesOpenGL::GLVisualRasterSource::load_proxied_raster_data_into_raster_textur
 		Tile &tile,
 		GLRenderer &renderer)
 {
-	PROFILE_BEGIN(proxy_raster, "get_coloured_region_from_level");
+	PROFILE_BEGIN(proxy_raster, "GLVisualRasterSource: get_coloured_region_from_level");
 	// Get the region of the raster covered by this tile at the level-of-detail of this tile.
 	boost::optional<GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type> raster_region_opt =
 			d_proxied_raster_resolver->get_coloured_region_from_level(
@@ -413,6 +417,62 @@ GPlatesOpenGL::GLVisualRasterSource::load_proxied_raster_data_into_raster_textur
 				raster_region_opt.get()->data(),
 				texel_width,
 				texel_height);
+
+		// If the region does not occupy the entire tile then it means we've reached the right edge
+		// of the raster - we duplicate the last column of texels into the adjacent column to ensure
+		// that subsequent sampling of the texture at the right edge of the last column of texels
+		// will generate the texel colour at the texel centres (for both nearest and bilinear filtering).
+		// This sampling happens when rendering a raster into a multi-resolution cube map that has
+		// an cube frustum overlap of half a texel - normally, for a full tile, the OpenGL clamp-to-edge
+		// filter will ensure the texture border colour is not used - however for partially filled
+		// textures we need to duplicate the edge to achieve the same effect otherwise numerical precision
+		// in the graphics hardware and nearest neighbour filtering could sample a garbage texel.
+		if (texel_width < d_tile_texel_dimension)
+		{
+			// Copy the right edge of the region into the working space.
+			GPlatesGui::rgba8_t *const working_space = d_tile_edge_working_space.get();
+			// The last pixel in the first row of the region.
+			const GPlatesGui::rgba8_t *region_last_column = raster_region_opt.get()->data() + texel_width - 1;
+			for (unsigned int y = 0; y < texel_height; ++y)
+			{
+				working_space[y] = *region_last_column;
+				region_last_column += texel_width;
+			}
+
+			// Load the one-pixel wide column of data from column 'texel_width-1' into column 'texel_width'.
+			GLTextureUtils::load_image_into_rgba8_texture_2D(
+					renderer,
+					raster_texture,
+					d_tile_edge_working_space.get(),
+					1/*image_width*/,
+					texel_height,
+					texel_width/*texel_u_offset*/);
+		}
+
+		// Same applies if we've reached the bottom edge of raster (and the raster height is not an
+		// integer multiple of the tile texel dimension).
+		if (texel_height < d_tile_texel_dimension)
+		{
+			// Copy the bottom edge of the region into the working space.
+			GPlatesGui::rgba8_t *const working_space = d_tile_edge_working_space.get();
+			// The first pixel in the last row of the region.
+			const GPlatesGui::rgba8_t *const region_last_row =
+					raster_region_opt.get()->data() + (texel_height - 1) * texel_width;
+			for (unsigned int x = 0; x < texel_width; ++x)
+			{
+				working_space[x] = region_last_row[x];
+			}
+
+			// Load the one-pixel wide row of data from row 'texel_height-1' into row 'texel_height'.
+			GLTextureUtils::load_image_into_rgba8_texture_2D(
+					renderer,
+					raster_texture,
+					d_tile_edge_working_space.get(),
+					texel_width,
+					1/*image_height*/,
+					0/*texel_u_offset*/,
+					texel_height/*texel_v_offset*/);
+		}
 	}
 	else
 	{
@@ -476,7 +536,7 @@ GPlatesOpenGL::GLVisualRasterSource::render_error_text_into_texture(
 	if (error_text_image.isNull())
 	{
 		// Draw error message text into image.
-		error_text_image = GLTextureUtils::draw_text_into_qimage(
+		error_text_image = GLImageUtils::draw_text_into_qimage(
 				error_text,
 				d_tile_texel_dimension, d_tile_texel_dimension,
 				3.0f/*text scale*/,
@@ -520,26 +580,87 @@ GPlatesOpenGL::GLVisualRasterSource::write_raster_texture_into_tile_target_textu
 	//
 
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::RenderTarget2DScope render_target_scope(renderer, target_texture);
+	GLRenderer::RenderTarget2DScope render_target_scope(
+			renderer,
+			target_texture,
+			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
 
-	// Viewport that matches the tile texture size.
-	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
+	// The render target tiling loop...
+	do
+	{
+		const GLCapabilities &capabilities = renderer.get_capabilities();
 
-	// Clear only the colour buffer using default clear colour (all zeros).
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+		// Begin the current render target tile - this also sets the viewport.
+		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
 
-	// Bind the raster texture to texture unit 0.
-	renderer.gl_bind_texture(raster_texture, GL_TEXTURE0, GL_TEXTURE_2D);
+		// Set up the projection transform adjustment for the current render target tile.
+		renderer.gl_load_matrix(GL_PROJECTION, tile_projection->get_matrix());
 
-	// Enable texturing on texture unit 0.
-	renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
-	// We modulate the (interpolated) vertex colour with the texture on texture unit 0.
-	// The modulation colour is in the vertices of the full-screen quad.
-	renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		// Clear only the colour buffer using default clear colour (all zeros).
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT);
 
-	// NOTE: We leave the model-view and projection matrices as identity as that is what we
-	// we need to draw a full-screen quad.
-	renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+		// Bind the raster texture to texture unit 0.
+		renderer.gl_bind_texture(raster_texture, GL_TEXTURE0, GL_TEXTURE_2D);
+
+		// Enable texturing on texture unit 0.
+		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
+
+		// We modulate the (interpolated) vertex colour with the texture on texture unit 0.
+		// The modulation colour is in the vertices of the full-screen quad.
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+		// The raster data is in pre-multiplied alpha format.
+		// This is where the RGB channels have already been multiplied by the alpha channel (R*A,G*A,B*A,A).
+		// This requires alpha-blending to have (src,dst) blend factors of (1, 1-src_alpha) instead
+		// of (src_alpha, 1-src_alpha).
+		// In our case this is done using the fixed-function texture environment below.
+		// This is done in case we are drawing to a render texture which will, in turn, be used
+		// as a texture to render into another render target (such as the main view window).
+		// If we didn't do this then we'd end up double-blending semi-transparent rasters
+		// (or the semi-transparent boundaries of opaque rasters). This is because with normal blending
+		// the alpha value is multiplied by all channels including alpha such that...
+		//   (R,G,B,A) -> (A*R,A*G,A*B,A*A)
+		// ...and the final render target would then have a source blending contribution of...
+		//   (3A*R,3A*G,3A*B,4A)
+		// which is not what we want - we want (A*R,A*G,A*B,A).
+		// With pre-multiplied alpha we essentially get...
+		//   (R*A,G*A,B*A,A) -> (R*A,G*A,B*A,A)
+		// ...in other words unchanged.
+		// And where there's overlap in blending (due to differently rotated polygons overlapping
+		// each other) while rendering reconstructed raster into a render texture, the destination
+		// alpha channel (in the render texture) will record the correct amount of contributions,
+		// due to alpha, of the overlapping polygons. That way when the render texture is finally
+		// blended into the main view window (for example) it will be blended as if the intermediate
+		// render texture were bypassed and the overlapping polygons blended directly into the main view window.
+
+		// Do the alpha pre-multiply on texture unit 1.
+		// Pretty much all hardware has GL_ARB_texture_env_combine so this should work - if not then
+		// alpha won't get pre-multiplied and semi-transparent textures will have incorrect blending
+		// (but opaque textures will still be fine).
+		if (capabilities.texture.gl_ARB_texture_env_combine)
+		{
+			// Bind the raster texture again to texture unit 1 - although we won't access it.
+			renderer.gl_bind_texture(raster_texture, GL_TEXTURE1, GL_TEXTURE_2D);
+
+			// Enable texturing on texture unit 1.
+			renderer.gl_enable_texture(GL_TEXTURE1, GL_TEXTURE_2D);
+
+			// Pre-multiply RGB with Alpha.
+			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
+			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
+			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB);
+			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
+			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB);
+			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_ALPHA);
+			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE);
+			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB);
+		}
+
+		// NOTE: We leave the model-view and projection matrices as identity as that is what we
+		// we need to draw a full-screen quad.
+		renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+	}
+	while (render_target_scope.end_tile());
 }
 
 
@@ -548,13 +669,16 @@ GPlatesOpenGL::GLVisualRasterSource::create_tile_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture) const
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// No mipmaps needed or anisotropic filtering required.
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

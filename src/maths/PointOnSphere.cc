@@ -26,6 +26,8 @@
  */
 
 #include <ostream>
+#include <sstream>
+#include <QString>
 
 #include "PointOnSphere.h"
 #include "PointLiesOnGreatCircleArc.h"
@@ -139,3 +141,30 @@ GPlatesMaths::operator<<(
 	return os;
 }
 
+
+QDebug
+GPlatesMaths::operator <<(
+		QDebug dbg,
+		const PointOnSphere &p)
+{
+	std::ostringstream output_string_stream;
+	output_string_stream << p;
+
+	dbg.nospace() << QString::fromStdString(output_string_stream.str());
+
+	return dbg.space();
+}
+
+
+QTextStream &
+GPlatesMaths::operator <<(
+		QTextStream &stream,
+		const PointOnSphere &p)
+{
+	std::ostringstream output_string_stream;
+	output_string_stream << p;
+
+	stream << QString::fromStdString(output_string_stream.str());
+
+	return stream;
+}

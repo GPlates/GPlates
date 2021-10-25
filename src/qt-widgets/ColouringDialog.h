@@ -34,6 +34,7 @@
 
 #include "ColouringDialogUi.h"
 
+#include "GPlatesDialog.h"
 #include "OpenFileDialog.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
@@ -66,13 +67,13 @@ namespace GPlatesQtWidgets
 	class ReadErrorAccumulationDialog;
 
 	class ColouringDialog : 
-			public QDialog, 
+			public GPlatesDialog, 
 			protected Ui_ColouringDialog 
 	{
 		Q_OBJECT
 
 	public:
-
+		friend class DrawStyleDialog;
 		/**
 		 * Constructs a ColouringDialog. Clones @a existing_globe_canvas for the
 		 * previews.
@@ -83,7 +84,7 @@ namespace GPlatesQtWidgets
 			ReadErrorAccumulationDialog &read_error_accumulation_dialog,
 			QWidget* parent_ = NULL);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_close_button_clicked(

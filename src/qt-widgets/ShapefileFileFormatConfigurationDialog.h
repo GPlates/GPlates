@@ -69,7 +69,7 @@ namespace GPlatesQtWidgets
 		bool
 		get_wrap_to_dateline() const;
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Use the current state of the combo boxes to build up the 
@@ -85,7 +85,7 @@ namespace GPlatesQtWidgets
 		void
 		reset();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_buttonbox_clicked(

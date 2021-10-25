@@ -35,7 +35,6 @@
 #include "maths/GeometryOnSphere.h"
 #include "maths/types.h"
 
-#include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -72,11 +71,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the finite rotation transform.
 		 *
-		 * This is currently used for transforming on the graphics hardware (in the globe view).
-		 *
 		 * NOTE: If two @a ReconstructMethodFiniteRotation objects are equal, as determined by
 		 * 'operator==', then they will have the same finite rotation. This is a more efficient
-		 * way to compare finite rotations (such as sorting before batching to the graphics hardware).
+		 * way to compare finite rotations (such as sorting by transform).
 		 */
 		const GPlatesMaths::FiniteRotation &
 		get_finite_rotation() const

@@ -32,6 +32,8 @@
 #include "ExportAnimationDialogUi.h"
 
 #include "ConfigureExportParametersDialog.h"
+#include "EditExportParametersDialog.h"
+#include "GPlatesDialog.h"
 #include "OpenDirectoryDialog.h"
 
 #include "gui/ExportAnimationContext.h"
@@ -54,7 +56,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 
 	class ExportAnimationDialog: 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_ExportAnimationDialog 
 	{
 		Q_OBJECT
@@ -62,7 +64,6 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		ExportAnimationDialog(
-				GPlatesGui::AnimationController &animation_controller,
 				GPlatesPresentation::ViewState &view_state_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				QWidget *parent_ = NULL);
@@ -74,13 +75,30 @@ namespace GPlatesQtWidgets
 		const double &
 		view_time() const;
 
+		/**
+		 * Adds a new export of the specified type, format and configuration.
+		 *
+		 * This is called by the modal dialog ConfigureExportParametersDialog once the user has finished
+		 * selecting an export type and format and finished selecting its export options/parameters.
+		 */
 		void
 		insert_item(
 				GPlatesGui::ExportAnimationType::Type export_type,
 				GPlatesGui::ExportAnimationType::Format export_format,
 				const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &export_configuration);
-	
-	public slots:
+
+		/**
+		 * Changes the export configuration for the selected export row.
+		 *
+		 * This is called by the modal dialog EditExportParametersDialog once the user has finished
+		 * editing the export options/parameters for the export.
+		 */
+		void
+		edit_item(
+				int export_row,
+				const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &export_configuration);
+
+	public Q_SLOTS:
 		/**
 		 * Reset controls to their "Eagerly awaiting user input" state.
 		 */
@@ -116,12 +134,12 @@ namespace GPlatesQtWidgets
 		setVisible(
 				bool visible);
 		
-	signals:
+	Q_SIGNALS:
 		void
 		current_time_changed(
 				double new_value);
 
-	private slots:
+	private Q_SLOTS:
 		void
 		react_start_time_spinbox_changed(
 				double new_val);
@@ -205,6 +223,9 @@ namespace GPlatesQtWidgets
 		react_remove_export_clicked();
 
 		void
+		react_edit_export_clicked();
+
+		void
 		handle_export_selection_changed();
 
 	private:
@@ -224,11 +245,18 @@ namespace GPlatesQtWidgets
 		GPlatesGui::AnimationController *d_animation_controller_ptr;
 
 		/**
-		 * We have a minature sub-dialog, which is modal, for configuring parameters.
+		 * We have a miniature sub-dialog, which is modal, for configuring parameters.
 		 * Although this is appears to be a raw pointer, we parent the dialog to this
 		 * one, and Qt will handle memory management for it from then onwards.
 		 */
 		GPlatesQtWidgets::ConfigureExportParametersDialog *d_configure_parameters_dialog_ptr;
+
+		/**
+		 * We have a miniature sub-dialog, which is modal, for edit parameters for the selected export.
+		 * Although this is appears to be a raw pointer, we parent the dialog to this
+		 * one, and Qt will handle memory management for it from then onwards.
+		 */
+		GPlatesQtWidgets::EditExportParametersDialog *d_edit_parameters_dialog_ptr;
 
 		OpenDirectoryDialog d_open_directory_dialog;
 

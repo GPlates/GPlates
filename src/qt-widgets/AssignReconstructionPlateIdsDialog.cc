@@ -41,6 +41,7 @@
 #include "app-logic/Layer.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/TopologyUtils.h"
 
@@ -55,17 +56,16 @@
 #include "presentation/VisualLayerRegistry.h"
 #include "presentation/VisualLayers.h"
 
-
 namespace
 {
-	const QString HELP_PARTITIONING_LAYER_DIALOG_TITLE = QObject::tr("Selecting the partitioning layer");
+	const QString HELP_PARTITIONING_LAYER_DIALOG_TITLE = QObject::tr("Selecting one or more partitioning layers");
 	const QString HELP_PARTITIONING_LAYER_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
-			"<h3>Select the layer containing the polygons used to partition features</h3>"
-			"<p>Select a 'Resolved Topological Closed Plate Boundaries' layer to partition using "
-			"topological plate polygons, otherwise select a 'Reconstructed Geometries' layer "
-			"to partition using static polygon geometry (<em>note that the layer should contain "
-			"polygon geometries</em>).</p>"
+			"<h3>Select one or more layers containing the polygons used to partition features</h3>"
+			"<p>Select 'Resolved Topological Closed Plate Boundaries' or 'Resolved Topological Network' "
+			"layers to partition using topological plate polygons, otherwise select "
+			"'Reconstructed Geometries' layers to partition using static polygon geometry "
+			"(<em>note that the layers should contain polygon geometries</em>).</p>"
 			"<p>These polygons will be intersected with features and a subset of the polygon's "
 			"feature properties (such a reconstruction plate ID) will be copied over.</p>"
 			"</body></html>\n");
@@ -192,7 +192,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
+	GPlatesDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
 	d_help_partitioning_layer_dialog(
 			new InformationDialog(
 					HELP_PARTITIONING_LAYER_DIALOG_TEXT,
@@ -371,6 +371,13 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 		break;
 	}
 
+	// The default reconstruction tree will be used to reverse reconstruct any partitioned
+	// geometries (if necessary).
+	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
+			d_application_state.get_current_reconstruction()
+					.get_default_reconstruction_layer_output()
+							->get_reconstruction_tree(reconstruction_time);
+
 	// Determine which feature property types to copy from partitioning polygon.
 	GPlatesAppLogic::AssignPlateIds::feature_property_flags_type feature_property_types_to_assign;
 	if (d_assign_plate_ids)
@@ -385,7 +392,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 	return GPlatesAppLogic::AssignPlateIds::create(
 			d_assign_plate_id_method,
 			partitioning_layer_proxies,
-			reconstruction_time,
+			default_reconstruction_tree,
 			feature_property_types_to_assign,
 			d_respect_feature_time_period);
 }
@@ -588,7 +595,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_possible_partitioning_
 			// plate ids don't exist in the rotation file so they'll need to be added - for example
 			// the Andes deforming region has plate id 29201 which should be mapped to 201 in
 			// the rotation file).
-			if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER ||
+			if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER ||
 				layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER ||
 				layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
 			{

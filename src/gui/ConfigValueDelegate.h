@@ -94,7 +94,7 @@ namespace GPlatesGui
 				const QStyleOptionViewItem &option,
 				const QModelIndex &index) const;
 	
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		commit_and_close(

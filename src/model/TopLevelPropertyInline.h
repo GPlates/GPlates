@@ -103,6 +103,15 @@ namespace GPlatesModel
 				const container_type &values_,
 				const xml_attributes_type &xml_attributes_ = xml_attributes_type());
 
+		template<class PropertyValueIterator>
+		static
+		const non_null_ptr_type
+		create(
+				const PropertyName &property_name_,
+				const PropertyValueIterator &values_begin_,
+				const PropertyValueIterator &values_end_,
+				const xml_attributes_type &xml_attributes_ = xml_attributes_type());
+
 		static
 		const non_null_ptr_type
 		create(
@@ -199,6 +208,16 @@ namespace GPlatesModel
 			d_values(values_)
 		{  }
 
+		template<class PropertyValueIterator>
+		TopLevelPropertyInline(
+				const PropertyName &property_name_,
+				const PropertyValueIterator &values_begin_,
+				const PropertyValueIterator &values_end_,
+				const xml_attributes_type &xml_attributes_) :
+			TopLevelProperty(property_name_, xml_attributes_),
+			d_values(values_begin_, values_end_)
+		{  }
+
 		TopLevelPropertyInline(
 				const PropertyName &property_name_,
 				PropertyValue::non_null_ptr_type value_,
@@ -227,6 +246,23 @@ namespace GPlatesModel
 				const TopLevelPropertyInline &);
 
 	};
+
+
+	template<class PropertyValueIterator>
+	const TopLevelPropertyInline::non_null_ptr_type
+	TopLevelPropertyInline::create(
+			const PropertyName &property_name_,
+			const PropertyValueIterator &values_begin_,
+			const PropertyValueIterator &values_end_,
+			const xml_attributes_type &xml_attributes_)
+	{
+		return non_null_ptr_type(
+				new TopLevelPropertyInline(
+					property_name_,
+					values_begin_,
+					values_end_,
+					xml_attributes_));
+	}
 
 
 	template<class AttributeIterator>

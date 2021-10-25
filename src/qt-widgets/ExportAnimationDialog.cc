@@ -23,41 +23,75 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
+#include <QAbstractItemModel>
+#include <QDebug>
 #include <QDir>
 #include <QHeaderView>
-#include <QAbstractItemModel>
 
 #include "ExportAnimationDialog.h"
+
+#include "app-logic/ApplicationState.h"
+#include "app-logic/UserPreferences.h"
 
 #include "gui/AnimationController.h"
 #include "gui/ExportAnimationStrategy.h"
 
 #include "presentation/ViewState.h"
-#include "app-logic/ApplicationState.h"
-#include "app-logic/UserPreferences.h"
 
 #include "utils/AnimationSequenceUtils.h"
 
 
+namespace
+{
+	/**
+	 * Returns the export ID associated with the specified row in the table widget.
+	 */
+	GPlatesGui::ExportAnimationType::ExportID
+	get_export_id(
+			QTableWidget *table_widget,
+			int row)
+	{
+		const GPlatesGui::ExportAnimationType::Type export_type =
+				GPlatesQtWidgets::ConfigureExportParametersDialog::get_export_type(table_widget->item(row,0));
+
+		const GPlatesGui::ExportAnimationType::Format export_format =
+				GPlatesQtWidgets::ConfigureExportParametersDialog::get_export_format(table_widget->item(row,1));
+
+		return get_export_id(export_type, export_format);
+	}
+
+	/**
+	 * Returns the export configuration associated with the specified row in the table widget.
+	 */
+	GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
+	get_export_configuration(
+			QTableWidget *table_widget,
+			int row)
+	{
+		return GPlatesQtWidgets::ConfigureExportParametersDialog::get_export_configuration(table_widget->item(row,2));
+	}
+}
+
 GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
-		GPlatesGui::AnimationController &animation_controller,
 		GPlatesPresentation::ViewState &view_state_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		QWidget *parent_):
-	QDialog(
+	GPlatesDialog(
 			parent_, 
 			Qt::Window),
 	d_export_animation_context_ptr(
 			new GPlatesGui::ExportAnimationContext(
 					*this,
-					animation_controller,
+					view_state_.get_animation_controller(),
 					view_state_,
 					viewport_window_),
 			GPlatesUtils::NullIntrusivePointerHandler()),
-	d_animation_controller_ptr(
-			&animation_controller),
+	d_animation_controller_ptr(&view_state_.get_animation_controller()),
 	d_configure_parameters_dialog_ptr(
 			new GPlatesQtWidgets::ConfigureExportParametersDialog(
+					d_export_animation_context_ptr, this)),
+	d_edit_parameters_dialog_ptr(
+			new GPlatesQtWidgets::EditExportParametersDialog(
 					d_export_animation_context_ptr, this)),
 	d_open_directory_dialog(
 			this,
@@ -138,6 +172,12 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 	QObject::connect(button_remove, SIGNAL(clicked()),
 			this, SLOT(react_remove_export_clicked()));
 
+	QObject::connect(button_edit, SIGNAL(clicked()),
+ 			this, SLOT(react_edit_export_clicked()));
+	
+	QObject::connect(button_single_edit, SIGNAL(clicked()),
+			this, SLOT(react_edit_export_clicked()));
+
 	// Remove buttons should only be available if there is something selected.
 	QObject::connect(tableWidget_range, SIGNAL(itemSelectionChanged()),
 			this, SLOT(handle_export_selection_changed()));
@@ -173,6 +213,10 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 	
 	// We might actually need the 'exactly on end time' checkbox.
 	handle_options_changed();
+
+	// Start with the export animation range (instead of single export snapshot).
+	radioButton_range->setChecked(true);
+	select_range_snapshot(true);
 
 	// Reset controls to their "Eagerly awaiting user input" state.
 	reset();
@@ -372,19 +416,13 @@ GPlatesQtWidgets::ExportAnimationDialog::set_export_parameters()
 	d_export_animation_context_ptr->set_sequence(seq);
 	
 
-	for (int i=0; i<table_widget->rowCount();i++)
+	for (int row = 0; row < table_widget->rowCount(); ++row)
 	{
-		const GPlatesGui::ExportAnimationType::Type export_type =
-				ConfigureExportParametersDialog::get_export_type(table_widget->item(i,0));
-		const GPlatesGui::ExportAnimationType::Format export_format =
-				ConfigureExportParametersDialog::get_export_format(table_widget->item(i,1));
-
 		const GPlatesGui::ExportAnimationType::ExportID export_id =
-				get_export_id(export_type, export_format);
+				get_export_id(table_widget, row);
 
-		const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &export_configuration =
-				ConfigureExportParametersDialog::get_export_configuration(
-						table_widget->item(i,2));
+		const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr export_configuration =
+				get_export_configuration(table_widget, row);
 
 		// This shouldn't happen but check just in case.
 		if (!export_configuration)
@@ -450,8 +488,8 @@ GPlatesQtWidgets::ExportAnimationDialog::react_abort_button_clicked()
 void
 GPlatesQtWidgets::ExportAnimationDialog::react_add_export_clicked()
 {
-	QTableWidget * table_widget = NULL;
-	if(radioButton_single->isChecked())
+	QTableWidget *table_widget = NULL;
+	if (radioButton_single->isChecked())
 	{
 		table_widget = tableWidget_single;
 	}
@@ -467,7 +505,7 @@ GPlatesQtWidgets::ExportAnimationDialog::react_add_export_clicked()
 void
 GPlatesQtWidgets::ExportAnimationDialog::react_remove_export_clicked()
 {
-	if(radioButton_single->isChecked())
+	if (radioButton_single->isChecked())
 	{
 		tableWidget_single->removeRow(tableWidget_single->currentRow());
 		update_single_frame_progress_bar(0,tableWidget_single->rowCount());
@@ -479,12 +517,47 @@ GPlatesQtWidgets::ExportAnimationDialog::react_remove_export_clicked()
 	
 }
 
+void
+GPlatesQtWidgets::ExportAnimationDialog::react_edit_export_clicked()
+{
+	QTableWidget *table_widget = NULL;
+	if (radioButton_single->isChecked())
+	{
+		table_widget = tableWidget_single;
+	}
+	else
+	{
+		table_widget = tableWidget_range;
+	}
+
+	const int selected_row = table_widget->currentRow();
+
+	// Get the selected export's ID.
+	const GPlatesGui::ExportAnimationType::ExportID export_id =
+			get_export_id(table_widget, selected_row);
+
+	// Get the selected export's configuration.
+	const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr export_configuration =
+			get_export_configuration(table_widget, selected_row);
+
+	update_status_message("Ready to export");
+
+	// The user will now edit the configuration.
+	// Once that's done, the edited configuration will replace the current configuration when
+	// 'edit_item()' is called (by EditExportParametersDialog).
+	d_edit_parameters_dialog_ptr->initialise(selected_row, export_id, export_configuration);
+	d_edit_parameters_dialog_ptr->exec();
+}
+
 
 void
 GPlatesQtWidgets::ExportAnimationDialog::handle_export_selection_changed()
 {
 	button_remove->setDisabled(tableWidget_range->selectedItems().isEmpty());
 	button_single_remove->setDisabled(tableWidget_single->selectedItems().isEmpty());
+
+	button_edit->setDisabled(tableWidget_range->selectedItems().isEmpty());
+	button_single_edit->setDisabled(tableWidget_single->selectedItems().isEmpty());
 }
 
 
@@ -531,13 +604,50 @@ GPlatesQtWidgets::ExportAnimationDialog::insert_item(
 			configuration_item);
 	configuration_item->setText(export_configuration->get_filename_template());
 
+	// Select the row just added so the user can edit it easily.
+	// Also serves to highlight the export just added.
+	// The column is arbitrary since the entire row will be selected (due to selection behaviour).
+	tableWidget->setCurrentCell(0, 0);
 
 	tableWidget->setSortingEnabled(true);
 
-	if(radioButton_single->isChecked())
+	if (radioButton_single->isChecked())
 	{
 		update_single_frame_progress_bar(0,tableWidget->rowCount());
 	}
+}
+
+void
+GPlatesQtWidgets::ExportAnimationDialog::edit_item(
+		int export_row,
+		const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &export_configuration)
+{
+	QTableWidget *table_widget = NULL;
+	if (radioButton_single->isChecked())
+	{
+		table_widget = tableWidget_single;
+	}
+	else
+	{
+		table_widget = tableWidget_range;
+	}
+	const int num_rows = table_widget->rowCount();
+
+	// This shouldn't happen but check just in case.
+	if (export_row < 0 || export_row >= num_rows)
+	{
+		qWarning() << "Ignoring export edit since its row index is out of range.";
+		return;
+	}
+
+	// Replace the old configuration with the new one.
+	QTableWidgetItem *configuration_item =
+			new ConfigureExportParametersDialog::ExportConfigurationWidgetItem<QTableWidgetItem>(export_configuration);
+	table_widget->setItem(
+			export_row,
+			2,
+			configuration_item);
+	configuration_item->setText(export_configuration->get_filename_template());
 }
 
 void

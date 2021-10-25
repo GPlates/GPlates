@@ -42,10 +42,12 @@
 #include "ReconstructedMotionPath.h"
 #include "ReconstructedSmallCircle.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
+#include "ReconstructHandle.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
-#include "ResolvedTopologicalBoundary.h"
-#include "ResolvedTopologicalBoundarySubSegment.h"
+#include "ReconstructionTree.h"
+#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalGeometrySubSegment.h"
 #include "ResolvedTopologicalNetwork.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -53,8 +55,6 @@
 
 namespace GPlatesAppLogic
 {
-	class ReconstructionTree;
-
 	namespace ReconstructionGeometryUtils
 	{
 		///////////////
@@ -64,7 +64,8 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Determines if the @a ReconstructionGeometry object pointed to by
-		 * @a reconstruction_geom_ptr is of type ReconstructionGeometryDerivedType.
+		 * @a reconstruction_geom_ptr is of type ReconstructionGeometryDerivedType or
+		 * a type derived from it.
 		 *
 		 * Example usage:
 		 *   const ReconstructionGeometry *reconstruction_geometry_ptr = ...;
@@ -91,7 +92,8 @@ namespace GPlatesAppLogic
 		 * NOTE: Template parameter 'ContainerOfReconstructionGeometryDerivedType' *must*
 		 * be a standard container supporting the 'push_back()' method and must contain
 		 * pointers to a const or non-const type derived from @a ReconstructionGeometry.
-		 * It is this exact type that the caller is effectively searching for.
+		 * It is this exact type that the caller is effectively searching for -
+		 * the objects found will be of this type or a type derived from it.
 		 *
 		 * Returns true if any found from input sequence.
 		 */
@@ -156,7 +158,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Visits a @a ReconstructionGeometry to get a plate id (the plate id could be
 		 * a reconstruction plate id in @a ReconstructedFeatureGeometry or a plate id
-		 * to assign to other features in @a ResolvedTopologicalBoundary).
+		 * of a resolved topology).
 		 * Returns boost::none if derived type of reconstruction geometry has no plate id.
 		 * NOTE: @a reconstruction_geom_ptr can be anything that acts like a const or
 		 * non-const pointer to a @a ReconstructionGeometry.
@@ -170,7 +172,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Visits a @a ReconstructionGeometry to get the time of formation.
 		 * This function is unlike the above in that it returns result in a boost::optional.
-		 * Returns false if derived type of reconstruction geometry has time of formation.
+		 * Returns false if derived type of reconstruction geometry has no time of formation.
 		 * NOTE: @a reconstruction_geom_ptr can be anything that acts like a const or
 		 * non-const pointer to a @a ReconstructionGeometry.
 		 */
@@ -181,11 +183,51 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the boundary subsegment sequence for the specified resolved topological geometry.
+		 * Visits a @a ReconstructionGeometry to get the reconstruction tree for the specified time.
 		 *
-		 * @a reconstruction_geom_ptr should be either @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
+		 * If @a reconstruction_time is boost::none then the reconstruction tree at the time of
+		 * reconstruction of @a reconstruction_geom_ptr is returned.
 		 *
-		 * Returns boost::none if the specified reconstruction geometry is not a resolved topological geometry.
+		 * Returns false if derived type of reconstruction geometry has no reconstruction tree
+		 * (because not all derived types use a reconstruction tree).
+		 * NOTE: @a reconstruction_geom_ptr can be anything that acts like a const or
+		 * non-const pointer to a @a ReconstructionGeometry.
+		 *
+		 * Note that not all ReconstructionGeoemtry derived types are supported.
+		 * For example, @a MultiPointVectorField do not provide a reconstruction tree.
+		 */
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<ReconstructionTree::non_null_ptr_to_const_type>
+		get_reconstruction_tree(
+				ReconstructionGeometryPointer reconstruction_geom_ptr,
+				boost::optional<double> reconstruction_time = boost::none);
+
+
+		/**
+		 * Visits a @a ReconstructionGeometry to get the reconstruction tree creator.
+		 *
+		 * Returns false if derived type of reconstruction geometry has no reconstruction tree creator
+		 * (because not all derived types use a reconstruction tree creator).
+		 * NOTE: @a reconstruction_geom_ptr can be anything that acts like a const or
+		 * non-const pointer to a @a ReconstructionGeometry.
+		 *
+		 * Note that not all ReconstructionGeoemtry derived types are supported.
+		 * For example, @a MultiPointVectorField do not provide a reconstruction tree creator.
+		 */
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<ReconstructionTreeCreator>
+		get_reconstruction_tree_creator(
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
+
+
+		/**
+		 * Returns the *boundary* subsegment sequence for the specified resolved topology.
+		 *
+		 * @a reconstruction_geom_ptr should be either a @a ResolvedTopologicalGeometry (with a
+		 * *polygon* geometry - not a polyline) or a @a ResolvedTopologicalNetwork (the network boundary).
+		 * Resolved topological lines are excluded as they do not form a closed boundary.
+		 *
+		 * Returns boost::none if the specified reconstruction geometry is not a resolved topology.
 		 */
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<const sub_segment_seq_type &>
@@ -195,7 +237,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the boundary polygon of the specified resolved topological geometry.
 		 *
-		 * @a reconstruction_geom_ptr should be either @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
+		 * @a reconstruction_geom_ptr can be either a @a ResolvedTopologicalGeometry or @a ResolvedTopologicalNetwork.
+		 * However only @a ResolvedTopologicalGeometry objects containing *polylines* are ignored.
 		 *
 		 * Returns boost::none if the specified reconstruction geometry is not a resolved topological geometry.
 		 */
@@ -223,7 +266,7 @@ namespace GPlatesAppLogic
 				reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
 				const reconstruction_geom_seq_type &reconstruction_geometries_subset,
 				const ReconstructionGeometry &reconstruction_geometry,
-				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree = boost::none);
+				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
 
 		/**
@@ -248,7 +291,7 @@ namespace GPlatesAppLogic
 				reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
 				const reconstruction_geom_seq_type &reconstruction_geometries_subset,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree = boost::none);
+				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
 
 		/**
@@ -265,7 +308,7 @@ namespace GPlatesAppLogic
 				const reconstruction_geom_seq_type &reconstruction_geometries_subset,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
-				boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree = boost::none);
+				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
 
 		////////////////////
@@ -307,6 +350,14 @@ namespace GPlatesAppLogic
 				return d_found_geometries;
 			}
 
+			/**
+			 * Visit method for the derived @a ReconstructionGeometry type.
+			 *
+			 * NOTE: If 'reconstruction_geometry_derived_type' is @a ReconstructedFeatureGeometry
+			 * then this will also capture types derived from @a ReconstructedFeatureGeometry due to
+			 * the default implementation for these derived types in the base visitor class (the
+			 * default implementation delegates to the @a ReconstructedFeatureGeometry visit method).
+			 */
 			virtual
 			void
 			visit(
@@ -318,103 +369,6 @@ namespace GPlatesAppLogic
 		private:
 			container_type d_found_geometries;
 		};
-
-
-		/**
-		 * Template visitor class to find instances of @a ReconstructedFeatureGeometry.
-		 *
-		 * This class is only designed to use 'ReconstructedFeatureGeometry' or
-		 * 'const ReconstructedFeatureGeometry' as the template parameter.
-		 */
-		template <class ReconstructedFeatureGeometryType>
-		class ReconstructedFeatureGeometryTypeFinderBase :
-				public ReconstructionGeometryVisitorBase<
-						typename GPlatesUtils::CopyConst<
-								ReconstructedFeatureGeometryType, ReconstructionGeometry>::type >
-		{
-		public:
-			//! Typedef for base class type.
-			typedef ReconstructionGeometryVisitorBase<
-					typename GPlatesUtils::CopyConst<
-							ReconstructedFeatureGeometryType, ReconstructionGeometry>::type > base_class_type;
-
-			//! Typedef for reconstructed feature geometry type.
-			typedef typename base_class_type::reconstructed_feature_geometry_type reconstructed_feature_geometry_type;
-
-			//! Typedef for reconstructed virtual geomagnetic pole type.
-			typedef typename base_class_type::reconstructed_virtual_geomagnetic_pole_type reconstructed_virtual_geomagnetic_pole_type ;
-
-			//! Typedef for reconstructed flowline type.
-			typedef typename base_class_type::reconstructed_flowline_type reconstructed_flowline_type ;
-
-			//! Typedef for reconstructed motion path type.
-			typedef typename base_class_type::reconstructed_motion_path_type reconstructed_motion_path_type ;
-
-			//! Convenience typedef for sequence of pointers to a reconstructed feature geometry.
-			typedef std::vector<reconstructed_feature_geometry_type *> container_type;
-
-			// Bring base class visit methods into scope of current class.
-			using base_class_type::visit;
-
-			//! Returns a sequence of reconstruction geometries of type ReconstructedFeatureGeometryType
-			const container_type &
-			get_geometry_type_sequence() const
-			{
-				return d_found_geometries;
-			}
-
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rg)
-			{
-				d_found_geometries.push_back(rg.get());
-			}
-
-			//! A @a ReconstructedVirtualGeomagneticPole is derived from @a ReconstructedFeatureGeometry.
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
-			{
-				d_found_geometries.push_back(rvgp.get());
-			}
-
-			virtual
-			void
-			visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
-			{
-				d_found_geometries.push_back(rf.get());
-			}
-
-			virtual
-			void
-			visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
-			{
-				d_found_geometries.push_back(rmp.get());
-			}
-
-		private:
-			container_type d_found_geometries;
-		};
-
-
-		/*
-		 * Specialisations for the @a ReconstructedFeatureGeometry derived type
-		 * since other derived types (such as @a ReconstructedVirtualGeomagneticPole)
-		 * are derived from it and we want to catch all types that are a
-		 * @a ReconstructedFeatureGeometry.
-		 */
-		template <>
-		class ReconstructionGeometryDerivedTypeFinder<ReconstructedFeatureGeometry> :
-				public ReconstructedFeatureGeometryTypeFinderBase<ReconstructedFeatureGeometry>
-		{  };
-		template <>
-		class ReconstructionGeometryDerivedTypeFinder<const ReconstructedFeatureGeometry> :
-				public ReconstructedFeatureGeometryTypeFinderBase<const ReconstructedFeatureGeometry>
-		{  };
 
 
 		template <class ReconstructionGeometryDerivedType, typename ReconstructionGeometryPointer>
@@ -513,6 +467,8 @@ namespace GPlatesAppLogic
 				d_feature_ref = mpvf->get_feature_ref();
 			}
 
+			// Derivations of ReconstructedFeatureGeometry default to its implementation...
+
 			virtual
 			void
 			visit(
@@ -524,41 +480,9 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_feature_ref = rf->get_feature_ref();
-			}
-
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
-			{
-				d_feature_ref = rmp->get_feature_ref();
-			}
-
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
-			{
-				d_feature_ref = rsc->get_feature_ref();
-			}
-
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
-			{
-				d_feature_ref = rvgp->get_feature_ref();
-			}
-
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
-			{
-				d_feature_ref = rtb->get_feature_ref();
+				d_feature_ref = rtg->get_feature_ref();
 			}
 
 			virtual
@@ -618,6 +542,8 @@ namespace GPlatesAppLogic
 				d_property = mpvf->property();
 			}
 
+			// Derivations of ReconstructedFeatureGeometry default to its implementation...
+
 			virtual
 			void
 			visit(
@@ -629,41 +555,9 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_property = rf->property();
-			}
-
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
-			{
-				d_property = rmp->property();
-			}
-
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
-			{
-				d_property = rsc->property();
-			}
-
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
-			{
-				d_property = rvgp->property();
-			}
-
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
-			{
-				d_property = rtb->property();
+				d_property = rtg->property();
 			}
 
 			virtual
@@ -721,6 +615,8 @@ namespace GPlatesAppLogic
 				// to do here.
 			}
 
+			// Derivations of ReconstructedFeatureGeometry default to its implementation...
+
 			virtual
 			void
 			visit(
@@ -732,17 +628,9 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_plate_id = rvgp->reconstruction_plate_id();
-			}
-
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
-			{
-				d_plate_id = rtb->plate_id();
+				d_plate_id = rtg->plate_id();
 			}
 
 			virtual
@@ -752,31 +640,6 @@ namespace GPlatesAppLogic
 			{
 				d_plate_id = rtn->plate_id();
 			}
-
-
-			virtual
-			void
-			visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
-			{
-				d_plate_id = rf->reconstruction_plate_id();
-			}
-
-			virtual
-			void
-			visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
-			{
-				d_plate_id = rmp->plate_id();
-			}
-
-                       virtual
-                        void
-                        visit(
-                                const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
-                        {
-                                d_plate_id = rsc->plate_id();
-                        }
 
 		private:
 			boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
@@ -816,6 +679,8 @@ namespace GPlatesAppLogic
 				// and hence there is no time of formation, so nothing to do here.
 			}
 
+			// Derivations of ReconstructedFeatureGeometry default to its implementation...
+
 			virtual
 			void
 			visit(
@@ -827,17 +692,9 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_time_of_formation = rvgp->time_of_formation();
-			}
-
-			virtual
-			void
-			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
-			{
-				d_time_of_formation = rtb->time_of_formation();
+				d_time_of_formation = rtg->time_of_formation();
 			}
 
 			virtual
@@ -846,22 +703,6 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 			{
 				d_time_of_formation = rtn->time_of_formation();
-			}
-
-			virtual
-			void
-			visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
-			{
-				d_time_of_formation = rf->time_of_formation();
-			}
-
-			virtual
-			void
-			visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
-			{
-				d_time_of_formation = rmp->time_of_formation();
 			}
 
 		private:
@@ -881,6 +722,149 @@ namespace GPlatesAppLogic
 		}
 
 
+		class GetReconstructionTree :
+				public ConstReconstructionGeometryVisitor
+		{
+		public:
+
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
+			explicit
+			GetReconstructionTree(
+					boost::optional<double> reconstruction_time) :
+				d_reconstruction_time(reconstruction_time)
+			{ }
+
+			const boost::optional<ReconstructionTree::non_null_ptr_to_const_type> &
+			get_reconstruction_tree() const
+			{
+				return d_reconstruction_tree;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+			{
+				// multi_point_vector_field_type does not need/support reconstruction trees.
+			}
+
+			// Derivations of ReconstructedFeatureGeometry default to its implementation...
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+			{
+				d_reconstruction_tree = d_reconstruction_time
+						? rfg->get_reconstruction_tree_creator().get_reconstruction_tree(d_reconstruction_time.get())
+						: rfg->get_reconstruction_tree();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+			{
+				d_reconstruction_tree = d_reconstruction_time
+						? rtg->get_reconstruction_tree_creator().get_reconstruction_tree(d_reconstruction_time.get())
+						: rtg->get_reconstruction_tree();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+			{
+				// resolved_topological_network_type does not need/support reconstruction trees.
+			}
+
+		private:
+			boost::optional<double> d_reconstruction_time;
+			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> d_reconstruction_tree;
+		};
+
+
+		class GetReconstructionTreeCreator :
+				public ConstReconstructionGeometryVisitor
+		{
+		public:
+
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
+
+			const boost::optional<ReconstructionTreeCreator> &
+			get_reconstruction_tree_creator() const
+			{
+				return d_reconstruction_tree_creator;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+			{
+				// multi_point_vector_field_type does not need/support reconstruction trees.
+			}
+
+			// Derivations of ReconstructedFeatureGeometry default to its implementation...
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+			{
+				d_reconstruction_tree_creator = rfg->get_reconstruction_tree_creator();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+			{
+				d_reconstruction_tree_creator = rtg->get_reconstruction_tree_creator();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+			{
+				// resolved_topological_network_type does not need/support reconstruction trees.
+			}
+
+		private:
+			boost::optional<ReconstructionTreeCreator> d_reconstruction_tree_creator;
+		};
+
+
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<ReconstructionTree::non_null_ptr_to_const_type>
+		get_reconstruction_tree(
+				ReconstructionGeometryPointer reconstruction_geom_ptr,
+				boost::optional<double> reconstruction_time)
+		{
+			GetReconstructionTree get_reconstruction_tree_visitor(reconstruction_time);
+			reconstruction_geom_ptr->accept_visitor(get_reconstruction_tree_visitor);
+
+			return get_reconstruction_tree_visitor.get_reconstruction_tree();
+		}
+
+
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<ReconstructionTreeCreator>
+		get_reconstruction_tree_creator(
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
+		{
+			GetReconstructionTreeCreator get_reconstruction_tree_creator_visitor;
+			reconstruction_geom_ptr->accept_visitor(get_reconstruction_tree_creator_visitor);
+
+			return get_reconstruction_tree_creator_visitor.get_reconstruction_tree_creator();
+		}
+
+
 		class GetResolvedTopologicalBoundarySubSegmentSequence :
 				public ConstReconstructionGeometryVisitor
 		{
@@ -897,9 +881,13 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_sub_segment_sequence = rtb->get_sub_segment_sequence();
+				// Only a resolved topological geometry with a *polygon* is a resolved topological *boundary*.
+				if (rtg->resolved_topology_boundary())
+				{
+					d_sub_segment_sequence = rtg->get_sub_segment_sequence();
+				}
 			}
 
 			virtual
@@ -943,9 +931,11 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_boundary_polygon = rtb->resolved_topology_geometry();
+				// See if the resolved topology geometry is a polygon.
+				// It might be a polyline in which case boost::none is returned.
+				d_boundary_polygon = rtg->resolved_topology_boundary();
 			}
 
 			virtual
@@ -958,6 +948,15 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_boundary_polygon;
+
+
+			virtual
+			void
+			visit_polygon_on_sphere(
+					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+			{
+				d_boundary_polygon = polygon_on_sphere;
+			}
 		};
 
 
@@ -971,56 +970,6 @@ namespace GPlatesAppLogic
 
 			return visitor.get_boundary_polygon();
 		}
-
-		/**
-		 * Determines if there are any small circle features in the collection.
-		 *
-		 * Note: Small Circles are currently not reconstructable (although they may be 
-		 * in the future). 
-		 */
-		class DetectSmallCircleFeatures:
-			public GPlatesModel::ConstFeatureVisitor
-		{
-		public:
-			DetectSmallCircleFeatures() :
-				d_found_small_circle_features(false)
-			{  }
-
-
-			bool
-			has_small_circle_features() const
-			{
-				return d_found_small_circle_features;
-			}
-
-
-			virtual
-			void
-			visit_feature_handle(
-					const GPlatesModel::FeatureHandle &feature_handle)
-			{
-				if (d_found_small_circle_features)
-				{
-					// We've already found a small circle feature so just return.
-					return;
-				}
-
-				static const GPlatesModel::FeatureType small_circle_feature_type = 
-					GPlatesModel::FeatureType::create_gpml("SmallCircle");
-
-				if (feature_handle.feature_type() == small_circle_feature_type)
-				{
-					d_found_small_circle_features = true;
-				}
-
-				// NOTE: We don't actually want to visit the feature's properties
-				// so we're not calling 'visit_feature_properties()'.
-			}
-
-		private:
-			bool d_found_small_circle_features;
-		};
-
 	}
 }
 

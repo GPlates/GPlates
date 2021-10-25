@@ -67,15 +67,15 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlRevisionId.h"
 #include "property-values/GpmlTimeSample.h"
-#include "property-values/GpmlTopologicalPolygon.h"
-#include "property-values/GpmlTopologicalInterior.h"
-#include "property-values/GpmlTopologicalSection.h"
+#include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalLineSection.h"
-#include "property-values/GpmlTopologicalIntersection.h"
+#include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/GpmlTopologicalPolygon.h"
+#include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/UninterpretedPropertyValue.h"
-#include "property-values/TemplateTypeParameterType.h"
+#include "property-values/StructuralType.h"
 #include "property-values/XsString.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -103,27 +103,11 @@ bool
 GPlatesFeatureVisitors::TopologySectionsFinder::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
-	// super short-cut for features without boundary list properties
-	//
-	// FIXME: Do this check based on feature properties rather than feature type.
-	// So if something looks like a TCPB (because it has a topology polygon property)
-	// then treat it like one. For this to happen we first need TopologicalNetwork to
-	// use a property type different than TopologicalPolygon.
-	//
-	static const QString topology_boundary_type_name("TopologicalClosedPlateBoundary");
-	static const QString topology_slab_type_name("TopologicalSlabBoundary");
-	static const QString topology_network_type_name("TopologicalNetwork");
-	const QString feature_type = GPlatesUtils::make_qstring_from_icu_string( 
-		feature_handle.feature_type().get_name() );
-
-	// Quick-out: No need to continue.
-	if (
-		( feature_type != topology_boundary_type_name ) &&
-		( feature_type != topology_slab_type_name ) &&
-		( feature_type != topology_network_type_name ) )
-	{
-		return false; 
-	}
+	// NOTE: We don't test for topological feature types anymore.
+	// If a feature has a topological polygon, line or network property then it will
+	// get resolved, otherwise no reconstruction geometries will be generated.
+	// We're not testing feature type because we're introducing the ability for any feature type
+	// to allow a topological (or static) geometry property (at least for topological polygons/lines).
 
 	// clear the working vectors
 	d_boundary_sections.clear();
@@ -155,6 +139,18 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_piecewise_aggregation
 
 	for ( ; iter != end; ++iter) 
 	{
+		// FIXME: We really should be checking the time period of each time window against the
+		// current reconstruction time - which means we should also have a reconstruction time.
+		// It currently works because all topologies are currently created with a *single* time window
+		// (ie, we don't actually have any real time-dependent topologies even though they're wrapped
+		// in time-dependent wrappers).
+		// However we won't fix this just yet because GPML files created with old versions of GPlates
+		// set the time period, of the sole time window, to match that of the 'feature's time period
+		// (in the topology build/edit tools) - newer versions set it to *all* time (distant past/future).
+		// If the user expands the 'feature's time period *after* building/editing the topology then
+		// the *un-adjusted* time window time period will be incorrect and hence we need to ignore it.
+		// By the way, the time window is a *sole* time window because the topology tools cannot yet
+		// create time-dependent topology (section) lists.
 		process_gpml_time_window(*iter);
 	}
 }
@@ -170,17 +166,17 @@ GPlatesFeatureVisitors::TopologySectionsFinder::process_gpml_time_window(
 
 
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_polygon(
-		const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
+GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line(
+ 		const GPlatesPropertyValues::GpmlTopologicalLine &gpml_toplogical_line)
 {
 	// Set the sequence number
 	d_seq_num = 0;
 
-	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator 
-		iter, end;
-	iter = gpml_toplogical_polygon.sections().begin();
-	end = gpml_toplogical_polygon.sections().end();
 	// loop over all the sections
+	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator iter =
+			gpml_toplogical_line.sections_begin();
+	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator end =
+			gpml_toplogical_line.sections_end();
 	for ( ; iter != end; ++iter) 
 	{
 		// visit the rest of the gpml 
@@ -188,18 +184,78 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_polygon(
 	}
 }
 
+
 void
-GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_interior(
-		const GPlatesPropertyValues::GpmlTopologicalInterior &gpml_toplogical_interior)
+GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network(
+		const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_toplogical_network)
 {
-	// Set the sequence number
+	// Set the sequence number for the boundary sections.
+	d_seq_num = 0;
+
+	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator boundary_sections_iter =
+			gpml_toplogical_network.boundary_sections_begin();
+	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator boundary_sections_iter_end =
+			gpml_toplogical_network.boundary_sections_end();
+	// Loop over the boundary sections.
+	for ( ; boundary_sections_iter != boundary_sections_iter_end; ++boundary_sections_iter) 
+	{
+		// Visit the current topological section.
+		(*boundary_sections_iter)->accept_visitor(*this);
+	}
+
+	// Set the sequence number for the interior geometries.
 	d_seq_num = 1;
 
-	std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>::const_iterator 
-		iter, end;
-	iter = gpml_toplogical_interior.sections().begin();
-	end = gpml_toplogical_interior.sections().end();
+	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator interior_geometries_iter =
+			gpml_toplogical_network.interior_geometries_begin();
+	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator interior_geometries_iter_end =
+			gpml_toplogical_network.interior_geometries_end();
+	// Loop over the interior geometries.
+	for ( ; interior_geometries_iter != interior_geometries_iter_end; ++interior_geometries_iter) 
+	{
+		// Visit the current topological network interior.
+		visit_gpml_topological_network_interior(*interior_geometries_iter);
+	}
+}
+
+void
+GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network_interior(
+		const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_toplogical_network_interior)
+{
+	// source geom.'s value is a delegate 
+	// DO NOT visit the delegate with:
+	// ( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
+
+	// Rather, access directly
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type property_delegate_ptr =
+			gpml_toplogical_network_interior.get_source_geometry();
+	const GPlatesModel::FeatureId &src_geom_id = property_delegate_ptr->feature_id();
+	const GPlatesModel::PropertyName &src_prop_name = property_delegate_ptr->target_property();
+
+	// NOTE: A topological interior is *not* a topological section.
+	// But for the meantime we treat it like one because the topology tools currently access
+	// interior geometries via the topology *sections* table.
+	//
+	// FIXME: Move topology interiors out of the topology sections table and hence from the
+	// topological sections container and finder.
+	const GPlatesGui::TopologySectionsContainer::TableRow table_row(src_geom_id, src_prop_name);
+
+	d_interior_sections.push_back(table_row);
+}
+
+
+void
+GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_polygon(
+		const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
+{
+	// Set the sequence number
+	d_seq_num = 0;
+
 	// loop over all the sections
+	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator iter =
+			gpml_toplogical_polygon.exterior_sections_begin();
+	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator end =
+			gpml_toplogical_polygon.exterior_sections_end();
 	for ( ; iter != end; ++iter) 
 	{
 		// visit the rest of the gpml 
@@ -221,42 +277,15 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line_sect
 	GPlatesModel::FeatureId src_geom_id = property_delegate_ptr->feature_id();
 	const GPlatesModel::PropertyName src_prop_name = property_delegate_ptr->target_property();
 
-	// check for click point
-	boost::optional<GPlatesMaths::PointOnSphere> click_point = boost::none;
-
-	//
-	// The present day click point is the same for the start and end intersection.
-	// It represents where the user clicked on the current section.
-	//
-	// The reference plate ids can be different though (for the start and end intersection)
-	// but currently they are not used - instead the plate id of the current section is
-	// used - it was like that before to allow testing different algorithms for click points
-	// but it was decided that it makes most sense to rotate the click point with
-	// the feature that was clicked.
-	//
-
-	// Just look for the first click point we can find.
-	// If we don't find one then it means either both adjacent sections are point sections
-	// and hence cannot intersect or that one or more of the adjacent sections are
-	// line sections but that they were not intersecting when the topology was built.
-	if ( gpml_toplogical_line_section.get_start_intersection() )
-	{
-		click_point = *gpml_toplogical_line_section.get_start_intersection()
-				->reference_point()->point(); 
-	} 
-	else if ( gpml_toplogical_line_section.get_end_intersection() )
-	{
-		click_point = *gpml_toplogical_line_section.get_end_intersection()
-				->reference_point()->point(); 
-	} 
-
 	// use reverse 
 	const bool use_reverse = gpml_toplogical_line_section.get_reverse_order();
 
 	const GPlatesGui::TopologySectionsContainer::TableRow table_row(
-			src_geom_id, src_prop_name, use_reverse, click_point);
+			src_geom_id, src_prop_name, use_reverse);
 
 	// append the working row to the appropriate vector
+	// Note: Currently topological sections can only form part of the *boundary* but we'll
+	// test both in case that changes.
 	if ( d_seq_num == 0 )
 	{
 		d_boundary_sections.push_back( table_row );
@@ -285,6 +314,8 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_point(
 	const GPlatesGui::TopologySectionsContainer::TableRow table_row(src_geom_id, src_prop_name);
 
 	// append the working row to the appropriate vector
+	// Note: Currently topological sections can only form part of the *boundary* but we'll
+	// test both in case that changes.
 	if ( d_seq_num == 0 )
 	{
 		d_boundary_sections.push_back( table_row );

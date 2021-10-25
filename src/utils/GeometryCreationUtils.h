@@ -29,12 +29,14 @@
 #ifndef GPLATES_UTILS_GEOMETRYCREATIONUTILS_H
 #define GPLATES_UTILS_GEOMETRYCREATIONUTILS_H
 
-#include <QDebug>
+#include <iterator>
+#include <vector>
 #include <boost/none.hpp>
 #include <boost/optional.hpp>
-#include <iterator>
+#include <QDebug>
 
 #include "maths/GeometryOnSphere.h"
+#include "maths/GeometryType.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -59,6 +61,37 @@ namespace GPlatesUtils
 			INVALID_INSUFFICIENT_POINTS,
 			INVALID_ANTIPODAL_SEGMENT_ENDPOINTS
 		};
+	}
+
+
+	/**
+	 * Creates a @a GeometryOnSphere according to the specified geometry type and points.
+	 *
+	 * @a validity is a return-parameter. It will be set to
+	 * GeometryConstruction::VALID if everything went ok. In the event
+	 * of construction problems occuring, it will indicate why construction
+	 * failed.
+	 */
+	template <typename ForwardIterPointOnSphere>
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+	create_geometry_on_sphere(
+			GPlatesMaths::GeometryType::Value geometry_type,
+			ForwardIterPointOnSphere begin_points_on_sphere,
+			ForwardIterPointOnSphere end_points_on_sphere,
+			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity);
+
+
+	/**
+	 * An overload of @a create_geometry_on_sphere accepting a vector of points.
+	 */
+	inline
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+	create_geometry_on_sphere(
+			GPlatesMaths::GeometryType::Value geometry_type,
+			const std::vector<GPlatesMaths::PointOnSphere> &points,
+			GeometryConstruction::GeometryConstructionValidity &validity)
+	{
+		return create_geometry_on_sphere(geometry_type, points.begin(), points.end(), validity);
 	}
 
 
@@ -220,11 +253,87 @@ namespace GPlatesUtils
 	{
 		return create_multipoint_on_sphere(points.begin(), points.end(), validity);
 	}
+}
 
+//
+// Implementation of template functions.
+//
 
-	//
-	// Implementation of template functions.
-	//
+namespace GPlatesUtils
+{
+	template <typename ForwardIterPointOnSphere>
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+	create_geometry_on_sphere(
+			GPlatesMaths::GeometryType::Value geometry_type,
+			ForwardIterPointOnSphere begin_points_on_sphere,
+			ForwardIterPointOnSphere end_points_on_sphere,
+			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity)
+	{
+		switch (geometry_type)
+		{
+		case GPlatesMaths::GeometryType::POINT:
+			{
+				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry;
+
+				boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> point_on_sphere =
+						create_point_on_sphere(begin_points_on_sphere, end_points_on_sphere, validity);
+				if (point_on_sphere)
+				{
+					geometry = GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(point_on_sphere.get());
+				}
+
+				return geometry;
+			}
+
+		case GPlatesMaths::GeometryType::MULTIPOINT:
+			{
+				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry;
+
+				boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> multipoint_on_sphere =
+						create_multipoint_on_sphere(begin_points_on_sphere, end_points_on_sphere, validity);
+				if (multipoint_on_sphere)
+				{
+					geometry = GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(multipoint_on_sphere.get());
+				}
+
+				return geometry;
+			}
+
+		case GPlatesMaths::GeometryType::POLYLINE:
+			{
+				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry;
+
+				boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline_on_sphere =
+						create_polyline_on_sphere(begin_points_on_sphere, end_points_on_sphere, validity);
+				if (polyline_on_sphere)
+				{
+					geometry = GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(polyline_on_sphere.get());
+				}
+
+				return geometry;
+			}
+
+		case GPlatesMaths::GeometryType::POLYGON:
+			{
+				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry;
+
+				boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon_on_sphere =
+						create_polygon_on_sphere(begin_points_on_sphere, end_points_on_sphere, validity);
+				if (polygon_on_sphere)
+				{
+					geometry = GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(polygon_on_sphere.get());
+				}
+
+				return geometry;
+			}
+
+		case GPlatesMaths::GeometryType::NONE:
+		default:
+			break;
+		}
+
+		return boost::none;
+	}
 
 
 	template <typename ForwardIterPointOnSphere>

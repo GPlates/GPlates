@@ -23,274 +23,397 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/construct.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 
-#include "PlateVelocityUtils.h"
 #include "AppLogicUtils.h"
 #include "GeometryCookieCutter.h"
+#include "GeometryUtils.h"
+#include "MultiPointVectorField.h"
+#include "PlateVelocityUtils.h"
+#include "ReconstructedFeatureGeometry.h"
+#include "ReconstructionGeometryUtils.h"
+#include "ReconstructionFeatureProperties.h"
 #include "ReconstructionTree.h"
 #include "ResolvedTopologicalNetwork.h"
+#include "ResolvedTriangulationNetwork.h"
+#include "ResolvedTriangulationUtils.h"
 #include "TopologyUtils.h"
 
-#include "feature-visitors/ComputationalMeshSolver.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 #include "maths/CalculateVelocity.h"
+#include "maths/FiniteRotation.h"
 
 #include "model/FeatureType.h"
 #include "model/FeatureVisitor.h"
 #include "model/Model.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
+#include "model/types.h"
 
 #include "property-values/GmlMultiPoint.h"
+#include "property-values/GmlLineString.h"
+#include "property-values/GmlPoint.h"
+#include "property-values/GmlOrientableCurve.h"
+#include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
+#include "property-values/GmlTimeInstant.h"
+#include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
+#include "property-values/GpmlTimeSample.h"
+
+#include "utils/Profile.h"
 
 
-namespace
+namespace GPlatesAppLogic
 {
-	/**
-	 * Determines if any mesh node features that can be used by plate velocity calculations.
-	 */
-	class DetectVelocityMeshNodes:
-			public GPlatesModel::ConstFeatureVisitor
+	namespace
 	{
-	public:
-		DetectVelocityMeshNodes() :
-			d_found_velocity_mesh_nodes(false)
-		{  }
-
-
-		bool
-		has_velocity_mesh_node_features() const
+		/**
+		 * Determines if any mesh node features that can be used by plate velocity calculations.
+		 */
+		class DetectVelocityMeshNodes:
+				public GPlatesModel::ConstFeatureVisitor
 		{
-			return d_found_velocity_mesh_nodes;
-		}
+		public:
+			DetectVelocityMeshNodes() :
+				d_found_velocity_mesh_nodes(false)
+			{  }
 
 
-		virtual
-		void
-		visit_feature_handle(
-				const GPlatesModel::FeatureHandle &feature_handle)
-		{
-			if (d_found_velocity_mesh_nodes)
+			bool
+			has_velocity_mesh_node_features() const
 			{
-				// We've already found a mesh node feature so just return.
-				// We're trying to see if any features in a feature collection have
-				// a velocity mesh node.
-				return;
+				return d_found_velocity_mesh_nodes;
 			}
 
-			static const GPlatesModel::FeatureType mesh_node_feature_type = 
-					GPlatesModel::FeatureType::create_gpml("MeshNode");
 
-			if (feature_handle.feature_type() == mesh_node_feature_type)
+			virtual
+			void
+			visit_feature_handle(
+					const GPlatesModel::FeatureHandle &feature_handle)
 			{
-				d_found_velocity_mesh_nodes = true;
+				if (d_found_velocity_mesh_nodes)
+				{
+					// We've already found a mesh node feature so just return.
+					// We're trying to see if any features in a feature collection have
+					// a velocity mesh node.
+					return;
+				}
+
+				static const GPlatesModel::FeatureType mesh_node_feature_type = 
+						GPlatesModel::FeatureType::create_gpml("MeshNode");
+
+				if (feature_handle.feature_type() == mesh_node_feature_type)
+				{
+					d_found_velocity_mesh_nodes = true;
+				}
+
+				// NOTE: We don't actually want to visit the feature's properties
+				// so we're not calling 'visit_feature_properties()'.
 			}
 
-			// NOTE: We don't actually want to visit the feature's properties
-			// so we're not calling 'visit_feature_properties()'.
-		}
-
-	private:
-		bool d_found_velocity_mesh_nodes;
-	};
+		private:
+			bool d_found_velocity_mesh_nodes;
+		};
 
 
-	/**
-	 * For each feature of type "gpml:MeshNode" creates a new feature
-	 * of type "gpml:VelocityField" and adds to a new feature collection.
-	 */
-	class AddVelocityFieldFeatures:
-			public GPlatesModel::ConstFeatureVisitor
-	{
-	public:
-		AddVelocityFieldFeatures(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection) :
-			d_velocity_field_feature_collection(velocity_field_feature_collection)
-		{  }
-
-
-		virtual
-		bool
-		initialise_pre_feature_properties(
-				const GPlatesModel::FeatureHandle &feature_handle)
+		/**
+		 * For each feature of type "gpml:MeshNode" creates a new feature
+		 * of type "gpml:VelocityField" and adds to a new feature collection.
+		 */
+		class AddVelocityFieldFeatures:
+				public GPlatesModel::ConstFeatureVisitor
 		{
-			static const GPlatesModel::FeatureType mesh_node_feature_type = 
-					GPlatesModel::FeatureType::create_gpml("MeshNode");
+		public:
+			AddVelocityFieldFeatures(
+					const GPlatesModel::FeatureCollectionHandle::weak_ref &velocity_field_feature_collection) :
+				d_velocity_field_feature_collection(velocity_field_feature_collection)
+			{  }
 
-			if (feature_handle.feature_type() != mesh_node_feature_type)
+
+			virtual
+			bool
+			initialise_pre_feature_properties(
+					const GPlatesModel::FeatureHandle &feature_handle)
 			{
-				// Don't visit this feature.
+				static const GPlatesModel::FeatureType mesh_node_feature_type = 
+						GPlatesModel::FeatureType::create_gpml("MeshNode");
+
+				if (feature_handle.feature_type() != mesh_node_feature_type)
+				{
+					// Don't visit this feature.
+					return false;
+				}
+
+				d_velocity_field_feature = create_velocity_field_feature();
+
+				return true;
+			}
+
+
+			virtual
+			void
+			visit_gml_multi_point(
+					const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+			{
+				static const GPlatesModel::PropertyName mesh_points_prop_name =
+						GPlatesModel::PropertyName::create_gpml("meshPoints");
+
+				// Note: we can't get here without a valid property name but check
+				// anyway in case visiting a property value directly (ie, not via a feature).
+				if (current_top_level_propname() &&
+					*current_top_level_propname() == mesh_points_prop_name)
+				{
+					// We only expect one "meshPoints" property per mesh node feature.
+					// If there are multiple then we'll create multiple "domainSet" properties
+					// and velocity solver will aggregate them all into a single "rangeSet"
+					// property. Which means we'll have one large "rangeSet" property mapping
+					// into multiple smaller "domainSet" properties and the mapping order
+					// will be implementation defined.
+					create_and_append_domain_set_property_to_velocity_field_feature(
+							gml_multi_point);
+				}
+			}
+
+		private:
+			GPlatesModel::FeatureCollectionHandle::weak_ref d_velocity_field_feature_collection;
+			GPlatesModel::FeatureHandle::weak_ref d_velocity_field_feature;
+
+
+			const GPlatesModel::FeatureHandle::weak_ref
+			create_velocity_field_feature()
+			{
+				static const GPlatesModel::FeatureType velocity_field_feature_type = 
+						GPlatesModel::FeatureType::create_gpml("VelocityField");
+
+				// Create a new velocity field feature adding it to the new collection.
+				return GPlatesModel::FeatureHandle::create(
+						d_velocity_field_feature_collection,
+						velocity_field_feature_type);
+			}
+
+
+			void
+			create_and_append_domain_set_property_to_velocity_field_feature(
+					const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+			{
+				//
+				// Create the "gml:domainSet" property of type GmlMultiPoint -
+				// basically references "meshPoints" property in mesh node feature which
+				// should be a GmlMultiPoint.
+				//
+				static const GPlatesModel::PropertyName domain_set_prop_name =
+						GPlatesModel::PropertyName::create_gml("domainSet");
+
+				GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type domain_set_gml_multi_point =
+						GPlatesPropertyValues::GmlMultiPoint::create(
+								gml_multi_point.multipoint());
+
+				d_velocity_field_feature->add(
+						GPlatesModel::TopLevelPropertyInline::create(
+							domain_set_prop_name,
+							domain_set_gml_multi_point));
+			}
+		};
+
+
+		/**
+		 * Test the domain point against the resolved topological network.
+		 *
+		 * Return false if point is not inside the network.
+		 */
+		bool
+		solve_velocities_on_network(
+				const GPlatesMaths::PointOnSphere &domain_point,
+				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
+				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
+		{
+			boost::optional< std::pair<const ReconstructionGeometry *, GPlatesMaths::Vector3D > >
+					network_velocity = resolved_networks_query.calculate_velocity(domain_point);
+			if (!network_velocity)
+			{
 				return false;
 			}
 
-			d_velocity_field_feature = create_velocity_field_feature();
+			// The network 'component' could be the network's deforming region or an interior
+			// rigid block in the network.
+			const ReconstructionGeometry *network_component = network_velocity->first;
+			const GPlatesMaths::Vector3D &velocity_vector = network_velocity->second;
+
+			// Determine if point was in the deforming region or interior rigid block of network.
+			const MultiPointVectorField::CodomainElement::Reason codomain_element_reason =
+					// It's either a resolved topological network or a reconstructed feature geometry...
+					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+							const ResolvedTopologicalNetwork>(network_component)
+					? MultiPointVectorField::CodomainElement::InNetworkDeformingRegion
+					: MultiPointVectorField::CodomainElement::InNetworkRigidBlock;
+
+			// Note that we output the plate id of the deforming network (or one of its rigid blocks).
+			// This keeps things consistent with the plate id assignment code which assigns both
+			// static/dynamic polygon plate ids *and* network plate ids.
+			// This also means the GMT velocity export (which also exports plate ids) will export non-zero
+			// plate ids for all velocity domain points (assuming global coverage of plates/networks).
+			range_element = MultiPointVectorField::CodomainElement(
+					velocity_vector,
+					codomain_element_reason,
+					// The network component's plate id...
+					ReconstructionGeometryUtils::get_plate_id(network_component),
+					network_component);
 
 			return true;
 		}
 
 
-		virtual
-		void
-		visit_gml_multi_point(
-				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
+		/**
+		 * Test the domain point against the resolved topological network.
+		 *
+		 * Return false if point is not inside the network.
+		 */
+		bool
+		solve_velocities_on_rigid_plates(
+				const GPlatesMaths::PointOnSphere &domain_point,
+				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
+				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query)
 		{
-			static const GPlatesModel::PropertyName mesh_points_prop_name =
-					GPlatesModel::PropertyName::create_gpml("meshPoints");
-
-			// Note: we can't get here without a valid property name but check
-			// anyway in case visiting a property value directly (ie, not via a feature).
-			if (current_top_level_propname() &&
-				*current_top_level_propname() == mesh_points_prop_name)
+			// Get a list of all resolved topological boundaries that contain 'point'.
+			TopologyUtils::resolved_topological_boundary_seq_type resolved_topological_boundaries_containing_point;
+			resolved_rigid_plates_query->find_resolved_topology_boundaries_containing_point(
+					resolved_topological_boundaries_containing_point,
+					domain_point);
+			if (resolved_topological_boundaries_containing_point.empty())
 			{
-				// We only expect one "meshPoints" property per mesh node feature.
-				// If there are multiple then we'll create multiple "domainSet" properties
-				// and velocity solver will aggregate them all into a single "rangeSet"
-				// property. Which means we'll have one large "rangeSet" property mapping
-				// into multiple smaller "domainSet" properties and the mapping order
-				// will be implementation defined.
-				create_and_append_domain_set_property_to_velocity_field_feature(
-						gml_multi_point);
+				return false;
 			}
-		}
 
-	private:
-		GPlatesModel::FeatureCollectionHandle::weak_ref d_velocity_field_feature_collection;
-		GPlatesModel::FeatureHandle::weak_ref d_velocity_field_feature;
+#ifdef DEBUG
+GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(domain_point);
+qDebug() << "solve_velocities_on_rigid_plates: " << llp;
+#endif
 
-
-		const GPlatesModel::FeatureHandle::weak_ref
-		create_velocity_field_feature()
-		{
-			static const GPlatesModel::FeatureType velocity_field_feature_type = 
-					GPlatesModel::FeatureType::create_gpml("VelocityField");
-
-			// Create a new velocity field feature adding it to the new collection.
-			return GPlatesModel::FeatureHandle::create(
-					d_velocity_field_feature_collection,
-					velocity_field_feature_type);
-		}
-
-
-		void
-		create_and_append_domain_set_property_to_velocity_field_feature(
-				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
-		{
-			//
-			// Create the "gml:domainSet" property of type GmlMultiPoint -
-			// basically references "meshPoints" property in mesh node feature which
-			// should be a GmlMultiPoint.
-			//
-			static const GPlatesModel::PropertyName domain_set_prop_name =
-					GPlatesModel::PropertyName::create_gml("domainSet");
-
-			GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type domain_set_gml_multi_point =
-					GPlatesPropertyValues::GmlMultiPoint::create(
-							gml_multi_point.multipoint());
-
-			d_velocity_field_feature->add(
-					GPlatesModel::TopLevelPropertyInline::create(
-						domain_set_prop_name,
-						domain_set_gml_multi_point));
-		}
-	};
-
-
-	/**
-	 * Information for calculating velocities - information that is not
-	 * on a per-feature basis.
-	 */
-	class InfoForVelocityCalculations
-	{
-	public:
-		InfoForVelocityCalculations(
-				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree_1_,
-				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree_2_) :
-			reconstruction_tree_1(&reconstruction_tree_1_),
-			reconstruction_tree_2(&reconstruction_tree_2_)
-		{  }
-
-		const GPlatesAppLogic::ReconstructionTree *reconstruction_tree_1;
-		const GPlatesAppLogic::ReconstructionTree *reconstruction_tree_2;
-	};
-
-
-	/**
-	 * A function to calculate velocity colat/lon - the signature of this function
-	 * matches that required by TopologyUtils::interpolate_resolved_topology_networks().
-	 *
-	 * FIXME: This needs to be optimised - currently there's alot of common calculations
-	 * within a feature that are repeated for each point - these calculations can be cached
-	 * and looked up.
-	 */
-	std::vector<double>
-	calc_velocity_vector_for_interpolation(
-			const GPlatesMaths::PointOnSphere &point,
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
-			const boost::any &user_data)
-	{
-		const InfoForVelocityCalculations &velocity_calc_info =
-				boost::any_cast<const InfoForVelocityCalculations &>(user_data);
-
-		// Get the reconstructionPlateId property value for the feature.
-		static const GPlatesModel::PropertyName recon_plate_id_property_name =
-				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
-		GPlatesModel::integer_plate_id_type recon_plate_id_value = 0;
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
-		if ( GPlatesFeatureVisitors::get_property_value(
-				feature_ref, recon_plate_id_property_name, recon_plate_id ) )
-		{
-			// The feature has a reconstruction plate ID.
-			recon_plate_id_value = recon_plate_id->value();
-		}
-
-		const GPlatesMaths::VectorColatitudeLongitude velocity_colat_lon = 
-				GPlatesAppLogic::PlateVelocityUtils::calc_velocity_colat_lon(
-						point,
-						*velocity_calc_info.reconstruction_tree_1,
-						*velocity_calc_info.reconstruction_tree_2,
-						recon_plate_id_value);
-
-		return GPlatesAppLogic::PlateVelocityUtils::convert_velocity_colatitude_longitude_to_scalars(
-				velocity_colat_lon);
-	}
-
-
-	/**
-	 * Accumulates the interior polygons of the specified topological networks.
-	 */
-	void
-	get_resolved_networks_interior_polygons(
-			std::vector<GPlatesAppLogic::reconstructed_feature_geometry_non_null_ptr_type> &resolved_networks_interior_polygons,
-			const std::vector<GPlatesAppLogic::resolved_topological_network_non_null_ptr_type> &resolved_topological_networks)
-	{
-		std::vector<GPlatesAppLogic::resolved_topological_network_non_null_ptr_type>::const_iterator networks_iter =
-				resolved_topological_networks.begin();
-		std::vector<GPlatesAppLogic::resolved_topological_network_non_null_ptr_type>::const_iterator networks_end =
-				resolved_topological_networks.end();
-		for ( ; networks_iter != networks_end; ++networks_iter)
-		{
-			const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type &network = *networks_iter;
-
-			GPlatesAppLogic::ResolvedTopologicalNetwork::interior_polygon_const_iterator interior_polys_iter =
-					network->interior_polygons_begin();
-			GPlatesAppLogic::ResolvedTopologicalNetwork::interior_polygon_const_iterator interior_polys_end =
-					network->interior_polygons_end();
-			for ( ; interior_polys_iter != interior_polys_end; ++interior_polys_iter)
+			boost::optional< std::pair<
+					GPlatesModel::integer_plate_id_type,
+					const ResolvedTopologicalGeometry * > > recon_plate_id_opt =
+							TopologyUtils::find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
+									resolved_topological_boundaries_containing_point);
+			if (!recon_plate_id_opt)
 			{
-				const GPlatesAppLogic::ResolvedTopologicalNetwork::InteriorPolygon &interior_poly = *interior_polys_iter;
+				GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
+				MultiPointVectorField::CodomainElement::Reason reason =
+						MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
+				range_element = MultiPointVectorField::CodomainElement(zero_velocity, reason);
 
-				resolved_networks_interior_polygons.push_back(
-						interior_poly.get_reconstructed_feature_geometry());
+				return true; 
 			}
+
+			const GPlatesModel::integer_plate_id_type recon_plate_id = recon_plate_id_opt->first;
+			const ResolvedTopologicalGeometry *resolved_topo_boundary = recon_plate_id_opt->second;
+
+			// Compute the velocity for this domain point.
+			const GPlatesMaths::Vector3D vector_xyz =
+					PlateVelocityUtils::calc_velocity_vector(
+							domain_point,
+							*resolved_topo_boundary->get_reconstruction_tree(),
+							*resolved_topo_boundary->get_reconstruction_tree_creator()
+									.get_reconstruction_tree(
+											// FIXME:  Should this '1' should be user controllable? ...
+											resolved_topo_boundary->get_reconstruction_time() + 1),
+							recon_plate_id);
+
+			MultiPointVectorField::CodomainElement::Reason reason =
+					MultiPointVectorField::CodomainElement::InPlateBoundary;
+			range_element = MultiPointVectorField::CodomainElement(vector_xyz, reason,
+					recon_plate_id, resolved_topo_boundary);
+
+			return true;
+		}
+
+
+		/**
+		 * Test the domain point against the resolved topological network.
+		 *
+		 * Return false if point is not inside the network.
+		 */
+		bool
+		solve_velocities_on_static_polygon(
+				const GPlatesMaths::PointOnSphere &domain_point,
+				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
+				const GeometryCookieCutter &reconstructed_static_polygons_query)
+		{
+			const boost::optional<const ReconstructionGeometry *>
+					reconstructed_static_polygon_containing_point = 
+							reconstructed_static_polygons_query.partition_point(domain_point);
+			if (!reconstructed_static_polygon_containing_point)
+			{
+				return false;
+			}
+
+
+#ifdef DEBUG
+GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(domain_point);
+qDebug() << "solve_velocities_on_static_polygon: " << llp;
+#endif
+
+			const boost::optional<GPlatesModel::integer_plate_id_type> recon_plate_id_opt =
+					ReconstructionGeometryUtils::get_plate_id(
+							reconstructed_static_polygon_containing_point.get());
+			if (!recon_plate_id_opt)
+			{
+				GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
+				range_element = MultiPointVectorField::CodomainElement(
+						zero_velocity,
+						MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork);
+
+				return true;
+			}
+
+			GPlatesModel::integer_plate_id_type recon_plate_id = recon_plate_id_opt.get();
+
+			// Get the reconstruction trees to calculate velocity with.
+			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> recon_tree1 =
+				ReconstructionGeometryUtils::get_reconstruction_tree(
+						reconstructed_static_polygon_containing_point.get());
+			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> recon_tree2 =
+				ReconstructionGeometryUtils::get_reconstruction_tree(
+						reconstructed_static_polygon_containing_point.get(),
+						// FIXME:  Should this '1' should be user controllable? ...
+						reconstructed_static_polygon_containing_point.get()->get_reconstruction_time() + 1);
+			// This should succeed since the static polygon is an RFG which supports reconstruction trees.
+			if (!recon_tree1 || !recon_tree2)
+			{
+				GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
+				range_element = MultiPointVectorField::CodomainElement(
+						zero_velocity,
+						MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork);
+
+				return true;
+			}
+
+			// Compute the velocity for this domain point.
+			const GPlatesMaths::Vector3D vector_xyz =
+					PlateVelocityUtils::calc_velocity_vector(
+							domain_point,
+							*recon_tree1.get(),
+							*recon_tree2.get(),
+							recon_plate_id);
+
+			range_element = MultiPointVectorField::CodomainElement(
+					vector_xyz,
+					MultiPointVectorField::CodomainElement::InStaticPolygon,
+					recon_plate_id,
+					reconstructed_static_polygon_containing_point.get());
+
+			return true;
 		}
 	}
 }
@@ -308,8 +431,7 @@ GPlatesAppLogic::PlateVelocityUtils::detect_velocity_mesh_nodes(
 	// Visitor to detect mesh node features in the feature collection.
 	DetectVelocityMeshNodes detect_velocity_mesh_nodes;
 
-	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
-			feature_collection, detect_velocity_mesh_nodes);
+	AppLogicUtils::visit_feature_collection(feature_collection, detect_velocity_mesh_nodes);
 
 	return detect_velocity_mesh_nodes.has_velocity_mesh_node_features();
 }
@@ -353,126 +475,142 @@ GPlatesAppLogic::PlateVelocityUtils::create_velocity_field_feature_collection(
 	// and create corresponding velocity field features in the new feature collection.
 	AddVelocityFieldFeatures add_velocity_field_features(velocity_field_feature_collection_ref);
 
-	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
-			feature_collection_with_mesh_nodes, add_velocity_field_features);
+	AppLogicUtils::visit_feature_collection(feature_collection_with_mesh_nodes, add_velocity_field_features);
 
 	// Return the newly created feature collection.
 	return velocity_field_feature_collection;
 }
 
 
-
-
 void
-GPlatesAppLogic::PlateVelocityUtils::solve_velocities(
-		std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_velocity_fields,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
+GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &multi_point_velocity_fields,
 		const double &reconstruction_time,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &multi_point_feature_collections,
-		const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_static_polygons,
-		const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
-		const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks)
+		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_domains,
+		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
+		const std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
+		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &velocity_surface_resolved_topological_networks)
 {
-	// Return early if there are no multi-point feature collections on which to solve velocities.
-	if (multi_point_feature_collections.empty())
+	PROFILE_FUNC();
+
+	// Return early if there are no velocity domains on which to solve velocities.
+	if (velocity_domains.empty())
 	{
 		return;
 	}
 
-	// FIXME:  Should this '1' should be user controllable?
-	const double reconstruction_time_1 = reconstruction_time;
-	const double reconstruction_time_2 = reconstruction_time_1 + 1;
-
-	// Our two reconstruction trees for velocity calculations.
-	const reconstruction_tree_non_null_ptr_to_const_type reconstruction_tree_1 =
-			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time_1);
-	const reconstruction_tree_non_null_ptr_to_const_type reconstruction_tree_2 =
-			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time_2);
-
-
 	// Get the reconstructed feature geometries and wrap them in a structure that can do
-	// point-in-polygon tests.
+	// point-in-polygon tests so we can query them at domain points.
 	GeometryCookieCutter reconstructed_static_polygons_query(
 			reconstruction_time,
-			reconstructed_static_polygons,
-			boost::none/*resolved_topological_boundaries*/,
-			boost::none/*resolved_topological_networks*/);
+			velocity_surface_reconstructed_static_polygons,
+			boost::none/*velocity_surface_resolved_topological_boundaries*/,
+			boost::none/*velocity_surface_resolved_topological_networks*/);
 
 
-	// Get the resolved topological boundaries and optimise them for point-in-polygon tests.
-	// Later the velocity solver will query the boundaries at various points and
-	// then calculate velocities using the best matching boundary.
-	const TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type resolved_boundaries_query =
-			TopologyUtils::query_resolved_topologies_for_geometry_partitioning(resolved_topological_boundaries);
+	// Get the resolved topological boundaries so we can query them at domain points.
+	const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type
+			resolved_rigid_plates_query =
+					TopologyUtils::ResolvedBoundariesForGeometryPartitioning::create(
+							velocity_surface_resolved_topological_boundaries);
 
 
-	// Get the resolved topological networks.
-	// This effectively goes through all the node points in all topological networks
-	// and generates velocity data for them.
-	// Later the velocity solver will query the networks for the interpolated velocity
-	// at various points.
+	// Get the resolved topological networks so we can query them for interpolated velocity at domain points.
+	const TopologicalNetworksVelocities resolved_networks_query(
+			velocity_surface_resolved_topological_networks);
 
-	const InfoForVelocityCalculations velocity_calc_info(*reconstruction_tree_1, *reconstruction_tree_2);
+	// Iterate over the velocity domain RFGs.
+	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>::const_iterator velocity_domains_iter =
+			velocity_domains.begin();
+	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>::const_iterator velocity_domains_end =
+			velocity_domains.end();
+	for ( ; velocity_domains_iter != velocity_domains_end; ++velocity_domains_iter)
+	{
+		const ReconstructedFeatureGeometry::non_null_ptr_type velocity_domain_rfg =
+				*velocity_domains_iter;
 
-	/*
-	 * The following callback function will take a ResolvedTopologicalNetworkImpl pointer
-	 * as its first argument and a TopologyUtils::network_interpolation_query_callback_type
-	 * as its second argument. It will first construct a TopologicalNetworkVelocities object
-	 * using the second argument and then pass that as an argument to
-	 * ResolvedTopologicalNetworkImpl::set_network_velocities().
-	 */
-	const TopologyUtils::network_interpolation_query_callback_type callback_function =
-			boost::lambda::bind(
-					// The member function that this callback will delegate to
-					&ResolvedTopologicalNetwork::set_network_velocities,
-					boost::lambda::_1/*the ResolvedTopologicalNetworkImpl object to set it on*/,
-					boost::lambda::bind(
-							// Construct a TopologicalNetworkVelocities object from the query
-							boost::lambda::constructor<TopologicalNetworkVelocities>(),
-							boost::lambda::_2/*the query to store in the network*/));
+		// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
+		// that stores a multi-point domain and a corresponding velocity field but the
+		// geometry property iterator (referenced by the MultiPointVectorField) could be a
+		// non-multi-point geometry.
+		//
+		// Note that we used the *reconstructed* geometry for the velocity domain.
+		// Previously we used the *present-day* geometry - essentially hard-wiring the plate id to zero
+		// (regardless of the actual plate id) in order to fix it to the spin axis before surface testing.
+		// Although even this had problems for non-zero anchor plate ids since zero plate id rotations
+		// then became non-identity rotations and we just assumed an identity rotation always.
+		// Also now that we use the *reconstructed* geometry this is no longer a problem for
+		// zero plate ids or non-zero plate ids (with zero or non-zero anchor plate ids).
+		// However by not forcing a zero plate id this allows the user to move the positions of
+		// the points before surface testing. Not sure how useful this is - but it shouldn't
+		// interfere with CitcomS mesh nodes (cap files) because they always have plate ids of zero
+		// and hence don't move (unless the anchor plate id is non-zero as expected).
+		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type velocity_domain_multi_point =
+				GeometryUtils::convert_geometry_to_multi_point(
+						*velocity_domain_rfg->reconstructed_geometry());
 
-	// Fill the topological network with velocities data at all the network points.
-	const TopologyUtils::resolved_networks_for_interpolation_query_type resolved_networks_query =
-			TopologyUtils::query_resolved_topology_networks_for_interpolation(
-					resolved_topological_networks,
-					&calc_velocity_vector_for_interpolation,
-					// Two scalars per velocity...
-					NUM_TOPOLOGICAL_NETWORK_VELOCITY_COMPONENTS,
-					// Info used by "calc_velocity_vector_for_interpolation()"...
-					boost::any(velocity_calc_info),
-					callback_function);
+		GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = velocity_domain_multi_point->begin();
+		GPlatesMaths::MultiPointOnSphere::const_iterator domain_end = velocity_domain_multi_point->end();
 
-	// Get the topological network interior polygons (if any) and wrap them in a structure
-	// that can do point-in-polygon tests.
-	// These are static (shape) interior regions of topological networks whose velocities
-	// are treated like regular static polygons (except these are given preference since they
-	// belong to a topological network).
-	std::vector<reconstructed_feature_geometry_non_null_ptr_type> resolved_networks_interior_polygons;
-	get_resolved_networks_interior_polygons(
-			resolved_networks_interior_polygons,
-			resolved_topological_networks);
-	GeometryCookieCutter resolved_networks_interior_polygons_query(
-			reconstruction_time,
-			resolved_networks_interior_polygons,
-			boost::none/*resolved_topological_boundaries*/,
-			boost::none/*resolved_topological_networks*/);
+		MultiPointVectorField::non_null_ptr_type vector_field =
+				MultiPointVectorField::create_empty(
+						reconstruction_time,
+						velocity_domain_multi_point,
+						// FIXME: Should this be the feature handle of the domain or surface ?
+						// For now using the domain...
+						*velocity_domain_rfg->property().handle_weak_ref(),
+						velocity_domain_rfg->property());
+		MultiPointVectorField::codomain_type::iterator field_iter = vector_field->begin();
 
-	// Visit the multi-point feature collections and calculate velocities.
-	GPlatesFeatureVisitors::ComputationalMeshSolver velocity_solver(
-			multi_point_velocity_fields,
-			reconstruction_time_1,  // "the" reconstruction time
-			reconstruction_tree_1,  // "the" reconstruction tree
-			reconstruction_tree_2,
-			reconstructed_static_polygons_query,
-			resolved_boundaries_query,
-			resolved_networks_query,
-			resolved_networks_interior_polygons_query,
-			true); // keep features without recon plate id
+		// Iterate over the domain points and calculate their velocities.
+		for ( ; domain_iter != domain_end; ++domain_iter, ++field_iter)
+		{
+			const GPlatesMaths::PointOnSphere &domain_point = *domain_iter;
 
-	GPlatesAppLogic::AppLogicUtils::visit_feature_collections(
-			multi_point_feature_collections.begin(),
-			multi_point_feature_collections.end(),
-			static_cast<GPlatesModel::FeatureVisitor &>(velocity_solver));
+			//
+			// First check whether domain point is inside any topological networks.
+			// This includes points inside interior rigid blocks on the networks.
+			//
+			if (solve_velocities_on_network(domain_point, *field_iter, resolved_networks_query))
+			{
+				continue;
+			}
+
+			//
+			// Next see if point is inside any topological boundaries.
+			//
+
+			if (solve_velocities_on_rigid_plates(domain_point, *field_iter, resolved_rigid_plates_query))
+			{
+				continue;
+			}
+
+			//
+			// Next see if point is inside any static (reconstructed) polygons.
+			//
+
+			if (solve_velocities_on_static_polygon(domain_point, *field_iter, reconstructed_static_polygons_query))
+			{
+				continue;
+			}
+
+			// else, point not found in any topology or static polygons so set the velocity values to 0 
+
+			const GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
+			const MultiPointVectorField::CodomainElement::Reason reason =
+					MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
+			*field_iter = MultiPointVectorField::CodomainElement(zero_velocity, reason);
+
+#ifdef DEBUG
+			// Report a warning.
+			// This is useful for global models that should span the entire globes with no gaps.
+			const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(domain_point);
+			qDebug() << "WARNING: domain point not in any Topology! point = " << llp;
+#endif
+		}
+
+		multi_point_velocity_fields.push_back(vector_field);
+	}
 }
 
 
@@ -497,6 +635,18 @@ GPlatesAppLogic::PlateVelocityUtils::calc_velocity_vector(
 GPlatesMaths::VectorColatitudeLongitude
 GPlatesAppLogic::PlateVelocityUtils::calc_velocity_colat_lon(
 		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesMaths::FiniteRotation &finite_rotation1,
+		const GPlatesMaths::FiniteRotation &finite_rotation2)
+{
+	const GPlatesMaths::Vector3D vector_xyz = calc_velocity_vector(point, finite_rotation1, finite_rotation2);
+
+	return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, vector_xyz);
+}
+
+
+GPlatesMaths::VectorColatitudeLongitude
+GPlatesAppLogic::PlateVelocityUtils::calc_velocity_colat_lon(
+		const GPlatesMaths::PointOnSphere &point,
 		const ReconstructionTree &reconstruction_tree1,
 		const ReconstructionTree &reconstruction_tree2,
 		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id)
@@ -508,48 +658,46 @@ GPlatesAppLogic::PlateVelocityUtils::calc_velocity_colat_lon(
 }
 
 
-boost::optional<GPlatesMaths::VectorColatitudeLongitude>
-GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworkVelocities::interpolate_velocity(
-		const GPlatesMaths::PointOnSphere &point)
+GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworksVelocities::TopologicalNetworksVelocities(
+		const std::vector<resolved_topological_network_non_null_ptr_type> &networks) :
+	d_networks(networks)
 {
-	const boost::optional< std::vector<double> > interpolated_velocity =
-			TopologyUtils::interpolate_resolved_topology_network(
-					d_network_velocities_query, point);
-
-	if (!interpolated_velocity)
-	{
-		return boost::none;
-	}
-
-	return convert_velocity_scalars_to_colatitude_longitude(*interpolated_velocity);
 }
 
 
-void
-GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworkVelocities::get_network_velocities(
-		std::vector<GPlatesMaths::PointOnSphere> &network_points,
-		std::vector<GPlatesMaths::VectorColatitudeLongitude> &network_velocities) const
+boost::optional<
+		std::pair<
+				const GPlatesAppLogic::ReconstructionGeometry *,
+				GPlatesMaths::Vector3D> >
+GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworksVelocities::calculate_velocity(
+		const GPlatesMaths::PointOnSphere &point) const
 {
-	// Get the network velocities as scalar tuples.
-	std::vector< std::vector<double> > network_scalar_tuple_sequence;
-	TopologyUtils::get_resolved_topology_network_scalars(
-			d_network_velocities_query,
-			network_points,
-			network_scalar_tuple_sequence);
-
-	// Assemble the scalar tuples as velocity vectors.
-
-	network_velocities.reserve(network_scalar_tuple_sequence.size());
-
-	// Iterate through the scalar tuple sequence and convert to velocity colat/lon.
-	typedef std::vector< std::vector<double> > scalar_tuple_seq_type;
-	scalar_tuple_seq_type::const_iterator scalar_tuple_iter = network_scalar_tuple_sequence.begin();
-	scalar_tuple_seq_type::const_iterator scalar_tuple_end = network_scalar_tuple_sequence.end();
-	for ( ; scalar_tuple_iter != scalar_tuple_end; ++scalar_tuple_iter)
+	BOOST_FOREACH(const ResolvedTopologicalNetwork::non_null_ptr_type &network, d_networks)
 	{
-		const std::vector<double> &scalar_tuple = *scalar_tuple_iter;
+		boost::optional<
+				std::pair<
+						boost::optional<const ResolvedTriangulation::Network::RigidBlock &>,
+						GPlatesMaths::Vector3D> >
+				velocity = network->get_triangulation_network().calculate_velocity(point);
+		if (velocity)
+		{
+			const GPlatesMaths::Vector3D &velocity_vector = velocity->second;
 
-		network_velocities.push_back(
-				convert_velocity_scalars_to_colatitude_longitude(scalar_tuple));
+			// If the point was in one of the network's rigid blocks.
+			if (velocity->first)
+			{
+				const ResolvedTriangulation::Network::RigidBlock &rigid_block = velocity->first.get();
+				const ReconstructionGeometry *velocity_recon_geom =
+						rigid_block.get_reconstructed_feature_geometry().get();
+
+				return std::make_pair(velocity_recon_geom, velocity_vector);
+			}
+
+			const ReconstructionGeometry *velocity_recon_geom = network.get();
+			return std::make_pair(velocity_recon_geom, velocity_vector);
+		}
 	}
+
+	// Point is not inside any networks.
+	return boost::none;
 }

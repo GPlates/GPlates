@@ -27,13 +27,14 @@
 
 #include "MeasureDistanceState.h"
 
+#include "canvas-tools/GeometryOperationState.h"
+
 #include "maths/ConstGeometryOnSphereVisitor.h"
+#include "maths/GeometryType.h"
 #include "maths/MathsUtils.h"
 #include "maths/SphericalArea.h"
 
 #include "view-operations/GeometryBuilder.h"
-#include "view-operations/GeometryOperationTarget.h"
-#include "view-operations/GeometryType.h"
 #include "view-operations/RenderedGeometryLayer.h"
 
 
@@ -122,38 +123,28 @@ GPlatesCanvasTools::MeasureDistanceState::DEFAULT_RADIUS_OF_EARTH = 6378.1;
 
 GPlatesCanvasTools::MeasureDistanceState::MeasureDistanceState(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target) :
-	d_main_layer_ptr(rendered_geom_collection.get_main_rendered_layer(
-				GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER)),
-	d_highlight_layer_ptr(rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER)),
-	d_label_layer_ptr(rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER)),
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state) :
 	d_radius(GPlatesCanvasTools::MeasureDistanceState::DEFAULT_RADIUS_OF_EARTH),
-	d_geometry_operation_target_ptr(&geometry_operation_target),
+	d_geometry_operation_state_ptr(&geometry_operation_state),
 	d_current_geometry_builder_ptr(NULL),
 	d_is_active(false),
 	d_is_quick_measure_highlighted(false),
 	d_is_feature_measure_highlighted(false)
 {
-	make_signal_slot_connections_for_geometry_operation_target();
-	d_highlight_layer_ptr->set_active(true);
-	d_label_layer_ptr->set_active(true);
+	make_signal_slot_connections_for_geometry_operation_state();
 }
 
 
 void
-GPlatesCanvasTools::MeasureDistanceState::make_signal_slot_connections_for_geometry_operation_target()
+GPlatesCanvasTools::MeasureDistanceState::make_signal_slot_connections_for_geometry_operation_state()
 {
-	// listen to GeometryOperationTarget for changes to which GeometryBuilder we are using
+	// listen to GeometryOperationState for changes to which GeometryBuilder we are using
 	QObject::connect(
-			d_geometry_operation_target_ptr,
+			d_geometry_operation_state_ptr,
 			SIGNAL(switched_geometry_builder(
-					GPlatesViewOperations::GeometryOperationTarget &,
 					GPlatesViewOperations::GeometryBuilder *)),
 			this,
 			SLOT(switch_geometry_builder(
-					GPlatesViewOperations::GeometryOperationTarget &,
 					GPlatesViewOperations::GeometryBuilder *)));
 }
 
@@ -190,7 +181,6 @@ GPlatesCanvasTools::MeasureDistanceState::disconnect_signal_slot_connections_for
 
 void
 GPlatesCanvasTools::MeasureDistanceState::switch_geometry_builder(
-		GPlatesViewOperations::GeometryOperationTarget &,
 		GPlatesViewOperations::GeometryBuilder *geometry_builder)
 {
 	disconnect_signal_slot_connections_for_geometry_builder();
@@ -203,7 +193,7 @@ void
 GPlatesCanvasTools::MeasureDistanceState::reexamine_geometry_builder()
 {
 	process_geometry_builder(d_current_geometry_builder_ptr);
-	emit feature_in_geometry_builder_changed();
+	Q_EMIT feature_in_geometry_builder_changed();
 }
 
 
@@ -242,7 +232,7 @@ GPlatesCanvasTools::MeasureDistanceState::get_feature_segment_distance()
 void
 GPlatesCanvasTools::MeasureDistanceState::emit_quick_measure_updated()
 {
-	emit quick_measure_updated(
+	Q_EMIT quick_measure_updated(
 			d_quick_measure_start,
 			d_quick_measure_end,
 			get_quick_measure_distance());
@@ -288,7 +278,7 @@ GPlatesCanvasTools::MeasureDistanceState::clear_quick_measure()
 		d_quick_measure_start = boost::none;
 		d_quick_measure_end = boost::none;
 
-		emit quick_measure_cleared();
+		Q_EMIT quick_measure_cleared();
 
 		emit_quick_measure_updated();
 	}
@@ -300,10 +290,7 @@ GPlatesCanvasTools::MeasureDistanceState::handle_activation()
 {
 	d_is_active = true;
 
-	// get and process the current geometry builder
-	d_current_geometry_builder_ptr =
-		d_geometry_operation_target_ptr->get_and_set_current_geometry_builder_for_newly_activated_tool(
-				GPlatesCanvasTools::CanvasToolType::MEASURE_DISTANCE);
+	// Process the current geometry builder
 	make_signal_slot_connections_for_geometry_builder();
 	process_geometry_builder(d_current_geometry_builder_ptr);
 
@@ -318,7 +305,7 @@ GPlatesCanvasTools::MeasureDistanceState::emit_feature_measure_updated()
 {
 	if (d_feature_total_distance)
 	{
-		emit feature_measure_updated(
+		Q_EMIT feature_measure_updated(
 				*d_feature_total_distance,
 				d_feature_area,
 				d_feature_segment_start,
@@ -327,7 +314,7 @@ GPlatesCanvasTools::MeasureDistanceState::emit_feature_measure_updated()
 	}
 	else
 	{
-		emit feature_measure_updated();
+		Q_EMIT feature_measure_updated();
 	}
 }
 
@@ -353,8 +340,8 @@ GPlatesCanvasTools::MeasureDistanceState::process_geometry_builder(
 				geometry_builder->get_num_geometries() &&
 				geometry_builder->get_num_points_in_current_geometry() &&
 					// we treat a geometry builder with fewer than two points as no selection
-				(geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYLINE ||
-				 geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON))
+				(geometry_builder->get_geometry_build_type() == GPlatesMaths::GeometryType::POLYLINE ||
+				 geometry_builder->get_geometry_build_type() == GPlatesMaths::GeometryType::POLYGON))
 					// we do not measure distances between a set of points
 		{
 			if (geometry_builder->get_num_points_in_current_geometry() > 1)
@@ -379,7 +366,7 @@ GPlatesCanvasTools::MeasureDistanceState::process_geometry_builder(
 				}
 
 				// if polygon, add distance between first and last points
-				if (geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON)
+				if (geometry_builder->get_geometry_build_type() == GPlatesMaths::GeometryType::POLYGON)
 				{
 					total_distance += calculate_distance_on_surface_of_sphere(
 							*previous,
@@ -430,7 +417,7 @@ GPlatesCanvasTools::MeasureDistanceState::set_quick_measure_highlight(
 	if (d_is_quick_measure_highlighted != is_highlighted)
 	{
 		d_is_quick_measure_highlighted = is_highlighted;
-		emit quick_measure_highlight_changed(is_highlighted);
+		Q_EMIT quick_measure_highlight_changed(is_highlighted);
 	}
 }
 
@@ -442,7 +429,7 @@ GPlatesCanvasTools::MeasureDistanceState::set_feature_measure_highlight(
 	if (d_is_feature_measure_highlighted != is_highlighted)
 	{
 		d_is_feature_measure_highlighted = is_highlighted;
-		emit feature_measure_highlight_changed(is_highlighted);
+		Q_EMIT feature_measure_highlight_changed(is_highlighted);
 	}
 }
 

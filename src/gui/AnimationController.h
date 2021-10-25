@@ -220,7 +220,7 @@ namespace GPlatesGui
 		is_valid_reconstruction_time(
 				const double &time);
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Initiates the animation. If the animation is already playing,
@@ -354,7 +354,7 @@ namespace GPlatesGui
 		void
 		swap_start_and_end_times();
 
-	signals:
+	Q_SIGNALS:
 	
 		void
 		view_time_changed(
@@ -408,7 +408,7 @@ namespace GPlatesGui
 		send_time_to_stdout(
 			double time);
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * Triggered whenever the internal QTimer ticks.

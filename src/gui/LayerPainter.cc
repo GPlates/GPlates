@@ -24,230 +24,128 @@
  */
 
 #include <boost/foreach.hpp>
+#include <boost/utility/in_place_factory.hpp>
 
 #include "LayerPainter.h"
 
+#include "FeedbackOpenGLToQPainter.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
+#include "opengl/GLContext.h"
+#include "opengl/GLLight.h"
 #include "opengl/GLRenderer.h"
+#include "opengl/GLShaderProgramUtils.h"
 #include "opengl/GLText.h"
 
 #include "utils/Profile.h"
 
+namespace GPlatesGui
+{
+	namespace
+	{
+		/**
+		 * Vertex shader source code to render points, lines and polygons with lighting.
+		 */
+		const QString RENDER_POINT_LINE_POLYGON_LIGHTING_VERTEX_SHADER =
+				":/opengl/layer_painter/render_point_line_polygon_lighting_vertex_shader.glsl";
+
+		/**
+		 * Fragment shader source code to render points, lines and polygons with lighting.
+		 */
+		const QString RENDER_POINT_LINE_POLYGON_LIGHTING_FRAGMENT_SHADER =
+				":/opengl/layer_painter/render_point_line_polygon_lighting_fragment_shader.glsl";
+	}
+}
+
 
 GPlatesGui::LayerPainter::LayerPainter(
-		bool use_depth_buffer) :
-	d_use_depth_buffer(use_depth_buffer)
+		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
+		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection) :
+	d_gl_visual_layers(gl_visual_layers),
+	d_map_projection(map_projection)
 {
 }
 
 
 void
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::begin_painting()
+GPlatesGui::LayerPainter::initialise(
+		GPlatesOpenGL::GLRenderer &renderer)
 {
-	// Create the stream.
-	d_stream.reset(new Stream());
-
-	// The stream should target our internal vertices/indices.
-	d_stream->stream_target.start_streaming(
-			boost::in_place(boost::ref(d_vertices)),
-			boost::in_place(boost::ref(d_vertex_elements)));
-}
-
-
-void
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::end_painting(
-		GPlatesOpenGL::GLRenderer &renderer,
-		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
-		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
-		GPlatesOpenGL::GLVertexArray &vertex_array,
-		GLenum mode)
-{
-	// Stop targeting our internal vertices/indices.
-	d_stream->stream_target.stop_streaming();
-
-	// If there are primitives to draw...
-	if (!d_vertex_elements.empty())
-	{
-		// Stream the vertex elements.
-		vertex_element_buffer_data.gl_buffer_data(
-				renderer,
-				GPlatesOpenGL::GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
-				d_vertex_elements,
-				GPlatesOpenGL::GLBuffer::USAGE_STREAM_DRAW);
-
-		// Stream the vertices.
-		vertex_buffer_data.gl_buffer_data(
-				renderer,
-				GPlatesOpenGL::GLBuffer::TARGET_ARRAY_BUFFER,
-				d_vertices,
-				GPlatesOpenGL::GLBuffer::USAGE_STREAM_DRAW);
-
-		// Draw the primitives.
-		// NOTE: The caller has already bound this vertex array.
-		vertex_array.gl_draw_range_elements(
-				renderer,
-				mode,
-				0/*start*/,
-				d_vertices.size() - 1/*end*/,
-				d_vertex_elements.size()/*count*/,
-				GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::type,
-				0/*indices_offset*/);
-	}
-
-	// Destroy the stream.
-	d_stream.reset();
-
-	d_vertex_elements.clear();
-	d_vertices.clear();
-}
-
-
-void
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::begin_painting()
-{
-	d_triangle_drawables.begin_painting();
-}
-
-
-void
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
-		GPlatesOpenGL::GLRenderer &renderer,
-		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
-		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
-		GPlatesOpenGL::GLVertexArray &vertex_array,
-		PersistentOpenGLObjects &persistent_opengl_objects)
-{
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	//
-	// If any rendered polygons (or polylines) are 'filled' then render them first.
-	// This way any vector geometry in this layer gets rendered on top and hence is visible.
-	//
-	// Filled polygons are rendered as rasters (textures) and hence the state set here
-	// is similar (in fact identical) to the state set for rasters.
+	// Create the vertex buffers and array.
 	//
 
-	persistent_opengl_objects.render_filled_polygons(renderer, d_filled_polygons);
-	// Now that the filled polygons have been rendered we should clear them for the next render call.
-	d_filled_polygons.clear();
-
-	// All painting below uses the one vertex array so we only need to bind it once (here).
-	// Note that the filled polygons above uses it own vertex array(s).
-	vertex_array.gl_bind(renderer);
-
-	//
-	// Paint the point, line and polygon drawables with the appropriate state
-	// (such as point size, line width).
-	//
-
-	//
-	// Paint the drawables representing all point primitives (if any).
-	//
-
-	// Iterate over the point size groups and paint them.
-	BOOST_FOREACH(point_size_to_drawables_map_type::value_type &point_size_entry, d_point_drawables_map)
-	{
-		const float point_size = point_size_entry.first.dval();
-		Drawables &points_drawable = point_size_entry.second;
-
-		// Set the point size for the current group of points.
-		renderer.gl_point_size(point_size);
-
-		points_drawable.end_painting(
-				renderer,
-				vertex_element_buffer_data,
-				vertex_buffer_data,
-				vertex_array,
-				GL_POINTS);
-	}
-
-	// Clear the points drawables because the next render may have a different collection of point sizes.
-	d_point_drawables_map.clear();
-
-	//
-	// Paint the drawables representing all line primitives (if any).
-	//
-
-	// Iterate over the line width groups and paint them.
-	BOOST_FOREACH(line_width_to_drawables_map_type::value_type &line_width_entry, d_line_drawables_map)
-	{
-		const float line_width = line_width_entry.first.dval();
-		Drawables &lines_drawable = line_width_entry.second;
-
-		// Set the line width for the current group of lines.
-		renderer.gl_line_width(line_width);
-
-		lines_drawable.end_painting(
-				renderer,
-				vertex_element_buffer_data,
-				vertex_buffer_data,
-				vertex_array,
-				GL_LINES);
-	}
-
-	// Clear the lines drawables because the next render may have a different collection of line widths.
-	d_line_drawables_map.clear();
-
-	//
-	// Paint the drawable representing all triangle primitives (if any).
-	//
-
-#if 0 // NOTE: This causes transparent edges between adjacent triangles in a mesh so we don't enable it...
-	// Set the anti-aliased polygon state.
- 	renderer.gl_enable(GL_POLYGON_SMOOTH);
- 	renderer.gl_hint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-#endif
-
-	d_triangle_drawables.end_painting(
+	// These are only created *once* and re-used across paint calls.
+	d_vertex_element_buffer = GPlatesOpenGL::GLVertexElementBuffer::create(
 			renderer,
-			vertex_element_buffer_data,
-			vertex_buffer_data,
-			vertex_array,
-			GL_TRIANGLES);
-}
+			GPlatesOpenGL::GLBuffer::create(renderer));
 
+	d_vertex_buffer = GPlatesOpenGL::GLVertexBuffer::create(
+			renderer,
+			GPlatesOpenGL::GLBuffer::create(renderer));
 
-GPlatesGui::LayerPainter::stream_primitives_type &
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_points_stream(
-		float point_size)
-{
-	// Get the stream for points of the current point size.
-	point_size_to_drawables_map_type::iterator stream_iter = d_point_drawables_map.find(point_size);
-	if (stream_iter != d_point_drawables_map.end())
-	{
-		Drawables &drawable = stream_iter->second;
-		return drawable.get_stream();
-	}
+	d_vertex_array = GPlatesOpenGL::GLVertexArray::create(renderer);
 
-	// A drawable does not yet exist for 'point_size' so create a new one.
-	Drawables &drawable = d_point_drawables_map[point_size];
+	// Attach vertex element buffer to the vertex array.
+	d_vertex_array->set_vertex_element_buffer(renderer, d_vertex_element_buffer);
 
-	// Start a new stream on the drawable.
-	drawable.begin_painting();
+	// Attach vertex buffer to the vertex array.
+	GPlatesOpenGL::bind_vertex_buffer_to_vertex_array<coloured_vertex_type>(
+			renderer, *d_vertex_array, d_vertex_buffer);
 
-	return drawable.get_stream();
-}
+	//
+	// Create the shader program to render lighting for points, lines and polygons in a 3D *globe* view.
+	//
 
+	const char *globe_view_shader_defines = "";
 
-GPlatesGui::LayerPainter::stream_primitives_type &
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_lines_stream(
-		float line_width)
-{
-	// Get the stream for lines of the current line width.
-	line_width_to_drawables_map_type::iterator stream_iter = d_line_drawables_map.find(line_width);
-	if (stream_iter != d_line_drawables_map.end())
-	{
-		Drawables &drawable = stream_iter->second;
-		return drawable.get_stream();
-	}
+	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource globe_view_vertex_shader_source;
+	globe_view_vertex_shader_source.add_shader_source(globe_view_shader_defines);
+	globe_view_vertex_shader_source.add_shader_source_from_file(
+			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	globe_view_vertex_shader_source.add_shader_source_from_file(
+			RENDER_POINT_LINE_POLYGON_LIGHTING_VERTEX_SHADER);
 
-	// A drawable does not yet exist for 'line_width' so create a new one.
-	Drawables &drawable = d_line_drawables_map[line_width];
+	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource globe_view_fragment_shader_source;
+	globe_view_fragment_shader_source.add_shader_source(globe_view_shader_defines);
+	globe_view_fragment_shader_source.add_shader_source_from_file(
+			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	globe_view_fragment_shader_source.add_shader_source_from_file(
+			RENDER_POINT_LINE_POLYGON_LIGHTING_FRAGMENT_SHADER);
 
-	// Start a new stream on the drawable.
-	drawable.begin_painting();
+	d_render_point_line_polygon_lighting_in_globe_view_program_object =
+			GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+					renderer,
+					globe_view_vertex_shader_source,
+					globe_view_fragment_shader_source);
 
-	return drawable.get_stream();
+	//
+	// Create the shader program to render lighting for points, lines and polygons in a 2D *map* view.
+	//
+
+	const char *map_view_shader_defines = "#define MAP_VIEW\n";
+
+	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource map_view_vertex_shader_source;
+	map_view_vertex_shader_source.add_shader_source(map_view_shader_defines);
+	map_view_vertex_shader_source.add_shader_source_from_file(
+			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	map_view_vertex_shader_source.add_shader_source_from_file(
+			RENDER_POINT_LINE_POLYGON_LIGHTING_VERTEX_SHADER);
+
+	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource map_view_fragment_shader_source;
+	map_view_fragment_shader_source.add_shader_source(map_view_shader_defines);
+	map_view_fragment_shader_source.add_shader_source_from_file(
+			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	map_view_fragment_shader_source.add_shader_source_from_file(
+			RENDER_POINT_LINE_POLYGON_LIGHTING_FRAGMENT_SHADER);
+
+	d_render_point_line_polygon_lighting_in_map_view_program_object =
+			GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+					renderer,
+					map_view_vertex_shader_source,
+					map_view_fragment_shader_source);
 }
 
 
@@ -255,53 +153,32 @@ void
 GPlatesGui::LayerPainter::begin_painting(
 		GPlatesOpenGL::GLRenderer &renderer)
 {
+	// The vertex buffers should have already been initialised in 'initialise()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_vertex_element_buffer && d_vertex_buffer && d_vertex_array,
+			GPLATES_ASSERTION_SOURCE);
+
 	d_renderer = renderer;
-
-	// Create the vertex buffers and array if not already done so.
-	// NOTE: These are only created *once* and re-used across paint calls.
-	if (!d_vertex_element_buffer)
-	{
-		d_vertex_element_buffer = GPlatesOpenGL::GLVertexElementBuffer::create(
-				renderer,
-				GPlatesOpenGL::GLBuffer::create(renderer));
-	}
-	if (!d_vertex_buffer)
-	{
-		d_vertex_buffer = GPlatesOpenGL::GLVertexBuffer::create(
-				renderer,
-				GPlatesOpenGL::GLBuffer::create(renderer));
-	}
-	if (!d_vertex_array)
-	{
-		d_vertex_array = GPlatesOpenGL::GLVertexArray::create(renderer);
-
-		// Attach vertex element buffer to the vertex array.
-		d_vertex_array->set_vertex_element_buffer(renderer, d_vertex_element_buffer);
-
-		// Attach vertex buffer to the vertex array.
-		GPlatesOpenGL::bind_vertex_buffer_to_vertex_array<coloured_vertex_type>(
-				renderer, *d_vertex_array, d_vertex_buffer);
-	}
 
 	drawables_off_the_sphere.begin_painting();
 	opaque_drawables_on_the_sphere.begin_painting();
 	translucent_drawables_on_the_sphere.begin_painting();
-
-	current_cube_quad_tree_location = boost::none;
 }
 
 
 GPlatesGui::LayerPainter::cache_handle_type
 GPlatesGui::LayerPainter::end_painting(
 		GPlatesOpenGL::GLRenderer &renderer,
-		PersistentOpenGLObjects &persistent_opengl_objects,
-		const TextRenderer &text_renderer,
-		float scale)
+		float scale,
+		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
 {
 	PROFILE_FUNC();
 
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// The cached view is a sequence of primitive (eg, raster) caches for the caller to keep alive until the next frame.
+	boost::shared_ptr<std::vector<cache_handle_type> > cache_handle(new std::vector<cache_handle_type>());
 
 	//
 	// The following mainly applies to the 3D globe view.
@@ -357,9 +234,48 @@ GPlatesGui::LayerPainter::end_painting(
 	//
 
 
-	// Set the alpha-blend state in case filled polygons are semi-transparent.
-	renderer.gl_enable(GL_BLEND);
-	renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	// Enable depth testing but disable depth writes by default.
+	renderer.gl_enable(GL_DEPTH_TEST, GL_TRUE);
+	renderer.gl_depth_mask(GL_FALSE);
+
+	// Paint a scalar field if there is one (note there should only be one scalar field per visual layer).
+	const cache_handle_type scalar_fields_cache_handle =
+			paint_scalar_fields(renderer, surface_occlusion_texture);
+	cache_handle->push_back(scalar_fields_cache_handle);
+
+	// Paint rasters if there are any (note there should only be one raster per visual layer).
+	// In particular pre-multiplied alpha-blending is used for reasons explained in the raster rendering code.
+	const cache_handle_type rasters_cache_handle = paint_rasters(renderer);
+	cache_handle->push_back(rasters_cache_handle);
+
+
+	// Set up alpha blending for pre-multiplied alpha.
+	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+	// This is where the RGB channels have already been multiplied by the alpha channel.
+	// See class GLVisualRasterSource for why this is done.
+	//
+	// NOTE: The points, lines, polygons, etc are rendered using anti-aliasing which generates the
+	// fragment alpha value so we cannot really pre-multiply RGB with alpha (even in a fragment shader
+	// because anti-aliasing might be coverage-based and multiplied with the fragment shader alpha).
+	// Instead we'll use separate alpha-blend (src,dst) factors for the alpha channel...
+	//
+	//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
+	//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
+	//
+	// ...this then enables use to later use (1, 1 - src_alpha) for all RGBA channels when blending
+	// the render texture into the main framebuffer (if that's how we get rendered by clients).
+	if (renderer.get_capabilities().framebuffer.gl_EXT_blend_func_separate)
+	{
+		renderer.gl_enable(GL_BLEND);
+		renderer.gl_blend_func_separate(
+				GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+				GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	}
+	else // otherwise resort to normal blending...
+	{
+		renderer.gl_enable(GL_BLEND);
+		renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
 
 	// Set the alpha-test state to reject pixels where alpha is zero (they make no
 	// change or contribution to the framebuffer) - this is an optimisation.
@@ -374,36 +290,8 @@ GPlatesGui::LayerPainter::end_painting(
 	renderer.gl_enable(GL_LINE_SMOOTH);
 	renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
-	// Turn on depth testing if the client has requested to use the depth buffer.
-	renderer.gl_enable(GL_DEPTH_TEST, d_use_depth_buffer);
-
-	// Turn off depth writes.
-	renderer.gl_depth_mask(GL_FALSE);
-
-	// Paint a raster if there is one (note there should only be one raster in a layer).
-	const cache_handle_type rasters_cache_handle = paint_rasters(renderer, persistent_opengl_objects);
-
-	{
-		// Make sure we leave the OpenGL state the way it was.
-		GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_drawables_off_sphere_state(renderer);
-
-		// Turn on depth writes.
-		// Drawables *off* the sphere is the only case where depth writes are enabled.
-		// Only enable depth writes if client requested to use the depth buffer.
-		if (d_use_depth_buffer)
-		{
-			renderer.gl_depth_mask(GL_TRUE);
-		}
-
-		// Even though these primitives are (or should be) opaque they are still rendered with
-		// polygon anti-aliasing which relies on alpha-blending (so we don't disable it here).
-		drawables_off_the_sphere.end_painting(
-				renderer,
-				*d_vertex_element_buffer->get_buffer(),
-				*d_vertex_buffer->get_buffer(),
-				*d_vertex_array,
-				persistent_opengl_objects);
-	}
+	// Turn on depth testing if not using a 2D map view.
+	renderer.gl_enable(GL_DEPTH_TEST, !d_map_projection);
 
 	// Even though these primitives are opaque they are still rendered with polygon anti-aliasing
 	// which relies on alpha-blending (so we don't disable it here).
@@ -412,17 +300,58 @@ GPlatesGui::LayerPainter::end_painting(
 			*d_vertex_element_buffer->get_buffer(),
 			*d_vertex_buffer->get_buffer(),
 			*d_vertex_array,
-			persistent_opengl_objects);
+			*d_gl_visual_layers,
+			d_map_projection,
+			d_render_point_line_polygon_lighting_in_globe_view_program_object,
+			d_render_point_line_polygon_lighting_in_map_view_program_object);
 
 	translucent_drawables_on_the_sphere.end_painting(
 			renderer,
 			*d_vertex_element_buffer->get_buffer(),
 			*d_vertex_buffer->get_buffer(),
 			*d_vertex_array,
-			persistent_opengl_objects);
+			*d_gl_visual_layers,
+			d_map_projection,
+			d_render_point_line_polygon_lighting_in_globe_view_program_object,
+			d_render_point_line_polygon_lighting_in_map_view_program_object);
+
+
+	// We rendered off-the-sphere drawables after on-the-sphere drawables because, for the 2D map views,
+	// there are no depth-writes (like there are for the 3D globe view) and hence nothing to make
+	// the off-the-sphere drawables get draw on top of everything rendered in *all* rendered layers.
+	// However we can at least make them get drawn on top *within* the current layer.
+	// An example of this is rendered velocity arrows (at topological network triangulation vertices)
+	// drawn on top of a filled topological network, both of which are generated by a single layer.
+	{
+		// Make sure we leave the OpenGL state the way it was.
+		GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_drawables_off_sphere_state(renderer);
+
+		// Turn on depth writes.
+		// Drawables *off* the sphere is the only case where depth writes are enabled.
+		// Only enable depth writes if not using a 2D map view.
+		if (!d_map_projection)
+		{
+			renderer.gl_depth_mask(GL_TRUE);
+		}
+
+		// As mentioned above these off-sphere primitives should not be rendered with any anti-aliasing
+		// (including polygon anti-aliasing - which we no longer use due to artifacts at triangle edges).
+		renderer.gl_enable(GL_POINT_SMOOTH, false);
+		renderer.gl_enable(GL_LINE_SMOOTH, false);
+
+		drawables_off_the_sphere.end_painting(
+				renderer,
+				*d_vertex_element_buffer->get_buffer(),
+				*d_vertex_buffer->get_buffer(),
+				*d_vertex_array,
+				*d_gl_visual_layers,
+				d_map_projection,
+				d_render_point_line_polygon_lighting_in_globe_view_program_object,
+				d_render_point_line_polygon_lighting_in_map_view_program_object);
+	}
 
 	// Render any 2D text last (text specified at 2D viewport positions).
-	paint_text_drawables_2D(renderer, text_renderer, scale);
+	paint_text_drawables_2D(renderer, scale);
 
 	// Render any 3D text last (text specified at 3D world positions).
 	// This is because the text is converted from 3D space to 2D window coordinates and hence is
@@ -431,42 +360,200 @@ GPlatesGui::LayerPainter::end_painting(
 	// We add it last so it gets drawn last for this layer which should put it on top.
 	// However if another rendered layer is drawn after this one then the text will be overwritten
 	// and not appear to hover in 3D space - currently it looks like the only layer that uses
-	// text is the Measure Distance tool layer and that's the last layer.
+	// text is the Measure Distance tool layer (in a canvas tools workflow rendered layer) and it
+	// should get drawn *after* all the reconstruction geometry/raster layers.
 	// Also it depends on how the text is meant to interact with other *off* the sphere geometries
 	// such as rendered arrows (should it be on top or interleave depending on depth).
 	// FIXME: We might be able to draw text as 3D and turn depth writes on (however the
 	// alpha-blending could cause some visual artifacts as described above).
-	paint_text_drawables_3D(renderer, text_renderer, scale);
+	paint_text_drawables_3D(renderer, scale);
 
 	// Only used for the duration of painting.
 	d_renderer = boost::none;
 
-	return rasters_cache_handle;
+	return cache_handle;
+}
+
+
+GPlatesGui::LayerPainter::cache_handle_type
+GPlatesGui::LayerPainter::paint_scalar_fields(
+		GPlatesOpenGL::GLRenderer &renderer,
+		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
+{
+	// Rendering 3D scalar fields not supported in 2D map views.
+	if (d_map_projection)
+	{
+		return cache_handle_type();
+	}
+
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Turn on depth writes for correct depth sorting of sub-surface geometries/fields.
+	renderer.gl_depth_mask(GL_TRUE);
+
+	// Set up scalar field alpha blending for pre-multiplied alpha.
+	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+	// This is where the RGB channels have already been multiplied by the alpha channel.
+	// See class GLVisualRasterSource for why this is done (not that we use that for 3D scalar fields).
+	//
+	// Note: The render target (main framebuffer) is fixed-point RGBA (and not floating-point) so we
+	// don't need to worry about alpha-blending not being available for floating-point render targets.
+	renderer.gl_enable(GL_BLEND, GL_TRUE);
+	renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	// No need for alpha-testing - transparent rays are culled in shader program by discarding pixel.
+
+	// The cached view is a sequence of raster caches for the caller to keep alive until the next frame.
+	boost::shared_ptr<std::vector<GPlatesOpenGL::GLVisualLayers::cache_handle_type> > cache_handle(
+			new std::vector<GPlatesOpenGL::GLVisualLayers::cache_handle_type>());
+	cache_handle->reserve(scalar_fields.size());
+
+	BOOST_FOREACH(const ScalarField3DDrawable &scalar_field_drawable, scalar_fields)
+	{
+		// We don't want to rebuild the OpenGL structures that render the scalar field each frame
+		// so those structures need to persist from one render to the next.
+		cache_handle_type scalar_field_cache_handle;
+
+		// Either render directly to the framebuffer, or render to a QImage and draw that to the
+		// feedback paint device using a QPainter.
+		if (renderer.rendering_to_context_framebuffer())
+		{
+			scalar_field_cache_handle = d_gl_visual_layers->render_scalar_field_3d(
+					renderer,
+					scalar_field_drawable.source_resolved_scalar_field,
+					scalar_field_drawable.render_parameters,
+					surface_occlusion_texture);
+			cache_handle->push_back(scalar_field_cache_handle);
+		}
+		else
+		{
+			FeedbackOpenGLToQPainter feedback_opengl;
+			FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, renderer);
+
+			// The feedback image tiling loop...
+			do
+			{
+				GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
+						image_scope.begin_render_tile();
+
+				// Adjust the current projection transform - it'll get restored before the next tile though.
+				GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
+				projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
+				renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
+
+				// Clear the framebuffer (colour and depth) before rendering each scalar field.
+				// We also clear the stencil buffer in case it is used - also it's usually
+				// interleaved with depth so it's more efficient to clear both depth and stencil.
+				renderer.gl_clear_color();
+				renderer.gl_clear_depth();
+				renderer.gl_clear_stencil();
+				renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+				scalar_field_cache_handle = d_gl_visual_layers->render_scalar_field_3d(
+						renderer,
+						scalar_field_drawable.source_resolved_scalar_field,
+						scalar_field_drawable.render_parameters,
+						surface_occlusion_texture);
+				cache_handle->push_back(scalar_field_cache_handle);
+			}
+			while (image_scope.end_render_tile());
+
+			// Draw final scalar field QImage to feedback QPainter.
+			image_scope.end_render();
+		}
+	}
+
+	// Now that the scalar fields have been rendered we should clear the drawables list for the next render call.
+	scalar_fields.clear();
+
+	return cache_handle;
 }
 
 
 GPlatesGui::LayerPainter::cache_handle_type
 GPlatesGui::LayerPainter::paint_rasters(
-		GPlatesOpenGL::GLRenderer &renderer,
-		PersistentOpenGLObjects &persistent_opengl_objects)
+		GPlatesOpenGL::GLRenderer &renderer)
 {
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Set up raster alpha blending for pre-multiplied alpha.
+	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+	// This is where the RGB channels have already been multiplied by the alpha channel.
+	// See class GLVisualRasterSource for why this is done.
+	//
+	// Note: The render target (main framebuffer) is fixed-point RGBA (and not floating-point) so we
+	// don't need to worry about alpha-blending not being available for floating-point render targets.
+	renderer.gl_enable(GL_BLEND);
+	renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Enable alpha testing as an optimisation for culling transparent raster pixels.
+	renderer.gl_enable(GL_ALPHA_TEST);
+	renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
+
 	// The cached view is a sequence of raster caches for the caller to keep alive until the next frame.
-	boost::shared_ptr<std::vector<PersistentOpenGLObjects::cache_handle_type> > cache_handle(
-			new std::vector<PersistentOpenGLObjects::cache_handle_type>());
+	boost::shared_ptr<std::vector<GPlatesOpenGL::GLVisualLayers::cache_handle_type> > cache_handle(
+			new std::vector<GPlatesOpenGL::GLVisualLayers::cache_handle_type>());
 	cache_handle->reserve(rasters.size());
 
 	BOOST_FOREACH(const RasterDrawable &raster_drawable, rasters)
 	{
 		// We don't want to rebuild the OpenGL structures that render the raster each frame
 		// so those structures need to persist from one render to the next.
-		const cache_handle_type raster_cache_handle = persistent_opengl_objects.render_raster(
-				renderer,
-				raster_drawable.source_resolved_raster,
-				raster_drawable.source_raster_colour_palette,
-				raster_drawable.source_raster_modulate_colour,
-				raster_drawable.map_projection);
+		cache_handle_type raster_cache_handle;
 
-		cache_handle->push_back(raster_cache_handle);
+		// Either render directly to the framebuffer, or render to a QImage and draw that to the
+		// feedback paint device using a QPainter.
+		if (renderer.rendering_to_context_framebuffer())
+		{
+			raster_cache_handle = d_gl_visual_layers->render_raster(
+					renderer,
+					raster_drawable.source_resolved_raster,
+					raster_drawable.source_raster_colour_palette,
+					raster_drawable.source_raster_modulate_colour,
+					raster_drawable.normal_map_height_field_scale_factor,
+					d_map_projection);
+			cache_handle->push_back(raster_cache_handle);
+		}
+		else
+		{
+			FeedbackOpenGLToQPainter feedback_opengl;
+			FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, renderer);
+
+			// The feedback image tiling loop...
+			do
+			{
+				GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
+						image_scope.begin_render_tile();
+
+				// Adjust the current projection transform - it'll get restored before the next tile though.
+				GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
+				projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
+				renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
+
+				// Clear the framebuffer (colour and depth) before rendering each raster.
+				// We also clear the stencil buffer in case it is used - also it's usually
+				// interleaved with depth so it's more efficient to clear both depth and stencil.
+				renderer.gl_clear_color();
+				renderer.gl_clear_depth();
+				renderer.gl_clear_stencil();
+				renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+				raster_cache_handle = d_gl_visual_layers->render_raster(
+						renderer,
+						raster_drawable.source_resolved_raster,
+						raster_drawable.source_raster_colour_palette,
+						raster_drawable.source_raster_modulate_colour,
+						raster_drawable.normal_map_height_field_scale_factor,
+						d_map_projection);
+				cache_handle->push_back(raster_cache_handle);
+			}
+			while (image_scope.end_render_tile());
+
+			// Draw final raster QImage to feedback QPainter.
+			image_scope.end_render();
+		}
 	}
 
 	// Now that the rasters have been rendered we should clear the drawables list for the next render call.
@@ -479,7 +566,6 @@ GPlatesGui::LayerPainter::paint_rasters(
 void
 GPlatesGui::LayerPainter::paint_text_drawables_2D(
 		GPlatesOpenGL::GLRenderer &renderer,
-		const TextRenderer &text_renderer,
 		float scale)
 {
 	BOOST_FOREACH(const TextDrawable2D &text_drawable, text_drawables_2D)
@@ -489,7 +575,6 @@ GPlatesGui::LayerPainter::paint_text_drawables_2D(
 		{
 			GPlatesOpenGL::GLText::render_text_2D(
 					renderer,
-					text_renderer,
 					text_drawable.world_x,
 					text_drawable.world_y,
 					text_drawable.text,
@@ -506,7 +591,6 @@ GPlatesGui::LayerPainter::paint_text_drawables_2D(
 		{
 			GPlatesOpenGL::GLText::render_text_2D(
 					renderer,
-					text_renderer,
 					text_drawable.world_x,
 					text_drawable.world_y,
 					text_drawable.text,
@@ -526,7 +610,6 @@ GPlatesGui::LayerPainter::paint_text_drawables_2D(
 void
 GPlatesGui::LayerPainter::paint_text_drawables_3D(
 		GPlatesOpenGL::GLRenderer &renderer,
-		const TextRenderer &text_renderer,
 		float scale)
 {
 	BOOST_FOREACH(const TextDrawable3D &text_drawable, text_drawables_3D)
@@ -536,7 +619,6 @@ GPlatesGui::LayerPainter::paint_text_drawables_3D(
 		{
 			GPlatesOpenGL::GLText::render_text_3D(
 					renderer,
-					text_renderer,
 					text_drawable.world_position.x().dval(),
 					text_drawable.world_position.y().dval(),
 					text_drawable.world_position.z().dval(),
@@ -554,7 +636,6 @@ GPlatesGui::LayerPainter::paint_text_drawables_3D(
 		{
 			GPlatesOpenGL::GLText::render_text_3D(
 					renderer,
-					text_renderer,
 					text_drawable.world_position.x().dval(),
 					text_drawable.world_position.y().dval(),
 					text_drawable.world_position.z().dval(),
@@ -569,4 +650,449 @@ GPlatesGui::LayerPainter::paint_text_drawables_3D(
 
 	// Now that the text has been rendered we should clear the drawables list for the next render call.
 	text_drawables_3D.clear();
+}
+
+
+void
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::begin_painting()
+{
+	d_triangle_drawables.begin_painting();
+
+	// There are multiple point and line categories depending on point sizes and line widths so
+	// we only begin painting on those when we encounter a new point size or line width.
+}
+
+
+void
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
+		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
+		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
+		GPlatesOpenGL::GLVertexArray &vertex_array,
+		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+				render_point_line_polygon_lighting_in_globe_view_program_object,
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+				render_point_line_polygon_lighting_in_map_view_program_object)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// If any rendered polygons (or polylines) are 'filled' then render them first.
+	// This way any vector geometry in this layer gets rendered on top and hence is visible.
+	paint_filled_polygons(renderer, gl_visual_layers, map_projection);
+
+	//
+	// Set up for rendering points, lines and polygons.
+	//
+
+	// All painting below uses the one vertex array so we only need to bind it once (here).
+	// Note that the filled polygons above uses it own vertex array(s).
+	vertex_array.gl_bind(renderer);
+
+	//
+	// Apply lighting if it's enabled and the runtime system supports it.
+	//
+
+	// If we are not rendering to the framebuffer then we need to use OpenGL feedback in order to
+	// render to the QPainter's paint device. Currently we're using base OpenGL feedback which only
+	// works with the fixed-function pipeline - so we turn off shaders.
+	// TODO: Implement OpenGL 2/3 feedback extensions to enable feedback from vertex shaders.
+	if (renderer.rendering_to_context_framebuffer())
+	{
+		// Get the OpenGL light if the runtime system supports it.
+		boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light =
+				gl_visual_layers.get_light(renderer);
+
+		// Use shader program (if supported) if lighting is enabled, otherwise the fixed-function pipeline (default).
+		// The shader program enables lighting of the point/polyline/polygon geometries.
+		if (gl_light &&
+			gl_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
+					GPlatesGui::SceneLightingParameters::LIGHTING_POINT_POLYLINE_POLYGON))
+		{
+			if (map_projection)
+			{
+				if (render_point_line_polygon_lighting_in_map_view_program_object)
+				{
+					// Bind the shader program.
+					renderer.gl_bind_program_object(render_point_line_polygon_lighting_in_map_view_program_object.get());
+
+					// Set the (ambient+diffuse) lighting.
+					// For the 2D map views this is constant across the map since the surface normal is
+					// constant (it's a flat surface unlike the globe).
+					render_point_line_polygon_lighting_in_map_view_program_object.get()->gl_uniform1f(
+							renderer,
+							"ambient_and_diffuse_lighting",
+							gl_light.get()->get_map_view_constant_lighting(renderer));
+				}
+			}
+			else // globe view ...
+			{
+				if (render_point_line_polygon_lighting_in_globe_view_program_object)
+				{
+					// Bind the shader program.
+					renderer.gl_bind_program_object(render_point_line_polygon_lighting_in_globe_view_program_object.get());
+
+					// Set the world-space light direction.
+					render_point_line_polygon_lighting_in_globe_view_program_object.get()->gl_uniform3f(
+							renderer,
+							"world_space_light_direction",
+							gl_light.get()->get_globe_view_light_direction(renderer));
+
+					// Set the light ambient contribution.
+					render_point_line_polygon_lighting_in_globe_view_program_object.get()->gl_uniform1f(
+							renderer,
+							"light_ambient_contribution",
+							gl_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
+				}
+			}
+		}
+	}
+
+	//
+	// Paint the point, line and polygon drawables with the appropriate state
+	// (such as point size, line width).
+	//
+	// Draw polygons first then lines then points so that points appear on top of lines which
+	// appear on top of polygons.
+	//
+
+	//
+	// Paint the drawable representing all triangle primitives (if any).
+	//
+
+#if 0 // NOTE: This causes transparent edges between adjacent triangles in a mesh so we don't enable it...
+	// Set the anti-aliased polygon state.
+ 	renderer.gl_enable(GL_POLYGON_SMOOTH);
+ 	renderer.gl_hint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+#endif
+
+	d_triangle_drawables.end_painting(
+			renderer,
+			vertex_element_buffer_data,
+			vertex_buffer_data,
+			vertex_array,
+			GL_TRIANGLES);
+
+	//
+	// Paint the drawables representing all line primitives (if any).
+	//
+
+	// Iterate over the line width groups and paint them.
+	BOOST_FOREACH(line_width_to_drawables_map_type::value_type &line_width_entry, d_line_drawables_map)
+	{
+		const float line_width = line_width_entry.first.dval();
+		Drawables &lines_drawable = line_width_entry.second;
+
+		// Set the line width for the current group of lines.
+		renderer.gl_line_width(line_width);
+
+		lines_drawable.end_painting(
+				renderer,
+				vertex_element_buffer_data,
+				vertex_buffer_data,
+				vertex_array,
+				GL_LINES);
+	}
+
+	// Clear the lines drawables because the next render may have a different collection of line widths.
+	d_line_drawables_map.clear();
+
+	//
+	// Paint the drawables representing all point primitives (if any).
+	//
+
+	// Iterate over the point size groups and paint them.
+	BOOST_FOREACH(point_size_to_drawables_map_type::value_type &point_size_entry, d_point_drawables_map)
+	{
+		const float point_size = point_size_entry.first.dval();
+		Drawables &points_drawable = point_size_entry.second;
+
+		// Set the point size for the current group of points.
+		renderer.gl_point_size(point_size);
+
+		points_drawable.end_painting(
+				renderer,
+				vertex_element_buffer_data,
+				vertex_buffer_data,
+				vertex_array,
+				GL_POINTS);
+	}
+
+	// Clear the points drawables because the next render may have a different collection of point sizes.
+	d_point_drawables_map.clear();
+}
+
+
+GPlatesGui::LayerPainter::stream_primitives_type &
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_points_stream(
+		float point_size)
+{
+	// Get the stream for points of the current point size.
+	point_size_to_drawables_map_type::iterator stream_iter = d_point_drawables_map.find(point_size);
+	if (stream_iter != d_point_drawables_map.end())
+	{
+		Drawables &drawable = stream_iter->second;
+		return drawable.get_stream();
+	}
+
+	// A drawable does not yet exist for 'point_size' so create a new one.
+	Drawables &drawable = d_point_drawables_map[point_size];
+
+	// Start a new stream on the drawable.
+	drawable.begin_painting();
+
+	return drawable.get_stream();
+}
+
+
+GPlatesGui::LayerPainter::stream_primitives_type &
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_lines_stream(
+		float line_width)
+{
+	// Get the stream for lines of the current line width.
+	line_width_to_drawables_map_type::iterator stream_iter = d_line_drawables_map.find(line_width);
+	if (stream_iter != d_line_drawables_map.end())
+	{
+		Drawables &drawable = stream_iter->second;
+		return drawable.get_stream();
+	}
+
+	// A drawable does not yet exist for 'line_width' so create a new one.
+	Drawables &drawable = d_line_drawables_map[line_width];
+
+	// Start a new stream on the drawable.
+	drawable.begin_painting();
+
+	return drawable.get_stream();
+}
+
+
+GPlatesGui::LayerPainter::stream_primitives_type &
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_triangles_stream()
+{
+	return d_triangle_drawables.get_stream();
+}
+
+
+void
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
+		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection)
+{
+	// Return early if nothing to render.
+	if (map_projection) // Rendering to a 2D map view...
+	{
+		if (d_filled_polygons_map_view.empty())
+		{
+			return;
+		}
+	}
+	else // Rendering to the 3D globe view...
+	{
+		if (d_filled_polygons_globe_view.empty())
+		{
+			return;
+		}
+	}
+
+	// Filled polygons are rendered as rasters (textures) and hence the state set here
+	// is similar (in fact identical) to the state set for rasters.
+	//
+	// Either render directly to the framebuffer, or render to a QImage and draw that to the
+	// feedback paint device using a QPainter. We render filled polygons to an image instead of
+	// as vector geometries because filled polygons are actually rendered as a raster.
+	if (renderer.rendering_to_context_framebuffer())
+	{
+		if (map_projection) // Rendering to a 2D map view...
+		{
+			gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons_map_view);
+		}
+		else // Rendering to the 3D globe view...
+		{
+			gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons_globe_view);
+		}
+	}
+	else
+	{
+		FeedbackOpenGLToQPainter feedback_opengl;
+		FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, renderer);
+
+		// The feedback image tiling loop...
+		do
+		{
+			GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
+					image_scope.begin_render_tile();
+
+			// Adjust the current projection transform - it'll get restored before the next tile though.
+			GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
+			projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
+			renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
+
+			// Clear the framebuffer (colour and depth) before rendering the filled polygons.
+			// We also clear the stencil buffer since it is used when filling polygons - also it's
+			// usually interleaved with depth so it's more efficient to clear both depth and stencil.
+			renderer.gl_clear_color();
+			renderer.gl_clear_depth();
+			renderer.gl_clear_stencil();
+			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+			if (map_projection) // Rendering to a 2D map view...
+			{
+				gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons_map_view);
+			}
+			else // Rendering to the 3D globe view...
+			{
+				gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons_globe_view);
+			}
+		}
+		while (image_scope.end_render_tile());
+
+		// Draw final raster QImage to feedback QPainter.
+		image_scope.end_render();
+	}
+
+	// Now that the filled polygons have been rendered we should clear them for the next render call.
+	if (map_projection) // Rendering to a 2D map view...
+	{
+		d_filled_polygons_map_view.clear();
+	}
+	else // Rendering to the 3D globe view...
+	{
+		d_filled_polygons_globe_view.clear();
+	}
+}
+
+
+void
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::begin_painting()
+{
+	// Create the stream.
+	d_stream.reset(new Stream());
+
+	// The stream should target our internal vertices/indices.
+	d_stream->stream_target.start_streaming(
+			boost::in_place(boost::ref(d_vertices)),
+			boost::in_place(boost::ref(d_vertex_elements)));
+}
+
+
+void
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::end_painting(
+		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
+		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
+		GPlatesOpenGL::GLVertexArray &vertex_array,
+		GLenum mode)
+{
+	// The stream should have already been created in 'begin_painting()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_stream,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Stop targeting our internal vertices/indices.
+	d_stream->stream_target.stop_streaming();
+
+	// If there are primitives to draw...
+	if (!d_vertex_elements.empty())
+	{
+		// Either render directly to the framebuffer, or use OpenGL feedback to render to the
+		// QPainter's paint device.
+		if (renderer.rendering_to_context_framebuffer())
+		{
+			draw_primitives(renderer, vertex_element_buffer_data, vertex_buffer_data, vertex_array, mode);
+		}
+		else
+		{
+			draw_feedback_primitives_to_qpainter(
+					renderer, vertex_element_buffer_data, vertex_buffer_data, vertex_array, mode);
+		}
+	}
+
+	// Destroy the stream.
+	d_stream.reset();
+
+	d_vertex_elements.clear();
+	d_vertices.clear();
+}
+
+
+void
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::draw_primitives(
+		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
+		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
+		GPlatesOpenGL::GLVertexArray &vertex_array,
+		GLenum mode)
+{
+	// Stream the vertex elements.
+	vertex_element_buffer_data.gl_buffer_data(
+			renderer,
+			GPlatesOpenGL::GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
+			d_vertex_elements,
+			GPlatesOpenGL::GLBuffer::USAGE_STREAM_DRAW);
+
+	// Stream the vertices.
+	vertex_buffer_data.gl_buffer_data(
+			renderer,
+			GPlatesOpenGL::GLBuffer::TARGET_ARRAY_BUFFER,
+			d_vertices,
+			GPlatesOpenGL::GLBuffer::USAGE_STREAM_DRAW);
+
+	// Draw the primitives.
+	// NOTE: The caller has already bound this vertex array.
+	vertex_array.gl_draw_range_elements(
+			renderer,
+			mode,
+			0/*start*/,
+			d_vertices.size() - 1/*end*/,
+			d_vertex_elements.size()/*count*/,
+			GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::type,
+			0/*indices_offset*/);
+}
+
+
+void
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::draw_feedback_primitives_to_qpainter(
+		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
+		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
+		GPlatesOpenGL::GLVertexArray &vertex_array,
+		GLenum mode)
+{
+	// Determine the number of points/lines/triangles we're about to render.
+	unsigned int max_num_points = 0;
+	unsigned int max_num_lines = 0;
+	unsigned int max_num_triangles = 0;
+
+	if (mode == GL_POINTS)
+	{
+		max_num_points += d_vertex_elements.size();
+	}
+	else if (mode == GL_LINES)
+	{
+		max_num_lines += d_vertex_elements.size() / 2;
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				mode == GL_TRIANGLES,
+				GPLATES_ASSERTION_SOURCE);
+
+		max_num_triangles += d_vertex_elements.size() / 3;
+	}
+
+	// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
+	// We are rendering to the QPainter attached to GLRenderer.
+	FeedbackOpenGLToQPainter feedback_opengl;
+	FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
+			feedback_opengl,
+			renderer,
+			max_num_points,
+			max_num_lines,
+			max_num_triangles);
+
+	draw_primitives(renderer, vertex_element_buffer_data, vertex_buffer_data, vertex_array, mode);
 }

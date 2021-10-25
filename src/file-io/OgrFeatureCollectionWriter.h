@@ -50,6 +50,11 @@
 #include "model/PropertyName.h"
 
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesFileIO
 {
 	namespace FeatureCollectionFileFormat
@@ -78,7 +83,8 @@ namespace GPlatesFileIO
 		explicit
 		OgrFeatureCollectionWriter(
 				File::Reference &file_ref,
-				const boost::shared_ptr<const FeatureCollectionFileFormat::OGRConfiguration> &default_file_configuration);
+				const boost::shared_ptr<const FeatureCollectionFileFormat::OGRConfiguration> &default_file_configuration,
+				const GPlatesModel::Gpgim &gpgim);
 
 		virtual
 			~OgrFeatureCollectionWriter()

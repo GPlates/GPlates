@@ -23,10 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "ReconstructMethodFlowline.h"
 
+#include "GeometryUtils.h"
 #include "FlowlineGeometryPopulator.h"
 #include "FlowlineUtils.h"
 #include "ReconstructUtils.h"
@@ -130,46 +132,162 @@ GPlatesAppLogic::ReconstructMethodFlowline::can_reconstruct_feature(
 
 
 void
-GPlatesAppLogic::ReconstructMethodFlowline::get_present_day_geometries(
-		std::vector<Geometry> &present_day_geometries,
-		const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref) const
+GPlatesAppLogic::ReconstructMethodFlowline::get_present_day_feature_geometries(
+		std::vector<Geometry> &present_day_geometries) const
 {
 	GetPresentDayGeometries visitor(present_day_geometries);
 
-	visitor.visit_feature(feature_weak_ref);
+	visitor.visit_feature(get_feature_ref());
 }
 
 
 void
-GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature(
+GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature_geometries(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
-		const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref,
-		const ReconstructHandle::type &/*reconstruct_handle*/,
-		const ReconstructParams &/*reconstruct_params*/,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const ReconstructHandle::type &reconstruct_handle,
+		const Context &context,
 		const double &reconstruction_time)
 {
 	FlowlineGeometryPopulator visitor(
 			reconstructed_feature_geometries,
-			reconstruction_tree_creator,
+			context.reconstruction_tree_creator,
 			reconstruction_time);
 
-	visitor.visit_feature(feature_weak_ref);
+	visitor.visit_feature(get_feature_ref());
+}
+
+
+void
+GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature_velocities(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+		const ReconstructHandle::type &reconstruct_handle,
+		const Context &context,
+		const double &reconstruction_time)
+{
+	// Get some flowline properties.
+	FlowlineUtils::FlowlinePropertyFinder flowline_property_finder(reconstruction_time);
+	flowline_property_finder.visit_feature(get_feature_ref());
+
+    if (!flowline_property_finder.can_process_seed_point() ||
+		!flowline_property_finder.can_process_flowline())
+    {
+		return;
+    }
+
+	//
+	// FIXME: I'm not sure if the following velocity calculation is correct.
+	// Need to go through FlowlineUtils to see how flowlines are reconstructed.
+	// For now we'll just calculate the velocity at the seed point at the current reconstruction time.
+	//
+
+	// If we can't get left/right plate IDs then we'll just use plate id zero (spin axis)
+	// which can still give a non-identity rotation if the anchor plate id is non-zero.
+	GPlatesModel::integer_plate_id_type left_plate_id = 0;
+	GPlatesModel::integer_plate_id_type right_plate_id = 0;
+	if (flowline_property_finder.get_left_plate())
+	{
+		left_plate_id = flowline_property_finder.get_left_plate().get();
+	}
+	if (flowline_property_finder.get_right_plate())
+	{
+		right_plate_id = flowline_property_finder.get_right_plate().get();
+	}
+
+	// Iterate over the feature's present day geometries and rotate each one.
+	std::vector<Geometry> present_day_geometries;
+	get_present_day_feature_geometries(present_day_geometries);
+	BOOST_FOREACH(const Geometry &present_day_geometry, present_day_geometries)
+	{
+		const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
+				context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
+		const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_2 =
+				context.reconstruction_tree_creator.get_reconstruction_tree(
+						// FIXME:  Should this '1' should be user controllable? ...
+						reconstruction_time + 1);
+
+		// Get the half-stage rotation.
+		const GPlatesMaths::FiniteRotation finite_rotation = ReconstructUtils::get_half_stage_rotation(
+				*reconstruction_tree,
+				left_plate_id,
+				right_plate_id);
+		const GPlatesMaths::FiniteRotation finite_rotation_2 = ReconstructUtils::get_half_stage_rotation(
+				*reconstruction_tree_2,
+				left_plate_id,
+				right_plate_id);
+
+		// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
+		// that stores a multi-point domain and a corresponding velocity field but the
+		// geometry property iterator (referenced by the MultiPointVectorField) could be a
+		// non-multi-point geometry.
+		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type velocity_domain =
+				GeometryUtils::convert_geometry_to_multi_point(*present_day_geometry.geometry);
+
+		// Rotate the velocity domain.
+		// We do this even if the plate id is zero because the anchor plate might be non-zero.
+		velocity_domain = finite_rotation * velocity_domain;
+
+		// Create an RFG purely for the purpose of representing the feature that generated the
+		// plate ID (ie, this feature).
+		// This is required in order for the velocity arrows to be coloured correctly -
+		// because the colouring code requires a reconstruction geometry (it will then
+		// lookup the plate ID or other feature property(s) depending on the colour scheme).
+		const ReconstructedFeatureGeometry::non_null_ptr_type plate_id_rfg =
+				ReconstructedFeatureGeometry::create(
+						reconstruction_tree,
+						context.reconstruction_tree_creator,
+						*get_feature_ref(),
+						present_day_geometry.property_iterator,
+						velocity_domain,
+						ReconstructMethod::FLOWLINE,
+						flowline_property_finder.get_reconstruction_plate_id(),
+						flowline_property_finder.get_time_of_appearance(),
+						reconstruct_handle);
+
+		GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = velocity_domain->begin();
+		GPlatesMaths::MultiPointOnSphere::const_iterator domain_end = velocity_domain->end();
+
+		MultiPointVectorField::non_null_ptr_type vector_field =
+				MultiPointVectorField::create_empty(
+						reconstruction_time,
+						velocity_domain,
+						*get_feature_ref(),
+						present_day_geometry.property_iterator,
+						reconstruct_handle);
+		MultiPointVectorField::codomain_type::iterator field_iter = vector_field->begin();
+
+		// Iterate over the domain points and calculate their velocities.
+		for ( ; domain_iter != domain_end; ++domain_iter, ++field_iter)
+		{
+			// Calculate the velocity.
+			const GPlatesMaths::Vector3D vector_xyz =
+					GPlatesMaths::calculate_velocity_vector(
+							*domain_iter,
+							finite_rotation,
+							finite_rotation_2);
+
+			*field_iter = MultiPointVectorField::CodomainElement(
+					vector_xyz,
+					MultiPointVectorField::CodomainElement::ReconstructedDomainPoint,
+					flowline_property_finder.get_reconstruction_plate_id(),
+					ReconstructionGeometry::maybe_null_ptr_to_const_type(plate_id_rfg.get()));
+		}
+
+		reconstructed_feature_velocities.push_back(vector_field);
+	}
 }
 
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_geometry(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const Context &context,
 		const double &reconstruction_time,
 		bool reverse_reconstruct)
 {
     return GPlatesAppLogic::FlowlineUtils::reconstruct_flowline_seed_points(
 			geometry,
 			reconstruction_time,
-			reconstruction_tree_creator,
-			reconstruction_properties,
+			context.reconstruction_tree_creator,
+			get_feature_ref(),
 			reverse_reconstruct);
 }

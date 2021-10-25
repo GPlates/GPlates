@@ -34,8 +34,9 @@
 #include "LayerProxyUtils.h"
 #include "ReconstructionLayerProxy.h"
 #include "ReconstructLayerProxy.h"
-#include "TopologyBoundaryResolverLayerProxy.h"
+#include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
+#include "VelocityFieldCalculatorLayerTask.h"
 
 #include "utils/SubjectObserverToken.h"
 
@@ -63,9 +64,10 @@ namespace GPlatesAppLogic
 		 */
 		static
 		non_null_ptr_type
-		create()
+		create(
+				VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method)
 		{
-			return non_null_ptr_type(new VelocityFieldCalculatorLayerProxy());
+			return non_null_ptr_type(new VelocityFieldCalculatorLayerProxy(solve_velocities_method));
 		}
 
 
@@ -139,11 +141,25 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time);
 
 		/**
-		 * Set the reconstruction layer proxy.
+		 * Sets the velocity calculation method.
 		 */
 		void
-		set_current_reconstruction_layer_proxy(
-				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy);
+		set_solve_velocities_method(
+				VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method);
+
+		/**
+		 * Add a velocity domain layer proxy.
+		 */
+		void
+		add_velocity_domain_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &velocity_domain_layer_proxy);
+
+		/**
+		 * Remove a velocity domain layer proxy.
+		 */
+		void
+		remove_velocity_domain_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &velocity_domain_layer_proxy);
 
 		/**
 		 * Add a reconstructed static polygons layer proxy.
@@ -164,14 +180,14 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_topological_boundary_resolver_layer_proxy(
-				const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
 
 		/**
 		 * Remove a topological boundary resolver layer proxy.
 		 */
 		void
 		remove_topological_boundary_resolver_layer_proxy(
-				const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
 
 		/**
 		 * Add a topological network resolver layer proxy.
@@ -187,47 +203,18 @@ namespace GPlatesAppLogic
 		remove_topological_network_resolver_layer_proxy(
 				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy);
 
-		/**
-		 * Add to the list of feature collections containing multi-point geometries.
-		 */
-		void
-		add_multi_point_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
-
-		/**
-		 * Remove from the list of feature collections containing multi-point geometries.
-		 */
-		void
-		remove_multi_point_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
-
-		/**
-		 * A feature collection containing multi-point geometries was modified.
-		 */
-		void
-		modified_multi_point_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
-
 	private:
-		/**
-		 * The input feature collections containing the points at which to calculate velocities.
-		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_multi_point_feature_collections;
-
-		/**
-		 * Used to get reconstruction trees at desired reconstruction times.
-		 */
-		LayerProxyUtils::InputLayerProxy<ReconstructionLayerProxy> d_current_reconstruction_layer_proxy;
 
 		/**
 		 * Used to get reconstructed static polygon surfaces to calculate velocities on.
 		 */
-		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy> d_current_reconstructed_polygon_layer_proxies;
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
+				d_current_reconstructed_polygon_layer_proxies;
 
 		/**
 		 * Used to get resolved topology boundary surfaces to calculate velocities on.
 		 */
-		LayerProxyUtils::InputLayerProxySequence<TopologyBoundaryResolverLayerProxy>
+		LayerProxyUtils::InputLayerProxySequence<TopologyGeometryResolverLayerProxy>
 				d_current_topological_boundary_resolver_layer_proxies;
 
 		/**
@@ -237,9 +224,20 @@ namespace GPlatesAppLogic
 				d_current_topological_network_resolver_layer_proxies;
 
 		/**
+		 * Used to get velocity domain geometries to calculate velocities at.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
+				d_current_velocity_domain_layer_proxies;
+
+		/**
 		 * The current reconstruction time as set by the layer system.
 		 */
 		double d_current_reconstruction_time;
+
+		/**
+		 * The current method to calculate velocities.
+		 */
+		VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType d_current_solve_velocities_method;
 
 		/**
 		 * The cached velocities.
@@ -259,7 +257,9 @@ namespace GPlatesAppLogic
 
 
 		//! Default constructor.
-		VelocityFieldCalculatorLayerProxy();
+		explicit
+		VelocityFieldCalculatorLayerProxy(
+				VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method);
 
 
 		/**

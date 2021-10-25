@@ -61,7 +61,7 @@ namespace GPlatesCli
 		std::string
 		get_command_description() const
 		{
-			return "reconstructs loaded feature collections";
+			return "reconstruct loaded feature collections to a paleo time";
 		}
 
 
@@ -77,12 +77,12 @@ namespace GPlatesCli
 
 		//! Interprets the parsed command-line and config file options stored in @a vm and runs this command.
 		virtual
-		int
+		void
 		run(
 				const boost::program_options::variables_map &vm);
 
 	private:
-		typedef std::vector<GPlatesFileIO::File::non_null_ptr_type>
+		typedef std::vector<GPlatesFileIO::File::Reference::non_null_ptr_type>
 				loaded_feature_collection_file_seq_type;
 
 		GPlatesModel::ModelInterface d_model;
@@ -97,6 +97,26 @@ namespace GPlatesCli
 		 * If this is false then there is an output file for each input file.
 		 */
 		bool d_export_single_output_file;
+
+		/**
+		 * If 'true' then the *multiple* export files will follow the pattern...
+		 *
+		 *   "<export_path>/<collection_filename>/<export_template_filename>"
+		 *
+		 * ...otherwise they will follow the pattern...
+		 *
+		 *   "<export_path>/<collection_filename>_<export_template_filename>"
+		 *
+		 * NOTE: This option only applies if @a d_export_single_output_file is 'false'.
+		 */
+		bool d_export_separate_output_directory_per_input_file;
+
+		/**
+		 * Wraps reconstructed geometries to the dateline.
+		 *
+		 * This currently only applies to Shapefiles.
+		 */
+		bool d_wrap_to_dateline;
 	};
 }
 

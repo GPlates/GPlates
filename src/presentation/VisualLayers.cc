@@ -43,7 +43,6 @@
 #include "view-operations/RenderedGeometryLayer.h"
 #include "utils/Profile.h"
 
-
 GPlatesPresentation::VisualLayers::VisualLayers(
 		GPlatesAppLogic::ApplicationState &application_state,
 		ViewState &view_state,
@@ -209,6 +208,16 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 	GPlatesAppLogic::ReconstructGraph *reconstruct_graph = &d_application_state.get_reconstruct_graph();
 	QObject::connect(
 			reconstruct_graph,
+			SIGNAL(begin_add_or_remove_layers()),
+			this,
+			SLOT(handle_begin_add_or_remove_layers()));
+	QObject::connect(
+			reconstruct_graph,
+			SIGNAL(end_add_or_remove_layers()),
+			this,
+			SLOT(handle_end_add_or_remove_layers()));
+	QObject::connect(
+			reconstruct_graph,
 			SIGNAL(layer_added(
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer)),
@@ -287,6 +296,20 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 
 
 void
+GPlatesPresentation::VisualLayers::handle_begin_add_or_remove_layers()
+{
+	Q_EMIT begin_add_or_remove_layers();
+}
+
+
+void
+GPlatesPresentation::VisualLayers::handle_end_add_or_remove_layers()
+{
+	Q_EMIT end_add_or_remove_layers();
+}
+
+
+void
 GPlatesPresentation::VisualLayers::handle_layer_added(
 		GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 		GPlatesAppLogic::Layer layer)
@@ -301,7 +324,7 @@ GPlatesPresentation::VisualLayers::add_layer(
 {
 	// Work out where the new layer should go.
 	std::size_t new_index = get_index_of_new_layer(static_cast<VisualLayerType::Type>(layer.get_type()));;
-	emit layer_about_to_be_added(new_index);
+	Q_EMIT layer_about_to_be_added(new_index);
 
 	// Create a new visual layer.
 	const visual_layer_ptr_type visual_layer = create_visual_layer(layer);
@@ -320,9 +343,9 @@ GPlatesPresentation::VisualLayers::add_layer(
 				visual_layer->get_rendered_geometry_layer_index(),
 				visual_layer));
 
-	emit layer_added(new_index);
-	emit layer_added(visual_layer);
-	emit changed();
+	Q_EMIT layer_added(new_index);
+	Q_EMIT layer_added(visual_layer);
+	Q_EMIT changed();
 }
 
 
@@ -426,13 +449,13 @@ GPlatesPresentation::VisualLayers::remove_layer(
 	{
 		size_t order_seq_index = layer_order_iter - d_layer_order.begin();
 
-		emit layer_about_to_be_removed(order_seq_index);
-		emit layer_about_to_be_removed(visual_layer);
+		Q_EMIT layer_about_to_be_removed(order_seq_index);
+		Q_EMIT layer_about_to_be_removed(visual_layer);
 
 		d_layer_order.erase(layer_order_iter);
 
-		emit layer_removed(order_seq_index);
-		emit changed();
+		Q_EMIT layer_removed(order_seq_index);
+		Q_EMIT changed();
 	}
 
 	// Also remove the entry from the map from layer index to visual layer.
@@ -545,7 +568,7 @@ GPlatesPresentation::VisualLayers::move_layer(
 				std::back_inserter(new_order));
 
 		std::swap(d_layer_order, new_order);
-		emit layer_order_changed(from_index, to_index);
+		Q_EMIT layer_order_changed(from_index, to_index);
 	}
 	else // (to_index < from_index)
 	{
@@ -573,9 +596,9 @@ GPlatesPresentation::VisualLayers::move_layer(
 				std::back_inserter(new_order));
 
 		std::swap(d_layer_order, new_order);
-		emit layer_order_changed(to_index, from_index);
+		Q_EMIT layer_order_changed(to_index, from_index);
 	}
-	emit changed();
+	Q_EMIT changed();
 
 	// FIXME: There has to be a better way, but let's just do a full reconstruction
 	// so the changes in layer ordering get reflected in the main window.
@@ -676,16 +699,16 @@ GPlatesPresentation::VisualLayers::refresh_all_layers()
 	for (index_map_type::const_iterator index_iter = d_index_map.begin();
 			index_iter != d_index_map.end(); ++index_iter)
 	{
-		emit layer_modified(index_iter->second);
+		Q_EMIT layer_modified(index_iter->second);
 	}
 
 	// Emit version of layer_modified that provides an index.
 	for (size_t i = 0; i != d_layer_order.size(); ++i)
 	{
-		emit layer_modified(i);
+		Q_EMIT layer_modified(i);
 	}
 
-	emit changed();
+	Q_EMIT changed();
 }
 
 
@@ -705,9 +728,9 @@ GPlatesPresentation::VisualLayers::emit_layer_modified(
 		std::find(d_layer_order.begin(), d_layer_order.end(), index);
 	if (order_iter != d_layer_order.end())
 	{
-		emit layer_modified(index_iter->second);
-		emit layer_modified(order_iter - d_layer_order.begin());
-		emit changed();
+		Q_EMIT layer_modified(index_iter->second);
+		Q_EMIT layer_modified(order_iter - d_layer_order.begin());
+		Q_EMIT changed();
 	}
 }
 

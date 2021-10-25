@@ -35,6 +35,7 @@
 
 #include "GLRenderer.h"
 #include "GLTexture.h"
+#include "GLUtils.h"
 
 
 GLenum
@@ -52,12 +53,15 @@ GPlatesOpenGL::GLPixelBufferObject::get_pack_target_type()
 
 
 GPlatesOpenGL::GLPixelBufferObject::GLPixelBufferObject(
+		GLRenderer &renderer,
 		const GLBufferObject::shared_ptr_type &buffer) :
 	d_buffer(buffer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// We should only get here if the pixel buffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_pixel_buffer_object),
+			capabilities.buffer.gl_ARB_pixel_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -84,6 +88,23 @@ GPlatesOpenGL::GLPixelBufferObject::gl_bind_pack(
 {
 	renderer.gl_bind_pixel_pack_buffer_object(
 			boost::dynamic_pointer_cast<const GLPixelBufferObject>(shared_from_this()));
+}
+
+
+void
+GPlatesOpenGL::GLPixelBufferObject::gl_draw_pixels(
+		GLRenderer &renderer,
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		GLint offset)
+{
+	// Use the overload that doesn't require a client memory pointer since we're using
+	// the bound buffer object and *not* client memory.
+	renderer.gl_draw_pixels(x, y, width, height, format, type, offset);
 }
 
 
@@ -143,10 +164,16 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_image_2D(
 		GLenum type,
 		GLint offset) const
 {
+	// For cube map textures the target to bind is different than the target specifying the cube face.
+	const GLenum bind_target =
+			(target >= GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB && target <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_ARB)
+			? GL_TEXTURE_CUBE_MAP_ARB
+			: target;
+
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
 	// Revert our texture binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindTextureAndApply save_restore_bind_texture(renderer, texture, GL_TEXTURE0, target);
+	GLRenderer::BindTextureAndApply save_restore_bind_texture(renderer, texture, GL_TEXTURE0, bind_target);
 
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
@@ -170,6 +197,8 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_image_3D(
 		GLenum type,
 		GLint offset) const
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
 	// Revert our texture binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
@@ -178,12 +207,13 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_image_3D(
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
 
-	// The GL_EXT_texture3D extension must be available.
+	// Previously we checked for the GL_EXT_texture3D extension but on MacOS this is not exposed
+	// so we use the core OpenGL 1.2 function instead.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_texture3D),
+			capabilities.gl_version_1_2,
 			GPLATES_ASSERTION_SOURCE);
 
-	glTexImage3DEXT(target, level, internalformat, width, height, depth, border, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+	glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
 }
 
 
@@ -225,10 +255,16 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_sub_image_2D(
 		GLenum type,
 		GLint offset) const
 {
+	// For cube map textures the target to bind is different than the target specifying the cube face.
+	const GLenum bind_target =
+			(target >= GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB && target <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_ARB)
+			? GL_TEXTURE_CUBE_MAP_ARB
+			: target;
+
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
 	// Revert our texture binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindTextureAndApply save_restore_bind_texture(renderer, texture, GL_TEXTURE0, target);
+	GLRenderer::BindTextureAndApply save_restore_bind_texture(renderer, texture, GL_TEXTURE0, bind_target);
 
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
@@ -253,6 +289,8 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_sub_image_3D(
 		GLenum type,
 		GLint offset) const
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
 	// Revert our texture binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
@@ -261,11 +299,12 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_sub_image_3D(
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
 
-	// The GL_EXT_subtexture extension must be available.
+	// Previously we checked for the GL_EXT_subtexture extension but on MacOS in particular this is
+	// not exposed so we use the core OpenGL 1.2 function instead.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_subtexture),
+			capabilities.gl_version_1_2,
 			GPLATES_ASSERTION_SOURCE);
 
-	glTexSubImage3DEXT(
+	glTexSubImage3D(
 			target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
 }

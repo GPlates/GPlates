@@ -34,6 +34,7 @@
 #include "global/LogException.h"
 #include "utils/XQueryUtils.h"
 
+
 using namespace GPlatesUtils;
 using namespace GPlatesModel;
 

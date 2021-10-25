@@ -69,7 +69,7 @@ namespace GPlatesGui
 				int role = Qt::DisplayRole) const;
 				
 		
-	public slots:
+	public Q_SLOTS:
 	
 		void
 		set_filter(

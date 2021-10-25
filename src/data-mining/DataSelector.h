@@ -30,6 +30,7 @@
 #include <string>
 #include <QString>
 #include <map>
+#include <boost/optional.hpp>
 #include <boost/version.hpp>
 
 #if BOOST_VERSION > 103600
@@ -40,46 +41,41 @@
 #include "CoRegFilterCache.h"
 #include "DataTable.h"
 
+#include "app-logic/LayerProxy.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
-#include "app-logic/ReconstructUtils.h"
-#include "app-logic/AppLogicUtils.h"
-#include "app-logic/ReconstructionGeometryUtils.h"
-
-#include "feature-visitors/GeometryFinder.h"
 
 #include "model/FeatureHandle.h"
-#include "app-logic/Reconstruction.h"
-#include "app-logic/ReconstructedFeatureGeometry.h"
 
 #include "utils/UnicodeStringUtils.h"
+
+
+namespace GPlatesOpenGL
+{
+	class GLRasterCoRegistration;
+	class GLRenderer;
+}
 
 namespace GPlatesDataMining
 {
 	class DataSelector
 	{
 	public:
-#if BOOST_VERSION > 103600
-		typedef boost::unordered_map< 
-				const GPlatesModel::FeatureHandle*,
-				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> 
-									> FeatureRFGMap;
 
-		typedef boost::unordered_map< 
-				const GPlatesModel::FeatureCollectionHandle*,
-				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> 
-									> FeatureCollectionRFGMap;
-#else
-		 typedef std::map<
-                                const GPlatesModel::FeatureHandle*,
-                                std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>
-                                                                        > FeatureRFGMap;
+		//! Used for co-registering target rasters.
+		struct RasterCoRegistration
+		{
+			RasterCoRegistration(
+					GPlatesOpenGL::GLRenderer &renderer_,
+					GPlatesOpenGL::GLRasterCoRegistration &co_registration_) :
+				renderer(renderer_),
+				co_registration(co_registration_)
+			{  }
 
-                typedef std::map<
-                                const GPlatesModel::FeatureCollectionHandle*,
-                                std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>
-                                                                        > FeatureCollectionRFGMap;
+			GPlatesOpenGL::GLRenderer &renderer;
+			GPlatesOpenGL::GLRasterCoRegistration &co_registration;
+		};
 
-#endif
+
 		static
 		boost::shared_ptr<DataSelector> 
 		create(
@@ -89,15 +85,20 @@ namespace GPlatesDataMining
 		}
 
 		
-		/*
-		* Given the seed and target, select() will return the associated data in DataTable.
-		*/
+		/**
+		 * Given the seed and target, select() will return the associated data in DataTable.
+		 *
+		 * Note that @a co_register_rasters is required for *raster* co-registration since
+		 * (raster co-registration is accelerated using OpenGL).
+		 * If @a co_register_rasters is boost::none then any target layers that are rasters will not be co-registered.
+		 */
 		void
 		select(
-				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>& seed_collection,	
-				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>& co_reg_collection,								
-				DataTable& ret														
-				);
+				const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &reconstructed_seed_features,	
+				const std::vector<GPlatesAppLogic::LayerProxy::non_null_ptr_type> &target_layer_proxies,
+				const double &reconstruction_time,
+				DataTable &result_data_table,
+				boost::optional<RasterCoRegistration> co_register_rasters);
 
 		static
 		void
@@ -121,23 +122,39 @@ namespace GPlatesDataMining
 		{ }
 		
 	protected:
-		/*
-		* Get target feature collections from input table.
-		*/
-		void
-		get_target_collections(
-				std::vector<const GPlatesModel::FeatureCollectionHandle*>& ) const;				
-		/*
-		* Check if the configuration table is still valid.
-		*/
+
+		/**
+		 * It's possible that some config rows might reference non-existent, or inactive, target layers
+		 * in which case this method returns false.
+		 *
+		 * NOTE: Normally the co-registration configuration dialog will remove these rows for us but
+		 * due to the effectively undefined order in which Qt slots receive signals it's possible
+		 * for data co-registration to proceed (ie, an app-logic wide reconstruction is performed)
+		 * before the dialog gets a chance to remove the rows.
+		 */
 		bool
-		is_cfg_table_valid() const;
+		is_config_table_valid(
+				const std::vector<GPlatesAppLogic::LayerProxy::non_null_ptr_type> &target_layer_proxies);
 
 		void
 		fill_seed_info(
-				const GPlatesModel::FeatureHandle*,
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature,
 				DataRowSharedPtr);
-		
+
+		void
+		co_register_target_reconstructed_rasters(
+				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GLRasterCoRegistration &raster_co_registration,
+				const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &reconstructed_seed_features,	
+				const double &reconstruction_time,
+				GPlatesDataMining::DataTable &result_data_table);
+
+		void
+		co_register_target_reconstructed_geometries(
+				const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &reconstructed_seed_features,	
+				const double &reconstruction_time,
+				GPlatesDataMining::DataTable &result_data_table);
+
 		//default constructor
 		DataSelector();
 
@@ -159,8 +176,6 @@ namespace GPlatesDataMining
 
 		CoRegConfigurationTable d_cfg_table;
 
-		FeatureCollectionRFGMap d_target_fc_rfg_map;
-		FeatureRFGMap d_seed_feature_rfg_map;
 		TableHeader d_table_header;
 		unsigned d_data_index;
 		/*

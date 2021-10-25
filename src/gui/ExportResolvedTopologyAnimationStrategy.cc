@@ -1,11 +1,11 @@
 /* $Id$ */
- 
+
 /**
  * \file 
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2012 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,28 +23,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iterator>
-#include <algorithm>
 #include <boost/foreach.hpp>
-#include <boost/optional.hpp>
-#include <QFileInfo>
-#include <QString>
 
 #include "ExportResolvedTopologyAnimationStrategy.h"
 
-#include "AnimationController.h"
-#include "ExportAnimationContext.h"
-
 #include "app-logic/ApplicationState.h"
-#include "app-logic/AppLogicUtils.h"
-#include "app-logic/ReconstructionGeometryUtils.h"
-#include "app-logic/Reconstruction.h"
-#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/FeatureCollectionFileState.h"
+
+#include "gui/ExportAnimationContext.h"
+#include "gui/AnimationController.h"
 
 #include "presentation/ViewState.h"
-
-#include "view-operations/RenderedGeometryUtils.h"
-
 
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::ExportResolvedTopologyAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
@@ -70,34 +59,6 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::ExportResolvedTopologyAnima
 }
 
 
-void
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
-		const QString &filename)
-{
-	// We want "Polygons" to look like "Polygons.%P.%d" as that
-	// is what is expected by the workflow (external to GPlates) that uses
-	// this export.
-	// The '%P' placeholder string will get replaced for each type of export
-	// in 'do_export_iteration()'.
-	// The "%d" tells ExportTemplateFilenameSequence to insert the reconstruction time.
-#if 0
-	//The placeholders, %P and %d", have been taken care by "export" dialog.
-	//So there is no need to add them here again.
-	const QString suffix =
-			"." +
-			GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING +
-			".%d";
-
-	const QString modified_template_filename =
-			append_suffix_to_template_filebasename(filename, suffix);
-
-#endif
-	// Call base class method to actually set the template filename.
-	//ExportAnimationStrategy::set_template_filename(modified_template_filename);
-	ExportAnimationStrategy::set_template_filename(filename);
-}
-
-
 bool
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
@@ -105,96 +66,55 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
-	// Assemble parts of this iteration's filename from the template filename sequence.
-	QString output_filebasename = *filename_it++;
+	// Figure out a filename from the template filename sequence.
+	QString basename = *filename_it++;
+	// Add the target dir to that to figure out the absolute path + name.
+	QString full_filename = d_export_animation_context_ptr->target_dir().absoluteFilePath(basename);
 
-	//
-	// Here's where we would do the actual exporting of the resolved topologies.
-	// The View is already set to the appropriate reconstruction time for
-	// this frame; all we have to do is the maths and the file-writing (to @a full_filename)
-	//
+	// All that's really expected of us at this point is maybe updating
+	// the dialog status message, then calculating what we want to calculate,
+	// and writing whatever file we feel like writing.
+	d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Writing resolved topologies at frame %2 to file \"%1\"...")
+			.arg(basename)
+			.arg(frame_index) );
 
-	GPlatesAppLogic::ApplicationState &application_state =
-			d_export_animation_context_ptr->view_state().get_application_state();
+	// Here's where we do the actual work of exporting of the resolved topologies,
+	// given frame_index, filename, reconstructable files and geoms, and target_dir. Etc.
+	try
+	{
 
-	const double &reconstruction_time = application_state.get_current_reconstruction_time();
-
-	// Get any ReconstructionGeometry objects that are visible in any active layers
-	// of the RenderedGeometryCollection.
-	GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
-	GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
-			reconstruction_geom_seq,
+		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resolved_topologies(
+			full_filename,
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
-			// Don't want to export a duplicate resolved topology if one is currently in focus...
-			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
-
-	// Get any ReconstructionGeometry objects that are of type ResolvedTopologicalBoundary or
-	// ResolvedTopologicalNetwork since both these types have topological boundaries.
-	resolved_geom_seq_type resolved_topological_geometries;
-
-	// Get the ResolvedTopologicalBoundary objects...
-	std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_topological_boundaries;
-	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-			reconstruction_geom_seq.begin(),
-			reconstruction_geom_seq.end(),
-			resolved_topological_boundaries);
-	std::copy(
-			resolved_topological_boundaries.begin(),
-			resolved_topological_boundaries.end(),
-			std::back_inserter(resolved_topological_geometries));
-
-	// Get the ResolvedTopologicalNetwork objects...
-	std::vector<const GPlatesAppLogic::ResolvedTopologicalNetwork *> resolved_topological_networks;
-	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-			reconstruction_geom_seq.begin(),
-			reconstruction_geom_seq.end(),
-			resolved_topological_networks);
-	std::copy(
-			resolved_topological_networks.begin(),
-			resolved_topological_networks.end(),
-			std::back_inserter(resolved_topological_geometries));
-
-	// Export the various files.
-	export_files(resolved_topological_geometries, reconstruction_time, output_filebasename);
-	
-	// Normal exit, all good, ask the Context to process the next iteration please.
-	return true;
-}
-
-
-void
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::wrap_up(
-		bool export_successful)
-{
-	// If we need to do anything after writing a whole batch of velocity files,
-	// here's the place to do it.
-	// Of course, there's also the destructor, which should free up any resources
-	// we acquired in the constructor; this method is intended for any "last step"
-	// iteration operations that might need to occur. Perhaps all iterations end
-	// up in the same file and we should close that file (if all steps completed
-	// successfully).
-}
-
-
-void
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
-		const resolved_geom_seq_type &resolved_geom_seq,
-		const double &recon_time,
-		const QString &filebasename)
-{
-	const QDir &target_dir = d_export_animation_context_ptr->target_dir();
-
-	GPlatesFileIO::ResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
-			target_dir,
-			filebasename,
-			GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
-			d_configuration->output_options,
-			GPlatesFileIO::ResolvedTopologicalBoundaryExport::get_export_file_format(
-					filebasename,
-					d_export_animation_context_ptr->view_state().get_application_state()
-							.get_feature_collection_file_format_registry()),
-			resolved_geom_seq,
+			d_export_animation_context_ptr->view_state().get_application_state().get_feature_collection_file_format_registry(),
 			d_loaded_files,
 			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
-			d_export_animation_context_ptr->view_time());
+			d_export_animation_context_ptr->view_time(),
+			d_configuration->file_options.export_to_a_single_file,
+			d_configuration->file_options.export_to_multiple_files,
+			d_configuration->file_options.separate_output_directory_per_file,
+			d_configuration->export_topological_lines,
+			d_configuration->export_topological_polygons,
+			d_configuration->wrap_to_dateline);
+
+	}
+	catch (std::exception &exc)
+	{
+		d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Error writing reconstructed geometry file \"%1\": %2")
+					.arg(full_filename)
+					.arg(exc.what()));
+		return false;
+	}
+	catch (...)
+	{
+		// FIXME: Catch all proper exceptions we might get here.
+		d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Error writing reconstructed geometry file \"%1\": unknown error!").arg(full_filename));
+		return false;
+	}
+	
+	// Normal exit, all good, ask the Context process the next iteration please.
+	return true;
 }

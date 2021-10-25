@@ -77,7 +77,7 @@ namespace GPlatesGui
 				QMenu &menu_);
 
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Relabels and shows/hides appropriate Menu Actions to match the current
@@ -91,7 +91,7 @@ namespace GPlatesGui
 		open_previous_session(
 				int session_slot_to_load = 0);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_action_triggered(

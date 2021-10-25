@@ -224,9 +224,9 @@ namespace GPlatesAppLogic
 		/**
 		 * The partitioning static or dynamic polygons come from a layer output.
 		 *
-		 * It is expected that the layer proxy type is either @a ReconstructLayerProxy
-		 * (for static partitioning polygons) or @a TopologyBoundaryResolverLayerProxy or
-		 * @a TopologicalNetwork, otherwise no partitioning will occur.
+		 * It is expected that the partitioning layer proxy types are @a ReconstructLayerProxy
+		 * (for static partitioning polygons), @a TopologyGeometryResolverLayerProxy or
+		 * @a TopologyNetworkResolverLayerProxy, otherwise no partitioning will occur.
 		 *
 		 * NOTE: We also include topological network here even though they are deforming
 		 * and not rigid regions. This is because the current topological closed plate polygons
@@ -236,6 +236,8 @@ namespace GPlatesAppLogic
 		 * plate ids don't exist in the rotation file so they'll need to be added - for example
 		 * the Andes deforming region has plate id 29201 which should be mapped to 201 in
 		 * the rotation file).
+		 *
+		 * @a reconstruction_tree is used to reverse reconstruct geometries (if necessary).
 		 *
 		 * The default value of @a feature_properties_to_assign only assigns
 		 * the reconstruction plate id.
@@ -250,7 +252,7 @@ namespace GPlatesAppLogic
 		create(
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
-				const double &reconstruction_time,
+				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				const feature_property_flags_type &feature_property_types_to_assign =
 						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
 				bool respect_feature_time_period = true)
@@ -258,7 +260,7 @@ namespace GPlatesAppLogic
 			return non_null_ptr_type(new AssignPlateIds(
 					assign_plate_id_method,
 					partitioning_layer_proxies,
-					reconstruction_time,
+					reconstruction_tree,
 					feature_property_types_to_assign,
 					respect_feature_time_period));
 		}
@@ -358,16 +360,18 @@ namespace GPlatesAppLogic
 		/**
 		 * The partitioning static or dynamic polygons come from layer outputs.
 		 *
-		 * It is expected that the layer proxy type is either @a ReconstructLayerProxy or
-		 * @a TopologyBoundaryResolverLayerProxy or @a TopologyNetworkResolverLayerProxy,
-		 * otherwise no partitioning will occur.
+		 * It is expected that the partitioning layer proxy types are @a ReconstructLayerProxy
+		 * (for static partitioning polygons), @a TopologyGeometryResolverLayerProxy or
+		 * @a TopologyNetworkResolverLayerProxy, otherwise no partitioning will occur.
+		 *
+		 * @a reconstruction_tree is used to reverse reconstruct geometries (if necessary).
 		 *
 		 * @throws PreconditionViolationError exception if @a partitioning_layer_proxies is empty.
 		 */
 		AssignPlateIds(
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
-				const double &reconstruction_time,
+				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				const feature_property_flags_type &feature_property_types_to_assign,
 				bool respect_feature_time_period);
 	};

@@ -33,40 +33,9 @@
          <attribute name="headerMinimumSectionSize">
           <number>50</number>
          </attribute>
-         <attribute name="headerDefaultSectionSize">
-          <number>60</number>
-         </attribute>
-         <attribute name="headerMinimumSectionSize">
-          <number>50</number>
-         </attribute>
          <column>
           <property name="text">
-           <string>File / Seq</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Time</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Lat</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Lon</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Angle</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Comment</string>
+           <string notr="true">1</string>
           </property>
          </column>
         </widget>
@@ -268,6 +237,26 @@
      </item>
      <item>
       <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <spacer name="verticalSpacer_6">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="show_metadata_button">
+         <property name="text">
+          <string>Show Metadata</string>
+         </property>
+        </widget>
+       </item>
        <item>
         <spacer name="verticalSpacer">
          <property name="orientation">

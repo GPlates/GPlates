@@ -42,7 +42,7 @@ class CameraDemo_3:
 			
 
 def register():
-	print "registering..."
+	pass
 	#pygplates.Application().register_utility(CameraDemo_1())
 	#pygplates.Application().register_utility(CameraDemo_2())
 	#pygplates.Application().register_utility(CameraDemo_3())

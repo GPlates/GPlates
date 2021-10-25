@@ -54,7 +54,7 @@ namespace GPlatesQtWidgets
 			return d_font;
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_clicked();

@@ -32,6 +32,7 @@
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
 	class GLState;
 
 	/**
@@ -70,6 +71,7 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const = 0;
 
@@ -99,6 +101,7 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const = 0;
 
 
@@ -123,6 +126,7 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const = 0;
 	};
 }

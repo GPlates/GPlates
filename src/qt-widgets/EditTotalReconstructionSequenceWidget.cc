@@ -318,8 +318,8 @@ namespace
 
 		boost::intrusive_ptr<XsString> description =
 			XsString::create(GPlatesUtils::make_icu_string_from_qstring(comment)).get();
-		TemplateTypeParameterType value_type =
-			TemplateTypeParameterType::create_gpml("FiniteRotation");
+		StructuralType value_type =
+			StructuralType::create_gpml("FiniteRotation");
 		return GpmlTimeSample(value, gml_time_instant, description, value_type);
 	}
 
@@ -789,7 +789,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::validate()
 
 	// This signal can be picked up for example by the parent Edit... and Create... 
 	// dialogs to update their Apply/Create buttons. 
-    emit table_validity_changed(times_valid && plates_valid);
+    Q_EMIT table_validity_changed(times_valid && plates_valid);
 
     return (times_valid && plates_valid);
 }
@@ -845,7 +845,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::handle_plate_ids_change
 {
     if (validate())
     {
-        emit plate_ids_have_changed();
+        Q_EMIT plate_ids_have_changed();
     }
 }
 

@@ -86,7 +86,6 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 	try
 	{
 
-		// TODO: Get 'export_single_output_file' and 'export_per_input_file' from user (via GUI).
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_feature_geometries(
 			full_filename,
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
@@ -96,6 +95,7 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 			d_export_animation_context_ptr->view_time(),
 			d_configuration->file_options.export_to_a_single_file,
 			d_configuration->file_options.export_to_multiple_files,
+			d_configuration->file_options.separate_output_directory_per_file,
 			d_configuration->wrap_to_dateline);
 
 	}

@@ -43,9 +43,6 @@ namespace GPlatesQtWidgets
 	/**
 	 * ExportFlowlineOptionsWidget is used to show export options for
 	 * exporting flowlines.
-	 *
-	 * Currently it's just a placeholder for the @a ExportFileOptionsWidget since no
-	 * other options are currently required.
 	 */
 	class ExportFlowlineOptionsWidget :
 			public ExportOptionsWidget
@@ -58,12 +55,13 @@ namespace GPlatesQtWidgets
 		ExportOptionsWidget *
 		create(
 				QWidget *parent,
+				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const GPlatesGui::ExportFlowlineAnimationStrategy::const_configuration_ptr &
-						default_export_configuration,
+						export_configuration,
 				bool configure_dateline_wrapping)
 		{
 			return new ExportFlowlineOptionsWidget(
-					parent, default_export_configuration, configure_dateline_wrapping);
+					parent, export_configuration, configure_dateline_wrapping);
 		}
 
 
@@ -97,12 +95,12 @@ namespace GPlatesQtWidgets
 		ExportFlowlineOptionsWidget(
 				QWidget *parent_,
 				const GPlatesGui::ExportFlowlineAnimationStrategy::const_configuration_ptr &
-						default_export_configuration,
+						export_configuration,
 				bool configure_dateline_wrapping) :
 			ExportOptionsWidget(parent_),
 			d_dateline_wrap_options_widget(NULL),
 			d_export_file_options_widget(NULL),
-			d_export_configuration(*default_export_configuration)
+			d_export_configuration(*export_configuration)
 		{
 			QVBoxLayout *widget_layout = new QVBoxLayout(this);
 			widget_layout->setContentsMargins(0, 0, 0, 0);
@@ -119,7 +117,7 @@ namespace GPlatesQtWidgets
 			d_export_file_options_widget =
 					ExportFileOptionsWidget::create(
 							parent_,
-							default_export_configuration->file_options);
+							export_configuration->file_options);
 			widget_layout->addWidget(d_export_file_options_widget);
 		}
 

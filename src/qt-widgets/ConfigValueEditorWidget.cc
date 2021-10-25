@@ -70,7 +70,7 @@ void
 GPlatesQtWidgets::ConfigValueEditorWidget::handle_reset()
 {
 	d_wants_reset = true;
-	emit reset_requested(this);
+	Q_EMIT reset_requested(this);
 }
 
 

@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <boost/optional.hpp>
+#include <boost/scoped_array.hpp>
 #include <QImage>
 
 #include "GLCompiledDrawState.h"
@@ -64,6 +65,29 @@ namespace GPlatesOpenGL
 	 * such as JPEG.
 	 *
 	 * There is also support for modulating the opacity and intensity of the raster for visual purposes.
+	 *
+	 * The data is also in pre-multiplied alpha format.
+	 * This is where the RGB channels have already been multiplied by the alpha channel (R*A,G*A,B*A,A).
+	 * This requires alpha-blending to have (src,dst) blend factors of (1, 1-src_alpha) instead
+	 * of (src_alpha, 1-src_alpha).
+	 * This is done in case we are drawing to a render texture which will, in turn, be used
+	 * as a texture to render into another render target (such as the main view window).
+	 * If we didn't do this then we'd end up double-blending semi-transparent rasters
+	 * (or the semi-transparent boundaries of opaque rasters). This is because with normal blending
+	 * the alpha value is multiplied by all channels including alpha such that...
+	 *   (R,G,B,A) -> (A*R,A*G,A*B,A*A)
+	 * ...and the final render target would then have a source blending contribution of...
+	 *   (3A*R,3A*G,3A*B,4A)
+	 * which is not what we want - we want (A*R,A*G,A*B,A).
+	 * With pre-multiplied alpha we essentially get...
+	 *   (R*A,G*A,B*A,A) -> (R*A,G*A,B*A,A)
+	 * ...in other words unchanged.
+	 * And where there's overlap in blending (due to differently rotated polygons overlapping
+	 * each other) while rendering reconstructed raster into a render texture, the destination
+	 * alpha channel (in the render texture) will record the correct amount of contributions,
+	 * due to alpha, of the overlapping polygons. That way when the render texture is finally
+	 * blended into the main view window (for example) it will be blended as if the intermediate
+	 * render texture were bypassed and the overlapping polygons blended directly into the main view window.
 	 */
 	class GLVisualRasterSource :
 			public GLMultiResolutionRasterSource
@@ -95,6 +119,34 @@ namespace GPlatesOpenGL
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 				const GPlatesGui::Colour &raster_modulate_colour = GPlatesGui::Colour::get_white(),
 				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION);
+
+
+		/**
+		 * Change to a new raster of the same dimensions as the current internal raster.
+		 *
+		 * This method is useful for time-dependent rasters sharing the same georeferencing
+		 * and raster dimensions.
+		 *
+		 * Returns false if @a raster has different dimensions than the current internal raster.
+		 * In this case you'll need to create a new @a GLVisualRasterSource.
+		 *
+		 * NOTE: The opposite, changing the georeferencing without changing the raster,
+		 * will require creating a new @a GLMultiResolutionRaster object.
+		 */
+		bool
+		change_raster(
+				GLRenderer &renderer,
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
+
+
+		/**
+		 * Change the colour to modulate the raster texture with.
+		 */
+		void
+		change_modulate_colour(
+				GLRenderer &renderer,
+				const GPlatesGui::Colour &raster_modulate_colour);
 
 
 		virtual
@@ -140,34 +192,6 @@ namespace GPlatesOpenGL
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
 				GLRenderer &renderer);
-
-
-		/**
-		 * Change to a new raster of the same dimensions as the current internal raster.
-		 *
-		 * This method is useful for time-dependent rasters sharing the same georeferencing
-		 * and raster dimensions.
-		 *
-		 * Returns false if @a raster has different dimensions than the current internal raster.
-		 * In this case you'll need to create a new @a GLVisualRasterSource.
-		 *
-		 * NOTE: The opposite, changing the georeferencing without changing the raster,
-		 * will require creating a new @a GLMultiResolutionRaster object.
-		 */
-		bool
-		change_raster(
-				GLRenderer &renderer,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
-
-
-		/**
-		 * Change the colour to modulate the raster texture with.
-		 */
-		void
-		change_modulate_colour(
-				GLRenderer &renderer,
-				const GPlatesGui::Colour &raster_modulate_colour);
 
 	private:
 		class Tile
@@ -295,6 +319,12 @@ namespace GPlatesOpenGL
 		 * The vertex colours are @a d_raster_modulate_colour.
 		 */
 		GLCompiledDrawState::non_null_ptr_to_const_type d_full_screen_quad_drawable;
+
+		/**
+		 * Uses as temporary space to duplicate a tile's vertical or horizontal edge when the data in
+		 * the tile does not consume the full @a d_tile_texel_dimension x @a d_tile_texel_dimension area.
+		 */
+		boost::scoped_array<GPlatesGui::rgba8_t> d_tile_edge_working_space;
 
 		/**
 		 * Images containing error messages when fail to load proxied raster tiles.

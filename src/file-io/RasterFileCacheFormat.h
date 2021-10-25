@@ -25,8 +25,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H
-#define GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H
+#ifndef GPLATES_FILEIO_RASTERFILECACHEFORMAT_H
+#define GPLATES_FILEIO_RASTERFILECACHEFORMAT_H
 
 #include <vector>
 #include <boost/cstdint.hpp>
@@ -82,9 +82,10 @@ namespace GPlatesFileIO
 	 *
 	 * The header consists of the following fields, in order:
 	 *  - ( 0) A magic number that identifies a file as GPlates.
-	 *  - ( 8) The version number of the GPlates raster file cache format used.
-	 *  - (12) The type of the source raster: RGBA, float or double.
-	 *  - (16) For the base level:
+	 *  - ( 8) The file size (to check for partially written files).
+	 *  - (16) The version number of the GPlates raster file cache format used.
+	 *  - (20) The type of the source raster: RGBA, float or double.
+	 *  - (24) For the base level:
 	 *     - The width of the image in this level.
 	 *     - The height of the image in this level.
 	 *     - The starting position, in bytes, of the encoded source raster data in the file.
@@ -93,10 +94,11 @@ namespace GPlatesFileIO
 	 *
 	 * The header consists of the following fields, in order:
 	 *  - ( 0) A magic number that identifies a file as GPlates.
-	 *  - ( 8) The version number of the GPlates raster file cache format used.
-	 *  - (12) The type of the mipmaps: RGBA, float or double.
-	 *  - (16) The number of levels.
-	 *  - (20) For each level:
+	 *  - ( 8) The file size (to check for partially written files).
+	 *  - (16) The version number of the GPlates raster file cache format used.
+	 *  - (20) The type of the mipmaps: RGBA, float or double.
+	 *  - (24) The number of levels.
+	 *  - (28) For each level:
 	 *     - The width of the mipmap in this level.
 	 *     - The height of the mipmap in this level.
 	 *     - The starting position, in bytes, of the encoded mipmap data in the file.
@@ -417,4 +419,4 @@ namespace GPlatesFileIO
 	}
 }
 
-#endif  // GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H
+#endif  // GPLATES_FILEIO_RASTERFILECACHEFORMAT_H

@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2011 The University of Sydney, Australia
+ * Copyright (C) 2013 California Institute of Technology
  *
  * This file is part of GPlates.
  *
@@ -30,16 +31,22 @@
 #include <boost/optional.hpp>
 
 #include "AppLogicFwd.h"
+#include "GeometryDeformation.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
+#include "ReconstructHandle.h"
 #include "ReconstructionLayerProxy.h"
 #include "ReconstructLayerProxy.h"
+#include "ResolvedTopologicalNetwork.h"
+#include "TopologyGeometryResolverLayerProxy.h"
 
 #include "utils/SubjectObserverToken.h"
 
 
 namespace GPlatesAppLogic
 {
+	class ReconstructLayerProxy;
+
 	/**
 	 * A layer proxy that resolves topological networks from feature collection(s)
 	 * containing topological network features.
@@ -72,12 +79,22 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the resolved topological networks, for the current reconstruction time,
 		 * by appending them to them to @a resolved_topological_networks.
+		 *
+		 * NOTE: The resolved topological networks can in turn reference resolved topological polylines.
+		 * Currently there is a topological referencing restriction where resolved topological networks can reference
+		 * resolved topological polylines (and regular static geometries) but resolved topological polylines
+		 * can only reference regular static geometries (and not resolved topological geometries of any type).
+		 * This ordering enables the resolving process to ensure all geometries referenced by a topology
+		 * are fully reconstructed (and resolved) before that topology itself is resolved. This is needed
+		 * because the topological referencing is done using feature-id lookup instead of querying input layers
+		 * and only the latter can truly guarantee a correct dependency ordering without intervention
+		 * required - in the former case that intervention is the imposed topological referencing restriction.
 		 */
-		void
+		ReconstructHandle::type
 		get_resolved_topological_networks(
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks)
 		{
-			get_resolved_topological_networks(resolved_topological_networks, d_current_reconstruction_time);
+			return get_resolved_topological_networks(resolved_topological_networks, d_current_reconstruction_time);
 		}
 
 
@@ -85,17 +102,35 @@ namespace GPlatesAppLogic
 		 * Returns the resolved topological networks, at the specified time, by appending
 		 * them to them to @a resolved_topological_networks.
 		 */
-		void
+		ReconstructHandle::type
 		get_resolved_topological_networks(
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const double &reconstruction_time);
 
 
 		/**
-		 * Returns the current reconstruction layer proxy used for reconstructions.
+		 * Returns a time span of resolved topological networks.
+		 *
+		 * The main purpose of this method, over calling @a get_resolved_topological_networks for
+		 * a sequence of times (which essentially does the same thing), is to cache a time range
+		 * of resolved topological networks rather than just caching for a single reconstruction time.
+		 * This helps to avoid the expensive process of repeating the generation of a time span of
+		 * resolved networks which would happen if multiple clients each called
+		 * @a get_resolved_topological_networks over a sequence of reconstruction times because
+		 * a separate resolved network would unnecessarily be created for each client - whereas,
+		 * with this method, a single time range of resolved networks would be shared by all clients.
+		 *
+		 * NOTE: The returned @a ResolvedNetworkTimeSpan reference can be invalidated by a subsequent
+		 * request so it should be copied by the caller (it's cheap to copy since just intrusive pointers).
+		 *
+		 * @throws exception if the following is not satisfied:
+		 *   begin_time > end_time && time_increment > 0
 		 */
-		ReconstructionLayerProxy::non_null_ptr_type
-		get_reconstruction_layer_proxy();
+		const GeometryDeformation::ResolvedNetworkTimeSpan &
+		get_resolved_network_time_span(
+				const double &begin_time,
+				const double &end_time,
+				const double &time_increment);
 
 
 		/**
@@ -143,18 +178,20 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time);
 
 		/**
-		 * Set the reconstruction layer proxy used to rotate feature geometries.
+		 * Sets the current reconstruct layer proxies used to reconstruct the topological network boundary sections.
 		 */
 		void
-		set_current_reconstruction_layer_proxy(
-				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy);
+		set_current_reconstructed_geometry_topological_sections_layer_proxies(
+				const std::vector<ReconstructLayerProxy::non_null_ptr_type> &
+						reconstructed_geometry_topological_sections_layer_proxies);
 
 		/**
-		 * Sets the current reconstruct layer proxies used to reconstruct the topological sections.
+		 * Sets the current resolved topological line layer proxies used to resolve the topological boundary line sections.
 		 */
 		void
-		set_current_topological_sections_layer_proxies(
-				const std::vector<ReconstructLayerProxy::non_null_ptr_type> &topological_sections_layer_proxies);
+		set_current_resolved_line_topological_sections_layer_proxies(
+				const std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &
+						resolved_line_topological_sections_layer_proxies);
 
 		/**
 		 * Add to the list of feature collections containing topological network features.
@@ -178,13 +215,36 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 	private:
+
 		/**
-		 * The cached resolved topologies.
+		 * Contains resolved topological networks.
 		 */
-		struct ResolvedTopologies
+		struct ResolvedNetworks
 		{
-			std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
-			std::vector<resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
+			void
+			invalidate()
+			{
+				cached_reconstruct_handle = boost::none;
+				cached_resolved_topological_networks = boost::none;
+				cached_reconstruction_time = boost::none;
+			}
+
+			/**
+			 * The reconstruct handle that identifies all cached resolved topological networks
+			 * in this structure.
+			 */
+			boost::optional<ReconstructHandle::type> cached_reconstruct_handle;
+
+			/**
+			 * The cached resolved topological networks.
+			 */
+			boost::optional< std::vector<resolved_topological_network_non_null_ptr_type> >
+					cached_resolved_topological_networks;
+
+			/**
+			 * Cached reconstruction time.
+			 */
+			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
 		};
 
 		/**
@@ -193,14 +253,16 @@ namespace GPlatesAppLogic
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_topological_network_feature_collections;
 
 		/**
-		 * Used to get reconstruction trees at desired reconstruction times.
+		 * Used to get reconstructed static features that form the topological sections for our topological geometries.
 		 */
-		LayerProxyUtils::InputLayerProxy<ReconstructionLayerProxy> d_current_reconstruction_layer_proxy;
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
+				d_current_reconstructed_geometry_topological_sections_layer_proxies;
 
 		/**
-		 * Used to get reconstructed features that form the topological sections.
+		 * Used to get resolved topological lines that form the topological sections for our topological geometries.
 		 */
-		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy> d_current_topological_sections_layer_proxies;
+		LayerProxyUtils::InputLayerProxySequence<TopologyGeometryResolverLayerProxy>
+				d_current_resolved_line_topological_sections_layer_proxies;
 
 		/**
 		 * The current reconstruction time as set by the layer system.
@@ -208,14 +270,16 @@ namespace GPlatesAppLogic
 		double d_current_reconstruction_time;
 
 		/**
-		 * The cached resolved topologies.
+		 * The cached resolved topologies for a single reconstruction time.
 		 */
-		boost::optional<ResolvedTopologies> d_cached_resolved_topologies;
+		ResolvedNetworks d_cached_resolved_networks;
 
 		/**
-		 * Cached reconstruction time.
+		 * The cached resolved topologies over a range of reconstruction times.
+		 *
+		 * This is cached as a performance optimisation for clients that deform geometries.
 		 */
-		boost::optional<GPlatesMaths::real_t> d_cached_reconstruction_time;
+		boost::optional<GeometryDeformation::ResolvedNetworkTimeSpan> d_cached_resolved_network_time_span;
 
 		/**
 		 * Used to notify polling observers that we've been updated.
@@ -252,6 +316,34 @@ namespace GPlatesAppLogic
 		 */
 		void
 		check_input_layer_proxies();
+
+
+		/**
+		 * Generates resolved topological networks for the specified reconstruction time
+		 * if they're not already cached.
+		 */
+		std::vector<resolved_topological_network_non_null_ptr_type> &
+		cache_resolved_topological_networks(
+				const double &reconstruction_time);
+
+
+		/**
+		 * Generates a resolved network time span for the specified time range if one is not already cached.
+		 */
+		GeometryDeformation::ResolvedNetworkTimeSpan &
+		cache_resolved_network_time_span(
+				const double &begin_time,
+				const double &end_time,
+				const double &time_increment);
+
+
+		/**
+		 * Creates resolved topological networks for the specified reconstruction time.
+		 */
+		ReconstructHandle::type
+		create_resolved_topological_networks(
+				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				const double &reconstruction_time);
 	};
 }
 

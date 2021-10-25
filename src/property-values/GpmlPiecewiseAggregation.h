@@ -32,12 +32,12 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include "GpmlTimeWindow.h"
-#include "TemplateTypeParameterType.h"
+#include "StructuralType.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 
 
-// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlPiecewiseAggregation, visit_gpml_piecewise_aggregation)
@@ -76,7 +76,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				const std::vector<GpmlTimeWindow> &time_windows_,
-				const TemplateTypeParameterType &value_type_)
+				const StructuralType &value_type_)
 		{
 			non_null_ptr_type ptr(
 					new GpmlPiecewiseAggregation(time_windows_, value_type_));
@@ -116,10 +116,21 @@ namespace GPlatesPropertyValues
 
 		// Note that no "setter" is provided:  The value type of a GpmlPiecewiseAggregation
 		// instance should never be changed.
-		const TemplateTypeParameterType &
+		const StructuralType &
 		value_type() const
 		{
 			return d_value_type;
+		}
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("PiecewiseAggregation");
+			return STRUCTURAL_TYPE;
 		}
 
 		/**
@@ -161,7 +172,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GpmlPiecewiseAggregation(
 				const std::vector<GpmlTimeWindow> &time_windows_,
-				const TemplateTypeParameterType &value_type_):
+				const StructuralType &value_type_):
 			PropertyValue(),
 			d_time_windows(time_windows_),
 			d_value_type(value_type_)
@@ -187,7 +198,7 @@ namespace GPlatesPropertyValues
 	private:
 
 		std::vector<GpmlTimeWindow> d_time_windows;
-		TemplateTypeParameterType d_value_type;
+		StructuralType d_value_type;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

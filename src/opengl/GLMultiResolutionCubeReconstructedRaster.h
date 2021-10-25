@@ -129,7 +129,8 @@ namespace GPlatesOpenGL
 		 */
 		static
 		std::size_t
-		get_default_tile_texel_dimension();
+		get_default_tile_texel_dimension(
+				GLRenderer &renderer);
 
 
 		/**
@@ -147,7 +148,7 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer,
 				const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &source_reconstructed_raster,
-				std::size_t tile_texel_dimension = get_default_tile_texel_dimension(),
+				std::size_t tile_texel_dimension,
 				bool cache_tile_textures = true)
 		{
 			return non_null_ptr_type(

@@ -28,6 +28,8 @@
 
 #include "VisualLayerParams.h"
 
+#include "view-operations/RenderedGeometryParameters.h"
+
 
 namespace GPlatesPresentation
 {
@@ -47,33 +49,59 @@ namespace GPlatesPresentation
 			return new VelocityFieldCalculatorVisualLayerParams( layer_task_params );
 		}
 
-		bool
-		show_delaunay_vectors() const
+
+		float
+		get_arrow_body_scale() const
 		{
-			return d_show_delaunay_vectors;
+			return d_arrow_body_scale;
 		}
 
+		//! Set the arrow body scale of rendered arrows.
 		void
-		set_show_delaunay_vectors(
-				bool b)
+		set_arrow_body_scale(
+				float arrow_body_scale)
 		{
-			d_show_delaunay_vectors = b;
+			d_arrow_body_scale = arrow_body_scale;
 			emit_modified();
 		}
 
-		bool
-		show_constrained_vectors() const
+
+		float
+		get_arrowhead_scale() const
 		{
-			return d_show_constrained_vectors;
+			return d_arrowhead_scale;
 		}
 
+		//! Set the arrowhead scale of rendered arrows.
 		void
-		set_show_constrained_vectors(
-				bool b)
+		set_arrowhead_scale(
+				float arrowhead_scale)
 		{
-			d_show_constrained_vectors = b;
+			d_arrowhead_scale = arrowhead_scale;
 			emit_modified();
 		}
+
+
+		float
+		get_arrow_spacing() const
+		{
+			return d_arrow_spacing;
+		}
+
+		/**
+		 * Set the screen-space spacing of rendered arrows.
+		 *
+		 * A value of zero has the special meaning of unlimited density (ie, no limit on number of arrows).
+		 * NOTE: Small values can cause large memory usage.
+		 */
+		void
+		set_arrow_spacing(
+				float arrow_spacing)
+		{
+			d_arrow_spacing = arrow_spacing;
+			emit_modified();
+		}
+
 
 		virtual
 		void
@@ -97,14 +125,18 @@ namespace GPlatesPresentation
 		VelocityFieldCalculatorVisualLayerParams( 
 				GPlatesAppLogic::LayerTaskParams &layer_task_params ) :
 			VisualLayerParams(layer_task_params),
-			d_show_delaunay_vectors(true),
-			d_show_constrained_vectors(true)
+			d_arrow_spacing(GPlatesViewOperations::RenderedLayerParameters::VELOCITY_ARROW_SPACING),
+			d_arrow_body_scale(GPlatesViewOperations::RenderedLayerParameters
+					::RECONSTRUCTION_RATIO_ARROW_UNIT_VECTOR_DIRECTION_TO_GLOBE_RADIUS),
+			d_arrowhead_scale(GPlatesViewOperations::RenderedLayerParameters
+					::RECONSTRUCTION_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS)
 		{  }
 
 	private:
 
-		bool d_show_delaunay_vectors;
-		bool d_show_constrained_vectors;
+		float d_arrow_spacing;
+		float d_arrow_body_scale;
+		float d_arrowhead_scale;
 	};
 }
 

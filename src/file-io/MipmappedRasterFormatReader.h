@@ -74,7 +74,7 @@ namespace GPlatesFileIO
 		 * @throws @a ErrorOpeningFileForReadingException if @a filename could not be
 		 * opened for reading.
 		 *
-		 * @throws @a FileFormatNotException if the header information is wrong.
+		 * @throws @a FileFormatNotSupportedException if the header information is wrong.
 		 *
 		 * @throws @a RasterFileCacheFormat::UnsupportedVersion if the mipmap version is either
 		 * not recognised (mipmap file created by a newer version of GPlates) or no longer supported
@@ -131,7 +131,7 @@ namespace GPlatesFileIO
 			// part-way through writing the file and didn't remove the file for some reason.
 			// We need to check this here because we don't actually read the mipmapped (encoded)
 			// data until clients request region of the raster (and it's too late to detect errors then).
-			if (total_file_size != static_cast<quint64>(file_info.size()))
+			if (total_file_size != static_cast<qint64>(file_info.size()))
 			{
 				throw FileFormatNotSupportedException(
 						GPLATES_EXCEPTION_SOURCE, "detected a partially written mipmap file");
@@ -255,6 +255,25 @@ namespace GPlatesFileIO
 		}
 
 		/**
+		 * Returns the raster statistics or boost::none if original raster did not provide any.
+		 *
+		 * NOTE: Currently the statistics are the same for each mipmap level.
+		 */
+		boost::optional<GPlatesPropertyValues::RasterStatistics>
+		get_raster_statistics(
+				unsigned int level) const
+		{
+			if (d_is_closed)
+			{
+				return boost::none;
+			}
+			else
+			{
+				return d_impl->get_raster_statistics(level);
+			}
+		}
+
+		/**
 		 * Retrieves information about the file that we are reading.
 		 */
 		QFileInfo
@@ -304,6 +323,11 @@ namespace GPlatesFileIO
 					unsigned int y_offset,
 					unsigned int width,
 					unsigned int height) = 0;
+
+			virtual
+			boost::optional<GPlatesPropertyValues::RasterStatistics>
+			get_raster_statistics(
+					unsigned int level) const = 0;
 		};
 
 		/**
@@ -432,6 +456,19 @@ namespace GPlatesFileIO
 				}
 
 				return d_raster_file_cache_readers[level]->read_coverage(x_offset, y_offset, width, height);
+			}
+
+			virtual
+			boost::optional<GPlatesPropertyValues::RasterStatistics>
+			get_raster_statistics(
+					unsigned int level) const
+			{
+				if (level >= d_level_infos.size())
+				{
+					return boost::none;
+				}
+
+				return d_raster_file_cache_readers[level]->get_raster_statistics();
 			}
 
 		private:

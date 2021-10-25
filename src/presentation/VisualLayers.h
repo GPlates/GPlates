@@ -170,7 +170,7 @@ namespace GPlatesPresentation
 		const_iterator
 		order_end() const;
 
-	public slots:
+	public Q_SLOTS:
 
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -198,7 +198,7 @@ namespace GPlatesPresentation
 		void
 		create_rendered_geometries();
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Indicates that there has been a change in the ordering of layer indices
@@ -208,6 +208,24 @@ namespace GPlatesPresentation
 		layer_order_changed(
 				size_t first_index,
 				size_t last_index);
+
+		/**
+		 * This signal is emitted before any layers are added or removed.
+		 *
+		 * begin_add_or_remove_layers / end_add_or_remove_layers usually surrounds the
+		 * addition or removal of one or more layers.
+		 */
+		void
+		begin_add_or_remove_layers();
+
+		/**
+		 * This signal is emitted after layers have been added or removed.
+		 *
+		 * begin_add_or_remove_layers / end_add_or_remove_layers usually surrounds the
+		 * addition or removal of one or more layers.
+		 */
+		void
+		end_add_or_remove_layers();
 
 		/**
 		 * This signal is emitted just before a new visual layer is added.
@@ -304,11 +322,17 @@ namespace GPlatesPresentation
 		void
 		changed();
 
-	private slots:
+	private Q_SLOTS:
 
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
+
+		void
+		handle_begin_add_or_remove_layers();
+
+		void
+		handle_end_add_or_remove_layers();
 
 		void
 		handle_layer_added(

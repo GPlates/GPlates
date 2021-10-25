@@ -90,7 +90,7 @@ namespace GPlatesQtWidgets
 				QWidget *editor,
 				const QModelIndex &index) const;
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_layer_about_to_be_removed(

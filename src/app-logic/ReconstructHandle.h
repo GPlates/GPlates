@@ -34,7 +34,7 @@ namespace GPlatesAppLogic
 	namespace ReconstructHandle
 	{
 		/**
-		 * Typedef for a global handle that is stored in @a ReconstructedFeatureGeometry
+		 * Typedef for a global handle that is stored in @a ReconstructionGeometry
 		 * instances to identity them, for example, as belonging to a particular group of
 		 * reconstructed feature geometries.
 		 *
@@ -46,17 +46,16 @@ namespace GPlatesAppLogic
 		//
 		// NOTE: We don't want a 'get_current_reconstruct_handle()' function because
 		// then anyone can accidentally place another client's reconstruct handle into their own
-		// created RFGs (thinking it's going into their own group) thus effectively adding RFGs to
-		// someone else's reconstruct group.
+		// created ReconstructionGeometry's (thinking it's going into their own group) thus
+		// effectively adding ReconstructionGeometry's to someone else's reconstruct group.
 		//
 
 		/**
 		 * Returns the next global reconstruct handle by incrementing the integer handle
 		 * returned by the last call to @a get_next_reconstruct_handle.
 		 *
-		 * The returned global handle can be stored in @a ReconstructedFeatureGeometry
-		 * instances to identity them, for example, as belonging to a particular group of
-		 * reconstructed feature geometries.
+		 * The returned global handle can be stored in @a ReconstructionGeometry instances to identity
+		 * them, for example, as belonging to a particular group of reconstructed feature geometries.
 		 * This is useful when searching for @a ReconstructedFeatureGeometry objects when
 		 * iterating over weak observers of a particular feature.
 		 * If the feature has been reconstructed several times, in different situations, then it will

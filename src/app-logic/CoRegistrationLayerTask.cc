@@ -30,16 +30,17 @@
 #include "AppLogicUtils.h"
 #include "CoRegistrationLayerTask.h"
 #include "CoRegistrationData.h"
+#include "RasterLayerProxy.h"
+#include "ReconstructLayerProxy.h"
 
 #include "data-mining/CoRegConfigurationTable.h"
 #include "data-mining/DataTable.h"
 #include "data-mining/DataSelector.h"
 
-
 const QString GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME =
-		"CoRegistration seed Channel";
+		"Reconstructed seed geometries";
 const QString GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME =
-		"CoRegistration input Channel";
+		"Reconstructed target geometries/rasters";
 
 
 bool
@@ -55,11 +56,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::get_input_channel_types() const
 {
 	std::vector<LayerInputChannelType> input_channel_types;
 
-	// Channel definition for the reconstruction tree.
-	input_channel_types.push_back(
-			LayerInputChannelType(
-					get_reconstruction_tree_channel_name(),
-					LayerInputChannelType::ONE_DATA_IN_CHANNEL));
+	// NOTE: There's no channel definition for a reconstruction tree - a rotation layer is not needed.
 
 	input_channel_types.push_back(
 			LayerInputChannelType(
@@ -67,11 +64,17 @@ GPlatesAppLogic::CoRegistrationLayerTask::get_input_channel_types() const
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 					LayerTaskType::RECONSTRUCT));
 
+	// Channel definition for the co-registration targets:
+	// - reconstructed feature geometries, or
+	// - reconstructed raster(s).
+	std::vector<LayerTaskType::Type> target_input_channel_types;
+	target_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
+	target_input_channel_types.push_back(LayerTaskType::RASTER);
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
-					LayerTaskType::RECONSTRUCT));
+					target_input_channel_types));
 
 	return input_channel_types;
 }
@@ -118,21 +121,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::add_input_layer_proxy_connection(
 		const QString &input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == get_reconstruction_tree_channel_name())
-	{
-		// Make sure the input layer proxy is a reconstruction layer proxy.
-		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
-				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructionLayerProxy>(layer_proxy);
-		if (reconstruction_layer_proxy)
-		{
-			// Stop using the default reconstruction layer proxy.
-			d_using_default_reconstruction_layer_proxy = false;
-
-			d_coregistration_layer_proxy->set_current_reconstruction_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(reconstruction_layer_proxy.get()));
-		}
-	}
-	else if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
+	if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
 	{
 		// The seed geometries layer proxy.
 		boost::optional<ReconstructLayerProxy *> reconstructed_seed_geometries_layer_proxy =
@@ -145,13 +134,22 @@ GPlatesAppLogic::CoRegistrationLayerTask::add_input_layer_proxy_connection(
 	}
 	else if (input_channel_name == CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME)
 	{
-		// The target geometries layer proxy.
-		boost::optional<ReconstructLayerProxy *> reconstructed_target_geometries_layer_proxy =
+		// The target reconstructed geometries layer proxy.
+		boost::optional<ReconstructLayerProxy *> target_reconstructed_geometries_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
-		if (reconstructed_target_geometries_layer_proxy)
+		if (target_reconstructed_geometries_layer_proxy)
 		{
 			d_coregistration_layer_proxy->add_coregistration_target_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(reconstructed_target_geometries_layer_proxy.get()));
+					GPlatesUtils::get_non_null_pointer(target_reconstructed_geometries_layer_proxy.get()));
+		}
+
+		// The target raster layer proxy.
+		boost::optional<RasterLayerProxy *> target_raster_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<RasterLayerProxy>(layer_proxy);
+		if (target_raster_layer_proxy)
+		{
+			d_coregistration_layer_proxy->add_coregistration_target_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(target_raster_layer_proxy.get()));
 		}
 	}
 }
@@ -162,22 +160,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::remove_input_layer_proxy_connection(
 		const QString &input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == get_reconstruction_tree_channel_name())
-	{
-		// Make sure the input layer proxy is a reconstruction layer proxy.
-		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
-				LayerProxyUtils::get_layer_proxy_derived_type<
-						ReconstructionLayerProxy>(layer_proxy);
-		if (reconstruction_layer_proxy)
-		{
-			// Start using the default reconstruction layer proxy.
-			d_using_default_reconstruction_layer_proxy = true;
-
-			d_coregistration_layer_proxy->set_current_reconstruction_layer_proxy(
-					d_default_reconstruction_layer_proxy);
-		}
-	}
-	else if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
+	if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
 	{
 		// The seed geometries layer proxy.
 		boost::optional<ReconstructLayerProxy *> reconstructed_seed_geometries_layer_proxy =
@@ -190,13 +173,22 @@ GPlatesAppLogic::CoRegistrationLayerTask::remove_input_layer_proxy_connection(
 	}
 	else if (input_channel_name == CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME)
 	{
-		// The target geometries layer proxy.
-		boost::optional<ReconstructLayerProxy *> reconstructed_target_geometries_layer_proxy =
+		// The target reconstructed geometries layer proxy.
+		boost::optional<ReconstructLayerProxy *> target_reconstructed_geometries_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
-		if (reconstructed_target_geometries_layer_proxy)
+		if (target_reconstructed_geometries_layer_proxy)
 		{
 			d_coregistration_layer_proxy->remove_coregistration_target_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(reconstructed_target_geometries_layer_proxy.get()));
+					GPlatesUtils::get_non_null_pointer(target_reconstructed_geometries_layer_proxy.get()));
+		}
+
+		// The target raster layer proxy.
+		boost::optional<RasterLayerProxy *> target_raster_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<RasterLayerProxy>(layer_proxy);
+		if (target_raster_layer_proxy)
+		{
+			d_coregistration_layer_proxy->remove_coregistration_target_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(target_raster_layer_proxy.get()));
 		}
 	}
 }
@@ -211,71 +203,13 @@ GPlatesAppLogic::CoRegistrationLayerTask::update(
 	// If the layer task params have been modified then update our reconstruct layer proxy.
 	if (d_layer_task_params.d_set_cfg_table_called)
 	{
-		// NOTE: Currently this doesn't really do anything because the layer proxy also
-		// has a reference to the table - but later it will have a copy of the configuration
-		// table and this will notify it that the copy should be updated.
+		// Let the layer proxy know of the updated configuration table.
 		d_coregistration_layer_proxy->set_current_coregistration_configuration_table(
-				*d_layer_task_params.d_cfg_table);
+				d_layer_task_params.d_cfg_table);
 
 		d_layer_task_params.d_set_cfg_table_called = false;
 	}
 
-	// If our layer proxy is currently using the default reconstruction layer proxy then
-	// tell our layer proxy about the new default reconstruction layer proxy.
-	if (d_using_default_reconstruction_layer_proxy)
-	{
-		// Avoid setting it every update unless it's actually a different layer.
-		if (reconstruction->get_default_reconstruction_layer_output() != d_default_reconstruction_layer_proxy)
-		{
-			d_coregistration_layer_proxy->set_current_reconstruction_layer_proxy(
-					reconstruction->get_default_reconstruction_layer_output());
-		}
-	}
-
-	d_default_reconstruction_layer_proxy = reconstruction->get_default_reconstruction_layer_output();
-
-
-	//
-	// Here we deviate from the usual way layer proxies work by getting the co-reg layer proxy
-	// to do its processing here rather than the usual way of waiting until some client queries
-	// the layer proxy (such as during export or perhaps some other layer that uses us as input
-	// - currently there are none of these layers).
-	//
-	// TODO: After the 1.1 release I'll change this, but for now I'll keep it the way it was
-	// for minimum disturbance.
-	//
-
-	if(!d_layer_task_params.d_call_back || !d_layer_task_params.d_cfg_table)
-	{
-		//This case means layer parameters haven't be initialized. We should not proceed further from here.
-		return;
-	}
-	refresh_data(GPlatesDataMining::DataTable());
-
-	// Get the co-registration result data for the current reconstruction time.
-	boost::optional<CoRegistrationData::non_null_ptr_type> coregistration_data =
-			d_coregistration_layer_proxy->get_coregistration_data();
-
-	// Notify observers of the new results data.
-	if (coregistration_data)
-	{
-		refresh_data(coregistration_data.get()->data_table());
-
-#ifdef _DEBUG
-		std::cout << coregistration_data.get()->data_table() << std::endl;
-#endif
-	}
-}
-
-
-void
-GPlatesAppLogic::CoRegistrationLayerTask::refresh_data(
-		const GPlatesDataMining::DataTable& table)
-{
-	GPlatesDataMining::DataSelector::set_data_table(table);
-
-	if (d_layer_task_params.d_call_back)
-	{
-		d_layer_task_params.d_call_back(GPlatesDataMining::DataSelector::get_data_table());
-	}
+	// NOTE: Clients of co-registration (eg, the co-registration results dialog or co-registration
+	// export) are expected to query the layer proxy to process/get co-registration results.
 }

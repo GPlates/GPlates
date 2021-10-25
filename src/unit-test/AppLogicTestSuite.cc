@@ -30,7 +30,7 @@
 #include "unit-test/ApplicationStateTest.h"
 #include "unit-test/TestSuiteFilter.h"
 #include "unit-test/DataAssociationDataTableTest.h"
-#include "unit-test/MeshGeneratorTest.h"
+#include "unit-test/GenerateVelocityDomainCitcomsTest.h"
 
 
 GPlatesUnitTest::AppLogicTestSuite::AppLogicTestSuite(
@@ -45,6 +45,6 @@ void
 GPlatesUnitTest::AppLogicTestSuite::construct_maps()
 {
 	ADD_TESTSUITE(ApplicationState);
-	ADD_TESTSUITE(MeshGenerator);
+	ADD_TESTSUITE(GenerateVelocityDomainCitcoms);
 }
 

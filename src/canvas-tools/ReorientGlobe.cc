@@ -29,17 +29,24 @@
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 
+#include "view-operations/RenderedGeometryCollection.h"
+
 
 void
 GPlatesCanvasTools::ReorientGlobe::handle_activation()
 {
-	// FIXME:  We may have to adjust the message if we are using a Map View.
 	if (globe_canvas().isVisible())
 	{
-		d_view_state_ptr->status_message(QObject::tr(
+		d_viewport_window_ptr->status_message(QObject::tr(
 			"Drag to re-orient the globe."
 			" Shift+drag to rotate the globe."));
 	}
+}
+
+
+void
+GPlatesCanvasTools::ReorientGlobe::handle_deactivation()
+{
 }
 
 

@@ -33,7 +33,7 @@
 #include "ShapefileFileFormatConfigurationDialog.h"
 
 #include "file-io/ErrorOpeningFileForReadingException.h"
-#include "file-io/ShapefileReader.h"
+#include "file-io/OgrReader.h"
 
 
 void
@@ -113,7 +113,7 @@ GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_con
 		const QString filename = file.get_file_info().get_qfileinfo().fileName();
 
 		const QStringList field_names =
-				GPlatesFileIO::ShapefileReader::read_field_names(file, d_model, read_errors);
+				GPlatesFileIO::OgrReader::read_field_names(file, d_model, read_errors);
 
 		// This is the model-to-attribute map that will be modified.
 		// NOTE: We're modifying the new file configuration in-place.
@@ -144,7 +144,7 @@ GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_con
 		file.set_file_info(file.get_file_info(), file_configuration);
 
 		// Remap the model with the updated attributes.
-		GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(file, d_model, read_errors);
+		GPlatesFileIO::OgrReader::remap_shapefile_attributes(file, d_model, read_errors);
 	}
 	catch (GPlatesFileIO::ErrorOpeningFileForReadingException &exc)
 	{

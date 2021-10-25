@@ -104,12 +104,9 @@ namespace GPlatesOpenGL
 			 * Returns the specified tile's texture or boost::none if there's no texture for this node
 			 * (for example there was no raster covering the node's tile).
 			 *
-			 * @a view_transform and @a projection_transform should match the current node's tile.
-			 * This information is provided by the client since it's usually available during client's
-			 * traversal of cube quad tree and says us memory.
-			 *
 			 * Note that for derived class @a GLMultiResolutionCubeRaster this will always return
-			 * a valid tile texture.
+			 * a valid tile texture since there will be no quad tree nodes over regions where there
+			 * is not raster coverage.
 			 *
 			 * NOTE: The returned texture has nearest neighbour filtering if it's a floating-point
 			 * texture so you should emulate bilinear filtering in a fragment shader.
@@ -117,11 +114,7 @@ namespace GPlatesOpenGL
 			 *
 			 * @a renderer is used if the tile's texture is not currently cached and needs to be re-rendered.
 			 *
-			 * @a cache_handle can be stored by the client to keep textures (and vertices) cached.
-			 *
-			 * NOTE: The returned texture shared pointer should only be used for rendering
-			 * and then discarded. This is because the texture is part of a texture cache and it might
-			 * get used during a subsequent call to @a get_tile_texture if it isn't being cached.
+			 * @a cache_handle is to be stored by the client to keep textures (and vertices) cached.
 			 */
 			boost::optional<GLTexture::shared_ptr_to_const_type>
 			get_tile_texture(

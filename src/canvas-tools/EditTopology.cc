@@ -32,13 +32,15 @@
 #include "EditTopology.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/TopologyGeometryType.h"
 #include "app-logic/TopologyInternalUtils.h"
+#include "app-logic/TopologyUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "global/InternalInconsistencyException.h"
 
-#include "gui/AddClickedGeometriesToFeatureTable.h"
+#include "gui/TopologyTools.h"
 
 #include "maths/LatLonPoint.h"
 
@@ -49,6 +51,7 @@
 #include "property-values/XsString.h"
 
 #include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/SearchResultsDockWidget.h"
 #include "qt-widgets/TopologyToolsWidget.h"
 #include "qt-widgets/ViewportWindow.h"
 
@@ -78,51 +81,58 @@ GPlatesCanvasTools::EditTopology::EditTopology(
 void
 GPlatesCanvasTools::EditTopology::handle_activation()
 {
+	// Reset the save/restore focused feature in case we return early.
+	d_save_restore_focused_feature = GPlatesModel::FeatureHandle::weak_ref();
+	d_save_restore_focused_feature_geometry_property = GPlatesModel::FeatureHandle::iterator();
+
 	// This tool must have a focused feature to activate 
-	if ( ! d_feature_focus_ptr->is_valid() )
+	if (!d_feature_focus_ptr->is_valid())
 	{
-		// switch to the choose feature tool
-		// FIXME:  Since ViewportWindow is passed as a const ref cannot call this :
-		// d_viewport_window_ptr->choose_click_geometry_tool();
 		return;
 	}
 
-	// else check type 
+	const GPlatesModel::FeatureHandle::const_weak_ref focused_feature = d_feature_focus_ptr->focused_feature();
 
-	//
-	// FIXME: Do this check based on feature properties rather than feature type.
-	// So if something looks like a TCPB (because it has a topology polygon property)
-	// then treat it like one. For this to happen we first need TopologicalNetwork to
-	// use a property type different than TopologicalPolygon.
-	//
-	static const GPlatesModel::FeatureType plate_type =
-		GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
-	static const GPlatesModel::FeatureType network_type =
-		GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
-	static const GPlatesModel::FeatureType slab_type =
-		GPlatesModel::FeatureType::create_gpml("TopologicalSlabBoundary");
+	// Determine the topology geometry type.
+	GPlatesAppLogic::TopologyGeometry::Type topology_geometry_type = GPlatesAppLogic::TopologyGeometry::UNKNOWN;
 
-	const GPlatesModel::FeatureType &feature_type = d_feature_focus_ptr->focused_feature()->feature_type();
+	if (GPlatesAppLogic::TopologyUtils::is_topological_line_feature(focused_feature))
+	{
+		topology_geometry_type = GPlatesAppLogic::TopologyGeometry::LINE;
+		d_topology_sections_filter =
+				&GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_line_topological_section;
+	}
+	else if (GPlatesAppLogic::TopologyUtils::is_topological_boundary_feature(focused_feature))
+	{
+		topology_geometry_type = GPlatesAppLogic::TopologyGeometry::BOUNDARY;
+		d_topology_sections_filter =
+				&GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_boundary_topological_section;
+	}
+	else if (GPlatesAppLogic::TopologyUtils::is_topological_network_feature(focused_feature))
+	{
+		topology_geometry_type = GPlatesAppLogic::TopologyGeometry::NETWORK;
+		d_topology_sections_filter =
+				&GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_network_topological_section;
+	}
 
-	// Only activate for topologies
-	if (
-		feature_type != plate_type && 
-		feature_type != network_type &&
-		feature_type != slab_type)
+	// Only activate for topologies.
+	if (topology_geometry_type == GPlatesAppLogic::TopologyGeometry::UNKNOWN)
 	{
 		// unset the focus
  		d_feature_focus_ptr->unset_focus();
-		
 		return;
 	}
 
-	// else, all checks passed , continue to activate the low level tools 
+	// Save the focused feature so we can restore it when this tool is deactivated.
+	// The focused feature is restored once topology editing has finished because, firstly, it leaves
+	// things almost the way they were (doesn't restore full clicked feature sequence though) and,
+	// secondly, it allows the user to easily edit the same topology feature again if they want.
+	d_save_restore_focused_feature = d_feature_focus_ptr->focused_feature();
+	d_save_restore_focused_feature_geometry_property = d_feature_focus_ptr->associated_geometry_property();
 
-	// Activate rendered layer.
-	d_rendered_geom_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
-
-	d_topology_tools_widget_ptr->activate( GPlatesGui::TopologyTools::EDIT );
+	d_topology_tools_widget_ptr->activate(
+			GPlatesQtWidgets::TopologyToolsWidget::EDIT,
+			topology_geometry_type);
 
 	set_status_bar_message(QT_TR_NOOP("Click a feature to add it to a topology."));
 }
@@ -131,6 +141,47 @@ void
 GPlatesCanvasTools::EditTopology::handle_deactivation()
 {
 	d_topology_tools_widget_ptr->deactivate();
+
+	d_topology_sections_filter = GPlatesGui::filter_reconstruction_geometry_predicate_type();
+
+	// Restore the focused feature (saved when this tool was activated).
+	if (d_save_restore_focused_feature.is_valid())
+	{
+		if (d_save_restore_focused_feature_geometry_property.is_still_valid())
+		{
+			d_feature_focus_ptr->set_focus(
+					d_save_restore_focused_feature,
+					d_save_restore_focused_feature_geometry_property);
+		}
+		else // Focused feature but geometry property no longer valid...
+		{
+			// Set focus to first geometry found within the feature.
+			d_feature_focus_ptr->set_focus(d_save_restore_focused_feature);
+		}
+	}
+	else // No focused feature...
+	{
+		d_feature_focus_ptr->unset_focus();
+	}
+
+	// Populate the feature table so that the Clicked (Geometries) GUI table shows the focused feature.
+	// NOTE: We do this *after* focusing the feature so that it can be found in the updated clicked feature table.
+	if (d_feature_focus_ptr->associated_reconstruction_geometry())
+	{
+		GPlatesGui::add_clicked_geometries_to_feature_table(
+				std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>(
+						1,
+						d_feature_focus_ptr->associated_reconstruction_geometry().get()),
+				*d_viewport_window_ptr,
+				*d_clicked_table_model_ptr,
+				*d_feature_focus_ptr,
+				d_reconstruct_graph,
+				false/*highlight_first_clicked_feature_in_table*/);
+	}
+	else
+	{
+		d_clicked_table_model_ptr->clear();
+	}
 }
 
 
@@ -141,9 +192,9 @@ GPlatesCanvasTools::EditTopology::handle_left_click(
 		double proximity_inclusion_threshold)
 {
 	// Show the 'Clicked' Feature Table
-	d_viewport_window_ptr->choose_clicked_geometry_table();
+	d_viewport_window_ptr->search_results_dock_widget().choose_clicked_geometry_table();
 
-	GPlatesGui::add_clicked_geometries_to_feature_table(
+	GPlatesGui::get_and_add_clicked_geometries_to_feature_table(
 			point_on_sphere,
 			proximity_inclusion_threshold,
 			*d_viewport_window_ptr,
@@ -151,6 +202,6 @@ GPlatesCanvasTools::EditTopology::handle_left_click(
 			*d_feature_focus_ptr,
 			*d_rendered_geom_collection,
 			d_reconstruct_graph,
-			&GPlatesAppLogic::TopologyInternalUtils::include_only_reconstructed_feature_geometries);
+			d_topology_sections_filter);
 }
 

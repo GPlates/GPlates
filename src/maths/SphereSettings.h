@@ -31,6 +31,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "MathsUtils.h"
 #include "types.h"
 
 #include "utils/Singleton.h"
@@ -39,8 +40,8 @@ namespace GPlatesMaths
 {
 	namespace Spherical
 	{
-		const real_t DefaultEarthRadius = 6378.1;
-		const real_t PI = 3.14159265358979323846;
+		const real_t DEFAULT_RADIUS_OF_EARTH = 6378.1;
+
 		//TODO: This is suspicious and needs more investigation.
 		const real_t DotProductDistanceAccuracyTolerance = 1.0e-7; 
 		//This is a dot-product value, -1 means the largest distance on sphere
@@ -126,7 +127,7 @@ namespace GPlatesMaths
 
 		protected:
 			SphereSettings() :
-				d_earth_radius(DefaultEarthRadius),
+				d_earth_radius(DEFAULT_RADIUS_OF_EARTH),
 				d_PI(PI),
 				d_dot_product_distance_accuracy_tolerance(DotProductDistanceAccuracyTolerance)
 			{ }

@@ -46,6 +46,7 @@ GPlatesFileIO::ExportTemplateFilename::validate_filename_template(
 GPlatesFileIO::ExportTemplateFilenameSequence::ExportTemplateFilenameSequence(
 		const QString &filename_template,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+		const QString &default_recon_tree_layer_name,
 		const GPlatesMaths::real_t &begin_reconstruction_time,
 		const GPlatesMaths::real_t &end_reconstruction_time,
 		const GPlatesMaths::real_t &reconstruction_time_increment,
@@ -82,6 +83,7 @@ GPlatesFileIO::ExportTemplateFilenameSequence::ExportTemplateFilenameSequence(
 	d_impl.reset(new ExportTemplateFilenameSequenceImpl(
 			filename_template,
 			reconstruction_anchor_plate_id,
+			default_recon_tree_layer_name,
 			begin_reconstruction_time.dval(),
 			reconstruction_time_increment.dval(),
 			sequence_info));

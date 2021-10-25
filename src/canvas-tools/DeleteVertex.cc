@@ -26,27 +26,27 @@
 #include "DeleteVertex.h"
 
 #include "qt-widgets/ViewportWindow.h"
+
 #include "view-operations/DeleteVertexGeometryOperation.h"
-#include "view-operations/GeometryOperationTarget.h"
 
 
 GPlatesCanvasTools::DeleteVertex::DeleteVertex(
 		const status_bar_callback_type &status_bar_callback,
-		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+		GPlatesViewOperations::GeometryBuilder &geometry_builder,
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+		GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 		const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold) :
 	CanvasTool(status_bar_callback),
-	d_rendered_geometry_collection(&rendered_geometry_collection),
-	d_geometry_operation_target(&geometry_operation_target),
 	d_delete_vertex_geometry_operation(
-		new GPlatesViewOperations::DeleteVertexGeometryOperation(
-				geometry_operation_target,
-				active_geometry_operation,
-				&rendered_geometry_collection,
-				choose_canvas_tool,
-				query_proximity_threshold))
+			new GPlatesViewOperations::DeleteVertexGeometryOperation(
+					geometry_builder,
+					geometry_operation_state,
+					rendered_geometry_collection,
+					main_rendered_layer_type,
+					canvas_tool_workflows,
+					query_proximity_threshold))
 {  }
 
 
@@ -59,24 +59,8 @@ GPlatesCanvasTools::DeleteVertex::~DeleteVertex()
 void
 GPlatesCanvasTools::DeleteVertex::handle_activation()
 {
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
-
-	// Ask which GeometryBuilder we are to operate on.
-	// Note: we must pass the type of canvas tool in (see GeometryOperationTarget for explanation).
-	// Returned GeometryBuilder should not be NULL but might be if tools are not
-	// enable/disabled properly.
-	GPlatesViewOperations::GeometryBuilder *geometry_builder =
-		d_geometry_operation_target->get_and_set_current_geometry_builder_for_newly_activated_tool(
-		GPlatesCanvasTools::CanvasToolType::DELETE_VERTEX);
-
-	// Ask which main rendered layer we are to operate on.
-	const GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_layer_type =
-		GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_LAYER;
-
-	// Activate our InsertVertexGeometryOperation.
-	d_delete_vertex_geometry_operation->activate(geometry_builder, main_layer_type);
+	// Activate our geometry operation.
+	d_delete_vertex_geometry_operation->activate();
 
 	set_status_bar_message(QT_TR_NOOP("Click to delete a vertex of the current geometry."));
 }
@@ -85,7 +69,7 @@ GPlatesCanvasTools::DeleteVertex::handle_activation()
 void
 GPlatesCanvasTools::DeleteVertex::handle_deactivation()
 {
-	// Deactivate our DeleteVertexGeometryOperation.
+	// Deactivate our geometry operation.
 	d_delete_vertex_geometry_operation->deactivate();
 }
 

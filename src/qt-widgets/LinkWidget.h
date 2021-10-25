@@ -72,7 +72,7 @@ namespace GPlatesQtWidgets
 			return d_link_text;
 		}
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when the user clicks on the link.
@@ -87,7 +87,7 @@ namespace GPlatesQtWidgets
 		event(
 				QEvent *ev);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_link_activated();

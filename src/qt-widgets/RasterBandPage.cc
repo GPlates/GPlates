@@ -35,7 +35,6 @@
 
 #include "RasterBandPage.h"
 
-
 namespace
 {
 	using GPlatesQtWidgets::RasterBandPageInternals::BandNameComboBox;
@@ -172,7 +171,7 @@ GPlatesQtWidgets::RasterBandPage::handle_table_cell_changed(
 		QString text = band_names_table->item(row, 1)->text();
 		d_band_names[row] = text.trimmed();
 
-		emit completeChanged();
+		Q_EMIT completeChanged();
 	}
 }
 
@@ -200,6 +199,12 @@ GPlatesQtWidgets::RasterBandPage::populate_table()
 		band_number_item->setFlags(Qt::ItemIsEnabled);
 		band_names_table->setItem(i, 0, band_number_item);
 
+		// Seems we need to close the editor before opening a new one otherwise
+		// changing the sort order will only affect the filenames and not depths.
+		if (band_names_table->item(i, 1))
+		{
+			band_names_table->closePersistentEditor(band_names_table->item(i, 1));
+		}
 		QTableWidgetItem *band_name_item = new QTableWidgetItem(d_band_names[i]);
 		band_name_item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsEditable);
 		band_names_table->setItem(i, 1, band_name_item);

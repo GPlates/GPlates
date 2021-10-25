@@ -66,7 +66,6 @@
 
 #include "utils/UnicodeStringUtils.h"
 
-
 // This is to allow FeatureCollectionHandle::const_weak_ref to be stored in the
 // userData of a QComboBox item, which is of type QVariant.
 // The macro is defined in <QMetaType>.
@@ -208,7 +207,7 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 		const GlobeAndMapWidget &existing_globe_and_map_widget,
 		ReadErrorAccumulationDialog &read_error_accumulation_dialog,
 		QWidget *parent_):
-	QDialog(parent_, Qt::Window),
+	GPlatesDialog(parent_, Qt::Window),
 	d_application_state(view_state.get_application_state()),
 	d_existing_globe_and_map_widget_ptr(&existing_globe_and_map_widget),
 	d_read_error_accumulation_dialog_ptr(&read_error_accumulation_dialog),
@@ -736,7 +735,7 @@ GPlatesQtWidgets::ColouringDialog::handle_repaint(
 	colour_schemes_list->item(d_next_icon_to_render)->setIcon(
 			QIcon(
 				QPixmap::fromImage(
-					d_globe_and_map_widget_ptr->grab_frame_buffer())));
+					d_globe_and_map_widget_ptr->render_to_qimage())));
 	++d_next_icon_to_render;
 
 	if (d_next_icon_to_render < colour_schemes_list->count())

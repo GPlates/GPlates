@@ -33,12 +33,12 @@
 
 #include "GpmlTimeSample.h"
 #include "GpmlInterpolationFunction.h"
-#include "TemplateTypeParameterType.h"
+#include "StructuralType.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
 
 
-// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlIrregularSampling, visit_gpml_irregular_sampling)
@@ -73,7 +73,7 @@ namespace GPlatesPropertyValues
 		create(
 				const GpmlTimeSample &first_time_sample,
 				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
-				const TemplateTypeParameterType &value_type_)
+				const StructuralType &value_type_)
 		{
 			non_null_ptr_type ptr(
 					new GpmlIrregularSampling(first_time_sample, interp_func,
@@ -91,7 +91,7 @@ namespace GPlatesPropertyValues
 		create(
 				const std::vector<GpmlTimeSample> &time_samples_,
 				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
-				const TemplateTypeParameterType &value_type_)
+				const StructuralType &value_type_)
 		{
 			non_null_ptr_type ptr(
 					new GpmlIrregularSampling(time_samples_, interp_func, value_type_));
@@ -161,10 +161,21 @@ namespace GPlatesPropertyValues
 
 		// Note that no "setter" is provided:  The value type of a GpmlIrregularSampling
 		// instance should never be changed.
-		const TemplateTypeParameterType &
+		const StructuralType &
 		value_type() const
 		{
 			return d_value_type;
+		}
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("IrregularSampling");
+			return STRUCTURAL_TYPE;
 		}
 
 		/**
@@ -207,7 +218,7 @@ namespace GPlatesPropertyValues
 		GpmlIrregularSampling(
 				const GpmlTimeSample &first_time_sample,
 				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
-				const TemplateTypeParameterType &value_type_):
+				const StructuralType &value_type_):
 			PropertyValue(),
 			d_time_samples(),
 			d_interpolation_function(interp_func),
@@ -221,7 +232,7 @@ namespace GPlatesPropertyValues
 		GpmlIrregularSampling(
 				const std::vector<GpmlTimeSample> &time_samples_,
 				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
-				const TemplateTypeParameterType &value_type_):
+				const StructuralType &value_type_):
 			PropertyValue(),
 			d_time_samples(time_samples_),
 			d_interpolation_function(interp_func),
@@ -250,7 +261,7 @@ namespace GPlatesPropertyValues
 
 		std::vector<GpmlTimeSample> d_time_samples;
 		GpmlInterpolationFunction::maybe_null_ptr_type d_interpolation_function;
-		TemplateTypeParameterType d_value_type;
+		StructuralType d_value_type;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

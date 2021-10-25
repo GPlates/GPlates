@@ -199,7 +199,7 @@ namespace GPlatesOpenGL
 					level_of_detail,
 					tile_u_offset,
 					tile_v_offset,
-					// See http://www.opengl.org/resources/code/samples/sig99/advanced99/notes/node30.html
+					// See http://www.opengl.org/archives/resources/code/samples/sig99/advanced99/notes/node30.html
 					// to help understand why the *inverse* ratio is used to scale the projection transform...
 					0.5 * d_expanded_projection_scale);
 		}

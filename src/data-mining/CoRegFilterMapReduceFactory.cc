@@ -43,27 +43,27 @@ using namespace GPlatesUtils;
 GPlatesDataMining::CoRegFilter*
 GPlatesDataMining::CoRegFilterFactory::create(
 		const ConfigurationTableRow& row, 
-		const GPlatesDataMining::CoRegFilter::RFGVector& seeds)
+		const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature)
 {
-	return row.filter_cfg->create_filter(seeds);
+	return row.filter_cfg->create_filter(reconstructed_seed_feature);
 }
 
 GPlatesDataMining::CoRegMapper*
 GPlatesDataMining::CoRegMapperFactory::create(
 		const ConfigurationTableRow& row,
-		const GPlatesDataMining::CoRegFilter::RFGVector& seeds)
+		const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature)
 {
 	switch(row.attr_type)
 	{
-		case CO_REGISTRATION_ATTRIBUTE:
+		case CO_REGISTRATION_GPML_ATTRIBUTE:
 			return new	RFGToPropertyValueMapper(row.attr_name);
 		case DISTANCE_ATTRIBUTE:
 		case PRESENCE_ATTRIBUTE:
 		case NUMBER_OF_PRESENCE_ATTRIBUTE:
-			return new	RFGToRelationalPropertyMapper(row.attr_type,seeds);
+			return new	RFGToRelationalPropertyMapper(row.attr_type, reconstructed_seed_feature);
 	
 			//This case should be removed once the shape file attributes are treated the same with other attributes.
-		case SHAPE_FILE_ATTRIBUTE: 
+		case CO_REGISTRATION_SHAPEFILE_ATTRIBUTE: 
 			return new	RFGToPropertyValueMapper(row.attr_name,true);
 		default:
 			break;
@@ -75,7 +75,7 @@ GPlatesDataMining::CoRegMapperFactory::create(
 GPlatesDataMining::CoRegReducer*
 GPlatesDataMining::CoRegReducerFactory::create(
 		const ConfigurationTableRow& row,
-		const GPlatesDataMining::CoRegFilter::RFGVector& seeds)
+		const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature)
 {
 	switch(row.reducer_type)
 	{
@@ -101,7 +101,7 @@ GPlatesDataMining::CoRegReducerFactory::create(
 			return new PercentileReducer();
 
 		case REDUCER_LOOKUP:
-			return new LookupReducer(seeds);
+			return new LookupReducer(reconstructed_seed_feature);
 		
 		default:
 			break;

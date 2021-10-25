@@ -26,19 +26,24 @@
 #ifndef GPLATES_GUI_TOPOLOGYSECTIONSTABLE_H
 #define GPLATES_GUI_TOPOLOGYSECTIONSTABLE_H
 
-#include <QObject>
-#include <QTableWidget>
-#include <QAction>
 #include <vector>
+#include <QAction>
+#include <QObject>
+#include <QPointer>
+#include <QTableWidget>
 
-#include "gui/TopologySectionsContainer.h"
-#include "gui/TopologySectionsTableColumns.h"
-#include "gui/FeatureFocus.h"
+#include "TopologySectionsContainer.h"
+#include "TopologySectionsTableColumns.h"
 
 
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
 }
 
 namespace GPlatesQtWidgets
@@ -48,6 +53,8 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesGui
 {
+	class FeatureFocus;
+
 	/**
 	 * Class to manage a QTableWidget plus the items within, to display
 	 * the sections of topology the user is currently building up via
@@ -67,14 +74,13 @@ namespace GPlatesGui
 				QTableWidget &table,
 				TopologySectionsContainer &boundary_container,
 				TopologySectionsContainer &interior_container,
-				GPlatesAppLogic::ApplicationState &application_state,
-				GPlatesGui::FeatureFocus &feature_focus);
+				GPlatesPresentation::ViewState &view_state);
 
 		virtual
 		~TopologySectionsTable()
 		{  }
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Updates the table rows from the data vector.
@@ -93,7 +99,7 @@ namespace GPlatesGui
 		void
 		react_container_change(GPlatesGui::TopologySectionsContainer*);
 
-	private slots:
+	private Q_SLOTS:
 		void
 		react_cell_entered(
 				int row,
@@ -299,7 +305,7 @@ namespace GPlatesGui
 		/**
 		 * The QTableWidget we are managing.
 		 */
-		QTableWidget *d_table;
+		QPointer<QTableWidget> d_table;
 		
 		/**
 		 * The underlying data. Stored as pointer so we could change it later,
@@ -361,7 +367,7 @@ namespace GPlatesGui
 		 * FeatureFocus even gets a special version of @a set_focus() called
 		 * just for this class! How special.
 		 */
-		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
+		FeatureFocus *d_feature_focus_ptr;
 		
 	};
 }

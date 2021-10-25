@@ -30,10 +30,6 @@
 #include <QPointF>
 #include <QDebug>
 
-#include "gui/MapTransform.h"
-
-#include "qt-widgets/MapView.h"
-
 
 namespace GPlatesQtWidgets
 {
@@ -269,10 +265,7 @@ namespace GPlatesGui
 				bool was_on_surface,
 				const QPointF &current_point_on_scene,
 				bool is_on_surface,
-				const QPointF &translation)
-		{
-			map_transform().translate(-translation.x(), -translation.y());
-		}
+				const QPointF &translation);
 
 		/**
 		 * Handle the release of the left-mouse button after a mouse drag while a Control

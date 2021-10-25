@@ -55,7 +55,7 @@ namespace GPlatesQtWidgets
 		init();
 	
 
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_stage_pole_checkbox_state();

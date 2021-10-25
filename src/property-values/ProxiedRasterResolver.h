@@ -54,9 +54,9 @@
 #include "gui/Mipmapper.h"
 #include "gui/RasterColourPalette.h"
 
-#include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/Profile.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesPropertyValues
@@ -1008,7 +1008,7 @@ namespace GPlatesPropertyValues
 									// The 'true' means use the colour palette before mipmapping...
 									GPlatesFileIO::MipmappedRasterFormatWriter<ProxiedRawRasterType, true> >(
 											d_proxied_raw_raster,
-											get_raster_band_reader_handle(*d_proxied_raw_raster),
+											this->get_raster_band_reader_handle(*d_proxied_raw_raster),
 											colour_palette);
 
 					// If there was an error then don't try again next time

@@ -17,6 +17,7 @@
 #   copy_resolved_item_into_bundle
 #   copy_resolved_framework_into_bundle
 #   fixup_bundle_item
+#   fixup_python_framework
 #   verify_bundle_prerequisites
 #   verify_bundle_symlinks
 # Requires CMake 2.6 or greater because it uses function, break and
@@ -522,6 +523,13 @@ function(copy_resolved_framework_into_bundle resolved_item resolved_embedded_ite
       get_filename_component(resolved_embedded_dir "${resolved_embedded_dir}/../.." ABSOLUTE)
       #message(STATUS "copying COMMAND ${CMAKE_COMMAND} -E copy_directory '${resolved_dir}' '${resolved_embedded_dir}'")
       execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory "${resolved_dir}" "${resolved_embedded_dir}")
+    elseif(${resolved_item} MATCHES ".*Python.framework.*")
+      get_filename_component(resolved_dir "${resolved_item}" PATH)
+      get_filename_component(resolved_embedded_dir "${resolved_embedded_item}" PATH)
+      #message(STATUS "copying COMMAND ${CMAKE_COMMAND} -E copy_directory '${resolved_dir}' '${resolved_embedded_dir}'")
+      file(COPY "${resolved_dir}/" DESTINATION "${resolved_embedded_dir}")
+      #follow Florian's suggestion, use file(COPY...) to avoid dereferencing symbol links.
+      #execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory "${resolved_dir}" "${resolved_embedded_dir}")
     else()
       # Framework lib itself:
       #message(STATUS "copying COMMAND ${CMAKE_COMMAND} -E copy ${resolved_item} ${resolved_embedded_item}")
@@ -566,6 +574,8 @@ function(fixup_bundle_item resolved_embedded_item exepath dirs)
     message(FATAL_ERROR "cannot fixup an item that is not in the bundle...")
   endif()
 
+  execute_process(COMMAND chmod u+w "${resolved_embedded_item}")
+
   set(prereqs "")
   get_prerequisites("${resolved_embedded_item}" prereqs 1 0 "${exepath}" "${dirs}")
 
@@ -583,17 +593,72 @@ function(fixup_bundle_item resolved_embedded_item exepath dirs)
     endif(NOT "${${rkey}_EMBEDDED_ITEM}" STREQUAL "")
   endforeach(pr)
 
-  if(BU_CHMOD_BUNDLE_ITEMS)
-    execute_process(COMMAND chmod u+w "${resolved_embedded_item}")
-  endif()
+  #if(BU_CHMOD_BUNDLE_ITEMS)
+    #execute_process(COMMAND chmod u+w "${resolved_embedded_item}")
+  #endif()
 
   # Change this item's id and all of its references in one call
   # to install_name_tool:
   #
+  #message(STATUS "changes: ${changes}")
+  #message(STATUS "ikey_emb_item: ${${ikey}_EMBEDDED_ITEM}")
+  #message(STATUS "resolved_embedded_item: ${resolved_embedded_item}")
   execute_process(COMMAND install_name_tool
     ${changes} -id "${${ikey}_EMBEDDED_ITEM}" "${resolved_embedded_item}"
   )
 endfunction(fixup_bundle_item)
+
+#fixup the dynamic load libraries in python framework.
+function(fixup_python_framework exepath dirs)
+
+if(APPLE)
+	message(STATUS "Begin fixup python framework")
+	file(GLOB_RECURSE file_list "${exepath}/../Frameworks/Python.framework/*.so")
+
+	set(depends "")
+	set(file_need_fix "")
+	
+	foreach(file ${file_list})
+        	set(prereqs "")
+		get_prerequisites("${file}" prereqs 1 1 "${exepath}" "${dirs}")
+
+		if(prereqs)
+			gp_append_unique(file_need_fix  "${file}")
+			foreach(pr ${prereqs})
+				gp_append_unique(depends  "${pr}")
+			endforeach(pr)
+		endif(prereqs)
+	endforeach(file)
+
+	set(embed_deps "")
+	foreach(dep ${depends})
+		GET_FILENAME_COMPONENT(dep_name "${dep}" NAME)
+		if(NOT EXISTS "${exepath}/../MacOS/${dep_name}")	
+			execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${dep}" "${exepath}/../MacOS")
+			gp_append_unique(embed_deps  "${exepath}/../MacOS/${dep_name}")
+		endif(NOT EXISTS "${exepath}/../MacOS/${dep_name}")
+	endforeach(dep)
+
+	set(file_list ${file_need_fix} ${embed_deps})
+
+	foreach(f ${file_list})
+		GET_FILENAME_COMPONENT(fname "${f}" NAME)
+
+		set(prereqs "")
+		get_prerequisites("${f}" prereqs 1 0 "${exepath}" "${dirs}")
+		set(changes "")
+		foreach(pr ${prereqs})
+			GET_FILENAME_COMPONENT(pfname "${pr}" NAME)
+			set(changes ${changes} "-change" "${pr}" "@executable_path/../MacOS/${pfname}")
+		endforeach(pr)
+
+	execute_process(COMMAND chmod u+w "${f}")
+	execute_process(COMMAND install_name_tool
+		${changes} -id "@executable_path/../MacOS/${fname}" "${f}")
+	endforeach(f)
+	message(STATUS "end fixup python framework")
+endif(APPLE)
+endfunction(fixup_python_framework)
 
 
 function(fixup_bundle app libs dirs)
@@ -636,8 +701,8 @@ function(fixup_bundle app libs dirs)
 
       if(${${key}_COPYFLAG})
         set(item "${${key}_ITEM}")
-        if(item MATCHES "[^/]+\\.framework/")
-          copy_resolved_framework_into_bundle("${${key}_RESOLVED_ITEM}"
+	if(item MATCHES "[^/]+\\.framework/")
+	   copy_resolved_framework_into_bundle("${${key}_RESOLVED_ITEM}"
             "${${key}_RESOLVED_EMBEDDED_ITEM}")
         else()
           copy_resolved_item_into_bundle("${${key}_RESOLVED_ITEM}"
@@ -660,6 +725,8 @@ function(fixup_bundle app libs dirs)
     message(STATUS "fixup_bundle: cleaning up...")
     clear_bundle_keys(keys)
 
+    fixup_python_framework("${exepath}" "${Dirs}")
+	
     message(STATUS "fixup_bundle: verifying...")
     verify_app("${app}")
   else(valid)
@@ -686,7 +753,12 @@ function(verify_bundle_prerequisites bundle result_var info_var)
   file(GLOB_RECURSE file_list "${bundle}/*")
   foreach(f ${file_list})
     is_file_executable("${f}" is_executable)
-    if(is_executable)
+
+  # For now, we only care about gplates executable.
+  # The problem with previous code is when Python framework has been copied into bundle,
+  # some python files look like executable files. 
+  # Those files should be verified here and some of them cannot pass the verification.  
+  if(is_executable AND (${f} MATCHES ".*gplates$"))
       get_filename_component(exepath "${f}" PATH)
       math(EXPR count "${count} + 1")
 
@@ -725,7 +797,7 @@ function(verify_bundle_prerequisites bundle result_var info_var)
         set(result 0)
         set(info ${info} "external prerequisites found:\nf='${f}'\nexternal_prereqs='${external_prereqs}'\n")
       endif(external_prereqs)
-    endif(is_executable)
+    endif(is_executable AND (${f} MATCHES ".*gplates$"))
   endforeach(f)
 
   if(result)

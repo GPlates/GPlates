@@ -28,7 +28,7 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLINTERPOLATIONFUNCTION_H
 #define GPLATES_PROPERTYVALUES_GPMLINTERPOLATIONFUNCTION_H
 
-#include "TemplateTypeParameterType.h"
+#include "StructuralType.h"
 
 #include "model/PropertyValue.h"
 #include "utils/UnicodeStringUtils.h"
@@ -100,7 +100,7 @@ namespace GPlatesPropertyValues
 		 */
 		explicit
 		GpmlInterpolationFunction(
-				const TemplateTypeParameterType &value_type_):
+				const StructuralType &value_type_):
 			PropertyValue(),
 			d_value_type(value_type_)
 		{  }
@@ -129,10 +129,21 @@ namespace GPlatesPropertyValues
 
 		// Note that no "setter" is provided:  The value type of a
 		// GpmlInterpolationFunction instance should never be changed.
-		const TemplateTypeParameterType &
+		const StructuralType &
 		value_type() const
 		{
 			return d_value_type;
+		}
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("InterpolationFunction");
+			return STRUCTURAL_TYPE;
 		}
 
 		virtual
@@ -142,7 +153,7 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		TemplateTypeParameterType d_value_type;
+		StructuralType d_value_type;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

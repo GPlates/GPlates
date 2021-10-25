@@ -54,21 +54,29 @@ namespace
 			QObject *qreceiver,
 			QEvent *qevent)
 	{
-#ifdef GPLATES_DEBUG
-		// For debug builds we don't want to catch exceptions because
-		// if we do then we lose the debugger call stack trace which is
-		// much more detailed than our own stack trace implementation that
-		// currently requires placing TRACK_CALL_STACK macros around the code.
-		// And, of course, debugging relies on the native debugger stack trace.
-		return func();
-#else
+#if !defined(GPLATES_DEBUG)
 		std::string error_message_std;
 		std::string call_stack_trace_std;
+#endif
 
 		try
 		{
 			return func();
 		}
+		catch (GPlatesGlobal::NeedExitException &ex)
+		{
+			std::ostringstream os;
+			os << ex;
+			qDebug() << os.str().c_str();
+			//use exception to exit gplates is better than call exit(0) directly.
+			return true;
+		}
+		// For debug builds we don't want to catch exceptions (except 'NeedExitException')
+		// because if we do then we lose the debugger call stack trace which is
+		// much more detailed than our own stack trace implementation that
+		// currently requires placing TRACK_CALL_STACK macros around the code.
+		// And, of course, debugging relies on the native debugger stack trace.
+#if !defined(GPLATES_DEBUG)
 		catch (GPlatesGlobal::Exception &exc)
 		{
 			// Get exception to write its message.
@@ -118,6 +126,8 @@ namespace
 			// Only do this if we're in the Qt event thread otherwise
 			// it seems to crash (if an exception is thrown in 'main()' before
 			// QApplication::exec() is called).
+			// This also applies when GPlates is used for command-line processing
+			// (ie, when it's not used as a GUI).
 			QMessageBox::critical(NULL,
 					QObject::tr("Error: unhandled GPlates exception"),
 					error_message,
@@ -142,11 +152,12 @@ namespace
 
 		// If we have an installed message handler then this will output to a log file.
 		// This is where the core dump or debugger trigger happens on debug builds.
+		// On release builds this exits the application with a return value of 1.
 		qFatal("Exiting due to exception caught");
 
 		// Shouldn't get past qFatal - this just keeps compiler happy.
 		return false;
-#endif // GPLATES_DEBUG
+#endif // if !defined(GPLATES_DEBUG)
 	}
 
 

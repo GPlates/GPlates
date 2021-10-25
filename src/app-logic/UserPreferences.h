@@ -342,7 +342,7 @@ namespace GPlatesAppLogic
 				const KeyValueMap &keyvalues);
 
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Indicates where settings are stored to console.

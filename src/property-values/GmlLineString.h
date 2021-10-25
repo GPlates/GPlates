@@ -35,7 +35,7 @@
 #include "maths/PolylineOnSphere.h"
 
 
-// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlLineString, visit_gml_line_string)
@@ -125,6 +125,17 @@ namespace GPlatesPropertyValues
 		{
 			d_polyline = p;
 			update_instance_id();
+		}
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gml("LineString");
+			return STRUCTURAL_TYPE;
 		}
 
 		/**

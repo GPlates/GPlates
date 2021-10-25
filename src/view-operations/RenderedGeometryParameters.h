@@ -29,6 +29,8 @@
 
 #include "gui/Colour.h"
 
+#include "RenderedGeometryFactory.h"
+
 
 namespace GPlatesViewOperations
 {
@@ -53,6 +55,13 @@ namespace GPlatesViewOperations
 		//! Line width for reconstruction layer.
 		const float RECONSTRUCTION_LINE_WIDTH_HINT = 1.5f;
 
+		//! Default scaling for arrow bodies.
+		const float RECONSTRUCTION_RATIO_ARROW_UNIT_VECTOR_DIRECTION_TO_GLOBE_RADIUS = 0.05f;
+
+		//! Default scaling for arrowheads.
+		const float RECONSTRUCTION_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS =
+				RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS;
+
 		//! Point size for reconstruction layer.
 		const float DIGITISATION_POINT_SIZE_HINT = DEFAULT_POINT_SIZE_HINT;
 
@@ -73,6 +82,9 @@ namespace GPlatesViewOperations
 
 		//! Line width for reconstruction layer.
 		const float TOPOLOGY_TOOL_LINE_WIDTH_HINT = 4.0f;
+
+		//! Default arrow spacing velocity layer.
+		const float VELOCITY_ARROW_SPACING = 0.175f;
 	}
 
 	/**

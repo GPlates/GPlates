@@ -422,9 +422,9 @@ GPlatesOpenGL::GLMatrix::glu_look_at(
 
 	const GPlatesMaths::UnitVector3D f = (center - eye).get_normalisation();
 
-	const GPlatesMaths::UnitVector3D s( cross(f, up.get_normalisation()) );
+	const GPlatesMaths::UnitVector3D s( cross(f, up).get_normalisation() );
 
-	const GPlatesMaths::UnitVector3D u( cross(s, f) );
+	const GPlatesMaths::Vector3D u( cross(s, f) );
 
 	GLdouble look_at[16];
 

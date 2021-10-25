@@ -34,19 +34,24 @@
 
 #include "LatLonCoordinatesTable.h"
 
+#include "canvas-tools/GeometryOperationState.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+
 #include "gui/Colour.h"
-#include "maths/InvalidLatLonException.h"
-#include "maths/InvalidLatLonCoordinateException.h"
-#include "maths/LatLonPoint.h"
+
 #include "maths/GeometryOnSphere.h"
+#include "maths/GeometryType.h"
+#include "maths/InvalidLatLonCoordinateException.h"
+#include "maths/InvalidLatLonException.h"
+#include "maths/LatLonPoint.h"
 #include "maths/Real.h"
+
 #include "utils/GeometryCreationUtils.h"
 #include "utils/StringFormattingUtils.h"
-#include "view-operations/ActiveGeometryOperation.h"
+
 #include "view-operations/GeometryOperation.h"
-#include "view-operations/GeometryType.h"
 
 
 namespace
@@ -198,25 +203,25 @@ namespace
 
 	QString
 	get_geometry_type_text(
-			GPlatesViewOperations::GeometryType::Value geom_type)
+			GPlatesMaths::GeometryType::Value geom_type)
 	{
 		QString label;
 
 		switch (geom_type)
 		{
-		case GPlatesViewOperations::GeometryType::POINT:
+		case GPlatesMaths::GeometryType::POINT:
 			label = "gml:Point";
 			break;
 
-		case GPlatesViewOperations::GeometryType::MULTIPOINT:
+		case GPlatesMaths::GeometryType::MULTIPOINT:
 			label = "gml:MultiPoint";
 			break;
 
-		case GPlatesViewOperations::GeometryType::POLYLINE:
+		case GPlatesMaths::GeometryType::POLYLINE:
 			label = "gml:LineString";
 			break;
 
-		case GPlatesViewOperations::GeometryType::POLYGON:
+		case GPlatesMaths::GeometryType::POLYGON:
 			label = "gml:Polygon";
 			break;
 
@@ -230,62 +235,38 @@ namespace
 
 GPlatesQtWidgets::LatLonCoordinatesTable::LatLonCoordinatesTable(
 		QTreeWidget *coordinates_table,
-		GPlatesViewOperations::GeometryBuilder *initial_geom_builder,
-		GPlatesViewOperations::ActiveGeometryOperation *active_geometry_operation) :
-d_coordinates_table(coordinates_table),
-d_tree_widget_builder(coordinates_table),
-d_current_geometry_builder(NULL),
-d_current_geometry_operation(NULL),
-d_need_to_reload_data(false)
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state) :
+	d_coordinates_table(coordinates_table),
+	d_tree_widget_builder(coordinates_table),
+	d_current_geometry_builder(NULL),
+	d_current_geometry_operation(NULL),
+	d_need_to_reload_data(false)
 {
-	if (active_geometry_operation)
-	{
-		connect_to_active_geometry_operation_signals(active_geometry_operation);
-	}
-
-	set_geometry_builder(initial_geom_builder);
-}
-
-void
-GPlatesQtWidgets::LatLonCoordinatesTable::set_geometry_builder(
-		GPlatesViewOperations::GeometryBuilder *geom_builder)
-{
-	// If the new geometry builder is the same as current one then do nothing.
-	if (geom_builder == d_current_geometry_builder)
-	{
-		return;
-	}
-
-	if (d_current_geometry_builder != NULL)
-	{
-		disconnect_from_current_geometry_builder();
-	}
-
-	d_current_geometry_builder = geom_builder;
-
-
-	if (d_current_geometry_builder != NULL)
-	{
-		connect_to_current_geometry_builder();
-
-		initialise_table_from_current_geometry_builder();
-	}
+	connect_to_geometry_operation_state_signals(geometry_operation_state);
 }
 
 
 void
-GPlatesQtWidgets::LatLonCoordinatesTable::connect_to_active_geometry_operation_signals(
-		GPlatesViewOperations::ActiveGeometryOperation *active_geometry_operation)
+GPlatesQtWidgets::LatLonCoordinatesTable::connect_to_geometry_operation_state_signals(
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state)
 {
-	// Connect to the geometry operation's signals.
-	// GeometryOperation has just highlighted a vertex.
+	// Connect to the geometry operation state's signals.
+
 	QObject::connect(
-			active_geometry_operation,
+			&geometry_operation_state,
 			SIGNAL(switched_geometry_operation(
 					GPlatesViewOperations::GeometryOperation *)),
 			this,
 			SLOT(switched_geometry_operation(
 					GPlatesViewOperations::GeometryOperation *)));
+
+	QObject::connect(
+			&geometry_operation_state,
+			SIGNAL(switched_geometry_builder(
+					GPlatesViewOperations::GeometryBuilder *)),
+			this,
+			SLOT(switched_geometry_builder(
+					GPlatesViewOperations::GeometryBuilder *)));
 }
 
 
@@ -338,11 +319,11 @@ GPlatesQtWidgets::LatLonCoordinatesTable::connect_to_current_geometry_builder()
 			d_current_geometry_builder,
 			SIGNAL(changed_actual_geometry_type(
 					GPlatesViewOperations::GeometryBuilder::GeometryIndex,
-					GPlatesViewOperations::GeometryType::Value)),
+					GPlatesMaths::GeometryType::Value)),
 			this,
 			SLOT(change_actual_geometry_type(
 					GPlatesViewOperations::GeometryBuilder::GeometryIndex,
-					GPlatesViewOperations::GeometryType::Value)));
+					GPlatesMaths::GeometryType::Value)));
 
 	// Insert geometry into our table.
 	QObject::connect(
@@ -453,6 +434,34 @@ GPlatesQtWidgets::LatLonCoordinatesTable::switched_geometry_operation(
 
 
 void
+GPlatesQtWidgets::LatLonCoordinatesTable::switched_geometry_builder(
+		GPlatesViewOperations::GeometryBuilder *geometry_builder)
+{
+	// If the new geometry builder is the same as current one then do nothing.
+	if (geometry_builder == d_current_geometry_builder)
+	{
+		return;
+	}
+
+	if (d_current_geometry_builder != NULL)
+	{
+		disconnect_from_current_geometry_builder();
+	}
+
+	d_current_geometry_builder = geometry_builder;
+
+	d_need_to_reload_data = false;
+
+	if (d_current_geometry_builder != NULL)
+	{
+		connect_to_current_geometry_builder();
+
+		initialise_table_from_current_geometry_builder();
+	}
+}
+
+
+void
 GPlatesQtWidgets::LatLonCoordinatesTable::highlight_point_in_geometry(
 		GPlatesViewOperations::GeometryBuilder *,
 		GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
@@ -495,7 +504,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::unhighlight_point_in_geometry(
 void
 GPlatesQtWidgets::LatLonCoordinatesTable::change_actual_geometry_type(
 		GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
-		GPlatesViewOperations::GeometryType::Value geometry_type)
+		GPlatesMaths::GeometryType::Value geometry_type)
 {
 	//If the table is invisible, we do nothing. The data will be reloaded when it becomes visible.
 	if(!d_coordinates_table->isVisible() && d_need_to_reload_data)
@@ -535,7 +544,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_geometry(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Get actual type of geometry.
-	const GPlatesViewOperations::GeometryType::Value geom_type =
+	const GPlatesMaths::GeometryType::Value geom_type =
 		d_current_geometry_builder->get_actual_type_of_geometry(geometry_index);
 
 	// Get geometry type text.
@@ -660,7 +669,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_point_into_geometry(
 
 	d_tree_widget_builder.insert_child(geom_item_handle, coord_item_handle, point_index);
 
-	const GPlatesViewOperations::GeometryType::Value geom_type =
+	const GPlatesMaths::GeometryType::Value geom_type =
 		d_current_geometry_builder->get_actual_type_of_current_geometry();
 	const QString label = get_geometry_type_text(geom_type);
 

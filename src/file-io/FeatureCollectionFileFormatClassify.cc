@@ -22,20 +22,18 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include <boost/foreach.hpp>
 
 #include "FeatureCollectionFileFormatClassify.h"
-
 #include "FeatureCollectionFileFormat.h"
 
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/ExtractRasterFeatureProperties.h"
+#include "app-logic/ExtractScalarField3DFeatureProperties.h"
 #include "app-logic/ReconstructMethodRegistry.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
-
 
 namespace GPlatesFileIO
 {
@@ -82,7 +80,7 @@ namespace GPlatesFileIO
 				{
 					if (!classifications.test(reconstruct_method)) // Only test if not classified already...
 					{
-						// Check if the feature is can be reconstructed with the current reconstruct method type.
+						// Check if the feature can be reconstructed with the current reconstruct method type.
 						if (reconstruct_method_registry.can_reconstruct_feature(reconstruct_method, feature))
 						{
 							classifications.set(reconstruct_method);
@@ -102,11 +100,19 @@ namespace GPlatesFileIO
 					}
 				}
 
+				// Check if the feature is a scalar field.
+				if (!classifications.test(SCALAR_FIELD_3D)) // Only test if not classified already...
+				{
+					if (GPlatesAppLogic::is_scalar_field_3d_feature(feature))
+					{
+						classifications.set(SCALAR_FIELD_3D);
+					}
+				}
+
 				// Check if the feature is topological.
 				if (!classifications.test(TOPOLOGICAL)) // Only test if not classified already...
 				{
-					if (GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(*feature.handle_ptr()) ||
-						GPlatesAppLogic::TopologyUtils::is_topological_network_feature(*feature.handle_ptr()))
+					if (GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(feature))
 					{
 						classifications.set(TOPOLOGICAL);
 					}

@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -36,35 +37,53 @@ namespace GPlatesFileIO
 	 */
 	class FileLoadAbortedException : public GPlatesGlobal::Exception
 	{
-		public:
-			/**
+	public:
+		/**
 			 * @param msg is a message describing the situation.
 			 */
-			FileLoadAbortedException(
-					const GPlatesUtils::CallStack::Trace &exception_source,
-					const char *msg) :
-				Exception(exception_source),
-				_msg(msg)
-			{  }
-			
-			~FileLoadAbortedException() throw() { } 
-		protected:
-			virtual const char *
-			exception_name() const {
+		FileLoadAbortedException(
+				const GPlatesUtils::CallStack::Trace &exception_source,
+				const char *msg,
+				const QString &filename_) :
+			Exception(exception_source),
+			d_msg(msg),
+			d_filename(filename_)
+		{  }
 
-				return "FileLoadAbortedException";
-			}
+		~FileLoadAbortedException() throw() { }
 
-			virtual
-			void
-			write_message(
-					std::ostream &os) const
-			{
-				write_string_message(os, _msg);
-			}
+		/**
+			 * Return the filename of the file for which loading was aborted.
+			 */
+		const QString &
+		filename() const
+		{
+			return d_filename;
+		}
 
-		private:
-			std::string _msg;
+	protected:
+		virtual const char *
+		exception_name() const {
+			return "FileLoadAbortedException";
+		}
+
+		virtual
+		void
+		write_message(
+				std::ostream &os) const
+		{
+			write_string_message(os, d_msg);
+		}
+
+
+
+	private:
+		std::string d_msg;
+
+		/**
+			 * The filename of the file for which loading was aborted.
+			 */
+		QString d_filename;
 	};
 }
 

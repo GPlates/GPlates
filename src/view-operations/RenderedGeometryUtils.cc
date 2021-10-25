@@ -25,7 +25,9 @@
  */
 
 #include <algorithm>
+#include <set>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 
@@ -35,7 +37,6 @@
 
 #include "RenderedReconstructionGeometry.h"
 #include "RenderedGeometryVisitor.h"
-
 
 namespace GPlatesViewOperations
 {
@@ -121,32 +122,41 @@ namespace GPlatesViewOperations
 
 			/**
 			 * Removes duplicate @a ReconstructionGeometry objects from an unsorted sequence.
+			 *
+			 * NOTE: This keeps the original sort order which is important if the (rendered) geometries
+			 * are sorted by mouse click proximity - we don't want to lose that sort order.
 			 */
 			void
 			remove_duplicates(
 					reconstruction_geom_seq_type &reconstruction_geom_seq)
 			{
-				std::sort(
-						reconstruction_geom_seq.begin(),
-						reconstruction_geom_seq.end(),
-						boost::lambda::bind(
-								&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-								boost::lambda::_1) <
-								boost::lambda::bind(
-										&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-										boost::lambda::_2));
+				// Instead of using std::sort, std::unique and erase we keep the reconstruction geometry
+				// sequence in its original order.
 
-				reconstruction_geom_seq.erase(
-						std::unique(
-								reconstruction_geom_seq.begin(),
-								reconstruction_geom_seq.end(),
-								boost::lambda::bind(
-										&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-										boost::lambda::_1) ==
-										boost::lambda::bind(
-												&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-												boost::lambda::_2)),
-						reconstruction_geom_seq.end());
+				// Use a std::set to avoid an O(N^2) search which is a large bottleneck for
+				// very large number of geometries.
+				typedef std::set<const GPlatesAppLogic::ReconstructionGeometry *> unique_recons_geoms_set_type;
+				unique_recons_geoms_set_type unique_recon_geoms_set;
+
+				reconstruction_geom_seq_type unique_reconstruction_geom_seq;
+				unique_reconstruction_geom_seq.reserve(reconstruction_geom_seq.size());
+
+				BOOST_FOREACH(
+					const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom,
+					reconstruction_geom_seq)
+				{
+					const std::pair<unique_recons_geoms_set_type::const_iterator, bool>
+							unique_recon_geoms_insert_result = unique_recon_geoms_set.insert(recon_geom.get());
+
+					// Add reconstruction geometry if it isn't already in the sequence.
+					if (unique_recon_geoms_insert_result.second)
+					{
+						unique_reconstruction_geom_seq.push_back(recon_geom);
+					}
+				}
+
+				// Replace the caller's sequence with the unique sequence.
+				reconstruction_geom_seq.swap(unique_reconstruction_geom_seq);
 			}
 		}
 	}
@@ -311,7 +321,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 		reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
 		const RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry,
-		boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree,
+		boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles,
 		bool only_if_reconstruction_layer_active)
 {
 	// Get all reconstruction geometries from the rendered geometry collection RECONSTRUCTION layer.
@@ -329,7 +339,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 			reconstruction_geometries_observing_feature,
 			all_reconstruction_geoms_in_reconstruction_layer,
 			reconstruction_geometry,
-			reconstruction_tree);
+			reconstruct_handles);
 }
 
 
@@ -338,7 +348,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 		reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
 		const RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-		boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree,
+		boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles,
 		bool only_if_reconstruction_layer_active)
 {
 	// Get all reconstruction geometries from the rendered geometry collection RECONSTRUCTION layer.
@@ -356,7 +366,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 			reconstruction_geometries_observing_feature,
 			all_reconstruction_geoms_in_reconstruction_layer,
 			feature_ref,
-			reconstruction_tree);
+			reconstruct_handles);
 }
 
 
@@ -366,7 +376,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 		const RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 		const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
-		boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree,
+		boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles,
 		bool only_if_reconstruction_layer_active)
 {
 	// Get all reconstruction geometries from the rendered geometry collection RECONSTRUCTION layer.
@@ -385,7 +395,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 			all_reconstruction_geoms_in_reconstruction_layer,
 			feature_ref,
 			geometry_property_iterator,
-			reconstruction_tree);
+			reconstruct_handles);
 }
 
 

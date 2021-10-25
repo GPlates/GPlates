@@ -59,7 +59,7 @@ namespace GPlatesQtWidgets
 				GPlatesGui::ViewportZoom &vzoom,
 				QWidget *parent_ = NULL);
 
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_slider_moved(

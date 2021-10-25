@@ -76,7 +76,7 @@ namespace GPlatesQtWidgets
 		const QString &
 		get_title();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_fill_polygons_clicked();

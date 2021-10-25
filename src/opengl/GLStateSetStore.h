@@ -35,6 +35,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLContext;
+
 	/**
 	 * Manages allocation of derived @a GLStateSet classes using a separate object pool for each type.
 	 */
@@ -68,6 +70,7 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLBindProgramObjectStateSet> bind_program_object_state_sets;
 		GPlatesUtils::ObjectPool<GLBindTextureStateSet> bind_texture_state_sets;
 		GPlatesUtils::ObjectPool<GLBindVertexArrayObjectStateSet> bind_vertex_array_object_state_sets;
+		GPlatesUtils::ObjectPool<GLBlendEquationStateSet> blend_equation_state_sets;
 		GPlatesUtils::ObjectPool<GLBlendFuncStateSet> blend_func_state_sets;
 		GPlatesUtils::ObjectPool<GLClearColorStateSet> clear_color_state_sets;
 		GPlatesUtils::ObjectPool<GLClearDepthStateSet> clear_depth_state_sets;
@@ -95,7 +98,9 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLPolygonOffsetStateSet> polygon_offset_state_sets;
 		GPlatesUtils::ObjectPool<GLNormalPointerStateSet> normal_pointer_state_sets;
 		GPlatesUtils::ObjectPool<GLScissorStateSet> scissor_state_sets;
+		GPlatesUtils::ObjectPool<GLStencilFuncStateSet> stencil_func_state_sets;
 		GPlatesUtils::ObjectPool<GLStencilMaskStateSet> stencil_mask_state_sets;
+		GPlatesUtils::ObjectPool<GLStencilOpStateSet> stencil_op_state_sets;
 		GPlatesUtils::ObjectPool<GLTexCoordPointerStateSet> tex_coord_pointer_state_sets;
 		GPlatesUtils::ObjectPool<GLTexGenStateSet> tex_gen_state_sets;
 		GPlatesUtils::ObjectPool<GLTexEnvStateSet> tex_env_state_sets;

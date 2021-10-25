@@ -37,12 +37,12 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <opengl/OpenGL.h>
+#include <QImage>
+#include <QPainter>
 #include <QtOpenGL/qgl.h>
 
 #include "gui/ColourScheme.h"
 #include "gui/Globe.h"
-#include "gui/PersistentOpenGLObjects.h"
-#include "gui/TextRenderer.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/MultiPointOnSphere.h"
@@ -51,7 +51,9 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
+#include "opengl/GLOffScreenContext.h"
 #include "opengl/GLViewport.h"
+#include "opengl/GLVisualLayers.h"
 
 #include "qt-widgets/SceneView.h"
 
@@ -61,6 +63,12 @@
 namespace GPlatesGui
 {
 	class TextOverlay;
+}
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+	class GLTileRender;
 }
 
 namespace GPlatesPresentation
@@ -126,10 +134,6 @@ namespace GPlatesQtWidgets
 				QWidget *parent_ = 0);
 
 		~GlobeCanvas();
-
-		void
-		set_disable_update(
-				bool b);
 
 	private:
 
@@ -219,27 +223,29 @@ namespace GPlatesQtWidgets
 			return d_mouse_pointer_is_on_globe;
 		}
 
+		/**
+		 * Returns the dimensions of the viewport.
+		 */
 		virtual
-		void
-		create_svg_output(
-			QString filename);
-
-		void
-		repaint_canvas()
-		{
-			repaint();
-		}
+		QSize
+		get_viewport_size() const;
 
 		/**
-		*   Draw the relevant objects for svg output. This is slightly different from 
-		*	the usual paintGL method, because we don't want to draw the sphere 
-		*   (otherwise we end up with loads of little polygons);
-		*	Instead we'll use the nurbs routines to draw a circle around the circumference
-		*	of the sphere (prior to the sphere orientation).
-		*/
+		 * Renders the scene to a QImage of the dimensions specified by @a image_size
+		 * (or dimensions @a get_viewport_size, if @a image_size is boost::none).
+		 */
+		virtual
+		QImage
+		render_to_qimage(
+				boost::optional<QSize> image_size = boost::none);
+
+		/**
+		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
+		 */
 		virtual
 		void
-		draw_svg_output();
+		render_opengl_feedback_to_paint_device(
+				QPaintDevice &feedback_paint_device);
 
 		virtual
 		boost::optional<GPlatesMaths::LatLonPoint>
@@ -260,10 +266,11 @@ namespace GPlatesQtWidgets
 			const GPlatesMaths::Rotation &rotation
 			/*bool should_emit_external_signal = true */);
 
-		QImage
-		grab_frame_buffer();
-
-		//! Returns the @a GLContext associated with this QGLWidget so it can be shared across widgets.
+		/**
+		 * Returns the OpenGL context associated with this QGLWidget.
+		 *
+		 * This also enables it to be shared across widgets.
+		 */
 		GPlatesOpenGL::GLContext::non_null_ptr_type
 		get_gl_context()
 		{
@@ -271,13 +278,13 @@ namespace GPlatesQtWidgets
 		}
 
 		//! Returns the persistent OpenGL objects associated with this widget's OpenGL context so it can be shared across widgets.
-		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type
-		get_persistent_opengl_objects()
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type
+		get_gl_visual_layers()
 		{
-			return d_gl_persistent_objects;
+			return d_gl_visual_layers;
 		}
 
-	public slots:
+	public Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -347,6 +354,11 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		paintGL();
+
+		virtual
+		void
+		paintEvent(
+				QPaintEvent *paint_event);
 
 		/**
 		 * This is a virtual override of the function in QWidget.
@@ -436,14 +448,7 @@ namespace GPlatesQtWidgets
 		void
 		reset_camera_orientation();
 
-#if 0
-		virtual
-		void
-		paintEvent(
-			QPaintEvent *paint_event);
-#endif
-
-	signals:
+	Q_SIGNALS:
 
 		void
 		mouse_pointer_position_changed(
@@ -505,7 +510,7 @@ namespace GPlatesQtWidgets
 		repainted(
 				bool mouse_down);
 
-	public slots:
+	public Q_SLOTS:
 
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -544,27 +549,41 @@ namespace GPlatesQtWidgets
 		//! Makes the QGLWidget's OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
 		MakeGLContextCurrent d_make_context_current;
 
-		//! The OpenGL viewport used to render the main scene into this canvas.
-		GPlatesOpenGL::GLViewport d_gl_viewport;
+		/**
+		 * Used to render to an off-screen frame buffer when outside paint event.
+		 *
+		 * It's a boost::optional since we don't create it until @a initializeGL is called.
+		 */
+		boost::optional<GPlatesOpenGL::GLOffScreenContext::non_null_ptr_type> d_gl_off_screen_context;
+
+		//! Is true if OpenGL has been initialised for this canvas.
+		bool d_initialisedGL;
 
 		//! The current model-view transform for regular OpenGL rendering.
 		GPlatesOpenGL::GLMatrix d_gl_model_view_transform;
 
 		/**
-		 * The current projection transform for OpenGL rendering of the front visible half of the globe.
+		 * The current projection transform for OpenGL rendering of the *front* visible half of the globe.
 		 *
 		 * This is used for rendering an opaque globe (only the front half is visible) and for
 		 * rendering SVG output since it uses the OpenGL feedback mechanism which bypasses
 		 * rasterisation and hence the transformation pipeline is required for clipping
 		 * (ie, the far clip plane).
 		 */
-		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_half_globe;
+		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_front_half_globe;
+
+		/**
+		 * The current projection transform for OpenGL rendering of the *rear* half of the globe.
+		 *
+		 * This is used when rendering a transparent globe since the rear half of the globe then
+		 * becomes visible.
+		 */
+		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_rear_half_globe;
 
 		/**
 		 * The current projection transform for OpenGL rendering of the full globe.
 		 *
-		 * This is used when rendering a transparent globe since the rear half of the globe then
-		 * becomes visible.
+		 * This is used when rendering sub-surface data (such as 3D scalar fields).
 		 */
 		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_full_globe;
 
@@ -575,14 +594,19 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_stars;
 
+		/**
+		 * The current projection transform for the screen text overlay.
+		 */
+		GPlatesOpenGL::GLMatrix d_gl_projection_transform_text_overlay;
+
 		//! Keeps track of OpenGL objects that persist from one render to another.
-		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type d_gl_persistent_objects;
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 
 		/**
 		 * Enables frame-to-frame caching of persistent OpenGL resources.
 		 *
 		 * There is a certain amount of caching without this already.
-		 * This just prevents a render frame from re-using cached resources of the previous frame
+		 * This just prevents a render frame from invalidating cached resources of the previous frame
 		 * in order to avoid regenerating the same cached resources unnecessarily each frame.
 		 * We hold onto the previous frame's cached resources *while* generating the current frame and
 		 * then release our hold on the previous frame (and continue this pattern each new frame).
@@ -607,12 +631,6 @@ namespace GPlatesQtWidgets
 		//! The y-coord of the mouse pointer position on the screen.
 		int d_mouse_pointer_screen_pos_y;
 
-		//! The width of the canvas in integer screen coordinates.
-		int d_canvas_screen_width;
-
-		//! The height of the canvas in integer screen coordinates.
-		int d_canvas_screen_height;
-
 		//! The smaller of the dimensions (width/height) of the screen.
 		double d_smaller_dim;
 
@@ -621,14 +639,42 @@ namespace GPlatesQtWidgets
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
-		GPlatesGui::TextRenderer::non_null_ptr_type d_text_renderer;
-
 		GPlatesGui::Globe d_globe;
 
 		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
 
+
+		//! Calls 'initializeGL()' if it hasn't already been called.
+		void
+		initializeGL_if_necessary();
+
 		void
 		set_view();
+
+		/**
+		 * Render one tile of the scene (as specified by @a tile_render).
+		 *
+		 * The sub-rect of @a image to render into is determined by @a tile_renderer.
+		 */
+		cache_handle_type
+		render_scene_tile_into_image(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesOpenGL::GLTileRender &tile_render,
+				QImage &image);
+
+		/**
+		 * Render the scene.
+		 */
+		cache_handle_type
+		render_scene(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
+				const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
+				int paint_device_width,
+				int paint_device_height);
 
 		void
 		update_mouse_pointer_pos(

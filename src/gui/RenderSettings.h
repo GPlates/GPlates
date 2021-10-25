@@ -76,15 +76,15 @@ namespace GPlatesGui
 		bool show_topology() const { return d_show_topology; }
 		bool show_strings() const { return d_show_strings; }
 
-		void set_show_points(bool b) { d_show_points = b; emit settings_changed(); }
-		void set_show_multipoints(bool b) { d_show_multipoints = b; emit settings_changed(); }
-		void set_show_lines(bool b) { d_show_lines = b; emit settings_changed(); }
-		void set_show_polygons(bool b) { d_show_polygons = b; emit settings_changed(); }
-		void set_show_arrows(bool b) { d_show_arrows = b; emit settings_changed(); }
-		void set_show_topology(bool b) { d_show_topology = b; emit settings_changed(); }
-		void set_show_strings(bool b) { d_show_strings = b; emit settings_changed(); }
+		void set_show_points(bool b) { d_show_points = b; Q_EMIT settings_changed(); }
+		void set_show_multipoints(bool b) { d_show_multipoints = b; Q_EMIT settings_changed(); }
+		void set_show_lines(bool b) { d_show_lines = b; Q_EMIT settings_changed(); }
+		void set_show_polygons(bool b) { d_show_polygons = b; Q_EMIT settings_changed(); }
+		void set_show_arrows(bool b) { d_show_arrows = b; Q_EMIT settings_changed(); }
+		void set_show_topology(bool b) { d_show_topology = b; Q_EMIT settings_changed(); }
+		void set_show_strings(bool b) { d_show_strings = b; Q_EMIT settings_changed(); }
 	
-	signals:
+	Q_SIGNALS:
 
 		void
 		settings_changed();

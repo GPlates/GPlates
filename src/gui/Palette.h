@@ -556,8 +556,9 @@ namespace GPlatesApi
 	class Palette
 	{
 	public:
-		Palette(const GPlatesGui::Palette* p) :
-		d_p(p)
+		Palette(
+				const GPlatesGui::Palette* p) :
+			d_p(p)
 		{ }
 
 		  GPlatesGui::Colour
@@ -584,6 +585,7 @@ namespace GPlatesApi
 }
 
 #endif  /* GPLATES_GUI_COLOURPALETTE_H */
+
 
 
 

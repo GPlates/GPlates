@@ -126,7 +126,7 @@ namespace GPlatesGui
 		void
 		clear_export_animation_strategies()
 		{
-			d_exporter_map.clear();
+			d_exporter_multimap.clear();
 		}
 
 
@@ -209,11 +209,17 @@ namespace GPlatesGui
 #endif
 
 	private:
-		//! Typedef to map export ID to an @a ExportAnimationStrategy.
-		typedef std::map<
+		/**
+		 * Typedef to multimap export ID to an @a ExportAnimationStrategy.
+		 *
+		 * Note that we allow multiple entries matching the same export ID - this is because
+		 * the user may want multiple exports with the same export type and format but with
+		 * different export options.
+		 */
+		typedef std::multimap<
 				ExportAnimationType::ExportID, 
 				ExportAnimationStrategy::non_null_ptr_type> 
-			exporter_map_type;
+			exporter_multimap_type;
 
 
 		/**
@@ -272,9 +278,13 @@ namespace GPlatesGui
 		QDir d_target_dir;
 
 		/**
-		 * A map of export ID to exporters.
+		 * A multimap of export ID to exporters.
+		 *
+		 * Note that we allow multiple entries matching the same export ID - this is because
+		 * the user may want multiple exports with the same export type and format but with
+		 * different export options.
 		 */
-		exporter_map_type d_exporter_map;
+		exporter_multimap_type d_exporter_multimap;
 	};
 }
 

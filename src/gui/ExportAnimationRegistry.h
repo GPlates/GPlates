@@ -71,27 +71,36 @@ namespace GPlatesGui
 		 *
 		 * Returns the created @a ExportAnimationStrategy.
 		 */
-		typedef boost::function<
-				ExportAnimationStrategy::non_null_ptr_type (
+		typedef ExportAnimationStrategy::non_null_ptr_type
+				create_export_animation_strategy_function_signature_type(
 						ExportAnimationContext &,
-						const ExportAnimationStrategy::const_configuration_base_ptr &)>
-								create_export_animation_strategy_function_type;
+						const ExportAnimationStrategy::const_configuration_base_ptr &);
+
+		//! The boost::function typedef that creates a @a ExportAnimationStrategy.
+		typedef boost::function<create_export_animation_strategy_function_signature_type>
+				create_export_animation_strategy_function_type;
+
 
 		/**
 		 * Convenience typedef for a function that creates a @a ExportOptionsWidget.
 		 *
 		 * The function takes the following arguments:
 		 * - An QWidget (the parent of the export options widget).
-		 * - A default @a ExportAnimationStrategy::const_configuration_base_ptr
+		 * - A @a ExportAnimationStrategy::const_configuration_base_ptr
 		 *   (the value registered in @a register_exporter is what will get passed in here).
 		 *
 		 * Returns the created @a ExportOptionsWidget.
 		 */
-		typedef boost::function<
-				GPlatesQtWidgets::ExportOptionsWidget * (
+		typedef GPlatesQtWidgets::ExportOptionsWidget *
+				create_export_options_widget_function_signature_type(
 						QWidget *,
-						const ExportAnimationStrategy::const_configuration_base_ptr &)>
-								create_export_options_widget_function_type;
+						ExportAnimationContext &,
+						const ExportAnimationStrategy::const_configuration_base_ptr &);
+
+		//! The boost::function typedef that creates a @a ExportOptionsWidget.
+		typedef boost::function<create_export_options_widget_function_signature_type>
+				create_export_options_widget_function_type;
+
 
 		/**
 		 * Convenience typedef for a function that validates a filename template.
@@ -102,7 +111,13 @@ namespace GPlatesGui
 		 *
 		 * Returns true if successfully validated.
 		 */
-		typedef boost::function<bool (const QString &, QString &)>
+		typedef bool
+				validate_filename_template_function_signature_type(
+						const QString &,
+						QString &);
+
+		//! The boost::function typedef that validates a filename template.
+		typedef boost::function<validate_filename_template_function_signature_type>
 				validate_filename_template_function_type;
 
 
@@ -112,7 +127,7 @@ namespace GPlatesGui
 		void
 		register_exporter(
 				ExportAnimationType::ExportID export_id_,
-				const ExportAnimationStrategy::const_configuration_base_ptr &default_export_configuration,
+				const ExportAnimationStrategy::const_configuration_base_ptr &export_configuration,
 				//const QString &filename_template_description_,
 				const create_export_animation_strategy_function_type &create_export_animation_strategy_function_,
 				const create_export_options_widget_function_type &create_export_options_widget_function_,
@@ -175,13 +190,20 @@ namespace GPlatesGui
 		 * Returns a widget to allow the user to specify export animation options for the
 		 * specified export ID.
 		 *
+		 * If @a export_configuration is specified then it will be the configuration that's edited.
+		 * Otherwise the default export configuration will be edited.
+		 *
+		 * @a parent is the widget used to parent the created export options widget.
+		 *
 		 * Returns boost::none if there is no widget for the specified export ID,
 		 * or if the given ID has not been registered.
 		 */
 		boost::optional<GPlatesQtWidgets::ExportOptionsWidget *>
 		create_export_options_widget(
 				ExportAnimationType::ExportID export_id,
-				QWidget *parent) const;
+				QWidget *parent,
+				ExportAnimationContext &export_animation_context,
+				boost::optional<ExportAnimationStrategy::const_configuration_base_ptr> export_configuration = boost::none) const;
 
 		/**
 		 * Returns true if @a filename_template is valid for the specified export ID.
@@ -225,8 +247,7 @@ namespace GPlatesGui
 	};
 
 	/**
-	 * Registers information about the default export animation types with the
-	 * given @a registry.
+	 * Registers information about the default export animation types with the given @a registry.
 	 */
 	void
 	register_default_export_animation_types(

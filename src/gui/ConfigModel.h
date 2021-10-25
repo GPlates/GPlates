@@ -156,7 +156,7 @@ namespace GPlatesGui
 		typedef QList<SchemaEntry> SchemaType;
 
 
-	private slots:
+	private Q_SLOTS:
 		
 		/**
 		 * When our underlying ConfigInterface gets changed, we need to emite a

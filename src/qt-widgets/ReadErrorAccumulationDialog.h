@@ -29,14 +29,17 @@
 #include <QObject>
 #include <QString>
 
-#include "ReadErrorAccumulationDialogUi.h"
-#include "file-io/ReadErrorAccumulation.h"
+#include "GPlatesDialog.h"
 #include "InformationDialog.h"
+#include "ReadErrorAccumulationDialogUi.h"
+
+#include "file-io/ReadErrorAccumulation.h"
+
 
 namespace GPlatesQtWidgets
 {
 	class ReadErrorAccumulationDialog:
-			public QDialog, 
+			public GPlatesDialog, 
 			protected Ui_ReadErrorAccumulationDialog
 	{
 		Q_OBJECT
@@ -72,7 +75,7 @@ namespace GPlatesQtWidgets
 			return d_read_errors;
 		}
 	
-	public slots:
+	public Q_SLOTS:
 	
 		void pop_up_help_dialog()
 		{
@@ -106,7 +109,7 @@ namespace GPlatesQtWidgets
 			clear();
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_buttonbox_clicked(
@@ -245,34 +248,6 @@ namespace GPlatesQtWidgets
 		QTreeWidgetItem *
 		create_occurrence_result_item(
 				const GPlatesFileIO::ReadErrorOccurrence &error);
-
-
-		const QString
-		build_summary_string();
-
-		/**
-		 * Converts a Description enum to a translated QString (short form).
-		 */
-		static
-		const QString &
-		get_short_description_as_string(
-				GPlatesFileIO::ReadErrors::Description code);
-
-		/**
-		 * Converts a Description enum to a translated QString (full text).
-		 */
-		static
-		const QString &
-		get_full_description_as_string(
-				GPlatesFileIO::ReadErrors::Description code);
-
-		/**
-		 * Converts a Result enum to a translated QString.
-		 */
-		static
-		const QString &
-		get_result_as_string(
-				GPlatesFileIO::ReadErrors::Result code);
 	};
 }
 

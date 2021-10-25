@@ -29,7 +29,6 @@
 #include <QObject>
 
 #include "GeometryBuilder.h"
-#include "RenderedGeometryCollection.h"
 
 
 namespace GPlatesGui
@@ -53,14 +52,11 @@ namespace GPlatesViewOperations
 		{  }
 
 		/**
-		 * Activate this operation and attach to specified @a GeometryBuilder
-		 * and render into specified main rendered layer.
+		 * Activate this operation.
 		 */
 		virtual
 		void
-		activate(
-				GeometryBuilder *,
-				RenderedGeometryCollection::MainLayerType main_layer_type) = 0;
+		activate() = 0;
 
 		/**
 		 * Deactivate this operation.
@@ -70,7 +66,7 @@ namespace GPlatesViewOperations
 		deactivate() = 0;
 
 
-	signals:
+	Q_SIGNALS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.

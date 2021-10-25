@@ -58,8 +58,6 @@
 
 #include "utils/UnicodeStringUtils.h"
 //#include "utils/Profile.h"
-
-
 namespace
 {
 	/**
@@ -85,7 +83,7 @@ namespace
 			const GPlatesModel::PropertyName &name)
 	{
 		QStringList fields;
-		fields.push_back(GPlatesUtils::make_qstring_from_icu_string(name.build_aliased_name()));
+		fields.push_back(convert_qualified_xml_name_to_qstring(name));
 		fields.push_back(QString());
 		fields.push_back(QString());
 

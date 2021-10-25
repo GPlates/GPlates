@@ -165,6 +165,22 @@ namespace GPlatesPresentation
 		GPlatesGui::Colour
 		get_modulate_colour() const;
 
+		/**
+		 * Sets the height field scale factor adjustment to use for normal map.
+		 */
+		void
+		set_surface_relief_scale(
+				float surface_relief_scale);
+
+		/**
+		 * Gets the height field scale factor adjustment to use for normal map.
+		 */
+		float
+		get_surface_relief_scale() const
+		{
+			return d_surface_relief_scale;
+		}
+
 	protected:
 
 		explicit
@@ -208,6 +224,11 @@ namespace GPlatesPresentation
 		 * The intensity of the raster in the range [0,1].
 		 */
 		double d_intensity;
+
+		/**
+		 * Gets the height field scale factor adjustment to use for normal map.
+		 */
+		float d_surface_relief_scale;
 	};
 }
 

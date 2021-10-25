@@ -30,6 +30,7 @@
 #include "GsmlNodeProcessorFactory.h"
 #include "GsmlFeaturesDef.h"
 
+
 GPlatesFileIO::GsmlNodeProcessorFactory::GsmlNodeProcessorFactory(
 		GPlatesModel::FeatureHandle::weak_ref f):
 	d_property_handler(new GsmlPropertyHandlers(f))

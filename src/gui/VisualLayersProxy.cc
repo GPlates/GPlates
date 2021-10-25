@@ -106,7 +106,21 @@ GPlatesGui::VisualLayersProxy::handle_layer_order_changed(
 		size_t last_index)
 {
 	// Note that we need to flip the order of the indices passed on.
-	emit layer_order_changed(fix_index(last_index), fix_index(first_index));
+	Q_EMIT layer_order_changed(fix_index(last_index), fix_index(first_index));
+}
+
+
+void
+GPlatesGui::VisualLayersProxy::handle_begin_add_or_remove_layers()
+{
+	Q_EMIT begin_add_or_remove_layers();
+}
+
+
+void
+GPlatesGui::VisualLayersProxy::handle_end_add_or_remove_layers()
+{
+	Q_EMIT end_add_or_remove_layers();
 }
 
 
@@ -116,7 +130,7 @@ GPlatesGui::VisualLayersProxy::handle_layer_about_to_be_added(
 {
 	// Note that here, the index is an index into the container of visual layers
 	// after it has been resized.
-	emit layer_about_to_be_added(fix_index(index, size() + 1));
+	Q_EMIT layer_about_to_be_added(fix_index(index, size() + 1));
 }
 
 
@@ -124,7 +138,7 @@ void
 GPlatesGui::VisualLayersProxy::handle_layer_added(
 		size_t index)
 {
-	emit layer_added(fix_index(index));
+	Q_EMIT layer_added(fix_index(index));
 }
 
 
@@ -132,7 +146,7 @@ void
 GPlatesGui::VisualLayersProxy::handle_layer_added(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
 {
-	emit layer_added(visual_layer);
+	Q_EMIT layer_added(visual_layer);
 }
 
 
@@ -140,7 +154,7 @@ void
 GPlatesGui::VisualLayersProxy::handle_layer_about_to_be_removed(
 		size_t index)
 {
-	emit layer_about_to_be_removed(fix_index(index));
+	Q_EMIT layer_about_to_be_removed(fix_index(index));
 }
 
 
@@ -148,7 +162,7 @@ void
 GPlatesGui::VisualLayersProxy::handle_layer_about_to_be_removed(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
 {
-	emit layer_about_to_be_removed(visual_layer);
+	Q_EMIT layer_about_to_be_removed(visual_layer);
 }
 
 
@@ -156,7 +170,7 @@ void
 GPlatesGui::VisualLayersProxy::handle_layer_removed(
 		size_t index)
 {
-	emit layer_removed(fix_index(index));
+	Q_EMIT layer_removed(fix_index(index));
 }
 
 
@@ -164,7 +178,7 @@ void
 GPlatesGui::VisualLayersProxy::handle_layer_modified(
 		size_t index)
 {
-	emit layer_modified(fix_index(index));
+	Q_EMIT layer_modified(fix_index(index));
 }
 
 
@@ -172,7 +186,7 @@ void
 GPlatesGui::VisualLayersProxy::handle_layer_modified(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
 {
-	emit layer_modified(visual_layer);
+	Q_EMIT layer_modified(visual_layer);
 }
 
 
@@ -185,6 +199,16 @@ GPlatesGui::VisualLayersProxy::make_signal_slot_connections()
 			SIGNAL(layer_order_changed(size_t, size_t)),
 			this,
 			SLOT(handle_layer_order_changed(size_t, size_t)));
+	QObject::connect(
+			&d_visual_layers,
+			SIGNAL(begin_add_or_remove_layers()),
+			this,
+			SLOT(handle_begin_add_or_remove_layers()));
+	QObject::connect(
+			&d_visual_layers,
+			SIGNAL(end_add_or_remove_layers()),
+			this,
+			SLOT(handle_end_add_or_remove_layers()));
 	QObject::connect(
 			&d_visual_layers,
 			SIGNAL(layer_about_to_be_added(size_t)),

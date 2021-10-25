@@ -122,7 +122,7 @@ namespace GPlatesPresentation
 			return d_style;
 		}
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when any aspect of the parameters has been modified.
@@ -134,10 +134,10 @@ namespace GPlatesPresentation
 
 		explicit
 		VisualLayerParams(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params) :
-			d_style(NULL),
-			d_layer_task_params(layer_task_params)
-			
+				GPlatesAppLogic::LayerTaskParams &layer_task_params,
+				const GPlatesGui::StyleAdapter* style = NULL) :
+			d_layer_task_params(layer_task_params),
+			d_style(style)
 		{  }
 
 		GPlatesAppLogic::LayerTaskParams &
@@ -153,13 +153,13 @@ namespace GPlatesPresentation
 		void
 		emit_modified()
 		{
-			emit modified();
+			Q_EMIT modified();
 		}
-	protected:
-		const GPlatesGui::StyleAdapter* d_style;
+
 	private:
+
 		GPlatesAppLogic::LayerTaskParams &d_layer_task_params;
-		
+		const GPlatesGui::StyleAdapter* d_style;
 	};
 }
 

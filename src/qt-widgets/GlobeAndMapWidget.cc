@@ -24,7 +24,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 #include <boost/foreach.hpp>
 #include <QHBoxLayout>
 
@@ -43,8 +42,9 @@
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
-#include "presentation/ViewState.h"
+#include "opengl/GLContext.h"
 
+#include "presentation/ViewState.h"
 
 // Fresh GlobeAndMapWidget
 GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
@@ -64,7 +64,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 				this,
 				d_globe_canvas_ptr.get(),
 				d_globe_canvas_ptr->get_gl_context(),
-				d_globe_canvas_ptr->get_persistent_opengl_objects())),
+				d_globe_canvas_ptr->get_gl_visual_layers())),
 	d_layout(new QStackedLayout(this)),
 	d_active_view_ptr(d_globe_canvas_ptr.get()),
 	d_zoom_enabled(true)
@@ -94,7 +94,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 				this,
 				d_globe_canvas_ptr.get(),
 				d_globe_canvas_ptr->get_gl_context(),
-				d_globe_canvas_ptr->get_persistent_opengl_objects())),
+				d_globe_canvas_ptr->get_gl_visual_layers())),
 	d_layout(new QStackedLayout(this)),
 	d_active_view_ptr(
 			existing_globe_and_map_widget_ptr->is_globe_active()
@@ -113,6 +113,63 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 	{
 		d_layout->setCurrentWidget(d_map_view_ptr.get());
 	}
+}
+
+/*
+* This is an ugly hacking in order to clone a share-opengl-context GlobeAndMapWidget without a ColourScheme.
+* The ColourScheme argument is spread into many functions. But in some cases, we don't need ColourScheme in GlobeAndMapWidget at all.
+* Use the DummyColourScheme to fool compiler.
+*/
+#include "gui/SingleColourScheme.h"
+class DummyColourScheme :
+	public GPlatesGui::SingleColourScheme	
+{ };
+
+GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
+		const GlobeAndMapWidget *existing_widget,
+		QWidget *parent_) :
+	QWidget(parent_),
+	d_view_state(existing_widget->d_view_state),
+	d_layout(new QStackedLayout(this)),	
+	d_zoom_enabled(existing_widget->d_zoom_enabled)
+{
+	GPlatesGui::ColourScheme::non_null_ptr_type dummy_scheme(new DummyColourScheme());
+	
+	d_globe_canvas_ptr.reset(existing_widget->d_globe_canvas_ptr->clone(
+			dummy_scheme,
+			this));
+
+	d_map_view_ptr.reset( new MapView(	
+			d_view_state,
+			dummy_scheme,
+			this,
+			d_globe_canvas_ptr.get(),
+			d_globe_canvas_ptr->get_gl_context(),	
+			d_globe_canvas_ptr->get_gl_visual_layers()));
+
+	d_active_view_ptr =	existing_widget->is_globe_active()
+		? static_cast<SceneView *>(d_globe_canvas_ptr.get())
+		: static_cast<SceneView *>(d_map_view_ptr.get());
+
+		init();
+
+		// Copy which of globe and map is active.
+		if (existing_widget->is_globe_active())
+		{
+			d_layout->setCurrentWidget(d_globe_canvas_ptr.get());
+		}
+		else
+		{
+			d_layout->setCurrentWidget(d_map_view_ptr.get());
+		}
+}
+
+
+GPlatesQtWidgets::GlobeAndMapWidget *
+GPlatesQtWidgets::GlobeAndMapWidget::clone_with_shared_opengl_context(
+			QWidget *parent_)
+{
+	return new GlobeAndMapWidget(this, parent_);
 }
 
 
@@ -176,6 +233,11 @@ GPlatesQtWidgets::GlobeAndMapWidget::make_signal_slot_connections()
 	GPlatesGui::ViewportProjection &vprojection = d_view_state.get_viewport_projection();
 	QObject::connect(
 			&vprojection,
+			SIGNAL(projection_type_about_to_change(const GPlatesGui::ViewportProjection &)),
+			this,
+			SLOT(about_to_change_projection(const GPlatesGui::ViewportProjection &)));
+	QObject::connect(
+			&vprojection,
 			SIGNAL(projection_type_changed(const GPlatesGui::ViewportProjection &)),
 			this,
 			SLOT(change_projection(const GPlatesGui::ViewportProjection &)));
@@ -203,7 +265,17 @@ void
 GPlatesQtWidgets::GlobeAndMapWidget::handle_globe_or_map_repainted(
 		bool mouse_down)
 {
-	emit repainted(mouse_down);
+	Q_EMIT repainted(mouse_down);
+}
+
+
+void
+GPlatesQtWidgets::GlobeAndMapWidget::about_to_change_projection(
+		const GPlatesGui::ViewportProjection &view_projection)
+{
+	// Save the camera position of the currently active view before we potentially change
+	// to a different view (eg, globe to map view or vice versa).
+	d_active_camera_llp = get_camera_llp();
 }
 
 
@@ -217,17 +289,14 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	d_map_view_ptr->map_canvas().map().set_central_meridian(
 		view_projection.get_central_meridian());
 
-	// Save the existing camera llp.
-	boost::optional<GPlatesMaths::LatLonPoint> camera_llp = get_camera_llp();
-
 	if (view_projection.get_projection_type() == GPlatesGui::MapProjection::ORTHOGRAPHIC)
 	{
 		// Switch to globe.
 		d_active_view_ptr = d_globe_canvas_ptr.get();
 		d_globe_canvas_ptr->update_canvas();
-		if (camera_llp)
+		if (d_active_camera_llp)
 		{
-			d_globe_canvas_ptr->set_camera_viewpoint(*camera_llp);
+			d_globe_canvas_ptr->set_camera_viewpoint(d_active_camera_llp.get());
 		}
 		d_layout->setCurrentWidget(d_globe_canvas_ptr.get());
 	}
@@ -237,14 +306,18 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		d_active_view_ptr = d_map_view_ptr.get();
 		// d_map_view_ptr->set_view();
 		d_map_view_ptr->update_canvas();
-		if (camera_llp)
+		if (d_active_camera_llp)
 		{
-			d_map_view_ptr->set_camera_viewpoint(*camera_llp);	
+			d_map_view_ptr->set_camera_viewpoint(d_active_camera_llp.get());	
 		}
 		d_layout->setCurrentWidget(d_map_view_ptr.get());
 	}
 	
-	emit update_tools_and_status_message();
+	// There might have been a zoom change while the previous view was active and the current
+	// view would not have known about it.
+	d_active_view_ptr->handle_zoom_change();
+
+	Q_EMIT update_tools_and_status_message();
 }
 
 
@@ -308,14 +381,27 @@ void
 GPlatesQtWidgets::GlobeAndMapWidget::resizeEvent(
 		QResizeEvent *resize_event)
 {
-	emit resized(resize_event->size().width(), resize_event->size().height());
+	Q_EMIT resized(resize_event->size().width(), resize_event->size().height());
 }
 
 
 QImage
-GPlatesQtWidgets::GlobeAndMapWidget::grab_frame_buffer()
+GPlatesQtWidgets::GlobeAndMapWidget::render_to_qimage(
+		boost::optional<QSize> image_size)
 {
-	return d_active_view_ptr->grab_frame_buffer();
+	return d_active_view_ptr->render_to_qimage(image_size);
+}
+
+
+GPlatesOpenGL::GLContext::non_null_ptr_type
+GPlatesQtWidgets::GlobeAndMapWidget::get_active_gl_context()
+{
+	if (d_active_view_ptr == d_globe_canvas_ptr.get())
+	{
+		return d_globe_canvas_ptr->get_gl_context();
+	}
+
+	return d_map_view_ptr->get_gl_context();
 }
 
 
@@ -323,13 +409,6 @@ void
 GPlatesQtWidgets::GlobeAndMapWidget::update_canvas()
 {
 	d_active_view_ptr->update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::GlobeAndMapWidget::repaint_canvas()
-{
-	d_active_view_ptr->repaint_canvas();
 }
 
 

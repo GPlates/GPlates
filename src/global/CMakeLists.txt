@@ -29,7 +29,6 @@ set(srcs
     InternalInconsistencyException.cc
     InternalInconsistencyException.h
     InternalObjectInconsistencyException.h
-    InternalRID.h
     IntrusivePointerZeroRefCountException.h
     InvalidFeatureCollectionException.h
     InvalidParametersException.h
@@ -41,7 +40,6 @@ set(srcs
     python.h
     RetrievalFromEmptyContainerException.h
     SubversionInfo.h
-    types.h
     UnexpectedEmptyFeatureCollectionException.h
     unicode.h
     UninitialisedIteratorException.h

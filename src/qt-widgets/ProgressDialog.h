@@ -95,7 +95,7 @@ namespace GPlatesQtWidgets
 			cancel_button->setDisabled(flag);
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 		void 
 		handle_cancel()

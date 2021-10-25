@@ -61,7 +61,7 @@ namespace GPlatesCli
 		std::string
 		get_command_description() const
 		{
-			return "returns total rotation pole between a fixed/moving plate pair";
+			return "print the relative (moving/fixed plate pair) total rotation pole";
 		}
 
 
@@ -77,7 +77,7 @@ namespace GPlatesCli
 
 		//! Interprets the parsed command-line and config file options stored in @a vm and runs this command.
 		virtual
-		int
+		void
 		run(
 				const boost::program_options::variables_map &vm);
 
@@ -89,9 +89,6 @@ namespace GPlatesCli
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
 		GPlatesModel::integer_plate_id_type d_moving_plate_id;
-		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
-
-		std::string d_export_filename;
 	};
 }
 

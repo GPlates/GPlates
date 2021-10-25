@@ -34,8 +34,11 @@
 #include "feature-visitors/GeometrySetter.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/Model.h"
+#include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 #include "model/TopLevelPropertyInline.h"
+
 
 void
 GPlatesViewOperations::SplitFeatureUndoCommand::redo()
@@ -44,11 +47,9 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
-	GPlatesModel::NotificationGuard model_notification_guard(
-			d_view_state->get_application_state().get_model_interface().access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(d_model_interface.access_model());
 
-	d_old_feature = 
-		d_feature_focus->focused_feature();
+	d_old_feature =  d_feature_focus->focused_feature();
 	if (!(*d_old_feature).is_valid())
 	{
 		return;
@@ -94,13 +95,27 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 		(*property_iter)->property_name(); 
 
 	//keep the old geometry property for "Undo"
-	d_old_geometry_property = 
-		GPlatesModel::TopLevelPropertyInline::create(
-				property_name,
-				*GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
+	GPlatesModel::PropertyValue::non_null_ptr_type old_geometry_property_value =
+			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 						points.begin(), 
 						points.end(),
-						GPlatesViewOperations::GeometryType::POLYLINE));
+						GPlatesMaths::GeometryType::POLYLINE).get();
+
+	// Attempt to create a property wrapped in the correct time-dependent wrapper based on the
+	// property name (according to the GPGIM).
+	d_old_geometry_property = 
+		GPlatesModel::ModelUtils::create_top_level_property(
+				property_name,
+				old_geometry_property_value,
+				d_gpgim);
+	// If that fails (eg, because property name not recognised) then just add an unwrapped property value.
+	if (!d_old_geometry_property)
+	{
+		d_old_geometry_property = 
+			GPlatesModel::TopLevelPropertyInline::create(
+					property_name,
+					old_geometry_property_value);
+	}
 	
 	//we need to reverse reconstruct the inserted point to present day first
 	if (d_oriented_pos_on_globe)
@@ -115,7 +130,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 			GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 					*d_oriented_pos_on_globe,
 					*rfg.get()->reconstruction_plate_id(),
-					*rfg.get()->reconstruction_tree(),
+					*rfg.get()->get_reconstruction_tree(),
 					true);
 		
 			points.insert(
@@ -196,22 +211,56 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	// TODO: currently the ploy line type has been hard-coded here, 
 	// we need to support other geometry type in the future
 #if 1
-	(*d_old_feature)->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				property_name,
-				*GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
+	GPlatesModel::PropertyValue::non_null_ptr_type before_split_point_geometry_property_value =
+			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 						points.begin(), 
 						points.begin() + point_index_to_split,
-						GPlatesViewOperations::GeometryType::POLYLINE)));
+						GPlatesMaths::GeometryType::POLYLINE).get();
+
+	// Attempt to create a property wrapped in the correct time-dependent wrapper based on the
+	// property name (according to the GPGIM).
+	boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> before_split_point_geometry_property = 
+		GPlatesModel::ModelUtils::create_top_level_property(
+				property_name,
+				before_split_point_geometry_property_value,
+				d_gpgim);
+	// If that fails (eg, because property name not recognised) then just add an unwrapped property value.
+	if (!before_split_point_geometry_property)
+	{
+		before_split_point_geometry_property = 
+			GPlatesModel::TopLevelPropertyInline::create(
+					property_name,
+					before_split_point_geometry_property_value);
+	}
+
+	// Add the geometry *before* the split point to the *old* feature.
+	d_old_feature.get()->add(before_split_point_geometry_property.get());
 #endif
 	
-	(*d_new_feature)->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				property_name,
-				*GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
+	GPlatesModel::PropertyValue::non_null_ptr_type after_split_point_geometry_property_value =
+			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 						points.begin() + point_index_to_split -1, 
 						points.end(),
-						GPlatesViewOperations::GeometryType::POLYLINE)));
+						GPlatesMaths::GeometryType::POLYLINE).get();
+
+	// Attempt to create a property wrapped in the correct time-dependent wrapper based on the
+	// property name (according to the GPGIM).
+	boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> after_split_point_geometry_property = 
+		GPlatesModel::ModelUtils::create_top_level_property(
+				property_name,
+				after_split_point_geometry_property_value,
+				d_gpgim);
+	// If that fails (eg, because property name not recognised) then just add an unwrapped property value.
+	if (!after_split_point_geometry_property)
+	{
+		after_split_point_geometry_property = 
+			GPlatesModel::TopLevelPropertyInline::create(
+					property_name,
+					after_split_point_geometry_property_value);
+	}
+
+	// Add the geometry *after* the split point to the *new* feature.
+	d_new_feature.get()->add(after_split_point_geometry_property.get());
 
 	// We release the model notification guard which will cause a reconstruction to occur
 	// because we modified the model.
@@ -247,8 +296,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 	
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
-	GPlatesModel::NotificationGuard model_notification_guard(
-			d_view_state->get_application_state().get_model_interface().access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(d_model_interface.access_model());
 
 	//restore the old geometry
 	GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);

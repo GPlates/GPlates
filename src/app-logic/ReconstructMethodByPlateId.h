@@ -26,6 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTMETHODBYPLATEID_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTMETHODBYPLATEID_H
 
+#include <vector>
 #include <boost/optional.hpp>
 
 #include "ReconstructedFeatureGeometry.h"
@@ -60,29 +61,30 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Creates a @a ReconstructMethodByPlateId object.
+		 * Creates a @a ReconstructMethodByPlateId object associated with the specified feature.
 		 */
 		static
 		ReconstructMethodByPlateId::non_null_ptr_type
-		create()
+		create(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const Context &context)
 		{
-			return non_null_ptr_type(new ReconstructMethodByPlateId());
+			return non_null_ptr_type(new ReconstructMethodByPlateId(feature_ref, context));
 		}
 
 
 		/**
-		 * Returns the present day geometries of the specified feature.
+		 * Returns the present day geometries of the feature associated with this reconstruct method.
 		 */
 		virtual
 		void
-		get_present_day_geometries(
-				std::vector<Geometry> &present_day_geometries,
-				const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref) const;
+		get_present_day_feature_geometries(
+				std::vector<Geometry> &present_day_geometries) const;
 
 
 		/**
-		 * Reconstructs the specified feature at the specified reconstruction time and returns
-		 * one more more reconstructed feature geometries.
+		 * Reconstructs the feature associated with this reconstruct method to the specified
+		 * reconstruction time and returns one or more reconstructed feature geometries.
 		 *
 		 * NOTE: This will still generate a reconstructed feature geometry if the
 		 * feature has no plate ID (ie, even if @a can_reconstruct_feature returns false).
@@ -90,12 +92,24 @@ namespace GPlatesAppLogic
 		 */
 		virtual
 		void
-		reconstruct_feature(
+		reconstruct_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
-				const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref,
 				const ReconstructHandle::type &reconstruct_handle,
-				const ReconstructParams &reconstruct_params,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const Context &context,
+				const double &reconstruction_time);
+
+
+		/**
+		 * Calculates velocities at the positions of the reconstructed feature geometries, of the feature
+		 * associated with this reconstruct method, at the specified reconstruction time and returns
+		 * one or more reconstructed feature *velocities*.
+		 */
+		virtual
+		void
+		reconstruct_feature_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				const ReconstructHandle::type &reconstruct_handle,
+				const Context &context,
 				const double &reconstruction_time);
 
 
@@ -105,22 +119,56 @@ namespace GPlatesAppLogic
 		 * the reconstructed geometry (at the reconstruction time) and the returned geometry will
 		 * then be the present day geometry.
 		 *
-		 * NOTE: The specified feature is called @a reconstruction_properties since its geometry(s)
-		 * is not reconstructed - it is only used as a source of properties that determine how
-		 * to perform the reconstruction (for example, a reconstruction plate ID).
+		 * NOTE: The feature associated with this reconstruct method is used as a source of
+		 * feature properties that determine how to perform the reconstruction (for example,
+		 * a reconstruction plate ID) - the feature's geometries are not reconstructed.
 		 */
 		virtual
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct_geometry(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const Context &context,
 				const double &reconstruction_time,
 				bool reverse_reconstruct);
 
 	private:
-		ReconstructMethodByPlateId()
-		{  }
+
+		/**
+		 * Associate a deformed geometry's time span with its feature property.
+		 */
+		struct DeformedGeometryPropertyTimeSpan
+		{
+			DeformedGeometryPropertyTimeSpan(
+					const GPlatesModel::FeatureHandle::iterator &property_iterator_,
+					const GeometryDeformation::GeometryTimeSpan::non_null_ptr_type &geometry_time_span_) :
+				property_iterator(property_iterator_),
+				geometry_time_span(geometry_time_span_)
+			{  }
+
+			GPlatesModel::FeatureHandle::iterator property_iterator;
+			GeometryDeformation::GeometryTimeSpan::non_null_ptr_type geometry_time_span;
+		};
+
+		//! Typedef for a sequence of deformed geometries.
+		typedef std::vector<DeformedGeometryPropertyTimeSpan> deformed_geometry_time_span_sequence_type;
+
+
+		/**
+		 * The deformed geometry look up tables, or boost::none if not using deformation.
+		 *
+		 * There's one entry for each feature geometry property.
+		 */
+		boost::optional<deformed_geometry_time_span_sequence_type> d_deformed_geometry_property_time_spans;
+
+
+		explicit
+		ReconstructMethodByPlateId(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				const Context &context);
+
+		void
+		initialise_deformation(
+				const Context &context);
 	};
 }
 

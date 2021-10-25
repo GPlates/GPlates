@@ -59,7 +59,7 @@ namespace GPlatesQtWidgets
 			QStringList &field_names,
 			QMap<QString,QString> &model_to_attribute_map);
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Use the current state of the combo boxes to build up the 
@@ -75,7 +75,7 @@ namespace GPlatesQtWidgets
 		void
 		reset_fields();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_buttonbox_clicked(

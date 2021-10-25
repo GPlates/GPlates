@@ -60,7 +60,7 @@ namespace GPlatesDataMining
 		{
 			if(column_index >= d_data.size())
 			{
-				qWarning() << "The column index which is used to get table cell is invalid";
+				qWarning() << "Invalid column index into co-registration data row.";
 				return;
 			}
 			ret = d_data[column_index];			
@@ -135,13 +135,15 @@ namespace GPlatesDataMining
 		}
 
 		void
-		set_data_index(std::size_t idx)
+		set_data_index(
+				std::size_t idx)
 		{
 			d_data_index = idx;
 		}
 
 		void
-		to_qstring_table(std::vector<std::vector<QString> >&) const;
+		to_qstring_table(
+				std::vector<std::vector<QString> >&) const;
 
 
 	protected:

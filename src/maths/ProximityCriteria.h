@@ -41,8 +41,7 @@ namespace GPlatesMaths
 	public:
 		ProximityCriteria(
 				const PointOnSphere &test_point_,
-				const double &closeness_inclusion_threshold_,
-				bool consider_polygon_interior_ = false);
+				const double &closeness_inclusion_threshold_);
 
 		const PointOnSphere &
 		test_point() const
@@ -62,17 +61,10 @@ namespace GPlatesMaths
 			return d_latitude_exclusion_threshold;
 		}
 
-		bool
-		consider_polygon_interior() const
-		{
-			return d_consider_polygon_interior;
-		}
-
 	private:
 		PointOnSphere d_test_point;
 		double d_closeness_inclusion_threshold;
 		double d_latitude_exclusion_threshold;
-		bool d_consider_polygon_interior;
 	};
 
 }

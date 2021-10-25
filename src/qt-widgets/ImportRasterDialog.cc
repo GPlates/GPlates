@@ -79,7 +79,6 @@
 #include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h"
 
-
 const QString
 GPlatesQtWidgets::ImportRasterDialog::GPML_EXT = ".gpml";
 
@@ -184,12 +183,16 @@ GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 			tr("Import Raster"),
 			GPlatesFileIO::RasterReader::get_file_dialog_filters(),
 			view_state),
+	d_raster_width(0),
+	d_raster_height(0),
 	d_georeferencing(
 			GPlatesPropertyValues::Georeferencing::create()),
 	d_save_after_finish(true),
 	d_time_dependent_raster_page_id(addPage(
 				new TimeDependentRasterPage(
 					view_state,
+					d_raster_width,
+					d_raster_height,
 					d_raster_sequence,
 					boost::bind(
 						&ImportRasterDialog::set_number_of_bands,
@@ -203,7 +206,8 @@ GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 	d_georeferencing_page_id(addPage(
 				new GeoreferencingPage(
 					d_georeferencing,
-					d_raster_sequence,
+					d_raster_width,
+					d_raster_height,
 					this))),
 	d_raster_feature_collection_page_id(addPage(
 				new RasterFeatureCollectionPage(
@@ -330,6 +334,11 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 				band_types,
 				raster_size.first,
 				raster_size.second);
+
+		// Set the raster width and height for the next stage (wizard page) since we're
+		// skipping past the time-dependent raster sequence page which normally sets them.
+		d_raster_width = raster_size.first;
+		d_raster_height = raster_size.second;
 
 		// Jump past the time-dependent raster sequence page.
 		setStartId(d_raster_band_page_id);
@@ -560,8 +569,8 @@ GPlatesQtWidgets::ImportRasterDialog::create_range_set(
 
 	// Items common to both branches.
 	const TimeDependentRasterSequence::sequence_type &sequence = d_raster_sequence.get_sequence();
-	static const TemplateTypeParameterType GML_FILE_VALUE_TYPE =
-		TemplateTypeParameterType::create_gml("File");
+	static const StructuralType GML_FILE_VALUE_TYPE =
+		StructuralType::create_gml("File");
 
 	if (time_dependent_raster)
 	{
@@ -660,8 +669,8 @@ GPlatesQtWidgets::ImportRasterDialog::create_domain_set() const
 
 	// Then wrap it up in a constant value.
 	// FIXME: We need to allow the user to create time-dependent georeferencing.
-	static const TemplateTypeParameterType VALUE_TYPE =
-		TemplateTypeParameterType::create_gml("RectifiedGrid");
+	static const StructuralType VALUE_TYPE =
+		StructuralType::create_gml("RectifiedGrid");
 	return GpmlConstantValue::create(rectified_grid, VALUE_TYPE);
 }
 

@@ -32,6 +32,8 @@
 #include "qt-widgets/MapView.h"
 #include "qt-widgets/ViewportWindow.h"
 
+#include "view-operations/RenderedGeometryCollection.h"
+
 
 void
 GPlatesCanvasTools::PanMap::handle_activation()
@@ -47,7 +49,8 @@ GPlatesCanvasTools::PanMap::handle_activation()
 
 void
 GPlatesCanvasTools::PanMap::handle_deactivation()
-{  }
+{
+}
 
 
 void

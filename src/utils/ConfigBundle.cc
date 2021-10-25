@@ -101,7 +101,7 @@ GPlatesUtils::ConfigBundle::set_value(
 	QVariant orig_value = d_map.value(key);
 	d_map.insert(key, value);
 	if (orig_value != value) {
-		emit key_value_updated(key);
+		Q_EMIT key_value_updated(key);
 	}
 }
 
@@ -113,7 +113,7 @@ GPlatesUtils::ConfigBundle::set_default_value(
 	QVariant orig_visible_value = get_value(key);
 	d_defaults.insert(key, value);
 	if (orig_visible_value != get_value(key)) {
-		emit key_value_updated(key);
+		Q_EMIT key_value_updated(key);
 	}
 }
 
@@ -123,7 +123,7 @@ GPlatesUtils::ConfigBundle::clear_value(
 		const QString &key)
 {
 	d_map.remove(key);
-	emit key_value_updated(key);
+	Q_EMIT key_value_updated(key);
 }
 
 void
@@ -136,7 +136,7 @@ GPlatesUtils::ConfigBundle::clear_prefix(
 	// And remove each one.
 	Q_FOREACH(QString key, keys_to_remove) {
 		d_map.remove(key);
-		emit key_value_updated(key);
+		Q_EMIT key_value_updated(key);
 	}
 }
 

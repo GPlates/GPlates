@@ -25,9 +25,11 @@
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <QString>
 
 #include "ExportAnimationRegistry.h"
 
+#include "ExportCitcomsResolvedTopologyAnimationStrategy.h"
 #include "ExportCoRegistrationAnimationStrategy.h"
 #include "ExportFileNameTemplateValidationUtils.h"
 #include "ExportFlowlineAnimationStrategy.h"
@@ -35,18 +37,26 @@
 #include "ExportRasterAnimationStrategy.h"
 #include "ExportReconstructedGeometryAnimationStrategy.h"
 #include "ExportResolvedTopologyAnimationStrategy.h"
-#include "ExportRotationAnimationStrategy.h"
+#include "ExportStageRotationAnimationStrategy.h"
 #include "ExportSvgAnimationStrategy.h"
+#include "ExportTotalRotationAnimationStrategy.h"
 #include "ExportVelocityAnimationStrategy.h"
+
+#include "file-io/MultiPointVectorFieldExport.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "qt-widgets/ExportCitcomsResolvedTopologyOptionsWidget.h"
 #include "qt-widgets/ExportFlowlineOptionsWidget.h"
 #include "qt-widgets/ExportMotionPathOptionsWidget.h"
+#include "qt-widgets/ExportRasterOptionsWidget.h"
 #include "qt-widgets/ExportReconstructedGeometryOptionsWidget.h"
-#include "qt-widgets/ExportResolvedTopologicalBoundaryOptionsWidget.h"
-
+#include "qt-widgets/ExportResolvedTopologyOptionsWidget.h"
+#include "qt-widgets/ExportStageRotationOptionsWidget.h"
+#include "qt-widgets/ExportSvgOptionsWidget.h"
+#include "qt-widgets/ExportTotalRotationOptionsWidget.h"
+#include "qt-widgets/ExportVelocityOptionsWidget.h"
 
 namespace GPlatesGui
 {
@@ -101,7 +111,7 @@ namespace GPlatesGui
 
 		/**
 		 * Function to create an @a ExportOptionsWidget derived type ExportOptionsWidgetType
-		 * passing in a default export configuration.
+		 * passing in an export configuration.
 		 *
 		 * Expects derived type ExportOptionsWidgetType to contain a static method 'create'
 		 * that accepts the following parameters:
@@ -118,13 +128,14 @@ namespace GPlatesGui
 		GPlatesQtWidgets::ExportOptionsWidget *
 		create_export_options_widget(
 				QWidget *parent,
-				const ExportAnimationStrategy::const_configuration_base_ptr &default_export_configuration)
+				ExportAnimationContext &export_animation_context,
+				const ExportAnimationStrategy::const_configuration_base_ptr &export_configuration)
 		{
 			return ExportOptionsWidgetType::create(
 					parent,
-					dynamic_cast_export_configuration<ExportAnimationStrategyType>(default_export_configuration));
+					export_animation_context,
+					dynamic_cast_export_configuration<ExportAnimationStrategyType>(export_configuration));
 		}
-
 
 		/**
 		 * Same as the other overload of @a create_export_options_widget but has an extra parameter.
@@ -133,28 +144,61 @@ namespace GPlatesGui
 		GPlatesQtWidgets::ExportOptionsWidget *
 		create_export_options_widget(
 				QWidget *parent,
-				const ExportAnimationStrategy::const_configuration_base_ptr &default_export_configuration,
+				ExportAnimationContext &export_animation_context,
+				const ExportAnimationStrategy::const_configuration_base_ptr &export_configuration,
 				const A1 &arg1)
 		{
 			return ExportOptionsWidgetType::create(
 					parent,
-					dynamic_cast_export_configuration<ExportAnimationStrategyType>(default_export_configuration),
+					export_animation_context,
+					dynamic_cast_export_configuration<ExportAnimationStrategyType>(export_configuration),
 					arg1);
 		}
+
+		/**
+		 * A convenience typedef because a static_cast is needed on some compilers to help determine
+		 * the correct overload of 'create_export_options_widget()' to use with boost::bind.
+		 *
+		 * Note: It seems the static_cast is only needed for the overload with no extra arguments.
+		 */
+		typedef GPlatesQtWidgets::ExportOptionsWidget *
+				(*create_export_options_widget_function_pointer_type)(
+						QWidget *,
+						ExportAnimationContext &,
+						const ExportAnimationStrategy::const_configuration_base_ptr &);
 
 
 		/**
 		 * A function that returns a NULL @a ExportOptionsWidget.
 		 *
 		 * Used for those exporters that don't need an export options widget to configure
-		 * its export parameters.
+		 * their export parameters.
 		 */
 		GPlatesQtWidgets::ExportOptionsWidget *
 		create_null_export_options_widget(
 				QWidget *,
+				ExportAnimationContext &,
 				const ExportAnimationStrategy::const_configuration_base_ptr &)
 		{
 			return NULL;
+		}
+
+
+		/**
+		 * Adds the export filename extension to the basename if there is an extension for the specified format.
+		 */
+		QString
+		add_export_filename_extension(
+				QString file_basename,
+				ExportAnimationType::Format export_format)
+		{
+			const QString filename_extension =
+					ExportAnimationType::get_export_format_filename_extension(export_format);
+
+			// Some export formats do not have a filename extension.
+			return filename_extension.isEmpty()
+					? file_basename
+					: file_basename + "." + filename_extension;
 		}
 	}
 }
@@ -163,7 +207,7 @@ namespace GPlatesGui
 void
 GPlatesGui::ExportAnimationRegistry::register_exporter(
 		ExportAnimationType::ExportID export_id_,
-		const ExportAnimationStrategy::const_configuration_base_ptr &default_export_configuration,
+		const ExportAnimationStrategy::const_configuration_base_ptr &export_configuration,
 		const create_export_animation_strategy_function_type &create_export_animation_strategy_function_,
 		const create_export_options_widget_function_type &create_export_options_widget_function_,
 		const validate_filename_template_function_type &validate_filename_template_function_)
@@ -172,7 +216,7 @@ GPlatesGui::ExportAnimationRegistry::register_exporter(
 			std::make_pair(
 				export_id_,
 				ExporterInfo(
-					default_export_configuration,
+					export_configuration,
 					create_export_animation_strategy_function_,
 					create_export_options_widget_function_,
 					validate_filename_template_function_)));
@@ -259,7 +303,9 @@ GPlatesGui::ExportAnimationRegistry::create_export_animation_strategy(
 boost::optional<GPlatesQtWidgets::ExportOptionsWidget *>
 GPlatesGui::ExportAnimationRegistry::create_export_options_widget(
 		ExportAnimationType::ExportID export_id,
-		QWidget *parent) const
+		QWidget *parent,
+		ExportAnimationContext &export_animation_context,
+		boost::optional<ExportAnimationStrategy::const_configuration_base_ptr> export_configuration) const
 {
 	exporter_info_map_type::const_iterator iter = d_exporter_info_map.find(export_id);
 	if (iter == d_exporter_info_map.end())
@@ -272,7 +318,11 @@ GPlatesGui::ExportAnimationRegistry::create_export_options_widget(
 	GPlatesQtWidgets::ExportOptionsWidget *export_options_widget =
 			exporter_info.create_export_options_widget_function(
 					parent,
-					exporter_info.default_export_configuration);
+					export_animation_context,
+					// Use the configuration provided, otherwise use the default configuration...
+					export_configuration
+							? export_configuration.get()
+							: exporter_info.default_export_configuration);
 
 	if (export_options_widget == NULL)
 	{
@@ -311,8 +361,6 @@ GPlatesGui::register_default_export_animation_types(
 	// Export reconstructed geometries
 	//
 
-	// By default only export to multiple files (one output file per input file) as this
-	// is the most requested output.
 	const ExportOptionsUtils::ExportFileOptions default_reconstructed_geometry_file_export_options(
 			/*export_to_a_single_file_*/true,
 			/*export_to_multiple_files_*/true);
@@ -324,7 +372,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::GMT),
 			ExportReconstructedGeometryAnimationStrategy::const_configuration_ptr(
 					new ExportReconstructedGeometryAnimationStrategy::Configuration(
-							"reconstructed_%0.2fMa.xy",
+							add_export_filename_extension("reconstructed_%0.2fMa", ExportAnimationType::GMT),
 							ExportReconstructedGeometryAnimationStrategy::Configuration::GMT,
 							default_reconstructed_geometry_file_export_options,
 							default_reconstructed_geometry_wrap_to_dateline)),
@@ -335,7 +383,7 @@ GPlatesGui::register_default_export_animation_types(
 							ExportReconstructedGeometryAnimationStrategy,
 							bool>,
 					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
-					_1, _2, false),
+					_1, _2, _3, false),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -344,7 +392,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::SHAPEFILE),
 			ExportReconstructedGeometryAnimationStrategy::const_configuration_ptr(
 					new ExportReconstructedGeometryAnimationStrategy::Configuration(
-							"reconstructed_%0.2fMa.shp",
+							add_export_filename_extension("reconstructed_%0.2fMa", ExportAnimationType::SHAPEFILE),
 							ExportReconstructedGeometryAnimationStrategy::Configuration::SHAPEFILE,
 							default_reconstructed_geometry_file_export_options,
 							default_reconstructed_geometry_wrap_to_dateline)),
@@ -355,7 +403,7 @@ GPlatesGui::register_default_export_animation_types(
 							ExportReconstructedGeometryAnimationStrategy,
 							bool>,
 					// The 'true' allows user to turn on/off dateline wrapping of geometries...
-					_1, _2, true),
+					_1, _2, _3, true),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -364,7 +412,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::OGRGMT),
 			ExportReconstructedGeometryAnimationStrategy::const_configuration_ptr(
 				new ExportReconstructedGeometryAnimationStrategy::Configuration(
-						"reconstructed_%0.2fMa.gmt",
+						add_export_filename_extension("reconstructed_%0.2fMa", ExportAnimationType::OGRGMT),
 						ExportReconstructedGeometryAnimationStrategy::Configuration::SHAPEFILE,
 						default_reconstructed_geometry_file_export_options,
 						default_reconstructed_geometry_wrap_to_dateline)),
@@ -375,12 +423,16 @@ GPlatesGui::register_default_export_animation_types(
 							ExportReconstructedGeometryAnimationStrategy,
 							bool>,
 					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
-					_1, _2, false),
+					_1, _2, _3, false),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
 	// Export projected geometries
 	//
+
+	// By default output SVG images the same size as main viewport window (and don't constrain aspect ratio).
+	const ExportOptionsUtils::ExportImageResolutionOptions default_svg_image_resolution_export_options(
+			false/*constrain_aspect_ratio*/);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
@@ -388,33 +440,218 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::SVG),
 			ExportSvgAnimationStrategy::const_configuration_ptr(
 					new ExportSvgAnimationStrategy::Configuration(
-							"snapshot_%0.2fMa.svg")),
+							add_export_filename_extension("snapshot_%0.2fMa", ExportAnimationType::SVG),
+							default_svg_image_resolution_export_options)),
 			&create_animation_strategy<ExportSvgAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportSvgOptionsWidget,
+									ExportSvgAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
 	// Export velocities
 	//
 
+	// By default only export to multiple files (one output file per input file).
+	const ExportOptionsUtils::ExportFileOptions default_velocity_file_export_options(
+			/*export_to_a_single_file_*/false,
+			/*export_to_multiple_files_*/true);
+
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::MESH_VELOCITIES,
+					ExportAnimationType::VELOCITIES,
 					ExportAnimationType::GPML),
 			ExportVelocityAnimationStrategy::const_configuration_ptr(
-					new ExportVelocityAnimationStrategy::Configuration(
-							"velocity_colat_lon_on_mesh_%P_at_%0.2fMa.gpml")),
+					new ExportVelocityAnimationStrategy::GpmlConfiguration(
+							add_export_filename_extension("velocity_%0.2fMa", ExportAnimationType::GPML),
+							default_velocity_file_export_options)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportVelocityOptionsWidget,
+									ExportVelocityAnimationStrategy>),
+					_1, _2, _3),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::VELOCITIES,
+					ExportAnimationType::GMT),
+			ExportVelocityAnimationStrategy::const_configuration_ptr(
+					new ExportVelocityAnimationStrategy::GMTConfiguration(
+							add_export_filename_extension("velocity_%0.2fMa", ExportAnimationType::GMT),
+							default_velocity_file_export_options,
+							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D,
+							1.0/*velocity_scale*/,
+							1/*velocity_stride*/,
+							// Lon/lat is the default GMT ordering...
+							ExportVelocityAnimationStrategy::GMTConfiguration::LON_LAT,
+							true/*include_plate_id*/,
+							true/*include_domain_point*/,
+							true/*include_domain_meta_data*/)),
+			&create_animation_strategy<ExportVelocityAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportVelocityOptionsWidget,
+									ExportVelocityAnimationStrategy>),
+					_1, _2, _3),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	// Default Terra grid filename template to match, for example, "TerraMesh.32.16.5.1".
+	const QString default_terra_grid_filename_template =
+			QString("TerraMesh.") +
+				ExportVelocityAnimationStrategy::TerraTextConfiguration::MT_PLACE_HOLDER + "." +
+				ExportVelocityAnimationStrategy::TerraTextConfiguration::NT_PLACE_HOLDER + "." +
+				ExportVelocityAnimationStrategy::TerraTextConfiguration::ND_PLACE_HOLDER + "." +
+				ExportVelocityAnimationStrategy::TerraTextConfiguration::PROCESSOR_PLACE_HOLDER;
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::VELOCITIES,
+					ExportAnimationType::TERRA_TEXT),
+			ExportVelocityAnimationStrategy::const_configuration_ptr(
+					new ExportVelocityAnimationStrategy::TerraTextConfiguration(
+							// An example Terra filename is "gpt.0025.100" which must have
+							// 3 digits for the reconstruction time (which must be an integer)...
+							add_export_filename_extension("gpt.%P.%03d", ExportAnimationType::TERRA_TEXT),
+							default_terra_grid_filename_template)),
+			&create_animation_strategy<ExportVelocityAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportVelocityOptionsWidget,
+									ExportVelocityAnimationStrategy>),
+					_1, _2, _3),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+
+	// Default CitcomS grid filename template to match, for example, "TerraMesh.32.16.5.1".
+	const QString default_citcoms_grid_filename_template =
+			ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::DENSITY_PLACE_HOLDER +
+				".mesh." +
+				ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::CAP_NUM_PLACE_HOLDER;
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::VELOCITIES,
+					ExportAnimationType::CITCOMS_GLOBAL),
+			ExportVelocityAnimationStrategy::const_configuration_ptr(
+					new ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration(
+							// An example Terra filename is "bvel25.9" where 25 is the reconstruction
+							// time (which must be an integer) and 9 is the cap number...
+							add_export_filename_extension("bvel%d.%P", ExportAnimationType::CITCOMS_GLOBAL),
+							default_citcoms_grid_filename_template,
+							true/*include_gmt_export*/,
+							1.0/*gmt_velocity_scale*/,
+							1/*gmt_velocity_stride*/)),
+			&create_animation_strategy<ExportVelocityAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportVelocityOptionsWidget,
+									ExportVelocityAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
 	//
-	// Export resolved topologies
+	// Export resolved topologies (general)
+	//
+
+	const ExportOptionsUtils::ExportFileOptions default_resolved_topology_file_export_options(
+			/*export_to_a_single_file_*/true,
+			/*export_to_multiple_files_*/true);
+	const bool default_resolved_topology_export_lines = true;
+	const bool default_resolved_topology_export_polygons = true;
+	const bool default_resolved_topology_wrap_to_dateline = false;
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::RESOLVED_TOPOLOGIES,
+					ExportAnimationType::GMT),
+			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
+					new ExportResolvedTopologyAnimationStrategy::Configuration(
+							add_export_filename_extension("topology_%0.2fMa", ExportAnimationType::GMT),
+							ExportResolvedTopologyAnimationStrategy::Configuration::GMT,
+							default_resolved_topology_file_export_options,
+							default_resolved_topology_export_lines,
+							default_resolved_topology_export_polygons,
+							default_resolved_topology_wrap_to_dateline)),
+			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget,
+							ExportResolvedTopologyAnimationStrategy,
+							bool>,
+					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
+					_1, _2, _3, false),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::RESOLVED_TOPOLOGIES,
+					ExportAnimationType::SHAPEFILE),
+			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
+					new ExportResolvedTopologyAnimationStrategy::Configuration(
+							add_export_filename_extension("topology_%0.2fMa", ExportAnimationType::SHAPEFILE),
+							ExportResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE,
+							default_resolved_topology_file_export_options,
+							default_resolved_topology_export_lines,
+							default_resolved_topology_export_polygons,
+							default_resolved_topology_wrap_to_dateline)),
+			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget,
+							ExportResolvedTopologyAnimationStrategy,
+							bool>,
+					// The 'true' allows the user to turn on/off dateline wrapping of geometries...
+					_1, _2, _3, true),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+				ExportAnimationType::RESOLVED_TOPOLOGIES,
+					ExportAnimationType::OGRGMT),
+			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
+					new ExportResolvedTopologyAnimationStrategy::Configuration(
+							add_export_filename_extension("topology_%02fMa", ExportAnimationType::OGRGMT),
+							ExportResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
+							default_resolved_topology_file_export_options,
+							default_resolved_topology_export_lines,
+							default_resolved_topology_export_polygons,
+							default_resolved_topology_wrap_to_dateline)),
+			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
+            boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget,
+							ExportResolvedTopologyAnimationStrategy,
+							bool>,
+					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
+                    _1, _2, _3, false),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+
+	//
+	// Export resolved topologies (CitcomS-specific)
 	//
 
 	// Set defaults 
-	const GPlatesFileIO::ResolvedTopologicalBoundaryExport::OutputOptions
-			default_resolved_topological_boundary_export_options(
+	const GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::OutputOptions
+			default_citcoms_resolved_topology_export_options(
 					/*wrap_geometries_to_the_dateline*/false,
 
 					/*export_individual_plate_polygon_files*/false,
@@ -457,140 +694,369 @@ GPlatesGui::register_default_export_animation_types(
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::RESOLVED_TOPOLOGIES,
+					ExportAnimationType::RESOLVED_TOPOLOGIES_CITCOMS,
 					ExportAnimationType::GMT),
-			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
-					new ExportResolvedTopologyAnimationStrategy::Configuration(
-							"topology_%P_%0.2fMa.xy",
-							ExportResolvedTopologyAnimationStrategy::Configuration::GMT,
-							default_resolved_topological_boundary_export_options)),
-			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
+			ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
+					new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
+							add_export_filename_extension("topology_%P_%0.2fMa", ExportAnimationType::GMT),
+							ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::GMT,
+							default_citcoms_resolved_topology_export_options)),
+			&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,
 			boost::bind(
 					&create_export_options_widget<
-							GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
-							ExportResolvedTopologyAnimationStrategy,
+							GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget,
+							ExportCitcomsResolvedTopologyAnimationStrategy,
 							bool>,
 					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
-					_1, _2, false),
+					_1, _2, _3, false),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::RESOLVED_TOPOLOGIES,
+					ExportAnimationType::RESOLVED_TOPOLOGIES_CITCOMS,
 					ExportAnimationType::SHAPEFILE),
-			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
-					new ExportResolvedTopologyAnimationStrategy::Configuration(
-							"topology_%P_%0.2fMa.shp",
-							ExportResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE,
-							default_resolved_topological_boundary_export_options)),
-			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
+			ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
+					new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
+							add_export_filename_extension("topology_%P_%0.2fMa", ExportAnimationType::SHAPEFILE),
+							ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE,
+							default_citcoms_resolved_topology_export_options)),
+			&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,
 			boost::bind(
 					&create_export_options_widget<
-							GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
-							ExportResolvedTopologyAnimationStrategy,
+							GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget,
+							ExportCitcomsResolvedTopologyAnimationStrategy,
 							bool>,
 					// The 'true' allows the user to turn on/off dateline wrapping of geometries...
-					_1, _2, true),
+					_1, _2, _3, true),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
-#if 0 // Not yet supported...
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-				ExportAnimationType::RESOLVED_TOPOLOGIES,
+				ExportAnimationType::RESOLVED_TOPOLOGIES_CITCOMS,
 					ExportAnimationType::OGRGMT),
-			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
-					new ExportResolvedTopologyAnimationStrategy::Configuration(
-							"topology_%P_%02fMa.gmt",
-							ExportResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
-							default_resolved_topological_boundary_export_options)),
-			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
-			&create_export_options_widget<
-					GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
-					ExportResolvedTopologyAnimationStrategy>,
+			ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
+					new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
+							add_export_filename_extension("topology_%P_%02fMa", ExportAnimationType::OGRGMT),
+							ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
+							default_citcoms_resolved_topology_export_options)),
+			&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,
+            boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget,
+							ExportCitcomsResolvedTopologyAnimationStrategy,
+							bool>,
+					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
+                    _1, _2, _3, false),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
-#endif
-
 
 
 	//
-	// Export relative rotations
+	// Export rotations
+	//
+
+	// By default write out identity rotations as "Indeterminate".
+	const ExportOptionsUtils::ExportRotationOptions default_rotation_export_options(
+			ExportOptionsUtils::ExportRotationOptions::WRITE_IDENTITY_AS_INDETERMINATE,
+			ExportOptionsUtils::ExportRotationOptions::WRITE_EULER_POLE_AS_LATITUDE_LONGITUDE);
+
+	//
+	// Export relative total rotations
 	//
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::RELATIVE_ROTATION,
+					ExportAnimationType::RELATIVE_TOTAL_ROTATION,
 					ExportAnimationType::CSV_COMMA),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
-							"relative_total_rotation_comma_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::RELATIVE_COMMA)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"relative_total_rotation_comma_%0.2fMa",
+									ExportAnimationType::CSV_COMMA),
+							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_COMMA,
+							default_rotation_export_options)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::RELATIVE_ROTATION,
+					ExportAnimationType::RELATIVE_TOTAL_ROTATION,
 					ExportAnimationType::CSV_SEMICOLON),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
-							"relative_total_rotation_semicolon_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"relative_total_rotation_semicolon_%0.2fMa",
+									ExportAnimationType::CSV_SEMICOLON),
+							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON,
+							default_rotation_export_options)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::RELATIVE_ROTATION,
+					ExportAnimationType::RELATIVE_TOTAL_ROTATION,
 					ExportAnimationType::CSV_TAB),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
-							"relative_total_rotation_tab_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::RELATIVE_TAB)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"relative_total_rotation_tab_%0.2fMa",
+									ExportAnimationType::CSV_TAB),
+							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_TAB,
+							default_rotation_export_options)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	//
+	// Export equivalent total rotations
+	//
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::EQUIVALENT_ROTATION,
+					ExportAnimationType::EQUIVALENT_TOTAL_ROTATION,
 					ExportAnimationType::CSV_COMMA),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
-							"equivalent_total_rotation_comma_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"equivalent_total_rotation_comma_%0.2fMa",
+									ExportAnimationType::CSV_COMMA),
+							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA,
+							default_rotation_export_options)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::EQUIVALENT_ROTATION,
+					ExportAnimationType::EQUIVALENT_TOTAL_ROTATION,
 					ExportAnimationType::CSV_SEMICOLON),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
-							"equivalent_total_rotation_semicolon_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"equivalent_total_rotation_semicolon_%0.2fMa",
+									ExportAnimationType::CSV_SEMICOLON),
+							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON,
+							default_rotation_export_options)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::EQUIVALENT_ROTATION,
+					ExportAnimationType::EQUIVALENT_TOTAL_ROTATION,
 					ExportAnimationType::CSV_TAB),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
-							"equivalent_total_rotation_tab_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::EQUIVALENT_TAB)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"equivalent_total_rotation_tab_%0.2fMa",
+									ExportAnimationType::CSV_TAB),
+							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_TAB,
+							default_rotation_export_options)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
+					_1, _2, _3),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	//
+	// Export relative stage rotations
+	//
+
+	// Default *stage* rotation export options.
+	const ExportOptionsUtils::ExportStageRotationOptions default_stage_rotation_export_options(
+			// Default stage rotation time interval is 1.0 My...
+			1.0);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::RELATIVE_STAGE_ROTATION,
+					ExportAnimationType::CSV_SEMICOLON),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"relative_stage_rotation_semicolon_%0.2fMa",
+									ExportAnimationType::CSV_SEMICOLON),
+							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
+					_1, _2, _3),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::RELATIVE_STAGE_ROTATION,
+					ExportAnimationType::CSV_COMMA),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"relative_stage_rotation_comma_%0.2fMa",
+									ExportAnimationType::CSV_COMMA),
+							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_COMMA,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
+					_1, _2, _3),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::RELATIVE_STAGE_ROTATION,
+					ExportAnimationType::CSV_TAB),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"relative_stage_rotation_tab_%0.2fMa",
+									ExportAnimationType::CSV_TAB),
+							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_TAB,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
+					_1, _2, _3),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	//
+	// Export equivalent stage rotations
+	//
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::EQUIVALENT_STAGE_ROTATION,
+					ExportAnimationType::CSV_SEMICOLON),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"equivalent_stage_rotation_semicolon_%0.2fMa",
+									ExportAnimationType::CSV_SEMICOLON),
+							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
+					_1, _2, _3),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::EQUIVALENT_STAGE_ROTATION,
+					ExportAnimationType::CSV_COMMA),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"equivalent_stage_rotation_comma_%0.2fMa",
+									ExportAnimationType::CSV_COMMA),
+							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
+					_1, _2, _3),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::EQUIVALENT_STAGE_ROTATION,
+					ExportAnimationType::CSV_TAB),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							add_export_filename_extension(
+									"equivalent_stage_rotation_tab_%0.2fMa",
+									ExportAnimationType::CSV_TAB),
+							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_TAB,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
 	// Export rasters
 	//
+
+	// By default output image the same size as main viewport window (and don't constrain aspect ratio).
+	const ExportOptionsUtils::ExportImageResolutionOptions default_raster_image_resolution_export_options(
+			false/*constrain_aspect_ratio*/);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
@@ -598,10 +1064,18 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::BMP),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.bmp",
-							ExportRasterAnimationStrategy::Configuration::BMP)),
+							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::BMP),
+							ExportRasterAnimationStrategy::Configuration::BMP,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportRasterOptionsWidget,
+									ExportRasterAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -610,10 +1084,18 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::JPG),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.jpg",
-							ExportRasterAnimationStrategy::Configuration::JPG)),
+							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::JPG),
+							ExportRasterAnimationStrategy::Configuration::JPG,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportRasterOptionsWidget,
+									ExportRasterAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -622,10 +1104,18 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::JPEG),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.jpeg",
-							ExportRasterAnimationStrategy::Configuration::JPEG)),
+							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::JPEG),
+							ExportRasterAnimationStrategy::Configuration::JPEG,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportRasterOptionsWidget,
+									ExportRasterAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -634,10 +1124,18 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::PNG),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.png",
-							ExportRasterAnimationStrategy::Configuration::PNG)),
+							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::PNG),
+							ExportRasterAnimationStrategy::Configuration::PNG,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportRasterOptionsWidget,
+									ExportRasterAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -646,10 +1144,18 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::PPM),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.ppm",
-							ExportRasterAnimationStrategy::Configuration::PPM)),
+							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::PPM),
+							ExportRasterAnimationStrategy::Configuration::PPM,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportRasterOptionsWidget,
+									ExportRasterAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -658,10 +1164,18 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::TIFF),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.tiff",
-							ExportRasterAnimationStrategy::Configuration::TIFF)),
+							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::TIFF),
+							ExportRasterAnimationStrategy::Configuration::TIFF,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportRasterOptionsWidget,
+									ExportRasterAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -670,10 +1184,18 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::XBM),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.xbm",
-							ExportRasterAnimationStrategy::Configuration::XBM)),
+							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::XBM),
+							ExportRasterAnimationStrategy::Configuration::XBM,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportRasterOptionsWidget,
+									ExportRasterAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -682,10 +1204,18 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::XPM),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.xpm",
-							ExportRasterAnimationStrategy::Configuration::XPM)),
+							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::XPM),
+							ExportRasterAnimationStrategy::Configuration::XPM,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportRasterOptionsWidget,
+									ExportRasterAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
@@ -705,7 +1235,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::GMT),
 			ExportFlowlineAnimationStrategy::const_configuration_ptr(
 					new ExportFlowlineAnimationStrategy::Configuration(
-							"flowline_output_%0.2fMa.xy",
+							add_export_filename_extension("flowline_output_%0.2fMa", ExportAnimationType::GMT),
 							ExportFlowlineAnimationStrategy::Configuration::GMT,
 							default_flowline_file_export_options,
 							default_flowline_wrap_to_dateline)),
@@ -716,7 +1246,7 @@ GPlatesGui::register_default_export_animation_types(
 							ExportFlowlineAnimationStrategy,
 							bool>,
 					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
-					_1, _2, false),
+					_1, _2, _3, false),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -725,7 +1255,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::SHAPEFILE),
 			ExportFlowlineAnimationStrategy::const_configuration_ptr(
 					new ExportFlowlineAnimationStrategy::Configuration(
-							"flowline_output_%0.2fMa.shp",
+							add_export_filename_extension("flowline_output_%0.2fMa", ExportAnimationType::SHAPEFILE),
 							ExportFlowlineAnimationStrategy::Configuration::SHAPEFILE,
 							default_flowline_file_export_options,
 							default_flowline_wrap_to_dateline)),
@@ -736,7 +1266,7 @@ GPlatesGui::register_default_export_animation_types(
 							ExportFlowlineAnimationStrategy,
 							bool>,
 					// The 'true' allows user to turn on/off dateline wrapping of geometries...
-					_1, _2, true),
+					_1, _2, _3, true),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 
@@ -746,7 +1276,7 @@ GPlatesGui::register_default_export_animation_types(
 				ExportAnimationType::OGRGMT),
 		ExportFlowlineAnimationStrategy::const_configuration_ptr(
 			new ExportFlowlineAnimationStrategy::Configuration(
-					"flowline_output_%0.2fMa.gmt",
+					add_export_filename_extension("flowline_output_%0.2fMa", ExportAnimationType::OGRGMT),
 					ExportFlowlineAnimationStrategy::Configuration::OGRGMT,
 					default_flowline_file_export_options,
 					default_flowline_wrap_to_dateline)),
@@ -757,7 +1287,7 @@ GPlatesGui::register_default_export_animation_types(
 							ExportFlowlineAnimationStrategy,
 							bool>,
 					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
-					_1, _2, false),
+					_1, _2, _3, false),
 		&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
@@ -777,7 +1307,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::GMT),
 			ExportMotionPathAnimationStrategy::const_configuration_ptr(
 					new ExportMotionPathAnimationStrategy::Configuration(
-							"motion_path_output_%0.2fMa.xy",
+							add_export_filename_extension("motion_path_output_%0.2fMa", ExportAnimationType::GMT),
 							ExportMotionPathAnimationStrategy::Configuration::GMT,
 							default_motion_path_file_export_options,
 							default_motion_path_wrap_to_dateline)),
@@ -788,7 +1318,7 @@ GPlatesGui::register_default_export_animation_types(
 							ExportMotionPathAnimationStrategy,
 							bool>,
 					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
-					_1, _2, false),
+					_1, _2, _3, false),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -797,7 +1327,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::SHAPEFILE),
 			ExportMotionPathAnimationStrategy::const_configuration_ptr(
 					new ExportMotionPathAnimationStrategy::Configuration(
-							"motion_path_output_%0.2fMa.shp",
+							add_export_filename_extension("motion_path_output_%0.2fMa", ExportAnimationType::SHAPEFILE),
 							ExportMotionPathAnimationStrategy::Configuration::SHAPEFILE,
 							default_motion_path_file_export_options,
 							default_motion_path_wrap_to_dateline)),
@@ -808,7 +1338,7 @@ GPlatesGui::register_default_export_animation_types(
 							ExportMotionPathAnimationStrategy,
 							bool>,
 					// The 'true' allows user to turn on/off dateline wrapping of geometries...
-					_1, _2, true),
+					_1, _2, _3, true),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 
@@ -818,7 +1348,7 @@ GPlatesGui::register_default_export_animation_types(
 				ExportAnimationType::OGRGMT),
 			ExportMotionPathAnimationStrategy::const_configuration_ptr(
 				new ExportMotionPathAnimationStrategy::Configuration(
-					"motion_path_output_%0.2fMa.gmt",
+					add_export_filename_extension("motion_path_output_%0.2fMa", ExportAnimationType::OGRGMT),
 					ExportMotionPathAnimationStrategy::Configuration::OGRGMT,
 					default_motion_path_file_export_options,
 					default_motion_path_wrap_to_dateline)),
@@ -829,7 +1359,7 @@ GPlatesGui::register_default_export_animation_types(
 							ExportMotionPathAnimationStrategy,
 							bool>,
 					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
-					_1, _2, false),
+					_1, _2, _3, false),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
@@ -842,8 +1372,10 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_COMMA),
 			ExportCoRegistrationAnimationStrategy::const_configuration_ptr(
 					new ExportCoRegistrationAnimationStrategy::Configuration(
-							"co_registration_data_%0.2fMa.csv")),
+							add_export_filename_extension(
+									"co_registration_data%P_%0.2fMa",
+									ExportAnimationType::CSV_COMMA))),
 			&create_animation_strategy<ExportCoRegistrationAnimationStrategy>,
 			&create_null_export_options_widget,
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 }

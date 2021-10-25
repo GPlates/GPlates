@@ -170,7 +170,7 @@ namespace GPlatesGui
 				int row) const;
 
 
-	public slots:
+	public Q_SLOTS:
 		
 		/**
 		 * Use this slot to clear the table and set it to a new feature reference.
@@ -187,7 +187,7 @@ namespace GPlatesGui
 		void
 		refresh_data();
 
-	signals:
+	Q_SIGNALS:
 		
 		/**
 		 * Emitted when changes have been made to a feature.

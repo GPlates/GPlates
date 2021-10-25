@@ -48,7 +48,7 @@
 GPlatesQtWidgets::CalculateReconstructionPoleDialog::CalculateReconstructionPoleDialog(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
-	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+	GPlatesDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_dialog_ptr(new InsertVGPReconstructionPoleDialog(view_state_, parent_)),
 	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(this)),
 	d_application_state_ptr(&view_state_.get_application_state()),

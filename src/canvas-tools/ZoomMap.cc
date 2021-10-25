@@ -29,16 +29,21 @@
 #include "gui/MapTransform.h"
 #include "gui/ViewportZoom.h"
 
+#include "qt-widgets/MapView.h"
 #include "qt-widgets/ViewportWindow.h"
+
+#include "view-operations/RenderedGeometryCollection.h"
 
 
 GPlatesCanvasTools::ZoomMap::ZoomMap(
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
 		GPlatesQtWidgets::MapView &map_view_,
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesGui::MapTransform &map_transform_,
 		GPlatesGui::ViewportZoom &viewport_zoom_) :
 	MapCanvasTool(map_canvas_, map_view_, map_transform_),
+	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_viewport_window_ptr(&viewport_window_),
 	d_map_transform_ptr(&map_transform_),
 	d_viewport_zoom_ptr(&viewport_zoom_)
@@ -55,6 +60,12 @@ GPlatesCanvasTools::ZoomMap::handle_activation()
 					" Shift+click to zoom out."
 					" Ctrl+drag to pan the map."));
 	}
+}
+
+
+void
+GPlatesCanvasTools::ZoomMap::handle_deactivation()
+{
 }
 
 

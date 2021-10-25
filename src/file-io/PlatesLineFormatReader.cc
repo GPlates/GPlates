@@ -40,10 +40,7 @@
 #include "ReadErrors.h"
 #include "LineReader.h"
 
-#include "global/types.h"
-
-#include "utils/StringUtils.h"
-#include "utils/UnicodeStringUtils.h"
+#include "feature-visitors/PropertyValueFinder.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
@@ -80,9 +77,11 @@
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlTopologicalSection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
-#include "property-values/TemplateTypeParameterType.h"
+#include "property-values/StructuralType.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "utils/Profile.h"
+#include "utils/StringUtils.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 namespace
@@ -166,8 +165,8 @@ namespace
 		const GPlatesModel::PropertyName name =
 			GPlatesModel::PropertyName::create_gpml("position");
 
-		const GPlatesPropertyValues::TemplateTypeParameterType value =
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point" );
+		const GPlatesPropertyValues::StructuralType value =
+			GPlatesPropertyValues::StructuralType::create_gml("Point" );
 
 		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd_ptr =
 			GPlatesPropertyValues::GpmlPropertyDelegate::create(
@@ -195,8 +194,8 @@ namespace
 		const GPlatesModel::PropertyName name =
 			GPlatesModel::PropertyName::create_gpml( "centerLineOf" );
 
-		const GPlatesPropertyValues::TemplateTypeParameterType value =
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("LineString");
+		const GPlatesPropertyValues::StructuralType value =
+			GPlatesPropertyValues::StructuralType::create_gml("LineString");
 		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type pd_ptr =
 			GPlatesPropertyValues::GpmlPropertyDelegate::create(
 				fid, name, value);
@@ -206,8 +205,6 @@ namespace
 		gtls_ptr =
 			GPlatesPropertyValues::GpmlTopologicalLineSection::create(
 				pd_ptr,
-				boost::none,
-				boost::none,
 				use_reverse);
 
 		return gtls_ptr;
@@ -230,35 +227,15 @@ namespace
 		// iterator for the list of strings
 		std::vector<std::string>::iterator iter = boundary_strings.begin(); 
 
-		// numeric indices to the boundary list:
-		// i is the current item, a.k.a iter
-		// p and n, are the previous and next items on the list 
-		int p = 0;
-		int i = 0;
-		int n = 0;
-
 		// loop over the list of strings
-		for ( ; iter != boundary_strings.end() ; ++iter, ++i) 
+		for (int i = 0; iter != boundary_strings.end() ; ++iter, ++i) 
 		{
 			// the string to parse 
 			std::string node_str = *iter;
 
-			// index math to close the loop
-			if ( iter == --(boundary_strings.end()) ) {
-				n = 0;
-				p = i - 1;
-			} else if ( iter == boundary_strings.begin() ) {
-				n = i + 1;
-				p = boundary_strings.size() - 1;
-			} else {
-				n = i + 1;
-				p = i - 1;
-			}
-
 #if 0
 // FIXME : remove diagnostic 
 std::cout << "size = " << boundary_strings.size() << std::endl; 
-std::cout << "p=" << p << " ; i=" << i << " ; n=" << n  << std::endl; 
 std::cout << "iter = " << node_str << std::endl; 
 #endif
 
@@ -346,16 +323,20 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			// convert type
 			//GPlatesGlobal::FeatureTypes feature_type(GPlatesGlobal::UNKNOWN_FEATURE);
 
+			// This was moved from an enumeration in deprecated 'global/types.h'.
+			const int POINT_FEATURE = 1;
+			const int LINE_FEATURE = 2;
+
 			switch ( type )
 			{
-				case GPlatesGlobal::POINT_FEATURE:
+				case POINT_FEATURE:
 					//feature_type = GPlatesGlobal::POINT_FEATURE;
 					// Fill the vector of GpmlTopologicalSection::non_null_ptr_type
 					topo_section_ptrs_vector.push_back( 
 						create_gpml_topological_point( old_fid ) );
 					break;
 
-				case GPlatesGlobal::LINE_FEATURE:
+				case LINE_FEATURE:
 					//feature_type = GPlatesGlobal::LINE_FEATURE;
 					// Fill the vector of GpmlTopologicalSection::non_null_ptr_type
 					topo_section_ptrs_vector.push_back( 
@@ -365,159 +346,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					break;
 			}
 
-			// create intersections if needed....
-			if ( boundary_strings.size() == 1) { continue; } 
-
-			// convert coordinates
-			GPlatesMaths::LatLonPoint llp( lat, lon);
-			GPlatesMaths::PointOnSphere pos = GPlatesMaths::make_point_on_sphere(llp);
-			const GPlatesMaths::PointOnSphere const_pos(pos);
-			GPlatesPropertyValues::GmlPoint::non_null_ptr_type ref_point =
-				GPlatesPropertyValues::GmlPoint::create( const_pos );
-
-			// Check for intersections with prev item on the list
-			if (use_head_prev || use_tail_prev)
-			{
-				// get the PREV feature id
-				std::string str = boundary_strings.at( p );
-				size_t prev_pos = str.find("#", 0);
-				std::string prev_old_fid = str.substr(0, prev_pos);
-				// Make sure Feature referenced by prev_old_fid can be located 
-				old_id_to_new_id_map_const_iterator prev_find_iter;
-				prev_find_iter = id_map.find( prev_old_fid );
-				if ( find_iter == id_map.end() ) 
-				{
-					std::cerr << "WARNING: PREV feature '" << prev_old_fid << "' is missing from file!" << std::endl;
-					std::cerr << "WARNING: GpmlTopologicalIntersection will NOT be created" << std::endl;
-					// DO NOT create a GpmlTopologicalSection
-					continue; // to next item on boundary list; 
-				}
-				// else, process 
-
-				const GPlatesModel::FeatureId prev_fid = (id_map.find(prev_old_fid))->second; 
-
-				const GPlatesModel::PropertyName prop_name1 =
-					GPlatesModel::PropertyName::create_gpml("centerLineOf");
-				
-				const GPlatesPropertyValues::TemplateTypeParameterType value_type1 =
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("LineString");
-		
-				// create the intersectionGeometry property delegate
-				GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type geom_delegte = 
-					GPlatesPropertyValues::GpmlPropertyDelegate::create( 
-						prev_fid,
-						prop_name1,
-						value_type1
-					);
-		
-				// reference_point
-				 GPlatesPropertyValues::GmlPoint::non_null_ptr_type prev_ref_point =
-					GPlatesPropertyValues::GmlPoint::create( const_pos );
-		
-				// reference_point_plate_id
-				// FIXME: what to do if the old_fid is not found?
-				const GPlatesModel::FeatureId index_fid = (id_map.find( old_fid ) )->second; 
-
-				const GPlatesModel::PropertyName prop_name2 =
-					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-		
-				const GPlatesPropertyValues::TemplateTypeParameterType value_type2 =
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId" );
-		
-				GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type plate_id_delegate = 
-					GPlatesPropertyValues::GpmlPropertyDelegate::create( 
-						index_fid,
-						prop_name2,
-						value_type2
-					);
-		
-				// Create the start GpmlTopologicalIntersection
-				GPlatesPropertyValues::GpmlTopologicalIntersection start_ti(
-					geom_delegte,
-					prev_ref_point,
-					plate_id_delegate);
-					
-				// Set the start instersection
-				GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
-					dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>(
-					topo_section_ptrs_vector.at( topo_section_ptrs_vector.size() - 1 ).get() 
-					);
-		
-				gtls_ptr->set_start_intersection( start_ti );
-			}
-
-			// check for endIntersection
-			if (use_head_next || use_tail_next)
-			{
-				// get the next feature id
-				std::string str = boundary_strings.at( n );
-				size_t next_pos = str.find("#", 0);
-				std::string next_old_fid = str.substr(0, next_pos);
-				// Make sure Feature referenced by prev_old_fid can be located 
-				old_id_to_new_id_map_const_iterator next_find_iter;
-				next_find_iter = id_map.find( next_old_fid );
-				if ( next_find_iter == id_map.end() ) 
-				{
-					std::cerr << "WARNING: NEXT feature '" << next_old_fid 
-					<< "' is missing." << std::endl;
-					std::cerr << "WARNING: GpmlTopologicalIntersection will NOT be created" << std::endl;
-					// DO NOT create a GpmlTopologicalSection
-					continue; // to next item on boundary list; 
-				}
-				// else, process 
-
-				const GPlatesModel::FeatureId next_fid = (id_map.find(next_old_fid))->second; 
-
-				const GPlatesModel::PropertyName prop_name1 =
-					GPlatesModel::PropertyName::create_gpml("centerLineOf");
-				
-				const GPlatesPropertyValues::TemplateTypeParameterType value_type1 =
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("LineString");
-		
-				// create the intersectionGeometry property delegate
-				GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type geom_delegte = 
-					GPlatesPropertyValues::GpmlPropertyDelegate::create( 
-						next_fid,
-						prop_name1,
-						value_type1
-					);
-		
-				// reference_point
-				 GPlatesPropertyValues::GmlPoint::non_null_ptr_type next_ref_point =
-					GPlatesPropertyValues::GmlPoint::create( const_pos );
-		
-				// reference_point_plate_id
-				// FIXME: what to do if the old_fid is not found?
-				const GPlatesModel::FeatureId index_fid = (id_map.find( old_fid ) )->second; 
-
-				const GPlatesModel::PropertyName prop_name2 =
-					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-		
-				const GPlatesPropertyValues::TemplateTypeParameterType value_type2 =
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId" );
-		
-				GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type plate_id_delegate = 
-					GPlatesPropertyValues::GpmlPropertyDelegate::create( 
-						index_fid,
-						prop_name2,
-						value_type2
-					);
-		
-				// Create the end GpmlTopologicalIntersection
-				GPlatesPropertyValues::GpmlTopologicalIntersection end_ti(
-					geom_delegte,
-					next_ref_point,
-					plate_id_delegate);
-					
-				// Set the end instersection
-				GPlatesPropertyValues::GpmlTopologicalLineSection* gtls_ptr =
-					dynamic_cast<GPlatesPropertyValues::GpmlTopologicalLineSection*>(
-					topo_section_ptrs_vector.at( topo_section_ptrs_vector.size() - 1 ).get() 
-					);
-		
-				gtls_ptr->set_end_intersection( end_ti );
-			}
-
+			// ...ignore intersections - they are no longer needed.
 		} // end of loop over boundary 
 
 		return topo_section_ptrs_vector;
@@ -542,10 +371,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		// create the TopologicalPolygon
 		GPlatesModel::PropertyValue::non_null_ptr_type topo_poly_value =
 			GPlatesPropertyValues::GpmlTopologicalPolygon::create(
-				topo_section_ptrs_vector);
+				topo_section_ptrs_vector.begin(),
+				topo_section_ptrs_vector.end());
 	
-		const GPlatesPropertyValues::TemplateTypeParameterType topo_poly_type =
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("TopologicalPolygon");
+		const GPlatesPropertyValues::StructuralType topo_poly_type =
+			GPlatesPropertyValues::StructuralType::create_gpml("TopologicalPolygon");
 	
 		// create the ConstantValue
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type constant_value =
@@ -612,8 +442,14 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		GPlatesUtils::UnicodeString geog_description = header->geographic_description();
 
 		// Search for the identity start tag.
-		const boost::int32_t identity_start_index = geog_description.indexOf(identity_start_tag);
-		if (identity_start_index < 0)
+		// For some reason some files have two "<identity>" tags followed by one "</identity>" tag.
+		// So we find the last occurrence of the "<identity>" tag.
+		const boost::int32_t first_identity_start_index =
+				geog_description.qstring().indexOf(identity_start_tag.qstring());
+		const boost::int32_t last_identity_start_index =
+				geog_description.qstring().lastIndexOf(identity_start_tag.qstring());
+		if (first_identity_start_index < 0 ||
+			last_identity_start_index < 0)
 		{
 			return false;
 		}
@@ -621,23 +457,24 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		// Search for the identity end tag (starting at end of the identity start tag).
 		const boost::int32_t identity_end_index = geog_description.indexOf(
 				identity_end_tag,
-				identity_start_index + identity_start_tag_length);
+				last_identity_start_index + identity_start_tag_length);
 		if (identity_end_index < 0)
 		{
 			return false;
 		}
 
-		// The feature id is between end of start tag and start of end tag.
+		// The feature id is between end of (last) start tag and start of end tag.
 		geog_description.extractBetween(
-				identity_start_index + identity_start_tag_length,
+				last_identity_start_index + identity_start_tag_length,
 				identity_end_index,
 				feature_id);
 
-		// Remove feature id and start/end id tage from the geographic description in
-		// PLATES header so we don't get two feature ids written out if save to PLATES header later.
+		// Remove feature id and start/end id tag (and any extra erroneous start tag) from the
+		// geographic description in PLATES header so we don't get two feature ids written out
+		// if save to PLATES header later.
 		// The PLATES writer will automatically append the feature id to each feature.
 		geog_description.removeBetween(
-				identity_start_index,
+				first_identity_start_index,
 				identity_end_index + identity_end_tag_length);
 
 		// Store back to original header.
@@ -708,9 +545,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
 
 			GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-					GPlatesModel::ModelUtils::create_gpml_constant_value(
-							gml_orientable_curve, 
-							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
+					GPlatesModel::ModelUtils::create_gpml_constant_value(gml_orientable_curve);
 			feature->add(
 					GPlatesModel::TopLevelPropertyInline::create(
 						property_name,
@@ -737,9 +572,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			{
 				// Wrap it in a constant value.
 				GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-					GPlatesModel::ModelUtils::create_gpml_constant_value(
-							gml_point, 
-							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
+					GPlatesModel::ModelUtils::create_gpml_constant_value(gml_point);
 				feature->add(
 						GPlatesModel::TopLevelPropertyInline::create(
 							property_name,
@@ -798,8 +631,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		feature_handle->add(
 				TopLevelPropertyInline::create(
 					PropertyName::create_gpml("reconstructionPlateId"),
-					ModelUtils::create_gpml_constant_value(recon_plate_id, 
-						TemplateTypeParameterType::create_gpml("plateId"))));
+					ModelUtils::create_gpml_constant_value(recon_plate_id)));
 
 		// For each geometry in the feature append the appropriate geometry property value
 		// to the current feature.
@@ -914,7 +746,9 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				create_fault(model, collection, header, geometry_seq);
 		
 		const GPlatesPropertyValues::Enumeration::non_null_ptr_type dip_slip_property_value =
-				GPlatesPropertyValues::Enumeration::create("gpml:DipSlipEnumeration", "Compression");
+				GPlatesPropertyValues::Enumeration::create(
+						GPlatesPropertyValues::EnumerationType::create_gpml("DipSlipEnumeration"),
+						"Compression");
 		feature_handle->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("dipSlip"),
@@ -935,7 +769,9 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				create_fault(model, collection, header, geometry_seq);
 		
 		const GPlatesPropertyValues::Enumeration::non_null_ptr_type dip_slip_property_value =
-				GPlatesPropertyValues::Enumeration::create("gpml:DipSlipEnumeration", "Extension");
+				GPlatesPropertyValues::Enumeration::create(
+						GPlatesPropertyValues::EnumerationType::create_gpml("DipSlipEnumeration"),
+						"Extension");
 		feature_handle->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("dipSlip"),
@@ -977,7 +813,9 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				create_fault(model, collection, header, geometry_seq);
 		
 		const GPlatesPropertyValues::Enumeration::non_null_ptr_type strike_slip_property_value =
-				GPlatesPropertyValues::Enumeration::create("gpml:StrikeSlipEnumeration", "Unknown");
+				GPlatesPropertyValues::Enumeration::create(
+						GPlatesPropertyValues::EnumerationType::create_gpml("StrikeSlipEnumeration"),
+						"Unknown");
 		feature_handle->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("strikeSlip"),
@@ -1388,9 +1226,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				GPlatesPropertyValues::XsBoolean::create(is_active);
 
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type constant_value_property_value =
-				GPlatesModel::ModelUtils::create_gpml_constant_value(
-						is_active_property_value, 
-						GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("boolean"));
+				GPlatesModel::ModelUtils::create_gpml_constant_value(is_active_property_value);
 
 		feature_handle->add(
 				GPlatesModel::TopLevelPropertyInline::create(
@@ -1497,12 +1333,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				GPlatesModel::FeatureType::create_gpml("SubductionZone"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	
-		const GPlatesPropertyValues::TemplateTypeParameterType subduction_polarity_property_type =
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("SubductionPolarityEnumeration");
+		const GPlatesPropertyValues::StructuralType subduction_polarity_property_type =
+			GPlatesPropertyValues::StructuralType::create_gpml("SubductionPolarityEnumeration");
 
 		const GPlatesPropertyValues::Enumeration::non_null_ptr_type subduction_polarity_property_value =
 				GPlatesPropertyValues::Enumeration::create(
-						"gpml:SubductionPolarityEnumeration", subduction_polarity_enumeration_content);
+						GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration"),
+						subduction_polarity_enumeration_content);
 	
 		// create the ConstantValue
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type subduction_polarity_constant_value =
@@ -1790,7 +1627,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		map["IM"] = create_isochron;
 		map["IP"] = create_isopach;
 		map["IR"] = create_island_arc_inactive;
-		map["IS"] = create_unclassified_feature; // -might- be Ice Shelf, might be Isochron. We don't know.
+
+		// -might- be Ice Shelf, might be Isochron. We don't know.
+		// It appears IS covers IC and IM.
+		//
+		// Update 2012/9/4: Maria Seton requested "IS" result in an isochron instead of unclassified feature.
+		map["IS"] = create_isochron;
+
 		map["LI"] = create_geological_lineation;
 		map["MA"] = create_magnetics;
 		map["NF"] = create_normal_fault;
@@ -1867,7 +1710,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				new GPlatesFileIO::LineNumber(in.line_number()));
 		errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(source, location, 
 				GPlatesFileIO::ReadErrors::AmbiguousPlatesIceShelfCode,
-				GPlatesFileIO::ReadErrors::UnclassifiedFeatureCreated));
+				GPlatesFileIO::ReadErrors::NoAction));
 	}
 
 
@@ -2286,13 +2129,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		// Pen-up plotter codes distinguish the geometries within a feature.
 		geometry_seq_type geometry_seq;
 
+		PlotterCodes::PlotterCode code;
 		point_seq_type points;
-		read_polyline_point(in, points, PlotterCodes::PEN_SKIP_TO);
+		code = read_polyline_point(in, points, PlotterCodes::PEN_SKIP_TO);
 
 		// FIXME : Rather than create millions of little features for each unbroken
 		// section of line, it would be better to create gml:MultiCurve geometry.
-		PlotterCodes::PlotterCode code;
-		do {
+		while (code != PlotterCodes::PEN_TERMINATING_POINT) {
 			code = read_polyline_point(in, points, PlotterCodes::PEN_EITHER);
 			if (code == PlotterCodes::PEN_TERMINATING_POINT) {
 				// When 'read_polyline_point' encounters the terminating point, it
@@ -2316,7 +2159,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 				points.push_back(last_point);
 			}
-		} while (code != PlotterCodes::PEN_TERMINATING_POINT);
+		}
 
 		// Now that we've read one or more geometries we can create the feature.
 		create_feature_with_geometries(model, collection, in, source,
@@ -2329,8 +2172,11 @@ void
 GPlatesFileIO::PlatesLineFormatReader::read_file(
 		File::Reference &file,
 		GPlatesModel::ModelInterface &model,
+		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
+	PROFILE_FUNC();
+
 	const FileInfo &fileinfo = file.get_file_info();
 
 	// By placing all changes to the model under the one changeset, we ensure that

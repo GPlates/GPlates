@@ -39,8 +39,6 @@ namespace GPlatesGui
 
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;		// ViewportWindow for pop_up_animate_dialog().
-
 	/**
 	 * This widget resides inside a QDockWidget. The dock is usually hidden
 	 * from view, but can pop up and sit in the top dock slot if the user
@@ -70,7 +68,7 @@ namespace GPlatesQtWidgets
 		~AnimateControlWidget()
 		{  }
 	
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Sets whether you want a single button for play and pause
@@ -93,7 +91,7 @@ namespace GPlatesQtWidgets
 		show_step_buttons(
 				bool show_);
 
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_play_or_pause_clicked();

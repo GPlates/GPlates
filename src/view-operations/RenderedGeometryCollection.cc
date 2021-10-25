@@ -108,7 +108,8 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryCollection() 
 		MainLayerType main_rendered_layer_type =
 			static_cast<MainLayerType>(main_layer_index);
 
-		d_main_layer_seq.push_back(MainLayer(main_rendered_layer_type));
+		d_main_layer_seq.push_back(
+				MainLayer(main_rendered_layer_type, d_current_viewport_zoom_factor));
 
 		// Get this main layer's RenderedGeometryLayer object.
 		RenderedGeometryLayer *rendered_geom_layer =
@@ -181,7 +182,9 @@ GPlatesViewOperations::RenderedGeometryCollection::create_child_rendered_layer(
 {
 	// Create rendered geometry layer.
 	const child_layer_index_type child_layer_index =
-		d_rendered_geometry_layer_manager.create_rendered_geometry_layer(parent_layer);
+			d_rendered_geometry_layer_manager.create_rendered_geometry_layer(
+					parent_layer,
+					d_current_viewport_zoom_factor);
 
 	connect_child_rendered_layer_to_parent(child_layer_index, parent_layer);
 
@@ -466,6 +469,36 @@ GPlatesViewOperations::RenderedGeometryCollection::end_update_collection()
 
 
 void
+GPlatesViewOperations::RenderedGeometryCollection::begin_update_all_registered_collections()
+{
+	// Get list of RenderedGeometryCollection objects.
+	const RenderedGeometryCollectionManager::collection_seq_type &collections =
+		RenderedGeometryCollectionManager::instance().get_registered_collections();
+
+	// Call begin_update_collection() on each collection.
+	std::for_each(
+			collections.begin(),
+			collections.end(),
+			boost::bind(&RenderedGeometryCollection::begin_update_collection, _1));
+}
+
+
+void
+GPlatesViewOperations::RenderedGeometryCollection::end_update_all_registered_collections()
+{
+	// Get list of RenderedGeometryCollection objects.
+	const RenderedGeometryCollectionManager::collection_seq_type &collections =
+		RenderedGeometryCollectionManager::instance().get_registered_collections();
+
+	// Call end_update_collection() on each collection.
+	std::for_each(
+			collections.begin(),
+			collections.end(),
+			boost::bind(&RenderedGeometryCollection::end_update_collection, _1));
+}
+
+
+void
 GPlatesViewOperations::RenderedGeometryCollection::signal_update(
 		MainLayerType main_layer_type)
 {
@@ -498,7 +531,7 @@ GPlatesViewOperations::RenderedGeometryCollection::signal_update(
 void
 GPlatesViewOperations::RenderedGeometryCollection::send_update_signal()
 {
-	emit collection_was_updated(*this, d_main_layers_updated);
+	Q_EMIT collection_was_updated(*this, d_main_layers_updated);
 	d_main_layers_updated.reset();
 
 	d_update_notify_queued = false;
@@ -552,15 +585,7 @@ GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState::is_acti
 
 GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard::UpdateGuard()
 {
-	// Get list of RenderedGeometryCollection objects.
-	const RenderedGeometryCollectionManager::collection_seq_type &collections =
-		RenderedGeometryCollectionManager::instance().get_registered_collections();
-
-	// Call begin_update_collection() on each collection.
-	std::for_each(
-			collections.begin(),
-			collections.end(),
-			boost::bind(&RenderedGeometryCollection::begin_update_collection, _1));
+	begin_update_all_registered_collections();
 }
 
 
@@ -570,15 +595,7 @@ GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard::~UpdateGuard()
 	// If one is thrown we just have to lump it and continue on.
 	try
 	{
-		// Get list of RenderedGeometryCollection objects.
-		const RenderedGeometryCollectionManager::collection_seq_type &collections =
-			RenderedGeometryCollectionManager::instance().get_registered_collections();
-
-		// Call end_update_collection() on each collection.
-		std::for_each(
-				collections.begin(),
-				collections.end(),
-				boost::bind(&RenderedGeometryCollection::end_update_collection, _1));
+		end_update_all_registered_collections();
 	}
 	catch (...)
 	{
@@ -624,7 +641,8 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 
 GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
 GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::create_rendered_geometry_layer(
-		MainLayerType main_layer)
+		MainLayerType main_layer,
+		const double &current_viewport_zoom_factor)
 {
 	// TODO: make this method exception-safe
 
@@ -641,7 +659,7 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 			GPLATES_ASSERTION_SOURCE);
 
 	// Create a new rendered geometry layer.
-	d_layer_storage[layer_index] = new RenderedGeometryLayer(user_data);
+	d_layer_storage[layer_index] = new RenderedGeometryLayer(current_viewport_zoom_factor, user_data);
 
 	return layer_index;
 }
@@ -749,10 +767,10 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 
 
 GPlatesViewOperations::RenderedGeometryCollection::MainLayer::MainLayer(
-		MainLayerType main_layer_type)
+		MainLayerType main_layer_type,
+		const double &viewport_zoom_factor)
 {
 	RenderedGeometryLayer::user_data_type user_data(main_layer_type);
 
-	d_rendered_geom_layer.reset(new RenderedGeometryLayer(user_data));
+	d_rendered_geom_layer.reset(new RenderedGeometryLayer(viewport_zoom_factor, user_data));
 }
-

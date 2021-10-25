@@ -19,12 +19,13 @@ set(srcs
     GLBufferImpl.h
     GLBufferObject.cc
     GLBufferObject.h
+    GLCapabilities.cc
+    GLCapabilities.h
     GLCompiledDrawState.cc
     GLCompiledDrawState.h
     GLContext.cc
     GLContext.h
-    GLCoverageSource.cc
-    GLCoverageSource.h
+    GLContextImpl.h
     GLCubeMeshGenerator.cc
     GLCubeMeshGenerator.h
     GLCubeSubdivision.cc
@@ -33,14 +34,22 @@ set(srcs
     GLDataRasterSource.cc
     GLDataRasterSource.h
     GLDepthRange.h
+    GLFilledPolygonsGlobeView.cc
+    GLFilledPolygonsGlobeView.h
+    GLFilledPolygonsMapView.cc
+    GLFilledPolygonsMapView.h
     GLFrameBufferObject.cc
     GLFrameBufferObject.h
     GLFrustum.cc
     GLFrustum.h
+    GLImageUtils.cc
+    GLImageUtils.h
     GLIntersect.cc
     GLIntersect.h
     GLIntersectPrimitives.cc
     GLIntersectPrimitives.h
+    GLLight.cc
+    GLLight.h
     GLMapCubeMeshGenerator.cc
     GLMapCubeMeshGenerator.h
     GLMatrix.cc
@@ -52,20 +61,24 @@ set(srcs
     GLMultiResolutionCubeRasterInterface.h
     GLMultiResolutionCubeReconstructedRaster.cc
     GLMultiResolutionCubeReconstructedRaster.h
-    GLMultiResolutionFilledPolygons.cc
-    GLMultiResolutionFilledPolygons.h
     GLMultiResolutionMapCubeMesh.cc
     GLMultiResolutionMapCubeMesh.h
     GLMultiResolutionRaster.cc
     GLMultiResolutionRaster.h
+    GLMultiResolutionRasterInterface.cc
+    GLMultiResolutionRasterInterface.h
     GLMultiResolutionRasterMapView.cc
     GLMultiResolutionRasterMapView.h
     GLMultiResolutionRasterSource.h
     GLMultiResolutionStaticPolygonReconstructedRaster.cc
     GLMultiResolutionStaticPolygonReconstructedRaster.h
+    GLNormalMapSource.cc
+    GLNormalMapSource.h
     GLObject.h
     GLObjectResource.h
     GLObjectResourceManager.h
+    GLOffScreenContext.cc
+    GLOffScreenContext.h
     GLPixelBuffer.cc
     GLPixelBuffer.h
     GLPixelBufferImpl.cc
@@ -80,9 +93,25 @@ set(srcs
     GLRasterCoRegistration.h
     GLReconstructedStaticPolygonMeshes.cc
     GLReconstructedStaticPolygonMeshes.h
+    GLRenderBufferObject.cc
+    GLRenderBufferObject.h
     GLRenderer.cc
     GLRenderer.h
     GLRendererImpl.h
+    GLRenderTarget.cc
+    GLRenderTarget.h
+    GLRenderTargetImpl.cc
+    GLRenderTargetImpl.h
+    GLSaveRestoreFrameBuffer.cc
+    GLSaveRestoreFrameBuffer.h
+    GLScalarField3D.cc
+    GLScalarField3D.h
+    GLScalarField3DGenerator.cc
+    GLScalarField3DGenerator.h
+    GLScalarFieldDepthLayersSource.cc
+    GLScalarFieldDepthLayersSource.h
+    GLScreenRenderTarget.cc
+    GLScreenRenderTarget.h
     GLShaderObject.cc
     GLShaderObject.h
     GLShaderProgramUtils.cc
@@ -105,6 +134,8 @@ set(srcs
     GLTexture.h
     GLTextureUtils.cc
     GLTextureUtils.h
+    GLTileRender.cc
+    GLTileRender.h
     GLTransform.h
     GLUtils.cc
     GLUtils.h
@@ -129,6 +160,8 @@ set(srcs
     GLVertexElementBufferObject.cc
     GLVertexElementBufferObject.h
     GLViewport.h
+    GLVisualLayers.cc
+    GLVisualLayers.h
     GLVisualRasterSource.cc
     GLVisualRasterSource.h
     OpenGL.h

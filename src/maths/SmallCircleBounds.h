@@ -437,14 +437,11 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Expands the bound to include the region bounded by @a other_builder.
-		 *
-		 * WARNING: @a other_builder should have the same small circle centre as 'this' -
-		 * this is not checked in this method.
+		 * Expands the bound to include the small circle of @a bounding_small_circle.
 		 */
 		void
-		expand_bound(
-				const BoundingSmallCircleBuilder &other_builder);
+		add(
+				const BoundingSmallCircle &bounding_small_circle);
 
 
 		/**
@@ -456,6 +453,8 @@ namespace GPlatesMaths
 		 * This means tests for intersection/inclusion can return false positives but in most
 		 * situations this is desirable because then a more accurate test will reveal there's
 		 * no intersection/inclusion - whereas the other way around can give the wrong result.
+		 *
+		 * A value of 1e-6 means a bounding small circle of zero radius will be expanded to ~9km (on earth's surface).
 		 */
 		BoundingSmallCircle
 		get_bounding_small_circle(
@@ -904,14 +903,19 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Expands/contracts the outer/inner bounds to include the region bounded by @a other_builder.
-		 *
-		 * WARNING: @a other_builder should have the same small circle centre as 'this' -
-		 * this is not checked in this method.
+		 * Expands the bound to include the small circle of @a bounding_small_circle.
 		 */
 		void
-		expand_bounds(
-				const InnerOuterBoundingSmallCircleBuilder &other_builder);
+		add(
+				const BoundingSmallCircle &bounding_small_circle);
+
+
+		/**
+		 * Expands/contracts the outer/inner bounds to include the region bounded by @a inner_outer_bounding_small_circle.
+		 */
+		void
+		add(
+				const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle);
 
 
 		/**

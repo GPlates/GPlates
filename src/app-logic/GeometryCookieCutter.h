@@ -62,11 +62,11 @@ namespace GPlatesAppLogic
 		{
 		public:
 			Partition(
-					const ReconstructionGeometry *reconstruction_geometry_) :
+					const reconstruction_geometry_non_null_ptr_to_const_type &reconstruction_geometry_) :
 				reconstruction_geometry(reconstruction_geometry_)
 			{ }
 
-			const ReconstructionGeometry *reconstruction_geometry;
+			reconstruction_geometry_non_null_ptr_to_const_type reconstruction_geometry;
 			partitioned_geometry_seq_type partitioned_geometries;
 		};
 
@@ -115,7 +115,7 @@ namespace GPlatesAppLogic
 		GeometryCookieCutter(
 				const double &reconstruction_time,
 				boost::optional<const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &> reconstructed_static_polygons,
-				boost::optional<const std::vector<resolved_topological_boundary_non_null_ptr_type> &> resolved_topological_boundaries,
+				boost::optional<const std::vector<resolved_topological_geometry_non_null_ptr_type> &> resolved_topological_boundaries,
 				boost::optional<const std::vector<resolved_topological_network_non_null_ptr_type> &> resolved_topological_networks);
 
 
@@ -184,7 +184,7 @@ namespace GPlatesAppLogic
 					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon);
 
 
-			const ReconstructionGeometry *d_reconstruction_geometry;
+			reconstruction_geometry_non_null_ptr_to_const_type d_reconstruction_geometry;
 			GPlatesMaths::PolygonIntersections::non_null_ptr_type d_polygon_intersections;
 
 			//! Used to sort by plate id.
@@ -208,11 +208,11 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Adds all @a ResolvedTopologicalBoundary objects as partitioning geometries.
+		 * Adds all @a ResolvedTopologicalGeometry objects, that are polygon boundaries, as partitioning geometries.
 		 */
 		void
 		add_partitioning_resolved_topological_boundaries(
-				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries);
+				const std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries);
 
 		/**
 		 * Adds all @a ResolvedTopologicalNetwork objects as partitioning geometries.

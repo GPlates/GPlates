@@ -27,6 +27,7 @@
 
 #ifndef GPLATES_GUI_DRAWSTYLEMANAGER_H
 #define GPLATES_GUI_DRAWSTYLEMANAGER_H
+
 #include <iostream>
 #include <boost/foreach.hpp>
 #include <boost/ref.hpp>
@@ -42,7 +43,7 @@ namespace GPlatesGui
 {
 	class DrawStyleManager;
 
-	class StyleCatagory
+	class StyleCategory
 	{
 		friend class DrawStyleManager;
 	public:
@@ -59,14 +60,14 @@ namespace GPlatesGui
 		}
 		
 		bool
-		operator==(const StyleCatagory& other) const
+		operator==(const StyleCategory& other) const
 		{
 			return d_id == other.d_id;
 		}
 
 	private:
 		explicit
-		StyleCatagory(
+		StyleCategory(
 				const QString& name_ = QString(), 
 				const QString& desc_ = QString()) : 
 			d_name(name_), 
@@ -87,7 +88,7 @@ namespace GPlatesGui
 
 	public:
 		typedef std::vector<StyleAdapter*> StyleContainer;
-		typedef std::vector<StyleCatagory*> CatagoryContainer;
+		typedef std::vector<StyleCategory*> CatagoryContainer;
 
 		static
 		DrawStyleManager*
@@ -161,7 +162,7 @@ namespace GPlatesGui
 		*/
 		void
 		register_template_style(
-				const StyleCatagory* cata,
+				const StyleCategory* cata,
 				const StyleAdapter* adapter)
 		{
 			d_template_map[cata] = adapter;
@@ -172,24 +173,27 @@ namespace GPlatesGui
 		* Get all user defined styles.
 		*/
 		std::vector<StyleAdapter*>
-		get_saved_styles(const StyleCatagory& cata);
+		get_saved_styles(
+				const StyleCategory& cata);
 
 		/*
 		* Get all built-in styles.
 		*/
 		std::vector<StyleAdapter*>
-		get_built_in_styles(const StyleCatagory& cata);
+		get_built_in_styles(
+				const StyleCategory& cata);
 
 
 		const StyleAdapter*
-		get_template_style(const StyleCatagory& cata);
+		get_template_style(
+				const StyleCategory& cata);
 
 
 		const StyleAdapter*
 		default_style();
 
 
-		const StyleCatagory*
+		const StyleCategory*
 		register_style_catagory(
 				const QString& name,
 				const QString& desc = QString(),
@@ -211,11 +215,11 @@ namespace GPlatesGui
 		void
 		emit_style_changed()
 		{
-			emit draw_style_changed();
+			Q_EMIT draw_style_changed();
 		}
 
 		StyleContainer
-		get_styles(const StyleCatagory& cata);
+		get_styles(const StyleCategory& cata);
 
 
 		CatagoryContainer&
@@ -225,7 +229,7 @@ namespace GPlatesGui
 		}
 
 				
-		const StyleCatagory*
+		const StyleCategory*
 		get_catagory(const QString& _name) const;
 
 
@@ -233,7 +237,7 @@ namespace GPlatesGui
 		save_user_defined_styles();
 
 
-	signals:
+	Q_SIGNALS:
 		void
 		draw_style_changed();
 
@@ -262,13 +266,15 @@ namespace GPlatesGui
 		const static unsigned BUILT_IN_OFFSET = 0x80000000;
 		
 		typedef std::map<const StyleAdapter*, unsigned> RefenceMap;
-		typedef std::map<const StyleCatagory*, const StyleAdapter*> TemplateMap;
+		typedef std::map<const StyleCategory*, const StyleAdapter*> TemplateMap;
 
 		RefenceMap d_reference_map;
 		TemplateMap d_template_map;
 		const static QString draw_style_prefix;
 		GPlatesAppLogic::UserPreferences* d_user_prefs;
 		GPlatesAppLogic::UserPreferences::KeyValueMap d_values_map;
+
+		const GPlatesGui::StyleAdapter* d_default_style; 
 
 		static bool d_alive_flag;
 		bool d_use_local_user_pref;

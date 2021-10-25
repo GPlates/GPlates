@@ -31,7 +31,6 @@
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayerRegistry.h"
 
-
 GPlatesQtWidgets::AddNewLayerDialog::AddNewLayerDialog(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,

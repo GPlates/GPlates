@@ -91,10 +91,10 @@ namespace GPlatesCli
 		 * Interprets the parsed command-line and config file options stored in @a vm
 		 * and runs this command.
 		 *
-		 * Returns 0 on success otherwise non-zero.
+		 * Throws exception on failure.
 		 */
 		virtual
-		int
+		void
 		run(
 				const boost::program_options::variables_map &vm) = 0;
 	};

@@ -50,7 +50,7 @@ namespace GPlatesOpenGL
 	/**
 	 * Used to view multi-resolution cube raster in a 2D map projection of the globe.
 	 *
-	 * This includes anything that can be rendered into a @a GLMultiResolutionCubeRasterInterface (including filled polygons).
+	 * This includes anything that can be rendered into a @a GLMultiResolutionCubeRasterInterface.
 	 */
 	class GLMultiResolutionRasterMapView :
 			public GPlatesUtils::ReferenceCount<GLMultiResolutionRasterMapView>

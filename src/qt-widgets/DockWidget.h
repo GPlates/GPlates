@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_DOCKWIDGET_H
 #define GPLATES_QTWIDGETS_DOCKWIDGET_H
 
+#include <boost/optional.hpp>
 #include <QAction>
 #include <QDockWidget>
 #include <QPointer>
@@ -50,13 +51,18 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
+		/**
+		 * The object name of this widget is set to "Dock_" + @a object_name_suffix.
+		 * If @a object_name_suffix is boost::none then the object name is "Dock_" + @a title.
+		 */
 		explicit
 		DockWidget(
 				const QString &title,
 				GPlatesGui::DockState &dock_state,
-				ViewportWindow &main_window);
+				ViewportWindow &main_window,
+				boost::optional<QString> object_name_suffix = boost::none);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		location_changed(
@@ -64,7 +70,7 @@ namespace GPlatesQtWidgets
 				Qt::DockWidgetArea area,
 				bool floating);
 
-	public slots:
+	public Q_SLOTS:
 
 		void
 		dock_at_top();
@@ -90,7 +96,7 @@ namespace GPlatesQtWidgets
 		void
 		tabify_at_right();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_floating_change(
@@ -101,7 +107,7 @@ namespace GPlatesQtWidgets
 				Qt::DockWidgetArea area);
 
 		/**
-		 * Hides 'tabify' menu items as appropriate.
+		 * Shows/hides dock and 'tabify' menu items based on allowed dock areas and dock configuration state.
 		 */
 		void
 		hide_menu_items_as_appropriate();
@@ -119,11 +125,6 @@ namespace GPlatesQtWidgets
 		 * DockState keeps track of which dock is currently where.
 		 */
 		QPointer<GPlatesGui::DockState> d_dock_state_ptr;
-
-		/**
-		 * Guarded pointer back to our main window, to call dock management methods on.
-		 */
-		QPointer<ViewportWindow> d_viewport_window_ptr;
 
 		/**
 		 * The various context menu actions.

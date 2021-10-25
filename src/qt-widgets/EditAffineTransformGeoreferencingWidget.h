@@ -65,12 +65,12 @@ namespace GPlatesQtWidgets
 			d_raster_height = raster_height;
 		}
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		georeferencing_changed();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_advanced_checkbox_state_changed(

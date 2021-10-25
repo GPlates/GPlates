@@ -34,7 +34,6 @@
 #include <QGLWidget>
 #include <QImage>
 #include <QMatrix>
-#include <QPainter>
 
 #include "GLTextureUtils.h"
 
@@ -58,11 +57,6 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_1D(
 		GLint border,
 		bool mipmapped)
 {
-	// And dimensions should be a power-of-two.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPlatesUtils::Base2::is_power_of_two(width),
-			GPLATES_ASSERTION_SOURCE);
-
 	// Generate level zero and the mip levels if requested.
 	GLint level = 0;
 	do
@@ -72,6 +66,8 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_1D(
 				renderer, target, level, internalformat, width, border,
 				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
+		// For non-power-of-two dimensions the GL_ARB_texture_non_power_of_two extension
+		// specifies the floor convention for determining the next smaller mipmap dimension.
 		width >>= 1;
 		++level;
 	}
@@ -90,12 +86,6 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_2D(
 		GLint border,
 		bool mipmapped)
 {
-	// And dimensions should be a power-of-two.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPlatesUtils::Base2::is_power_of_two(width) &&
-				GPlatesUtils::Base2::is_power_of_two(height),
-			GPLATES_ASSERTION_SOURCE);
-
 	// Generate level zero and the mip levels if requested.
 	GLint level = 0;
 	do
@@ -105,6 +95,8 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_2D(
 				renderer, target, level, internalformat, width, height, border,
 				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
+		// For non-power-of-two dimensions the GL_ARB_texture_non_power_of_two extension
+		// specifies the floor convention for determining the next smaller mipmap dimension.
 		width >>= 1;
 		height >>= 1;
 		++level;
@@ -125,13 +117,6 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_3D(
 		GLint border,
 		bool mipmapped)
 {
-	// And dimensions should be a power-of-two.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPlatesUtils::Base2::is_power_of_two(width) &&
-				GPlatesUtils::Base2::is_power_of_two(height) &&
-				GPlatesUtils::Base2::is_power_of_two(depth),
-			GPLATES_ASSERTION_SOURCE);
-
 	// Generate level zero and the mip levels if requested.
 	GLint level = 0;
 	do
@@ -141,6 +126,8 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_3D(
 				renderer, target, level, internalformat, width, height, depth, border,
 				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
+		// For non-power-of-two dimensions the GL_ARB_texture_non_power_of_two extension
+		// specifies the floor convention for determining the next smaller mipmap dimension.
 		width >>= 1;
 		height >>= 1;
 		depth >>= 1;
@@ -175,6 +162,11 @@ GPlatesOpenGL::GLTextureUtils::load_image_into_texture_2D(
 			texel_u_offset, texel_v_offset, image_width, image_height,
 			format, type, image);
 
+	// Restore to default value since calling OpenGL directly instead of using GLRenderer.
+	//
+	// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+
 #if 0 // No need to check this so frequently.
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
@@ -207,6 +199,11 @@ GPlatesOpenGL::GLTextureUtils::load_image_into_texture_2D(
 	texture->gl_tex_sub_image_2D(renderer, GL_TEXTURE_2D, 0,
 			texel_u_offset, texel_v_offset, image_width, image_height,
 			format, type, pixels, pixels_offset);
+
+	// Restore to default value since calling OpenGL directly instead of using GLRenderer.
+	//
+	// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
 #if 0 // No need to check this so frequently.
 	// Check there are no OpenGL errors.
@@ -292,9 +289,11 @@ GPlatesOpenGL::GLTextureUtils::load_colour_into_rgba32f_texture_2D(
 		unsigned int texel_u_offset,
 		unsigned int texel_v_offset)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Floating-point textures must be supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_float),
+			capabilities.texture.gl_ARB_texture_float,
 			GPLATES_ASSERTION_SOURCE);
 
 	const unsigned num_texels_to_load = texel_width * texel_height;
@@ -330,9 +329,11 @@ GPlatesOpenGL::GLTextureUtils::fill_float_texture_2D(
 		unsigned int texel_u_offset,
 		unsigned int texel_v_offset)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Floating-point textures must be supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_float),
+			capabilities.texture.gl_ARB_texture_float,
 			GPLATES_ASSERTION_SOURCE);
 
 	const unsigned num_texels_to_load = texel_width * texel_height;
@@ -369,9 +370,11 @@ GPlatesOpenGL::GLTextureUtils::fill_float_texture_2D(
 		unsigned int texel_u_offset,
 		unsigned int texel_v_offset)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Floating-point textures must be supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_float),
+			capabilities.texture.gl_ARB_texture_float,
 			GPLATES_ASSERTION_SOURCE);
 
 	const unsigned num_texels_to_load = texel_width * texel_height;
@@ -410,9 +413,11 @@ GPlatesOpenGL::GLTextureUtils::fill_float_texture_2D(
 		unsigned int texel_u_offset,
 		unsigned int texel_v_offset)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Floating-point textures must be supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_float),
+			capabilities.texture.gl_ARB_texture_float,
 			GPLATES_ASSERTION_SOURCE);
 
 	const unsigned num_texels_to_load = texel_width * texel_height;
@@ -439,47 +444,12 @@ GPlatesOpenGL::GLTextureUtils::fill_float_texture_2D(
 }
 
 
-QImage
-GPlatesOpenGL::GLTextureUtils::draw_text_into_qimage(
-		const QString &text,
-		unsigned int image_width,
-		unsigned int image_height,
-		const float text_scale,
-		const QColor &text_colour,
-		const QColor &background_colour)
-{
-	PROFILE_FUNC();
-
-	// Start off with half-size dimensions - we'll scale to full-size later
-	// so that image is more visible (because image will map roughly one texel to one
-	// screen pixel which can be hard to read).
-
-	const int scaled_width = static_cast<int>(image_width / text_scale);
-	const int scaled_height = static_cast<int>(image_height / text_scale);
-
-	QImage scaled_image(scaled_width, scaled_height, QImage::Format_ARGB32);
-
-	QPainter painter(&scaled_image);
-	// Draw filled background
-	painter.fillRect(QRect(0, 0, scaled_width, scaled_height), background_colour);
-	painter.setPen(text_colour);
-	painter.drawText(
-			0, 0,
-			scaled_width, scaled_height,
-			(Qt::AlignCenter | Qt::TextWordWrap),
-			text);
-	painter.end();
-
-	// Scale the rendered text.
-	return scaled_image.scaled(
-			image_width, image_height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-}
-
-
 GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	GLTexture::shared_ptr_type xy_clip_texture = GLTexture::create(renderer);
 
 	//
@@ -491,7 +461,8 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -531,6 +502,8 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	GLTexture::shared_ptr_type z_clip_texture = GLTexture::create(renderer);
 
 	//
@@ -542,7 +515,8 @@ GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

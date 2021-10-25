@@ -23,12 +23,71 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
+#include <boost/static_assert.hpp>
+
 #include "VelocityFieldCalculatorLayerOptionsWidget.h"
 
 #include "TotalReconstructionPolesDialog.h"
 #include "ViewportWindow.h"
 
+#include "app-logic/ApplicationState.h"
+#include "app-logic/VelocityFieldCalculatorLayerTask.h"
+
+#include "global/GPlatesAssert.h"
+
 #include "presentation/VelocityFieldCalculatorVisualLayerParams.h"
+
+
+namespace
+{
+	const QString HELP_SOLVE_VELOCITIES_METHOD_DIALOG_TITLE = QObject::tr("Calculating velocities");
+	const QString HELP_SOLVE_VELOCITIES_METHOD_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<h3>Select the method used to calculate velocities</h3>"
+			"A velocity is calculated at each point in the <i>velocity domains</i>.\n"
+			"The <i>velocity domains</i> can contain point, multi-point, polyline and polygon geometries.\n"
+			"<p>The options for the calculating velocity at each point in these domain geometries are:</p>"
+			"<h4>Calculate velocities of surfaces:</h4>"
+			"<ul>"
+			"<li>At each time step the points in the <i>velocity domains</i> are intersected with "
+			"the static/dynamic polygons/networks in the <i>velocity surfaces</i>. The velocities of "
+			"the surfaces are then calculated at those intersecting domain points.<li>"
+			"<li>The <i>velocity surfaces</i> can be static polygons or topological plate polygons/networks.</li>"
+			"<li>To use this option, layers containing the surfaces should be connected to the "
+			"<i>velocity surfaces</i> layer input.<li>"
+			"</ul>"
+			"<h4>Calculate velocities of domain points:</h4>\n"
+			"<ul>"
+			"<li>Any layers currently connected to the <i>velocity surfaces</i> layer input are <b>ignored</b>.<li>"
+			"<li>The velocities of the domain points are then calculated as they reconstruct through time.<li>"
+			"</ul>"
+			"</body></html>\n");
+
+	const QString HELP_ARROW_SPACING_DIALOG_TITLE = QObject::tr("Spacing between arrows");
+	const QString HELP_ARROW_SPACING_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>This parameter limits the number of velocity arrows that can be displayed on the screen or monitor.</p>"
+			"<p>This is achieved by dividing the globe into equal area regions where the area of each region "
+			"is controlled by this parameter. If there is more than one arrow in a region then only the arrow closest to "
+			"the centre of the region is displayed and this rule is repeated for each region. "
+			"In this way only a limited number of arrows are rendered and they are distributed evenly across the globe.</p>"
+			"<p>The density of arrows on the screen is <i>independent</i> of the zoom level. "
+			"That is, the number of arrows per unit screen area remains constant across the zoom levels.</p>"
+			"<p>Select the 'X' button to remove any limit to the number of arrows on the screen.</p>"
+			"</body></html>\n");
+
+	const QString HELP_ARROW_SCALE_DIALOG_TITLE = QObject::tr("Arrow body and head scaling");
+	const QString HELP_ARROW_SCALE_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>These parameters control the scaling of arrows (both the body and the head).</p>"
+			"<p>Both parameters are specified as log10(scale) which has a range of [-3, 0] corresponding "
+			"to a 'scale' range of [0.001, 1.0]. A scale of 1.0 (or log10 of 0.0) renders a velocity "
+			"of 2cm/year such that it is about as high or wide as the GPlates viewport.</p>"
+			"<p>The scaling of arrows on the screen is <i>independent</i> of the zoom level. "
+			"That is, the size of the arrows on the screen remains constant across the zoom levels.</p>"
+			"</body></html>\n");
+}
 
 
 GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalculatorLayerOptionsWidget(
@@ -39,23 +98,59 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 	LayerOptionsWidget(parent_),
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_viewport_window(viewport_window)
+	d_viewport_window(viewport_window),
+	d_help_solve_velocities_method_dialog(
+			new InformationDialog(
+					HELP_SOLVE_VELOCITIES_METHOD_DIALOG_TEXT,
+					HELP_SOLVE_VELOCITIES_METHOD_DIALOG_TITLE,
+					viewport_window)),
+	d_help_arrow_spacing_dialog(
+			new InformationDialog(
+					HELP_ARROW_SPACING_DIALOG_TEXT,
+					HELP_ARROW_SPACING_DIALOG_TITLE,
+					viewport_window)),
+	d_help_arrow_scale_dialog(
+			new InformationDialog(
+					HELP_ARROW_SCALE_DIALOG_TEXT,
+					HELP_ARROW_SCALE_DIALOG_TITLE,
+					viewport_window))
 {
 	setupUi(this);
+	solve_velocities_method_combobox->setCursor(QCursor(Qt::ArrowCursor));
+	push_button_help_solve_velocities_method->setCursor(QCursor(Qt::ArrowCursor));
+	arrow_spacing_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	push_button_help_arrow_spacing->setCursor(QCursor(Qt::ArrowCursor));
+	push_button_unlimited_arrow_spacing->setCursor(QCursor(Qt::ArrowCursor));
+	arrow_body_scale_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	arrowhead_scale_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	push_button_help_arrow_scale->setCursor(QCursor(Qt::ArrowCursor));
 
-#if 0
 	QObject::connect(
-			constrained_checkbox,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_constrained_clicked()));
-#endif
+			solve_velocities_method_combobox, SIGNAL(activated(int)),
+			this, SLOT(handle_solve_velocity_method_combobox_activated(int)));
+	QObject::connect(
+			arrow_spacing_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_arrow_spacing_value_changed(double)));
+	QObject::connect(
+			push_button_unlimited_arrow_spacing, SIGNAL(clicked()),
+			this, SLOT(handle_unlimited_arrow_spacing_clicked()));
+	QObject::connect(
+			arrow_body_scale_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_arrow_body_scale_value_changed(double)));
+	QObject::connect(
+			arrowhead_scale_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_arrowhead_scale_value_changed(double)));
 
+	// Connect the help dialogs.
 	QObject::connect(
-			triangulation_checkbox,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_triangulation_clicked()));
+			push_button_help_solve_velocities_method, SIGNAL(clicked()),
+			d_help_solve_velocities_method_dialog, SLOT(show()));
+	QObject::connect(
+			push_button_help_arrow_spacing, SIGNAL(clicked()),
+			d_help_arrow_spacing_dialog, SLOT(show()));
+	QObject::connect(
+			push_button_help_arrow_scale, SIGNAL(clicked()),
+			d_help_arrow_scale_dialog, SLOT(show()));
 }
 
 
@@ -83,13 +178,75 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 	// Set the state of the checkboxes.
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
-		GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *params =
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
+					&layer.get_layer_task_params());
+		if (layer_task_params)
+		{
+			typedef GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params layer_task_params_type;
+			// Update this source code if more 'solve velocities' enumeration values have been added (or removed).
+			BOOST_STATIC_ASSERT(layer_task_params_type::NUM_SOLVE_VELOCITY_METHODS == 2);
+
+			// Populate the 'solve velocities' combobox.
+			solve_velocities_method_combobox->clear();
+			for (int i = 0; i < layer_task_params_type::NUM_SOLVE_VELOCITY_METHODS; ++i)
+			{
+				const layer_task_params_type::SolveVelocitiesMethodType solve_velocities_method =
+						static_cast<layer_task_params_type::SolveVelocitiesMethodType>(i);
+
+				// "Calculate velocities "....
+				switch (solve_velocities_method)
+				{
+				case layer_task_params_type::SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS:
+					solve_velocities_method_combobox->addItem("of surfaces");
+					break;
+				case layer_task_params_type::SOLVE_VELOCITIES_OF_DOMAIN_POINTS:
+					solve_velocities_method_combobox->addItem("of domain points");
+					break;
+				default:
+					GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+					break;
+				}
+			}
+
+			solve_velocities_method_combobox->setCurrentIndex(layer_task_params->get_solve_velocities_method());
+		}
+
+		GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *visual_layer_params =
 			dynamic_cast<GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *>(
 					locked_visual_layer->get_visual_layer_params().get());
-		if (params)
+		if (visual_layer_params)
 		{
-			//constrained_checkbox->setChecked(params->show_constrained_vectors());
-			triangulation_checkbox->setChecked(params->show_delaunay_vectors());
+			// Setting values in a spin box will emit signals if the value changes
+			// which can lead to an infinitely recursive decent.
+			// To avoid this we temporarily disconnect the signals.
+
+			QObject::disconnect(
+					arrow_spacing_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_arrow_spacing_value_changed(double)));
+			arrow_spacing_spinbox->setValue(visual_layer_params->get_arrow_spacing());
+			QObject::connect(
+					arrow_spacing_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_arrow_spacing_value_changed(double)));
+
+			QObject::disconnect(
+					arrow_body_scale_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_arrow_body_scale_value_changed(double)));
+			// Convert from scale to log10(scale).
+			arrow_body_scale_spinbox->setValue(std::log10(visual_layer_params->get_arrow_body_scale()));
+			QObject::connect(
+					arrow_body_scale_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_arrow_body_scale_value_changed(double)));
+
+			QObject::disconnect(
+					arrowhead_scale_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_arrowhead_scale_value_changed(double)));
+			// Convert from scale to log10(scale).
+			arrowhead_scale_spinbox->setValue(std::log10(visual_layer_params->get_arrowhead_scale()));
+			QObject::connect(
+					arrowhead_scale_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_arrowhead_scale_value_changed(double)));
 		}
 	}
 }
@@ -103,9 +260,42 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::get_title()
 }
 
 
+void
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_solve_velocity_method_combobox_activated(
+		int index)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		// Set the band name in the app-logic layer params.
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
+					&layer.get_layer_task_params());
+		if (layer_task_params)
+		{
+			if (index < 0 || index >= GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::NUM_SOLVE_VELOCITY_METHODS)
+			{
+				return;
+			}
+
+			// If the combobox choice has not changed then return early.
+			if (index == layer_task_params->get_solve_velocities_method())
+			{
+				return;
+			}
+
+			layer_task_params->set_solve_velocities_method(
+					static_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType>(
+							index));
+		}
+	}
+}
+
 
 void
-GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_constrained_clicked()
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_arrow_spacing_value_changed(
+		double arrow_spacing)
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
@@ -114,13 +304,24 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_constrained_
 					locked_visual_layer->get_visual_layer_params().get());
 		if (params)
 		{
-			//params->set_show_constrained_vectors(constrained_checkbox->isChecked());
+			params->set_arrow_spacing(arrow_spacing);
 		}
 	}
 }
 
+
 void
-GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_triangulation_clicked()
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_unlimited_arrow_spacing_clicked()
+{
+	// Set to the minimum value.
+	// This will also display the special value text of "Not limited".
+	arrow_spacing_spinbox->setValue(0);
+}
+
+
+void
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_arrow_body_scale_value_changed(
+		double arrow_body_scale_log10)
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
@@ -129,8 +330,30 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_triangulatio
 					locked_visual_layer->get_visual_layer_params().get());
 		if (params)
 		{
-			params->set_show_delaunay_vectors(triangulation_checkbox->isChecked());
+			// Convert from log10(scale) to scale.
+			const float arrow_body_scale = static_cast<float>(std::pow(10.0, arrow_body_scale_log10));
+
+			params->set_arrow_body_scale(arrow_body_scale);
 		}
 	}
 }
 
+
+void
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_arrowhead_scale_value_changed(
+		double arrowhead_scale_log10)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			// Convert from log10(scale) to scale.
+			const float arrowhead_scale = static_cast<float>(std::pow(10.0, arrowhead_scale_log10));
+
+			params->set_arrowhead_scale(arrowhead_scale);
+		}
+	}
+}

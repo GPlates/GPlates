@@ -33,7 +33,6 @@
 #include <QString>
 #include <QStringList>
 
-
 namespace GPlatesQtWidgets
 {
 	/**

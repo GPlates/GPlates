@@ -34,11 +34,15 @@
 #include "app-logic/FlowlineUtils.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructUtils.h"
+
 #include "maths/FiniteRotation.h"
 #include "maths/MathsUtils.h"
+#include "maths/types.h"
+
 #include "model/FeatureVisitor.h"
 #include "model/Model.h"
 #include "model/ModelUtils.h"
+
 #include "property-values/GpmlArray.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
@@ -137,6 +141,38 @@ GPlatesAppLogic::MotionPathUtils::calculate_motion_track(
 }
 
 void
+GPlatesAppLogic::MotionPathUtils::fill_times_vector(
+	std::vector<double> &times,
+	const double &reconstruction_time,
+	const std::vector<double> &time_samples)
+{
+	std::vector<double>::const_iterator
+		samples_iter = time_samples.begin(),
+		samples_end = time_samples.end();
+
+	// Get to the first time which is older than our current reconstruction time. 
+	while ((samples_iter != samples_end) && (*samples_iter <= GPlatesMaths::real_t(reconstruction_time)))
+	{
+		++samples_iter;
+	}	
+
+	// Add the reconstruction time if it lies between the end points of the times vector.
+	if (!time_samples.empty() &&
+		time_samples.front() <= GPlatesMaths::real_t(reconstruction_time) &&
+		time_samples.back() > GPlatesMaths::real_t(reconstruction_time))
+	{
+		times.push_back(reconstruction_time);
+	}
+
+	// Add the remaining times. 
+	while (samples_iter != samples_end)
+	{
+		times.push_back(*samples_iter);
+		++samples_iter;
+	}	
+}
+
+void
 GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::visit_gml_time_period(
 		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
@@ -166,7 +202,6 @@ GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::can_process_motion_p
     // we have recon and relative plate ids
     // we have a reconstruction time and
     // we have a non-empty times vector and
-    // the reconstruction time lies between the end points of the times vector and
     // the reconstruction time lies between the feature begin/time ends and
     // we have geometries.
 	if (d_times.empty() ||
@@ -178,18 +213,11 @@ GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::can_process_motion_p
 	    return false;
 	}
 
-	// Assumes the times are sorted.
-	double oldest = d_times.back();
-	double youngest = d_times.front();
+	// NOTE: We no longer require the reconstruction time to be between the end points of the times vector.
+	// This enables us to display/export at, for example, present day when the time vector does
+	// not include present day (such as a motion path representing part of a hotspot trail).
 
-
-	if ((d_reconstruction_time->value() <= oldest) &&
-	     (d_reconstruction_time->value() >= youngest))
-	{
-		return true;
-	}
-
-	return false;
+	return true;
 }
 
 bool

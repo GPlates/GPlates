@@ -30,6 +30,13 @@
 
 
 const char *
+GPlatesUtils::XmlNamespaces::Internals::gpgim_namespace()
+{
+	return "http://www.gplates.org/gpgim";
+}
+
+
+const char *
 GPlatesUtils::XmlNamespaces::Internals::gpml_namespace()
 {
 	return "http://www.gplates.org/gplates";
@@ -47,6 +54,13 @@ const char *
 GPlatesUtils::XmlNamespaces::Internals::xsi_namespace()
 {
 	return "http://www.w3.org/XMLSchema-instance";
+}
+
+
+const char *
+GPlatesUtils::XmlNamespaces::Internals::gpgim_standard_alias()
+{
+	return "gpgim";
 }
 
 
@@ -85,6 +99,12 @@ GPlatesUtils::XmlNamespaces::get_standard_alias_for_namespace(
 	{
 		return aliases.insert(XSI_STANDARD_ALIAS);
 	}
+	// NOTE: The GPGIM namespace is not part of the feature readers but is placed here
+	// in order to re-use a lot of the XML parsing machinery when reading the GPGIM XML file.
+	else if (namespace_uri == GPGIM_NAMESPACE)
+	{
+		return aliases.insert(GPGIM_STANDARD_ALIAS);
+	}
 	else
 	{
 		// Return gpml as default if URI not recognised.
@@ -109,12 +129,18 @@ GPlatesUtils::XmlNamespaces::get_namespace_for_standard_alias(
 	}
 	else if (namespace_alias == XSI_STANDARD_ALIAS)
 	{
-		return aliases.insert(XSI_STANDARD_ALIAS);
+		return aliases.insert(XSI_NAMESPACE);
+	}
+	// NOTE: The GPGIM namespace is not part of the feature readers but is placed here
+	// in order to re-use a lot of the XML parsing machinery when reading the GPGIM XML file.
+	else if (namespace_alias == GPGIM_STANDARD_ALIAS)
+	{
+		return aliases.insert(GPGIM_NAMESPACE);
 	}
 	else
 	{
-		// Return alias argument as default if not recognised.
-		return aliases.insert(namespace_alias);
+		// Return gpml namespace URI as default if alias not recognised.
+		return aliases.insert(GPML_NAMESPACE);
 	}
 }
 

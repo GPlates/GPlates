@@ -18,16 +18,18 @@ set(srcs
     AppLogicUtils.h
     AssignPlateIds.cc
     AssignPlateIds.h
-    CgalUtils.cc
-    CgalUtils.h
     CoRegistrationData.cc
     CoRegistrationData.h
     CoRegistrationLayerProxy.cc
     CoRegistrationLayerProxy.h
     CoRegistrationLayerTask.cc
     CoRegistrationLayerTask.h
+    DeformedFeatureGeometry.cc
+    DeformedFeatureGeometry.h
     ExtractRasterFeatureProperties.cc
     ExtractRasterFeatureProperties.h
+    ExtractScalarField3DFeatureProperties.cc
+    ExtractScalarField3DFeatureProperties.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
@@ -36,10 +38,16 @@ set(srcs
     FlowlineGeometryPopulator.h
     FlowlineUtils.cc
     FlowlineUtils.h
+    GenerateVelocityDomainCitcoms.cc
+    GenerateVelocityDomainCitcoms.h
+    GenerateVelocityDomainTerra.cc
+    GenerateVelocityDomainTerra.h
     GenericPartitionFeatureTask.cc
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc
     GeometryCookieCutter.h
+    GeometryDeformation.cc
+    GeometryDeformation.h
     GeometryUtils.cc
     GeometryUtils.h
     GPlatesQtMsgHandler.cc
@@ -61,8 +69,6 @@ set(srcs
     LogModel.h
     LogToModelHandler.cc
     LogToModelHandler.h
-    MeshGenerator.cc
-    MeshGenerator.h
     MotionPathGeometryPopulator.cc
     MotionPathGeometryPopulator.h
     MotionPathUtils.cc
@@ -106,7 +112,6 @@ set(srcs
     Reconstruction.h
     ReconstructionFeatureProperties.cc
     ReconstructionFeatureProperties.h
-    ReconstructionGeometry.cc
     ReconstructionGeometry.h
     ReconstructionGeometryFinder.cc
     ReconstructionGeometryFinder.h
@@ -138,6 +143,7 @@ set(srcs
     ReconstructMethodFlowline.h
     ReconstructMethodHalfStageRotation.cc
     ReconstructMethodHalfStageRotation.h
+    ReconstructMethodInterface.cc
     ReconstructMethodInterface.h
     ReconstructMethodMotionPath.cc
     ReconstructMethodMotionPath.h
@@ -155,11 +161,26 @@ set(srcs
     ReconstructUtils.h
     ResolvedRaster.cc
     ResolvedRaster.h
-    ResolvedTopologicalBoundary.cc
-    ResolvedTopologicalBoundary.h
-    ResolvedTopologicalBoundarySubSegment.h
+    ResolvedScalarField3D.cc
+    ResolvedScalarField3D.h
+    ResolvedTopologicalGeometry.cc
+    ResolvedTopologicalGeometry.h
+    ResolvedTopologicalGeometrySubSegment.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
+    ResolvedTriangulationConstrainedDelaunay2.cc
+    ResolvedTriangulationConstrainedDelaunay2.h
+    ResolvedTriangulationDelaunay2.cc
+    ResolvedTriangulationDelaunay2.h
+    ResolvedTriangulationDelaunay3.cc
+    ResolvedTriangulationDelaunay3.h
+    ResolvedTriangulationNetwork.cc
+    ResolvedTriangulationNetwork.h
+    ResolvedTriangulationUtils.h
+    ScalarField3DLayerProxy.cc
+    ScalarField3DLayerProxy.h
+    ScalarField3DLayerTask.cc
+    ScalarField3DLayerTask.h
     Serialization.cc
     Serialization.h
     Session.cc
@@ -168,16 +189,17 @@ set(srcs
     SessionManagement.h
     SmallCircleGeometryPopulator.cc
     SmallCircleGeometryPopulator.h
-    TopologyBoundaryIntersections.cc
-    TopologyBoundaryIntersections.h
-    TopologyBoundaryResolver.cc
-    TopologyBoundaryResolver.h
-    TopologyBoundaryResolverLayerProxy.cc
-    TopologyBoundaryResolverLayerProxy.h
-    TopologyBoundaryResolverLayerTask.cc
-    TopologyBoundaryResolverLayerTask.h
+    TopologyGeometryResolver.cc
+    TopologyGeometryResolver.h
+    TopologyGeometryResolverLayerProxy.cc
+    TopologyGeometryResolverLayerProxy.h
+    TopologyGeometryResolverLayerTask.cc
+    TopologyGeometryResolverLayerTask.h
+    TopologyGeometryType.h
     TopologyInternalUtils.cc
     TopologyInternalUtils.h
+    TopologyIntersections.cc
+    TopologyIntersections.h
     TopologyNetworkResolver.cc
     TopologyNetworkResolver.h
     TopologyNetworkResolverLayerProxy.cc
@@ -197,9 +219,6 @@ set(srcs
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h
 )
-
-
-
 
 
 set(target_name app-logic)

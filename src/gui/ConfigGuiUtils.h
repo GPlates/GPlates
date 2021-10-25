@@ -116,7 +116,7 @@ namespace GPlatesGui
 			~ConfigWidgetAdapter()
 			{  }
 		
-		signals:
+		Q_SIGNALS:
 			
 			void
 			value_changed(
@@ -134,7 +134,7 @@ namespace GPlatesGui
 			value_changed(
 					double value);
 		
-		public slots:
+		public Q_SLOTS:
 			
 			void
 			handle_key_value_updated(

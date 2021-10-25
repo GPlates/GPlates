@@ -63,7 +63,7 @@ namespace GPlatesQtWidgets
 		{  }
 		
 
-	public slots:
+	public Q_SLOTS:
 	
 		/**
 		 * Clears the geometry display in preparation for a new set of geometries.
@@ -90,7 +90,7 @@ namespace GPlatesQtWidgets
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg);
 
-	private slots:
+	private Q_SLOTS:
 		
 	private:
 		/**

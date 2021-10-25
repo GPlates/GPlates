@@ -32,27 +32,30 @@ using namespace GPlatesAppLogic;
 bool
 GPlatesDataMining::CoRegFilterCache::find(
 		const GPlatesDataMining::ConfigurationTableRow& key,
-		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>& values)
+		reconstructed_feature_vector_type &value)
 {
 	boost::optional<std::size_t> weight = boost::none;
-	bool hit = false;
 	BOOST_FOREACH(const CacheItem& data, d_data)
 	{
-		if(key.target_fc.handle_ptr() == data.d_key.target_fc.handle_ptr() && 
-			key.filter_cfg->filter_name() == data.d_key.filter_cfg->filter_name())
+	if(key.target_layer == data.d_key.target_layer && 
+		   key.filter_cfg->filter_name() == data.d_key.filter_cfg->filter_name())
 		{
-			if(key.filter_cfg  < data.d_key.filter_cfg  || data.d_key.filter_cfg == key.filter_cfg)
+			if(*key.filter_cfg < *data.d_key.filter_cfg)
 			{
 				if(!weight || *weight > data.d_value.size())
 				{
 					weight = data.d_value.size();
-					values = data.d_value;
-					hit = true;
+					value = data.d_value;
 				}
+			}
+			else if(*key.filter_cfg == *data.d_key.filter_cfg)
+			{
+				value = data.d_value;
+				break;
 			}
 		}
 	}
-	return hit;
+	return !value.empty();
 }
 
 

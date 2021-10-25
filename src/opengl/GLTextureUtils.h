@@ -30,7 +30,6 @@
 #include <QColor>
 #include <QImage>
 #include <QRect>
-#include <QString>
 
 #include "GLMatrix.h"
 #include "GLPixelBuffer.h"
@@ -48,7 +47,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Initialises the specified texture object as a 1D texture matching the specified parameters.
 		 *
-		 * NOTE: The dimensions must be a power-of-two.
+		 * NOTE: The dimensions do *not* need to be a power-of-two.
 		 *
 		 * NOTE: The specified texture will have its level zero initialised (memory allocated for image)
 		 * but the image data will be unspecified.
@@ -70,7 +69,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Initialises the specified texture object as a 2D texture matching the specified parameters.
 		 *
-		 * NOTE: The dimensions must be a power-of-two.
+		 * NOTE: The dimensions do *not* need to be a power-of-two.
 		 *
 		 * NOTE: The specified texture will have its level zero initialised (memory allocated for image)
 		 * but the image data will be unspecified.
@@ -93,7 +92,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Initialises the specified texture object as a 3D texture matching the specified parameters.
 		 *
-		 * NOTE: The dimensions must be a power-of-two.
+		 * NOTE: The dimensions do *not* need to be a power-of-two.
 		 *
 		 * NOTE: The specified texture will have its level zero initialised (memory allocated for image)
 		 * but the image data will be unspecified.
@@ -393,19 +392,6 @@ namespace GPlatesOpenGL
 					texel_u_offset,
 					texel_v_offset);
 		}
-
-
-		/**
-		 * Draws the specified text into a QImage the specified size.
-		 */
-		QImage
-		draw_text_into_qimage(
-				const QString &text,
-				unsigned int image_width,
-				unsigned int image_height,
-				const float text_scale = 1.0f,
-				const QColor &text_colour = QColor(255, 255, 255, 255)/*white*/,
-				const QColor &background_colour = QColor(0, 0, 0, 255)/*black*/);
 
 
 		/**

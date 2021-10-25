@@ -29,7 +29,11 @@
 #include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
 #include "VisualLayersListView.h"
+
+#include "gui/Dialogs.h"
+
 #include "utils/ComponentManager.h"
+
 
 GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 		GPlatesPresentation::VisualLayers &visual_layers,
@@ -70,7 +74,7 @@ GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 		QObject::connect(
 				colouring_button,
 				SIGNAL(clicked()),
-				d_viewport_window,
+				&d_viewport_window->dialogs(),
 				SLOT(pop_up_draw_style_dialog()));
 	}
 	else
@@ -107,6 +111,6 @@ GPlatesQtWidgets::VisualLayersWidget::handle_add_new_layer_button_clicked()
 void
 GPlatesQtWidgets::VisualLayersWidget::handle_colouring_button_clicked()
 {
-	d_viewport_window->pop_up_colouring_dialog();
+	d_viewport_window->dialogs().pop_up_colouring_dialog();
 }
 

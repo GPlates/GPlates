@@ -61,7 +61,7 @@ namespace GPlatesCli
 		std::string
 		get_command_description() const
 		{
-			return "assigns plate ids to regular features using topological closed plate boundaries";
+			return "assign plate ids to regular features using dynamic or static polygons";
 		}
 
 
@@ -77,7 +77,7 @@ namespace GPlatesCli
 
 		//! Interprets the parsed command-line and config file options stored in @a vm and runs this command.
 		virtual
-		int
+		void
 		run(
 				const boost::program_options::variables_map &vm);
 
@@ -89,6 +89,21 @@ namespace GPlatesCli
 		 * For most cases this will be present day (0Ma).
 		 */
 		double d_recon_time;
+
+		/**
+		 * Assign plate ids (from the partitioning features).
+		 */
+		bool d_assign_plate_id;
+
+		/**
+		 * Assign time period (from the partitioning features).
+		 */
+		bool d_assign_time_period;
+
+		/**
+		 * Only partition features that exist at the reconstruction time.
+		 */
+		bool d_respect_time_period;
 
 		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
 

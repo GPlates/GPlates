@@ -28,10 +28,12 @@
 #include "CanvasToolAdapterForMap.h"
 
 #include "gui/MapProjection.h"
+#include "gui/MapTransform.h"
 
 #include "maths/PointOnSphere.h"
 
 #include "qt-widgets/MapCanvas.h"
+#include "qt-widgets/MapView.h"
 
 
 namespace

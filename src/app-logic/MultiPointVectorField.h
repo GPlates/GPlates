@@ -121,11 +121,12 @@ namespace GPlatesAppLogic
 			 */
 			enum Reason
 			{
-				NotInAnyBoundaryOrNetwork,
-				InStaticPolygon,
-				InPlateBoundary,
-				InDeformationNetwork,
-				InDeformationNetworkConstrainedInterpolation,
+				ReconstructedDomainPoint,   // The domain point (present day) was reconstructed (non-static)
+				NotInAnyBoundaryOrNetwork,  // Static domain point was not found in any boundary or network
+				InStaticPolygon,            // Static domain point was found in a reconstructed static boundary
+				InPlateBoundary,            // Static domain point was found in a resolved topological boundary
+				InNetworkDeformingRegion,   // Static domain point was found in a deforming region of resolved topological network
+				InNetworkRigidBlock         // Static domain point was found in a rigid block of a resolved topological network
 			};
 
 			/**
@@ -144,52 +145,58 @@ namespace GPlatesAppLogic
 			 * An optional plate ID.
 			 *
 			 * The plate ID is optional in case the point does not lie inside a plate
-			 * boundary, but the client code still wishes to assign a 3-D vector.
+			 * boundary (or original domain feature has no plate ID), but the client code
+			 * still wishes to assign a 3-D vector.
 			 */
 			boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
 
 			/**
 			 * A "maybe-null" reconstruction geometry for the plate boundary that
-			 * encloses the point.
+			 * encloses the point (or the original domain feature with a plate ID).
 			 *
 			 * The reconstruction geometry is optional in case the point does not lie
-			 * inside a plate boundary, but the client code still wishes to assign a
-			 * 3-D vector.
+			 * inside a plate boundary (or original domain feature has no plate ID),
+			 * but the client code still wishes to assign a 3-D vector.
+			 *
+			 * This is also used to store the reconstructed domain point when the 'Reason' is
+			 * 'ReconstructedDomainPoint', ie, when no velocity surfaces (like plate boundaries)
+			 * are used and, instead, the domain points themselves are reconstructed to new positions
+			 * rather than having static positions.
 			 */
-			ReconstructionGeometry::maybe_null_ptr_to_const_type d_enclosing_boundary;
+			ReconstructionGeometry::maybe_null_ptr_to_const_type d_plate_id_reconstruction_geometry;
 
 			/**
 			 * Construct a codomain element from a 3-D vector @a v and a reason @a r.
 			 *
-			 * Optionally, a boost::optional plate ID @opt_p and an enclosing boundary
-			 * @a opt_eb may be specified.
+			 * Optionally, a boost::optional plate ID @opt_p and a plate ID recon geometry
+			 * @a opt_rg may be specified.
 			 */
 			CodomainElement(
 					const GPlatesMaths::Vector3D &v,
 					Reason r,
 					const boost::optional<GPlatesModel::integer_plate_id_type> &opt_p = boost::none,
-					const ReconstructionGeometry::maybe_null_ptr_to_const_type &opt_eb = NULL):
+					const ReconstructionGeometry::maybe_null_ptr_to_const_type &opt_rg = NULL):
 				d_vector(v),
 				d_reason(r),
 				d_plate_id(opt_p),
-				d_enclosing_boundary(opt_eb)
+				d_plate_id_reconstruction_geometry(opt_rg)
 			{  }
 
 			/**
 			 * Construct a codomain element from a 3-D vector @a v, a reason @a r, and
 			 * a plate ID @p.
 			 *
-			 * Optionally, an enclosing boundary @a eb may be specified.
+			 * Optionally, a plate ID recon geometry @a opt_rg may be specified.
 			 */
 			CodomainElement(
 					const GPlatesMaths::Vector3D &v,
 					Reason r,
 					const GPlatesModel::integer_plate_id_type &p,
-					const ReconstructionGeometry::maybe_null_ptr_to_const_type &opt_eb = NULL):
+					const ReconstructionGeometry::maybe_null_ptr_to_const_type &opt_rg = NULL):
 				d_vector(v),
 				d_reason(r),
 				d_plate_id(p),
-				d_enclosing_boundary(opt_eb)
+				d_plate_id_reconstruction_geometry(opt_rg)
 			{  }
 		};
 
@@ -199,8 +206,7 @@ namespace GPlatesAppLogic
 		typedef std::vector< boost::optional<CodomainElement> > codomain_type;
 
 		/**
-		 * Create a MultiPointVectorField instance which is sampled over the supplied
-		 * multi-point domain.
+		 * Create a MultiPointVectorField instance which is sampled over the supplied multi-point domain.
 		 *
 		 * The vector field will be pre-sized to the correct size, but will be empty
 		 * (full of "null" elements, represented by boost::none).
@@ -208,18 +214,19 @@ namespace GPlatesAppLogic
 		static
 		const non_null_ptr_type
 		create_empty(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const double &reconstruction_time_,
 				const multi_point_ptr_type &multi_point_ptr,
 				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator_)
+				GPlatesModel::FeatureHandle::iterator property_iterator_,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
 		{
 			return non_null_ptr_type(
 					new MultiPointVectorField(
-							reconstruction_tree,
+							reconstruction_time_,
 							multi_point_ptr,
 							feature_handle,
-							property_iterator_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+							property_iterator_,
+							reconstruct_handle_));
 		}
 
 
@@ -294,8 +301,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Return a weak-ref to the feature whose reconstructed geometry this RFG contains,
-		 * or an invalid weak-ref, if this pointer is not valid to be dereferenced.
+		 * Return a weak-ref to the *domain* feature used for the domain of the vector field.
 		 */
 		const GPlatesModel::FeatureHandle::weak_ref
 		get_feature_ref() const;
@@ -418,11 +424,12 @@ namespace GPlatesAppLogic
 		 * instantiation of this type on the stack.
 		 */
 		MultiPointVectorField(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const double &reconstruction_time_,
 				const multi_point_ptr_type &multi_point_ptr,
 				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator_):
-			ReconstructionGeometry(reconstruction_tree_),
+				GPlatesModel::FeatureHandle::iterator property_iterator_,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_):
+			ReconstructionGeometry(reconstruction_time_, reconstruct_handle_),
 			WeakObserverType(feature_handle),
 			d_multi_point_ptr(multi_point_ptr),
 			d_property_iterator(property_iterator_),

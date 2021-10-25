@@ -335,8 +335,8 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_quad_tree_mesh_drawables(
 		d_meshes_vertex_array[cube_face]/*vertex_array*/,
 		base_vertex_index/*start*/,
 		vertex_index - 1/*end*/,
-		vertex_element_index - base_vertex_element_index/*count*/,
-		sizeof(vertex_element_type) * base_vertex_element_index/*indices_offset*/
+		static_cast<GLsizei>(vertex_element_index - base_vertex_element_index)/*count*/,
+                static_cast<GLint>(sizeof(vertex_element_type) * base_vertex_element_index)/*indices_offset*/
 	};
 
 	// Create a quad tree node.

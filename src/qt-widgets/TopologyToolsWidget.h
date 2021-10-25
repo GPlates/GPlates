@@ -25,16 +25,16 @@
 #ifndef GPLATES_QTWIDGETS_TOPOLOGYTOOLSWIDGET_H
 #define GPLATES_QTWIDGETS_TOPOLOGYTOOLSWIDGET_H
 
+#include <boost/optional.hpp>
 #include <QDebug>
 #include <QWidget>
 
 #include "TopologyToolsWidgetUi.h"
 #include "TaskPanelWidget.h"
 
-#include "global/types.h"
-#include "model/FeatureHandle.h"
+#include "app-logic/TopologyGeometryType.h"
 
-#include "gui/TopologyTools.h"
+#include "model/FeatureHandle.h"
 
 
 namespace GPlatesAppLogic
@@ -44,13 +44,14 @@ namespace GPlatesAppLogic
 
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
+	class CanvasToolWorkflows;
 	class FeatureFocus;
-//	class TopologyTools;
+	class TopologyTools;
 }
 
 namespace GPlatesModel
 {
+	class Gpgim;
 	class ModelInterface;
 }
 
@@ -78,12 +79,18 @@ namespace GPlatesQtWidgets
 		
 	public:
 
+		/** What mode the tools were started in ; NOTE this can change during tool use */
+		enum CanvasToolMode
+		{
+			BUILD, EDIT
+		};
+
 		explicit
 		TopologyToolsWidget(
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window,
 				QAction *clear_action,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				QWidget *parent_ = NULL);
 
 		~TopologyToolsWidget();
@@ -104,62 +111,72 @@ namespace GPlatesQtWidgets
 		void
 		handle_clear_action_triggered();
 
-	public slots:
+	public Q_SLOTS:
 		
 		void 
-		activate( GPlatesGui::TopologyTools::CanvasToolMode mode );
+		activate(
+				CanvasToolMode mode,
+				GPlatesAppLogic::TopologyGeometry::Type topology_geometry_type);
 
 		void 
 		deactivate();
 
 		void
-		clear();
+		clear_task_panel();
 
 		void
-		display_topology(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref,
-				GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type associated_rg,
-				GPlatesGlobal::TopologyTypes topology_type);
-
-		void
-		display_number_of_sections_boundary( int i ) {
-			label_num_sections_boundary->setText( QString::number( i ) );
+		display_number_of_sections_boundary( int i )
+		{
+			label_num_sections->setText( QString::number( i ) );
 		}
 
 		void
-		display_number_of_sections_interior( int i ) {
+		display_number_of_sections_interior( int i )
+		{
 			label_num_sections_interior->setText( QString::number( i ) );
 		}
 
 		int
 		get_sections_combobox_index()
 		{
-			return sections_combobox->currentIndex();
+			return sections_table_combobox->currentIndex();
 		}
 
 		void
 		set_sections_combobox_index( int index )
 		{
-			sections_combobox->setCurrentIndex( index );
+			sections_table_combobox->setCurrentIndex( index );
 		}
 
 		void
 		handle_sections_combobox_index_changed( int index );
 
 		void
-		handle_remove_all_sections();
+		handle_clear();
+
+		void
+		handle_clear_action_changed();
 
 		void
 		handle_create();
-	
-		void
-		handle_add_feature_boundary();
 
 		void
-		handle_add_feature_interior();
+		handle_apply();
 
 		void
-		handle_remove_feature();
+		handle_add_to_boundary();
+
+		void
+		handle_add_to_boundary_shortcut_triggered();
+
+		void
+		handle_add_to_interior();
+
+		void
+		handle_remove();
+
+		void
+		handle_remove_shortcut_triggered();
 
 		void
 		choose_topology_tab()
@@ -181,6 +198,16 @@ namespace GPlatesQtWidgets
 		void
 		setup_connections();
 
+		void
+		display_topology(
+				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+
+
+		GPlatesPresentation::ViewState &d_view_state;
+		ViewportWindow &d_viewport_window;
+		const GPlatesModel::Gpgim &d_gpgim;
+
+
 		/**
 		 * This is our reference to the Feature Focus, which we use to let the rest of the
 		 * application know what the user just clicked on.
@@ -193,7 +220,13 @@ namespace GPlatesQtWidgets
 		GPlatesModel::ModelInterface *d_model_interface;
 
 		/**
-		 * The dialog the user sees when they hit the Create button.
+		 * To change the canvas tool when we are finished editing/building topology.
+		 */
+		GPlatesGui::CanvasToolWorkflows *d_canvas_tool_workflows;
+
+		/**
+		 * The dialog the user sees when they hit the "Create" button to build a *new* topological feature.
+		 *
 		 * Memory managed by Qt.
 		 */
 		CreateFeatureDialog *d_create_feature_dialog;
@@ -203,7 +236,12 @@ namespace GPlatesQtWidgets
 
 		/** the FeatureSummaryWidget pointer */
 		FeatureSummaryWidget *d_feature_summary_widget_ptr;
-		
+
+		/*
+		 * The topology feature being edited (if using edit tool) or boost::none (if using the build tool).
+		 */ 
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_edit_topology_feature_ref;
+
 	};
 }
 

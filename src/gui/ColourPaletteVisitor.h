@@ -39,6 +39,8 @@ namespace GPlatesGui
 	template <typename> class CategoricalCptColourPalette;
 	class DefaultPlateIdColourPalette;
 	class DefaultRasterColourPalette;
+	class UserColourPalette;
+	class DefaultNormalisedRasterColourPalette;
 	class FeatureTypeColourPalette;
 	class RegionalPlateIdColourPalette;
 	class RegularCptColourPalette;
@@ -56,6 +58,8 @@ namespace GPlatesGui
 		typedef typename GPlatesUtils::SetConst<AgeColourPalette, Const>::type age_colour_palette_type;
 		typedef typename GPlatesUtils::SetConst<DefaultPlateIdColourPalette, Const>::type default_plate_id_colour_palette_type;
 		typedef typename GPlatesUtils::SetConst<DefaultRasterColourPalette, Const>::type default_raster_colour_palette_type;
+		typedef typename GPlatesUtils::SetConst<UserColourPalette, Const>::type user_colour_palette_type;
+		typedef typename GPlatesUtils::SetConst<DefaultNormalisedRasterColourPalette, Const>::type default_normalised_raster_colour_palette_type;
 		typedef typename GPlatesUtils::SetConst<FeatureTypeColourPalette, Const>::type feature_type_colour_palette_type;
 		typedef typename GPlatesUtils::SetConst<RegionalPlateIdColourPalette, Const>::type regional_plate_id_colour_palette_type;
 		typedef typename GPlatesUtils::SetConst<RegularCptColourPalette, Const>::type regular_cpt_colour_palette_type;
@@ -82,6 +86,18 @@ namespace GPlatesGui
 		void
 		visit_default_raster_colour_palette(
 				default_raster_colour_palette_type &)
+		{  }
+
+		virtual
+		void
+		visit_user_colour_palette(
+				user_colour_palette_type &)
+		{  }
+
+		virtual
+		void
+		visit_default_normalised_raster_colour_palette(
+				default_normalised_raster_colour_palette_type &)
 		{  }
 
 		virtual

@@ -91,7 +91,7 @@ namespace GPlatesQtWidgets
 		void
 		load_data_if_necessary();
 		
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Updates the dialog to redisplay the geometry of the current Feature.
@@ -110,7 +110,7 @@ namespace GPlatesQtWidgets
 				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_rg);
 		
-	signals:
+	Q_SIGNALS:
 
 	private:
 		/**

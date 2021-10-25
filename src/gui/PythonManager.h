@@ -26,6 +26,7 @@
 */
 #ifndef GPLATES_GUI_PYTHON_MANAGER_H
 #define GPLATES_GUI_PYTHON_MANAGER_H
+
 #include <QDir>
 #include <QFileInfoList>
 #include <boost/foreach.hpp>
@@ -35,7 +36,6 @@
 #include "global/GPlatesException.h"
 #include "global/python.h"
 #include "EventBlackout.h"
-
 
 namespace GPlatesAppLogic
 {
@@ -220,6 +220,21 @@ namespace GPlatesGui
 			d_python_home = str;
 		}
 
+		inline
+		void
+		set_python_prefix(
+				const QString& str);
+
+
+		inline
+		void
+		set_python_prefix();
+
+
+		inline
+		QString
+		get_python_prefix_from_preferences();
+
 
 		void
 		python_runner_started();
@@ -231,7 +246,7 @@ namespace GPlatesGui
 		print_py_msg(
 				const QString& msg);
 
-	signals:
+	Q_SIGNALS:
 		void
 		system_exit_exception_raised(
 				int exit_status,
@@ -289,7 +304,7 @@ namespace GPlatesGui
 
 		friend class PythonExecGuard;
 
-	public slots:
+	public Q_SLOTS:
 		
 		void
 		exec_function_slot(
@@ -370,7 +385,7 @@ namespace GPlatesGui
 		*/
 		GPlatesGui::EventBlackout d_event_blackout;
 
-		bool d_show_python_init_fail_dlg;
+		bool d_show_python_init_fail_dlg, d_clear_python_prefix_flag;
 
 		QString d_python_home;
 		
@@ -392,7 +407,7 @@ namespace GPlatesGui
 			static PythonManager* inst = new PythonManager();
 			return inst;
 		}
-		void initialize(GPlatesPresentation::Application& app){app.get_viewport_window().hide_python_menu();}
+		void initialize(GPlatesPresentation::Application& app){app.get_main_window().hide_python_menu();}
 		void pop_up_python_console(){}
 	};
 }

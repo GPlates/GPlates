@@ -46,11 +46,10 @@
 
 #include "utils/UnicodeStringUtils.h"
 
-
 GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
-	QDialog(parent_, Qt::Window),
+	GPlatesDialog(parent_, Qt::Window),
 	d_query_feature_properties_widget(
 			new QueryFeaturePropertiesWidget(
 				view_state_,
@@ -138,8 +137,7 @@ GPlatesQtWidgets::FeaturePropertiesDialog::refresh_display()
 	
 	// Update our text fields at the top.
 	lineedit_feature_type->setText(
-			GPlatesUtils::make_qstring_from_icu_string(
-				d_feature_ref->feature_type().build_aliased_name()));
+			convert_qualified_xml_name_to_qstring(d_feature_ref->feature_type()));
 	
 	// Update our tabbed sub-widgets.
 	d_query_feature_properties_widget->display_feature(d_feature_ref, d_focused_rg);
@@ -168,20 +166,6 @@ GPlatesQtWidgets::FeaturePropertiesDialog::choose_geometries_widget_and_open()
 {
 	tabwidget_query_edit->setCurrentWidget(d_view_feature_geometries_widget);
 	pop_up();
-}
-
-
-void
-GPlatesQtWidgets::FeaturePropertiesDialog::pop_up()
-{
-	show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	raise();
 }
 
 

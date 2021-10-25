@@ -42,9 +42,9 @@ namespace GPlatesDataMining
 	public:
 		RFGToRelationalPropertyMapper(
 				const AttributeType attr_type,
-				CoRegMapper::RFGVector seeds):
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature):
 			d_attr_type(attr_type),
-			d_seed_geos(seeds)
+			d_reconstructed_seed_feature(reconstructed_seed_feature)
 		{ }
 
 		void
@@ -59,26 +59,54 @@ namespace GPlatesDataMining
 				case DISTANCE_ATTRIBUTE:
 					for(;input_begin != input_end; input_begin++)
 					{
-						output.push_back(boost::make_tuple(
-								OpaqueData(DataMiningUtils::shortest_distance(d_seed_geos,input_begin->second)),
-								input_begin->second));
+						const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_target_feature =
+								*input_begin;
+
+						std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> target_geos;
+						BOOST_FOREACH(
+								const GPlatesAppLogic::ReconstructContext::Reconstruction &target_geo_recon,
+								reconstructed_target_feature.get_reconstructions())
+						{
+							target_geos.push_back(target_geo_recon.get_reconstructed_feature_geometry().get());
+						}
+
+						std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> seed_geos;
+						BOOST_FOREACH(
+								const GPlatesAppLogic::ReconstructContext::Reconstruction &seed_geo_recon,
+								d_reconstructed_seed_feature.get_reconstructions())
+						{
+							seed_geos.push_back(seed_geo_recon.get_reconstructed_feature_geometry().get());
+						}
+
+						output.push_back(
+								boost::make_tuple(
+										OpaqueData(DataMiningUtils::shortest_distance(seed_geos, target_geos)),
+										reconstructed_target_feature));
 					}
 					break;
+
 				case PRESENCE_ATTRIBUTE:
 					output.push_back(boost::make_tuple(
 							OpaqueData((input_begin != input_end)),
-							CoRegMapper::RFGVector()));
+							// Not used...
+							GPlatesAppLogic::ReconstructContext::ReconstructedFeature(
+									GPlatesModel::FeatureHandle::weak_ref())));
 					break;
+
 				case NUMBER_OF_PRESENCE_ATTRIBUTE:
 					dis = static_cast<unsigned>(std::distance(input_begin,input_end));
-					output.push_back(boost::make_tuple(OpaqueData(dis),CoRegMapper::RFGVector()));
+					output.push_back(boost::make_tuple(
+							OpaqueData(dis),
+							// Not used...
+							GPlatesAppLogic::ReconstructContext::ReconstructedFeature(
+									GPlatesModel::FeatureHandle::weak_ref())));
 					break;
-				case CO_REGISTRATION_ATTRIBUTE:
-				case SHAPE_FILE_ATTRIBUTE:
+
+				case CO_REGISTRATION_GPML_ATTRIBUTE:
+				case CO_REGISTRATION_SHAPEFILE_ATTRIBUTE:
 				default:
 					break;
 			}
-			return;
 		}
 
 		virtual
@@ -86,7 +114,7 @@ namespace GPlatesDataMining
 
 	protected:
 		const AttributeType d_attr_type;
-		CoRegMapper::RFGVector d_seed_geos;
+		const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &d_reconstructed_seed_feature;
 	};
 }
 #endif //GPLATESDATAMINING_RFGTORELATIONALPROPERTYMAPPER_H

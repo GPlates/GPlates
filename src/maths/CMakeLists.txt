@@ -36,12 +36,11 @@ set(srcs
     GenericVectorOps3D.h
     GeometryForwardDeclarations.h
     GeometryOnSphere.h
+    GeometryType.h
     GreatCircle.cc
     GreatCircle.h
     GreatCircleArc.cc
     GreatCircleArc.h
-    GridOnSphere.cc
-    GridOnSphere.h
     HierarchicalTriangularMesh.h
     HighPrecision.h
     IndeterminateArcRotationAxisException.h
@@ -71,6 +70,8 @@ set(srcs
     PointOnSphere.cc
     PointOnSphere.h
     PointProximityHitDetail.h
+    PolygonFan.cc
+    PolygonFan.h
     PolygonIntersections.cc
     PolygonIntersections.h
     PolygonMesh.cc
@@ -86,6 +87,8 @@ set(srcs
     PolylineOnSphere.cc
     PolylineOnSphere.h
     PolylineProximityHitDetail.h
+    ProjectionUtils.cc
+    ProjectionUtils.h
     ProximityCriteria.cc
     ProximityCriteria.h
     ProximityHitDetail.cc

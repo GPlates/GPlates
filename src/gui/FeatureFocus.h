@@ -31,7 +31,10 @@
 
 #include "app-logic/ReconstructionGeometry.h"
 
+#include "maths/LatLonPoint.h"
+
 #include "model/FeatureHandle.h"
+
 
 namespace GPlatesPresentation
 {
@@ -59,7 +62,7 @@ namespace GPlatesGui
 		
 		explicit
 		FeatureFocus(
-				GPlatesPresentation::ViewState &view_state);
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection);
 
 		virtual
 		~FeatureFocus()
@@ -106,7 +109,7 @@ namespace GPlatesGui
 			return d_associated_geometry_property;
 		}
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Change which feature is currently focused, also specifying an associated
@@ -209,7 +212,7 @@ namespace GPlatesGui
 		void
 		handle_rendered_geometry_collection_update();
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when a new feature has been clicked on, or the current focus has been
@@ -251,6 +254,16 @@ namespace GPlatesGui
 		GPlatesModel::FeatureHandle::weak_ref d_focused_feature;
 
 		/**
+		 * Keep another reference to the currently focused feature to contain our model callback.
+		 *
+		 * This avoids the problem where the callback is copied when the weak ref is copied.
+		 * Having a separate weak ref means the callback cannot escape into the wild and cause
+		 * a crash during shutdown when the view state is destroyed before the application-logic state
+		 * (the callback then references a destroyed @a FeatureFocus object).
+		 */
+		GPlatesModel::FeatureHandle::weak_ref d_callback_focused_feature;
+
+		/**
 		 * The ReconstructionGeometry associated with the currently-focused feature.
 		 *
 		 * Note that there may not be a RG associated with the currently-focused feature.
@@ -286,7 +299,7 @@ namespace GPlatesGui
 		find_new_associated_reconstruction_geometry();
 	};
 
-	boost::optional<const GPlatesMaths::LatLonPoint>
+	boost::optional<GPlatesMaths::LatLonPoint>
 	locate_focus();
 }
 

@@ -86,7 +86,6 @@ namespace GPlatesQtWidgets
 	public:
 
 		ReconstructionViewWidget(
-				GPlatesGui::AnimationController &animation_controller,
 				ViewportWindow &viewport_window,
 				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
@@ -105,7 +104,7 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		insert_task_panel(
-				std::auto_ptr<GPlatesQtWidgets::TaskPanel> task_panel);
+				GPlatesQtWidgets::TaskPanel *task_panel);
 
 		GlobeCanvas &
 		globe_canvas();
@@ -140,7 +139,7 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesMaths::LatLonPoint>
 		camera_llp();
 
-	public slots:
+	public Q_SLOTS:
 
 		void
 		activate_time_spinbox();
@@ -164,7 +163,7 @@ namespace GPlatesQtWidgets
 		void
 		handle_update_tools_and_status_message();
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		update_tools_and_status_message();
@@ -178,7 +177,7 @@ namespace GPlatesQtWidgets
 		send_orientation_to_stdout(
 			GPlatesMaths::Rotation &);
 	
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_globe_and_map_widget_resized(

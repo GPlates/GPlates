@@ -33,13 +33,22 @@
 #include "CoRegistrationData.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
+#include "RasterLayerProxy.h"
 #include "ReconstructionLayerProxy.h"
 #include "ReconstructLayerProxy.h"
 
 #include "data-mining/CoRegConfigurationTable.h"
 
+#include "global/PointerTraits.h"
+
 #include "utils/SubjectObserverToken.h"
 
+
+namespace GPlatesOpenGL
+{
+	class GLRasterCoRegistration;
+	class GLRenderer;
+}
 
 namespace GPlatesAppLogic
 {
@@ -74,12 +83,25 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the co-registration data for the current reconstruction time.
 		 *
-		 * Returns boost::none if the input layers are not connected or if 
+		 * @a renderer is required since *raster* co-registration is accelerated using OpenGL.
+		 * If you do not already have a @a GLRenderer available then you'll need to retrieve a
+		 * @a GLContext object and use that to create a @a GLRenderer. An OpenGL context usually
+		 * requires some kind of operating system window (in Qt this can be a QGLWidget) which is
+		 * what the globe and map views use - see "GlobeAndMapWidget::get_gl_context()".
+		 * For situations where there's not typically a window handy (eg, using the GPlates
+		 * python API without using the GPlates application) you'll probably need to create a
+		 * window of some sort and associate an OpenGL context with it
+		 * (perhaps the GPlates python API can provide something like this).
+		 *
+		 * Returns boost::none if the input layers are not connected or if
+		 * @a set_current_coregistration_configuration_table has not yet been called (ie, the
+		 * co-registration has not yet been configured by the user for this layer).
 		 */
 		boost::optional<coregistration_data_non_null_ptr_type>
-		get_coregistration_data()
+		get_coregistration_data(
+				GPlatesOpenGL::GLRenderer &renderer)
 		{
-			return get_coregistration_data(d_current_reconstruction_time);
+			return get_coregistration_data(renderer, d_current_reconstruction_time);
 		}
 
 
@@ -88,6 +110,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<coregistration_data_non_null_ptr_type>
 		get_coregistration_data(
+				GPlatesOpenGL::GLRenderer &renderer,
 				const double &reconstruction_time);
 
 
@@ -136,18 +159,26 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time);
 
 		/**
-		 * Set the current input reconstruction layer proxy.
-		 */
-		void
-		set_current_reconstruction_layer_proxy(
-				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy);
-
-		/**
 		 * Adds a co-registration seed layer proxy.
 		 */
 		void
 		add_coregistration_seed_layer_proxy(
 				const ReconstructLayerProxy::non_null_ptr_type &coregistration_seed_layer_proxy);
+
+		
+		std::vector<reconstruct_layer_proxy_non_null_ptr_type>  
+		get_coregistration_seed_layer_proxy()
+		{
+			std::vector<reconstruct_layer_proxy_non_null_ptr_type> ret;
+			BOOST_FOREACH(
+					LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> input_proxy, 
+					d_current_seed_layer_proxies.get_input_layer_proxies())
+			{
+				ret.push_back(input_proxy.get_input_layer_proxy());
+			}
+			return ret;
+		}
+
 
 		/**
 		 * Removes a co-registration seed layer proxy.
@@ -157,18 +188,32 @@ namespace GPlatesAppLogic
 				const ReconstructLayerProxy::non_null_ptr_type &coregistration_seed_layer_proxy);
 
 		/**
-		 * Adds a co-registration target layer proxy.
+		 * Adds a co-registration target (reconstructed geometries) layer proxy.
 		 */
 		void
 		add_coregistration_target_layer_proxy(
 				const ReconstructLayerProxy::non_null_ptr_type &coregistration_target_layer_proxy);
 
 		/**
-		 * Removes a co-registration target layer proxy.
+		 * Removes a co-registration target (reconstructed geometries) layer proxy.
 		 */
 		void
 		remove_coregistration_target_layer_proxy(
 				const ReconstructLayerProxy::non_null_ptr_type &coregistration_target_layer_proxy);
+
+		/**
+		 * Adds a co-registration target (raster) layer proxy.
+		 */
+		void
+		add_coregistration_target_layer_proxy(
+				const RasterLayerProxy::non_null_ptr_type &coregistration_target_layer_proxy);
+
+		/**
+		 * Removes a co-registration target (raster) layer proxy.
+		 */
+		void
+		remove_coregistration_target_layer_proxy(
+				const RasterLayerProxy::non_null_ptr_type &coregistration_target_layer_proxy);
 
 		/**
 		 * Sets the configuration table to use for co-registration.
@@ -177,37 +222,49 @@ namespace GPlatesAppLogic
 		set_current_coregistration_configuration_table(
 				const GPlatesDataMining::CoRegConfigurationTable &coregistration_configuration_table);
 
+
+		const GPlatesDataMining::CoRegConfigurationTable&
+		get_current_coregistration_configuration_table() const 
+		{
+			return d_current_coregistration_configuration_table;
+		}
+
 	private:
-		/**
-		 * Used to get reconstruction trees at desired reconstruction times.
-		 *
-		 * TODO: I'm not sure we really need a reconstruction tree layer ?
-		 */
-		LayerProxyUtils::InputLayerProxy<ReconstructionLayerProxy> d_current_reconstruction_layer_proxy;
 
 		/**
 		 * Used to get the co-registration reconstructed seed geometries.
 		 */
-		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy> d_current_coregistration_seed_layer_proxies;
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy> d_current_seed_layer_proxies;
 
 		/**
-		 * Used to get the co-registration reconstructed target geometries.
+		 * Used to get the co-registration target (reconstructed geometries) layer proxies.
 		 */
-		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy> d_current_coregistration_target_layer_proxies;
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy> d_current_target_reconstruct_layer_proxies;
+
+		/**
+		 * Used to get the co-registration target (raster) layer proxies.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<RasterLayerProxy> d_current_target_raster_layer_proxies;
 
 		/**
 		 * The current co-registration configuration.
-		 *
-		 * NOTE: For now we'll keep a reference to the table in case it changes underneath us.
-		 * Later we'll keep a copy which will get updated when
-		 * @a set_current_coregistration_configuration_table is called.
 		 */
-		boost::optional<const GPlatesDataMining::CoRegConfigurationTable &> d_current_coregistration_configuration_table;
+		GPlatesDataMining::CoRegConfigurationTable d_current_coregistration_configuration_table;
 
 		/**
 		 * The current reconstruction time as set by the layer system.
 		 */
 		double d_current_reconstruction_time;
+
+		/**
+		 * Used to co-register rasters.
+		 *
+		 * The one instance is used to co-register all/any rasters and is only created when first used.
+		 *
+		 * NOTE: Used the method @a get_raster_co_registration to retrieve this.
+		 */
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRasterCoRegistration>::non_null_ptr_type>
+				d_raster_co_registration;
 
 		/**
 		 * The cached co-registration data - the output of co-registration.
@@ -254,6 +311,15 @@ namespace GPlatesAppLogic
 		 */
 		void
 		check_input_layer_proxies();
+
+		/**
+		 * Returns the raster co-registration and creates one the first time this method is called.
+		 *
+		 * Returns boost::none if the OpenGL extensions required for raster co-registration are not available.
+		 */
+		boost::optional<GPlatesOpenGL::GLRasterCoRegistration &>
+		get_raster_co_registration(
+				GPlatesOpenGL::GLRenderer &renderer);
 	};
 }
 

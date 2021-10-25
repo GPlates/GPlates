@@ -55,7 +55,8 @@ namespace GPlatesGui
 		enum Section
 		{
 			BUILT_IN,
-			PYTHON,
+			RASTER,
+			SCALAR_FIELD_3D,
 
 			NUM_SECTIONS // Must be the last entry.
 		};
@@ -80,7 +81,7 @@ namespace GPlatesGui
 				const QString &text,
 				const boost::function< void () > &callback);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_action_triggered(

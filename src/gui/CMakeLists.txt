@@ -17,8 +17,12 @@ set(srcs
     AgeColourPalettes.h
     AnimationController.cc
     AnimationController.h
-    ChooseCanvasTool.cc
-    ChooseCanvasTool.h
+    CanvasToolWorkflow.cc
+    CanvasToolWorkflow.h
+    CanvasToolWorkflows.cc
+    CanvasToolWorkflows.h
+    ChooseCanvasToolUndoCommand.cc
+    ChooseCanvasToolUndoCommand.h
     Colour.cc
     Colour.h
     ColourFilter.h
@@ -38,6 +42,8 @@ set(srcs
     ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
+    CommandServer.cc
+    CommandServer.h
     ConfigGuiUtils.cc
     ConfigGuiUtils.h
     ConfigModel.cc
@@ -50,14 +56,14 @@ set(srcs
     CsvExport.h
     Dialogs.cc
     Dialogs.h
+    DigitisationCanvasToolWorkflow.cc
+    DigitisationCanvasToolWorkflow.h
     DockState.cc
     DockState.h
     DrawStyleAdapters.cc
     DrawStyleAdapters.h
     DrawStyleManager.cc
     DrawStyleManager.h
-    EnableCanvasTool.cc
-    EnableCanvasTool.h
     EventBlackout.cc
     EventBlackout.h
     ExportAnimationContext.cc
@@ -68,6 +74,8 @@ set(srcs
     ExportAnimationStrategy.h
     ExportAnimationType.cc
     ExportAnimationType.h
+    ExportCitcomsResolvedTopologyAnimationStrategy.cc
+    ExportCitcomsResolvedTopologyAnimationStrategy.h
     ExportCoRegistrationAnimationStrategy.cc
     ExportCoRegistrationAnimationStrategy.h
     ExportFileNameTemplateValidationUtils.cc
@@ -83,22 +91,28 @@ set(srcs
     ExportReconstructedGeometryAnimationStrategy.h
     ExportResolvedTopologyAnimationStrategy.cc
     ExportResolvedTopologyAnimationStrategy.h
-    ExportRotationAnimationStrategy.cc
-    ExportRotationAnimationStrategy.h
-    ExportRotationParamsAnimationStrategy.cc
-    ExportRotationParamsAnimationStrategy.h
+    ExportStageRotationAnimationStrategy.cc
+    ExportStageRotationAnimationStrategy.h
     ExportSvgAnimationStrategy.cc
     ExportSvgAnimationStrategy.h
+    ExportTotalRotationAnimationStrategy.cc
+    ExportTotalRotationAnimationStrategy.h
     ExportVelocityAnimationStrategy.cc
     ExportVelocityAnimationStrategy.h
+    ExternalSyncController.cc
+    ExternalSyncController.h
     FeatureFocus.cc
     FeatureFocus.h
+    FeatureInspectionCanvasToolWorkflow.cc
+    FeatureInspectionCanvasToolWorkflow.h
     FeaturePropertyTableModel.cc
     FeaturePropertyTableModel.h
     FeatureTableModel.cc
     FeatureTableModel.h
     FeatureTypeColourPalette.cc
     FeatureTypeColourPalette.h
+    FeedbackOpenGLToQPainter.cc
+    FeedbackOpenGLToQPainter.h
     FileIOFeedback.cc
     FileIOFeedback.h
     FullScreenMode.cc
@@ -112,8 +126,6 @@ set(srcs
     GlobeCanvasTool.h
     GlobeCanvasToolAdapter.cc
     GlobeCanvasToolAdapter.h
-    GlobeCanvasToolChoice.cc
-    GlobeCanvasToolChoice.h
     GlobeOrientation.h
     GlobeRenderedGeometryCollectionPainter.cc
     GlobeRenderedGeometryCollectionPainter.h
@@ -139,12 +151,12 @@ set(srcs
     LogFilterModel.h
     Map.cc
     Map.h
+    MapBackground.cc
+    MapBackground.h
     MapCanvasTool.cc
     MapCanvasTool.h
     MapCanvasToolAdapter.cc
     MapCanvasToolAdapter.h
-    MapCanvasToolChoice.cc
-    MapCanvasToolChoice.h
     MapGrid.cc
     MapGrid.h
     MapProjection.cc
@@ -161,10 +173,10 @@ set(srcs
     OpaqueSphere.h
     Palette.cc
     Palette.h
-    PersistentOpenGLObjects.cc
-    PersistentOpenGLObjects.h
     PlateIdColourPalettes.cc
     PlateIdColourPalettes.h
+    PoleManipulationCanvasToolWorkflow.cc
+    PoleManipulationCanvasToolWorkflow.h
     ProjectionException.h
     PythonConfiguration.cc
     PythonConfiguration.h
@@ -172,34 +184,31 @@ set(srcs
     PythonConsoleHistory.h
     PythonManager.cc
     PythonManager.h
-    QGLWidgetTextRenderer.cc
-    QGLWidgetTextRenderer.h
-    QPainterTextRenderer.cc
-    QPainterTextRenderer.h
     RasterColourPalette.cc
     RasterColourPalette.h
     ReconstructionGeometrySequence.h
     RenderSettings.h
+    SceneLightingParameters.h
     SessionMenu.cc
     SessionMenu.h
     SimpleGlobeOrientation.cc
     SimpleGlobeOrientation.h
     SingleColourScheme.cc
     SingleColourScheme.h
+    SmallCircleCanvasToolWorkflow.cc
+    SmallCircleCanvasToolWorkflow.h
     SphericalGrid.cc
     SphericalGrid.h
     Stars.cc
     Stars.h
-    SvgExport.cc
-    SvgExport.h
     Symbol.cc
     Symbol.h
     TextOverlay.cc
     TextOverlay.h
     TextOverlaySettings.cc
     TextOverlaySettings.h
-    TextRenderer.cc
-    TextRenderer.h
+    TopologyCanvasToolWorkflow.cc
+    TopologyCanvasToolWorkflow.h
     TopologySectionsContainer.cc
     TopologySectionsContainer.h
     TopologySectionsTable.cc
@@ -216,6 +225,8 @@ set(srcs
     UnsavedChangesTracker.h
     UtilitiesMenu.cc
     UtilitiesMenu.h
+    ViewCanvasToolWorkflow.cc
+    ViewCanvasToolWorkflow.h
     ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h

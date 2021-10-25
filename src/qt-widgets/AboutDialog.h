@@ -27,34 +27,43 @@
 #define GPLATES_QTWIDGETS_ABOUTDIALOG_H
 
 #include <QDialog>
-#include <boost/scoped_ptr.hpp>
+#include <QPointer>
 
 #include "AboutDialogUi.h"
+
+#include "GPlatesDialog.h"
+
+namespace GPlatesGui
+{
+	class Dialogs;
+}
+
+namespace GPlatesModel
+{
+	class Gpgim;
+}
 
 namespace GPlatesQtWidgets
 {
 	class LicenseDialog;
 
 	class AboutDialog: 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_AboutDialog 
 	{
 		Q_OBJECT
 		
 	public:
+
 		explicit
 		AboutDialog(
+				GPlatesGui::Dialogs &dialogs,
+				const GPlatesModel::Gpgim &gpgim,
 				QWidget *parent_ = NULL);
 
-		virtual
-		~AboutDialog();
-
 	private:
-		boost::scoped_ptr<LicenseDialog> d_license_dialog_ptr;
 
-	private slots:
-		void
-		pop_up_license_dialog();
+		QPointer<LicenseDialog> d_license_dialog_ptr;
 	};
 }
 

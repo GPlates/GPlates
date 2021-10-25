@@ -30,6 +30,9 @@
 
 #include "ConfigureGraticulesDialogUi.h"
 
+#include "GPlatesDialog.h"
+
+
 namespace GPlatesGui
 {
 	class GraticuleSettings;
@@ -40,7 +43,7 @@ namespace GPlatesQtWidgets
 	class ChooseColourButton;
 
 	class ConfigureGraticulesDialog : 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_ConfigureGraticulesDialog 
 	{
 		Q_OBJECT

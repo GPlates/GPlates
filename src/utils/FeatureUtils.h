@@ -47,7 +47,7 @@ namespace GPlatesModel
 namespace GPlatesUtils
 {
 	boost::optional<GPlatesModel::integer_plate_id_type>
-	get_int_plate_id(
+	get_recon_plate_id_as_int(
 			const GPlatesModel::FeatureHandle* feature_ptr);
 
 	boost::optional<GPlatesMaths::Real>
@@ -59,6 +59,11 @@ namespace GPlatesUtils
 			GPlatesMaths::Real, 
 			GPlatesMaths::Real>
 	get_start_end_time(
+			const GPlatesModel::FeatureHandle* feature_ptr);
+
+
+	boost::optional<GPlatesMaths::Real>
+	get_begin_time(
 			const GPlatesModel::FeatureHandle* feature_ptr);
 
 
@@ -77,7 +82,7 @@ namespace GPlatesUtils
 		if(rx.indexIn(name) != -1)
 		{
 			shape_name = rx.cap(2);
-			qDebug() << "Shapefile attribute name: " << *shape_name;
+		//	qDebug() << "Shapefile attribute name: " << *shape_name;
 		}
 		return shape_name;
 	}
@@ -96,6 +101,7 @@ namespace GPlatesUtils
 }
 
 #endif //GPLATES_UTILS_FEATUREUTILS_H
+
 
 
 

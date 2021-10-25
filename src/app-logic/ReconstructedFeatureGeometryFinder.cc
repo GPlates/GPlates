@@ -41,7 +41,7 @@ namespace
 			const GPlatesAppLogic::ReconstructedFeatureGeometry &rfg,
 			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_to_match)
 	{
-		return (rfg.reconstruction_tree() == reconstruction_tree_to_match);
+		return (rfg.get_reconstruction_tree() == reconstruction_tree_to_match);
 	}
 
 

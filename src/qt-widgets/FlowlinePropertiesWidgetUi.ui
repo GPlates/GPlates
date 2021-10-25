@@ -7,22 +7,28 @@
     <x>0</x>
     <y>0</y>
     <width>344</width>
-    <height>489</height>
+    <height>135</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
+   <property name="margin">
+    <number>0</number>
+   </property>
    <item row="0" column="0">
     <widget class="QGroupBox" name="groupbox_geometries">
      <property name="title">
-      <string>Geometries</string>
+      <string>Customise Geometry</string>
      </property>
      <property name="flat">
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout">
+      <property name="margin">
+       <number>9</number>
+      </property>
       <item row="0" column="0" colspan="2">
        <widget class="QLabel" name="label">
         <property name="text">
@@ -78,13 +84,6 @@
        </widget>
       </item>
      </layout>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QGroupBox" name="groupbox_time_sequence">
-     <property name="title">
-      <string>Times</string>
-     </property>
     </widget>
    </item>
   </layout>

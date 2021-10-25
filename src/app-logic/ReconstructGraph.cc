@@ -36,8 +36,10 @@
 #include "Serialization.h"
 
 
+#include "ApplicationState.h"
 #include "LayerProxyUtils.h"
 #include "LayerTask.h"
+#include "LayerTaskParams.h"
 #include "LayerTaskRegistry.h"
 #include "ReconstructGraph.h"
 #include "ReconstructGraphImpl.h"
@@ -50,7 +52,6 @@
 #include "global/PreconditionViolationError.h"
 
 #include "utils/Profile.h"
-
 
 namespace
 {
@@ -89,6 +90,72 @@ namespace
 
 
 	/**
+	 * The layer is a velocity field calculator layer so look for a reconstruct layer with the
+	 * same main channel input filename and connect its output to the velocity layer's domain input.
+	 *
+	 * This is because velocity layers now connect the domain input to reconstruct layers instead
+	 * of input files.
+	 */
+	template <typename LayerForwardIter>
+	void
+	connect_velocity_field_calculator_layer_input_to_domain_reconstruct_layer_output(
+			GPlatesAppLogic::Layer& velocity_layer,
+			LayerForwardIter layers_begin,
+			LayerForwardIter layers_end)
+	{
+		for (LayerForwardIter layer_iter = layers_begin; layer_iter != layers_end; layer_iter++)
+		{
+			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
+			{
+				continue;
+			}
+
+			// FIXME: This relies on the velocity layer having the same name input file as its
+			// associated domain layer. But the velocity layer no longer needs to connect to
+			// input files (connects to domain 'layer' instead).
+			// So this is somewhat flakey and likely to break in the future.
+
+			// See if the layer is connected to the same input file as the velocity layer.
+			const std::vector<GPlatesAppLogic::Layer::InputConnection> layer_input_connections =
+					layer_iter->get_channel_inputs(
+							layer_iter->get_main_input_feature_collection_channel());
+			const std::vector<GPlatesAppLogic::Layer::InputConnection> velocity_layer_input_connections =
+					velocity_layer.get_channel_inputs(
+							velocity_layer.get_main_input_feature_collection_channel());
+			// We're expecting only one input file connection.
+			if (layer_input_connections.size() != 1 ||
+				velocity_layer_input_connections.size() != 1)
+			{
+				continue;
+			}
+			// Make sure the input connects to a file rather than the output of another layer.
+			boost::optional<GPlatesAppLogic::Layer::InputFile> layer_main_channel_input_file =
+					layer_input_connections[0].get_input_file();
+			boost::optional<GPlatesAppLogic::Layer::InputFile> velocity_layer_main_channel_input_file =
+					velocity_layer_input_connections[0].get_input_file();
+			if (!layer_main_channel_input_file ||
+				!velocity_layer_main_channel_input_file)
+			{
+				continue;
+			}
+
+			if (layer_main_channel_input_file->get_file() !=
+				velocity_layer_main_channel_input_file->get_file())
+			{
+				continue;
+			}
+
+			GPlatesAppLogic::Layer domain_reconstruct_layer = *layer_iter;
+
+			connect_layer_input_to_layer_output(velocity_layer, domain_reconstruct_layer);
+
+			// There should only be one domain layer satifying the above conditions.
+			break;
+		}
+	}
+
+
+	/**
 	 * The layer is a velocity field calculator layer so look for any topology resolver layers
 	 * and connect their outputs to the velocity layer input.
 	 */
@@ -99,9 +166,9 @@ namespace
 			LayerForwardIter layers_begin,
 			LayerForwardIter layers_end)
 	{
-		for (LayerForwardIter layer_iter = layers_begin ; layer_iter != layers_end; layer_iter++)
+		for (LayerForwardIter layer_iter = layers_begin; layer_iter != layers_end; layer_iter++)
 		{
-			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER &&
+			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER &&
 			   layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
 			{
 				continue;
@@ -124,7 +191,7 @@ namespace
 			LayerForwardIter layers_begin,
 			LayerForwardIter layers_end)
 	{
-		for (LayerForwardIter layer_iter = layers_begin ; layer_iter != layers_end; layer_iter++)
+		for (LayerForwardIter layer_iter = layers_begin; layer_iter != layers_end; layer_iter++)
 		{
 			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
 			{
@@ -139,10 +206,12 @@ namespace
 
 
 GPlatesAppLogic::ReconstructGraph::ReconstructGraph(
-		const LayerTaskRegistry &layer_task_registry) :
-	d_layer_task_registry(layer_task_registry),
+		ApplicationState &application_state) :
+	d_application_state(application_state),
+	d_layer_task_registry(application_state.get_layer_task_registry()),
 	d_identity_rotation_reconstruction_layer_proxy(
-			ReconstructionLayerProxy::create(1/*max_num_reconstruction_trees_in_cache*/))
+			ReconstructionLayerProxy::create(1/*max_num_reconstruction_trees_in_cache*/)),
+	d_add_or_remove_layers_group_nested_count(0)
 {
 }
 
@@ -165,10 +234,15 @@ GPlatesAppLogic::ReconstructGraph::add_files(
 	// of layers emits signals (that clients connect to).
 	if (auto_create_layers)
 	{
+		AddOrRemoveLayersGroup add_layers_group(*this);
+		add_layers_group.begin_add_or_remove_layers();
+
 		BOOST_FOREACH(const Layer::InputFile &input_file, input_files)
 		{
 			auto_create_layers_for_new_input_file(input_file, auto_create_layers.get());
 		}
+
+		add_layers_group.end_add_or_remove_layers();
 	}
 }
 
@@ -269,6 +343,10 @@ GPlatesAppLogic::Layer
 GPlatesAppLogic::ReconstructGraph::add_layer(
 		const boost::shared_ptr<LayerTask> &layer_task)
 {
+	// Make sure each layer addition is part of an add layers group.
+	AddOrRemoveLayersGroup add_layers_group(*this);
+	add_layers_group.begin_add_or_remove_layers();
+
 	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(
 			new ReconstructGraphImpl::Layer(layer_task, *this));
 
@@ -284,7 +362,15 @@ GPlatesAppLogic::ReconstructGraph::add_layer(
 	const Layer layer(layer_impl);
 
 	// Let clients know of the new layer.
-	emit layer_added(*this, layer);
+	Q_EMIT layer_added(*this, layer);
+
+	// Ensure a full reconstruction each time the layer task parameters of this layer are modified.
+	QObject::connect(
+			&layer_task->get_layer_task_params(), SIGNAL(modified()),
+			&d_application_state, SLOT(reconstruct()));
+
+	// End the add layers group.
+	add_layers_group.end_add_or_remove_layers();
 
 	// Return the weak reference.
 	return layer;
@@ -295,6 +381,10 @@ void
 GPlatesAppLogic::ReconstructGraph::remove_layer(
 		Layer layer)
 {
+	// Make sure each layer removal is part of a remove layers group.
+	AddOrRemoveLayersGroup remove_layers_group(*this);
+	remove_layers_group.begin_add_or_remove_layers();
+
 	// Throw our own exception to track location of throw.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 		layer.is_valid(),
@@ -309,7 +399,7 @@ GPlatesAppLogic::ReconstructGraph::remove_layer(
 	layer.activate(false);
 
 	// Let clients know the layer is about to be removed.
-	emit layer_about_to_be_removed(*this, layer);
+	Q_EMIT layer_about_to_be_removed(*this, layer);
 
 	// Convert from weak_ptr.
 	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(layer.get_impl());
@@ -321,7 +411,10 @@ GPlatesAppLogic::ReconstructGraph::remove_layer(
 	layer_impl.reset();
 
 	// Let clients know a layer has been removed.
-	emit layer_removed(*this);
+	Q_EMIT layer_removed(*this);
+
+	// End the remove layers group.
+	remove_layers_group.end_add_or_remove_layers();
 }
 
 
@@ -346,7 +439,7 @@ GPlatesAppLogic::ReconstructGraph::set_default_reconstruction_tree_layer(
 	d_default_reconstruction_tree_layer_stack.push_back(new_default_reconstruction_tree_layer);
 
 	// Let clients know of the new default reconstruction tree layer.
-	emit default_reconstruction_tree_layer_changed(
+	Q_EMIT default_reconstruction_tree_layer_changed(
 			*this,
 			prev_default_reconstruction_tree_layer,
 			new_default_reconstruction_tree_layer);
@@ -611,6 +704,12 @@ GPlatesAppLogic::ReconstructGraph::auto_connect_layer(
 			layer.get_main_input_feature_collection_channel();
 
 	// Connect the input file to the main input channel of the new layer.
+	//
+	// FIXME: This actually gives velocity (visual) layers the name of the input file that caused
+	// their auto-creation even though velocity layers no longer have input files (only input layers).
+	// This is because the input file connection is still there - just unused and undisplayed
+	// in the visual layer - but yet still used to determine the visual layer name.
+	// It's somewhat flakey and likely to break in the future.
 	layer.connect_input_to_file(
 			main_input_channel_input_file,
 			main_input_feature_collection_channel);
@@ -624,14 +723,17 @@ GPlatesAppLogic::ReconstructGraph::auto_connect_layer(
 
 	// If the layer is a velocity field calculator then look for any topology resolver layers
 	// and connect their outputs to the velocity layer input.
+	// Also look for a topology resolver layers
+	// and connect their outputs to the velocity layer input.
 	if (layer.get_type() == GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
 	{
+		connect_velocity_field_calculator_layer_input_to_domain_reconstruct_layer_output(layer, begin(), end());
 		connect_velocity_field_calculator_layer_input_to_topology_resolver_layer_outputs(layer, begin(), end());
 	}
 
 	// If the layer is a topology resolver then look for any velocity field calculator layers
 	// and connect the topology resolver output to the input of the velocity layers.
-	if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER ||
+	if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER ||
 		layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
 	{
 		connect_topology_resolver_layer_output_to_velocity_field_calculator_layer_inputs(layer, begin(), end());
@@ -760,7 +862,7 @@ GPlatesAppLogic::ReconstructGraph::handle_default_reconstruction_tree_layer_remo
 
 	// Let clients know of the new default reconstruction tree layer even if there are no
 	// default reconstruction trees left.
-	emit default_reconstruction_tree_layer_changed(
+	Q_EMIT default_reconstruction_tree_layer_changed(
 			*this,
 			prev_default_reconstruction_tree_layer,
 			new_default_reconstruction_tree_layer);
@@ -799,13 +901,36 @@ GPlatesAppLogic::ReconstructGraph::debug_reconstruct_graph_state()
 }
 
 
+void
+GPlatesAppLogic::ReconstructGraph::emit_begin_add_or_remove_layers()
+{
+	if (d_add_or_remove_layers_group_nested_count == 0)
+	{
+		Q_EMIT begin_add_or_remove_layers();
+	}
+
+	++d_add_or_remove_layers_group_nested_count;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::emit_end_add_or_remove_layers()
+{
+	--d_add_or_remove_layers_group_nested_count;
+
+	if (d_add_or_remove_layers_group_nested_count == 0)
+	{
+		Q_EMIT end_add_or_remove_layers();
+	}
+}
+
 
 void
 GPlatesAppLogic::ReconstructGraph::emit_layer_activation_changed(
 		const Layer &layer,
 		bool activation)
 {
-	emit layer_activation_changed(*this, layer, activation);
+	Q_EMIT layer_activation_changed(*this, layer, activation);
 }
 
 
@@ -814,7 +939,7 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_added_input_connection(
 		GPlatesAppLogic::Layer layer,
 		GPlatesAppLogic::Layer::InputConnection input_connection)
 {
-	emit layer_added_input_connection(*this, layer, input_connection);
+	Q_EMIT layer_added_input_connection(*this, layer, input_connection);
 }
 
 
@@ -823,7 +948,7 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_about_to_remove_input_connection(
 		GPlatesAppLogic::Layer layer,
 		GPlatesAppLogic::Layer::InputConnection input_connection)
 {
-	emit layer_about_to_remove_input_connection(*this, layer, input_connection);
+	Q_EMIT layer_about_to_remove_input_connection(*this, layer, input_connection);
 }
 
 
@@ -831,6 +956,56 @@ void
 GPlatesAppLogic::ReconstructGraph::emit_layer_removed_input_connection(
 		GPlatesAppLogic::Layer layer)
 {
-	emit layer_removed_input_connection(*this, layer);
+	Q_EMIT layer_removed_input_connection(*this, layer);
 }
 
+
+GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup::AddOrRemoveLayersGroup(
+		ReconstructGraph &reconstruct_graph) :
+	d_reconstruct_graph(reconstruct_graph),
+	d_inside_group(false)
+{
+}
+
+
+GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup::~AddOrRemoveLayersGroup()
+{
+	if (d_inside_group)
+	{
+		// Since this is a destructor we cannot let any exceptions escape.
+		// If one is thrown we just have to lump it and continue on.
+		try
+		{
+			end_add_or_remove_layers();
+		}
+		catch (...)
+		{
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup::begin_add_or_remove_layers()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_inside_group,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_reconstruct_graph.emit_begin_add_or_remove_layers();
+
+	d_inside_group = true;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup::end_add_or_remove_layers()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_inside_group,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_reconstruct_graph.emit_end_add_or_remove_layers();
+
+	d_inside_group = false;
+}

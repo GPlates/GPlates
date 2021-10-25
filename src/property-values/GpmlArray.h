@@ -1,4 +1,4 @@
-/* $Id: PropertyCreationUtils.h 10193 2010-11-11 16:12:10Z rwatson $ */
+/* $Id: GpmlArray.h 10193 2010-11-11 16:12:10Z rwatson $ */
 
 /**
  * @file 
@@ -27,11 +27,13 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLARRAY_H
 #define GPLATES_PROPERTYVALUES_GPMLARRAY_H
 
-#include "TemplateTypeParameterType.h"
+#include "StructuralType.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
 
-// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlArray, visit_gpml_array)
@@ -70,7 +72,7 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-			const TemplateTypeParameterType &value_type_,		
+			const StructuralType &value_type_,		
                         const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members)
 		{
 			non_null_ptr_type ptr(new GpmlArray(
@@ -103,10 +105,21 @@ namespace GPlatesPropertyValues
 			return d_members;
 		}
 
-		const TemplateTypeParameterType &
+		const StructuralType &
 		type() const
 		{
 			return d_type;
+		}
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("Array");
+			return STRUCTURAL_TYPE;
 		}
 
 		/**
@@ -166,7 +179,7 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlArray(
-			const TemplateTypeParameterType &value_type_,
+			const StructuralType &value_type_,
 			const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members_):
 				PropertyValue(),
 				d_type(value_type_),
@@ -188,7 +201,7 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		TemplateTypeParameterType d_type;
+		StructuralType d_type;
 
 		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> d_members;
 

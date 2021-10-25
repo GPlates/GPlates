@@ -86,7 +86,15 @@ GPlatesGui::PythonCfgPalette::set_value(const QVariant& val)
 	QFileInfo file_info(filename);
 	if(file_info.isFile() && file_info.isReadable())
 	{
-		d_palette.reset(new CptPalette(filename));
+		try
+		{
+			d_palette.reset(new CptPalette(filename));
+		}
+		catch (GPlatesGlobal::LogException& ex)
+		{
+			d_palette.reset();
+			ex.write(std::cerr);
+		}
 		d_py_obj = bp::object(GPlatesApi::Palette(d_palette.get()));
 	}
 	else
@@ -97,6 +105,7 @@ GPlatesGui::PythonCfgPalette::set_value(const QVariant& val)
 
 
 #endif //GPLATES_NO_PYTHON
+
 
 
 

@@ -31,7 +31,10 @@
 #include <boost/variant.hpp>
 #include <boost/variant/get.hpp>
 
+#include "app-logic/ReconstructContext.h"
+
 #include "global/LogException.h" 
+
 
 namespace GPlatesAppLogic
 {
@@ -43,27 +46,37 @@ namespace GPlatesDataMining
 	class CoRegFilter
 	{
 	public:
-		typedef std::vector<
-			const GPlatesAppLogic::ReconstructedFeatureGeometry*> RFGVector;
+		typedef std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature>
+				reconstructed_feature_vector_type;
 		
 		class Config
 		{
 		public:
 			virtual
 			CoRegFilter*
-			create_filter(const CoRegFilter::RFGVector& seed) = 0;
+			create_filter(
+					const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature) = 0;
 			
 			virtual
 			bool
-			is_same_type(const Config* other) = 0;
+			is_same_type(
+					const Config* other) = 0;
 
 			virtual
 			const QString
-			to_string(){ return QString("derived class doesn't override this function.");}
+			to_string(){ return QString("The derived class doesn't override this function.");}
 
 			virtual 
 			const QString
 			filter_name() = 0;
+
+			virtual
+			std::vector<QString>
+			get_parameters_as_strings() const 
+			{
+				qDebug() << "Using get_parameters_as_strings() in base class.";
+				return std::vector<QString>();
+			}
 
 			virtual
 			bool
@@ -80,9 +93,9 @@ namespace GPlatesDataMining
 		virtual
 		void
 		process(
-				RFGVector::const_iterator first,
-				RFGVector::const_iterator last,
-				RFGVector& output
+				reconstructed_feature_vector_type::const_iterator first,
+				reconstructed_feature_vector_type::const_iterator last,
+				reconstructed_feature_vector_type& output
 		) = 0;
 
 		virtual
@@ -96,7 +109,8 @@ namespace GPlatesDataMining
 		{
 		public:
 			CoRegFilter*
-			create_filter(const CoRegFilter::RFGVector& seed) 
+			create_filter(
+					const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature) 
 			{
 				return new DummyFilter();
 			}
@@ -132,9 +146,9 @@ namespace GPlatesDataMining
 
 		void
 		process(
-				CoRegFilter::RFGVector::const_iterator first,
-				CoRegFilter::RFGVector::const_iterator last,
-				CoRegFilter::RFGVector& output) 
+				CoRegFilter::reconstructed_feature_vector_type::const_iterator first,
+				CoRegFilter::reconstructed_feature_vector_type::const_iterator last,
+				CoRegFilter::reconstructed_feature_vector_type& output) 
 		{ }
 
 		~DummyFilter(){ }

@@ -87,7 +87,7 @@ namespace GPlatesQtWidgets
 				QObject *watched,
 				QEvent *ev);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_cancel_button_clicked();

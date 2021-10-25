@@ -26,9 +26,13 @@
 
 #include "MapCanvasTool.h"
 
+#include "MapTransform.h"
+
 #include "maths/Real.h"
 #include "maths/MathsUtils.h"
 #include "maths/types.h"
+
+#include "qt-widgets/MapView.h"
 
 
 namespace
@@ -66,6 +70,18 @@ namespace
 
 GPlatesGui::MapCanvasTool::~MapCanvasTool()
 {  }
+
+
+void
+GPlatesGui::MapCanvasTool::handle_ctrl_left_drag(
+		const QPointF &initial_point_on_scene,
+		bool was_on_surface,
+		const QPointF &current_point_on_scene,
+		bool is_on_surface,
+		const QPointF &translation)
+{
+	map_transform().translate(-translation.x(), -translation.y());
+}
 
 
 void

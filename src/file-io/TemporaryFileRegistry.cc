@@ -32,7 +32,6 @@
 
 #include "TemporaryFileRegistry.h"
 
-
 namespace
 {
 	QString

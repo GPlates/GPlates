@@ -37,8 +37,10 @@
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
+#include "file-io/ReadErrorAccumulation.h"
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/Gpgim.h"
 #include "model/ModelInterface.h"
 
 
@@ -56,7 +58,7 @@ namespace GPlatesCli
 		/**
 		 * Typedef for a sequence of files each containing a feature collection.
 		 */
-		typedef std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_file_seq_type;
+		typedef std::vector<GPlatesFileIO::File::Reference::non_null_ptr_type> feature_collection_file_seq_type;
 
 
 		/**
@@ -78,7 +80,8 @@ namespace GPlatesCli
 		 */
 		feature_collection_file_seq_type
 		load_files(
-				const std::string &option_name);
+				const std::string &option_name,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
 
 		/**
@@ -91,6 +94,15 @@ namespace GPlatesCli
 		extract_feature_collections(
 				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
 				FeatureCollectionFileIO::feature_collection_file_seq_type &files);
+
+
+		/**
+		 * Reports any file read errors accumulated into @a read_errors.
+		 */
+		static
+		void
+		report_load_file_errors(
+				const GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
 
 		/**
@@ -191,6 +203,11 @@ namespace GPlatesCli
 		GPlatesModel::ModelInterface d_model;
 
 		/**
+		 * Used to help the feature collection readers know about GPGIM feature types and their properties.
+		 */
+		GPlatesModel::Gpgim::non_null_ptr_to_const_type d_gpgim;
+
+		/**
 		 * A registry of the file formats for reading/writing feature collections.
 		 */
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry d_file_format_registry;
@@ -204,7 +221,24 @@ namespace GPlatesCli
 		void
 		load_feature_collections(
 				const std::vector<std::string> &filenames,
-				feature_collection_file_seq_type &files);
+				feature_collection_file_seq_type &files,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors);
+
+		static
+		void
+		report_load_file_error_by_collection_type(
+				const QString &error_header,
+				const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors);
+
+		static
+		void
+		report_load_file_error_by_file(
+				const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors);
+
+		static
+		void
+		report_load_file_error_by_error_type(
+				const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors);
 	};
 }
 

@@ -72,21 +72,13 @@ namespace GPlatesQtWidgets
 			return *d_property_model_ptr;
 		}
 
-		/**
-		 * Called by AddPropertyDialog to perform the actual model magic.
-		 */
-		void
-		append_property_value_to_feature(
-				GPlatesModel::PropertyValue::non_null_ptr_type property_value,
-				const GPlatesModel::PropertyName &property_name);
-
 		const GPlatesModel::FeatureHandle::weak_ref &
 		current_feature() const
 		{
 			return d_feature_ref;
 		}
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Updates the dialog to display and edit a new Feature.
@@ -110,7 +102,7 @@ namespace GPlatesQtWidgets
 		void
 		commit_edit_widget_data();
 
-	private slots:
+	private Q_SLOTS:
 		
 		/**
 		 * Wipes the EditFeaturePropertiesWidget clean without causing any leftover

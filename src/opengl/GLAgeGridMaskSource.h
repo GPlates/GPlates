@@ -60,7 +60,13 @@ namespace GPlatesOpenGL
 	class GLRenderer;
 
 	/**
-	 * An arbitrary dimension source of RGBA data made accessible by a proxied raster.
+	 * An age grid mask raster that generates a mask for a specific reconstruction time.
+	 *
+	 * The mask has value 1.0 where the age-grid age pixels are earlier (more in the geological past)
+	 * than the reconstruction time, and 0.0 otherwise.
+	 *
+	 * The mask is replicated into the RGB channels and the age grid coverage (where age grid has
+	 * valid age values) is stored in the Alpha channel.
 	 */
 	class GLAgeGridMaskSource :
 			public GLMultiResolutionRasterSource
@@ -82,7 +88,10 @@ namespace GPlatesOpenGL
 		 * If @a tile_texel_dimension is greater than the maximum texture size supported
 		 * by the run-time system then it will be reduced to the maximum texture size.
 		 *
-		 * Returns false if @a raster is not a proxy raster or if it's uninitialised.
+		 * Returns false if @a raster is not a proxy raster or if it's uninitialised or if it doesn't
+		 * contain numerical floating-point or integer data (ie, contains colour RGBA pixels) or
+		 * if @a is_supported returns false.
+		 * NOTE: The raster is expected to be floating-point (or integer), otherwise boost::none is returned.
 		 */
 		static
 		boost::optional<non_null_ptr_type>

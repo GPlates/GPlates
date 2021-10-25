@@ -76,7 +76,8 @@ namespace GPlatesFileIO
 				const GPlatesModel::XmlNode::non_null_ptr_type &current_elem,
 				ReaderParams &params,
 				const ReadErrors::Description &desc,
-				const ReadErrors::Result &res) {
+				const ReadErrors::Result &res)
+		{
 			return append_warning_if(true, current_elem, params, desc, res);
 		}
 
@@ -86,6 +87,16 @@ namespace GPlatesFileIO
 				ReaderParams &params,
 				const ReadErrors::Description &desc,
 				const ReadErrors::Result &res);
+
+		inline
+		bool
+		append_warning(
+				ReaderParams &params,
+				const ReadErrors::Description &desc,
+				const ReadErrors::Result &res)
+		{
+			return append_warning_if(true, params, desc, res);
+		}
 
 		bool
 		append_recoverable_error_if(

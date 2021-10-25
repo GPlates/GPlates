@@ -48,6 +48,11 @@
 #include "maths/PointOnSphere.h"
 
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesFileIO
 {
 	namespace FeatureCollectionFileFormat
@@ -87,7 +92,8 @@ namespace GPlatesFileIO
 		explicit
 		GMTFormatWriter(
 				File::Reference &file_ref,
-				const boost::shared_ptr<const FeatureCollectionFileFormat::GMTConfiguration> &default_gmt_file_configuration);
+				const boost::shared_ptr<const FeatureCollectionFileFormat::GMTConfiguration> &default_gmt_file_configuration,
+				const GPlatesModel::Gpgim &gpgim);
 
 		virtual
 		~GMTFormatWriter();

@@ -73,29 +73,6 @@ namespace
 		return output;
 	}
 
-	void
-	get_export_times(
-		std::vector<double> &export_times,
-		const std::vector<double> &times,
-		const double &reconstruction_time)
-	{
-		std::vector<double>::const_iterator 
-			it = times.begin(),
-			end = times.end();
-			
-		while ((it != end) && (*it <= reconstruction_time))
-		{
-			++it;
-		}	
-		export_times.push_back(reconstruction_time);
-		while (it != end)
-		{
-			export_times.push_back(*it);
-			++it;
-		}
-	}
-
-
 	
 	
 	/**
@@ -131,7 +108,7 @@ namespace
 		GpmlKeyValueDictionaryElement name_element(
 			key,
 			name_value,
-			TemplateTypeParameterType::create_xsi("string"));
+			StructuralType::create_xsi("string"));
 		dictionary->elements().push_back(name_element);	
 
 		// Seed points.
@@ -143,7 +120,7 @@ namespace
 		GpmlKeyValueDictionaryElement motion_path_seeds_element(
 			key,
 			motion_path_seeds_value,
-			TemplateTypeParameterType::create_xsi("string"));
+			StructuralType::create_xsi("string"));
 		dictionary->elements().push_back(motion_path_seeds_element);
 
 		// Anchor plate.
@@ -154,7 +131,7 @@ namespace
 		GpmlKeyValueDictionaryElement anchor_element(
 			key,
 			anchor_value,
-			TemplateTypeParameterType::create_xsi("integer"));
+			StructuralType::create_xsi("integer"));
 		dictionary->elements().push_back(anchor_element);	
 
 		// Reconstruction time.
@@ -165,7 +142,7 @@ namespace
 		GpmlKeyValueDictionaryElement time_element(
 			key,
 			time_value,
-			TemplateTypeParameterType::create_xsi("double"));
+			StructuralType::create_xsi("double"));
 		dictionary->elements().push_back(time_element);	
 
 		if (should_add_referenced_files)
@@ -206,7 +183,7 @@ namespace
 				GpmlKeyValueDictionaryElement element(
 					key,
 					file_value,
-					TemplateTypeParameterType::create_xsi("string"));
+					StructuralType::create_xsi("string"));
 				dictionary->elements().push_back(element);	
 			}
 		}

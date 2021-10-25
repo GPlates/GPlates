@@ -52,6 +52,8 @@ void export_colour();
 void export_feature();
 void export_topology_tools();
 
+void export_coregistration_layer_proxy();
+
 BOOST_PYTHON_MODULE(pygplates)
 {
 #ifdef GPLATES_PYTHON_EMBEDDING
@@ -69,6 +71,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	
 	//export_topology_tools();
 
+	export_coregistration_layer_proxy();
 #endif	
 	export_feature_collection();
 	export_feature();

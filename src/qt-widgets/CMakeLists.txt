@@ -19,6 +19,10 @@ set(srcs
     AbstractEditWidget.h
     ActionButtonBox.cc
     ActionButtonBox.h
+    AddContributorWidgetUi.ui
+    AddCreatorWidgetUi.ui
+    AddGTSWidgetUi.ui
+    AddHellWidgetUi.ui
     AddNewLayerDialog.cc
     AddNewLayerDialog.h
     AddNewLayerDialogUi.ui
@@ -37,16 +41,18 @@ set(srcs
     AssignReconstructionPlateIdsDialog.cc
     AssignReconstructionPlateIdsDialog.h
     AssignReconstructionPlateIdsDialogUi.ui
-    BuildTopologyWidgetUi.ui
     CalculateReconstructionPoleDialog.cc
     CalculateReconstructionPoleDialog.h
     CalculateReconstructionPoleDialogUi.ui
+    CanvasToolBarDockWidget.cc
+    CanvasToolBarDockWidget.h
+    CanvasToolBarDockWidgetUi.ui
     ChangeFeatureTypeDialog.cc
     ChangeFeatureTypeDialog.h
     ChangeFeatureTypeDialogUi.ui
-    ChangeGeometryPropertyWidget.cc
-    ChangeGeometryPropertyWidget.h
-    ChangeGeometryPropertyWidgetUi.ui
+    ChangePropertyWidget.cc
+    ChangePropertyWidget.h
+    ChangePropertyWidgetUi.ui
     ChooseColourButton.cc
     ChooseColourButton.h
     ChooseFeatureCollectionDialog.cc
@@ -59,8 +65,8 @@ set(srcs
     ChooseFeatureTypeWidget.h
     ChooseFontButton.cc
     ChooseFontButton.h
-    ChooseGeometryPropertyWidget.cc
-    ChooseGeometryPropertyWidget.h
+    ChoosePropertyWidget.cc
+    ChoosePropertyWidget.h
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
@@ -80,14 +86,23 @@ set(srcs
     ConnectWFSDialog.cc
     ConnectWFSDialog.h
     ConnectWFSDialogUi.ui
+    CoRegistrationLayerConfigurationDialog.cc
+    CoRegistrationLayerConfigurationDialog.h
+    CoRegistrationLayerConfigurationDialogUi.ui
     CoRegistrationOptionsWidget.h
     CoRegistrationOptionsWidgetUi.ui
-    CoRegLayerConfigurationDialog.cc
-    CoRegLayerConfigurationDialog.h
-    CoRegLayerConfigurationDialogUi.ui
+    CoRegistrationResultTableDialog.cc
+    CoRegistrationResultTableDialog.h
+    CoRegistrationResultTableDialogUi.ui
+    CreateFeatureAddOrEditPropertyDialog.cc
+    CreateFeatureAddOrEditPropertyDialog.h
+    CreateFeatureAddOrEditPropertyDialogUi.ui
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
+    CreateFeaturePropertiesPage.cc
+    CreateFeaturePropertiesPage.h
+    CreateFeaturePropertiesPageUi.ui
     CreateSmallCircleDialog.cc
     CreateSmallCircleDialog.h
     CreateSmallCircleDialogUi.ui
@@ -126,6 +141,9 @@ set(srcs
     EditEnumerationWidget.cc
     EditEnumerationWidget.h
     EditEnumerationWidgetUi.ui
+    EditExportParametersDialog.cc
+    EditExportParametersDialog.h
+    EditExportParametersDialogUi.ui
     EditFeaturePropertiesWidget.cc
     EditFeaturePropertiesWidget.h
     EditFeaturePropertiesWidgetUi.ui
@@ -166,7 +184,6 @@ set(srcs
     EditTimeSequenceWidget.cc
     EditTimeSequenceWidget.h
     EditTimeSequenceWidgetUi.ui
-    EditTopologyWidgetUi.ui
     EditTotalReconstructionSequenceDialog.cc
     EditTotalReconstructionSequenceDialog.h
     EditTotalReconstructionSequenceDialogUi.ui
@@ -182,18 +199,40 @@ set(srcs
     ExportAnimationDialog.cc
     ExportAnimationDialog.h
     ExportAnimationDialogUi.ui
+    ExportCitcomsResolvedTopologyOptionsWidget.cc
+    ExportCitcomsResolvedTopologyOptionsWidget.h
+    ExportCitcomsResolvedTopologyOptionsWidgetUi.ui
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
+    ExportFileNameTemplateWidget.cc
+    ExportFileNameTemplateWidget.h
+    ExportFileNameTemplateWidgetUi.ui
     ExportFileOptionsWidget.h
     ExportFileOptionsWidgetUi.ui
     ExportFlowlineOptionsWidget.h
+    ExportImageResolutionOptionsWidget.cc
+    ExportImageResolutionOptionsWidget.h
+    ExportImageResolutionOptionsWidgetUi.ui
     ExportMotionPathOptionsWidget.h
     ExportOptionsWidget.h
+    ExportRasterOptionsWidget.cc
+    ExportRasterOptionsWidget.h
     ExportReconstructedGeometryOptionsWidget.h
-    ExportResolvedTopologicalBoundaryOptionsWidget.cc
-    ExportResolvedTopologicalBoundaryOptionsWidget.h
-    ExportResolvedTopologicalBoundaryOptionsWidgetUi.ui
+    ExportResolvedTopologyOptionsWidget.cc
+    ExportResolvedTopologyOptionsWidget.h
+    ExportResolvedTopologyOptionsWidgetUi.ui
+    ExportRotationOptionsWidget.h
+    ExportRotationOptionsWidgetUi.ui
+    ExportStageRotationOnlyOptionsWidget.h
+    ExportStageRotationOnlyOptionsWidgetUi.ui
+    ExportStageRotationOptionsWidget.h
+    ExportSvgOptionsWidget.cc
+    ExportSvgOptionsWidget.h
+    ExportTotalRotationOptionsWidget.h
+    ExportVelocityOptionsWidget.cc
+    ExportVelocityOptionsWidget.h
+    ExportVelocityOptionsWidgetUi.ui
     FeaturePropertiesDialog.cc
     FeaturePropertiesDialog.h
     FeaturePropertiesDialogUi.ui
@@ -201,11 +240,23 @@ set(srcs
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
     FileDialogFilter.h
+    FiniteRotationCalculatorDialog.cc
+    FiniteRotationCalculatorDialog.h
+    FiniteRotationCalculatorDialogUi.ui
     FlowlinePropertiesWidget.cc
     FlowlinePropertiesWidget.h
     FlowlinePropertiesWidgetUi.ui
     FriendlyLineEdit.cc
     FriendlyLineEdit.h
+    GenerateVelocityDomainCitcomsDialog.cc
+    GenerateVelocityDomainCitcomsDialog.h
+    GenerateVelocityDomainCitcomsDialogUi.ui
+    GenerateVelocityDomainLatLonDialog.cc
+    GenerateVelocityDomainLatLonDialog.h
+    GenerateVelocityDomainLatLonDialogUi.ui
+    GenerateVelocityDomainTerraDialog.cc
+    GenerateVelocityDomainTerraDialog.h
+    GenerateVelocityDomainTerraDialogUi.ui
     GeoreferencingPage.cc
     GeoreferencingPage.h
     GeoreferencingPageUi.ui
@@ -219,10 +270,15 @@ set(srcs
     GMTFileFormatConfigurationDialog.cc
     GMTFileFormatConfigurationDialog.h
     GMTFileFormatConfigurationDialogUi.ui
+    GpgimVersionWarningDialog.cc
+    GpgimVersionWarningDialog.h
+    GpgimVersionWarningDialogUi.ui
     GPlatesDialog.cc
     GPlatesDialog.h
     ImportRasterDialog.cc
     ImportRasterDialog.h
+    ImportScalarField3DDialog.cc
+    ImportScalarField3DDialog.h
     InformationDialog.cc
     InformationDialog.h
     InformationDialogUi.ui
@@ -259,18 +315,15 @@ set(srcs
     MeasureDistanceWidget.cc
     MeasureDistanceWidget.h
     MeasureDistanceWidgetUi.ui
-    MeshDialog.cc
-    MeshDialog.h
-    MeshDialogUi.ui
+    MetadataDialog.cc
+    MetadataDialog.h
+    MetadataDialogUi.ui
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui
     ModifyReconstructionPoleWidget.cc
     ModifyReconstructionPoleWidget.h
     ModifyReconstructionPoleWidgetUi.ui
-    MotionPathPropertiesWidget.cc
-    MotionPathPropertiesWidget.h
-    MotionPathPropertiesWidgetUi.ui
     NoActiveEditWidgetException.h
     OpenDirectoryDialog.cc
     OpenDirectoryDialog.h
@@ -345,19 +398,30 @@ set(srcs
     ReconstructLayerOptionsWidget.cc
     ReconstructLayerOptionsWidget.h
     ReconstructLayerOptionsWidgetUi.ui
-    ResultTableDialog.cc
-    ResultTableDialog.h
-    ResultTableDialogUi.ui
+    ResizeToContentsTextEdit.cc
+    ResizeToContentsTextEdit.h
     SaveFileDialog.cc
     SaveFileDialog.h
     SaveFileDialogImpl.cc
     SaveFileDialogImpl.h
+    ScalarField3DDepthLayersPage.cc
+    ScalarField3DDepthLayersPage.h
+    ScalarField3DDepthLayersPageUi.ui
+    ScalarField3DLayerOptionsWidget.cc
+    ScalarField3DLayerOptionsWidget.h
+    ScalarField3DLayerOptionsWidgetUi.ui
     SceneView.h
+    SearchResultsDockWidget.cc
+    SearchResultsDockWidget.h
+    SearchResultsDockWidgetUi.ui
     SelectionWidget.cc
     SelectionWidget.h
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui
+    SetDeformationParametersDialog.cc
+    SetDeformationParametersDialog.h
+    SetDeformationParametersDialogUi.ui
     SetProjectionDialog.cc
     SetProjectionDialog.h
     SetProjectionDialogUi.ui
@@ -405,9 +469,6 @@ set(srcs
     TopologyBoundaryResolverLayerOptionsWidget.cc
     TopologyBoundaryResolverLayerOptionsWidget.h
     TopologyBoundaryResolverLayerOptionsWidgetUi.ui
-    TopologyNetworkPropertiesWidget.cc
-    TopologyNetworkPropertiesWidget.h
-    TopologyNetworkPropertiesWidgetUi.ui
     TopologyNetworkResolverLayerOptionsWidget.cc
     TopologyNetworkResolverLayerOptionsWidget.h
     TopologyNetworkResolverLayerOptionsWidgetUi.ui

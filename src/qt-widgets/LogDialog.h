@@ -31,10 +31,10 @@
 #include <QPointer>
 #include <QTimer>
 
-#include "app-logic/ApplicationState.h"
 #include "GPlatesDialog.h"
-
 #include "LogDialogUi.h"
+
+#include "app-logic/ApplicationState.h"
 
 
 namespace GPlatesGui
@@ -64,12 +64,12 @@ namespace GPlatesQtWidgets
 		~LogDialog()
 		{  };
 	
-	public slots:
+	public Q_SLOTS:
 		
 		void
 		copy_selection_to_clipboard();
 	
-	private slots:
+	private Q_SLOTS:
 	
 		void
 		handle_filter_typing();

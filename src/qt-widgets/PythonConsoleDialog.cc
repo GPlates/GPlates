@@ -89,11 +89,15 @@ namespace
 		QFont font("Consolas");
 #endif
 		font.setStyleHint(QFont::Courier);
-#if defined(Q_WS_MAC)
-		font.setPointSize(14);
-#else
-		font.setPointSize(9);
-#endif
+
+
+// #if defined(Q_WS_MAC)
+// 		font.setPointSize(14);
+// #else
+// 		//font.setPointSize(9);
+// #endif
+
+		font.setPixelSize(15);
 		return font;
 	}
 
@@ -380,7 +384,7 @@ GPlatesQtWidgets::PythonConsoleDialog::do_append_text(
 
 	d_output_textedit->append_text(text, error);
 
-	emit text_changed();
+	Q_EMIT text_changed();
 }
 
 
@@ -743,15 +747,15 @@ GPlatesQtWidgets::ConsoleInputTextEdit::keyPressEvent(
 	// user pressed return/enter at the end of the line.
 	if (ev->key() == Qt::Key_Return || ev->key() == Qt::Key_Enter)
 	{
-		emit return_pressed(get_text());
+		Q_EMIT return_pressed(get_text());
 	}
 	else if (ev->key() == Qt::Key_Up)
 	{
-		emit up_pressed(get_text());
+		Q_EMIT up_pressed(get_text());
 	}
 	else if (ev->key() == Qt::Key_Down)
 	{
-		emit down_pressed(get_text());
+		Q_EMIT down_pressed(get_text());
 	}
 	else if (QtWidgetUtils::is_control_c(ev))
 	{
@@ -763,7 +767,7 @@ GPlatesQtWidgets::ConsoleInputTextEdit::keyPressEvent(
 			return;
 		}
 #endif
-		emit control_c_pressed(get_text());
+		Q_EMIT control_c_pressed(get_text());
 	}
 #if defined(Q_WS_MAC)
 	else if (ev->key() == Qt::Key_Backspace && ev->modifiers() == Qt::ControlModifier)
@@ -847,7 +851,7 @@ GPlatesQtWidgets::ConsoleInputTextEdit::handle_text_changed()
 		// Emit signal for each line except the last.
 		for (int i = 0; i != lines.count() - 1; ++i)
 		{
-			emit return_pressed(lines.at(i));
+			Q_EMIT return_pressed(lines.at(i));
 		}
 
 		// Set the last line as the text remaining in the edit box.
@@ -1185,7 +1189,7 @@ GPlatesQtWidgets::ConsoleTextEdit::handle_return_pressed(
 	d_input_textedit->set_text(QString());
 	d_console_history->commit_command(line);
 
-	emit return_pressed(line);
+	Q_EMIT return_pressed(line);
 }
 
 
@@ -1223,7 +1227,7 @@ GPlatesQtWidgets::ConsoleTextEdit::handle_control_c_pressed(
 	d_input_textedit->set_text(QString());
 	d_console_history->reset_modifiable_history();
 
-	emit control_c_pressed(line);
+	Q_EMIT control_c_pressed(line);
 }
 
 

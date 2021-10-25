@@ -33,6 +33,8 @@
 #include <QWidget>
 #include <QStackedLayout>
 
+#include "global/PointerTraits.h"
+
 #include "gui/ColourScheme.h"
 
 #include "maths/LatLonPoint.h"
@@ -48,6 +50,11 @@
 namespace GPlatesGui
 {
 	class ViewportProjection;
+}
+
+namespace GPlatesOpenGL
+{
+	class GLContext;
 }
 
 namespace GPlatesPresentation
@@ -85,6 +92,10 @@ namespace GPlatesQtWidgets
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = NULL);
 
+		GlobeAndMapWidget *
+		clone_with_shared_opengl_context(
+				QWidget *parent_ = NULL);
+
 		~GlobeAndMapWidget();
 
 		GlobeCanvas &
@@ -118,15 +129,26 @@ namespace GPlatesQtWidgets
 		QSize
 		sizeHint() const;
 
-		//! Gets the framebuffer for the active view.
+		/**
+		 * Renders the scene to a QImage of the dimensions specified by @a image_size
+		 * (or dimensions @a get_viewport_size, if @a image_size is boost::none).
+		 */
 		QImage
-		grab_frame_buffer();
+		render_to_qimage(
+				boost::optional<QSize> image_size = boost::none);
+
+		/**
+		 * Returns the OpenGL context for the active view.
+		 *
+		 * Since both the globe and map views use OpenGL this returns whichever is currently active.
+		 * Note that you should still call "GLContext::make_current()" before using the context
+		 * to ensure it is the currently active OpenGL context.
+		 */
+		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLContext>::non_null_ptr_type
+		get_active_gl_context();
 
 		void
 		update_canvas();
-
-		void
-		repaint_canvas();
 
 		virtual
 		double
@@ -137,7 +159,7 @@ namespace GPlatesQtWidgets
 		set_zoom_enabled(
 				bool enabled);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		update_tools_and_status_message();
@@ -147,7 +169,8 @@ namespace GPlatesQtWidgets
 				int new_width, int new_height);
 
 		void
-		repainted(bool mouse_down);
+		repainted(
+				bool mouse_down);
 
 	protected:
 
@@ -181,13 +204,17 @@ namespace GPlatesQtWidgets
 		wheelEvent(
 				QWheelEvent *event);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		init();
 
 		void
 		handle_zoom_change();
+
+		void
+		about_to_change_projection(
+				const GPlatesGui::ViewportProjection &view_projection);
 
 		void
 		change_projection(
@@ -198,6 +225,10 @@ namespace GPlatesQtWidgets
 				bool mouse_down);
 
 	private:
+
+		GlobeAndMapWidget(
+				const GlobeAndMapWidget *existing_widget,
+				QWidget *parent_ = NULL);
 
 		void
 		make_signal_slot_connections();
@@ -212,6 +243,13 @@ namespace GPlatesQtWidgets
 		 * Which of globe and map is currently active.
 		 */
 		SceneView *d_active_view_ptr;
+
+		/**
+		 * The camera position of the currently active view.
+		 *
+		 * Is boost::none if unable to retrieve the camera position from the currently active view.
+		 */
+		boost::optional<GPlatesMaths::LatLonPoint> d_active_camera_llp;
 
 		/**
 		 * Whether zooming (via mouse wheel or pinch gesture) is enabled.

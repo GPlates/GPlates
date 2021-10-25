@@ -24,8 +24,8 @@
  */
 
 #include <boost/shared_ptr.hpp>
-#include <QFileInfo>
 #include <QDir>
+#include <QFileInfo>
 #include <QPalette>
 
 #include "RasterLayerOptionsWidget.h"
@@ -43,11 +43,22 @@
 
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/CptColourPalette.h"
+#include "gui/Dialogs.h"
 
 #include "presentation/RasterVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
 
 #include "property-values/XsString.h"
+
+
+namespace GPlatesQtWidgets
+{
+	namespace
+	{
+		//! The age CPT file (user can manually select when they load an age grid raster).
+		const QString AGE_CPT_FILE_NAME = ":/age.cpt";
+	}
+}
 
 
 GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
@@ -79,6 +90,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 	band_combobox->setCursor(QCursor(Qt::ArrowCursor));
 	select_palette_filename_button->setCursor(QCursor(Qt::ArrowCursor));
 	use_default_palette_button->setCursor(QCursor(Qt::ArrowCursor));
+	use_age_palette_button->setCursor(QCursor(Qt::ArrowCursor));
 
 	d_palette_filename_lineedit->setReadOnly(true);
 	QtWidgetUtils::add_widget_to_placeholder(
@@ -94,6 +106,8 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 
 	opacity_spinbox->setCursor(QCursor(Qt::ArrowCursor));
 	intensity_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+
+	surface_relief_scale_spinbox->setCursor(QCursor(Qt::ArrowCursor));
 
 	make_signal_slot_connections();
 }
@@ -176,13 +190,29 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_data(
 			// which can lead to an infinitely recursive decent.
 			// To avoid this we temporarily disconnect their signals.
 
-			QObject::disconnect(opacity_spinbox, SIGNAL(valueChanged(double)), this, SLOT(handle_opacity_spinbox_changed(double)));
+			QObject::disconnect(
+					opacity_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_opacity_spinbox_changed(double)));
 			opacity_spinbox->setValue(visual_layer_params->get_opacity());
-			QObject::connect(opacity_spinbox, SIGNAL(valueChanged(double)), this, SLOT(handle_opacity_spinbox_changed(double)));
+			QObject::connect(
+					opacity_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_opacity_spinbox_changed(double)));
 
-			QObject::disconnect(intensity_spinbox, SIGNAL(valueChanged(double)), this, SLOT(handle_intensity_spinbox_changed(double)));
+			QObject::disconnect(
+					intensity_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_intensity_spinbox_changed(double)));
 			intensity_spinbox->setValue(visual_layer_params->get_intensity());
-			QObject::connect(intensity_spinbox, SIGNAL(valueChanged(double)), this, SLOT(handle_intensity_spinbox_changed(double)));
+			QObject::connect(
+					intensity_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_intensity_spinbox_changed(double)));
+
+			QObject::disconnect(
+					surface_relief_scale_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_surface_relief_scale_spinbox_changed(double)));
+			surface_relief_scale_spinbox->setValue(visual_layer_params->get_surface_relief_scale());
+			QObject::connect(
+					surface_relief_scale_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_surface_relief_scale_spinbox_changed(double)));
 		}
 	}
 }
@@ -217,7 +247,8 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_band_combobox_activated(
 
 
 void
-GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_button_clicked()
+GPlatesQtWidgets::RasterLayerOptionsWidget::set_colour_palette(
+		const QString &palette_file_name)
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
@@ -230,13 +261,12 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 			return;
 		}
 
-		QString palette_file_name = d_open_file_dialog.get_open_file_name();
 		if (palette_file_name.isEmpty())
 		{
 			return;
 		}
 
-		ReadErrorAccumulationDialog &read_errors_dialog = d_viewport_window->read_errors_dialog();
+		ReadErrorAccumulationDialog &read_errors_dialog = d_viewport_window->dialogs().read_error_accumulation_dialog();
 		GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
 		GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
 
@@ -304,9 +334,22 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 		{
 			read_errors_dialog.show();
 		}
-
-		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 	}
+}
+
+
+void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_button_clicked()
+{
+	QString palette_file_name = d_open_file_dialog.get_open_file_name();
+	if (palette_file_name.isEmpty())
+	{
+		return;
+	}
+
+	set_colour_palette(palette_file_name);
+
+	d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
 }
 
 
@@ -324,6 +367,13 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_default_palette_button_cl
 			params->use_auto_generated_colour_palette();
 		}
 	}
+}
+
+
+void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_age_palette_button_clicked()
+{
+	set_colour_palette(AGE_CPT_FILE_NAME);
 }
 
 
@@ -364,6 +414,24 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_intensity_spinbox_changed(
 
 
 void
+GPlatesQtWidgets::RasterLayerOptionsWidget::handle_surface_relief_scale_spinbox_changed(
+		double value)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::RasterVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->set_surface_relief_scale(value);
+		}
+	}
+}
+
+
+void
 GPlatesQtWidgets::RasterLayerOptionsWidget::make_signal_slot_connections()
 {
 	QObject::connect(
@@ -382,6 +450,11 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::make_signal_slot_connections()
 			this,
 			SLOT(handle_use_default_palette_button_clicked()));
 	QObject::connect(
+			use_age_palette_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_use_age_palette_button_clicked()));
+	QObject::connect(
 			opacity_spinbox,
 			SIGNAL(valueChanged(double)),
 			this,
@@ -391,5 +464,10 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::make_signal_slot_connections()
 			SIGNAL(valueChanged(double)),
 			this,
 			SLOT(handle_intensity_spinbox_changed(double)));
+	QObject::connect(
+			surface_relief_scale_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(handle_surface_relief_scale_spinbox_changed(double)));
 }
 

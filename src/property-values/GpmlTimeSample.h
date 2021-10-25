@@ -31,7 +31,7 @@
 #include "GmlTimeInstant.h"
 #include "model/PropertyValue.h"
 #include "XsString.h"
-#include "TemplateTypeParameterType.h"
+#include "StructuralType.h"
 #include "model/FeatureVisitor.h"
 
 
@@ -39,7 +39,7 @@ namespace GPlatesPropertyValues
 {
 
 	// Since all the members of this class are of type boost::intrusive_ptr or
-	// TemplateTypeParameterType (which wraps an StringSet::SharedIterator instance which
+	// StructuralType (which wraps an StringSet::SharedIterator instance which
 	// points to a pre-allocated node in a StringSet), none of the construction,
 	// copy-construction or copy-assignment operations for this class should throw.
 	class GpmlTimeSample
@@ -51,7 +51,7 @@ namespace GPlatesPropertyValues
 				GPlatesModel::PropertyValue::non_null_ptr_type value_,
 				GmlTimeInstant::non_null_ptr_type valid_time_,
 				boost::intrusive_ptr<XsString> description_,
-				const TemplateTypeParameterType &value_type_,
+				const StructuralType &value_type_,
 				bool is_disabled_ = false):
 			d_value(value_),
 			d_valid_time(valid_time_),
@@ -164,7 +164,7 @@ namespace GPlatesPropertyValues
 
 		// Note that no "setter" is provided:  The value type of a GpmlTimeSample instance
 		// should never be changed.
-		const TemplateTypeParameterType &
+		const StructuralType &
 		value_type() const
 		{
 			return d_value_type;
@@ -202,7 +202,7 @@ namespace GPlatesPropertyValues
 		// This one is optional.
 		boost::intrusive_ptr<XsString> d_description;
 
-		TemplateTypeParameterType d_value_type;
+		StructuralType d_value_type;
 
 		bool d_is_disabled;
 	};

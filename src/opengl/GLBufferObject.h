@@ -83,7 +83,8 @@ namespace GPlatesOpenGL
 		{
 		public:
 			resource_handle_type
-			allocate();
+			allocate(
+					const GLCapabilities &capabilities);
 
 			void
 			deallocate(
@@ -247,6 +248,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				target_type target,
 				unsigned int minimum_bytes_to_stream,
+				unsigned int stream_alignment,
 				unsigned int &stream_offset,
 				unsigned int &stream_bytes_available);
 
@@ -265,7 +267,8 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Unmaps the buffer mapped with @a gl_map_buffer_static - indicates updates or reading is complete.
+		 * Unmaps the buffer mapped with @a gl_map_buffer_static, @a gl_map_buffer_dynamic or
+		 * @a gl_map_buffer_stream.
 		 *
 		 * See base class interface for more details.
 		 */

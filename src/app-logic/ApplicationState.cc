@@ -48,8 +48,9 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "utils/Profile.h"
+#include "model/Gpgim.h"
 
+#include "utils/Profile.h"
 
 namespace
 {
@@ -75,12 +76,14 @@ namespace
 
 
 GPlatesAppLogic::ApplicationState::ApplicationState() :
+	d_gpgim(GPlatesModel::Gpgim::create()),
 	d_feature_collection_file_state(
 			new FeatureCollectionFileState(d_model)),
 	d_feature_collection_file_format_registry(
 			new GPlatesFileIO::FeatureCollectionFileFormat::Registry()),
 	d_feature_collection_file_io(
 			new FeatureCollectionFileIO(
+					*d_gpgim,
 					d_model,
 					*d_feature_collection_file_format_registry,
 					*d_feature_collection_file_state)),
@@ -90,7 +93,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
 	d_layer_task_registry(new LayerTaskRegistry()),
 	d_log_model(new LogModel(NULL)),
-	d_reconstruct_graph(new ReconstructGraph(*d_layer_task_registry)),
+	d_reconstruct_graph(new ReconstructGraph(*this)),
 	d_update_default_reconstruction_tree_layer(true),
 	d_reconstruction_time(0.0),
 	d_anchored_plate_id(0),
@@ -103,7 +106,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_callback_feature_store(d_model->root())
 {
 	// Register the default file formats for reading and/or writing feature collections.
-	register_default_file_formats(*d_feature_collection_file_format_registry, d_model);
+	register_default_file_formats(*d_feature_collection_file_format_registry, d_model, *d_gpgim);
 
 	// Register default reconstruct method types with the reconstruct method registry.
 	register_default_reconstruct_method_types(*d_reconstruct_method_registry);
@@ -152,7 +155,7 @@ GPlatesAppLogic::ApplicationState::set_reconstruction_time(
 	d_reconstruction_time = new_reconstruction_time;
 	reconstruct();
 
-	emit reconstruction_time_changed(*this, d_reconstruction_time);
+	Q_EMIT reconstruction_time_changed(*this, d_reconstruction_time);
 }
 
 
@@ -168,7 +171,7 @@ GPlatesAppLogic::ApplicationState::set_anchored_plate_id(
 	d_anchored_plate_id = new_anchor_plate_id;
 	reconstruct();
 
-	emit anchor_plate_id_changed(*this, d_anchored_plate_id);
+	Q_EMIT anchor_plate_id_changed(*this, d_anchored_plate_id);
 }
 
 
@@ -192,7 +195,7 @@ GPlatesAppLogic::ApplicationState::reconstruct()
 
 	//PROFILE_BLOCK("ApplicationState::reconstruct: emit reconstructed");
 
-	emit reconstructed(*this);
+	Q_EMIT reconstructed(*this);
 }
 
 

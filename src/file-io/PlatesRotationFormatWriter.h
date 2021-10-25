@@ -37,9 +37,15 @@
 #include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "property-values/GmlTimeInstant.h"
+#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "maths/FiniteRotation.h"
 
+
+namespace GPlatesModel
+{
+	class Gpgim;
+}
 
 namespace GPlatesPropertyValues
 {
@@ -56,7 +62,8 @@ namespace GPlatesFileIO
 
 		explicit
 		PlatesRotationFormatWriter(
-				const FileInfo &file_info);
+				const FileInfo &file_info,
+				const GPlatesModel::Gpgim &gpgim);
 
 	protected:
 
@@ -107,6 +114,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_total_reconstruction_pole(
+				const GPlatesPropertyValues::GpmlTotalReconstructionPole &trp);
+
+		virtual
+		void
 		visit_gpml_finite_rotation_slerp(
 				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
 
@@ -127,10 +139,15 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_metadata(
+				const GPlatesPropertyValues::GpmlMetadata &gpml_metadata){}		
+
+		virtual
+		void
 		visit_xs_string(
 				const GPlatesPropertyValues::XsString &xs_string);
 
-	private:
+	protected:
 
 		void
 		write_gpml_time_sample(
@@ -144,6 +161,7 @@ namespace GPlatesFileIO
 				boost::optional<GPlatesUtils::UnicodeString> comment;
 				boost::optional<double> time;
 				boost::optional<bool> is_disabled;
+				std::vector<GPlatesModel::Metadata::shared_const_ptr_type > metadata;
 
 				/**
 				 * Test whether the rotation pole data has acquired enough information to
@@ -193,3 +211,6 @@ namespace GPlatesFileIO
 }
 
 #endif  // GPLATES_FILEIO_PLATESROTATIONFORMATWRITER_H
+
+
+

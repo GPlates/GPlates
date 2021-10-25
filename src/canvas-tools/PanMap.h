@@ -42,6 +42,11 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 }
 
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryCollection;
+}
+
 namespace GPlatesCanvasTools
 {
 	/**
@@ -59,9 +64,11 @@ namespace GPlatesCanvasTools
 		PanMap(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::MapTransform &map_transform_):
 			MapCanvasTool(map_canvas_, map_view_, map_transform_),
+			d_rendered_geometry_collection(rendered_geometry_collection),
 			d_view_state_ptr(&view_state_)
 		{  }
 
@@ -95,6 +102,11 @@ namespace GPlatesCanvasTools
 				const QPointF &translation);
 
 	private:
+
+		/**
+		 * Used to activate/deactivate focused geometry highlight rendered layer.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 
 		/**
 		 * This is the View State used to pass messages to the status bar.

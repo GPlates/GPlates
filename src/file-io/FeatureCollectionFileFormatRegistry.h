@@ -45,6 +45,11 @@
 #include "model/ModelInterface.h"
 
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesFileIO
 {
 	class FileInfo;
@@ -307,8 +312,6 @@ namespace GPlatesFileIO
 			typedef std::map<Format, FileFormatInfo> file_format_info_map_type;
 
 
-			GPlatesModel::ModelInterface d_model;
-
 			/**
 			 * Stores a struct of information for each file format.
 			 */
@@ -333,7 +336,8 @@ namespace GPlatesFileIO
 		void
 		register_default_file_formats(
 				Registry &registry,
-				GPlatesModel::ModelInterface &model);
+				GPlatesModel::ModelInterface model,
+				const GPlatesModel::Gpgim &gpgim);
 	}
 }
 

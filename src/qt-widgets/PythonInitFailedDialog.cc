@@ -27,7 +27,6 @@
 
 #include "gui/PythonManager.h"
 
-#ifndef GPLATES_NO_PYTHON
 
 namespace
 {
@@ -39,13 +38,13 @@ namespace
 		<h3>Troubleshooting</h3> \
 		<h4>Check if <font color=\"red\">$PYTHON_NAME</font> has been installed.</h4> \
 		<h4>If $PYTHON_NAME has been installed at an unusual location, \
-		set \"python/python_home\" variable in GPlates preference \"Edit->Preference->Python\" \
+		set \"python/python_home\" variable in GPlates preference \"Edit->Preference->Advanced Settings\" \
 		and restart GPlates. </h4> \
 		<h3>Install Python</h3> \
 		$INSTALL_INSTRUCTION \
 		</body> </html>"
 		;
-#ifdef __WINDOWS__
+#ifdef Q_WS_WIN
 	const char* python26_install_instructions_win =
 		"<p><a href=\"http://www.python.org/download/releases/2.6.6/\">Click here to download Python installer for Windows</a></p>" \
 		;
@@ -54,17 +53,16 @@ namespace
 		"<p><a href=\"http://www.python.org/download/releases/2.7.2/\">Click here to download Python installer for Windows</a></p>" \
 		;
 #endif
-
-#ifdef __APPLE__
+#ifdef Q_WS_MACX
 	const char* python26_install_instructions_mac =
 		"<h4>Type in \"sudo port install python26\" in terminal to install python.</h4>" \
 		;
+
 	const char* python27_install_instructions_mac =
 		"<h4>Type in \"sudo port install python27\" in terminal to install python.</h4>" \
 		;
 #endif
-
-#ifdef __LINUX__
+#ifdef Q_WS_X11
 	const char* python26_install_instructions_linux =
 		"<h4>Type in \"sudo apt-get install python2.6\" in terminal to install python.</h4>" \
 		;
@@ -94,17 +92,17 @@ GPlatesQtWidgets::PythonInitFailedDialog::assemble_message()
 	d_html_page = QString(python_failed_msg);
 	QString python_version = GPlatesGui::PythonManager::instance()->python_version();
 	d_html_page.replace("$PYTHON_NAME", QString("Python") + python_version);
-#ifdef __APPLE__
+#ifdef Q_WS_MACX   
 	if("2.7" == python_version)
 		d_html_page.replace("$INSTALL_INSTRUCTION", python27_install_instructions_mac);
 	else if("2.6" == python_version)
 		d_html_page.replace("$INSTALL_INSTRUCTION", python26_install_instructions_mac);
-#elif defined __LINUX__
+#elif defined Q_WS_X11 
 	if("2.7" == python_version)
 		d_html_page.replace("$INSTALL_INSTRUCTION", python27_install_instructions_linux);
 	else if("2.6" == python_version)
 		d_html_page.replace("$INSTALL_INSTRUCTION", python26_install_instructions_linux);
-#elif defined __WINDOWS__
+#elif defined Q_WS_WIN 
 	if("2.7" == python_version)
 		d_html_page.replace("$INSTALL_INSTRUCTION", python27_install_instructions_win);
 	else if("2.6" == python_version)
@@ -112,6 +110,6 @@ GPlatesQtWidgets::PythonInitFailedDialog::assemble_message()
 #endif
 }
 
-#endif
+
 
 

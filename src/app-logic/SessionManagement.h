@@ -84,7 +84,7 @@ namespace GPlatesAppLogic
 		QList<GPlatesAppLogic::Session>
 		get_recent_session_list();
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * As @a load_session(Session &), but automatically picks the most recent
@@ -136,7 +136,7 @@ namespace GPlatesAppLogic
 		void
 		debug_session_state();
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when we write a new session list to persistent storage, so

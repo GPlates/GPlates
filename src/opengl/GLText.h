@@ -32,7 +32,6 @@
 #include <opengl/OpenGL.h>
 
 #include "gui/Colour.h"
-#include "gui/TextRenderer.h"
 
 
 namespace GPlatesOpenGL
@@ -43,6 +42,8 @@ namespace GPlatesOpenGL
 	{
 		/**
 		 * Renders text at a 2D position specified in OpenGL viewport coordinates (origin is bottom-left).
+		 *
+		 * This is typically used to render text in the 2D map views.
 		 *
 		 * Creates text @a string at position (@a x , @a y , 0.0) in world coordinates
 		 * using a particular @a colour and @a font.
@@ -55,9 +56,6 @@ namespace GPlatesOpenGL
 		 * NOTE: These are specified in OpenGL viewport coordinates (origin is bottom-left).
 		 * So if @a y_offset is '+1' then it offsets one pixel towards the top of the window.
 		 *
-		 * Note that @a renderer only does the projection whereas @a text_renderer does the
-		 * actual rendering of text.
-		 *
 		 * Also note that, because of this delegation to Qt for text rendering, the text rendering
 		 * draw call cannot be queued (see the @a GLRenderer interface).
 		 *
@@ -67,7 +65,6 @@ namespace GPlatesOpenGL
 		void
 		render_text_2D(
 				GLRenderer &renderer,
-				const GPlatesGui::TextRenderer &text_renderer,
 				const double &world_x,
 				const double &world_y,
 				const QString &string,
@@ -81,6 +78,8 @@ namespace GPlatesOpenGL
 		/**
 		 * Renders text at a 3D position.
 		 *
+		 * This is typically used to render text in the 3D globe view.
+		 *
 		 * Creates text @a string at position (@a x , @a y , @a z) in world coordinates
 		 * using a particular @a colour and @a font.
 		 *
@@ -92,16 +91,12 @@ namespace GPlatesOpenGL
 		 * NOTE: These are specified in OpenGL viewport coordinates (origin is bottom-left).
 		 * So if @a y_offset is '+1' then it offsets one pixel towards the top of the window.
 		 *
-		 * Note that @a renderer only does the projection whereas @a text_renderer does the
-		 * actual rendering of text.
-		 *
 		 * Also note that, because of this delegation to Qt for text rendering, the text rendering
 		 * draw call cannot be queued (see the @a GLRenderer interface).
 		 */
 		void
 		render_text_3D(
 				GLRenderer &renderer,
-				const GPlatesGui::TextRenderer &text_renderer,
 				double world_x,
 				double world_y,
 				double world_z,

@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QLayout>
 #include <QStringList>
 #include <QtGlobal>
 
@@ -49,13 +50,13 @@ namespace
 	get_full_screen_widgets_to_hide()
 	{
 		QStringList names;
-		// Possible options are: menubar, statusbar, Dock_, toolbar_canvas_tools,
+		// Possible options are: menubar, statusbar, Dock_...,
 		// TaskPanel, ZoomSlider, AwesomeBar_1, ViewBar.
 		// Bear in mind that if you hide AwesomeBar_1, you're also hiding the GMenu, which
 		// would cause some problems.
 		names << "menubar";
-		names << "Dock_";
-		names << "toolbar_canvas_tools";
+		names << "Dock_search_results";
+		names << "Dock_canvas_toolbar";
 		names << "statusbar";
 		names << "TaskPanel";
 		names << "ZoomSlider";	// Had some trouble hiding this one; seems ok now.

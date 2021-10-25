@@ -56,7 +56,7 @@ namespace GPlatesViewOperations
 				GPlatesGui::FeatureFocus &feature_focus,
 				GPlatesAppLogic::ApplicationState &application_state);
 
-	public slots:
+	public Q_SLOTS:
 
 		void
 		delete_focused_feature();

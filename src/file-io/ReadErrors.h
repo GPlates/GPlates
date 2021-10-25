@@ -7,6 +7,7 @@
  *   $Date$
  * 
  * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -33,8 +34,7 @@ namespace GPlatesFileIO
 	 * Please keep these entries in the same order as they appear on the GPlates
 	 * Trac wiki page "ReadErrorMessages".
 	 *
-	 * A corresponding textual description will also need to be added to
-	 * qt-widgets/ReadErrorAccumulationDialog.cc.
+	 * A corresponding textual description will also need to be added to "ReadErrorMessages.cc".
 	 */
 	namespace ReadErrors
 	{
@@ -89,34 +89,35 @@ namespace GPlatesFileIO
 			NoValidGeometriesInPlatesFeature,
 			InvalidMultipointGeometry,
 
-			// The following are specific to GPlates 8 hydrid PLATES line-format
+			// The following are specific to GPlates 8 hydrid PLATES line-format.
 			MissingPlatepolygonBoundaryFeature,
 			InvalidPlatepolygonBoundaryFeature,
 
-			// The following apply to ESRI Shapefile import
+			// The following apply to OGR-supported file format import.
 			NoLayersFoundInFile,
 			MultipleLayersInFile,
-			ErrorReadingShapefileLayer,
-			NoFeaturesFoundInShapefile,
-			ErrorReadingShapefileGeometry,
+			ErrorReadingOgrLayer,
+			NoFeaturesFoundInOgrFile,
+			ErrorReadingOgrGeometry,
 			TwoPointFiveDGeometryDetected,
 			LessThanTwoPointsInLineString,
 			InteriorRingsInShapefile,
 			UnsupportedGeometryType,
 			NoLatitudeShapeData,
 			NoLongitudeShapeData,
-			InvalidShapefileLatitude,
-			InvalidShapefileLongitude,
+			InvalidOgrLatitude,
+			InvalidOgrLongitude,
 			NoPlateIdFound,
 			InvalidShapefilePlateIdNumber,
-			UnrecognisedShapefileFeatureType,
+			UnrecognisedOgrFeatureType,
 			InvalidShapefileAgeOfAppearance,
 			InvalidShapefileAgeOfDisappearance,
 			InvalidShapefileConjugatePlateIdNumber,
-			InvalidShapefilePoint,
-			InvalidShapefileMultiPoint,
-			InvalidShapefilePolyline,
-			InvalidShapefilePolygon,
+			InvalidOgrPoint,
+			InvalidOgrMultiPoint,
+			InvalidOgrPolyline,
+			InvalidOgrPolygon,
+			InvalidShapefileReconstructionMethod,
 			
 			// The following relate to raster files in general.
 			InsufficientMemoryToLoadRaster,
@@ -132,6 +133,9 @@ namespace GPlatesFileIO
 			// The following relate to time-dependent raster file sets.
 			NoRasterSetsFound,
 			MultipleRasterSetsFound,
+
+			// The following relate to importing 3D scalar field files.
+			DepthLayerRasterIsNotNumerical,
 
 			// The following apply to GPML import
 			DuplicateProperty,
@@ -152,23 +156,30 @@ namespace GPlatesFileIO
 			InsufficientPointsInPolygon,
 			InsufficientDistinctPointsInPolygon,
 			AntipodalAdjacentPointsInPolygon,
+			InvalidEnumerationValue,
 			InvalidString,
 			InvalidUnsignedInt,
 			InvalidUnsignedLong,
 			MissingNamespaceAlias,
 			NonUniqueStructuralElement,
 			StructuralElementNotFound,
+			UnexpectedStructuralElement,
+			UnexpectedPropertyStructuralElement,
+			PropertyNameNotRecognisedInFeatureType,
+			TimeDependentPropertyStructuralElementNotFound,
+			TimeDependentPropertyStructuralElementFound,
+			IncorrectTimeDependentPropertyStructuralElementFound,
 			TooManyChildrenInElement,
 			UnexpectedEmptyString,
 			UnrecognisedChildFound,
-			ConstantValueOnNonTimeDependentProperty,
 			DuplicateIdentityProperty,
 			DuplicateRevisionProperty,
 			UnrecognisedFeatureCollectionElement,
 			UnrecognisedFeatureType,
 			IncorrectRootElementName,
 			MissingVersionAttribute,
-			IncorrectVersionAttribute,
+			MalformedVersionAttribute,
+			PartiallySupportedVersionAttribute,
 			ParseError,
 			UnexpectedNonEmptyAttributeList,
 			DuplicateRasterBandName,
@@ -214,16 +225,20 @@ namespace GPlatesFileIO
 			FeatureDiscarded,
 			NoGeometryCreatedByMovement,
 
-			// The following are specific to ESRI shapefile reading.
+			// The following are specific to OGR-supported file format reading.
 			MultipleLayersIgnored,
 			GeometryFlattenedTo2D,
 			GeometryIgnored,
 			OnlyExteriorRingRead,
+			// TODO: I think we can remove NoPlateIdLoadedForFile,
+			// and its corresponding messages.
 			NoPlateIdLoadedForFile,
-			NoPlateIdLoadedForFeature,
-			NoConjugatePlateIdLoadedForFeature,
+			NoPlateIdCreatedForFeature,
+			NoConjugatePlateIdCreatedForFeature,
+			NoLeftPlateIdCreatedForFeature,
+			NoRightPlateIdCreatedForFeature,
 			AttributeIgnored,
-			UnclassifiedShapefileFeatureCreated,
+			UnclassifiedOgrFeatureCreated,
 
 			// The following relate to time-dependent raster file sets.
 			NoRasterSetsLoaded,
@@ -231,10 +246,14 @@ namespace GPlatesFileIO
 			
 			// The following are specific to GPML reading.
 			ElementIgnored,
-			PropertyIgnored,
 			ParsingStoppedPrematurely,
 			ElementNameChanged,
-			AssumingCorrectVersion,
+			ElementNotNameChanged,
+			AssumingCurrentVersion,
+			PropertyConvertedToTimeDependent,
+			PropertyConvertedFromTimeDependent,
+			PropertyConvertedBetweenTimeDependentTypes,
+			PropertyNotInterpreted,
 			FeatureNotInterpreted,
 			AttributesIgnored,
 			
@@ -246,6 +265,7 @@ namespace GPlatesFileIO
 
 			// The following are generic to all local files
 			FileNotLoaded,
+			FileNotImported,
 			NoAction
 		}; // enum Result
 

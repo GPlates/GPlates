@@ -30,6 +30,7 @@
 #include "CreateSmallCircleFeatureDialog.h"
 
 #include "ChooseFeatureCollectionWidget.h"
+#include "InvalidPropertyValueException.h"
 #include "QtWidgetUtils.h"
 
 #include "app-logic/ApplicationState.h"
@@ -49,6 +50,7 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
+#include "model/NotificationGuard.h"
 
 #include "presentation/ViewState.h"
 
@@ -166,6 +168,11 @@ GPlatesQtWidgets::CreateSmallCircleFeatureDialog::handle_create()
 
 	try
 	{
+		// We want to merge model events across this scope so that only one model event
+		// is generated instead of many as we incrementally modify the feature below.
+		GPlatesModel::NotificationGuard model_notification_guard(
+				d_application_state_ptr->get_model_interface().access_model());
+
 		// Get the FeatureCollection the user has selected.
 		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> collection_file_iter =
 			d_choose_feature_collection_widget->get_file_reference();
@@ -231,15 +238,20 @@ GPlatesQtWidgets::CreateSmallCircleFeatureDialog::handle_create()
 			feature->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-				GPlatesModel::ModelUtils::create_gpml_constant_value(
-					gpml_plate_id,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));	
+				GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id)));	
 		}
 
 
+		
+		// Release the model notification guard now that we've finished modifying the feature.
+		// Provided there are no nested guards this should notify model observers.
+		// We want any observers to see the changes before we emit signals because we don't
+		// know whose listening on those signals and they may be expecting model observers to
+		// be up-to-date with the modified model.
+		model_notification_guard.release_guard();
 
 		// To trigger a reconstruction.
-		emit feature_created();
+		Q_EMIT feature_created();
 
 #if 0
 		// Create a new layer if necessary.
@@ -252,6 +264,13 @@ GPlatesQtWidgets::CreateSmallCircleFeatureDialog::handle_create()
 	{
 		QMessageBox::critical(this, tr("No feature collection selected"),
 				tr("Please select a feature collection to add the new feature to."));
+		return;
+	}
+	catch (const InvalidPropertyValueException &exc)
+	{
+		QMessageBox::critical(this, tr("Property Value Invalid"),
+				tr("A feature property could not be added: %1.").arg(exc.reason()),
+				QMessageBox::Ok);
 		return;
 	}
 

@@ -33,6 +33,11 @@
 
 #include "model/FeatureHandle.h"
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesFileIO
 {
 	struct ReadErrorAccumulation;
@@ -106,6 +111,8 @@ namespace GPlatesFileIO
 
 	private:
 		GPlatesModel::FeatureHandle::weak_ref d_feature;
+
+		const GPlatesModel::Gpgim *d_gpgim;
 		ReadErrorAccumulation* d_read_errors;
 	};
 }

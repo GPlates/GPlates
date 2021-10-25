@@ -39,14 +39,6 @@ GPlatesPropertyValues::GpmlTopologicalLineSection::deep_clone() const
 			d_source_geometry->deep_clone();
 	dup->d_source_geometry = cloned_source_geometry;
 
-	if (d_start_intersection) {
-		dup->d_start_intersection = (*d_start_intersection).deep_clone();
-	}
-
-	if (d_end_intersection) {
-		dup->d_end_intersection = (*d_end_intersection).deep_clone();
-	}
-
 	return dup;
 }
 

@@ -150,7 +150,7 @@ GPlatesGui::ColourSchemeDelegator::set_colour_scheme(
 		//colour_scheme_handle inserted = d_special_colour_schemes[feature_collection];
 	}
 	
-	emit changed();
+	Q_EMIT changed();
 }
 
 
@@ -164,7 +164,7 @@ GPlatesGui::ColourSchemeDelegator::unset_colour_scheme(
 		d_special_colour_schemes.erase(iter);
 	}
 
-	emit changed();
+	Q_EMIT changed();
 }
 
 
@@ -251,7 +251,7 @@ GPlatesGui::ColourSchemeDelegator::handle_colour_scheme_edited(
 	if (d_global_colour_scheme.first == category &&
 		d_global_colour_scheme.second == id)
 	{
-		emit changed();
+		Q_EMIT changed();
 		return;
 	}
 
@@ -262,7 +262,7 @@ GPlatesGui::ColourSchemeDelegator::handle_colour_scheme_edited(
 		if (curr.first == category &&
 			curr.second == id)
 		{
-			emit changed();
+			Q_EMIT changed();
 			return;
 		}
 	}

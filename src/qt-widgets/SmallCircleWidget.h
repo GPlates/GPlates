@@ -119,7 +119,7 @@ namespace GPlatesQtWidgets
                 update_circles(
                         small_circle_collection_type &small_circle_collection);
 
-	signals:
+	Q_SIGNALS:
 		
 		/**
 		 * For triggering a reconstruction.                                                                    
@@ -154,7 +154,7 @@ namespace GPlatesQtWidgets
 
 
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_create_feature();

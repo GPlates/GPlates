@@ -432,9 +432,9 @@ GPlatesGui::AnimationController::set_view_time(
 		// This will perform a new reconstruction.
 		d_application_state_ptr->set_reconstruction_time(new_time);
 		
-		emit view_time_changed(new_time);
+		Q_EMIT view_time_changed(new_time);
 		// FIXME: We could probably use the view_time_changed signal here. 
-		emit send_time_to_stdout(new_time);
+		Q_EMIT send_time_to_stdout(new_time);
 	}
 }
 
@@ -460,7 +460,7 @@ GPlatesGui::AnimationController::set_start_time(
 	if ( ! GPlatesMaths::are_geo_times_approximately_equal(d_start_time, new_time)) {
 		d_start_time = new_time;
 		
-		emit start_time_changed(new_time);
+		Q_EMIT start_time_changed(new_time);
 		recalculate_increment();
 	}
 }
@@ -473,7 +473,7 @@ GPlatesGui::AnimationController::set_end_time(
 	if ( ! GPlatesMaths::are_geo_times_approximately_equal(d_end_time, new_time)) {
 		d_end_time = new_time;
 		
-		emit end_time_changed(new_time);
+		Q_EMIT end_time_changed(new_time);
 		recalculate_increment();
 	}
 }
@@ -496,7 +496,7 @@ GPlatesGui::AnimationController::set_time_increment(
 		d_time_increment = new_increment;
 		
 		// Note that the signal emits the abs version for consistency.
-		emit time_increment_changed(new_abs_increment);
+		Q_EMIT time_increment_changed(new_abs_increment);
 	}
 }
 
@@ -509,7 +509,7 @@ GPlatesGui::AnimationController::set_frames_per_second(
 	if (GPlatesMaths::Real(d_frames_per_second) != fps) {
 		d_frames_per_second = fps;
 		
-		emit frames_per_second_changed(fps);
+		Q_EMIT frames_per_second_changed(fps);
 	}
 }
 
@@ -519,7 +519,7 @@ GPlatesGui::AnimationController::set_should_finish_exactly_on_end_time(
 {
 	if (d_finish_exactly_on_end_time != finish_exactly) {
 		d_finish_exactly_on_end_time = finish_exactly;
-		emit finish_exactly_on_end_time_changed(finish_exactly);
+		Q_EMIT finish_exactly_on_end_time_changed(finish_exactly);
 	}
 }
 
@@ -529,7 +529,7 @@ GPlatesGui::AnimationController::set_should_loop(
 {
 	if (d_loop != loop) {
 		d_loop = loop;
-		emit should_loop_changed(loop);
+		Q_EMIT should_loop_changed(loop);
 	}
 }
 
@@ -540,7 +540,7 @@ GPlatesGui::AnimationController::set_should_adjust_bounds_to_contain_current_tim
 {
 	if (d_adjust_bounds_to_contain_current_time != adjust_bounds) {
 		d_adjust_bounds_to_contain_current_time = adjust_bounds;
-		emit should_adjust_bounds_to_contain_current_time_changed(adjust_bounds);
+		Q_EMIT should_adjust_bounds_to_contain_current_time_changed(adjust_bounds);
 	}
 }
 
@@ -629,8 +629,8 @@ GPlatesGui::AnimationController::start_animation_timer()
 	double frame_duration_millisecs = (1000.0 / d_frames_per_second);
 	d_timer.start(static_cast<int>(frame_duration_millisecs));
 
-	emit animation_started();
-	emit animation_state_changed(true);
+	Q_EMIT animation_started();
+	Q_EMIT animation_state_changed(true);
 }
 
 
@@ -639,8 +639,8 @@ GPlatesGui::AnimationController::stop_animation_timer()
 {
 	d_timer.stop();
 
-	emit animation_paused();
-	emit animation_state_changed(false);
+	Q_EMIT animation_paused();
+	Q_EMIT animation_state_changed(false);
 }
 
 

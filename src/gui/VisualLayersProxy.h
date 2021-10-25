@@ -98,12 +98,18 @@ namespace GPlatesGui
 		get_visual_layer(
 				const GPlatesAppLogic::Layer &layer);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_layer_order_changed(
 				size_t first_index,
 				size_t last_index);
+
+		void
+		handle_begin_add_or_remove_layers();
+
+		void
+		handle_end_add_or_remove_layers();
 
 		void
 		handle_layer_about_to_be_added(
@@ -137,12 +143,18 @@ namespace GPlatesGui
 		handle_layer_modified(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		layer_order_changed(
 				size_t first_index,
 				size_t last_index);
+
+		void
+		begin_add_or_remove_layers();
+
+		void
+		end_add_or_remove_layers();
 
 		void
 		layer_about_to_be_added(

@@ -37,7 +37,9 @@
 #include "CalculateVelocity.h"
 
 #include "global/IllegalParametersException.h"
+
 #include "maths/CartesianConvMatrix3D.h"
+#include "maths/MathsUtils.h"
 #include "maths/UnitQuaternion3D.h"
 
 
@@ -45,23 +47,51 @@ using namespace GPlatesGlobal;
 
 GPlatesMaths::Vector3D
 GPlatesMaths::calculate_velocity_vector(
-	const PointOnSphere &point, 
-	const FiniteRotation &fr_t1,
-	const FiniteRotation &fr_t2)
+		const PointOnSphere &point, 
+		const FiniteRotation &fr_t1,
+		const FiniteRotation &fr_t2)
 {
 
 	static const real_t radius_of_earth = 6.378e8;  // in centimetres.
 
+	const UnitQuaternion3D &q1 = fr_t1.unit_quat();
+	const UnitQuaternion3D &q2 = fr_t2.unit_quat();
+
 	// This quaternion represents a rotation from t2 to t1.
-	UnitQuaternion3D q = fr_t1.unit_quat() * fr_t2.unit_quat().get_inverse();
-	
+	//
+	// Note the t1 is a more recent time (closer to present day) than t2.
+	//
+	// R(t2->t1,A->P)
+	//    = R(0->t1,A->P) * R(t2->0,A->P)
+	//    = R(0->t1,A->P) * inverse[R(0->t2,A->P)]
+	//
+	// ...where 'A' is the anchor plate and 'P' is the plate the point is in.
+	//
+	//
+	// NOTE: Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
+	// that q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
+	// So check if we're using the longer path and negate either quaternion in order to
+	// take the shorter path. It actually doesn't matter which one we negate.
+	// We don't normally make this correction because it limits the user's (who creates total poles
+	// in the rotation file) ability to select the short or the long path. However since the velocity
+	// calculation uses two adjacent times (separated by 1Ma usually) then the shortest path should
+	// be fine. And also the SLERP used in 'FiniteRotation::interpolate()' chooses the shortest path
+	// between two adjacent total poles (two different times for the same plate) so the calculated
+	// velocities should follow that interpolated motion anyway.
+	//
+	const UnitQuaternion3D q = dot(q1, q2).is_precisely_less_than(0)
+			? q1 * (-q2).get_inverse()
+			: q1 * q2.get_inverse();
+
 	if ( represents_identity_rotation( q ) ) 
 	{
 		// The finite rotations must be identical.
 		return Vector3D(0, 0, 0);
 	}
 
-	const UnitQuaternion3D::RotationParams params = q.get_rotation_params( fr_t1.axis_hint() );
+	// The axis hint does not affect our results because, in our velocity calculation, the signs of
+	// the axis and angle cancel each other out so it doesn't matter if axis/angle or -axis/-angle.
+	const UnitQuaternion3D::RotationParams params = q.get_rotation_params(boost::none);
 
 	// Angular velocity of rotation (radians per million years).
 	real_t omega = params.angle;
@@ -79,8 +109,8 @@ GPlatesMaths::calculate_velocity_vector(
 
 GPlatesMaths::VectorColatitudeLongitude
 GPlatesMaths::convert_vector_from_xyz_to_colat_lon(
-	const GPlatesMaths::PointOnSphere &point, 
-	const Vector3D &vector_xyz)
+		const GPlatesMaths::PointOnSphere &point, 
+		const Vector3D &vector_xyz)
 {
 	// Matrix to convert between different Cartesian representations.
 	CartesianConvMatrix3D ccm(point);
@@ -97,8 +127,8 @@ GPlatesMaths::convert_vector_from_xyz_to_colat_lon(
 
 GPlatesMaths::Vector3D
 GPlatesMaths::convert_vector_from_colat_lon_to_xyz(
-	const PointOnSphere &point, 
-	const VectorColatitudeLongitude &vector_colat_lon)
+		const PointOnSphere &point, 
+		const VectorColatitudeLongitude &vector_colat_lon)
 {
 	// Create a new vector 3d from the components.
 	GPlatesMaths::CartesianConvMatrix3D ccm(point);
@@ -112,8 +142,8 @@ GPlatesMaths::convert_vector_from_colat_lon_to_xyz(
 
 std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t >
 GPlatesMaths::calculate_vector_components_magnitude_angle(
-	const GPlatesMaths::PointOnSphere &point, 
-	const Vector3D &vector_xyz)
+		const GPlatesMaths::PointOnSphere &point, 
+		const Vector3D &vector_xyz)
 {
 	// Matrix to convert between different Cartesian representations.
 	CartesianConvMatrix3D ccm(point);
@@ -133,7 +163,61 @@ GPlatesMaths::calculate_vector_components_magnitude_angle(
 }
 
 
+std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t >
+GPlatesMaths::calculate_vector_components_magnitude_and_azimuth(
+		const GPlatesMaths::PointOnSphere &point, 
+		const Vector3D &vector_xyz)
+{
+	// Matrix to convert between different Cartesian representations.
+	CartesianConvMatrix3D ccm(point);
 
+	// Cartesian (n, e, d) 
+	Vector3D vector_ned = ccm * vector_xyz;
 
+	double vx = -vector_ned.x().dval();
+	double vy = vector_ned.y().dval();
 
+	// compute the velocity magnitude
 
+	double magnitude = std::sqrt( ( vx * vx ) + ( vy * vy ) );
+
+	// compute the azimuth
+
+	double azimuth = 0;
+
+	if ( vy <= 0 )
+	{
+		if ( vx < 0 )
+		{
+			azimuth = std::atan( vy / vx );
+			azimuth = 2 * PI - azimuth;
+		}
+		else if ( vx > 0 )
+		{
+			azimuth = std::atan( -vy / vx );
+			azimuth = PI + azimuth;
+		}
+		else
+		{
+			azimuth = 3 * HALF_PI;
+		}
+	}
+	else
+	{
+		if ( vx < 0)
+		{
+			azimuth = std::atan( -vy / vx );
+		}
+		else if ( vx > 0 )
+		{
+			azimuth = std::atan( vy / vx );
+			azimuth = PI - azimuth;
+		}
+		else
+		{
+			azimuth = HALF_PI;
+		}
+	}
+
+	return std::make_pair(real_t(magnitude), real_t(azimuth));
+}

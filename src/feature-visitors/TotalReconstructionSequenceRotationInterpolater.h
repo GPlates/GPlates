@@ -34,6 +34,7 @@
 #include "model/PropertyName.h"
 #include "model/types.h"
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GpmlTotalReconstructionPole.h"
 #include "maths/FiniteRotation.h"
 
 
@@ -83,6 +84,14 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_gpml_irregular_sampling(
 				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
+
+		virtual
+		void
+		visit_gpml_total_reconstruction_pole(
+				const GPlatesPropertyValues::GpmlTotalReconstructionPole &pole)
+		{
+			visit_gpml_finite_rotation(pole);
+		}
 
 	private:
 

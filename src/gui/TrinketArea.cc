@@ -29,6 +29,8 @@
 
 #include "TrinketArea.h"
 
+#include "Dialogs.h"
+
 #include "qt-widgets/TrinketIcon.h"
 #include "qt-widgets/ViewportWindow.h"
 
@@ -37,7 +39,7 @@ namespace
 {
 	GPlatesQtWidgets::TrinketIcon *
 	create_unsaved_changes_trinket(
-			GPlatesQtWidgets::ViewportWindow &viewport_window)
+			GPlatesGui::Dialogs &dialogs)
 	{
 		GPlatesQtWidgets::TrinketIcon *unsaved = new GPlatesQtWidgets::TrinketIcon(
 				QIcon(":/unsaved_changes_red_disk_bang_22.png"),
@@ -46,10 +48,10 @@ namespace
 		unsaved->set_clickable(true);
 		
 		// Set a callback function object using boost::bind to wrap up the member function
-		// call with our instance of ViewportWindow.
+		// call with our instance of Dialogs.
 		unsaved->set_clicked_callback_function(boost::bind(
-				&GPlatesQtWidgets::ViewportWindow::pop_up_manage_feature_collections_dialog,
-				&viewport_window
+				&GPlatesGui::Dialogs::pop_up_manage_feature_collections_dialog,
+				&dialogs
 				));
 		return unsaved;
 	}
@@ -57,7 +59,7 @@ namespace
 	
 	GPlatesQtWidgets::TrinketIcon *
 	create_read_errors_trinket(
-			GPlatesQtWidgets::ViewportWindow &viewport_window)
+			GPlatesGui::Dialogs &dialogs)
 	{
 		GPlatesQtWidgets::TrinketIcon *errors = new GPlatesQtWidgets::TrinketIcon(
 				QIcon(":/gnome_dialog_warning_22.png"),
@@ -66,10 +68,10 @@ namespace
 		errors->set_clickable(true);
 
 		// Set a callback function object using boost::bind to wrap up the member function
-		// call with our instance of ViewportWindow.
+		// call with our instance of Dialogs.
 		errors->set_clicked_callback_function(boost::bind(
-				&GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog,
-				&viewport_window
+				&GPlatesGui::Dialogs::pop_up_read_error_accumulation_dialog,
+				&dialogs
 				));
 		return errors;
 	}
@@ -78,12 +80,13 @@ namespace
 
 
 GPlatesGui::TrinketArea::TrinketArea(
+		Dialogs &dialogs,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		QObject *parent_):
 	QObject(parent_),
 	d_viewport_window_ptr(&viewport_window_),
-	d_trinket_unsaved(create_unsaved_changes_trinket(viewport_window_)),
-	d_trinket_read_errors(create_read_errors_trinket(viewport_window_))
+	d_trinket_unsaved(create_unsaved_changes_trinket(dialogs)),
+	d_trinket_read_errors(create_read_errors_trinket(dialogs))
 {  }
 
 

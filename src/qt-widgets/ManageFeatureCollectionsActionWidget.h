@@ -88,7 +88,7 @@ namespace GPlatesQtWidgets
 			return d_file_reference;
 		}
 
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_edit_configuration();

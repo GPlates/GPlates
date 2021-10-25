@@ -85,6 +85,12 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::ModifyReconstructionPoleWidget
 	make_signal_slot_connections(view_state);
 
 	create_child_rendered_layers();
+
+	// Disable the task panel widget.
+	// It will get enabled when the Manipulate Pole canvas tool is activated.
+	// This prevents the user from interacting with the task panel widget if the
+	// canvas tool happens to be disabled at startup.
+	setEnabled(false);
 }
 
 
@@ -96,7 +102,15 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::~ModifyReconstructionPoleWidge
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::activate()
 {
+	// Enable the task panel widget.
+	setEnabled(true);
+
 	d_is_active = true;
+
+	// Activate both rendered layers.
+	d_initial_geom_layer_ptr->set_active();
+	d_dragged_geom_layer_ptr->set_active();
+
 	set_focus(d_view_state_ptr->get_feature_focus());
 	draw_initial_geometries_at_activation();
 }
@@ -105,7 +119,14 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::activate()
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::deactivate()
 {
+	// Disable the task panel widget.
+	setEnabled(false);
+
 	d_is_active = false;
+
+	// Deactivate both rendered layers.
+	d_initial_geom_layer_ptr->set_active(false);
+	d_dragged_geom_layer_ptr->set_active(false);
 }
 
 
@@ -638,16 +659,16 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_geometry =
 			feature_focus.associated_reconstruction_geometry();
 
-	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
-	// for instance, are used to assign plate ids to regular features so we probably only
-	// want to look at geometries of regular features).
+	// We're only interested in ReconstructedFeatureGeometry's (resolved topologies are excluded
+	// since they, in turn, reference reconstructed static geometries).
 	// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
 	// from ReconstructedFeatureGeometry.
-	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
-			focused_geometry ?
-			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_geometry) :
-			boost::none;
+	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg;
+	if (focused_geometry)
+	{
+		rfg = GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+				const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_geometry);
+	}
 
 	// Do the following if no RG or if RG is not RFG.
 	if (!rfg)
@@ -665,7 +686,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 		return;
 	}
 
-	d_reconstruction_tree = focused_geometry->reconstruction_tree();
+	d_reconstruction_tree = rfg.get()->get_reconstruction_tree();
 
 	// Nothing to do if plate ID hasn't changed.
 	if (d_plate_id != rfg.get()->reconstruction_plate_id())
@@ -686,6 +707,9 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 			// Clear the plate ID field.
 			field_moving_plate->clear();
 		}
+
+		// Since the plate id has changed the initial geometries will also have changed.
+		draw_initial_geometries();
 	}
 }
 
@@ -738,9 +762,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 			layer_outputs.begin(), layer_outputs.end(), reconstruct_outputs))
 	{
 		// Iterate over the *reconstruct* layers because...
-		// ...we're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
-		// for instance, are used to assign plate ids to regular features so we probably only
-		// want to look at geometries of regular features).
+		// ...we're only interested in ReconstructedFeatureGeometry's (resolved topologies are excluded
+		// since they, in turn, reference reconstructed static geometries).
 		// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
 		// from ReconstructedFeatureGeometry.
 		BOOST_FOREACH(
@@ -761,7 +784,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 
 				// Make sure the current RFG was created from the same reconstruction tree as
 				// the focused geometry.
-				if (rfg->reconstruction_tree() != *d_reconstruction_tree)
+				if (rfg->get_reconstruction_tree() != *d_reconstruction_tree)
 				{
 					continue;
 				}
@@ -784,8 +807,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 	if (d_reconstructed_feature_geometries.empty()) {
 		// That's pretty strange.  We expected at least one geometry here, or else, what's
 		// the user dragging?
-		std::cerr << "No initial geometries found ModifyReconstructionPoleWidget::populate_initial_geometries!"
-				<< std::endl;
+		qWarning() << "No initial geometries found ModifyReconstructionPoleWidget::populate_initial_geometries!";
 	}
 	
 }
@@ -833,7 +855,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 			boost::none,
 			boost::none);
 
-	initial_geometry_renderer.begin_render();
+	initial_geometry_renderer.begin_render(*d_initial_geom_layer_ptr);
 
 	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
 			d_reconstructed_feature_geometries.begin();
@@ -845,7 +867,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 		(*rfg_iter)->accept_visitor(initial_geometry_renderer);
 	}
 
-	initial_geometry_renderer.end_render(*d_initial_geom_layer_ptr);
+	initial_geometry_renderer.end_render();
 }
 
 
@@ -887,7 +909,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 			d_accum_orientation->rotation(),
 			boost::none);
 
-	dragged_geometry_renderer.begin_render();
+	dragged_geometry_renderer.begin_render(*d_dragged_geom_layer_ptr);
 
 	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
 			d_reconstructed_feature_geometries.begin();
@@ -899,7 +921,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 		(*rfg_iter)->accept_visitor(dragged_geometry_renderer);
 	}
 
-	dragged_geometry_renderer.end_render(*d_dragged_geom_layer_ptr);
+	dragged_geometry_renderer.end_render();
 }
 
 
@@ -996,20 +1018,16 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::create_child_rendered_layers()
 	// Create a rendered layer to draw the initial geometries.
 	d_initial_geom_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// Create a rendered layer to draw the initial geometries.
 	// NOTE: this must be created second to get drawn on top.
 	d_dragged_geom_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// In both cases above we store the returned object as a data member and it
 	// automatically destroys the created layer for us when 'this' object is destroyed.
-
-	// Activate both layers.
-	d_initial_geom_layer_ptr->set_active();
-	d_dragged_geom_layer_ptr->set_active();
 }
 
 

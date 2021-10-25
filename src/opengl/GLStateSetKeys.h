@@ -32,6 +32,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
+
 	/**
 	 * Used to assign a separate slot for each @a GLStateSet derived state.
 	 */
@@ -51,9 +53,10 @@ namespace GPlatesOpenGL
 		 */
 		static
 		non_null_ptr_to_const_type
-		create()
+		create(
+				const GLCapabilities &capabilities)
 		{
-			return non_null_ptr_type(new GLStateSetKeys());
+			return non_null_ptr_type(new GLStateSetKeys(capabilities));
 		}
 
 
@@ -84,6 +87,7 @@ namespace GPlatesOpenGL
 			KEY_BIND_PROGRAM_OBJECT,
 			KEY_BIND_TEXTURE_BUFFER_OBJECT,
 			KEY_BIND_VERTEX_ARRAY_OBJECT,
+			KEY_BLEND_EQUATION,
 			KEY_BLEND_FUNC,
 			KEY_CLEAR_COLOR,
 			KEY_CLEAR_DEPTH,
@@ -122,7 +126,9 @@ namespace GPlatesOpenGL
 			KEY_POLYGON_MODE_FRONT,
 			KEY_POLYGON_OFFSET,
 			KEY_SCISSOR,
+			KEY_STENCIL_FUNC,
 			KEY_STENCIL_MASK,
+			KEY_STENCIL_OP,
 			KEY_VERTEX_ARRAY_COLOR_POINTER,
 			KEY_VERTEX_ARRAY_NORMAL_POINTER,
 			KEY_VERTEX_ARRAY_VERTEX_POINTER,
@@ -244,6 +250,23 @@ namespace GPlatesOpenGL
 			TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_CUBE_MAP,
 			TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_RECTANGLE,
 			TEXTURE_IMAGE_UNIT_KEY_TEX_ENV_MODE,
+			TEXTURE_IMAGE_UNIT_KEY_TEX_ENV_COLOR,
+			TEXTURE_IMAGE_UNIT_KEY_COMBINE_RGB,
+			TEXTURE_IMAGE_UNIT_KEY_COMBINE_ALPHA,
+			TEXTURE_IMAGE_UNIT_KEY_SOURCE0_RGB,
+			TEXTURE_IMAGE_UNIT_KEY_SOURCE1_RGB,
+			TEXTURE_IMAGE_UNIT_KEY_SOURCE2_RGB,
+			TEXTURE_IMAGE_UNIT_KEY_SOURCE0_ALPHA,
+			TEXTURE_IMAGE_UNIT_KEY_SOURCE1_ALPHA,
+			TEXTURE_IMAGE_UNIT_KEY_SOURCE2_ALPHA,
+			TEXTURE_IMAGE_UNIT_KEY_OPERAND0_RGB,
+			TEXTURE_IMAGE_UNIT_KEY_OPERAND1_RGB,
+			TEXTURE_IMAGE_UNIT_KEY_OPERAND2_RGB,
+			TEXTURE_IMAGE_UNIT_KEY_OPERAND0_ALPHA,
+			TEXTURE_IMAGE_UNIT_KEY_OPERAND1_ALPHA,
+			TEXTURE_IMAGE_UNIT_KEY_OPERAND2_ALPHA,
+			TEXTURE_IMAGE_UNIT_KEY_RGB_SCALE,
+			TEXTURE_IMAGE_UNIT_KEY_ALPHA_SCALE,
 
 			NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS // Must be last.
 		};
@@ -274,6 +297,8 @@ namespace GPlatesOpenGL
 			NUM_TEXTURE_COORD_KEY_OFFSETS // Must be last.
 		};
 
+		const GLCapabilities &d_capabilities;
+
 		key_type d_generic_vertex_attribute_index_zero_base_key;
 
 		key_type d_texture_image_unit_zero_base_key;
@@ -282,7 +307,8 @@ namespace GPlatesOpenGL
 		unsigned int d_num_state_set_keys;
 
 		//! Default constructor can only be called by @a create.
-		GLStateSetKeys();
+		GLStateSetKeys(
+				const GLCapabilities &capabilities);
 
 		//! Calculate a key for a texture parameter in the specified texture *image* unit.
 		key_type

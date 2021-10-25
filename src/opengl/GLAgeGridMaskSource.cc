@@ -25,6 +25,7 @@
 
 #include <utility>
 #include <boost/cast.hpp>
+#include <boost/cstdint.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -51,6 +52,26 @@
 #include "utils/Profile.h"
 
 
+namespace
+{
+	/**
+	 * A 4-component texture environment colour used to extract red channel when used with GL_ARB_texture_env_dot3.
+	 */
+	std::vector<GLfloat>
+	create_dot3_extract_red_channel()
+	{
+		std::vector<GLfloat> vec(4);
+
+		vec[0] = 1;
+		vec[1] = 0.5f;
+		vec[2] = 0.5f;
+		vec[3] = 0;
+
+		return vec;
+	}
+}
+
+
 boost::optional<GPlatesOpenGL::GLAgeGridMaskSource::non_null_ptr_type>
 GPlatesOpenGL::GLAgeGridMaskSource::create(
 		GLRenderer &renderer,
@@ -58,6 +79,12 @@ GPlatesOpenGL::GLAgeGridMaskSource::create(
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &age_grid_raster,
 		unsigned int tile_texel_dimension)
 {
+	// The raster type is expected to contain numerical data, not colour RGBA data.
+	if (!GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(*age_grid_raster))
+	{
+		return boost::none;
+	}
+
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
 			GPlatesPropertyValues::ProxiedRasterResolver::create(age_grid_raster);
 	if (!proxy_resolver_opt)
@@ -103,9 +130,9 @@ GPlatesOpenGL::GLAgeGridMaskSource::create(
 	}
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+		tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
@@ -435,13 +462,16 @@ GPlatesOpenGL::GLAgeGridMaskSource::create_tile_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture) const
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// No mipmaps needed or anisotropic filtering required.
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -480,17 +510,31 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 	const unsigned int num_texels = texel_width * texel_height;
 	for (unsigned int texel = 0; texel < num_texels; ++texel)
 	{
-		// If we've sampled outside the coverage then we have no valid age grid value so
-		// set the age to the maximum age since it represents continental crust (inside the coverage
-		// area is oceanic crust) and continental crust is much older than oceanic crust.
-		const RealType age_grid_texel =
-				(age_grid_coverage_tile[texel] > 0) ? age_grid_age_tile[texel] : d_raster_max_age;
+		const float coverage = age_grid_coverage_tile[texel];
+		const bool has_coverage = (coverage > 0);
 
-		// Convert floating-point age grid value to integer.
+		// If we've sampled outside the coverage then we have no valid age grid value so set the age
+		// to the minimum raster value - this ensures the age mask will be zero in regions not
+		// covered by the age grid.
+		const RealType age_grid_texel = has_coverage ? age_grid_age_tile[texel] : d_raster_min_age;
+
+		// Convert floating-point age grid value to integer and store in the Alpha channels.
 		convert_age_to_16_bit_integer(
 				age_grid_texel,
 				high_byte_tile_working_space[texel].alpha,
 				low_byte_tile_working_space[texel].alpha);
+
+		// Store the coverage in the Red channel.
+		//
+		// NOTE: We convert non-zero coverage values to 1.0 to avoid blending seams due to
+		// partial alpha values. The render-target age mask values are also either 0.0 or 1.0 and
+		// our clients use nearest-neighbour texture sampling with no anisotropic filtering so that
+		// values of 0.0 or 1.0 remain as 0.0 or 1.0 (no inbetween values).
+		// All of this ensures no alpha-blending artifacts since the final alpha used for blending
+		// will always be either 0.0 or 1.0 (ie, either draw or no-draw).
+		high_byte_tile_working_space[texel].red =
+				low_byte_tile_working_space[texel].red =
+						(has_coverage ? 255 : 0);
 	}
 
 	// Load the data into the high and low byte textures.
@@ -588,39 +632,93 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_mask(
 
 
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::RenderTarget2DScope render_target_scope(renderer, target_texture);
-
+	//
 	// Viewport that matches the tile texture size even though some tiles (around boundary of age
 	// grid raster) will not use the full tile.
 	// The extra texels will be garbage and what we calculate with them will be garbage but those
 	// texels won't be accessed when rendering *using* the age grid tile so it's ok.
-	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
+	GLRenderer::RenderTarget2DScope render_target_scope(
+			renderer,
+			target_texture,
+			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
 
-	renderer.gl_clear_color(1, 1, 1, 1);
-	// Clear only the colour buffer.
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+	// The render target tiling loop...
+	do
+	{
+		// Begin the current render target tile - this also sets the viewport.
+		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
 
-	// Prevent writing to the colour channels.
-	renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+		// Set up the projection transform adjustment for the current render target tile.
+		renderer.gl_load_matrix(GL_PROJECTION, tile_projection->get_matrix());
 
-	//
-	// Set the state converting the age grid intermediate mask to the full mask.
-	//
+		renderer.gl_clear_color(1, 1, 1, 1);
+		// Clear only the colour buffer.
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT);
 
-	// Bind the intermediate texture to texture unit 0.
-	renderer.gl_bind_texture(intermediate_texture.get(), GL_TEXTURE0, GL_TEXTURE_2D);
+		// Prevent writing to the RGB channels - RGB(1,1,1) is used for the default age grid mask.
+		renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
 
-	// Enable texturing and set the texture function to replace on texture unit 0.
-	renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
-	renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+		// Bind the low byte age texture to texture unit 0 - the red channel contains coverage.
+		renderer.gl_bind_texture(low_byte_age_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
-	// Alpha-test state.
-	renderer.gl_enable(GL_ALPHA_TEST);
-	renderer.gl_alpha_func(GL_LEQUAL, GLclampf(0));
+		// Enable texturing and on texture unit 0.
+		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
 
-	// NOTE: We leave the model-view and projection matrices as identity as that is what we
-	// we need to draw a full-screen quad.
-	renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+		// Use dot3 to convert RGB(1,*,*) to RGBA(*,*,*,1) or RGB(0,*,*) to RGBA(*,*,*,0).
+		//
+		// NOTE: This only works for extracting a value that's either 0.0 or 1.0 so nearest neighbour
+		// filtering with no anisotropic should be used to prevent a value between 0 and 1.
+		static const std::vector<GLfloat> dot3_extract_red_channel = create_dot3_extract_red_channel();
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_DOT3_RGBA_ARB);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_CONSTANT_ARB);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, dot3_extract_red_channel);
+		// The alpha channel is ignored since using GL_DOT3_RGBA_ARB instead of GL_DOT3_RGB_ARB.
+
+		// NOTE: We leave the model-view and projection matrices as identity as that is what we
+		// we need to draw a full-screen quad.
+		renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+
+
+		//
+		// The initial alpha channel render target value is 1 from the above clear.
+		// If an intermediate texture pixel has zero alpha then then zero is written to the render target,
+		// otherwise it is left as 1.
+		// The intermediate texture is either Ah or Al (the high or low byte of the age-grid age texture)
+		// when the age mask should be 1 or 0 when it should be 0.
+		// And, as noted in 'render_age_grid_intermediate_mask()', Ah or Al is always greater than zero.
+		// So an alpha-test of A == 0 (combined with initial render target value of 1) transforms:
+		//
+		//   0           ->    0
+		//   Ah or Al    ->    1
+		//
+		// ...so our final age mask values will be 0.0 or 1.0 and nothing in between.
+		//
+
+		//
+		// Set the state converting the age grid intermediate mask to the full mask.
+		//
+
+		// Prevent writing to the Alpha channel (it contains our coverage).
+		renderer.gl_color_mask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+
+		// Bind the intermediate texture to texture unit 0.
+		renderer.gl_bind_texture(intermediate_texture.get(), GL_TEXTURE0, GL_TEXTURE_2D);
+
+		// Enable texturing and set the texture function to replace on texture unit 0.
+		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+		// Alpha-test state.
+		renderer.gl_enable(GL_ALPHA_TEST);
+		renderer.gl_alpha_func(GL_LEQUAL, GLclampf(0));
+
+		// NOTE: We leave the model-view and projection matrices as identity as that is what we
+		// we need to draw a full-screen quad.
+		renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+	}
+	while (render_target_scope.end_tile());
 }
 
 
@@ -634,59 +732,104 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_intermediate_mask(
 	PROFILE_FUNC();
 
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::RenderTarget2DScope render_target_scope(renderer, intermediate_texture);
+	GLRenderer::RenderTarget2DScope render_target_scope(
+			renderer,
+			intermediate_texture,
+			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
 
-	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
+	// The render target tiling loop...
+	do
+	{
+		// Begin the current render target tile - this also sets the viewport.
+		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
 
-	// Setup for clearing the render target colour buffer.
-	// Clear colour to all ones and alpha channel to zero.
-	renderer.gl_clear_color(1, 1, 1, 0);
+		// Set up the projection transform adjustment for the current render target tile.
+		renderer.gl_load_matrix(GL_PROJECTION, tile_projection->get_matrix());
 
-	// Clear the colour buffer of the render target.
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+		// Setup for clearing the render target colour buffer.
+		// Clear RGB colour to all zeros - this will be used by 'render_age_grid_mask()'.
+		// Clear the alpha channel to zero - we'll write a non-zero alpha value where
+		// the age-grid age value is greater than the current reconstruction time.
+		renderer.gl_clear_color(0, 0, 0, 0);
 
-	// Prevent writing to the colour channels.
-	renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+		// Clear the colour buffer of the render target.
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+
+		// Prevent writing to the colour channels - we want to keep RGB(0,0,0) for 'render_age_grid_mask()'.
+		renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
 
 
-	//
-	// Set the state for the first render pass and render.
-	//
+		//
+		// The algorithm for a 16-bit age comparison in terms of an 8-bit comparison is...
+		//
+		//   Ah * 256 + Al > Th * 256 + Tl
+		//
+		// ...where Ah and Al are the high and low bytes of the 16-bit age-grid age value and
+		// Th and Tl are the high and low bytes of the 16-bit current reconstruction time.
+		// This is the same as...
+		//
+		//   (Ah > Th) || ((Ah == Th) && (Al > Tl))
+		//
+		// ...which can be implemented as three consecutive alpha-blending / alpha-testing passes...
+		//
+		//       src_blend  dst_blend  alpha-test
+		//   (1)     1          0       Al >  Tl
+		//   (2)     0          0       Ah != Th
+		//   (3)     1          1       Ah >  Th
+		//
+		// ...which gives the following results for the alpha channel of the render target...
+		//
+		//   Ah > Th                           Ah        PASS
+		//   Ah < Th                           0         FAIL
+		//   (Ah == Th) && (Al > Tl)           Al        PASS
+		//   (Ah == Th) && (Al <= Tl)          0         FAIL
+		//
+		// ...and note that Ah and Al can never be zero in the above because Ah > Th or Al > Tl means
+		// that Ah > 0 or Al > 0 (since Th >= 0 or Tl >= 0).
+		// Therefore the final alpha channel render target value is always non-zero for PASS and zero for FAIL.
+		//
 
-	// First pass alpha-test state.
-	const GLclampf first_pass_alpha_ref = (1.0 / 255) * d_current_reconstruction_time_low_byte;
-	renderer.gl_alpha_func(GL_GREATER, first_pass_alpha_ref);
 
-	// Bind the low byte age texture to texture unit 0.
-	renderer.gl_bind_texture(low_byte_age_texture, GL_TEXTURE0, GL_TEXTURE_2D);
+		//
+		// Set the state for the first render pass and render.
+		//
 
-	renderer.apply_compiled_draw_state(*d_first_render_pass_state);
+		// First pass alpha-test state.
+		const GLclampf first_pass_alpha_ref = (1.0 / 255) * d_current_reconstruction_time_low_byte;
+		renderer.gl_alpha_func(GL_GREATER, first_pass_alpha_ref);
 
-	//
-	// Set the state for the second render pass and render.
-	//
+		// Bind the low byte age texture to texture unit 0.
+		renderer.gl_bind_texture(low_byte_age_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
-	// Second pass alpha-test state.
-	const GLclampf second_pass_alpha_ref = (1.0 / 255) * d_current_reconstruction_time_high_byte;
-	renderer.gl_alpha_func(GL_NOTEQUAL, second_pass_alpha_ref);
+		renderer.apply_compiled_draw_state(*d_first_render_pass_state);
 
-	// Bind the high byte age texture to texture unit 0.
-	renderer.gl_bind_texture(high_byte_age_texture, GL_TEXTURE0, GL_TEXTURE_2D);
+		//
+		// Set the state for the second render pass and render.
+		//
 
-	renderer.apply_compiled_draw_state(*d_second_render_pass_state);
+		// Second pass alpha-test state.
+		const GLclampf second_pass_alpha_ref = (1.0 / 255) * d_current_reconstruction_time_high_byte;
+		renderer.gl_alpha_func(GL_NOTEQUAL, second_pass_alpha_ref);
 
-	//
-	// Set the state for the third render pass and render.
-	//
+		// Bind the high byte age texture to texture unit 0.
+		renderer.gl_bind_texture(high_byte_age_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
-	// Third pass alpha-test state.
-	const GLclampf third_pass_alpha_ref = (1.0 / 255) * d_current_reconstruction_time_high_byte;
-	renderer.gl_alpha_func(GL_GREATER, third_pass_alpha_ref);
+		renderer.apply_compiled_draw_state(*d_second_render_pass_state);
 
-	// Bind the high byte age texture to texture unit 0.
-	renderer.gl_bind_texture(high_byte_age_texture, GL_TEXTURE0, GL_TEXTURE_2D);
+		//
+		// Set the state for the third render pass and render.
+		//
 
-	renderer.apply_compiled_draw_state(*d_third_render_pass_state);
+		// Third pass alpha-test state.
+		const GLclampf third_pass_alpha_ref = (1.0 / 255) * d_current_reconstruction_time_high_byte;
+		renderer.gl_alpha_func(GL_GREATER, third_pass_alpha_ref);
+
+		// Bind the high byte age texture to texture unit 0.
+		renderer.gl_bind_texture(high_byte_age_texture, GL_TEXTURE0, GL_TEXTURE_2D);
+
+		renderer.apply_compiled_draw_state(*d_third_render_pass_state);
+	}
+	while (render_target_scope.end_tile());
 }
 
 

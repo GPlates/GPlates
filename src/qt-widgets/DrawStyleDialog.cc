@@ -1,9 +1,9 @@
-/* $Id: ColouringDialog.cc 10521 2010-12-11 06:33:37Z elau $ */
+/* $Id$ */
 
 /**
  * \file 
- * $Revision: 10521 $
- * $Date: 2010-12-11 17:33:37 +1100 (Sat, 11 Dec 2010) $ 
+ * $Revision$
+ * $Date$ 
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
  *
@@ -24,6 +24,7 @@
  */
 #include "global/python.h"
 #include <boost/optional.hpp>
+#include <QBuffer>
 #include <QFileDialog>
 #include <QColorDialog>
 #include <QHeaderView>
@@ -42,15 +43,16 @@
 #include "gui/DrawStyleAdapters.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/HTMLColourNames.h"
-#include "gui/GenericColourScheme.h"
-#include "gui/SingleColourScheme.h"
 #include "gui/PlateIdColourPalettes.h"
 #include "gui/PythonConfiguration.h"
 #include "gui/ViewportProjection.h"
 
+#include "presentation/Application.h"
 #include "presentation/ReconstructVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
 #include "presentation/VisualLayers.h"
+
+#include "view-operations/RenderedGeometryCollection.h"
 
 #include "GlobeAndMapWidget.h"
 #include "GlobeCanvas.h"
@@ -61,13 +63,13 @@
 GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget* parent_) :
-	QDialog(parent_),
+	GPlatesDialog(parent_),
 	d_show_thumbnails(true),
-	d_repaint_flag(true),
+	d_ignore_next_main_repaint(false),
+	d_globe_and_map_widget_ptr(NULL),
 	d_view_state(view_state),
 	d_combo_box(NULL),
-	d_style_of_all(NULL),
-	d_refresh_preview(false)
+	d_style_of_all(NULL)
 {
 	init_dlg();
 }
@@ -80,7 +82,7 @@ GPlatesQtWidgets::DrawStyleDialog::reset(
 	//qDebug() << "reseting draw style dialog...";
 	d_combo_box->set_selected_visual_layer(layer);
 	d_visual_layer = layer;
-	init_catagory_table();
+	init_category_table();
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
 		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
@@ -100,20 +102,34 @@ namespace
 			GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
 		const GPlatesPresentation::VisualLayerType::Type t3 = 
 			static_cast<GPlatesPresentation::VisualLayerType::Type>(
-			GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER);
+			GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
 		return (t == t1 || t == t2 || t == t3);
 	}
+
+	inline
+	QPixmap
+	to_QPixmap(
+			const QImage& img)
+	{
+#ifdef GPLATES_USE_VGL
+		//workaround for using VirtualGL.
+		//With VirtualGL, the QPixmap::fromImage() funtion returns a corrupted QPixmap object.
+		//use "cmake . -DCMAKE_CXX_FLAGS=-DGPLATES_USE_VGL" to define "GPLATES_USE_VGL"
+		QByteArray ba;
+		QBuffer buffer(&ba);
+		buffer.open(QIODevice::WriteOnly);
+		img.save(&buffer, "BMP");
+
+		QPixmap qp;
+		qp.loadFromData(ba, "BMP");
+		return qp;
+#else
+		return QPixmap::fromImage(img);
+#endif
+	}
+
 }
 
-#if 0
-void
-GPlatesQtWidgets::DrawStyleDialog::showEvent ( QShowEvent *  )
-{
-	init_catagory_table();
-	d_visual_layer = d_combo_box->get_selected_visual_layer();
-	handle_layer_changed(d_visual_layer);
-}
-#endif
 
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
@@ -157,7 +173,7 @@ void
 GPlatesQtWidgets::LayerGroupComboBox::insert_all()
 {
 	QVariant qv; qv.setValue(boost::weak_ptr<GPlatesPresentation::VisualLayer>());
-	static const QIcon empty_icon(QPixmap(16, 16));
+	static const QIcon empty_icon(QPixmap(":/gnome_stock_color_16.png"));
 	insertItem(0, empty_icon, "(All)", qv);
 	setCurrentIndex(0);
 }
@@ -183,15 +199,20 @@ GPlatesQtWidgets::DrawStyleDialog::focus_style(
 {
 	if(NULL == style_)
 	{
+		const GPlatesGui::StyleAdapter* default_style = d_style_mgr->default_style();
+		if(default_style)
+		{
+			focus_style(default_style);
+		}
 		return;
 	}
 
-	const GPlatesGui::StyleCatagory* cata = &style_->catagory();
+	const GPlatesGui::StyleCategory* cata = &style_->catagory();
 	int row_num = categories_table->rowCount();
 	for(int i=0; i<row_num; i++)
 	{
 		QTableWidgetItem* item = categories_table->item(i,0);
-		GPlatesGui::StyleCatagory* tmp_cat = static_cast<GPlatesGui::StyleCatagory*>(item->data(Qt::UserRole).value<void*>());
+		GPlatesGui::StyleCategory* tmp_cat = static_cast<GPlatesGui::StyleCategory*>(item->data(Qt::UserRole).value<void*>());
 		if(tmp_cat == cata)
 		{
 			categories_table->setCurrentItem(item, QItemSelectionModel::SelectCurrent);
@@ -215,7 +236,7 @@ GPlatesQtWidgets::DrawStyleDialog::focus_style(
 
 
 void
-GPlatesQtWidgets::DrawStyleDialog::init_catagory_table()
+GPlatesQtWidgets::DrawStyleDialog::init_category_table()
 {
 	categories_table->clear();
 	GPlatesGui::DrawStyleManager::CatagoryContainer& catas = d_style_mgr->all_catagories();
@@ -270,19 +291,11 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 			this,
 			SLOT(handle_style_selection_changed(QListWidgetItem*,QListWidgetItem*)));
 
-#if defined(Q_OS_MAC)
 	QObject::connect(
-			&GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget().globe_and_map_widget(),
+			&GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget().globe_and_map_widget(),
 			SIGNAL(repainted(bool)),
 			this,
 			SLOT(handle_main_repaint(bool)));
-#endif
-
-	QObject::connect(
-			d_globe_and_map_widget_ptr,
-			SIGNAL(repainted(bool)),
-			this,
-			SLOT(handle_repaint(bool)));
 
 	QObject::connect(
 			show_thumbnails_checkbox,
@@ -295,33 +308,28 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 			SIGNAL(textChanged(const QString&)),
 			this,
 			SLOT(handle_cfg_name_changed(const QString&)));
-
-	QObject::connect(
-			&GPlatesPresentation::Application::instance()->get_viewport_window().globe_canvas(),
-			SIGNAL(mouse_released_after_drag(
-					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &,
-					Qt::MouseButton, Qt::KeyboardModifiers)),
-			this, 
-			SLOT(handle_release_after_drag()));
-
-	QObject::connect(
-			&GPlatesPresentation::Application::instance()->get_viewport_window().map_view(),
-			SIGNAL(mouse_released_after_drag(const QPointF &,
-					bool, const QPointF &, bool, const QPointF &,
-					Qt::MouseButton, Qt::KeyboardModifiers)),
-			this, 
-			SLOT(handle_release_after_drag()));
-
-	QObject::connect(
-			&d_view_state.get_viewport_projection(),
-			SIGNAL(projection_type_changed(const GPlatesGui::ViewportProjection &)),
-			this,
-			SLOT(handle_change_projection()));
 }
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::showEvent(
+		QShowEvent *show_event)
+{
+	// Return early if the event is not an internal (ie, application-generated) event.
+	// We want to show preview icons when this dialog is popped up by the user - in case the
+	// main globe/map view changed while this dialog was hidden (this dialog only responds to
+	// repaint signals of the globe/map view when this dialog is visible).
+	if (show_event->spontaneous())
+	{
+		return;
+	}
+
+	if (d_show_thumbnails)
+	{
+		show_preview_icons();
+	}
+}
+
 
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_close_button_clicked()
@@ -329,33 +337,26 @@ GPlatesQtWidgets::DrawStyleDialog::handle_close_button_clicked()
 	hide();
 }
 
-void
-GPlatesQtWidgets::DrawStyleDialog::handle_repaint(
-		bool mouse_down)
-{
-	d_repaint_flag = true;
-	d_image = d_globe_and_map_widget_ptr->grab_frame_buffer();
-	return;
-}
-
 
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_main_repaint(
 		bool mouse_down)
 {
-	if(!mouse_down && d_refresh_preview)
+	// Return early to avoid never-ending cycle of...
+	//   update draw style -> create rendered geometries -> paint main globe/map canvas ->
+	//   DrawStyleDialog::handle_main_repaint -> show preview icons -> update draw style ...
+	if (d_ignore_next_main_repaint)
 	{
-		d_refresh_preview = false;
-		if(d_preview_lock.tryLock())
-		{
-			try{
-				refresh_preview_icons();
-			}catch(...)
-			{ }
-			d_preview_lock.unlock();
-		}
+		d_ignore_next_main_repaint = false;
+		return;
+	}
+
+	if (!mouse_down && isVisible() && d_show_thumbnails)
+	{
+		show_preview_icons();
 	}
 }
+
 
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_remove_button_clicked()
@@ -373,6 +374,23 @@ GPlatesQtWidgets::DrawStyleDialog::handle_remove_button_clicked()
 		mgr->remove_style(sa);
 		delete style_list->takeItem(style_list->currentRow());
 	}
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::handle_configuration_changed()
+{
+	GPlatesGui::StyleAdapter* current_style = get_current_style();
+	
+	if(!current_style)
+	{
+		qDebug() << "DrawStyleDialog::handle_configuration_changed(): Cannot find current style setting.";
+		return;
+	}
+
+	current_style->set_dirty_flag(true);
+	set_style(current_style);
+	refresh_current_icon();
 }
 
 
@@ -395,6 +413,11 @@ GPlatesQtWidgets::DrawStyleDialog::set_style(
 		d_style_of_all = _style;
 		apply_style_to_all_layers();
 	}
+
+	// Avoid never-ending cycle of...
+	//   update draw style -> create rendered geometries -> paint main globe/map canvas ->
+	//   DrawStyleDialog::handle_main_repaint -> show preview icons -> update draw style ...
+	d_ignore_next_main_repaint = true;
 	GPlatesGui::DrawStyleManager::instance()->emit_style_changed();
 }
 
@@ -421,11 +444,16 @@ GPlatesQtWidgets::DrawStyleDialog::set_style()
 	}
 }
 
+
 void
 GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 {
 	setupUi(this);
-	d_globe_and_map_widget_ptr = new GlobeAndMapWidget(d_view_state, style_list);
+	
+	d_globe_and_map_widget_ptr = 
+			&GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget()
+					.globe_and_map_widget();
+
 	categories_table->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
 	categories_table->horizontalHeader()->hide();
 	categories_table->verticalHeader()->hide();
@@ -442,13 +470,13 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	style_list->setUniformItemSizes(true);
 	style_list->setWordWrap(true);
 
-	QPixmap blank_pixmap(ICON_SIZE, ICON_SIZE);
-	blank_pixmap.fill(*GPlatesGui::HTMLColourNames::instance().get_colour("slategray"));
+	QPixmap blank_pixmap(ICON_SIZE,ICON_SIZE);
+	blank_pixmap.load(":/preview_not_available.png","PNG");
+	//blank_pixmap.fill(*GPlatesGui::HTMLColourNames::instance().get_colour("slategray"));
 	d_blank_icon = QIcon(blank_pixmap);
-	d_image = d_globe_and_map_widget_ptr->grab_frame_buffer();
 	d_style_mgr = GPlatesGui::DrawStyleManager::instance();
 	
-	//init_catagory_table();
+	//init_category_table();
 	make_signal_slot_connections();
 	
 	open_button->hide();
@@ -457,16 +485,6 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	add_button->show();
 	remove_button->show();
 
-	// Set up our GlobeAndMapWidget that we use for rendering.
-	d_globe_and_map_widget_ptr->resize(ICON_SIZE, ICON_SIZE);
-	d_globe_and_map_widget_ptr->hide();
-
-#if defined(Q_OS_MAC)
-	if(QT_VERSION >= 0x040600)
-		d_globe_and_map_widget_ptr->move(style_list->spacing()+4, style_list->spacing()+3); 
-#else
-	d_globe_and_map_widget_ptr->move(1- ICON_SIZE, 1- ICON_SIZE);
-#endif
 	splitter->setStretchFactor(splitter->indexOf(categories_table),1);
 	splitter->setStretchFactor(splitter->indexOf(right_side_frame),4);
 
@@ -498,20 +516,23 @@ GPlatesQtWidgets::DrawStyleDialog::handle_categories_table_cell_changed(
 {
 	if(current_row < 0)
 	{
-		qWarning() << "The index of current row is negative number. Do nothing and return.";
+		qDebug() << "The index of current row is negative number. Do nothing and return.";
 		return;
 	}
 	QTableWidgetItem* item = categories_table->currentItem();
 	if(item)
 	{
-		GPlatesGui::StyleCatagory* cata = get_catagory(*item);
+		GPlatesGui::StyleCategory* cata = get_catagory(*item);
 		if(cata)
+		{
 			load_category(*cata);
+		}
 	}
 }
 
 void
-GPlatesQtWidgets::DrawStyleDialog::load_category(const GPlatesGui::StyleCatagory& cata)
+GPlatesQtWidgets::DrawStyleDialog::load_category(
+		const GPlatesGui::StyleCategory& cata)
 {
 	using namespace GPlatesGui;
 
@@ -531,7 +552,7 @@ GPlatesQtWidgets::DrawStyleDialog::load_category(const GPlatesGui::StyleCatagory
 	// Set the rendering chain in motion.
 	if (d_show_thumbnails)
 	{
-		show_preview_icon();
+		show_preview_icons();
 	}
 }
 
@@ -580,31 +601,19 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 }
 
 void
-GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
+GPlatesQtWidgets::DrawStyleDialog::show_preview_icons()
 {
+	//qDebug() << "show_preview_icons()";
 	{
-		//sync the camera point
-		GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
-			GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget();
-		boost::optional<GPlatesMaths::LatLonPoint> camera_point = view_widget.camera_llp();
-	
-		if(camera_point)
-		{
-			d_globe_and_map_widget_ptr->get_active_view().set_camera_viewpoint(*camera_point);
-		}
+		// Delay any notification of changes to the rendered geometry collection
+		// until end of current scope block. This is so we can do multiple changes
+		// without the main globe/map canvas redrawing itself after each change.
+		GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
-		if(view_widget.globe_is_active())
-		{
-			d_globe_and_map_widget_ptr->get_globe_canvas().set_orientation(
-				*view_widget.globe_canvas().orientation());
-		}
-		
 		PreviewGuard guard(*this);
-		
+
 		int len = style_list->count();
-    
-		d_globe_and_map_widget_ptr->show();
-	
+
 		for(int i = 0; i < len; i++)
 		{
 			 QListWidgetItem* current_item = style_list->item(i);
@@ -612,38 +621,22 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 			 if(!current_item)
 				 continue;
 
-			d_repaint_flag = false;
 			QVariant qv = current_item->data(Qt::UserRole);
 			GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
 			set_style(sa);
 
-		#if defined(Q_OS_MAC)
-			d_globe_and_map_widget_ptr->update_canvas();
-			while(!d_repaint_flag)
-			{
-				QApplication::processEvents();
-			}
-		#else
-			d_globe_and_map_widget_ptr->repaint_canvas();
-		#endif
-			
-			current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
+			// Render the preview icon image.
+			QImage image = d_globe_and_map_widget_ptr->render_to_qimage(QSize(ICON_SIZE, ICON_SIZE));
+
+			current_item->setIcon(QIcon(to_QPixmap(image)));
 		}
-	
-		d_globe_and_map_widget_ptr->hide();
 	}
-		
-	//style_list->setCurrentRow(0);
-	//QVariant q_data = style_list->currentItem()->data(Qt::UserRole);
-	//set_style(static_cast<GPlatesGui::StyleAdapter*>(q_data.value<void*>()));
 }
 
 
 void
 GPlatesQtWidgets::DrawStyleDialog::refresh_current_icon()
 {
-	d_globe_and_map_widget_ptr->show();
-
 	QListWidgetItem* current_item = style_list->currentItem();
 
 	if(!current_item)
@@ -651,21 +644,15 @@ GPlatesQtWidgets::DrawStyleDialog::refresh_current_icon()
 
 	if (d_show_thumbnails)
 	{
-		d_repaint_flag = false;
 		QVariant qv = current_item->data(Qt::UserRole);
 		GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
 		set_style(sa);
 
-		d_globe_and_map_widget_ptr->update_canvas();
+		// Render the preview icon image.
+		QImage image = d_globe_and_map_widget_ptr->render_to_qimage(QSize(ICON_SIZE, ICON_SIZE));
 
-
-		while(!d_repaint_flag)
-			QApplication::processEvents();
-
-
-		current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
+		current_item->setIcon(QIcon(to_QPixmap(image)));
 	}
-	d_globe_and_map_widget_ptr->hide();
 }
 
 
@@ -679,7 +666,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_add_button_clicked(bool )
 	 if(!cur_cata_item)
 		 return;
 
-	StyleCatagory* current_cata = get_catagory(*cur_cata_item);
+	StyleCategory* current_cata = get_catagory(*cur_cata_item);
 	if(current_cata)
 	{
 		const StyleAdapter* style_temp = d_style_mgr->get_template_style(*current_cata);
@@ -696,6 +683,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_add_button_clicked(bool )
 				new_style->set_name(new_name);
 				d_style_mgr->register_style(new_style);
 				load_category(*current_cata);
+				focus_style(new_style);
 			}
 		}
 	}
@@ -770,7 +758,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_cfg_name_changed(const QString& cfg_na
 
 bool
 GPlatesQtWidgets::DrawStyleDialog::is_style_name_valid(
-		const GPlatesGui::StyleCatagory& catagory,
+		const GPlatesGui::StyleCategory& catagory,
 		const QString& cfg_name)
 {
 	if(cfg_name.contains('/'))// '/' cannot be in style name.
@@ -789,7 +777,7 @@ GPlatesQtWidgets::DrawStyleDialog::is_style_name_valid(
 
 const QString
 GPlatesQtWidgets::DrawStyleDialog::generate_new_valid_style_name(
-		const GPlatesGui::StyleCatagory& catagory,
+		const GPlatesGui::StyleCategory& catagory,
 		const QString& cfg_name)
 {
 	QString new_name_base = cfg_name;
@@ -823,69 +811,29 @@ GPlatesQtWidgets::DrawStyleDialog::focus_style()
 	{
 		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
 	}
+	else
+	{
+		focus_style(d_style_of_all);
+	}
 }
 
 
-GPlatesQtWidgets::PreviewGuard::PreviewGuard(
-		DrawStyleDialog& dlg) :
-	d_dlg(dlg),
+GPlatesQtWidgets::DrawStyleDialog::PreviewGuard::PreviewGuard(
+		DrawStyleDialog &draw_style_dialog) :
+	d_draw_style_dialog(draw_style_dialog),
 	d_current_idx(0)
 {
-	dlg.d_combo_box->setDisabled(true);
-	dlg.categories_table->setDisabled(true);
+	draw_style_dialog.d_combo_box->setDisabled(true);
+	draw_style_dialog.categories_table->setDisabled(true);
 
-	GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
-		GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget();
-	if(view_widget.globe_is_active())
-	{
-		view_widget.globe_canvas().set_disable_update(true);
-	}
-	else if(view_widget.map_is_active())
-	{
-		view_widget.map_view().set_disable_update(true);
-	}
-	d_current_idx = dlg.style_list->currentRow();
+	d_current_idx = draw_style_dialog.style_list->currentRow();
 }
 
-GPlatesQtWidgets::PreviewGuard::~PreviewGuard()
+GPlatesQtWidgets::DrawStyleDialog::PreviewGuard::~PreviewGuard()
 {
-	d_dlg.d_combo_box->setDisabled(false);
-	d_dlg.categories_table->setDisabled(false);
-			
-	GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
-		GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget();
-			
-	if(view_widget.globe_is_active())
-	{
-		view_widget.globe_canvas().set_disable_update(false);
-	}
-	else if(view_widget.map_is_active())
-	{
-		view_widget.map_view().set_disable_update(false);
-	}
-	 d_dlg.style_list->setCurrentRow(d_current_idx);
-	 d_dlg.set_style();
+	d_draw_style_dialog.d_combo_box->setDisabled(false);
+	d_draw_style_dialog.categories_table->setDisabled(false);
+
+	d_draw_style_dialog.style_list->setCurrentRow(d_current_idx);
+	d_draw_style_dialog.set_style();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

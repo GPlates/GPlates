@@ -33,7 +33,6 @@
 
 #include "qt-widgets/QtWidgetUtils.h"
 
-
 namespace
 {
 	QEvent::Type PERMITTED_EVENTS[] = {

@@ -111,18 +111,22 @@ GPlatesCli::ConvertFileFormatCommand::add_options(
 }
 
 
-int
+void
 GPlatesCli::ConvertFileFormatCommand::run(
 		const boost::program_options::variables_map &vm)
 {
 	FeatureCollectionFileIO file_io(d_model, vm);
+	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
 	//
 	// Load the feature collection files
 	//
 
 	FeatureCollectionFileIO::feature_collection_file_seq_type files =
-			file_io.load_files(LOAD_FEATURE_COLLECTION_OPTION_NAME);
+			file_io.load_files(LOAD_FEATURE_COLLECTION_OPTION_NAME, read_errors);
+
+	// Report all file load errors (if any).
+	FeatureCollectionFileIO::report_load_file_errors(read_errors);
 
 	// Extract the feature collections from the owning files.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collections;
@@ -134,14 +138,14 @@ GPlatesCli::ConvertFileFormatCommand::run(
 		file_index < files.size();
 		++file_index)
 	{
-		const GPlatesFileIO::File &input_file = *files[file_index];
+		const GPlatesFileIO::File::Reference &input_file = *files[file_index];
 		const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 				feature_collections[file_index];
 
 		// Get the save filename.
 		const GPlatesFileIO::FileInfo save_file_info =
 				file_io.get_save_file_info(
-						input_file.get_reference().get_file_info(),
+						input_file.get_file_info(),
 						d_save_file_type,
 						d_save_file_prefix.c_str(),
 						d_save_file_suffix.c_str());
@@ -149,6 +153,4 @@ GPlatesCli::ConvertFileFormatCommand::run(
 		// Save the file with (re)assigned plate ids.
 		file_io.save_file(save_file_info, feature_collection);
 	}
-
-	return 0;
 }

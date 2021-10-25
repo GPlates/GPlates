@@ -73,7 +73,7 @@ namespace GPlatesQtWidgets
 		~GPlatesDialog()
 		{  }
 	
-	public slots:
+	public Q_SLOTS:
 	
 		/**
 		 * If the dialog is currently hidden, show it and ask the WM to raise it to the top.

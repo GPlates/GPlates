@@ -97,7 +97,7 @@ void
 GPlatesQtWidgets::VisualLayersComboBox::handle_current_index_changed(
 		int index)
 {
-	emit selected_visual_layer_changed(get_selected_visual_layer());
+	Q_EMIT selected_visual_layer_changed(get_selected_visual_layer());
 }
 
 

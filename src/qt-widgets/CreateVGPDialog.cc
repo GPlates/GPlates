@@ -58,6 +58,7 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
 
+
 namespace
 {
 
@@ -89,9 +90,7 @@ namespace
 			GPlatesPropertyValues::GmlPoint::create(point);
 
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-			GPlatesModel::ModelUtils::create_gpml_constant_value(
-			gml_point, 
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
+			GPlatesModel::ModelUtils::create_gpml_constant_value(gml_point);
 
 		feature->add(
 			GPlatesModel::TopLevelPropertyInline::create(
@@ -164,9 +163,7 @@ namespace
 			GPlatesPropertyValues::GmlPoint::create(point);	
 
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-			GPlatesModel::ModelUtils::create_gpml_constant_value(
-			gml_point, 
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));			
+			GPlatesModel::ModelUtils::create_gpml_constant_value(gml_point);			
 
 
 		feature->add(
@@ -187,9 +184,7 @@ namespace
 		feature->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-				GPlatesModel::ModelUtils::create_gpml_constant_value(
-					gpml_plate_id,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));			
+				GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id)));			
 			
 	}
 
@@ -226,7 +221,7 @@ namespace
 GPlatesQtWidgets::CreateVGPDialog::CreateVGPDialog(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
-	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+	GPlatesDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_model_ptr(view_state_.get_application_state().get_model_interface()),
 	d_file_state(view_state_.get_application_state().get_feature_collection_file_state()),
 	d_file_io(view_state_.get_application_state().get_feature_collection_file_io()),
@@ -266,7 +261,7 @@ GPlatesQtWidgets::CreateVGPDialog::setup_connections()
 	QObject::connect(d_choose_feature_collection_widget, SIGNAL(item_activated()),
 		button_create, SLOT(setFocus()));
 
-	QObject::connect(this,SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
+	QObject::connect(this,SIGNAL(feature_created()),
 			d_application_state_ptr,SLOT(reconstruct()));
 }
 
@@ -349,7 +344,7 @@ GPlatesQtWidgets::CreateVGPDialog::handle_create()
 		model_notification_guard.release_guard();
 
 		// To trigger a reconstruction.
-		emit feature_created();
+		Q_EMIT feature_created();
 	
 		accept();
 	}

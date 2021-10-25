@@ -25,14 +25,20 @@
 
 #include "TopologyBoundaryResolverLayerOptionsWidget.h"
 
-#include "ViewportWindow.h"
 #include "DrawStyleDialog.h"
 #include "LinkWidget.h"
 #include "QtWidgetUtils.h"
+#include "ViewportWindow.h"
 #include "VisualLayersDialog.h"
+
+#include "gui/Dialogs.h"
+
 #include "presentation/TopologyBoundaryVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
+
 #include "utils/ComponentManager.h"
+
+
 GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::TopologyBoundaryResolverLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
@@ -42,7 +48,7 @@ GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::TopologyBoundaryRe
 	d_application_state(application_state),
 	d_view_state(view_state),
 	d_viewport_window(viewport_window),
-	d_draw_style_dialog_ptr(viewport_window->draw_style_dialog())
+	d_draw_style_dialog_ptr(&viewport_window->dialogs().draw_style_dialog())
 {
 	setupUi(this);
 

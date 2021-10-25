@@ -104,7 +104,7 @@ namespace GPlatesQtWidgets
 		set_action_widget_in_row(
 			int row);
 
-	signals:
+	Q_SIGNALS:
 
 
 		void
@@ -134,7 +134,7 @@ namespace GPlatesQtWidgets
 		
 
 
-	private slots:
+	private Q_SLOTS:
 
 
 		void

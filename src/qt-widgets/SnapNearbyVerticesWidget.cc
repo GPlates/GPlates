@@ -24,16 +24,22 @@
 
 #include "boost/optional.hpp"
 
-#include "feature-visitors/PropertyValueFinder.h"
-#include "gui/FeatureFocus.h"
-#include "model/FeatureHandle.h"
-#include "model/PropertyName.h"
-#include "presentation/ViewState.h"
-#include "property-values/GpmlPlateId.h"
-
-
 #include "SnapNearbyVerticesWidget.h"
 #include "TaskPanel.h"
+
+#include "canvas-tools/ModifyGeometryState.h"
+
+#include "feature-visitors/PropertyValueFinder.h"
+
+#include "gui/FeatureFocus.h"
+
+#include "model/FeatureHandle.h"
+#include "model/PropertyName.h"
+
+#include "presentation/ViewState.h"
+
+#include "property-values/GpmlPlateId.h"
+
 
 static const double DEFAULT_THRESHOLD_DEGREES = 0.5;
 
@@ -63,11 +69,11 @@ namespace{
 }
 
 GPlatesQtWidgets::SnapNearbyVerticesWidget::SnapNearbyVerticesWidget(
-	GPlatesQtWidgets::TaskPanel *task_panel_,
-	GPlatesPresentation::ViewState &view_state,
-	QWidget *parent_):
+		GPlatesCanvasTools::ModifyGeometryState &modify_geometry_state,
+		GPlatesPresentation::ViewState &view_state,
+		QWidget *parent_):
 	QWidget(parent_),
-	d_task_panel_ptr(task_panel_),
+	d_modify_geometry_state(modify_geometry_state),
 	d_feature_focus_ptr(&(view_state.get_feature_focus()))
 {
 	setupUi(this);
@@ -152,7 +158,8 @@ GPlatesQtWidgets::SnapNearbyVerticesWidget::send_update_signal()
 	{
 		plate_id_value = spinbox_plate_id->value();
 	}
-	d_task_panel_ptr->emit_vertex_data_changed_signal(
+
+	d_modify_geometry_state.set_snap_vertices_setup(
 		checkbox_vertices->isChecked(),
 		spinbox_threshold->value(),
 		checkbox_plate_id->isChecked(),

@@ -27,12 +27,16 @@
 #ifndef GPLATES_GUI_TEXTOVERLAY_H
 #define GPLATES_GUI_TEXTOVERLAY_H
 
-#include "TextRenderer.h"
 
 
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+}
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
 }
 
 namespace GPlatesGui
@@ -49,20 +53,19 @@ namespace GPlatesGui
 
 		explicit
 		TextOverlay(
-				const GPlatesAppLogic::ApplicationState &application_state,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer);
+				const GPlatesAppLogic::ApplicationState &application_state);
 
 		void
 		paint(
+				GPlatesOpenGL::GLRenderer &renderer,
 				const TextOverlaySettings &settings,
-				int canvas_width,
-				int canvas_height,
+				int paint_device_width,
+				int paint_device_height,
 				float scale);
 
 	private:
 
 		const GPlatesAppLogic::ApplicationState &d_application_state;
-		TextRenderer::non_null_ptr_to_const_type d_text_renderer;
 	};
 
 }

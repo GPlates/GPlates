@@ -152,7 +152,7 @@ namespace GPlatesGui
 		 */
 		static const double MAX_CENTRE_OF_VIEWPORT_Y;
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when the centre of viewport, the rotation or the zoom factor is changed.
@@ -161,7 +161,7 @@ namespace GPlatesGui
 		transform_changed(
 				const GPlatesGui::MapTransform &map_transform);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_zoom_changed();

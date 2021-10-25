@@ -622,13 +622,19 @@ namespace {
 		const GreatCircleArc &arc1 = *iter1;
 		const GreatCircleArc &arc2 = *iter2;
 
+		if (arc1.is_zero_length() || arc2.is_zero_length())
+		{
+			return false;
+		}
+
 		const PointOnSphere &arc1_start_pt = arc1.start_point();
 		const PointOnSphere &arc1_end_pt = arc1.end_point();
 		const PointOnSphere &arc2_start_pt = arc2.start_point();
 		const PointOnSphere &arc2_end_pt = arc2.end_point();
 
-		if (unit_vectors_are_parallel(arc1.rotation_axis(),
-		                              arc2.rotation_axis())) {
+		if (!arc1.is_zero_length() &&
+			!arc2.is_zero_length() &&
+			unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis())) {
 
 			/*
 			 * The axes of the arcs are parallel, which means the
@@ -671,6 +677,8 @@ namespace {
 			/*
 			 * The axes of the arcs are anti-parallel, which means
 			 * the arcs are "rotating" in the opposite direction.
+			 * Or one (or both) arcs are zero length (and hence it doesn't
+			 * matter whether they're parallel or anti-parallel).
 			 *
 			 * Hence, the arrangements which would cause the arcs
 			 * to be touching endpoint-to-endpoint-only are:
@@ -820,8 +828,9 @@ namespace {
 
 		ArcList::iterator iter_at_overlapping_arc_in_longer;
 
-		if (unit_vectors_are_parallel(defining_arc.rotation_axis(),
-					      longer_arc.rotation_axis())) {
+		if (!defining_arc.is_zero_length() &&
+			!longer_arc.is_zero_length() &&
+			unit_vectors_are_parallel(defining_arc.rotation_axis(), longer_arc.rotation_axis())) {
 
 			/*
 			 * The arcs will be:
@@ -901,8 +910,9 @@ namespace {
 		 * We want to know whether the arcs are "rotating" in the same
 		 * direction or opposite directions.
 		 */
-		if (unit_vectors_are_parallel(arc1.rotation_axis(),
-					      arc2.rotation_axis())) {
+		if (!arc1.is_zero_length() &&
+			!arc2.is_zero_length() &&
+			unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis())) {
 
 			// The arcs are rotating in the same direction.  Thus,
 			// 'arc1.start_point()' will be the earlier point of
@@ -1341,6 +1351,12 @@ namespace {
 
 		const GreatCircleArc &arc1 = *iter1;
 		const GreatCircleArc &arc2 = *iter2;
+
+		// If either arc is zero length then return early.
+		if (arc1.is_zero_length() || arc2.is_zero_length())
+		{
+			return;
+		}
 
 		/*
 		 * Since (as we have already established) 'arc1' and 'arc2' do

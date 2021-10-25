@@ -156,7 +156,7 @@ namespace GPlatesQtWidgets
 		QSizePolicy
 		lineEditSizePolicy() const;
 
-	signals:
+	Q_SIGNALS:
 
 		// Using Qt naming conventions here.
 
@@ -182,19 +182,19 @@ namespace GPlatesQtWidgets
 		focusInEvent(
 				QFocusEvent *event_);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_internal_line_edit_editing_finished()
 		{
-			emit editingFinished();
+			Q_EMIT editingFinished();
 		}
 
 		void
 		handle_internal_line_edit_text_edited(
 				const QString &text_)
 		{
-			emit textEdited(text_);
+			Q_EMIT textEdited(text_);
 			handle_text_edited(text_);
 		}
 

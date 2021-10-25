@@ -36,7 +36,8 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructUtils.h"
-#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalGeometry.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
 
 #include "feature-visitors/GeometrySetter.h"
 
@@ -83,7 +84,7 @@ namespace GPlatesViewOperations
 					GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 			{
 				d_undo_operation = d_geom_builder->set_geometry(
-						GeometryType::MULTIPOINT,
+						GPlatesMaths::GeometryType::MULTIPOINT,
 						multi_point_on_sphere->begin(),
 						multi_point_on_sphere->end());
 			}
@@ -96,7 +97,7 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::PointOnSphere geom_point[1] = { *point_on_sphere };
 
 				d_undo_operation = d_geom_builder->set_geometry(
-						GeometryType::POINT,
+						GPlatesMaths::GeometryType::POINT,
 						geom_point,
 						geom_point + 1);
 			}
@@ -107,7 +108,7 @@ namespace GPlatesViewOperations
 					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 			{
 				d_undo_operation = d_geom_builder->set_geometry(
-						GeometryType::POLYGON,
+						GPlatesMaths::GeometryType::POLYGON,
 						polygon_on_sphere->vertex_begin(),
 						polygon_on_sphere->vertex_end());
 			}
@@ -118,7 +119,7 @@ namespace GPlatesViewOperations
 					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 			{
 				d_undo_operation = d_geom_builder->set_geometry(
-						GeometryType::POLYLINE,
+						GPlatesMaths::GeometryType::POLYLINE,
 						polyline_on_sphere->vertex_begin(),
 						polyline_on_sphere->vertex_end());
 			}
@@ -259,8 +260,8 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
 	d_feature = feature_focus.focused_feature();
 
 	// Accept any type of ReconstructionGeometry derivation (not just ReconstructedFeatureGeometry's)
-	// because then the CloneGeometry tool, for example, can copy a ResolvedTopologicalBoundary's geometry.
-	// Other operations on ResolvedTopologicalBoundary's don't make sense though, such as MoveVertex,
+	// because then the CloneGeometry tool, for example, can copy a ResolvedTopologicalGeometry's geometry.
+	// Other operations on ResolvedTopologicalGeometry's don't make sense though, such as MoveVertex,
 	// and so the appropriate canvas tools will need to be disabled in these situations.
 	d_focused_geometry = NULL;
 	if (feature_focus.associated_reconstruction_geometry())
@@ -319,13 +320,25 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::get_geometry_from_feat
 	}
 
 	// See if the focused reconstruction geometry is a resolved topological boundary.
-	boost::optional<const GPlatesAppLogic::ResolvedTopologicalBoundary *> focused_rtb =
+	boost::optional<const GPlatesAppLogic::ResolvedTopologicalGeometry *> focused_rtb =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ResolvedTopologicalBoundary>(d_focused_geometry);
+					const GPlatesAppLogic::ResolvedTopologicalGeometry>(d_focused_geometry);
 	if (focused_rtb)
 	{
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geom =
 				focused_rtb.get()->resolved_topology_geometry();
+		return resolved_geom;
+	}
+
+	// See if the focused reconstruction geometry is a resolved topological network.
+	// If so then we'll use it's boundary polygon as the geometry and ignore the interior nodes, etc.
+	boost::optional<const GPlatesAppLogic::ResolvedTopologicalNetwork *> focused_rtn =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const GPlatesAppLogic::ResolvedTopologicalNetwork>(d_focused_geometry);
+	if (focused_rtn)
+	{
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geom =
+				focused_rtn.get()->boundary_polygon();
 		return resolved_geom;
 	}
 
@@ -337,7 +350,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 {
 	// We're only interested in setting geometry for non-topological features because topological
 	// features resolve their geometry using other features so it doesn't make sense to modify
-	// it's resolved geometry using one of the canvas tools.
+	// its resolved geometry using one of the canvas tools.
 	//
 	// So return early if the ReconstructionGeometry is not an RFG.
 	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> focused_rfg =
@@ -357,7 +370,13 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 				*opt_geometry_on_sphere;
 
 		// Reconstruct back to present day.
-		geometry_on_sphere = reconstruct(geometry_on_sphere, true/*reverse_reconstruct*/);
+		geometry_on_sphere = reconstruct(
+				geometry_on_sphere,
+				*focused_rfg.get()->get_reconstruction_tree(),
+				// FIXME: Using default reconstruct parameters, but will probably need to
+				// get this from the layer that created the focused feature...
+				GPlatesAppLogic::ReconstructParams(),
+				true/*reverse_reconstruct*/);
 
 		// Set the actual geometry in the geometry property of the focused geometry.
 		GPlatesFeatureVisitors::GeometrySetter geometry_setter(geometry_on_sphere);
@@ -394,7 +413,13 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_secondary_geom
 		*geom;
 
 	// Reconstruct back to present day.
-	geometry_on_sphere = reconstruct(geometry_on_sphere, true/*reverse_reconstruct*/);
+	geometry_on_sphere = reconstruct(
+			geometry_on_sphere,
+			*rfg.get()->get_reconstruction_tree(),
+			// FIXME: Using default reconstruct parameters, but will probably need to
+			// get this from the layer that created the focused feature...
+			GPlatesAppLogic::ReconstructParams(),
+			true/*reverse_reconstruct*/);
 
 	// Set the actual geometry in the geometry property of the focused geometry.
 	GPlatesFeatureVisitors::GeometrySetter geometry_setter(geometry_on_sphere);
@@ -410,14 +435,17 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_secondary_geom
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
-	bool reverse_reconstruct)
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
+		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
+		const GPlatesAppLogic::ReconstructParams &reconstruct_params,
+		bool reverse_reconstruct)
 {
 	// We need to convert geometry to present day coordinates. This is because the geometry is
 	// currently reconstructed geometry at the current reconstruction time.
 	return GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			geometry_on_sphere,
 			d_feature,
-			*d_focused_geometry->reconstruction_tree(),
+			reconstruction_tree,
+			reconstruct_params,
 			reverse_reconstruct);
 }

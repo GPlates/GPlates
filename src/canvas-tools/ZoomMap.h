@@ -43,6 +43,11 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 }
 
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryCollection;
+}
+
 namespace GPlatesCanvasTools
 {
 	/**
@@ -60,6 +65,7 @@ namespace GPlatesCanvasTools
 		ZoomMap(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::MapView &map_view_,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				GPlatesGui::MapTransform &map_transform_,
 				GPlatesGui::ViewportZoom &viewport_zoom_);
@@ -67,6 +73,10 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_activation();
+
+		virtual
+		void
+		handle_deactivation();
 
 		
 		virtual
@@ -86,6 +96,11 @@ namespace GPlatesCanvasTools
 		void
 		recentre_map(
 				const QPointF &point_on_scene);
+
+		/**
+		 * Used to activate/deactivate focused geometry highlight rendered layer.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 
 		/**
 		 * This is the window that has the status bar.

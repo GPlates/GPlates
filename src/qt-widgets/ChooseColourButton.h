@@ -55,7 +55,7 @@ namespace GPlatesQtWidgets
 			return d_colour;
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_clicked();

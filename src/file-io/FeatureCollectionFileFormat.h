@@ -39,10 +39,11 @@ namespace GPlatesFileIO
 			GPML,              //!< '.gpml' extension.
 			GPMLZ,			   //!< '.gpmlz' or '.gpml.gz' extension.
 			PLATES4_LINE,      //!< '.dat' or '.pla' extension.
+			GPLATES_ROTATION,  //!< '.grot' extension.
 			PLATES4_ROTATION,  //!< '.rot' extension.
 			SHAPEFILE,         //!< '.shp' extension.
 			OGRGMT,			   //!< '.gmt' extension.
-			WRITE_ONLY_XY_GMT,               //!< '.xy' extension.
+			WRITE_ONLY_XY_GMT, //!< '.xy' extension.
 			GMAP,              //!< '.vgp' extension.
 			GSML,              //!< '.gsml' extension.
 
