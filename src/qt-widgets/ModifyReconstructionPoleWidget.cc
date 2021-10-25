@@ -509,9 +509,18 @@ void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
 		const GPlatesMaths::PointOnSphere &current_oriented_position)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_accum_orientation != NULL,
-			GPLATES_ASSERTION_SOURCE);
+	if (!d_accum_orientation)
+	{
+		// It's possible that the accumulated rotation has been reset in the middle of a drag (eg, using shortcut key)
+		// and hence 'start_new_drag()' hasn't then been called to initialise it.
+		//
+		// Hence, nothing to do in this function.
+		//
+		// Note: This used to be an assertion but it would trip up occasionally for unknown reasons.
+		//       Maybe user was using shortcut key *during* drag (but that is very unlikely).
+		//       More likely some issue with mouse events in GlobeCanvas or MapView.
+		return;
+	}
 
 	if (d_move_pole_widget.get_pole())
 	{
