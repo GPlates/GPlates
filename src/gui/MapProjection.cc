@@ -344,7 +344,7 @@ GPlatesGui::MapProjection::inverse_transform(
 
 void
 GPlatesGui::MapProjection::set_central_llp(
-	GPlatesMaths::LatLonPoint &llp)
+		const GPlatesMaths::LatLonPoint &llp)
 {
 	d_central_llp = llp;
 

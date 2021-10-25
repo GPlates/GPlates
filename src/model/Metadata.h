@@ -141,7 +141,7 @@ namespace GPlatesModel
 	struct GeoTimeScale
 	{
 		const QString 
-			to_string() const
+		to_string() const
 		{
 			std::vector<QString> tmp_vec;
 			tmp_vec.push_back(id); tmp_vec.push_back(pub_id);
@@ -613,6 +613,10 @@ namespace GPlatesModel
 
 		virtual
 		~Metadata(){ }
+
+		static const QString DISABLED_SEQUENCE_FLAG;
+		static const QString DELETE_MARK;
+
 	protected:
 		QString d_name, d_content;
 	};

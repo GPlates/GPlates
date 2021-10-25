@@ -44,3 +44,24 @@ GPlatesModel::GpgimProperty::get_structural_type(
 	// Not found.
 	return boost::none;
 }
+
+
+void
+GPlatesModel::GpgimProperty::set_default_structural_type(
+		unsigned int default_structural_type_index)
+{
+	// Should have at least one structural type.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_structural_types.empty() &&
+				default_structural_type_index < d_structural_types.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Move the default structural type to the beginning of the structural types sequence.
+	if (default_structural_type_index != 0)
+	{
+		const GpgimStructuralType::non_null_ptr_to_const_type default_structural_type =
+				d_structural_types[default_structural_type_index];
+		d_structural_types.erase(d_structural_types.begin() + default_structural_type_index);
+		d_structural_types.insert(d_structural_types.begin(), default_structural_type);
+	}
+}

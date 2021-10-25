@@ -32,10 +32,12 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include "GpmlTimeSample.h"
+#include "GpmlTotalReconstructionPole.h"
 #include "GpmlInterpolationFunction.h"
 #include "StructuralType.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
+#include "model/Metadata.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -211,7 +213,17 @@ namespace GPlatesPropertyValues
 		print_to(
 				std::ostream &os) const;
 
+		bool
+		is_disabled() const;
+
+		void
+		set_disabled(
+				bool flag);
+
 	protected:
+
+		bool
+		contain_disabled_sequence_flag() const ;
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.

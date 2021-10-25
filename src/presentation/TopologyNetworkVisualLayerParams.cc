@@ -51,9 +51,11 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::TopologyNetworkVisualLaye
 	d_range1_min(						13.0),
 	d_range2_max(						-13.0),
 	d_range2_min(						-17.0),
+	d_fg_colour( 						GPlatesGui::Colour(1, 1, 1) ),
 	d_max_colour( 						GPlatesGui::Colour(1, 0, 0) ),
 	d_mid_colour( 						GPlatesGui::Colour(1, 1, 1) ),
 	d_min_colour(						GPlatesGui::Colour(0, 0, 1) ),
+	d_bg_colour(						GPlatesGui::Colour(1, 1, 1) ),
 	d_colour_palette_filename(QString()),
 	d_colour_palette(GPlatesGui::RasterColourPalette::create())
 {
@@ -68,14 +70,17 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::handle_layer_modified(
 	if (d_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
 	{
 		d_colour_palette = GPlatesGui::RasterColourPalette::create<double>(
-			GPlatesGui::UserColourPalette::create(
+			GPlatesGui::DeformationColourPalette::create(
 				d_range1_max, 
 				d_range1_min, 
 				d_range2_max, 
 				d_range2_min, 
+				d_fg_colour, 
 				d_max_colour, 
 				d_mid_colour, 
-				d_min_colour));
+				d_min_colour,
+				d_bg_colour
+			));
 	}
 	emit_modified();
 }
@@ -93,14 +98,17 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::update(
 	if (d_colour_palette_filename.isEmpty())
 	{
 		d_colour_palette = GPlatesGui::RasterColourPalette::create<double>(
-			GPlatesGui::UserColourPalette::create(
+			GPlatesGui::DeformationColourPalette::create(
 				d_range1_max, 
 				d_range1_min, 
 				d_range2_max, 
 				d_range2_min, 
+				d_fg_colour, 
 				d_max_colour, 
 				d_mid_colour, 
-				d_min_colour));
+				d_min_colour,
+				d_bg_colour
+			));
 
 		colour_palette_changed = true;
 		colour_palette_valid = true;

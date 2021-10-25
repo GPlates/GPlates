@@ -249,6 +249,18 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			range2_max->setValue( params->get_range2_max() );
 			range2_min->setValue( params->get_range2_min() );
 
+
+			// Set the fg colour spinbox
+			int fg_index = 4; // default is white 
+			if 		( params->get_fg_colour() == GPlatesGui::Colour::get_red() ) 	{fg_index = 0;}
+			else if ( params->get_fg_colour() == GPlatesGui::Colour::get_yellow() )	{fg_index = 1;}
+			else if ( params->get_fg_colour() == GPlatesGui::Colour::get_green() ) 	{fg_index = 2;}
+			else if ( params->get_fg_colour() == GPlatesGui::Colour::get_blue() )	{fg_index = 3;}
+			else if ( params->get_fg_colour() == GPlatesGui::Colour::get_white() ) 	{fg_index = 4;}
+			else if ( params->get_fg_colour() == GPlatesGui::Colour(0.35f, 0.35f, 0.35f) ) 	{fg_index = 5;}
+			else if ( params->get_fg_colour() == GPlatesGui::Colour::get_black() )	{fg_index = 6;}
+			fg_colour_combobox->setCurrentIndex( fg_index );
+
 			// Set the max colour spinbox
 			int max_index = 0;
 			if ( 	  params->get_max_colour() == GPlatesGui::Colour::get_red() ) 	{max_index = 0;}
@@ -256,7 +268,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			else if ( params->get_max_colour() == GPlatesGui::Colour::get_green() ) {max_index = 2;}
 			else if ( params->get_max_colour() == GPlatesGui::Colour::get_blue() ) 	{max_index = 3;}
 			else if ( params->get_max_colour() == GPlatesGui::Colour::get_white() ) {max_index = 4;}
-			else if ( params->get_max_colour() == GPlatesGui::Colour::get_grey() ) 	{max_index = 5;}
+			else if ( params->get_max_colour() == GPlatesGui::Colour(0.35f, 0.35f, 0.35f) ) 	{max_index = 5;}
 			else if ( params->get_max_colour() == GPlatesGui::Colour::get_black() )	{max_index = 6;}
 			max_colour_combobox->setCurrentIndex( max_index );
 
@@ -267,7 +279,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_green() ) {mid_index = 2;}
 			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_blue() ) 	{mid_index = 3;}
 			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_white() ) {mid_index = 4;}
-			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_grey() ) 	{mid_index = 5;}
+			else if ( params->get_mid_colour() == GPlatesGui::Colour(0.35f, 0.35f, 0.35f) ) 	{mid_index = 5;}
 			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_black() )	{mid_index = 6;}
 			mid_colour_combobox->setCurrentIndex( mid_index );
 
@@ -278,9 +290,20 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 			else if ( params->get_min_colour() == GPlatesGui::Colour::get_green() ) {min_index = 2;}
 			else if ( params->get_min_colour() == GPlatesGui::Colour::get_blue() ) 	{min_index = 3;}
 			else if ( params->get_min_colour() == GPlatesGui::Colour::get_white() ) {min_index = 4;}
-			else if ( params->get_min_colour() == GPlatesGui::Colour::get_grey() ) 	{min_index = 5;}
+			else if ( params->get_min_colour() == GPlatesGui::Colour(0.35f, 0.35f, 0.35f) ) 	{min_index = 5;}
 			else if ( params->get_min_colour() == GPlatesGui::Colour::get_black() )	{min_index = 6;}
 			min_colour_combobox->setCurrentIndex( min_index );
+
+			// Set the bg colour spinbox
+			int bg_index = 4; // default is white 
+			if 		( params->get_bg_colour() == GPlatesGui::Colour::get_red() ) 	{bg_index = 0;}
+			else if ( params->get_bg_colour() == GPlatesGui::Colour::get_yellow() )	{bg_index = 1;}
+			else if ( params->get_bg_colour() == GPlatesGui::Colour::get_green() ) 	{bg_index = 2;}
+			else if ( params->get_bg_colour() == GPlatesGui::Colour::get_blue() )	{bg_index = 3;}
+			else if ( params->get_bg_colour() == GPlatesGui::Colour::get_white() ) 	{bg_index = 4;}
+			else if ( params->get_bg_colour() == GPlatesGui::Colour(0.35f, 0.35f, 0.35f) ) 	{bg_index = 5;}
+			else if ( params->get_bg_colour() == GPlatesGui::Colour::get_black() )	{bg_index = 6;}
+			bg_colour_combobox->setCurrentIndex( bg_index );
 
 			d_colour_scale_widget->populate(params->get_colour_palette());
 			colour_scale_placeholder_widget->setVisible(true);
@@ -425,6 +448,20 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_update_butto
 		params->set_range2_max( range2_max->value() );
 		params->set_range2_min( range2_min->value() );
 
+		// Get the fg colour from the combobox index	
+		int fg_index = fg_colour_combobox->currentIndex();
+		GPlatesGui::Colour fg_colour;
+		if 		( fg_index == 0 ) { fg_colour = GPlatesGui::Colour::get_red(); }
+		else if ( fg_index == 1 ) { fg_colour = GPlatesGui::Colour::get_yellow(); }
+		else if ( fg_index == 2 ) { fg_colour = GPlatesGui::Colour::get_green(); }
+		else if ( fg_index == 3 ) { fg_colour = GPlatesGui::Colour::get_blue(); }
+		else if ( fg_index == 4 ) { fg_colour = GPlatesGui::Colour::get_white(); }
+		else if ( fg_index == 5 ) { fg_colour = GPlatesGui::Colour(0.35f, 0.35f, 0.35f); }
+		else if ( fg_index == 6 ) { fg_colour = GPlatesGui::Colour::get_black(); }
+		else					  { fg_colour = GPlatesGui::Colour::get_black(); }
+		// Set the colour
+		params->set_fg_colour( fg_colour );
+
 		// Get the max colour from the combobox index	
 		int max_index = max_colour_combobox->currentIndex();
 		GPlatesGui::Colour max_colour;
@@ -433,7 +470,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_update_butto
 		else if ( max_index == 2 ) { max_colour = GPlatesGui::Colour::get_green(); }
 		else if ( max_index == 3 ) { max_colour = GPlatesGui::Colour::get_blue(); }
 		else if ( max_index == 4 ) { max_colour = GPlatesGui::Colour::get_white(); }
-		else if ( max_index == 5 ) { max_colour = GPlatesGui::Colour::get_grey(); }
+		else if ( max_index == 5 ) { max_colour = GPlatesGui::Colour(0.35f, 0.35f, 0.35f); }
 		else if ( max_index == 6 ) { max_colour = GPlatesGui::Colour::get_black(); }
 		else		               { max_colour = GPlatesGui::Colour::get_white(); }
 		// Set the colour
@@ -447,7 +484,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_update_butto
 		else if ( mid_index == 2 ) { mid_colour = GPlatesGui::Colour::get_green(); }
 		else if ( mid_index == 3 ) { mid_colour = GPlatesGui::Colour::get_blue(); }
 		else if ( mid_index == 4 ) { mid_colour = GPlatesGui::Colour::get_white(); }
-		else if ( mid_index == 5 ) { mid_colour = GPlatesGui::Colour::get_grey(); }
+		else if ( mid_index == 5 ) { mid_colour = GPlatesGui::Colour(0.35f, 0.35f, 0.35f); }
 		else if ( mid_index == 6 ) { mid_colour = GPlatesGui::Colour::get_black(); }
 		else					   { mid_colour = GPlatesGui::Colour::get_grey(); }
 		// Set the colour
@@ -461,11 +498,26 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_update_butto
 		else if ( min_index == 2 ) { min_colour = GPlatesGui::Colour::get_green(); }
 		else if ( min_index == 3 ) { min_colour = GPlatesGui::Colour::get_blue(); }
 		else if ( min_index == 4 ) { min_colour = GPlatesGui::Colour::get_white(); }
-		else if ( min_index == 5 ) { min_colour = GPlatesGui::Colour::get_grey(); }
+		else if ( min_index == 5 ) { min_colour = GPlatesGui::Colour(0.35f, 0.35f, 0.35f); }
 		else if ( min_index == 6 ) { min_colour = GPlatesGui::Colour::get_black(); }
 		else					   { min_colour = GPlatesGui::Colour::get_black(); }
 		// Set the colour
 		params->set_min_colour( min_colour );
+
+		// Get the bg colour from the combobox index	
+		int bg_index = bg_colour_combobox->currentIndex();
+		GPlatesGui::Colour bg_colour;
+		if 		( bg_index == 0 ) { bg_colour = GPlatesGui::Colour::get_red(); }
+		else if ( bg_index == 1 ) { bg_colour = GPlatesGui::Colour::get_yellow(); }
+		else if ( bg_index == 2 ) { bg_colour = GPlatesGui::Colour::get_green(); }
+		else if ( bg_index == 3 ) { bg_colour = GPlatesGui::Colour::get_blue(); }
+		else if ( bg_index == 4 ) { bg_colour = GPlatesGui::Colour::get_white(); }
+		else if ( bg_index == 5 ) { bg_colour = GPlatesGui::Colour(0.35f, 0.35f, 0.35f); }
+		else if ( bg_index == 6 ) { bg_colour = GPlatesGui::Colour::get_black(); }
+		else					  { bg_colour = GPlatesGui::Colour::get_black(); }
+		// Set the colour
+		params->set_bg_colour( bg_colour );
+
 
 		// Create the palette
 		params->user_generated_colour_palette();
@@ -592,9 +644,4 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::open_draw_style_set
 	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 	d_draw_style_dialog_ptr->reset(d_current_visual_layer);
 }
-
-
-
-
-
 

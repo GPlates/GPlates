@@ -40,6 +40,7 @@
 #include "global/AssertionFailureException.h"
 
 #include "maths/LatLonPoint.h"
+#include "maths/PointOnSphere.h"
 #include "maths/MathsUtils.h"
 #include "maths/UnitVector3D.h"
 #include "maths/types.h"

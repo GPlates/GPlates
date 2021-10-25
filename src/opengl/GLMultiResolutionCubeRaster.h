@@ -252,6 +252,17 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Gets the transform that is applied to raster/geometries when rendering into the cube map.
+		 */
+		virtual
+		const GLMatrix &
+		get_world_transform() const
+		{
+			return d_world_transform;
+		}
+
+
+		/**
 		 * Sets the transform to apply to raster/geometries when rendering into the cube map.
 		 */
 		virtual
@@ -315,6 +326,7 @@ namespace GPlatesOpenGL
 		 *
 		 * This is the internal format of the texture returned by @a get_tile_texture.
 		 */
+		virtual
 		GLint
 		get_tile_texture_internal_format() const
 		{

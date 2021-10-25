@@ -28,6 +28,7 @@
 #ifndef GPLATES_PROPERTYVALUES_RAWRASTER_H
 #define GPLATES_PROPERTYVALUES_RAWRASTER_H
 
+#include <cstddef> // For std::size_t
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
 #include <boost/scoped_array.hpp>
@@ -526,7 +527,8 @@ namespace GPlatesPropertyValues
 					unsigned int height_) :
 				d_width(width_),
 				d_height(height_),
-				d_data(new T[width_ * height_])
+				// Using std::size_t in case 64-bit compiler and array exceeds 32-bit...
+				d_data(new T[std::size_t(width_) * height_])
 			{  }
 
 			WithData(
@@ -841,6 +843,83 @@ namespace GPlatesPropertyValues
 				const Arg1 &arg1,
 				const Arg2 &arg2) :
 			ImplType(arg1, arg2)
+		{  }
+
+		template<class Arg1, class Arg2, class Arg3>
+		TemplatedRawRasterVisitor(
+				const Arg1 &arg1,
+				const Arg2 &arg2,
+				const Arg3 &arg3) :
+			ImplType(arg1, arg2, arg3)
+		{  }
+
+		template<class Arg1, class Arg2, class Arg3, class Arg4>
+		TemplatedRawRasterVisitor(
+				const Arg1 &arg1,
+				const Arg2 &arg2,
+				const Arg3 &arg3,
+				const Arg4 &arg4) :
+			ImplType(arg1, arg2, arg3, arg4)
+		{  }
+
+		template<class Arg1, class Arg2, class Arg3, class Arg4, class Arg5>
+		TemplatedRawRasterVisitor(
+				const Arg1 &arg1,
+				const Arg2 &arg2,
+				const Arg3 &arg3,
+				const Arg4 &arg4,
+				const Arg5 &arg5) :
+			ImplType(arg1, arg2, arg3, arg4, arg5)
+		{  }
+
+		template<class Arg1, class Arg2, class Arg3, class Arg4, class Arg5, class Arg6>
+		TemplatedRawRasterVisitor(
+				const Arg1 &arg1,
+				const Arg2 &arg2,
+				const Arg3 &arg3,
+				const Arg4 &arg4,
+				const Arg5 &arg5,
+				const Arg6 &arg6) :
+			ImplType(arg1, arg2, arg3, arg4, arg5, arg6)
+		{  }
+
+		template<class Arg1, class Arg2, class Arg3, class Arg4, class Arg5, class Arg6, class Arg7>
+		TemplatedRawRasterVisitor(
+				const Arg1 &arg1,
+				const Arg2 &arg2,
+				const Arg3 &arg3,
+				const Arg4 &arg4,
+				const Arg5 &arg5,
+				const Arg6 &arg6,
+				const Arg7 &arg7) :
+			ImplType(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+		{  }
+
+		template<class Arg1, class Arg2, class Arg3, class Arg4, class Arg5, class Arg6, class Arg7, class Arg8>
+		TemplatedRawRasterVisitor(
+				const Arg1 &arg1,
+				const Arg2 &arg2,
+				const Arg3 &arg3,
+				const Arg4 &arg4,
+				const Arg5 &arg5,
+				const Arg6 &arg6,
+				const Arg7 &arg7,
+				const Arg8 &arg8) :
+			ImplType(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+		{  }
+
+		template<class Arg1, class Arg2, class Arg3, class Arg4, class Arg5, class Arg6, class Arg7, class Arg8, class Arg9>
+		TemplatedRawRasterVisitor(
+				const Arg1 &arg1,
+				const Arg2 &arg2,
+				const Arg3 &arg3,
+				const Arg4 &arg4,
+				const Arg5 &arg5,
+				const Arg6 &arg6,
+				const Arg7 &arg7,
+				const Arg8 &arg8,
+				const Arg9 &arg9) :
+			ImplType(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 		{  }
 
 		virtual

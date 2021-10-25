@@ -49,7 +49,7 @@ GPlatesApi::PyCoregistrationLayerProxy::get_all_seed_features()
 	
 	BOOST_FOREACH(
 			const GPlatesModel::FeatureHandle::weak_ref f, 
-			DataMiningUtils::get_all_seed_features(d_proxy))
+			d_proxy->get_seed_features())
 	{
 		if(f.is_valid() && feature_set.find(f.handle_ptr()) == feature_set.end())
 		{

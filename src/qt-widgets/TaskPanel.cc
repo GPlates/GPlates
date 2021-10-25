@@ -33,9 +33,11 @@
 #include "ActionButtonBox.h"
 #include "DigitisationWidget.h"
 #include "FeatureSummaryWidget.h"
+#include "LightingWidget.h"
 #include "MeasureDistanceWidget.h"
 #include "ModifyGeometryWidget.h"
 #include "ModifyReconstructionPoleWidget.h"
+#include "MovePoleWidget.h"
 #include "SmallCircleWidget.h"
 #include "SnapNearbyVerticesWidget.h"
 #include "ReconstructionPoleWidget.h"
@@ -151,8 +153,13 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 			new ModifyGeometryWidget(
 				geometry_operation_state,
 				this)),
+	d_move_pole_widget_ptr(
+			new MovePoleWidget(
+				view_state,
+				this)),
 	d_modify_reconstruction_pole_widget_ptr(
 			new ModifyReconstructionPoleWidget(
+				*d_move_pole_widget_ptr,
 				view_state,
 				viewport_window,
 				d_clear_action,
@@ -171,6 +178,10 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	d_small_circle_widget_ptr(
 			new SmallCircleWidget(
 				view_state,
+				this)),
+	d_lighting_widget_ptr(
+			new LightingWidget(
+				viewport_window,
 				this)),
 	d_active_widget(NULL)
 {
@@ -193,10 +204,12 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	set_up_feature_tab(view_state);
 	set_up_digitisation_tab();
 	set_up_modify_geometry_tab();
+	set_up_move_pole_tab();
 	set_up_modify_pole_tab();
 	set_up_topology_tools_tab();
 	set_up_measure_distance_tab();
 	set_up_small_circle_tab();
+	set_up_lighting_tab();
 
 	choose_feature_tab();
 }
@@ -311,6 +324,26 @@ GPlatesQtWidgets::TaskPanel::set_up_modify_pole_tab()
 
 
 void
+GPlatesQtWidgets::TaskPanel::set_up_move_pole_tab()
+{
+	// Set up the layout to be used by the Move Pole tab.
+	QLayout *lay = add_default_layout(
+			add_page_with_title(d_stacked_widget_ptr, tr("Move Pole")));
+	
+	// Add the main MovePoleWidget.
+	// As usual, Qt will take ownership of memory so we don't have to worry.
+	// We cannot set this parent widget in the TaskPanel initialiser list because
+	// setupUi() has not been called yet.
+	lay->addWidget(d_move_pole_widget_ptr);
+
+	// After the main widget and anything else we might want to cram in there,
+	// a spacer to eat up remaining space and push all the widgets to the top
+	// of the Modify Pole tab.
+	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
+}
+
+
+void
 GPlatesQtWidgets::TaskPanel::set_up_topology_tools_tab()
 {
 	// Set up the layout to be used by the Topology Tools tab.
@@ -352,15 +385,29 @@ GPlatesQtWidgets::TaskPanel::set_up_measure_distance_tab()
 void
 GPlatesQtWidgets::TaskPanel::set_up_small_circle_tab()
 {
-        QLayout *layout_ = add_default_layout(
-		add_page_with_title(d_stacked_widget_ptr, tr("Small Circle")));
+	QLayout *layout_ = add_default_layout(
+	add_page_with_title(d_stacked_widget_ptr, tr("Small Circle")));
 
-        layout_->addWidget(d_small_circle_widget_ptr);
+	layout_->addWidget(d_small_circle_widget_ptr);
 
 	// After the main widget and anything else we might want to cram in there,
 	// a spacer to eat up remaining space and push all the widgets to the top
 	// of the Modify Pole tab.
-        layout_->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
+	layout_->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
+}
+
+void
+GPlatesQtWidgets::TaskPanel::set_up_lighting_tab()
+{
+	QLayout *layout_ = add_default_layout(
+	add_page_with_title(d_stacked_widget_ptr, tr("Lighting")));
+
+	layout_->addWidget(d_lighting_widget_ptr);
+
+	// After the main widget and anything else we might want to cram in there,
+	// a spacer to eat up remaining space and push all the widgets to the top
+	// of the Modify Pole tab.
+	layout_->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
 
 void
@@ -438,6 +485,13 @@ GPlatesQtWidgets::TaskPanel::choose_modify_pole_tab()
 
 
 void
+GPlatesQtWidgets::TaskPanel::choose_move_pole_tab()
+{
+	choose_tab(MOVE_POLE);
+}
+
+
+void
 GPlatesQtWidgets::TaskPanel::choose_topology_tools_tab()
 {
 	choose_tab(TOPOLOGY_TOOLS);
@@ -454,6 +508,12 @@ void
 GPlatesQtWidgets::TaskPanel::choose_small_circle_tab()
 {
 	choose_tab(SMALL_CIRCLE);
+}
+
+void
+GPlatesQtWidgets::TaskPanel::choose_lighting_tab()
+{
+	choose_tab(LIGHTING);
 }
 
 void

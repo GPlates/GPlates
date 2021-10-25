@@ -111,7 +111,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::FeatureInspectionCanvasToolWork
 		SLOT(update_enable_state()));
 
 	// Listen for focused feature geometry changes.
-	// We use this to determine if a geometry, that's being operated on or will potentially
+	// We use this to determine if a geometry that's being operated on, or will potentially
 	// be operated on, has got vertices or not.
 	QObject::connect(
 			&d_focused_feature_geometry_builder,

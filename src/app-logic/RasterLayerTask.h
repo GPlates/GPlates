@@ -43,6 +43,7 @@
 #include "property-values/Georeferencing.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/RawRaster.h"
+#include "property-values/SpatialReferenceSystem.h"
 #include "property-values/TextContent.h"
 
 
@@ -86,6 +87,10 @@ namespace GPlatesAppLogic
 			const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
 			get_georeferencing() const;
 
+			//! Returns the raster feature's spatial reference system.
+			const boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> &
+			get_spatial_reference_system() const;
+
 			//! Returns the raster feature or boost::none if one is currently not set on the layer.
 			const boost::optional<GPlatesModel::FeatureHandle::weak_ref> &
 			get_raster_feature() const;
@@ -99,6 +104,9 @@ namespace GPlatesAppLogic
 
 			//! The georeferencing of the raster.
 			boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> d_georeferencing;
+
+			//! The raster's spatial reference system.
+			boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> d_spatial_reference_system;
 
 			//! The raster feature.
 			boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_raster_feature;

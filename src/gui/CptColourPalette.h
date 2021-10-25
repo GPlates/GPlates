@@ -551,6 +551,15 @@ namespace GPlatesGui
 		}
 
 		/**
+		 * Returns the entries added.
+		 */
+		const std::vector<EntryType> &
+		get_entries() const
+		{
+			return d_entries;
+		}
+
+		/**
 		 * Sets the background colour, used for values that go before the first entry.
 		 *
 		 * This colour is ignored for categorical CPT files where the value type is
@@ -561,6 +570,15 @@ namespace GPlatesGui
 				const Colour &colour)
 		{
 			d_background_colour = colour;
+		}
+
+		/**
+		 * Returns the background colour.
+		 */
+		boost::optional<Colour>
+		get_background_colour() const
+		{
+			return d_background_colour;
 		}
 
 		/**
@@ -577,6 +595,15 @@ namespace GPlatesGui
 		}
 
 		/**
+		 * Returns the foreground colour.
+		 */
+		boost::optional<Colour>
+		get_foreground_colour() const
+		{
+			return d_foreground_colour;
+		}
+
+		/**
 		 * Sets the NaN colour, used for values that are:
 		 *  - NaN
 		 *  - not present, and
@@ -588,6 +615,15 @@ namespace GPlatesGui
 				const Colour &colour)
 		{
 			d_nan_colour = colour;
+		}
+
+		/**
+		 * Returns the NaN colour.
+		 */
+		boost::optional<Colour>
+		get_nan_colour() const
+		{
+			return d_nan_colour;
 		}
 
 		/**

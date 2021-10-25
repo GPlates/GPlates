@@ -243,7 +243,7 @@ namespace
 	 * Convenience function to help write GmlPoint and GmlMultiPoint.
 	 */
 	void
-	write_gml_point(
+	write_gml_point_on_sphere(
 			GPlatesFileIO::XmlWriter &xml_output,
 			const GPlatesMaths::PointOnSphere &point,
 			GPlatesPropertyValues::GmlPoint::GmlProperty gml_property)
@@ -275,26 +275,26 @@ namespace
 
 
 	/**
-	 * Similar to write_gml_point() but retrieves the lat-lon version of the point
-	 * using GmlPoint::point_in_lat_lon().
+	 * Similar to write_gml_point_on_sphere() but retrieves the original lat-lon version of the point
+	 * using GmlPoint::point_2d().
 	 *
 	 * See the comments above GmlPoint::point_in_lat_lon for the rationale behind
 	 * this special case.
 	 */
 	void
-	write_gml_point_in_lat_lon(
+	write_gml_point_2d(
 			GPlatesFileIO::XmlWriter &xml_output,
 			const GPlatesPropertyValues::GmlPoint &gml_point)
 	{
 		xml_output.writeStartGmlElement("Point");
-			GPlatesMaths::LatLonPoint llp = gml_point.point_in_lat_lon();
+			const std::pair<double, double> &point_2d = gml_point.point_2d();
 			if (gml_point.gml_property() == GPlatesPropertyValues::GmlPoint::POS)
 			{
 				xml_output.writeStartGmlElement("pos");
 
 					// NOTE: We are assuming GPML is using (lat,lon) ordering.
 					// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
-					xml_output.writeDecimalPair(llp.latitude(), llp.longitude());
+					xml_output.writeDecimalPair(point_2d.first, point_2d.second);
 
 				xml_output.writeEndElement();  // </gml:pos>
 			}
@@ -304,7 +304,7 @@ namespace
 
 					// NOTE: We are assuming GPML is using (lat,lon) ordering.
 					// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
-					xml_output.writeCommaSeparatedDecimalPair(llp.latitude(), llp.longitude());
+					xml_output.writeCommaSeparatedDecimalPair(point_2d.first, point_2d.second);
 
 				xml_output.writeEndElement();  // </gml:coordinates>
 			}
@@ -952,7 +952,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_multi_point(
 	for ( ; iter != end; ++iter, ++gml_properties_iter) 
 	{
 		d_output.writeStartGmlElement("pointMember");
-		write_gml_point(d_output, *iter, *gml_properties_iter);
+		write_gml_point_on_sphere(d_output, *iter, *gml_properties_iter);
 		d_output.writeEndElement(); // </gml:pointMember>
 	}
 
@@ -981,7 +981,7 @@ void
 GPlatesFileIO::GpmlOutputVisitor::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point) 
 {
-	write_gml_point_in_lat_lon(d_output, gml_point);
+	write_gml_point_2d(d_output, gml_point);
 }
 
 
@@ -1574,25 +1574,32 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_time_sample(
 		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) 
 {
 	d_output.writeStartGpmlElement("TimeSample");
-		d_output.writeStartGpmlElement("value");
-			gpml_time_sample.value()->accept_visitor(*this);
-		d_output.writeEndElement();
+	d_output.writeStartGpmlElement("value");
+	gpml_time_sample.value()->accept_visitor(*this);
+	d_output.writeEndElement();
 
-		d_output.writeStartGpmlElement("validTime");
-			gpml_time_sample.valid_time()->accept_visitor(*this);
-		d_output.writeEndElement();
+	d_output.writeStartGpmlElement("validTime");
+	gpml_time_sample.valid_time()->accept_visitor(*this);
+	d_output.writeEndElement();
 
-		// The description is optional.
-		if (gpml_time_sample.description() != NULL) 
-		{
-			d_output.writeStartGmlElement("description");
-				gpml_time_sample.description()->accept_visitor(*this);
-			d_output.writeEndElement();
-		}
-
-		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_time_sample.value_type());
+	// The description is optional.
+	if (gpml_time_sample.description() != NULL) 
+	{
+		d_output.writeStartGmlElement("description");
+		gpml_time_sample.description()->accept_visitor(*this);
 		d_output.writeEndElement();
+	}
+
+	if(gpml_time_sample.is_disabled())
+	{
+		d_output.writeStartGpmlElement("isDisabled");
+		d_output.writeBoolean(true);
+		d_output.writeEndElement();
+	}
+
+	d_output.writeStartGpmlElement("valueType");
+	writeTemplateTypeParameterType(d_output, gpml_time_sample.value_type());
+	d_output.writeEndElement();
 
 	d_output.writeEndElement();  // </gpml:TimeSample>
 }

@@ -169,39 +169,43 @@ GPlatesMaths::MultiPointOnSphere::accept_visitor(
 }
 
 
-bool
+boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesMaths::MultiPointOnSphere::is_close_to(
 		const PointOnSphere &test_point,
 		const real_t &closeness_inclusion_threshold,
 		real_t &closeness) const
 {
 	real_t &closest_closeness_so_far = closeness;  // A descriptive alias.
-	bool have_already_found_a_close_point = false;
+	boost::optional<PointOnSphere> closest_point;
 
 	const_iterator iter = begin(), the_end = end();
-	for ( ; iter != the_end; ++iter) {
+	for ( ; iter != the_end; ++iter)
+	{
 		const PointOnSphere &the_point = *iter;
 
-		// Don't bother initialising this.
+		// No need to initialise this - to -1 (ie, min-dot-product).
 		real_t point_closeness;
 
-		if (the_point.is_close_to(test_point,
-				closeness_inclusion_threshold, point_closeness))
+		if (the_point.is_close_to(test_point, closeness_inclusion_threshold, point_closeness))
 		{
-			if (have_already_found_a_close_point) {
-				if (point_closeness.is_precisely_greater_than(
-							closest_closeness_so_far.dval()))
+			if (closest_point)
+			{
+				if (point_closeness.is_precisely_greater_than(closest_closeness_so_far.dval()))
 				{
 					closest_closeness_so_far = point_closeness;
+					closest_point = the_point;
 				}
 				// else, do nothing.
-			} else {
+			}
+			else
+			{
 				closest_closeness_so_far = point_closeness;
-				have_already_found_a_close_point = true;
+				closest_point = the_point;
 			}
 		}
 	}
-	return have_already_found_a_close_point;
+
+	return closest_point;
 }
 
 

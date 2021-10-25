@@ -50,7 +50,7 @@
 GPlatesPresentation::Application::Application() :
 	d_view_state(d_application_state),
 	d_main_window(d_application_state, d_view_state),
-	d_cmd_server(new GPlatesGui::CommandServer())
+	d_cmd_server(d_application_state, d_view_state, d_main_window)
 {
 	initialise();
 }

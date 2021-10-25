@@ -36,9 +36,13 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::ScalarField3DVisualLayerPar
 		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
 	VisualLayerParams(layer_task_params),
 	d_render_mode(GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_ISOSURFACE),
-	d_colour_mode(GPlatesViewOperations::ScalarField3DRenderParameters::COLOUR_MODE_DEPTH),
-	d_colour_palette_filename(QString()),
-	d_colour_palette(GPlatesGui::DefaultNormalisedRasterColourPalette::create())
+	d_isosurface_deviation_window_mode(GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_DEVIATION_WINDOW_MODE_NONE),
+	d_isosurface_colour_mode(GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_COLOUR_MODE_DEPTH),
+	d_cross_section_colour_mode(GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_SCALAR),
+	d_scalar_colour_palette(GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette::SCALAR),
+	d_initialised_scalar_colour_palette_range_mapping(false),
+	d_gradient_colour_palette(GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette::GRADIENT),
+	d_initialised_gradient_colour_palette_range_mapping(false)
 {
 }
 
@@ -58,12 +62,38 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::handle_layer_modified(
 	}
 	// ...there's no scalar field feature...
 
-	if (d_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
+	emit_modified();
+}
+
+
+GPlatesViewOperations::ScalarField3DRenderParameters
+GPlatesPresentation::ScalarField3DVisualLayerParams::get_scalar_field_3d_render_parameters() const
+{
+	GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters isovalue_parameters;
+	if (get_isovalue_parameters())
 	{
-		d_colour_palette = GPlatesGui::DefaultNormalisedRasterColourPalette::create();
+		isovalue_parameters = get_isovalue_parameters().get();
 	}
 
-	emit_modified();
+	GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction depth_restriction;
+	if (get_depth_restriction())
+	{
+		depth_restriction = get_depth_restriction().get();
+	}
+
+	return GPlatesViewOperations::ScalarField3DRenderParameters(
+			get_render_mode(),
+			get_isosurface_deviation_window_mode(),
+			get_isosurface_colour_mode(),
+			get_cross_section_colour_mode(),
+			get_scalar_colour_palette(),
+			get_gradient_colour_palette(),
+			isovalue_parameters,
+			get_deviation_window_render_options(),
+			get_surface_polygons_mask(),
+			depth_restriction,
+			get_quality_performance(),
+			get_shader_test_variables());
 }
 
 
@@ -72,6 +102,58 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::update(
 		bool always_emit_modified_signal)
 {
 	bool emit_modified_signal = always_emit_modified_signal;
+
+	// Once we know the scalar field's scalar mean/std-dev we can set up the initial palette range mapping.
+	if (!d_initialised_scalar_colour_palette_range_mapping)
+	{
+		GPlatesAppLogic::ScalarField3DLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::ScalarField3DLayerTask::Params *>(
+					&get_layer_task_params());
+
+		// If we have a scalar field then map the palette range to the scalar mean +/- deviation.
+		if (layer_task_params &&
+			layer_task_params->get_scalar_mean() &&
+			layer_task_params->get_scalar_standard_deviation())
+		{
+			d_scalar_colour_palette.map_palette_range(
+					layer_task_params->get_scalar_mean().get() -
+							d_scalar_colour_palette.get_deviation_from_mean() *
+									layer_task_params->get_scalar_standard_deviation().get(),
+					layer_task_params->get_scalar_mean().get() +
+							d_scalar_colour_palette.get_deviation_from_mean() *
+									layer_task_params->get_scalar_standard_deviation().get());
+
+			d_initialised_scalar_colour_palette_range_mapping = true;
+
+			emit_modified_signal = true;
+		}
+	}
+
+	// Once we know the scalar field's gradient mean/std-dev we can set up the initial palette range mapping.
+	if (!d_initialised_gradient_colour_palette_range_mapping)
+	{
+		GPlatesAppLogic::ScalarField3DLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::ScalarField3DLayerTask::Params *>(
+					&get_layer_task_params());
+
+		// If we have a scalar field then map the palette range to the gradient +/- (mean + deviation).
+		if (layer_task_params &&
+			layer_task_params->get_gradient_magnitude_mean() &&
+			layer_task_params->get_gradient_magnitude_standard_deviation())
+		{
+			d_gradient_colour_palette.map_palette_range(
+					-layer_task_params->get_gradient_magnitude_mean().get() -
+							d_gradient_colour_palette.get_deviation_from_mean() *
+									layer_task_params->get_gradient_magnitude_standard_deviation().get(),
+					layer_task_params->get_gradient_magnitude_mean().get() +
+							d_gradient_colour_palette.get_deviation_from_mean() *
+									layer_task_params->get_gradient_magnitude_standard_deviation().get());
+
+			d_initialised_gradient_colour_palette_range_mapping = true;
+
+			emit_modified_signal = true;
+		}
+	}
 
 	// If the isovalue parameters have not yet been set then initialise them with the scalar field mean value.
 	if (!d_isovalue_parameters)
@@ -112,49 +194,8 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::update(
 		}
 	}
 
-	// Create a new colour palette if the colour palette currently in place was not
-	// loaded from a file.
-	if (d_colour_palette_filename.isEmpty())
-	{
-		d_colour_palette = GPlatesGui::DefaultNormalisedRasterColourPalette::create();
-		emit_modified_signal = true;
-	}
-
 	if (emit_modified_signal)
 	{
 		emit_modified();
 	}
-}
-
-
-const QString &
-GPlatesPresentation::ScalarField3DVisualLayerParams::get_colour_palette_filename() const
-{
-	return d_colour_palette_filename;
-}
-
-
-void
-GPlatesPresentation::ScalarField3DVisualLayerParams::set_colour_palette(
-		const QString &filename,
-		const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette)
-{
-	d_colour_palette_filename = filename;
-	d_colour_palette = colour_palette;
-	emit_modified();
-}
-
-
-void
-GPlatesPresentation::ScalarField3DVisualLayerParams::use_auto_generated_colour_palette()
-{
-	d_colour_palette_filename = QString();
-	update(true /* emit modified signal for us */);
-}
-
-
-GPlatesGui::ColourPalette<double>::non_null_ptr_type
-GPlatesPresentation::ScalarField3DVisualLayerParams::get_colour_palette() const
-{
-	return d_colour_palette;
 }

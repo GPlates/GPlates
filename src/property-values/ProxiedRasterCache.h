@@ -29,9 +29,11 @@
 #define GPLATES_PROPERTYVALUES_PROXIEDRASTERCACHE_H
 
 #include <vector>
+#include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include "RawRaster.h"
+#include "SpatialReferenceSystem.h"
 #include "TextContent.h"
 
 #include "file-io/ReadErrorAccumulation.h"
@@ -70,6 +72,13 @@ namespace GPlatesPropertyValues
 		const std::vector<RawRaster::non_null_ptr_type> &
 		proxied_raw_rasters() const;
 
+		/**
+		 * FIXME: This will no longer be needed once we store the raster
+		 * spatial reference system in a new property value.
+		 */
+		boost::optional<SpatialReferenceSystem::non_null_ptr_to_const_type>
+		get_spatial_reference_system();
+
 		void
 		set_file_name(
 				const TextContent &file_name,
@@ -97,6 +106,14 @@ namespace GPlatesPropertyValues
 			virtual
 			const std::vector<RawRaster::non_null_ptr_type> &
 			proxied_raw_rasters() = 0;
+
+			/**
+			 * FIXME: This will no longer be needed once we store the raster
+			 * spatial reference system in a new property value.
+			 */
+			virtual
+			boost::optional<SpatialReferenceSystem::non_null_ptr_to_const_type>
+			get_spatial_reference_system() = 0;
 
 			virtual
 			void

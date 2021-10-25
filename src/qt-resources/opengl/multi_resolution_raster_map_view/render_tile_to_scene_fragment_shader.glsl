@@ -30,13 +30,27 @@
 uniform sampler2D tile_texture_sampler;
 
 #ifdef ENABLE_CLIPPING
-uniform sampler2D clip_texture_sampler;
+	uniform sampler2D clip_texture_sampler;
 #endif // ENABLE_CLIPPING
+
+#ifdef SOURCE_RASTER_IS_FLOATING_POINT
+	uniform vec4 source_texture_dimensions;
+#endif
 
 void main (void)
 {
+#ifdef SOURCE_RASTER_IS_FLOATING_POINT
+	// Do the texture transform projective divide.
+	vec2 source_texture_coords = gl_TexCoord[0].st / gl_TexCoord[0].q;
+	// Bilinearly filter the tile texture (data/coverage is in red/green channel).
+	// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
+	gl_FragColor = bilinearly_interpolate_data_coverge_RG(
+		 tile_texture_sampler, source_texture_coords, source_texture_dimensions);
+#else
 	// Projective texturing to handle cube map projection.
+	// Use hardware bilinear interpolation of fixed-point texture.
 	gl_FragColor = texture2DProj(tile_texture_sampler, gl_TexCoord[0]);
+#endif
 
 #ifdef ENABLE_CLIPPING
 	gl_FragColor *= texture2DProj(clip_texture_sampler, gl_TexCoord[1]);

@@ -123,7 +123,7 @@ namespace
 
 
 	void
-	add_supported_formats_to_map(
+	add_supported_formats(
 			std::map<QString, RasterReader::FormatInfo> &formats,
 			RasterReader::FormatHandler format_handler)
 	{
@@ -136,67 +136,82 @@ namespace
 			formats.insert(std::make_pair(
 					"bmp",
 					RasterReader::FormatInfo(
-						"Windows BMP image",
+						"Windows BMP",
 						"image/bmp",
 						RasterReader::RGBA)));
 			formats.insert(std::make_pair(
 					"gif",
 					RasterReader::FormatInfo(
-						"GIF image",
+						"GIF",
 						"image/gif",
 						RasterReader::RGBA)));
 			formats.insert(std::make_pair(
 					"jpg",
 					RasterReader::FormatInfo(
-						"JPEG image",
+						"JPEG",
 						"image/jpeg",
 						RasterReader::RGBA)));
 			formats.insert(std::make_pair(
 					"jpeg",
 					RasterReader::FormatInfo(
-						"JPEG image",
+						"JPEG",
 						"image/jpeg",
 						RasterReader::RGBA)));
 			formats.insert(std::make_pair(
 					"png",
 					RasterReader::FormatInfo(
-						"PNG image",
+						"PNG",
 						"image/png",
 						RasterReader::RGBA)));
 			formats.insert(std::make_pair(
 					"svg",
 					RasterReader::FormatInfo(
-						"SVG image",
+						"SVG",
 						"image/svg+xml",
-						RasterReader::RGBA)));
-			formats.insert(std::make_pair(
-					"tif",
-					RasterReader::FormatInfo(
-						"TIFF image",
-						"image/tiff",
-						RasterReader::RGBA)));
-			formats.insert(std::make_pair(
-					"tiff",
-					RasterReader::FormatInfo(
-						"TIFF image",
-						"image/tiff",
 						RasterReader::RGBA)));
 		}
 
-		// Also add GMT grid/NetCDF files, read by GDAL.
+		// Also add support for numerical rasters (eg, GMT grid/NetCDF files), read by GDAL.
+		// These formats can also support RGBA data such as GeoTIFF (*.tif) but have the advantage
+		// (due to GDAL) of also supporting georeferencing and spatial reference systems
+		// (unlike the RGBA raster reader above).
 		if (format_handler == RasterReader::GDAL)
 		{
 			formats.insert(std::make_pair(
 					"grd",
 					RasterReader::FormatInfo(
-						"NetCDF/GMT grid data",
+						"NetCDF/GMT",
 						"application/x-netcdf",
 						RasterReader::GDAL)));
 			formats.insert(std::make_pair(
 					"nc",
 					RasterReader::FormatInfo(
-						"NetCDF/GMT grid data",
+						"NetCDF/GMT",
 						"application/x-netcdf",
+						RasterReader::GDAL)));
+			formats.insert(std::make_pair(
+					"tif",
+					RasterReader::FormatInfo(
+						"TIFF",
+						"image/tiff",
+						RasterReader::GDAL)));
+			formats.insert(std::make_pair(
+					"tiff",
+					RasterReader::FormatInfo(
+						"TIFF",
+						"image/tiff",
+						RasterReader::GDAL)));
+			formats.insert(std::make_pair(
+					"img",
+					RasterReader::FormatInfo(
+						"Erdas Imagine",
+						"application/x-erdas-hfa",
+						RasterReader::GDAL)));
+			formats.insert(std::make_pair(
+					"ers",
+					RasterReader::FormatInfo(
+						"ERMapper",
+						"application/x-ers",
 						RasterReader::GDAL)));
 		}
 	}
@@ -301,7 +316,7 @@ GPlatesFileIO::RasterReader::get_supported_formats()
 
 	for (unsigned int format_handler = 0; format_handler < NUM_FORMAT_HANDLERS; ++format_handler)
 	{
-		add_supported_formats_to_map(supported_formats, static_cast<FormatHandler>(format_handler));
+		add_supported_formats(supported_formats, static_cast<FormatHandler>(format_handler));
 	}
 
 	return supported_formats;
@@ -313,7 +328,7 @@ GPlatesFileIO::RasterReader::get_supported_formats(
 		FormatHandler format_handler)
 {
 	std::map<QString, FormatInfo> supported_formats;
-	add_supported_formats_to_map(supported_formats, format_handler);
+	add_supported_formats(supported_formats, format_handler);
 	return supported_formats;
 }
 
@@ -406,7 +421,7 @@ GPlatesFileIO::RasterReader::RasterReader(
 			break;
 
 		default:
-			// Shouldn't get here.
+			// Shouldn't be able to get here.
 			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 	}
 }
@@ -429,6 +444,34 @@ GPlatesFileIO::RasterReader::can_read()
 	else
 	{
 		return false;
+	}
+}
+
+
+boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
+GPlatesFileIO::RasterReader::get_georeferencing()
+{
+	if (d_impl)
+	{
+		return d_impl->get_georeferencing();
+	}
+	else
+	{
+		return boost::none;
+	}
+}
+
+
+boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+GPlatesFileIO::RasterReader::get_spatial_reference_system()
+{
+	if (d_impl)
+	{
+		return d_impl->get_spatial_reference_system();
+	}
+	else
+	{
+		return boost::none;
 	}
 }
 

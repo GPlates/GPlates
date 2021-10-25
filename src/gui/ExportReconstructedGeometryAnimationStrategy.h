@@ -83,7 +83,7 @@ namespace GPlatesGui
 					const QString& filename_template_,
 					FileFormat file_format_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
-					bool wrap_to_dateline_ = false) :
+					bool wrap_to_dateline_ = true) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
 				file_options(file_options_),
@@ -147,6 +147,9 @@ namespace GPlatesGui
 		 */
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type
 				d_loaded_files;
+
+		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type
+				d_loaded_reconstruction_files;
 
 		//! Export configuration parameters.
 		const_configuration_ptr d_configuration;

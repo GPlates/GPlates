@@ -50,12 +50,18 @@ namespace GPlatesFileIO
 			QXmlStreamReader &reader;
 			boost::shared_ptr<GPlatesFileIO::DataSource> source;
 			GPlatesFileIO::ReadErrorAccumulation &errors;
+			bool &contains_unsaved_changes;
 
 			ReaderParams(
 					QXmlStreamReader &reader_,
 					boost::shared_ptr<GPlatesFileIO::DataSource> &source_,
-					GPlatesFileIO::ReadErrorAccumulation &errors_) :
-				reader(reader_), source(source_), errors(errors_) {  }
+					GPlatesFileIO::ReadErrorAccumulation &errors_,
+					bool &contains_unsaved_changes_) :
+				reader(reader_),
+				source(source_),
+				errors(errors_),
+				contains_unsaved_changes(contains_unsaved_changes_)
+			{  }
 		};
 
 

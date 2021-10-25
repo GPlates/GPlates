@@ -41,6 +41,8 @@
 
 #include "global/PointerTraits.h"
 
+#include "model/FeatureId.h"
+
 #include "utils/SubjectObserverToken.h"
 
 
@@ -115,6 +117,21 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns all the attribute data at the birth time of the seed feature.
+		 * Normally, the return value is a one-row table.
+		 * The columns in the table correspond to the associations 
+		 * in the configuration of he co-registration layer.
+		 * The seed feature is specified by its feature id.
+		 * If the seed feature does not exist or has no valid birth time, 
+		 * the function returns boost::none.
+		 */
+		boost::optional<coregistration_data_non_null_ptr_type>
+		get_birth_attribute_data(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesModel::FeatureId &feature_id);
+
+
+		/**
 		 * Returns the subject token that clients can use to determine if the co-registration data
 		 * has changed since it was last retrieved.
 		 *
@@ -166,18 +183,11 @@ namespace GPlatesAppLogic
 				const ReconstructLayerProxy::non_null_ptr_type &coregistration_seed_layer_proxy);
 
 		
-		std::vector<reconstruct_layer_proxy_non_null_ptr_type>  
-		get_coregistration_seed_layer_proxy()
-		{
-			std::vector<reconstruct_layer_proxy_non_null_ptr_type> ret;
-			BOOST_FOREACH(
-					LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> input_proxy, 
-					d_current_seed_layer_proxies.get_input_layer_proxies())
-			{
-				ret.push_back(input_proxy.get_input_layer_proxy());
-			}
-			return ret;
-		}
+		/*
+		* Returns all the seed features for this co-registration layer.
+		*/
+		std::vector<GPlatesModel::FeatureHandle::weak_ref>  
+		get_seed_features();
 
 
 		/**
@@ -222,7 +232,9 @@ namespace GPlatesAppLogic
 		set_current_coregistration_configuration_table(
 				const GPlatesDataMining::CoRegConfigurationTable &coregistration_configuration_table);
 
-
+		/**
+		 * Returns the current co-registration configuration table.
+		 */
 		const GPlatesDataMining::CoRegConfigurationTable&
 		get_current_coregistration_configuration_table() const 
 		{

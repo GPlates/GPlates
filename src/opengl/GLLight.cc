@@ -38,6 +38,7 @@
 #include "GLFrameBufferObject.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
+#include "GLShaderSource.h"
 #include "GLUtils.h"
 
 #include "global/AssertionFailureException.h"
@@ -95,12 +96,12 @@ GPlatesOpenGL::GLLight::is_supported(
 		// such as number of shader instructions allowed.
 		//
 
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
-		fragment_shader_source.add_shader_source_from_file(
+		GLShaderSource fragment_shader_source;
+		fragment_shader_source.add_code_segment_from_file(
 				RENDER_MAP_VIEW_LIGHT_DIRECTION_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 		
-		GLShaderProgramUtils::ShaderSource vertex_shader_source;
-		vertex_shader_source.add_shader_source_from_file(
+		GLShaderSource vertex_shader_source;
+		vertex_shader_source.add_code_segment_from_file(
 				RENDER_MAP_VIEW_LIGHT_DIRECTION_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
@@ -388,24 +389,11 @@ GPlatesOpenGL::GLLight::update_globe_view(
 
 	if (d_scene_lighting_params.is_light_direction_attached_to_view_frame())
 	{
-		// The light direction is in view-space.
-		const GPlatesMaths::UnitVector3D &view_space_light_direction =
-				d_scene_lighting_params.get_globe_view_light_direction();
-		const double light_x = view_space_light_direction.x().dval();
-		const double light_y = view_space_light_direction.y().dval();
-		const double light_z = view_space_light_direction.z().dval();
-
-		// Need to reverse rotate back to world-space.
-		// We'll assume the view orientation matrix stores only a 3x3 rotation.
-		// In which case the inverse matrix is the transpose.
-		const GLMatrix &view = d_view_orientation;
-
-		// Multiply the view-space light direction by the transpose of the 3x3 view orientation.
-		d_globe_view_light_direction = GPlatesMaths::Vector3D(
-				view.get_element(0,0) * light_x + view.get_element(1,0) * light_y + view.get_element(2,0) * light_z,
-				view.get_element(0,1) * light_x + view.get_element(1,1) * light_y + view.get_element(2,1) * light_z,
-				view.get_element(0,2) * light_x + view.get_element(1,2) * light_y + view.get_element(2,2) * light_z)
-						.get_normalisation();
+		// Reverse rotate light direction from view-space back to world-space.
+		d_globe_view_light_direction =
+				GPlatesGui::transform_globe_view_space_light_direction_to_world_space(
+						d_scene_lighting_params.get_globe_view_light_direction(),
+						d_view_orientation);
 	}
 	else // light direction is attached to world-space...
 	{
@@ -421,9 +409,9 @@ GPlatesOpenGL::GLLight::create_shader_programs(
 	d_render_map_view_light_direction_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+					GLShaderSource::create_shader_source_from_file(
 							RENDER_MAP_VIEW_LIGHT_DIRECTION_VERTEX_SHADER_SOURCE_FILE_NAME),
-					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+					GLShaderSource::create_shader_source_from_file(
 							RENDER_MAP_VIEW_LIGHT_DIRECTION_FRAGMENT_SHADER_SOURCE_FILE_NAME));
 
 	// The client should have called 'is_supported()' which verifies vertex/fragment shader support

@@ -379,6 +379,9 @@ GPlatesFileIO::GpmlPropertyReader::read_property_structural_type(
 					ReadErrors::IncorrectTimeDependentPropertyStructuralElementFound,
 					ReadErrors::PropertyConvertedBetweenTimeDependentTypes);
 
+			// The file we read from still contains old type of time-dependent wrapper.
+			reader_params.contains_unsaved_changes = true;
+
 			return piecewise_aggregration_property_value;
 		}
 
@@ -526,6 +529,9 @@ GPlatesFileIO::GpmlPropertyReader::convert_unwrapped_to_time_dependent_wrapped_s
 				ReadErrors::TimeDependentPropertyStructuralElementNotFound,
 				ReadErrors::PropertyConvertedToTimeDependent);
 
+		// The file we read from does not contain the time-dependent wrapper we just added.
+		reader_params.contains_unsaved_changes = true;
+
 		// Property was interpreted (after some modification).
 		return wrapped_property_value;
 	}
@@ -579,6 +585,9 @@ GPlatesFileIO::GpmlPropertyReader::convert_time_dependent_wrapped_to_unwrapped_s
 			append_warning(structural_xml_element, reader_params,
 					ReadErrors::TimeDependentPropertyStructuralElementFound,
 					ReadErrors::PropertyConvertedFromTimeDependent);
+
+			// The file we read from still contains the time-dependent wrapper we just removed.
+			reader_params.contains_unsaved_changes = true;
 
 			// Return the unwrapped property value (ie, without the GpmlConstantValue wrapper).
 			return constant_value_property_value->value();

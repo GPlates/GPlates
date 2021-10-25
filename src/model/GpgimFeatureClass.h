@@ -34,6 +34,9 @@
 #include "GpgimProperty.h"
 #include "PropertyName.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -69,7 +72,12 @@ namespace GPlatesModel
 		 *        feature class (but not its ancestor classes).
 		 * @param gpgim_properties_end end iterator over the GPGIM properties associated with this
 		 *        feature class (but not its ancestor classes).
+		 * @param default_geometry_property the default geometry property (if there is one).
 		 * @param parent_feature_class the parent feature class (if there is a parent).
+		 *
+		 * @throws PreconditionViolationError if @a default_geometry_property is specified but
+		 * is not one of the GPGIM property instances in the range
+		 * [ @a gpgim_properties_begin, @a gpgim_properties_end ].
 		 */
 		template <typename GpgimPropertyForwardIter>
 		static
@@ -79,6 +87,7 @@ namespace GPlatesModel
 				const QString &feature_description,
 				GpgimPropertyForwardIter gpgim_properties_begin,
 				GpgimPropertyForwardIter gpgim_properties_end,
+				boost::optional<GpgimProperty::non_null_ptr_to_const_type> default_geometry_property = boost::none,
 				boost::optional<GpgimFeatureClass::non_null_ptr_to_const_type> parent_feature_class = boost::none)
 		{
 			return non_null_ptr_type(
@@ -87,6 +96,7 @@ namespace GPlatesModel
 							feature_description,
 							gpgim_properties_begin,
 							gpgim_properties_end,
+							default_geometry_property,
 							parent_feature_class));
 		}
 
@@ -140,6 +150,18 @@ namespace GPlatesModel
 
 
 		/**
+		 * Returns the GPGIM properties of only this feature class (excluding ancestor feature classes).
+		 *
+		 * Only properties from this feature class (superclass) are included.
+		 */
+		const gpgim_property_seq_type &
+		get_feature_properties_excluding_ancestor_classes() const
+		{
+			return d_feature_properties;
+		}
+
+
+		/**
 		 * Convenience method returns the GPGIM property of the specified property name.
 		 *
 		 * Returns boost::none if the specified property name is not recognised for this feature class
@@ -151,14 +173,30 @@ namespace GPlatesModel
 
 
 		/**
-		 * Returns the GPGIM properties of only this feature class (excluding ancestor feature classes).
+		 * Returns the default GPGIM property that represents a *geometry* property for this feature class.
 		 *
-		 * Only properties from this feature class (superclass) are included.
+		 * Returns boost::none if this feature class (and its ancestor/inherited classes) do not
+		 * have a default geometry property. This can happen if this feature class is an abstract
+		 * feature class (since a descendent/derived class will likely contain a geometry property).
+		 *
+		 * If both an ancestor feature class (or multiple ancestor classes) and this feature class
+		 * provide a defautl GPGIM property then this feature class overrides the ancestors.
+		 * Note that typically this won't happen if the GPGIM is designed/edited properly.
 		 */
-		const gpgim_property_seq_type &
-		get_feature_properties_excluding_ancestor_classes() const
+		boost::optional<GpgimProperty::non_null_ptr_to_const_type>
+		get_default_geometry_feature_property() const;
+
+
+		/**
+		 * Same as @a get_default_geometry_feature_property but excludes ancestor feature classes.
+		 *
+		 * Only if this feature class (ie, not superclasses) has a default geometry property
+		 * will one be returned. This is useful when converting one feature class into another.
+		 */
+		boost::optional<GpgimProperty::non_null_ptr_to_const_type>
+		get_default_geometry_feature_property_excluding_ancestor_classes() const
 		{
-			return d_feature_properties;
+			return d_default_geometry_property;
 		}
 
 
@@ -183,6 +221,9 @@ namespace GPlatesModel
 		//! The GPGIM properties of this feature class.
 		gpgim_property_seq_type d_feature_properties;
 
+		//! The optional default geometry property.
+		boost::optional<GpgimProperty::non_null_ptr_to_const_type> d_default_geometry_property;
+
 		//! Optional parent feature class that 'this' feature class inherits from.
 		boost::optional<GpgimFeatureClass::non_null_ptr_to_const_type> d_parent_feature_class;
 
@@ -193,12 +234,21 @@ namespace GPlatesModel
 				const QString &feature_description,
 				GpgimPropertyForwardIter gpgim_properties_begin,
 				GpgimPropertyForwardIter gpgim_properties_end,
+				boost::optional<GpgimProperty::non_null_ptr_to_const_type> default_geometry_property,
 				boost::optional<GpgimFeatureClass::non_null_ptr_to_const_type> parent_feature_class) :
 			d_feature_type(feature_type),
 			d_feature_description(feature_description),
 			d_feature_properties(gpgim_properties_begin, gpgim_properties_end),
+			d_default_geometry_property(default_geometry_property),
 			d_parent_feature_class(parent_feature_class)
-		{  }
+		{
+			// If default geometry property specified then it must be one of the list feature properties.
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					!d_default_geometry_property ||
+					std::find(d_feature_properties.begin(), d_feature_properties.end(),
+							d_default_geometry_property.get()) != d_feature_properties.end(),
+					GPLATES_ASSERTION_SOURCE);
+		}
 
 	};
 }

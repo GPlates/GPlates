@@ -966,6 +966,7 @@ namespace GPlatesFileIO
 					ResolvedTopologicalBoundaryExportType export_type,
 					const resolved_geom_seq_type &resolved_geoms,
 					const std::vector<const File::Reference *> &referenced_files,
+					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
 					bool wrap_to_dateline)
@@ -983,6 +984,7 @@ namespace GPlatesFileIO
 						export_type,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time);
 					break;
@@ -995,6 +997,7 @@ namespace GPlatesFileIO
 						resolved_geoms,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						wrap_to_dateline);		
@@ -1018,6 +1021,7 @@ namespace GPlatesFileIO
 					SubSegmentExportType export_type,
 					const sub_segment_group_seq_type &sub_segment_groups,
 					const std::vector<const File::Reference *> &referenced_files,
+					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
 					bool wrap_to_dateline)
@@ -1041,6 +1045,7 @@ namespace GPlatesFileIO
 						export_type,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time);
 					break;
@@ -1053,6 +1058,7 @@ namespace GPlatesFileIO
 						sub_segment_groups,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						wrap_to_dateline);		
@@ -1077,6 +1083,7 @@ namespace GPlatesFileIO
 					const QString &placeholder,
 					const resolved_geom_seq_type &resolved_geoms,
 					const feature_handle_to_collection_map_type &feature_to_collection_map,
+					const std::vector<const File::Reference *> &active_reconstruction_files,
 					bool wrap_to_dateline)
 			{
 				const QString filename = get_full_output_filename(
@@ -1099,6 +1106,7 @@ namespace GPlatesFileIO
 						export_type,
 						resolved_geoms,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						wrap_to_dateline);
@@ -1117,6 +1125,7 @@ namespace GPlatesFileIO
 					const QString &placeholder,
 					const sub_segment_group_seq_type &sub_segment_groups,
 					const feature_handle_to_collection_map_type &feature_to_collection_map,
+					const std::vector<const File::Reference *> &active_reconstruction_files,
 					bool wrap_to_dateline)
 			{
 				const QString filename = get_full_output_filename(
@@ -1139,6 +1148,7 @@ namespace GPlatesFileIO
 						export_type,
 						sub_segment_groups,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						wrap_to_dateline);
@@ -1152,6 +1162,7 @@ namespace GPlatesFileIO
 					const QString &placeholder_format_string,
 					Format export_format,
 					const std::vector<const File::Reference *> &loaded_files,
+					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
 					const OutputOptions &output_options,
@@ -1181,6 +1192,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_lines,
 							output.lines,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1201,6 +1213,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_platepolygons,
 							output.platepolygons,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1260,6 +1273,7 @@ namespace GPlatesFileIO
 								place_holder_replacement,
 								resolved_geoms,
 								feature_to_collection_map,
+								active_reconstruction_files,
 								output_options.wrap_geometries_to_the_dateline);
 					}
 				}
@@ -1281,6 +1295,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_ridge_transforms,
 							output.ridge_transforms,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1297,6 +1312,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_subductions,
 							output.subductions,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1313,6 +1329,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_left_subductions,
 							output.left_subductions,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1329,6 +1346,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_right_subductions,
 							output.right_subductions,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1349,6 +1367,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_slab_polygons,
 							output.slab_polygons,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1408,6 +1427,7 @@ namespace GPlatesFileIO
 								place_holder_replacement,
 								resolved_geoms,
 								feature_to_collection_map,
+								active_reconstruction_files,
 								output_options.wrap_geometries_to_the_dateline);
 					}
 				}
@@ -1429,6 +1449,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_slab_edge_leading,
 							output.slab_edge_leading,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1445,6 +1466,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_slab_edge_leading_left,
 							output.slab_edge_leading_left,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1461,6 +1483,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_slab_edge_leading_right,
 							output.slab_edge_leading_right,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1477,6 +1500,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_slab_edge_trench,
 							output.slab_edge_trench,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1493,6 +1517,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_slab_edge_side,
 							output.slab_edge_side,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1515,6 +1540,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_networks,
 							output.network_polygons,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1574,6 +1600,7 @@ namespace GPlatesFileIO
 								place_holder_replacement,
 								resolved_geoms,
 								feature_to_collection_map,
+								active_reconstruction_files,
 								output_options.wrap_geometries_to_the_dateline);
 					}
 				}
@@ -1595,6 +1622,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_network_ridge_transforms,
 							output.network_ridge_transforms,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1611,6 +1639,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_network_subductions,
 							output.network_subductions,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1627,6 +1656,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_network_left_subductions,
 							output.network_left_subductions,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 
@@ -1643,6 +1673,7 @@ namespace GPlatesFileIO
 							output_options.placeholder_network_right_subductions,
 							output.network_right_subductions,
 							feature_to_collection_map,
+							active_reconstruction_files,
 							output_options.wrap_geometries_to_the_dateline);
 				}
 			}
@@ -1695,6 +1726,7 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::export_resolved_topolog
 		Format export_format,
 		const resolved_geom_seq_type &resolved_geom_seq,
 		const std::vector<const File::Reference *> &loaded_files,
+		const std::vector<const File::Reference *> &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time)
 {
@@ -1713,6 +1745,7 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::export_resolved_topolog
 			placeholder_format_string,
 			export_format,
 			loaded_files,
+			active_reconstruction_files,
 			reconstruction_anchor_plate_id,
 			reconstruction_time,
 			output_options,

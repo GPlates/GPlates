@@ -373,6 +373,13 @@ GPlatesAppLogic::RasterLayerTask::Params::get_georeferencing() const
 }
 
 
+const boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> &
+GPlatesAppLogic::RasterLayerTask::Params::get_spatial_reference_system() const
+{
+	return d_spatial_reference_system;
+}
+
+
 const boost::optional<GPlatesModel::FeatureHandle::weak_ref> &
 GPlatesAppLogic::RasterLayerTask::Params::get_raster_feature() const
 {
@@ -399,6 +406,7 @@ GPlatesAppLogic::RasterLayerTask::Params::updated_raster_feature()
 		d_band_name = GPlatesUtils::UnicodeString();
 		d_band_names.clear();
 		d_georeferencing = boost::none;
+		d_spatial_reference_system = boost::none;
 
 		return;
 	}
@@ -408,6 +416,9 @@ GPlatesAppLogic::RasterLayerTask::Params::updated_raster_feature()
 
 	// Get the georeferencing.
 	d_georeferencing = visitor.get_georeferencing();
+
+	// Get the spatial reference system.
+	d_spatial_reference_system = visitor.get_spatial_reference_system();
 
 	// If there are no raster band names...
 	if (!visitor.get_raster_band_names() ||

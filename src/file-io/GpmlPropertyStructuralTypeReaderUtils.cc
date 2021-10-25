@@ -279,12 +279,20 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_point(
 		const GPlatesModel::GpgimVersion &gpml_version,
 		ReadErrorAccumulation &read_errors)
 {
+	// Note: We call 'create_point_2d' instead of 'create_lon_lat_point_on_sphere' because
+	// the former does not check for valid latitude/longitude ranges. This is important because
+	// not all points read from GML are within valid lat/lon ranges - an example is the origin
+	// of a rectified grid (georeferencing) where the georeferenced coordinates are in a
+	// *projection* coordinate system (which is generally not specified in lat/lon).
+	// Unfortunately this also means that regular points that are lat/lon points won't get
+	// checked for valid lat/lon ranges - this will have to be delayed to when the point is
+	// extracted from the GmlPoint property.
 	std::pair<std::pair<double, double>, GPlatesPropertyValues::GmlPoint::GmlProperty> point =
-		create_lon_lat_point_on_sphere(parent, gpml_version, read_errors);
+			create_point_2d(parent, gpml_version, read_errors);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// to the line string!
-	return GPlatesPropertyValues::GmlPoint::create(point.first, point.second);
+	return GPlatesPropertyValues::GmlPoint::create_from_pos_2d(point.first, point.second);
 }
 
 

@@ -33,6 +33,7 @@
 #include <QSize>
 
 #include "maths/Rotation.h"
+
 #include "view-operations/QueryProximityThreshold.h"
 
 

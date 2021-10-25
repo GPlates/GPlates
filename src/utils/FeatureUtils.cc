@@ -210,9 +210,11 @@ GPlatesUtils::get_begin_time(
 		const GPlatesModel::FeatureHandle* feature_ptr)
 {
 	PropertyFinder finder;
-	
-	boost::optional<GPlatesPropertyValues::GeoTimeInstant> s_time = GPlatesPropertyValues::GeoTimeInstant(0.0);
-	s_time = boost::none; // This strange initialization is a workaround for Ubuntu Precise 32-bit. The g++ doesn't like boost::optional.
+	using namespace  GPlatesPropertyValues;
+	boost::optional<GeoTimeInstant> s_time = GeoTimeInstant(0.0);
+	// This strange initialization is a workaround for Ubuntu Precise 32-bit. 
+	// The g++ doesn't like boost::optional.
+	s_time = boost::none; 
 	
 	GPlatesModel::FeatureHandle::const_iterator 
 		iter = feature_ptr->begin(),
@@ -240,7 +242,7 @@ boost::optional<GPlatesModel::PropertyName>
 GPlatesUtils::convert_property_name(
 		const QString& name)
 {
-	QRegExp rx("^\\s*\\b(gpml|gml)\\b\\s*:\\s*\\b(\\w+)\\b\\s*"); // (gpml|gmp):(name)
+	QRegExp rx("^\\s*\\b(gpml|gml)\\b\\s*:\\s*\\b(\\w+)\\b\\s*"); // (gpml|gml):(name)
 	rx.indexIn(name);
 	QString prefix = rx.cap(1);
 	QString short_name = rx.cap(2);

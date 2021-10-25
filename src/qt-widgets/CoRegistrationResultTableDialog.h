@@ -267,11 +267,6 @@ namespace GPlatesQtWidgets
 		update_co_registration_data(
 				const GPlatesDataMining::DataTable &co_registration_data_table);
 
-		GPlatesModel::FeatureHandle::weak_ref
-		find_feature_by_id(
-				GPlatesAppLogic::FeatureCollectionFileState& state,
-				const QString& id);
-
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;

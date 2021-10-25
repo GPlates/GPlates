@@ -305,6 +305,12 @@ namespace GPlatesAppLogic
 		remove_file(
 				file_reference file_ref);
 
+		void
+		emit_file_reloaded()
+		{
+			Q_EMIT file_reloaded(*this);
+		}
+
 	Q_SIGNALS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -348,6 +354,10 @@ namespace GPlatesAppLogic
 		// This signal is emitted *after* any file state has changed.
 		void
 		file_state_changed(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state);
+
+		void
+		file_reloaded(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
 

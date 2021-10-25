@@ -99,7 +99,7 @@ namespace GPlatesFileIO
 			explicit
 			OutputOptions(
 					// Wrap polyline/polygon geometries to the dateline (mainly useful for ArcGIS shapefile users)...
-					bool wrap_geometries_to_the_dateline_ = false,
+					bool wrap_geometries_to_the_dateline_ = true,
 
 					// plate polygon options
 					bool export_individual_plate_polygon_files_         = false,
@@ -307,6 +307,7 @@ namespace GPlatesFileIO
 				Format export_format,
 				const std::vector<const GPlatesAppLogic::ReconstructionGeometry *> &resolved_topological_geometry_seq,
 				const std::vector<const File::Reference *> &loaded_files,
+				const std::vector<const File::Reference *> &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
 	}

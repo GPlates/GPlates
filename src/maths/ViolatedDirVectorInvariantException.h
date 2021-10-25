@@ -43,11 +43,14 @@ namespace GPlatesMaths
 			 * @param msg is a description of the conditions
 			 * which cause the invariant to be violated.
 			 */
-			ViolatedDirVectorInvariantException(const char *msg)
-				: _msg(msg) {  }
+			ViolatedDirVectorInvariantException(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const char *msg)
+				:MathematicalException(exception_source), 
+				_msg(msg) {  }
 
 			virtual
-			~ViolatedDirVectorInvariantException() {  }
+			~ViolatedDirVectorInvariantException() throw(){  }
 
 		protected:
 			virtual const char *

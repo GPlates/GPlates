@@ -36,9 +36,12 @@
 
 #include "gui/MapCanvasTool.h"
 
+#include "maths/PointOnSphere.h"
+
 
 namespace GPlatesGui
 {
+	class MapProjection;
 	class MapTransform;
 }
 
@@ -46,11 +49,6 @@ namespace GPlatesQtWidgets
 {
 	class MapCanvas;
 	class MapView;
-}
-
-namespace GPlatesMaths
-{
-	class PointOnSphere;
 }
 
 namespace GPlatesCanvasTools
@@ -191,7 +189,7 @@ namespace GPlatesCanvasTools
 				const QPointF &current_point_on_scene,
 				bool is_on_surface,
 				const QPointF &translation);
-		
+	
 	private:
 
 		/**

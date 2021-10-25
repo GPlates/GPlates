@@ -62,9 +62,10 @@ GPlatesFileIO::ExportTemplateFilenameSequenceImpl::ExportTemplateFilenameSequenc
 
 void
 GPlatesFileIO::ExportTemplateFilenameSequenceImpl::validate_filename_template(
-		const QString &filename_template)
+		const QString &filename_template,
+		bool check_filename_variation)
 {
-	FormatExtractor::validate_filename_template(filename_template);
+	FormatExtractor::validate_filename_template(filename_template, check_filename_variation);
 }
 
 
@@ -170,7 +171,8 @@ GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::ValidateForm
 
 void
 GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_filename_template(
-		const QString &filename_template)
+		const QString &filename_template,
+		bool check_filename_variation)
 {
 	const QChar percent_char = QLatin1Char('%');
 	bool filename_varies_with_reconstruction_time_or_frame = false;
@@ -204,7 +206,8 @@ GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::validate_fil
 		// Continue looking for the next format pattern.
 	}
 
-	if (!filename_varies_with_reconstruction_time_or_frame)
+	if (check_filename_variation &&
+		!filename_varies_with_reconstruction_time_or_frame)
 	{
 		// There are no format specifiers, in the filename template, that have filename variation
 		// so there's no filename variation at all and this is an error.
@@ -242,7 +245,12 @@ GPlatesFileIO::ExportTemplateFilenameSequenceImpl::FormatExtractor::extract_form
 		// Continue looking for the next format pattern.
 	}
 
+	// We don't check for filename variation (with reconstruction time).
+	// We leave that up to the client - they should call 'validate_filename_template()' - and they
+	// may decide not to check for filename variation (if exporting to a single file only).
+#if 0
 	check_filename_template_varies_with_reconstruction_time();
+#endif
 }
 
 

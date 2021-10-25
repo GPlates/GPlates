@@ -39,6 +39,7 @@
 #include "GLContext.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
+#include "GLShaderSource.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
 
@@ -93,7 +94,7 @@ GPlatesOpenGL::GLNormalMapSource::is_supported(
 			!renderer.get_capabilities().shader.gl_ARB_fragment_shader)
 		{
 			qWarning() <<
-					"Normal map raster lighting NOT supported by this OpenGL system.\n"
+					"Normal map raster lighting NOT supported by this graphics hardware.\n"
 					"  Requires vertex/fragment shader programs.";
 
 			return false;
@@ -1168,15 +1169,15 @@ bool
 GPlatesOpenGL::GLNormalMapSource::create_normal_map_generation_shader_program(
 		GLRenderer &renderer)
 {
-	GLShaderProgramUtils::ShaderSource generate_normal_map_vertex_shader_source;
-	GLShaderProgramUtils::ShaderSource generate_normal_map_fragment_shader_source;
+	GLShaderSource generate_normal_map_vertex_shader_source;
+	GLShaderSource generate_normal_map_fragment_shader_source;
 
 	// Finally add the GLSL 'main()' function.
-	generate_normal_map_vertex_shader_source.add_shader_source_from_file(
+	generate_normal_map_vertex_shader_source.add_code_segment_from_file(
 			GENERATE_NORMAL_MAP_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 	// Finally add the GLSL 'main()' function.
-	generate_normal_map_fragment_shader_source.add_shader_source_from_file(
+	generate_normal_map_fragment_shader_source.add_code_segment_from_file(
 			GENERATE_NORMAL_MAP_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Create the shader program for *inactive* polygons.

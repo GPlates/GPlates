@@ -76,6 +76,54 @@ GPlatesOpenGL::GLRenderer::GLRenderer(
 void
 GPlatesOpenGL::GLRenderer::begin_render()
 {
+	// It's very likely that Qt (eg, some previous QPainter) has set up the modelview and projection
+	// matrices to non-default values before it exited (especially the projection to that match the viewport).
+	// So we need to load identity matrices to match the default OpenGL state.
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity(); // The default modelview matrix
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity(); // The default projection matrix
+	glMatrixMode(GL_MODELVIEW); // The default matrix mode.
+
+	begin_render_internal();
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::begin_render(
+		QPainter &qpainter,
+		bool paint_device_is_framebuffer)
+{
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!d_qpainter_info,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_NO_ACTIVE_QPAINTER);
+
+	d_qpainter_info = boost::in_place(boost::ref(qpainter), paint_device_is_framebuffer);
+
+	// The QPainter should currently be active.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			d_qpainter_info->qpainter.isActive(),
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_ACTIVE_QPAINTER);
+
+	// Suspend the QPainter so we can start making calls directly to OpenGL without interfering with
+	// the QPainter's OpenGL state (if it uses an OpenGL paint engine).
+	suspend_qpainter();
+
+	begin_render_internal();
+
+	// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
+	// GLRenderer directly to OpenGL - in this case we need to make sure our last applied state
+	// actually represents the state of OpenGL - which it may not because QPainter may have
+	// changed the model-view and projection matrices (if it uses an OpenGL paint engine).
+	apply_current_state_to_opengl();
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::begin_render_internal()
+{
 	// Start a rendering frame.
 	d_context->begin_render();
 
@@ -119,38 +167,6 @@ GPlatesOpenGL::GLRenderer::begin_render()
 	const GLCompiledDrawState::non_null_ptr_to_const_type default_vertex_array_state =
 			create_unbound_vertex_array_compiled_draw_state(*this);
 	apply_compiled_draw_state(*default_vertex_array_state);
-}
-
-
-void
-GPlatesOpenGL::GLRenderer::begin_render(
-		QPainter &qpainter,
-		bool paint_device_is_framebuffer)
-{
-	GPlatesGlobal::Assert<GLRendererAPIError>(
-			!d_qpainter_info,
-			GPLATES_ASSERTION_SOURCE,
-			GLRendererAPIError::SHOULD_HAVE_NO_ACTIVE_QPAINTER);
-
-	d_qpainter_info = boost::in_place(boost::ref(qpainter), paint_device_is_framebuffer);
-
-	// The QPainter should currently be active.
-	GPlatesGlobal::Assert<GLRendererAPIError>(
-			d_qpainter_info->qpainter.isActive(),
-			GPLATES_ASSERTION_SOURCE,
-			GLRendererAPIError::SHOULD_HAVE_ACTIVE_QPAINTER);
-
-	// Suspend the QPainter so we can start making calls directly to OpenGL without interfering with
-	// the QPainter's OpenGL state (if it uses an OpenGL paint engine).
-	suspend_qpainter();
-
-	begin_render();
-
-	// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
-	// GLRenderer directly to OpenGL - in this case we need to make sure our last applied state
-	// actually represents the state of OpenGL - which it may not because QPainter may have
-	// changed the model-view and projection matrices (if it uses an OpenGL paint engine).
-	apply_current_state_to_opengl();
 }
 
 
@@ -2003,10 +2019,14 @@ GPlatesOpenGL::GLRenderer::suspend_qpainter()
 		// us to restore the modelview (and projection?) matrices if we've modified them.
 		// So we push the modelview and projection matrices onto the OpenGL matrix stack so that we
 		// modify copies of them and we restore the originals when resuming the QPainter later.
+		// Also we need to set these matrices to identity to match the default OpenGL state which
+		// GLRenderer will assume from here onwards.
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
+		glLoadIdentity(); // The default modelview matrix.
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
+		glLoadIdentity(); // The default projection matrix.
 		glMatrixMode(GL_MODELVIEW); // The default matrix mode.
 	}
 }
@@ -2232,29 +2252,42 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 			return false;
 		}
 
-		stencil_render_buffer = get_context().get_shared_state()->acquire_render_buffer_object(
+		// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
+		// And both must be enabled for the frame buffer completeness check to succeed.
+		const GLRenderBufferObject::shared_ptr_type depth_stencil_render_buffer =
+				get_context().get_shared_state()->acquire_render_buffer_object(
 					*this,
-					GL_DEPTH_STENCIL_EXT,
+					GL_DEPTH24_STENCIL8_EXT,
 					texture_level_width,
 					texture_level_height);
-
-		// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
-		if (render_texture_target.depth_buffer)
-		{
-			depth_render_buffer = stencil_render_buffer;
-		}
+		stencil_render_buffer = depth_stencil_render_buffer;
+		depth_render_buffer = depth_stencil_render_buffer;
 	}
 	else if (render_texture_target.depth_buffer)
 	{
-		depth_render_buffer = get_context().get_shared_state()->acquire_render_buffer_object(
-					*this,
-					// To improve render buffer re-use we use packed depth/stencil (if supported)
-					// even if only depth is requested...
-					get_capabilities().framebuffer.gl_EXT_packed_depth_stencil
-							? GL_DEPTH_STENCIL_EXT
-							: GL_DEPTH_COMPONENT,
-					texture_level_width,
-					texture_level_height);
+		// To improve render buffer re-use we use packed depth/stencil (if supported)
+		// though only depth was requested...
+		if (get_capabilities().framebuffer.gl_EXT_packed_depth_stencil)
+		{
+			// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
+			// And both must be enabled for the frame buffer completeness check to succeed.
+			const GLRenderBufferObject::shared_ptr_type depth_stencil_render_buffer =
+					get_context().get_shared_state()->acquire_render_buffer_object(
+							*this,
+							GL_DEPTH24_STENCIL8_EXT,
+							texture_level_width,
+							texture_level_height);
+			stencil_render_buffer = depth_stencil_render_buffer;
+			depth_render_buffer = depth_stencil_render_buffer;
+		}
+		else
+		{
+			depth_render_buffer = get_context().get_shared_state()->acquire_render_buffer_object(
+						*this,
+						GL_DEPTH_COMPONENT,
+						texture_level_width,
+						texture_level_height);
+		}
 	}
 
 	// Classify our frame buffer object according to texture (mipmap level) format/dimensions, etc.

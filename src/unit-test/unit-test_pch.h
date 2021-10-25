@@ -132,7 +132,6 @@ extern "C" {
 #ifdef __WINDOWS__
 #include <boost/bind.hpp>
 #endif // __WINDOWS__
-//#include <Magick++.h>
 #ifdef __WINDOWS__
 #include <boost/scoped_array.hpp>
 #endif // __WINDOWS__

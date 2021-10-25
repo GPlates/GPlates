@@ -55,6 +55,7 @@ namespace GPlatesGui
 namespace GPlatesOpenGL
 {
 	class GLContext;
+	class GLVisualLayers;
 }
 
 namespace GPlatesPresentation
@@ -146,6 +147,12 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLContext>::non_null_ptr_type
 		get_active_gl_context();
+
+		/**
+		 * Returns the OpenGL layers used to filled polygons, render rasters and scalar fields.
+		 */
+		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLVisualLayers>::non_null_ptr_type
+		get_active_gl_visual_layers();
 
 		void
 		update_canvas();

@@ -55,6 +55,7 @@ GPlatesQtWidgets::EditExportParametersDialog::EditExportParametersDialog(
 			Qt::WindowTitleHint | 
 			Qt::WindowSystemMenuHint),
 	d_export_animation_context_ptr(export_animation_context_ptr),
+	d_is_single_frame(false),
 	d_export_file_name_template_widget(NULL),
 	d_export_options_widget_layout(NULL)
 {
@@ -141,7 +142,10 @@ GPlatesQtWidgets::EditExportParametersDialog::react_edit_item_accepted()
 	// Validate the filename template against the selected exporter.
 	QString filename_template_validation_message;
 	if (!export_animation_registry.validate_filename_template(
-			d_export_id.get(), filename_template, filename_template_validation_message))
+			d_export_id.get(),
+			filename_template,
+			filename_template_validation_message,
+			!d_is_single_frame/*check_filename_variation*/))
 	{
 		QMessageBox error_popup;
 		error_popup.setWindowTitle(QString("Cannot Commit Edited Data to Export"));

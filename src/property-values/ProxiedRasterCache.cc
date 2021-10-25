@@ -62,6 +62,18 @@ namespace
 			return d_proxied_raw_rasters;
 		}
 
+		/**
+		 * FIXME: This will no longer be needed once we store the raster
+		 * spatial reference system in a new property value.
+		 */
+		virtual
+		boost::optional<SpatialReferenceSystem::non_null_ptr_to_const_type>
+		get_spatial_reference_system()
+		{
+			update_proxied_raw_rasters(false);
+			return d_spatial_reference_system;
+		}
+
 		virtual
 		void
 		set_file_name(
@@ -125,6 +137,7 @@ namespace
 					if (proxied_raw_raster)
 					{
 						d_proxied_raw_rasters.push_back(*proxied_raw_raster);
+						d_spatial_reference_system = reader->get_spatial_reference_system();
 					}
 					else
 					{
@@ -141,6 +154,7 @@ namespace
 		QString d_file_name_as_qstring;
 		QDateTime d_last_modified;
 		std::vector<RawRaster::non_null_ptr_type> d_proxied_raw_rasters;
+		boost::optional<SpatialReferenceSystem::non_null_ptr_to_const_type> d_spatial_reference_system;
 	};
 }
 
@@ -165,6 +179,13 @@ const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
 GPlatesPropertyValues::ProxiedRasterCache::proxied_raw_rasters() const
 {
 	return d_impl->proxied_raw_rasters();
+}
+
+
+boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+GPlatesPropertyValues::ProxiedRasterCache::get_spatial_reference_system()
+{
+	return d_impl->get_spatial_reference_system();
 }
 
 

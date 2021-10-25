@@ -48,6 +48,9 @@ namespace GPlatesGui
 
 				export_type_name_map[RECONSTRUCTED_GEOMETRIES]    =QObject::tr("Reconstructed Geometries");
 				export_type_name_map[PROJECTED_GEOMETRIES]        =QObject::tr("Projected Geometries (and Rasters)");
+				export_type_name_map[IMAGE]                       =QObject::tr("Image (screenshot)");
+				export_type_name_map[COLOUR_RASTER]               =QObject::tr("Colour Raster");
+				export_type_name_map[NUMERICAL_RASTER]            =QObject::tr("Numerical Raster");
 				export_type_name_map[VELOCITIES]                  =QObject::tr("Velocities");
 				export_type_name_map[RESOLVED_TOPOLOGIES]         =QObject::tr("Resolved Topologies (General)");
 				export_type_name_map[RESOLVED_TOPOLOGIES_CITCOMS] =QObject::tr("Resolved Topologies (CitcomS specific)");
@@ -55,7 +58,6 @@ namespace GPlatesGui
 				export_type_name_map[EQUIVALENT_TOTAL_ROTATION]   =QObject::tr("Equivalent Total Rotation");
 				export_type_name_map[RELATIVE_STAGE_ROTATION]     =QObject::tr("Relative Stage Rotation");
 				export_type_name_map[EQUIVALENT_STAGE_ROTATION]   =QObject::tr("Equivalent Stage Rotation");
-				export_type_name_map[RASTER]                      =QObject::tr("Raster");
 				export_type_name_map[FLOWLINES]                   =QObject::tr("Flowlines");
 				export_type_name_map[MOTION_PATHS]                =QObject::tr("Motion Paths");
 				export_type_name_map[CO_REGISTRATION]             =QObject::tr("Co-registration data");
@@ -70,64 +72,134 @@ namespace GPlatesGui
 				std::map<Type, QString> export_type_description_map;
 
 				export_type_description_map[RECONSTRUCTED_GEOMETRIES] =
-						QObject::tr("Export reconstructed geometries.");
+						QObject::tr(
+							"<html><body>"
+							"<p>Export reconstructed geometries.</p>"
+							"</body></html>");
 				export_type_description_map[PROJECTED_GEOMETRIES] =
-						QObject::tr("Export projected geometries (and projected raster) data.");
+						QObject::tr(
+							"<html><body>"
+							"<p>Export projected geometries (and projected raster) data.</p>"
+							"</body></html>");
+				export_type_description_map[IMAGE] =
+						QObject::tr(
+							"<html><body>"
+							"<p>Export image (screenshot) of current view (globe or map)."
+							"</body></html>");
+				export_type_description_map[COLOUR_RASTER] =
+						QObject::tr(
+							"<html><body>"
+							"<p>Export 8-bit (per channel) RGBA (or RGB) coloured raster data:</p>"
+							"<ul>"
+							"<li>Exports each visible raster layer to a single file (per time step).</li>"
+							"<li>RGBA (and RGB) raster layers contain colour pixels.</li>"
+							"<li>Numerical raster layers converted to colour using layer's palette.</li>"
+							"<li>Geo-referenced region stored in raster formats that support it.</li>"
+							"</ul>"
+							"</body></html>");
+				export_type_description_map[NUMERICAL_RASTER] =
+						QObject::tr(
+							"<html><body>"
+							"Export 32-bit floating-point numerical (non-coloured) raster data:"
+							"<ul>"
+							"<li>Exports each visible (numerical) raster layer to a single file (per time step).</li>"
+							"<li>RGBA (and RGB) raster layers are not exported.</li>"
+							"<li>Numerical raster layers contain floating-point pixels.</li>"
+							"<li>NaN no-data value stored in pixels not covered by raster data.</li>"
+							"<li>Geo-referenced region stored in raster.</li>"
+							"</ul>"
+							"</body></html>");
 				export_type_description_map[VELOCITIES] =
-						QObject::tr("Export velocity data.");
+						QObject::tr(
+							"<html><body>"
+							"<p>Export velocity data.</p>"
+							"</body></html>");
 				export_type_description_map[RESOLVED_TOPOLOGIES] = 
 						QObject::tr(
-							"Export resolved topologies:\n"
-							"- exports resolved topological lines and polygons (but not networks) for any feature type.\n");
+							"<html><body>"
+							"<p>Export resolved topologies:</p>"
+							"<ul>"
+							"<li>Exports resolved topological lines and polygons (but not networks) for any feature type.</li>"
+							"</ul>"
+							"</body></html>");
 				export_type_description_map[RESOLVED_TOPOLOGIES_CITCOMS] = 
 						QObject::tr(
-							"Export resolved topologies for use by CitcomS software:\n"
-							"- exports boundaries of resolved topological closed plate polygons/networks,\n"
-							"- optionally exports the subsegment geometries of polygon/network boundaries.\n");
+							"<html><body>"
+							"<p>Export resolved topologies for use by CitcomS software:</p>"
+							"<ul>"
+							"<li>Exports boundaries of resolved topological closed plate polygons/networks.</li>"
+							"<li>Optionally exports the subsegment geometries of polygon/network boundaries.</li>"
+							"</ul>"
+							"</body></html>");
 				export_type_description_map[RELATIVE_TOTAL_ROTATION] = 
 						QObject::tr(
-							"Export relative total rotation data:\n"
-							"- 'relative' is between a moving/fixed plate pair,\n"
-							"- 'total' is from the export reconstruction time to present day.\n"
-							"Each line in exported file(s) will contain the following entries...\n"
-							"  <moving_plate_id> <euler_pole_lat> <euler_pole_lon> <euler_pole_angle> <fixed_plate_id>\n"
-							"...for latitude/longitude format, or for 3D cartesian format...\n"
-							"  <moving_plate_id> <euler_pole_x> <euler_pole_y> <euler_pole_z> <euler_pole_angle> <fixed_plate_id>\n");
+							"<html><body>"
+							"<p>Export relative total rotation data:</p>"
+							"<ul>"
+							"<li><em>relative</em> is between a moving/fixed plate pair.</li>"
+							"<li><em>total</em> is from the export reconstruction time to present day.</li>"
+							"<li>Each line in latitude/longitude format will contain:<br />"
+							"<tt>moving_plate_id euler_pole_lat euler_pole_lon euler_pole_angle fixed_plate_id</tt></li>"
+							"<li>Each line in 3D cartesian format will contain:<br />"
+							"<tt>moving_plate_id euler_pole_x euler_pole_y euler_pole_z euler_pole_angle fixed_plate_id</tt></li>"
+							"</ul>"
+							"</body></html>");
 				export_type_description_map[EQUIVALENT_TOTAL_ROTATION] = 
 						QObject::tr(
-							"Export equivalent total rotation data:\n"
-							"- 'equivalent' is from an exported plate id to the anchor plate,\n"
-							"- 'total' is from the export reconstruction time to present day.\n"
-							"Each line in exported file(s) will contain the following entries...\n"
-							"  <plate_id> <euler_pole_lat> <euler_pole_lon> <euler_pole_angle>\n"
-							"...for latitude/longitude format, or for 3D cartesian format...\n"
-							"  <plate_id> <euler_pole_x> <euler_pole_y> <euler_pole_z> <euler_pole_angle>\n");
+							"<html><body>"
+							"<p>Export equivalent total rotation data:</p>"
+							"<ul>"
+							"<li><em>equivalent</em> is from an exported plate id to the anchor plate.</li>"
+							"<li><em>total</em> is from the export reconstruction time to present day.</li>"
+							"<li>Each line in latitude/longitude format will contain:<br />"
+							"<tt>plate_id euler_pole_lat euler_pole_lon euler_pole_angle</tt></li>"
+							"<li>Each line in 3D cartesian format will contain:<br />"
+							"<tt>plate_id euler_pole_x euler_pole_y euler_pole_z euler_pole_angle</tt></li>"
+							"</ul>"
+							"</body></html>");
 				export_type_description_map[RELATIVE_STAGE_ROTATION] = 
 						QObject::tr(
-							"Export relative stage rotation data:\n"
-							"- 'relative' is between a moving/fixed plate pair,\n"
-							"- 'stage' is from 't+interval' Ma to 't' Ma where 't' is the export reconstruction time.\n"
-							"Each line in exported file(s) will contain the following entries...\n"
-							"  <moving_plate_id> <stage_pole_lat> <stage_pole_lon> <stage_pole_angle> <fixed_plate_id>\n"
-							"...for latitude/longitude format, or for 3D cartesian format...\n"
-							"  <moving_plate_id> <stage_pole_x> <stage_pole_y> <stage_pole_z> <stage_pole_angle> <fixed_plate_id>\n");
+							"<html><body>"
+							"<p>Export relative stage rotation data:</p>"
+							"<ul>"
+							"<li><em>relative</em> is between a moving/fixed plate pair.</li>"
+							"<li><em>stage</em> is from <tt>t+interval</tt> Ma to <tt>t</tt> Ma where "
+							"<tt>t</tt> is the export reconstruction time.</li>"
+							"<li>Each line in latitude/longitude format will contain:<br />"
+							"<tt>moving_plate_id stage_pole_lat stage_pole_lon stage_pole_angle fixed_plate_id</tt></li>"
+							"<li>Each line in 3D cartesian format will contain:<br />"
+							"<tt>moving_plate_id stage_pole_x stage_pole_y stage_pole_z stage_pole_angle fixed_plate_id</tt></li>"
+							"</ul>"
+							"</body></html>");
 				export_type_description_map[EQUIVALENT_STAGE_ROTATION] = 
 						QObject::tr(
-							"Export equivalent stage rotation data:\n"
-							"- 'equivalent' is from an exported plate id to the anchor plate,\n"
-							"- 'stage' is from 't+interval' Ma to 't' Ma where 't' is the export reconstruction time.\n"
-							"Each line in exported file(s) will contain the following entries...\n"
-							"  <plate_id> <stage_pole_lat> <stage_pole_lon> <stage_pole_angle>\n"
-							"...for latitude/longitude format, or for 3D cartesian format...\n"
-							"  <plate_id> <stage_pole_x> <stage_pole_y> <stage_pole_z> <stage_pole_angle>\n");
-				export_type_description_map[RASTER] =
-						QObject::tr("Export raster data as image.");
+							"<html><body>"
+							"<p>Export equivalent stage rotation data:</p>"
+							"<ul>"
+							"<li><em>equivalent</em>' is from an exported plate id to the anchor plate.</li>"
+							"<li><em>stage</em> is from <tt>t+interval</tt> Ma to <tt>t</tt> Ma where "
+							"<tt>t</tt> is the export reconstruction time.</li>"
+							"<li>Each line in latitude/longitude format will contain:<br />"
+							"<tt>plate_id stage_pole_lat stage_pole_lon stage_pole_angle</tt></li>"
+							"<li>Each line in 3D cartesian format will contain:<br />"
+							"<tt>plate_id stage_pole_x stage_pole_y stage_pole_z stage_pole_angle</tt></li>"
+							"</ul>"
+							"</body></html>");
 				export_type_description_map[FLOWLINES] =
-						QObject::tr("Export flowlines.");
+						QObject::tr(
+							"<html><body>"
+							"<p>Export flowlines.</p>"
+							"</body></html>");
 				export_type_description_map[MOTION_PATHS] =
-						QObject::tr("Export motion tracks.");
+						QObject::tr(
+							"<html><body>"
+							"<p>Export motion tracks.</p>"
+							"</body></html>");
 				export_type_description_map[CO_REGISTRATION] =
-						QObject::tr("Co-registration data for data-mining.");
+						QObject::tr(
+							"<html><body>"
+							"<p>Co-registration data for data-mining.</p>"
+							"</body></html>");
 
 				return export_type_description_map;
 			}
@@ -154,6 +226,11 @@ namespace GPlatesGui
 				export_format_description_map[TIFF]            =QObject::tr("Tagged Image File Format (*.tiff)");
 				export_format_description_map[XBM]             =QObject::tr("X11 Bitmap (*.xbm)");
 				export_format_description_map[XPM]             =QObject::tr("X11 Pixmap (*.xpm)");
+				export_format_description_map[NETCDF]          =QObject::tr("NetCDF (*.nc)");
+				export_format_description_map[GMT_NETCDF]      =QObject::tr("GMT NetCDF (*.grd)");
+				export_format_description_map[GEOTIFF]         =QObject::tr("GeoTIFF (*.tif)");
+				export_format_description_map[ERDAS_IMAGINE]   =QObject::tr("Erdas Imagine (*.img)");
+				export_format_description_map[ERMAPPER]        =QObject::tr("ERMapper (*.ers)");
 				export_format_description_map[CITCOMS_GLOBAL]  =QObject::tr("CitcomS global (*)");
 				export_format_description_map[TERRA_TEXT]      =QObject::tr("Terra text format (*)");
 
@@ -182,6 +259,11 @@ namespace GPlatesGui
 				export_format_filename_extension_map[TIFF]            ="tiff";
 				export_format_filename_extension_map[XBM]             ="xbm";
 				export_format_filename_extension_map[XPM]             ="xpm";
+				export_format_filename_extension_map[NETCDF]          ="nc";
+				export_format_filename_extension_map[GMT_NETCDF]      ="grd";
+				export_format_filename_extension_map[GEOTIFF]         ="tif";
+				export_format_filename_extension_map[ERDAS_IMAGINE]   ="img";
+				export_format_filename_extension_map[ERMAPPER]        ="ers";
 				export_format_filename_extension_map[CITCOMS_GLOBAL]  ="";
 				export_format_filename_extension_map[TERRA_TEXT]      ="";
 

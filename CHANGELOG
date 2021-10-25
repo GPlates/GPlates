@@ -1,3 +1,137 @@
+GPlates 1.4
+===========
+
+Changes since 1.3:
+
+ * Export (numerical) rasters:
+   * Export raster layers to one raster file per visible layer.
+     * User specified lat/lon export region and resolution.
+   * Added GDAL and RGBA raster writers.
+     * GDAL writes colour (as RGBA bands) or floating-point (with NaN no-data value).
+	 * RGBA writes only colour.
+   * Supported numerical raster formats: NetCDF, GMT NetCDF, GeoTIFF and Erdas Imagine.
+   * New supported colour raster formats: GeoTIFF and Erdas Imagine.
+   * Surface relief lighting included in colour raster export.
+   * Colour palette used to export numerical rasters as colours (in colour export).
+   * Statically link PROJ4 library to GDAL.
+     * Avoids runtime DLL/SO load error when loading raster with non-default spatial reference system.
+   * Completed emulation of bilinear filtering of *floating-point* textures in all fragment shaders requiring it.
+     * Incorporate pixel coverage in bilinear filtering to avoid wrong values at boundary between covered and non-covered areas.
+   * Export raster statistics (notably Erdas Imagine) to avoid black raster in ArcGIS.
+ * Import raster improvements:
+   * New raster formats: ERMapper, Erdas Imagine and GeoTIFF.
+   * Import georeferencing from source raster file.
+     * Skip georeferencing dialog wizard page if raster specifies georeferencing.
+   * Support inbuilt raster spatial reference systems (projection included).
+     * Enables conversion from raster georeference coordinates to WGS84 coordinates (GPlates default).
+   * Support RGB(A) rasters with GDAL raster reader.
+     * Now use GDAL to read TIFF rasters (instead of Qt) since GeoTIFF files have georeferencing and spatial reference systems.
+   * Improved performance when importing very large rasters (mostly GDAL-based rasters but also RGBA rasters).
+     * Calculate statistics ourselves to avoid GDAL scanning entire file.
+     * Allow reading raster decompressed images that are greater than 32-bits (4Gb) in size.
+   * Fix GmlPoint so it can accept a position outside valid lat/lon range.
+     * Needed for georeferenced origin of raster in *projected* coordinate system.
+ * Fixed inability to export images (screenshots) on systems supporting GL_ARB_vertex_buffer_object but not GL_ARB_pixel_buffer_object.
+ * Fixed missing thin sliver triangles at top and bottom of map view (four triangles in total).
+ * Fixed rare missing georeferenced raster tiles in reconstructed raster (map view).
+   * Possibly solves corrupt export of 3D scalar fields to SVG format.
+ * Fixed raster map view not correctly updating world transform.
+ * Improved performance of rasters in map view - now require fewer source raster tiles.
+ * Using HTML in export description labels.
+ * Added reconstruction files to flowline, motion-path, reconstructed geometry and topology exports.
+ * Fixed wrong order of arguments in motion-path/flowline OGR export.
+ * Replaced shp-export-related occurrences of PLATE_ID with PLATEID1.
+ * Added spreading asymmetry to exported shapefiles.
+   * Also added to import mapping.
+ * Using default geometry type when creating features from OGR sources.
+ * Prevent negative times when editing time sequence.
+ * Fix flowline creation issues by demanding present-day time in array-of-times and preventing its deletion.
+ * Allow user to specify lat/lon region when generating velocity domain nodes in lat/lon space.
+ * Render direction arrows (eg, velocities) as proper 3D (cylindrical body and head) with lighting.
+ * Fixed map view mouse drag location lagging by one frame/update.
+ * Fixed 'Reset Rotation' button not enabled in Manipulate Pole tool.
+ * Fixed populated geometries in Manipulate Pole tool from disappearing when changing the reconstruction time.
+ * Add circularly-symmetric symbols for rendered radial arrows.
+ * New Move Pole canvas tool:
+   * Used to specify pole about which Manipulate Pole tool adjusts rotation.
+   * User can drag pole location (arrow) with mouse.
+   * User can change pole location via text entry (or spinboxes).
+   * User can set pole location to north pole ('constrain latitude') for Virtual Geomagnetic poles.
+   * User can constrain pole location to moving/fixed stage pole of focused feature.
+     * Shows current moving and fixed plate ids.
+	 * Checkbox to track and update stage pole location over time.
+ * New lighting canvas tool (currently disabled until official release of volume viz. in 1.5):
+   * Enables/disables lighting per primitive type.
+   * Optionally detach light direction from camera.
+   * User drags light direction (arrow) with mouse.
+   * Support directional and non-directional (radial) lighting on rasters both with and without surface relief.
+ * Removed dependency on ImageMagick.
+   * Also solves OpenCL problem with Snow Leopard builds running on Lion and above.
+ * No longer show warning dialog when loading files (due to different GPGIM version) - was too irritating.
+   * We still show a warning dialog when saving (when GPGIM version differs).
+ * Canvas tool tab icons are now static again (to avoid confusion).
+ * New SubductionZone properties 'gpml:subductionZoneSystem' and 'gpml:subductionZoneSystemOrder'.
+ * A new colour palette for deformation networks.
+ * Changes to loaded data (during reading) are now marked as unsaved changes.
+ * Fix half-stage rotation to have multiple stages instead of just one stage.
+   * GPGIM now has version 1 and 2 half-stage rotations - new files use version 2.
+ * Add spreading asymmetry to mid-ocean ridges.
+ * Avoid out-of-memory error when compiling on windows with pre-compiled headers.
+   * Happens on 12-core Windows 8.1 machine in Visual Studio 2005.
+ * Allow no variation in export (template) filename when exporting a single frame.
+   * In case user does not want the reconstruction time in the single exported filename.
+ * Fix stage rotations when loading PLATES rotation file so that each stage rotation takes the short way around the globe (instead of long way).
+ * Fixed "New Feature Collection" being displayed after importing a raster or 3D scalar field.
+ * Enable forcing use of python embedded in application (bundle).
+   * Set program name properly and set Py_IgnoreEnvironmentFlag before initializing python interpreter.
+ * Fixed OpenGL invalid enum error (GL_INVALID_ENUM) when creating render buffer object for depth/stencil buffer.
+ * Fixed crash bug due to dangling parent pointer in FeatureHandle when parent FeatureCollectionHandle is destroyed but its children are not.
+ * Co-registration:
+   * Improved retrieval of feature's birth attributes.
+   * Improved retrieval of seed features.
+   * Improved data mining Orange widgets layout.
+ * Create Feature dialog:
+   * Add the 'relative plate id' to the common properties page for those feature types supporting it (currently only MotionPath).
+   * The default topological polygon or network feature type is 'gpml:TopologicalClosedPlateBoundary' and 'gpml:TopologicalNetwork'.
+   * Added GPGIM support for 'gpgim:defaultGeometryProperty' for feature types with more than one geometry property.
+     * Defaults to the appropriate property name for the digitised geometry property.
+   * Remember the previous feature type selection when switching pages.
+     * But when invoking dialog set to a default feature type (based on geometry property type).
+ * Dateline wrapper now outputs the original input polyline or polygon if it got swallowed up by the dateline (because lay entirely *on* the dateline).
+ * Set dateline wrapping on by default for saving and exporting to Shapefile format.
+ * Report error to console for duplicate reconstruction tree edges.
+ * Fixed MotionPath colour differing from seed colour when changing the colour scheme.
+ * Force user to specify a 'gpml:relativePlateId' when creating a MotionPath feature (even if it's zero).
+ * Velocities:
+   * Added velocity smoothing for domain points near plate boundary when calculating velocities on surfaces.
+   * No velocity boundary smoothing for domain points within a deforming region.
+   * Add export velocity smoothing options to all velocity exports (not just TERRA).
+ * GeometryOnSphere proximity tests also return the closest point on the geometry (from the test point).
+ * Volume visualisation:
+   * Improved iso-surface performance when using surface fill mask with no visible walls.
+     * Uses min/max depth range of volume fill regions to limit the range over which rays are sampled (instead of sampling through entire globe).
+   * Merged isosurface ray-tracing shader program optimisations from Tobias Pfaffelmoser and Michael Kern.
+   * Added support for regional (non-global) scalar fields in shader programs and scalar field import.
+   * Support transparent colours when rendering isosurface and cross sections of 3D scalar fields.
+   * Separate input channels for cross sections and surface polygons mask (no longer share same input channel).
+     * Surface polygons mask can now apply to cross-sections.
+	 * Added option to disable surface polygons mask without having to disconnect input layers.
+   * Colour palette improvements;
+     * Optionally remap scalar/gradient palette range.
+     * Adjust range using mean and standard deviation of scalar field.
+	   * Separate controls for scalar value and gradient magnitude value.
+     * Separate colour palettes for scalar and gradient colour modes.
+     * Added default colour palette for gradient magnitudes.
+   * Increase iso-surface performance, when rotating globe with mouse, by reducing iso-surface sampling rate by a user-defined factor.
+   * Only show 3D scalar field GUI controls that apply to the current settings of the controls.
+ * Fixed framebuffer completeness error when using stencil buffer without depth buffer.
+ * Allow more than one feature with same feature id when searching topological sections.
+   * Allows comparing two topological datasets (from two different files) with same feature ids.
+   * User must limit each topological dataset/layer to search only its own topological sections (not all global sections).
+ * Avoid aborting GPlates when encounter unsupported field in CPT file.
+ * Disable a total reconstruction sequence (or pole within a sequence).
+ * Fixed "Show Point/Line/etc Geometries" hiding geometries in the canvas tools (workflows).
+
 GPlates 1.3
 ===========
 

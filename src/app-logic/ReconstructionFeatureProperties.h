@@ -29,12 +29,11 @@
 
 #include <boost/optional.hpp>
 
-#include "app-logic/ReconstructMethodType.h"
-
 #include "model/FeatureVisitor.h"
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/Enumeration.h"
 
 
 namespace GPlatesAppLogic
@@ -116,9 +115,22 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Returns optional reconstruction method if "gpml:reonstructionMethod" property is found.
+		 * Returns optional ridge spreading asymmetry if "gpml:spreadingAsymmetry" property is found.
+		 *
+		 * Spreading asymmetry is in the range [-1,1] where the value 0 represents half-stage
+		 * rotation, the value 1 represents full-stage rotation (right plate) and the value -1
+		 * represents zero stage rotation (left plate).
 		 */
-		const boost::optional<ReconstructMethod::Type> &
+		const boost::optional<double> &
+		get_spreading_asymmetry() const
+		{
+			return d_spreading_asymmetry;
+		}
+
+		/**
+		 * Returns optional reconstruction method if "gpml:reconstructionMethod" property is found.
+		 */
+		const boost::optional<GPlatesPropertyValues::EnumerationContent> &
 		get_reconstruction_method() const
 		{
 			return d_recon_method;
@@ -161,6 +173,10 @@ namespace GPlatesAppLogic
 				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
 		void
+		visit_xs_double(
+				const GPlatesPropertyValues::XsDouble &xs_double);
+
+		void
 		visit_enumeration(
 				const enumeration_type &enumeration);
 
@@ -190,9 +206,10 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_appearance;
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_dissappearance;
 
-		boost::optional<ReconstructMethod::Type> d_recon_method;
+		boost::optional<GPlatesPropertyValues::EnumerationContent> d_recon_method;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_right_plate_id;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_left_plate_id;
+		boost::optional<double> d_spreading_asymmetry;
 	};
 }
 

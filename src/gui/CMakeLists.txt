@@ -30,6 +30,7 @@ set(srcs
     ColourNameSet.h
     ColourPalette.h
     ColourPaletteAdapter.h
+    ColourPaletteRangeRemapper.h
     ColourPaletteVisitor.h
     ColourProxy.cc
     ColourProxy.h
@@ -82,6 +83,8 @@ set(srcs
     ExportFileNameTemplateValidationUtils.h
     ExportFlowlineAnimationStrategy.cc
     ExportFlowlineAnimationStrategy.h
+    ExportImageAnimationStrategy.cc
+    ExportImageAnimationStrategy.h
     ExportMotionPathAnimationStrategy.cc
     ExportMotionPathAnimationStrategy.h
     ExportOptionsUtils.h
@@ -186,8 +189,8 @@ set(srcs
     PythonManager.h
     RasterColourPalette.cc
     RasterColourPalette.h
-    ReconstructionGeometrySequence.h
     RenderSettings.h
+    SceneLightingParameters.cc
     SceneLightingParameters.h
     SessionMenu.cc
     SessionMenu.h

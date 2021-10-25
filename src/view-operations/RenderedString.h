@@ -33,6 +33,7 @@
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
 #include "gui/ColourProxy.h"
+#include "maths/PointOnSphere.h"
 
 namespace GPlatesViewOperations
 {

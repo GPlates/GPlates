@@ -377,6 +377,20 @@ namespace
 	}
 
 	void
+	add_spreading_asymmetry_key_to_kvd_if_missing(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString, QString > &model_to_shapefile_map)
+	{
+		GPlatesPropertyValues::XsDouble::non_null_ptr_type value =
+				GPlatesPropertyValues::XsDouble::create(0.);
+
+		add_field_to_kvd(get_key_string(model_to_shapefile_map, ShapefileAttributes::SPREADING_ASYMMETRY),
+						 value,
+						 GPlatesPropertyValues::StructuralType::create_xsi("string"),
+						 dictionary);
+	}
+
+	void
 	add_region_to_kvd(
 			const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header,
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary)
@@ -567,6 +581,7 @@ namespace
 		add_reconstruction_method_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 		add_left_plate_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 		add_right_plate_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
+		add_spreading_asymmetry_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 	}
 
 
@@ -628,61 +643,6 @@ namespace
 						kvd));
 	}
 
-	QVariant
-	get_qvariant_from_element(
-			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
-	{
-		GPlatesFeatureVisitors::ToQvariantConverter converter;
-
-		element.value()->accept_visitor(converter);
-
-		if (converter.found_values_begin() != converter.found_values_end())
-		{
-			return *converter.found_values_begin();
-		}
-		else
-		{
-			return QVariant();
-		}
-	}
-
-	/**
-	 * Write kvd to debug output
-	 */
-	void
-	write_kvd(
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
-	{
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator it =
-				kvd->elements().begin();
-
-		for (; it != kvd->elements().end(); ++it)
-		{
-			qDebug() << "Key: " <<
-						GPlatesUtils::make_qstring_from_icu_string((*it).key()->value().get()) <<
-						", Value: " <<
-						get_qvariant_from_element(*it);
-		}
-	}
-
-	/**
-	 * Write kvd to debug output
-	 */
-	void
-	write_kvd(
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type kvd)
-	{
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator it =
-				kvd->elements().begin();
-
-		for (; it != kvd->elements().end(); ++it)
-		{
-			qDebug() << "Key: " <<
-						GPlatesUtils::make_qstring_from_icu_string((*it).key()->value().get()) <<
-						", Value: " <<
-						get_qvariant_from_element(*it);
-		}
-	}
 
 	double
 	get_time_from_time_period(
@@ -892,6 +852,46 @@ namespace
 							key,
 							value,
 							GPlatesPropertyValues::StructuralType::create_xsi("string"));
+
+				add_or_replace_kvd_element(new_element,key_string,dictionary);
+			}
+		}
+
+	}
+
+	void
+	fill_kvd_with_spreading_asymmetry(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString,QString > &model_to_shapefile_map,
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+	{
+
+		static const GPlatesModel::PropertyName spreading_asymmetry_property_name =
+				GPlatesModel::PropertyName::create_gpml("spreadingAsymmetry");
+
+		const GPlatesPropertyValues::XsDouble *spreading_asymmetry;
+
+		if (GPlatesFeatureVisitors::get_property_value(
+					feature,spreading_asymmetry_property_name,spreading_asymmetry)) {
+
+			GPlatesModel::PropertyValue::non_null_ptr_type value =
+					spreading_asymmetry->clone();
+
+			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
+						ShapefileAttributes::model_properties[ShapefileAttributes::SPREADING_ASYMMETRY]);
+
+			if (it != model_to_shapefile_map.end())
+			{
+
+				QString key_string = it.value();
+
+				GPlatesPropertyValues::XsString::non_null_ptr_type key =
+						GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(key_string));
+
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
+							key,
+							value,
+							GPlatesPropertyValues::StructuralType::create_xsi("double"));
 
 				add_or_replace_kvd_element(new_element,key_string,dictionary);
 			}
@@ -1341,6 +1341,20 @@ namespace
 					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 		elements.push_back(recon_method_element);
 
+		// Add a reconstruction method entry
+		it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::SPREADING_ASYMMETRY]);
+		key = GPlatesPropertyValues::XsString::create(
+					GPlatesUtils::make_icu_string_from_qstring(*it));
+
+		GPlatesPropertyValues::XsDouble::non_null_ptr_type spreading_asymmetry_value =
+				GPlatesPropertyValues::XsDouble::create(0.);
+
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement spreading_asymmetry_element(
+					key,
+					spreading_asymmetry_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
+		elements.push_back(spreading_asymmetry_element);
+
 		// Add them all to the default kvd.
 		default_key_value_dictionary.reset(GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements));
 	}
@@ -1363,6 +1377,7 @@ namespace
 		fill_kvd_with_recon_method(dictionary,model_to_shapefile_map,feature);
 		fill_kvd_with_left_plate_id(dictionary,model_to_shapefile_map,feature);
 		fill_kvd_with_right_plate_id(dictionary,model_to_shapefile_map,feature);
+		fill_kvd_with_spreading_asymmetry(dictionary,model_to_shapefile_map,feature);
 	}
 	
 	void

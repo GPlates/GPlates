@@ -291,31 +291,6 @@ GPlatesDataMining::DataMiningUtils::load_cfg(
 }
 
 
-std::vector<GPlatesModel::FeatureHandle::weak_ref>
-GPlatesDataMining::DataMiningUtils::get_all_seed_features(
-		GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type co_proxy)
-{
-	using namespace GPlatesAppLogic;
-	std::vector<GPlatesModel::FeatureHandle::weak_ref> ret;
-
-	std::vector<reconstruct_layer_proxy_non_null_ptr_type> seed_proxies =
-		co_proxy->get_coregistration_seed_layer_proxy();
-
-	std::vector<ReconstructContext::ReconstructedFeature> reconstructed_seed_features;
-	BOOST_FOREACH(reconstruct_layer_proxy_non_null_ptr_type p, seed_proxies)
-	{
-		p->get_reconstructed_features(reconstructed_seed_features);
-
-		BOOST_FOREACH(ReconstructContext::ReconstructedFeature rsf, reconstructed_seed_features)
-		{
-			const GPlatesModel::FeatureHandle::weak_ref f = rsf.get_feature();
-			if(f.is_valid())
-				ret.push_back(f);
-		}
-	}
-	return ret;
-}
-
 
 
 

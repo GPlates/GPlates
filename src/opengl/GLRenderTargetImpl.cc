@@ -78,20 +78,26 @@ GPlatesOpenGL::GLRenderTargetImpl::is_supported(
 			return false;
 		}
 
-		frame_buffer_object_classification.set_stencil_buffer_internal_format(GL_DEPTH_STENCIL_EXT);
-
 		// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
-		if (include_depth_buffer)
-		{
-			frame_buffer_object_classification.set_depth_buffer_internal_format(GL_DEPTH_STENCIL_EXT);
-		}
+		// And both must be enabled for the frame buffer completeness check to succeed.
+		frame_buffer_object_classification.set_stencil_buffer_internal_format(GL_DEPTH24_STENCIL8_EXT);
+		frame_buffer_object_classification.set_depth_buffer_internal_format(GL_DEPTH24_STENCIL8_EXT);
 	}
 	else if (include_depth_buffer)
 	{
-		frame_buffer_object_classification.set_depth_buffer_internal_format(
-				// To improve render buffer re-use we use packed depth/stencil (if supported)
-				// even if only depth is requested...
-				capabilities.framebuffer.gl_EXT_packed_depth_stencil ? GL_DEPTH_STENCIL_EXT : GL_DEPTH_COMPONENT);
+		// To improve render buffer re-use we use packed depth/stencil (if supported)
+		// though only depth was requested...
+		if (capabilities.framebuffer.gl_EXT_packed_depth_stencil)
+		{
+			// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
+			// And both must be enabled for the frame buffer completeness check to succeed.
+			frame_buffer_object_classification.set_depth_buffer_internal_format(GL_DEPTH24_STENCIL8_EXT);
+			frame_buffer_object_classification.set_stencil_buffer_internal_format(GL_DEPTH24_STENCIL8_EXT);
+		}
+		else
+		{
+			frame_buffer_object_classification.set_depth_buffer_internal_format(GL_DEPTH_COMPONENT);
+		}
 	}
 
 	//! Typedef for a mapping of supported parameters (key) to boolean flag indicating supported.
@@ -168,28 +174,38 @@ GPlatesOpenGL::GLRenderTargetImpl::GLRenderTargetImpl(
 				capabilities.framebuffer.gl_EXT_packed_depth_stencil,
 				GPLATES_ASSERTION_SOURCE);
 
-		d_stencil_buffer = boost::in_place(GLRenderBufferObject::create(renderer), GL_DEPTH_STENCIL_EXT);
-
 		// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
-		if (include_depth_buffer)
-		{
-			d_depth_buffer = boost::in_place(d_stencil_buffer->render_buffer, GL_DEPTH_STENCIL_EXT);
-		}
+		// And both must be enabled for the frame buffer completeness check to succeed.
+		const GLRenderBufferObject::shared_ptr_type depth_stencil_render_buffer =
+				GLRenderBufferObject::create(renderer);
+		d_stencil_buffer = boost::in_place(depth_stencil_render_buffer, GL_DEPTH24_STENCIL8_EXT);
+		d_depth_buffer = boost::in_place(depth_stencil_render_buffer, GL_DEPTH24_STENCIL8_EXT);
 	}
 	else if (include_depth_buffer)
 	{
-		d_depth_buffer = boost::in_place(
-				GLRenderBufferObject::create(renderer),
-				// To improve render buffer re-use we use packed depth/stencil (if supported)
-				// even if only depth is requested...
-				capabilities.framebuffer.gl_EXT_packed_depth_stencil ? GL_DEPTH_STENCIL_EXT : GL_DEPTH_COMPONENT);
+		// To improve render buffer re-use we use packed depth/stencil (if supported)
+		// though only depth was requested...
+		if (capabilities.framebuffer.gl_EXT_packed_depth_stencil)
+		{
+			// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
+			// And both must be enabled for the frame buffer completeness check to succeed.
+			const GLRenderBufferObject::shared_ptr_type depth_stencil_render_buffer =
+					GLRenderBufferObject::create(renderer);
+			d_depth_buffer = boost::in_place(depth_stencil_render_buffer, GL_DEPTH24_STENCIL8_EXT);
+			d_stencil_buffer = boost::in_place(depth_stencil_render_buffer, GL_DEPTH24_STENCIL8_EXT);
+		}
+		else
+		{
+			d_depth_buffer = boost::in_place(GLRenderBufferObject::create(renderer), GL_DEPTH_COMPONENT);
+		}
 	}
 
 	//
 	// Set up the texture.
 	//
+	// TODO: Allow client to set these parameters. For example, may not want nearest filtering if
+	// *not* representing a full-screen texture (full-screen usually point sampled).
 
-	// It's a full-screen texture (meant to be point sampled) so nearest filtering is all that's needed.
 	d_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	d_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 

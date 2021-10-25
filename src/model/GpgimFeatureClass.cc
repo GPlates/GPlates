@@ -106,3 +106,24 @@ GPlatesModel::GpgimFeatureClass::get_feature_property(
 	// Not found.
 	return boost::none;
 }
+
+
+boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type>
+GPlatesModel::GpgimFeatureClass::get_default_geometry_feature_property() const
+{
+	// First, see if this feature class has a default geometry property. If it does then we don't
+	// need to search ancestor classes because derived classes override ancestor classes.
+	if (d_default_geometry_property)
+	{
+		return d_default_geometry_property.get();
+	}
+
+	// Next, recursively search our ancestor feature classes.
+	if (d_parent_feature_class)
+	{
+		return d_parent_feature_class.get()->get_default_geometry_feature_property();
+	}
+
+	// Not found.
+	return boost::none;
+}

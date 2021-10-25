@@ -27,8 +27,11 @@
 #define GPLATES_GUI_MAPCANVASTOOL_H
 
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <QPointF>
 #include <QDebug>
+
+#include "maths/PointOnSphere.h"
 
 
 namespace GPlatesQtWidgets
@@ -39,6 +42,7 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesGui
 {
+	class MapProjection;
 	class MapTransform;
 
 	/**
@@ -368,6 +372,16 @@ namespace GPlatesGui
 		{
 			return *d_map_transform_ptr;
 		}
+
+		/**
+		 * Converts a QPointF to a PointOnSphere.
+		 *
+		 * Returns none if no valid inverse transform to lat/lon for specified (x,y) point.
+		 */
+		boost::optional<GPlatesMaths::PointOnSphere>
+		qpointf_to_point_on_sphere(
+				const QPointF &point,
+				const GPlatesGui::MapProjection &projection);
 
 		/**
 		 * Re-orient the map by dragging the mouse pointer.

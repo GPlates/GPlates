@@ -1,9 +1,9 @@
-/* $Id: ShapefileFormatReconstructedFeatureGeometryExport.h 6843 2009-10-15 14:54:14Z rwatson $ */
+/* $Id$ */
 
 /**
  * \file Exports flowlines to shapefile format.
- * $Revision: 6843 $
- * $Date: 2009-10-15 16:54:14 +0200 (to, 15 okt 2009) $
+ * $Revision$
+ * $Date$
  * 
  * Copyright (C) 2010 Geological Survey of Norway
  *
@@ -62,6 +62,7 @@ namespace GPlatesFileIO
 				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
+				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool should_export_referenced_files = true);

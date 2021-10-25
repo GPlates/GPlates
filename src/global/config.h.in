@@ -150,4 +150,7 @@
 /* Whether GPlates is not built with Symbol stuff */
 #cmakedefine GPLATES_NO_SYMBOL
 
+/* Whether GPlates ignores environment variables when initilizing embeded Python interpreter */
+#cmakedefine GPLATES_IGNORE_PYTHON_ENVIRONMENT
+
 #endif // GPLATES_GLOBAL_CONFIG_H

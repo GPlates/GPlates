@@ -553,7 +553,7 @@ GPlatesQtWidgets::ViewportWindow::connect_file_menu_actions()
 			GPlatesGui::ImportMenu::RASTER,
 			"Import &Time-Dependent Raster...",
 			boost::bind(&ViewportWindow::pop_up_import_time_dependent_raster_dialog, boost::ref(*this)));
-	// If scalar fields have been enabled then all them to be imported.
+	// If scalar fields have been enabled then allow them to be imported.
 	if (GPlatesUtils::ComponentManager::instance().is_enabled(
 		GPlatesUtils::ComponentManager::Component::scalar_field_import()))
 	{
@@ -1314,6 +1314,12 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		// We don't pick a tab - the previous tab from another canvas tool workflow will remain.
 		break;
 
+#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
+	case GPlatesGui::CanvasToolWorkflows::TOOL_CHANGE_LIGHTING:
+		d_task_panel_ptr->choose_lighting_tab();
+		break;
+#endif
+
 	case GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY:
 		d_task_panel_ptr->choose_feature_tab();
 		break;
@@ -1352,6 +1358,10 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE:
 		d_task_panel_ptr->choose_modify_pole_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_POLE:
+		d_task_panel_ptr->choose_move_pole_tab();
 		break;
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY:

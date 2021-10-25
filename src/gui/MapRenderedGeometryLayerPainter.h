@@ -87,7 +87,7 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const double &inverse_viewport_zoom_factor,
-				GPlatesGui::RenderSettings &render_settings,
+				const GPlatesGui::RenderSettings &render_settings,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
 
@@ -125,8 +125,13 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_rendered_direction_arrow(
-				const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow);
+		visit_rendered_radial_arrow(
+				const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow);
+
+		virtual
+		void
+		visit_rendered_tangential_arrow(
+				const GPlatesViewOperations::RenderedTangentialArrow &rendered_tangential_arrow);
 
 		virtual
 		void
@@ -304,7 +309,7 @@ namespace GPlatesGui
 		const double d_inverse_zoom_factor;
 
 		//! Rendering flags for determining what gets shown
-		RenderSettings &d_render_settings;
+		const RenderSettings &d_render_settings;
 
 		//! For assigning colours to RenderedGeometry
 		ColourScheme::non_null_ptr_type d_colour_scheme;

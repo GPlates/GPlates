@@ -7,19 +7,16 @@
     <x>0</x>
     <y>0</y>
     <width>587</width>
-    <height>532</height>
+    <height>650</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_11">
-   <property name="spacing">
-    <number>3</number>
-   </property>
-   <property name="margin">
-    <number>0</number>
-   </property>
+  <layout class="QVBoxLayout" name="verticalLayout_13">
+   <item>
+    <widget class="QWidget" name="widget_velocity_smoothing_options" native="true"/>
+   </item>
    <item>
     <widget class="QWidget" name="widget_file_options" native="true"/>
    </item>

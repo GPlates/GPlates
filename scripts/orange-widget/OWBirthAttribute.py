@@ -1,3 +1,24 @@
+'''
+ * 
+ * Copyright (C) 2013 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+'''
+
 """
 <name>BirthAttribute</name>
 <description>Get attribute data at seed birth.</description>
@@ -62,82 +83,47 @@ class OWBirthAttribute(OWWidget):
         if not self.coreg_layer:
             if not self.refresh():
                 return
-            
-        cache={float('inf'):self.coreg_layer.get_coreg_data(9999)}
-
+        
         if self.ui.property_comboBox.count() == 0:
             return
-        cur_idx = self.ui.property_comboBox.currentIndex()
-
-        vec = []
-        birth_time_vec=[]
-        seeds = self.coreg_layer.get_coreg_seeds()
         
+        cur_idx = self.ui.property_comboBox.currentIndex()
+        seeds = self.coreg_layer.get_coreg_seeds()             
+
+        count = 0
+        seed_id_vec = []
+        birth_time_vec = []
+        birth_attr_vec = []       
+
         pb = OWGUI.ProgressBar(self,iterations=len(seeds))
         for seed in seeds:
             pb.advance()
-            count=0
             while(count < self.RETRY_NUM):
                 try:
-                    table = []
-                    bt_time = self.coreg_layer.get_begin_time(seed)
-                    birth_time_vec.append(str(bt_time))
-                    if bt_time == float('inf'):
-                        bt_time, e_time, inc = self.coreg_layer.get_time_setting()
-
-                    if str(bt_time)=='nan':
-                        vec.append('NaN')
-                        continue
-                    
-                    if bt_time not in cache:        
-                        table = self.coreg_layer.get_coreg_data(bt_time)
-                        cache[bt_time]=table
-                    else:
-                        table = cache[bt_time]
+                    attributes = self.coreg_layer.get_birth_attributes(seed) #a list of attributes
+                    birth_attr_vec.append(str(attributes[cur_idx+2]))
+                    seed_id_vec.append(str(seed))
+                    birth_time_vec.append(str(attributes[1]))
                     break
                 except Exception, e:
                     count +=1
-                    print 'Failed to get coregistration data for seed: ' + seed
+                    print e
+                    print 'Failed to get birth attribute.'
                     print 'retrying... ' + str(count)
-
-            for row in table:
-                if row[0] == seed:
-                    vec.append(str(row[cur_idx+2]))
+        pb.finish()
         
-        vv = []
-        for item in set(vec):
-            vv.append(item)
-        bt_vv=[]
-        for btt in set(birth_time_vec):
-            bt_vv.append(btt)
-
         v = [orange.StringVariable('Feature ID'),
-             orange.EnumVariable('Birth Time', values = bt_vv),
-             orange.EnumVariable(str(self.ui.property_comboBox.currentText()),values = vv)]
+             orange.StringVariable('Birth Time'),
+             orange.StringVariable(str(self.ui.property_comboBox.currentText()))]
+
         domain = Orange.data.Domain(v)
         data = Orange.data.Table(domain) #create empty table.
-
-        seeds_str=[str(s) for s in seeds]
-        for i in zip(seeds_str,birth_time_vec,vec):
+        #put data into the table
+        for i in zip(seed_id_vec,birth_time_vec,birth_attr_vec):
             data.append(list(i))
         self.send("Attribute At Birth", data)
 
-        '''
-        v = [orange.StringVariable('Feature ID')]
-        domain = Orange.data.Domain(v)
-        data = Orange.data.Table(domain) #create empty table.
-        for i in seeds:
-            data.append([str(i)])
-        self.send("Feature IDs", data)
-
-        v = [orange.EnumVariable('Birth Time', values = bt_vv)]
-        domain = Orange.data.Domain(v)
-        data = Orange.data.Table(domain) #create empty table.
-        for i in birth_time_vec:
-            data.append([str(i)])
-        self.send("Birth Time", data)'''
-
-
+        
     def refresh(self):
         if not self.coreg_layer:
             try:

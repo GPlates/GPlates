@@ -80,7 +80,8 @@ namespace
 		{
 			// The first time setjmp() is called, it returns 0. If GDALOpen() segfaults,
 			// we longjmp back to the if statement, but with a non-zero value.
-			result = static_cast<GDALDataset *>(GDALOpen(filename.toStdString().c_str(), GA_ReadOnly));
+			const std::string filename_std_string = filename.toStdString();
+			result = static_cast<GDALDataset *>(GDALOpen(filename_std_string.c_str(), GA_ReadOnly));
 			segfaulted = false;
 		}
 
@@ -119,7 +120,8 @@ namespace
 			const QString &filename,
 			GPlatesFileIO::ReadErrorAccumulation *read_errors)
 	{
-		GDALDataset *result = static_cast<GDALDataset *>(GDALOpen(filename.toStdString().c_str(), GA_ReadOnly));
+		const std::string filename_std_string = filename.toStdString();
+		GDALDataset *result = static_cast<GDALDataset *>(GDALOpen(filename_std_string.c_str(), GA_ReadOnly));
 
 		// Add errors as necessary.
 		if (!result)
@@ -142,12 +144,29 @@ namespace
 
 #endif  // Q_WS_X11
 
+
+void
+GPlatesFileIO::GdalUtils::gdal_register_drivers()
+{
+	static bool s_registered = false;
+
+	// Only register once.
+	if (!s_registered)
+	{
+		GDALAllRegister();
+
+		s_registered = true;
+	}
+}
+
+
 GDALDataset *
 GPlatesFileIO::GdalUtils::gdal_open(
 		const QString &filename,
 		ReadErrorAccumulation *read_errors)
 {
-	GDALAllRegister();
+	gdal_register_drivers();
+
 	return do_gdal_open(filename, read_errors);
 }
 

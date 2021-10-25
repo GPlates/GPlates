@@ -501,9 +501,12 @@ GPlatesFileIO::GmapReader::read_file(
 		File::Reference &file_ref,
 		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::Gpgim &gpgim,
-		ReadErrorAccumulation &read_errors)
+		ReadErrorAccumulation &read_errors,
+		bool &contains_unsaved_changes)
 {
 	PROFILE_FUNC();
+
+	contains_unsaved_changes = false;
 
 	const FileInfo &fileinfo = file_ref.get_file_info();
 

@@ -1,4 +1,25 @@
 import socket
+'''
+ * 
+ * Copyright (C) 2013 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ '''
+
 from xml.dom.minidom import parseString
 from decimal import *
 
@@ -173,7 +194,7 @@ class CoregistrationLayer:
         return bt, et, inc
 
     #Given a reconstruction time, the get_coreg_data() returns a table of coregistration data.
-    #THe data might be string or float depends on its nature.    
+    #The data might be string or float depends on its nature.    
     def get_coreg_data(self, time):
         request=('<Request><Name>GetAssociationData</Name><ReconstructionTime>'
                 + str(time) + '</ReconstructionTime><LayerName>'
@@ -216,6 +237,56 @@ class CoregistrationLayer:
                     
             t = [data_list[i:i+column] for i  in range(0, len(data_list), column)]
             return t
+        else:
+            print 'Cannot find data.'
+            #print data
+            return None
+
+    #
+    # Given a seed feature id, return a list of attributes at the birth time of the seed.
+    #
+    def get_birth_attributes(self, seed_id):
+        request=('<Request><Name>GetBirthAttribute</Name><FeatureID>'
+                + str(seed_id) + '</FeatureID><LayerName>'
+                 + self.layer_name +'</LayerName></Request>')
+        data = ''
+        self.d_client = Client()
+        try:
+            data = self.d_client.send_request_return_response(request)
+            dom = parseString(data)
+        except:
+            print self.d_client.get_error_msg()
+            print data
+            raise
+        
+        ele = dom.getElementsByTagName('DataTable')
+        if ele:
+            row=0
+            column=0
+            attrs = ele[0].attributes
+            for index in range(attrs.length):
+                    if attrs.item(index).name == 'row':
+                            row = int(attrs.item(index).value)
+                    if attrs.item(index).name == 'column':
+                            column = int(attrs.item(index).value)
+           
+            cells = ele[0].getElementsByTagName('c')
+            data_list = []
+            for c in cells:
+                fc = c.firstChild
+                if not fc:
+                    data_list.append('')
+                    continue
+
+                str_val = fc.nodeValue
+                               
+                if str_val.isdigit():
+                    data_list.append(float(str_val))
+                else:
+                    data_list.append(str_val)
+                    
+            t = [data_list[i:i+column] for i  in range(0, len(data_list), column)]
+            return t[0] #TODO: we are expecting exact one row in the table.
         else:
             print 'Cannot find data.'
             #print data

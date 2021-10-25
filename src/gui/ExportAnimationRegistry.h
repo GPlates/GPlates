@@ -107,14 +107,16 @@ namespace GPlatesGui
 		 *
 		 * The function takes the following arguments:
 		 * - A filename template,
-		 * - A message regarding the validation.
+		 * - A message regarding the validation,
+		 * - A bool indicating whether to check for filename variation or not.
 		 *
 		 * Returns true if successfully validated.
 		 */
 		typedef bool
 				validate_filename_template_function_signature_type(
 						const QString &,
-						QString &);
+						QString &,
+						bool);
 
 		//! The boost::function typedef that validates a filename template.
 		typedef boost::function<validate_filename_template_function_signature_type>
@@ -209,12 +211,17 @@ namespace GPlatesGui
 		 * Returns true if @a filename_template is valid for the specified export ID.
 		 *
 		 * @a filename_template_validation_message is set to the valid message, if any.
+		 *
+		 * If @a check_filename_variation is true then also checks that there is filename variation
+		 * (varies with reconstruction time).
+		 * This should normally be true except when a exporting for a single time instant.
 		 */
 		bool
 		validate_filename_template(
 				ExportAnimationType::ExportID export_id,
 				const QString &filename_template,
-				QString &filename_template_validation_message) const;
+				QString &filename_template_validation_message,
+				bool check_filename_variation = true) const;
 
 
 	private:

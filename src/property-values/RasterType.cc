@@ -103,6 +103,39 @@ namespace GPlatesPropertyValues
 }
 
 
+QString
+GPlatesPropertyValues::RasterType::get_type_as_string(
+		Type type)
+{
+	switch (type)
+	{
+	case UNINITIALISED:
+		return QString("UNINITIALISED");
+	case INT8:
+		return QString("INT8");
+	case UINT8:
+		return QString("UINT8");
+	case INT16:
+		return QString("INT16");
+	case UINT16:
+		return QString("UINT16");
+	case INT32:
+		return QString("INT32");
+	case UINT32:
+		return QString("UINT32");
+	case FLOAT:
+		return QString("FLOAT");
+	case DOUBLE:
+		return QString("DOUBLE");
+	case RGBA8:
+		return QString("RGBA8");
+	case UNKNOWN:
+	default:
+		return QString("UNKNOWN");
+	}
+}
+
+
 bool
 GPlatesPropertyValues::RasterType::is_signed_integer(
 		Type type)

@@ -64,7 +64,7 @@ namespace GPlatesGlobal
 				const GPlatesUtils::CallStack::Trace &exception_source,
 				const std::string &message) :
 			Exception(exception_source),
-			d_message(message)
+			d_message(QString::fromStdString(message))
 		{  }
 
 		/**
@@ -79,10 +79,19 @@ namespace GPlatesGlobal
 				const GPlatesUtils::CallStack::Trace &exception_source,
 				const QString &message) :
 			Exception(exception_source),
-			d_message(message.toStdString())
+			d_message(message)
 		{  }
 
 		~LogException() throw() { }
+
+		/**
+		 * Returns the log message passed into constructor.
+		 */
+		const QString &
+		get_message() const
+		{
+			return d_message;
+		}
 
 	protected:
 		virtual
@@ -97,11 +106,11 @@ namespace GPlatesGlobal
 		write_message(
 				std::ostream &os) const
 		{
-			write_string_message(os, d_message);
+			write_string_message(os, d_message.toStdString());
 		}
 
 	private:
-		std::string d_message;
+		QString d_message;
 	};
 }
 

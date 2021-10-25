@@ -68,7 +68,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Identifies each axis in the *local* coordinate frame of a cube face.
+		 * Identifies each axis in the *local* right-handed coordinate frame of a cube face.
 		 *
 		 * The 'x' and 'y' axes are parallel to the plane of a cube face (but not in the plane
 		 * of the cube face) and the 'z' axis is the negative of the cube face normal vector.

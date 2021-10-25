@@ -265,27 +265,7 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_scalar_field_3d_visual_layer_params(
 		const ScalarField3DVisualLayerParams &params)
 {
-	const GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters &isovalue_parameters =
-			params.get_isovalue_parameters()
-			? params.get_isovalue_parameters().get()
-			: GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters();
-
-	const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction =
-			params.get_depth_restriction()
-			? params.get_depth_restriction().get()
-			: GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction();
-
-	d_render_params.scalar_field_render_parameters =
-			GPlatesViewOperations::ScalarField3DRenderParameters(
-					params.get_render_mode(),
-					params.get_colour_mode(),
-					params.get_colour_palette(),
-					isovalue_parameters,
-					params.get_deviation_window_render_options(),
-					params.get_surface_polygons_mask(),
-					depth_restriction,
-					params.get_quality_performance(),
-					params.get_shader_test_variables());
+	d_render_params.scalar_field_render_parameters = params.get_scalar_field_3d_render_parameters();
 }
 
 
@@ -395,7 +375,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			// This means it was inside the network but outside any interior rigid blocks on the network.
 			// The arrow should be rendered black.
 			const GPlatesViewOperations::RenderedGeometry rendered_arrow =
-					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 							point,
 							velocity.d_vector,
 							d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
@@ -425,7 +405,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						plate_id_recon_geom.get();
 
 				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
-						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 								point,
 								velocity.d_vector,
 								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
@@ -436,7 +416,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 				render(rendered_arrow);
 			} else {
 				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
-						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 								point,
 								velocity.d_vector,
 								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
@@ -909,7 +889,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry rendered_geom =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrowed_polyline(
 			rmp->motion_path_points(),
-			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rmp));
+			get_colour(rmp, d_colour, d_style_adapter));
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry = 
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
@@ -1386,7 +1366,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 
 		// Create a RenderedGeometry using the velocity vector.
 		const GPlatesViewOperations::RenderedGeometry rendered_vector =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 				point,
 				velocity_vector,
 				d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,

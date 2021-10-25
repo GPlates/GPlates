@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0322" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
             <gpml:identity>GPlates-36f759e1-6187-4533-a9e3-f9ed7da98404</gpml:identity>
@@ -8,7 +8,7 @@
                 <gpml:ConstantValue>
                     <gpml:value>
                         <gml:Point>
-                            <gml:pos>16.5788 -33.5898</gml:pos>
+                            <gml:pos>16.578800000000005 -33.589800000000004</gml:pos>
                         </gml:Point>
                     </gpml:value>
                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
@@ -20,6 +20,7 @@
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
+            <gml:name>seed1</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -34,7 +35,6 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>seed1</gml:name>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>
@@ -45,7 +45,7 @@
                 <gpml:ConstantValue>
                     <gpml:value>
                         <gml:Point>
-                            <gml:pos>-3.27146 -8.62951</gml:pos>
+                            <gml:pos>-3.2714599999999998 -8.629509999999998</gml:pos>
                         </gml:Point>
                     </gpml:value>
                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
@@ -57,6 +57,7 @@
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
+            <gml:name>seed2</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -71,7 +72,6 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>seed2</gml:name>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>
@@ -82,7 +82,7 @@
                 <gpml:ConstantValue>
                     <gpml:value>
                         <gml:Point>
-                            <gml:pos>-25.3407 36.2962</gml:pos>
+                            <gml:pos>-25.340699999999998 36.296199999999999</gml:pos>
                         </gml:Point>
                     </gpml:value>
                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
@@ -94,6 +94,7 @@
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
+            <gml:name>seed3</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -108,7 +109,6 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>seed3</gml:name>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>
@@ -119,7 +119,7 @@
                 <gpml:ConstantValue>
                     <gpml:value>
                         <gml:Point>
-                            <gml:pos>-1.18867 157.808</gml:pos>
+                            <gml:pos>-1.1886699999999999 157.80799999999999</gml:pos>
                         </gml:Point>
                     </gpml:value>
                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
@@ -131,6 +131,7 @@
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
+            <gml:name>seed4</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -145,7 +146,6 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>seed4</gml:name>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>
@@ -156,7 +156,7 @@
                 <gpml:ConstantValue>
                     <gpml:value>
                         <gml:Point>
-                            <gml:pos>16.7132 7.24091</gml:pos>
+                            <gml:pos>16.713200000000001 7.2409100000000004</gml:pos>
                         </gml:Point>
                     </gpml:value>
                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
@@ -168,6 +168,7 @@
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
+            <gml:name>seed4</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -182,19 +183,29 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>seed4</gml:name>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
             <gpml:identity>GPlates-7267ab2d-3fae-4160-999a-15210338f111</gpml:identity>
             <gpml:revision>GPlates-787755a4-60b2-4f0c-8205-c0e501720890</gpml:revision>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:Point>
+                            <gml:pos>7.65198 8.1375100000000007</gml:pos>
+                        </gml:Point>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
                     <gpml:value>101</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
+            <gml:name>point_80-20</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -209,17 +220,6 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>point_80-20</gml:name>
-            <gpml:centerLineOf>
-                <gpml:ConstantValue>
-                    <gpml:value>
-                        <gml:Point>
-                            <gml:pos>7.65198 8.13751</gml:pos>
-                        </gml:Point>
-                    </gpml:value>
-                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:centerLineOf>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
 </gpml:FeatureCollection>

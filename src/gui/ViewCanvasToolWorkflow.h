@@ -100,6 +100,11 @@ namespace GPlatesGui
 		//! For zooming the globe in the 2D map view.
 		boost::scoped_ptr<MapCanvasTool> d_map_zoom_globe_tool;
 
+		//! For changing the lighting in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_change_lighting_tool;
+		//! For changing the lighting in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_change_lighting_tool;
+
 
 		void
 		create_canvas_tools(

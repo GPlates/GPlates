@@ -33,6 +33,7 @@
 
 #include "ProxiedRasterCache.h"
 #include "RasterType.h"
+#include "SpatialReferenceSystem.h"
 #include "ValueObjectType.h"
 #include "XsString.h"
 
@@ -223,6 +224,13 @@ namespace GPlatesPropertyValues
 		 */
 		std::vector<RawRaster::non_null_ptr_type>
 		proxied_raw_rasters() const;
+
+		/**
+		 * FIXME: This will be moved to its own property value once we store the raster
+		 * spatial reference system in a new property value.
+		 */
+		boost::optional<SpatialReferenceSystem::non_null_ptr_to_const_type>
+		get_spatial_reference_system() const;
 
 		/**
 		 * Returns the structural type associated with this property value class.

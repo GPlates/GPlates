@@ -1,11 +1,11 @@
-/* $Id:  $ */
+/* $Id$ */
 
 /**
  * @file 
  * Contains the implementation of the CommandServer class.
  *
  * Most recent change:
- *   $Date: $
+ *   $Date$
  * 
  * Copyright (C) 2012 The University of Sydney, Australia
  *
@@ -31,15 +31,25 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/CoRegistrationLayerProxy.h"
 #include "app-logic/UserPreferences.h"
+
 #include "data-mining/DataMiningUtils.h"
+
 #include "global/LogException.h"
+
 #include "gui/AnimationController.h"
+
+#include "model/ModelUtils.h"
+
 #include "opengl/GLContext.h"
 #include "opengl/GLRenderer.h"
+
 #include "presentation/Application.h"
+#include "presentation/ViewState.h"
 #include "presentation/VisualLayers.h"
+
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/GlobeAndMapWidget.h"
+
 #include "utils/FeatureUtils.h"
 
 namespace
@@ -57,128 +67,75 @@ namespace
 		return false;
 	}
 
-
-	std::vector<GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type>
-	get_all_coreg_proxies()
-	{
-		using namespace GPlatesAppLogic;
-		using namespace GPlatesPresentation;
-
-		ApplicationState &state = Application::instance().get_application_state();
-
-		// Get the current reconstruction (of all (enabled) layers).
-		const Reconstruction &reconstruction =	state.get_current_reconstruction();
-
-		// Get the co-registration layer outputs (likely only one layer but could be more).
-		std::vector<CoRegistrationLayerProxy::non_null_ptr_type> co_registration_layer_outputs;
-		reconstruction.get_active_layer_outputs<CoRegistrationLayerProxy>(co_registration_layer_outputs);
-		return co_registration_layer_outputs;
-	}
-
-
-	GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type
-	get_coreg_proxy()
-	{
-		std::vector<GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type> 
-			co_registration_layer_outputs = get_all_coreg_proxies();
-		
-		if(co_registration_layer_outputs.empty())
-		{
-			throw GPlatesGlobal::LogException(
-					GPLATES_EXCEPTION_SOURCE,
-					"Cannot find any co-registration layer." );
-		}
-		else
-		{
-			if(co_registration_layer_outputs.size() != 1)
-			{
-				qWarning() << "More than one co-registration layers found. Only return the first one. ";
-			}
-			return co_registration_layer_outputs[0];
-		}
-	}
-
-
-	GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type
-	get_coreg_proxy(
-			const QString& layer_name)
+	boost::optional<GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type>
+	get_coregistration_layer_proxy(
+			GPlatesPresentation::ViewState &view_state,
+			const QString &layer_name)
 	{
 		using namespace GPlatesPresentation;
 		using namespace GPlatesAppLogic;
 
-		if(layer_name.isEmpty())
-		{
-			return get_coreg_proxy();
-		}
-
-		VisualLayers& layers = Application::instance().get_view_state().get_visual_layers();
+		VisualLayers& layers = view_state.get_visual_layers();
 		boost::weak_ptr<VisualLayer> layer;
 		boost::shared_ptr<VisualLayer> locked_visual_layer;
-
 		for(size_t i=0; i < layers.size(); i++)
 		{
-			layer = layers.visual_layer_at(i);
-			if (locked_visual_layer = layer.lock())
-			if(locked_visual_layer && (locked_visual_layer->get_name() == layer_name))
-			{
-				break;
-			}
 			locked_visual_layer.reset();
-		}
-		
-		if(locked_visual_layer)
-		{
-			boost::optional<GPlatesAppLogic::LayerProxy::non_null_ptr_type> layer_proxy = 
-				locked_visual_layer->get_reconstruct_graph_layer().get_layer_output();
-			if(layer_proxy)
+			layer = layers.visual_layer_at(i);
+			locked_visual_layer = layer.lock();
+			if(locked_visual_layer)
 			{
-				CoRegistrationLayerProxy* coreg_proxy = dynamic_cast<CoRegistrationLayerProxy*>((*layer_proxy).get());
-				if(coreg_proxy)
-				{
-					return CoRegistrationLayerProxy::non_null_ptr_type(coreg_proxy);
+				CoRegistrationLayerProxy* coreg_proxy = NULL;
+				boost::optional<GPlatesAppLogic::LayerProxy::non_null_ptr_type> layer_proxy = 
+					locked_visual_layer->get_reconstruct_graph_layer().get_layer_output();
+				if(layer_proxy)
+				{   //First, we check if the layer is a co-registration layer.
+					 coreg_proxy = dynamic_cast<CoRegistrationLayerProxy*>((*layer_proxy).get());
+					if(!coreg_proxy)
+					{
+						//Not a co-registration layer, we continue the search.
+						continue;
+					}
+					if(layer_name.isEmpty())
+					{
+						//No layer name is given. So, we just return the first one we found.
+						return CoRegistrationLayerProxy::non_null_ptr_type(coreg_proxy);
+					}
+					else
+					{
+						if(locked_visual_layer->get_name() == layer_name)
+						{
+							// We have found the layer with the specific name.
+							return CoRegistrationLayerProxy::non_null_ptr_type(coreg_proxy);
+						}
+						else
+						{
+							//Not the layer we are looking for. continue the search.
+							continue;
+						}
+					}
 				}
 			}
 		}
-		throw GPlatesGlobal::LogException(
-				GPLATES_EXCEPTION_SOURCE,
-				"Cannot find co-registration layer with name: "+ layer_name);
-	}
-
-
-	GPlatesModel::FeatureHandle::non_null_ptr_type
-	get_feature_by_id(
-			const QString& id)
-	{
-		GPlatesPresentation::Application &app = GPlatesPresentation::Application::instance();
-		std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> files =
-			app.get_application_state().get_feature_collection_file_state().get_loaded_files();
-
-		BOOST_FOREACH(GPlatesAppLogic::FeatureCollectionFileState::file_reference& file_ref, files)
-		{
-			GPlatesModel::FeatureCollectionHandle::weak_ref fc = file_ref.get_file().get_feature_collection();
-			BOOST_FOREACH(GPlatesModel::FeatureHandle::non_null_ptr_type feature, *fc)
-			{
-				if(feature->feature_id().get().qstring() == id)
-				{
-					return feature;
-				}
-			}
-		}
-		throw GPlatesGlobal::LogException(
-				GPLATES_EXCEPTION_SOURCE,
-				"Cannot find feature with id: " + id ); 
+		return boost::none; //Could not find the co-registration layer.
 	}
 }
 
 
 GPlatesGui::CommandServer::CommandServer(
+		GPlatesAppLogic::ApplicationState &application_state,
+		GPlatesPresentation::ViewState &view_state,
+		GPlatesQtWidgets::ViewportWindow &main_window,
 		unsigned port, 
 		QObject* _parent) :
 	QTcpServer(_parent),
 	d_disabled(false),
 	d_command(""),
 	d_timeout(false),
-	d_timer(new QTimer(this))
+	d_timer(new QTimer(this)),
+	d_app_state(application_state),
+	d_view_state(view_state),
+	d_main_window(main_window)
 {
 	GPlatesAppLogic::UserPreferences pref(NULL);
 	if(0 == port)
@@ -196,12 +153,13 @@ GPlatesGui::CommandServer::CommandServer(
 	{
 		qWarning() << "Failed to listen on port:" << port;
 	}
-	d_command_map["GetSeeds"] = create_get_seeds_command;
-	d_command_map["GetTimeSetting"] = create_get_time_setting_command;
-	d_command_map["GetBeginTime"] = create_get_begin_time_command;
-	d_command_map["GetAssociations"] = create_get_associations_command;
-	d_command_map["GetAssociationData"] = create_get_association_data_command;
-	d_command_map["SetReconstructionTime"] = create_set_reconstruction_time_command;
+	d_command_map["GetSeeds"] = &CommandServer::create_get_seeds_command;
+	d_command_map["GetTimeSetting"] = &CommandServer::create_get_time_setting_command;
+	d_command_map["GetBeginTime"] = &CommandServer::create_get_begin_time_command;
+	d_command_map["GetAssociations"] = &CommandServer::create_get_associations_command;
+	d_command_map["GetAssociationData"] = &CommandServer::create_get_association_data_command;
+	d_command_map["GetBirthAttribute"] = &CommandServer::create_get_birth_attribute_command;
+	d_command_map["SetReconstructionTime"] = &CommandServer::create_set_reconstruction_time_command;
 	connect(d_timer, SIGNAL(timeout()), this, SLOT(timeout()));
 }
 
@@ -264,7 +222,7 @@ GPlatesGui::CommandServer::create_command(
 			QString name = reader.readElementText().simplified();
 			if(d_command_map.find(name) != d_command_map.end())
 			{
-				return d_command_map[name](reader);
+				return (this->*(d_command_map[name]))(reader);
 			}
 		}
 	}
@@ -283,14 +241,22 @@ GPlatesGui::GetSeedsCommand::execute(
 	std::set<QString> feature_id_set;
 	QTextStream os(socket);
 	os.setAutoDetectUnicode(true);
-
+	boost::optional<CoRegistrationLayerProxy::non_null_ptr_type> proxy =
+		get_coregistration_layer_proxy(d_view_state, d_layer_name);
+	if(!proxy)
+	{
+		qWarning() << "Not be able to get co-registration layer.";
+		return false;
+	}
 	try{
 		BOOST_FOREACH(
-			const GPlatesModel::FeatureHandle::weak_ref f, 
-			DataMiningUtils::get_all_seed_features(get_coreg_proxy(d_layer_name)))
+				const GPlatesModel::FeatureHandle::weak_ref f, 
+				(*proxy)->get_seed_features())
 		{
 			if(f.is_valid())
+			{
 				feature_id_set.insert(f->feature_id().get().qstring());
+			}
 		}
 	}catch(GPlatesGlobal::Exception& ex)
 	{
@@ -322,9 +288,9 @@ GPlatesGui::GetTimeSettingCommand::execute(
 	QTextStream os(socket);
 	os.setAutoDetectUnicode(true);
 	double st = 140.0, et = 0.0, inc = 1.0;
+	
 	try{
-		GPlatesGui::AnimationController&  controller =
-			GPlatesPresentation::Application::instance().get_view_state().get_animation_controller();
+		AnimationController&  controller = d_view_state.get_animation_controller();
 		st = controller.start_time();
 		et = controller.end_time();
 		inc = controller.time_increment();
@@ -354,8 +320,10 @@ GPlatesGui::GetBeginTimeCommand::execute(
 	QTextStream os(socket);
 	os.setAutoDetectUnicode(true);
 	try{
-		GPlatesModel::FeatureHandle::non_null_ptr_type feature = get_feature_by_id(d_feature_id);
-		boost::optional<GPlatesMaths::Real> begin_time = GPlatesUtils::get_begin_time(feature.get());
+		GPlatesModel::FeatureHandle::weak_ref feature = 
+			GPlatesModel::ModelUtils::find_feature(d_feature_id);
+		boost::optional<GPlatesMaths::Real> begin_time = 
+			GPlatesUtils::get_begin_time(feature.handle_ptr());
 		QString bt_str;
 		if(begin_time)
 		{
@@ -380,7 +348,8 @@ GPlatesGui::GetBeginTimeCommand::execute(
 		os << "<Response>";
 		os << bt_str ;
 		os << "</Response>";
-	}catch(GPlatesGlobal::Exception& ex)
+	}
+	catch(GPlatesGlobal::Exception& ex)//TODO
 	{
 		ex.write(std::cerr);
 		std::stringstream ss;
@@ -401,9 +370,16 @@ GPlatesGui::GetAssociationsCommand::execute(
 	bool ret = true;
 	QTextStream os(socket);
 	os.setAutoDetectUnicode(true);
+	boost::optional<GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type> proxy =
+		get_coregistration_layer_proxy(d_view_state, d_layer_name);
+	if(!proxy)
+	{
+		qWarning() << "Not be able to get co-registration layer.";
+		return false;
+	}
 	try{
-		const GPlatesDataMining::CoRegConfigurationTable& table = 
-			get_coreg_proxy(d_layer_name)->get_current_coregistration_configuration_table();
+		const CoRegConfigurationTable& table = 
+			(*proxy)->get_current_coregistration_configuration_table();
 
 		
 		std::map<unsigned, ConfigurationTableRow> sorted_map;
@@ -418,7 +394,7 @@ GPlatesGui::GetAssociationsCommand::execute(
 		os << "<Response>";
 		for( ; map_it != sorted_map.end(); map_it++)
 		{
-			os << GPlatesDataMining::to_string(map_it->second);
+			os << to_string(map_it->second);
 		}
 		os << "</Response>";
 	}catch(GPlatesGlobal::Exception& ex)
@@ -451,8 +427,7 @@ GPlatesGui::GetAssociationDataCommand::execute(
 	}
 
 	GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
-		GPlatesPresentation::Application::instance().get_main_window().
-		reconstruction_view_widget().globe_and_map_widget().get_active_gl_context();
+		d_main_window.reconstruction_view_widget().globe_and_map_widget().get_active_gl_context();
 
 	// Make sure the context is currently active.
 	gl_context->make_current();
@@ -461,9 +436,16 @@ GPlatesGui::GetAssociationDataCommand::execute(
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
 	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
+	boost::optional<GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type> proxy =
+		get_coregistration_layer_proxy(d_view_state, d_layer_name);
+	if(!proxy)
+	{
+		qWarning() << "Not be able to get co-registration layer.";
+		return false;
+	}
 	try{
 		boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type> coregistration_data = 
-			get_coreg_proxy(d_layer_name)->get_coregistration_data(*renderer, d_time);
+			(*proxy)->get_coregistration_data(*renderer, d_time);
 		if(coregistration_data)
 		{
 			std::vector<std::vector<QString> > table;
@@ -495,23 +477,89 @@ GPlatesGui::GetAssociationDataCommand::execute(
 	return ret;
 }
 
+
 bool
-GPlatesGui::SetReconstructionTimeCommand::execute(
+GPlatesGui::GetBirthAttributeCommand::execute(
 		QTcpSocket* socket)
 {
 	bool ret = true;
 	QTextStream os(socket);
 	os.setAutoDetectUnicode(true);
+	os << "<Response>";
+
+	GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
+		d_main_window.reconstruction_view_widget().globe_and_map_widget().get_active_gl_context();
+
+	// Make sure the context is currently active.
+	gl_context->make_current();
+
+	// Start a begin_render/end_render scope.
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
+	try{
+		//TODO: The following code should be re-factored 2013/09/23.
+		//1. Catch the paticular exception, not GPlatesGlobal::Exception.h
+		//2. Create a new function for converting CoRegistrationData into xml DataTable.
+		boost::optional<GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type> proxy =
+			get_coregistration_layer_proxy(d_view_state, d_layer_name);
+		if(!proxy)
+		{
+			qWarning() << "Not be able to get co-registration layer.";
+			return false;
+		}
+		boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type> coregistration_data = 
+			(*proxy)->get_birth_attribute_data(
+					*renderer, 
+					GPlatesModel::FeatureId(GPlatesUtils::UnicodeString(d_feature_id)));
+		if(coregistration_data)
+		{
+			std::vector<std::vector<QString> > table;
+			(*coregistration_data)->data_table().to_qstring_table(table);
+			if(!table.empty())
+			{
+				os << "<DataTable row=\"" << table.size() <<  "\" column=\"" << table[0].size() << "\" >";
+				BOOST_FOREACH(const std::vector<QString>& row, table)
+				{
+					BOOST_FOREACH(const QString& cell, row)
+					{
+						os << "<c>" << escape_reserved_xml_characters(cell) << "</c>";
+					}
+				}
+				os << "</DataTable>";
+			}
+		}
+		os << "</Response>";
+	}catch(GPlatesGlobal::Exception& ex)
+	{
+		ex.write(std::cerr);
+		std::stringstream ss;
+		ex.write(ss);
+		os << "<ErrorMsg>" << escape_reserved_xml_characters(QString(ss.str().c_str())) << "</ErrorMsg></Response>";
+		ret = false;
+	}
+
+	os.flush();
+	return ret;
+}
+
+
+bool
+GPlatesGui::SetReconstructionTimeCommand::execute(
+		QTcpSocket* socket)
+{
+	QTextStream os(socket);
+	os.setAutoDetectUnicode(true);
 	try{
 
-		GPlatesGui::AnimationController&  controller =
-			GPlatesPresentation::Application::instance().get_view_state().get_animation_controller();
+		AnimationController&  controller = d_view_state.get_animation_controller();
 	
 		if(d_time < 0)
-			throw GPlatesGlobal::LogException(GPLATES_EXCEPTION_SOURCE, "Invalid input reconstruction time.");
-		
+		{
+			qWarning() << "Invalid input reconstruction time: " << d_time ;
+			return false;
+		}
 		controller.set_view_time(d_time);
-
 		os << "<Response>";
 		os << "<Status>Succeed</Status>";
 		os << "</Response>";
@@ -522,12 +570,107 @@ GPlatesGui::SetReconstructionTimeCommand::execute(
 		ex.write(ss);
 		os << "<Response><ErrorMsg>" << escape_reserved_xml_characters(
 			QString(ss.str().c_str())) << "</ErrorMsg></Response>";
-		ret = false;
+		return false;
 	}
 	os.flush();
-	return ret;
+	return true;
 }
 
+
+boost::shared_ptr<GPlatesGui::Command>
+GPlatesGui::CommandServer::create_get_seeds_command(
+		QXmlStreamReader& reader)
+{
+	QString layer_name = read_next_element_txt(reader, "LayerName");
+	return boost::shared_ptr<Command>(
+			new GetSeedsCommand(d_view_state, layer_name));
+}
+
+boost::shared_ptr<GPlatesGui::Command>
+GPlatesGui::CommandServer::create_get_time_setting_command(
+		QXmlStreamReader& reader)
+{
+	return boost::shared_ptr<Command>(new GetTimeSettingCommand(d_view_state));
+}
+		
+boost::shared_ptr<GPlatesGui::Command>
+GPlatesGui::CommandServer::create_get_begin_time_command(
+		QXmlStreamReader& reader)
+{
+	QString id;
+	if(reader.readNextStartElement() && ("FeatureID" == reader.name()))
+	{
+		id = reader.readElementText().simplified();
+	}
+	return boost::shared_ptr<Command>(new GetBeginTimeCommand(id));
+}
+
+
+boost::shared_ptr<GPlatesGui::Command>
+GPlatesGui::CommandServer::create_get_associations_command(
+		QXmlStreamReader& reader)
+{
+	QString layer_name = read_next_element_txt(reader, "LayerName");
+	return boost::shared_ptr<Command>(
+			new GetAssociationsCommand(d_view_state, layer_name));
+}
+
+boost::shared_ptr<GPlatesGui::Command>
+GPlatesGui::CommandServer::create_get_association_data_command(
+		QXmlStreamReader& reader)
+{
+	double time = 0.0;
+	bool is_invalid = false;
+	QString reconstruct_time = read_next_element_txt(reader, "ReconstructionTime");
+	QString layer_name = read_next_element_txt(reader, "LayerName");
+	bool ok;
+	time = reconstruct_time.toDouble(&ok);
+	if(!ok)
+	{
+		is_invalid = true;
+		qWarning() << "The reconstructionTime is not a number: " << reconstruct_time;
+	}
+	return boost::shared_ptr<Command>(
+			new GetAssociationDataCommand(
+					d_view_state,
+					d_main_window,
+					time, 
+					layer_name, 
+					is_invalid));
+}
+
+boost::shared_ptr<GPlatesGui::Command>
+GPlatesGui::CommandServer::create_get_birth_attribute_command(
+		QXmlStreamReader& reader)
+{
+	QString feature_id = read_next_element_txt(reader, "FeatureID");
+	QString layer_name = read_next_element_txt(reader, "LayerName");
+	return boost::shared_ptr<Command>(
+			new GetBirthAttributeCommand(
+					d_view_state,
+					d_main_window,
+					feature_id, 
+					layer_name));
+}
+
+boost::shared_ptr<GPlatesGui::Command>
+GPlatesGui::CommandServer::create_set_reconstruction_time_command(
+		QXmlStreamReader& reader)
+{
+	double time = 0.0;
+	QString time_str = read_next_element_txt(reader, "ReconstructionTime");
+	bool ok;
+	time = time_str.toDouble(&ok);
+	if(!ok)
+	{
+		time = -1;
+		qWarning() << "Invalid reconstructionTime: " << time_str;
+	}
+	return boost::shared_ptr<Command>(
+			new SetReconstructionTimeCommand(
+					d_view_state,
+					time));
+}
 
 
 

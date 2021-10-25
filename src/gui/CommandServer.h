@@ -1,11 +1,11 @@
-/* $Id: $ */
+/* $Id$ */
 
 /**
  * @file 
  * Contains the definition of the CommandServer class.
  *
  * Most recent change:
- *   $Date: $
+ *   $Date$
  * 
  * Copyright (C) 2012 The University of Sydney, Australia
  *
@@ -27,16 +27,20 @@
 
 #ifndef GPLATES_GUI_COMMANDSERVER_H
 #define GPLATES_GUI_COMMANDSERVER_H
-
 #include <set>
 
 #include <boost/shared_ptr.hpp>
+
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
 #include <QStringList>
 #include <QRegExp>
 #include <QtXml/QXmlStreamReader>
+
+#include "app-logic/ApplicationState.h"
+
+#include "presentation/ViewState.h"
 
 namespace GPlatesGui
 {
@@ -70,7 +74,9 @@ namespace GPlatesGui
 	{
 	public:
 		GetSeedsCommand(
+				GPlatesPresentation::ViewState &view_state,
 				const QString& layer_name):
+			d_view_state(view_state),
 			d_layer_name(layer_name)
 		{	}
 
@@ -78,6 +84,7 @@ namespace GPlatesGui
 		execute(
 				QTcpSocket* socket);
 	private:
+		GPlatesPresentation::ViewState &d_view_state;
 		QString d_layer_name;
 	};
 
@@ -86,14 +93,16 @@ namespace GPlatesGui
 		public Command
 	{
 	public:
-		GetTimeSettingCommand()
+		GetTimeSettingCommand(
+				GPlatesPresentation::ViewState &view_state):
+			d_view_state(view_state)
 		{	}
 
 		bool
 		execute(
 				QTcpSocket* socket);
 	private:
-		
+		GPlatesPresentation::ViewState &d_view_state;
 	};
 
 
@@ -119,7 +128,9 @@ namespace GPlatesGui
 	{
 	public:
 		GetAssociationsCommand(
+				GPlatesPresentation::ViewState &view_state,
 				const QString& layer_name):
+			d_view_state(view_state),
 			d_layer_name(layer_name)
 		{	}
 
@@ -127,6 +138,7 @@ namespace GPlatesGui
 		execute(
 				QTcpSocket* socket);
 	private:
+		GPlatesPresentation::ViewState &d_view_state;
 		QString d_layer_name;
 	};
 
@@ -136,9 +148,13 @@ namespace GPlatesGui
 	{
 	public:
 		GetAssociationDataCommand(
+				GPlatesPresentation::ViewState &view_state,
+				GPlatesQtWidgets::ViewportWindow &main_window,
 				double time,
 				const QString& layer_name,
 				bool is_invalid = false):
+			d_view_state(view_state),
+			d_main_window(main_window),
 			d_time(time),
 			d_layer_name(layer_name),
 			d_invalid_time(is_invalid)
@@ -148,18 +164,47 @@ namespace GPlatesGui
 		execute(
 				QTcpSocket* socket);
 	private:
+		GPlatesPresentation::ViewState &d_view_state;
+		GPlatesQtWidgets::ViewportWindow &d_main_window;
 		double d_time;
 		QString d_layer_name;
 		bool d_invalid_time;
 	};
 
 
+	class GetBirthAttributeCommand : 
+		public Command
+	{
+	public:
+		GetBirthAttributeCommand(
+			GPlatesPresentation::ViewState &view_state,
+			GPlatesQtWidgets::ViewportWindow &main_window,
+			const QString& feature_id,
+			const QString& layer_name):
+		d_view_state(view_state),
+		d_main_window(main_window),
+		d_feature_id(feature_id),
+		d_layer_name(layer_name)
+		{	}
+
+		bool
+		execute(
+				QTcpSocket* socket);
+	private:
+		GPlatesPresentation::ViewState &d_view_state;
+		GPlatesQtWidgets::ViewportWindow &d_main_window;
+		QString d_feature_id, d_layer_name;
+	};
+
+	
 	class SetReconstructionTimeCommand : 
 		public Command
 	{
 	public:
 		SetReconstructionTimeCommand(
+				GPlatesPresentation::ViewState &view_state,
 				double time):
+			d_view_state(view_state),
 			d_time(time)
 		{	}
 
@@ -167,6 +212,7 @@ namespace GPlatesGui
 		execute(
 				QTcpSocket* socket);
 	private:
+		GPlatesPresentation::ViewState &d_view_state;
 		double d_time;
 	};
 
@@ -196,89 +242,6 @@ namespace GPlatesGui
 		}
 		return txt;
 	}
-	
-
-	inline
-	boost::shared_ptr<Command>
-	create_get_seeds_command(
-			QXmlStreamReader& reader)
-	{
-		QString layer_name = read_next_element_txt(reader, "LayerName");
-
-		return boost::shared_ptr<Command>(new GetSeedsCommand(layer_name));
-	}
-
-
-	inline
-	boost::shared_ptr<Command>
-	create_get_time_setting_command(
-			QXmlStreamReader& reader)
-	{
-		return boost::shared_ptr<Command>(new GetTimeSettingCommand());
-	}
-
-
-	inline
-	boost::shared_ptr<Command>
-	create_get_begin_time_command(
-			QXmlStreamReader& reader)
-	{
-		QString id;
-		if(reader.readNextStartElement() && ("FeatureID" == reader.name()))
-		{
-			id = reader.readElementText().simplified();
-		}
-		return boost::shared_ptr<Command>(new GetBeginTimeCommand(id));
-	}
-
-
-	inline
-	boost::shared_ptr<Command>
-	create_get_associations_command(
-			QXmlStreamReader& reader)
-	{
-		QString layer_name = read_next_element_txt(reader, "LayerName");
-		return boost::shared_ptr<Command>(new GetAssociationsCommand(layer_name));
-	}
-
-
-	inline
-	boost::shared_ptr<Command>
-	create_get_association_data_command(
-			QXmlStreamReader& reader)
-	{
-		double time = 0.0;
-		bool is_invalid = false;
-		QString reconstruct_time = read_next_element_txt(reader, "ReconstructionTime");
-		QString layer_name = read_next_element_txt(reader, "LayerName");
-		bool ok;
-		time = reconstruct_time.toDouble(&ok);
-		if(!ok)
-		{
-			is_invalid = true;
-			qWarning() << "The reconstructionTime is not a number: " << reconstruct_time;
-		}
-		return boost::shared_ptr<Command>(new GetAssociationDataCommand(time, layer_name, is_invalid));
-	}
-
-
-	inline
-	boost::shared_ptr<Command>
-	create_set_reconstruction_time_command(
-			QXmlStreamReader& reader)
-	{
-		double time = 0.0;
-		QString time_str = read_next_element_txt(reader, "ReconstructionTime");
-		bool ok;
-		time = time_str.toDouble(&ok);
-		if(!ok)
-		{
-			time = -1;
-			qWarning() << "Invalid reconstructionTime: " << time_str;
-		}
-		return boost::shared_ptr<Command>(new SetReconstructionTimeCommand(time));
-	}
-
 
 	class CommandServer : 
 		public QTcpServer 
@@ -286,6 +249,9 @@ namespace GPlatesGui
 		Q_OBJECT
 	public:
 		CommandServer(
+				GPlatesAppLogic::ApplicationState &application_state,
+				GPlatesPresentation::ViewState &view_state,
+				GPlatesQtWidgets::ViewportWindow &main_window,
 				unsigned port = 0, 
 				QObject* _parent = 0); 
 
@@ -306,7 +272,6 @@ namespace GPlatesGui
 			connect(s, SIGNAL(readyRead()), this, SLOT(readClient()));
 			connect(s, SIGNAL(disconnected()), this, SLOT(discardClient()));
 			s->setSocketDescriptor(socket);
-//			qDebug() << "New Connection " ;
 		}
 
 		 void pause()
@@ -318,6 +283,38 @@ namespace GPlatesGui
 		 {
 			 d_disabled = false;
 		 }
+	protected:
+		/*
+		* The following group of functions create Command objects for CommandServer.
+		* The Command objects they create can be deduced easily from their function names.
+		*/
+		boost::shared_ptr<Command>
+		create_get_seeds_command(
+				QXmlStreamReader& reader);
+
+		boost::shared_ptr<Command>
+		create_get_time_setting_command(
+				QXmlStreamReader& reader);
+		
+		boost::shared_ptr<Command>
+		create_get_begin_time_command(
+				QXmlStreamReader& reader);
+
+		boost::shared_ptr<Command>
+		create_get_associations_command(
+				QXmlStreamReader& reader);
+
+		boost::shared_ptr<Command>
+		create_get_association_data_command(
+				QXmlStreamReader& reader);
+
+		boost::shared_ptr<Command>
+		create_get_birth_attribute_command(
+				QXmlStreamReader& reader);
+
+		boost::shared_ptr<Command>
+		create_set_reconstruction_time_command(
+				QXmlStreamReader& reader);
 
 	private Q_SLOTS:
 		void 
@@ -344,12 +341,15 @@ namespace GPlatesGui
 		CommandServer(const CommandServer&);
 		CommandServer& operator=(const CommandServer&);
 
-		typedef boost::shared_ptr<Command> (*CreateFun)(QXmlStreamReader&);
+		typedef boost::shared_ptr<Command> (CommandServer::*CreateFun)(QXmlStreamReader&);
 		bool d_disabled;
 		std::map<QString, CreateFun> d_command_map;
 		QString d_command;
 		bool d_timeout;
 		QTimer *d_timer; 
+		GPlatesAppLogic::ApplicationState &d_app_state;
+		GPlatesPresentation::ViewState &d_view_state;
+		GPlatesQtWidgets::ViewportWindow &d_main_window;
 	};
 }
 

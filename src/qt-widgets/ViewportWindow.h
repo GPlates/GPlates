@@ -36,6 +36,7 @@
 #include <QtCore/QTimer>
 #include <QPointer>
 #include <QCloseEvent>
+#include <QMainWindow>
 #include <QStringList>
 #include <QUndoGroup>
 

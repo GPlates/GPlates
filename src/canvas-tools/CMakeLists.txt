@@ -18,6 +18,10 @@ set(srcs
     CanvasToolAdapterForGlobe.h
     CanvasToolAdapterForMap.cc
     CanvasToolAdapterForMap.h
+    ChangeLightDirectionGlobe.cc
+    ChangeLightDirectionGlobe.h
+    ChangeLightDirectionMap.cc
+    ChangeLightDirectionMap.h
     ClickGeometry.cc
     ClickGeometry.h
     CreateSmallCircle.cc
@@ -38,6 +42,10 @@ set(srcs
     MeasureDistanceState.cc
     MeasureDistanceState.h
     ModifyGeometryState.h
+    MovePoleGlobe.cc
+    MovePoleGlobe.h
+    MovePoleMap.cc
+    MovePoleMap.h
     MoveVertex.cc
     MoveVertex.h
     PanMap.cc

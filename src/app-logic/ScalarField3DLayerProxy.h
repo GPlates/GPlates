@@ -68,10 +68,11 @@ namespace GPlatesAppLogic
 		//! A convenience typedef for a shared pointer to a const @a ScalarField3DLayerProxy.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const ScalarField3DLayerProxy> non_null_ptr_to_const_type;
 
-		/**
-		 * Typedef for a sequence of surface geometries (points, multi-points, polylines, polygons).
-		 */
-		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> surface_geometry_seq_type;
+		//! Typedef for a sequence of surface polygon mask geometries (polylines, polygons).
+		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> surface_polygons_mask_seq_type;
+
+		//! Typedef for a sequence of surface polygon mask geometries (polylines, polygons).
+		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> cross_sections_seq_type;
 
 
 		/**
@@ -128,33 +129,61 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the surface geometries for the current reconstruction time.
+		 * Returns the cross sections (geometries) for the current reconstruction time.
 		 *
-		 * The surface geometries are typically used either for cross-sections of the 3D scalar field
-		 * or for surface fill masks (to limit region in which scalar field is rendered).
+		 * These geometries are used for cross-sections of the 3D scalar field.
 		 *
-		 * The surface geometries can be reconstructed feature geometries, resolved topological
-		 * geometries (polygons and polylines) and resolved networks.
+		 * The geometries can be reconstructed feature geometries (polygons and polylines),
+		 * resolved topological geometries (polygons and polylines) and resolved networks.
 		 *
-		 * Returns false if there are no surface geometry layers connected
-		 * (or no surface geometries in connected layers).
+		 * Returns false if there are no cross section layers connected (or no geometries in connected layers).
 		 */
 		bool
-		get_surface_geometries(
-				surface_geometry_seq_type &surface_geometries)
+		get_cross_sections(
+				cross_sections_seq_type &cross_sections)
 		{
-			return get_surface_geometries(surface_geometries, d_current_reconstruction_time);
+			return get_cross_sections(cross_sections, d_current_reconstruction_time);
 		}
 
 		/**
-		 * Returns the surface geometries for the specified time.
+		 * Returns the cross sections (geometries) for the specified time.
 		 *
-		 * Returns false if there are no surface geometry layers connected
-		 * (or no surface geometries in connected layers).
+		 * Returns false if there are no cross section layers connected (or no geometries in connected layers).
 		 */
 		bool
-		get_surface_geometries(
-				surface_geometry_seq_type &surface_geometries,
+		get_cross_sections(
+				cross_sections_seq_type &cross_sections,
+				const double &reconstruction_time);
+
+
+		/**
+		 * Returns the surface polygons mask (geometries) for the current reconstruction time.
+		 *
+		 * These geometries are used as surface fill masks of the 3D scalar field to limit the
+		 * region in which scalar field is rendered.
+		 *
+		 * The geometries can be reconstructed feature geometries, resolved topological
+		 * geometries and resolved networks.
+		 *
+		 * Returns false if there are no surface polygons mask layers connected
+		 * (or no geometries in connected layers).
+		 */
+		bool
+		get_surface_polygons_mask(
+				surface_polygons_mask_seq_type &surface_polygons_mask)
+		{
+			return get_surface_polygons_mask(surface_polygons_mask, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the surface polygons mask (geometries) for the specified time.
+		 *
+		 * Returns false if there are no surface polygons mask layers connected
+		 * (or no geometries in connected layers).
+		 */
+		bool
+		get_surface_polygons_mask(
+				surface_polygons_mask_seq_type &surface_polygons_mask,
 				const double &reconstruction_time);
 
 
@@ -248,46 +277,66 @@ namespace GPlatesAppLogic
 		modified_scalar_field_feature(
 				const ScalarField3DLayerTask::Params &scalar_field_params);
 
-		/**
-		 * Add a reconstructed static geometries layer proxy.
-		 */
+
+		//! Add a 'cross section' reconstructed static geometries layer proxy.
 		void
-		add_reconstructed_geometries_layer_proxy(
+		add_cross_section_reconstructed_geometries_layer_proxy(
 				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometries_layer_proxy);
 
-		/**
-		 * Remove a reconstructed static geometries layer proxy.
-		 */
+		//! Remove a 'cross section' reconstructed static geometries layer proxy.
 		void
-		remove_reconstructed_geometries_layer_proxy(
+		remove_cross_section_reconstructed_geometries_layer_proxy(
 				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometries_layer_proxy);
 
-		/**
-		 * Add a topological boundary resolver layer proxy.
-		 */
+		//! Add a 'cross section' topological boundary resolver layer proxy.
 		void
-		add_topological_boundary_resolver_layer_proxy(
+		add_cross_section_topological_boundary_resolver_layer_proxy(
 				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
 
-		/**
-		 * Remove a topological boundary resolver layer proxy.
-		 */
+		//! Remove a 'cross section' topological boundary resolver layer proxy.
 		void
-		remove_topological_boundary_resolver_layer_proxy(
+		remove_cross_section_topological_boundary_resolver_layer_proxy(
 				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
 
-		/**
-		 * Add a topological network resolver layer proxy.
-		 */
+		//! Add a 'cross section' topological network resolver layer proxy.
 		void
-		add_topological_network_resolver_layer_proxy(
+		add_cross_section_topological_network_resolver_layer_proxy(
 				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy);
 
-		/**
-		 * Remove a topological network resolver layer proxy.
-		 */
+		//! Remove a 'cross section' topological network resolver layer proxy.
 		void
-		remove_topological_network_resolver_layer_proxy(
+		remove_cross_section_topological_network_resolver_layer_proxy(
+				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy);
+
+
+		//! Add a 'surface polygons mask' reconstructed static geometries layer proxy.
+		void
+		add_surface_polygons_mask_reconstructed_geometries_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometries_layer_proxy);
+
+		//! Remove a 'surface polygons mask' reconstructed static geometries layer proxy.
+		void
+		remove_surface_polygons_mask_reconstructed_geometries_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometries_layer_proxy);
+
+		//! Add a 'surface polygons mask' topological boundary resolver layer proxy.
+		void
+		add_surface_polygons_mask_topological_boundary_resolver_layer_proxy(
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+
+		//! Remove a 'surface polygons mask' topological boundary resolver layer proxy.
+		void
+		remove_surface_polygons_mask_topological_boundary_resolver_layer_proxy(
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+
+		//! Add a 'surface polygons mask' topological network resolver layer proxy.
+		void
+		add_surface_polygons_mask_topological_network_resolver_layer_proxy(
+				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy);
+
+		//! Remove a 'surface polygons mask' topological network resolver layer proxy.
+		void
+		remove_surface_polygons_mask_topological_network_resolver_layer_proxy(
 				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy);
 
 	private:
@@ -312,24 +361,48 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * The cached surface geometries (from other layers).
+		 * The cached cross sections (from other layers).
 		 */
-		struct SurfaceGeometries
+		struct CrossSections
 		{
 			void
 			invalidate()
 			{
-				cached_surface_geometries = boost::none;
+				cached_geometries = boost::none;
 				cached_reconstruction_time = boost::none;
 			}
 
 			/**
-			 * The cached surface geometries.
+			 * The cached geometries.
 			 */
-			boost::optional<surface_geometry_seq_type> cached_surface_geometries;
+			boost::optional<cross_sections_seq_type> cached_geometries;
 
 			/**
-			 * The reconstruction time of the cached surface geometries.
+			 * The reconstruction time of the cached geometries.
+			 */
+			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
+		};
+
+
+		/**
+		 * The cached surface polygons mask (from other layers).
+		 */
+		struct SurfacePolygonsMask
+		{
+			void
+			invalidate()
+			{
+				cached_geometries = boost::none;
+				cached_reconstruction_time = boost::none;
+			}
+
+			/**
+			 * The cached geometries.
+			 */
+			boost::optional<surface_polygons_mask_seq_type> cached_geometries;
+
+			/**
+			 * The reconstruction time of the cached geometries.
 			 */
 			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
 		};
@@ -341,22 +414,40 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_current_scalar_field_feature;
 
 		/**
-		 * Used to get surface geometries from reconstructed feature geometries.
+		 * Used to get cross section geometries from reconstructed feature geometries.
 		 */
 		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
-				d_current_reconstructed_geometry_layer_proxies;
+				d_current_cross_section_reconstructed_geometry_layer_proxies;
 
 		/**
-		 * Used to get surface geometries from resolved topological boundaries.
+		 * Used to get surface polygon mask geometries from reconstructed feature geometries.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
+				d_current_surface_polygons_mask_reconstructed_geometry_layer_proxies;
+
+		/**
+		 * Used to get cross section geometries from resolved topological boundaries.
 		 */
 		LayerProxyUtils::InputLayerProxySequence<TopologyGeometryResolverLayerProxy>
-				d_current_topological_boundary_resolver_layer_proxies;
+				d_current_cross_section_topological_boundary_resolver_layer_proxies;
 
 		/**
-		 * Used to get surface geometries from resolved topological networks.
+		 * Used to get surface polygon mask geometries from resolved topological boundaries.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<TopologyGeometryResolverLayerProxy>
+				d_current_surface_polygons_mask_topological_boundary_resolver_layer_proxies;
+
+		/**
+		 * Used to get cross section geometries from resolved topological networks.
 		 */
 		LayerProxyUtils::InputLayerProxySequence<TopologyNetworkResolverLayerProxy>
-				d_current_topological_network_resolver_layer_proxies;
+				d_current_cross_section_topological_network_resolver_layer_proxies;
+
+		/**
+		 * Used to get surface polygon mask geometries from resolved topological networks.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<TopologyNetworkResolverLayerProxy>
+				d_current_surface_polygons_mask_topological_network_resolver_layer_proxies;
 
 		/**
 		 * The current reconstruction time as set by the layer system.
@@ -367,9 +458,14 @@ namespace GPlatesAppLogic
 		ResolvedScalarFieldFeatureProperties d_cached_resolved_scalar_field_feature_properties;
 
 		/**
-		 * The cached surface geometries (from other layers).
+		 * The cached cross sections (from other layers).
 		 */
-		SurfaceGeometries d_cached_surface_geometries;
+		CrossSections d_cached_cross_sections;
+
+		/**
+		 * The cached surface polygons mask (from other layers).
+		 */
+		SurfacePolygonsMask d_cached_surface_polygons_mask;
 
 		/**
 		 * Used to notify polling observers that we've been updated.
@@ -421,13 +517,23 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Checks if the specified input layer proxy has changed.
+		 * Checks if the specified cross section input layer proxy has changed.
 		 *
 		 * If so then reset caches and invalidates subject token.
 		 */
 		template <class InputLayerProxyWrapperType>
 		void
-		check_input_layer_proxy(
+		check_cross_section_input_layer_proxy(
+				InputLayerProxyWrapperType &input_layer_proxy_wrapper);
+
+		/**
+		 * Checks if the specified surface polygons mask input layer proxy has changed.
+		 *
+		 * If so then reset caches and invalidates subject token.
+		 */
+		template <class InputLayerProxyWrapperType>
+		void
+		check_surface_polygons_mask_input_layer_proxy(
 				InputLayerProxyWrapperType &input_layer_proxy_wrapper);
 
 
@@ -438,6 +544,12 @@ namespace GPlatesAppLogic
 		 */
 		void
 		check_input_layer_proxies();
+
+		void
+		check_cross_section_input_layer_proxies();
+
+		void
+		check_surface_polygons_mask_input_layer_proxies();
 	};
 }
 

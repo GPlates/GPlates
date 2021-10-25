@@ -81,11 +81,13 @@ namespace GPlatesFileIO
 			 * The function takes the following arguments:
 			 * - A reference to the file to contain the feature collection that is read,
 			 * - A structure to report read errors to.
+			 * - A reference to an unsaved changes flag (for changes made just after reading file).
 			 */
 			typedef boost::function<
 					void (
 							File::Reference &,
-							ReadErrorAccumulation &)>
+							ReadErrorAccumulation &,
+							bool &)>
 									read_feature_collection_function_type;
 
 			/**
@@ -233,6 +235,8 @@ namespace GPlatesFileIO
 			 *
 			 * @param file_ref both filename of file to read from and feature collection to store in.
 			 * @param read_errors to contain errors reading file.
+			 * @param contains_unsaved_changes if specified then returns true if changes were made
+			 *        to one or more features after reading from file (eg, to conform to GPGIM).
 			 *
 			 * @throws FileFormatNotSupportedException if file format does not support reading
 			 * (eg, only writing) or file format is not registered.
@@ -240,7 +244,8 @@ namespace GPlatesFileIO
 			void
 			read_feature_collection(
 					File::Reference &file_ref,
-					ReadErrorAccumulation &read_errors) const;
+					ReadErrorAccumulation &read_errors,
+					boost::optional<bool &> contains_unsaved_changes = boost::none) const;
 
 			/**
 			 * Writes features to the specified file @a file_ref.

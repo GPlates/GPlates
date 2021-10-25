@@ -175,6 +175,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	combo_recon_method->addItem(QString(QObject::tr("<none>")));
 	combo_left->addItem(QString(QObject::tr("<none>")));
 	combo_right->addItem(QString(QObject::tr("<none>")));
+	combo_spreading_asymmetry->addItem(QString(QObject::tr("<none>")));
 
 	// Fill the remaining fields from the QStringList d_field_names.
 	combo_plateID->addItems(d_field_names);
@@ -188,6 +189,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	combo_recon_method->addItems(d_field_names);
 	combo_left->addItems(d_field_names);
 	combo_right->addItems(d_field_names);
+	combo_spreading_asymmetry->addItems(d_field_names);
 
 	// Check for any of the default field names. If we find any, set the combo box to the default.
 	// 1 is added to the index to account for the <none> item, which is 0th in each combo box. 
@@ -246,6 +248,10 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 		combo_right->setCurrentIndex(index + 1);
 	}
 
+	if ( (index = d_field_names.indexOf(d_default_fields[ShapefileAttributes::SPREADING_ASYMMETRY])) != -1) {
+		combo_spreading_asymmetry->setCurrentIndex(index + 1);
+	}
+
 
 // save the state of the combo boxes so that we can reset them.
 	d_combo_reset_map.clear();
@@ -260,6 +266,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	d_combo_reset_map.push_back(combo_recon_method->currentIndex());
 	d_combo_reset_map.push_back(combo_left->currentIndex());
 	d_combo_reset_map.push_back(combo_right->currentIndex());
+	d_combo_reset_map.push_back(combo_spreading_asymmetry->currentIndex());
 	
 }
 
@@ -279,6 +286,7 @@ GPlatesQtWidgets::ShapefileAttributeWidget::reset_fields()
 	combo_recon_method->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::RECONSTRUCTION_METHOD]);
 	combo_left->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::LEFT_PLATE]);
 	combo_right->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::RIGHT_PLATE]);
+	combo_spreading_asymmetry->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::SPREADING_ASYMMETRY]);
 	
 }
 
@@ -356,6 +364,12 @@ GPlatesQtWidgets::ShapefileAttributeWidget::accept_fields()
 			d_model_to_attribute_map.insert(
 						ShapefileAttributes::model_properties[ShapefileAttributes::RIGHT_PLATE],
 					d_field_names[combo_right->currentIndex()-1]);
+		}
+
+		if (combo_spreading_asymmetry->currentIndex() != 0){
+			d_model_to_attribute_map.insert(
+						ShapefileAttributes::model_properties[ShapefileAttributes::SPREADING_ASYMMETRY],
+					d_field_names[combo_spreading_asymmetry->currentIndex()-1]);
 		}
 }
 

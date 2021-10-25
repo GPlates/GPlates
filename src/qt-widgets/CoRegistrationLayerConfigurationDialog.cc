@@ -313,7 +313,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::does_raster_layer_cont
 	{
 		// If the raster band contains numerical data (ie, it's not colour data) then we can
 		// use it for co-registration.
-		if (raster_layer_proxy.get()->does_raster_contain_numerical_data(raster_band_name->value()))
+		if (raster_layer_proxy.get()->does_raster_band_contain_numerical_data(raster_band_name->value()))
 		{
 			return true;
 		}
@@ -383,12 +383,12 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_target_layer_sel
 		attributes_list_widget->clear();
 
 		const QString message = tr(
-				"Raster co-registration requires roughly OpenGL 2.0/3.0 compliant graphics "
+				"Raster co-registration requires roughly OpenGL 2.0/3.0 compliant graphics hardware "
 				"(specifically floating-point textures and frame buffer objects).\n\n"
 				"Please select a non-raster layer instead.");
 		QMessageBox::warning(
 				this,
-				tr("Raster co-registration not supported on this system"),
+				tr("Raster co-registration not supported on this graphics hardware"),
 				message,
 				QMessageBox::Ok,
 				QMessageBox::Ok);
@@ -646,7 +646,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::populate_raster_coregi
 	{
 		// If the raster band does not contain numerical data (ie, it's colour data) then we don't
 		// use it for co-registration.
-		if (!raster_layer_proxy.get()->does_raster_contain_numerical_data(raster_band_name->value()))
+		if (!raster_layer_proxy.get()->does_raster_band_contain_numerical_data(raster_band_name->value()))
 		{
 			continue;
 		}

@@ -28,14 +28,18 @@
 #ifndef GPLATES_OPENGL_OPENGL_H
 #define GPLATES_OPENGL_OPENGL_H
 
+// The OpenGL Extension Wrangler Library (GLEW).
+// Must be included before the OpenGL headers (which also means before Qt headers).
+// But, as noted below, it's best to try and include it in ".cc" files only (rather than here).
+//
 // NOTE: We're not including the OpenGL Extension Wrangler Library (GLEW) library here
 // even though it complains if it's not included before the regular OpenGL headers.
-// This is because other modules include this <opengl/OpenGL.h> header and they also
-// include Qt headers which in turn include regular OpenGL headers.
+// This is because other modules include this (<opengl/OpenGL.h>) header and they also
+// include Qt headers which in turn include regular (GL/gl.h>) OpenGL headers.
 // So getting the order of includes correct throughout the application becomes quite difficult.
-// A better way is to only include GLEW headers in the GPlates' OpenGL module (which is the
-// only place it should be used) and provide enough of an interface to limit exposure
-// of internals in order to eliminate exposure any GLEW "#include"s to outside modules.
+// A better way is to only include GLEW headers in the OpenGL module ".cc" files (which is the
+// only place it should be used) and provide a good enough interface to limit exposure
+// of internal details in order to eliminate the exposure any GLEW "#include"s to outside modules.
 //
 //#include <GL/glew.h>
 

@@ -3,9 +3,9 @@
 /**
  * \file 
  * $Revision$
- * $Date$ 
+ * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2014 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,19 +22,15 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
-#ifndef GPLATES_GUI_EXPORTRASTERSTRATEGY_H
-#define GPLATES_GUI_EXPORTRASTERSTRATEGY_H
 
-#include <boost/optional.hpp>
+#ifndef GPLATES_GUI_EXPORTRASTERANIMATIONSTRATEGY_H
+#define GPLATES_GUI_EXPORTRASTERANIMATIONSTRATEGY_H
 
-#include <QImage>
-#include <QSize>
 #include <QString>
 
 #include "ExportAnimationStrategy.h"
 
-#include "gui/ExportOptionsUtils.h"
+#include "property-values/Georeferencing.h"
 
 #include "qt-widgets/GlobeAndMapWidget.h"
 
@@ -47,8 +43,8 @@ namespace GPlatesGui
 	class ExportAnimationContext;
 
 	/**
-	 * Concrete implementation of the ExportAnimationStrategy class for 
-	 * writing reconstructed feature geometries at each timestep.
+	 * Concrete implementation of the ExportAnimationStrategy class for saving (colour or numerical)
+	 * raster data (unwrapped to latitude/longitude) to a file at each timestep.
 	 * 
 	 * This class serves as the concrete Strategy role as
 	 * described in Gamma et al. p315. It is used by ExportAnimationContext.
@@ -61,7 +57,7 @@ namespace GPlatesGui
 
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportReconstructedGeometryAnimationStrategy>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportRasterAnimationStrategy>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<ExportRasterAnimationStrategy> non_null_ptr_type;
 		
@@ -73,40 +69,23 @@ namespace GPlatesGui
 				public ExportAnimationStrategy::ConfigurationBase
 		{
 		public:
-			//http://doc.qt.nokia.com/4.6/qimage.html#reading-and-writing-image-files
-			// 		Format	Description								Qt's support 
-			// 		BMP		Windows Bitmap							Read/write 
-			// 		GIF		Graphic Interchange Format (optional)	Read 
-			// 		JPG		Joint Photographic Experts Group		Read/write 
-			// 		JPEG	Joint Photographic Experts Group		Read/write 
-			// 		PNG		Portable Network Graphics				Read/write 
-			// 		PBM		Portable Bitmap							Read 
-			// 		PGM		Portable Graymap						Read 
-			// 		PPM		Portable Pixmap							Read/write 
-			// 		TIFF	Tagged Image File Format				Read/write 
-			// 		XBM		X11 Bitmap								Read/write 
-			// 		XPM		X11 Pixmap								Read/write 
 
-			enum ImageType
+			enum RasterType
 			{
-				BMP,
-				JPG,
-				JPEG,
-				PNG,
-				PPM,
-				TIFF,
-				XBM,
-				XPM
+				NUMERICAL,
+				COLOUR
 			};
 
 
 			Configuration(
 					const QString& filename_template_,
-					ImageType image_type_,
-					const ExportOptionsUtils::ExportImageResolutionOptions &image_resolution_options_) :
+					RasterType raster_type_,
+					const double &resolution_in_degrees_,
+					const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &lat_lon_extents_) :
 				ConfigurationBase(filename_template_),
-				image_type(image_type_),
-				image_resolution_options(image_resolution_options_)
+				raster_type(raster_type_),
+				resolution_in_degrees(resolution_in_degrees_),
+				lat_lon_extents(lat_lon_extents_)
 			{  }
 
 			virtual
@@ -116,8 +95,9 @@ namespace GPlatesGui
 				return configuration_base_ptr(new Configuration(*this));
 			}
 
-			ImageType image_type;
-			ExportOptionsUtils::ExportImageResolutionOptions image_resolution_options;
+			RasterType raster_type;
+			double resolution_in_degrees;
+			GPlatesPropertyValues::Georeferencing::lat_lon_extents_type lat_lon_extents;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.
@@ -165,7 +145,4 @@ namespace GPlatesGui
 	};
 }
 
-
-#endif //GPLATES_GUI_EXPORTRASTERSTRATEGY_H
-
-
+#endif // GPLATES_GUI_EXPORTRASTERANIMATIONSTRATEGY_H

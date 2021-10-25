@@ -339,7 +339,10 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 	// Validate the filename template against the selected exporter.
 	QString filename_template_validation_message;
 	if (!export_animation_registry.validate_filename_template(
-			selected_export_id, filename_template, filename_template_validation_message))
+			selected_export_id,
+			filename_template,
+			filename_template_validation_message,
+			!d_is_single_frame/*check_filename_variation*/))
 	{
 		QMessageBox error_popup;
 		error_popup.setWindowTitle(QString("Cannot Add Data to Export"));

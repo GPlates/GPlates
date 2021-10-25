@@ -68,7 +68,6 @@ namespace GPlatesOpenGL
 		 * Also tracks state changes from buffer objects to/from client memory arrays.
 		 */
 		class GLVertexAttributeBuffer
-
 		{
 		public:
 			//! Binds to a vertex buffer object.

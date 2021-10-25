@@ -17,7 +17,7 @@
    <item>
     <widget class="QGroupBox" name="groupBox_2">
      <property name="title">
-      <string>Choose Property</string>
+      <string>Choose Association</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
@@ -25,7 +25,7 @@
         <item>
          <widget class="QLabel" name="label_4">
           <property name="text">
-           <string>Property:</string>
+           <string>Association:</string>
           </property>
          </widget>
         </item>
@@ -99,4 +99,3 @@
  <resources/>
  <connections/>
 </ui>
-

@@ -337,6 +337,8 @@ GPlatesQtWidgets::MapView::mouseMoveEvent(
 
 	d_last_mouse_view_coords = move_event->pos();
 
+	update_mouse_pointer_pos(move_event);
+
 	if (d_mouse_press_info)
 	{
 		int x_dist = move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
@@ -373,10 +375,6 @@ GPlatesQtWidgets::MapView::mouseMoveEvent(
 				mouse_pointer_is_on_surface(),
 				translation);
 	}
-
-
-	update_mouse_pointer_pos(move_event);
-
 }
 
 
@@ -408,7 +406,7 @@ GPlatesQtWidgets::MapView::mouse_pointer_llp()
 
 	if (!llp)
 	{
-		return llp;
+		return boost::none;
 	}
 		
 	// Forward transform the lat-lon point and see where it would end up. 

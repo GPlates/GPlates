@@ -163,6 +163,7 @@
 #ifdef __WINDOWS__
 #include <windows.h>
 #endif // __WINDOWS__
+#include <GL/glew.h>
 extern "C" {
 #if defined(__APPLE__)
 #include <OpenGL/gl.h>
@@ -211,7 +212,6 @@ extern "C" {
 #ifdef __WINDOWS__
 #include <boost/type_traits.hpp>
 #endif // __WINDOWS__
-//#include <Magick++.h>
 #ifdef __WINDOWS__
 #include <boost/type_traits/is_floating_point.hpp>
 #endif // __WINDOWS__

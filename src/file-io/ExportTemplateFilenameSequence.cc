@@ -37,9 +37,12 @@
 
 void
 GPlatesFileIO::ExportTemplateFilename::validate_filename_template(
-		const QString &filename_template)
+		const QString &filename_template,
+		bool check_filename_variation)
 {
-	ExportTemplateFilenameSequenceImpl::validate_filename_template(filename_template);
+	ExportTemplateFilenameSequenceImpl::validate_filename_template(
+			filename_template,
+			check_filename_variation);
 }
 
 

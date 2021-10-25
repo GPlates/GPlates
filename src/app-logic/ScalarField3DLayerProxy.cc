@@ -80,32 +80,32 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_resolved_scalar_field_3d(
 
 
 bool
-GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_geometries(
-		surface_geometry_seq_type &surface_geometries,
+GPlatesAppLogic::ScalarField3DLayerProxy::get_cross_sections(
+		cross_sections_seq_type &cross_sections,
 		const double &reconstruction_time)
 {
 	// See if any input layer proxies have changed.
-	check_input_layer_proxies();
+	check_cross_section_input_layer_proxies();
 
 	// See if the reconstruction time has changed.
-	if (d_cached_surface_geometries.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
+	if (d_cached_cross_sections.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
 	{
-		// The surface geometries are now invalid.
-		d_cached_surface_geometries.invalidate();
+		// The geometries are now invalid.
+		d_cached_cross_sections.invalidate();
 
 		// Note that observers don't need to be updated when the time changes - if they
-		// have surface geometries for a different time they don't need
+		// have geometries for a different time they don't need
 		// to be updated just because some other client requested a different time.
-		d_cached_surface_geometries.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+		d_cached_cross_sections.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
 	}
 
-	if (!d_cached_surface_geometries.cached_surface_geometries)
+	if (!d_cached_cross_sections.cached_geometries)
 	{
-		// Create empty vector of surface geometries.
-		d_cached_surface_geometries.cached_surface_geometries = surface_geometry_seq_type();
+		// Create empty vector of geometries.
+		d_cached_cross_sections.cached_geometries = cross_sections_seq_type();
 
 		//
-		// Get the input surface geometries.
+		// Get the input geometries.
 		//
 
 		// Static geometries...
@@ -113,7 +113,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_geometries(
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometries_layer_proxy,
-				d_current_reconstructed_geometry_layer_proxies.get_input_layer_proxies())
+				d_current_cross_section_reconstructed_geometry_layer_proxies.get_input_layer_proxies())
 		{
 			reconstructed_geometries_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
 					reconstructed_static_geometries,
@@ -124,7 +124,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_geometries(
 				const reconstructed_feature_geometry_non_null_ptr_type &reconstructed_static_geometry,
 				reconstructed_static_geometries)
 		{
-			d_cached_surface_geometries.cached_surface_geometries->push_back(
+			d_cached_cross_sections.cached_geometries->push_back(
 					reconstructed_static_geometry->reconstructed_geometry());
 		}
 
@@ -133,7 +133,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_geometries(
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
-				d_current_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
+				d_current_cross_section_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
 		{
 			topological_boundary_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_geometries(
 					resolved_topological_geometries,
@@ -144,7 +144,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_geometries(
 				const resolved_topological_geometry_non_null_ptr_type &resolved_topological_geometry,
 				resolved_topological_geometries)
 		{
-			d_cached_surface_geometries.cached_surface_geometries->push_back(
+			d_cached_cross_sections.cached_geometries->push_back(
 					resolved_topological_geometry->resolved_topology_geometry());
 		}
 
@@ -153,7 +153,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_geometries(
 		// Iterate over the layers.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
-				d_current_topological_network_resolver_layer_proxies.get_input_layer_proxies())
+				d_current_cross_section_topological_network_resolver_layer_proxies.get_input_layer_proxies())
 		{
 			topological_network_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_networks(
 					resolved_topological_networks,
@@ -166,18 +166,120 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_geometries(
 		{
 			// TODO: Add more than just the network boundary polygon.
 			// Such as interior polygons and interior nodes.
-			d_cached_surface_geometries.cached_surface_geometries->push_back(
+			d_cached_cross_sections.cached_geometries->push_back(
 					resolved_topological_network->boundary_polygon());
 		}
 	}
 
-	// Append our cached surface geometries (if any) to the caller's sequence.
-	surface_geometries.insert(
-			surface_geometries.end(),
-			d_cached_surface_geometries.cached_surface_geometries->begin(),
-			d_cached_surface_geometries.cached_surface_geometries->end());
+	// Append our cached geometries (if any) to the caller's sequence.
+	cross_sections.insert(
+			cross_sections.end(),
+			d_cached_cross_sections.cached_geometries->begin(),
+			d_cached_cross_sections.cached_geometries->end());
 
-	return !d_cached_surface_geometries.cached_surface_geometries->empty();
+	return !d_cached_cross_sections.cached_geometries->empty();
+}
+
+
+bool
+GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_polygons_mask(
+		surface_polygons_mask_seq_type &surface_polygons_mask,
+		const double &reconstruction_time)
+{
+	// See if any input layer proxies have changed.
+	check_surface_polygons_mask_input_layer_proxies();
+
+	// See if the reconstruction time has changed.
+	if (d_cached_surface_polygons_mask.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
+	{
+		// The geometries are now invalid.
+		d_cached_surface_polygons_mask.invalidate();
+
+		// Note that observers don't need to be updated when the time changes - if they
+		// have geometries for a different time they don't need
+		// to be updated just because some other client requested a different time.
+		d_cached_surface_polygons_mask.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+	}
+
+	if (!d_cached_surface_polygons_mask.cached_geometries)
+	{
+		// Create empty vector of geometries.
+		d_cached_surface_polygons_mask.cached_geometries = surface_polygons_mask_seq_type();
+
+		//
+		// Get the input geometries.
+		//
+
+		// Static geometries...
+		std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_static_geometries;
+		// Iterate over the layers.
+		BOOST_FOREACH(
+				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometries_layer_proxy,
+				d_current_surface_polygons_mask_reconstructed_geometry_layer_proxies.get_input_layer_proxies())
+		{
+			reconstructed_geometries_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
+					reconstructed_static_geometries,
+					reconstruction_time);
+		}
+		// Iterate over the reconstructed feature geometries.
+		BOOST_FOREACH(
+				const reconstructed_feature_geometry_non_null_ptr_type &reconstructed_static_geometry,
+				reconstructed_static_geometries)
+		{
+			d_cached_surface_polygons_mask.cached_geometries->push_back(
+					reconstructed_static_geometry->reconstructed_geometry());
+		}
+
+		// Resolved topological geometries...
+		std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_geometries;
+		// Iterate over the layers.
+		BOOST_FOREACH(
+				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
+				d_current_surface_polygons_mask_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
+		{
+			topological_boundary_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_geometries(
+					resolved_topological_geometries,
+					reconstruction_time);
+		}
+		// Iterate over the resolved topological geometries.
+		BOOST_FOREACH(
+				const resolved_topological_geometry_non_null_ptr_type &resolved_topological_geometry,
+				resolved_topological_geometries)
+		{
+			d_cached_surface_polygons_mask.cached_geometries->push_back(
+					resolved_topological_geometry->resolved_topology_geometry());
+		}
+
+		// Topological networks...
+		std::vector<resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
+		// Iterate over the layers.
+		BOOST_FOREACH(
+				LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
+				d_current_surface_polygons_mask_topological_network_resolver_layer_proxies.get_input_layer_proxies())
+		{
+			topological_network_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_networks(
+					resolved_topological_networks,
+					reconstruction_time);
+		}
+		// Iterate over the resolved topological networks.
+		BOOST_FOREACH(
+				const resolved_topological_network_non_null_ptr_type &resolved_topological_network,
+				resolved_topological_networks)
+		{
+			// TODO: Add more than just the network boundary polygon.
+			// Such as interior polygons and interior nodes.
+			d_cached_surface_polygons_mask.cached_geometries->push_back(
+					resolved_topological_network->boundary_polygon());
+		}
+	}
+
+	// Append our cached geometries (if any) to the caller's sequence.
+	surface_polygons_mask.insert(
+			surface_polygons_mask.end(),
+			d_cached_surface_polygons_mask.cached_geometries->begin(),
+			d_cached_surface_polygons_mask.cached_geometries->end());
+
+	return !d_cached_surface_polygons_mask.cached_geometries->empty();
 }
 
 
@@ -252,13 +354,14 @@ GPlatesAppLogic::ScalarField3DLayerProxy::modified_scalar_field_feature(
 
 
 void
-GPlatesAppLogic::ScalarField3DLayerProxy::add_reconstructed_geometries_layer_proxy(
+GPlatesAppLogic::ScalarField3DLayerProxy::add_cross_section_reconstructed_geometries_layer_proxy(
 		const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometries_layer_proxy)
 {
-	d_current_reconstructed_geometry_layer_proxies.add_input_layer_proxy(reconstructed_geometries_layer_proxy);
+	d_current_cross_section_reconstructed_geometry_layer_proxies.add_input_layer_proxy(
+			reconstructed_geometries_layer_proxy);
 
-	// The surface geometries are now invalid.
-	d_cached_surface_geometries.invalidate();
+	// The surface polygons mask geometries are now invalid.
+	d_cached_cross_sections.invalidate();
 
 	// Polling observers need to update themselves with respect to us.
 	d_subject_token.invalidate();
@@ -266,13 +369,14 @@ GPlatesAppLogic::ScalarField3DLayerProxy::add_reconstructed_geometries_layer_pro
 
 
 void
-GPlatesAppLogic::ScalarField3DLayerProxy::remove_reconstructed_geometries_layer_proxy(
+GPlatesAppLogic::ScalarField3DLayerProxy::remove_cross_section_reconstructed_geometries_layer_proxy(
 		const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometries_layer_proxy)
 {
-	d_current_reconstructed_geometry_layer_proxies.remove_input_layer_proxy(reconstructed_geometries_layer_proxy);
+	d_current_cross_section_reconstructed_geometry_layer_proxies.remove_input_layer_proxy(
+			reconstructed_geometries_layer_proxy);
 
-	// The surface geometries are now invalid.
-	d_cached_surface_geometries.invalidate();
+	// The cross section geometries are now invalid.
+	d_cached_cross_sections.invalidate();
 
 	// Polling observers need to update themselves with respect to us.
 	d_subject_token.invalidate();
@@ -280,13 +384,14 @@ GPlatesAppLogic::ScalarField3DLayerProxy::remove_reconstructed_geometries_layer_
 
 
 void
-GPlatesAppLogic::ScalarField3DLayerProxy::add_topological_boundary_resolver_layer_proxy(
+GPlatesAppLogic::ScalarField3DLayerProxy::add_cross_section_topological_boundary_resolver_layer_proxy(
 		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
 {
-	d_current_topological_boundary_resolver_layer_proxies.add_input_layer_proxy(topological_boundary_resolver_layer_proxy);
+	d_current_cross_section_topological_boundary_resolver_layer_proxies.add_input_layer_proxy(
+			topological_boundary_resolver_layer_proxy);
 
-	// The surface geometries are now invalid.
-	d_cached_surface_geometries.invalidate();
+	// The cross section geometries are now invalid.
+	d_cached_cross_sections.invalidate();
 
 	// Polling observers need to update themselves with respect to us.
 	d_subject_token.invalidate();
@@ -294,27 +399,14 @@ GPlatesAppLogic::ScalarField3DLayerProxy::add_topological_boundary_resolver_laye
 
 
 void
-GPlatesAppLogic::ScalarField3DLayerProxy::remove_topological_boundary_resolver_layer_proxy(
+GPlatesAppLogic::ScalarField3DLayerProxy::remove_cross_section_topological_boundary_resolver_layer_proxy(
 		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
 {
-	d_current_topological_boundary_resolver_layer_proxies.remove_input_layer_proxy(topological_boundary_resolver_layer_proxy);
+	d_current_cross_section_topological_boundary_resolver_layer_proxies.remove_input_layer_proxy(
+			topological_boundary_resolver_layer_proxy);
 
-	// The surface geometries are now invalid.
-	d_cached_surface_geometries.invalidate();
-
-	// Polling observers need to update themselves with respect to us.
-	d_subject_token.invalidate();
-}
-
-
-void
-GPlatesAppLogic::ScalarField3DLayerProxy::add_topological_network_resolver_layer_proxy(
-		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy)
-{
-	d_current_topological_network_resolver_layer_proxies.add_input_layer_proxy(topological_network_resolver_layer_proxy);
-
-	// The surface geometries are now invalid.
-	d_cached_surface_geometries.invalidate();
+	// The cross section geometries are now invalid.
+	d_cached_cross_sections.invalidate();
 
 	// Polling observers need to update themselves with respect to us.
 	d_subject_token.invalidate();
@@ -322,13 +414,119 @@ GPlatesAppLogic::ScalarField3DLayerProxy::add_topological_network_resolver_layer
 
 
 void
-GPlatesAppLogic::ScalarField3DLayerProxy::remove_topological_network_resolver_layer_proxy(
+GPlatesAppLogic::ScalarField3DLayerProxy::add_cross_section_topological_network_resolver_layer_proxy(
 		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy)
 {
-	d_current_topological_network_resolver_layer_proxies.remove_input_layer_proxy(topological_network_resolver_layer_proxy);
+	d_current_cross_section_topological_network_resolver_layer_proxies.add_input_layer_proxy(
+			topological_network_resolver_layer_proxy);
 
-	// The surface geometries are now invalid.
-	d_cached_surface_geometries.invalidate();
+	// The cross section geometries are now invalid.
+	d_cached_cross_sections.invalidate();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::ScalarField3DLayerProxy::remove_cross_section_topological_network_resolver_layer_proxy(
+		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy)
+{
+	d_current_cross_section_topological_network_resolver_layer_proxies.remove_input_layer_proxy(
+			topological_network_resolver_layer_proxy);
+
+	// The cross section geometries are now invalid.
+	d_cached_cross_sections.invalidate();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::ScalarField3DLayerProxy::add_surface_polygons_mask_reconstructed_geometries_layer_proxy(
+		const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometries_layer_proxy)
+{
+	d_current_surface_polygons_mask_reconstructed_geometry_layer_proxies.add_input_layer_proxy(
+			reconstructed_geometries_layer_proxy);
+
+	// The surface polygons mask geometries are now invalid.
+	d_cached_surface_polygons_mask.invalidate();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::ScalarField3DLayerProxy::remove_surface_polygons_mask_reconstructed_geometries_layer_proxy(
+		const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometries_layer_proxy)
+{
+	d_current_surface_polygons_mask_reconstructed_geometry_layer_proxies.remove_input_layer_proxy(
+			reconstructed_geometries_layer_proxy);
+
+	// The surface polygons mask geometries are now invalid.
+	d_cached_surface_polygons_mask.invalidate();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::ScalarField3DLayerProxy::add_surface_polygons_mask_topological_boundary_resolver_layer_proxy(
+		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
+{
+	d_current_surface_polygons_mask_topological_boundary_resolver_layer_proxies.add_input_layer_proxy(
+			topological_boundary_resolver_layer_proxy);
+
+	// The surface polygons mask geometries are now invalid.
+	d_cached_surface_polygons_mask.invalidate();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::ScalarField3DLayerProxy::remove_surface_polygons_mask_topological_boundary_resolver_layer_proxy(
+		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
+{
+	d_current_surface_polygons_mask_topological_boundary_resolver_layer_proxies.remove_input_layer_proxy(
+			topological_boundary_resolver_layer_proxy);
+
+	// The surface polygons mask geometries are now invalid.
+	d_cached_surface_polygons_mask.invalidate();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::ScalarField3DLayerProxy::add_surface_polygons_mask_topological_network_resolver_layer_proxy(
+		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy)
+{
+	d_current_surface_polygons_mask_topological_network_resolver_layer_proxies.add_input_layer_proxy(
+			topological_network_resolver_layer_proxy);
+
+	// The surface polygons mask geometries are now invalid.
+	d_cached_surface_polygons_mask.invalidate();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::ScalarField3DLayerProxy::remove_surface_polygons_mask_topological_network_resolver_layer_proxy(
+		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy)
+{
+	d_current_surface_polygons_mask_topological_network_resolver_layer_proxies.remove_input_layer_proxy(
+			topological_network_resolver_layer_proxy);
+
+	// The surface polygons mask geometries are now invalid.
+	d_cached_surface_polygons_mask.invalidate();
 
 	// Polling observers need to update themselves with respect to us.
 	d_subject_token.invalidate();
@@ -412,14 +610,34 @@ GPlatesAppLogic::ScalarField3DLayerProxy::resolve_scalar_field_feature(
 
 template <class InputLayerProxyWrapperType>
 void
-GPlatesAppLogic::ScalarField3DLayerProxy::check_input_layer_proxy(
+GPlatesAppLogic::ScalarField3DLayerProxy::check_cross_section_input_layer_proxy(
+		InputLayerProxyWrapperType &input_layer_proxy_wrapper)
+{
+	// See if the input layer proxy has changed.
+	if (!input_layer_proxy_wrapper.is_up_to_date())
+	{
+		// The cross sections are now invalid.
+		d_cached_cross_sections.invalidate();
+
+		// We're now up-to-date with respect to the input layer proxy.
+		input_layer_proxy_wrapper.set_up_to_date();
+
+		// Polling observers need to update themselves with respect to us.
+		d_subject_token.invalidate();
+	}
+}
+
+
+template <class InputLayerProxyWrapperType>
+void
+GPlatesAppLogic::ScalarField3DLayerProxy::check_surface_polygons_mask_input_layer_proxy(
 		InputLayerProxyWrapperType &input_layer_proxy_wrapper)
 {
 	// See if the input layer proxy has changed.
 	if (!input_layer_proxy_wrapper.is_up_to_date())
 	{
 		// The surface geometries are now invalid.
-		d_cached_surface_geometries.invalidate();
+		d_cached_surface_polygons_mask.invalidate();
 
 		// We're now up-to-date with respect to the input layer proxy.
 		input_layer_proxy_wrapper.set_up_to_date();
@@ -433,27 +651,64 @@ GPlatesAppLogic::ScalarField3DLayerProxy::check_input_layer_proxy(
 void
 GPlatesAppLogic::ScalarField3DLayerProxy::check_input_layer_proxies()
 {
+	check_cross_section_input_layer_proxies();
+	check_surface_polygons_mask_input_layer_proxies();
+}
+
+
+void
+GPlatesAppLogic::ScalarField3DLayerProxy::check_cross_section_input_layer_proxies()
+{
 	// See if any reconstructed geometry layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometries_layer_proxy,
-			d_current_reconstructed_geometry_layer_proxies.get_input_layer_proxies())
+			d_current_cross_section_reconstructed_geometry_layer_proxies.get_input_layer_proxies())
 	{
-		check_input_layer_proxy(reconstructed_geometries_layer_proxy);
+		check_cross_section_input_layer_proxy(reconstructed_geometries_layer_proxy);
 	}
 
 	// See if any resolved boundaries layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
-			d_current_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
+			d_current_cross_section_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
 	{
-		check_input_layer_proxy(topological_boundary_resolver_layer_proxy);
+		check_cross_section_input_layer_proxy(topological_boundary_resolver_layer_proxy);
 	}
 
 	// See if the resolved networks layer proxy has changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
-			d_current_topological_network_resolver_layer_proxies.get_input_layer_proxies())
+			d_current_cross_section_topological_network_resolver_layer_proxies.get_input_layer_proxies())
 	{
-		check_input_layer_proxy(topological_network_resolver_layer_proxy);
+		check_cross_section_input_layer_proxy(topological_network_resolver_layer_proxy);
+	}
+}
+
+
+void
+GPlatesAppLogic::ScalarField3DLayerProxy::check_surface_polygons_mask_input_layer_proxies()
+{
+	// See if any reconstructed geometry layer proxies have changed.
+	BOOST_FOREACH(
+			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometries_layer_proxy,
+			d_current_surface_polygons_mask_reconstructed_geometry_layer_proxies.get_input_layer_proxies())
+	{
+		check_surface_polygons_mask_input_layer_proxy(reconstructed_geometries_layer_proxy);
+	}
+
+	// See if any resolved boundaries layer proxies have changed.
+	BOOST_FOREACH(
+			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
+			d_current_surface_polygons_mask_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
+	{
+		check_surface_polygons_mask_input_layer_proxy(topological_boundary_resolver_layer_proxy);
+	}
+
+	// See if the resolved networks layer proxy has changed.
+	BOOST_FOREACH(
+			LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
+			d_current_surface_polygons_mask_topological_network_resolver_layer_proxies.get_input_layer_proxies())
+	{
+		check_surface_polygons_mask_input_layer_proxy(topological_network_resolver_layer_proxy);
 	}
 }

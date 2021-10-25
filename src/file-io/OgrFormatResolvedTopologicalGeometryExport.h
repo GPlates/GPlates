@@ -66,9 +66,10 @@ namespace GPlatesFileIO
 				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
+				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 		/**
 		* Exports @a ResolvedTopologicalGeometry objects to OGR format.
@@ -80,9 +81,10 @@ namespace GPlatesFileIO
 				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 				const QFileInfo& file_info,
 				const std::vector<const File::Reference *> &referenced_files,
+				const std::vector<const File::Reference *> &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 
 		/**
@@ -95,9 +97,10 @@ namespace GPlatesFileIO
 				const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type &resolved_topological_geometries,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
+				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 
 		/**
@@ -110,9 +113,10 @@ namespace GPlatesFileIO
 				const CitcomsResolvedTopologicalBoundaryExportImpl::sub_segment_group_seq_type &sub_segments,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
+				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 	}
 }
 

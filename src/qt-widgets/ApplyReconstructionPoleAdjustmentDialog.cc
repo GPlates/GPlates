@@ -326,6 +326,18 @@ GPlatesQtWidgets::AdjustmentApplicator::handle_pole_sequence_choice_changed(
 	// Calculate the adjustment relative to the fixed plate.
 	Rotation adjustment_rel_fixed = *d_adjustment;
 
+	//
+	// The adjustment calculation:
+	//
+	// R(0->t,A->M)' = Adj * R(0->t,A->M)
+	// R(0->t,A->M)' = Adj * R(0->t,A->F) * R(0->t,F->M)
+	// R(0->t,A->F) * R(0->t,F->M)' = Adj * R(0->t,A->F) * R(0->t,F->M)
+	// R(0->t,F->M)' = inverse[R(0->t,A->F)] * Adj * R(0->t,A->F) * R(0->t,F->M)
+	//
+	// ...where t is reconstruction time, A is anchor plate and F and M are fixed and moving plates.
+	// R' is after adjustment and R is prior to adjustment.
+	//
+
 	// The "fixed" plate, relative to which this plate's motion is described.
 	unsigned long fixed_plate = d_sequence_choices.at(index).d_fixed_plate;
 	// Of course, the "fixed" plate might be moving relative to some other plate...

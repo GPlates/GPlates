@@ -26,6 +26,7 @@
 #ifndef GPLATES_PRESENTATION_SCALARFIELD3DVISUALLAYERPARAMS_H
 #define GPLATES_PRESENTATION_SCALARFIELD3DVISUALLAYERPARAMS_H
 
+#include <utility>
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -87,6 +88,14 @@ namespace GPlatesPresentation
 		handle_layer_modified(
 				const GPlatesAppLogic::Layer &layer);
 
+
+		/**
+		 * Returns all parameters as a single @a ScalarField3DRenderParameters object for convenience.
+		 */
+		GPlatesViewOperations::ScalarField3DRenderParameters
+		get_scalar_field_3d_render_parameters() const;
+
+
 		/**
 		 * Returns the current render mode.
 		 */
@@ -108,55 +117,104 @@ namespace GPlatesPresentation
 		}
 
 		/**
-		 * Returns the current colour mode.
+		 * Returns the current iso-surface window deviation mode.
 		 */
-		GPlatesViewOperations::ScalarField3DRenderParameters::ColourMode
-		get_colour_mode() const
+		GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceDeviationWindowMode
+		get_isosurface_deviation_window_mode() const
 		{
-			return d_colour_mode;
+			return d_isosurface_deviation_window_mode;
 		}
 
 		/**
-		 * Sets the current colour mode.
+		 * Sets the current iso-surface window deviation mode.
 		 */
 		void
-		set_colour_mode(
-				GPlatesViewOperations::ScalarField3DRenderParameters::ColourMode colour_mode)
+		set_isosurface_deviation_window_mode(
+				GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceDeviationWindowMode isosurface_deviation_window_mode)
 		{
-			d_colour_mode = colour_mode;
+			d_isosurface_deviation_window_mode = isosurface_deviation_window_mode;
 			emit_modified();
 		}
 
 		/**
-		 * Returns the filename of the file from which the current colour
-		 * palette was loaded, if it was loaded from a file.
-		 * If the current colour palette is auto-generated, returns the empty string.
+		 * Returns the current iso-surface colour mode.
 		 */
-		const QString &
-		get_colour_palette_filename() const;
+		GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceColourMode
+		get_isosurface_colour_mode() const
+		{
+			return d_isosurface_colour_mode;
+		}
 
 		/**
-		 * Sets the current colour palette to be one that is loaded from a file.
-		 * @a filename must not be the empty string.
+		 * Sets the current iso-surface colour mode.
 		 */
 		void
-		set_colour_palette(
-				const QString &filename,
-				const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette);
+		set_isosurface_colour_mode(
+				GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceColourMode isosurface_colour_mode)
+		{
+			d_isosurface_colour_mode = isosurface_colour_mode;
+			emit_modified();
+		}
 
 		/**
-		 * Causes the current colour palette to be auto-generated from the
-		 * raster in the layer, and sets the filename field to be the empty string.
+		 * Returns the current cross-section colour mode.
+		 */
+		GPlatesViewOperations::ScalarField3DRenderParameters::CrossSectionColourMode
+		get_cross_section_colour_mode() const
+		{
+			return d_cross_section_colour_mode;
+		}
+
+		/**
+		 * Sets the current cross-section colour mode.
 		 */
 		void
-		use_auto_generated_colour_palette();
+		set_cross_section_colour_mode(
+				GPlatesViewOperations::ScalarField3DRenderParameters::CrossSectionColourMode cross_section_colour_mode)
+		{
+			d_cross_section_colour_mode = cross_section_colour_mode;
+			emit_modified();
+		}
 
 		/**
-		 * Returns the current colour palette, whether explicitly set as loaded
-		 * from a file, or auto-generated.
+		 * Returns the current scalar colour palette.
 		 */
-		GPlatesGui::ColourPalette<double>::non_null_ptr_type
-		get_colour_palette() const;
+		const GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette &
+		get_scalar_colour_palette() const
+		{
+			return d_scalar_colour_palette;
+		}
+
+		/**
+		 * Sets the current scalar colour palette.
+		 */
+		void
+		set_scalar_colour_palette(
+				const GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette &scalar_colour_palette)
+		{
+			d_scalar_colour_palette = scalar_colour_palette;
+			emit_modified();
+		}
+
+		/**
+		 * Returns the current gradient colour palette.
+		 */
+		const GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette &
+		get_gradient_colour_palette() const
+		{
+			return d_gradient_colour_palette;
+		}
+
+		/**
+		 * Sets the current gradient colour palette.
+		 */
+		void
+		set_gradient_colour_palette(
+				const GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette &gradient_colour_palette)
+		{
+			d_gradient_colour_palette = gradient_colour_palette;
+			emit_modified();
+		}
 
 		/**
 		 * Returns the current isovalue parameters.
@@ -273,21 +331,21 @@ namespace GPlatesPresentation
 
 
 		GPlatesViewOperations::ScalarField3DRenderParameters::RenderMode d_render_mode;
-		GPlatesViewOperations::ScalarField3DRenderParameters::ColourMode d_colour_mode;
+		GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceDeviationWindowMode d_isosurface_deviation_window_mode;
+		GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceColourMode d_isosurface_colour_mode;
+		GPlatesViewOperations::ScalarField3DRenderParameters::CrossSectionColourMode d_cross_section_colour_mode;
 
 		/**
-		 * If the current colour palette was loaded from a file (typically a
-		 * CPT file), then this variable holds that filename.
-		 * Otherwise, if the current colour palette was auto-generated, this is
-		 * the empty string.
-		 */
-		QString d_colour_palette_filename;
-
-		/**
-		 * The current colour palette for this layer, whether set explicitly as
+		 * The current *scalar* colour palette for this layer, whether set explicitly as
 		 * loaded from a file, or auto-generated.
 		 */
-		GPlatesGui::ColourPalette<double>::non_null_ptr_type d_colour_palette;
+		GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette d_scalar_colour_palette;
+		//! Is false until we have done an initial range mapping using the scalar field min/max range.
+		bool d_initialised_scalar_colour_palette_range_mapping;
+
+		GPlatesViewOperations::ScalarField3DRenderParameters::ColourPalette d_gradient_colour_palette;
+		//! Is false until we have done an initial range mapping using the gradient field min/max range.
+		bool d_initialised_gradient_colour_palette_range_mapping;
 
 		// This is optional because the default isovalue cannot be set until a scalar field feature
 		// is available - the default isovalue is the mean scalar value in the scalar field.

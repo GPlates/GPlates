@@ -25,7 +25,7 @@
 
 #ifndef GPLATESDATAMINING_REDUCERTYPES_H
 #define GPLATESDATAMINING_REDUCERTYPES_H
-
+#include <QString>
 namespace GPlatesDataMining
 {
 	enum AttributeType

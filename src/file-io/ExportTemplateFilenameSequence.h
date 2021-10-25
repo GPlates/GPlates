@@ -70,11 +70,15 @@ namespace GPlatesFileIO
 		 * @param filename_template is a string containing the filename template.
 		 *
 		 * @throws UnrecognisedFormatString if no format recognised at a '%' char.
-		 * @throws NoFilenameVariation if no formats have filename variation (vary with reconstruction time).
+		 *
+		 * If @a check_filename_variation is true then also checks that there is filename variation
+		 * (varies with reconstruction time).
+		 * This should normally be true except when a exporting for a single time instant.
 		 */
 		void
 		validate_filename_template(
-				const QString &filename_template);
+				const QString &filename_template,
+				bool check_filename_variation = true);
 
 
 		/**
@@ -160,7 +164,6 @@ namespace GPlatesFileIO
 		 * @throws IncorrectTimeIncrementSign if sign of time increment does not match sign of
 		 *         end minus begin reconstruction time.
 		 * @throws UnrecognisedFormatString if no format recognised at a '%' char.
-		 * @throws NoFilenameVariation if no formats have filename variation (vary with reconstruction time).
 		 *
 		 * Having a begin time equal to the end time may seem a little silly, but it should still work
 		 * as a legal time range - only one frame will be written.

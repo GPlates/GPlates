@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <boost/foreach.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/construct.hpp>
@@ -52,6 +53,8 @@
 
 #include "maths/CalculateVelocity.h"
 #include "maths/FiniteRotation.h"
+#include "maths/Rotation.h"
+#include "maths/SmallCircleBounds.h"
 
 #include "model/FeatureType.h"
 #include "model/FeatureVisitor.h"
@@ -415,6 +418,465 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 
 			return true;
 		}
+
+
+		/**
+		 * Test the domain point against the all surface types.
+		 *
+		 * Return false if point is not inside any surfaces.
+		 */
+		bool
+		solve_velocity_on_surfaces(
+				const GPlatesMaths::PointOnSphere &domain_point,
+				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
+				const GeometryCookieCutter &reconstructed_static_polygons_query,
+				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query,
+				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
+		{
+			//
+			// First check whether domain point is inside any topological networks.
+			// This includes points inside interior rigid blocks on the networks.
+			//
+			if (solve_velocities_on_network(domain_point, range_element, resolved_networks_query))
+			{
+				return true;
+			}
+
+			//
+			// Next see if point is inside any topological boundaries.
+			//
+
+			if (solve_velocities_on_rigid_plates(domain_point, range_element, resolved_rigid_plates_query))
+			{
+				return true;
+			}
+
+			//
+			// Next see if point is inside any static (reconstructed) polygons.
+			//
+
+			if (solve_velocities_on_static_polygon(domain_point, range_element, reconstructed_static_polygons_query))
+			{
+				return true;
+			}
+
+			// else, point not found in any topology or static polygons so set the velocity values to 0 
+
+			const GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
+			const MultiPointVectorField::CodomainElement::Reason reason =
+					MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
+			range_element = MultiPointVectorField::CodomainElement(zero_velocity, reason);
+
+#ifdef DEBUG
+			// Report a warning.
+			// This is useful for global models that should span the entire globes with no gaps.
+			const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(domain_point);
+			qDebug() << "WARNING: domain point not in any Topology! point = " << llp;
+#endif
+
+			return false;
+		}
+
+
+		/**
+		 * Calculate the boundary velocity at the specified point sample (which is very close
+		 * to the boundary but not on it).
+		 *
+		 * It will be either inside the polygon or outside (in an adjacent polygon).
+		 */
+		void
+		solve_velocity_at_boundary(
+				const GPlatesMaths::PointOnSphere &point_sample,
+				boost::optional<GPlatesMaths::Vector3D> &velocity_inside_polygon_boundary,
+				boost::optional<GPlatesMaths::Vector3D> &velocity_outside_polygon_boundary,
+				const ReconstructionGeometry *polygon_recon_geom_containing_domain_point,
+				const GeometryCookieCutter &reconstructed_static_polygons_query,
+				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query,
+				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
+		{
+			// Sample the velocity at the point sample.
+			boost::optional<MultiPointVectorField::CodomainElement> velocity_sample;
+			if (!solve_velocity_on_surfaces(
+					point_sample,
+					velocity_sample,
+					reconstructed_static_polygons_query,
+					resolved_rigid_plates_query,
+					resolved_networks_query))
+			{
+				// Didn't sample a surface.
+				return;
+			}
+
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					velocity_sample,
+					GPLATES_ASSERTION_SOURCE);
+
+			// If the surface was found (ie, not a zero velocity vector) then assign the
+			// velocity to the inside or outside polygon depending on the surface.
+			if (velocity_sample->d_plate_id_reconstruction_geometry)
+			{
+				if (velocity_sample->d_plate_id_reconstruction_geometry.get() ==
+					polygon_recon_geom_containing_domain_point)
+				{
+					// If not already found a velocity inside polygon...
+					if (!velocity_inside_polygon_boundary)
+					{
+						velocity_inside_polygon_boundary = velocity_sample->d_vector;
+					}
+				}
+				else // velocity sample is from the adjacent polygon(s)...
+				{
+					// If not already found a velocity outside polygon...
+					if (!velocity_outside_polygon_boundary)
+					{
+						velocity_outside_polygon_boundary = velocity_sample->d_vector;
+					}
+				}
+			}
+		}
+
+
+		/**
+		 * Calculate the average velocity, at the specified point on the polygon boundary,
+		 * by averaging the velocity on each side of the boundary.
+		 */
+		boost::optional<GPlatesMaths::Vector3D>
+		solve_average_velocity_at_boundary(
+				const GPlatesMaths::PointOnSphere &polygon_boundary_point,
+				const GPlatesMaths::PointOnSphere &domain_point,
+				const ReconstructionGeometry *polygon_recon_geom_containing_domain_point,
+				const GeometryCookieCutter &reconstructed_static_polygons_query,
+				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query,
+				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
+		{
+			// We need both a velocity just inside and just outside the polygon boundary before
+			// we can calculate the average velocity at boundary.
+			boost::optional<GPlatesMaths::Vector3D> velocity_inside_polygon_boundary;
+			boost::optional<GPlatesMaths::Vector3D> velocity_outside_polygon_boundary;
+
+			// Rotation axis to rotate domain point towards polygon boundary point.
+			GPlatesMaths::Vector3D domain_to_boundary_rotation_axis_cross_product = cross(
+					GPlatesMaths::Vector3D(domain_point.position_vector()),
+					GPlatesMaths::Vector3D(polygon_boundary_point.position_vector()));
+			const GPlatesMaths::UnitVector3D domain_to_boundary_rotation_axis =
+					(domain_to_boundary_rotation_axis_cross_product.magSqrd() > 0.0)
+					? domain_to_boundary_rotation_axis_cross_product.get_normalisation()
+					// The domain point and the polygon boundary point happen to coincide.
+					// Pick an arbitrary rotation axis orthogonal to the polygon boundary point...
+					: GPlatesMaths::generate_perpendicular(polygon_boundary_point.position_vector());
+
+			// This should be small but not too small that we start getting epsilon issues when
+			// testing the epsilon-rotated points for inclusion in polygons sharing boundary.
+			const double epsilon_rotation_angle = 1e-3/*radians, ~0.1 degrees or 10Kms*/;
+
+			//
+			// Try sampling directly outside and inside (separated by 180 degrees).
+			//
+
+			// Start with the point just inside the adjacent polygon (it might not be though).
+			// In most cases this will give us the best chance of finding the velocity in the adjacent polygon.
+			const GPlatesMaths::PointOnSphere original_point_outside_polygon_boundary =
+					GPlatesMaths::Rotation::create(domain_to_boundary_rotation_axis, epsilon_rotation_angle) *
+							polygon_boundary_point;
+
+			// Sample directly outside the polygon.
+			solve_velocity_at_boundary(
+					original_point_outside_polygon_boundary,
+					velocity_inside_polygon_boundary,
+					velocity_outside_polygon_boundary,
+					polygon_recon_geom_containing_domain_point,
+					reconstructed_static_polygons_query,
+					resolved_rigid_plates_query,
+					resolved_networks_query);
+
+			// To get point sample inside polygon boundary we rotate the point outside by 180 degrees.
+			GPlatesMaths::Rotation rotation_180_about_polygon_boundary_point =
+					GPlatesMaths::Rotation::create(polygon_boundary_point.position_vector(), GPlatesMaths::PI);
+
+			// Sample directly inside the polygon.
+			solve_velocity_at_boundary(
+					rotation_180_about_polygon_boundary_point * original_point_outside_polygon_boundary,
+					velocity_inside_polygon_boundary,
+					velocity_outside_polygon_boundary,
+					polygon_recon_geom_containing_domain_point,
+					reconstructed_static_polygons_query,
+					resolved_rigid_plates_query,
+					resolved_networks_query);
+
+			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
+			{
+				// Return the average velocity at boundary.
+				return 0.5 * (velocity_inside_polygon_boundary.get() + velocity_outside_polygon_boundary.get());
+			}
+
+			//
+			// Try sampling directly left and right along boundary (separated by 180 degrees).
+			//
+
+			GPlatesMaths::Rotation rotation_90_about_polygon_boundary_point =
+					GPlatesMaths::Rotation::create(polygon_boundary_point.position_vector(), GPlatesMaths::HALF_PI);
+
+			// Start with the point just inside the adjacent polygon (it might not be though).
+			// In most cases this will give us the best chance of finding the velocity in the adjacent polygon.
+			const GPlatesMaths::PointOnSphere point_left_along_polygon_boundary =
+					rotation_90_about_polygon_boundary_point * original_point_outside_polygon_boundary;
+
+			// Sample left along polygon boundary.
+			solve_velocity_at_boundary(
+					point_left_along_polygon_boundary,
+					velocity_inside_polygon_boundary,
+					velocity_outside_polygon_boundary,
+					polygon_recon_geom_containing_domain_point,
+					reconstructed_static_polygons_query,
+					resolved_rigid_plates_query,
+					resolved_networks_query);
+
+			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
+			{
+				// Return the average velocity at boundary.
+				return 0.5 * (velocity_inside_polygon_boundary.get() + velocity_outside_polygon_boundary.get());
+			}
+
+			// Sample right along polygon boundary.
+			solve_velocity_at_boundary(
+					rotation_180_about_polygon_boundary_point * point_left_along_polygon_boundary,
+					velocity_inside_polygon_boundary,
+					velocity_outside_polygon_boundary,
+					polygon_recon_geom_containing_domain_point,
+					reconstructed_static_polygons_query,
+					resolved_rigid_plates_query,
+					resolved_networks_query);
+
+			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
+			{
+				// Return the average velocity at boundary.
+				return 0.5 * (velocity_inside_polygon_boundary.get() + velocity_outside_polygon_boundary.get());
+			}
+
+			//
+			// Try sampling at regular intervals around a circle (around the polygon boundary point).
+			// With each depth level halving the previous level's interval.
+			//
+
+			for (unsigned int level = 2; level < 5; ++level)
+			{
+				const unsigned int num_intervals = (1 << level);
+				const double interval_rotation_angle = 2 * GPlatesMaths::PI / num_intervals;
+
+				// The starting point sample is offset by 'half' an interval in order to avoid
+				// sampling the same points as the previous level.
+				GPlatesMaths::PointOnSphere point_sample =
+						GPlatesMaths::Rotation::create(
+								polygon_boundary_point.position_vector(),
+								0.5 * interval_rotation_angle) *
+										original_point_outside_polygon_boundary;
+
+				GPlatesMaths::Rotation interval_rotation_about_polygon_boundary_point =
+						GPlatesMaths::Rotation::create(
+								polygon_boundary_point.position_vector(),
+								interval_rotation_angle);
+
+				for (unsigned int interval = 0; interval < num_intervals; ++interval)
+				{
+					solve_velocity_at_boundary(
+							point_sample,
+							velocity_inside_polygon_boundary,
+							velocity_outside_polygon_boundary,
+							polygon_recon_geom_containing_domain_point,
+							reconstructed_static_polygons_query,
+							resolved_rigid_plates_query,
+							resolved_networks_query);
+
+					if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
+					{
+						// Return the average velocity at boundary.
+						return 0.5 * (velocity_inside_polygon_boundary.get() + velocity_outside_polygon_boundary.get());
+					}
+
+					// Move to the next sample point.
+					point_sample = interval_rotation_about_polygon_boundary_point * point_sample;
+				}
+			}
+
+			// We were unable to find a velocity both inside and outside the polygon boundary.
+
+			// If unable to find a velocity inside the polygon boundary then just resort to
+			// using the velocity at the domain point even though it could be further from
+			// the boundary point (although still within the smoothing distance).
+			// The velocities within the same polygon (and relatively near each other) should
+			// be relatively the same.
+			// This scenario happens when there are overlapping polygons and the domain point
+			// is outside the overlapping region (then the boundary point lies in the overlapping
+			// region and the plate polygon of the domain point cannot be found at the boundary point).
+			if (!velocity_inside_polygon_boundary)
+			{
+				solve_velocity_at_boundary(
+						domain_point,
+						velocity_inside_polygon_boundary,
+						velocity_outside_polygon_boundary,
+						polygon_recon_geom_containing_domain_point,
+						reconstructed_static_polygons_query,
+						resolved_rigid_plates_query,
+						resolved_networks_query);
+
+				if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
+				{
+					// Return the average velocity at boundary.
+					return 0.5 * (velocity_inside_polygon_boundary.get() + velocity_outside_polygon_boundary.get());
+				}
+			}
+
+			// We were unable to find a velocity both inside and outside the polygon boundary.
+			qWarning() << "Unable to find average velocity at plate boundary for smoothing:";
+			qWarning() << "  Most likely cause is a gap between plates/surfaces.";
+			GPlatesMaths::LatLonPoint domain_point_lat_lon =
+					GPlatesMaths::make_lat_lon_point(domain_point);
+			qWarning() << "  Domain point location lat/lon: "
+					<< domain_point_lat_lon.latitude() << ", "
+					<< domain_point_lat_lon.longitude();
+			GPlatesMaths::LatLonPoint polygon_boundary_point_lat_lon =
+					GPlatesMaths::make_lat_lon_point(polygon_boundary_point);
+			qWarning() << "  Nearest plate boundary location lat/lon: "
+					<< polygon_boundary_point_lat_lon.latitude() << ", "
+					<< polygon_boundary_point_lat_lon.longitude() << "\n";
+
+			return boost::none;
+		}
+
+
+		/**
+		 * Test the domain point against the all surface types and smooth velocities near boundaries.
+		 *
+		 * Return false if point is not inside any surfaces.
+		 */
+		bool
+		solve_velocity_on_surfaces_with_boundary_smoothing(
+				const GPlatesMaths::PointOnSphere &domain_point,
+				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
+				const GeometryCookieCutter &reconstructed_static_polygons_query,
+				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query,
+				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
+				const double &boundary_smoothing_angular_half_extent,
+				const double &cosine_boundary_smoothing_angular_half_extent,
+				const double &sine_boundary_smoothing_angular_half_extent,
+				bool exclude_deforming_regions_from_smoothing)
+		{
+			// First solve the velocity at the domain point.
+			if (!solve_velocity_on_surfaces(
+					domain_point,
+					range_element,
+					reconstructed_static_polygons_query,
+					resolved_rigid_plates_query,
+					resolved_networks_query))
+			{
+				// Domain point is not inside any surfaces.
+				return false;
+			}
+
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					range_element,
+					GPLATES_ASSERTION_SOURCE);
+
+			if (exclude_deforming_regions_from_smoothing)
+			{
+				// If the domain point is inside a deforming region (or micro-block within a deforming region)
+				// then it does not need smoothing so just use the already calculated velocity at the domain point.
+				// One reason smoothing might not be needed is because a deforming region linearly interpolates
+				// velocities and hence domain points near the deforming region boundary will have velocities
+				// similar to those at the boundary, hence smoothing has essentially already been done.
+				if (range_element->d_reason == MultiPointVectorField::CodomainElement::InNetworkDeformingRegion ||
+					range_element->d_reason == MultiPointVectorField::CodomainElement::InNetworkRigidBlock)
+				{
+					return true;
+				}
+			}
+
+			// If we don't have a reconstruction geometry then the point was inside a boundary but
+			// we couldn't find the plate id of the boundary (and hence reverted to zero velocity).
+			if (!range_element->d_plate_id_reconstruction_geometry)
+			{
+				return true;
+			}
+
+			const ReconstructionGeometry *boundary_recon_geom =
+					range_element->d_plate_id_reconstruction_geometry.get();
+
+			// Get the boundary polygon geometry.
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon_boundary_opt =
+					ReconstructionGeometryUtils::get_boundary_polygon(boundary_recon_geom);
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					polygon_boundary_opt,
+					GPLATES_ASSERTION_SOURCE);
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_boundary =
+					polygon_boundary_opt.get();
+
+			// An optimisation that avoids testing all domain points for closeness to the polygon
+			// boundary is to use a small circle test. Any domain point inside this small circle
+			// cannot be in the smoothing region.
+			const GPlatesMaths::BoundingSmallCircle polygon_boundary_inner_bounding_small_circle =
+					polygon_boundary->get_inner_outer_bounding_small_circle()
+							.get_inner_bounding_small_circle();
+
+			// Interior of small circle is outside smoothing region.
+			// The small circle is the inner small circle boundary of the polygon shrunk by
+			// the smoothing distance. 
+			const GPlatesMaths::BoundingSmallCircle outside_smoothing_region_small_circle =
+					polygon_boundary_inner_bounding_small_circle.contract(
+							cosine_boundary_smoothing_angular_half_extent,
+							sine_boundary_smoothing_angular_half_extent);
+
+			// Here OUTSIDE_BOUNDS means outside the small circle.
+			if (outside_smoothing_region_small_circle.test(domain_point) !=
+				GPlatesMaths::BoundingSmallCircle::OUTSIDE_BOUNDS)
+			{
+				// The domain point is not in the smoothing region so just use the
+				// already calculated velocity at the domain point.
+				return true;
+			}
+
+			// Find the closest point on the boundary polygon (to the domain point) that is
+			// within the smoothing extents.
+			GPlatesMaths::real_t closeness_to_polygon_boundary = -1/*least close*/;
+			boost::optional<GPlatesMaths::PointOnSphere> closest_point_on_polygon_boundary =
+					polygon_boundary->is_close_to(
+							domain_point,
+							cosine_boundary_smoothing_angular_half_extent,
+							sine_boundary_smoothing_angular_half_extent,
+							closeness_to_polygon_boundary);
+			if (!closest_point_on_polygon_boundary)
+			{
+				// Domain point is not within the smoothing extent region-of-interest surrounding
+				// the polygon so just use the already calculated velocity at the domain point.
+				return true;
+			}
+
+			boost::optional<GPlatesMaths::Vector3D> average_boundary_velocity =
+					solve_average_velocity_at_boundary(
+							closest_point_on_polygon_boundary.get(),
+							domain_point,
+							boundary_recon_geom,
+							reconstructed_static_polygons_query,
+							resolved_rigid_plates_query,
+							resolved_networks_query);
+			if (!average_boundary_velocity)
+			{
+				// Unable to calculate average since unable to sample adjacent polygon -
+				// most likely due to complicated local concavities in polygon boundary.
+				// For now just return the un-smoothed velocity already calculated.
+				return true;
+			}
+
+			// The smoothing (interpolation) factor.
+			const GPlatesMaths::real_t smoothing_factor =
+					acos(closeness_to_polygon_boundary) / boundary_smoothing_angular_half_extent;
+
+			// Smooth the already calculated velocity vector.
+			range_element->d_vector =
+					smoothing_factor * range_element->d_vector +
+					(1 - smoothing_factor) * average_boundary_velocity.get();
+
+			return true;
+		}
 	}
 }
 
@@ -489,7 +951,8 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_domains,
 		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
 		const std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
-		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &velocity_surface_resolved_topological_networks)
+		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &velocity_surface_resolved_topological_networks,
+		const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options)
 {
 	PROFILE_FUNC();
 
@@ -518,6 +981,26 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 	// Get the resolved topological networks so we can query them for interpolated velocity at domain points.
 	const TopologicalNetworksVelocities resolved_networks_query(
 			velocity_surface_resolved_topological_networks);
+
+	// Calculate cosine and sine of the angular half extent.
+	// Note: This is only used if an angular half extent was specified.
+	boost::optional<double> boundary_smoothing_angular_half_extent;
+	bool exclude_deforming_regions_from_smoothing = true;
+	if (velocity_smoothing_options)
+	{
+		boundary_smoothing_angular_half_extent = velocity_smoothing_options->angular_half_extent_radians;
+		exclude_deforming_regions_from_smoothing = velocity_smoothing_options->exclude_deforming_regions;
+	}
+	const double cosine_boundary_smoothing_angular_half_extent =
+			boundary_smoothing_angular_half_extent
+			? std::cos(boundary_smoothing_angular_half_extent.get())
+			: 1.0;
+	const double cosine_boundary_smoothing_angular_half_extent_squared =
+			cosine_boundary_smoothing_angular_half_extent * cosine_boundary_smoothing_angular_half_extent;
+	const double sine_boundary_smoothing_angular_half_extent =
+			(cosine_boundary_smoothing_angular_half_extent_squared < 1)
+			? std::sqrt(1 - cosine_boundary_smoothing_angular_half_extent_squared)
+			: 0;
 
 	// Iterate over the velocity domain RFGs.
 	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>::const_iterator velocity_domains_iter =
@@ -566,47 +1049,30 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 		for ( ; domain_iter != domain_end; ++domain_iter, ++field_iter)
 		{
 			const GPlatesMaths::PointOnSphere &domain_point = *domain_iter;
+			boost::optional<MultiPointVectorField::CodomainElement> &range_element = *field_iter;
 
-			//
-			// First check whether domain point is inside any topological networks.
-			// This includes points inside interior rigid blocks on the networks.
-			//
-			if (solve_velocities_on_network(domain_point, *field_iter, resolved_networks_query))
+			if (velocity_smoothing_options)
 			{
-				continue;
+				solve_velocity_on_surfaces_with_boundary_smoothing(
+						domain_point,
+						range_element,
+						reconstructed_static_polygons_query,
+						resolved_rigid_plates_query,
+						resolved_networks_query,
+						boundary_smoothing_angular_half_extent.get(),
+						cosine_boundary_smoothing_angular_half_extent,
+						sine_boundary_smoothing_angular_half_extent,
+						exclude_deforming_regions_from_smoothing);
 			}
-
-			//
-			// Next see if point is inside any topological boundaries.
-			//
-
-			if (solve_velocities_on_rigid_plates(domain_point, *field_iter, resolved_rigid_plates_query))
+			else
 			{
-				continue;
+				solve_velocity_on_surfaces(
+						domain_point,
+						range_element,
+						reconstructed_static_polygons_query,
+						resolved_rigid_plates_query,
+						resolved_networks_query);
 			}
-
-			//
-			// Next see if point is inside any static (reconstructed) polygons.
-			//
-
-			if (solve_velocities_on_static_polygon(domain_point, *field_iter, reconstructed_static_polygons_query))
-			{
-				continue;
-			}
-
-			// else, point not found in any topology or static polygons so set the velocity values to 0 
-
-			const GPlatesMaths::Vector3D zero_velocity(0, 0, 0);
-			const MultiPointVectorField::CodomainElement::Reason reason =
-					MultiPointVectorField::CodomainElement::NotInAnyBoundaryOrNetwork;
-			*field_iter = MultiPointVectorField::CodomainElement(zero_velocity, reason);
-
-#ifdef DEBUG
-			// Report a warning.
-			// This is useful for global models that should span the entire globes with no gaps.
-			const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(domain_point);
-			qDebug() << "WARNING: domain point not in any Topology! point = " << llp;
-#endif
 		}
 
 		multi_point_velocity_fields.push_back(vector_field);

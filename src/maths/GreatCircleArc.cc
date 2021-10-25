@@ -65,14 +65,12 @@ namespace
 	 * Returns feature of @a great_circle_arc that is closest to @a test_point.
 	 * The closeness (dot product) of closest point on GCA to @a test_point is returned
 	 * in @a closeness.
-	 * If, and only if, the returned feature is @a GCA_ARC then the closest point on the
-	 * great circle arc is returned in @a closest_point_on_great_circle_arc.
 	 */
 	GreatCircleArcFeature
 	calculate_closest_feature(
 			const GPlatesMaths::GreatCircleArc &great_circle_arc,
 			const GPlatesMaths::PointOnSphere &test_point,
-			boost::optional<GPlatesMaths::UnitVector3D> &closest_point_on_great_circle_arc,
+			boost::optional<GPlatesMaths::PointOnSphere> &closest_point_on_great_circle_arc,
 			GPlatesMaths::real_t &closeness)
 	{
 		/*
@@ -114,7 +112,7 @@ namespace
 				 * 'test_point'.
 				 */
 				closeness = dot(t, c);
-				closest_point_on_great_circle_arc = c;
+				closest_point_on_great_circle_arc = boost::in_place(boost::cref(c));
 				return GCA_ARC;
 
 			} else {
@@ -136,11 +134,13 @@ namespace
 					 * to B.
 					 */
 					closeness = dot(t, a);
+					closest_point_on_great_circle_arc = great_circle_arc.start_point();
 					return GCA_START_POINT;
 
 				} else {
 
 					closeness = dot(t, b);
+					closest_point_on_great_circle_arc = great_circle_arc.end_point();
 					return GCA_END_POINT;
 				}
 			}
@@ -148,6 +148,7 @@ namespace
 
 		// The arc is point-like so return the start point.
 		closeness = calculate_closeness(test_point, great_circle_arc.start_point());
+		closest_point_on_great_circle_arc = great_circle_arc.start_point();
 		return GCA_START_POINT;
 	}
 }
@@ -250,7 +251,7 @@ GPlatesMaths::GreatCircleArc::rotation_axis() const
 }
 
 
-bool
+boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesMaths::GreatCircleArc::is_close_to(
 		const PointOnSphere &test_point,
 		const real_t &closeness_inclusion_threshold,
@@ -282,21 +283,30 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 				 * below the GC that there is no chance it could be "close to"
 				 * this GCA.
 				 */
-				return false;
+				return boost::none;
 			}
 		}
 		
 		// Get the closest feature of this GCA to 'test_point'.
-		boost::optional<UnitVector3D> closest_point_on_great_circle_arc;
+		boost::optional<PointOnSphere> closest_point_on_great_circle_arc;
 		calculate_closest_feature(
 				*this, test_point, closest_point_on_great_circle_arc, closeness);
 		
-		return closeness.is_precisely_greater_than(closeness_inclusion_threshold.dval());
-		
+		if (!closeness.is_precisely_greater_than(closeness_inclusion_threshold.dval()))
+		{
+			return boost::none;
+		}
+
+		return closest_point_on_great_circle_arc;
 	}
 
 	// The arc is point-like.
-	return start_point().is_close_to(test_point, closeness_inclusion_threshold, closeness);
+	if (!start_point().is_close_to(test_point, closeness_inclusion_threshold, closeness))
+	{
+		return boost::none;
+	}
+
+	return start_point();
 }
 
 GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
@@ -305,20 +315,10 @@ GPlatesMaths::GreatCircleArc::get_closest_point(
 {
 	// Get the closest feature of this GCA to 'test_point'.
 	real_t closeness;
-	boost::optional<UnitVector3D> closest_point_on_great_circle_arc;
-	const GreatCircleArcFeature gca_feature = calculate_closest_feature(
-			*this, test_point, closest_point_on_great_circle_arc, closeness);
+	boost::optional<PointOnSphere> closest_point_on_great_circle_arc;
+	calculate_closest_feature(*this, test_point, closest_point_on_great_circle_arc, closeness);
 
-	if (gca_feature == GCA_ARC)
-	{
-		return PointOnSphere::create_on_heap(*closest_point_on_great_circle_arc);
-	}
-	else if (gca_feature == GCA_END_POINT)
-	{
-		return end_point().get_non_null_pointer();
-	}
-
-	return start_point().get_non_null_pointer();
+	return closest_point_on_great_circle_arc->get_non_null_pointer();
 }
 
 GPlatesMaths::GreatCircleArc::ConstructionParameterValidity

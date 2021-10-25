@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_EDITTIMESEQUENCE_H
 
 #include <boost/intrusive_ptr.hpp>
+#include <QItemDelegate>
 
 #include "AbstractEditWidget.h"
 #include "EditTableWidget.h"
@@ -43,6 +44,53 @@ namespace GPlatesAppLogic
 
 namespace GPlatesQtWidgets
 {
+
+	/**
+	 * @brief The SpinBoxDelegate class
+	 *
+	 * This lets us customise the spinbox behaviour in the TableView. Borrowed largely from the
+	 * Qt example here:
+	 * http://qt-project.org/doc/qt-4.8/itemviews-spinboxdelegate.html
+	 *
+	 */
+	class EditTimeSequenceSpinBoxDelegate : public QItemDelegate
+	{
+		Q_OBJECT
+
+	public:
+
+		Q_SIGNAL void editing_finished() const;
+
+		EditTimeSequenceSpinBoxDelegate(QObject *parent = 0);
+
+		QWidget *createEditor(
+				QWidget *parent,
+				const QStyleOptionViewItem &option,
+				const QModelIndex &index) const;
+
+		void setEditorData(
+				QWidget *editor,
+				const QModelIndex &index) const;
+
+		void setModelData(
+				QWidget *editor,
+				QAbstractItemModel *model,
+				const QModelIndex &index) const;
+
+		void updateEditorGeometry(
+				QWidget *editor,
+				const QStyleOptionViewItem &option,
+				const QModelIndex &index) const;
+
+		void paint(
+				QPainter *painter,
+				const QStyleOptionViewItem &option,
+				const QModelIndex &index) const;
+	};
+
+
+
+
 	class EditTableActionWidget;
 
 	class EditTimeSequenceWidget:
@@ -53,6 +101,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
+
 		explicit
 		EditTimeSequenceWidget(
 			GPlatesAppLogic::ApplicationState &app_state_,
@@ -97,33 +146,16 @@ namespace GPlatesQtWidgets
 			double time);
 				
 		/**
-		 * Fill the table with values determined by the "Fill with times" group box.                                                                     
+		 * Fill the table with values determined by the "Fill with times" group box.
 		 */		
 		void
 		insert_multiple();
 
 	private Q_SLOTS:
 	
-		/**
-		 * Fired when the data of a cell has been modified.
-		 *
-		 * FIXME: ... by the user?
-		 */
 		void
-		handle_cell_changed(int row, int column);
-		
-		
-		/**
-		 * Fired when a cell has been clicked.
-		 *
-		 */
-		void
-		handle_cell_clicked(int row, int column);
+		handle_spinbox_editing_finished();
 
-		/**
-		 * Fired when Fill-with-times widget's Fill button has been clicked.                                                                   
-		 */
-		
 		void
 		handle_remove_all();
 
@@ -155,8 +187,6 @@ namespace GPlatesQtWidgets
 		handle_current_cell_changed(
 				int currentRow, int currentColumn, int previousRow, int previousColumn);
 				
-		void
-		handle_cell_activated(int row, int column);
 
 		/**
 		 * Use main window time for the insert-single-time time-value
@@ -210,7 +240,7 @@ namespace GPlatesQtWidgets
 				int row);
 
 		/**
-		 * Sorts the table, and emits commit signal.
+		 * Sorts the table, removes duplicates, and emits commit signal.
 		 */
 		void
 		sort_and_commit();
@@ -219,7 +249,7 @@ namespace GPlatesQtWidgets
 		 * Updates the time samples in the GpmlIrregularSampling.
 		 */
 		void
-		update_times();
+		update_time_array_from_widget();
 
 		void
 		update_buttons();
@@ -241,11 +271,11 @@ namespace GPlatesQtWidgets
 		 * adding brand new properties to the model.
 		 */
 
-         boost::intrusive_ptr<GPlatesPropertyValues::GpmlArray> d_array_ptr;
+		boost::intrusive_ptr<GPlatesPropertyValues::GpmlArray> d_array_ptr;
 		
-		 double d_current_reconstruction_time;
+		double d_current_reconstruction_time;
 
-
+		EditTimeSequenceSpinBoxDelegate *d_spin_box_delegate;
 	};
 }
 

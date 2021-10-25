@@ -1,11 +1,11 @@
-/* $Id: OGRFormatReconstructedFeatureGeometryExport.h -1   $ */
+/* $Id$ */
 
 /**
  * \file Exports reconstructed feature geometries to a GMT format file.
- * $Revision: -1 $
- * $Date: $
+ * $Revision$
+ * $Date$
  * 
- * Copyright (C) 2009, 2010 Geological Survey of Norway
+ * Copyright (C) 2009, 2010, 2014 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -66,9 +66,10 @@ namespace GPlatesFileIO
 				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
+				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 		/**
 		* Exports @a ReconstructedFeatureGeometry objects to ESRI Shapefile format.
@@ -79,10 +80,11 @@ namespace GPlatesFileIO
 		export_geometries_per_collection(
 				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 				const QFileInfo& file_info,
-				const std::vector<const File::Reference *> &referenced_files,
+				const referenced_files_collection_type &referenced_files,
+				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 	}
 }
 

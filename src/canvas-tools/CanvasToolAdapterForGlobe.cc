@@ -52,7 +52,10 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_activation()
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_deactivation()
 {
-	d_canvas_tool_ptr->handle_deactivation();
+	if (globe_canvas().isVisible()) // Avoid deactivating twice (in globe and map adaptor)
+	{
+		d_canvas_tool_ptr->handle_deactivation();
+	}
 }
 
 void

@@ -134,6 +134,7 @@ namespace GPlatesMaths
 				const UnitVector3D &small_circle_centre,
 				const double &min_dot_product);
 
+
 		/**
 		 * The result of testing a primitive against the bounding region
 		 * can return fully outside, fully inside or intersecting.
@@ -287,6 +288,31 @@ namespace GPlatesMaths
 
 			return d_magnitude_boundary_cross_product.get();
 		}
+
+
+		/**
+		 * Creates a bounding small circle extended by the specified angle - specified as cosine(angle).
+		 *
+		 * @a sine_extend_angle can be provided (as an optimisation) if it already available.
+		 */
+		BoundingSmallCircle
+		extend(
+				const double &cosine_extend_angle,
+				boost::optional<double> sine_extend_angle = boost::none) const;
+
+
+		/**
+		 * Creates a bounding small circle contracted by the specified angle - specified as cosine(angle).
+		 *
+		 * Returns a small circle of zero radius if the contract angle is larger then the angle
+		 * of 'this' bounding small circle.
+		 *
+		 * @a sine_contract_angle can be provided (as an optimisation) if it already available.
+		 */
+		BoundingSmallCircle
+		contract(
+				const double &cosine_contract_angle,
+				boost::optional<double> sine_contract_angle = boost::none) const;
 
 	private:
 		UnitVector3D d_small_circle_centre;
@@ -467,7 +493,7 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Two concentric small circles that enclose a region.
+	 * Two concentric small circles that enclose an annular region.
 	 */
 	class InnerOuterBoundingSmallCircle
 	{
@@ -594,7 +620,7 @@ namespace GPlatesMaths
 		 * Returns the cosine of any part of the inner small circle boundary with the small circle centre.
 		 *
 		 * This gives a measure of the maximum dot product of any part of any geometry,
-		 * bounded by this small circle, with the small circle centre.
+		 * bounded by the annular region, with the small circle centre.
 		 */
 		const double &
 		get_inner_small_circle_boundary_cosine() const
@@ -628,6 +654,45 @@ namespace GPlatesMaths
 			}
 
 			return d_magnitude_inner_boundary_cross_product.get();
+		}
+
+
+		/**
+		 * Returns the cosine of any part of the outer small circle boundary with the small circle centre.
+		 *
+		 * This gives a measure of the minimum dot product of any part of any geometry,
+		 * bounded by the annular region, with the small circle centre.
+		 */
+		const double &
+		get_outer_small_circle_boundary_cosine() const
+		{
+			return d_outer_small_circle.get_small_circle_boundary_cosine();
+		}
+
+
+		/**
+		 * Returns the sine of any part of the outer small circle boundary with the small circle centre.
+		 *
+		 * This gives a measure of the magnitude of the cross product of any point *on* the
+		 * outer bounding small circle with the small circle centre.
+		 */
+		const double &
+		get_outer_small_circle_boundary_sine() const
+		{
+			return d_outer_small_circle.get_small_circle_boundary_sine();
+		}
+
+
+		/**
+		 * Returns the inner small circle boundary - a simplification that ignores the outer bounds.
+		 */
+		const BoundingSmallCircle
+		get_inner_bounding_small_circle() const
+		{
+			return BoundingSmallCircle(
+					d_outer_small_circle.get_centre(),
+					d_max_dot_product, // Becomes the min dot product of the returned small circle.
+					d_magnitude_inner_boundary_cross_product);
 		}
 
 

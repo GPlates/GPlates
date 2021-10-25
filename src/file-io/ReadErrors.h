@@ -61,6 +61,7 @@ namespace GPlatesFileIO
 			NoExclMarkToStartComment,
 			SamePlateIdsButDuplicateGeoTime,
 			SamePlateIdsButEarlierGeoTime,
+			PoleTakesLongRotationPathRelativeToPrevPole,
 
 			// The following are specific to PLATES line-format reading.
 			InvalidPlatesRegionNumber,
@@ -118,6 +119,8 @@ namespace GPlatesFileIO
 			InvalidOgrPolyline,
 			InvalidOgrPolygon,
 			InvalidShapefileReconstructionMethod,
+			InvalidShapefileSpreadingAsymmetry,
+			UnableToMatchOgrGeometryWithFeature,
 			
 			// The following relate to raster files in general.
 			InsufficientMemoryToLoadRaster,
@@ -219,6 +222,7 @@ namespace GPlatesFileIO
 			MovingPlateIdChangedToMatchEarlierSequence,
 			NewOverlappingSequenceBegun,
 			PoleDiscarded,
+			PoleAdjustedToShortRotationPathRelativeToPrevPole,
 
 			// The following are specific to PLATES line-format reading.
 			UnclassifiedFeatureCreated,
@@ -239,6 +243,7 @@ namespace GPlatesFileIO
 			NoRightPlateIdCreatedForFeature,
 			AttributeIgnored,
 			UnclassifiedOgrFeatureCreated,
+			FeatureIgnored,
 
 			// The following relate to time-dependent raster file sets.
 			NoRasterSetsLoaded,

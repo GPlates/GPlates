@@ -32,7 +32,7 @@
 
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/ReconstructionTree.h"
-#include "app-logic/ReconstructUtils.h"
+#include "app-logic/RotationUtils.h"
 #include "maths/FiniteRotation.h"
 #include "maths/MathsUtils.h"
 #include "model/FeatureVisitor.h"
@@ -438,7 +438,7 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
 
         // The stage pole for the moving plate w.r.t. the fixed plate, from t_prev to t
         GPlatesMaths::FiniteRotation stage_pole =
-                GPlatesAppLogic::ReconstructUtils::get_stage_pole(
+                GPlatesAppLogic::RotationUtils::get_stage_pole(
                     *tree_at_prev_time_ptr,
                     *tree_at_time_t_ptr,
                     right_plate_id,
@@ -446,7 +446,7 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
 
         FlowlineUtils::get_half_angle_rotation(stage_pole);
 
-       // ReconstructUtils::display_rotation(stage_pole);
+        // qDebug() << stage_pole;
         seed_point_rotations.push_back(stage_pole);
 
     }
@@ -461,7 +461,7 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
  				reconstruction_tree_creator.get_reconstruction_tree(current_time);
 
         GPlatesMaths::FiniteRotation stage_pole =
-                GPlatesAppLogic::ReconstructUtils::get_stage_pole(
+                GPlatesAppLogic::RotationUtils::get_stage_pole(
                     *tree_at_time_t_ptr,
                     *tree_at_current_time_ptr,
                     right_plate_id,
@@ -470,7 +470,7 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
         FlowlineUtils::get_half_angle_rotation(stage_pole);
         seed_point_rotations.push_back(stage_pole);
 
-       // ReconstructUtils::display_rotation(stage_pole);
+        // qDebug() << stage_pole;
     }
 }
 
@@ -561,7 +561,7 @@ GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
 		    reconstruction_tree_creator.get_reconstruction_tree(*iter);
 
 	    GPlatesMaths::FiniteRotation stage_pole =
-		    GPlatesAppLogic::ReconstructUtils::get_stage_pole(
+		    GPlatesAppLogic::RotationUtils::get_stage_pole(
 		    *tree_at_prev_time_ptr,
 		    *tree_at_time_t_ptr,
 		    plate_2,

@@ -464,7 +464,8 @@ namespace GPlatesOpenGL
 				const std::vector<GLMapCubeMeshGenerator::Point> &cube_face_quadrant_mesh_vertices,
 				const unsigned int cube_face_quadrant_x_offset,
 				const unsigned int cube_face_quadrant_y_offset,
-				const GPlatesMaths::CubeQuadTreeLocation &quadrant_quad_tree_node_location);
+				const GPlatesMaths::CubeQuadTreeLocation &quadrant_quad_tree_node_location,
+				const GLMapCubeMeshGenerator &map_cube_mesh_generator);
 
 		void
 		create_cube_face_quad_tree_mesh_vertices(
@@ -475,7 +476,8 @@ namespace GPlatesOpenGL
 				const std::vector<GLMapCubeMeshGenerator::Point> &cube_face_quadrant_mesh_vertices,
 				const unsigned int cube_face_quadrant_x_offset,
 				const unsigned int cube_face_quadrant_y_offset,
-				const GPlatesMaths::CubeQuadTreeLocation &quad_tree_node_location);
+				const GPlatesMaths::CubeQuadTreeLocation &quad_tree_node_location,
+				const GLMapCubeMeshGenerator &map_cube_mesh_generator);
 	};
 }
 

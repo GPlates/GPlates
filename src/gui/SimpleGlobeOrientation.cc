@@ -36,16 +36,21 @@ void
 GPlatesGui::SimpleGlobeOrientation::move_handle_to_pos(
 		const GPlatesMaths::PointOnSphere &pos)
 {
-	if (d_handle_pos == pos) {
-		// There's no difference between the positions, so nothing to do.
-		return;
+	// There's no difference between the positions, so nothing to do.
+	if (d_handle_pos != pos)
+	{
+		GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(d_handle_pos, pos);
+
+		d_accum_rot = rot * d_accum_rot;
+		d_rev_accum_rot = d_accum_rot.get_reverse();
+		d_handle_pos = pos;
 	}
-	GPlatesMaths::Rotation rot = GPlatesMaths::Rotation::create(d_handle_pos, pos);
 
-	d_accum_rot = rot * d_accum_rot;
-	d_rev_accum_rot = d_accum_rot.get_reverse();
-	d_handle_pos = pos;
-
+	// NOTE: We still emit the orientation changed signal even if the orientation didn't change.
+	// This is to ensure that the globe or map refresh themselves even during mouse button release
+	// events (when the mouse positions is not moving) which is needed for some situations such
+	// as temporarily reducing rendering quality during mouse drag (globe rotation) and then
+	// rendering again at normal quality when the mouse button is released.
 	Q_EMIT orientation_changed();
 }
 

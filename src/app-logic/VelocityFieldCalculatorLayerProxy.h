@@ -37,6 +37,7 @@
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
 #include "VelocityFieldCalculatorLayerTask.h"
+#include "VelocityParams.h"
 
 #include "utils/SubjectObserverToken.h"
 
@@ -65,35 +66,89 @@ namespace GPlatesAppLogic
 		static
 		non_null_ptr_type
 		create(
-				VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method)
+				const VelocityParams &velocity_params = VelocityParams())
 		{
-			return non_null_ptr_type(new VelocityFieldCalculatorLayerProxy(solve_velocities_method));
+			return non_null_ptr_type(new VelocityFieldCalculatorLayerProxy(velocity_params));
 		}
 
 
 		~VelocityFieldCalculatorLayerProxy();
 
 
+		//
+		// Getting a sequence of @a MultiPointVectorField objects.
+		//
+
 		/**
-		 * Returns the velocities in multi-point vector fields, for the current reconstruction time,
-		 * by appending them to them to @a multi_point_vector_fields.
+		 * Returns the velocities in multi-point vector fields, for the current velocity params and
+		 * current reconstruction time, by appending them to them to @a multi_point_vector_fields.
 		 */
 		void
 		get_velocity_multi_point_vector_fields(
 				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_vector_fields)
 		{
-			get_velocity_multi_point_vector_fields(multi_point_vector_fields, d_current_reconstruction_time);
+			return get_velocity_multi_point_vector_fields(
+					multi_point_vector_fields, d_current_velocity_params, d_current_reconstruction_time);
 		}
 
-
 		/**
-		 * Returns the velocities in multi-point vector fields, at the specified time, by appending
-		 * them to them to @a multi_point_vector_fields.
+		 * Returns the velocities, for the specified velocity params and
+		 * current reconstruction time, by appending them to @a multi_point_vector_fields.
 		 */
 		void
 		get_velocity_multi_point_vector_fields(
 				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_vector_fields,
+				const VelocityParams &velocity_params)
+		{
+			return get_velocity_multi_point_vector_fields(
+					multi_point_vector_fields, velocity_params, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the velocities, for the current velocity params and
+		 * specified reconstruction time, by appending them to @a multi_point_vector_fields.
+		 */
+		void
+		get_velocity_multi_point_vector_fields(
+				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_vector_fields,
+				const double &reconstruction_time)
+		{
+			return get_velocity_multi_point_vector_fields(
+					multi_point_vector_fields, d_current_velocity_params, reconstruction_time);
+		}
+
+		/**
+		 * Returns the velocities, for the specified velocity params and
+		 * reconstruction time, by appending them to @a multi_point_vector_fields.
+		 */
+		void
+		get_velocity_multi_point_vector_fields(
+				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_vector_fields,
+				const VelocityParams &velocity_params,
 				const double &reconstruction_time);
+
+
+		//
+		// Getting current velocity params and reconstruction time as set by the layer system.
+		//
+
+		/**
+		 * Gets the current reconstruction time as set by the layer system.
+		 */
+		const double &
+		get_current_reconstruction_time() const
+		{
+			return d_current_reconstruction_time;
+		}
+
+		/**
+		 * Gets the parameters used for calculating velocities.
+		 */
+		const VelocityParams &
+		get_current_velocity_params() const
+		{
+			return d_current_velocity_params;
+		}
 
 
 		/**
@@ -141,11 +196,11 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time);
 
 		/**
-		 * Sets the velocity calculation method.
+		 * Sets the parameters used for calculating velocities.
 		 */
 		void
-		set_solve_velocities_method(
-				VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method);
+		set_current_velocity_params(
+				const VelocityParams &velocity_params);
 
 		/**
 		 * Add a velocity domain layer proxy.
@@ -235,9 +290,9 @@ namespace GPlatesAppLogic
 		double d_current_reconstruction_time;
 
 		/**
-		 * The current method to calculate velocities.
+		 * The current velocity parameters as set by the layer system.
 		 */
-		VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType d_current_solve_velocities_method;
+		VelocityParams d_current_velocity_params;
 
 		/**
 		 * The cached velocities.
@@ -251,15 +306,19 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesMaths::real_t> d_cached_reconstruction_time;
 
 		/**
+		 * Cached velocity parameters.
+		 */
+		boost::optional<VelocityParams> d_cached_velocity_params;
+
+		/**
 		 * Used to notify polling observers that we've been updated.
 		 */
 		mutable GPlatesUtils::SubjectToken d_subject_token;
 
 
-		//! Default constructor.
 		explicit
 		VelocityFieldCalculatorLayerProxy(
-				VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method);
+				const VelocityParams &velocity_params);
 
 
 		/**

@@ -46,6 +46,9 @@ namespace GPlatesGui
 		{
 			RECONSTRUCTED_GEOMETRIES,
 			PROJECTED_GEOMETRIES,
+			IMAGE, // Screenshot of viewport
+			COLOUR_RASTER, // Lat/lon colour raster export
+			NUMERICAL_RASTER, // Lat/lon floating-point raster export
 			VELOCITIES,
 			RESOLVED_TOPOLOGIES, // General (non-CitcomS-specific) resolved topology exports
 			RESOLVED_TOPOLOGIES_CITCOMS, // CitcomS-specific resolved topology exports
@@ -53,7 +56,6 @@ namespace GPlatesGui
 			EQUIVALENT_TOTAL_ROTATION,
 			RELATIVE_STAGE_ROTATION,
 			EQUIVALENT_STAGE_ROTATION,
-			RASTER,
 			FLOWLINES,
 			MOTION_PATHS,
 			CO_REGISTRATION,
@@ -81,6 +83,8 @@ namespace GPlatesGui
 			CSV_COMMA,
 			CSV_SEMICOLON,
 			CSV_TAB,
+
+			// Colour raster/image formats.
 			BMP,
 			JPG,
 			JPEG,
@@ -89,6 +93,13 @@ namespace GPlatesGui
 			TIFF,
 			XBM,
 			XPM,
+
+			// Numerical raster formats.
+			NETCDF,
+			GMT_NETCDF,
+			GEOTIFF,
+			ERDAS_IMAGINE,
+			ERMAPPER,
 
 			CITCOMS_GLOBAL,  // CitcomS global velocity file.
 			TERRA_TEXT,      // Terra velocity text file.

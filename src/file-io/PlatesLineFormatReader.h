@@ -58,7 +58,8 @@ namespace GPlatesFileIO
 				File::Reference &file,
 				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::Gpgim &gpgim,
-				ReadErrorAccumulation &read_errors);
+				ReadErrorAccumulation &read_errors,
+				bool &contains_unsaved_changes);
 	};
 	
 }

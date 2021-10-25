@@ -20,7 +20,7 @@ set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the int
 
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION_MAJOR "1")
-set(GPLATES_PACKAGE_VERSION_MINOR "3")
+set(GPLATES_PACKAGE_VERSION_MINOR "4")
 set(GPLATES_PACKAGE_VERSION_PATCH "0")
 
 # The GPlates package version.
@@ -31,9 +31,9 @@ set(GPLATES_VERSION_STRING "${GPLATES_PACKAGE_NAME} ${GPLATES_PACKAGE_VERSION}")
 
 # The GPlates copyright - string version to be used in a source file.
 set(GPLATES_COPYRIGHT_STRING "")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2013 The University of Sydney, Australia\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2004-2013 California Institute of Technology\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2013 The Geological Survey of Norway\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2014 The University of Sydney, Australia\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2004-2014 California Institute of Technology\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2014 The Geological Survey of Norway\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}The GPlates source code also contains code derived from:\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * ReconTreeViewer (James Boyden)\\n")
@@ -48,9 +48,9 @@ set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}environment, the Inksca
 # The GPlates copyright for html.
 set(GPLATES_HTML_COPYRIGHT_STRING "")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<html><body>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2013 The University of Sydney, Australia<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2004-2013 California Institute of Technology<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2013 The Geological Survey of Norway<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2014 The University of Sydney, Australia<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2004-2014 California Institute of Technology<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2014 The Geological Survey of Norway<br />\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<br />\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates source code also contains code derived from: <ul>\\n")
@@ -69,7 +69,7 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # This is manually set when making GPlates *public* releases.
 # However, when making internal releases or just an ordinary developer build, leave it
 # empty; if it is empty, the revision number is automatically populated for you on build.
-set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "14188")
+set(GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING "15234")
 
 # List the Qt plugins used by GPlates.
 # This is needed for packaging standalone versions of GPlates for a binary installer.
@@ -108,6 +108,11 @@ set(GPLATES_BINARY_INSTALL_EXTRAS "")
 # Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
 # And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
 set(GPLATES_PUBLIC_RELEASE true)
+
+# Set to 'true' to tell GPlates ignore environment variables, such as PYTHONHOME, PYTHONPATH, etc, 
+# when initializing embeded Python interpreter.
+# Put this close to GPLATES_PUBLIC_RELEASE because we usually want to set this to "true" when compiling public release.
+set(GPLATES_IGNORE_PYTHON_ENVIRONMENT true)
 
 # Pre-compiled headers are turned off by default as they are not implicitly supported by CMake.
 # Developers of GPlates may want to turn them on in their 'ConfigUser.cmake' file to speed up build times.

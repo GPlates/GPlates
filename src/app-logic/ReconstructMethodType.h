@@ -25,11 +25,6 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTMETHODTYPE_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTMETHODTYPE_H
 
-#include <boost/optional.hpp>
-
-#include "property-values/EnumerationContent.h"
-
-
 namespace GPlatesAppLogic
 {
 	namespace ReconstructMethod
@@ -48,15 +43,8 @@ namespace GPlatesAppLogic
 		 */
 		enum Type
 		{
-			// The following types *do* correspond to a GPGIM enumeration value for
-			// the enumeration type 'gpml:reconstructionMethod'...
-
 			BY_PLATE_ID,
 			HALF_STAGE_ROTATION,
-
-			// The following types do *not* correspond to a GPGIM enumeration value for
-			// the enumeration type 'gpml:reconstructionMethod'...
-
 			SMALL_CIRCLE,
 			VIRTUAL_GEOMAGNETIC_POLE,
 			FLOWLINE,
@@ -64,23 +52,6 @@ namespace GPlatesAppLogic
 
 			NUM_TYPES
 		};
-
-		/**
-		 * Returns the corresponding string value for the given enumeration.
-		 * @a reconstruction_method must be one of BY_PLATE_ID or
-		 * HALF_STAGE_ROTATION.
-		 */
-		GPlatesPropertyValues::EnumerationContent
-		get_enum_as_string(
-				Type reconstruction_method);
-
-		/**
-		 * Returns the corresponding enumeration value for the given string;
-		 * returns boost::none if @a string is not recognised.
-		 */
-		boost::optional<Type>
-		get_string_as_enum(
-				const GPlatesPropertyValues::EnumerationContent &string);
 	}
 }
 	

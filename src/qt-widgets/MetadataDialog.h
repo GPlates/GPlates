@@ -142,7 +142,6 @@ namespace GPlatesQtWidgets
 					SLOT(handle_edit_finished()));
 		}
 
-		static const QString DELETE_MARK;
 	protected Q_SLOTS:
 	
 		void

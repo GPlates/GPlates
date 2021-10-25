@@ -60,9 +60,14 @@ namespace GPlatesQtWidgets
 
 		enum ActionRequested { LOAD_FILES, SAVE_FILES };
 
+		/**
+		 * If @a show_dialog_on_loading_files is true then this warning dialog will *not* be
+		 * shown when *loading* files.
+		 */
 		explicit
 		GpgimVersionWarningDialog(
 				const GPlatesModel::Gpgim &gpgim,
+				bool show_dialog_on_loading_files = true,
 				QWidget *parent_ = NULL);
 
 		virtual

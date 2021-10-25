@@ -113,33 +113,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The default tile dimension is 512 (or 256 if framebuffer objects not supported - see below).
-		 *
-		 * This size gives us a small enough tile region on the globe to make good use
-		 * of view frustum culling of tiles.
-		 * It's also larger than the default tile sizes elsewhere (256) because each tile requires
-		 * a full render of the reconstructed raster into the tile's view frustum.
-		 * These renders are quite expensive so we don't want too many of them - increasing the
-		 * tile dimension means less visible tiles in the map view.
-		 *
-		 * NOTE: If there's no framebuffer object support then the main framebuffer will be used as a
-		 * render-target and thus will be limited to the size of GPlates' main viewport panel which
-		 * is less than 512x512 by default. So to avoid clipping of our render-textures we'll reduce
-		 * the size of render-targets to 256x256 (GPlates' viewport panel should be bigger than this).
-		 */
-		static
-		std::size_t
-		get_default_tile_texel_dimension(
-				GLRenderer &renderer);
-
-
-		/**
 		 * Creates a @a GLMultiResolutionCubeReconstructedRaster object.
 		 *
-		 * @a tile_texel_dimension is the dimension of each square tile texture (returned by @a get_tile_texture).
-		 * If it is larger than the maximum supported texture dimension then it will be changed to the maximum.
-		 * If 'GL_ARB_texture_non_power_of_two' is not supported then it will be changed to the
-		 * next power-of-two (if it is not already a power-of-two).
+		 * The dimension of tiles is the same as the source reconstructed raster.
 		 *
 		 * If @a cache_tile_textures is true then the tile textures will be cached.
 		 */
@@ -148,15 +124,24 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer,
 				const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &source_reconstructed_raster,
-				std::size_t tile_texel_dimension,
 				bool cache_tile_textures = true)
 		{
 			return non_null_ptr_type(
 					new GLMultiResolutionCubeReconstructedRaster(
 							renderer,
 							source_reconstructed_raster,
-							tile_texel_dimension,
 							cache_tile_textures));
+		}
+
+
+		/**
+		 * Gets the transform that is applied to raster/geometries when rendering into the cube map.
+		 */
+		virtual
+		const GLMatrix &
+		get_world_transform() const
+		{
+			return d_world_transform;
 		}
 
 
@@ -208,7 +193,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the tile texel dimension passed into constructor.
+		 * Returns the tile texel dimension.
 		 */
 		virtual
 		std::size_t
@@ -224,6 +209,7 @@ namespace GPlatesOpenGL
 		 *
 		 * This is the internal format of the texture returned by @a get_tile_texture.
 		 */
+		virtual
 		GLint
 		get_tile_texture_internal_format() const
 		{
@@ -263,9 +249,11 @@ namespace GPlatesOpenGL
 			CubeQuadTreeNode(
 					const GLTransform::non_null_ptr_to_const_type &view_transform_,
 					const GLTransform::non_null_ptr_to_const_type &projection_transform_,
+					unsigned int quad_tree_depth_,
 					const tile_texture_cache_type::volatile_object_ptr_type &tile_texture_) :
 				d_view_transform(view_transform_),
 				d_projection_transform(projection_transform_),
+				d_quad_tree_depth(quad_tree_depth_),
 				d_tile_texture(tile_texture_)
 			{  }
 
@@ -274,6 +262,9 @@ namespace GPlatesOpenGL
 
 			//! Projection transform used to render source raster into current tile.
 			GLTransform::non_null_ptr_to_const_type d_projection_transform;
+
+			//! Used to determine rendering LOD.
+			unsigned int d_quad_tree_depth;
 
 			/**
 			 * Keeps tracks of whether the source data has changed underneath us
@@ -400,7 +391,6 @@ namespace GPlatesOpenGL
 		GLMultiResolutionCubeReconstructedRaster(
 				GLRenderer &renderer,
 				const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &source_reconstructed_raster,
-				std::size_t tile_texel_dimension,
 				bool cache_tile_textures);
 
 		boost::optional<GLTexture::shared_ptr_to_const_type>
@@ -414,6 +404,10 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const CubeQuadTreeNode &tile,
 				TileTexture &tile_texture);
+
+		float
+		get_level_of_detail(
+				const CubeQuadTreeNode &tile) const;
 
 		void
 		create_tile_texture(

@@ -25,17 +25,14 @@
 
 #include <QDebug>
 
-#include "GeoreferencingPage.h"
+#include "RasterGeoreferencingPage.h"
 
 #include "EditAffineTransformGeoreferencingWidget.h"
 #include "ImportRasterDialog.h"
 #include "QtWidgetUtils.h"
 
-#include "global/GPlatesAssert.h"
-#include "global/AssertionFailureException.h"
 
-
-GPlatesQtWidgets::GeoreferencingPage::GeoreferencingPage(
+GPlatesQtWidgets::RasterGeoreferencingPage::RasterGeoreferencingPage(
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing,
 		unsigned int &raster_width,
 		unsigned int &raster_height,
@@ -54,14 +51,14 @@ GPlatesQtWidgets::GeoreferencingPage::GeoreferencingPage(
 	setupUi(this);
 
 	setTitle("Georeferencing");
-	setSubTitle("Specify the location of the raster using lat-lon bounds or an affine transformation.");
+	setSubTitle("Specify the extent of the raster using lat-lon bounds or an affine transformation.");
 
 	QtWidgetUtils::add_widget_to_placeholder(d_georeferencing_widget, georeferencing_placeholder_widget);
 }
 
 
 void
-GPlatesQtWidgets::GeoreferencingPage::initializePage()
+GPlatesQtWidgets::RasterGeoreferencingPage::initializePage()
 {
 	if (d_raster_width != d_last_seen_raster_width ||
 			d_raster_height != d_last_seen_raster_height)
@@ -77,6 +74,7 @@ GPlatesQtWidgets::GeoreferencingPage::initializePage()
 				d_last_seen_raster_height);
 	}
 
+	// Update widget using the current georeferencing.
 	d_georeferencing_widget->refresh();
 }
 

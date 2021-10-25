@@ -181,6 +181,72 @@ GPlatesMaths::BoundingSmallCircle::test_filled_polygon(
 }
 
 
+GPlatesMaths::BoundingSmallCircle
+GPlatesMaths::BoundingSmallCircle::extend(
+		const double &cosine_extend_angle,
+		boost::optional<double> sine_extend_angle) const
+{
+	// Calculate sine if not provided.
+	if (!sine_extend_angle)
+	{
+		const double cosine_extend_angle_squared = cosine_extend_angle * cosine_extend_angle;
+		if (cosine_extend_angle_squared < 1)
+		{
+			sine_extend_angle = std::sqrt(1 - cosine_extend_angle_squared);
+		}
+		else
+		{
+			sine_extend_angle = 0;
+		}
+	}
+
+	return BoundingSmallCircle(
+			get_centre(),
+			// cos(a+b) = cos(a)cos(b) - sin(a)sin(b)
+			get_small_circle_boundary_cosine() * cosine_extend_angle -
+				get_small_circle_boundary_sine() * sine_extend_angle.get(),
+			// sin(a+b) = sin(a)cos(b) + cos(a)sin(b)
+			get_small_circle_boundary_sine() * cosine_extend_angle +
+				get_small_circle_boundary_cosine() * sine_extend_angle.get());
+}
+
+
+GPlatesMaths::BoundingSmallCircle
+GPlatesMaths::BoundingSmallCircle::contract(
+		const double &cosine_contract_angle,
+		boost::optional<double> sine_contract_angle) const
+{
+	// Return a small circle of zero radius if the contract angle is too large.
+	if (cosine_contract_angle < get_small_circle_boundary_cosine())
+	{
+		return BoundingSmallCircle(get_centre(), 1.0, 0.0);
+	}
+
+	// Calculate sine if not provided.
+	if (!sine_contract_angle)
+	{
+		const double cosine_contract_angle_squared = cosine_contract_angle * cosine_contract_angle;
+		if (cosine_contract_angle_squared < 1)
+		{
+			sine_contract_angle = std::sqrt(1 - cosine_contract_angle_squared);
+		}
+		else
+		{
+			sine_contract_angle = 0;
+		}
+	}
+
+	return BoundingSmallCircle(
+			get_centre(),
+			// cos(a-b) = cos(a)cos(b) + sin(a)sin(b)
+			get_small_circle_boundary_cosine() * cosine_contract_angle +
+				get_small_circle_boundary_sine() * sine_contract_angle.get(),
+			// sin(a-b) = sin(a)cos(b) - cos(a)sin(b)
+			get_small_circle_boundary_sine() * cosine_contract_angle -
+				get_small_circle_boundary_cosine() * sine_contract_angle.get());
+}
+
+
 const GPlatesMaths::BoundingSmallCircle
 GPlatesMaths::operator*(
 		const FiniteRotation &rotation,

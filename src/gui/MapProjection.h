@@ -169,7 +169,7 @@ namespace GPlatesGui
 		 */ 
 		void
 		set_central_llp(
-			GPlatesMaths::LatLonPoint &llp);
+				const GPlatesMaths::LatLonPoint &llp);
 
 		/**
 		 * Get the central llp

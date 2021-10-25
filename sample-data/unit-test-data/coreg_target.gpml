@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0322" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
             <gpml:identity>GPlates-f4c7f2e8-1e8c-4ffa-9e7b-fc12c2eb84ce</gpml:identity>
@@ -8,12 +8,18 @@
                 <gpml:ConstantValue>
                     <gpml:value>
                         <gml:Point>
-                            <gml:pos>16.011 -36.95</gml:pos>
+                            <gml:pos>16.010999999999999 -36.950000000000003</gml:pos>
                         </gml:Point>
                     </gpml:value>
                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:centerLineOf>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>102</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
             <gpml:shapefileAttributes>
                 <gpml:KeyValueDictionary>
                     <gpml:element>
@@ -32,12 +38,7 @@
                     </gpml:element>
                 </gpml:KeyValueDictionary>
             </gpml:shapefileAttributes>
-            <gpml:reconstructionPlateId>
-                <gpml:ConstantValue>
-                    <gpml:value>102</gpml:value>
-                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:reconstructionPlateId>
+            <gml:name>point</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -52,7 +53,6 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>point</gml:name>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>
@@ -65,7 +65,7 @@
                         <gml:OrientableCurve>
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">16.2947 -18.3376 -11.5214 -12.4727 </gml:posList>
+                                    <gml:posList gml:dimension="2">16.294699999999999 -18.337600000000002 -11.5214 -12.472700000000001 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -73,6 +73,12 @@
                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:centerLineOf>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
             <gpml:shapefileAttributes>
                 <gpml:KeyValueDictionary>
                     <gpml:element>
@@ -91,12 +97,7 @@
                     </gpml:element>
                 </gpml:KeyValueDictionary>
             </gpml:shapefileAttributes>
-            <gpml:reconstructionPlateId>
-                <gpml:ConstantValue>
-                    <gpml:value>101</gpml:value>
-                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:reconstructionPlateId>
+            <gml:name>polyline</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -111,7 +112,6 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>polyline</gml:name>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>
@@ -124,7 +124,7 @@
                         <gml:Polygon>
                             <gml:exterior>
                                 <gml:LinearRing>
-                                    <gml:posList gml:dimension="2">-0.544955 9.16733 20.0232 15.1097 28.3955 -1.70382 -0.544955 9.16733 </gml:posList>
+                                    <gml:posList gml:dimension="2">-0.54495499999999997 9.1673299999999998 20.023199999999999 15.109700000000002 28.395499999999998 -1.7038199999999999 -0.54495499999999997 9.1673299999999998 </gml:posList>
                                 </gml:LinearRing>
                             </gml:exterior>
                         </gml:Polygon>
@@ -138,6 +138,7 @@
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
+            <gml:name>polygon</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -152,34 +153,12 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>polygon</gml:name>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
             <gpml:identity>GPlates-1daa710c-f8e2-416e-a928-016eddf7caa8</gpml:identity>
             <gpml:revision>GPlates-9af6ede0-9c53-46f0-8412-8281b7968595</gpml:revision>
-            <gpml:reconstructionPlateId>
-                <gpml:ConstantValue>
-                    <gpml:value>101</gpml:value>
-                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:reconstructionPlateId>
-            <gml:validTime>
-                <gml:TimePeriod>
-                    <gml:begin>
-                        <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
-                        </gml:TimeInstant>
-                    </gml:begin>
-                    <gml:end>
-                        <gml:TimeInstant>
-                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
-                        </gml:TimeInstant>
-                    </gml:end>
-                </gml:TimePeriod>
-            </gml:validTime>
-            <gml:name>multipoints</gml:name>
             <gpml:centerLineOf>
                 <gpml:ConstantValue>
                     <gpml:value>
@@ -196,7 +175,7 @@
                             </gml:pointMember>
                             <gml:pointMember>
                                 <gml:Point>
-                                    <gml:pos>8.50445 -6.31236</gml:pos>
+                                    <gml:pos>8.5044500000000003 -6.31236</gml:pos>
                                 </gml:Point>
                             </gml:pointMember>
                         </gml:MultiPoint>
@@ -204,18 +183,54 @@
                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:MultiPoint</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:centerLineOf>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gml:name>multipoints</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
             <gpml:identity>GPlates-2f49ccbb-456f-4bf7-9c36-4c4b361d173e</gpml:identity>
             <gpml:revision>GPlates-cac99e91-f042-4f3d-9d1c-346b688d8508</gpml:revision>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:Polygon>
+                            <gml:exterior>
+                                <gml:LinearRing>
+                                    <gml:posList gml:dimension="2">27.777799999999999 -54.518799999999999 37.840599999999995 34.68480000000001 0.81744799999999995 48.51039999999999 -29.0168 66.395600000000002 -34.796700000000001 19.802600000000002 -28.705700000000004 -43.304299999999998 27.777799999999999 -54.518799999999999 </gml:posList>
+                                </gml:LinearRing>
+                            </gml:exterior>
+                        </gml:Polygon>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Polygon</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
                     <gpml:value>0</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
+            <gml:name>Huge_polygon</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -230,14 +245,19 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>Huge_polygon</gml:name>
+        </gpml:UnclassifiedFeature>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:UnclassifiedFeature>
+            <gpml:identity>GPlates-c0789216-2f4b-4f7f-b6fa-1a3ad7ed862b</gpml:identity>
+            <gpml:revision>GPlates-c200731a-029e-44bb-87b2-28785ffb4b18</gpml:revision>
             <gpml:centerLineOf>
                 <gpml:ConstantValue>
                     <gpml:value>
                         <gml:Polygon>
                             <gml:exterior>
                                 <gml:LinearRing>
-                                    <gml:posList gml:dimension="2">27.7778 -54.5188 37.8406 34.6848 0.817448 48.5104 -29.0168 66.3956 -34.7967 19.8026 -28.7057 -43.3043 27.7778 -54.5188 </gml:posList>
+                                    <gml:posList gml:dimension="2">16.010999999999999 8.9658300000000004 9.5811600000000006 10.982100000000001 7.92699 15.740500000000003 11.7996 22.117799999999999 16.010999999999999 8.9658300000000004 </gml:posList>
                                 </gml:LinearRing>
                             </gml:exterior>
                         </gml:Polygon>
@@ -245,18 +265,13 @@
                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Polygon</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:centerLineOf>
-        </gpml:UnclassifiedFeature>
-    </gml:featureMember>
-    <gml:featureMember>
-        <gpml:UnclassifiedFeature>
-            <gpml:identity>GPlates-c0789216-2f4b-4f7f-b6fa-1a3ad7ed862b</gpml:identity>
-            <gpml:revision>GPlates-c200731a-029e-44bb-87b2-28785ffb4b18</gpml:revision>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
                     <gpml:value>0</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
+            <gml:name>polygon_50</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -271,21 +286,6 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>polygon_50</gml:name>
-            <gpml:centerLineOf>
-                <gpml:ConstantValue>
-                    <gpml:value>
-                        <gml:Polygon>
-                            <gml:exterior>
-                                <gml:LinearRing>
-                                    <gml:posList gml:dimension="2">16.011 8.96583 9.58116 10.9821 7.92699 15.7405 11.7996 22.1178 16.011 8.96583 </gml:posList>
-                                </gml:LinearRing>
-                            </gml:exterior>
-                        </gml:Polygon>
-                    </gpml:value>
-                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Polygon</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:centerLineOf>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
 </gpml:FeatureCollection>

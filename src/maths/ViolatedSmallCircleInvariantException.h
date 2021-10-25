@@ -43,11 +43,14 @@ namespace GPlatesMaths
 			 * @param msg is a description of the conditions
 			 * which cause the invariant to be violated.
 			 */
-			ViolatedSmallCircleInvariantException(const char *msg)
-				: _msg(msg) {  }
+			ViolatedSmallCircleInvariantException(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const char *msg)
+				:MathematicalException(exception_source), 
+				_msg(msg) {  }
 
 			virtual
-			~ViolatedSmallCircleInvariantException() {  }
+			~ViolatedSmallCircleInvariantException() throw() {  }
 
 		protected:
 			virtual const char *

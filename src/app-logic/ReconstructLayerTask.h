@@ -59,6 +59,7 @@ namespace GPlatesAppLogic
 				public LayerTaskParams
 		{
 		public:
+
 			/**
 			 * Returns the 'const' reconstruct parameters.
 			 */
@@ -68,13 +69,13 @@ namespace GPlatesAppLogic
 			/**
 			 * Returns the reconstruct parameters for modification.
 			 *
-			 * NOTE: This will cause the flush any cached reconstructed feature geometries
-			 * in this layer.
+			 * NOTE: This will flush any cached reconstructed feature geometries in this layer.
 			 */
 			ReconstructParams &
 			get_reconstruct_params();
 
 		private:
+
 			ReconstructParams d_reconstruct_params;
 
 			/**

@@ -26,9 +26,8 @@
 #ifndef GPLATES_OPENGL_GLSTATESETKEYS_H
 #define GPLATES_OPENGL_GLSTATESETKEYS_H
 
-#include "utils/non_null_intrusive_ptr.h"
+#include <opengl/OpenGL.h>
 #include "utils/ReferenceCount.h"
-
 
 namespace GPlatesOpenGL
 {

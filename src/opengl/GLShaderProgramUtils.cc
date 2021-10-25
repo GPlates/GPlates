@@ -22,6 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -34,45 +35,6 @@
 
 #include "GLProgramObject.h"
 #include "GLRenderer.h"
-
-#include "file-io/ErrorOpeningFileForReadingException.h"
-
-
-GPlatesOpenGL::GLShaderProgramUtils::ShaderSource::ShaderSource(
-		const char *shader_source,
-		GLShaderObject::ShaderVersion shader_version) :
-	d_shader_version(shader_version),
-	d_shader_source(1, QByteArray::fromRawData(shader_source, qstrlen(shader_source)))
-{
-}
-
-
-GPlatesOpenGL::GLShaderProgramUtils::ShaderSource::ShaderSource(
-		const QByteArray &shader_source,
-		GLShaderObject::ShaderVersion shader_version) :
-	d_shader_version(shader_version),
-	d_shader_source(1, shader_source)
-{
-}
-
-
-QByteArray
-GPlatesOpenGL::GLShaderProgramUtils::ShaderSource::get_shader_source_from_file(
-		const QString& shader_source_file_name)
-{
-	QFile shader_source_file(shader_source_file_name);
-	if (!shader_source_file.open(QIODevice::ReadOnly | QIODevice::Text))
-	{
-		throw GPlatesFileIO::ErrorOpeningFileForReadingException(
-				GPLATES_EXCEPTION_SOURCE,
-				shader_source_file.fileName());
-	}
-
-	// Read the entire file.
-	const QByteArray shader_source = shader_source_file.readAll();
-
-	return shader_source;
-}
 
 
 GPlatesOpenGL::GLShaderProgramUtils::GeometryShaderProgramParameters::GeometryShaderProgramParameters(
@@ -89,7 +51,7 @@ GPlatesOpenGL::GLShaderProgramUtils::GeometryShaderProgramParameters::GeometrySh
 boost::optional<GPlatesOpenGL::GLShaderObject::shared_ptr_type>
 GPlatesOpenGL::GLShaderProgramUtils::compile_fragment_shader(
 		GLRenderer &renderer,
-		const ShaderSource &fragment_shader_source)
+		const GLShaderSource &fragment_shader_source)
 {
 	// Check for support first.
 	if (!GLShaderObject::is_supported(renderer, GL_FRAGMENT_SHADER_ARB))
@@ -99,10 +61,7 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_fragment_shader(
 
 	// Create and compile the fragment shader source.
 	GLShaderObject::shared_ptr_type fragment_shader = GLShaderObject::create(renderer, GL_FRAGMENT_SHADER_ARB);
-	fragment_shader->gl_shader_source(
-			renderer,
-			fragment_shader_source.get_shader_source(),
-			fragment_shader_source.get_shader_version());
+	fragment_shader->gl_shader_source(renderer, fragment_shader_source);
 	if (!fragment_shader->gl_compile_shader(renderer))
 	{
 		return boost::none;
@@ -115,7 +74,7 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_fragment_shader(
 boost::optional<GPlatesOpenGL::GLShaderObject::shared_ptr_type>
 GPlatesOpenGL::GLShaderProgramUtils::compile_vertex_shader(
 		GLRenderer &renderer,
-		const ShaderSource &vertex_shader_source)
+		const GLShaderSource &vertex_shader_source)
 {
 	// Check for support first.
 	if (!GLShaderObject::is_supported(renderer, GL_VERTEX_SHADER_ARB))
@@ -125,10 +84,7 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_vertex_shader(
 
 	// Create and compile the vertex shader source.
 	GLShaderObject::shared_ptr_type vertex_shader = GLShaderObject::create(renderer, GL_VERTEX_SHADER_ARB);
-	vertex_shader->gl_shader_source(
-			renderer,
-			vertex_shader_source.get_shader_source(),
-			vertex_shader_source.get_shader_version());
+	vertex_shader->gl_shader_source(renderer, vertex_shader_source);
 	if (!vertex_shader->gl_compile_shader(renderer))
 	{
 		return boost::none;
@@ -141,7 +97,7 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_vertex_shader(
 boost::optional<GPlatesOpenGL::GLShaderObject::shared_ptr_type>
 GPlatesOpenGL::GLShaderProgramUtils::compile_geometry_shader(
 		GLRenderer &renderer,
-		const ShaderSource &geometry_shader_source)
+		const GLShaderSource &geometry_shader_source)
 {
 #ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
 
@@ -153,10 +109,7 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_geometry_shader(
 
 	// Create and compile the geometry shader source.
 	GLShaderObject::shared_ptr_type geometry_shader = GLShaderObject::create(renderer, GL_GEOMETRY_SHADER_EXT);
-	geometry_shader->gl_shader_source(
-			renderer,
-			geometry_shader_source.get_shader_source(),
-			geometry_shader_source.get_shader_version());
+	geometry_shader->gl_shader_source(renderer, geometry_shader_source);
 	if (!geometry_shader->gl_compile_shader(renderer))
 	{
 		return boost::none;
@@ -176,7 +129,7 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_geometry_shader(
 boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
 GPlatesOpenGL::GLShaderProgramUtils::link_fragment_program(
 		GLRenderer &renderer,
-		const GLShaderObject &fragment_shader)
+		const GLShaderObject::shared_ptr_to_const_type &fragment_shader)
 {
 	// Check for support first.
 	if (!GLProgramObject::is_supported(renderer))
@@ -199,8 +152,8 @@ GPlatesOpenGL::GLShaderProgramUtils::link_fragment_program(
 boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
 GPlatesOpenGL::GLShaderProgramUtils::link_vertex_fragment_program(
 		GLRenderer &renderer,
-		const GLShaderObject &vertex_shader,
-		const GLShaderObject &fragment_shader)
+		const GLShaderObject::shared_ptr_to_const_type &vertex_shader,
+		const GLShaderObject::shared_ptr_to_const_type &fragment_shader)
 {
 	// Check for support first.
 	if (!GLProgramObject::is_supported(renderer))
@@ -224,9 +177,9 @@ GPlatesOpenGL::GLShaderProgramUtils::link_vertex_fragment_program(
 boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
 GPlatesOpenGL::GLShaderProgramUtils::link_vertex_geometry_fragment_program(
 		GLRenderer &renderer,
-		const GLShaderObject &vertex_shader,
-		const GLShaderObject &geometry_shader,
-		const GLShaderObject &fragment_shader,
+		const GLShaderObject::shared_ptr_to_const_type &vertex_shader,
+		const GLShaderObject::shared_ptr_to_const_type &geometry_shader,
+		const GLShaderObject::shared_ptr_to_const_type &fragment_shader,
 		const GeometryShaderProgramParameters &geometry_shader_program_parameters)
 {
 	// Check for support first.
@@ -276,7 +229,7 @@ GPlatesOpenGL::GLShaderProgramUtils::link_vertex_geometry_fragment_program(
 boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
 GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_fragment_program(
 		GLRenderer &renderer,
-		const ShaderSource &fragment_shader_source)
+		const GLShaderSource &fragment_shader_source)
 {
 	// First create and compile the fragment shader source.
 	boost::optional<GLShaderObject::shared_ptr_type> fragment_shader =
@@ -286,15 +239,15 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_fragment_program(
 		return boost::none;
 	}
 
-	return link_fragment_program(renderer, *fragment_shader.get());
+	return link_fragment_program(renderer, fragment_shader.get());
 }
 
 
 boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
 GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 		GLRenderer &renderer,
-		const ShaderSource &vertex_shader_source,
-		const ShaderSource &fragment_shader_source)
+		const GLShaderSource &vertex_shader_source,
+		const GLShaderSource &fragment_shader_source)
 {
 	// Create and compile the vertex shader source.
 	boost::optional<GLShaderObject::shared_ptr_type> vertex_shader =
@@ -312,16 +265,16 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 		return boost::none;
 	}
 
-	return link_vertex_fragment_program(renderer, *vertex_shader.get(), *fragment_shader.get());
+	return link_vertex_fragment_program(renderer, vertex_shader.get(), fragment_shader.get());
 }
 
 
 boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
 GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_geometry_fragment_program(
 		GLRenderer &renderer,
-		const ShaderSource &vertex_shader_source,
-		const ShaderSource &geometry_shader_source,
-		const ShaderSource &fragment_shader_source,
+		const GLShaderSource &vertex_shader_source,
+		const GLShaderSource &geometry_shader_source,
+		const GLShaderSource &fragment_shader_source,
 		const GeometryShaderProgramParameters &geometry_shader_program_parameters)
 {
 	// Create and compile the vertex shader source.
@@ -350,8 +303,8 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_geometry_fragment_p
 
 	return link_vertex_geometry_fragment_program(
 			renderer,
-			*vertex_shader.get(),
-			*geometry_shader.get(),
-			*fragment_shader.get(),
+			vertex_shader.get(),
+			geometry_shader.get(),
+			fragment_shader.get(),
 			geometry_shader_program_parameters);
 }

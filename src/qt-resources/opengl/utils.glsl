@@ -97,6 +97,45 @@ bilinearly_interpolate(
 	return mix(mix(tex11, tex21, interp.x), mix(tex12, tex22, interp.x), interp.y);
 }
 
+/*
+ * Bilinearly interpolate a data raster where the data is in the red channel and
+ * the coverage is in the green channel.
+ *
+ * This function weights the bilinear filter according to the coverage texels.
+ *
+ * This RG format is used for floating-point rasters in GPlates.
+ */
+vec4
+bilinearly_interpolate_data_coverge_RG(
+		sampler2D tex_sampler,
+		vec2 tex_coords,
+		vec4 tex_dimensions)
+{
+	// The 2x2 texture sample to interpolate.
+	vec4 tex11;
+	vec4 tex21;
+	vec4 tex12;
+	vec4 tex22;
+
+	// The bilinear interpolation coefficients.
+	vec2 interp;
+
+	// Call the other overload of 'bilinearly_interpolate()'.
+	bilinearly_interpolate(
+		tex_sampler, tex_coords, tex_dimensions, tex11, tex21, tex12, tex22, interp);
+	
+	// Multiple the data (in red channel) by coverage (in green channel) for each sample.
+	tex11.r *= tex11.g;
+	tex21.r *= tex21.g;
+	tex12.r *= tex12.g;
+	tex22.r *= tex22.g;
+
+	// Bilinearly interpolate the four texels.
+	vec4 result = mix(mix(tex11, tex21, interp.x), mix(tex12, tex22, interp.x), interp.y);
+	
+	return vec4(result.r / result.g, result.gba);
+}
+
 
 /*
  * Shader source code to rotate an (x,y,z) vector by a quaternion.
@@ -121,7 +160,7 @@ rotate_vector_by_quaternion(
 		vec4 q,
 		vec3 v)
 {
-   return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+	return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
 }
 
 
@@ -135,9 +174,10 @@ lambert_diffuse_lighting(
 		vec3 light_direction,
 		vec3 normal)
 {
-	// The light direction typically needs to be normalised because it's interpolated between vertices.
+	// The light direction typically needs to be normalised because it's interpolated between vertices
+	// (if using tangent-space lighting).
 	// The surface normal might also need to be normalised because it's either interpolated between
-	// vertices (no normal map) or bilinearly interpolated texture lookup (with normal map).
+	// vertices (no normal map) or bilinearly interpolated during texture (normal map) lookup.
 	// We can save one expensive 'normalize' by rearranging...
 	// Lambert = dot(normalize(N),normalize(L))
 	//		 = dot(N/|N|,L/|L|) 
@@ -166,4 +206,109 @@ mix_ambient_with_diffuse_lighting(
 	// NOTE: Using float instead of integer parameters to 'mix' otherwise driver compiler
 	// crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.
 	return mix(diffuse_lighting, 1.0, light_ambient_contribution);
+}
+
+/*
+ * Colour space conversion from RGB to HSV.
+ *
+ * The hue channel of HSV is normalised to the range [0,1].
+ *
+ * References include wikipedia (http://en.wikipedia.org/wiki/HSL_and_HSV),
+ * the Nvidia shader library (http://developer.download.nvidia.com/shaderlibrary/packages/post_RGB_to_HSV.fx.zip), and
+ * http://chilliant.blogspot.com.au/2010/11/rgbhsv-in-hlsl.html
+ */
+vec3
+rgb_to_hsv(
+		vec3 rgb)
+{
+	vec3 hsv = vec3(0);
+	
+	float min_rgb_channel = min(rgb.r, min(rgb.g, rgb.b));
+	float max_rgb_channel = max(rgb.r, max(rgb.g, rgb.b));
+	float chroma = max_rgb_channel - min_rgb_channel;
+	hsv.z = max_rgb_channel; // value
+	
+	if (chroma != 0)
+	{
+		hsv.y = chroma / max_rgb_channel; // saturation
+		vec3 d = (((vec3(max_rgb_channel) - rgb) / 6.0) + vec3(chroma / 2.0)) / chroma;
+		
+		if (rgb.x == max_rgb_channel)
+		{
+			hsv.x = d.z - d.y; // hue
+		}
+		else if (rgb.y == max_rgb_channel)
+		{
+			hsv.x = (1.0 / 3.0) + d.x - d.z; // hue
+		}
+		else if (rgb.z == max_rgb_channel)
+		{
+			hsv.x = (2.0 / 3.0) + d.y - d.x; // hue
+		}
+		
+		// Handle hue wrap around.
+		if (hsv.x < 0.0)
+		{
+			hsv.x += 1.0;
+		}
+		if (hsv.x > 1.0)
+		{
+			hsv.x -= 1.0;
+		}
+	}
+
+	return hsv;
+}
+
+/*
+ * Colour space conversion from HSV to RGB.
+ *
+ * The hue channel of HSV is normalised to the range [0,1].
+ *
+ * References include wikipedia (http://en.wikipedia.org/wiki/HSL_and_HSV),
+ * the Nvidia shader library (http://developer.download.nvidia.com/shaderlibrary/packages/post_RGB_to_HSV.fx.zip), and
+ * http://chilliant.blogspot.com.au/2010/11/rgbhsv-in-hlsl.html
+ */
+vec3
+hsv_to_rgb(
+		vec3 hsv)
+{
+	vec3 rgb = vec3(hsv.z);
+	
+	if (hsv.y != 0)
+	{
+		float h = hsv.x * 6;
+		float i = floor(h);
+		
+		float var_1 = hsv.z * (1.0 - hsv.y);
+		float var_2 = hsv.z * (1.0 - hsv.y * (h - i));
+		float var_3 = hsv.z * (1.0 - hsv.y * (1 - (h - i)));
+		
+		if (i == 0)
+		{
+			rgb = vec3(hsv.z, var_3, var_1);
+		}
+		else if (i == 1)
+		{
+			rgb = vec3(var_2, hsv.z, var_1);
+		}
+		else if (i == 2)
+		{
+			rgb = vec3(var_1, hsv.z, var_3);
+		}
+		else if (i == 3)
+		{
+			rgb = vec3(var_1, var_2, hsv.z);
+		}
+		else if (i == 4)
+		{
+			rgb = vec3(var_3, var_1, hsv.z);
+		}
+		else
+		{
+			rgb = vec3(hsv.z, var_1, var_2);
+		}
+	}
+
+	return rgb;
 }

@@ -183,6 +183,7 @@ namespace
 	get_global_header_lines(
 		std::vector<QString> &global_header_lines,
 		const GPlatesFileIO::GMTFormatMotionPathsExport::referenced_files_collection_type referenced_files,
+		const GPlatesFileIO::GMTFormatMotionPathsExport::referenced_files_collection_type active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &anchor_plate_id,
 		const double &reconstruction_time)
 	{
@@ -197,27 +198,8 @@ namespace
 		global_header_lines.push_back(
 			QString("reconstructionTime ") + QString::number(reconstruction_time));
 
-		// Print the list of reconstruction filenames that the exported
-		// geometries came from.
-		QStringList filenames;
-		GPlatesFileIO::GMTFormatMotionPathsExport::referenced_files_collection_type::const_iterator file_iter;
-		for (file_iter = referenced_files.begin();
-			file_iter != referenced_files.end();
-			++file_iter)
-		{
-			const GPlatesFileIO::File::Reference *file = *file_iter;
-
-			// Some files might not actually exist yet if the user created a new
-			// feature collection internally and hasn't saved it to file yet.
-			if (!GPlatesFileIO::file_exists(file->get_file_info()))
-			{
-				continue;
-			}
-
-			filenames << file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
-		}
-
-		global_header_lines.push_back(filenames.join(" "));	
+		GPlatesFileIO::GMTFormatHeader::add_filenames_to_header(global_header_lines,referenced_files);
+		GPlatesFileIO::GMTFormatHeader::add_filenames_to_header(global_header_lines,active_reconstruction_files);
 	}
 
 	void
@@ -286,6 +268,7 @@ GPlatesFileIO::GMTFormatMotionPathsExport::export_motion_paths(
 	const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 	const QFileInfo &qfile_info, 
 	const referenced_files_collection_type &referenced_files, 
+	const referenced_files_collection_type &active_reconstruction_files,
 	const GPlatesModel::integer_plate_id_type &anchor_plate_id, 
 	const double &reconstruction_time)
 {
@@ -303,7 +286,8 @@ GPlatesFileIO::GMTFormatMotionPathsExport::export_motion_paths(
 
 	std::vector<QString> global_header_lines;
 	get_global_header_lines(global_header_lines,
-		referenced_files,anchor_plate_id,reconstruction_time);
+		referenced_files,active_reconstruction_files,
+		anchor_plate_id,reconstruction_time);
 
 	GMTHeaderPrinter gmt_header_printer;
 	gmt_header_printer.print_global_header_lines(output_stream,global_header_lines);

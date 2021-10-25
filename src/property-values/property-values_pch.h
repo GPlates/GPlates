@@ -63,7 +63,6 @@
 #include <boost/type_traits/remove_const.hpp>
 #endif // __WINDOWS__
 #include <QtXml/QXmlStreamReader>
-//#include <Magick++.h>
 #ifdef __WINDOWS__
 #include <boost/utility/enable_if.hpp>
 #endif // __WINDOWS__

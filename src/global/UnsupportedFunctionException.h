@@ -50,7 +50,7 @@ namespace GPlatesGlobal
 				Exception(exception_source),
 				_fname(fname)
 			{  }
-
+			~UnsupportedFunctionException() throw (){}
 		protected:
 			virtual const char *
 			exception_name() const {

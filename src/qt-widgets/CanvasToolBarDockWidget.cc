@@ -109,6 +109,9 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::CanvasToolBarDockWidget(
 	// Create a tool bar for each canvas tools workflow and populate the tool actions.
 	set_up_workflows();
 
+	// Orient the workflow tab icons - they need to be rotated 90 degrees clockwise.
+	set_up_workflow_tab_icons();
+
 	// Setup canvas tool shortcuts separately from their equivalent QActions.
 	// This is because we can't have the same shortcut for two or more QActions -
 	// which can occur when the same tool type is used by multiple workflows.
@@ -181,6 +184,12 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_view_workflow()
 			view_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
 			action_Zoom_Globe);
+#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
+	add_tool_action_to_workflow(
+			view_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_CHANGE_LIGHTING,
+			action_Change_Lighting);
+#endif
 }
 
 
@@ -323,6 +332,10 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_pole_manipulation_workflow()
 			action_Click_Geometry);
 	add_tool_action_to_workflow(
 			pole_manipulation_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_POLE,
+			action_Move_Pole);
+	add_tool_action_to_workflow(
+			pole_manipulation_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE,
 			action_Manipulate_Pole);
 }
@@ -406,9 +419,9 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::add_tool_action_to_workflow(
 
 	// NOTE: We can't have the same shortcut for two or more QActions which can occur when
 	// the same tool type is used by multiple workflows.
-	// To get around this we will use the shortcuts on the original (unique) QActions but they
-	// won't be visible - instead, when they are triggered by a keyboard shortcut, we will determine
-	// which workflow is currently active to determine which of the  multiple canvas tools
+	// To get around this we will use the shortcuts on the original (unique) QActions but those QAction
+	// instances won't be visible - instead, when they are triggered by a keyboard shortcut, we will
+	// determine which workflow is currently active to determine which of the  multiple canvas tools
 	// (using that same shortcut) we should target.
 	// This will be done in "set_up_canvas_tool_shortcuts()".
 #if 0
@@ -432,13 +445,46 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::add_tool_action_to_workflow(
 			tool_action, SIGNAL(triggered()),
 			this, SLOT(handle_tool_action_triggered()));
 
-	// For the GPlates 1.3 *public* release we are disabling the 'Build New Network Topology' tool
+	// For the GPlates 1.4 *public* release we are disabling the 'Build New Network Topology' tool
 	// unless a command-line switch is activated.
 	if (original_tool_action == action_Build_Network_Topology &&
 		!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::deformation()))
 	{
 		// Make invisible so user cannot select it.
 		tool_action->setVisible(false);
+	}
+}
+
+
+void
+GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_workflow_tab_icons()
+{
+	// Set the icon size in each toolbar (in each group tab).
+	for (unsigned int workflow_index = 0; workflow_index < d_workflows.size(); ++workflow_index)
+	{
+		// Get the current workflow's tab.
+		const int workflow_tab_index = d_workflows[workflow_index].tab_index;
+
+		// Get the current icon size.
+		const QSize tool_icon_size = tab_widget_canvas_tools->iconSize();
+
+		// Get the enabled/disabled icon pixmap from the existing workflow tab icon.
+		const QPixmap un_rotated_icon_pixmap =
+				tab_widget_canvas_tools->tabIcon(workflow_tab_index).pixmap(tool_icon_size, QIcon::Normal);
+
+		// Rotate the pixmap 90 degree clockwise.
+		// We need to do this because the tab widget is vertical instead of horizontal and so placing
+		// icons on the tabs has the effect of rotating them 90 degrees counter-clockwise.
+		// So we need to undo that effect.
+		QMatrix rotate_90_degree_clockwise;
+		rotate_90_degree_clockwise.rotate(90);
+		const QPixmap rotated_icon_pixmap = un_rotated_icon_pixmap.transformed(rotate_90_degree_clockwise);
+
+		// The rotated icon.
+		const QIcon tab_icon(rotated_icon_pixmap);
+		
+		// Set the icon back onto the tab widget.
+		tab_widget_canvas_tools->setTabIcon(workflow_tab_index, tab_icon);
 	}
 }
 
@@ -455,6 +501,9 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_tool_shortcuts()
 	// (using that same shortcut) we should target.
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE, action_Drag_Globe);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE, action_Zoom_Globe);
+#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CHANGE_LIGHTING, action_Change_Lighting);
+#endif
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MEASURE_DISTANCE, action_Measure_Distance);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY, action_Click_Geometry);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE, action_Digitise_New_Polyline);
@@ -465,13 +514,14 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_tool_shortcuts()
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_INSERT_VERTEX, action_Insert_Vertex);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_SPLIT_FEATURE, action_Split_Feature);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE, action_Manipulate_Pole);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_POLE, action_Move_Pole);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY, action_Build_Line_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY, action_Build_Boundary_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_NETWORK_TOPOLOGY, action_Build_Network_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_EDIT_TOPOLOGY, action_Edit_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE, action_Create_Small_Circle);
 
-	// For the GPlates 1.3 *public* release we are disabling the 'Build New Network Topology' tool
+	// For the GPlates 1.4 *public* release we are disabling the 'Build New Network Topology' tool
 	// unless a command-line switch is activated.
 	if (!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::deformation()))
 	{
@@ -788,11 +838,14 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::handle_canvas_tool_enabled(
 	// Enable or disable the tool action.
 	tool_action->setEnabled(enable);
 
+	// We no longer copy the icon of the selected canvas tool to the workflow tab.
+#if 0
 	// If the tool is the selected tool in its workflow then copy its icon to its workflow tab.
 	if (d_canvas_tool_workflows.get_selected_canvas_tool_in_workflow(workflow) == tool)
 	{
 		copy_canvas_tool_icon_to_workflow_tab(workflow, tool);
 	}
+#endif
 }
 
 
@@ -823,8 +876,11 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::handle_canvas_tool_activated(
 	tab_widget_canvas_tools->setCurrentIndex(d_workflows[workflow].tab_index);
 	connect_to_workflow_tab_changed(true);
 
+	// We no longer copy the icon of the selected canvas tool to the workflow tab.
+#if 0
 	// Copy the icon of the newly activated canvas tool to its workflow tab.
 	copy_canvas_tool_icon_to_workflow_tab(workflow, tool);
+#endif
 }
 
 
@@ -864,50 +920,6 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::get_tool_action(
 			GPLATES_ASSERTION_SOURCE);
 
 	return tool_action;
-}
-
-
-void
-GPlatesQtWidgets::CanvasToolBarDockWidget::copy_canvas_tool_icon_to_workflow_tab(
-		GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
-		GPlatesGui::CanvasToolWorkflows::ToolType tool)
-{
-	// Find the tool action corresponding to the specified workflow/tool.
-	QAction *tool_action = get_tool_action(workflow, tool);
-
-	// Get the specified workflow's tab.
-	const int workflow_tab_index = d_workflows[workflow].tab_index;
-
-	// Get the current icon size.
-	const QSize tool_icon_size = tab_widget_canvas_tools->iconSize();
-
-#if 1
-	// Currently we always use a non-greyed-out icon on the workflow *tab*.
-	// This avoids the confusing the user into thinking they cannot select the workflow tab.
-	const QIcon::Mode icon_mode = QIcon::Normal;
-#else
-	// The icon mode depends on whether the tool is currently enabled or disabled.
-	const QIcon::Mode icon_mode = d_canvas_tool_workflows.is_canvas_tool_enabled(workflow, tool)
-			? QIcon::Normal
-			: QIcon::Disabled;
-#endif
-
-	// Get the enabled/disabled icon pixmap from the canvas tool icon.
-	const QPixmap un_rotated_icon_pixmap = tool_action->icon().pixmap(tool_icon_size, icon_mode);
-
-	// Rotate the pixmap 90 degree clockwise.
-	// We need to do this because the tab widget is vertical instead of horizontal and so placing
-	// icons on the tabs has the effect of rotating them 90 degrees counter-clockwise.
-	// So we need to undo that effect.
-	QMatrix rotate_90_degree_clockwise;
-	rotate_90_degree_clockwise.rotate(90);
-	const QPixmap rotated_icon_pixmap = un_rotated_icon_pixmap.transformed(rotate_90_degree_clockwise);
-
-	// The enabled/disabled rotated icon.
-	const QIcon tab_icon(rotated_icon_pixmap);
-	
-	// Set the icon on the tab widget.
-	tab_widget_canvas_tools->setTabIcon(workflow_tab_index, tab_icon);
 }
 
 

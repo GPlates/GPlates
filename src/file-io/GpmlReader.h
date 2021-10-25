@@ -58,6 +58,7 @@ namespace GPlatesFileIO
 				const GPlatesModel::Gpgim &gpgim,
 				const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
 				ReadErrorAccumulation &read_errors,
+				bool &contains_unsaved_changes,
 				bool use_gzip = false);
 
 		static

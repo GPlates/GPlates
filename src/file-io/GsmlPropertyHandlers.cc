@@ -45,13 +45,14 @@
 #include "model/PropertyValue.h"
 #include "model/XmlNode.h"
 
+#include "property-values/CoordinateTransformation.h"
 #include "property-values/GmlLineString.h"
+#include "property-values/SpatialReferenceSystem.h"
 #include "property-values/TextContent.h"
 #include "property-values/UninterpretedPropertyValue.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
 
-#include "utils/SpatialReferenceSystem.h"
 #include "utils/XQueryUtils.h"
 
 
@@ -156,12 +157,10 @@ namespace
 		return (name.contains("EPSG",Qt::CaseInsensitive) && name.contains("4326"));
 	}
 
-	using GPlatesUtils::SpatialReferenceSystem::Dimension;
-	
 	/*
 	* Find the dimension of Spatial Reference System from xml data buffer.
 	*/
-	const Dimension
+	unsigned int
 	find_srs_dimension(
 			const QByteArray& buf)
 	{
@@ -182,10 +181,10 @@ namespace
 				attr.name().toString() == "srsDimension" && 
 				attr.value().toString() == "3")
 				{
-					return Dimension::threeD();
+					return 3;
 				}
 		}
-		return Dimension::twoD();
+		return 2;
 	}
 
 	/*
@@ -196,8 +195,6 @@ namespace
 	convert_to_epsg_4326(
 			QByteArray& buf)
 	{
-		using namespace GPlatesUtils::SpatialReferenceSystem;
-
 		QString srs_name = get_srs_name(buf);
 		
 		if(srs_name.size() == 0)
@@ -216,7 +213,7 @@ namespace
 		static const QString posList_end = "</gml:posList>";
 		
 		int idx = 0, idx_begin = 0, idx_end = 0;
-		Dimension srs_dimension = Dimension::twoD(); //by default, 2D
+		unsigned int srs_dimension = 2; //by default, 2D
 
 		idx = buf.indexOf(posList_begin.toUtf8());
 		while(idx != -1)
@@ -236,7 +233,7 @@ namespace
 			QList<QByteArray> list = buf.mid(idx_begin, idx_end-idx_begin).simplified().split(' ');
 			buf.clear();buf.append(head);
 
-			std::vector<Coordinates> coordinates;
+			std::vector<GPlatesPropertyValues::CoordinateTransformation::Coord> coordinates;
 			QList<QByteArray>::const_iterator it = list.begin();
 			QList<QByteArray>::const_iterator it_end = list.end();
 			for(;it != it_end;)
@@ -245,37 +242,52 @@ namespace
 				//validate the QList
 				//check the result flag of toDouble()
 				//bool f; toDouble(&f)
-				std::vector<double> tmp;
-				tmp.push_back((*it).toDouble()); ++it;
-				tmp.push_back((*it).toDouble()); ++it;
-				if(srs_dimension == Dimension::threeD())
+				const double x = (*it).toDouble();
+				++it;
+				const double y = (*it).toDouble();
+				++it;
+				boost::optional<double> z;
+				if (srs_dimension == 3)
 				{
-					tmp.push_back((*it).toDouble()); ++it;
+					z = (*it).toDouble();
+					++it;
 				}
-				coordinates.push_back(
-						Coordinates(
-								tmp,
-								CoordinateReferenceSystem::create_by_name(
-										srs_name,
-										srs_dimension)));
+				GPlatesPropertyValues::CoordinateTransformation::Coord coord(x, y, z);
+				coordinates.push_back(coord);
 			}
 
 #if 0
-			transform(
-					CoordinateReferenceSystem::create_by_name(srs_name,srs_dimension),
-					CoordinateReferenceSystem::espg_4326(),
-					coordinates);
+			OGRSpatialReference from_srs;
+			from_srs.SetWellKnownGeogCS(srs_name.toStdString().c_str());
+			boost::optional<GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_type>
+					coordinate_transformation = GPlatesPropertyValues::CoordinateTransformation::create(
+							GPlatesPropertyValues::SpatialReferenceSystem::create(from_srs));
+			if (coordinate_transformation)
+			{
+				if (!coordinate_transformation.get()->transform_in_place(coordinates))
+				{
+					//TODO:
+					//throw exception
+					qWarning() << "Error occurred during Transform.";
+				}
+			}
+			else
+			{
+				//TODO:
+				//throw exception
+				qWarning() << "cannot create transform.";
+			}
 #endif
 
 			list.clear();
-			std::vector<Coordinates>::const_iterator c_it = coordinates.begin();
-			std::vector<Coordinates>::const_iterator c_it_end = coordinates.end();
+			std::vector<GPlatesPropertyValues::CoordinateTransformation::Coord>::const_iterator c_it = coordinates.begin();
+			std::vector<GPlatesPropertyValues::CoordinateTransformation::Coord>::const_iterator c_it_end = coordinates.end();
 			for(;c_it != c_it_end; ++c_it)
 			{
 				buf.append(" ");
-				buf.append(QByteArray().setNum(c_it->x()));
+				buf.append(QByteArray().setNum(c_it->x));
 				buf.append(" ");
-				buf.append(QByteArray().setNum(c_it->y()));
+				buf.append(QByteArray().setNum(c_it->y));
 			}
 
 			idx_end = buf.length();

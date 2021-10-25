@@ -31,6 +31,7 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/Enumeration.h"
+#include "property-values/XsDouble.h"
 
 
 GPlatesAppLogic::ReconstructionFeatureProperties::ReconstructionFeatureProperties(
@@ -59,6 +60,7 @@ GPlatesAppLogic::ReconstructionFeatureProperties::initialise_pre_feature_propert
 	d_recon_method = boost::none;
 	d_right_plate_id = boost::none;
 	d_left_plate_id = boost::none;
+	d_spreading_asymmetry = boost::none;
 
 	return true;
 }
@@ -124,6 +126,22 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gpml_plate_id(
 	}
 }
 
+
+void
+GPlatesAppLogic::ReconstructionFeatureProperties::visit_xs_double(
+		const GPlatesPropertyValues::XsDouble& xs_double)
+{
+	static GPlatesModel::PropertyName spreading_asymmetry_property_name =
+			GPlatesModel::PropertyName::create_gpml("spreadingAsymmetry");
+
+	// Note that we're going to assume that we're in a property...
+	if (current_top_level_propname() == spreading_asymmetry_property_name)
+	{
+		d_spreading_asymmetry = xs_double.value();
+	}
+}
+
+
 void
 GPlatesAppLogic::ReconstructionFeatureProperties::visit_enumeration(
 		const enumeration_type &enumeration)
@@ -134,8 +152,6 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_enumeration(
 	// Note that we're going to assume that we're in a property...
 	if (current_top_level_propname() == reconstruction_method_name)
 	{
-		// Note that this returns boost::none if string is not recognised.
-		d_recon_method = ReconstructMethod::get_string_as_enum(enumeration.value());
+		d_recon_method = enumeration.value();
 	}
 }
-

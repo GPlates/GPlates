@@ -85,7 +85,6 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	const ReconstructHandle::type reconstruct_handle = ReconstructUtils::reconstruct(
 			reconstructed_feature_geometries,
 			reconstruction_time,
-			anchor_plate_id,
 			reconstruct_method_registry,
 			partitioning_feature_collections,
 			reconstruction_tree_cache);

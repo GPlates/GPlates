@@ -31,6 +31,7 @@
 
 #include <utility>
 #include <map>
+#include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <QRect>
 #include <QString>
@@ -39,8 +40,10 @@
 #include "ReadErrorAccumulation.h"
 #include "ReadErrorOccurrence.h"
 
+#include "property-values/Georeferencing.h"
 #include "property-values/RasterType.h"
 #include "property-values/RawRaster.h"
+#include "property-values/SpatialReferenceSystem.h"
 
 #include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
@@ -115,6 +118,18 @@ namespace GPlatesFileIO
 		 */
 		bool
 		can_read();
+
+		/**
+		 * Returns the georeferencing of pixel/line raster data to georeference coordinates.
+		 */
+		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
+		get_georeferencing();
+
+		/**
+		 * Returns the raster's spatial reference system.
+		 */
+		boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+		get_spatial_reference_system();
 
 		/**
 		 * Returns the number of bands in the raster.
@@ -254,6 +269,14 @@ namespace GPlatesFileIO
 		virtual
 		bool
 		can_read() = 0;
+
+		virtual
+		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
+		get_georeferencing() = 0;
+
+		virtual
+		boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+		get_spatial_reference_system() = 0;
 
 		virtual
 		unsigned int

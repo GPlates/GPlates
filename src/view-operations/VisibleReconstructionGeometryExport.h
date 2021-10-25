@@ -33,7 +33,6 @@
 
 #include "model/types.h"
 
-
 namespace GPlatesFileIO
 {
 	namespace FeatureCollectionFileFormat
@@ -58,6 +57,7 @@ namespace GPlatesViewOperations
 		 * file extension of @a filename.
 		 *
 		 * @param active_files used to determine which files the RFGs came from.
+		 * @param active_reconstruction_files  the loaded and active reconstruction files in the reconstruction graph.
 		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.
 		 * @param reconstruction_time time at which the reconstruction took place.
 		 * @param export_single_output_file write all geometries to a single file.
@@ -74,12 +74,13 @@ namespace GPlatesViewOperations
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				const files_collection_type &active_files,
+				const files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 
 		/**
@@ -88,6 +89,7 @@ namespace GPlatesViewOperations
 		 * file extension of @a filename.
 		 *
 		 * @param active_files used to determine which files the RFGs came from.
+		 * @param active_reconstruction_files  the loaded and active reconstruction files in the reconstruction graph.
 		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.
 		 * @param reconstruction_time time at which the reconstruction took place.
 		 * @param export_single_output_file write all geometries to a single file.
@@ -104,12 +106,13 @@ namespace GPlatesViewOperations
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				const files_collection_type &active_files,
+				const files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 
 		/**
@@ -118,6 +121,7 @@ namespace GPlatesViewOperations
 		 * file extension of @a filename.
 		 *
 		 * @param active_files used to determine which files the RFGs came from.
+		 * @param active_reconstruction_files  the loaded and active reconstruction files in the reconstruction graph.
 		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.
 		 * @param reconstruction_time time at which the reconstruction took place.
 		 * @param export_single_output_file write all geometries to a single file.
@@ -134,12 +138,13 @@ namespace GPlatesViewOperations
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				const files_collection_type &active_files,
+				const files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 
 		/**
@@ -166,6 +171,7 @@ namespace GPlatesViewOperations
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				const files_collection_type &active_files,
+				const files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool export_single_output_file,
@@ -173,7 +179,7 @@ namespace GPlatesViewOperations
 				bool export_separate_output_directory_per_input_file,
 				bool export_topological_lines,
 				bool export_topological_polygons,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 	}
 }
 

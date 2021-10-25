@@ -1,9 +1,9 @@
-/* $Id: ReconstructedFeatureGeometryExport.h -1   $ */
+/* $Id$ */
 
 /**
  * \file Exports reconstructed feature geometries to a file.
- * $Revision: -1 $
- * $Date: $
+ * $Revision$
+ * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
  * Copyright (C) 2010 Geological Survey of Norway
@@ -95,17 +95,17 @@ namespace GPlatesFileIO
 		 * @throws FileFormatNotSupportedException if file format not supported.
 		 */
 		void
-		export_reconstructed_motion_paths(
-				const QString &filename,
+		export_reconstructed_motion_paths(const QString &filename,
 				Format export_format,
 				const std::vector<const GPlatesAppLogic::ReconstructedMotionPath *> &reconstructed_motion_path_seq,
 				const std::vector<const File::Reference *> &active_files,
+				const std::vector<const File::Reference *> &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 	}
 }
 

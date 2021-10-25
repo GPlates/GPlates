@@ -27,6 +27,7 @@
 #define GPLATES_PROPERTYVALUES_RASTERTYPE_H
 
 #include <boost/cstdint.hpp>
+#include <QString>
 
 #include "gui/Colour.h"
 
@@ -53,6 +54,40 @@ namespace GPlatesPropertyValues
 			UNKNOWN
 		};
 
+		template<typename T>
+		Type
+		get_type_as_enum();
+
+		QString
+		get_type_as_string(
+				Type type);
+
+		bool
+		is_signed_integer(
+				Type type);
+
+		bool
+		is_unsigned_integer(
+				Type type);
+
+		bool
+		is_integer(
+				Type type);
+
+		bool
+		is_floating_point(
+				Type type);
+	}
+}
+
+//
+// Implementation
+//
+
+namespace GPlatesPropertyValues
+{
+	namespace RasterType
+	{
 		template<typename T>
 		Type
 		get_type_as_enum()
@@ -99,22 +134,6 @@ namespace GPlatesPropertyValues
 		template<>
 		Type
 		get_type_as_enum<GPlatesGui::rgba8_t>();
-
-		bool
-		is_signed_integer(
-				Type type);
-
-		bool
-		is_unsigned_integer(
-				Type type);
-
-		bool
-		is_integer(
-				Type type);
-
-		bool
-		is_floating_point(
-				Type type);
 	}
 }
 

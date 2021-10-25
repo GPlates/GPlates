@@ -72,6 +72,7 @@ namespace GPlatesFileIO
 				CitcomsResolvedTopologicalBoundaryExportImpl::ResolvedTopologicalBoundaryExportType export_type,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
+				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
 
@@ -85,6 +86,7 @@ namespace GPlatesFileIO
 				CitcomsResolvedTopologicalBoundaryExportImpl::SubSegmentExportType export_type,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
+				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time);
 	}

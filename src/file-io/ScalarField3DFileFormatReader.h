@@ -288,9 +288,8 @@ namespace GPlatesFileIO
 			/**
 			 * Reads the tile mask data (determines which areas of field data contain valid data used for non-global fields).
 			 *
-			 * The data is arranged as a sequence of 2D tile images where the first @a get_num_depth_layers_per_tile
-			 * images are associated with the first active tile, etc, giving a total of
-			 * "get_num_active_tiles * get_num_depth_layers_per_tile" 2D images where each square image has
+			 * The data is arranged as a sequence of 2D tile images with one mask image associated with
+			 * each tile giving a total of "get_num_active_tiles" 2D images where each square image has
 			 * a resolution of @a get_tile_resolution.
 			 *
 			 * Within each image the data is laid out as rows from negative-to-positive Y and each row

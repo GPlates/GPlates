@@ -161,7 +161,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 	// a factor of two (or one level-of-detail difference). This means two pixels on the globe
 	// can fit into one pixel in the cube map at a face centre. This is fine for each level-of-detail
 	// because it ensures plenty enough detail is rendered into a cube map tile. However it does
-	// mean that we can get one resolution level than expected. This means we can zoom further
+	// mean that we can get one more resolution level than expected. This means we can zoom further
 	// into the globe before it reaches full resolution and starts to get blurry.
 	// The factor is sqrt(3) * (1 / cos(A)); where sin(A) = (1 / sqrt(3)).
 	// This is the same as 3 / sqrt(2).
@@ -171,6 +171,17 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 	// This factor is how much a pixel on the globe expands in size when projected to a pixel on the
 	// cube face at its corner (and is close to a factor of two).
 	viewport_dimension_scale *= 3.0 / std::sqrt(2.0);
+
+	// Clamp the viewport dimension scale to a maximum value in case the entire raster is georeferenced
+	// to a ridiculously tiny region for some reason (eg, the raster's projection transform went bad).
+	// This can prevent a crash due to 32-bit integer overflow caused by a quad tree depth of 32
+	// or greater (the tile indices range up to 2^32). However we make it lower than 32 to avoid
+	// excessive CPU and memory building too deep a quad tree.
+	const double MAX_VIEWPORT_DIMENSION_SCALE = std::exp(std::log(2.0) * 25.0/*max log2_viewport_dimension_scale*/);
+	if (viewport_dimension_scale > MAX_VIEWPORT_DIMENSION_SCALE)
+	{
+		viewport_dimension_scale = MAX_VIEWPORT_DIMENSION_SCALE;
+	}
 
 	// Since our cube quad tree is an *integer* power-of-two subdivision of tiles find out the
 	// *non-integer* power-of-two scale factor - next we'll adjust this so it becomes an *integer*
@@ -631,13 +642,13 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 		}
 		else // an RGBA render target...
 		{
-	#if 0 // We don't really need alpha blending since the source raster tiles don't overlap...
+#if 0 // We don't really need alpha blending since the source raster tiles don't overlap...
 			// Set up alpha blending for pre-multiplied alpha.
 			// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
 			// This is where the RGB channels have already been multiplied by the alpha channel.
 			renderer.gl_enable(GL_BLEND);
 			renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-	#endif
+#endif
 
 			// Enable alpha testing as an optimisation for culling transparent raster pixels.
 			renderer.gl_enable(GL_ALPHA_TEST);

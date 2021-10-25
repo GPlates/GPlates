@@ -232,6 +232,9 @@ namespace GPlatesQtWidgets
 				const QAction *tool_action);
 
 		void
+		set_up_workflow_tab_icons();
+
+		void
 		set_up_canvas_tool_shortcuts();
 
 		void
@@ -249,11 +252,6 @@ namespace GPlatesQtWidgets
 
 		QAction *
 		get_tool_action(
-				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
-				GPlatesGui::CanvasToolWorkflows::ToolType tool);
-
-		void
-		copy_canvas_tool_icon_to_workflow_tab(
 				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
 				GPlatesGui::CanvasToolWorkflows::ToolType tool);
 

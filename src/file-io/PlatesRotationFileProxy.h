@@ -627,7 +627,8 @@ namespace GPlatesFileIO
 		read_file(
 				File::Reference &file,
 				GPlatesModel::ModelInterface &model,
-				ReadErrorAccumulation &read_errors);
+				ReadErrorAccumulation &read_errors,
+				bool &contains_unsaved_changes);
 		
 		virtual
 		void

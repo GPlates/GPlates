@@ -157,8 +157,8 @@ GPlatesOpenGL::GLProjectionUtils::glu_un_project(
 }
 
 
-double
-GPlatesOpenGL::GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
+std::pair<double/*min*/, double/*max*/>
+GPlatesOpenGL::GLProjectionUtils::get_min_max_pixel_size_on_unit_sphere(
 		const GLViewport &viewport,
 		const GLMatrix &model_view_transform,
 		const GLMatrix &projection_transform)
@@ -196,7 +196,9 @@ GPlatesOpenGL::GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
 	// view frustum when fully zoomed out most likely will miss the unit sphere)
 	// but the centre point will always hit (only because the way GPlates currently
 	// sets up its projections - we can't rely on this always being the case in which
-	// case we'll return the distance from north pole to south pole if nothing hits.
+	// case we'll return the distance from north pole to south pole (for minimum distance) and
+	// zero distance (for maximum distance) if nothing hits.
+	GPlatesMaths::real_t min_dot_product_pixel_size(1);
 	GPlatesMaths::real_t max_dot_product_pixel_size(-1);
 	for (int n = 0; n < 9; ++n)
 	{
@@ -232,7 +234,12 @@ GPlatesOpenGL::GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
 		// expensive operation until we've compared all samples.
 		const GPlatesMaths::real_t dot_product_pixel_size_x =
 				dot(projected_pixel_plus_one_x.get(), projected_pixel.get());
-		// We want the minimum projected pixel size which means maximum dot product.
+		// Here we want the maximum projected pixel size which means minimum dot product.
+		if (dot_product_pixel_size_x < min_dot_product_pixel_size)
+		{
+			min_dot_product_pixel_size = dot_product_pixel_size_x;
+		}
+		// Here we want the minimum projected pixel size which means maximum dot product.
 		if (dot_product_pixel_size_x > max_dot_product_pixel_size)
 		{
 			max_dot_product_pixel_size = dot_product_pixel_size_x;
@@ -257,7 +264,12 @@ GPlatesOpenGL::GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
 		// expensive operation until we've compared all samples.
 		const GPlatesMaths::real_t dot_product_pixel_size_y =
 				dot(projected_pixel_plus_one_y.get(), projected_pixel.get());
-		// We want the minimum projected pixel size which means maximum dot product.
+		// Here we want the maximum projected pixel size which means minimum dot product.
+		if (dot_product_pixel_size_y < min_dot_product_pixel_size)
+		{
+			min_dot_product_pixel_size = dot_product_pixel_size_y;
+		}
+		// Here we want the minimum projected pixel size which means maximum dot product.
 		if (dot_product_pixel_size_y > max_dot_product_pixel_size)
 		{
 			max_dot_product_pixel_size = dot_product_pixel_size_y;
@@ -265,5 +277,8 @@ GPlatesOpenGL::GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
 	}
 
 	// Convert from dot product to arc distance on the unit sphere.
-	return acos(max_dot_product_pixel_size).dval();
+	const double min_distance = acos(max_dot_product_pixel_size).dval();
+	const double max_distance = acos(min_dot_product_pixel_size).dval();
+
+	return std::make_pair(min_distance, max_distance);
 }

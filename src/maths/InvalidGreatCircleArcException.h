@@ -44,11 +44,15 @@ namespace GPlatesMaths
 			 * @param msg is a description of the conditions
 			 * which cause the invariant to be violated.
 			 */
-			InvalidGreatCircleArcException(const char *msg)
-				: _msg(msg) {  }
+			InvalidGreatCircleArcException(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const char *msg): 
+				MathematicalException(exception_source),
+				_msg(msg) 
+				{  }
 
 			virtual
-			~InvalidGreatCircleArcException() {  }
+			~InvalidGreatCircleArcException() throw() {  }
 
 		protected:
 			virtual const char *
