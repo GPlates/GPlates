@@ -51,9 +51,8 @@ GPlatesFileIO::OgrGeometryExporter::OgrGeometryExporter(
 	bool multiple_geometry_types,
 	bool wrap_to_dateline):
 	d_filename(filename),
-	d_ogr_writer(0)
+	d_ogr_writer(new OgrWriter(d_filename, multiple_geometry_types, wrap_to_dateline))
 {
-	d_ogr_writer = new OgrWriter(d_filename, multiple_geometry_types, wrap_to_dateline);
 }
 
 GPlatesFileIO::OgrGeometryExporter::~OgrGeometryExporter()
@@ -70,9 +69,9 @@ GPlatesFileIO::OgrGeometryExporter::visit_multi_point_on_sphere(
 
 void
 GPlatesFileIO::OgrGeometryExporter::visit_point_on_sphere(
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+	GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
-	d_point_geometries.push_back(*point_on_sphere);
+	d_point_geometries.push_back(point_on_sphere->position());
 }
 
 void
@@ -147,7 +146,7 @@ GPlatesFileIO::OgrGeometryExporter::write_geometries()
 		{
 			// We have more than one point in the feature, so we should handle this as a multi-point.
 			d_ogr_writer->write_multi_point_feature(
-					GPlatesMaths::MultiPointOnSphere::create_on_heap(
+					GPlatesMaths::MultiPointOnSphere::create(
 							d_point_geometries.begin(),
 							d_point_geometries.end()),
 					d_key_value_dictionary,

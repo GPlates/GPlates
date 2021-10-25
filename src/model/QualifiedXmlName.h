@@ -241,7 +241,7 @@ namespace GPlatesModel
 			d_name(SingletonType::instance().insert(name))
 		{
 			if (namespace_alias) {
-				d_namespace_alias = *namespace_alias;
+				d_namespace_alias = StringSetSingletons::xml_namespace_alias_instance().insert(*namespace_alias);
 			} else {
 				set_namespace_alias();
 			}

@@ -177,14 +177,6 @@ namespace GPlatesQtWidgets
 		virtual
 		boost::optional<GPlatesMaths::LatLonPoint>
 		camera_llp() const;
-				
-		virtual
-		void
-		enable_raster_display();
-
-		virtual
-		void
-		disable_raster_display();
 
 		void
 		update_mouse_pointer_pos(
@@ -195,20 +187,29 @@ namespace GPlatesQtWidgets
 		handle_mouse_pointer_pos_change();
 
 		/**
-		 * Returns the dimensions of the viewport.
+		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
+		 *
+		 * Device-independent pixels (widget size) differ from device pixels (OpenGL size).
+		 * Widget dimensions are device independent whereas OpenGL uses device pixels
+		 * (differing by the device pixel ratio).
 		 */
 		virtual
 		QSize
 		get_viewport_size() const;
 
 		/**
-		 * Renders the scene to a QImage of the dimensions specified by @a image_size
-		 * (or dimensions @a get_viewport_size, if @a image_size is boost::none).
+		 * Renders the scene to a QImage of the dimensions specified by @a image_size.
+		 *
+		 * The specified image size should be in device *independent* pixels (eg, widget dimensions).
+		 * The returned image will be a high-DPI image if this canvas has a device pixel ratio greater than 1.0
+		 * (in which case the returned QImage will have the same device pixel ratio).
+		 *
+		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
 		virtual
 		QImage
 		render_to_qimage(
-				boost::optional<QSize> image_size = boost::none);
+				const QSize &image_size_in_device_independent_pixels);
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
@@ -376,7 +377,7 @@ namespace GPlatesQtWidgets
 					const QGLFormat &format_,
 					QWidget *parent_ = 0,
 					const QGLWidget *shareWidget_ = 0,
-					Qt::WindowFlags flags_ = 0);
+					Qt::WindowFlags flags_ = Qt::WindowFlags());
 
 			void
 			swap_buffers_if_necessary();

@@ -93,12 +93,12 @@ namespace GPlatesScribe
 			ConstructObject< std::pair<T1, T2> > &pair_object);
 
 
-	//! Transcribe std::auto_ptr.
+	//! Transcribe std::unique_ptr.
 	template <typename T>
 	TranscribeResult
 	transcribe(
 			Scribe &scribe,
-			std::auto_ptr<T> &auto_ptr_object,
+			std::unique_ptr<T> &unique_ptr_object,
 			bool transcribed_construct_data);
 
 
@@ -344,14 +344,14 @@ namespace GPlatesScribe
 	TranscribeResult
 	transcribe(
 			Scribe &scribe,
-			std::auto_ptr<T> &auto_ptr_object,
+			std::unique_ptr<T> &unique_ptr_object,
 			bool transcribed_construct_data)
 	{
 		T *raw_ptr = NULL;
 
 		if (scribe.is_saving())
 		{
-			raw_ptr = auto_ptr_object.get();
+			raw_ptr = unique_ptr_object.get();
 		}
 
 		TranscribeResult transcribe_result =
@@ -363,7 +363,7 @@ namespace GPlatesScribe
 
 		if (scribe.is_loading())
 		{
-			auto_ptr_object.reset(raw_ptr);
+			unique_ptr_object.reset(raw_ptr);
 		}
 
 		return TRANSCRIBE_SUCCESS;

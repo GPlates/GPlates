@@ -24,15 +24,10 @@
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include "global/CompilerWarnings.h"
-
-PUSH_MSVC_WARNINGS
-DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/operators.hpp>
-#include <boost/bind.hpp>
-POP_MSVC_WARNINGS
+#include <boost/bind/bind.hpp>
 
 #include <stack>
 #include <vector>
@@ -46,6 +41,12 @@ POP_MSVC_WARNINGS
 #include <iomanip>
 #include <numeric>
 #include <functional>
+
+#if defined(_WIN32)
+// Including up top (instead of just including below, when needed) somehow avoids compile error:
+//    qatomic_msvc.h(320): error C2668: '_InterlockedCompareExchange': ambiguous call to overloaded function
+#include <windows.h>
+#endif
 
 #include "Profile.h"
 
@@ -72,7 +73,7 @@ namespace
 	 * Returns current time in units of @a ticks_t.
 	 */
 	ticks_t
-			get_ticks();
+	get_ticks();
 
 	/**
 	 * Converts ticks to seconds.
@@ -957,8 +958,8 @@ namespace
 		std::sort(
 				sorted_profile_node_seq.begin(),
 				sorted_profile_node_seq.end(),
-				boost::bind(&ProfileNode::get_self_ticks, _1)
-						> boost::bind(&ProfileNode::get_self_ticks, _2));
+				boost::bind(&ProfileNode::get_self_ticks, boost::placeholders::_1)
+						> boost::bind(&ProfileNode::get_self_ticks, boost::placeholders::_2));
 	
 		output_stream << "Flat Profile" << std::endl;
 		output_stream << "------------" << std::endl;
@@ -1036,8 +1037,8 @@ namespace
 		std::sort(
 				sorted_profile_node_seq.begin(),
 				sorted_profile_node_seq.end(),
-				boost::bind(&calc_ticks_in_profile_node_and_all_its_children, _1)
-					> boost::bind(&calc_ticks_in_profile_node_and_all_its_children, _2));
+				boost::bind(&calc_ticks_in_profile_node_and_all_its_children, boost::placeholders::_1)
+					> boost::bind(&calc_ticks_in_profile_node_and_all_its_children, boost::placeholders::_2));
 
 		output_stream << "Call Graph Profile" << std::endl;
 		output_stream << "------------------" << std::endl;
@@ -1085,8 +1086,8 @@ namespace
 			std::sort(
 					sorted_parent_links.begin(),
 					sorted_parent_links.end(),
-					boost::bind(&get_ticks, _1)
-						< boost::bind(&get_ticks, _2));
+					boost::bind(&get_ticks, boost::placeholders::_1)
+						< boost::bind(&get_ticks, boost::placeholders::_2));
 
 			// Iterate through the sorted sequence of parent links and print them out.
 			parent_profile_link_seq_type::const_iterator sorted_parent_iter;
@@ -1185,8 +1186,8 @@ namespace
 			std::sort(
 					sorted_child_links.begin(),
 					sorted_child_links.end(),
-					boost::bind(&get_ticks, _1)
-						> boost::bind(&get_ticks, _2));
+					boost::bind(&get_ticks, boost::placeholders::_1)
+						> boost::bind(&get_ticks, boost::placeholders::_2));
 
 			// Iterate through the sorted sequence of child links and print them out.
 			child_profile_link_seq_type::const_iterator sorted_child_iter;
@@ -1252,8 +1253,8 @@ namespace
 				profile_nodes.end(),
 				ticks_t(0),
 				boost::bind(std::plus<ticks_t>(),
-						_1,
-						boost::bind(&ProfileNode::get_self_ticks, _2)));
+						boost::placeholders::_1,
+						boost::bind(&ProfileNode::get_self_ticks, boost::placeholders::_2)));
 		
 		const double total_seconds = convert_ticks_to_seconds(total_ticks);
 		
@@ -1293,7 +1294,6 @@ namespace
 
 #if defined(_WIN32)
 
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 	inline

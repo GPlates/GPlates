@@ -268,7 +268,12 @@ GPlatesScribe::TranscribeContext<GPlatesScribe::TranscribeUtils::FilePath>::get_
 	}
 
 	// Make unique.
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	const QSet<QString> unique_file_paths(file_paths.cbegin(), file_paths.cend());
+	file_paths = QList<QString>(unique_file_paths.cbegin(), unique_file_paths.cend());
+#else
 	file_paths = QList<QString>::fromSet(QSet<QString>::fromList(file_paths));
+#endif
 
 	// Sort.
 	file_paths.sort();
@@ -360,7 +365,7 @@ GPlatesScribe::TranscribeUtils::convert_file_path(
 		return file_path;
 	}
 
-#if defined(Q_WS_WIN)
+#if defined(Q_OS_WIN)
 
 	// Add a Windows drive letter to absolute paths if necessary.
 	if (file_path.startsWith('/') &&

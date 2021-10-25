@@ -40,7 +40,6 @@ namespace GPlatesMaths
 
 	// Forward declarations for the non-member function 'operator*'.
 	class MultiPointOnSphere;
-	class PointOnSphere;
 	class PolylineOnSphere;
 	class PolygonOnSphere;
 	class GeometryOnSphere;
@@ -202,20 +201,19 @@ namespace GPlatesMaths
 		create(
 				const UnitQuaternion3D &uq,
 				const UnitVector3D &rotation_axis,
-				const real_t &rotation_angle);
+				const real_t &rotation_angle)
+		{
+			return Rotation(rotation_axis, rotation_angle, uq);
+		}
 
 
 		Rotation(
 				const UnitVector3D &axis_,
 				const real_t &angle_,
-				const UnitQuaternion3D &quat_,
-				const real_t &d,
-				const Vector3D &e):
+				const UnitQuaternion3D &quat_) :
 			d_axis(axis_),
 			d_angle(angle_),
-			d_quat(quat_),
-			d_d(d),
-			d_e(e)
+			d_quat(quat_)
 		{  }
 
 	private:
@@ -234,17 +232,6 @@ namespace GPlatesMaths
 		 * described by the rotation axis and angle.
 		 */
 		UnitQuaternion3D d_quat;
-
-		/*
-		 * And now for the mysterious values of 'd_d' and 'd_e' !
-		 *
-		 * These are only used to rotate points on the sphere,
-		 * and are calculated purely for optimisation purposes.
-		 * I don't know whether they have any physical meaning.
-		 * I suspect not.
-		 */
-		real_t   d_d;
-		Vector3D d_e;
 	};
 
 
@@ -270,10 +257,14 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
+	inline
 	const PointOnSphere
 	operator*(
 			const Rotation &r,
-			const PointOnSphere &p);
+			const PointOnSphere &p)
+	{
+		return PointOnSphere(r * p.position_vector());
+	}
 
 
 	/**
@@ -281,10 +272,14 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>
+	inline
+	const GPlatesUtils::non_null_intrusive_ptr<const PointGeometryOnSphere>
 	operator*(
 			const Rotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p);
+			const GPlatesUtils::non_null_intrusive_ptr<const PointGeometryOnSphere> &p)
+	{
+		return PointGeometryOnSphere::create(r * p->position());
+	}
 
 
 	/**

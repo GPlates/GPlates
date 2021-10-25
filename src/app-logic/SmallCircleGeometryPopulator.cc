@@ -73,8 +73,7 @@ GPlatesAppLogic::SmallCircleGeometryPopulator::finalise_post_feature_properties(
 			reconstruction_plate_id = d_reconstruction_plate_id.get();
 		}
 
-		*d_centre = reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first *
-				*d_centre;
+		d_centre = reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id) * d_centre.get();
 
 		GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type small_circle_rg =
 			ReconstructedSmallCircle::create(

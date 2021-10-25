@@ -83,7 +83,8 @@ namespace GPlatesGui
 			{
 				SHAPEFILE,
 				GMT,
-				OGRGMT
+				OGRGMT,
+				GEOJSON
 			};
 
 			explicit

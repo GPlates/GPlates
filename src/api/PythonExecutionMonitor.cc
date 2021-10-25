@@ -22,7 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <QEvent>
 #include <QApplication>
 #include <QThread>
@@ -35,7 +35,6 @@
 #include "utils/DeferredCallEvent.h"
 #include "api/PythonUtils.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::PythonExecutionMonitor::PythonExecutionMonitor() :
 	d_continue_interactive_input(false),
 	d_finish_reason(SUCCESS),
@@ -194,4 +193,3 @@ GPlatesApi::PythonExecutionMonitor::stop_monitor()
 	}
 	d_event_loop.quit();
 }
-#endif //GPLATES_NO_PYTHON

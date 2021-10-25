@@ -171,7 +171,7 @@ namespace GPlatesMaths
 			{
 				const GreatCircleArc &gca = *ring_iter;
 
-				ring_arc_length += acos(gca.dot_of_endpoints());
+				ring_arc_length += gca.arc_length();
 			}
 
 			return ring_arc_length;
@@ -209,7 +209,7 @@ namespace GPlatesMaths
 
 
 const unsigned
-GPlatesMaths::PolygonOnSphere::s_min_num_collection_points = 3;
+GPlatesMaths::PolygonOnSphere::s_min_num_ring_points = 3;
 
 
 GPlatesMaths::PolygonOnSphere::~PolygonOnSphere()
@@ -221,20 +221,6 @@ GPlatesMaths::PolygonOnSphere::~PolygonOnSphere()
 
 GPlatesMaths::PolygonOnSphere::PolygonOnSphere() :
 	GeometryOnSphere()
-{
-	// Constructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
-	// PolygonOnSphereImpl::CachedCalculations - because compiler must
-	// generate code that destroys already constructed members if constructor throws.
-}
-
-
-GPlatesMaths::PolygonOnSphere::PolygonOnSphere(
-		const PolygonOnSphere &other) :
-	GeometryOnSphere(),
-	d_exterior_ring(other.d_exterior_ring),
-	d_interior_rings(other.d_interior_rings),
-	// Since PolygonOnSphere is immutable we can just share the cached calculations.
-	d_cached_calculations(other.d_cached_calculations)
 {
 	// Constructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
 	// PolygonOnSphereImpl::CachedCalculations - because compiler must
@@ -420,7 +406,7 @@ GPlatesMaths::PolygonOnSphere::get_exterior_ring_arc_length() const
 
 const GPlatesMaths::real_t &
 GPlatesMaths::PolygonOnSphere::get_interior_ring_arc_length(
-		size_type interior_ring_index) const
+		unsigned int interior_ring_index) const
 {
 	if (!d_cached_calculations)
 	{
@@ -779,7 +765,7 @@ GPlatesMaths::PolygonOnSphere::get_exterior_ring_bounding_tree() const
 
 const GPlatesMaths::PolygonOnSphere::ring_bounding_tree_type &
 GPlatesMaths::PolygonOnSphere::get_interior_ring_bounding_tree(
-		size_type interior_ring_index) const
+		unsigned int interior_ring_index) const
 {
 	if (!d_cached_calculations)
 	{
@@ -1010,7 +996,8 @@ GPlatesMaths::PolygonOnSphere::ConstIterator::distance_to(
 			GPLATES_ASSERTION_SOURCE,
 			"Attempted to compare an uninitialised iterator.");
 
-	const int ring_id_difference = other.d_current_ring_id - d_current_ring_id;
+	const int ring_id_difference =
+			static_cast<int>(other.d_current_ring_id) - static_cast<int>(d_current_ring_id);
 
 	if (ring_id_difference == 0)
 	{
@@ -1086,7 +1073,7 @@ GPlatesMaths::tessellate(
 
 	if (polygon.number_of_interior_rings() == 0)
 	{
-		return PolygonOnSphere::create_on_heap(tessellated_exterior_ring);
+		return PolygonOnSphere::create(tessellated_exterior_ring);
 	}
 
 	// Tessellate the interior rings.
@@ -1105,7 +1092,7 @@ GPlatesMaths::tessellate(
 				max_angular_extent);
 	}
 
-	return PolygonOnSphere::create_on_heap(
+	return PolygonOnSphere::create(
 			tessellated_exterior_ring,
 			tessellated_interior_rings.begin(),
 			tessellated_interior_rings.end());

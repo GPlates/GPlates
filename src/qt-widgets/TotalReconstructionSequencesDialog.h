@@ -33,7 +33,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include "TotalReconstructionSequencesDialogUi.h"
+#include "ui_TotalReconstructionSequencesDialogUi.h"
 
 #include "GPlatesDialog.h"
 

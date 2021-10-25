@@ -28,7 +28,7 @@
 
 #include <QDialog>
 
-#include "InformationDialogUi.h"
+#include "ui_InformationDialogUi.h"
 
 #include "GPlatesDialog.h"
 

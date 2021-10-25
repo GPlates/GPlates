@@ -25,6 +25,7 @@
  */
 
 #include <memory>
+#include <utility> // std::move
 #include <QUndoCommand>
 
 #include "DeleteVertexGeometryOperation.h"
@@ -309,17 +310,17 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::delete_vertex(
 	emit_unhighlight_signal(&d_geometry_builder);
 
 	// The command that does the actual deleting of vertex.
-	std::auto_ptr<QUndoCommand> delete_vertex_command(
+	std::unique_ptr<QUndoCommand> delete_vertex_command(
 			new GeometryBuilderRemovePointUndoCommand(
 					d_geometry_builder,
 					delete_vertex_index));
 
 	// Command wraps delete vertex command with handing canvas tool choice and
 	// delete vertex tool activation.
-	std::auto_ptr<QUndoCommand> undo_command(
+	std::unique_ptr<QUndoCommand> undo_command(
 			new GeometryOperationUndoCommand(
 					QObject::tr("delete vertex"),
-					delete_vertex_command,
+					std::move(delete_vertex_command),
 					this,
 					d_canvas_tool_workflows));
 
@@ -383,7 +384,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::add_rendered_lines_for_pol
 		d_geometry_builder.get_geometry_point_end(geom_index);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
-		GPlatesMaths::PolylineOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
+		GPlatesMaths::PolylineOnSphere::create(builder_geom_begin, builder_geom_end);
 
 	RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 				polyline_on_sphere,
@@ -405,7 +406,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::add_rendered_lines_for_pol
 		d_geometry_builder.get_geometry_point_end(geom_index);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
-		GPlatesMaths::PolygonOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
+		GPlatesMaths::PolygonOnSphere::create(builder_geom_begin, builder_geom_end);
 
 	RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_polygon_on_sphere(
 				polygon_on_sphere,

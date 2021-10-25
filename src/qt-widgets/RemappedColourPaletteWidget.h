@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "RemappedColourPaletteWidgetUi.h"
+#include "ui_RemappedColourPaletteWidgetUi.h"
 
 #include "gui/BuiltinColourPaletteType.h"
 
@@ -61,16 +61,11 @@ namespace GPlatesQtWidgets
 
 	public:
 
-		/**
-		 * If @a extra_widget is specified then it is added to the 'extra_placeholder_widget',
-		 * otherwise that area is not visible.
-		 */
 		explicit
 		RemappedColourPaletteWidget(
 				GPlatesPresentation::ViewState &view_state,
 				ViewportWindow *viewport_window,
-				QWidget *parent_,
-				QWidget *extra_widget = NULL);
+				QWidget *parent_);
 
 
 		/**

@@ -30,8 +30,9 @@
 
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <QWidget>
 #include <QStackedLayout>
+#include <QtGlobal>
+#include <QWidget>
 
 #include "global/PointerTraits.h"
 
@@ -42,8 +43,8 @@
 #include "view-operations/QueryProximityThreshold.h"
 
 
-// We only enable the pinch zoom gesture on the Mac with Qt 4.6 and above.
-#if defined(Q_WS_MAC) && QT_VERSION >= 0x040600
+// We only enable the pinch zoom gesture on the Mac.
+#if defined(Q_OS_MACOS)
 #	define GPLATES_PINCH_ZOOM_ENABLED
 #endif
 
@@ -131,12 +132,27 @@ namespace GPlatesQtWidgets
 		sizeHint() const;
 
 		/**
-		 * Renders the scene to a QImage of the dimensions specified by @a image_size
-		 * (or dimensions @a get_viewport_size, if @a image_size is boost::none).
+		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
+		 *
+		 * Device-independent pixels (widget size) differ from device pixels (OpenGL size).
+		 * Widget dimensions are device independent whereas OpenGL uses device pixels
+		 * (differing by the device pixel ratio).
+		 */
+		QSize
+		get_viewport_size() const;
+
+		/**
+		 * Renders the scene to a QImage of the dimensions specified by @a image_size.
+		 *
+		 * The specified image size should be in device *independent* pixels (eg, widget dimensions).
+		 * The returned image will be a high-DPI image if this canvas has a device pixel ratio greater than 1.0
+		 * (in which case the returned QImage will have the same device pixel ratio).
+		 *
+		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
 		QImage
 		render_to_qimage(
-				boost::optional<QSize> image_size = boost::none);
+				const QSize &image_size_in_device_independent_pixels);
 
 		/**
 		 * Returns the OpenGL context for the active view.

@@ -28,7 +28,7 @@
 
 #include <QDoubleValidator>
 
-#include "TopologyNetworkResolverLayerOptionsWidgetUi.h"
+#include "ui_TopologyNetworkResolverLayerOptionsWidgetUi.h"
 
 #include "DrawStyleDialog.h"
 #include "InformationDialog.h"
@@ -172,6 +172,51 @@ namespace GPlatesQtWidgets
 		open_draw_style_setting_dlg();
 
 	private:
+
+		/**
+		 * Fixes up any QValidator::Intermediate input (only when user editing has finished) so that we
+		 * always get a valid result (when user editing has finished) and hence always get an
+		 * 'editingFinished()' signal to process/finalise the user input thus avoiding confusing the user.
+		 */
+		class DoubleValidator :
+				public QDoubleValidator
+		{
+		public:
+			DoubleValidator(
+					const double &minimum,
+					const double &maximum,
+					const int decimal_places,
+					QObject *parent_) :
+				QDoubleValidator(minimum, maximum, decimal_places, parent_)
+			{  }
+
+			virtual
+			void
+			fixup(
+					QString &input) const
+			{
+				// Conversion to double assuming the system locale, falling back to C locale.
+				bool ok;
+				double value = locale().toDouble(input, &ok);
+				if (!ok)
+				{
+					// QString::toDouble() only uses C locale.
+					value = input.toDouble(&ok);
+				}
+
+				// Clamp the value to the allowed range.
+				if (value < bottom())
+				{
+					value = bottom();
+				}
+				else if (value > top())
+				{
+					value = top();
+				}
+
+				input = locale().toString(value, 'f', decimals());
+			}
+		};
 
 		TopologyNetworkResolverLayerOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,

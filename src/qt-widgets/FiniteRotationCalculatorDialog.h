@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "FiniteRotationCalculatorDialogUi.h"
+#include "ui_FiniteRotationCalculatorDialogUi.h"
 
 #include "GPlatesDialog.h"
 

@@ -30,7 +30,7 @@
 #include "AbstractEditWidget.h"
 #include "property-values/XsString.h"
 
-#include "EditStringWidgetUi.h"
+#include "ui_EditStringWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

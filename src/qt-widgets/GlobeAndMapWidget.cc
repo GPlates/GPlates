@@ -385,11 +385,18 @@ GPlatesQtWidgets::GlobeAndMapWidget::resizeEvent(
 }
 
 
+QSize
+GPlatesQtWidgets::GlobeAndMapWidget::get_viewport_size() const
+{
+	return d_active_view_ptr->get_viewport_size();
+}
+
+
 QImage
 GPlatesQtWidgets::GlobeAndMapWidget::render_to_qimage(
-		boost::optional<QSize> image_size)
+		const QSize &image_size_in_device_independent_pixels)
 {
-	return d_active_view_ptr->render_to_qimage(image_size);
+	return d_active_view_ptr->render_to_qimage(image_size_in_device_independent_pixels);
 }
 
 
@@ -446,7 +453,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::wheelEvent(
 {
 	if (d_zoom_enabled)
 	{
-		int delta = wheel_event->delta();
+		int delta = wheel_event->angleDelta().y();
 		if (delta == 0)
 		{
 			return;

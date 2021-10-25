@@ -42,151 +42,6 @@ namespace GPlatesGui
 	namespace BuiltinColourPalettes
 	{
 		/**
-		 * Age grid colour palette.
-		 *
-		 * The colour palette covers a range of age values starting at 0Ma.
-		 *
-		 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
-		 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
-		 */
-		ColourPalette<double>::non_null_ptr_type
-		create_age_palette();
-
-
-		/**
-		 * ColorBrewer sequential palette types.
-		 *
-		 * Colors from www.ColorBrewer.org by Cynthia A. Brewer, Geography, Pennsylvania State University.
-		 */
-		enum ColorBrewerSequentialType
-		{
-			OrRd,
-			PuBu,
-			BuPu,
-			Oranges,
-			BuGn,
-			YlOrBr,
-			YlGn,
-			Reds,
-			RdPu,
-			Greens,
-			YlGnBu,
-			Purples,
-			GnBu,
-			Greys,
-			YlOrRd,
-			PuRd,
-			Blues,
-			PuBuGn
-		};
-
-		/**
-		 * Returns a name for a sequential ColorBrewer colour palette.
-		 *
-		 * This is useful for displaying in the GUI.
-		 */
-		QString
-		get_colorbrewer_sequential_palette_name(
-				ColorBrewerSequentialType sequential_type);
-
-		/**
-		 * There are between 3 and 9 classes available in ColorBrewer sequential palette types.
-		 */
-		enum ColorBrewerSequentialClasses
-		{
-			ThreeSequentialClasses = 3,
-			FourSequentialClasses,
-			FiveSequentialClasses,
-			SixSequentialClasses,
-			SevenSequentialClasses,
-			EightSequentialClasses,
-			NineSequentialClasses
-		};
-
-		/**
-		 * Create a sequential ColorBrewer colour palette over the range [0,1].
-		 *
-		 * If @a continuous is true then the colours are linearly blended across each colour slice,
-		 * otherwise a constant colour is used in each colour slice.
-		 *
-		 * @a invert reverses the ordering of colours.
-		 *
-		 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
-		 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
-		 */
-		ColourPalette<double>::non_null_ptr_type
-		create_colorbrewer_sequential_palette(
-				ColorBrewerSequentialType sequential_type,
-				ColorBrewerSequentialClasses sequential_classes,
-				bool continuous,
-				bool invert,
-				const boost::optional<Colour> &nan_colour = boost::none);
-
-
-		/**
-		 * ColorBrewer diverging palette types.
-		 *
-		 * Colors from www.ColorBrewer.org by Cynthia A. Brewer, Geography, Pennsylvania State University.
-		 */
-		enum ColorBrewerDivergingType
-		{
-			Spectral,
-			RdYlGn,
-			RdBu,
-			PiYG,
-			PRGn,
-			RdYlBu,
-			BrBG,
-			RdGy,
-			PuOr
-		};
-
-		/**
-		 * Returns a name for a diverging ColorBrewer colour palette.
-		 *
-		 * This is useful for displaying in the GUI.
-		 */
-		QString
-		get_colorbrewer_diverging_palette_name(
-				ColorBrewerDivergingType diverging_type);
-
-		/**
-		 * There are between 3 and 11 classes available in ColorBrewer diverging palette types.
-		 */
-		enum ColorBrewerDivergingClasses
-		{
-			ThreeDivergingClasses = 3,
-			FourDivergingClasses,
-			FiveDivergingClasses,
-			SixDivergingClasses,
-			SevenDivergingClasses,
-			EightDivergingClasses,
-			NineDivergingClasses,
-			TenDivergingClasses,
-			ElevenDivergingClasses
-		};
-
-		/**
-		 * Create a diverging ColorBrewer colour palette over the range [-1,1].
-		 *
-		 * If @a continuous is true then the colours are linearly blended across each colour slice,
-		 * otherwise a constant colour is used in each colour slice.
-		 *
-		 * @a invert reverses the ordering of colours.
-		 *
-		 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
-		 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
-		 */
-		ColourPalette<double>::non_null_ptr_type
-		create_colorbrewer_diverging_palette(
-				ColorBrewerDivergingType diverging_type,
-				ColorBrewerDivergingClasses diverging_classes,
-				bool continuous,
-				bool invert,
-				const boost::optional<Colour> &nan_colour = boost::none);
-
-
-		/**
 		 * The colour palette used when colouring by *scalar* value.
 		 *
 		 * The colour palette covers the range of values [0, 1].
@@ -264,33 +119,231 @@ namespace GPlatesGui
 				double max_strain_rate_style);
 
 
-		//
-		// Transcribe for sessions/projects.
-		//
+		/**
+		 * Age grid palettes.
+		 */
+		namespace Age
+		{
+			enum Type
+			{
+				Legacy,       // Original palette used in GPlates 2.2
+				Traditional,  // New default palette for GPlates 2.3
+				Modern        // Alternative palette for GPlates 2.3
+			};
 
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				ColorBrewerSequentialType &colorbrewer_sequential_type,
-				bool transcribed_construct_data);
+			/**
+			 * Returns a name for an age colour palette.
+			 *
+			 * This is useful for displaying in the GUI.
+			 */
+			QString
+			get_palette_name(
+					Type type);
 
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				ColorBrewerSequentialClasses &colorbrewer_sequential_classes,
-				bool transcribed_construct_data);
+			/**
+			 * Age grid colour palette.
+			 *
+			 * Age colour palettes cover a range of age values starting at 0Ma.
+			 *
+			 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
+			 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
+			 */
+			ColourPalette<double>::non_null_ptr_type
+			create_palette(
+					Type type);
 
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				ColorBrewerDivergingType &colorbrewer_diverging_type,
-				bool transcribed_construct_data);
 
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				ColorBrewerDivergingClasses &colorbrewer_diverging_classes,
-				bool transcribed_construct_data);
+			//
+			// Transcribe for sessions/projects.
+			//
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					Type &type,
+					bool transcribed_construct_data);
+		}
+
+
+		/**
+		 * Colors from www.ColorBrewer.org by Cynthia A. Brewer, Geography, Pennsylvania State University.
+		 */
+		namespace ColorBrewer
+		{
+			/**
+			 * ColorBrewer sequential palettes.
+			 */
+			namespace Sequential
+			{
+				/**
+				 * ColorBrewer sequential palette types.
+				 */
+				enum Type
+				{
+					OrRd,
+					PuBu,
+					BuPu,
+					Oranges,
+					BuGn,
+					YlOrBr,
+					YlGn,
+					Reds,
+					RdPu,
+					Greens,
+					YlGnBu,
+					Purples,
+					GnBu,
+					Greys,
+					YlOrRd,
+					PuRd,
+					Blues,
+					PuBuGn
+				};
+
+				/**
+				 * Returns a name for a sequential ColorBrewer colour palette.
+				 *
+				 * This is useful for displaying in the GUI.
+				 */
+				QString
+				get_palette_name(
+						Type type);
+
+				/**
+				 * There are between 3 and 9 classes available in ColorBrewer sequential palette types.
+				 */
+				enum Classes
+				{
+					Three = 3,
+					Four,
+					Five,
+					Six,
+					Seven,
+					Eight,
+					Nine
+				};
+
+				/**
+				 * Create a sequential ColorBrewer colour palette over the range [0,1].
+				 *
+				 * If @a continuous is true then the colours are linearly blended across each colour slice,
+				 * otherwise a constant colour is used in each colour slice.
+				 *
+				 * @a invert reverses the ordering of colours.
+				 *
+				 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
+				 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
+				 */
+				ColourPalette<double>::non_null_ptr_type
+				create_palette(
+						Type type,
+						Classes classes,
+						bool continuous,
+						bool invert,
+						const boost::optional<Colour> &nan_colour = boost::none);
+
+
+				//
+				// Transcribe for sessions/projects.
+				//
+
+				GPlatesScribe::TranscribeResult
+				transcribe(
+						GPlatesScribe::Scribe &scribe,
+						Type &type,
+						bool transcribed_construct_data);
+
+				GPlatesScribe::TranscribeResult
+				transcribe(
+						GPlatesScribe::Scribe &scribe,
+						Classes &classes,
+						bool transcribed_construct_data);
+			}
+
+
+			/**
+			 * ColorBrewer diverging palettes.
+			 */
+			namespace Diverging
+			{
+				/**
+				 * ColorBrewer diverging palette types.
+				 */
+				enum Type
+				{
+					Spectral,
+					RdYlGn,
+					RdBu,
+					PiYG,
+					PRGn,
+					RdYlBu,
+					BrBG,
+					RdGy,
+					PuOr
+				};
+
+				/**
+				 * Returns a name for a diverging ColorBrewer colour palette.
+				 *
+				 * This is useful for displaying in the GUI.
+				 */
+				QString
+				get_palette_name(
+						Type type);
+
+				/**
+				 * There are between 3 and 11 classes available in ColorBrewer diverging palette types.
+				 */
+				enum Classes
+				{
+					Three = 3,
+					Four,
+					Five,
+					Six,
+					Seven,
+					Eight,
+					Nine,
+					Ten,
+					Eleven
+				};
+
+				/**
+				 * Create a diverging ColorBrewer colour palette over the range [-1,1].
+				 *
+				 * If @a continuous is true then the colours are linearly blended across each colour slice,
+				 * otherwise a constant colour is used in each colour slice.
+				 *
+				 * @a invert reverses the ordering of colours.
+				 *
+				 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
+				 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
+				 */
+				ColourPalette<double>::non_null_ptr_type
+				create_palette(
+						Type type,
+						Classes classes,
+						bool continuous,
+						bool invert,
+						const boost::optional<Colour> &nan_colour = boost::none);
+
+
+				//
+				// Transcribe for sessions/projects.
+				//
+
+				GPlatesScribe::TranscribeResult
+				transcribe(
+						GPlatesScribe::Scribe &scribe,
+						Type &type,
+						bool transcribed_construct_data);
+
+				GPlatesScribe::TranscribeResult
+				transcribe(
+						GPlatesScribe::Scribe &scribe,
+						Classes &classes,
+						bool transcribed_construct_data);
+			}
+		}
 	}
 }
 

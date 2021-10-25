@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "ViewFeatureGeometriesWidgetUi.h"
+#include "ui_ViewFeatureGeometriesWidgetUi.h"
 
 #include "gui/FeatureFocus.h"
 #include "model/FeatureHandle.h"

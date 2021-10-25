@@ -252,7 +252,7 @@ namespace
 	/**
 	 * Returns whether or not we should offer a reconstruction plate ID property.
 	 *
-	 * Note: Returns false if geometry is topological (regardless of feature type).
+	 * Note: Returns false if geometry is a topological line or network (regardless of feature type).
 	 */
 	bool
 	should_offer_reconstruction_plate_id_prop(
@@ -293,7 +293,7 @@ namespace
 	/**
 	 * Returns whether or not we should offer a conjugate plate ID property.
 	 *
-	 * Note: Returns false if geometry is topological (regardless of feature type).
+	 * Note: Returns false if geometry is a topological line or network (regardless of feature type).
 	 */
 	bool
 	should_offer_conjugate_plate_id_prop(
@@ -2068,9 +2068,9 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_enter_page(
 		// then select the default geometry property name based on the feature type.
 		//
 		// Note that we really want to encourage users to use the 'default' geometry property
-		// for a feature type as this makes retrieving geometries (eg, in python pygplates API)
+		// for a feature type as this makes retrieving geometries (eg, in python pyGPlates API)
 		// much easier for users (since they don't have to specify the geometry property name -
-		// when not specified pygplates will extract the 'default' geometry property).
+		// when not specified pyGPlates will extract the 'default' geometry property).
 		if (last_page < COMMON_PROPERTIES_PAGE && d_feature_type != d_previously_selected_feature_type)
 		{
 			select_default_geometry_property_name();
@@ -2598,6 +2598,7 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 	GPlatesFeatureVisitors::GeometrySetter geometry_setter(present_day_geometry);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_property_clone =
 			(*geometry_property_iterator)->deep_clone();
+			(*geometry_property_iterator)->clone();
 	geometry_setter.set_geometry(geometry_property_clone.get());
 	*geometry_property_iterator = geometry_property_clone;
 

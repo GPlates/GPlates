@@ -31,8 +31,10 @@
 #include <QDebug>
 #include <QImage>
 #include <QPainter>
+#include <QPainterPath>
 #include <QSize>
 #include <QString>
+#include <QtGlobal>
 
 #include "FeedbackOpenGLToQPainter.h"
 
@@ -177,7 +179,12 @@ namespace
 		{
 			qDebug("%d ", type_count[i]);
 		}
-		qDebug() << endl;
+		qDebug()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 	}
 
 
@@ -263,7 +270,7 @@ namespace
 		QRectF lines_bounding_rect = lines.boundingRect();
 		QRectF points_bounding_rect = points.boundingRect();
 
-		QRectF result = lines_bounding_rect.unite(points_bounding_rect);
+		QRectF result = lines_bounding_rect.united(points_bounding_rect);
 
 		return result;
 	}

@@ -32,9 +32,6 @@
 #include "PythonConfiguration.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
-
 GPlatesGui::PythonCfgItem::~PythonCfgItem()
 {
 	// If our Python object is going to be destroyed then do it while holding the Python GIL.
@@ -131,5 +128,3 @@ GPlatesGui::PythonCfgPalette::is_built_in_palette() const
 {
 	return built_in_palette(d_value.toString()) != NULL;
 }
-
-#endif //GPLATES_NO_PYTHON

@@ -31,6 +31,7 @@
 #include <QProcess>
 #include <QMap>
 #include <iostream>
+#include <string>
 
 #include "PythonManager.h"
 
@@ -44,6 +45,10 @@
 #include "app-logic/UserPreferences.h"
 
 #include "file-io/ErrorOpeningFileForReadingException.h"
+#include "file-io/StandaloneBundle.h"
+
+#include "global/config.h"
+#include "global/python.h"  // PY_MAJOR_VERSION
 
 #include "presentation/Application.h"
 
@@ -52,9 +57,12 @@
 
 #include "utils/StringUtils.h"
 
-#if !defined(GPLATES_NO_PYTHON)
-extern "C" void initpygplates();
 
+#if PY_MAJOR_VERSION >= 3
+PyMODINIT_FUNC PyInit_pygplates(void);
+#else
+extern "C" void initpygplates();
+#endif 
 
 GPlatesGui::PythonManager::PythonManager() : 
 	d_python_main_thread_runner(NULL),
@@ -118,23 +126,40 @@ GPlatesGui::PythonManager::initialize(
 void
 GPlatesGui::PythonManager::check_python_capability()
 {
+	// FIXME: For some reason importing 'sys' is required for Python 3.
+	//
+	// This was discovered because 'register_utils_scripts()' seemed to work,
+	// but the code below did not. And the only difference is 'set_python_prefix()'
+	// is called between them and that calls 'bp::import("sys")'.
+#if PY_MAJOR_VERSION >= 3
+	bp::import("sys");
+#endif
+
+	// TODO: Uncomment the 'print()' statements once stdout/stderr capture and redirection to
+	//       log window/file is properly working (in 'GPlatesQtMsgHandler').
+	//       For now, we're keeping the console just for non-GPlates output (eg, dependency libraries).
+	//       Also now that we bundle the Python standard library with GPlates (and consequently disable
+	//       PYTHONHOME and PYTHONPATH) it's not so bad if we don't print the Python prefix.
 	QString test_code = QString() +
-			"print \'******Start testing python capability******\';" +
+			"from __future__ import print_function;" +
+			//"print(\'******Start testing python capability******\');" +
 			"import sys;" +
 			"import code;"  +
 			"import math;"  +
 			"import platform;" +
 			"import pygplates;" +
-			"print \'python import test passed.\';" +
+			//"print(\'python import test passed.\');" +
 			"math.log(12);" +
-			"print \'python math test passed.\';" +
-			"print \'Version: \'; print sys.version_info;" +
+			//"print(\'python math test passed.\');" +
+			//"print(\'Version: \'); print(sys.version_info);" +
 			"sys.platform;" +
-			"platform.uname();" +
-			"print \'Prefix: \' +sys.prefix;" +
-			"print \'Exec Prefix: \'+sys.exec_prefix;" +
-			"print \'python system test passed.\';" +
-			"print \'******End of testing python capability******\';";
+			"platform.uname();"
+			//"print(\'Prefix: \' +sys.prefix);" +
+			//"print(\'Exec Prefix: \'+sys.exec_prefix);" +
+			//"print(\'python system test passed.\');" +
+			//"print(\'******End of testing python capability******\');"
+			//"sys.stdout.flush();"
+		;
 
 	bool result = true;
 	GPlatesApi::PythonInterpreterLocker l;
@@ -219,7 +244,11 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	using namespace GPlatesApi;
 	// Initialize the embedded Python interpreter.
 	char GPLATES_MODULE_NAME[] = "pygplates";
-	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
+#if PY_MAJOR_VERSION >= 3
+	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &PyInit_pygplates))
+#else
+    if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
+#endif
 	{
 		qWarning() << PythonUtils::get_error_message();
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
@@ -236,7 +265,17 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	string in static storage whose contents will not change for the duration of the program’s 
 	execution. No code in the Python interpreter will change the contents of this storage.
 	*/
+#if PY_MAJOR_VERSION >= 3
+	// Convert char* to wchar_t*
+	const std::wstring program_name = GPlatesUtils::make_wstring_from_qstring(QString(argv[0]));
+	// Seems Py_SetProgramName accepts a wchar_t* pointer to 'non-const', so make a copy.
+	std::vector<wchar_t> program_name_non_const(program_name.begin(), program_name.end());
+	program_name_non_const.push_back('\0'); // Null terminate the string.
+
+	Py_SetProgramName(&program_name_non_const[0]);
+#else
 	Py_SetProgramName(argv[0]);
+#endif
 	/*
 	Ignore the environment variables. This is necessary because GPlates only works with the *correct* python version, 
 	which is the version that boost python uses. So, the python version has been determined when compiling 
@@ -246,15 +285,11 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	interpreter. We force GPlates to use the directory which contains GPlates executable binary as the python home 
 	by setting Py_IgnoreEnvironmentFlag flag. On Mac OS, it is the python framework inside application bundle.
 	*/
-
-	/*
-	* Due to the CRT mismatch, putenv cannot set environment variables without restarting. Use this flag for now.
-	* The CRT mismatch problem maybe need to be addressed in the future, but not now.
-	*/
-	// The GPLATES_IGNORE_PYTHON_ENVIRONMENT is defined in 'ConfigDefault.cmake' and 'src/global/config.h.in'
-	#ifdef GPLATES_IGNORE_PYTHON_ENVIRONMENT
-	Py_IgnoreEnvironmentFlag = 1;
-	#endif
+	// If GPlates has bundled the Python standard library then ignore all PYTHON* environment variables (eg, PYTHONPATH and PYTHONHOME).
+	if (GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory())
+	{
+		Py_IgnoreEnvironmentFlag = 1;
+	}
 
 	/* 
 	Info from Python manual.
@@ -262,23 +297,26 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	using any other Python/C API functions; with the exception of Py_SetProgramName(), 
 	Py_SetPythonHome(), PyEval_InitThreads(), PyEval_ReleaseLock(), and PyEval_AcquireLock(). 
 	This initializes the table of loaded modules (sys.modules), and creates the fundamental 
-	modules __builtin__, __main__ and sys. It also initializes the module search path (sys.path). 
+	modules __builtin__ ('builtins' for Python 3), __main__ and sys. It also initializes the module search path (sys.path). 
 	It does not set sys.argv; use PySys_SetArgvEx() for that. This is a no-op when called for a 
 	second time (without calling Py_Finalize() first). There is no return value; it is a fatal error 
 	if the initialization fails.
 	*/
 	Py_Initialize();
 		
-	// Initialise Python threading support; this grabs the Global Interpreter Lock
-	// for this thread.
+	// Initialise Python threading support; this grabs the Global Interpreter Lock for this thread.
+	//
+	// Note: For Python >= 3.9 this no longer does anything (and is deprecated).
+#if (PY_MAJOR_VERSION < 3) || ((PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9))
 	PyEval_InitThreads();
+#endif
 
 	// But then we give up the GIL, so that PythonInterpreterLocker may now be used.
 	PyEval_SaveThread();
 
 	PythonInterpreterLocker interpreter_locker;
 
-	// Load the pygplates module.
+	// Load the 'pygplates' module.
 	try
 	{
 		d_python_main_module = import("__main__");
@@ -296,6 +334,9 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	//The objective of the following code is mysterious to me. 
 	//Comment out them until I figure out the purpose of these code.
 	//At least one crash is caused by deleting python built-in functions.
+	//
+	// NOTE: Python 3 names the "__builtin__" module "builtins"
+	// (in case this code is later uncommented).
 #if 0
 	// Importing "sys" enables the printing of the value of expressions in
 	// the interactive Python console window, and importing "builtin" enables
@@ -623,18 +664,3 @@ GPlatesGui::PythonManager::print_py_msg(const QString& msg)
 {
 	d_python_console_dialog_ptr->append_text(msg);
 }
-
-#endif //GPLATES_NO_PYTHON
-
-
-
-
-
-
-
-
-
-
-
-
-

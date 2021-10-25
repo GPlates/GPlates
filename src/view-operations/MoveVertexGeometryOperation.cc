@@ -26,6 +26,7 @@
  */
 
 #include <memory>
+#include <utility> // std::move
 #include <QDebug>
 #include <QUndoCommand>
 
@@ -342,7 +343,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::move_vertex(
 		bool is_intermediate_move)
 {
 	// The command that does the actual moving of vertex.
-	std::auto_ptr<QUndoCommand> move_vertex_command(
+	std::unique_ptr<QUndoCommand> move_vertex_command(
 			new GeometryBuilderMovePointUndoCommand(
 					d_geometry_builder,
 					d_selected_vertex_index,
@@ -351,10 +352,10 @@ GPlatesViewOperations::MoveVertexGeometryOperation::move_vertex(
 					
 	// Command wraps move vertex command with handing canvas tool choice and
 	// move vertex tool activation.
-	std::auto_ptr<QUndoCommand> undo_command(
+	std::unique_ptr<QUndoCommand> undo_command(
 			new GeometryOperationUndoCommand(
 					QObject::tr("move vertex"),
-					move_vertex_command,
+					std::move(move_vertex_command),
 					this,
 					d_canvas_tool_workflows,
 					d_move_vertex_command_id));
@@ -425,7 +426,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::add_rendered_lines_for_polyl
 		d_geometry_builder.get_geometry_point_end(geom_index);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
-		GPlatesMaths::PolylineOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
+		GPlatesMaths::PolylineOnSphere::create(builder_geom_begin, builder_geom_end);
 
 	RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 				polyline_on_sphere,
@@ -447,7 +448,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::add_rendered_lines_for_polyg
 		d_geometry_builder.get_geometry_point_end(geom_index);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
-		GPlatesMaths::PolygonOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
+		GPlatesMaths::PolygonOnSphere::create(builder_geom_begin, builder_geom_end);
 
 	RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_polygon_on_sphere(
 				polygon_on_sphere,

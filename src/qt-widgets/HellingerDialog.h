@@ -35,7 +35,7 @@
 #include "GPlatesDialog.h"
 #include "HellingerConfigurationWidget.h"
 #include "HellingerModel.h"
-#include "HellingerDialogUi.h"
+#include "ui_HellingerDialogUi.h"
 #include "HellingerThread.h"
 #include "OpenDirectoryDialog.h"
 

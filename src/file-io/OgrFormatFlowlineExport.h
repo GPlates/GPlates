@@ -56,6 +56,8 @@ namespace GPlatesFileIO
 
 		/**
 		* Exports @a ReconstructedFlowline objects to ESRI Shapefile format.
+		*
+		* @param wrap_to_dateline if true then exported geometries are wrapped/clipped to the dateline.
 		*/
 		void
 		export_flowlines(
@@ -65,7 +67,8 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool should_export_referenced_files = true);
+				bool should_export_referenced_files,
+				bool wrap_to_dateline);
 
 
 	}

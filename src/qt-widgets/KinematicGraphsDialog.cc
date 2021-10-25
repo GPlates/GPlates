@@ -27,6 +27,35 @@
 #include <QStandardItemModel>
 #include <QVector>
 
+// Workaround MSVC compile warnings of math.h macro redefinitions (such as "M_PI").
+//
+// This is caused by the following:
+//
+// - Qwt includes <qwt_math.h> which includes <QtCore/qglobal.h> which seems to eventually indirectly
+//   include <cmath> but _USE_MATH_DEFINES is not yet defined and hence "M_PI", etc, are not defined,
+// - <qwt_math.h> later defines _USE_MATH_DEFINES and then includes <qmath.h>,
+// - <qmath.h> includes <cmath> but, since <cmath> has already been included, its include guards prevent
+//   it from including <math.h> and so "M_PI", etc, do *not* get defined (which <qmath.h> is relying on),
+// - <qmath.h> then defines "M_PI", etc, because they have not yet been defined,
+// - some subsequent header must then be (indirectly) including <math.h> (not <cmath>) which attempts
+//   to define "M_PI", etc, because that part of <math.h> is outside its own include guards
+//   (so it doesn't matter that <math.h> has already been included) and <math.h> does not check to see
+//   if "M_PI", etc, are already defined and this results in the macro redefinition warning.
+//
+// Although the problem lies in <qmath.h> (eg, it could fix itself by including <math.h> instead of <cmath>)
+// <qwt_math.h> defines _USE_MATH_DEFINES but does not undefine it.
+// So the workaround is to include <qwt_math.h> and then undefine _USE_MATH_DEFINES ourself
+// (and hope that no one else defines it) thus preventing <math.h> from attemping to redefine "M_PI", etc,
+// that <qmath.h> has already defined. And since <qwt_math.h> has now been included it won't get
+// included/processed again and hence cannot define _USE_MATH_DEFINES again (to resurrect the problem).
+//   
+#if defined(_MSC_VER)
+#	include "qwt_math.h"
+#	ifdef _USE_MATH_DEFINES
+#	undef _USE_MATH_DEFINES
+#	endif
+#endif
+
 #include "qwt_scale_engine.h"
 #include "qwt_plot.h"
 #include "qwt_plot_canvas.h"
@@ -201,7 +230,7 @@ namespace
 			return result.d_velocity_lon;
 			break;
 		case GPlatesQtWidgets::KinematicGraphsDialog::ANGULAR_VELOCITY_GRAPH_TYPE:
-			return std::abs(result.d_angular_velocity);
+			return result.d_angular_velocity;
 			break;
 #if 0
 		case GPlatesQtWidgets::KinematicGraphsDialog::ROTATION_RATE_GRAPH_TYPE:
@@ -657,17 +686,10 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		return;
 	}
 
-	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
-			d_application_state.get_current_reconstruction()
-			.get_default_reconstruction_layer_output()->get_reconstruction_tree();
-
+	// The default reconstruction tree creator.
 	GPlatesAppLogic::ReconstructionTreeCreator tree_creator =
-			GPlatesAppLogic::create_cached_reconstruction_tree_creator(
-				default_reconstruction_tree->get_reconstruction_features(),
-				d_anchor_id,
-				100, /* try this cache size for starters */
-				// We're not going to modify the reconstruction features so no need to clone...
-				false/*clone_reconstruction_features*/);
+			d_application_state.get_current_reconstruction()
+			.get_default_reconstruction_layer_output()->get_reconstruction_tree_creator();
 
 	LatLonPoint llp(d_lat,d_lon);
 	PointOnSphere pos_ = make_point_on_sphere(llp);
@@ -683,8 +705,8 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		get_older_and_younger_times(d_configuration,time,time_older,time_younger);
 
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree =
-				tree_creator.get_reconstruction_tree(time);
-		FiniteRotation rot = tree->get_composed_absolute_rotation(d_moving_id).first;
+				tree_creator.get_reconstruction_tree(time, d_anchor_id);
+		FiniteRotation rot = tree->get_composed_absolute_rotation(d_moving_id);
 
 		PointOnSphere p = rot*pos_;
 
@@ -692,13 +714,13 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 
 		// t1 is younger than t2, as required by the calculate_velocity_vector_and_omaga function used below.
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_t1 =
-				tree_creator.get_reconstruction_tree(time_younger);
+				tree_creator.get_reconstruction_tree(time_younger, d_anchor_id);
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_t2 =
-				tree_creator.get_reconstruction_tree(time_older);
+				tree_creator.get_reconstruction_tree(time_older, d_anchor_id);
 
 
-		FiniteRotation rot_1 = tree_t1->get_composed_absolute_rotation(d_moving_id).first;
-		FiniteRotation rot_2 = tree_t2->get_composed_absolute_rotation(d_moving_id).first;
+		FiniteRotation rot_1 = tree_t1->get_composed_absolute_rotation(d_moving_id);
+		FiniteRotation rot_2 = tree_t2->get_composed_absolute_rotation(d_moving_id);
 
 		PointOnSphere p_1 = rot_1*pos_;
 		PointOnSphere p_2 = rot_2*pos_;
@@ -706,11 +728,9 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		// The velocity calculation assumes a time step of 1Ma. As we have used dtime here to generate the finite rotations, we need to correct for this.
 		// The position here should represent the position of the point *at the desired time instant*, not the present day point.
 
-		// I've added an axis hint to the velocity routine in order to get the sign of the rotation angle, but in order to get the axis hint
-		// I have to generate the stage pole, so I'm probably duplicating work here. There may be a neater way of getting this.
-		FiniteRotation stage_pole_rotation = GPlatesAppLogic::RotationUtils::get_stage_pole(*tree_t1,*tree_t2,d_moving_id,d_anchor_id);
-		boost::optional<UnitVector3D> stage_pole_axis = stage_pole_rotation.axis_hint();
-		std::pair<Vector3D,real_t> velocity_and_omega_pair = calculate_velocity_vector_and_omega(p,rot_1,rot_2,dtime,stage_pole_axis);
+		// Calculate velocity 'vector' and positive angular velocity (rads/Myr).
+		// Note that 'omega' is always positive since the stage rotation 'pole' is arbitrary (can negate pole/angle pair and get same rotation).
+		std::pair<Vector3D,real_t> velocity_and_omega_pair = calculate_velocity_vector_and_omega(p,rot_1,rot_2,dtime);
 		Vector3D v = velocity_and_omega_pair.first;
 
 		VectorColatitudeLongitude vcl = convert_vector_from_xyz_to_colat_lon(p,v);
@@ -851,12 +871,8 @@ void
 GPlatesQtWidgets::KinematicGraphsDialog::initialise_widgets()
 {
 
-	//	  Qt documentation says (http://qt-project.org/doc/qt-4.8/qobject.html):
-	//		"For portability reasons, we recommend that you use escape sequences for
-	//		specifying non-ASCII characters in string literals to trUtf8(). For example:
-	//			label->setText(tr("F\374r \310lise"));  "
-	//
-	//		So we use \260 for the degree symbol.
+	// QObject::tr() accepts a string literal in UTF8 format.
+	// So we use \302\260 as the UTF8 encoding of the degree symbol.
 
 
 
@@ -875,20 +891,20 @@ GPlatesQtWidgets::KinematicGraphsDialog::initialise_widgets()
 	d_model->setHorizontalHeaderItem(LAT_COLUMN,new QStandardItem(QObject::tr("Lat")));
 	d_model->setHorizontalHeaderItem(LON_COLUMN,new QStandardItem(QObject::tr("Lon")));
 	d_model->setHorizontalHeaderItem(VELOCITY_MAG_COLUMN,new QStandardItem(QObject::tr("V mag (cm/yr)")));
-	d_model->setHorizontalHeaderItem(VELOCITY_AZIMUTH_COLUMN,new QStandardItem(QObject::tr("V azimuth (\260)")));
+	d_model->setHorizontalHeaderItem(VELOCITY_AZIMUTH_COLUMN,new QStandardItem(QObject::tr("V azimuth (\302\260)")));
 	d_model->setHorizontalHeaderItem(VELOCITY_COLAT_COLUMN,new QStandardItem(QObject::tr("V colat (cm/yr)")));
 	d_model->setHorizontalHeaderItem(VELOCITY_LON_COLUMN,new QStandardItem(QObject::tr("V lon (cm/yr)")));
-	d_model->setHorizontalHeaderItem(ANGULAR_VELOCITY_COLUMN,new QStandardItem(QObject::tr("Ang V (\260/Ma)")));
+	d_model->setHorizontalHeaderItem(ANGULAR_VELOCITY_COLUMN,new QStandardItem(QObject::tr("Ang V (\302\260/Ma)")));
 
 
 	d_model->horizontalHeaderItem(TIME_COLUMN)->setToolTip(QObject::tr("Time (Ma)"));
 	d_model->horizontalHeaderItem(LAT_COLUMN)->setToolTip(QObject::tr("Latitude"));
 	d_model->horizontalHeaderItem(LON_COLUMN)->setToolTip(QObject::tr("Longitude"));
 	d_model->horizontalHeaderItem(VELOCITY_MAG_COLUMN)->setToolTip(QObject::tr("Magnitude of velocity (cm/yr)"));
-	d_model->horizontalHeaderItem(VELOCITY_AZIMUTH_COLUMN)->setToolTip(QObject::tr("Azimuth of velocity (\260)"));
+	d_model->horizontalHeaderItem(VELOCITY_AZIMUTH_COLUMN)->setToolTip(QObject::tr("Azimuth of velocity (\302\260)"));
 	d_model->horizontalHeaderItem(VELOCITY_COLAT_COLUMN)->setToolTip(QObject::tr("Colatitude component of velocity (cm/yr)"));
 	d_model->horizontalHeaderItem(VELOCITY_LON_COLUMN)->setToolTip(QObject::tr("Longitude component of velocity (cm/yr)"));
-	d_model->horizontalHeaderItem(ANGULAR_VELOCITY_COLUMN)->setToolTip(QObject::tr("Angular velocity (\260/Ma)"));
+	d_model->horizontalHeaderItem(ANGULAR_VELOCITY_COLUMN)->setToolTip(QObject::tr("Angular velocity (\302\260/Ma)"));
 
 
 	table_results->setModel(d_model);
@@ -908,7 +924,7 @@ GPlatesQtWidgets::KinematicGraphsDialog::initialise_widgets()
 	table_results->setAlternatingRowColors(true);
 #if 0
 	// Temp addition to table
-	d_model->setHorizontalHeaderItem(ROTATION_RATE_COLUMN,new QStandardItem(QObject::tr("Rot rate (\260/Ma)")));
+	d_model->setHorizontalHeaderItem(ROTATION_RATE_COLUMN,new QStandardItem(QObject::tr("Rot rate (\302\260/Ma)")));
 	d_model->horizontalHeaderItem(ROTATION_RATE_COLUMN)->setToolTip(QObject::tr("Rate of change of velocity azimuth"));
 	table_results->horizontalHeader()->resizeSection(ROTATION_RATE_COLUMN,100);
 #endif
@@ -971,7 +987,7 @@ GPlatesQtWidgets::KinematicGraphsDialog::set_graph_axes_and_titles()
 		graph_title = QObject::tr("Velocity magnitude vs time");
 		break;
 	case VELOCITY_AZIMUTH_GRAPH_TYPE:
-		axis_title = QObject::tr("Azimuth (\260)");
+		axis_title = QObject::tr("Azimuth (\302\260)"); // \302\260 is UTF8 for degree sign
 		graph_title = QObject::tr("Velocity azimuth vs time");
 		break;
 	case VELOCITY_COLAT_GRAPH_TYPE:
@@ -983,11 +999,11 @@ GPlatesQtWidgets::KinematicGraphsDialog::set_graph_axes_and_titles()
 		graph_title = QObject::tr("Velocity longitude component vs time");
 		break;
 	case ANGULAR_VELOCITY_GRAPH_TYPE:
-		axis_title = QObject::tr("Angular velocity (\260/Ma)");
+		axis_title = QObject::tr("Angular velocity (\302\260/Ma)"); // \302\260 is UTF8 for degree sign
 		graph_title = QObject::tr("Angular velocity vs time");
 		break;
 	case ROTATION_RATE_GRAPH_TYPE:
-		axis_title = QObject::tr("Rotation rate (\260/Ma)");
+		axis_title = QObject::tr("Rotation rate (\302\260/Ma)"); // \302\260 is UTF8 for degree sign
 		graph_title = QObject::tr("Rotation rate vs time");
 		break;
 	default:

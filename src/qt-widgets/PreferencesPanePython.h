@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "PreferencesPanePythonUi.h"
+#include "ui_PreferencesPanePythonUi.h"
 
 
 namespace GPlatesAppLogic

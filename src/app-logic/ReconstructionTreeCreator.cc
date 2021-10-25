@@ -31,9 +31,10 @@
 #include "ReconstructionTreeCreator.h"
 
 #include "AppLogicUtils.h"
-#include "ReconstructionGraph.h"
-#include "ReconstructionTreePopulator.h"
+#include "ReconstructionGraphBuilder.h"
+#include "ReconstructionGraphPopulator.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/PreconditionViolationError.h"
 #include "global/GPlatesAssert.h"
 
@@ -45,58 +46,6 @@ namespace GPlatesAppLogic
 	namespace
 	{
 		/**
-		 * Clone an existing feature collection.
-		 *
-		 * NOTE: We don't use FeatureHandle::clone() because it currently does a shallow copy
-		 * instead of a deep copy (and we're in the middle of updating the model).
-		 * FIXME: Once FeatureHandle has been updated to use the same revisioning system as
-		 * TopLevelProperty and PropertyValue then just use FeatureCollectionHandle::clone() instead.
-		 */
-		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
-		clone_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref)
-		{
-			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					feature_collection_ref.is_valid(),
-					GPLATES_ASSERTION_SOURCE);
-
-			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type cloned_feature_collection =
-					GPlatesModel::FeatureCollectionHandle::create();
-
-			// Iterate over the feature of the feature collection and clone them.
-			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_ref->begin();
-			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_ref->end();
-			for ( ; features_iter != features_end; ++features_iter)
-			{
-				if (!features_iter.is_still_valid())
-				{
-					continue;
-				}
-
-				GPlatesModel::FeatureHandle::non_null_ptr_type feature = *features_iter;
-
-				GPlatesModel::FeatureHandle::non_null_ptr_type cloned_feature =
-						GPlatesModel::FeatureHandle::create(feature->feature_type());
-
-				// Iterate over the properties of the feature and clone them.
-				GPlatesModel::FeatureHandle::iterator properties_iter = feature->begin();
-				GPlatesModel::FeatureHandle::iterator properties_end = feature->end();
-				for ( ; properties_iter != properties_end; ++properties_iter)
-				{
-					cloned_feature->add((*properties_iter)->deep_clone());
-				}
-
-				cloned_feature_collection->add(cloned_feature);
-			}
-
-			// Copy the tags also.
-			cloned_feature_collection->tags() = feature_collection_ref->tags();
-
-			return cloned_feature_collection;
-		}
-
-
-		/**
 		 * An uncached reconstruction tree creator implementation that simply creates a new
 		 * reconstruction tree whenever a reconstruction tree is requested.
 		 */
@@ -106,30 +55,15 @@ namespace GPlatesAppLogic
 		public:
 
 			UncachedReconstructionTreeCreatorImpl(
-					const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
-					GPlatesModel::integer_plate_id_type default_anchor_plate_id,
-					bool clone_reconstruction_features) :
+					const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
+					bool extend_total_reconstruction_poles_to_distant_past,
+					GPlatesModel::integer_plate_id_type default_anchor_plate_id) :
+				d_reconstruction_graph(
+						create_reconstruction_graph(
+								reconstruction_feature_collections,
+								extend_total_reconstruction_poles_to_distant_past)),
 				d_default_anchor_plate_id(default_anchor_plate_id)
-			{
-				BOOST_FOREACH(
-						const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-						reconstruction_features_collection)
-				{
-					// If requested then clone the feature collections to ensure that we will always create
-					// a reconstruction tree using the state of the feature collections right now
-					// (because they could subsequently get modified by some other client).
-					if (feature_collection_ref.is_valid())
-					{
-						const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-								clone_reconstruction_features
-								? clone_feature_collection(feature_collection_ref)
-								: GPlatesModel::FeatureCollectionHandle::non_null_ptr_type(feature_collection_ref.handle_ptr());
-
-						d_cloned_reconstruction_features_collection.push_back(feature_collection);
-						d_cloned_reconstruction_features_collection_refs.push_back(feature_collection->reference());
-					}
-				}
-			}
+			{  }
 
 			//! Returns the reconstruction tree for the specified time and anchored plate id.
 			virtual
@@ -138,10 +72,7 @@ namespace GPlatesAppLogic
 					const double &reconstruction_time,
 					GPlatesModel::integer_plate_id_type anchor_plate_id)
 			{
-				return GPlatesAppLogic::create_reconstruction_tree(
-						reconstruction_time,
-						anchor_plate_id,
-						d_cloned_reconstruction_features_collection_refs);
+				return ReconstructionTree::create(d_reconstruction_graph, reconstruction_time, anchor_plate_id);
 			}
 
 			//! Returns the reconstruction tree for the specified time and the *default* anchored plate id.
@@ -153,36 +84,39 @@ namespace GPlatesAppLogic
 				return get_reconstruction_tree(reconstruction_time, d_default_anchor_plate_id);
 			}
 
+			//! Returns the default anchor plate ID;
+			virtual
+			GPlatesModel::integer_plate_id_type
+			get_default_anchor_plate_id() const
+			{
+				return d_default_anchor_plate_id;
+			}
+
 		private:
 
-			std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_cloned_reconstruction_features_collection;
-			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_cloned_reconstruction_features_collection_refs;
+			ReconstructionGraph::non_null_ptr_to_const_type d_reconstruction_graph;
 			GPlatesModel::integer_plate_id_type d_default_anchor_plate_id;
 		};
 	}
 }
 
 
-const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type
-GPlatesAppLogic::create_reconstruction_tree(
-		const double &time,
-		GPlatesModel::integer_plate_id_type anchor_plate_id,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				reconstruction_features_collection)
+const GPlatesAppLogic::ReconstructionGraph::non_null_ptr_to_const_type
+GPlatesAppLogic::create_reconstruction_graph(
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
+		bool extend_total_reconstruction_poles_to_distant_past)
 {
-	ReconstructionGraph graph;
-	ReconstructionTreePopulator rtp(time, graph);
+	PROFILE_FUNC();
+
+	ReconstructionGraphBuilder graph_builder(extend_total_reconstruction_poles_to_distant_past);
+	ReconstructionGraphPopulator rgp(graph_builder);
 
 	AppLogicUtils::visit_feature_collections(
-			reconstruction_features_collection.begin(),
-			reconstruction_features_collection.end(),
-			rtp);
+			reconstruction_feature_collections.begin(),
+			reconstruction_feature_collections.end(),
+			rgp);
 
-	// Build the reconstruction tree, using 'root' as the root of the tree.
-	ReconstructionTree::non_null_ptr_type tree =
-			graph.build_tree(anchor_plate_id, time, reconstruction_features_collection);
-
-	return tree;
+	return graph_builder.build_graph();
 }
 
 
@@ -216,19 +150,26 @@ GPlatesAppLogic::ReconstructionTreeCreator::get_reconstruction_tree(
 }
 
 
+GPlatesModel::integer_plate_id_type
+GPlatesAppLogic::ReconstructionTreeCreator::get_default_anchor_plate_id() const
+{
+	return d_impl->get_default_anchor_plate_id();
+}
+
+
 GPlatesAppLogic::ReconstructionTreeCreator
 GPlatesAppLogic::create_cached_reconstruction_tree_creator(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
+		bool extend_total_reconstruction_poles_to_distant_past,
 		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
-		unsigned int reconstruction_tree_cache_size,
-		bool clone_reconstruction_features)
+		unsigned int reconstruction_tree_cache_size)
 {
 	const ReconstructionTreeCreatorImpl::non_null_ptr_type impl =
 			create_cached_reconstruction_tree_creator_impl(
-					reconstruction_features_collection,
+					reconstruction_feature_collections,
+					extend_total_reconstruction_poles_to_distant_past,
 					default_anchor_plate_id,
-					reconstruction_tree_cache_size,
-					clone_reconstruction_features);
+					reconstruction_tree_cache_size);
 
 	return ReconstructionTreeCreator(impl);
 }
@@ -237,7 +178,7 @@ GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 GPlatesAppLogic::ReconstructionTreeCreator
 GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
+		boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id,
 		unsigned int reconstruction_tree_cache_size)
 {
 	const ReconstructionTreeCreatorImpl::non_null_ptr_type impl =
@@ -252,27 +193,27 @@ GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
 
 GPlatesUtils::non_null_intrusive_ptr<GPlatesAppLogic::CachedReconstructionTreeCreatorImpl>
 GPlatesAppLogic::create_cached_reconstruction_tree_creator_impl(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
+		bool extend_total_reconstruction_poles_to_distant_past,
 		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
-		unsigned int reconstruction_tree_cache_size,
-		bool clone_reconstruction_features)
+		unsigned int reconstruction_tree_cache_size)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			reconstruction_tree_cache_size > 0,
 			GPLATES_ASSERTION_SOURCE);
 
 	return CachedReconstructionTreeCreatorImpl::create(
-			reconstruction_features_collection,
+			reconstruction_feature_collections,
+			extend_total_reconstruction_poles_to_distant_past,
 			default_anchor_plate_id,
-			reconstruction_tree_cache_size,
-			clone_reconstruction_features);
+			reconstruction_tree_cache_size);
 }
 
 
 GPlatesUtils::non_null_intrusive_ptr<GPlatesAppLogic::CachedReconstructionTreeCreatorImpl>
 GPlatesAppLogic::create_cached_reconstruction_tree_adaptor_impl(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
+		boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id,
 		unsigned int reconstruction_tree_cache_size)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -288,68 +229,56 @@ GPlatesAppLogic::create_cached_reconstruction_tree_adaptor_impl(
 
 GPlatesAppLogic::ReconstructionTreeCreator
 GPlatesAppLogic::create_uncached_reconstruction_tree_creator(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
-		bool clone_reconstruction_features)
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
+		bool extend_total_reconstruction_poles_to_distant_past,
+		GPlatesModel::integer_plate_id_type default_anchor_plate_id)
 {
 	ReconstructionTreeCreatorImpl::non_null_ptr_type impl(
 			new UncachedReconstructionTreeCreatorImpl(
-					reconstruction_features_collection,
-					default_anchor_plate_id,
-					clone_reconstruction_features));
+					reconstruction_feature_collections,
+					extend_total_reconstruction_poles_to_distant_past,
+					default_anchor_plate_id));
 
 	return ReconstructionTreeCreator(impl);
 }
 
 
 GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::CachedReconstructionTreeCreatorImpl(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
+		bool extend_total_reconstruction_poles_to_distant_past,
 		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
-		unsigned int reconstruction_tree_cache_size,
-		bool clone_reconstruction_features) :
-	d_default_anchor_plate_id(default_anchor_plate_id),
+		unsigned int reconstruction_tree_cache_size) :
 	d_create_reconstruction_tree_function(
 			boost::bind(
-					&CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_feature_collections,
+					&CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_graph,
 					this,
-					_1,
-					// Using 'boost::cref()' to ensure vector not copied by boost-bind...
-					// We'll initialise vector shortly.
-					boost::cref(d_cloned_reconstruction_features_collection_refs))),
+					boost::placeholders::_1,
+					// Non-null intrusive pointer to reconstruction graph gets copied by boost-bind...
+					create_reconstruction_graph(
+							reconstruction_feature_collections,
+							extend_total_reconstruction_poles_to_distant_past))),
+	d_get_default_anchor_plate_id_function([=]() { return default_anchor_plate_id; }),
 	d_cache(d_create_reconstruction_tree_function, reconstruction_tree_cache_size)
 {
-	BOOST_FOREACH(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-			reconstruction_features_collection)
-	{
-		// If requested then clone the feature collections to ensure that we will always create
-		// a reconstruction tree using the state of the feature collections right now
-		// (because they could subsequently get modified by some other client).
-		if (feature_collection_ref.is_valid())
-		{
-			const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-					clone_reconstruction_features
-					? clone_feature_collection(feature_collection_ref)
-					: GPlatesModel::FeatureCollectionHandle::non_null_ptr_type(feature_collection_ref.handle_ptr());
-
-			d_cloned_reconstruction_features_collection.push_back(feature_collection);
-			d_cloned_reconstruction_features_collection_refs.push_back(feature_collection->reference());
-		}
-	}
 }
 
 
 GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::CachedReconstructionTreeCreatorImpl(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
+		boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id,
 		unsigned int reconstruction_tree_cache_size) :
-	d_default_anchor_plate_id(default_anchor_plate_id),
 	d_create_reconstruction_tree_function(
 			boost::bind(
 					&CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_tree_creator,
 					this,
-					_1,
+					boost::placeholders::_1,
 					reconstruction_tree_creator)),
+	d_get_default_anchor_plate_id_function([=]()
+		{
+			// Return the specified default anchor plate ID (if specified), otherwise ask the adapted reconstruction tree creator.
+			// Note we copied in [=] 'reconstruction_tree_creator' but it just contains a non-null pointer (so it's a cheap copy).
+			return default_anchor_plate_id ? default_anchor_plate_id.get() : reconstruction_tree_creator.get_default_anchor_plate_id();
+		}),
 	d_cache(d_create_reconstruction_tree_function, reconstruction_tree_cache_size)
 {
 }
@@ -368,7 +297,16 @@ GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
 GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::get_reconstruction_tree_default_anchored_plate_id(
 		const double &reconstruction_time)
 {
-	return get_reconstruction_tree(reconstruction_time, d_default_anchor_plate_id);
+	const GPlatesModel::integer_plate_id_type default_anchor_plate_id = d_get_default_anchor_plate_id_function();
+
+	return d_cache.get_value(cache_key_type(reconstruction_time, default_anchor_plate_id));
+}
+
+
+GPlatesModel::integer_plate_id_type
+GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::get_default_anchor_plate_id() const
+{
+	return d_get_default_anchor_plate_id_function();
 }
 
 
@@ -388,18 +326,17 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::clear_cache()
 
 
 GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::cache_value_type
-GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_feature_collections(
+GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_graph(
 		const cache_key_type &key,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-				reconstruction_features_collection)
+		ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph)
 {
 	//PROFILE_FUNC();
 
+	const GPlatesMaths::real_t &reconstruction_time = key.first;
+	const GPlatesModel::integer_plate_id_type anchor_plate_id = key.second;
+
 	// Create a reconstruction tree for the specified time/anchor.
-	return create_reconstruction_tree(
-			key.first.dval()/*reconstruction_time*/,
-			key.second/*anchor_plate_id*/,
-			reconstruction_features_collection);
+	return ReconstructionTree::create(reconstruction_graph, reconstruction_time.dval(), anchor_plate_id);
 }
 
 
@@ -410,8 +347,9 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::create_reconstruction_tree
 {
 	//PROFILE_FUNC();
 
-	// Create a reconstruction tree for the specified time/anchor.
-	return reconstruction_tree_creator.get_reconstruction_tree(
-			key.first.dval()/*reconstruction_time*/,
-			key.second/*anchor_plate_id*/);
+	const GPlatesMaths::real_t &reconstruction_time = key.first;
+	const GPlatesModel::integer_plate_id_type anchor_plate_id = key.second;
+
+	// Get the reconstruction tree for the specified time/anchor.
+	return reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time.dval(), anchor_plate_id);
 }

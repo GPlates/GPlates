@@ -69,7 +69,7 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type point_on_sphere1)
+					PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere1)
 			{
 				/**
 				 * Minimum distance between a PointOnSphere and a GeometryOnSphere.
@@ -102,17 +102,17 @@ namespace GPlatesMaths
 					virtual
 					void
 					visit_point_on_sphere(
-							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+							PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere2)
 					{
 						d_minimum_distance = minimum_distance(
 								d_point_on_sphere1,
-								*point_on_sphere2,
+								point_on_sphere2->position(),
 								d_minimum_distance_threshold);
 
 						if (d_closest_positions)
 						{
 							boost::get<0>(d_closest_positions.get()) = d_point_on_sphere1.position_vector();
-							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
 
 						if (d_closest_indices)
@@ -237,7 +237,7 @@ namespace GPlatesMaths
 				};
 
 				PointOnSphereVisitor visitor(
-						*point_on_sphere1,
+						point_on_sphere1->position(),
 						d_geometry2_interior_is_solid,
 						d_minimum_distance,
 						d_minimum_distance_threshold,
@@ -283,7 +283,7 @@ namespace GPlatesMaths
 					virtual
 					void
 					visit_point_on_sphere(
-							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+							PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere2)
 					{
 						boost::optional<UnitVector3D &> closest_position_in_multipoint1;
 						if (d_closest_positions)
@@ -298,14 +298,14 @@ namespace GPlatesMaths
 
 						d_minimum_distance = minimum_distance(
 								d_multi_point_on_sphere1,
-								*point_on_sphere2,
+								point_on_sphere2->position(),
 								d_minimum_distance_threshold,
 								closest_position_in_multipoint1,
 								closest_position_index_in_multipoint1);
 
 						if (d_closest_positions)
 						{
-							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
 						if (d_closest_indices)
 						{
@@ -416,7 +416,7 @@ namespace GPlatesMaths
 					virtual
 					void
 					visit_point_on_sphere(
-							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+							PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere2)
 					{
 						boost::optional<UnitVector3D &> closest_position_on_polygon1;
 						if (d_closest_positions)
@@ -431,7 +431,7 @@ namespace GPlatesMaths
 
 						d_minimum_distance = minimum_distance(
 								d_polygon_on_sphere1,
-								*point_on_sphere2,
+								point_on_sphere2->position(),
 								d_geometry1_interior_is_solid,
 								d_minimum_distance_threshold,
 								closest_position_on_polygon1,
@@ -439,7 +439,7 @@ namespace GPlatesMaths
 
 						if (d_closest_positions)
 						{
-							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
 						if (d_closest_indices)
 						{
@@ -553,7 +553,7 @@ namespace GPlatesMaths
 					virtual
 					void
 					visit_point_on_sphere(
-							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+							PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere2)
 					{
 						boost::optional<UnitVector3D &> closest_position_on_polyline1;
 						if (d_closest_positions)
@@ -568,14 +568,14 @@ namespace GPlatesMaths
 
 						d_minimum_distance = minimum_distance(
 								d_polyline_on_sphere1,
-								*point_on_sphere2,
+								point_on_sphere2->position(),
 								d_minimum_distance_threshold,
 								closest_position_on_polyline1,
 								closest_segment_index_in_polyline1);
 
 						if (d_closest_positions)
 						{
-							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position().position_vector();
 						}
 						if (d_closest_indices)
 						{
@@ -1617,8 +1617,16 @@ GPlatesMaths::minimum_distance(
 {
 	// Since we're swapping the order of the geometries we also need to swap the closest position
 	// references and the closest index references.
-	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polyline*/> >
-			closest_positions_reversed;
+	//
+	// Need a workaround for g++-11 since it thinks boost tuple is used uninitialized [-Werror=uninitialized].
+#if defined(__GNUC__) &&  (__GNUC__ == 11)
+	static UnitVector3D unused(1, 0, 0);
+	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polyline*/> > closest_positions_reversed =
+		boost::make_optional(false, boost::make_tuple(boost::ref(unused), boost::ref(unused)));
+#else
+	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polyline*/> > closest_positions_reversed;
+#endif
+
 	if (closest_positions)
 	{
 		closest_positions_reversed = boost::make_tuple(
@@ -1766,7 +1774,12 @@ GPlatesMaths::minimum_distance(
 		// If the polyline is completely inside the polygon then we only need to test if one of
 		// the polyline's points (any arbitrary point) is inside the polygon (because we know the
 		// polyline did not intersect the polygon boundary).
-		if (polygon.is_point_in_polygon(polyline.start_point()/*arbitrary*/))
+		if (polygon.is_point_in_polygon(
+				polyline.start_point()/*arbitrary*/,
+				GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
+				// Note we turn off point-on-polygon outline threshold testing.
+				// We don't want test to return true if point is outside polygon but *very* close to it...
+				false/*use_point_on_polygon_threshold*/))
 		{
 			if (closest_positions ||
 				closest_segment_indices)
@@ -1819,8 +1832,16 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<unsigned int &/*polygon*/, unsigned int &/*multipoint*/> > closest_indices)
 {
 	// Since we're swapping the order of the geometries we also need to swap the closest position references.
-	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polygon*/> >
-			closest_positions_reversed;
+	//
+	// Need a workaround for g++-11 since it thinks boost tuple is used uninitialized [-Werror=uninitialized].
+#if defined(__GNUC__) &&  (__GNUC__ == 11)
+	static UnitVector3D unused(1, 0, 0);
+	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polygon*/> > closest_positions_reversed =
+		boost::make_optional(false, boost::make_tuple(boost::ref(unused), boost::ref(unused)));
+#else
+	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polygon*/> > closest_positions_reversed;
+#endif
+
 	if (closest_positions)
 	{
 		closest_positions_reversed = boost::make_tuple(
@@ -1856,8 +1877,16 @@ GPlatesMaths::minimum_distance(
 		boost::optional< boost::tuple<unsigned int &/*polygon*/, unsigned int &/*polyline*/> > closest_segment_indices)
 {
 	// Since we're swapping the order of the geometries we also need to swap the closest position references.
-	boost::optional< boost::tuple<UnitVector3D &/*polyline*/, UnitVector3D &/*polygon*/> >
-			closest_positions_reversed;
+	//
+	// Need a workaround for g++-11 since it thinks boost tuple is used uninitialized [-Werror=uninitialized].
+#if defined(__GNUC__) &&  (__GNUC__ == 11)
+	static UnitVector3D unused(1, 0, 0);
+	boost::optional< boost::tuple<UnitVector3D &/*polyline*/, UnitVector3D &/*polygon*/> > closest_positions_reversed =
+		boost::make_optional(false, boost::make_tuple(boost::ref(unused), boost::ref(unused)));
+#else
+	boost::optional< boost::tuple<UnitVector3D &/*polyline*/, UnitVector3D &/*polygon*/> > closest_positions_reversed;
+#endif
+
 	if (closest_positions)
 	{
 		closest_positions_reversed = boost::make_tuple(
@@ -1950,7 +1979,12 @@ GPlatesMaths::minimum_distance(
 		// If polygon2 is completely inside polygon1 then we only need to test if one of
 		// the polygon2's points (any arbitrary point) is inside polygon1 (because we know that
 		// polygon2 did not intersect polygon1's boundary).
-		if (polygon1.is_point_in_polygon(polygon2.first_exterior_ring_vertex()/*arbitrary*/))
+		if (polygon1.is_point_in_polygon(
+				polygon2.first_exterior_ring_vertex()/*arbitrary*/,
+				GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
+				// Note we turn off point-on-polygon outline threshold testing.
+				// We don't want test to return true if point is outside polygon but *very* close to it...
+				false/*use_point_on_polygon_threshold*/))
 		{
 			if (closest_positions ||
 				closest_segment_indices)
@@ -1996,7 +2030,12 @@ GPlatesMaths::minimum_distance(
 		// If polygon1 is completely inside polygon2 then we only need to test if one of
 		// the polygon1's points (any arbitrary point) is inside polygon2 (because we know that
 		// polygon1 did not intersect polygon2's boundary).
-		if (polygon2.is_point_in_polygon(polygon1.first_exterior_ring_vertex()/*arbitrary*/))
+		if (polygon2.is_point_in_polygon(
+				polygon1.first_exterior_ring_vertex()/*arbitrary*/,
+				GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
+				// Note we turn off point-on-polygon outline threshold testing.
+				// We don't want test to return true if point is outside polygon but *very* close to it...
+				false/*use_point_on_polygon_threshold*/))
 		{
 			if (closest_positions ||
 				closest_segment_indices)

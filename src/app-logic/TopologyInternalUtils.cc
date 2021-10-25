@@ -81,11 +81,136 @@
 #include "property-values/XsString.h"
 
 #include "utils/Profile.h"
+#include "utils/ReferenceCount.h"
 #include "utils/UnicodeStringUtils.h"
 
 
 namespace
 {
+	/**
+	 * Returns the topological geometry property value (topological line, polygon or network)
+	 * at the specified reconstruction time (only applies if property value is time-dependent).
+	 *
+	 * This should be used to visit a single feature *property* (not a feature).
+	 */
+	class TopologicalGeometryPropertyValue :
+			public GPlatesModel::FeatureVisitor
+	{
+	public:
+
+		explicit
+		TopologicalGeometryPropertyValue(
+				const double &reconstruction_time) :
+			d_reconstruction_time(reconstruction_time)
+		{  }
+
+		boost::optional<GPlatesAppLogic::TopologyInternalUtils::topological_geometry_property_value_type>
+		get_topological_geometry_property_value()
+		{
+			return d_topological_geometry_property_value;
+		}
+
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		{
+			gpml_constant_value.value()->accept_visitor(*this);
+		}
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		{
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+					gpml_piecewise_aggregation.time_windows();
+
+			// NOTE: If there's only one time window then we do not check its time period against the
+			// current reconstruction time.
+			// This is because GPML files created with old versions of GPlates set the time period,
+			// of the sole time window, to match that of the 'feature's time period (in the topology
+			// build/edit tools) - newer versions set it to *all* time (distant past/future) - in fact
+			// newer versions just use a GpmlConstantValue instead of GpmlPiecewiseAggregation because
+			// the topology tools cannot yet create time-dependent topology (section) lists.
+			// With old versions if the user expanded the 'feature's time period *after* building/editing
+			// the topology then the *un-adjusted* time window time period will be incorrect and hence
+			// we need to ignore it here.
+			// Those old versions were around 4 years ago (prior to GPlates 1.3) - so we really shouldn't
+			// be seeing any old topologies.
+			// Actually I can see there are some currently in the sample data for GPlates 2.0.
+			// So as a compromise we'll ignore the reconstruction time if there's only one time window
+			// (a single time window shouldn't really have any time constraints on it anyway)
+			// and respect the reconstruction time if there's more than one time window
+			// (since multiple time windows need non-overlapping time constraints).
+			// This is especially true now that pyGPlates will soon be able to generate time-dependent
+			// topologies (where the reconstruction time will need to be respected otherwise multiple
+			// topologies from different time periods will get created instead of just one of them).
+			if (time_windows.size() == 1)
+			{
+				visit_gpml_time_window(time_windows.front());
+				return;
+			}
+
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter = time_windows.begin();
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end = time_windows.end();
+			for ( ; iter != end; ++iter) 
+			{
+				GPlatesPropertyValues::GpmlTimeWindow &time_window = *iter;
+
+				// NOTE: We really should be checking the time period of each time window against the
+				// If the time window period contains the current reconstruction time then visit.
+				// The time periods should be mutually exclusive - if we happen to be in
+				// two time periods then we're probably right on the boundary between the two
+				// in which case we'll only visit the first time window encountered.
+				if (time_window.valid_time()->contains(d_reconstruction_time))
+				{
+					visit_gpml_time_window(time_window);
+					return;
+				}
+			}
+		}
+
+		void
+		visit_gpml_time_window(
+				GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
+		{
+			gpml_time_window.time_dependent_value()->accept_visitor(*this);
+		}
+
+		virtual
+		void
+		visit_gpml_topological_network(
+				GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
+		{
+			d_topological_geometry_property_value = GPlatesUtils::get_non_null_pointer(&gpml_topological_network);
+		}
+
+		virtual
+		void
+		visit_gpml_topological_line(
+				GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
+		{
+			d_topological_geometry_property_value = GPlatesUtils::get_non_null_pointer(&gpml_topological_line);
+		}
+
+		virtual
+		void
+		visit_gpml_topological_polygon(
+				GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
+		{
+			d_topological_geometry_property_value = GPlatesUtils::get_non_null_pointer(&gpml_topological_polygon);
+		}
+
+	private:
+
+		double d_reconstruction_time;
+		boost::optional<GPlatesAppLogic::TopologyInternalUtils::topological_geometry_property_value_type>
+				d_topological_geometry_property_value;
+	};
+
+
 	/**
 	 * Used to determine if a feature property is a topological geometry.
 	 *
@@ -132,9 +257,9 @@ namespace
 		virtual
 		void
 		visit_gpml_topological_network(
-				const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_toplogical_network)
+				const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
 		{
-			d_topological_geometry_property_value_type = gpml_toplogical_network.get_structural_type();
+			d_topological_geometry_property_value_type = gpml_topological_network.get_structural_type();
 		}
 
 		virtual
@@ -364,7 +489,7 @@ namespace
 			d_visited_topological_line(false)
 		{  }
 
-		boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior>
+		boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 		create_gpml_topological_network_interior(
 				const GPlatesModel::FeatureHandle::iterator &geometry_property)
 		{
@@ -388,7 +513,7 @@ namespace
 	private:
 		GPlatesModel::FeatureHandle::iterator d_geometry_property;
 
-		boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> d_topological_interior;
+		boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> d_topological_interior;
 
 		//! If GpmlTopologicalLine is in a piecewise aggregration then we only need to visit one time window.
 		bool d_visited_topological_line;
@@ -503,8 +628,7 @@ namespace
 			}
 
 			// Create a GpmlTopologicalNetwork::Interior from the delegate.
-			d_topological_interior =
-					GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(*geom_delegate);
+			d_topological_interior = geom_delegate.get();
 		}
 	};
 
@@ -626,11 +750,10 @@ namespace
 					gpml_topological_network.interior_geometries_end();
 			for ( ; interior_iter != interior_end; ++interior_iter)
 			{
-				const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &interior = *interior_iter;
+				const GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type interior = *interior_iter;
 
 				// Add the feature ID of the interior geometry.
-				d_topological_sections_referenced.insert(
-						interior.get_source_geometry()->feature_id());
+				d_topological_sections_referenced.insert(interior->feature_id());
 			}
 		}
 
@@ -685,21 +808,21 @@ namespace
 		virtual
 		void
 		visit_gpml_topological_line_section(
-				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section)
 		{
 			// Add the feature ID of the line section geometry.
 			d_topological_sections_referenced.insert(
-					gpml_toplogical_line_section.get_source_geometry()->feature_id());
+					gpml_topological_line_section.get_source_geometry()->feature_id());
 		}
 
 		virtual
 		void
 		visit_gpml_topological_point(
-				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point)
 		{
 			// Add the feature ID of the point geometry.
 			d_topological_sections_referenced.insert(
-					gpml_toplogical_point.get_source_geometry()->feature_id());
+					gpml_topological_point.get_source_geometry()->feature_id());
 		}
 
 	private:
@@ -842,14 +965,57 @@ namespace
 }
 
 
+boost::optional<GPlatesAppLogic::TopologyInternalUtils::topological_geometry_property_value_type>
+GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value(
+		GPlatesModel::TopLevelProperty &property,
+		const double &reconstruction_time)
+{
+	TopologicalGeometryPropertyValue visitor(reconstruction_time);
+	property.accept_visitor(visitor);
+
+	return visitor.get_topological_geometry_property_value();
+}
+
+
+boost::optional<GPlatesAppLogic::TopologyInternalUtils::topological_geometry_property_value_type>
+GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value(
+		const GPlatesModel::FeatureHandle::iterator &property,
+		const double &reconstruction_time)
+{
+	if (!property.is_still_valid())
+	{
+		return boost::none;
+	}
+
+	// Need to clone (for now) since feature iterator is non-const.
+	GPlatesModel::TopLevelProperty::non_null_ptr_type cloned_property = (*property)->clone();
+
+	// Extract PropertyValue our of the cloned TopLevelProperty.
+	return get_topology_geometry_property_value(*cloned_property);
+}
+
+
+boost::optional<GPlatesPropertyValues::StructuralType>
+GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value_type(
+	const GPlatesModel::TopLevelProperty &property)
+{
+	TopologicalGeometryPropertyValueType visitor;
+	property.accept_visitor(visitor);
+
+	return visitor.get_topological_geometry_property_value_type();
+}
+
+
 boost::optional<GPlatesPropertyValues::StructuralType>
 GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value_type(
 		const GPlatesModel::FeatureHandle::const_iterator &property)
 {
-	TopologicalGeometryPropertyValueType visitor;
-	(*property)->accept_visitor(visitor);
+	if (!property.is_still_valid())
+	{
+		return boost::none;
+	}
 
-	return visitor.get_topological_geometry_property_value_type();
+	return get_topology_geometry_property_value_type(**property);
 }
 
 
@@ -867,7 +1033,7 @@ GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_section(
 }
 
 
-boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior>
+boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_network_interior(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property)
 {

@@ -41,7 +41,6 @@
 
 #include "utils/FeatureUtils.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace bp=boost::python;
 
@@ -250,8 +249,4 @@ namespace GPlatesUtils
 	};
 }
 
-#endif //GPLATES_NO_PYTHON
 #endif //GPLATESDATAMINING_GETPROPERTYASPYTHONOBJVISITOR_H
-
-
-

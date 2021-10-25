@@ -26,7 +26,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
-#include <memory> // std::auto_ptr
+#include <memory> // std::unique_ptr
 #include <ostream>
 #include <utility>
 #include <vector>
@@ -52,6 +52,7 @@
 #include "app-logic/LayerTaskRegistry.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/RasterLayerParams.h"
+#include "app-logic/ReconstructionLayerParams.h"
 #include "app-logic/ReconstructLayerParams.h"
 #include "app-logic/ReconstructScalarCoverageLayerParams.h"
 #include "app-logic/ScalarField3DLayerParams.h"
@@ -656,6 +657,15 @@ namespace GPlatesPresentation
 
 			virtual
 			void
+			visit_reconstruction_layer_params(
+					reconstruction_layer_params_type &params)
+			{
+				// Save the reconstruction params.
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_reconstruction_params(), d_layer_params_tag("reconstruction_params"));
+			}
+
+			virtual
+			void
 			visit_reconstruct_layer_params(
 					reconstruct_layer_params_type &params)
 			{
@@ -762,6 +772,19 @@ namespace GPlatesPresentation
 				if (band_name.is_valid())
 				{
 					params.set_band_name(band_name);
+				}
+			}
+
+			virtual
+			void
+			visit_reconstruction_layer_params(
+					reconstruction_layer_params_type &params)
+			{
+				// Load the reconstruction params.
+				GPlatesAppLogic::ReconstructionParams reconstruction_params;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, reconstruction_params, d_layer_params_tag("reconstruction_params")))
+				{
+					params.set_reconstruction_params(reconstruction_params);
 				}
 			}
 
@@ -1426,7 +1449,7 @@ namespace GPlatesPresentation
 			const QString new_draw_style_name = get_new_draw_style_name(draw_style_name, draw_styles);
 
 			// Create a new draw style from the template.
-			std::auto_ptr<GPlatesGui::StyleAdapter> new_draw_style_owner(template_draw_style->deep_clone());
+			std::unique_ptr<GPlatesGui::StyleAdapter> new_draw_style_owner(template_draw_style->deep_clone());
 			GPlatesGui::StyleAdapter *new_draw_style = new_draw_style_owner.get();
 			if (new_draw_style == NULL)
 			{
@@ -1552,30 +1575,39 @@ namespace GPlatesPresentation
 				// Save the draw style (colouring scheme).
 				save_draw_style(d_layer_params_tag("draw_style"), d_scribe, params);
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_vgp_draw_circular_error(),
-						d_layer_params_tag("vgp_draw_circular_error"));
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_vgp_earliest_time(), d_layer_params_tag("vgp_earliest_time"));
+				// Loaded by GPlates 2.2 and older (when these params were in app-logic layer params)...
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_vgp_earliest_time(), d_layer_params_tag("reconstruct_params")("vgp_earliest_time"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_polygons(),
-						d_layer_params_tag("fill_polygons"));
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_vgp_latest_time(), d_layer_params_tag("vgp_latest_time"));
+				// Loaded by GPlates 2.2 and older (when these params were in app-logic layer params)...
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_vgp_latest_time(), d_layer_params_tag("reconstruct_params")("vgp_latest_time"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_polylines(),
-						d_layer_params_tag("fill_polylines"));
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_vgp_delta_t(), d_layer_params_tag("vgp_delta_t"));
+				// Loaded by GPlates 2.2 and older (when these params were in app-logic layer params)...
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_vgp_delta_t(), d_layer_params_tag("reconstruct_params")("vgp_delta_t"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_opacity(),
-						d_layer_params_tag("fill_opacity"));
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_vgp_visibility_setting(), d_layer_params_tag("vgp_visibility_setting"));
+				// Loaded by GPlates 2.2 and older (when these params were in app-logic layer params)...
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_vgp_visibility_setting(), d_layer_params_tag("reconstruct_params")("vgp_visibility_setting"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_intensity(),
-						d_layer_params_tag("fill_intensity"));
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_vgp_draw_circular_error(), d_layer_params_tag("vgp_draw_circular_error"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_polygons(), d_layer_params_tag("fill_polygons"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_polylines(), d_layer_params_tag("fill_polylines"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_opacity(), d_layer_params_tag("fill_opacity"));
+
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_fill_intensity(), d_layer_params_tag("fill_intensity"));
 
 				d_scribe.save(TRANSCRIBE_SOURCE, params.get_show_topology_reconstructed_feature_geometries(),
 						// Keeping original tag name for compatibility...
 						d_layer_params_tag("show_deformed_feature_geometries"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_show_strain_accumulation(),
-						d_layer_params_tag("show_strain_accumulation"));
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_show_strain_accumulation(), d_layer_params_tag("show_strain_accumulation"));
 
-				d_scribe.save(TRANSCRIBE_SOURCE, params.get_strain_accumulation_scale(),
-						d_layer_params_tag("strain_accumulation_scale"));
+				d_scribe.save(TRANSCRIBE_SOURCE, params.get_strain_accumulation_scale(), d_layer_params_tag("strain_accumulation_scale"));
 			}
 
 			virtual
@@ -1848,6 +1880,38 @@ namespace GPlatesPresentation
 			{
 				// Load the draw style (colouring scheme).
 				load_draw_style(d_layer_params_tag("draw_style"), d_scribe, params, d_visual_layer, d_read_errors);
+
+				GPlatesPropertyValues::GeoTimeInstant vgp_earliest_time(0);
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, vgp_earliest_time, d_layer_params_tag("vgp_earliest_time")) ||
+					// Saved by GPlates 2.2 and older (when these params were in app-logic layer params)...
+					d_scribe.transcribe(TRANSCRIBE_SOURCE, vgp_earliest_time, d_layer_params_tag("reconstruct_params")("vgp_earliest_time")))
+				{
+					params.set_vgp_earliest_time(vgp_earliest_time);
+				}
+
+				GPlatesPropertyValues::GeoTimeInstant vgp_latest_time(0);
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, vgp_latest_time, d_layer_params_tag("vgp_latest_time")) ||
+					// Saved by GPlates 2.2 and older (when these params were in app-logic layer params)...
+					d_scribe.transcribe(TRANSCRIBE_SOURCE, vgp_latest_time, d_layer_params_tag("reconstruct_params")("vgp_latest_time")))
+				{
+					params.set_vgp_latest_time(vgp_latest_time);
+				}
+
+				double vgp_delta_t;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, vgp_delta_t, d_layer_params_tag("vgp_delta_t")) ||
+					// Saved by GPlates 2.2 and older (when these params were in app-logic layer params)...
+					d_scribe.transcribe(TRANSCRIBE_SOURCE, vgp_delta_t, d_layer_params_tag("reconstruct_params")("vgp_delta_t")))
+				{
+					params.set_vgp_delta_t(vgp_delta_t);
+				}
+
+				ReconstructVisualLayerParams::VGPVisibilitySetting vgp_visibility_setting;
+				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, vgp_visibility_setting, d_layer_params_tag("vgp_visibility_setting")) ||
+					// Saved by GPlates 2.2 and older (when these params were in app-logic layer params)...
+					d_scribe.transcribe(TRANSCRIBE_SOURCE, vgp_visibility_setting, d_layer_params_tag("reconstruct_params")("vgp_visibility_setting")))
+				{
+					params.set_vgp_visibility_setting(vgp_visibility_setting);
+				}
 
 				bool vgp_draw_circular_error;
 				if (d_scribe.transcribe(TRANSCRIBE_SOURCE, vgp_draw_circular_error,

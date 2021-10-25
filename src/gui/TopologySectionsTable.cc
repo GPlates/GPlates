@@ -614,7 +614,7 @@ GPlatesGui::TopologySectionsTable::set_up_table()
 	}
 	// Set widths and stretching.
 	for (std::size_t column = 0; column < d_column_heading_infos.size(); ++column) {
-		d_table->horizontalHeader()->setResizeMode(column, d_column_heading_infos[column].resize_mode);
+		d_table->horizontalHeader()->setSectionResizeMode(column, d_column_heading_infos[column].resize_mode);
 		d_table->horizontalHeader()->resizeSection(column, d_column_heading_infos[column].width);
 	}
 	

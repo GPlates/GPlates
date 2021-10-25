@@ -1,3 +1,4 @@
+from __future__ import print_function
 from math import *
 from numpy import *
 import sys
@@ -25,7 +26,7 @@ class MathsUtils():
         self.nsect = int(nsect)
         self.sig = zeros((3,3))
         qhat = self.trans2(h, qhati)
-	ahat = self.quaternion_to_rotation_matrix(qhat)
+        ahat = self.quaternion_to_rotation_matrix(qhat)
         self.eta = zeros((self.msect,3,3))
         self.etai = zeros((self.msect,3,3))        
         for i in range(1,self.nsect+1): #z
@@ -38,7 +39,7 @@ class MathsUtils():
                             self.sig[j,k] += ahat[k1,j]*sigma[1,i,k1,k2]*ahat[k2,k]            
             d = self.jacobi(self.sig,3,3) # output: d, z, wk, nrot
             if d[3] < 0:
-                print "subrutine jacobi(3)--nrot: ", self.nrot
+                print("subrutine jacobi(3)--nrot: ", self.nrot)
             self.eta[i,0,0] = 0
             self.eta[i,1,0] = d[1][2,0]
             self.eta[i,2,0] = -d[1][1,0]
@@ -78,9 +79,9 @@ class MathsUtils():
         # The suffix 12 denotes guess and related variables for plate 1 to plate 2
         # The suffix 13 denotes guess and related variables for plate 1 to plate 3
         qhat12 = self.trans2(h[0:3],qhati[0:4])
-	ahat12 = self.quaternion_to_rotation_matrix(qhat12)
+        ahat12 = self.quaternion_to_rotation_matrix(qhat12)
         qhat13 = self.trans2(h[3:6],qhati[4:8])     
-	ahat13 = self.quaternion_to_rotation_matrix(qhat13)
+        ahat13 = self.quaternion_to_rotation_matrix(qhat13)
         for i in range(1,self.nsect+1):
             for j in range(0,3):
                 for k in range(0,3):
@@ -91,8 +92,8 @@ class MathsUtils():
                             self.sig[j,k] += ahat13[k1,j]*sigma[2,i,k1,k2]*ahat13[k2,k]
             d = self.jacobi(self.sig,3,3)
             if d[3] < 0:
-                print "subroutine jacobi(3)--nrot: ", self.nrot
-                print "vector h: ", h        
+                print("subroutine jacobi(3)--nrot: ", self.nrot)
+                print("vector h: ", h        )
             self.eta[i,0,0] = 0
             self.eta[i,1,0] = d[1][2,0]
             self.eta[i,2,0] = -d[1][1,0]
@@ -123,18 +124,18 @@ class MathsUtils():
         Calculation of hellinger criterion r for a triple junction.
         Adapated from the r2 routine in hellinger3.f
 
-	return: r2, eta, etai.
+        return: r2, eta, etai.
 
-	Here's what I think is going on:
-	r2 is the the residual value to be minised, and is equivalent
-	to r defined in Kirkwood et al equation (16)
-	eta is the matrix M as per Kirkwood p.411, and Chang p.1180
-	eta is of form (num_segments,3,3). For each segment i, eta(i,3,3) represents
-	M(eta) for the segment.
-	etai is the matrix O_i defined in Kirkwood p.412, under equation (13).
-	etai is of form (num_segments,3,2). Each etai(i,3,2) contains an "orthonormal basis
-	of the vector perpendicular to eta_i (the normal to the great circle arc for
-	the segment i).
+        Here's what I think is going on:
+        r2 is the the residual value to be minised, and is equivalent
+        to r defined in Kirkwood et al equation (16)
+        eta is the matrix M as per Kirkwood p.411, and Chang p.1180
+        eta is of form (num_segments,3,3). For each segment i, eta(i,3,3) represents
+        M(eta) for the segment.
+        etai is the matrix O_i defined in Kirkwood p.412, under equation (13).
+        etai is of form (num_segments,3,2). Each etai(i,3,2) contains an "orthonormal basis
+        of the vector perpendicular to eta_i (the normal to the great circle arc for
+        the segment i).
         """
         r2 = 0
         msect = 70
@@ -145,9 +146,9 @@ class MathsUtils():
         # The suffix 12 denotes guess and related variables for plate 1 to plate 2
         # The suffix 13 denotes guess and related variables for plate 1 to plate 3
         qhat12 = self.trans2(h[0:3],qhati[0:4])
-	ahat12 = self.quaternion_to_rotation_matrix(qhat12)
+        ahat12 = self.quaternion_to_rotation_matrix(qhat12)
         qhat13 = self.trans2(h[3:6],qhati[4:8])     
-	ahat13 = self.quaternion_to_rotation_matrix(qhat13)
+        ahat13 = self.quaternion_to_rotation_matrix(qhat13)
         for i in range(1,nsect+1):
             for j in range(0,3):
                 for k in range(0,3):
@@ -158,8 +159,8 @@ class MathsUtils():
                             sig[j,k] += ahat13[k1,j]*sigma[2,i,k1,k2]*ahat13[k2,k]
             d = self.jacobi(sig,3,3)
             if d[3] < 0:
-                print "subroutine jacobi(3)--nrot: ", self.nrot
-                print "vector h: ", h        
+                print("subroutine jacobi(3)--nrot: ", self.nrot)
+                print("vector h: ", h        )
             eta[i,0,0] = 0
             eta[i,1,0] = d[1][2,0]
             eta[i,2,0] = -d[1][1,0]
@@ -175,7 +176,7 @@ class MathsUtils():
 #                for m in range(0,3):
 #                    self.etai[i,m,0] = self.eta[i,m,0]
 #                    self.etai[i,m,1] = self.eta[i,m,1]
-	    elif (abs(d[1][0,0])) > 0.2:
+            elif (abs(d[1][0,0])) > 0.2:
                 etai[i,0:3,0] = eta[i,0:3,1]
                 etai[i,0:3,1] = eta[i,0:3,2]                    
 #                for m in range(0,3):
@@ -323,7 +324,7 @@ class MathsUtils():
     def jacobi(self,matrix,row,column):
         
         # Use numpy's linalg module. RJW Jan 2016
-	w,v = linalg.eig(matrix)
+        w,v = linalg.eig(matrix)
         
         # The old jacobi function ("jacobi_old", below) returns eigenvectors (w) in sorted (ascending) order, with
         # the columns of v matching.
@@ -900,7 +901,7 @@ class MathsUtils():
     def lat_lon_to_euclidean(self,alat,along):
         """
         SUBROUTINE TO TRANSLATE LATITUDE AND LONGITUDE TO EUCLIDEAN COORDINATES
-	Corresponds to "trans1" function in the FORTRAN code.
+        Corresponds to "trans1" function in the FORTRAN code.
         """
 
         u = []
@@ -938,7 +939,7 @@ class MathsUtils():
         """
         SUBROUTINE TO TRANSLATE AXIS LATITUDE AND LONGITUDE, ANGLE OF ROTATION
         TO A ROTATION EXPRESSED AS A QUARTERNION.
-	Corresponds to "trans3" function in the FORTRAN code.
+        Corresponds to "trans3" function in the FORTRAN code.
         """
 
         qhati = []
@@ -957,7 +958,7 @@ class MathsUtils():
     def quaternion_to_rotation_matrix(self,ahat):
         """
         SUBROUTINE TO TRANSLATE A QUARTERNION INTO A ROTATION MATRIX.
-	Corresponds to "trans4" function in the FORTRAN code.
+        Corresponds to "trans4" function in the FORTRAN code.
         """
 
         self.ahmat = zeros((3,3))
@@ -975,7 +976,7 @@ class MathsUtils():
     def quaternion_to_lat_lon_rho(self,ahat):
         """
         SUBROUTINE TO TRANSLATE A QUARTERNION TO A AXIS LATITUDE, LONGITUDE AND ANGLE
-	Corresponds to "trans5" function in the FORTRAN code.
+        Corresponds to "trans5" function in the FORTRAN code.
         """
 
         fact = acos(ahat[0])
@@ -987,7 +988,7 @@ class MathsUtils():
     def euclidean_to_lat_lon(self,u):
         """
         SUBROUTINE TO TRANSLATE EUCLIDEAN COORDINATES INTO LATITUDE AND LONGITUDE
-	Corresponds to "trans6" function in the FORTRAN code.
+        Corresponds to "trans6" function in the FORTRAN code.
         """
 
         ulat = asin(u[2])/self.pi180
@@ -1000,12 +1001,12 @@ class MathsUtils():
     def lat_lon_rho_to_rotation_matrix(self,alat, along, rho):
         """
         SUBROUTINE TO TRANSLATE AXIS LATITUDE AND LONGITUDE, ANGLE OF ROTATION
-	INTO A ROTATION EXPRESSED AS A MATRIX.
-	Corresponds to "trans7" function in the FORTRAN code.
+        INTO A ROTATION EXPRESSED AS A MATRIX.
+        Corresponds to "trans7" function in the FORTRAN code.
         """
 
-	ahat = self.lat_lon_rho_to_quaternion(alat, along, rho)
-	ahmat = self.quaternion_to_rotation_matrix(ahat)
+        ahat = self.lat_lon_rho_to_quaternion(alat, along, rho)
+        ahmat = self.quaternion_to_rotation_matrix(ahat)
         return ahmat
 
     def sl(self,a,n,ipt):
@@ -1068,9 +1069,9 @@ class MathsUtils():
             lower surface
         """
         
-        print "Determining the confidence region in the form of min.",
-        print " and max. angles of rotation expressed as functions of",
-        print "longitude and latitude axes."
+        print("Determining the confidence region in the form of min.",)
+        print(" and max. angles of rotation expressed as functions of",)
+        print("longitude and latitude axes.")
 
         if (graphics):
             ind = 1
@@ -1082,7 +1083,7 @@ class MathsUtils():
         mf = zeros((3,3))
         jer = 0
         qt = zeros(10)
-	qt[0:10] = q[0:10]
+        qt[0:10] = q[0:10]
         qt[0] = qt[0]-lhat
         qt[2] = qt[2]-lhat
         qt[5] = qt[5]-lhat
@@ -1095,11 +1096,11 @@ class MathsUtils():
                 qf[i,j] = qt[k]
                 qf[j,i] = qf[i,j]
                 k = k+1
-        print "The matrix Qtilde: "
-        print qf[0,0], qf[0,1],qf[0,2],qf[0,3]
-        print qf[1,0], qf[1,1],qf[1,2],qf[1,3]
-        print qf[2,0], qf[2,1],qf[2,2],qf[2,3]
-        print qf[3,0], qf[3,1],qf[3,2],qf[3,3]
+        print("The matrix Qtilde: ")
+        print(qf[0,0], qf[0,1],qf[0,2],qf[0,3])
+        print(qf[1,0], qf[1,1],qf[1,2],qf[1,3])
+        print(qf[2,0], qf[2,1],qf[2,2],qf[2,3])
+        print(qf[3,0], qf[3,1],qf[3,2],qf[3,3])
         self.azero = qf[0,0]
         if self.azero <= 1.0:
             self.icase = 7
@@ -1111,53 +1112,53 @@ class MathsUtils():
                 jer = 1
                 return jer
         if self.icase == 1:
-            print "The set a of admissible axes is a cap not",
-            print " containing either pole. In the longitude-latitude",
-            print " plane, this set is bounded by a closed curve."
+            print("The set a of admissible axes is a cap not",)
+            print(" containing either pole. In the longitude-latitude",)
+            print(" plane, this set is bounded by a closed curve.")
         elif self.icase == 2:
-            print "\n"
-            print "the set a of admissible axes is a cap containing"
-            print 'the north pole.  in the axis longitude-axis latitude'
-            print 'plane this set is bounded by the lines: axis longi-'
-            print 'tude = -180 degrees, axis longitude = 180 degrees,'
-            print 'axis latitude = 90 degrees, and a curve which forms'
-            print 'the southern border.'
+            print("\n")
+            print("the set a of admissible axes is a cap containing")
+            print('the north pole.  in the axis longitude-axis latitude')
+            print('plane this set is bounded by the lines: axis longi-')
+            print('tude = -180 degrees, axis longitude = 180 degrees,')
+            print('axis latitude = 90 degrees, and a curve which forms')
+            print('the southern border.')
         elif self.icase == 3:
-            print "\n"
-            print 'the set a of admissible axes is a cap containing'
-            print 'the south pole.  in the axis longitude-axis latitude'
-            print 'plane this set is bounded by the lines: axis longi-'
-            print 'tude = -180 degrees, axis longitude = 180 degrees,'
-            print 'axis latitude = -90 degrees, and a curve which forms'
-            print 'the northern border.'
+            print("\n")
+            print('the set a of admissible axes is a cap containing')
+            print('the south pole.  in the axis longitude-axis latitude')
+            print('plane this set is bounded by the lines: axis longi-')
+            print('tude = -180 degrees, axis longitude = 180 degrees,')
+            print('axis latitude = -90 degrees, and a curve which forms')
+            print('the northern border.')
         elif self.icase == 4:
-            print "\n"
-            print 'the set a of admissible axes is the complement of'
-            print 'two anti-podal caps which contain the poles.'
-            print 'hence, this set is an equatorial belt.  in the axis'
-            print 'longitude-axis latitude plane this set is bounded by'
-            print 'the lines: axis longitude = -180 degrees, axis longi-'
-            print 'tude = 180 degrees, and two curves which form the'
-            print 'northern and southern borders of the belt.'
+            print("\n")
+            print('the set a of admissible axes is the complement of')
+            print('two anti-podal caps which contain the poles.')
+            print('hence, this set is an equatorial belt.  in the axis')
+            print('longitude-axis latitude plane this set is bounded by')
+            print('the lines: axis longitude = -180 degrees, axis longi-')
+            print('tude = 180 degrees, and two curves which form the')
+            print('northern and southern borders of the belt.')
         elif self.icase == 5:
-            print "\n"
-            print 'the set a of admissible axes is the complement of'
-            print 'two anti-podal caps which do not contain the'
-            print 'poles.  in the axis longitude-axis latitude plane'
-            print 'this set is bounded by the four lines: axis longi-'
-            print 'tude = -180 degrees, axis longitude = 180 degrees,'
-            print 'axis latitude = -90 degrees, and axis latitude ='
-            print '90 degrees; however, there are two holes in the set.'
+            print("\n")
+            print('the set a of admissible axes is the complement of')
+            print('two anti-podal caps which do not contain the')
+            print('poles.  in the axis longitude-axis latitude plane')
+            print('this set is bounded by the four lines: axis longi-')
+            print('tude = -180 degrees, axis longitude = 180 degrees,')
+            print('axis latitude = -90 degrees, and axis latitude =')
+            print('90 degrees; however, there are two holes in the set.')
         elif self.icase == 6:
-            print "\n"
-            print 'any axis is admissible; however, the identity is not'
-            print 'in the confidence region.  the set a of admissible'
-            print 'axes is the entire axis longitude-axis latitude plane.'
+            print("\n")
+            print('any axis is admissible; however, the identity is not')
+            print('in the confidence region.  the set a of admissible')
+            print('axes is the entire axis longitude-axis latitude plane.')
         elif self.icase == 7:
-            print "\n"
-            print 'the identity is in the confidence region.  hence, each'
-            print 'axis is admissible.  that is, the set a of admissible'
-            print 'axes is the entire axis longitude-axis latitude plane.'
+            print("\n")
+            print('the identity is in the confidence region.  hence, each')
+            print('axis is admissible.  that is, the set a of admissible')
+            print('axes is the entire axis longitude-axis latitude plane.')
         boundcFuntion = self.boundc(self.azero, nu, w, self.icase, ind, path, file_dat)
         pmind = boundcFuntion[0]
         pmaxd = boundcFuntion[1]
@@ -1167,7 +1168,7 @@ class MathsUtils():
         if ier != 0:
             jer = 1
             return jer
-        print "\n"
+        print("\n")
         alat1 = float(self.largin(tmind))
         alat2 = float(-self.largin(-tmaxd))
         along1 = float(self.largin(pmind))
@@ -1177,7 +1178,7 @@ class MathsUtils():
         if ier != 0:
             jer = 1
             return jer
-	return 0
+        return 0
 
     def grid(self, alat1, alat2, along1, along2, qf, mf, w, icase, ind, path, file_up, file_do): #return jer
         """
@@ -1221,9 +1222,9 @@ class MathsUtils():
         v = zeros((2,2))
         work = zeros(4)
         if ind == 1:            
-            self.upperFile = file(path+ os.path.sep +file_up, "w")
+            self.upperFile = open(path+ os.path.sep +file_up, "w")
             if icase < 7:                
-                self.lowerFile = file(path+"/"+file_do, "w")
+                self.lowerFile = open(path+"/"+file_do, "w")
         dlong = (along2-along1)/(nlong-1.0)
         dlat = (alat2-alat1)/(nlat-1.0)
         irho = 0
@@ -1273,16 +1274,16 @@ class MathsUtils():
                     sum = sum+bu[k]*u[k]
                 af[1,1] = sum
 #                self.jacob2Function = self.jacob2(af, 2, 2, mu, v, 2, work)
-		self.jacob2Function = self.jacobi(af, 2, 2)
+                self.jacob2Function = self.jacobi(af, 2, 2)
 #                nrot = self.jacob2Function[0]
 #                if nrot <= 0:
 #                    jer = 1
-#                    print "error in grid, on a call to jacob2."
-#                    print "row = ",i," column = ", j
-#                    print "nrot = ", nrot
+#                    print("error in grid, on a call to jacob2.")
+#                    print("row = ",i," column = ", j)
+#                    print("nrot = ", nrot)
 #                    return jer
-		d = self.jacob2Function[0] #eigenvectors
-		z = self.jacob2Function[1] #eigenvalues
+                d = self.jacob2Function[0] #eigenvectors
+                z = self.jacob2Function[1] #eigenvalues
                 if icase < 7:
                     if v[1,0] < 0:
                         for k in range(0,2):
@@ -1319,35 +1320,35 @@ class MathsUtils():
                     for jj in range(0,nlong-3):
                         self.lowerFile.write(str(crho[jj])+" "+str(crho[jj+1])+" "+str(crho[jj+2])+" "+str(crho[jj+3])+"\n")                    
         if irho == 0:
-            print 'unable to calculate min. and max. values of the angle'
-            print 'of rotation, since none of the grid points correspond'
-            print 'to admissible axes of rotation.'
-            print "Min., Max. axis longitude over grid: ", along1, along2, " degrees."
-            print "Min., Max. axis latitude over grid:  ", alat1, alat2, " degrees."
-            print "Grid of ", nlong, " longitude values"
-            print " (cols.) and ", nlat, " latitude values (rows)."
+            print('unable to calculate min. and max. values of the angle')
+            print('of rotation, since none of the grid points correspond')
+            print('to admissible axes of rotation.')
+            print("Min., Max. axis longitude over grid: ", along1, along2, " degrees.")
+            print("Min., Max. axis latitude over grid:  ", alat1, alat2, " degrees.")
+            print("Grid of ", nlong, " longitude values")
+            print(" (cols.) and ", nlat, " latitude values (rows).")
             return jer
         if icase == 7:
             rmind = 0
-        print " Min., Max. angle of rotation over the confidence"
-        print " region: ", rmind, rmaxd ," degrees. Note: these"
-        print "values are the min. and max. over a rectangular"
-        print "grid superimposed on the set of admissible axes."
-        print "Min., Max. axis longitude over grid: ", along1, along2, " degrees."
-        print "Min., Max. axis latitude over grid:  ", alat1, alat2, " degrees."
-        print "Grid of ", nlong, " longitude values"
-        print " (cols.) and ", nlat, " latitude values (rows)."
+        print(" Min., Max. angle of rotation over the confidence")
+        print(" region: ", rmind, rmaxd ," degrees. Note: these")
+        print("values are the min. and max. over a rectangular")
+        print("grid superimposed on the set of admissible axes.")
+        print("Min., Max. axis longitude over grid: ", along1, along2, " degrees.")
+        print("Min., Max. axis latitude over grid:  ", alat1, alat2, " degrees.")
+        print("Grid of ", nlong, " longitude values")
+        print(" (cols.) and ", nlat, " latitude values (rows).")
         if ind == 1:
             if icase < 7:
-                print    "Max. angle of rotation values have been",
-                print ' written to the file (by grid rows, with ',nlong,
-                print ' values to a row).  Min. angle of rotation values',
-                print ' (also by row) have been written to the file.'
+                print(   "Max. angle of rotation values have been",)
+                print(' written to the file (by grid rows, with ',nlong,)
+                print(' values to a row).  Min. angle of rotation values',)
+                print(' (also by row) have been written to the file.')
             elif icase == 7:
-                print "Max. angle of rotation values have been"
-                print ' written to the file (by grid rows, with ',nlong
-                print ' values to a row). Note: all min. angle of rotation'
-                print ' values are zero.'
+                print("Max. angle of rotation values have been")
+                print(' written to the file (by grid rows, with ',nlong)
+                print(' values to a row). Note: all min. angle of rotation')
+                print(' values are zero.')
         return jer
 
     def largin(self,x):
@@ -1400,12 +1401,12 @@ class MathsUtils():
             pmaxd = 180
             tmind = -90
             tmaxd = 90
-            print "Min., Max., longitude: ", pmind, pmaxd, " degrees."
-            print "Min., Max. latitude: ", tmind, tmaxd, " degrees."
+            print("Min., Max., longitude: ", pmind, pmaxd, " degrees.")
+            print("Min., Max. latitude: ", tmind, tmaxd, " degrees.")
             return pmind, pmaxd, tmind, tmaxd, jer
         if ind == 1:
-            print "file_dat: ", file_dat
-            self.boundaryFile = file(path+"/"+file_dat, "w")
+            print("file_dat: ", file_dat)
+            self.boundaryFile = open(path+"/"+file_dat, "w")
             
         delpt = self.pi / 6.0
         ophi = 0
@@ -1465,10 +1466,10 @@ class MathsUtils():
                                         kzz = k-1
                                         if kzz <= 0:
                                             jer = 1
-                                            print "error in boundc (icase=4):"
-                                            print 'there are no points on the bounding curve with'
-                                            print 'negative longitude.  the points on the bounding'
-                                            print 'curve are too sparse.'
+                                            print("error in boundc (icase=4):")
+                                            print('there are no points on the bounding curve with')
+                                            print('negative longitude.  the points on the bounding')
+                                            print('curve are too sparse.')
                                             return pmind, pmaxd, tmind, tmaxd, jer
                                         tmax = thetm[0]
                                         for k in range(0,npt+1):
@@ -1478,8 +1479,8 @@ class MathsUtils():
                                         pmaxd = 180
                                         tmaxd = tmax*180/self.pi
                                         tmind = -tmaxd
-                                        print "Min., Max., longitude: ", pmind, pmaxd, " degrees."
-                                        print "Min., Max. latitude: ", tmind, tmaxd, " degrees."
+                                        print("Min., Max., longitude: ", pmind, pmaxd, " degrees.")
+                                        print("Min., Max. latitude: ", tmind, tmaxd, " degrees.")
                                         if ind == 1:
                                             self.boundaryFile.write(str(npt+1)+", 0"+"\n")
                                             for k in range(0,npt+1):
@@ -1495,19 +1496,19 @@ class MathsUtils():
                                                 blong = phim[l]*180/self.pi+180
                                                 blat = -thetm[l]*180/self.pi
                                                 self.boundaryFile.write(str(blong)+" "+str(blat)+"\n")
-                                        print "' ','  a sequence of ',i3,' points along the curve'"
-                                        print "which forms the'/' ','  northern border of the belt have been"
-                                        print "written to the file ',a10,'.'/' ','  these are followed by the"
-                                        print "same number of points along the'/' ','  curve which forms the"
-                                        print "southern border."
+                                        print("' ','  a sequence of ',i3,' points along the curve'")
+                                        print("which forms the'/' ','  northern border of the belt have been")
+                                        print("written to the file ',a10,'.'/' ','  these are followed by the")
+                                        print("same number of points along the'/' ','  curve which forms the")
+                                        print("southern border.")
                                         return pmind, pmaxd, tmind, tmaxd, jer
                                         
                                     else:
                                         jer = 1
-                                        print 'error in boundc (icase=4):'
-                                        print 'there are no points on the bounding curve with positve'
-                                        print 'longitude.  the points on the bounding curve are too'
-                                        print 'sparse.'
+                                        print('error in boundc (icase=4):')
+                                        print('there are no points on the bounding curve with positve')
+                                        print('longitude.  the points on the bounding curve are too')
+                                        print('sparse.')
                                         return pmind, pmaxd, tmind, tmaxd, jer
                             else:
                                 tmin = thetm[0]
@@ -1525,8 +1526,8 @@ class MathsUtils():
                                 elif icase == 3:
                                     tmind = -90
                                     tmaxd = tmax * 180 / self.pi
-                                print "Min., Max., longitude: ", pmind, pmaxd, " degrees."
-                                print "Min., Max. latitude: ", tmind, tmaxd, " degrees."
+                                print("Min., Max., longitude: ", pmind, pmaxd, " degrees.")
+                                print("Min., Max. latitude: ", tmind, tmaxd, " degrees.")
                                 if ind == 1:                                    
                                     self.boundaryFile.write(str(npt+1)+", 0"+"\n")
                                     for k in range(0,npt+1):
@@ -1534,13 +1535,13 @@ class MathsUtils():
                                         blat = thetm[k]*180/self.pi
                                         self.boundaryFile.write(str(blong)+" "+str(blat)+"\n")
                                     if icase == 2:
-                                        print "a sequence of " +npt+" points along the southern",
-                                        print "border of the set of admissible axes has been",
-                                        print "written to the file "+bfile+" ."
+                                        print("a sequence of " +npt+" points along the southern",)
+                                        print("border of the set of admissible axes has been",)
+                                        print("written to the file "+bfile+" .")
                                     elif icase == 3:
-                                        print "a sequence of "+npt+ " points along the northern",
-                                        print "border of the set of admissible axes has been",
-                                        print "written to the file "+bfile+" ."
+                                        print("a sequence of "+npt+ " points along the northern",)
+                                        print("border of the set of admissible axes has been",)
+                                        print("written to the file "+bfile+" .")
                                 return pmind, pmaxd, tmind, tmaxd, jer
                     for k in range(0,npt+1):
                         phim[k] = phi[k]
@@ -1551,10 +1552,10 @@ class MathsUtils():
                                     kzz = k-1
                                     if kzz <= 0:
                                         jer = 1
-                                        print "error in boundc (icase=4):"
-                                        print 'there are no points on the bounding curve with'
-                                        print 'negative longitude.  the points on the bounding'
-                                        print 'curve are too sparse.'
+                                        print("error in boundc (icase=4):")
+                                        print('there are no points on the bounding curve with')
+                                        print('negative longitude.  the points on the bounding')
+                                        print('curve are too sparse.')
                                         return pmind, pmaxd, tmind, tmaxd, jer
                                     tmax = thetm[0]
                                     for k in range(0,npt+1):
@@ -1564,8 +1565,8 @@ class MathsUtils():
                                     pmaxd = 180
                                     tmaxd = tmax*180/self.pi
                                     tmind = -tmaxd
-                                    print "Min., Max., longitude: ", pmind, pmaxd, " degrees."
-                                    print "Min., Max. latitude: ", tmind, tmaxd, " degrees."
+                                    print("Min., Max., longitude: ", pmind, pmaxd, " degrees.")
+                                    print("Min., Max. latitude: ", tmind, tmaxd, " degrees.")
                                     if ind == 1:
                                         self.boundaryFile.write(str(npt+1)+", 0"+"\n")
                                         for k in range(0,npt+1):
@@ -1581,18 +1582,18 @@ class MathsUtils():
                                             blong = phim[l]*180/self.pi+180
                                             blat = -thetm[l]*180/self.pi
                                             self.boundaryFile.write(str(blong)+" "+str(blat)+"\n")
-                                    print "' ','  a sequence of ',i3,' points along the curve'"
-                                    print "which forms the'/' ','  northern border of the belt have been"
-                                    print "written to the file ',a10,'.'/' ','  these are followed by the"
-                                    print "same number of points along the'/' ','  curve which forms the"
-                                    print "southern border."
+                                    print("' ','  a sequence of ',i3,' points along the curve'")
+                                    print("which forms the'/' ','  northern border of the belt have been")
+                                    print("written to the file ',a10,'.'/' ','  these are followed by the")
+                                    print("same number of points along the'/' ','  curve which forms the")
+                                    print("southern border.")
                                     return pmind, pmaxd, tmind, tmaxd, jer
                                 else:
                                     jer = 1
-                                    print 'error in boundc (icase=4):'
-                                    print 'there are no points on the bounding curve with positve'
-                                    print 'longitude.  the points on the bounding curve are too'
-                                    print 'sparse.'
+                                    print('error in boundc (icase=4):')
+                                    print('there are no points on the bounding curve with positve')
+                                    print('longitude.  the points on the bounding curve are too')
+                                    print('sparse.')
                                     return pmind, pmaxd, tmind, tmaxd, jer
                         else:
                             tmin = thetm[0]
@@ -1610,8 +1611,8 @@ class MathsUtils():
                             elif icase == 3:
                                 tmind = -90
                                 tmaxd = tmax * 180 / self.pi
-                            print "Min., Max., longitude: ", pmind, pmaxd, " degrees."
-                            print "Min., Max. latitude: ", tmind, tmaxd, " degrees."
+                            print("Min., Max., longitude: ", pmind, pmaxd, " degrees.")
+                            print("Min., Max. latitude: ", tmind, tmaxd, " degrees.")
                             if ind == 1:
                                 self.boundaryFile.write(str(npt+1)+", 0"+"\n")
                                 for k in range(0,npt+1):
@@ -1619,13 +1620,13 @@ class MathsUtils():
                                     blat = thetm[k]*180/self.pi
                                     self.boundaryFile.write(str(blong)+" "+str(blat)+"\n")
                                 if icase == 2:
-                                    print "a sequence of " +str(npt+1)+" points along the southern",
-                                    print "border of the set of admissible axes has been",
-                                    print "written to the file."
+                                    print("a sequence of " +str(npt+1)+" points along the southern",)
+                                    print("border of the set of admissible axes has been",)
+                                    print("written to the file.")
                                 elif icase == 3:
-                                    print "a sequence of "+str(npt+1)+ " points along the northern",
-                                    print "border of the set of admissible axes has been",
-                                    print "written to the file ."
+                                    print("a sequence of "+str(npt+1)+ " points along the northern",)
+                                    print("border of the set of admissible axes has been",)
+                                    print("written to the file .")
                             return pmind, pmaxd, tmind, tmaxd, jer
                 if icase == 5:
                     npt = k
@@ -1635,8 +1636,8 @@ class MathsUtils():
                     pmaxd=  180.
                     tmind= -90.
                     tmaxd=  90.
-                    print "Min., Max., longitude: ", pmind, pmaxd, " degrees."
-                    print "Min., Max. latitude: ", tmind, tmaxd, " degrees."
+                    print("Min., Max., longitude: ", pmind, pmaxd, " degrees.")
+                    print("Min., Max. latitude: ", tmind, tmaxd, " degrees.")
                     for k in range(0,npt+1):
                         if phi[k] > self.pi:
                             for k in range(0,npt+1):
@@ -1687,23 +1688,23 @@ class MathsUtils():
                                                     blong = phi[k]*180/self.pi -isw *180
                                                     blat = -theta[k]*180/self.pi
                                                     self.boundaryFile.write(str(blong)+" "+str(blat)+"\n")
-                                                print "one of the holes straddles the line: axis"
-                                                print " longitude =   180 degrees.  hence, this hole is bounded"
-                                                print "by two open curves (one near axis longitude = 180"
-                                                print "degrees, the other near axis longitude = -180"
-                                                print "degrees).  the other hole is bounded by a closed"
-                                                print "curve."
-                                                print "a sequence of "+npt+" points around the closed"
-                                                print "curve have been written to the file "+bfile+ " these are"
-                                                print "followed by"+n1+" points one one open curve and "+n2+" points on the other."
+                                                print("one of the holes straddles the line: axis")
+                                                print(" longitude =   180 degrees.  hence, this hole is bounded")
+                                                print("by two open curves (one near axis longitude = 180")
+                                                print("degrees, the other near axis longitude = -180")
+                                                print("degrees).  the other hole is bounded by a closed")
+                                                print("curve.")
+                                                print("a sequence of "+npt+" points around the closed")
+                                                print("curve have been written to the file "+bfile+ " these are")
+                                                print("followed by"+n1+" points one one open curve and "+n2+" points on the other.")
                                             return pmind, pmaxd, tmind, tmaxd, jer
                                         jer = 1
-                                        print "error in boundc (icase=5, subcase b):"
-                                        print "impossible exit from loop, statement 585."
+                                        print("error in boundc (icase=5, subcase b):")
+                                        print("impossible exit from loop, statement 585.")
                                         return pmind, pmaxd, tmind, tmaxd, jer
                                 jer = 1
-                                print "error in boundc (icase=5, subcase b):"
-                                print "impossible exit from loop, statement 585."
+                                print("error in boundc (icase=5, subcase b):")
+                                print("impossible exit from loop, statement 585.")
                                 return pmind, pmaxd, tmind, tmaxd, jer
                     for k in range(0,npt+1):
                           if phi[k] <= -self.pi:
@@ -1756,24 +1757,24 @@ class MathsUtils():
                                                         blong = phi[k]*180/self.pi -isw *180
                                                         blat = -theta[k]*180/self.pi
                                                         self.boundaryFile.write(str(blong)+" "+str(blat)+"\n")
-                                                    print "one of the holes straddles the line: axis"
-                                                    print " longitude =   180 degrees.  hence, this hole is bounded"
-                                                    print "by two open curves (one near axis longitude = 180"
-                                                    print "degrees, the other near axis longitude = -180"
-                                                    print "degrees).  the other hole is bounded by a closed"
-                                                    print "curve."
-                                                    print "a sequence of "+npt+" points around the closed"
-                                                    print "curve have been written to the file "+bfile+ " these are"
-                                                    print "followed by"+n1+" points one one open curve and "+n2+" points on the other."
+                                                    print("one of the holes straddles the line: axis")
+                                                    print(" longitude =   180 degrees.  hence, this hole is bounded")
+                                                    print("by two open curves (one near axis longitude = 180")
+                                                    print("degrees, the other near axis longitude = -180")
+                                                    print("degrees).  the other hole is bounded by a closed")
+                                                    print("curve.")
+                                                    print("a sequence of "+npt+" points around the closed")
+                                                    print("curve have been written to the file "+bfile+ " these are")
+                                                    print("followed by"+n1+" points one one open curve and "+n2+" points on the other.")
                                                 return pmind, pmaxd, tmind, tmaxd, jer
                                             jer = 1
-                                            print "error in boundc (icase=5, subcase b):"
-                                            print "impossible exit from loop, statement 585."
+                                            print("error in boundc (icase=5, subcase b):")
+                                            print("impossible exit from loop, statement 585.")
                                             return pmind, pmaxd, tmind, tmaxd, jer
 
                                      jer = 1
-                                     print 'error in boundc (icase=5, subcase b):'
-                                     print 'impossible exit from loop, statement 575.'
+                                     print('error in boundc (icase=5, subcase b):')
+                                     print('impossible exit from loop, statement 575.')
                                      return pmind, pmaxd, tmind, tmaxd, jer
                     ipos = 0
                     ineg = 0
@@ -1828,24 +1829,24 @@ class MathsUtils():
                                                 blong = phi[k]*180/self.pi -isw *180
                                                 blat = -theta[k]*180/self.pi
                                                 self.boundaryFile.write(str(blong)+" "+str(blat)+"\n")
-                                            print "one of the holes straddles the line: axis"
-                                            print " longitude =   180 degrees.  hence, this hole is bounded"
-                                            print "by two open curves (one near axis longitude = 180"
-                                            print "degrees, the other near axis longitude = -180"
-                                            print "degrees).  the other hole is bounded by a closed"
-                                            print "curve."
-                                            print "a sequence of "+str(npt+1)+" points around the closed"
-                                            print "curve have been written to the file these are"
-                                            print "followed by"+n1+" points one one open curve and "+n2+" points on the other."
+                                            print("one of the holes straddles the line: axis")
+                                            print(" longitude =   180 degrees.  hence, this hole is bounded")
+                                            print("by two open curves (one near axis longitude = 180")
+                                            print("degrees, the other near axis longitude = -180")
+                                            print("degrees).  the other hole is bounded by a closed")
+                                            print("curve.")
+                                            print("a sequence of "+str(npt+1)+" points around the closed")
+                                            print("curve have been written to the file these are")
+                                            print("followed by"+n1+" points one one open curve and "+n2+" points on the other.")
                                         return pmind, pmaxd, tmind, tmaxd, jer
                                     jer = 1
-                                    print "error in boundc (icase=5, subcase b):"
-                                    print "impossible exit from loop, statement 585."
+                                    print("error in boundc (icase=5, subcase b):")
+                                    print("impossible exit from loop, statement 585.")
                                     return pmind, pmaxd, tmind, tmaxd, jer
 
                              jer = 1
-                             print 'error in boundc (icase=5, subcase b):'
-                             print 'impossible exit from loop, statement 575.'
+                             print('error in boundc (icase=5, subcase b):')
+                             print('impossible exit from loop, statement 575.')
                              return pmind, pmaxd, tmind, tmaxd, jer
                     if ipos == 1 and ineg == 0:
                           isign = -1
@@ -1853,9 +1854,9 @@ class MathsUtils():
                           isign  = 1
                     if ipos != 1 and ineg != 1:
                           jer = 1
-                          print "error in boundc (icase=5, subcase a):"
-                          print "the curve we have lies on the line phi=0, which"
-                          print "is very unlikely."
+                          print("error in boundc (icase=5, subcase a):")
+                          print("the curve we have lies on the line phi=0, which")
+                          print("is very unlikely.")
                           return pmind, pmaxd, tmind, tmaxd, jer
                     if ind == 1:
                           self.boundaryFile.write(str(npt+1)+", 2"+"\n")
@@ -1868,11 +1869,11 @@ class MathsUtils():
                               blong = phi[k]*180/self.pi+isign*180
                               blat = -theta[k]*180/self.pi
                               self.boundaryFile.write(str(blong)+" "+str(blat)+"\n")
-                          print "  neither of the holes straddles the line:"
-                          print "axis'/' ','  longitude = 180 degrees.  hence, each hole is"
-                          print "bounded by a'/' ','  closed curve"
-                          print "  a sequence of ',i3,' points around each of"
-                          print "the closed'/' ','  curves has been written to the file a10,."
+                          print("  neither of the holes straddles the line:")
+                          print("axis'/' ','  longitude = 180 degrees.  hence, each hole is")
+                          print("bounded by a'/' ','  closed curve")
+                          print("  a sequence of ',i3,' points around each of")
+                          print("the closed'/' ','  curves has been written to the file a10,.")
                     return pmind, pmaxd, tmind, tmaxd, jer
                 npt = k
                 phit[npt] = 2*self.pi
@@ -1907,24 +1908,24 @@ class MathsUtils():
                 pmaxd = pmax*180/self.pi
                 tmind = tmin*180/self.pi
                 tmaxd = tmax*180/self.pi
-                print "Min., Max. longitude: ", pmind, pmaxd ," degrees."
-                print "Min., Max. latitude: ", tmind, tmaxd, " degrees."
+                print("Min., Max. longitude: ", pmind, pmaxd ," degrees.")
+                print("Min., Max. latitude: ", tmind, tmaxd, " degrees.")
                 if ind == 1:
                     self.boundaryFile.write(str(npt+1)+", 1"+"\n")
                     for k in range(0,npt+1):
                         blong = phi[k]*180/self.pi
                         blat = theta[k]*180/self.pi
                         self.boundaryFile.write(str(blong)+" "+str(blat)+"\n")
-                    print "A sequence of ", npt+1 ," points around the closed"
-                    print "curve bounding the set of admissible axes has"
-                    print "been written to the file."
+                    print("A sequence of ", npt+1 ," points around the closed")
+                    print("curve bounding the set of admissible axes has")
+                    print("been written to the file.")
                 return pmind, pmaxd, tmind, tmaxd, jer
 
         jer = 1
-        print "error in boundc:"
-        print "unable to close the bounding curve with the prescribed"
-        print "npart and kmax.  either npart needs to be decreased or"
-        print "kmax needs to be increased."
+        print("error in boundc:")
+        print("unable to close the bounding curve with the prescribed")
+        print("npart and kmax.  either npart needs to be decreased or")
+        print("kmax needs to be increased.")
         return pmind, pmaxd, tmind, tmaxd, jer
                             
     def evalf(self,phit,nu,w,azero,icode,oldu, ophi):#fval,phi,theta,u,jer
@@ -2009,8 +2010,8 @@ class MathsUtils():
             return fval,phi,theta,u,jer
         else:
             jer = 1
-            print "error in evalf: unable to determine phi, for a",
-            print "point on the bounding curve."
+            print("error in evalf: unable to determine phi, for a",)
+            print("point on the bounding curve.")
             return fval,phi,theta,u,jer
 
     def meig(self,qf,uxx,nu,w,mf): #jer, icase
@@ -2050,15 +2051,15 @@ class MathsUtils():
             for j in range(0,3):
                 mf[i,j] = (self.azero-1.0)*self.b[i,j]-self.dvect[i]*self.dvect[j]
 #        self.jacob2Function = self.jacob2(mf, 3, 3, d, z, 3, work)
-	self.jacob2Function = self.jacobi(mf, 3, 3)
+        self.jacob2Function = self.jacobi(mf, 3, 3)
 #        nrot = self.jacob2Function[0]
 #        if nrot <= 0:
 #            jer = 1
-#            print "error in meig, on a call to jacob2:"
-#            print "nrot = ", nrot
+#            print("error in meig, on a call to jacob2:")
+#            print("nrot = ", nrot)
 #            return jer, icase
-	d = self.jacob2Function[0] #eigenvectors
-	z = self.jacob2Function[1] #eigenvalues
+        d = self.jacob2Function[0] #eigenvectors
+        z = self.jacob2Function[1] #eigenvalues
         nneg = 0
         npos = 0
         for i in range(0,3):
@@ -2070,10 +2071,10 @@ class MathsUtils():
                 kpos.append(i)
         if nneg != 1 or npos != 2:
             jer = 1
-            print 'error in meig:'
-            print 'it is not the case that m has one negative eigenvalue'
-            print 'and two positive ones.  there is some error, as m'
-            print 'should have eigenvalues of this type.'
+            print('error in meig:')
+            print('it is not the case that m has one negative eigenvalue')
+            print('and two positive ones.  there is some error, as m')
+            print('should have eigenvalues of this type.')
             return jer, icase
         nlarg = 0
         for j in range(0,2):

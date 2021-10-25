@@ -34,7 +34,7 @@
 #include "model/FeatureCollectionHandle.h"
 
 #include "DatelineWrapOptionsWidget.h"
-#include "ShapefileFileFormatConfigurationDialogUi.h"
+#include "ui_ShapefileFileFormatConfigurationDialogUi.h"
 #include "ShapefileAttributeWidget.h"
 
 

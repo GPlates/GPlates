@@ -46,7 +46,6 @@
 
 #include "model/Gpgim.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace bp = boost::python;
 namespace utils = GPlatesDataMining::DataMiningUtils;
 
@@ -75,6 +74,8 @@ namespace
 			return GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE;
 		if(f_type.contains("gmt"))
 			return GPlatesFileIO::ReconstructedFeatureGeometryExport::OGRGMT;
+		if (f_type.contains("json"))
+			return GPlatesFileIO::ReconstructedFeatureGeometryExport::GEOJSON;
 		else
 			return  GPlatesFileIO::ReconstructedFeatureGeometryExport::UNKNOWN;
 	}
@@ -157,7 +158,8 @@ namespace
 					recon_time,
 					true/*export_single_output_file*/,
 					false/*export_per_input_file*/,
-					false/*export_separate_output_directory_per_input_file*/);
+					false/*export_separate_output_directory_per_input_file*/,
+					format == ReconstructedFeatureGeometryExport::SHAPEFILE/*wrap_to_dateline*/);
 	}
 
 
@@ -209,6 +211,7 @@ namespace
 		const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 						reconstruction_feature_collections,
+						false/*extend_total_reconstruction_poles_to_distant_past*/,
 						anchor_plate_id/*default_anchor_plate_id*/);
 
 		// Create the context in which to reconstruct.
@@ -298,11 +301,3 @@ export_functions()
 	bp::def("reconstruct", &reconstruct);
 	bp::def("reverse_reconstruct", &reverse_reconstruct);
 }
-#endif
-
-
-
-
-
-
-

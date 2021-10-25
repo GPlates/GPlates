@@ -56,10 +56,9 @@ namespace GPlatesFileIO
 			UNKNOWN,           //!< Format, or file extension, is unknown.
 
 			GMT,               //!< '.xy' extension.
-			
 			SHAPEFILE,         //!< '.shp' extension.
-
-			OGRGMT			   //!< '.gmt' extension.
+			OGRGMT,            //!< '.gmt' extension.
+			GEOJSON            //!< '.geojson' or '.json' extension.
 		};
 
 
@@ -87,7 +86,7 @@ namespace GPlatesFileIO
 		 *        Save each exported file to a different directory based on the file basename.
 		 *        Only applies if @a export_per_input_file is 'true'.
 		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to
-		 *        the dateline (currently only applies to @a SHAPEFILE format).
+		 *        the dateline (currently ignored by GMT '.xy' format).
 		 *
 		 * Note that both @a export_single_output_file and @a export_per_input_file can be true
 		 * in which case both a single output file is exported as well as grouped output files.
@@ -107,7 +106,7 @@ namespace GPlatesFileIO
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 	}
 }
 

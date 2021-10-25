@@ -60,7 +60,7 @@ GPlatesUnitTest::DataAssociationDataTableTest::test_data_table()
 	row->append_cell(
 			GPlatesDataMining::OpaqueData(7));
 	row->append_cell(
-			GPlatesDataMining::OpaqueData("hello world!"));
+			GPlatesDataMining::OpaqueData(QString("hello world!")));
 	row->append_cell(
 			GPlatesDataMining::OpaqueData(true));
 			
@@ -72,39 +72,36 @@ GPlatesUnitTest::DataAssociationDataTableTest::test_data_table()
 
 	GPlatesDataMining::OpaqueData o_data;
 	QString con_str;
-	boost::optional< int > j;
 	ret_row->get_cell(
 			0, 
 			o_data);
-	j = boost::get<boost::optional< int > >(
+	int j = boost::get<int>(
 			o_data);
 	con_str = boost::apply_visitor(
 			GPlatesDataMining::ConvertOpaqueDataToString(),
 			o_data);
-	std::cout << "the int is: " << *j << std::endl;
+	std::cout << "the int is: " << j << std::endl;
 
 
-	boost::optional< QString > str_r;
 	ret_row->get_cell(
 			1,
 			o_data);
-	str_r = boost::get<boost::optional< QString > >(
+	QString str_r = boost::get<QString>(
 			o_data);
 	con_str = boost::apply_visitor(
 			GPlatesDataMining::ConvertOpaqueDataToString(),
 			o_data);
-	std::cout<<"the string is: "<<(*str_r).toStdString()<<std::endl;
+	std::cout << "the string is: " << str_r.toStdString() << std::endl;
 
-	boost::optional< bool > ret_b;
 	ret_row->get_cell(
 			2,
 			o_data);
-	ret_b = boost::get<boost::optional< bool > >(
+	bool ret_b = boost::get<bool>(
 			o_data);
 	con_str = boost::apply_visitor(
 			GPlatesDataMining::ConvertOpaqueDataToString(),
 			o_data);
-	std::cout << "the bool is: " << *ret_b << std::endl;
+	std::cout << "the bool is: " << ret_b << std::endl;
 
 	d_data_table->export_as_CSV(QString("export_as_CSV.csv"));
 

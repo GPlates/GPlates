@@ -27,8 +27,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <memory>
 #include <iterator>
+#include <memory>
+#include <utility> // std::move
 #include <QUndoCommand>
 
 #include "InsertVertexGeometryOperation.h"
@@ -166,14 +167,14 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_on_line_segm
 		// position onto the line segment and insert there.
 		// This is useful if the user wants to insert directly on the line segment even
 		// though the mouse position might be off the line segment by a pixel or two.
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_to_insert =
+		const GPlatesMaths::PointOnSphere point_to_insert =
 				project_point_onto_line_segment(index_of_start_point, oriented_pos_on_sphere);
 
-		insert_vertex(index_of_point_to_insert_before, *point_to_insert);
+		insert_vertex(index_of_point_to_insert_before, point_to_insert);
 	}
 }
 
-GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PointOnSphere
 GPlatesViewOperations::InsertVertexGeometryOperation::project_point_onto_line_segment(
 		const GeometryBuilder::PointIndex start_point_index,
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
@@ -628,7 +629,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex(
 		const GPlatesMaths::PointOnSphere &insert_pos_on_sphere)
 {
 	// The command that does the actual inserting of vertex.
-	std::auto_ptr<QUndoCommand> insert_vertex_command(
+	std::unique_ptr<QUndoCommand> insert_vertex_command(
 			new GeometryBuilderInsertPointUndoCommand(
 					d_geometry_builder,
 					insert_vertex_index,
@@ -636,10 +637,10 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex(
 
 	// Command wraps insert vertex command with handing canvas tool choice and
 	// insert vertex tool activation.
-	std::auto_ptr<QUndoCommand> undo_command(
+	std::unique_ptr<QUndoCommand> undo_command(
 			new GeometryOperationUndoCommand(
 					QObject::tr("insert vertex"),
-					insert_vertex_command,
+					std::move(insert_vertex_command),
 					this,
 					d_canvas_tool_workflows));
 

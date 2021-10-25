@@ -27,7 +27,7 @@
 
 
 #include <algorithm>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <iostream>
 #include <QDir>
 #include <QFileInfo>
@@ -144,14 +144,11 @@ const GPlatesUtils::UnicodeString
 GPlatesFileIO::XmlWriter::getAliasForNamespace(
 		const GPlatesUtils::StringSet::SharedIterator namespace_uri) const
 {
+	using namespace boost::placeholders;  // For _1, _2, etc
+
 	NamespaceStack::const_reverse_iterator iter = std::find_if(
 			d_ns_stack.rbegin(), d_ns_stack.rend(), 
 			boost::bind(compare_ns_and_decl, namespace_uri, _1));
-	// N.B.  We can't use bind1st in the find_if call above since it takes
-	// a reference to it's argument which, in this case, is already a (const)
-	// reference (and one can't take the reference of a reference).  The same
-	// reasoning lies behind the subsequent uses of boost::bind(...) in this file.
-
 	if (iter != d_ns_stack.rend()) 
 	{
 		return *(iter->second);
@@ -164,6 +161,8 @@ bool
 GPlatesFileIO::XmlWriter::declare_namespace_if_necessary(
 		const NamespaceDeclaration &ns_decl)
 {
+	using namespace boost::placeholders;  // For _1, _2, etc
+
 	bool namespace_added = false;
 	NamespaceStack::reverse_iterator iter = std::find_if(
 			d_ns_stack.rbegin(), d_ns_stack.rend(), 

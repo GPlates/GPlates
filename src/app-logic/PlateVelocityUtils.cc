@@ -239,7 +239,7 @@ namespace GPlatesAppLogic
 		 * Return false if point is not inside the network.
 		 */
 		bool
-		solve_velocities_on_network(
+		solve_velocities_on_networks(
 				const GPlatesMaths::PointOnSphere &domain_point,
 				boost::optional<MultiPointVectorField::CodomainElement> &range_element,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
@@ -389,7 +389,7 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 			// First check whether domain point is inside any topological networks.
 			// This includes points inside interior rigid blocks on the networks.
 			//
-			if (solve_velocities_on_network(
+			if (solve_velocities_on_networks(
 					domain_point,
 					range_element,
 					resolved_networks_query,
@@ -1063,19 +1063,18 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
 			velocity_delta_time_type, reconstruction_time, velocity_delta_time);
 
 	// Get the finite rotation results for the plate id.
-	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_young =
+	boost::optional<GPlatesMaths::FiniteRotation> fr_young =
 			reconstruction_tree_creator.get_reconstruction_tree(time_range.second/*young*/)
-					->get_composed_absolute_rotation(reconstruction_plate_id);
-	const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_old =
+					->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
+	boost::optional<GPlatesMaths::FiniteRotation> fr_old =
 			reconstruction_tree_creator.get_reconstruction_tree(time_range.first/*old*/)
-					->get_composed_absolute_rotation(reconstruction_plate_id);
+					->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
 
 	// If both times found then calculate velocity as normal.
-	if (fr_young.second != ReconstructionTree::NoPlateIdMatchesFound &&
-		fr_old.second != ReconstructionTree::NoPlateIdMatchesFound)
+	if (fr_young && fr_old)
 	{
 		// Calculate the stage rotation.
-		return GPlatesMaths::calculate_stage_rotation(fr_young.first, fr_old.first);
+		return GPlatesMaths::calculate_stage_rotation(fr_young.get(), fr_old.get());
 	}
 
 	// If the youngest time in the delta time interval is negative *and* the oldest time
@@ -1086,25 +1085,24 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
 	// This enables rare users to support negative (future) times in rotation files if they wish
 	// but also supports most users having only non-negative rotations yet still supplying a valid
 	// velocity at/near present day when using a delta time interval such as (T-dt, T) instead of (T+dt, T).
-	if (fr_young.second == ReconstructionTree::NoPlateIdMatchesFound &&
-		fr_old.second != ReconstructionTree::NoPlateIdMatchesFound &&
+	if (!fr_young &&
+		fr_old &&
 		time_range.second/*young*/ < 0 &&
 		time_range.first/*old*/ >= 0)
 	{
 		// Shift velocity calculation such that the time interval [velocity_delta_time, 0] is non-negative.
-		const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_zero =
+		boost::optional<GPlatesMaths::FiniteRotation> fr_zero =
 				reconstruction_tree_creator.get_reconstruction_tree(0)
-						->get_composed_absolute_rotation(reconstruction_plate_id);
-		const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_delta =
+						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
+		boost::optional<GPlatesMaths::FiniteRotation> fr_delta =
 				reconstruction_tree_creator.get_reconstruction_tree(velocity_delta_time)
-						->get_composed_absolute_rotation(reconstruction_plate_id);
+						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
 
 		// If both times found then calculate velocity.
-		if (fr_zero.second != ReconstructionTree::NoPlateIdMatchesFound &&
-			fr_delta.second != ReconstructionTree::NoPlateIdMatchesFound)
+		if (fr_zero && fr_delta)
 		{
 			// Calculate the stage rotation.
-			return GPlatesMaths::calculate_stage_rotation(fr_zero.first, fr_delta.first);
+			return GPlatesMaths::calculate_stage_rotation(fr_zero.get(), fr_delta.get());
 		}
 	}
 
@@ -1114,27 +1112,26 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
 	//
 	// If not then we will try a time range of [reconstruction_time, reconstruction_time - velocity_delta_time].
 	if (velocity_delta_time_type != VelocityDeltaTime::T_TO_T_MINUS_DELTA_T &&
-		fr_young.second != ReconstructionTree::NoPlateIdMatchesFound &&
-		fr_old.second == ReconstructionTree::NoPlateIdMatchesFound)
+		fr_young &&
+		!fr_old)
 	{
 		// Next try shifting the velocity calculation such that the time interval is now
 		// [reconstruction_time, reconstruction_time - velocity_delta_time].
 		const std::pair<double, double> new_time_range = VelocityDeltaTime::get_time_range(
 				VelocityDeltaTime::T_TO_T_MINUS_DELTA_T, reconstruction_time, velocity_delta_time);
 
-		const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_new_young =
+		boost::optional<GPlatesMaths::FiniteRotation> fr_new_young =
 				reconstruction_tree_creator.get_reconstruction_tree(new_time_range.second/*young*/)
-						->get_composed_absolute_rotation(reconstruction_plate_id);
-		const std::pair<GPlatesMaths::FiniteRotation, ReconstructionTree::ReconstructionCircumstance> fr_new_old =
+						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
+		boost::optional<GPlatesMaths::FiniteRotation> fr_new_old =
 				reconstruction_tree_creator.get_reconstruction_tree(new_time_range.first/*old*/)
-						->get_composed_absolute_rotation(reconstruction_plate_id);
+						->get_composed_absolute_rotation_or_none(reconstruction_plate_id);
 
 		// If both times found then calculate velocity.
-		if (fr_new_young.second != ReconstructionTree::NoPlateIdMatchesFound &&
-			fr_new_old.second != ReconstructionTree::NoPlateIdMatchesFound)
+		if (fr_new_young && fr_new_old)
 		{
 			// Calculate the stage rotation.
-			return GPlatesMaths::calculate_stage_rotation(fr_new_young.first, fr_new_old.first);
+			return GPlatesMaths::calculate_stage_rotation(fr_new_young.get(), fr_new_old.get());
 		}
 	}
 
@@ -1199,7 +1196,7 @@ GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworksVelocities::calculate_ve
 		boost::optional<
 				std::pair<
 						GPlatesMaths::Vector3D,
-						boost::optional<const ResolvedTriangulation::Network::RigidBlock &> > >
+						ResolvedTriangulation::Network::PointLocation> >
 				velocity = network->get_triangulation_network().calculate_velocity(
 						point,
 						velocity_delta_time,
@@ -1209,11 +1206,12 @@ GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworksVelocities::calculate_ve
 			const GPlatesMaths::Vector3D &velocity_vector = velocity->first;
 
 			// If the point was in one of the network's rigid blocks.
-			if (velocity->second)
+			const ResolvedTriangulation::Network::PointLocation &point_location = velocity->second;
+			if (boost::optional<const ResolvedTriangulation::Network::RigidBlock &> rigid_block =
+				point_location.located_in_rigid_block())
 			{
-				const ResolvedTriangulation::Network::RigidBlock &rigid_block = velocity->second.get();
 				const ReconstructionGeometry *velocity_recon_geom =
-						rigid_block.get_reconstructed_feature_geometry().get();
+						rigid_block->get_reconstructed_feature_geometry().get();
 
 				return std::make_pair(velocity_recon_geom, velocity_vector);
 			}

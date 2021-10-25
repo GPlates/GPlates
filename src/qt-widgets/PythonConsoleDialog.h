@@ -35,7 +35,7 @@
 #include <QMenu>
 #include <QMessageBox>
 
-#include "PythonConsoleDialogUi.h"
+#include "ui_PythonConsoleDialogUi.h"
 
 #include "OpenFileDialog.h"
 #include "SaveFileDialog.h"
@@ -69,7 +69,7 @@ namespace GPlatesPresentation
 	class ViewState;
 }
 
-#if !defined(GPLATES_NO_PYTHON)
+
 namespace GPlatesQtWidgets
 {
 	// Forward declarations.
@@ -559,5 +559,5 @@ namespace GPlatesQtWidgets
 		bool d_on_blank_line;
 	};
 }
-#endif  //GPLATES_NO_PYTHON
+
 #endif  // GPLATES_QTWIDGETS_PYTHONCONSOLEDIALOG_H

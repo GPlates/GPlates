@@ -187,20 +187,17 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 		// Now let's use the reconstruction plate ID of the feature to find the appropriate 
 		// absolute rotation in the reconstruction tree.
 		const GPlatesAppLogic::ReconstructionTree &recon_tree = *focused_rfg.get()->get_reconstruction_tree();
-		std::pair<GPlatesMaths::FiniteRotation,
-				GPlatesAppLogic::ReconstructionTree::ReconstructionCircumstance>
-				absolute_rotation =
-						recon_tree.get_composed_absolute_rotation(plate_id);
+		const GPlatesMaths::FiniteRotation absolute_rotation = recon_tree.get_composed_absolute_rotation(plate_id);
 
 		// FIXME:  Do we care about the reconstruction circumstance?
 		// (For example, there may have been no match for the reconstruction plate ID.)
-		const GPlatesMaths::UnitQuaternion3D &uq = absolute_rotation.first.unit_quat();
+		const GPlatesMaths::UnitQuaternion3D &uq = absolute_rotation.unit_quat();
 		if (!GPlatesMaths::represents_identity_rotation(uq))
 		{
 			using namespace GPlatesMaths;
 
 			GPlatesMaths::UnitQuaternion3D::RotationParams params =
-					uq.get_rotation_params(absolute_rotation.first.axis_hint());
+					uq.get_rotation_params(absolute_rotation.axis_hint());
 
 			GPlatesMaths::PointOnSphere euler_pole(params.axis);
 			GPlatesMaths::LatLonPoint llp = make_lat_lon_point(euler_pole);

@@ -1,0 +1,104 @@
+#####################################################################################################################################
+#   CPACK_PROJECT_CONFIG_FILE - CPack-time project CPack configuration file.                                                        #
+#   This file is included at cpack time, once per generator after CPack has set CPACK_GENERATOR                                     #
+#   to the actual generator being used. It allows per-generator setting of CPACK_* variables at cpack time.                         #
+#                                                                                                                                   #
+# This is our own configuration file to handle generator-specific settings for CPACK variables that are used by multiple generators #
+# (eg, NSIS, DragNDrop). For example, CPACK_PACKAGE_ICON uses different icon formats for different generators.                      #
+# This is not needed for CPACK_<GENERATOR>_ variables (since they only apply to a specific generator).                              #
+#####################################################################################################################################
+
+
+###########
+# Archive #
+###########
+
+if (CPACK_GENERATOR MATCHES "^(7Z|TBZ2|TGZ|TXZ|TZ|TZST|ZIP)$")
+    #   CPACK_MONOLITHIC_INSTALL - Disables the component-based installation mechanism.
+    #
+    #   When set, the component specification is ignored and all installed items are put in a single "MONOLITHIC" package.
+    #   Some CPack generators do monolithic packaging by default and may be asked to do component packaging by setting
+    #   CPACK_<GENNAME>_COMPONENT_INSTALL to TRUE.
+    #
+    # We want component-based installs (for components gplates and pygplates) for archive generators.
+    # The other generators (eg, NSIS, DragNDrop and Debian) default to monolithic which only installs the 'gplates' component
+    # (since we used EXCLUDE_FROM_ALL in the 'install()' commands for the 'pygplates' component).
+    SET(CPACK_MONOLITHIC_INSTALL OFF)
+
+    #    CPACK_COMPONENTS_ALL - The list of component to install.
+    #
+    #    The default value of this variable is computed by CPack and contains all components defined by the project.
+    #    The user may set it to only include the specified components.
+    #
+    # We only specify CPACK_COMPONENTS_ALL when CPACK_MONOLITHIC_INSTALL is disabled because they are conflicting
+    # (CPack will issue a warning and default to monolithic). See Package.cmake for reasons behind our choice of components.
+    #
+    # Note: It seems setting this variable on the command-line (eg, with 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=pygplates')
+    #       does not override the value set here (this doesn't appear to be a problem with the regular non-override Package.cmake).
+    #       So we'll only set it here if it hasn't already been defined (eg, via the command-line).
+    #       Also note that it is not defined in the regular non-override Package.cmake because that would conflict with our default
+    #       setting of ON for CPACK_MONOLITHIC_INSTALL. So the only place it should potentially be defined is the command-line.
+    if (NOT DEFINED CPACK_COMPONENTS_ALL)
+        set(CPACK_COMPONENTS_ALL gplates)
+    endif()
+
+    # For archive files make the top level of the extracted directory tree have the same name as the archive file
+    # (this is the default for archive non-component installs, but not for component installs).
+    # The top-level directory name will be CPACK_PACKAGE_FILE_NAME regardless of the component being packaged
+    # (so for pygplates you will probably want to manually rename the top-level directory, so that it says 'pygplates'
+    # instead of 'gplates' and has the pygplates version instead of the gplates version; although pygplates should typically
+    # be built for conda, not packaged up with cpack).
+    set(CPACK_COMPONENT_INCLUDE_TOPLEVEL_DIRECTORY ON)
+endif()
+
+
+########
+# NSIS #
+########
+
+if (CPACK_GENERATOR MATCHES "^NSIS$")
+    #   CPACK_PACKAGE_INSTALL_DIRECTORY - Installation directory on the target system.
+    #
+    #   This may be used by some CPack generators like NSIS to create an installation directory e.g.,
+    #   "CMake 2.5" below the installation prefix. All installed elements will be put inside this directory..
+    #
+    # We want, for example, "GPlates\GPlates 2.3.0\" (which ends up as "C:\Program Files\GPlates\GPlates 2.3.0\").
+    # This way multiple versions can be installed at the same time (in different sub-directories of "C:\Program Files\GPlates\").
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "@PROJECT_NAME@\\@PROJECT_NAME@ @GPLATES_PACKAGE_VERSION_NAME@")
+
+    #   CPACK_PACKAGE_INSTALL_REGISTRY_KEY - Registry key used when installing this project.
+    #
+    #   This is only used by installers for Windows. The default value is based on the installation directory.
+    #
+    # We want, for example, "GPlates 2.3.0-dev.1" for a development release so that multiple installations
+    # with different version numbers don't conflict with each other.
+    SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "@PROJECT_NAME@ @GPLATES_PACKAGE_VERSION_NAME@")
+
+    # Note that CPACK_PACKAGE_ICON can be used by NSIS, but we don't set this for now since apparently NSIS needs this to be 150x57 pixels.
+endif()
+
+
+#############
+# DragNDrop #
+#############
+
+if (CPACK_GENERATOR MATCHES "^DragNDrop$")
+    #   CPACK_PACKAGE_ICON - A branding image that will be displayed inside the installer (used by GUI installers).
+    #
+    # Apparently this icon is only used to represent the .dmg file when mounted, not for the .dmg file itself.
+    SET(CPACK_PACKAGE_ICON "@GPLATES_SOURCE_DISTRIBUTION_DIR@/gplates_desktop_icon.icns")
+
+    #    CPACK_PACKAGING_INSTALL_PREFIX - The prefix used in the built package.
+    #
+    #    Each CPack generator has a default value (like /usr). This default value may be overwritten from the CMakeLists.txt or
+    #    the cpack(1) command line by setting an alternative value. Example:
+    #
+    #       set(CPACK_PACKAGING_INSTALL_PREFIX "/opt")
+    #
+    #    This is not the same purpose as CMAKE_INSTALL_PREFIX which is used when installing from the build tree without building a package.
+    #
+    # Make sure everything ends up in the specified directory (which the user can then drag'n'drop into "/Applications/").
+    # This way the GPlates app bundle and geodata stay together in the one directory.
+    # And using the version in the directory name enables multiple versions to be installed (in different sub-directories of, eg, "/Applications").
+    SET(CPACK_PACKAGING_INSTALL_PREFIX "/@PROJECT_NAME@_@GPLATES_PACKAGE_VERSION_NAME@")
+endif()

@@ -104,8 +104,8 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_found_geometries.push_back(gml_point.point());
-	d_found_point_geometries.push_back( gml_point.point() );
+	d_found_geometries.push_back(gml_point.point().get_geometry_on_sphere());
+	d_found_point_geometries.push_back(gml_point.point().get_point_geometry_on_sphere());
 }
 
 

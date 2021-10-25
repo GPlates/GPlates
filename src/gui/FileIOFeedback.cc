@@ -24,7 +24,7 @@
  */
 
 #include <iostream>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QCoreApplication>
 #include <QDebug>
@@ -111,7 +111,7 @@ namespace
 	{
 		FileDialogFilter filter(
 				QObject::tr(
-						file_format_registry.get_short_description(file_format).toAscii().constData()));
+						file_format_registry.get_short_description(file_format).toLatin1().constData()));
 
 		add_filename_extensions_to_file_dialog_filter(filter, file_format, file_format_registry);
 

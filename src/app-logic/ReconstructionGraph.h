@@ -28,228 +28,335 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTIONGRAPH_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTIONGRAPH_H
 
-#include <map>  // std::multimap
-#include <vector>
-#include <algorithm>  // std::swap
-#include <utility>  // std::pair
+#include <map>
+#include <boost/intrusive/slist.hpp>
+#include <boost/optional.hpp>
+#include <boost/pool/object_pool.hpp>
 
-#include "ReconstructionTreeEdge.h"
+#include "maths/FiniteRotation.h"
+#include "maths/Real.h"
 
-#include "model/FeatureCollectionHandle.h"
+#include "model/types.h"
 
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
+#include "property-values/GeoTimeInstant.h"
+
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesAppLogic
 {
-	// Forward declaration for intrusive-pointer.  ReconstructionTree needs to see the whole
-	// definition of ReconstructionGraph (since a ReconstructionGraph will be contained within
-	// a ReconstructionTree) so this header cannot #include the header for ReconstructionTree.
-	class ReconstructionTree;
-
-
 	/**
-	 * A reconstruction graph is a collection of reconstruction tree edges.
+	 * A reconstruction graph represents a plate circuit rotation hierarchy.
 	 *
-	 * By specifying a root plate ID, you can build a reconstruction graph into a
-	 * ReconstructionTree.
+	 * A reconstruction *graph* can contain cycles due to crossovers (when a moving plate switches
+	 * fixed plates at a particular time) because each edge represents a total reconstruction *sequence*
+	 * (which contains a pole over a range of times).
 	 *
-	 * Building a reconstruction tree is a three-step process:
-	 * -# Instantiate ReconstructionGraph.
-	 * -# Populate the ReconstructionGraph instance by inserting interpolated poles (function
-	 * @a insert_total_reconstruction_pole).
-	 * -# Build the reconstruction tree (function @a build_tree), specifying the root of the
-	 * tree.
+	 * By specifying a reconstruction time and an anchor plate ID, you can create a ReconstructionTree
+	 * rooted at the anchor plate and taking the path through the reconstruction graph at the
+	 * reconstruction time. However, in contrast to a ReconstructionGraph, a ReconstructTree is *acyclic*
+	 * and only takes one of the possible paths through a crossover (when the reconstruction time
+	 * matches a moving plate's crossover time).
+	 *
+	 * NOTE: A @a ReconstructionGraph should be created using a @a ReconstructionGraphBuilder.
 	 */
-	class ReconstructionGraph
+	class ReconstructionGraph :
+			public GPlatesUtils::ReferenceCount<ReconstructionGraph>
 	{
 	public:
-		/**
-		 * This type is used to reference an edge in this graph.
-		 */
-		typedef ReconstructionTreeEdge::non_null_ptr_type edge_ref_type;
+
+		typedef GPlatesUtils::non_null_intrusive_ptr<ReconstructionGraph> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const ReconstructionGraph> non_null_ptr_to_const_type;
+
+		//
+		// NOTE: ReconstructionGraphBuilder should be used to create ReconstructionGraph.
+		//
+
+
+		// Some setup needed for an intrusive list of pole samples.
+		typedef boost::intrusive::slist_base_hook<
+				// Turn off safe linking (the default link mode) because it asserts if we destroy
+				// a pole sample before removing it from a list (eg, a list inside an edge).
+				// Well, we actually destroy all edges before pole samples, so this never actually happens.
+				// But since we're destroying the entire graph in one go, we don't want the list destructors
+				// to go to the extra (unnecessary) effort of setting each hook in list to default hook state...
+				//
+				// NOTE: This should be changed back to 'safe_link' if debugging a problem though...
+				boost::intrusive::link_mode<boost::intrusive::normal_link> >
+						pole_sample_list_base_hook_type;
 
 		/**
-		 * This type is used to map plate IDs to edge-refs.
+		 * Represents the finite rotation value of a pole at a specific time instant.
 		 */
-		typedef std::multimap<GPlatesModel::integer_plate_id_type, edge_ref_type>
-				edge_refs_by_plate_id_map_type;
-
-		/**
-		 * This type is used to describe the number of edges in the graph.
-		 */
-		typedef edge_refs_by_plate_id_map_type::size_type size_type;
-
-		/**
-		 * This type is the iterator for a map of plate IDs to edge-refs.
-		 */
-		typedef edge_refs_by_plate_id_map_type::iterator edge_refs_by_plate_id_map_iterator;
-
-		/**
-		 * This type is the const-iterator for a map of plate IDs to edge-refs.
-		 */
-		typedef edge_refs_by_plate_id_map_type::const_iterator edge_refs_by_plate_id_map_const_iterator;
-
-		/**
-		 * The purpose of this type is the same as the purpose of the return-type of the
-		 * function 'multimap::equal_range' -- it contains the "begin" and "end" iterators
-		 * of an STL container range.
-		 */
-		typedef std::pair<edge_refs_by_plate_id_map_iterator, edge_refs_by_plate_id_map_iterator>
-				edge_refs_by_plate_id_map_range_type;
-
-		/**
-		 * The purpose of this type is the same as the purpose of the return-type of the
-		 * function 'multimap::equal_range' -- it contains the "begin" and "end" iterators
-		 * of an STL container range.
-		 *
-		 * This contains const-iterators.
-		 */
-		typedef std::pair<edge_refs_by_plate_id_map_const_iterator, edge_refs_by_plate_id_map_const_iterator>
-				edge_refs_by_plate_id_map_const_range_type;
-
-		/**
-		 * Return the number of edges contained in this graph.
-		 *
-		 * This function does not throw.
-		 */
-		size_type
-		num_edges_contained() const
+		class PoleSample :
+				// Using an intrusive list avoids extra memory allocations and is generally faster...
+				public pole_sample_list_base_hook_type
 		{
-			return d_edges_by_fixed_plate_id.size();
-		}
+		public:
+
+			const GPlatesPropertyValues::GeoTimeInstant &
+			get_time_instant() const
+			{
+				return d_time_instant;
+			}
+
+			/**
+			 * Return the total rotation from @a get_time_instant to present day of the pole's fixed/moving plate pair.
+			 */
+			const GPlatesMaths::FiniteRotation &
+			get_finite_rotation() const
+			{
+				return d_finite_rotation;
+			}
+
+		private:
+
+			friend class ReconstructionGraphBuilder;
+			friend class boost::object_pool<PoleSample>;  // Access to Pole constructor.
+
+			PoleSample(
+					const GPlatesPropertyValues::GeoTimeInstant &time_instant,
+					const GPlatesMaths::FiniteRotation &finite_rotation) :
+				d_time_instant(time_instant),
+				d_finite_rotation(finite_rotation)
+			{  }
+
+			GPlatesPropertyValues::GeoTimeInstant d_time_instant;
+			GPlatesMaths::FiniteRotation d_finite_rotation;
+		};
 
 		/**
-		 * Insert a total reconstruction pole for this reconstruction time.
+		 * Typedef for a list of pole samples.
 		 *
-		 * This will result in the creation of reconstruction tree edges, which will be
-		 * added to the graph.
-		 *
-		 * For maximum computational efficiency, you should insert all relevant total
-		 * reconstruction poles before building the tree.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
+		 * Note: Using a *singly*-linked list since don't need to do insertions (saves a small amount of memory).
 		 */
-		void
-		insert_total_reconstruction_pole(
-				GPlatesModel::integer_plate_id_type fixed_plate_id_,
-				GPlatesModel::integer_plate_id_type moving_plate_id_,
-				const GPlatesMaths::FiniteRotation &pole,
-				bool finite_rotation_was_interpolated);
+		typedef boost::intrusive::slist<PoleSample,
+				boost::intrusive::base_hook<pole_sample_list_base_hook_type>,
+				boost::intrusive::cache_last<true>/*enable push_back() and back()*/>
+						pole_sample_list_type;
+
+
+		// Some setup needed for an intrusive list of plate *incoming* edges.
+		class PlateIncomingEdgeTag;
+		typedef boost::intrusive::slist_base_hook<
+				boost::intrusive::tag<PlateIncomingEdgeTag>,
+				// Turn off safe linking (the default link mode) because it asserts if we destroy
+				// an edge before removing it from a list (eg, a list inside a plate).
+				// Well, we actually destroy all plates before edges, so this never actually happens.
+				// But since we're destroying the entire graph in one go, we don't want the list destructors
+				// to go to the extra (unnecessary) effort of setting each hook in list to default hook state...
+				//
+				// NOTE: This should be changed back to 'safe_link' if debugging a problem though...
+				boost::intrusive::link_mode<boost::intrusive::normal_link> >
+						plate_incoming_edge_list_base_hook_type;
+
+		// Some setup needed for an intrusive list of plate *outgoing* edges.
+		class PlateOutgoingEdgeTag;
+		typedef boost::intrusive::slist_base_hook<
+				boost::intrusive::tag<PlateOutgoingEdgeTag>,
+				// Turn off safe linking (the default link mode) because it asserts if we destroy
+				// an edge before removing it from a list (eg, a list inside a plate).
+				// Well, we actually destroy all plates before edges, so this never actually happens.
+				// But since we're destroying the entire graph in one go, we don't want the list destructors
+				// to go to the extra (unnecessary) effort of setting each hook in list to default hook state...
+				//
+				// NOTE: This should be changed back to 'safe_link' if debugging a problem though...
+				boost::intrusive::link_mode<boost::intrusive::normal_link> >
+						plate_outgoing_edge_list_base_hook_type;
+
+		class Plate;
 
 		/**
-		 * Build the graph into a ReconstructionTree, specifying the @a root_plate_id of
-		 * the tree.
+		 * Represents the relative rotation from a fixed @a Plate to a moving @a Plate.
 		 *
-		 * @a reconstruction_features are the features that were used to fill this graph.
-		 * This can be used to find which ReconstructionTrees were generated using the same
-		 * set of reconstruction features and can also be used to find the set of reconstruction
-		 * features used to reconstruct specific geometries so that those reconstruction features
-		 * can be modified (such as inserting new rotation poles).
-		 *
-		 * Note that invoking this function will cause all total reconstruction poles in
-		 * this graph to be transferred to the new ReconstructionTree instance, leaving
-		 * this graph empty (as if it had just been created).
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
+		 * These are the edges in the graph.
 		 */
-		GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree>
-		build_tree(
-				GPlatesModel::integer_plate_id_type root_plate_id,
-				const double &reconstruction_time,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features);
-
-		/**
-		 * Find all edges in this graph whose fixed plate ID matches @a plate_id.
-		 *
-		 * The return-value is a typedef for a 'std::pair'.  Its purpose is the same as the
-		 * purpose of the return-type of the function 'multimap::equal_range' -- it
-		 * contains the "begin" and "end" iterators of an STL container range.
-		 *
-		 * This function does not throw.
-		 */
-		edge_refs_by_plate_id_map_const_range_type
-		find_edges_whose_fixed_plate_id_match(
-				GPlatesModel::integer_plate_id_type plate_id) const;
-
-		/**
-		 * Find all edges in this graph whose fixed plate ID matches @a plate_id.
-		 *
-		 * The return-value is a typedef for a 'std::pair'.  Its purpose is the same as the
-		 * purpose of the return-type of the function 'multimap::equal_range' -- it
-		 * contains the "begin" and "end" iterators of an STL container range.
-		 *
-		 * This function does not throw.
-		 */
-		edge_refs_by_plate_id_map_range_type
-		find_edges_whose_fixed_plate_id_match(
-				GPlatesModel::integer_plate_id_type plate_id);
-
-		/**
-		 * Swap the contents of this graph with @a other.
-		 *
-		 * This function does not throw.
-		 */
-		void
-		swap(
-				ReconstructionGraph &other)
+		class Edge :
+				// Using intrusive lists avoids extra memory allocations and is generally faster...
+				public plate_incoming_edge_list_base_hook_type,
+				public plate_outgoing_edge_list_base_hook_type
 		{
-			d_edges_by_fixed_plate_id.swap(other.d_edges_by_fixed_plate_id);
-		}
+		public:
+
+			const Plate &
+			get_fixed_plate() const
+			{
+				return *d_fixed_plate;
+			}
+
+			const Plate &
+			get_moving_plate() const
+			{
+				return *d_moving_plate;
+			}
+
+			/**
+			 * Return the sequence of pole time samples.
+			 *
+			 * These are ordered from youngest to oldest (same as in a rotation feature or file).
+			 *
+			 * Note: This is guaranteed to be at least two time samples.
+			 */
+			const pole_sample_list_type &
+			get_pole() const
+			{
+				return d_pole;
+			}
+
+			/**
+			 * Return the time of the *oldest* pole sample.
+			 */
+			const GPlatesPropertyValues::GeoTimeInstant &
+			get_begin_time() const
+			{
+				return d_pole.back().get_time_instant();
+			}
+
+			/**
+			 * Return the time of the *youngest* pole sample.
+			 */
+			const GPlatesPropertyValues::GeoTimeInstant &
+			get_end_time() const
+			{
+				return d_pole.front().get_time_instant();
+			}
+
+		private:
+
+			friend class ReconstructionGraphBuilder;
+			friend class boost::object_pool<Edge>;  // Access to Edge constructor.
+
+			Edge(
+					Plate *fixed_plate,
+					Plate *moving_plate) :
+				d_fixed_plate(fixed_plate),
+				d_moving_plate(moving_plate)
+			{  }
+
+			Plate *d_fixed_plate;
+			Plate *d_moving_plate;
+			pole_sample_list_type d_pole;
+		};
+
 
 		/**
-		 * Copy-assign the value of @a other to this.
+		 * Typedef for a list of edges going *into* a plate (edge direction is from fixed plate to moving plate).
 		 *
-		 * This function is strongly exception-safe and exception-neutral.
+		 * In this sense the plate is the *moving* plate of the edges.
 		 *
-		 * This copy-assignment operator should act exactly the same as the default
-		 * (auto-generated) copy-assignment operator (except that we can guarantee that
-		 * this operator will be strongly exception-safe).
+		 * Note: Using a *singly*-linked list since don't need to do insertions (saves a small amount of memory).
 		 */
-		ReconstructionGraph &
-		operator=(
-				const ReconstructionGraph &other)
+		typedef boost::intrusive::slist<Edge, boost::intrusive::base_hook<plate_incoming_edge_list_base_hook_type> >
+				plate_incoming_edge_list_type;
+
+		/**
+		 * Typedef for a list of edges going *out* of a plate (edge direction is from fixed plate to moving plate).
+		 *
+		 * In this sense the plate is the *fixed* plate of the edges.
+		 *
+		 * Note: Using a *singly*-linked list since don't need to do insertions (saves a small amount of memory).
+		 */
+		typedef boost::intrusive::slist<Edge, boost::intrusive::base_hook<plate_outgoing_edge_list_base_hook_type> >
+				plate_outgoing_edge_list_type;
+
+		/**
+		 * Represents a plate (ID).
+		 *
+		 * These are the nodes in the graph.
+		 */
+		class Plate
 		{
-			// Use the copy+swap idiom to enable strong exception safety.
-			ReconstructionGraph dup(other);
-			this->swap(dup);
-			return *this;
+		public:
+
+			GPlatesModel::integer_plate_id_type
+			get_plate_id() const
+			{
+				return d_plate_id;
+			}
+			
+			/**
+			 * List of edges going *into* this plate (edge direction is from fixed plate to moving plate).
+			 *
+			 * This plate is the *moving* plate of these edges.
+			 */
+			const plate_incoming_edge_list_type &
+			get_incoming_edges() const
+			{
+				return d_incoming_edges;
+			}
+
+			/**
+			 * List of edges going *out* of this plate (edge direction is from fixed plate to moving plate).
+			 *
+			 * This plate is the *fixed* plate of these edges.
+			 */
+			const plate_outgoing_edge_list_type &
+			get_outgoing_edges() const
+			{
+				return d_outgoing_edges;
+			}
+
+		private:
+
+			friend class ReconstructionGraphBuilder;
+			friend class boost::object_pool<Plate>;  // Access to Plate constructor.
+
+			explicit
+			Plate(
+					GPlatesModel::integer_plate_id_type plate_id) :
+				d_plate_id(plate_id)
+			{  }
+
+			GPlatesModel::integer_plate_id_type d_plate_id;
+			plate_incoming_edge_list_type d_incoming_edges;
+			plate_outgoing_edge_list_type d_outgoing_edges;
+		};
+
+
+		/**
+		 * Return the @a Plate associated with the specified plate ID.
+		 *
+		 * This is typically used to obtain the anchor @a Plate when creating a @a ReconstructionTree.
+		 * Then the graph can be traversed from there through the @a Edge and @a Plate objects.
+		 */
+		boost::optional<const Plate &>
+		get_plate(
+				GPlatesModel::integer_plate_id_type plate_id) const
+		{
+			plate_map_type::const_iterator plate_iter = d_plate_map.find(plate_id);
+			if (plate_iter == d_plate_map.end())
+			{
+				return boost::none;
+			}
+
+			return *plate_iter->second;
 		}
 
 	private:
-		/**
-		 * This is a mapping of fixed plate IDs to edge-refs.
-		 *
-		 * It is populated when total reconstruction poles are inserted.
-		 *
-		 * It is used when building the reconstruction tree:  Starting with the root plate
-		 * ID, a tree is built recursively by finding edges whose fixed plate ID matches
-		 * the root plate ID; examining the moving plate IDs of each of those edges; and
-		 * for each of these moving plate IDs, finding edges whose fixed plate ID matches
-		 * the current (moving) plate ID.
-		 */
-		edge_refs_by_plate_id_map_type d_edges_by_fixed_plate_id;
+
+		friend class ReconstructionGraphBuilder;
+
+		static
+		non_null_ptr_type
+		create()
+		{
+			return non_null_ptr_type(new ReconstructionGraph());
+		}
+
+		ReconstructionGraph()
+		{  }
+
+
+		//! Typedef for mapping plate IDs to @a Plate objects.
+		typedef std::map<GPlatesModel::integer_plate_id_type, Plate *> plate_map_type;
+
+		// Storage for the pole samples, edges and plates.
+		boost::object_pool<PoleSample> d_pole_sample_pool;
+		boost::object_pool<Edge> d_edge_pool;
+		boost::object_pool<Plate> d_plate_pool;
+
+		plate_map_type d_plate_map;
 	};
-}
-
-
-namespace std
-{
-	/**
-	 * This is a template specialisation of the standard function @a swap.
-	 *
-	 * See Josuttis, section 4.4.2, "Swapping Two Values" for more information.
-	 */
-	template<>
-	inline
-	void
-	swap<GPlatesAppLogic::ReconstructionGraph>(
-			GPlatesAppLogic::ReconstructionGraph &rg1,
-			GPlatesAppLogic::ReconstructionGraph &rg2)
-	{
-		rg1.swap(rg2);
-	}
 }
 
 #endif  // GPLATES_APP_LOGIC_RECONSTRUCTIONGRAPH_H

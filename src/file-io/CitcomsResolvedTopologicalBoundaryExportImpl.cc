@@ -51,6 +51,7 @@ namespace GPlatesFileIO
 				private GPlatesModel::ConstFeatureVisitor
 		{
 		public:
+			explicit
 			DetermineSubSegmentFeatureType(
 					const double &recon_time) :
 				d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time))
@@ -267,6 +268,7 @@ namespace GPlatesFileIO
 				private GPlatesModel::ConstFeatureVisitor
 		{
 		public:
+			explicit
 			DetermineSlabSubSegmentFeatureType(
 					const double &recon_time) :
 				d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time))
@@ -284,9 +286,6 @@ namespace GPlatesFileIO
 				// - a property named "subductionPolarity",
 				// - a property type of "gpml:SubductionPolarityEnumeration".
 				// - an enumeration value other than "Unknown".
-				//
-				// If we didn't find this information then look for the "sL" and "sR"
-				// data type codes in an old plates header if we can find one.
 				//
 				return d_sub_segment_type;
 			}
@@ -432,7 +431,6 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_slab_sub_segmen
 {
 	SubSegmentType d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
 
-	QString slabEdgeType;
 	static const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("slabEdgeType");
 
@@ -441,7 +439,7 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_slab_sub_segmen
 					sub_segment_feature_ref, property_name);
 	if (property_value)
 	{
-		slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value.get()->value().get() );
+		const QString slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value.get()->value().get() );
 
 		if (slabEdgeType == QString("Leading") ) 
 		{

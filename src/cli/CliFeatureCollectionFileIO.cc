@@ -290,7 +290,7 @@ GPlatesCli::FeatureCollectionFileIO::report_load_file_error_by_error_type(
 		std::ostringstream location_str;
 		read_error_occurrence.d_location->write(location_str);
 
-		qWarning() << "Line: " << QString::fromAscii(location_str.str().c_str());
+		qWarning() << "Line: " << QString::fromLatin1(location_str.str().c_str());
 
 		const QString &error_result_string =
 				GPlatesFileIO::ReadErrorMessages::get_result_as_string(

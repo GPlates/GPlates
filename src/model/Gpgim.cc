@@ -1025,7 +1025,7 @@ GPlatesModel::Gpgim::create_property(
 
 	// Read the property structural types.
 	GpgimProperty::structural_type_seq_type property_structural_types;
-	GpgimProperty::structural_type_seq_type::size_type default_property_structural_type_index =
+	unsigned int default_property_structural_type_index =
 			read_feature_property_structural_types(
 					property_structural_types,
 					property_xml_element,
@@ -1181,7 +1181,7 @@ GPlatesModel::Gpgim::read_feature_property_multiplicity(
 }
 
 
-GPlatesModel::GpgimProperty::structural_type_seq_type::size_type
+unsigned int
 GPlatesModel::Gpgim::read_feature_property_structural_types(
 		GpgimProperty::structural_type_seq_type &gpgim_property_structural_types,
 		const XmlElementNode::non_null_ptr_type &property_xml_element,

@@ -34,12 +34,14 @@
 #include <set>
 #include <utility>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/current_function.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QStringList>
 #include <QTextStream>
+#include <Qt>
+#include <QtGlobal>
 
 #include "GpmlStructuralTypeReaderUtils.h"
 
@@ -593,7 +595,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_window(
 }
 
 
-GPlatesPropertyValues::GpmlTopologicalNetwork::Interior
+GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_topological_network_interior(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 		const GPlatesModel::GpgimVersion &gpml_version,
@@ -612,7 +614,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_topological_network_in
 		find_and_create_one(elem, &create_gpml_property_delegate,
 				SOURCE_GEOMETRY, gpml_version, read_errors);
 
-	return GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(source_geometry);
+	return source_geometry;
 }
 
 
@@ -1096,7 +1098,13 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_double_list(
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
 	QStringList tokens =
-			create_string(elem, gpml_version, read_errors).split(" ", QString::SkipEmptyParts);
+			create_string(elem, gpml_version, read_errors).split(" ",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				Qt::SkipEmptyParts
+#else
+				QString::SkipEmptyParts
+#endif
+			);
 
 	std::vector<double> result;
 	result.reserve(tokens.count());
@@ -1164,7 +1172,13 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_int_list(
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
 	QStringList tokens =
-			create_string(elem, gpml_version, read_errors).split(" ", QString::SkipEmptyParts);
+			create_string(elem, gpml_version, read_errors).split(" ",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				Qt::SkipEmptyParts
+#else
+				QString::SkipEmptyParts
+#endif
+			);
 
 	std::vector<int> result;
 	result.reserve(tokens.count());
@@ -1417,7 +1431,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_polyline(
 					EXCEPTION_SOURCE);
 			break;
 	}
-	return polyline_type::create_on_heap(points);
+	return polyline_type::create(points);
 }
 
 
@@ -1661,7 +1675,13 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_tuple_list(
 	for ( ; num_lists < num_comma_separated_tokens; ++num_lists)
 	{
 		QStringList current_token_numbers =
-				comma_separated_tokens[num_lists].trimmed().split(" ", QString::SkipEmptyParts);
+				comma_separated_tokens[num_lists].trimmed().split(" ",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+					Qt::SkipEmptyParts
+#else
+					QString::SkipEmptyParts
+#endif
+				);
 		if (current_token_numbers.size() != 1)
 		{
 			++num_lists;
@@ -1718,7 +1738,13 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_tuple_list(
 			}
 
 			QStringList current_token_numbers =
-					comma_separated_tokens[comma_separated_token_index].trimmed().split(" ", QString::SkipEmptyParts);
+					comma_separated_tokens[comma_separated_token_index].trimmed().split(" ",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+						Qt::SkipEmptyParts
+#else
+						QString::SkipEmptyParts
+#endif
+					);
 			++comma_separated_token_index;
 
 			const QString list_element = current_token_numbers[0];

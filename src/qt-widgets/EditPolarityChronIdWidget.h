@@ -30,7 +30,7 @@
 #include "AbstractEditWidget.h"
 #include "property-values/GpmlPolarityChronId.h"
 
-#include "EditPolarityChronIdWidgetUi.h"
+#include "ui_EditPolarityChronIdWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

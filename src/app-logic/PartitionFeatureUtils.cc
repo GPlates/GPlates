@@ -136,7 +136,7 @@ namespace GPlatesAppLogic
 				visit_gml_point(
 						gml_point_type &gml_point)
 				{
-					add_geometry(gml_point.point());
+					add_geometry(gml_point.point().get_geometry_on_sphere());
 				}
 
 
@@ -498,9 +498,11 @@ namespace GPlatesAppLogic
 							// we can get partitioned points that don't fall on the original polygon.
 							// In this case we really should get the partitioner itself to generate
 							// interpolate information similar to what DateLineWrapper does.
+							GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+									partitioned_domain_point_geometry = partitioned_domain_point.get_geometry_on_sphere();
 							if (GPlatesMaths::AngularExtent::PI == minimum_distance(
-									partitioned_domain_point,
-									*geometry_domain,
+									*partitioned_domain_point_geometry,  // const GeometryOnSphere &
+									*geometry_domain,                    // const GeometryOnSphere &
 									false/*geometry1_interior_is_solid*/,
 									false/*geometry2_interior_is_solid*/,
 									POLY_GEOMETRY_DISTANCE_THRESHOLD,
@@ -510,8 +512,8 @@ namespace GPlatesAppLogic
 								// The minimum distance exceeded our threshold. This shouldn't happen
 								// but if it does then we'll do the test again without a threshold.
 								minimum_distance(
-										partitioned_domain_point,
-										*geometry_domain,
+										*partitioned_domain_point_geometry,  // const GeometryOnSphere &
+										*geometry_domain,                    // const GeometryOnSphere &
 										false/*geometry1_interior_is_solid*/,
 										false/*geometry2_interior_is_solid*/,
 										boost::none/*minimum_distance_threshold*/,
@@ -609,7 +611,7 @@ namespace GPlatesAppLogic
 				GreatCircleArcForwardIteratorType gca_iter = gca_begin;
 				for ( ; gca_iter != gca_end; ++gca_iter)
 				{
-					distance += acos(gca_iter->dot_of_endpoints());
+					distance += gca_iter->arc_length();
 				}
 
 				return distance;
@@ -640,7 +642,7 @@ namespace GPlatesAppLogic
 				virtual
 				void
 				visit_point_on_sphere(
-						GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
+						GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
 				{
 					++d_num_points;
 				}

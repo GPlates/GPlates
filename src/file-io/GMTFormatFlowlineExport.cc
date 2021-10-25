@@ -28,6 +28,7 @@
 #include <QDebug>
 #include <QStringList>
 #include <QTextStream>
+#include <QtGlobal>
 
 #include "app-logic/FlowlineUtils.h"
 #include "app-logic/ReconstructedFlowline.h"
@@ -98,12 +99,22 @@ namespace
 			// For whatever perverse reason, the user wants to write in (lat,lon) order.
 			stream << "  " << lat_str.c_str()
 				<< "      " << lon_str.c_str()
-				<< "      " << time_str.c_str() << endl;
+				<< "      " << time_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		} else {
 			// Normal GMT (lon,lat) order should be used.
 			stream << "  " << lon_str.c_str()
 				<< "      " << lat_str.c_str() 
-				<< "      " << time_str.c_str() << endl;
+				<< "      " << time_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		}
 	}
 
@@ -113,17 +124,22 @@ namespace
 		QTextStream &text_stream,
 		const GPlatesAppLogic::ReconstructedFlowline &rf)
 	{
-		GPlatesAppLogic::ReconstructedFlowline::seed_point_geom_ptr_type seed_point =
+		const GPlatesAppLogic::ReconstructedFlowline::seed_point_type &seed_point =
 			rf.present_day_seed_point();
 
-		GPlatesMaths::LatLonPoint llp = make_lat_lon_point(*seed_point);
+		GPlatesMaths::LatLonPoint llp = make_lat_lon_point(seed_point);
 		text_stream << "> ";
 		text_stream << "Seed point: ";
 		text_stream << "Lat: ";
 		text_stream << llp.latitude();
 		text_stream << ", Lon: ";
 		text_stream << llp.longitude();
-		text_stream << endl;
+		text_stream
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 	}
 
 	void
@@ -144,7 +160,13 @@ namespace
 			time_end = times.end(); 
 
 
-		text_stream << "> Left-plate flowline" << endl;
+		text_stream << "> Left-plate flowline"
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
+
 		for (; (line_it != line_end) && (time_it != time_end) ; ++line_it, ++time_it)
 		{
 			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*line_it);
@@ -157,7 +179,13 @@ namespace
 		line_it = rrf->vertex_begin();
 		line_end = rrf->vertex_end();
 
-		text_stream << "> Right-plate flowline" << endl;
+		text_stream << "> Right-plate flowline"
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
+
 		for (; (line_it != line_end) && (time_it != time_end) ; ++line_it, ++time_it)
 		{
 			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*line_it);

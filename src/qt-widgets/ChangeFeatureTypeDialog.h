@@ -33,7 +33,7 @@
 #include <QTextEdit>
 #include <QStringList>
 
-#include "ChangeFeatureTypeDialogUi.h"
+#include "ui_ChangeFeatureTypeDialogUi.h"
 
 #include "model/FeatureHandle.h"
 

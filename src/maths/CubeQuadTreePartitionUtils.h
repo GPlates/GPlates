@@ -26,8 +26,11 @@
 #ifndef GPLATES_MATHS_CUBEQUADTREEPARTITIONUTILS_H
 #define GPLATES_MATHS_CUBEQUADTREEPARTITIONUTILS_H
 
+#include <utility>  // std::pair
 #include <boost/mpl/if.hpp>
+#include <boost/optional.hpp>
 #include <boost/type_traits/is_const.hpp>
+#include <boost/utility/in_place_factory.hpp>
 
 #include "CubeCoordinateFrame.h"
 #include "CubeQuadTreeLocation.h"
@@ -35,6 +38,8 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+
+#include "utils/IntrusiveSinglyLinkedList.h"
 
 
 namespace GPlatesMaths
@@ -56,14 +61,14 @@ namespace GPlatesMaths
 		 *
 		 *   void
 		 *   mirror_root_element_function(
-		 *      CubeQuadTreePartition<DstElementType> &dst_spatial_partition,
-		 *      const SrcElementType &src_root_element);
+		 *       CubeQuadTreePartition<DstElementType> &dst_spatial_partition,
+		 *       const SrcElementType &src_root_element);
 		 *
 		 *   void
 		 *   mirror_node_element_function(
-		 *      CubeQuadTreePartition<DstElementType> &dst_spatial_partition,
-		 *      typename CubeQuadTreePartition<DstElementType>::node_reference_type dst_node,
-		 *      const SrcElementType &src_element);
+		 *       CubeQuadTreePartition<DstElementType> &dst_spatial_partition,
+		 *       typename CubeQuadTreePartition<DstElementType>::node_reference_type dst_node,
+		 *       const SrcElementType &src_element);
 		 *
 		 */
 		template <typename SrcElementType, typename DstElementType,
@@ -87,10 +92,26 @@ namespace GPlatesMaths
 				const CubeQuadTreePartition<ElementType> &src_spatial_partition);
 
 
+		/**
+		 * Visits those pairs of elements in @a spatial_partition that potentially intersect each other.
+		 *
+		 * The function signature is:
+		 *
+		 *   void
+		 *   visit_element_pair_function(
+		 *       ElementType &element1,
+		 *       ElementType &element1);
+		 */
+		template <typename ElementType, typename VisitElementPairFunctionType>
+		void
+		visit_potentially_intersecting_elements(
+				CubeQuadTreePartition<ElementType> &spatial_partition,
+				const VisitElementPairFunctionType &visit_element_pair_function);
+
+
 		// Forward declaration.
 		template <typename ElementType, class CubeQuadTreePartitionType>
 		class CubeQuadTreeIntersectingNodes;
-
 
 		/**
 		 * A utility class to use during traversal of a spatial partition to determine those
@@ -480,6 +501,294 @@ namespace GPlatesMaths
 		}
 
 
+		namespace Implementation
+		{
+			template <typename ElementType>
+			using element_iterator = typename CubeQuadTreePartition<ElementType>::element_iterator;
+
+			template <typename ElementType>
+			using element_range_type = std::pair<
+					element_iterator<ElementType>,
+					element_iterator<ElementType>>;
+
+			template <typename ElementType>
+			using node_reference_type = typename CubeQuadTreePartition<ElementType>::node_reference_type;
+
+			template <typename ElementType>
+			using neighbour_nodes_type = CubeQuadTreePartitionIntersectingNodes<
+					ElementType,
+					/*non-const*/ CubeQuadTreePartition<ElementType>>;
+
+			//! A linked list node that references a list of elements (either the root elements or elements in a node).
+			template <typename ElementType>
+			struct ElementRangeListNode :
+					public GPlatesUtils::IntrusiveSinglyLinkedList<ElementRangeListNode<ElementType>>::Node
+			{
+				explicit
+				ElementRangeListNode(
+						const element_range_type<ElementType> &element_range_) :
+					element_range(element_range_)
+				{  }
+
+				ElementRangeListNode(
+						const element_iterator<ElementType> &element_range_begin_,
+						const element_iterator<ElementType> &element_range_end_) :
+					element_range(element_range_begin_, element_range_end_)
+				{  }
+
+				element_range_type<ElementType> element_range;
+			};
+
+			/**
+			 * We use our own intrusive singly linked list (instead of boost::slist) since it supports
+			 * tail-sharing (where multiple lists can share their tail ends).
+			 */
+			template <typename ElementType>
+			using element_range_list_type = GPlatesUtils::IntrusiveSinglyLinkedList<ElementRangeListNode<ElementType>>;
+
+			template <typename ElementType>
+			using element_range_list_const_iterator_type = typename element_range_list_type<ElementType>::const_iterator;
+
+			template <typename ElementType, typename VisitElementPairFunctionType>
+			void
+			visit_potentially_intersecting_element_range(
+					const element_range_type<ElementType> &element_range,
+					const element_range_list_type<ElementType> &neighbour_element_range_list,
+					const element_range_list_const_iterator_type<ElementType> &sibling_ancestor_neighbour_boundary_element_range_iterator,
+					const VisitElementPairFunctionType &visit_element_pair_function)
+			{
+				// Iterate over the elements in the current element range
+				// (which is either the root elements or the elements of a quad tree node).
+				for (auto element_iter = element_range.first; element_iter != element_range.second; ++element_iter)
+				{
+					auto &element = *element_iter;
+
+					// Iterate over prior elements (to the current element) in the current element range.
+					// By only visiting the *prior* elements we avoid visiting each pair of elements twice.
+					for (auto prev_element_iter = element_range.first; prev_element_iter != element_iter; ++prev_element_iter)
+					{
+						auto &prev_element = *prev_element_iter;
+
+						// Visit the pair of previous and current elements (in the current element range).
+						visit_element_pair_function(prev_element, element);
+					}
+
+					// Next visit the sibling neighbour element ranges (at the same quad tree depth as elements in the current range).
+					//
+					// The sibling part of the list is the first part.
+					for (auto sibling_neighbour_element_range_iter = neighbour_element_range_list.begin();
+						sibling_neighbour_element_range_iter != sibling_ancestor_neighbour_boundary_element_range_iterator;
+						++sibling_neighbour_element_range_iter)
+					{
+						const auto &sibling_neighbour_element_range = sibling_neighbour_element_range_iter->element_range;
+
+						// Iterate over the elements in the sibling neighbour element range.
+						for (auto sibling_neighbour_element_iter = sibling_neighbour_element_range.first;
+							sibling_neighbour_element_iter != sibling_neighbour_element_range.second;
+							++sibling_neighbour_element_iter)
+						{
+							auto &sibling_neighbour_element = *sibling_neighbour_element_iter;
+
+							// With *sibling* neighbour elements we end up visiting each element pair twice
+							// (ie, 'visit_element_pair_function(sibling_neighbour_element, element)' and
+							// 'visit_element_pair_function(element, sibling_neighbour_element)').
+							// This is because we're visiting the pair now where we visit 'element' and
+							// its neighbour 'sibling_neighbour_element' but we also will visit
+							// 'sibling_neighbour_element' and its neighbour 'element.
+							// So in order to only visit the pair once we need an arbitrary condition
+							// that excludes one ordering of the pair. In our case it's easiest just
+							// to compare the memory addresses of the two elements.
+							if (&sibling_neighbour_element < &element)
+							{
+								// Visit the pair of sibling neighbour and current elements.
+								visit_element_pair_function(sibling_neighbour_element, element);
+							}
+						}
+					}
+
+					// Next visit all ancestor neighbour element ranges (higher in the quad tree, closer to root, than the
+					// elements in the current range). These neighbour elements are the root elements
+					// (which potentially intersect all elements) and elements of parent quad tree nodes up to the root
+					// (which also potentially intersect elements in the current range).
+					//
+					// The ancestor part of the list is the last part.
+					for (auto ancestor_neighbour_element_range_iter = sibling_ancestor_neighbour_boundary_element_range_iterator;
+						ancestor_neighbour_element_range_iter != neighbour_element_range_list.end();
+						++ancestor_neighbour_element_range_iter)
+					{
+						const auto &ancestor_neighbour_element_range = ancestor_neighbour_element_range_iter->element_range;
+
+						// Iterate over the elements in the ancestor neighbour element range.
+						for (auto ancestor_neighbour_element_iter = ancestor_neighbour_element_range.first;
+							ancestor_neighbour_element_iter != ancestor_neighbour_element_range.second;
+							++ancestor_neighbour_element_iter)
+						{
+							auto &ancestor_neighbour_element = *ancestor_neighbour_element_iter;
+
+							// Visit the pair of ancestor neighbour and current elements.
+							//
+							// Note that, unlike a sibling neighbour, we always visit an ancestor neighbour.
+							// This is because we never end up visiting the swapped version of these elements
+							// (ie, 'visit_element_pair_function(element, ancestor_neighbour_element)' because
+							// when we visited the ancestor element it did not visit any descendant elements.
+							visit_element_pair_function(ancestor_neighbour_element, element);
+						}
+					}
+				}
+			}
+
+			template <typename ElementType, typename VisitElementPairFunctionType>
+			void
+			visit_potentially_intersecting_elements_quad_tree(
+					CubeQuadTreePartition<ElementType> &spatial_partition,
+					const element_range_list_type<ElementType> &ancestor_neighbour_element_range_list,
+					const node_reference_type<ElementType> &node_reference,
+					const neighbour_nodes_type<ElementType> &sibling_neighbour_nodes,
+					const VisitElementPairFunctionType &visit_element_pair_function)
+			{
+				// Tail share with the ancestor neighbour element-range list since we want to traverse the nodes
+				// in that list as well as new sibling neighbour nodes that we'll add now.
+				element_range_list_type<ElementType> neighbour_element_range_list(ancestor_neighbour_element_range_list);
+
+				// The current beginning of the neighbour element range list is the boundary between ancestor and
+				// sibling neighbours. We'll soon be adding the sibling neighbours.
+				const element_range_list_const_iterator_type<ElementType>
+						sibling_ancestor_neighbour_boundary_element_range_iterator = neighbour_element_range_list.begin();
+
+				// Construct linked list nodes on the runtime stack as it simplifies memory management.
+				// When the stack unwinds, the list(s) referencing these nodes, as well as the nodes themselves,
+				// will disappear together (leaving any lists higher up in the stack still intact) - this happens
+				// because this list implementation supports tail-sharing.
+				// Note that we use boost::optional since 'ElementRangeListNode' does not have a default constructor.
+				boost::optional<ElementRangeListNode<ElementType>> sibling_neighbour_element_range_list_nodes[
+						neighbour_nodes_type<ElementType>::intersecting_nodes_type::MAX_NUM_NODES];
+
+				// Now add those neighbour nodes that exist (not all areas of the spatial partition will be populated).
+				const unsigned int num_sibling_neighbour_nodes = sibling_neighbour_nodes.get_intersecting_nodes().get_num_nodes();
+				for (unsigned int sibling_neighbour_node_index = 0;
+					sibling_neighbour_node_index < num_sibling_neighbour_nodes;
+					++sibling_neighbour_node_index)
+				{
+					const auto &sibling_neighbour_node_reference =
+							sibling_neighbour_nodes.get_intersecting_nodes().get_node(sibling_neighbour_node_index);
+					// Skip the sibling neighbour node if it's also the current node.
+					if (sibling_neighbour_node_reference == node_reference)
+					{
+						continue;
+					}
+
+					// Only need to add neighbour nodes that actually contain elements.
+					// NOTE: We still recurse into child nodes though - an empty internal node does not mean the child nodes are necessarily empty.
+					if (sibling_neighbour_node_reference.empty())
+					{
+						continue;
+					}
+
+					sibling_neighbour_element_range_list_nodes[sibling_neighbour_node_index] =
+							boost::in_place(sibling_neighbour_node_reference.begin(), sibling_neighbour_node_reference.end());
+
+					// Add to the list of element ranges that neighbour the current node.
+					neighbour_element_range_list.push_front(
+							&sibling_neighbour_element_range_list_nodes[sibling_neighbour_node_index].get());
+				}
+
+				// The elements in the current node.
+				const element_range_type<ElementType> element_range(node_reference.begin(), node_reference.end());
+
+				// Visit the elements in the current node.
+				//
+				// Their neighbours are the same elements in the current node as well as elements
+				// gathered in the neighbour list so far.
+				visit_potentially_intersecting_element_range(
+						element_range,
+						neighbour_element_range_list,
+						sibling_ancestor_neighbour_boundary_element_range_iterator,
+						visit_element_pair_function);
+
+				// Add the range of elements in the current node to the list of neighbour element ranges.
+				// This is so any child nodes will consider the current node as a neighbour
+				// (albeit an overlapping neighbour).
+				ElementRangeListNode<ElementType> element_range_list_node(element_range);
+				neighbour_element_range_list.push_front(&element_range_list_node);
+
+				// Iterate over the child nodes.
+				for (unsigned int child_y_offset = 0; child_y_offset < 2; ++child_y_offset)
+				{
+					for (unsigned int child_x_offset = 0; child_x_offset < 2; ++child_x_offset)
+					{
+						// See if there is the current child node in the source spatial partition.
+						const auto child_node = spatial_partition.get_child_node(node_reference, child_x_offset, child_y_offset);
+						if (child_node)
+						{
+							const neighbour_nodes_type<ElementType> child_neighbour_nodes(
+									sibling_neighbour_nodes, child_x_offset, child_y_offset);
+
+							visit_potentially_intersecting_elements_quad_tree(
+									spatial_partition,
+									neighbour_element_range_list,
+									child_node,
+									child_neighbour_nodes,
+									visit_element_pair_function);
+						}
+					}
+				}
+			}
+		}
+
+
+		template <typename ElementType, typename VisitElementPairFunctionType>
+		void
+		visit_potentially_intersecting_elements(
+				CubeQuadTreePartition<ElementType> &spatial_partition,
+				const VisitElementPairFunctionType &visit_element_pair_function)
+		{
+			Implementation::element_range_list_type<ElementType> root_neighbour_element_range_list;
+
+			// Elements in the root of the spatial partition (not in any cube-face quadtrees).
+			const Implementation::element_range_type<ElementType> root_element_range(
+					spatial_partition.begin_root_elements(),
+					spatial_partition.end_root_elements());
+
+			// Visit the root elements.
+			//
+			// Their neighbours are the same root elements, but there are no sibling/ancestor elements
+			// gathered yet into the list (so it is empty).
+			Implementation::visit_potentially_intersecting_element_range(
+					root_element_range,
+					root_neighbour_element_range_list,  // empty
+					// There are no sibling or ancestor neighbour element ranges to the root elements...
+					root_neighbour_element_range_list.end(),
+					visit_element_pair_function);
+
+			// Add the range of root elements to the list of neighbour element ranges.
+			// This is so the cube-face quadtrees will consider the root elements as neighbours
+			// (albeit overlapping neighbours).
+			Implementation::ElementRangeListNode<ElementType> root_neighbour_element_range_list_node(root_element_range);
+			root_neighbour_element_range_list.push_front(&root_neighbour_element_range_list_node);
+
+			// Iterate over the faces of the cube and then traverse the quad tree of each face.
+			for (unsigned int face = 0; face < 6; ++face)
+			{
+				const GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face =
+						static_cast<GPlatesMaths::CubeCoordinateFrame::CubeFaceType>(face);
+
+				const Implementation::neighbour_nodes_type<ElementType> sibling_neighbour_nodes(spatial_partition, cube_face);
+
+				// See if there is the current quad tree root node in the spatial partition.
+				const auto node_reference = spatial_partition.get_quad_tree_root_node(cube_face);
+				if (node_reference)
+				{
+					Implementation::visit_potentially_intersecting_elements_quad_tree(
+							spatial_partition,
+							root_neighbour_element_range_list,
+							node_reference,
+							sibling_neighbour_nodes,
+							visit_element_pair_function);
+				}
+			}
+		}
+
+
 		template <typename ElementType, class CubeQuadTreePartitionType>
 		CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>::CubeQuadTreePartitionIntersectingNodes(
 				CubeQuadTreePartitionType &spatial_partition,
@@ -509,6 +818,18 @@ namespace GPlatesMaths
 					++d_intersecting_nodes.d_num_nodes;
 				}
 			}
+		}
+
+
+		template <typename ElementType, class CubeQuadTreePartitionType>
+		CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>::CubeQuadTreePartitionIntersectingNodes(
+				const CubeQuadTreePartitionIntersectingNodes &parent,
+				unsigned int child_x_offset,
+				unsigned int child_y_offset) :
+			d_node_location(
+					parent.d_node_location, child_x_offset, child_y_offset)
+		{
+			find_intersecting_nodes(parent.d_intersecting_nodes);
 		}
 
 
@@ -564,18 +885,6 @@ namespace GPlatesMaths
 					}
 				}
 			}
-		}
-
-
-		template <typename ElementType, class CubeQuadTreePartitionType>
-		CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>::CubeQuadTreePartitionIntersectingNodes(
-				const CubeQuadTreePartitionIntersectingNodes &parent,
-				unsigned int child_x_offset,
-				unsigned int child_y_offset) :
-			d_node_location(
-					parent.d_node_location, child_x_offset, child_y_offset)
-		{
-			find_intersecting_nodes(parent.d_intersecting_nodes);
 		}
 
 

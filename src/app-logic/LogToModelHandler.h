@@ -57,7 +57,7 @@ namespace GPlatesAppLogic
 		void
 		handle_qt_message(
 				QtMsgType msg_type,
-				const char *msg);
+				const QString &msg);
 
 	private:
 

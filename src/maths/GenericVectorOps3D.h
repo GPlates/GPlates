@@ -99,7 +99,7 @@ namespace GPlatesMaths {
 			 const real_t s,
 			 const V v) {
 
-				return R(s * v.x().dval(), s * v.y().dval(), s * v.z().dval());
+				return R(s.dval() * v.x().dval(), s.dval() * v.y().dval(), s.dval() * v.z().dval());
 			}
 
 		};

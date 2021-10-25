@@ -46,6 +46,7 @@
 namespace GPlatesMaths
 {
 	class GreatCircleArc;
+	class PointGeometryOnSphere;
 
 	/** 
 	 * Represents a point on the surface of a sphere. 
@@ -57,15 +58,15 @@ namespace GPlatesMaths
 	 *
 	 * As long as the invariant of the unit vector is maintained, the point
 	 * will definitely lie on the surface of the sphere.
+	 *
+	 * NOTE: This does *NOT* inherit from @a GeometryOnSphere (see @a PointGeometryOnSphere below for that).
+	 *       This reduces the size of @a PointOnSphere from 40 to 24 bytes and consequently reduces
+	 *       the size of multipoints, polylines and polygons. This is actually the main reason for
+	 *       the separation into two classes.
 	 */
-	class PointOnSphere:
-			public GeometryOnSphere
-			// NOTE: We are *not* inheriting from 'GPlatesUtils::QtStreamable<PointOnSphere>' in order to
-			// avoid bloating sizeof(PointOnSphere) due to multiple inheritance (even from empty
-			// base class) - this reduces sizeof(PointOnSphere) from 40 to 32.
-			// Instead we explicitly provide 'operator <<' overloads as non-member functions.
-			//
-			//public GPlatesUtils::QtStreamable<PointOnSphere>
+	class PointOnSphere :
+		// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+		public GPlatesUtils::QtStreamable<PointOnSphere>
 	{
 	public:
 
@@ -79,146 +80,20 @@ namespace GPlatesMaths
 		 */
 		static const PointOnSphere south_pole;
 
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> non_null_ptr_to_const_type;
-
-
-		/**
-		 * Create a new PointOnSphere instance on the heap from the unit vector
-		 * @a position_vector_.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 */
-		static
-		const non_null_ptr_to_const_type
-		create_on_heap(
-				const UnitVector3D &position_vector_)
-		{
-			return non_null_ptr_to_const_type(new PointOnSphere(position_vector_));
-		}
-
-
-		/**
-		 * Clone this PointOnSphere instance, to create a duplicate instance on the
-		 * heap.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 */
-		const GeometryOnSphere::non_null_ptr_to_const_type
-		clone_as_geometry() const
-		{
-			return GeometryOnSphere::non_null_ptr_to_const_type(new PointOnSphere(*this));
-		}
-
-
-		/**
-		 * Clone this PointOnSphere instance, to create a duplicate instance on the
-		 * heap.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 */
-		const non_null_ptr_to_const_type
-		clone_as_point() const
-		{
-			return non_null_ptr_to_const_type(new PointOnSphere(*this));
-		}
-
-
-		/**
-		 * Get a non-null pointer to a const PointOnSphere which points to this instance
-		 * (or a clone of this instance).
-		 *
-		 * (Since geometries are treated as immutable literals in GPlates, a geometry can
-		 * never be modified through a pointer, so there is no reason why it would be
-		 * inappropriate to return a pointer to a clone of this instance rather than a
-		 * pointer to this instance.)
-		 *
-		 * This function will behave correctly regardless of whether this instance is on
-		 * the stack or the heap.
-		 */
-		const non_null_ptr_to_const_type
-		get_non_null_pointer() const;
-
 
 		/**
 		 * Create a new PointOnSphere instance from the unit vector @a position_vector_.
 		 *
 		 * Note that, in contrast to variable-length geometries like PolylineOnSphere and
 		 * PolygonOnSphere, a PointOnSphere has an internal representation which is fixed
-		 * in size and known in advance (and relatively small, in fact -- only 3 'double's
-		 * and a single 'long'), so memory allocation is not needed when a PointOnSphere
-		 * instance is copied.  For this reason, it's not such a tragedy if PointOnSphere
-		 * instances are instantiated on the stack and copied into containers by value.
+		 * in size and known in advance (and relatively small, in fact -- only 3 'double's),
+		 * so memory allocation is not needed when a PointOnSphere instance is copied.
 		 */
 		explicit 
 		PointOnSphere(
-				const UnitVector3D &position_vector_):
-			GeometryOnSphere(),
+				const UnitVector3D &position_vector_) :
 			d_position_vector(position_vector_)
 		{  }
-
-
-		/**
-		 * Create a copy-constructed PointOnSphere instance on the stack.
-		 *
-		 * This constructor should act exactly the same as the default (auto-generated)
-		 * copy-constructor would, except that it should initialise the ref-count to zero.
-		 *
-		 * Note that, in contrast to variable-length geometries like PolylineOnSphere and
-		 * PolygonOnSphere, a PointOnSphere has an internal representation which is fixed
-		 * in size and known in advance (and relatively small, in fact -- only 3 'double's
-		 * and a single 'long'), so memory allocation is not needed when a PointOnSphere
-		 * instance is copied.  For this reason, it's not such a tragedy if PointOnSphere
-		 * instances are instantiated on the stack and copied into containers by value.
-		 */
-		PointOnSphere(
-				const PointOnSphere &other):
-			GeometryOnSphere(),
-			d_position_vector(other.d_position_vector)
-		{  }
-
-
-		virtual
-		ProximityHitDetail::maybe_null_ptr_type
-		test_proximity(
-				const ProximityCriteria &criteria) const;
-
-
-		virtual
-		ProximityHitDetail::maybe_null_ptr_type
-		test_vertex_proximity(
-			const ProximityCriteria &criteria) const;
-
-		/**
-		 * Accept a ConstGeometryOnSphereVisitor instance.
-		 *
-		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
-		 * this function.
-		 */
-		virtual
-		void
-		accept_visitor(
-				ConstGeometryOnSphereVisitor &visitor) const;
-
-
-		/**
-		 * Copy-assign the value of @a other to this.
-		 *
-		 * This function has a nothrow exception-safety guarantee.
-		 *
-		 * This copy-assignment operator should act exactly the same as the default
-		 * (auto-generated) copy-assignment operator would, except that it should
-		 * not assign the ref-count of @a other to this.
-		 */
-		PointOnSphere &
-		operator=(
-				const PointOnSphere &other)
-		{
-			d_position_vector = other.d_position_vector;
-			return *this;
-		}
 
 
 		const UnitVector3D &
@@ -238,9 +113,6 @@ namespace GPlatesMaths
 		 * If @a test_point is "close", the function will
 		 * calculate exactly @em how close, and store that
 		 * value in @a closeness.
-		 *
-		 * For more information, read the comment before
-		 * @a GPlatesGui::ProximityTests::find_close_rfgs.
 		 */
 		bool
 		is_close_to(
@@ -256,12 +128,163 @@ namespace GPlatesMaths
 		lies_on_gca(
 				const GreatCircleArc &gca) const;
 
+
+		/**
+		 * Test for a proximity hit.
+		 *
+		 * If there is a hit, the pointer returned will be a pointer to extra information
+		 * about the hit -- for example, the specific vertex (point) or segment (GCA) of a
+		 * polyline which was hit.
+		 *
+		 * Otherwise (ie, if there was not a hit), the pointer returned will be null.
+		 */
+		ProximityHitDetail::maybe_null_ptr_type
+		test_proximity(
+				const ProximityCriteria &criteria) const;
+
+		/**
+		 * Test for a proximity hit, but only on the vertices of the geometry.                                                                     
+		 */
+		ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+				const ProximityCriteria &criteria) const;
+
+
+		/**
+		 * Copy this point into a @a PointGeometryOnSphere instance and return that as its base class @a GeometryOnSphere.
+		 *
+		 * This is useful when a point needs to be returned as a @a GeometryOnSphere (note that
+		 * @a PointOnSphere does *not* inherit @a GeometryOnSphere, only @a PointGeometryOnSphere inherits it).
+		 */
+		GeometryOnSphere::non_null_ptr_to_const_type
+		get_geometry_on_sphere() const;
+
+
+		/**
+		 * Copy this point into a @a PointGeometryOnSphere instance.
+		 *
+		 * This is useful when a point needs to be returned as a @a PointGeometryOnSphere.
+		 */
+		GPlatesUtils::non_null_intrusive_ptr<const PointGeometryOnSphere>  // Same as PointGeometryOnSphere::non_null_ptr_to_const_type
+		get_point_geometry_on_sphere() const;
+
 	private:
 
 		/**
 		 * This is the 3-D unit-vector which defines the position of this point.
 		 */
 		UnitVector3D d_position_vector;
+
+	};
+
+
+	/** 
+	 * A derivation of @a GeometryOnSphere that wraps a @a PointOnSphere.
+	 *
+	 * In most uses cases only @a PointOnSphere should be needed (which uses less memory, 24 bytes versus 40 bytes),
+	 * however @a PointGeometryOnSphere will be needed when accessing a point via the @a GeometryOnSphere interface.
+	 */
+	class PointGeometryOnSphere:
+			public GeometryOnSphere,
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<PointGeometryOnSphere>
+	{
+	public:
+
+		/**
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const PointGeometryOnSphere>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PointGeometryOnSphere> non_null_ptr_to_const_type;
+
+
+		/**
+		 * Create a new PointGeometryOnSphere instance on the heap from the PointOnSphere @a position_.
+		 */
+		static
+		const non_null_ptr_to_const_type
+		create(
+				const PointOnSphere &position_)
+		{
+			return non_null_ptr_to_const_type(new PointGeometryOnSphere(position_));
+		}
+
+
+		/**
+		 * Inherited from @a GeometryOnSphere.
+		 */
+		virtual
+		ProximityHitDetail::maybe_null_ptr_type
+		test_proximity(
+				const ProximityCriteria &criteria) const
+		{
+			return position().test_proximity(criteria);
+		}
+
+
+		/**
+		 * Inherited from @a GeometryOnSphere.
+		 */
+		virtual
+		ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+			const ProximityCriteria &criteria) const
+		{
+			return position().test_vertex_proximity(criteria);
+		}
+
+		/**
+		 * Accept a ConstGeometryOnSphereVisitor instance.
+		 *
+		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
+		 * this function.
+		 */
+		virtual
+		void
+		accept_visitor(
+				ConstGeometryOnSphereVisitor &visitor) const;
+
+
+		/**
+		 * Return the wrapped @a PointOnSphere.
+		 */
+		const PointOnSphere &
+		position() const
+		{
+			return d_position;
+		}
+
+
+		/**
+		 * Return this instance as a non-null pointer.
+		 */
+		const non_null_ptr_to_const_type
+		get_non_null_pointer() const
+		{
+			return GPlatesUtils::get_non_null_pointer(this);
+		}
+
+	private:
+
+		/**
+		 * Construct a PointGeometryOnSphere instance from a PointOnSphere.
+		 *
+		 * This constructor should never be invoked directly by client code; only through
+		 * the static 'create' function.
+		 *
+		 * It should also initialise the ref-count to zero.
+		 */
+		explicit 
+		PointGeometryOnSphere(
+				const PointOnSphere &position_):
+			GeometryOnSphere(),
+			d_position(position_)
+		{  }
+
+
+		/**
+		 * The wrapped point-on-sphere position.
+		 */
+		PointOnSphere d_position;
 
 	};
 
@@ -434,28 +457,10 @@ namespace GPlatesMaths
 			const PointOnSphere &p);
 
 
-	/**
-	 * Gives us:
-	 *    qDebug() << p;
-	 *    qWarning() << p;
-	 *    qCritical() << p;
-	 *    qFatal() << p;
-	 */
-	QDebug
-	operator <<(
-			QDebug dbg,
-			const PointOnSphere &p);
-
-
-	/**
-	 * Gives us:
-	 *    QTextStream text_stream(device);
-	 *    text_stream << p;
-	 */
-	QTextStream &
-	operator <<(
-			QTextStream &stream,
-			const PointOnSphere &p);
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const PointGeometryOnSphere &p);
 
 
 	inline
@@ -467,7 +472,6 @@ namespace GPlatesMaths
 		return p1.position_vector() == p2.position_vector();
 	}
 
-
 	inline
 	bool
 	operator!=(
@@ -475,6 +479,25 @@ namespace GPlatesMaths
 			const PointOnSphere &p2)
 	{
 		return p1.position_vector() != p2.position_vector();
+	}
+
+
+	inline
+	bool
+	operator==(
+			const PointGeometryOnSphere &p1,
+			const PointGeometryOnSphere &p2)
+	{
+		return p1.position() == p2.position();
+	}
+
+	inline
+	bool
+	operator!=(
+			const PointGeometryOnSphere &p1,
+			const PointGeometryOnSphere &p2)
+	{
+		return p1.position() != p2.position();
 	}
 
 

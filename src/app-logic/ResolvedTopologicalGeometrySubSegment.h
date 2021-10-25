@@ -35,6 +35,7 @@
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/PointOnSphere.h"
+#include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureHandle.h"
 
@@ -154,7 +155,7 @@ namespace GPlatesAppLogic
 		 * topological geometry along with other sub-segments) depends on this un-reversed geometry
 		 * and the reversal flag returned by @a get_use_reverse.
 		 */
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 		get_sub_segment_geometry() const
 		{
 			return d_sub_segment.get_geometry();

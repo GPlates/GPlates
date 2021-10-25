@@ -26,7 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_RECONSTRUCTLAYEROPTIONSWIDGET_H
 #define GPLATES_QTWIDGETS_RECONSTRUCTLAYEROPTIONSWIDGET_H
 
-#include "ReconstructLayerOptionsWidgetUi.h"
+#include "ui_ReconstructLayerOptionsWidgetUi.h"
 
 #include "InformationDialog.h"
 #include "LayerOptionsWidget.h"

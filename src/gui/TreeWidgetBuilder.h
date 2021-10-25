@@ -27,11 +27,12 @@
 #define GPLATES_GUI_TREEWIDGETBUILDER_H
 
 #include <algorithm>
-#include <memory> // std::auto_ptr
+#include <memory> // std::unique_ptr
+#include <utility> // std::move
 #include <vector>
 #include <list>
 #include <stack>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/noncopyable.hpp>
@@ -331,10 +332,10 @@ namespace GPlatesGui
 
 			//! Constructor for managed QTreeWidgetItem.
 			Item(
-					std::auto_ptr<QTreeWidgetItem> tree_widget_item,
+					std::unique_ptr<QTreeWidgetItem> tree_widget_item,
 					item_handle_type parent_item_handle = INVALID_HANDLE) :
 				d_parent_item_handle(parent_item_handle),
-				d_managed_item(tree_widget_item),
+				d_managed_item(std::move(tree_widget_item)),
 				d_item(d_managed_item.get())
 			{  }
 
@@ -343,15 +344,15 @@ namespace GPlatesGui
 					QTreeWidgetItem *tree_widget_item,
 					item_handle_type parent_item_handle = INVALID_HANDLE) :
 				d_parent_item_handle(parent_item_handle),
-				d_managed_item(NULL),
+				d_managed_item(nullptr),
 				d_item(tree_widget_item)
 			{  }
 
 			item_handle_type d_parent_item_handle;
 
-			// std::auto_ptr is used here because Item is non-copyable and we need to
+			// std::unique_ptr is used here because Item is non-copyable and we need to
 			// release this resource when transferring ownership to the tree widget later.
-			std::auto_ptr<QTreeWidgetItem> d_managed_item;
+			std::unique_ptr<QTreeWidgetItem> d_managed_item;
 			QTreeWidgetItem *d_item;
 
 			//! Functions to call on the QTreeWidgetItem when it's attached to QTreeWidget.
@@ -537,7 +538,7 @@ namespace GPlatesGui
 	{
 		std::for_each(begin_child_item_handles, end_child_item_handles,
 				boost::bind(&TreeWidgetBuilder::add_child,
-						boost::ref(tree_widget_builder), parent_item_handle, _1));
+						boost::ref(tree_widget_builder), parent_item_handle, boost::placeholders::_1));
 	}
 
 	/**

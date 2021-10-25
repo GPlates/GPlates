@@ -28,7 +28,7 @@
 
 #include <utility>
 
-#include "ReconstructScalarCoverageLayerOptionsWidgetUi.h"
+#include "ui_ReconstructScalarCoverageLayerOptionsWidgetUi.h"
 
 #include "LayerOptionsWidget.h"
 #include "OpenFileDialog.h"

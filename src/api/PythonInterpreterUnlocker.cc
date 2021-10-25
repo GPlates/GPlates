@@ -27,7 +27,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#if !defined(GPLATES_NO_PYTHON)
+
 GPlatesApi::PythonInterpreterUnlocker::PythonInterpreterUnlocker(
 		bool save_thread_)
 	: d_thread_state(NULL)
@@ -69,4 +69,3 @@ GPlatesApi::PythonInterpreterUnlocker::restore_thread()
 	PyEval_RestoreThread(d_thread_state);
 	d_thread_state = NULL;
 }
-#endif //GPLATES_NO_PYTHON

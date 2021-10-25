@@ -25,6 +25,7 @@
  */
 
 #include <memory>
+#include <utility> // std::move
 #include <QUndoCommand>
 
 #include "AddPointGeometryOperation.h"
@@ -128,7 +129,7 @@ GPlatesViewOperations::AddPointGeometryOperation::add_point(
 	}
 
 	// The command that does the actual adding of the point.
-	std::auto_ptr<QUndoCommand> add_point_command(
+	std::unique_ptr<QUndoCommand> add_point_command(
 			new GeometryBuilderInsertPointUndoCommand(
 					d_geometry_builder,
 					num_geom_points,
@@ -136,10 +137,10 @@ GPlatesViewOperations::AddPointGeometryOperation::add_point(
 
 	// Command wraps add point command with handing canvas tool choice and
 	// add point tool activation.
-	std::auto_ptr<QUndoCommand> undo_command(
+	std::unique_ptr<QUndoCommand> undo_command(
 			new GeometryOperationUndoCommand(
 					QObject::tr("add point"),
-					add_point_command,
+					std::move(add_point_command),
 					this,
 					d_canvas_tool_workflows));
 
@@ -289,7 +290,7 @@ GPlatesViewOperations::AddPointGeometryOperation::update_rendered_polyline_on_sp
 	if (num_points_in_geom > 1)
 	{
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
-				GPlatesMaths::PolylineOnSphere::create_on_heap(
+				GPlatesMaths::PolylineOnSphere::create(
 						d_geometry_builder.get_geometry_point_begin(geom_index),
 						d_geometry_builder.get_geometry_point_end(geom_index));
 

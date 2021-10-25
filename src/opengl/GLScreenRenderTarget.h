@@ -105,17 +105,17 @@ namespace GPlatesOpenGL
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 */
 		static
-		std::auto_ptr<GLScreenRenderTarget>
-		create_as_auto_ptr(
+		std::unique_ptr<GLScreenRenderTarget>
+		create_as_unique_ptr(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
 				bool include_depth_buffer,
 				bool include_stencil_buffer)
 		{
-			return std::auto_ptr<GLScreenRenderTarget>(
+			return std::unique_ptr<GLScreenRenderTarget>(
 					new GLScreenRenderTarget(
 							renderer, texture_internalformat, include_depth_buffer, include_stencil_buffer));
 		}

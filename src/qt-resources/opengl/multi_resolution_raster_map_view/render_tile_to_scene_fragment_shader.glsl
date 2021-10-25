@@ -39,6 +39,19 @@ uniform sampler2D tile_texture_sampler;
 
 void main (void)
 {
+#ifdef ENABLE_CLIPPING
+	// Discard the pixel if it has been clipped by the clip texture.
+	//
+	// Note: Discarding is necessary for our 'data' floating-point textures,
+	//       as opposed to just modulating the alpha channel as you could with
+	//       fixed-point colour textures, because there is no alpha blending/testing
+	//       for floating-point textures (and also they store data in red channel and
+	//       coverage in green channel).
+	float clip_mask = texture2DProj(clip_texture_sampler, gl_TexCoord[1]).a;
+	if (clip_mask == 0)
+		discard;
+#endif // ENABLE_CLIPPING
+
 #ifdef SOURCE_RASTER_IS_FLOATING_POINT
 	// Do the texture transform projective divide.
 	vec2 source_texture_coords = gl_TexCoord[0].st / gl_TexCoord[0].q;
@@ -51,8 +64,4 @@ void main (void)
 	// Use hardware bilinear interpolation of fixed-point texture.
 	gl_FragColor = texture2DProj(tile_texture_sampler, gl_TexCoord[0]);
 #endif
-
-#ifdef ENABLE_CLIPPING
-	gl_FragColor *= texture2DProj(clip_texture_sampler, gl_TexCoord[1]);
-#endif // ENABLE_CLIPPING
 }

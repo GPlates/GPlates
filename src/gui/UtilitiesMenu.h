@@ -36,7 +36,6 @@
 #include "api/Sleeper.h"
 #include "gui/PythonManager.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace GPlatesApi
 {
@@ -89,6 +88,5 @@ namespace GPlatesGui
 		submenus_map_type d_submenus;
 	};
 }
-#endif
 
 #endif	// GPLATES_GUI_UTILITIESMENU_H

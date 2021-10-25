@@ -40,8 +40,8 @@
 #include "global/PreconditionViolationError.h"
 
 
-std::auto_ptr<GPlatesOpenGL::GLVertexArray>
-GPlatesOpenGL::GLVertexArray::create_as_auto_ptr(
+std::unique_ptr<GPlatesOpenGL::GLVertexArray>
+GPlatesOpenGL::GLVertexArray::create_as_unique_ptr(
 		GLRenderer &renderer)
 {
 	const GLCapabilities &capabilities = renderer.get_capabilities();
@@ -50,13 +50,13 @@ GPlatesOpenGL::GLVertexArray::create_as_auto_ptr(
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	if (capabilities.buffer.gl_ARB_vertex_array_object)
 	{
-		return std::auto_ptr<GPlatesOpenGL::GLVertexArray>(
-				GLVertexArrayObject::create_as_auto_ptr(renderer));
+		return std::unique_ptr<GPlatesOpenGL::GLVertexArray>(
+				GLVertexArrayObject::create_as_unique_ptr(renderer));
 	}
 #endif
 
-	return std::auto_ptr<GPlatesOpenGL::GLVertexArray>(
-			GLVertexArrayImpl::create_as_auto_ptr(renderer));
+	return std::unique_ptr<GPlatesOpenGL::GLVertexArray>(
+			GLVertexArrayImpl::create_as_unique_ptr(renderer));
 }
 
 

@@ -33,9 +33,11 @@
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>
+#include <QtGlobal>
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QStringList>
 #include <QTextStream>
 
@@ -47,10 +49,12 @@
 
 #include "cli/CliCommandDispatcher.h"
 
-#include "global/Constants.h"
+#include "file-io/StandaloneBundle.h"
+
+#include "global/config.h"  // GPLATES_PUBLIC_RELEASE
 #include "global/NotYetImplementedException.h"
 #include "global/python.h"
-#include "global/SubversionInfo.h"
+#include "global/Version.h"
 
 #include "gui/DrawStyleManager.h"
 #include "gui/FileIOFeedback.h"
@@ -102,11 +106,7 @@ namespace
 			enable_data_mining(true),//Enable data mining by default
 			enable_symbol_table(false),
 			enable_hellinger_three_plate(false) // Disable three-plate fitting by default
-		{
-#if defined(GPLATES_NO_PYTHON)
-			enable_python = false;
-#endif
-		}
+		{  }
 
 		boost::optional<QString> project_filename;
 		QStringList feature_collection_filenames;
@@ -345,28 +345,33 @@ namespace
 		// Print GPlates version if requested.
 		if (GPlatesUtils::CommandLineParser::is_version_requested(vm))
 		{
-			// Specify the major.minor version.
-			std::cout << GPlatesGlobal::VersionString << std::endl;
+			// Specify the major.minor.patch[-prerelease] version.
+			std::cout << GPlatesGlobal::Version::get_GPlates_version().toLatin1().constData();
 
+#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
 			// Specify the build revision (using the subversion info).
-			QString subversion_version_number = GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
+			QString subversion_version_number = GPlatesGlobal::Version::get_working_copy_version_number();
 			if (!subversion_version_number.isEmpty())
 			{
-				QString subversion_info = "Build: " + subversion_version_number;
-				QString subversion_branch_name = GPlatesGlobal::SubversionInfo::get_working_copy_branch_name();
+				QString subversion_info = " (build:" + subversion_version_number;
+				QString subversion_branch_name = GPlatesGlobal::Version::get_working_copy_branch_name();
 				if (!subversion_branch_name.isEmpty())
 				{
 					if (subversion_branch_name == "trunk")
 					{
-						subversion_info.append(" (trunk)");
+						subversion_info.append(" trunk");
 					}
 					else
 					{
-						subversion_info.append(" (").append(subversion_branch_name).append(" branch)");
+						subversion_info.append(" ").append(subversion_branch_name).append(" branch");
 					}
 				}
-				std::cout << subversion_info.toAscii().constData() << std::endl;
+				subversion_info.append(")");
+				std::cout << subversion_info.toLatin1().constData();
 			}
+#endif
+
+			std::cout << std::endl;
 
 			exit(0);
 		}
@@ -454,7 +459,7 @@ namespace
 					GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION,
 					Qt::CaseInsensitive))
 			{
-#if defined(__APPLE__)
+#if defined(Q_OS_MACOS)
 				// Mac OS X sometimes (when invoking from Finder or 'open' command) adds the
 				// '-psn...' command-line argument to the applications argument list
 				// (for example '-psn_0_548998').
@@ -513,12 +518,10 @@ namespace
 		}
 
 		// Disable python if command line option specified.
-#if !defined(GPLATES_NO_PYTHON)
 		if (vm.count(NO_PYTHON_OPTION_NAME))
 		{
 			command_line_options.enable_python = false;
 		}
-#endif
 
 		return command_line_options;
 	}
@@ -724,7 +727,6 @@ namespace
 	{
 		using namespace GPlatesGui;
 		PythonManager* mgr = PythonManager::instance();
-#ifndef GPLATES_NO_PYTHON
 		try
 		{
 			mgr->initialize(argv,app);
@@ -748,7 +750,6 @@ namespace
 			GPlatesUtils::ComponentManager::instance().disable(
 				GPlatesUtils::ComponentManager::Component::python());
 		}
-#endif
 	}
 
 	void
@@ -762,9 +763,7 @@ namespace
 		if(GPlatesUtils::ComponentManager::instance().is_enabled(
 				GPlatesUtils::ComponentManager::Component::python()))
 		{
-	#if !defined(GPLATES_NO_PYTHON)
 			GPlatesApi::PythonInterpreterLocker lock;
-	#endif
 			delete GPlatesGui::DrawStyleManager::instance(); //delete draw style manager singleton.
 		}
 		delete GPlatesGui::PythonManager::instance();
@@ -776,10 +775,19 @@ internal_main(int argc, char* argv[])
 {
 	// Initialize Qt resources that exist in the static 'qt-resources' library.
 	// NOTE: This is done here so that both the GUI and command-line-only paths have initialized resources.
-	Q_INIT_RESOURCE(gpgim);
-	Q_INIT_RESOURCE(qt_widgets);
+	//
+	// NOTE: According to the QtResources documentation calls to Q_INIT_RESOURCE are not needed if
+	// the resources are compiled into a shared library (further, if resources only accessed from
+	// within shared library then there's also no issue with the shared library not being loaded yet).
+	// So Q_INIT_RESOURCE is not called for the python (API) shared library (since this source
+	// file is not included in it) but that's no problem since the python shared library is used
+	// externally (ie, used by an external python interpreter not the GPlates embedded interpreter)
+	// and so the resources are only accessed internally by the shared library.
+	//
 	Q_INIT_RESOURCE(opengl);
 	Q_INIT_RESOURCE(python);
+	Q_INIT_RESOURCE(gpgim);
+	Q_INIT_RESOURCE(qt_widgets);
 
 	//on Ubuntu Natty, we need to set this env variable to avoid the funny looking of spherical grid.
 	#if defined(linux) || defined(__linux__) || defined(__linux)
@@ -822,7 +830,7 @@ internal_main(int argc, char* argv[])
 				GPlatesUtils::ComponentManager::Component::symbology());
 	}
 
-	// Enable or disable python as specified on command-line (and whether GPLATES_NO_PYTHON defined).
+	// Enable or disable python as specified on command-line.
 	if (gui_command_line_options->enable_python)
 	{
 		GPlatesUtils::ComponentManager::instance().enable(
@@ -846,16 +854,80 @@ internal_main(int argc, char* argv[])
 			GPlatesUtils::ComponentManager::Component::hellinger_three_plate());
 	}
 
-	// This will only install handler if any of the following conditions are satisfied:
-	//   1) GPLATES_PUBLIC_RELEASE is defined (automatically handled by CMake build system), or
-	//   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
-	//      "true", "1", "yes" or "on".
-	// Note: Installing handler overrides default Qt message handler.
-	//       And does not log messages to the console.
-	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler();
+	// Enable high DPI pixmaps (for high DPI displays like Apple Retina).
+	//
+	// For example this enables a QImage with a device pixel ratio of 2
+	// (and twice the dimensions of associated QIcon) to have the QIcon displayed
+	// as high DPI, when QImage is converted to QPixmap and then set on QIcon.
+	// Enabling this attribute allows this in our globe/map colouring previews
+	// (though we still have to manually render a QImage twice the icon dimensions
+	// and set the image's device pixel ratio to 2).
+	QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+
+#if QT_VERSION >= QT_VERSION_CHECK(5,14,0)
+	// Enable high DPI scaling in Qt on supported platforms (X11 and Windows).
+	// Note that MacOS has its own native scaling (eg, for Retina), so this
+	// attribute does not affect MacOS.
+	//
+	// Note: This attribute was added in Qt 5.6 (which our minimum Qt requirement satisfies).
+	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+
+	// Decide how DPI non-integer scale factors (such as Windows 150%) are handled.
+	//
+	// Currently we are using the integer version of the various Qt devicePixelRatio() functions
+	// (eg, in QPaintDevice) which only handles scale factors 100%, 200%, etc. However it is not uncommon
+	// for Windows to be 150% (eg, a 1920x1080 14" laptop display). So currently we need to round to an
+	// integer scale factor by either rounding up or rounding down. In the case of the 1920x1080 14" laptop
+	// rounding 150% up to 200% doubled the size of GPlates such that it no longer fit on the screen
+	// (GPlates is currently almost 700 pixels high and twice this is 1400 which exceeds 1080).
+	// So we choose to round up only for scale factors 0.75 to 1.0 (with 0.0 to 1.74999 rounding down) which
+	// is achieved with Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor. In other words, 150% rounds
+	// down to 100% and 175% rounds up to 200%. This means GPlates with 150% will look smaller than desired
+	// and with 175% GPlates will look slightly larger than desired.
+	//
+	// TODO: Switch to using Qt::HighDpiScaleFactorRoundingPolicy::PassThrough which supports fractional scale factors.
+	//       This will also require switching to the qreal versions of the various Qt devicePixelRatio() functions.
+	//       And will likely require using Qt 5.15 (as it appears there were Qt 5.14 bugs related to fractional scale factors).
+	//
+	// Note: This function was added in Qt 5.14.
+	QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor);
+#else
+	// Disable high DPI scaling in Qt on supported platforms (X11 and Windows).
+	// Note that MacOS has its own native scaling (eg, for Retina), so this
+	// attribute does not affect MacOS.
+	//
+	// Note: This attribute was added in Qt 5.6 (which our minimum Qt requirement satisfies).
+	QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+#endif
 
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
 	GPlatesGui::GPlatesQApplication qapplication(argc, argv);
+
+	// Install the general GPlates Qt message handler.
+	//
+	// Unless the GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
+	// "0", "false", "off", "disabled", or "no".
+	//
+	// We do this before Application object is initialised below so that its qDebug(), qWarning(), etc,
+	// messages are captured by our handler. We also instantiate this singleton on the stack so that
+	// we can control when it gets destroyed (which is just after Application object gets destroyed and
+	// hence we capture any messages output during its destruction phase).
+	GPlatesAppLogic::GPlatesQtMsgHandler qt_message_handler;
+	//
+	// Add the default log file to the Qt message handler.
+	//
+	// We do this after QApplication is initialised (via GPlatesQApplication above) since this adds
+	// LogToFileHandler which uses QStandardPaths::DataLocation (when GPlates is installed into a
+	// non-writeable directory) and QStandardPaths::DataLocation does not include the "GPlates/GPlates/"
+	// suffix until after QApplication is created (and hence the GPlates organization and application
+	// names have been set via QCoreApplication).
+	qt_message_handler.add_log_file_handler();
+
+	// Initialise so that queries on the standalone bundle can be made.
+	// Note: This must be done *after* QApplication is initialised (via GPlatesQApplication above) since
+	// 	     it uses QCoreApplication::applicationDirPath().
+	//       And we do it *before* Application is initialised below in case Application makes any bundle queries.
+	GPlatesFileIO::StandaloneBundle::initialise();
 
 	// GPlatesPresentation::Application is a singleton which is normally only accessed via 'Application::instance()'.
 	// However we also need to control its lifetime and ensure it gets destroyed before QApplication

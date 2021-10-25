@@ -31,7 +31,7 @@
 
 #include "GPlatesDialog.h"
 #include "InformationDialog.h"
-#include "ReadErrorAccumulationDialogUi.h"
+#include "ui_ReadErrorAccumulationDialogUi.h"
 
 #include "file-io/ReadErrorAccumulation.h"
 

@@ -104,7 +104,7 @@ namespace GPlatesGui
 		debug_font_metrics();
 
 		/**
-		 * So we know what the QDesktopServices::storageLocation s actually map to on each platform.
+		 * So we know what the QStandardPaths::writableLocation actually map to on each platform.
 		 */
 		void
 		debug_system_paths();

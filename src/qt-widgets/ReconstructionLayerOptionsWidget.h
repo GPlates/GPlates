@@ -26,8 +26,9 @@
 #ifndef GPLATES_QTWIDGETS_RECONSTRUCTIONLAYEROPTIONSWIDGET_H
 #define GPLATES_QTWIDGETS_RECONSTRUCTIONLAYEROPTIONSWIDGET_H
 
-#include "ReconstructionLayerOptionsWidgetUi.h"
+#include "ui_ReconstructionLayerOptionsWidgetUi.h"
 
+#include "InformationDialog.h"
 #include "LayerOptionsWidget.h"
 
 
@@ -85,6 +86,9 @@ namespace GPlatesQtWidgets
 		handle_merge_reconstruction_tree_layers_link_activated();
 
 		void
+		handle_extend_total_reconstruction_poles_to_distant_past_clicked();
+
+		void
 		handle_keep_as_default_checkbox_clicked(
 				bool checked);
 
@@ -107,6 +111,8 @@ namespace GPlatesQtWidgets
 		 * The visual layer for which we are currently displaying options.
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
+
+		GPlatesQtWidgets::InformationDialog *d_help_extend_total_reconstruction_pole_to_distant_past_dialog;
 	};
 }
 

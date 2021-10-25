@@ -34,11 +34,13 @@
 #include <boost/foreach.hpp>
 
 #include <QDebug>
-#include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QMessageBox>
+#include <QStandardPaths>
+#include <Qt>
+#include <QtGlobal>
 
 
 #include "api/PythonInterpreterLocker.h"
@@ -333,7 +335,7 @@ namespace{
 
 		GPlatesViewOperations::RenderedGeometry pick_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					point.get_non_null_pointer(),
+					point.get_geometry_on_sphere(),
 					colour,
 					DEFAULT_POINT_SIZE, /* point size */
 					DEFAULT_LINE_THICKNESS, /* line thickness */
@@ -448,10 +450,14 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_python_path = d_view_state.get_application_state().get_user_preferences().get_default_value("paths/python_system_script_dir").toString();
 
 	// And we need a location to store some temporary files which are used in exchanging data between GPlates and the python scripts.
-	d_path_for_temporary_files = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+	//
+	// NOTE: In Qt5, QStandardPaths::DataLocation (called QDesktopServices::DataLocation in Qt4) no longer has 'data/' in the path.
+	d_path_for_temporary_files = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
 
 	// This is the path for text files containing fit results
-	d_output_file_path = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+	//
+	// NOTE: In Qt5, QStandardPaths::DataLocation (called QDesktopServices::DataLocation in Qt4) no longer has 'data/' in the path.
+	d_output_file_path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
 
 	// The temporary location might not exist - if it doesn't, try to create it.
 	QDir dir(d_path_for_temporary_files);
@@ -759,7 +765,13 @@ GPlatesQtWidgets::HellingerDialog::handle_import_hellinger_file()
 	}
 	QFile file(file_path);
 	QFileInfo file_info(file.fileName());
-	QStringList file_name = file_info.fileName().split(".", QString::SkipEmptyParts);
+	QStringList file_name = file_info.fileName().split(".",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		Qt::SkipEmptyParts
+#else
+		QString::SkipEmptyParts
+#endif
+	);
 	QString type_file = file_name.last();
 
 	QString path = file_info.path();
@@ -1256,7 +1268,7 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse(
 			ellipse_points.push_back(GPlatesMaths::make_point_on_sphere(llp));
 		}
 
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type ellipse_geometry_on_sphere = GPlatesMaths::PolylineOnSphere::create_on_heap(ellipse_points);
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type ellipse_geometry_on_sphere = GPlatesMaths::PolylineOnSphere::create(ellipse_points);
 		GPlatesViewOperations::RenderedGeometry ellipse_rg = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					ellipse_geometry_on_sphere,
 					HellingerConfigurationWidget::get_colour_from_hellinger_colour(
@@ -1334,7 +1346,7 @@ void GPlatesQtWidgets::HellingerDialog::set_feature_highlight(
 {
 	GPlatesViewOperations::RenderedGeometry highlight_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				point.get_non_null_pointer(),
+				point.get_geometry_on_sphere(),
 				GPlatesGui::Colour::get_yellow(),
 				ENLARGED_POINT_SIZE,
 				DEFAULT_LINE_THICKNESS,
@@ -1441,7 +1453,7 @@ GPlatesQtWidgets::HellingerDialog::draw_picks_of_plate_index(
 
 				GPlatesViewOperations::RenderedGeometry pick_geometry =
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-							point.get_non_null_pointer(),
+							point.get_geometry_on_sphere(),
 							get_segment_colour(num_colour),
 							2, /* point thickness */
 							2, /* line thickness */
@@ -1661,7 +1673,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 
 					GPlatesViewOperations::RenderedGeometry pick_geometry =
 							GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-								point.get_non_null_pointer(),
+								point.get_geometry_on_sphere(),
 								get_segment_colour(num_colour),
 								2, /* point thickness */
 								2, /* line thickness */

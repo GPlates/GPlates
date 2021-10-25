@@ -32,7 +32,7 @@
 #include <QTimer>
 
 #include "GPlatesDialog.h"
-#include "LogDialogUi.h"
+#include "ui_LogDialogUi.h"
 
 #include "app-logic/ApplicationState.h"
 

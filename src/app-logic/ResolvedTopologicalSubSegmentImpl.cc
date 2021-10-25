@@ -194,16 +194,15 @@ namespace GPlatesAppLogic
 			// else vertex source infos are different for start and end points of intersected segment...
 
 			//
-			// This situation will be very rare because:
-			//  - If topological line consists of points, then the end points of the topological line
-			//    will usually be made to match the end points of adjacent topological sections such
-			//    that they touch (intersect at points, not in middle of segments).
-			//  - If topological line consists of intersecting static lines, then the only segments
-			//    along topological line that contain differing vertex source infos for segment start
-			//    and end points will be zero-length segments resulting from the intersection of
-			//    those static lines (ie, each static line can have a different plate ID, but they
-			//    will intersect at a point, which then becomes a zero-length segment with start point
-			//    carrying one plate ID and end point carrying the other).
+			// This situation will most likely happen when the topological line consists of points, in
+			// which case the intersection is between two points (each point having a different plate ID).
+			// Conversely, this situation is very unlikely if topological line consists of intersecting
+			// static lines, because the only segments along the topological line that contain differing
+			// vertex source infos (for the segment start and end points) will be zero-length segments
+			// resulting from the intersection of those static lines (ie, each static line can have a
+			// different plate ID, but they will intersect at a point, which then becomes a zero-length
+			// segment with start point carrying one plate ID and end point carrying the other). However
+			// it's unlikely the intersection will register on a zero-length segment.
 			//
 			return ResolvedVertexSourceInfo::create(
 					section_vertex_source_infos[segment_start_vertex_index],
@@ -754,8 +753,12 @@ namespace GPlatesAppLogic
 					// The index of the GCA segment within the sub-sub-segment.
 					// Note: This is not the segment index within the *unclipped* section geometry (of the sub-sub-segment).
 					segment_index_in_sub_sub_segment_geometry =
-							// -1 to convert num vertices to num segments, and -1 to convert num segments to segment index...
-							sub_sub_segment_end_vertex_index - 2 - intersection.segment_index;
+							// -1 to convert num vertices to num segments...
+							sub_sub_segment_end_vertex_index - 1
+								// -1 to convert num segments to segment index (except if on segment start since
+								// that's really segment end, because reversed, which is start of next segment)...
+								- (intersection.on_segment_start ? 0 : 1)
+								- intersection.segment_index;
 				}
 				else // not reversed ...
 				{

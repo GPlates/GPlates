@@ -69,7 +69,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 
 		/**
 		* Exports @a ReconstructedFeatureGeometry objects to ESRI Shapefile format.
@@ -84,7 +84,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 	}
 }
 

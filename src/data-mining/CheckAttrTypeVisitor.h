@@ -219,19 +219,19 @@ namespace GPlatesDataMining
 		virtual
 		void
 		visit_gpml_topological_polygon(
-				gpml_topological_polygon_type &gpml_toplogical_polygon)
+				gpml_topological_polygon_type &gpml_topological_polygon)
 		{  }
 
 		virtual
 		void
 		visit_gpml_topological_line_section(
-				gpml_topological_line_section_type &gpml_toplogical_line_section)
+				gpml_topological_line_section_type &gpml_topological_line_section)
 		{  }
 
 		virtual
 		void
 		visit_gpml_topological_point(
-				gpml_topological_point_type &gpml_toplogical_point)
+				gpml_topological_point_type &gpml_topological_point)
 		{  }
 
 		virtual

@@ -26,7 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_PYTHONINITFAILEDDIALOG_H
 #define GPLATES_QTWIDGETS_PYTHONINITFAILEDDIALOG_H
 
-#include "PythonInitFailedDialogUi.h"
+#include "ui_PythonInitFailedDialogUi.h"
 
 
 namespace GPlatesQtWidgets

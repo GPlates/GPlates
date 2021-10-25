@@ -57,8 +57,8 @@ GPlatesQtWidgets::MergeReconstructionLayersDialog::MergeReconstructionLayersDial
 
 	// Try to adjust column widths.
 	QHeaderView *header = reconstruction_tree_layers_to_merge_table_widget->horizontalHeader();
-	header->setResizeMode(LAYER_NAME_COLUMN, QHeaderView::Stretch);
-	header->setResizeMode(ENABLE_LAYER_COLUMN, QHeaderView::ResizeToContents);
+	header->setSectionResizeMode(LAYER_NAME_COLUMN, QHeaderView::Stretch);
+	header->setSectionResizeMode(ENABLE_LAYER_COLUMN, QHeaderView::ResizeToContents);
 }
 
 

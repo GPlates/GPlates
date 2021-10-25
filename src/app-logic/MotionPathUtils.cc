@@ -122,7 +122,7 @@ GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::initialise_pre_featu
 
 void
 GPlatesAppLogic::MotionPathUtils::calculate_motion_track(
-	const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point, 
+	const GPlatesMaths::PointOnSphere &present_day_seed_point, 
 	const MotionPathPropertyFinder &motion_track_parameters,
 	std::vector<GPlatesMaths::PointOnSphere> &motion_track,
 	const std::vector<GPlatesMaths::FiniteRotation> &rotations)
@@ -135,8 +135,8 @@ GPlatesAppLogic::MotionPathUtils::calculate_motion_track(
 
 	for (; iter != end ; ++iter)
 	{
-		PointOnSphere::non_null_ptr_to_const_type current_point = *iter * present_day_seed_point;
-		motion_track.push_back(*current_point);
+		const PointOnSphere current_point = *iter * present_day_seed_point;
+		motion_track.push_back(current_point);
 	}
 }
 

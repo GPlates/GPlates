@@ -36,7 +36,7 @@
 #include <QEvent>
 #include <qevent.h>
 
-#include "CoRegistrationResultTableDialogUi.h"
+#include "ui_CoRegistrationResultTableDialogUi.h"
 #include "SaveFileDialog.h"
 
 #include "data-mining/DataTable.h"

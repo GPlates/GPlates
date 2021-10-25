@@ -26,10 +26,10 @@
 #ifndef GPLATES_QTWIDGETS_COREGISTRATIONOPTIONSWIDGET_H
 #define GPLATES_QTWIDGETS_COREGISTRATIONOPTIONSWIDGET_H
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 #include "CoRegistrationLayerConfigurationDialog.h"
-#include "CoRegistrationOptionsWidgetUi.h"
+#include "ui_CoRegistrationOptionsWidgetUi.h"
 #include "LayerOptionsWidget.h"
 #include "CoRegistrationResultTableDialog.h"
 

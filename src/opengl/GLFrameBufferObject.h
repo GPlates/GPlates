@@ -26,7 +26,7 @@
 #ifndef GPLATES_OPENGL_GLFRAMEBUFFEROBJECT_H
 #define GPLATES_OPENGL_GLFRAMEBUFFEROBJECT_H
 
-#include <memory> // For std::auto_ptr
+#include <memory> // For std::unique_ptr
 #include <utility>
 #include <vector>
 #include <boost/enable_shared_from_this.hpp>
@@ -278,14 +278,14 @@ namespace GPlatesOpenGL
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 */
 		static
-		std::auto_ptr<GLFrameBufferObject>
-		create_as_auto_ptr(
+		std::unique_ptr<GLFrameBufferObject>
+		create_as_unique_ptr(
 				GLRenderer &renderer)
 		{
-			return std::auto_ptr<GLFrameBufferObject>(new GLFrameBufferObject(renderer));
+			return std::unique_ptr<GLFrameBufferObject>(new GLFrameBufferObject(renderer));
 		}
 
 
@@ -521,6 +521,8 @@ namespace GPlatesOpenGL
 		 * a specific attachment point for this method).
 		 *
 		 * NOTE: This is a lower-level function used to help implement the OpenGL framework.
+		 *
+		 * NOTE: Dimensions, in OpenGL, are in device pixels (not the device independent pixels used for widget sizes).
 		 */
 		boost::optional< std::pair<GLuint/*width*/, GLuint/*height*/> >
 		get_frame_buffer_dimensions() const;

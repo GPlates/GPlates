@@ -42,7 +42,6 @@
 #include <boost/variant.hpp>
 #include <boost/weak_ptr.hpp>
 #include <QDataStream>
-#include <QLinkedList>
 #include <QList>
 #include <QMap>
 #include <QSet>
@@ -254,7 +253,6 @@ namespace GPlatesUnitTest
 			std::set<std::string> str_set;
 			std::vector< std::map<int, std::string> > int_str_map_vec;
 			QVector< QMap<int, QString> > int_qstr_qmap_qvec;
-			QLinkedList<int> qill;
 			QSet<QString> qstr_set;
 			QStringList qstr_list;
 			boost::optional<int> bin;
@@ -762,7 +760,7 @@ namespace GPlatesUnitTest
 			boost::scoped_ptr<Base> d_scoped_ptr;
 			boost::shared_ptr<Base> d_shared_ptr, d_shared_ptr2;
 			boost::intrusive_ptr<Base> d_intrusive_ptr, d_intrusive_ptr2;
-			std::auto_ptr<Base> d_auto_ptr;
+			std::unique_ptr<Base> d_unique_ptr;
 			GPlatesUtils::non_null_intrusive_ptr<Base> d_non_null_intrusive_ptr;
 
 			Derived d_pre_derived_object1;

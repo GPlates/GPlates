@@ -721,8 +721,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_partitioning_layers
 
 	// Try to adjust column widths.
 	QHeaderView *header = table_partitioning_layers->horizontalHeader();
-	header->setResizeMode(LAYER_NAME_COLUMN, QHeaderView::Stretch);
-	header->setResizeMode(ENABLE_LAYER_COLUMN, QHeaderView::ResizeToContents);
+	header->setSectionResizeMode(LAYER_NAME_COLUMN, QHeaderView::Stretch);
+	header->setSectionResizeMode(ENABLE_LAYER_COLUMN, QHeaderView::ResizeToContents);
 }
 
 
@@ -743,8 +743,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_partitioned_files_p
 
 	// Try to adjust column widths.
 	QHeaderView *header = table_partitioned_files->horizontalHeader();
-	header->setResizeMode(FILENAME_COLUMN, QHeaderView::Stretch);
-	header->setResizeMode(ENABLE_FILE_COLUMN, QHeaderView::ResizeToContents);
+	header->setSectionResizeMode(FILENAME_COLUMN, QHeaderView::Stretch);
+	header->setSectionResizeMode(ENABLE_FILE_COLUMN, QHeaderView::ResizeToContents);
 }
 
 

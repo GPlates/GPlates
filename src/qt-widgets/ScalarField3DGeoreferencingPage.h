@@ -26,7 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_SCALARFIELD3DGEOREFERENCINGPAGE_H
 #define GPLATES_QTWIDGETS_SCALARFIELD3DGEOREFERENCINGPAGE_H
 
-#include "ScalarField3DGeoreferencingPageUi.h"
+#include "ui_ScalarField3DGeoreferencingPageUi.h"
 
 #include "property-values/Georeferencing.h"
 

@@ -1,70 +1,83 @@
 #
-# Generate 'global/config.h' file from 'global/config.h.in'.
+# Set some variables needed when generating 'global/config.h' file from 'global/config.h.in'.
 #
 
-# For now only setting the variables currently used by GPlates:
-
-set(PACKAGE_IS_BETA 1)
-
-IF(GDAL_INCLUDE_DIR)
-  # Set HAVE_GDAL_OGRSF_FRMTS_H to 1 if the "ogrsf_frmts.h" file
-  # lives in a "gdal" directory.
-  # This is used in GPlates to determine which file to '#include'.
-  IF (EXISTS "${GDAL_INCLUDE_DIR}/gdal/ogrsf_frmts.h")
-    set(HAVE_GDAL_OGRSF_FRMTS_H 1)
-  ENDIF (EXISTS "${GDAL_INCLUDE_DIR}/gdal/ogrsf_frmts.h")
-  
-  # Set HAVE_GDAL_VERSION_H to 1 if the "gdal_version.h" file exists.
-  # If so then also set HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX
-  # or HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX to 1 if we need
-  # "#include <gdal/gdal_version.h>" in our C++ code instead of "#include <gdal_version.h>".
-  IF (EXISTS "${GDAL_INCLUDE_DIR}/gdal_version.h")
-    set(HAVE_GDAL_VERSION_H 1)
-  ENDIF (EXISTS "${GDAL_INCLUDE_DIR}/gdal_version.h")
-  IF (EXISTS "${GDAL_INCLUDE_DIR}/gdal/gdal_version.h")
-    set(HAVE_GDAL_VERSION_H 1)
-	set(HAVE_GDAL_VERSION_H_LOWERCASE_GDAL_PREFIX 1)
-  ENDIF (EXISTS "${GDAL_INCLUDE_DIR}/gdal/gdal_version.h")
-  IF (EXISTS "${GDAL_INCLUDE_DIR}/GDAL/gdal_version.h")
-    set(HAVE_GDAL_VERSION_H 1)
-	set(HAVE_GDAL_VERSION_H_UPPERCASE_GDAL_PREFIX 1)
-  ENDIF (EXISTS "${GDAL_INCLUDE_DIR}/GDAL/gdal_version.h")
-ENDIF(GDAL_INCLUDE_DIR)
-
-IF(PROJ_INCLUDE_DIR)
-  # If have the Proj6 header ("proj.h").
-  IF (EXISTS "${PROJ_INCLUDE_DIR}/proj.h")
-    set(HAVE_PROJ_H 1)
-  ENDIF (EXISTS "${PROJ_INCLUDE_DIR}/proj.h")
+# Determine which PROJ header to include.
+#
+# For Proj5+ we should include 'proj.h' (the modern API).
+# For Proj4 we can only include 'proj_api.h' (the old API).
+#
+# Note that Proj8 removed the Proj4 header ('proj_api.h') but both headers
+# exist in Proj versions 5, 6 and 7 (where we choose 'proj.h').
+FOREACH(_PROJ_INCLUDE_DIR ${PROJ_INCLUDE_DIRS})
+  # If have the Proj5+ header ("proj.h").
+  IF (EXISTS "${_PROJ_INCLUDE_DIR}/proj.h")
+    set(GPLATES_HAVE_PROJ_H 1)
+  ENDIF()
   
   # If have the Proj4 header ("proj_api.h").
-  IF (EXISTS "${PROJ_INCLUDE_DIR}/proj_api.h")
-    set(HAVE_PROJ_API_H 1)
-  ENDIF (EXISTS "${PROJ_INCLUDE_DIR}/proj_api.h")
-ENDIF(PROJ_INCLUDE_DIR)
+  IF (EXISTS "${_PROJ_INCLUDE_DIR}/proj_api.h")
+    set(GPLATES_HAVE_PROJ_API_H 1)
+  ENDIF()
+ENDFOREACH()
 
 # The following system header files are found in the "system-fixes" directory.
 # If they also exist in the expected places on the user's system, we set a
 # variable to indicate the path to the installed version of the header file.
-SET (BOOST_MATH_SPECIAL_FUNCTIONS_FPCLASSIFY_HPP_PATH "${Boost_INCLUDE_DIR}/boost/math/special_functions/fpclassify.hpp")
-IF (NOT EXISTS ${BOOST_MATH_SPECIAL_FUNCTIONS_FPCLASSIFY_HPP_PATH})
-	SET (BOOST_MATH_SPECIAL_FUNCTIONS_FPCLASSIFY_HPP_PATH "")
-ENDIF (NOT EXISTS ${BOOST_MATH_SPECIAL_FUNCTIONS_FPCLASSIFY_HPP_PATH})
-
-SET (BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH "${Boost_INCLUDE_DIR}/boost/math/tools/real_cast.hpp")
-IF (NOT EXISTS ${BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH})
-	SET (BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH "")
-ENDIF (NOT EXISTS ${BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH})
-
+# The 'src/system-fixes/boost/cstdint.hpp' gets included by our source code and
+# it, in turn, uses this variable to include the system <boost/cstdint.hpp>.
 SET (BOOST_CSTDINT_HPP_PATH "${Boost_INCLUDE_DIR}/boost/cstdint.hpp")
-IF (NOT EXISTS ${BOOST_CSTDINT_HPP_PATH})
+IF (NOT EXISTS "${BOOST_CSTDINT_HPP_PATH}")
 	SET (BOOST_CSTDINT_HPP_PATH "")
-ENDIF (NOT EXISTS ${BOOST_CSTDINT_HPP_PATH})
+ENDIF()
 
-# Tell GPlates that we have a valid 'global/config.h' file.
-add_definitions(-DHAVE_CONFIG_H)
+# Do we have boost.python.numpy?
+#
+# Only available for Boost >= 1.63, and if boost.python.numpy installed since
+# it's currently optional (because we don't actually use it yet).
+if (TARGET Boost::${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
+  set(GPLATES_HAVE_BOOST_PYTHON_NUMPY 1)
+endif()
 
-# Convert 'global/config.h.in' file to 'global/config.h'.
-set(CONFIG_H_IN_FILE "${GPlates_SOURCE_DIR}/src/global/config.h.in")
-set(CONFIG_H_OUT_FILE "${CMAKE_BINARY_DIR}/src/global/config.h")
-configure_file(${CONFIG_H_IN_FILE} ${CONFIG_H_OUT_FILE})
+# Do we have the NumPy C-API include directories?
+#
+# If GPLATES_Python_NumPy_INCLUDE_DIRS is set then it's also been added
+# to the target include directories so we don't have to do that here
+# (in other words in the source code we just need "#include <numpy/arrayobject.h>").
+if (GPLATES_Python_NumPy_INCLUDE_DIRS)
+  # Also make sure "numpy/arrayobject.h" actually exists.
+  if (EXISTS "${GPLATES_Python_NumPy_INCLUDE_DIRS}/numpy/arrayobject.h")
+    set(GPLATES_HAVE_NUMPY_C_API 1)
+  endif()
+endif()
+
+# The sub-directories of standalone base installation directory (or sub-dirs of
+# 'gplates.app/Contents/Resources/' dir of base installation for GPlates macOS app bundle)
+# to place data from the Proj (eg, 'proj.db') and GDAL libraries.
+#
+# Note: Only used when GPLATES_INSTALL_STANDALONE is true.
+set(GPLATES_STANDALONE_PROJ_DATA_DIR proj_data)
+set(GPLATES_STANDALONE_GDAL_DATA_DIR gdal_data)
+
+# GPLATES_STANDALONE_PYTHON_STDLIB_DIR
+#
+# The sub-directory of standalone base installation directory (or sub-dir of 'gplates.app/Contents/Frameworks/' dir
+# of base installation for GPlates macOS app bundle) to place the Python standard library.
+#
+# Note: Only used when GPLATES_INSTALL_STANDALONE is true.
+#       And only used for gplates (not pygplates since that's imported by an external
+#       non-embedded Python interpreter that has its own Python standard library).
+if (APPLE)
+  # On Apple we're expecting Python to be a framework.
+  if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python\\.framework/")
+      # Convert, for example, '/opt/local/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8' to
+      # 'Python.framework/Versions/3.8/lib/python3.8'.
+      string(REGEX REPLACE "^.*/(Python\\.framework/.*)$" "\\1" GPLATES_STANDALONE_PYTHON_STDLIB_DIR ${GPLATES_PYTHON_STDLIB_DIR})
+  else()
+      message(FATAL_ERROR "Expected Python to be a framework")
+  endif()
+else() # Windows or Linux
+  # Find the relative path from the Python prefix directory to the standard library directory.
+  # We'll use this as the standard library install location relative to the standalone base installation directory.
+  file(RELATIVE_PATH GPLATES_STANDALONE_PYTHON_STDLIB_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
+endif()

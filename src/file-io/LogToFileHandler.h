@@ -52,6 +52,12 @@ namespace GPlatesFileIO
 		 * Default constructor for LogToFileHandler; optionally takes the filename
 		 * to log to, which will be dumped into the current working directory unless
 		 * a full pathname is specified.
+		 *
+		 * If the log file cannot be opened for writing (eg, when GPlates installed to system area)
+		 * then attempts to write to the local writable app data location. For example:
+		 *   Windows - "C:/Users/<USER>/AppData/Local/GPlates/GPlates/"
+		 *   macOS   - "~/Library/Application Support/GPlates/GPlates/"
+		 *   Linux   - "~/.local/share/GPlates/GPlates/".
 		 */
 		explicit
 		LogToFileHandler(
@@ -71,7 +77,7 @@ namespace GPlatesFileIO
 		void
 		handle_qt_message(
 				QtMsgType msg_type,
-				const char *msg);
+				const QString &msg);
 
 	private:
 

@@ -87,9 +87,8 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
-						force_polygon_orientation = boost::none,
-				bool wrap_to_dateline = true);
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
+				bool wrap_to_dateline);
 
 
 		/**
@@ -102,6 +101,9 @@ namespace GPlatesFileIO
 		 * features came from multiple input files (which might have different attribute field names making it
 		 * difficult to merge into a single output).
 		 *
+		 * If @a export_topological_line_sub_segments is true then export the individual sub-segments of each boundary
+		 * segment that came from a resolved topological line, otherwise export a single geometry per boundary segment.
+		 *
 		 * If @a wrap_to_dateline is true then exported polyline geometries are wrapped/clipped to the dateline.
 		 */
 		void
@@ -113,7 +115,8 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = true);
+				bool export_topological_line_sub_segments,
+				bool wrap_to_dateline);
 
 
 		/**
@@ -123,13 +126,13 @@ namespace GPlatesFileIO
 		*/
 		void
 		export_citcoms_resolved_topological_boundaries(
-				const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type &resolved_topological_geometries,
+				const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type &resolved_topologies,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 
 
 		/**
@@ -145,7 +148,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 	}
 }
 

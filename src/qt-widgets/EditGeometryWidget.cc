@@ -140,7 +140,7 @@ namespace
 		table.setItem(row, COLUMN_LON, new QTableWidgetItem(locale.toString(lon)));
 		// Add the "Action" cell - we need to set this as uneditable.
 		QTableWidgetItem *action_item = new QTableWidgetItem();
-		action_item->setFlags(0);
+		action_item->setFlags(Qt::ItemFlags());
 		table.setItem(row, COLUMN_ACTION, action_item);
 
 
@@ -175,7 +175,7 @@ namespace
 		table.setItem(row, COLUMN_LON, new QTableWidgetItem());
 		// Add the "Action" cell - we need to set this as uneditable.
 		QTableWidgetItem *action_item = new QTableWidgetItem();
-		action_item->setFlags(0);
+		action_item->setFlags(Qt::ItemFlags());
 		table.setItem(row, COLUMN_ACTION, action_item);
 		// Creating the action_widget is not a memory leak - Qt will take ownership of
 		// the action_widget memory, and clean it up when the table row is deleted.
@@ -254,11 +254,11 @@ namespace
 			GPlatesQtWidgets::EditGeometryWidget &geometry_widget,
 			QTableWidget &table,
 			int offset,
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point)
+			const GPlatesMaths::PointOnSphere &point)
 	{
 		ensure_table_size(table, offset + 1);
 		
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*point);
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 		populate_table_row_from_lat_lon(geometry_widget, table, offset,
 				llp.latitude(), llp.longitude());
 	}
@@ -532,7 +532,7 @@ namespace
 			return geometry_opt_ptr_type(GPlatesUtils::create_multipoint_on_sphere(points, validity));
 
 		case GPlatesMaths::GeometryType::POINT:
-			return geometry_opt_ptr_type(GPlatesUtils::create_point_on_sphere(points, validity));
+			return geometry_opt_ptr_type(GPlatesUtils::create_point_geometry_on_sphere(points, validity));
 
 		case GPlatesMaths::GeometryType::POLYGON:
 			return geometry_opt_ptr_type(GPlatesUtils::create_polygon_on_sphere(points, validity));
@@ -595,11 +595,11 @@ GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 	setupUi(this);
 	// Set column widths and resizabilty.
 	EditTableActionWidget dummy(this, NULL);
-	table_points->horizontalHeader()->setResizeMode(COLUMN_LAT, QHeaderView::Stretch);
-	table_points->horizontalHeader()->setResizeMode(COLUMN_LON, QHeaderView::Stretch);
-	table_points->horizontalHeader()->setResizeMode(COLUMN_ACTION, QHeaderView::Fixed);
+	table_points->horizontalHeader()->setSectionResizeMode(COLUMN_LAT, QHeaderView::Stretch);
+	table_points->horizontalHeader()->setSectionResizeMode(COLUMN_LON, QHeaderView::Stretch);
+	table_points->horizontalHeader()->setSectionResizeMode(COLUMN_ACTION, QHeaderView::Fixed);
 	table_points->horizontalHeader()->resizeSection(COLUMN_ACTION, dummy.width());
-	table_points->horizontalHeader()->setMovable(true);
+	table_points->horizontalHeader()->setSectionsMovable(true);
 	// Set up a minimum row height as well, for the action widgets' sake.
 	table_points->verticalHeader()->setDefaultSectionSize(dummy.height());
 	

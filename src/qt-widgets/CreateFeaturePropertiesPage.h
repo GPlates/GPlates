@@ -31,7 +31,7 @@
 #include <QFocusEvent>
 #include <QWidget>
 
-#include "CreateFeaturePropertiesPageUi.h"
+#include "ui_CreateFeaturePropertiesPageUi.h"
 
 #include "model/GpgimProperty.h"
 #include "model/FeatureType.h"

@@ -30,7 +30,7 @@
 #include <boost/optional.hpp>
 #include <QWidget>
 
-#include "MovePoleWidgetUi.h"
+#include "ui_MovePoleWidgetUi.h"
 #include "TaskPanelWidget.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"

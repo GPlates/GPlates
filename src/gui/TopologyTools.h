@@ -30,7 +30,6 @@
 #include <vector>
 
 #include <boost/optional.hpp>
-#include <boost/none.hpp>
 
 #include <QDebug>
 #include <QObject>
@@ -57,6 +56,7 @@
 #include "model/PropertyValue.h"
 
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalSection.h"
 
@@ -470,7 +470,7 @@ namespace GPlatesGui
 		/**
 		 * The topology geometry type for the topology feature we are building or editing.
 		 */
-		GPlatesAppLogic::TopologyGeometry::Type d_topology_geometry_type;
+		boost::optional<GPlatesAppLogic::TopologyGeometry::Type> d_topology_geometry_type;
 
 		/**
 		 * Optional time period of topology feature.
@@ -767,7 +767,7 @@ namespace GPlatesGui
 		 */
 		void
 		create_topological_interiors(
-				std::vector<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> &topological_interiors);
+				std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> &topological_interiors);
 
 		void
 		clear_widgets_and_data();

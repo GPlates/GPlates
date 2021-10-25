@@ -24,7 +24,7 @@
  */
 
 #include <sstream>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>
@@ -62,15 +62,22 @@ GPlatesFileIO::GpmlPropertyReader::GpmlPropertyReader(
 	d_constant_value_structural_reader_function(
 			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
 					&GpmlPropertyStructuralTypeReaderUtils::create_gpml_constant_value,
-							_1, boost::cref(*property_structural_type_reader), _2, _3)),
+							boost::placeholders::_1, boost::cref(*property_structural_type_reader),
+							boost::placeholders::_2,
+							boost::placeholders::_3)),
 	d_irregular_sampling_structural_reader_function(
 			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
 					&GpmlPropertyStructuralTypeReaderUtils::create_gpml_irregular_sampling,
-							_1, boost::cref(*property_structural_type_reader), _2, _3)),
+							boost::placeholders::_1,
+							boost::cref(*property_structural_type_reader),
+							boost::placeholders::_2,
+							boost::placeholders::_3)),
 	d_piecewise_aggregation_structural_reader_function(
 			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
 					&GpmlPropertyStructuralTypeReaderUtils::create_gpml_piecewise_aggregation,
-							_1, boost::cref(*property_structural_type_reader), _2, _3))
+							boost::placeholders::_1, boost::cref(*property_structural_type_reader),
+							boost::placeholders::_2,
+							boost::placeholders::_3))
 {
 	// Get the allowed structural types for this property.
 	const GPlatesModel::GpgimProperty::structural_type_seq_type &gpgim_structural_types =

@@ -25,6 +25,7 @@
 #ifndef METADATA_DIALOG_H
 #define METADATA_DIALOG_H
 
+#include <boost/bind/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <iostream>
 #include <QComboBox>
@@ -34,10 +35,10 @@
 #include <QTextBrowser>
 #include <QTextEdit>
 
-#include "AddContributorWidgetUi.h"
-#include "AddCreatorWidgetUi.h"
-#include "AddGTSWidgetUi.h"
-#include "MetadataDialogUi.h"
+#include "ui_AddContributorWidgetUi.h"
+#include "ui_AddCreatorWidgetUi.h"
+#include "ui_AddGTSWidgetUi.h"
+#include "ui_MetadataDialogUi.h"
 
 #include "file-io/PlatesRotationFileProxy.h"
 
@@ -524,11 +525,12 @@ namespace GPlatesQtWidgets
 		remove_contributor(
 				QString &name)
 		{
-			std::remove_if(
-					d_fc_meta.get_dc_data().contributors.begin(),
-					d_fc_meta.get_dc_data().contributors.end(),
-					boost::bind(&MetadataDialog::is_the_contributor_name,this,_1,name));
-			d_fc_meta.get_dc_data().contributors.pop_back();
+			d_fc_meta.get_dc_data().contributors.erase(
+					std::remove_if(
+							d_fc_meta.get_dc_data().contributors.begin(),
+							d_fc_meta.get_dc_data().contributors.end(),
+							boost::bind(&MetadataDialog::is_the_contributor_name, this, boost::placeholders::_1, name)),
+					d_fc_meta.get_dc_data().contributors.end());
 			save();
 			meta_tree->clear();
 			populate_fc_meta();
@@ -548,11 +550,12 @@ namespace GPlatesQtWidgets
 		remove_gts(
 				QString &name)
 		{
-			std::remove_if(
-					d_fc_meta.get_geo_time_scales().begin(),
-					d_fc_meta.get_geo_time_scales().end(),
-					boost::bind(&MetadataDialog::is_the_gts_name,this,_1,name));
-			d_fc_meta.get_geo_time_scales().pop_back();
+			d_fc_meta.get_geo_time_scales().erase(
+					std::remove_if(
+							d_fc_meta.get_geo_time_scales().begin(),
+							d_fc_meta.get_geo_time_scales().end(),
+							boost::bind(&MetadataDialog::is_the_gts_name, this, boost::placeholders::_1, name)),
+					d_fc_meta.get_geo_time_scales().end());
 			save();
 			meta_tree->clear();
 			populate_fc_meta();
@@ -571,11 +574,12 @@ namespace GPlatesQtWidgets
 		remove_creator(
 				QString &name)
 		{
-			std::remove_if(
-					d_fc_meta.get_dc_data().creators.begin(),
-					d_fc_meta.get_dc_data().creators.end(),
-					boost::bind(&MetadataDialog::is_the_creator_name,this,_1,name));
-			d_fc_meta.get_dc_data().creators.pop_back();
+			d_fc_meta.get_dc_data().creators.erase(
+					std::remove_if(
+							d_fc_meta.get_dc_data().creators.begin(),
+							d_fc_meta.get_dc_data().creators.end(),
+							boost::bind(&MetadataDialog::is_the_creator_name, this, boost::placeholders::_1, name)),
+					d_fc_meta.get_dc_data().creators.end());
 			save();
 			meta_tree->clear();
 			populate_fc_meta();

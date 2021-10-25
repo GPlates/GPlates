@@ -26,7 +26,7 @@
 #ifndef GPLATES_QT_WIDGETS_EXPORTSCALARCOVERAGEOPTIONSWIDGET_H
 #define GPLATES_QT_WIDGETS_EXPORTSCALARCOVERAGEOPTIONSWIDGET_H
 
-#include "ExportScalarCoverageOptionsWidgetUi.h"
+#include "ui_ExportScalarCoverageOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
 

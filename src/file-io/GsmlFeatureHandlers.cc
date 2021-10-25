@@ -24,7 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <boost/foreach.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <QBuffer>
 
 #include "GsmlFeatureHandlers.h"

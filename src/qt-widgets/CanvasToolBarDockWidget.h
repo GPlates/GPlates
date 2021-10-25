@@ -36,7 +36,7 @@
 #include <QToolBar>
 #include <QWidget>
 
-#include "CanvasToolBarDockWidgetUi.h"
+#include "ui_CanvasToolBarDockWidgetUi.h"
 
 #include "DockWidget.h"
 

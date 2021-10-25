@@ -211,10 +211,8 @@ GPlatesGui::DrawStyleManager::remove_style(GPlatesGui::StyleAdapter* style)
 		return false;
 	}
 
-#if !defined(GPLATES_NO_PYTHON)
 	// Deleting a style also destroys Python objects.
 	GPlatesApi::PythonInterpreterLocker interpreter_locker;
-#endif
 
 	d_styles.erase(it);
 	delete style;

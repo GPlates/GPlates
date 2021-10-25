@@ -50,11 +50,8 @@ namespace
 	/**
 	 * The QDataStream serialisation version used for streaming QVariant and QDateTime.
 	 *
-	 * NOTE: We are using Qt version 4.4 data streams so the QDataStream::setFloatingPointPrecision()
-	 * function is not available (introduced in Qt 4.6).
-	 * So the floating-point precision written depends on stream operator called
-	 * (ie, whether 'float' or 'double' is written).
-	 * We are using Qt 4.4 since that is the current minimum requirement for GPlates.
+	 * NOTE: We are using Qt version 4.4 data streams since that was the minimum requirement for GPlates
+	 *       when this was implemented.
 	 *
 	 * WARNING: Changing this version may break backward/forward compatibility of projects/sessions.
 	 */

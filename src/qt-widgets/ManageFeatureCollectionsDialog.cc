@@ -27,14 +27,15 @@
 
 #include <set>
 #include <QCoreApplication>
-#include <QTableWidget>
-#include <QHeaderView>
-#include <QMessageBox>
-#include <QPushButton>
+#include <QDebug>
+#include <QDir>
 #include <QDragEnterEvent>
 #include <QDropEvent>
-#include <QDir>
-#include <QDebug>
+#include <QHeaderView>
+#include <QMessageBox>
+#include <QMimeData>
+#include <QPushButton>
+#include <QTableWidget>
 
 #include "ManageFeatureCollectionsDialog.h"
 
@@ -49,7 +50,6 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
-#include "file-io/ExternalProgram.h"
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatConfiguration.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
@@ -127,7 +127,7 @@ namespace
 
 		return QObject::tr(
 				file_format_registry.get_short_description(file_format.get())
-						.toAscii().constData());
+						.toLatin1().constData());
 	}
 
 
@@ -261,13 +261,13 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 
 	// Try to adjust column widths.
 	QHeaderView *header = table_feature_collections->horizontalHeader();
-	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
+	header->setSectionResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);
 	header->resizeSection(ColumnNames::FORMAT, 128);
 	header->resizeSection(ColumnNames::ACTIONS, 212);
 
 	// Enforce minimum row height for the Actions widget's sake.
 	QHeaderView *sider = table_feature_collections->verticalHeader();
-	sider->setResizeMode(QHeaderView::Fixed);
+	sider->setSectionResizeMode(QHeaderView::Fixed);
 	sider->setDefaultSectionSize(34);
 	
 	// Hide the 'unsaved' information labels by default - these are shown/hidden

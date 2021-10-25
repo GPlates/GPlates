@@ -73,19 +73,6 @@ GPlatesMaths::MultiPointOnSphere::MultiPointOnSphere() :
 }
 
 
-GPlatesMaths::MultiPointOnSphere::MultiPointOnSphere(
-		const MultiPointOnSphere &other) :
-	GeometryOnSphere(),
-	d_points(other.d_points),
-	// Since MultiPointOnSphere is immutable we can just share the cached calculations.
-	d_cached_calculations(other.d_cached_calculations)
-{
-	// Constructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
-	// MultiPointOnSphereImpl::CachedCalculations - because compiler must
-	// generate code that destroys already constructed members if constructor throws.
-}
-
-
 GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
 GPlatesMaths::MultiPointOnSphere::test_proximity(
 		const ProximityCriteria &criteria) const

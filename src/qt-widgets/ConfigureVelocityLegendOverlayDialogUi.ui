@@ -182,7 +182,7 @@
            <string>Arrow orientation in degrees. Zero degrees is right-pointing horizontal arrow, angle measured clockwise.</string>
           </property>
           <property name="suffix">
-           <string/>
+           <string>°</string>
           </property>
           <property name="minimum">
            <number>-360</number>
@@ -360,7 +360,6 @@
      </layout>
      <zorder>anchor_combobox</zorder>
      <zorder>anchor_label</zorder>
-     <zorder></zorder>
     </widget>
    </item>
    <item>

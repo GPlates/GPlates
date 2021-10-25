@@ -27,7 +27,6 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERASTER_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERASTER_H
 
-#include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -70,7 +69,7 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer_,
 					const GLMultiResolutionRaster::cache_handle_type &source_cache_handle_ =
 							GLMultiResolutionRaster::cache_handle_type()) :
-				texture(GLTexture::create_as_auto_ptr(renderer_)),
+				texture(GLTexture::create_as_unique_ptr(renderer_)),
 				source_cache_handle(source_cache_handle_)
 			{  }
 
@@ -173,7 +172,7 @@ namespace GPlatesOpenGL
 		 * This size gives us a small enough tile region on the globe to make good use
 		 * of view frustum culling of tiles.
 		 */
-		static const std::size_t DEFAULT_TILE_TEXEL_DIMENSION = 256;
+		static const unsigned int DEFAULT_TILE_TEXEL_DIMENSION = 256;
 
 
 		/**
@@ -233,7 +232,7 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer,
 				const GLMultiResolutionRaster::non_null_ptr_type &source_multi_resolution_raster,
-				std::size_t tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION,
+				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION,
 				bool adapt_tile_dimension_to_source_resolution = true,
 				FixedPointTextureFilterType fixed_point_texture_filter = DEFAULT_FIXED_POINT_TEXTURE_FILTER,
 				CacheTileTexturesType cache_tile_textures = DEFAULT_CACHE_TILE_TEXTURES)
@@ -275,12 +274,7 @@ namespace GPlatesOpenGL
 		 */
 		virtual
 		const GPlatesUtils::SubjectToken &
-		get_subject_token() const
-		{
-			// We'll just use the subject token of the raster source - if they don't change then neither do we.
-			// If we had two input sources then we'd have to have our own subject token.
-			return d_multi_resolution_raster->get_subject_token();
-		}
+		get_subject_token() const;
 
 
 		/**
@@ -311,7 +305,7 @@ namespace GPlatesOpenGL
 		 * Returns the tile texel dimension passed into constructor.
 		 */
 		virtual
-		std::size_t
+		unsigned int
 		get_tile_texel_dimension() const
 		{
 			return d_tile_texel_dimension;
@@ -394,7 +388,7 @@ namespace GPlatesOpenGL
 		 * Also note that depth (of cube quad tree) and source level-of-detail (LOD) are the inverse
 		 * of each other - an LOD of zero corresponds to a depth of 'get_num_levels_of_detail() - 1'.
 		 */
-		std::size_t
+		unsigned int
 		get_num_levels_of_detail() const
 		{
 			return d_num_source_levels_of_detail_used;
@@ -431,13 +425,13 @@ namespace GPlatesOpenGL
 		{
 			CubeQuadTreeNode(
 					unsigned int tile_level_of_detail_,
-					const GLTransform::non_null_ptr_to_const_type &view_transform_,
+					const GLTransform::non_null_ptr_to_const_type &world_model_view_transform_,
 					const GLTransform::non_null_ptr_to_const_type &projection_transform_,
 					const tile_texture_cache_type::volatile_object_ptr_type &tile_texture_) :
 				// Starts off as true (and later gets set to false if this is an internal node)...
 				d_is_leaf_node(true),
 				d_tile_level_of_detail(tile_level_of_detail_),
-				d_view_transform(view_transform_),
+				d_world_model_view_transform(world_model_view_transform_),
 				d_projection_transform(projection_transform_),
 				d_tile_texture(tile_texture_)
 			{  }
@@ -454,21 +448,14 @@ namespace GPlatesOpenGL
 			 */
 			unsigned int d_tile_level_of_detail;
 
-			//! View transform used to render source raster into current tile.
-			GLTransform::non_null_ptr_to_const_type d_view_transform;
+			//! World model view transform used to render source raster into current tile.
+			GLTransform::non_null_ptr_to_const_type d_world_model_view_transform;
 
 			//! Projection transform used to render source raster into current tile.
 			GLTransform::non_null_ptr_to_const_type d_projection_transform;
 
 			//! Tiles of source raster covered by this tile.
 			mutable std::vector<GLMultiResolutionRaster::tile_handle_type> d_src_raster_tiles;
-
-			/**
-			 * Keeps track of the visible source tiles contributing to this tile.
-			 *
-			 * The set of source tiles changes when the world transform is modified.
-			 */
-			mutable GPlatesUtils::ObserverToken d_visible_source_tiles_observer_token;
 
 			/**
 			 * The texture representation of the raster data for this tile.
@@ -555,11 +542,16 @@ namespace GPlatesOpenGL
 		 */
 		GLMultiResolutionRaster::non_null_ptr_type d_multi_resolution_raster;
 
+		/**
+		 * Keep track of changes to @a d_multi_resolution_raster.
+		 */
+		mutable GPlatesUtils::ObserverToken d_multi_resolution_raster_observer_token;
+
 
 		/**
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
 		 */
-		std::size_t d_tile_texel_dimension;
+		unsigned int d_tile_texel_dimension;
 
 		/**
 		 * The texture filtering mode (for fixed-point textures) returned by @a get_tile_texture.
@@ -589,22 +581,24 @@ namespace GPlatesOpenGL
 		 * NOTE: This can be less than that returned by our source raster
 		 * - ie, by 'GLMultiResolutionRaster::get_num_levels_of_detail()'.
 		 */
-		std::size_t d_num_source_levels_of_detail_used;
+		unsigned int d_num_source_levels_of_detail_used;
 
 		/**
 		 * The transform to use when rendering into the cube quad tree tiles.
 		 */
 		GLMatrix d_world_transform;
 
-		//! Keep track of changes to @a d_world_transform.
-		GPlatesUtils::SubjectToken d_world_transform_subject;
+		/**
+		 * Used to inform clients that we have been updated.
+		 */
+		mutable GPlatesUtils::SubjectToken d_subject_token;
 
 
 		//! Constructor.
 		GLMultiResolutionCubeRaster(
 				GLRenderer &renderer,
 				const GLMultiResolutionRaster::non_null_ptr_type &multi_resolution_raster,
-				std::size_t initial_tile_texel_dimension,
+				unsigned int initial_tile_texel_dimension,
 				bool adapt_tile_dimension_to_source_resolution,
 				FixedPointTextureFilterType fixed_point_texture_filter,
 				CacheTileTexturesType cache_tile_textures);

@@ -236,7 +236,7 @@ namespace GPlatesPropertyValues
 		CoordinateTransformation(
 				const SpatialReferenceSystem::non_null_ptr_to_const_type &source_srs,
 				const SpatialReferenceSystem::non_null_ptr_to_const_type &target_srs,
-				std::auto_ptr<OGRCoordinateTransformation> ogr_coordinate_transformation);
+				std::unique_ptr<OGRCoordinateTransformation> ogr_coordinate_transformation);
 
 	};
 }

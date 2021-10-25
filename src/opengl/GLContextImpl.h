@@ -67,14 +67,16 @@ namespace GPlatesOpenGL
 			unsigned int
 			get_width() const
 			{
-				return d_qgl_widget.width();
+				// Dimensions, in OpenGL, are in device pixels.
+				return d_qgl_widget.width() * d_qgl_widget.devicePixelRatio();
 			}
 
 			virtual
 			unsigned int
 			get_height() const
 			{
-				return d_qgl_widget.height();
+				// Dimensions, in OpenGL, are in device pixels.
+				return d_qgl_widget.height() * d_qgl_widget.devicePixelRatio();
 			}
 
 		private:
@@ -126,14 +128,16 @@ namespace GPlatesOpenGL
 			unsigned int
 			get_width() const
 			{
-				return d_qgl_pixel_buffer->width();
+				// Dimensions, in OpenGL, are in device pixels.
+				return d_qgl_pixel_buffer->width() * d_qgl_pixel_buffer->devicePixelRatio();
 			}
 
 			virtual
 			unsigned int
 			get_height() const
 			{
-				return d_qgl_pixel_buffer->height();
+				// Dimensions, in OpenGL, are in device pixels.
+				return d_qgl_pixel_buffer->height() * d_qgl_pixel_buffer->devicePixelRatio();
 			}
 
 		private:

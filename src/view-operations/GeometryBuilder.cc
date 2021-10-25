@@ -26,7 +26,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/cast.hpp>
 #include <boost/none.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <iterator>
 
 #include "GeometryBuilder.h"
@@ -270,7 +270,7 @@ namespace GPlatesViewOperations
 						boost::bind(
 								&GeometryBuilder::undo,
 								geometry_builder,
-								_1)
+								boost::placeholders::_1)
 						);
 			}
 
@@ -300,7 +300,7 @@ GPlatesViewOperations::GeometryBuilder::clear_all_geometries()
 	// Remove all geometries and set current geometry index to default index.
 
 	// We'll be copying the removed geometries into our undo operation.
-	std::auto_ptr<GeometryBuilderInternal::ClearAllGeometriesUndoImpl> undo_operation(
+	std::unique_ptr<GeometryBuilderInternal::ClearAllGeometriesUndoImpl> undo_operation(
 			new GeometryBuilderInternal::ClearAllGeometriesUndoImpl(
 					d_current_geometry_index));
 
@@ -350,8 +350,6 @@ GPlatesViewOperations::GeometryBuilder::set_geometry_type_to_build(
 		geometry_builder_ptr_type geometry_builder_ptr = d_geometry_builder_seq[geom_index];
 
 		geometry_builder_ptr->set_desired_geometry_type(d_geometry_build_type);
-
-		++geom_index;
 	}
 
 	return boost::any( GeometryBuilderInternal::UndoImpl(

@@ -30,7 +30,7 @@
 #include <boost/optional.hpp>
 #include <QDialog>
 
-#include "AddPropertyDialogUi.h"
+#include "ui_AddPropertyDialogUi.h"
 #include "EditWidgetGroupBox.h"
 
 #include "model/FeatureHandle.h"

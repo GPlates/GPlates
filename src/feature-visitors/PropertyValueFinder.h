@@ -31,7 +31,7 @@
 #include <typeinfo>
 #include <utility>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/optional.hpp>
 #include <boost/type_traits/add_const.hpp>
 #include <boost/type_traits/remove_const.hpp>
@@ -584,7 +584,7 @@ namespace GPlatesFeatureVisitors
 				boost::bind(
 						&property_value_finder_type::add_property_name_to_allow,
 						boost::ref(property_value_finder),
-						_1));
+						boost::placeholders::_1));
 
 		typename property_value_finder_type::property_value_container_range property_value_range =
 				property_value_finder.find_property_values(feature_or_property);
@@ -638,7 +638,7 @@ namespace GPlatesFeatureVisitors
 				boost::bind(
 						&property_value_finder_type::add_property_name_to_allow,
 						boost::ref(property_value_finder),
-						_1));
+						boost::placeholders::_1));
 
 		typename property_value_finder_type::property_value_container_range property_value_range =
 				property_value_finder.find_property_values(feature_or_property);

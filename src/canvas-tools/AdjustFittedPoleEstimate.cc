@@ -133,13 +133,13 @@ namespace
 	void
 	update_pole_and_angle_geometries(
 			GPlatesCanvasTools::AdjustFittedPoleEstimate::child_layer_ptr_type &layer,
-			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &pole,
-			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reference_arc_end_point,
-			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &relative_arc_end_point)
+			const GPlatesMaths::PointOnSphere &pole,
+			const GPlatesMaths::PointOnSphere &reference_arc_end_point,
+			const GPlatesMaths::PointOnSphere &relative_arc_end_point)
 	{
 		GPlatesViewOperations::RenderedGeometry pole_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					pole,
+					pole.get_geometry_on_sphere(),
 					VERTEX_COLOUR_POLE_12,
 					2, /* point size */
 					2, /* line thickness */
@@ -152,7 +152,7 @@ namespace
 
 		GPlatesViewOperations::RenderedGeometry reference_end_point_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					reference_arc_end_point,
+					reference_arc_end_point.get_geometry_on_sphere(),
 					VERTEX_COLOUR_POLE_12,
 					10, /* point size */
 					2, /* line thickness */
@@ -165,7 +165,7 @@ namespace
 
 		GPlatesViewOperations::RenderedGeometry relative_end_point_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					relative_arc_end_point,
+					relative_arc_end_point.get_geometry_on_sphere(),
 					VERTEX_COLOUR_POLE_12,
 					10, /* point size */
 					2, /* line thickness */
@@ -181,12 +181,12 @@ namespace
 
 		try{
 
-			GPlatesMaths::GreatCircleArc gca = GPlatesMaths::GreatCircleArc::create(*pole,*reference_arc_end_point);
+			GPlatesMaths::GreatCircleArc gca = GPlatesMaths::GreatCircleArc::create(pole, reference_arc_end_point);
 
-			GPlatesMaths::tessellate(points,gca,GPlatesMaths::PI/1800.);\
+			GPlatesMaths::tessellate(points, gca, GPlatesMaths::PI/1800.);
 
 			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
-					GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+					GPlatesMaths::PolylineOnSphere::create(points);
 
 			GPlatesViewOperations::RenderedGeometry gca_geometry =
 					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
@@ -195,9 +195,9 @@ namespace
 
 			layer->add_rendered_geometry(gca_geometry);
 
-			gca = GPlatesMaths::GreatCircleArc::create(*pole,*relative_arc_end_point);
+			gca = GPlatesMaths::GreatCircleArc::create(pole, relative_arc_end_point);
 			GPlatesMaths::tessellate(points,gca,GPlatesMaths::PI/1800.);
-			polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+			polyline = GPlatesMaths::PolylineOnSphere::create(points);
 			gca_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 						polyline,
 						ARC_COLOUR_POLE_12);
@@ -356,21 +356,21 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 				d_active_pole_type = PLATES_1_2_POLE_TYPE;
 				update_current_pole_arrow_layer();
 				update_current_pole_and_angle_layer();
-				update_pole_estimate_and_arc_highlight(d_current_pole_12.get_non_null_pointer(),
-													   d_end_point_of_reference_arc_12.get_non_null_pointer(),
-													   d_end_point_of_relative_arc_12.get_non_null_pointer());
+				update_pole_estimate_and_arc_highlight(d_current_pole_12,
+													   d_end_point_of_reference_arc_12,
+													   d_end_point_of_relative_arc_12);
 				break;
 			case REFERENCE_ARC_ENDPOINT_12_GEOMETRY_INDEX:
 				d_active_pole_type = PLATES_1_2_POLE_TYPE;
 				d_mouse_is_over_reference_arc_end_point = true;
-				update_arc_and_end_point_highlight(d_end_point_of_reference_arc_12.get_non_null_pointer(),
-												   d_current_pole_12.get_non_null_pointer());
+				update_arc_and_end_point_highlight(d_end_point_of_reference_arc_12,
+												   d_current_pole_12);
 				break;
 			case RELATIVE_ARC_ENDPOINT_12_GEOMETRY_INDEX:
 				d_mouse_is_over_relative_arc_end_point = true;
 				d_active_pole_type = PLATES_1_2_POLE_TYPE;
-				update_arc_and_end_point_highlight(d_end_point_of_relative_arc_12.get_non_null_pointer(),
-												   d_current_pole_12.get_non_null_pointer());
+				update_arc_and_end_point_highlight(d_end_point_of_relative_arc_12,
+												   d_current_pole_12);
 				break;
 			case REFERENCE_ARC_12_GEOMETRY_INDEX:
 				// Ignore this geometry for now. It's simpler to control the movement by the end point.
@@ -380,21 +380,21 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 				d_active_pole_type = PLATES_1_3_POLE_TYPE;
 				update_current_pole_arrow_layer();
 				update_current_pole_and_angle_layer();
-				update_pole_estimate_and_arc_highlight(d_current_pole_13.get_non_null_pointer(),
-													   d_end_point_of_reference_arc_13.get_non_null_pointer(),
-													   d_end_point_of_relative_arc_13.get_non_null_pointer());
+				update_pole_estimate_and_arc_highlight(d_current_pole_13,
+													   d_end_point_of_reference_arc_13,
+													   d_end_point_of_relative_arc_13);
 				break;
 			case REFERENCE_ARC_ENDPOINT_13_GEOMETRY_INDEX:
 				d_mouse_is_over_reference_arc_end_point = true;
 				d_active_pole_type = PLATES_1_3_POLE_TYPE;
-				update_arc_and_end_point_highlight(d_end_point_of_reference_arc_13.get_non_null_pointer(),
-												   d_current_pole_13.get_non_null_pointer());
+				update_arc_and_end_point_highlight(d_end_point_of_reference_arc_13,
+												   d_current_pole_13);
 				break;
 			case RELATIVE_ARC_ENDPOINT_13_GEOMETRY_INDEX:
 				d_mouse_is_over_relative_arc_end_point = true;
 				d_active_pole_type = PLATES_1_3_POLE_TYPE;
-				update_arc_and_end_point_highlight(d_end_point_of_relative_arc_13.get_non_null_pointer(),
-												   d_current_pole_13.get_non_null_pointer());
+				update_arc_and_end_point_highlight(d_end_point_of_relative_arc_13,
+												   d_current_pole_13);
 				break;
 			case REFERENCE_ARC_13_GEOMETRY_INDEX:
 				// Ignore this geometry for now. It's simpler to control the movement by the end point.
@@ -532,16 +532,16 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_drag(
 		if (d_active_pole_type == PLATES_1_2_POLE_TYPE)
 		{
 			d_current_pole_12 = current_point_on_sphere;
-			update_pole_estimate_and_arc_highlight(current_point_on_sphere.get_non_null_pointer(),
-												   d_end_point_of_reference_arc_12.get_non_null_pointer(),
-												   d_end_point_of_relative_arc_12.get_non_null_pointer());
+			update_pole_estimate_and_arc_highlight(current_point_on_sphere,
+												   d_end_point_of_reference_arc_12,
+												   d_end_point_of_relative_arc_12);
 		}
 		else
 		{
 			d_current_pole_13 = current_point_on_sphere;
-			update_pole_estimate_and_arc_highlight(current_point_on_sphere.get_non_null_pointer(),
-												   d_end_point_of_reference_arc_13.get_non_null_pointer(),
-												   d_end_point_of_relative_arc_13.get_non_null_pointer());
+			update_pole_estimate_and_arc_highlight(current_point_on_sphere,
+												   d_end_point_of_reference_arc_13,
+												   d_end_point_of_relative_arc_13);
 		}
 		update_angle();
 		update_hellinger_dialog_from_local_values();
@@ -551,14 +551,14 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_drag(
 		if (d_active_pole_type == PLATES_1_2_POLE_TYPE)
 		{
 			d_end_point_of_reference_arc_12 = current_point_on_sphere;
-			update_arc_and_end_point_highlight(current_point_on_sphere.get_non_null_pointer(),
-											   d_current_pole_12.get_non_null_pointer());
+			update_arc_and_end_point_highlight(current_point_on_sphere,
+											   d_current_pole_12);
 		}
 		else
 		{
 			d_end_point_of_reference_arc_13 = current_point_on_sphere;
-			update_arc_and_end_point_highlight(current_point_on_sphere.get_non_null_pointer(),
-											   d_current_pole_13.get_non_null_pointer());
+			update_arc_and_end_point_highlight(current_point_on_sphere,
+											   d_current_pole_13);
 		}
 		update_angle();
 		update_hellinger_dialog_from_local_values();
@@ -568,14 +568,14 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_drag(
 		if (d_active_pole_type == PLATES_1_2_POLE_TYPE)
 		{
 			d_end_point_of_relative_arc_12 = current_point_on_sphere;
-			update_arc_and_end_point_highlight(current_point_on_sphere.get_non_null_pointer(),
-											   d_current_pole_12.get_non_null_pointer());
+			update_arc_and_end_point_highlight(current_point_on_sphere,
+											   d_current_pole_12);
 		}
 		else
 		{
 			d_end_point_of_relative_arc_13 = current_point_on_sphere;
-			update_arc_and_end_point_highlight(current_point_on_sphere.get_non_null_pointer(),
-											   d_current_pole_13.get_non_null_pointer());
+			update_arc_and_end_point_highlight(current_point_on_sphere,
+											   d_current_pole_13);
 		}
 		update_angle();
 		update_hellinger_dialog_from_local_values();
@@ -702,24 +702,24 @@ void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_current_pole_and_angle
 
 
 	update_pole_and_angle_geometries(d_current_pole_and_angle_layer_ptr,
-									 d_current_pole_12.get_non_null_pointer(),
-									 d_end_point_of_reference_arc_12.get_non_null_pointer(),
-									 d_end_point_of_relative_arc_12.get_non_null_pointer());
+									 d_current_pole_12,
+									 d_end_point_of_reference_arc_12,
+									 d_end_point_of_relative_arc_12);
 
 	if (d_hellinger_dialog_ptr->get_fit_type() == GPlatesQtWidgets::THREE_PLATE_FIT_TYPE)
 	{
 		update_pole_and_angle_geometries(d_current_pole_and_angle_layer_ptr,
-										 d_current_pole_13.get_non_null_pointer(),
-										 d_end_point_of_reference_arc_13.get_non_null_pointer(),
-										 d_end_point_of_relative_arc_13.get_non_null_pointer());
+										 d_current_pole_13,
+										 d_end_point_of_reference_arc_13,
+										 d_end_point_of_relative_arc_13);
 	}
 }
 
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_and_arc_highlight(
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &pole,
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reference_arc_end_point,
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &relative_arc_end_point)
+		const GPlatesMaths::PointOnSphere &pole,
+		const GPlatesMaths::PointOnSphere &reference_arc_end_point,
+		const GPlatesMaths::PointOnSphere &relative_arc_end_point)
 {
 	d_highlight_layer_ptr->clear_rendered_geometries();
 
@@ -728,7 +728,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_and_arc_highl
 
 		GPlatesViewOperations::RenderedGeometry pole_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					pole,
+					pole.get_geometry_on_sphere(),
 					VERTEX_COLOUR_POLE_12,
 					2, /* point size */
 					2, /* line thickness */
@@ -739,7 +739,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_and_arc_highl
 
 		GPlatesViewOperations::RenderedGeometry pole_arrow_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
-					*pole,
+					pole,
 					d_hellinger_dialog_ptr->configuration().d_pole_arrow_height/*arrow_projected_length*/,
 					d_hellinger_dialog_ptr->configuration().d_pole_arrow_radius/*arrowhead_projected_size*/,
 					0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
@@ -748,12 +748,12 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_and_arc_highl
 					10.0f/*symbol_size*/,
 					GPlatesGui::Colour::get_yellow()/*symbol_colour*/);
 
-		GPlatesMaths::GreatCircleArc gca_reference = GPlatesMaths::GreatCircleArc::create(*pole,*reference_arc_end_point);
+		GPlatesMaths::GreatCircleArc gca_reference = GPlatesMaths::GreatCircleArc::create(pole, reference_arc_end_point);
 		std::vector<GPlatesMaths::PointOnSphere> points;
 		GPlatesMaths::tessellate(points,gca_reference,GPlatesMaths::PI/1800.);
 
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type reference_polyline =
-				GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+				GPlatesMaths::PolylineOnSphere::create(points);
 
 		GPlatesViewOperations::RenderedGeometry gca_reference_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
@@ -762,13 +762,13 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_and_arc_highl
 					3,
 					3);
 
-		GPlatesMaths::GreatCircleArc gca_relative = GPlatesMaths::GreatCircleArc::create(*pole,*relative_arc_end_point);
+		GPlatesMaths::GreatCircleArc gca_relative = GPlatesMaths::GreatCircleArc::create(pole, relative_arc_end_point);
 
 		GPlatesMaths::tessellate(points,gca_relative,GPlatesMaths::PI/1800.);
 
 
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type relative_polyline =
-				GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+				GPlatesMaths::PolylineOnSphere::create(points);
 
 		GPlatesViewOperations::RenderedGeometry gca_relative_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
@@ -795,14 +795,14 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_and_arc_highl
 
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::update_arc_and_end_point_highlight(
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &end_point,
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &pole)
+		const GPlatesMaths::PointOnSphere &end_point,
+		const GPlatesMaths::PointOnSphere &pole)
 {
 	d_highlight_layer_ptr->clear_rendered_geometries();
 
 	GPlatesViewOperations::RenderedGeometry end_point_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				end_point,
+				end_point.get_geometry_on_sphere(),
 				GPlatesGui::Colour::get_yellow(),
 				2, /* point size */
 				2, /* line thickness */
@@ -815,12 +815,12 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_arc_and_end_point_highlight
 	d_highlight_layer_ptr->add_rendered_geometry(end_point_geometry);
 
 	try {
-		GPlatesMaths::GreatCircleArc gca = GPlatesMaths::GreatCircleArc::create(*pole,*end_point);
+		GPlatesMaths::GreatCircleArc gca = GPlatesMaths::GreatCircleArc::create(pole, end_point);
 		std::vector<GPlatesMaths::PointOnSphere> points;
 		GPlatesMaths::tessellate(points,gca,GPlatesMaths::PI/1800.);
 
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
-				GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+				GPlatesMaths::PolylineOnSphere::create(points);
 
 		GPlatesViewOperations::RenderedGeometry gca_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(

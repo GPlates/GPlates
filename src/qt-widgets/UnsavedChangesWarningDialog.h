@@ -29,7 +29,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QPushButton>
-#include "UnsavedChangesWarningDialogUi.h"
+#include "ui_UnsavedChangesWarningDialogUi.h"
 
 
 namespace GPlatesQtWidgets

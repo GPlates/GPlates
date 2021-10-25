@@ -104,12 +104,21 @@ namespace GPlatesUtils
 	 * of construction problems occuring, it will indicate why construction
 	 * failed.
 	 *
-	 * Note we are returning a possibly-none boost::optional of
-	 * PointOnSphere::non_null_ptr_to_const_type.
+	 * Note we are returning a possibly-none boost::optional of PointOnSphere.
 	 */
 	template <typename ForwardIterPointOnSphere>
-	boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
+	boost::optional<GPlatesMaths::PointOnSphere>
 	create_point_on_sphere(
+			ForwardIterPointOnSphere begin_points_on_sphere,
+			ForwardIterPointOnSphere end_points_on_sphere,
+			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity);
+
+	/**
+	 * Same as @a create_point_on_sphere but returns the @a GeoemtryOnSphere derivation @a PointGeometryOnSphere.
+	 */
+	template <typename ForwardIterPointOnSphere>
+	boost::optional<GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type>
+	create_point_geometry_on_sphere(
 			ForwardIterPointOnSphere begin_points_on_sphere,
 			ForwardIterPointOnSphere end_points_on_sphere,
 			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity);
@@ -124,16 +133,27 @@ namespace GPlatesUtils
 	 * of construction problems occuring, it will indicate why construction
 	 * failed.
 	 *
-	 * Note we are returning a possibly-none boost::optional of
-	 * PointOnSphere::non_null_ptr_to_const_type.
+	 * Note we are returning a possibly-none boost::optional of PointOnSphere.
 	 */
 	inline
-	boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
+	boost::optional<GPlatesMaths::PointOnSphere>
 	create_point_on_sphere(
 			const std::vector<GPlatesMaths::PointOnSphere> &points,
 			GeometryConstruction::GeometryConstructionValidity &validity)
 	{
 		return create_point_on_sphere(points.begin(), points.end(), validity);
+	}
+
+	/**
+	 * Same as @a create_point_on_sphere but returns the @a GeoemtryOnSphere derivation @a PointGeometryOnSphere.
+	 */
+	inline
+	boost::optional<GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type>
+	create_point_geometry_on_sphere(
+			const std::vector<GPlatesMaths::PointOnSphere> &points,
+			GeometryConstruction::GeometryConstructionValidity &validity)
+	{
+		return create_point_geometry_on_sphere(points.begin(), points.end(), validity);
 	}
 
 	/**
@@ -275,11 +295,11 @@ namespace GPlatesUtils
 			{
 				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry;
 
-				boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> point_on_sphere =
+				boost::optional<GPlatesMaths::PointOnSphere> point_on_sphere =
 						create_point_on_sphere(begin_points_on_sphere, end_points_on_sphere, validity);
 				if (point_on_sphere)
 				{
-					geometry = GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(point_on_sphere.get());
+					geometry = point_on_sphere->get_geometry_on_sphere();
 				}
 
 				return geometry;
@@ -337,19 +357,40 @@ namespace GPlatesUtils
 
 
 	template <typename ForwardIterPointOnSphere>
-	boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
+	boost::optional<GPlatesMaths::PointOnSphere>
 	create_point_on_sphere(
 			ForwardIterPointOnSphere begin_points_on_sphere,
 			ForwardIterPointOnSphere end_points_on_sphere,
 			GeometryConstruction::GeometryConstructionValidity &validity)
 	{
-		if (begin_points_on_sphere != end_points_on_sphere) {
+		if (begin_points_on_sphere != end_points_on_sphere)
+		{
 			validity = GeometryConstruction::VALID;
-			return begin_points_on_sphere->clone_as_point();
-		} else {
+			return *begin_points_on_sphere;
+		}
+		else
+		{
 			validity = GeometryConstruction::INVALID_INSUFFICIENT_POINTS;
 			return boost::none;
 		}
+	}
+
+
+	template <typename ForwardIterPointOnSphere>
+	boost::optional<GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type>
+	create_point_geometry_on_sphere(
+			ForwardIterPointOnSphere begin_points_on_sphere,
+			ForwardIterPointOnSphere end_points_on_sphere,
+			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity)
+	{
+		boost::optional<GPlatesMaths::PointOnSphere> point_on_sphere =
+				create_point_on_sphere(begin_points_on_sphere, end_points_on_sphere, validity);
+		if (!point_on_sphere)
+		{
+			return boost::none;
+		}
+
+		return point_on_sphere->get_point_geometry_on_sphere();
 	}
 
 
@@ -370,9 +411,9 @@ namespace GPlatesUtils
 		{
 		case GPlatesMaths::PolylineOnSphere::VALID:
 			validity = GeometryConstruction::VALID;
-			// Note that create_on_heap gives us a PolylineOnSphere::non_null_ptr_to_const_type,
+			// Note that create gives us a PolylineOnSphere::non_null_ptr_to_const_type,
 			// while we are returning it as an optional GeometryOnSphere::non_null_ptr_to_const_type.
-			return GPlatesMaths::PolylineOnSphere::create_on_heap(
+			return GPlatesMaths::PolylineOnSphere::create(
 					begin_points_on_sphere, end_points_on_sphere);
 		
 		case GPlatesMaths::PolylineOnSphere::INVALID_INSUFFICIENT_DISTINCT_POINTS:
@@ -412,9 +453,9 @@ namespace GPlatesUtils
 		{
 		case GPlatesMaths::PolygonOnSphere::VALID:
 			validity = GeometryConstruction::VALID;
-			// Note that create_on_heap gives us a PolygonOnSphere::non_null_ptr_to_const_type,
+			// Note that create gives us a PolygonOnSphere::non_null_ptr_to_const_type,
 			// while we are returning it as an optional GeometryOnSphere::non_null_ptr_to_const_type.
-			return GPlatesMaths::PolygonOnSphere::create_on_heap(
+			return GPlatesMaths::PolygonOnSphere::create(
 					begin_points_on_sphere, end_points_on_sphere);
 		
 		case GPlatesMaths::PolygonOnSphere::INVALID_INSUFFICIENT_DISTINCT_POINTS:
@@ -454,9 +495,9 @@ namespace GPlatesUtils
 		{
 		case GPlatesMaths::MultiPointOnSphere::VALID:
 			validity = GeometryConstruction::VALID;
-			// Note that create_on_heap gives us a MultiPointOnSphere::non_null_ptr_to_const_type,
+			// Note that create gives us a MultiPointOnSphere::non_null_ptr_to_const_type,
 			// while we are returning it as an optional GeometryOnSphere::non_null_ptr_to_const_type.
-			return GPlatesMaths::MultiPointOnSphere::create_on_heap(
+			return GPlatesMaths::MultiPointOnSphere::create(
 					begin_points_on_sphere, end_points_on_sphere);
 
 		case GPlatesMaths::MultiPointOnSphere::INVALID_INSUFFICIENT_POINTS:

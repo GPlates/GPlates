@@ -26,7 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_EDITEXPORTPARAMETERSDIALOG_H
 #define GPLATES_QTWIDGETS_EDITEXPORTPARAMETERSDIALOG_H
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>
@@ -36,7 +36,7 @@
 #include <QTableWidget>
 #include <QVBoxLayout>
 
-#include "EditExportParametersDialogUi.h"
+#include "ui_EditExportParametersDialogUi.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/ExportAnimationType.h"

@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include "global/python.h"
-#if !defined(GPLATES_NO_PYTHON)
 
 #include "PythonUtils.h"
 #include "PyFeature.h"
@@ -168,12 +167,3 @@ export_style()
 		.def_readwrite("colour", &GPlatesGui::DrawStyle::colour)
 		;
 }
-#endif
-
-
-
-
-
-
-
-

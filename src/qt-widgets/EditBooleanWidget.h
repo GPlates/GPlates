@@ -30,7 +30,7 @@
 #include "AbstractEditWidget.h"
 #include "property-values/XsBoolean.h"
 
-#include "EditBooleanWidgetUi.h"
+#include "ui_EditBooleanWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

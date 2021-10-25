@@ -28,7 +28,7 @@
 
 #include <QWidget>
 #include "app-logic/ApplicationState.h"
-#include "EditTableActionWidgetUi.h"
+#include "ui_EditTableActionWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

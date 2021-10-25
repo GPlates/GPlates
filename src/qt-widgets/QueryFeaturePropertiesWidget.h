@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "QueryFeaturePropertiesWidgetUi.h"
+#include "ui_QueryFeaturePropertiesWidgetUi.h"
 
 #include "gui/FeatureFocus.h"
 #include "model/FeatureHandle.h"

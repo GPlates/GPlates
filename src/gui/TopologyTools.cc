@@ -204,7 +204,7 @@ namespace
 	GPlatesModel::PropertyValue::non_null_ptr_type
 	create_topological_network_property_value(
 			const std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &topological_boundary_sections,
-			const std::vector<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> &topological_interiors)
+			const std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> &topological_interiors)
 	{
 		if (topological_interiors.empty())
 		{
@@ -229,9 +229,7 @@ GPlatesGui::TopologyTools::TopologyTools(
 	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
 	d_feature_focus_ptr(&view_state.get_feature_focus()),
 	d_application_state_ptr(&view_state.get_application_state()),
-	d_viewport_window_ptr(&viewport_window),
-	// Arbitrary topology geometry type - will get set properly when tool is activated...
-	d_topology_geometry_type(GPlatesAppLogic::TopologyGeometry::UNKNOWN)
+	d_viewport_window_ptr(&viewport_window)
 {
 	// set up the drawing
 	create_child_rendered_layers();
@@ -412,6 +410,8 @@ GPlatesGui::TopologyTools::deactivate()
 
 	// Reset internal state - the very last thing we should do.
 	d_is_active = false;
+	d_topology_geometry_type = boost::none;
+	d_topology_time_period = boost::none;
 }
 
 
@@ -425,17 +425,16 @@ GPlatesGui::TopologyTools::create_topological_geometry_property()
 	create_topological_sections(topological_sections);
 
 	// Make sure we have enough topological sections for the topology geometry type.
-	switch (d_topology_geometry_type)
+	if (d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::LINE)
 	{
-	case GPlatesAppLogic::TopologyGeometry::LINE:
 		// Need at least one topological section for a line topology.
 		if (topological_sections.size() >= 1)
 		{
 			return create_topological_line_property_value(topological_sections);
 		}
-		break;
-
-	case GPlatesAppLogic::TopologyGeometry::BOUNDARY:
+	}
+	else if (d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::BOUNDARY)
+	{
 		// Need at least one topological section for a boundary topology.
 		// Only need one section because it could be a static polygon (which is already a boundary) or
 		// it could be a line section that should be treated like a polygon (ie, first/last vertex joined).
@@ -443,24 +442,20 @@ GPlatesGui::TopologyTools::create_topological_geometry_property()
 		{
 			return create_topological_polygon_property_value(topological_sections);
 		}
-		break;
-
-	case GPlatesAppLogic::TopologyGeometry::NETWORK:
+	}
+	else if (d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::NETWORK)
+	{
 		// Need at least one topological section for a network boundary topology.
 		// Only need one section because it could be a static polygon (which is already a boundary) or
 		// it could be a line section that should be treated like a polygon (ie, first/last vertex joined).
 		if (topological_sections.size() >= 1)
 		{
 			// Create the topological interiors (if any).
-			std::vector<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> topological_interiors;
+			std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> topological_interiors;
 			create_topological_interiors(topological_interiors);
 
 			return create_topological_network_property_value(topological_sections, topological_interiors);
 		}
-		break;
-
-	default:
-		break;
 	}
 
 	return boost::none;
@@ -3603,7 +3598,7 @@ GPlatesGui::TopologyTools::create_topological_sections(
 
 void
 GPlatesGui::TopologyTools::create_topological_interiors(
-		std::vector<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> &topological_interiors)
+		std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> &topological_interiors)
 {
 	// Iterate over our interior (sections) and create a vector of GpmlTopologicalNetwork::Interior objects.
 	//
@@ -3616,7 +3611,7 @@ GPlatesGui::TopologyTools::create_topological_interiors(
 		const SectionInfo &interior_section_info = d_interior_section_info_seq[interior_section_index];
 
 		// Create the GpmlTopologicalNetwork::Interior for the current interior.
-		boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior>
+		boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 				topological_interior =
 						GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_network_interior(
 								interior_section_info.d_table_row.get_geometry_property());
@@ -3734,7 +3729,7 @@ GPlatesGui::TopologyTools::update_boundary_vertices()
 	else if (num_topology_points == 1) 
 	{
 		d_boundary_geometry_opt_ptr = 
-			GPlatesUtils::create_point_on_sphere(d_topology_vertices, validity);
+			GPlatesUtils::create_point_geometry_on_sphere(d_topology_vertices, validity);
 	} 
 	else if (num_topology_points == 2 ||
 		d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::LINE) 
@@ -3812,7 +3807,7 @@ GPlatesGui::TopologyTools::update_interior_vertices()
 		else if (num_points == 1) 
 		{
 			geometry_opt_ptr = 
-				GPlatesUtils::create_point_on_sphere(section_vertices, validity);
+				GPlatesUtils::create_point_geometry_on_sphere(section_vertices, validity);
 		} 
 		else if (num_points == 2) 
 		{

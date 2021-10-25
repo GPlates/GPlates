@@ -27,7 +27,7 @@
 #include "Sleeper.h"
 #include "PythonInterpreterLocker.h"
 
-#if !defined(GPLATES_NO_PYTHON)
+
 GPlatesApi::Sleeper::Sleeper()
 {
 	using namespace boost::python;
@@ -80,7 +80,3 @@ GPlatesApi::Sleeper::~Sleeper()
 		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
 }
-
-#endif //GPLATES_NO_PYTHON
-
-

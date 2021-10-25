@@ -269,9 +269,9 @@ namespace
 
 		data_line.clear();
 		data_line.push_back(QObject::tr("PlateId"));
-		data_line.push_back(QObject::tr("Lat (\260)"));
-		data_line.push_back(QObject::tr("Lon (\260)"));
-		data_line.push_back(QObject::tr("Angular velocity (\260/Ma)"));
+		data_line.push_back(QObject::tr("Lat (\302\260)")); // \302\260 is UTF8 for degree sign
+		data_line.push_back(QObject::tr("Lon (\302\260)"));
+		data_line.push_back(QObject::tr("Angular velocity (\302\260/Ma)"));
 		data_line.push_back(QObject::tr("Area (km2)"));
 		csv_data.push_back(data_line);
 	}
@@ -286,9 +286,9 @@ namespace
 		data_line.push_back(QObject::tr("Net rotation:"));
 		csv_data.push_back(data_line);
 		data_line.clear();
-		data_line.push_back(QObject::tr("Lat (\260)"));
-		data_line.push_back(QObject::tr("Lon (\260)"));
-		data_line.push_back(QObject::tr("Angular velocity (\260/Ma)"));
+		data_line.push_back(QObject::tr("Lat (\302\260)")); // \302\260 is UTF8 for degree sign
+		data_line.push_back(QObject::tr("Lon (\302\260)"));
+		data_line.push_back(QObject::tr("Angular velocity (\302\260/Ma)"));
 		csv_data.push_back(data_line);
 		data_line.clear();
 		data_line.push_back(QString::number(net_rotation.first.latitude()));
@@ -390,9 +390,9 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration_using_existing_
 
 	data_line.clear();
 	data_line.push_back(QObject::tr("PlateId"));
-	data_line.push_back(QObject::tr("Lat (\260)"));
-	data_line.push_back(QObject::tr("Lon (\260)"));
-	data_line.push_back(QObject::tr("Angular velocity (\260/Ma)"));
+	data_line.push_back(QObject::tr("Lat (\302\260)")); // \302\260 is UTF8 for degree sign
+	data_line.push_back(QObject::tr("Lon (\302\260)"));
+	data_line.push_back(QObject::tr("Angular velocity (\302\260/Ma)"));
 	data_line.push_back(QObject::tr("Area"));
 	data.push_back(data_line);
 
@@ -667,7 +667,7 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 					// See if point is in network boundary and if so, return the stage rotation.
 					boost::optional< std::pair<
 							GPlatesMaths::FiniteRotation,
-							GPlatesAppLogic::ResolvedTriangulation::Network::point_location_type> > point_stage_rotation =
+							GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> > point_stage_rotation =
 									network_ptr->get_triangulation_network().calculate_stage_rotation(
 											pos,
 											t_older - t_younger/*velocity_delta_time*/,
@@ -912,9 +912,9 @@ GPlatesGui::ExportNetRotationAnimationStrategy::wrap_up(
 
 	data_line.clear();
 	data_line.push_back(QObject::tr("Time (Ma)"));
-	data_line.push_back(QObject::tr("Lat (\260)"));
-	data_line.push_back(QObject::tr("Lon (\260)"));
-	data_line.push_back(QObject::tr("Angular velocity (\260/Ma)"));
+	data_line.push_back(QObject::tr("Lat (\302\260)")); // \302\260 is UTF8 for degree sign
+	data_line.push_back(QObject::tr("Lon (\302\260)"));
+	data_line.push_back(QObject::tr("Angular velocity (\302\260/Ma)"));
 	data.push_back(data_line);
 
 

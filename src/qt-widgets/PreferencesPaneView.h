@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "PreferencesPaneViewUi.h"
+#include "ui_PreferencesPaneViewUi.h"
 
 
 namespace GPlatesAppLogic

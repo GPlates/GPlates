@@ -31,8 +31,9 @@
 #include <iosfwd>
 #include <boost/optional.hpp>
 
-#include "UnitQuaternion3D.h"
+#include "PointOnSphere.h"
 #include "Rotation.h"
+#include "UnitQuaternion3D.h"
 #include "types.h"  /* real_t */
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -48,7 +49,6 @@ namespace GPlatesMaths
 
 	// Forward declarations for the non-member function 'operator*'.
 	class MultiPointOnSphere;
-	class PointOnSphere;
 	class PolylineOnSphere;
 	class PolygonOnSphere;
 	class GeometryOnSphere;
@@ -81,6 +81,28 @@ namespace GPlatesMaths
 	public:
 
 		/**
+		 * Create an identity rotation.
+		 */
+		static
+		const FiniteRotation
+		create_identity_rotation()
+		{
+			return FiniteRotation(UnitQuaternion3D::create_identity_rotation(), boost::none);
+		}
+
+		/**
+		 * Create a finite rotation corresponding to the rotation effected by the unit quaternion @a uq.
+		 */
+		static
+		const FiniteRotation
+		create(
+				const UnitQuaternion3D &uq,
+				const boost::optional<UnitVector3D> &axis_hint_)
+		{
+			return FiniteRotation(uq, axis_hint_);
+		}
+
+		/**
 		 * Create a finite rotation with the Euler pole @a pole and rotation angle
 		 * @a angle.
 		 */
@@ -99,26 +121,58 @@ namespace GPlatesMaths
 		 */
 		static
 		const FiniteRotation
-		create(
+		create_great_circle_point_rotation(
 				const PointOnSphere &from_point,
 				const PointOnSphere &to_point);
 
 		/**
-		 * Create a finite rotation corresponding to the rotation effected by the
-		 * unit quaternion @a uq.
+		 * Create a finite rotation, using the specified rotation pole, that rotates @a from_point to @a to_point
+		 * (or at least rotates @a from_point to the same longitude as @a to_point with respect to the rotation pole).
+		 *
+		 * NOTE: @a from_point doesn't actually have to rotate *onto* @a to_point.
+		 *       Imagine @a rotation_pole is the North Pole, then the returned rotation will rotate such that
+		 *       the longitude matches but not necessarily the latitude.
+		 *
+		 * If either @a to_point or @a from_point coincides with @a rotation_pole then the identity rotation is returned.
 		 */
 		static
 		const FiniteRotation
-		create(
-				const UnitQuaternion3D &uq,
-				const boost::optional<UnitVector3D> &axis_hint_);
+		create_small_circle_point_rotation(
+				const PointOnSphere &rotation_pole,
+				const PointOnSphere &from_point,
+				const PointOnSphere &to_point);
 
 		/**
-		 * Create an identity rotation.
+		 * Create a finite rotation that rotates the *from* line segment to the *to* line segment.
+		 *
+		 * This is useful if you have the same geometry reconstructed to two different times and you want to
+		 * determine the rotation between those times. In this case you can choose two non-coincident points
+		 * of the geometry (at two different reconstruction times) and pass those four points to this function.
+		 *
+		 * The start and end points of the *from* line segment are @a from_segment_start and @a from_segment_end.
+		 * The start and end points of the *to* line segment are @a to_segment_start and @a to_segment_end.
+		 *
+		 * NOTE: The 'from' and 'to' segments do not actually have to be the same (arc) length.
+		 *       In this case, while @a from_segment_start is always rotated onto @a to_segment_start,
+		 *       @a from_segment_end is *not* rotated onto @a to_segment_end. Instead @a from_segment_end is
+		 *       rotated such that it is on the great circle containing the 'to' segment (great circle arc).
+		 *       In this way the 'from' segment is rotated such that its orientation matches the 'to' segment
+		 *       (as well as having matching start points).
+		 *
+		 * If either segment is zero length then the returned rotation reduces to one that rotates
+		 * @a from_segment_start to @a to_segment_start along the great circle arc between those two points.
+		 * This is because one (or both) segments has no orientation (so all we can match are the start points).
+		 *
+		 * Also note that it's fine for the start points of both 'from' and 'to' segments to coincide
+		 * (and it's fine for the end points of both segments to coincide for that matter).
 		 */
 		static
 		const FiniteRotation
-		create_identity_rotation();
+		create_segment_rotation(
+				const PointOnSphere &from_segment_start,
+				const PointOnSphere &from_segment_end,
+				const PointOnSphere &to_segment_start,
+				const PointOnSphere &to_segment_end);
 
 		/**
 		 * Return a unit quaternion which would effect the rotation of this finite
@@ -173,7 +227,10 @@ namespace GPlatesMaths
 		explicit
 		FiniteRotation(
 				const UnitQuaternion3D &unit_quat_,
-				const boost::optional<UnitVector3D> &axis_hint_);
+				const boost::optional<UnitVector3D> &axis_hint_) :
+			d_unit_quat(unit_quat_),
+			d_axis_hint(axis_hint_)
+		{  }
 
 	private:
 
@@ -182,11 +239,6 @@ namespace GPlatesMaths
 
 		// This provides a hint as to what the rotation axis might approx be.
 		boost::optional<UnitVector3D> d_axis_hint;
-
-		// These values are used to optimise rotation operations.
-		real_t   d_d;
-		Vector3D d_e;
-
 	};
 
 
@@ -327,10 +379,14 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
+	inline
 	const PointOnSphere
 	operator*(
 			const FiniteRotation &r,
-			const PointOnSphere &p);
+			const PointOnSphere &p)
+	{
+		return PointOnSphere(r * p.position_vector());
+	}
 
 
 	/**
@@ -338,10 +394,14 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>
+	inline
+	const GPlatesUtils::non_null_intrusive_ptr<const PointGeometryOnSphere>
 	operator*(
 			const FiniteRotation &r,
-			const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p);
+			const GPlatesUtils::non_null_intrusive_ptr<const PointGeometryOnSphere> &p)
+	{
+		return PointGeometryOnSphere::create(r * p->position());
+	}
 
 
 	/**

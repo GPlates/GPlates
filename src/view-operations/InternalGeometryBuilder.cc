@@ -69,7 +69,7 @@ GPlatesViewOperations::InternalGeometryBuilder::create_geometry_on_sphere(
 	switch (geom_type)
 	{
 	case GPlatesMaths::GeometryType::POINT:
-		d_geometry_opt_ptr = GPlatesUtils::create_point_on_sphere(d_point_seq, validity);
+		d_geometry_opt_ptr = GPlatesUtils::create_point_geometry_on_sphere(d_point_seq, validity);
 		if (validity == GPlatesUtils::GeometryConstruction::VALID)
 		{
 			d_actual_geometry_type = GPlatesMaths::GeometryType::POINT;

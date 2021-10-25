@@ -34,7 +34,7 @@
 #include "SaveFileDialog.h"
 #include "KinematicGraphsConfigurationWidget.h"
 
-#include "KinematicGraphsDialogUi.h"
+#include "ui_KinematicGraphsDialogUi.h"
 
 // TODO: Get vertical picker line to display all the time
 // update: don't recall what I was meaning with the above comment...

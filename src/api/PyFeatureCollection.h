@@ -40,7 +40,6 @@ namespace GPlatesApi
 	 * Wrapper around FeatureCollectionHandle for exposing to Python.
 	 *
 	 */
-#ifndef GPLATES_NO_PYTHON
 	class FeatureCollection 
 	{
 	public:
@@ -81,7 +80,6 @@ namespace GPlatesApi
 
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_feature_collection;
 	};
-#endif
 }
 
 #endif  // GPLATES_API_FEATURECOLLECTION_H

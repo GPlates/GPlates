@@ -27,9 +27,9 @@
 #ifndef GPLATES_OPENGL_GLSTATE_H
 #define GPLATES_OPENGL_GLSTATE_H
 
-#include <memory> // For std::auto_ptr
+#include <memory> // For std::unique_ptr
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
@@ -255,19 +255,19 @@ namespace GPlatesOpenGL
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 *
 		 * A valid @a state_store enables 'this' object to clone itself more efficiently.
 		 */
 		static
-		std::auto_ptr<GLState>
-		create_as_auto_ptr(
+		std::unique_ptr<GLState>
+		create_as_unique_ptr(
 				const GLStateSetStore::non_null_ptr_type &state_set_store,
 				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys,
 				const SharedData::shared_ptr_to_const_type &shared_data,
 				const boost::weak_ptr<GLStateStore> &state_store = boost::weak_ptr<GLStateStore>())
 		{
-			return std::auto_ptr<GLState>(new GLState(state_set_store, state_set_keys, shared_data, state_store));
+			return std::unique_ptr<GLState>(new GLState(state_set_store, state_set_keys, shared_data, state_store));
 		}
 
 
@@ -488,8 +488,7 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->bind_frame_buffer_object_state_sets,
 					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
-					// Boost 1.34 does not support zero arguments (1.35 does)...
-					// Also seems it doesn't like 'boost::none'...
+					// Seems it doesn't like 'boost::none'...
 					boost::in_place(boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>()));
 		}
 
@@ -502,8 +501,7 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->bind_frame_buffer_object_state_sets,
 					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
-					// Boost 1.34 does not support zero arguments (1.35 does)...
-					// Also seems it doesn't like 'boost::none'...
+					// Seems it doesn't like 'boost::none'...
 					boost::in_place(boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>()));
 			apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
 		}
@@ -549,8 +547,7 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->bind_program_object_state_sets,
 					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
-					// Boost 1.34 does not support zero arguments (1.35 does)...
-					// Also seems it doesn't like 'boost::none'...
+					// Seems it doesn't like 'boost::none'...
 					boost::in_place(boost::optional<GLProgramObject::shared_ptr_to_const_type>()));
 		}
 
@@ -563,8 +560,7 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->bind_program_object_state_sets,
 					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
-					// Boost 1.34 does not support zero arguments (1.35 does)...
-					// Also seems it doesn't like 'boost::none'...
+					// Seems it doesn't like 'boost::none'...
 					boost::in_place(boost::optional<GLProgramObject::shared_ptr_to_const_type>()));
 			apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT);
 		}
@@ -818,7 +814,7 @@ namespace GPlatesOpenGL
 					get_state_set_query<const GLViewport &, GLScissorStateSet>(
 							GLStateSetKeys::KEY_SCISSOR,
 							boost::bind(&GLScissorStateSet::get_scissor,
-									_1, boost::cref(capabilities), viewport_index));
+									boost::placeholders::_1, boost::cref(capabilities), viewport_index));
 			return scissor;
 		}
 
@@ -866,7 +862,7 @@ namespace GPlatesOpenGL
 					get_state_set_query<const GLViewport &, GLViewportStateSet>(
 							GLStateSetKeys::KEY_VIEWPORT,
 							boost::bind(&GLViewportStateSet::get_viewport,
-									_1, boost::cref(capabilities), viewport_index));
+									boost::placeholders::_1, boost::cref(capabilities), viewport_index));
 			return viewport;
 		}
 

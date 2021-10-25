@@ -25,11 +25,13 @@
 
 #include <algorithm>
 #include <cstddef> // std::size_t
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "ReconstructContext.h"
 
+#include "ReconstructionGraph.h"
+#include "ReconstructionTreeCreator.h"
 #include "ReconstructMethodRegistry.h"
 
 #include "global/AssertionFailureException.h"
@@ -50,6 +52,13 @@ namespace GPlatesAppLogic
 		{
 		public:
 
+			IdentityReconstructionTreeCreatorImpl() :
+				d_empty_reconstruction_graph(
+						GPlatesAppLogic::create_reconstruction_graph(
+								// An empty sequence of reconstruction feature collections...
+								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>()))
+			{  }
+
 			virtual
 			ReconstructionTree::non_null_ptr_to_const_type
 			get_reconstruction_tree(
@@ -57,7 +66,7 @@ namespace GPlatesAppLogic
 					GPlatesModel::integer_plate_id_type anchor_plate_id)
 			{
 				// Create a reconstruction tree that returns identity rotations.
-				return create_reconstruction_tree(0, 0);
+				return ReconstructionTree::create(d_empty_reconstruction_graph, 0, 0);
 			}
 
 			virtual
@@ -66,8 +75,22 @@ namespace GPlatesAppLogic
 					const double &reconstruction_time)
 			{
 				// Create a reconstruction tree that returns identity rotations.
-				return create_reconstruction_tree(0, 0);
+				return ReconstructionTree::create(d_empty_reconstruction_graph, 0, 0);
 			}
+
+			virtual
+			GPlatesModel::integer_plate_id_type
+			get_default_anchor_plate_id() const
+			{
+				return 0;
+			}
+
+		private:
+			/**
+			 * An empty ReconstructionGraph will create empty ReconstructionTree objects which
+			 * will always return identity finite rotations.
+			 */
+			ReconstructionGraph::non_null_ptr_to_const_type d_empty_reconstruction_graph;
 		};
 	}
 }
@@ -808,7 +831,7 @@ GPlatesAppLogic::ReconstructContext::assign_geometry_property_handles()
 	context_state_weak_ref_seq_type::const_iterator context_state_iter = std::find_if(
 			d_context_states.begin(),
 			d_context_states.end(),
-					!boost::bind(&context_state_weak_reference_type::expired, _1));
+					!boost::bind(&context_state_weak_reference_type::expired, boost::placeholders::_1));
 
 	context_state_reference_type context_state;
 	if (context_state_iter == d_context_states.end())
@@ -878,7 +901,7 @@ GPlatesAppLogic::ReconstructContext::initialise_context_states()
 	// longer using) in order to compress the size of the array.
 	d_context_states.erase(
 			std::remove_if(d_context_states.begin(), d_context_states.end(),
-					boost::bind(&context_state_weak_reference_type::expired, _1)),
+					boost::bind(&context_state_weak_reference_type::expired, boost::placeholders::_1)),
 			d_context_states.end());
 
 	// Iterate over the existing context states and re-create their reconstruct methods also.

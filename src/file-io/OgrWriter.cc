@@ -117,6 +117,7 @@ namespace{
 		QStringList geojson_driver;
 		geojson_driver << "GeoJSON" << "GeoJSON";
 		map["geojson"] = geojson_driver;
+		map["json"] = geojson_driver;
 
 		QStringList gpkg_driver;
 		gpkg_driver << "GeoPackage" << "GPKG";

@@ -31,8 +31,6 @@
 
 #include "utils/GetPropertyAsPythonObjVisitor.h"
 
-#if !defined(GPLATES_NO_PYTHON)
-
 
 void
 export_feature()
@@ -279,7 +277,3 @@ GPlatesApi::Feature::plate_id()
 		GPlatesUtils::get_recon_plate_id_as_int(d_handle.handle_ptr());
 	return pid ? *pid : 0;
 }
-
-
-#endif   //GPLATES_NO_PYTHON
-

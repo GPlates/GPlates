@@ -29,7 +29,7 @@
 
 #include <QWidget>
 
-#include "CreateVGPDialogUi.h"
+#include "ui_CreateVGPDialogUi.h"
 
 #include "GPlatesDialog.h"
 

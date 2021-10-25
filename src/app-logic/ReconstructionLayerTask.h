@@ -29,10 +29,12 @@
 
 #include <utility>
 #include <boost/shared_ptr.hpp>
+#include <QObject>
 #include <QString>
 
 #include "LayerParams.h"
 #include "LayerTask.h"
+#include "ReconstructionLayerParams.h"
 #include "ReconstructionLayerProxy.h"
 
 #include "maths/types.h"
@@ -47,8 +49,11 @@ namespace GPlatesAppLogic
 	 * containing reconstruction features.
 	 */
 	class ReconstructionLayerTask :
+			public QObject,
 			public LayerTask
 	{
+		Q_OBJECT
+
 	public:
 		static
 		bool
@@ -142,9 +147,18 @@ namespace GPlatesAppLogic
 			return d_layer_params;
 		}
 
+	private Q_SLOTS:
+
+		void
+		handle_reconstruction_params_modified(
+				GPlatesAppLogic::ReconstructionLayerParams &layer_params);
+
 	private:
 
-		LayerParams::non_null_ptr_type d_layer_params;
+		/**
+		 * Parameters used when generating reconstruction trees.
+		 */
+		ReconstructionLayerParams::non_null_ptr_type d_layer_params;
 
 		/**
 		 * The layer proxy at the output of the layer.
@@ -152,11 +166,7 @@ namespace GPlatesAppLogic
 		ReconstructionLayerProxy::non_null_ptr_type d_reconstruction_layer_proxy;
 
 
-		//! Constructor.
-		ReconstructionLayerTask() :
-				d_layer_params(LayerParams::create()),
-				d_reconstruction_layer_proxy(ReconstructionLayerProxy::create())
-		{  }
+		ReconstructionLayerTask();
 	};
 }
 

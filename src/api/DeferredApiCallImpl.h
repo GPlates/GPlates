@@ -26,7 +26,7 @@
 #ifndef GPLATES_API_DEFERREDAPICALLIMPL_H
 #define GPLATES_API_DEFERREDAPICALLIMPL_H
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/utility/enable_if.hpp>
 
@@ -38,7 +38,6 @@
 #include "utils/DeferredCallEvent.h"
 #include "utils/FunctionTypes.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	/**
@@ -796,5 +795,5 @@ namespace GPlatesApi
 		}
 	}
 }
-#endif //GPLATES_NO_PYTHON
+
 #endif  // GPLATES_API_DEFERREDAPICALLIMPL_H

@@ -168,7 +168,7 @@ namespace
 		const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property)
 	{
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
-			GPlatesMaths::PolylineOnSphere::create_on_heap(list_of_points);
+			GPlatesMaths::PolylineOnSphere::create(list_of_points);
 
 		GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 			GPlatesPropertyValues::GmlLineString::create(polyline);
@@ -206,7 +206,7 @@ namespace
 		const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property)
 	{
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon =
-			GPlatesMaths::PolygonOnSphere::create_on_heap(exterior_ring, interior_rings);
+			GPlatesMaths::PolygonOnSphere::create(exterior_ring, interior_rings);
 
 		GPlatesPropertyValues::GmlPolygon::non_null_ptr_type gml_polygon =
 			GPlatesPropertyValues::GmlPolygon::create(polygon);
@@ -877,7 +877,7 @@ namespace
 	{
 		// If there's no property mapper then fill the mapping with default values.
 		// If there's no property mapper then 'set_property_mapper()' was never called which
-		// can happen when we not using GPlates as a GUI (eg, importing pygplates into a python
+		// can happen when we not using GPlates as a GUI (eg, importing 'pygplates' into a python
 		// interpreter) - in this case we don't want to abort due to lack of a shapefile mapping.
 		if (mapper == NULL)
 		{
@@ -1296,7 +1296,7 @@ GPlatesFileIO::OgrReader::create_polygon_feature_from_list(
 	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
-		GPlatesMaths::PolygonOnSphere::create_on_heap(exterior_ring, interior_rings);
+		GPlatesMaths::PolygonOnSphere::create(exterior_ring, interior_rings);
 
 	GPlatesPropertyValues::GmlPolygon::non_null_ptr_type gml_polygon =
 		GPlatesPropertyValues::GmlPolygon::create(polygon_on_sphere);
@@ -1333,7 +1333,7 @@ GPlatesFileIO::OgrReader::create_line_feature_from_list(
 	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
-		GPlatesMaths::PolylineOnSphere::create_on_heap(list_of_points);
+		GPlatesMaths::PolylineOnSphere::create(list_of_points);
 
 	GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 		GPlatesPropertyValues::GmlLineString::create(polyline);
@@ -1408,7 +1408,7 @@ GPlatesFileIO::OgrReader::create_multi_point_feature_from_list(
 	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
-		GPlatesMaths::MultiPointOnSphere::create_on_heap(list_of_points);
+		GPlatesMaths::MultiPointOnSphere::create(list_of_points);
 
 	GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type gml_multi_point =
 		GPlatesPropertyValues::GmlMultiPoint::create(multi_point_on_sphere);
@@ -1454,7 +1454,7 @@ GPlatesFileIO::OgrReader::get_field_names(
 
 	for ( count=0; count< num_fields; count++){
 		OGRFieldDefn *field_def_ptr = feature_def_ptr->GetFieldDefn(count);
-		d_field_names.push_back(QString::fromAscii(field_def_ptr->GetNameRef()));
+		d_field_names.push_back(QString::fromLatin1(field_def_ptr->GetNameRef()));
 	}
 
 }

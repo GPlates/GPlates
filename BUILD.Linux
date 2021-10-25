@@ -28,7 +28,7 @@ Commands to execute
     the GPlates source code.
  2. Configure and compile the program:
 
-	cmake .
+    cmake .
     make
 
     * If you wish to install GPlates to a location other than the default
@@ -45,7 +45,7 @@ Installing GPlates
 
 The command
 
-	make install
+    sudo make install
 
 Will copy the "gplates" executable to the default location, "/usr/local".
 The GPlates executable will be installed as "/usr/local/bin/gplates".
@@ -56,9 +56,9 @@ On Ubuntu systems, this is accomplished by prefixing the command with
 If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:STRING" argument to
 "cmake". For example:
 
-	cmake -DCMAKE_INSTALL_PREFIX:STRING=$HOME/usr .
+    cmake -DCMAKE_INSTALL_PREFIX:STRING=$HOME/usr .
     make
-	make install
+    make install
 
 This will install GPlates in your home directory as "~/usr/bin/gplates".
 

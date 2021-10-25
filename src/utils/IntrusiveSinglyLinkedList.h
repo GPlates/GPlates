@@ -68,6 +68,9 @@ namespace GPlatesUtils
 	 *
 	 * An example where a list node element is added to two different lists:
 	 *
+	 *   struct FirstListTag;
+	 *   struct SecondListTag;
+	 *
 	 *   struct ElementNode :
 	 *      public IntrusiveSinglyLinkedList<ElementNode, FirstListTag>::Node,
 	 *      public IntrusiveSinglyLinkedList<ElementNode, SecondListTag>::Node
@@ -81,8 +84,8 @@ namespace GPlatesUtils
 	 *   first_list.push_front(element_node);
 	 *   second_list.push_front(element_node);
 	 *
-	 * Once the minimum version requirement of the boost library is raised to 1.35
-	 * we could instead use the boost version of an intrusive singly linked list 'boost::slist'.
+	 * NOTE: Now that the minimum version requirement of the boost library has been raised to 1.35
+	 * we should instead use the boost version of an intrusive singly linked list 'boost::intrusive::slist'.
 	 */
 	template <class ElementNodeType, class NodeTag = void>
 	class IntrusiveSinglyLinkedList

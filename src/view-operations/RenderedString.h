@@ -42,7 +42,7 @@ namespace GPlatesViewOperations
 	{
 	public:
 		RenderedString(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				const QString &string,
 				const GPlatesGui::ColourProxy &colour,
 				const GPlatesGui::ColourProxy &shadow_colour,
@@ -76,12 +76,6 @@ namespace GPlatesViewOperations
 
 		const GPlatesMaths::PointOnSphere &
 		get_point_on_sphere() const
-		{
-			return *d_point_on_sphere;
-		}
-
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
-		get_point_on_sphere_ptr() const
 		{
 			return d_point_on_sphere;
 		}
@@ -125,7 +119,7 @@ namespace GPlatesViewOperations
 	private:
 
 		//! Location of text
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_point_on_sphere;
+		GPlatesMaths::PointOnSphere d_point_on_sphere;
 
 		//! Text to display
 		QString d_string;

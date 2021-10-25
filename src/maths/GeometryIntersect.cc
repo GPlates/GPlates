@@ -59,30 +59,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Is the graph empty?
-		 */
-		bool
-		empty(
-				Graph &graph)
-		{
-			return graph.unordered_intersections.empty();
-		}
-
-
-		/**
-		 * Clear the graph.
-		 */
-		void
-		clear(
-				Graph &graph)
-		{
-			graph.unordered_intersections.clear();
-			graph.geometry1_ordered_intersections.clear();
-			graph.geometry2_ordered_intersections.clear();
-		}
-
-
-		/**
 		 * Predicate to sort intersections from beginning of the geometry to end.
 		 */
 		class SortGeometryIntersection :
@@ -204,7 +180,7 @@ namespace GPlatesMaths
 					angle_in_segment1, angle_in_segment2);
 
 			// Add the intersection.
-			const unsigned unordered_intersection_index = graph.unordered_intersections.size();
+			const unsigned int unordered_intersection_index = graph.unordered_intersections.size();
 			graph.unordered_intersections.push_back(intersection);
 
 			// Also keep track of the intersection for each geometry.
@@ -469,6 +445,17 @@ namespace GPlatesMaths
 			const UnitVector3D &segment2_start_point = segment2.start_point().position_vector();
 			const UnitVector3D &segment2_end_point = segment2.end_point().position_vector();
 
+			// Is segment1's start point on segment2's start or end points?
+			const bool segment1_start_point_on_segment2_start_point =
+					dot(segment1_start_point, segment2_start_point).dval() >= THICKNESS_THRESHOLD_COSINE;
+			const bool segment1_start_point_on_segment2_end_point =
+					dot(segment1_start_point, segment2_end_point).dval() >= THICKNESS_THRESHOLD_COSINE;
+			// Is segment1's end point on segment2's start or end points?
+			const bool segment1_end_point_on_segment2_start_point =
+					dot(segment1_end_point, segment2_start_point).dval() >= THICKNESS_THRESHOLD_COSINE;
+			const bool segment1_end_point_on_segment2_end_point =
+					dot(segment1_end_point, segment2_end_point).dval() >= THICKNESS_THRESHOLD_COSINE;
+
 			//
 			// Test if the start vertex of segment1 coincides with the start vertex of segment2.
 			//
@@ -536,34 +523,31 @@ namespace GPlatesMaths
 			// the signed-distance-to-plane test.
 			//
 			// On a related note, it's possible the start points of segment1 and segment2 are coincident
-			// and so we proceed to see if they *cross* each other's *thick* planes. This is very similar
-			// to the above issue and, like the above issue, the distance-to-start-point test succeeded,
-			// which would normally mean the signed-distance-to-plane test would also place the point *on*
-			// the *thick* plane, but it might not (due to finite precision issues). So if it's not *on*
-			// the *thick* plane then it means it can *cross* the *thick* plane and we could possibly
-			// get a *crossing* intersection (in addition to the start point *touching* intersection).
-			// However, if this does happen then it doesn't cause our intersection logic to fail like the
-			// above tunneling situation, in this case we just get an extra (possibly unwanted) intersection,
-			// but it's extremely unlikely to happen, so should be quite rare in practice.
+			// and so we should *not* subsequently check if they *cross* each other's *thick* planes.
+			// (Actually we need to exclude the *crossing* check if either start or end point of segment1
+			// coincides with either start of end point of segment2 to be robust).
+			// This is very similar to the above issue and, like the above issue, if the
+			// distance-to-start-or-end-point test succeeded (ie, points coincide) this would normally
+			// mean the signed-distance-to-plane test should also place the point *on* the *thick* plane,
+			// but it might not (due to finite precision issues). So if it's not *on* the *thick* plane then
+			// it means it can *cross* the *thick* plane and we could possibly get a *crossing* intersection
+			// (in addition to the start/end point *touching* intersection).
+			// So the *crossing* test needs to be excluded.
 			//
 
-			if (dot(segment1_start_point, segment2_start_point).dval() >= THICKNESS_THRESHOLD_COSINE)
+			if (segment1_start_point_on_segment2_start_point)
 			{
 				// Segment1's start point is *on* segment2's start point (and vice versa).
+				// Generate an intersection.
 				//
-				// If either segment's start point is on the other segment's end point then let that
-				// other segment's *next* segment generate the intersection (at its start point).
-				// Otherwise we have an intersection.
-				if (dot(segment1_start_point, segment2_end_point).dval() < THICKNESS_THRESHOLD_COSINE &&
-					dot(segment2_start_point, segment1_end_point).dval() < THICKNESS_THRESHOLD_COSINE)
-				{
-					add_intersection(
-							graph,
-							Intersection::SEGMENT_START_ON_SEGMENT_START,
-							segment1_start_point, // intersection
-							segment1_start_point, segment2_start_point,
-							segment1_index, segment2_index);
-				}
+				// Note that if either segment's start point is also on the other segment's end point then the
+				// other segment's *next* segment will also generate the intersection (at its start point).
+				add_intersection(
+						graph,
+						Intersection::SEGMENT_START_ON_SEGMENT_START,
+						segment1_start_point, // intersection
+						segment1_start_point, segment2_start_point,
+						segment1_index, segment2_index);
 			}
 
 			//
@@ -600,47 +584,41 @@ namespace GPlatesMaths
 
 			if (segment1_index == last_segment1_index)
 			{
-				if (dot(segment1_end_point, segment2_start_point).dval() >= THICKNESS_THRESHOLD_COSINE)
+				if (segment1_end_point_on_segment2_start_point)
 				{
 					// Segment1's end point is *on* segment2's start point.
+					// Generate an intersection.
 					//
-					// If it's also *on* segment2's end point then let segment2's *next* segment generate
-					// the intersection (at its start point).
-					// Otherwise we have an intersection.
-					if (dot(segment1_end_point, segment2_end_point).dval() < THICKNESS_THRESHOLD_COSINE)
-					{
-						add_intersection(
-								graph,
-								Intersection::SEGMENT_START_ON_SEGMENT_START,
-								segment1_end_point, // intersection
-								segment1_start_point, segment2_start_point,
-								// NOTE: Segment index of geometry1 is its 'number of segments'.
-								//       This is the fictitious one-past-the-last-segment...
-								segment1_index + 1, segment2_index);
-					}
+					// Note that if it's also *on* segment2's end point then segment2's *next* segment
+					// will also generate the intersection (at its start point).
+					add_intersection(
+							graph,
+							Intersection::SEGMENT_START_ON_SEGMENT_START,
+							segment1_end_point, // intersection
+							segment1_start_point, segment2_start_point,
+							// NOTE: Segment index of geometry1 is its 'number of segments'.
+							//       This is the fictitious one-past-the-last-segment...
+							segment1_index + 1, segment2_index);
 				}
 			}
 
 			if (segment2_index == last_segment2_index)
 			{
-				if (dot(segment2_end_point, segment1_start_point).dval() >= THICKNESS_THRESHOLD_COSINE)
+				if (segment1_start_point_on_segment2_end_point)
 				{
 					// Segment2's end point is *on* segment1's start point.
+					// Generate an intersection.
 					//
-					// If it's also *on* segment1's end point then let segment1's *next* segment generate
-					// the intersection (at its start point).
-					// Otherwise we have an intersection.
-					if (dot(segment2_end_point, segment1_end_point).dval() < THICKNESS_THRESHOLD_COSINE)
-					{
-						add_intersection(
-								graph,
-								Intersection::SEGMENT_START_ON_SEGMENT_START,
-								segment2_end_point, // intersection
-								segment1_start_point, segment2_start_point,
-								// NOTE: Segment index of geometry2 is its 'number of segments'.
-								//       This is the fictitious one-past-the-last-segment...
-								segment1_index, segment2_index + 1);
-					}
+					// Note that if it's also *on* segment1's end point then segment1's *next* segment
+					// will also generate the intersection (at its start point).
+					add_intersection(
+							graph,
+							Intersection::SEGMENT_START_ON_SEGMENT_START,
+							segment2_end_point, // intersection
+							segment1_start_point, segment2_start_point,
+							// NOTE: Segment index of geometry2 is its 'number of segments'.
+							//       This is the fictitious one-past-the-last-segment...
+							segment1_index, segment2_index + 1);
 				}
 			}
 
@@ -648,9 +626,10 @@ namespace GPlatesMaths
 			if (segment1_index == last_segment1_index &&
 				segment2_index == last_segment2_index)
 			{
-				if (dot(segment1_end_point, segment2_end_point).dval() >= THICKNESS_THRESHOLD_COSINE)
+				if (segment1_end_point_on_segment2_end_point)
 				{
 					// Segment1's end point is *on* segment2's end point (and vice versa).
+					// Generate an intersection.
 					add_intersection(
 							graph,
 							Intersection::SEGMENT_START_ON_SEGMENT_START,
@@ -766,7 +745,13 @@ namespace GPlatesMaths
 			// So we only need to test for "crossing" if both segments are non-zero length.
 			//
 			if (segment1_has_plane &&
-				segment2_has_plane)
+				segment2_has_plane &&
+				// Also, as mentioned above (under "A note on finite precision:"), for numerical robustness we do *not*
+				// check for a crossing if segment1's start/end point is coincident with segment2's start/end point...
+				!segment1_start_point_on_segment2_start_point &&
+				!segment1_start_point_on_segment2_end_point &&
+				!segment1_end_point_on_segment2_start_point &&
+				!segment1_end_point_on_segment2_end_point)
 			{
 				//
 				// Two segments *cross* if the end points of one segment are in opposite half-spaces of the plane of
@@ -953,8 +938,8 @@ namespace GPlatesMaths
 					// but not *on* segment2's start and end points.
 
 					// See if segment1's start point is not *on* segment2's start and end points.
-					if (dot(segment1_start_point, segment2_start_point).dval() < THICKNESS_THRESHOLD_COSINE &&
-						dot(segment1_start_point, segment2_end_point).dval() < THICKNESS_THRESHOLD_COSINE)
+					if (!segment1_start_point_on_segment2_start_point &&
+						!segment1_start_point_on_segment2_end_point)
 					{
 						if (point_is_in_segment_lune(
 								segment1_start_point,
@@ -985,8 +970,8 @@ namespace GPlatesMaths
 					// but not *on* segment1's start and end points.
 
 					// See if segment2's start point is not *on* segment1's start and end points.
-					if (dot(segment2_start_point, segment1_start_point).dval() < THICKNESS_THRESHOLD_COSINE &&
-						dot(segment2_start_point, segment1_end_point).dval() < THICKNESS_THRESHOLD_COSINE)
+					if (!segment1_start_point_on_segment2_start_point &&
+						!segment1_end_point_on_segment2_start_point)
 					{
 						if (point_is_in_segment_lune(
 								segment2_start_point,
@@ -1042,8 +1027,8 @@ namespace GPlatesMaths
 						!segment1_end_point_on_positive_side_of_segment2_plane)
 					{
 						// See if segment1's end point is not *on* segment2's start and end points.
-						if (dot(segment1_end_point, segment2_start_point).dval() < THICKNESS_THRESHOLD_COSINE &&
-							dot(segment1_end_point, segment2_end_point).dval() < THICKNESS_THRESHOLD_COSINE)
+						if (!segment1_end_point_on_segment2_start_point &&
+							!segment1_end_point_on_segment2_end_point)
 						{
 							// Segment1 end point is *on* segment2's plane.
 							// but not *on* segment2's start and end points.
@@ -1078,8 +1063,8 @@ namespace GPlatesMaths
 						!segment2_end_point_on_positive_side_of_segment1_plane)
 					{
 						// See if segment2's end point is not *on* segment1's start and end points.
-						if (dot(segment2_end_point, segment1_start_point).dval() < THICKNESS_THRESHOLD_COSINE &&
-							dot(segment2_end_point, segment1_end_point).dval() < THICKNESS_THRESHOLD_COSINE)
+						if (!segment1_start_point_on_segment2_end_point &&
+							!segment1_end_point_on_segment2_end_point)
 						{
 							// Segment2 end point is *on* segment1's plane.
 							// but not *on* segment1's start and end points.
@@ -1128,8 +1113,12 @@ namespace GPlatesMaths
 			// Note that the small circle radii have been expanded slightly to account for numerical tolerance.
 			// See BoundingSmallCircleBuilder::get_bounding_small_circle().
 			//
-			// TODO: Ensure that this expansion is as large as the thickness threshold around points and
-			// segments used during intersection detection.
+			// Note: The default expansion of bounding small circles
+			//       (see BoundingSmallCircleBuilder::get_default_angular_expansion())
+			//       matches our closeness threshold for intersection detection
+			//       (see GeometryIntersect::Intersection::get_on_segment_start_threshold_cosine()).
+			//       This ensures that the bounding small circle expands to include the *touching* region around
+			//       the geometries contained within the bounding small circle.
 			if (!intersect(
 					geometry1_sub_tree_node.get_bounding_small_circle(),
 					geometry2_sub_tree_node.get_bounding_small_circle()))
@@ -1260,7 +1249,7 @@ namespace GPlatesMaths
 				const unsigned int last_segment2_index)
 		{
 			// Make sure we start with an empty graph.
-			clear(graph);
+			graph.clear();
 
 			intersect_bounding_tree_nodes(
 					graph,
@@ -1271,7 +1260,7 @@ namespace GPlatesMaths
 					poly_geometry2_bounding_tree.get_root_node(),
 					last_segment2_index);
 
-			if (empty(graph))
+			if (graph.empty())
 			{
 				return false;
 			}
@@ -1431,4 +1420,20 @@ GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_si
 	static const double THICKNESS_THRESHOLD_SINE = std::sin(std::acos(get_on_segment_start_threshold_cosine()));
 
 	return THICKNESS_THRESHOLD_SINE;
+}
+
+
+bool
+GPlatesMaths::GeometryIntersect::Graph::empty() const
+{
+	return unordered_intersections.empty();
+}
+
+
+void
+GPlatesMaths::GeometryIntersect::Graph::clear()
+{
+	unordered_intersections.clear();
+	geometry1_ordered_intersections.clear();
+	geometry2_ordered_intersections.clear();
 }

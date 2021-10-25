@@ -31,6 +31,7 @@
 
 #include "DeformationStrain.h"
 #include "ReconstructedFeatureGeometry.h"
+#include "TopologyPointLocation.h"
 #include "TopologyReconstruct.h"
 
 #include "maths/MultiPointOnSphere.h"
@@ -57,6 +58,9 @@ namespace GPlatesAppLogic
 		//! A convenience typedef for a non-null shared pointer to a const @a TopologyReconstructedFeatureGeometry.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const TopologyReconstructedFeatureGeometry> non_null_ptr_to_const_type;
 
+
+		//! Typedef for a sequence of per-geometry-point locations in resolved topologies.
+		typedef std::vector<TopologyPointLocation> point_location_seq_type;
 
 		//! Typedef for a sequence of per-geometry-point deformation instantaneous strain rates.
 		typedef std::vector<DeformationStrainRate> point_deformation_strain_rate_seq_type;
@@ -116,6 +120,21 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the per-geometry-point locations in resolved topologies.
+		 *
+		 * Note: Each location maps to a point in @a get_reconstructed_points.
+		 *
+		 * Note: The number of locations is guaranteed to match points in @a get_reconstructed_points.
+		 */
+		void
+		get_reconstructed_point_locations(
+				point_location_seq_type &reconstructed_point_locations) const
+		{
+			get_geometry_data(boost::none/*points*/, reconstructed_point_locations);
+		}
+
+
+		/**
 		 * Returns the per-geometry-point deformation strain rates.
 		 *
 		 * Note: Each strain rate maps to a point in @a get_reconstructed_points.
@@ -126,7 +145,7 @@ namespace GPlatesAppLogic
 		get_point_deformation_strain_rates(
 				point_deformation_strain_rate_seq_type &strain_rates) const
 		{
-			get_geometry_data(boost::none/*points*/, strain_rates);
+			get_geometry_data(boost::none/*points*/, boost::none/*point_locations*/, strain_rates);
 		}
 
 		/**
@@ -140,17 +159,19 @@ namespace GPlatesAppLogic
 		get_point_deformation_total_strains(
 				point_deformation_total_strain_seq_type &total_strains) const
 		{
-			get_geometry_data(boost::none/*points*/, boost::none/*strain_rates*/, total_strains);
+			get_geometry_data(boost::none/*points*/, boost::none/*point_locations*/, boost::none/*strain_rates*/, total_strains);
 		}
 
 
 		/**
-		 * Combines @a get_reconstructed_points, @a get_point_deformation_strain_rates and
-		 * @a get_point_deformation_total_strains (for more efficient access).
+		 * Combines @a get_reconstructed_points, @a get_reconstructed_point_locations,
+		 * @a get_point_deformation_strain_rates and @a get_point_deformation_total_strains
+		 * (for more efficient access).
 		 */
 		void
 		get_geometry_data(
 				boost::optional<point_seq_type &> reconstructed_points = boost::none,
+				boost::optional<point_location_seq_type&> reconstructed_point_locations = boost::none,
 				boost::optional<point_deformation_strain_rate_seq_type &> strain_rates = boost::none,
 				boost::optional<point_deformation_total_strain_seq_type &> strains = boost::none) const;
 

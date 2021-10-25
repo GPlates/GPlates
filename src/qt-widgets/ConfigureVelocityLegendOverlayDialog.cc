@@ -66,9 +66,8 @@ GPlatesQtWidgets::ConfigureVelocityLegendOverlayDialog::ConfigureVelocityLegendO
 		new VisualLayersComboBox(
 			view_state.get_visual_layers(),
 			view_state.get_visual_layer_registry(),
-			std::bind1st(std::equal_to<GPlatesPresentation::VisualLayerType::Type>(),
-				static_cast<GPlatesPresentation::VisualLayerType::Type>(
-					GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)))),
+			[] (GPlatesPresentation::VisualLayerType::Type layer_type)
+			{ return layer_type == GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR; } )),
 	d_fixed_scale_help_dialog(new InformationDialog(s_fixed_scale_text,QObject::tr("Fixed scale"),this)),
 	d_max_arrow_length_help_dialog(new InformationDialog(s_max_arrow_length_text,QObject::tr("Maximum arrow length"),this))
 {
@@ -146,7 +145,6 @@ GPlatesQtWidgets::ConfigureVelocityLegendOverlayDialog::ConfigureVelocityLegendO
 	QtWidgetUtils::resize_based_on_size_hint(this);
 
 	radio_button_arrow_length->setChecked(true);
-	spinbox_angle->setSuffix("\260");
 
 }
 

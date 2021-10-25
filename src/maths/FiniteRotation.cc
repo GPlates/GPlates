@@ -52,34 +52,8 @@
 #include "global/PreconditionViolationError.h"
 
 
-namespace {
-
-	// This value is calculated to optimise rotation operations.
-	inline
-	const GPlatesMaths::real_t
-	calculate_d_value(
-			const GPlatesMaths::UnitQuaternion3D &uq)
-	{
-		const GPlatesMaths::real_t &s = uq.scalar_part();
-		const GPlatesMaths::Vector3D &v = uq.vector_part();
-
-		return ((s * s) - dot(v, v));
-	}
-
-
-	// This value is calculated to optimise rotation operations.
-	inline
-	const GPlatesMaths::Vector3D
-	calculate_e_value(
-			const GPlatesMaths::UnitQuaternion3D &uq)
-	{
-		const GPlatesMaths::real_t &s = uq.scalar_part();
-		const GPlatesMaths::Vector3D &v = uq.vector_part();
-
-		return ((2.0 * s) * v);
-	}
-
-
+namespace
+{
 	/**
 	 * Visits a @a GeometryOnSphere, rotates it and returns as a @a GeometryOnSphere.
 	 */
@@ -129,7 +103,7 @@ namespace {
 		virtual
 		void
 		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
 			d_rotated_geometry = d_finite_rotation * point_on_sphere;
 		}
@@ -168,8 +142,9 @@ GPlatesMaths::FiniteRotation::create(
 	return FiniteRotation(uq, axis);
 }
 
+
 const GPlatesMaths::FiniteRotation
-GPlatesMaths::FiniteRotation::create(
+GPlatesMaths::FiniteRotation::create_great_circle_point_rotation(
 		const PointOnSphere &from_point,
 		const PointOnSphere &to_point)
 {
@@ -177,7 +152,7 @@ GPlatesMaths::FiniteRotation::create(
 
 	// If the points are the same or antipodal then there are an infinite number of rotation axes
 	// possible, so we just pick one arbitrarily.
-	const PointOnSphere pole = (rotation_axis.magSqrd() == 0)
+	const PointOnSphere pole = rotation_axis.is_zero_magnitude()
 			? PointOnSphere(generate_perpendicular(from_point.position_vector()))
 			: PointOnSphere(rotation_axis.get_normalisation());
 
@@ -188,29 +163,71 @@ GPlatesMaths::FiniteRotation::create(
 
 
 const GPlatesMaths::FiniteRotation
-GPlatesMaths::FiniteRotation::create(
-		const UnitQuaternion3D &uq,
-		const boost::optional<UnitVector3D> &axis_hint_)
+GPlatesMaths::FiniteRotation::create_small_circle_point_rotation(
+		const PointOnSphere &rotation_pole,
+		const PointOnSphere &from_point,
+		const PointOnSphere &to_point)
 {
-	return FiniteRotation(uq, axis_hint_);
+	// Get the rotation axes of the arcs from the rotation pole to the 'from' and 'to' points.
+	const Vector3D from_rotation_axis = cross(rotation_pole.position_vector(), from_point.position_vector());
+	const Vector3D to_rotation_axis = cross(rotation_pole.position_vector(), to_point.position_vector());
+
+	// If either rotation axis is zero magnitude then we cannot determine both 'from' and 'to' point
+	// orientations relative to the rotation pole, so just return the identity rotation.
+	// This means one or both points lie on the rotation pole.
+	if (from_rotation_axis.is_zero_magnitude() ||
+		to_rotation_axis.is_zero_magnitude())
+	{
+		return create_identity_rotation();
+	}
+
+	// The angle between the rotation axes is the angle we need to rotate.
+	// This is the orientation of the 'to' point relative to the 'from' point with respect to the rotation pole.
+	real_t angle = acos(dot(from_rotation_axis.get_normalisation(), to_rotation_axis.get_normalisation()));
+
+	// Positive rotation angles rotate counter-clockwise so if we need to rotate clockwise then negate angle.
+	if (dot(from_rotation_axis, to_point.position_vector()).dval() < 0)
+	{
+		angle = -angle;
+	}
+
+	return create(rotation_pole, angle);
 }
 
 
 const GPlatesMaths::FiniteRotation
-GPlatesMaths::FiniteRotation::create_identity_rotation()
+GPlatesMaths::FiniteRotation::create_segment_rotation(
+		const PointOnSphere &from_segment_start,
+		const PointOnSphere &from_segment_end,
+		const PointOnSphere &to_segment_start,
+		const PointOnSphere &to_segment_end)
 {
-	return FiniteRotation(UnitQuaternion3D::create_identity_rotation(), boost::none);
+	// First rotate the start point of the 'from' segment to the start point of the 'to' segment.
+	//
+	// There are an infinite number of possible rotations (all with rotation poles on the great circle
+	// that separates the two points). We can pick any, so the easiest is the rotation that moves
+	// along the great circle arc between the two points.
+	const FiniteRotation rotate_from_segment_start_to_segment_start =
+			create_great_circle_point_rotation(from_segment_start, to_segment_start);
+
+    // So far we can rotate the start point of the 'from' segment onto the start point of the 'to' segment.
+    // However if we use that rotation to rotate the end point of the 'from' segment then it will not land
+    // on the end point of the 'to' segment.
+    // So we need to further rotate it by another rotation to get to the end point of the 'to' segment.
+    // That extra rotation rotates around the start point of the 'to' segment until the result lands on
+    // the end point of the 'to' segment.
+    //
+    // Note that since it's a rotation around the start point of the 'to' segment it doesn't affect
+    // the start point of the 'to' segment and so it won't mess up our final composed rotation of the
+    // start point of the 'from' segment onto the start point of the 'to' segment.
+	const FiniteRotation rotate_rotated_from_segment_end_to_segment_end =
+			create_small_circle_point_rotation(
+					to_segment_start/*rotation_pole*/,
+					rotate_from_segment_start_to_segment_start * from_segment_end/*from_point*/,
+					to_segment_end/*to_point*/);
+
+	return compose(rotate_rotated_from_segment_end_to_segment_end, rotate_from_segment_start_to_segment_start);
 }
-
-
-GPlatesMaths::FiniteRotation::FiniteRotation(
-		const UnitQuaternion3D &unit_quat_,
-		const boost::optional<UnitVector3D> &axis_hint_):
-	d_unit_quat(unit_quat_),
-	d_axis_hint(axis_hint_),
-	d_d(::calculate_d_value(unit_quat_)),
-	d_e(::calculate_e_value(unit_quat_))
-{  }
 
 
 const GPlatesMaths::UnitVector3D
@@ -253,9 +270,38 @@ const GPlatesMaths::Vector3D
 GPlatesMaths::FiniteRotation::operator*(
 		const Vector3D &vect) const
 {
+	const GPlatesMaths::real_t &uq_s = d_unit_quat.scalar_part();
 	const Vector3D &uq_v = d_unit_quat.vector_part();
 
-	return d_d * vect + (2.0 * dot(uq_v, vect)) * uq_v + cross(d_e, vect);
+	//
+	// Quaternion (uq_s, uq_v) rotates vector v to v' as:
+	//
+	//   v' = v + 2 * uq_v x (uq_s * v + uq_v x v)
+	//
+	// ...and using the vector triple product rule:
+	//
+	//   a x (b x c) = (a.c)b - (a.b)c
+	//
+	// ...we get:
+	//
+	//   v' = v + 2 * uq_s * uq_v x v + 2 * uq_v x (uq_v x v)
+	//      = v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v - 2 * (uq_v . uq_v) * v
+	//      = (1 - 2 * (uq_v . uq_v)) * v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v
+	//
+	// ...and using the norm of a unit quaternion:
+	//
+	//   uq_s * uq_s + uq_v . uq_v = 1
+	//                 uq_v . uq_v = 1 - uq_s * uq_s
+	//       1 - 2 * (uq_v . uq_v) = 1 - 2 * (1 - uq_s * uq_s)
+	//                             = 2 * uq_s * uq_s - 1
+	//
+	// ...we get:
+	//
+	//   v' = (1 - 2 * (uq_v . uq_v)) * v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v
+	//      = (2 * uq_s * uq_s - 1) * v + 2 * uq_s * uq_v x v + 2 * (uq_v . v) * uq_v
+	//      = (2 * uq_s * uq_s - 1) * v + 2 * [uq_s * uq_v x v + (uq_v . v) * uq_v]
+	//
+	return (2.0 * uq_s * uq_s - 1.0) * vect + 2.0 * (cross(uq_s * uq_v, vect) + dot(uq_v, vect) * uq_v);
 }
 
 
@@ -422,30 +468,15 @@ GPlatesMaths::compose(
 }
 
 
-const GPlatesMaths::PointOnSphere
-GPlatesMaths::operator*(
-		const FiniteRotation &r,
-		const PointOnSphere &p)
-{
-
-	return PointOnSphere(r * p.position_vector());
-}
-
-
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
-GPlatesMaths::operator*(
-		const FiniteRotation &r,
-		const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p)
-{
-	return PointOnSphere::create_on_heap(r * p->position_vector());
-}
-
-
 const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
 		const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere> &mp)
 {
+	// TODO: If there are enough points, convert quaternion to 3x3 matrix and
+	//       use that to rotate all points (since it's cheaper). There needs to
+	//       be enough points to cover the cost of converting quaternion to a matrix.
+
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(mp->number_of_points());
 
@@ -456,7 +487,7 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(PointOnSphere(r * iter->position_vector()));
 	}
 
-	return MultiPointOnSphere::create_on_heap(rotated_points);
+	return MultiPointOnSphere::create(rotated_points);
 }
 
 
@@ -465,6 +496,10 @@ GPlatesMaths::operator*(
 		const FiniteRotation &r,
 		const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> &p)
 {
+	// TODO: If there are enough points, convert quaternion to 3x3 matrix and
+	//       use that to rotate all points (since it's cheaper). There needs to
+	//       be enough points to cover the cost of converting quaternion to a matrix.
+
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(p->number_of_vertices());
 
@@ -474,7 +509,7 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(PointOnSphere(r * iter->position_vector()));
 	}
 
-	return PolylineOnSphere::create_on_heap(rotated_points);
+	return PolylineOnSphere::create(rotated_points);
 }
 
 
@@ -483,6 +518,10 @@ GPlatesMaths::operator*(
 		const FiniteRotation &r,
 		const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> &p)
 {
+	// TODO: If there are enough points, convert quaternion to 3x3 matrix and
+	//       use that to rotate all points (since it's cheaper). There needs to
+	//       be enough points to cover the cost of converting quaternion to a matrix.
+
 	std::vector<PointOnSphere> rotated_exterior_ring;
 	rotated_exterior_ring.reserve(p->number_of_vertices_in_exterior_ring());
 
@@ -497,7 +536,7 @@ GPlatesMaths::operator*(
 	const unsigned int num_interior_rings = p->number_of_interior_rings();
 	if (num_interior_rings == 0)
 	{
-		return PolygonOnSphere::create_on_heap(rotated_exterior_ring);
+		return PolygonOnSphere::create(rotated_exterior_ring);
 	}
 
 	std::vector< std::vector<PointOnSphere> > rotated_interior_rings(num_interior_rings);
@@ -515,7 +554,7 @@ GPlatesMaths::operator*(
 		}
 	} // loop over interior rings
 
-	return PolygonOnSphere::create_on_heap(rotated_exterior_ring, rotated_interior_rings);
+	return PolygonOnSphere::create(rotated_exterior_ring, rotated_interior_rings);
 }
 
 

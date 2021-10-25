@@ -28,7 +28,6 @@
 #define GPLATES_GUI_TEXTOVERLAY_H
 
 
-
 namespace GPlatesAppLogic
 {
 	class ApplicationState;

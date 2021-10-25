@@ -34,7 +34,7 @@
 #include <QButtonGroup>
 #include <QPushButton>
 
-#include "AssignReconstructionPlateIdsDialogUi.h"
+#include "ui_AssignReconstructionPlateIdsDialogUi.h"
 
 #include "GPlatesDialog.h"
 #include "InformationDialog.h"

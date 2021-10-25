@@ -562,7 +562,8 @@ GPlatesQtWidgets::MetadataDialog::show_mprs()
 			if((std::find_if(
 						d_mprs_data.begin(), 
 						d_mprs_data.end(), 
-						std::bind1st(std::ptr_fun(&is_same_meta), tmp)) == d_mprs_data.end()))
+						[&] (Metadata::shared_ptr_type metadata) { return is_same_meta(metadata, tmp); } )
+				== d_mprs_data.end()))
 			{
 				meta_name_combobox->addItem(v.first);
 			}
@@ -597,7 +598,8 @@ GPlatesQtWidgets::MetadataDialog::show_pole()
 		if((std::find_if(
 					pole_data.begin(), 
 					pole_data.end(), 
-					std::bind1st(std::ptr_fun(&is_same_meta), tmp)) == pole_data.end()) )
+					[&] (Metadata::shared_ptr_type metadata) { return is_same_meta(metadata, tmp); } )
+			== pole_data.end()) )
 		{
 			pole_data.push_back(tmp);
 			d_pole_data.push_back(tmp); //keep the metadata object alive.
@@ -690,7 +692,8 @@ GPlatesQtWidgets::MetadataDialog::refresh_add_new_entry_combobox()
 					if((std::find_if(
 							d_mprs_data.begin(), 
 							d_mprs_data.end(), 
-							std::bind1st(std::ptr_fun(&is_same_meta), tmp)) == d_mprs_data.end()))
+							[&] (Metadata::shared_ptr_type metadata) { return is_same_meta(metadata, tmp); } )
+						== d_mprs_data.end()))
 					{
 						meta_name_combobox->addItem(v.first);
 					}
@@ -1476,7 +1479,8 @@ GPlatesQtWidgets::MetadataDialog::get_pole_metadata(
 		if((std::find_if(
 					pole_data.begin(), 
 					pole_data.end(), 
-					std::bind1st(std::ptr_fun(&is_same_meta), d)) == pole_data.end()) ||
+					[&] (Metadata::shared_ptr_type metadata) { return is_same_meta(metadata, d); } )
+				== pole_data.end()) ||
 			(RotationMetadataRegistry::instance().get(d->get_name()).type_flag & MetadataType::MULTI_OCCUR))
 		{
 			ret.push_back(d);

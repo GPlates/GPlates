@@ -27,7 +27,7 @@
 #define GPLATES_QTWIDGETS_HELLINGERFITWIDGET_H
 
 #include "HellingerModel.h"
-#include "HellingerFitWidgetUi.h"
+#include "ui_HellingerFitWidgetUi.h"
 
 
 namespace GPlatesQtWidgets

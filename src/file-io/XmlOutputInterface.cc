@@ -166,7 +166,7 @@ GPlatesFileIO::XmlOutputInterface::write_line_of_boolean_content(
 
 void
 GPlatesFileIO::XmlOutputInterface::write_indentation() {
-	if (status() != NO_ERROR) {
+	if (status() != XML_NO_ERROR) {
 		// Some error has previously occurred.
 		return;
 	}
@@ -174,7 +174,7 @@ GPlatesFileIO::XmlOutputInterface::write_indentation() {
 		*d_os_ptr << d_indentation_unit;
 		if ( ! *d_os_ptr) {
 			// There was an error during writing.
-			set_status(WRITE_ERROR);
+			set_status(XML_WRITE_ERROR);
 		}
 	}
 }
@@ -195,14 +195,14 @@ GPlatesFileIO::XmlOutputInterface::write_unicode_string(
 	// which is followed by non-newline characters should have the current indentation inserted
 	// after it.
 
-	if (status() != NO_ERROR) {
+	if (status() != XML_NO_ERROR) {
 		// Some error has previously occurred.
 		return;
 	}
 	*d_os_ptr << s;
 	if ( ! *d_os_ptr) {
 		// There was an error during writing.
-		set_status(WRITE_ERROR);
+		set_status(XML_WRITE_ERROR);
 	}
 }
 
@@ -214,14 +214,14 @@ GPlatesFileIO::XmlOutputInterface::write_attribute_name(
 	// FIXME:  This function should filter out any characters which are not suitable for
 	// attribute names.
 
-	if (status() != NO_ERROR) {
+	if (status() != XML_NO_ERROR) {
 		// Some error has previously occurred.
 		return;
 	}
 	*d_os_ptr << xan.build_aliased_name();
 	if ( ! *d_os_ptr) {
 		// There was an error during writing.
-		set_status(WRITE_ERROR);
+		set_status(XML_WRITE_ERROR);
 	}
 }
 
@@ -233,14 +233,14 @@ GPlatesFileIO::XmlOutputInterface::write_attribute_value(
 	// FIXME:  This function should filter out (or transform?) any characters which are not
 	// suitable for attribute values.
 
-	if (status() != NO_ERROR) {
+	if (status() != XML_NO_ERROR) {
 		// Some error has previously occurred.
 		return;
 	}
 	*d_os_ptr << xav.get();
 	if ( ! *d_os_ptr) {
 		// There was an error during writing.
-		set_status(WRITE_ERROR);
+		set_status(XML_WRITE_ERROR);
 	}
 }
 
@@ -256,7 +256,7 @@ GPlatesFileIO::XmlOutputInterface::write_decimal_content(
 void
 GPlatesFileIO::XmlOutputInterface::flush_underlying_stream()
 {
-	if (status() == NO_ERROR) {
+	if (status() == XML_NO_ERROR) {
 		*d_os_ptr << std::flush;
 	}
 }
@@ -268,7 +268,7 @@ GPlatesFileIO::XmlOutputInterface::XmlOutputInterface(
 	d_os_ptr(&os),
 	d_indentation_unit(indentation_unit),
 	d_indentation_level(0),
-	d_status(NO_ERROR)
+	d_status(XML_NO_ERROR)
 {
 	write_xml_header_line(d_os_ptr);
 }

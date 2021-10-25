@@ -59,7 +59,7 @@ namespace GPlatesMaths
 	 * @a end.
 	 *
 	 * You can create a multi-point by invoking the static member function
-	 * @a MultiPointOnSphere::create_on_heap, passing it a sequential STL
+	 * @a MultiPointOnSphere::create, passing it a sequential STL
 	 * container (list, vector, ...) of PointOnSphere to define the points
 	 * in the multi-point.  The sequence of points must contain at least one
 	 * element, enabling the creation of a multi-point composed of at least
@@ -96,12 +96,6 @@ namespace GPlatesMaths
 		 * The type used to const_iterate over the container of points.
 		 */
 		typedef point_container_type::const_iterator const_iterator;
-
-
-		/**
-		 * The type used to describe collection sizes.
-		 */
-		typedef point_container_type::size_type size_type;
 
 
 		/**
@@ -170,7 +164,7 @@ namespace GPlatesMaths
 		template <typename ForwardIterPointOnSphere>
 		static
 		const non_null_ptr_to_const_type
-		create_on_heap(
+		create(
 				ForwardIterPointOnSphere begin,
 				ForwardIterPointOnSphere end);
 
@@ -186,53 +180,19 @@ namespace GPlatesMaths
 		template<typename C>
 		static
 		const non_null_ptr_to_const_type
-		create_on_heap(
+		create(
 				const C &coll)
 		{
-			return create_on_heap(coll.begin(), coll.end());
+			return create(coll.begin(), coll.end());
 		}
 
 
 		virtual
 		~MultiPointOnSphere();
 
-		/**
-		 * Clone this MultiPointOnSphere instance, to create a duplicate instance on the
-		 * heap.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 */
-		const GeometryOnSphere::non_null_ptr_to_const_type
-		clone_as_geometry() const
-		{
-			return GeometryOnSphere::non_null_ptr_to_const_type(new MultiPointOnSphere(*this));
-		}
-
 
 		/**
-		 * Clone this MultiPointOnSphere instance, to create a duplicate instance on the
-		 * heap.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 */
-		const non_null_ptr_to_const_type
-		clone_as_multi_point() const
-		{
-			return non_null_ptr_to_const_type(new MultiPointOnSphere(*this));
-		}
-
-
-		/**
-		 * Get a non-null pointer to a const MultiPointOnSphere which points to this
-		 * instance (or a clone of this instance).
-		 *
-		 * (Since geometries are treated as immutable literals in GPlates, a geometry can
-		 * never be modified through a pointer, so there is no reason why it would be
-		 * inappropriate to return a pointer to a clone of this instance rather than a
-		 * pointer to this instance.)
-		 *
-		 * This function will behave correctly regardless of whether this instance is on
-		 * the stack or the heap.
+		 * Return this instance as a non-null pointer.
 		 */
 		const non_null_ptr_to_const_type
 		get_non_null_pointer() const
@@ -299,7 +259,7 @@ namespace GPlatesMaths
 		/**
 		 * Return the number of points in this multi-point.
 		 */
-		size_type
+		unsigned int
 		number_of_points() const
 		{
 			return d_points.size();
@@ -311,7 +271,7 @@ namespace GPlatesMaths
 		 */
 		const PointOnSphere &
 		get_point(
-				size_type point_index) const
+				unsigned int point_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					point_index < number_of_points(),
@@ -352,9 +312,6 @@ namespace GPlatesMaths
 		 * If @a test_point is "close", the function will calculate
 		 * exactly @em how close, and store that value in @a closeness and
 		 * return the closest point on the MultiPointOnSphere.
-		 *
-		 * For more information, read the comment before
-		 * @a GPlatesGui::ProximityTests::find_close_rfgs.
 		 */
 		boost::optional<GPlatesMaths::PointOnSphere>
 		is_close_to(
@@ -415,7 +372,7 @@ namespace GPlatesMaths
 		 * instantiation of a multi-point without any vertices.
 		 *
 		 * This constructor should never be invoked directly by client code; only through
-		 * the static 'create_on_heap' function.
+		 * the static 'create' function.
 		 *
 		 * This constructor should act exactly the same as the default (auto-generated)
 		 * default-constructor would, except that it should initialise the ref-count to
@@ -425,31 +382,8 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Create a copy-constructed MultiPointOnSphere instance.
-		 *
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 *
-		 * This constructor should never be invoked directly by client code; only through
-		 * the 'clone_as_geometry' or 'clone_as_multi_point' function.
-		 *
-		 * This constructor should act exactly the same as the default (auto-generated)
-		 * copy-constructor would, except that it should initialise the ref-count to zero.
-		 */
-		MultiPointOnSphere(
-				const MultiPointOnSphere &other);
-
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		MultiPointOnSphere &
-		operator=(
-				const MultiPointOnSphere &other);
-
-
-		/**
 		 * This is the minimum number of collection points to be passed into the
-		 * 'create_on_heap' function to enable creation of a multi-point.
+		 * 'create' function to enable creation of a multi-point.
 		 */
 		static const unsigned s_min_num_collection_points;
 
@@ -533,7 +467,7 @@ namespace GPlatesMaths
 
 	template<typename ForwardIterPointOnSphere>
 	const MultiPointOnSphere::non_null_ptr_to_const_type
-	MultiPointOnSphere::create_on_heap(
+	MultiPointOnSphere::create(
 			ForwardIterPointOnSphere begin,
 			ForwardIterPointOnSphere end)
 	{

@@ -24,7 +24,7 @@
  */
 
 #include <algorithm>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "GpmlFeatureReaderImpl.h"
@@ -350,7 +350,7 @@ GPlatesFileIO::GpmlUninterpretedFeatureReader::read_feature(
 	std::for_each(
 			unprocessed_feature_property_xml_nodes.begin(),
 			unprocessed_feature_property_xml_nodes.end(),
-			boost::bind(&GPlatesModel::XmlNode::accept_visitor, _1, visitor));
+			boost::bind(&GPlatesModel::XmlNode::accept_visitor, boost::placeholders::_1, visitor));
 
 	// We've processed all property XML nodes so clear the list of unprocessed nodes.
 	unprocessed_feature_property_xml_nodes.clear();

@@ -391,7 +391,7 @@ namespace GPlatesAppLogic
 					typename feature_visitor_type::gml_point_type &gml_point)
 			{
 				d_domains.push_back(
-						Domain(this->current_top_level_propiter().get(), gml_point.point()));
+						Domain(this->current_top_level_propiter().get(), gml_point.point().get_geometry_on_sphere()));
 			}
 
 

@@ -39,7 +39,6 @@
 #include "PythonUtils.h"
 #include "PythonRunner.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
@@ -243,20 +242,7 @@ namespace GPlatesApi
 
 		void
 		run_in_python_thread(
-				boost::function< void () > &f)
-		{
-			if(PythonUtils::is_main_thread())
-			{
-				PythonUtils::ThreadSwitchGuard g;
-				qRegisterMetaType<boost::function< void () > >("boost::function< void () >");
-				QMetaObject::invokeMethod(
-						d_python_runner, 
-						"exec_function_slot", 
-						Qt::AutoConnection,
-						Q_ARG(boost::function< void () > , f));
-				wait_done();
-			}
-		}
+				boost::function< void () > &f);
 
 		void
 		wait_done()
@@ -282,5 +268,5 @@ namespace GPlatesApi
 		PythonExecutionMonitor d_monitor;
 	};
 }
-#endif   //GPLATES_NO_PYTHON
+
 #endif  // GPLATES_API_PYTHONEXECUTIONTHREAD_H

@@ -265,9 +265,7 @@ namespace GPlatesMaths
 				{
 					const GreatCircleArc &edge = *edges_iter;
 
-					// Note: We use GPlatesMaths::acos instead of std::acos since it's possible the
-					// dot product is just outside the range [-1,1] which would result in NaN.
-					const double arc_length = acos(edge.dot_of_endpoints()).dval();
+					const double arc_length = edge.arc_length().dval();
 
 					const Vector3D edge_centroid = 0.5 * (
 							Vector3D(edge.start_point().position_vector()) +

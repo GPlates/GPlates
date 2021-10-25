@@ -32,14 +32,12 @@
 namespace GPlatesUtils
 {
 	/**
-	 * This namespace mimics the functionality provided by Boost.FunctionTypes,
-	 * which is currently unavailable because it was introduced in Boost 1.35 (as
-	 * of writing, the minimum Boost version is 1.34). The key word is *mimics* -
-	 * only what is necessary has been implemented!
+	 * This namespace mimics the functionality provided by Boost.FunctionTypes (introduced
+	 * in Boost 1.35). The key word is *mimics* - only what is necessary has been implemented!
 	 *
-	 * In theory, once we can use Boost 1.35, Boost.FunctionTypes can be used as a
-	 * replacement with the only modifications to client code being the change of
-	 * namespace in which the structs reside.
+	 * UPDATE: In theory, now that we can use Boost 1.35 (since currently it is the minimum
+	 * requirement), Boost.FunctionTypes can be used as a replacement with the only modifications
+	 to client code being the change of namespace in which the structs reside.
 	 *
 	 * Note that we follow the convention in Boost.FunctionTypes that the hidden
 	 * 'this' pointer of member function pointers counts towards the arity.

@@ -167,7 +167,7 @@ namespace GPlatesViewOperations
 					d_mesh_vertices[edge.vertex_indices[1]]
 				};
 				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type edge_polyline =
-						GPlatesMaths::PolylineOnSphere::create_on_heap(
+						GPlatesMaths::PolylineOnSphere::create(
 								edge_points,
 								edge_points + 2);
 

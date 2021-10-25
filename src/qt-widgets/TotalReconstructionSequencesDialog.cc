@@ -567,8 +567,8 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::TotalReconstructionSequenc
     {
         header_item->setText(
             column_names.get_index(id), 
-            QApplication::translate("TotalReconstructionSequencesDialog", id.toUtf8(), 0, QApplication::UnicodeUTF8));
-        treewidget_seqs->header()->setResizeMode(column_names.get_index(id),QHeaderView::ResizeToContents);
+            QApplication::translate("TotalReconstructionSequencesDialog", id.toUtf8(), 0));
+        treewidget_seqs->header()->setSectionResizeMode(column_names.get_index(id),QHeaderView::ResizeToContents);
     }
 
     // Resize the width of the first column slightly, to include space for indentation.

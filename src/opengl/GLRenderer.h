@@ -294,6 +294,8 @@ namespace GPlatesOpenGL
 		 *
 		 * If a frame buffer object (GLFrameBufferObject) is currently bound then it should be
 		 * set up properly (eg, 'gl_check_frame_buffer_status()') before calling this method.
+		 *
+		 * NOTE: Dimensions, in OpenGL, are in device pixels (not the device independent pixels used for widget sizes).
 		 */
 		std::pair<unsigned int/*width*/, unsigned int/*height*/>
 		get_current_frame_buffer_dimensions() const;

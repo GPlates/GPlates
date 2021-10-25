@@ -80,16 +80,6 @@ namespace GPlatesQtWidgets
 
 		virtual
 		void
-		enable_raster_display()
-		{ };
-
-		virtual
-		void
-		disable_raster_display()
-		{ };
-
-		virtual
-		void
 		handle_zoom_change()
 		{ };
 
@@ -98,22 +88,29 @@ namespace GPlatesQtWidgets
 		camera_llp() const = 0;
 
 		/**
-		 * Returns the dimensions of the viewport.
+		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
+		 *
+		 * Device-independent pixels (widget size) differ from device pixels (OpenGL size).
+		 * Widget dimensions are device independent whereas OpenGL uses device pixels
+		 * (differing by the device pixel ratio).
 		 */
 		virtual
 		QSize
 		get_viewport_size() const = 0;
 
 		/**
-		 * Renders the scene to a QImage of the dimensions specified by @a image_size
-		 * (or dimensions @a get_viewport_size, if @a image_size is boost::none).
+		 * Renders the scene to a QImage of the dimensions specified by @a image_size.
+		 *
+		 * The specified image size should be in device *independent* pixels (eg, widget dimensions).
+		 * The returned image will be a high-DPI image if this canvas has a device pixel ratio greater than 1.0
+		 * (in which case the returned QImage will have the same device pixel ratio).
 		 *
 		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
 		virtual
 		QImage
 		render_to_qimage(
-				boost::optional<QSize> image_size = boost::none) = 0;
+				const QSize &image_size_in_device_independent_pixels) = 0;
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.

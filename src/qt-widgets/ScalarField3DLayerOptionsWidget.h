@@ -30,7 +30,7 @@
 #include <vector>
 #include <QSlider>
 
-#include "ScalarField3DLayerOptionsWidgetUi.h"
+#include "ui_ScalarField3DLayerOptionsWidgetUi.h"
 
 #include "LayerOptionsWidget.h"
 #include "OpenFileDialog.h"

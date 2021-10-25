@@ -30,7 +30,7 @@
 #include <cstring> // for memset
 #include <exception>
 #include <limits>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/utility/in_place_factory.hpp>
 // Seems we need this to avoid compile problems on some CGAL versions
 // (eg, 4.0.2 on Mac 10.6) for subsequent <CGAL/number_utils.h> include...
@@ -253,7 +253,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::get_boundary_polygon_with_rigid
 			}
 
 			d_network_boundary_polygon_with_rigid_block_holes =
-					GPlatesMaths::PolygonOnSphere::create_on_heap(
+					GPlatesMaths::PolygonOnSphere::create(
 							d_network_boundary_polygon->exterior_ring_vertex_begin(),
 							d_network_boundary_polygon->exterior_ring_vertex_end(),
 							rigid_block_interior_rings.begin(),
@@ -309,7 +309,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::is_point_in_a_rigid_block(
 }
 
 
-boost::optional<GPlatesAppLogic::ResolvedTriangulation::Network::point_location_type>
+boost::optional<GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation>
 GPlatesAppLogic::ResolvedTriangulation::Network::get_point_location(
 		const GPlatesMaths::PointOnSphere &point) const
 {
@@ -322,7 +322,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::get_point_location(
 	boost::optional<const RigidBlock &> rigid_block = is_point_in_a_rigid_block(point);
 	if (rigid_block)
 	{
-		return point_location_type(boost::cref(rigid_block.get()));
+		return PointLocation(rigid_block.get());
 	}
 
 	// If we get here then the point must be in the deforming region.
@@ -333,7 +333,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::get_point_location(
 	// Find the delaunay face containing the point.
 	const Delaunay_2::Face_handle delaunay_face = get_delaunay_face_in_deforming_region(point_2);
 
-	return point_location_type(delaunay_face);
+	return PointLocation(delaunay_face);
 }
 
 
@@ -423,19 +423,19 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calc_delaunay_barycentric_coord
 boost::optional<GPlatesAppLogic::ResolvedTriangulation::DeformationInfo>
 GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformation(
 		const GPlatesMaths::PointOnSphere &point,
-		boost::optional<point_location_type> point_location) const
+		boost::optional<PointLocation> point_location) const
 {
 	// If already know the location of point.
 	if (point_location)
 	{
-		Delaunay_2::Face_handle *delaunay_face = boost::get<Delaunay_2::Face_handle>(&point_location.get());
-		if (delaunay_face == NULL)
+		boost::optional<Delaunay_2::Face_handle> delaunay_face = point_location->located_in_deforming_region();
+		if (!delaunay_face)
 		{
 			return boost::none;
 		}
 
 		// Return zero strain rates for interior rigid blocks since no deformation there.
-		return calculate_deformation_in_deforming_region(point, *delaunay_face);
+		return calculate_deformation_in_deforming_region(point, delaunay_face.get());
 	}
 
 	// We always classify points using 3D on-sphere tests.
@@ -513,20 +513,20 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformation_in_deform
 			// they are already cached inside the vertices...
 			UncachedDataAccess<DeformationInfo>(
 					get_delaunay_point_2_to_vertex_handle_map(),
-					boost::bind(&calc_delaunay_vertex_deformation, _1)));
+					boost::bind(&calc_delaunay_vertex_deformation, boost::placeholders::_1)));
 }
 
 
 boost::optional<
 		std::pair<
 				GPlatesMaths::PointOnSphere,
-				GPlatesAppLogic::ResolvedTriangulation::Network::point_location_type> >
+				GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
 GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 		const GPlatesMaths::PointOnSphere &point,
 		const double &time_increment,
 		bool reverse_deform,
 		bool use_natural_neighbour_interpolation,
-		boost::optional<point_location_type> point_location) const
+		boost::optional<PointLocation> point_location) const
 {
 	if (!point_location &&
 		!is_point_in_network(point))
@@ -555,13 +555,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 	boost::optional<const RigidBlock &> rigid_block;
 	if (point_location)
 	{
-		const boost::reference_wrapper<const RigidBlock> *rigid_block_ptr =
-				boost::get< boost::reference_wrapper<const RigidBlock> >(&point_location.get());
-		if (rigid_block_ptr)
-		{
-			// We already know point is in a rigid block so use it.
-			rigid_block = rigid_block_ptr->get();
-		}
+		rigid_block = point_location->located_in_rigid_block();
 	}
 	else
 	{
@@ -585,7 +579,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 		return std::make_pair(
 				// Point is rigidly rotated by the interior rigid block...
 				rigid_block_stage_rotation * point,
-				point_location_type(boost::cref(rigid_block.get())));
+				PointLocation(rigid_block.get()));
 	}
 
 	// If we get here then the point must be in the deforming region.
@@ -599,7 +593,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 		Delaunay_2::Face_handle delaunay_face;
 		if (point_location)
 		{
-			delaunay_face = boost::get<Delaunay_2::Face_handle>(point_location.get());
+			delaunay_face = point_location->located_in_deforming_region().get();
 		}
 		else
 		{
@@ -630,7 +624,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 						delaunay_vertex_handle_to_deformed_point_map,
 						get_delaunay_point_2_to_vertex_handle_map(),
 						boost::bind(&calc_delaunay_vertex_deformed_point,
-								_1,
+								boost::placeholders::_1,
 								time_increment,
 								reverse_deform,
 								velocity_delta_time_type,
@@ -638,14 +632,14 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 
 		return std::make_pair(
 				d_projection.unproject_to_point_on_sphere(deformed_point_2),
-				point_location_type(delaunay_face));
+				PointLocation(delaunay_face));
 	}
 	// ...else use barycentric interpolation...
 
 	Delaunay_2::Face_handle start_face_hint;
 	if (point_location)
 	{
-		start_face_hint = boost::get<Delaunay_2::Face_handle>(point_location.get());
+		start_face_hint = point_location->located_in_deforming_region().get();
 	}
 
 	// Get the barycentric coordinates for the projected point.
@@ -735,19 +729,19 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 
 	return std::make_pair(
 			d_projection.unproject_to_point_on_sphere(interpolated_deformed_point),
-			point_location_type(delaunay_face));
+			PointLocation(delaunay_face));
 }
 
 
 boost::optional<
 		std::pair<
 				GPlatesMaths::FiniteRotation,
-				GPlatesAppLogic::ResolvedTriangulation::Network::point_location_type> >
+				GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
 GPlatesAppLogic::ResolvedTriangulation::Network::calculate_stage_rotation(
 		const GPlatesMaths::PointOnSphere &point,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
-		boost::optional<point_location_type> point_location) const
+		boost::optional<PointLocation> point_location) const
 {
 	if (!point_location &&
 		!is_point_in_network(point))
@@ -759,13 +753,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_stage_rotation(
 	boost::optional<const RigidBlock &> rigid_block;
 	if (point_location)
 	{
-		const boost::reference_wrapper<const RigidBlock> *rigid_block_ptr =
-				boost::get< boost::reference_wrapper<const RigidBlock> >(&point_location.get());
-		if (rigid_block_ptr)
-		{
-			// We already know point is in a rigid block so use it.
-			rigid_block = rigid_block_ptr->get();
-		}
+		rigid_block = point_location->located_in_rigid_block();
 	}
 	else
 	{
@@ -781,7 +769,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_stage_rotation(
 
 		return std::make_pair(
 				rigid_block_stage_rotation,
-				point_location_type(boost::cref(rigid_block.get())));
+				PointLocation(rigid_block.get()));
 	}
 
 	// If we get here then the point must be in the deforming region.
@@ -789,7 +777,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_stage_rotation(
 	Delaunay_2::Face_handle start_face_hint;
 	if (point_location)
 	{
-		start_face_hint = boost::get<Delaunay_2::Face_handle>(point_location.get());
+		start_face_hint = point_location->located_in_deforming_region().get();
 	}
 
 	// Project into the 2D triangulation space.
@@ -860,19 +848,16 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_stage_rotation(
 
 	return std::make_pair(
 			interpolated_stage_rotation,
-			point_location_type(delaunay_face));
+			PointLocation(delaunay_face));
 }
 
 
-boost::optional<
-		std::pair<
-				GPlatesMaths::Vector3D,
-				boost::optional<const GPlatesAppLogic::ResolvedTriangulation::Network::RigidBlock &> > >
+boost::optional< std::pair<GPlatesMaths::Vector3D, GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
 GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 		const GPlatesMaths::PointOnSphere &point,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
-		boost::optional<point_location_type> point_location) const
+		boost::optional<PointLocation> point_location) const
 {
 	if (!point_location &&
 		!is_point_in_network(point))
@@ -884,13 +869,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 	boost::optional<const RigidBlock &> rigid_block;
 	if (point_location)
 	{
-		const boost::reference_wrapper<const RigidBlock> *rigid_block_ptr =
-				boost::get< boost::reference_wrapper<const RigidBlock> >(&point_location.get());
-		if (rigid_block_ptr)
-		{
-			// We already know point is in a rigid block so use it.
-			rigid_block = rigid_block_ptr->get();
-		}
+		rigid_block = point_location->located_in_rigid_block();
 	}
 	else
 	{
@@ -905,24 +884,31 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 						velocity_delta_time,
 						velocity_delta_time_type);
 
-		return std::make_pair(rigid_block_velocity, rigid_block);
+		return std::make_pair(rigid_block_velocity, PointLocation(rigid_block.get()));
 	}
 
 	// If we get here then the point must be in the deforming region.
-
-	Delaunay_2::Face_handle start_face_hint;
-	if (point_location)
-	{
-		start_face_hint = boost::get<Delaunay_2::Face_handle>(point_location.get());
-	}
 
 	// Project into the 2D triangulation space.
 	const Delaunay_2::Point point_2 =
 			d_projection.project_from_point_on_sphere<Delaunay_2::Point>(point);
 
+	Delaunay_2::Face_handle delaunay_face;
+	if (point_location)
+	{
+		delaunay_face = point_location->located_in_deforming_region().get();
+	}
+	else
+	{
+		// Find the delaunay face containing the point.
+		// We need to return a network position (delaunay face) and the natural neighbour interpolation
+		// doesn't provide that. However it can use our delaunay face to find the coordinates faster.
+		delaunay_face = get_delaunay_face_in_deforming_region(point_2);
+	}
+
 	// Get the interpolation coordinates for the point.
 	delaunay_natural_neighbor_coordinates_2_type natural_neighbor_coordinates;
-	calc_delaunay_natural_neighbor_coordinates_in_deforming_region(natural_neighbor_coordinates, point_2, start_face_hint);
+	calc_delaunay_natural_neighbor_coordinates_in_deforming_region(natural_neighbor_coordinates, point_2, delaunay_face);
 
 	// Look for an existing map associated with the velocity delta time parameters.
 	DelaunayVertexHandleToVelocityMapType &delaunay_vertex_handle_to_velocity_map =
@@ -938,11 +924,11 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_velocity(
 							delaunay_vertex_handle_to_velocity_map,
 							get_delaunay_point_2_to_vertex_handle_map(),
 							boost::bind(&calc_delaunay_vertex_velocity,
-									_1,
+									boost::placeholders::_1,
 									velocity_delta_time,
 									velocity_delta_time_type)));
 
-	return std::make_pair(interpolated_velocity, rigid_block/*boost::none*/);
+	return std::make_pair(interpolated_velocity, PointLocation(delaunay_face));
 }
 
 
@@ -1170,7 +1156,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::refine_rift_delaunay_2(
 	// Only then can be compare the stage pole axis with the reconstructed rift geometries in the network.
 	//
 	const GPlatesMaths::FiniteRotation left_plate_rotation =
-			reconstruction_tree_1->get_composed_absolute_rotation(rift_params.left_plate_id).first;
+			reconstruction_tree_1->get_composed_absolute_rotation(rift_params.left_plate_id);
 	const GPlatesMaths::UnitVector3D twist_axis = left_plate_rotation * stage_pole_axis;
 
 

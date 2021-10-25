@@ -28,7 +28,7 @@
 
 #include <QDialog>
 
-#include "ChooseBuiltinPaletteDialogUi.h"
+#include "ui_ChooseBuiltinPaletteDialogUi.h"
 
 #include "ColourScaleButton.h"
 #include "GPlatesDialog.h"
@@ -100,18 +100,27 @@ namespace GPlatesQtWidgets
 				ColourScaleButton *colour_scale_button);
 
 		GPlatesGui::BuiltinColourPaletteType
-		create_colorbrewer_sequential_palette_type(
-				GPlatesGui::BuiltinColourPalettes::ColorBrewerSequentialType sequential_type);
+		create_palette_type(
+				GPlatesGui::BuiltinColourPalettes::Age::Type age_type);
 
 		GPlatesGui::BuiltinColourPaletteType
-		create_colorbrewer_diverging_palette_type(
-				GPlatesGui::BuiltinColourPalettes::ColorBrewerDivergingType diverging_type);
+		create_palette_type(
+				GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Type sequential_type);
+
+		GPlatesGui::BuiltinColourPaletteType
+		create_palette_type(
+				GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::Type diverging_type);
 
 		void
 		re_populate_colorbrewer_buttons();
 
 
 		GPlatesGui::BuiltinColourPaletteType::Parameters d_builtin_parameters;
+
+		// Age palettes.
+		ColourScaleButton *d_age_legacy_button;
+		ColourScaleButton *d_age_traditional_button;
+		ColourScaleButton *d_age_modern_button;
 
 		// ColorBrewer sequential multi-hue palettes.
 		ColourScaleButton *d_BuGn_button;

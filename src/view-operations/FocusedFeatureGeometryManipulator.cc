@@ -94,9 +94,9 @@ namespace GPlatesViewOperations
 			virtual
 			void
 			visit_point_on_sphere(
-					GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+					GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 			{
-				const GPlatesMaths::PointOnSphere geom_point[1] = { *point_on_sphere };
+				const GPlatesMaths::PointOnSphere geom_point[1] = { point_on_sphere->position() };
 
 				d_undo_operation = d_geom_builder->set_geometry(
 						GPlatesMaths::GeometryType::POINT,
@@ -417,8 +417,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_secondary_geom
 	// Since we can have multiple geometry properties per feature we make sure we
 	// set the geometry that the user actually clicked on.
 	GPlatesModel::FeatureHandle::iterator iter = (*rfg)->property();
-	GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = 
-		(*iter)->deep_clone();
+	GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = (*iter)->deep_clone();
 	geometry_setter.set_geometry(geom_top_level_prop_clone.get());
 	*iter = geom_top_level_prop_clone;
 }

@@ -115,11 +115,11 @@ namespace GPlatesOpenGL
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 */
 		static
-		std::auto_ptr<GLRenderTarget>
-		create_as_auto_ptr(
+		std::unique_ptr<GLRenderTarget>
+		create_as_unique_ptr(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
 				bool include_depth_buffer,
@@ -127,7 +127,7 @@ namespace GPlatesOpenGL
 				unsigned int render_target_width,
 				unsigned int render_target_height)
 		{
-			return std::auto_ptr<GLRenderTarget>(
+			return std::unique_ptr<GLRenderTarget>(
 					new GLRenderTarget(
 							renderer,
 							texture_internalformat,

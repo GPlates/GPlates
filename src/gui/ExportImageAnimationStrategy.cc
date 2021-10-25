@@ -100,8 +100,14 @@ GPlatesGui::ExportImageAnimationStrategy::do_export_iteration(
 		}
 
 		// Render to the image file.
+		//
+		// Note: The returned image could be high DPI (pixel device ratio greater than 1.0).
+		//       In which case the actual pixel dimensions of the image will be larger than requested
+		//       (by the pixel device ratio) but it should still occupy the requested *widget* dimensions.
 		const QImage image = active_scene_view.render_to_qimage(
-				d_configuration->image_resolution_options.image_size);
+				d_configuration->image_resolution_options.image_size
+					? d_configuration->image_resolution_options.image_size.get()
+					: active_scene_view.get_viewport_size());
 		if (image.isNull())
 		{
 			// Most likely a memory allocation failure.

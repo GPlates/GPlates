@@ -38,9 +38,6 @@
 
 namespace GPlatesFileIO
 {
-	class ExternalProgram;
-
-
 	class GpmlReader
 	{
 	public:
@@ -52,13 +49,6 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors,
 				bool &contains_unsaved_changes,
 				bool use_gzip = false);
-
-		static
-		const ExternalProgram &
-		gunzip_program();
-
-	private:
-		static const ExternalProgram *s_gunzip_program;
 	};
 }
 

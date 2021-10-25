@@ -185,22 +185,22 @@ namespace GPlatesViewOperations
 		 * same id will be merged together when pushed onto undo stack next to
 		 * each other (ie, in sequential @a QUndoStack push operations).
 		 *
-		 * @param  std::auto_ptr<QUndoCommand> existing command.
+		 * @param  std::unique_ptr<QUndoCommand> existing command.
 		 * @param  merge_id used to determine which adjacent merge commands to merge with.
 		 * @return new command containing existing command.
 		 */
-		std::auto_ptr<QUndoCommand>
+		std::unique_ptr<QUndoCommand>
 		make_mergable_undo_command(
-				std::auto_ptr<QUndoCommand>,
+				std::unique_ptr<QUndoCommand>,
 				CommandId merge_id);
 
 		/**
 		 * Same as above except uses command id returned from
 		 * @a get_unique_command_id_scope.
 		 */
-		std::auto_ptr<QUndoCommand>
+		std::unique_ptr<QUndoCommand>
 		make_mergable_undo_command_in_current_unique_command_id_scope(
-				std::auto_ptr<QUndoCommand>);
+				std::unique_ptr<QUndoCommand>);
 
 		/**
 		 * Undo/redo command for grouping child commands into one command.

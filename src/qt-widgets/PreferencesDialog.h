@@ -31,7 +31,7 @@
 
 #include "GPlatesDialog.h"
 
-#include "PreferencesDialogUi.h"
+#include "ui_PreferencesDialogUi.h"
 
 
 namespace GPlatesAppLogic

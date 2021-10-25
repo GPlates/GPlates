@@ -27,7 +27,7 @@
 #include <limits>
 #include <new> // For placement new.
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/foreach.hpp>
@@ -626,9 +626,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_texture(
 		{
 			// Create a new tile texture.
 			tile_texture = lod_tile.tile_texture->set_cached_object(
-					std::auto_ptr<TileTexture>(new TileTexture(renderer)),
+					std::unique_ptr<TileTexture>(new TileTexture(renderer)),
 					// Called whenever tile texture is returned to the cache...
-					boost::bind(&TileTexture::returned_to_cache, _1));
+					boost::bind(&TileTexture::returned_to_cache, boost::placeholders::_1));
 
 			// The texture was just allocated so we need to create it in OpenGL.
 			create_texture(renderer, tile_texture->texture);
@@ -783,7 +783,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertices(
 		if (!tile_vertices)
 		{
 			tile_vertices = lod_tile.tile_vertices->set_cached_object(
-					std::auto_ptr<TileVertices>(new TileVertices(renderer)));
+					std::unique_ptr<TileVertices>(new TileVertices(renderer)));
 
 			// Bind the new vertex buffer to the new vertex array.
 			// This only needs to be done once since the vertex buffer and vertex array
