@@ -711,11 +711,13 @@ GPlatesMaths::DateLineWrapper::output_input_line_geometry(
 				tessellate_threshold,
 				// It's the original point - it hasn't been wrapped (clipped)...
 				true/*is_unwrapped_point*/,
-				0.0/*segment_interpolation_ratio*/,
-				line_segment_index,
-				geometry_part_index,
+				on_dateline_arc/*on_dateline*/,
+				LatLonLineGeometry::InterpolateOriginalSegment(
+						0.0/*segment_interpolation_ratio*/,
+						line_segment_index,
+						geometry_part_index),
 				// Line geometry did not intersect the dateline so it can't be along the dateline...
-				false/*is_dateline_segment*/);
+				false/*is_end_of_dateline_segment*/);
 	}
 
 	if (polygon_ring_index &&
@@ -803,6 +805,42 @@ GPlatesMaths::DateLineWrapper::intersects_dateline(
 
 
 void
+GPlatesMaths::DateLineWrapper::LatLonPolygon::get_exterior_ring_point_flags(
+		std::vector<point_flags_type> &exterior_ring_point_flags) const
+{
+	const std::vector<LatLonLineGeometry::point_flags_type> &point_flags =
+			d_exterior_ring_line_geometry->get_point_flags();
+
+	const unsigned int num_points = point_flags.size();
+	exterior_ring_point_flags.reserve(num_points);
+	for (unsigned int n = 0; n < num_points; ++n)
+	{
+		const LatLonLineGeometry::point_flags_type &flags = point_flags[n];
+
+		point_flags_type ring_flags;
+		if (flags.test(LatLonLineGeometry::ORIGINAL_POINT))
+		{
+			ring_flags.set(ORIGINAL_POINT);
+		}
+		if (flags.test(LatLonLineGeometry::TESSELLATED_POINT))
+		{
+			ring_flags.set(TESSELLATED_POINT);
+		}
+		if (flags.test(LatLonLineGeometry::ON_DATELINE))
+		{
+			ring_flags.set(ON_DATELINE);
+		}
+		if (flags.test(LatLonLineGeometry::ON_ORIGINAL_SEGMENT))
+		{
+			ring_flags.set(ON_ORIGINAL_SEGMENT);
+		}
+
+		exterior_ring_point_flags.push_back(ring_flags);
+	}
+}
+
+
+void
 GPlatesMaths::DateLineWrapper::LatLonPolygon::get_exterior_ring_interpolate_original_segments(
 		interpolate_original_segment_seq_type &exterior_ring_interpolate_original_segments) const
 {
@@ -828,6 +866,47 @@ GPlatesMaths::DateLineWrapper::LatLonPolygon::get_exterior_ring_interpolate_orig
 		{
 			exterior_ring_interpolate_original_segments.push_back(boost::none);
 		}
+	}
+}
+
+
+void
+GPlatesMaths::DateLineWrapper::LatLonPolygon::get_interior_ring_point_flags(
+		std::vector<point_flags_type> &interior_ring_point_flags,
+		unsigned int interior_ring_index) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			interior_ring_index < d_interior_ring_line_geometries.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	const std::vector<LatLonLineGeometry::point_flags_type> &point_flags =
+			d_interior_ring_line_geometries[interior_ring_index]->get_point_flags();
+
+	const unsigned int num_points = point_flags.size();
+	interior_ring_point_flags.reserve(num_points);
+	for (unsigned int n = 0; n < num_points; ++n)
+	{
+		const LatLonLineGeometry::point_flags_type &flags = point_flags[n];
+
+		point_flags_type ring_flags;
+		if (flags.test(LatLonLineGeometry::ORIGINAL_POINT))
+		{
+			ring_flags.set(ORIGINAL_POINT);
+		}
+		if (flags.test(LatLonLineGeometry::TESSELLATED_POINT))
+		{
+			ring_flags.set(TESSELLATED_POINT);
+		}
+		if (flags.test(LatLonLineGeometry::ON_DATELINE))
+		{
+			ring_flags.set(ON_DATELINE);
+		}
+		if (flags.test(LatLonLineGeometry::ON_ORIGINAL_SEGMENT))
+		{
+			ring_flags.set(ON_ORIGINAL_SEGMENT);
+		}
+
+		interior_ring_point_flags.push_back(ring_flags);
 	}
 }
 
@@ -868,6 +947,42 @@ GPlatesMaths::DateLineWrapper::LatLonPolygon::get_interior_ring_interpolate_orig
 
 
 void
+GPlatesMaths::DateLineWrapper::LatLonPolyline::get_point_flags(
+		std::vector<point_flags_type> &polyline_point_flags) const
+{
+	const std::vector<LatLonLineGeometry::point_flags_type> &point_flags = d_line_geometry->get_point_flags();
+
+	const unsigned int num_points = point_flags.size();
+	polyline_point_flags.reserve(num_points);
+	for (unsigned int n = 0; n < num_points; ++n)
+	{
+		const LatLonLineGeometry::point_flags_type &flags = point_flags[n];
+
+		// For a polyline, all points should be on original segments.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				flags.test(LatLonLineGeometry::ON_ORIGINAL_SEGMENT),
+				GPLATES_ASSERTION_SOURCE);
+
+		point_flags_type polyline_flags;
+		if (flags.test(LatLonLineGeometry::ORIGINAL_POINT))
+		{
+			polyline_flags.set(ORIGINAL_POINT);
+		}
+		if (flags.test(LatLonLineGeometry::TESSELLATED_POINT))
+		{
+			polyline_flags.set(TESSELLATED_POINT);
+		}
+		if (flags.test(LatLonLineGeometry::ON_DATELINE))
+		{
+			polyline_flags.set(ON_DATELINE);
+		}
+
+		polyline_point_flags.push_back(polyline_flags);
+	}
+}
+
+
+void
 GPlatesMaths::DateLineWrapper::LatLonPolyline::get_interpolate_original_segments(
 		interpolate_original_segment_seq_type &polyline_interpolate_original_segments) const
 {
@@ -903,19 +1018,17 @@ GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_point(
 		const double &central_meridian_longitude,
 		const boost::optional<AngularExtent> &tessellate_threshold,
 		bool is_unwrapped_point,
-		const double &segment_interpolation_ratio,
-		unsigned int segment_index,
-		unsigned int geometry_part_index,
-		bool is_dateline_segment)
+		bool on_dateline,
+		boost::optional<InterpolateOriginalSegment> interpolate_original_segment,
+		bool is_end_of_dateline_segment)
 {
 	const UntessellatedPointInfo untessellated_point_info(
 			lat_lon_point,
 			point,
 			is_unwrapped_point,
-			segment_interpolation_ratio,
-			segment_index,
-			geometry_part_index,
-			is_dateline_segment);
+			on_dateline,
+			interpolate_original_segment,
+			is_end_of_dateline_segment);
 
 	if (tessellate_threshold)
 	{
@@ -952,15 +1065,24 @@ GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_untessellated_point(
 	d_lat_lon_points.push_back(untessellated_point_info.lat_lon_point);
 	d_untessellated_points.push_back(untessellated_point_info.point);
 	
-	// We know point is untessellated - is it also unwrapped ?
-	d_is_unwrapped_untessellated_point_flags.push_back(untessellated_point_info.is_unwrapped_point);
+	point_flags_type point_flags;
+	// We know point is untessellated - is it an original point?
+	if (untessellated_point_info.is_unwrapped_point)
+	{
+		point_flags.set(ORIGINAL_POINT);
+	}
+	if (untessellated_point_info.on_dateline)
+	{
+		point_flags.set(ON_DATELINE);
+	}
+	if (untessellated_point_info.interpolate_original_segment)
+	{
+		point_flags.set(ON_ORIGINAL_SEGMENT);
+	}
+	d_point_flags.push_back(point_flags);
 
 	// Record the segment index and interpolation ratio along it corresponding to the current point.
-	d_points_interpolate_original_segments.push_back(
-			InterpolateOriginalSegment(
-					untessellated_point_info.segment_interpolation_ratio,
-					untessellated_point_info.segment_index,
-					untessellated_point_info.geometry_part_index));
+	d_points_interpolate_original_segments.push_back(untessellated_point_info.interpolate_original_segment);
 
 	// Keep track of the previous untessellated point information.
 	d_previous_untessellated_point_info = untessellated_point_info;
@@ -1029,7 +1151,7 @@ GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_tessellated_points(
 			const LatLonPoint tess_lat_lon(latitude, longitude);
 
 			// We are on the dateline and not along a polygon ring, so there's no interpolation.
-			add_tessellated_point(tess_lat_lon, boost::none/*interpolate_original_segment*/);
+			add_tessellated_point(tess_lat_lon, true/*on_dateline*/, boost::none/*interpolate_original_segment*/);
 		}
 
 		return;
@@ -1052,54 +1174,93 @@ GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_tessellated_points(
 	double segment_interpolation_ratio_increment;
 	unsigned int segment_index;
 	unsigned int geometry_part_index;
-	if (!untessellated_point_info.is_dateline_segment)
+	if (!untessellated_point_info.is_end_of_dateline_segment &&
+		// Both the following conditions should be true if we passed the above condition,
+		// but we'll check anyway to be sure...
+		untessellated_point_info.interpolate_original_segment &&
+		d_previous_untessellated_point_info->interpolate_original_segment)
 	{
-		geometry_part_index = untessellated_point_info.geometry_part_index;
+		geometry_part_index = untessellated_point_info.interpolate_original_segment->original_geometry_part_index;
 
-		// Determine the original segment index and the interpolation ratio within the segment
-		// for the start point.
-		if (d_previous_untessellated_point_info->is_unwrapped_point)
+		segment_interpolation_ratio_at_start = d_previous_untessellated_point_info->interpolate_original_segment->interpolate_ratio;
+		segment_interpolation_ratio_at_end = untessellated_point_info.interpolate_original_segment->interpolate_ratio;
+
+		// Determine the segment index (and adjust start/end interpolation ratios if necessary).
+		if (untessellated_point_info.is_unwrapped_point &&
+			d_previous_untessellated_point_info->is_unwrapped_point)
 		{
-			// A wrapped point is on the original geometry and hence its interpolation along the
-			// original segment is zero (at the start of segment).
-			segment_interpolation_ratio_at_start = 0.0;
-
-			// The segment index could refer to the first point in the original segment we are
-			// interpolating in, or it could refer to the last point in the previous original segment.
-			// In the latter case we need to increment the segment index.
-			segment_index = d_previous_untessellated_point_info->segment_index;
-			if (GPlatesMaths::are_almost_exactly_equal(
-				d_previous_untessellated_point_info->segment_interpolation_ratio,
-				// For wrapped points this will be either 0.0 or 1.0 ...
-				1.0))
+			// Both points are original points, but they might be on different segments.
+			if (untessellated_point_info.interpolate_original_segment->original_segment_index ==
+				d_previous_untessellated_point_info->interpolate_original_segment->original_segment_index)
 			{
-				++segment_index;
+				// On same segment (so arbitrarily pick either segment index - both as the same).
+				segment_index = d_previous_untessellated_point_info->interpolate_original_segment->original_segment_index;
+			}
+			// See if end of previous segment meets start of current segment...
+			else if (untessellated_point_info.interpolate_original_segment->original_segment_index ==
+					d_previous_untessellated_point_info->interpolate_original_segment->original_segment_index + 1 ||
+				// For polygon rings we need to handle wraparound from last segment to first segment...
+				(untessellated_point_info.interpolate_original_segment->original_segment_index == 0 &&
+					d_previous_untessellated_point_info->interpolate_original_segment->original_segment_index != 1))
+			{
+				// Each interpolation ratio is either 0.0 or 1.0 (since both points are original/unwrapped points).
+				// So we simply use 0.5 to distinguish between them.
+				if (segment_interpolation_ratio_at_end > 0.5)
+				{
+					segment_index = untessellated_point_info.interpolate_original_segment->original_segment_index;
+					segment_interpolation_ratio_at_start = 0.0;
+				}
+				else
+				{
+					segment_index = d_previous_untessellated_point_info->interpolate_original_segment->original_segment_index;
+					segment_interpolation_ratio_at_end = 1.0;
+				}
+			}
+			else // End of current segment meets start of previous segment...
+			{
+				// Each interpolation ratio is either 0.0 or 1.0 (since both points are original/unwrapped points).
+				// So we simply use 0.5 to distinguish between them.
+				if (segment_interpolation_ratio_at_end > 0.5)
+				{
+					segment_index = d_previous_untessellated_point_info->interpolate_original_segment->original_segment_index;
+					segment_interpolation_ratio_at_end = 0.0;
+				}
+				else
+				{
+					segment_index = untessellated_point_info.interpolate_original_segment->original_segment_index;
+					segment_interpolation_ratio_at_start = 1.0;
+				}
 			}
 		}
-		else
+		else if (untessellated_point_info.is_unwrapped_point)
 		{
-			// The untessellated point is not a wrapped point (ie, not on original geometry)
-			// so it'll be in the middle of the original segment somewhere and hence we know
-			// its segment index refers to the original segment we are currently interpolating in.
-			segment_interpolation_ratio_at_start =
-					d_previous_untessellated_point_info->segment_interpolation_ratio;
-			segment_index = d_previous_untessellated_point_info->segment_index;
-		}
+			// Only current point is an original point so previous point must lie partway along the segment so
+			// use its (previous) segment index and change current point interpolation ratio if on different segment.
+			segment_index = d_previous_untessellated_point_info->interpolate_original_segment->original_segment_index;
 
-		// Determine the interpolation ratio within the original segment for the end point.
-		if (untessellated_point_info.is_unwrapped_point)
-		{
-			// A wrapped point is on the original geometry and hence its interpolation along the
-			// original segment is one (at the end of segment).
-			segment_interpolation_ratio_at_end = 1.0;
+			if (untessellated_point_info.interpolate_original_segment->original_segment_index !=
+				d_previous_untessellated_point_info->interpolate_original_segment->original_segment_index)
+			{
+				segment_interpolation_ratio_at_end = 1.0 - segment_interpolation_ratio_at_end;
+			}
 		}
-		else
+		else if (d_previous_untessellated_point_info->is_unwrapped_point)
 		{
-			// The untessellated point is not a wrapped point (ie, not on original geometry)
-			// so it'll be in the middle of the original segment somewhere and hence we know its
-			// interpolation ratio refers to the original segment we are currently interpolating in.
-			segment_interpolation_ratio_at_end =
-					untessellated_point_info.segment_interpolation_ratio;
+			// Only previous point is an original point so current point must lie partway along the segment so
+			// use its (current) segment index and change previous point interpolation ratio if on different segment.
+			segment_index = untessellated_point_info.interpolate_original_segment->original_segment_index;
+
+			if (untessellated_point_info.interpolate_original_segment->original_segment_index !=
+				d_previous_untessellated_point_info->interpolate_original_segment->original_segment_index)
+			{
+				segment_interpolation_ratio_at_start = 1.0 - segment_interpolation_ratio_at_start;
+			}
+		}
+		else // both points are wrapped (not points in original geometry)...
+		{
+			// Both untessellated points are wrapped and hence must be on same segment.
+			// So arbitrarily pick either segment index (both will be the same).
+			segment_index = d_previous_untessellated_point_info->interpolate_original_segment->original_segment_index;
 		}
 
 		segment_interpolation_ratio_increment =
@@ -1146,7 +1307,7 @@ GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_tessellated_points(
 					arc_start_point_longitude.dval());
 
 			boost::optional<InterpolateOriginalSegment> interpolate_original_segment;
-			if (!untessellated_point_info.is_dateline_segment)
+			if (!untessellated_point_info.is_end_of_dateline_segment)
 			{
 				interpolate_original_segment = boost::in_place(
 						segment_interpolation_ratio_at_start + n * segment_interpolation_ratio_increment,
@@ -1154,7 +1315,7 @@ GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_tessellated_points(
 						geometry_part_index);
 			}
 
-			add_tessellated_point(tess_lat_lon, interpolate_original_segment);
+			add_tessellated_point(tess_lat_lon, true/*on_dateline*/, interpolate_original_segment);
 		}
 	}
 	else // arc is *not* entirely on the dateline (although one of the end points could be) ...
@@ -1184,7 +1345,7 @@ GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_tessellated_points(
 			}
 
 			boost::optional<InterpolateOriginalSegment> interpolate_original_segment;
-			if (!untessellated_point_info.is_dateline_segment)
+			if (!untessellated_point_info.is_end_of_dateline_segment)
 			{
 				interpolate_original_segment = boost::in_place(
 						segment_interpolation_ratio_at_start + n * segment_interpolation_ratio_increment,
@@ -1192,7 +1353,7 @@ GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_tessellated_points(
 						geometry_part_index);
 			}
 
-			add_tessellated_point(tess_lat_lon, interpolate_original_segment);
+			add_tessellated_point(tess_lat_lon, false/*on_dateline*/, interpolate_original_segment);
 		}
 	}
 }
@@ -1201,12 +1362,23 @@ GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_tessellated_points(
 void
 GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_tessellated_point(
 		const LatLonPoint &lat_lon_point,
+		bool on_dateline,
 		const boost::optional<InterpolateOriginalSegment> &interpolate_original_segment)
 {
 	d_lat_lon_points.push_back(lat_lon_point);
-
-	// We know point is tessellated - so it can't be untessellated (and unwrapped).
-	d_is_unwrapped_untessellated_point_flags.push_back(false);
+	
+	point_flags_type point_flags;
+	// We know point is tessellated - so it can't be an original point.
+	point_flags.set(TESSELLATED_POINT);
+	if (on_dateline)
+	{
+		point_flags.set(ON_DATELINE);
+	}
+	if (interpolate_original_segment)
+	{
+		point_flags.set(ON_ORIGINAL_SEGMENT);
+	}
+	d_point_flags.push_back(point_flags);
 
 	// Record the segment index and interpolation ratio along it corresponding to the current point
 	// unless it's along the dateline.
@@ -1234,6 +1406,9 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::IntersectionGraph(
 	if (d_is_polygon_graph)
 	{
 		// Create the four corner vertices of the dateline.
+		//
+		// Note that these vertices are *not* on any segments of the original geometry (polyline or polygon).
+		// If the original geometry intersects the North or South pole then new dateline vertices will get added.
 		d_dateline_corner_south_front = d_vertex_node_pool.construct(Vertex(LatLonPoint(-90, 180)));
 		d_dateline_corner_north_front = d_vertex_node_pool.construct(Vertex(LatLonPoint(90, 180)));
 		d_dateline_corner_north_back = d_vertex_node_pool.construct(Vertex(LatLonPoint(90, -180)));
@@ -1312,8 +1487,8 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::output_polylines(
 				central_meridian_longitude,
 				tessellate_threshold,
 				start_polyline_vertex.is_unwrapped_point,
-				start_polyline_vertex.segment_interpolation_ratio,
-				start_polyline_vertex.segment_index);
+				start_polyline_vertex.is_intersection/*on_dateline*/,
+				start_polyline_vertex.interpolate_original_segment);
 
 		// Add the remaining vertices of the current polyline.
 		// The current polyline stops when we hit another intersection point (or reach end of original polyline).
@@ -1338,8 +1513,8 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::output_polylines(
 					central_meridian_longitude,
 					tessellate_threshold,
 					polyline_vertex.is_unwrapped_point,
-					polyline_vertex.segment_interpolation_ratio,
-					polyline_vertex.segment_index);
+					polyline_vertex.is_intersection/*on_dateline*/,
+					polyline_vertex.interpolate_original_segment);
 
 			if (polyline_vertex.is_intersection)
 			{
@@ -1586,11 +1761,10 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::output_intersecting_polygons(
 					central_meridian_longitude,
 					tessellate_threshold,
 					output_polygon_vertex.is_unwrapped_point,
-					output_polygon_vertex.segment_interpolation_ratio,
-					output_polygon_vertex.segment_index,
-					output_polygon_vertex.geometry_part_index,
+					output_polygon_vertex.is_intersection/*on_dateline*/,
+					output_polygon_vertex.interpolate_original_segment,
 					// Is the segment ending with the current vertex along the dateline ? ...
-					output_polygon_vertex_list == &d_dateline_vertices /*is_dateline_segment*/);
+					output_polygon_vertex_list == &d_dateline_vertices /*is_end_of_dateline_segment*/);
 			output_polygon_vertex.used_to_output_polygon = true;
 
 			// At intersection vertices we need to jump lists.
@@ -1735,11 +1909,10 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::output_non_intersecting_line_p
 				central_meridian_longitude,
 				tessellate_threshold,
 				ring_vertex.is_unwrapped_point,
-				ring_vertex.segment_interpolation_ratio,
-				ring_vertex.segment_index,
-				ring_vertex.geometry_part_index,
+				ring_vertex.is_intersection/*on_dateline*/,
+				ring_vertex.interpolate_original_segment,
 				// Polygon ring did not intersect dateline so it can't be along the dateline...
-				false/*is_dateline_segment*/);
+				false/*is_end_of_dateline_segment*/);
 	}
 
 	if (tessellate_threshold)
@@ -2609,9 +2782,10 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_vertex(
 					vertex,
 					point,
 					true/*is_unwrapped_point*/,
-					segment_interpolation_ratio,
-					segment_index,
-					geometry_part_index));
+					LatLonLineGeometry::InterpolateOriginalSegment(
+							segment_interpolation_ratio,
+							segment_index,
+							geometry_part_index)));
 
 	// Add to the geometry sequence.
 	LineGeometry &line_geometry = d_line_geometries.back();
@@ -2639,9 +2813,10 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_fro
 					intersection_vertex,
 					boost::none/*point*/,
 					is_unwrapped_point,
-					segment_interpolation_ratio,
-					segment_index,
-					geometry_part_index,
+					LatLonLineGeometry::InterpolateOriginalSegment(
+							segment_interpolation_ratio,
+							segment_index,
+							geometry_part_index),
 					true/*is_intersection*/,
 					exiting_dateline_polygon));
 
@@ -2665,9 +2840,10 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_fro
 					intersection_vertex,
 					boost::none/*point*/,
 					is_unwrapped_point,
-					segment_interpolation_ratio,
-					segment_index,
-					geometry_part_index,
+					LatLonLineGeometry::InterpolateOriginalSegment(
+							segment_interpolation_ratio,
+							segment_index,
+							geometry_part_index),
 					true/*is_intersection*/));
 
 	// Insert into the dateline vertices sequence.
@@ -2717,9 +2893,10 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_bac
 					intersection_vertex,
 					boost::none/*point*/,
 					is_unwrapped_point,
-					segment_interpolation_ratio,
-					segment_index,
-					geometry_part_index,
+					LatLonLineGeometry::InterpolateOriginalSegment(
+							segment_interpolation_ratio,
+							segment_index,
+							geometry_part_index),
 					true/*is_intersection*/,
 					exiting_dateline_polygon));
 
@@ -2743,9 +2920,10 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_bac
 					intersection_vertex,
 					boost::none/*point*/,
 					is_unwrapped_point,
-					segment_interpolation_ratio,
-					segment_index,
-					geometry_part_index,
+					LatLonLineGeometry::InterpolateOriginalSegment(
+							segment_interpolation_ratio,
+							segment_index,
+							geometry_part_index),
 					true/*is_intersection*/));
 
 	// Insert into the dateline vertices sequence.
@@ -2795,9 +2973,10 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_nor
 					intersection_vertex,
 					boost::none/*point*/,
 					is_unwrapped_point,
-					segment_interpolation_ratio,
-					segment_index,
-					geometry_part_index,
+					LatLonLineGeometry::InterpolateOriginalSegment(
+							segment_interpolation_ratio,
+							segment_index,
+							geometry_part_index),
 					true/*is_intersection*/,
 					exiting_dateline_polygon));
 
@@ -2821,9 +3000,10 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_nor
 					intersection_vertex,
 					boost::none/*point*/,
 					is_unwrapped_point,
-					segment_interpolation_ratio,
-					segment_index,
-					geometry_part_index,
+					LatLonLineGeometry::InterpolateOriginalSegment(
+							segment_interpolation_ratio,
+							segment_index,
+							geometry_part_index),
 					true/*is_intersection*/));
 
 	// Insert into the dateline vertices sequence.
@@ -2873,9 +3053,10 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_sou
 					intersection_vertex,
 					boost::none/*point*/,
 					is_unwrapped_point,
-					segment_interpolation_ratio,
-					segment_index,
-					geometry_part_index,
+					LatLonLineGeometry::InterpolateOriginalSegment(
+							segment_interpolation_ratio,
+							segment_index,
+							geometry_part_index),
 					true/*is_intersection*/,
 					exiting_dateline_polygon));
 
@@ -2899,9 +3080,10 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_sou
 					intersection_vertex,
 					boost::none/*point*/,
 					is_unwrapped_point,
-					segment_interpolation_ratio,
-					segment_index,
-					geometry_part_index,
+					LatLonLineGeometry::InterpolateOriginalSegment(
+							segment_interpolation_ratio,
+							segment_index,
+							geometry_part_index),
 					true/*is_intersection*/));
 
 	// Insert into the dateline vertices sequence.

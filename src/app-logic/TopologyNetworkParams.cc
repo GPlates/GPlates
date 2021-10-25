@@ -25,6 +25,8 @@
 
 #include "TopologyNetworkParams.h"
 
+#include "maths/types.h"
+
 #include "scribe/Scribe.h"
 #include "scribe/TranscribeEnumProtocol.h"
 
@@ -40,7 +42,8 @@ GPlatesAppLogic::TopologyNetworkParams::operator==(
 		const TopologyNetworkParams &rhs) const
 {
 	return
-		d_strain_rate_smoothing == rhs.d_strain_rate_smoothing;
+		d_strain_rate_smoothing == rhs.d_strain_rate_smoothing &&
+		d_strain_rate_clamping == rhs.d_strain_rate_clamping;
 }
 
 
@@ -53,6 +56,15 @@ GPlatesAppLogic::TopologyNetworkParams::operator<(
 		return true;
 	}
 	if (d_strain_rate_smoothing > rhs.d_strain_rate_smoothing)
+	{
+		return false;
+	}
+
+	if (d_strain_rate_clamping < rhs.d_strain_rate_clamping)
+	{
+		return true;
+	}
+	if (d_strain_rate_clamping > rhs.d_strain_rate_clamping)
 	{
 		return false;
 	}
@@ -73,6 +85,77 @@ GPlatesAppLogic::TopologyNetworkParams::transcribe(
 	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_strain_rate_smoothing, "strain_rate_smoothing"))
 	{
 		d_strain_rate_smoothing = DEFAULT_PARAMS.d_strain_rate_smoothing;
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_strain_rate_clamping, "strain_rate_clamping"))
+	{
+		d_strain_rate_clamping = DEFAULT_PARAMS.d_strain_rate_clamping;
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+// Strain rates get to around 1e-17 so we should scale that to 1.0 before doing epsilon comparisons.
+const double GPlatesAppLogic::TopologyNetworkParams::StrainRateClamping::COMPARE_STRAIN_RATE_SCALE = 1e+17;
+
+
+bool
+GPlatesAppLogic::TopologyNetworkParams::StrainRateClamping::operator==(
+		const TopologyNetworkParams::StrainRateClamping &rhs) const
+{
+	return
+		enable_clamping == rhs.enable_clamping &&
+		GPlatesMaths::real_t(COMPARE_STRAIN_RATE_SCALE * max_total_strain_rate) ==
+				GPlatesMaths::real_t(COMPARE_STRAIN_RATE_SCALE * rhs.max_total_strain_rate);
+}
+
+
+bool
+GPlatesAppLogic::TopologyNetworkParams::StrainRateClamping::operator<(
+		const TopologyNetworkParams::StrainRateClamping &rhs) const
+{
+	if (enable_clamping < rhs.enable_clamping)
+	{
+		return true;
+	}
+	if (enable_clamping > rhs.enable_clamping)
+	{
+		return false;
+	}
+
+	if (GPlatesMaths::real_t(COMPARE_STRAIN_RATE_SCALE * max_total_strain_rate) <
+		GPlatesMaths::real_t(COMPARE_STRAIN_RATE_SCALE * rhs.max_total_strain_rate))
+	{
+		return true;
+	}
+	if (GPlatesMaths::real_t(COMPARE_STRAIN_RATE_SCALE * max_total_strain_rate) >
+		GPlatesMaths::real_t(COMPARE_STRAIN_RATE_SCALE * rhs.max_total_strain_rate))
+	{
+		return false;
+	}
+
+	return false;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::TopologyNetworkParams::StrainRateClamping::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Provide default values for failed parameters instead of returning failure.
+	// This way a future version of GPlates can add or remove parameters and still be backward/forward compatible.
+	static const StrainRateClamping DEFAULT_PARAMS;
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, enable_clamping, "enable_clamping"))
+	{
+		enable_clamping = DEFAULT_PARAMS.enable_clamping;
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, max_total_strain_rate, "max_total_strain_rate"))
+	{
+		max_total_strain_rate = DEFAULT_PARAMS.max_total_strain_rate;
 	}
 
 	return GPlatesScribe::TRANSCRIBE_SUCCESS;

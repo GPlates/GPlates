@@ -101,6 +101,12 @@ GPlatesOpenGL::GLCapabilities::initialise_viewport()
 void
 GPlatesOpenGL::GLCapabilities::initialise_framebuffer()
 {
+	// Get the number of bits of sub-pixel precision in pixel rasterizer.
+	GLint sub_pixel_bits;
+	// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
+	glGetIntegerv(GL_SUBPIXEL_BITS, &sub_pixel_bits);
+	framebuffer.gl_sub_pixel_bits = sub_pixel_bits;
+
 	if (GLEW_EXT_framebuffer_object)
 	{
 		framebuffer.gl_EXT_framebuffer_object = true;

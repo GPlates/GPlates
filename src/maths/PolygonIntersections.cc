@@ -89,23 +89,28 @@ namespace
 				return;
 			}
 
-			boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type>
-					partitioned_multipoint_inside,
-					partitioned_multipoint_outside;
+			PolygonIntersections::partitioned_point_seq_type partitioned_points_inside;
+			PolygonIntersections::partitioned_point_seq_type partitioned_points_outside;
 			d_result = d_polygon_intersections.partition_multipoint(
 					multi_point_on_sphere,
-					partitioned_multipoint_inside,
-					partitioned_multipoint_outside);
+					partitioned_points_inside,
+					partitioned_points_outside);
 
 			if (d_partitioned_geometries_inside &&
-				partitioned_multipoint_inside)
+				!partitioned_points_inside.empty())
 			{
-				d_partitioned_geometries_inside->push_back(partitioned_multipoint_inside.get());
+				d_partitioned_geometries_inside->push_back(
+						MultiPointOnSphere::create_on_heap(
+								partitioned_points_inside.begin(),
+								partitioned_points_inside.end()));
 			}
 			if (d_partitioned_geometries_outside &&
-				partitioned_multipoint_outside)
+				!partitioned_points_outside.empty())
 			{
-				d_partitioned_geometries_outside->push_back(partitioned_multipoint_outside.get());
+				d_partitioned_geometries_outside->push_back(
+						MultiPointOnSphere::create_on_heap(
+								partitioned_points_outside.begin(),
+								partitioned_points_outside.end()));
 			}
 		}
 
@@ -522,13 +527,30 @@ GPlatesMaths::PolygonIntersections::partition_point(
 GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_multipoint(
 		const MultiPointOnSphere::non_null_ptr_to_const_type &multipoint_to_be_partitioned,
-		boost::optional<boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &> partitioned_multipoint_inside,
-		boost::optional<boost::optional<MultiPointOnSphere::non_null_ptr_to_const_type> &> partitioned_multipoint_outside) const
+		boost::optional<partitioned_point_seq_type &> partitioned_points_inside_opt,
+		boost::optional<partitioned_point_seq_type &> partitioned_points_outside_opt) const
 {
 	bool any_intersecting_points = false;
 
-	std::vector<PointOnSphere> partitioned_points_inside;
-	std::vector<PointOnSphere> partitioned_points_outside;
+	// Use our own storage or caller's storage depending on whether caller provided any.
+	boost::optional<partitioned_point_seq_type> partitioned_points_inside_storage;
+	if (!partitioned_points_inside_opt)
+	{
+		partitioned_points_inside_storage = partitioned_point_seq_type();
+	}
+	partitioned_point_seq_type &partitioned_points_inside = partitioned_points_inside_opt
+			? partitioned_points_inside_opt.get()
+			: partitioned_points_inside_storage.get();
+
+	// Use our own storage or caller's storage depending on whether caller provided any.
+	boost::optional<partitioned_point_seq_type> partitioned_points_outside_storage;
+	if (!partitioned_points_outside_opt)
+	{
+		partitioned_points_outside_storage = partitioned_point_seq_type();
+	}
+	partitioned_point_seq_type &partitioned_points_outside = partitioned_points_outside_opt
+			? partitioned_points_outside_opt.get()
+			: partitioned_points_outside_storage.get();
 
 	// Iterate over the points in the multipoint and test each one.
 	MultiPointOnSphere::const_iterator multipoint_iter = multipoint_to_be_partitioned->begin();
@@ -557,19 +579,6 @@ GPlatesMaths::PolygonIntersections::partition_multipoint(
 			any_intersecting_points = true;
 			break;
 		}
-	}
-
-	if (partitioned_multipoint_inside &&
-		!partitioned_points_inside.empty())
-	{
-		partitioned_multipoint_inside.get() = MultiPointOnSphere::create_on_heap(
-				partitioned_points_inside.begin(), partitioned_points_inside.end());
-	}
-	if (partitioned_multipoint_outside &&
-		!partitioned_points_outside.empty())
-	{
-		partitioned_multipoint_outside.get() = MultiPointOnSphere::create_on_heap(
-				partitioned_points_outside.begin(), partitioned_points_outside.end());
 	}
 
 	// If there were any points on the boundary or there are points inside

@@ -115,6 +115,7 @@ namespace GPlatesFileIO
 			//! If this band comes from R,G,B (and optionally A) colour GDAL bands.
 			struct GDALRgbaBands
 			{
+				GDALDataType band_data_type; //!< All bands have the same data type.
 				GDALRasterBand *red_band;
 				GDALRasterBand *green_band;
 				GDALRasterBand *blue_band;
@@ -248,6 +249,17 @@ namespace GPlatesFileIO
 		add_data(
 				RasterElementType *result_buf,
 				const RasterBand &raster_band,
+				bool flip,
+				unsigned int region_x_offset,
+				unsigned int region_y_offset,
+				unsigned int region_width,
+				unsigned int region_height);
+
+		template <typename RasterBandElementType>
+		void
+		add_rgba_data(
+				GPlatesGui::rgba8_t *result_buf,
+				const RasterBand::GDALRgbaBands &gdal_rgba_raster_bands,
 				bool flip,
 				unsigned int region_x_offset,
 				unsigned int region_y_offset,

@@ -59,7 +59,7 @@ namespace GPlatesAppLogic
 
 
 		//! Typedef for a sequence of per-geometry-point deformation instantaneous strain rates.
-		typedef std::vector<DeformationStrain> point_deformation_strain_rate_seq_type;
+		typedef std::vector<DeformationStrainRate> point_deformation_strain_rate_seq_type;
 
 		//! Typedef for a sequence of per-geometry-point deformation accumulated/total strains.
 		typedef std::vector<DeformationStrain> point_deformation_total_strain_seq_type;

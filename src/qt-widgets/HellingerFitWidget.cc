@@ -249,7 +249,7 @@ GPlatesQtWidgets::HellingerFitWidget::update_fit_widgets_from_model()
 	bool three_plate_fit = d_three_way_fitting_is_enabled &&
 			(d_hellinger_model_ptr->get_fit_type(true) == THREE_PLATE_FIT_TYPE);
 
-	bool enable_12_result_boxes = d_hellinger_model_ptr->get_fit_12();
+	bool enable_12_result_boxes = static_cast<bool>(d_hellinger_model_ptr->get_fit_12());
 
 	bool enable_13_and_23_result_boxes = three_plate_fit &&
 			d_hellinger_model_ptr->get_fit_13() &&

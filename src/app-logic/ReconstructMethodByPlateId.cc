@@ -726,7 +726,8 @@ GPlatesAppLogic::ReconstructMethodByPlateId::get_topology_reconstruction_info(
 		{
 			active_point_parameters = TopologyReconstruct::ActivePointParameters(
 					context.reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_velocity_delta(),
-					context.reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary());
+					context.reconstruct_params.get_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary(),
+					context.reconstruct_params.get_topology_reconstruction_deactivate_points_that_fall_outside_a_network());
 		}
 
 		// Use natural neighbour coordinates when deforming points in topological networks.

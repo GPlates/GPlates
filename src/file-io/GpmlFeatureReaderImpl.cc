@@ -239,6 +239,90 @@ GPlatesFileIO::GpmlFeatureReader::read_feature(
 }
 
 
+GPlatesFileIO::GpmlAnyPropertyFeatureReader::GpmlAnyPropertyFeatureReader(
+		const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
+		const property_reader_seq_type &all_property_readers) :
+	d_all_property_readers(all_property_readers),
+	d_feature_reader(feature_reader)
+{
+}
+
+
+GPlatesModel::FeatureHandle::non_null_ptr_type
+GPlatesFileIO::GpmlAnyPropertyFeatureReader::read_feature(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &feature_xml_element,
+		xml_node_seq_type &unprocessed_feature_property_xml_nodes,
+		GpmlReaderUtils::ReaderParams &reader_params) const
+{
+	// Read the feature.
+	GPlatesModel::FeatureHandle::non_null_ptr_type feature =
+			d_feature_reader->read_feature(
+					feature_xml_element,
+					unprocessed_feature_property_xml_nodes,
+					reader_params);
+
+	// If all properties have been processed by regular feature reader then no need
+	// for a catch-all phase (to handle properties not supported by feature type).
+	if (unprocessed_feature_property_xml_nodes.empty())
+	{
+		return feature;
+	}
+
+	//
+	// Reads all unprocessed properties using any property defined in the GPGIM.
+	//
+
+	// Iterate over the sequence of all property readers.
+	BOOST_FOREACH(
+			const GpmlPropertyReader::non_null_ptr_to_const_type &property_reader,
+			d_all_property_readers)
+	{
+		// Read zero or more property values for the current property.
+		//
+		// Note that the property reader has been setup to be optional
+		// (ie, to require a minimum of 'zero' property values).
+		// These properties are optional because they are not allowed, for the feature type,
+		// by the GPGIM. And also means if this property has already been read (by the feature reader above)
+		// then we won't emit a read error here.
+		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> property_values;
+		property_reader->read_properties(
+				property_values,
+				feature_xml_element,
+				unprocessed_feature_property_xml_nodes,
+				reader_params);
+
+		// Even if there is more than one property value read, they will still have the same property name.
+		const GPlatesModel::PropertyName &property_name = property_reader->get_property_name();
+
+		// Add each property value to the feature.
+		BOOST_FOREACH(
+				const GPlatesModel::PropertyValue::non_null_ptr_type &property_value,
+				property_values)
+		{
+			// Top-level properties which also contain xml attributes
+			// may be having their attributes read twice (at both the property
+			// level, and here). To attempt to get round this, do not read
+			// xml attributes at the top level.
+			//
+			// If this turns out to cause problems with other property types
+			// we will have to find another solution.
+			//
+			// A similar modification has been made in the GpmlOutputVisitor - see
+			// GpmlOutputVisitor::visit_top_level_property_inline.
+			feature->add(GPlatesModel::TopLevelPropertyInline::create(property_name, property_value));
+		}
+
+		// We're finished if all property nodes have been processed.
+		if (unprocessed_feature_property_xml_nodes.empty())
+		{
+			return feature;
+		}
+	}
+
+	return feature;
+}
+
+
 GPlatesFileIO::GpmlUninterpretedFeatureReader::GpmlUninterpretedFeatureReader(
 		const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader) :
 	d_feature_reader(feature_reader)

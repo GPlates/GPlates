@@ -24,12 +24,11 @@
  */
 
 #include <QColor>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QPushButton>
 
 #include "MissingSessionFilesDialog.h"
-
-#include "OpenFileDialog.h"
 
 #include "presentation/ViewState.h"
 
@@ -168,17 +167,18 @@ GPlatesQtWidgets::MissingSessionFilesDialog::update(
 		return;
 	}
 	const QString file_name = file_name_item->text();
-	const QString file_name_ext = QFileInfo(file_name).completeSuffix();
+	const QFileInfo file_info(file_name);
+	const QString file_name_ext = file_info.completeSuffix();
 
 	// Ask the user to select a file.
-	OpenFileDialog open_file_dialog(
+	const QString updated_filename = QFileDialog::getOpenFileName(
 			this,
 			tr("Open File"),
+			// Set open directory to location where missing file should have been.
+			// If directory doesn't exist then QFileDialog seems to try parent directory (on Windows Qt 4.8)...
+			file_info.absolutePath(),
 			// Use the existing filename extension as the filter (in addition to the All files filter)...
-			tr("%1 files (*.%2);;All Files (*)").arg(file_name_ext).arg(file_name_ext),
-			d_view_state);
-
-	const QString updated_filename = open_file_dialog.get_open_file_name();
+			tr("%1 files (*.%2);;All Files (*)").arg(file_name_ext).arg(file_name_ext));
 	if (updated_filename.isEmpty())
 	{
 		return;

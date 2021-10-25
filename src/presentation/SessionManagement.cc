@@ -516,7 +516,7 @@ GPlatesPresentation::SessionManagement::close_event_hook()
 bool
 GPlatesPresentation::SessionManagement::save_session()
 {
-	return save_session_state();
+	return static_cast<bool>(save_session_state());
 }
 
 

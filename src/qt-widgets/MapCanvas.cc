@@ -46,6 +46,8 @@
 #include "gui/MapProjection.h"
 #include "gui/MapTransform.h"
 #include "gui/RenderSettings.h"
+#include "gui/TextOverlay.h"
+#include "gui/VelocityLegendOverlay.h"
 
 #include "opengl/GLContext.h"
 #include "opengl/GLContextImpl.h"
@@ -127,6 +129,8 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 	d_gl_context(gl_context),
 	d_make_context_current(*d_gl_context),
 	d_text_overlay(new GPlatesGui::TextOverlay(view_state.get_application_state())),
+	d_velocity_legend_overlay(
+		new GPlatesGui::VelocityLegendOverlay()),
 	d_map(
 			view_state,
 			gl_visual_layers,
@@ -242,6 +246,13 @@ GPlatesQtWidgets::MapCanvas::render_scene(
 	d_text_overlay->paint(
 			renderer,
 			d_view_state.get_text_overlay_settings(),
+			paint_device_width,
+			paint_device_height,
+			scale);
+
+	d_velocity_legend_overlay->paint(
+			renderer,
+			d_view_state.get_velocity_legend_overlay_settings(),
 			paint_device_width,
 			paint_device_height,
 			scale);

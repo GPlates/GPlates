@@ -335,13 +335,12 @@ namespace GPlatesAppLogic
 
 					// Get a reference to the entry just inserted (or existing entry).
 					PartitionedFeature::GeometryProperty &geometry_property = inserted.first->second;
-					if (inserted.second)
-					{
-						geometry_property.property_clones.push_back(
-								PartitionedFeature::GeometryPropertyClone(
-										geometry_domain_property_clone,
-										geometry_range_property_clone));
-					}
+
+					// Add the current geometry property clone.
+					geometry_property.property_clones.push_back(
+							PartitionedFeature::GeometryPropertyClone(
+									geometry_domain_property_clone,
+									geometry_range_property_clone));
 
 					// If there's a range for the current domain then add the range property name.
 					//
@@ -1009,7 +1008,7 @@ GPlatesAppLogic::PartitionFeatureUtils::add_unpartitioned_geometry_to_feature(
 		const GPlatesModel::FeatureHandle::weak_ref feature =
 				partitioned_feature_manager.get_feature_for_partition(
 						geometry_property.domain_property_name,
-						property_clone.range/*geometry_domain_has_associated_range*/,
+						static_cast<bool>(property_clone.range)/*geometry_domain_has_associated_range*/,
 						partition);
 
 		// Extract the geometry from the geometry property clone.

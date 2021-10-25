@@ -361,14 +361,6 @@ namespace GPlatesAppLogic
 				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &delaunay_points);
 
 		/**
-		 * Add a boundary section's points to the final list of boundary points.
-		 */
-		void
-		add_boundary_points(
-				const ResolvedNetwork::BoundarySection &boundary_section,
-				std::vector<GPlatesMaths::PointOnSphere> &boundary_points);
-
-		/**
 		 * Add interior points for delaunay triangulation from a reconstructed feature geometry.
 		 */
 		void

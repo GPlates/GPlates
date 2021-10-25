@@ -27,8 +27,10 @@
 // Various utility structures/functions used for ray-tracing, or rendering cross-sections of, 3D scalar fields.
 //
 
-// "#extension" needs to be specified in the shader source *string* where it is used (this is not
-// documented in the GLSL spec but is mentioned at http://www.opengl.org/wiki/GLSL_Core_Language).
+// GPlates currently moves this to start of *first* source code string passed into glShaderSource.
+// This is because extension lines must not occur *after* any non-preprocessor source code.
+//
+// NOTE: Do not comment this out with a /**/ comment spanning multiple lines since GPlates does not detect that.
 #extension GL_EXT_texture_array : enable
 
 // A local orthonormal coordinate frame for a particular cube face.

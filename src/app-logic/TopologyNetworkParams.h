@@ -52,10 +52,58 @@ namespace GPlatesAppLogic
 			NATURAL_NEIGHBOUR_SMOOTHING
 		};
 
+
+		/**
+		 * Strain rate clamping parameters.
+		 */
+		struct StrainRateClamping :
+				public boost::less_than_comparable<StrainRateClamping>,
+				public boost::equality_comparable<StrainRateClamping>
+		{
+			StrainRateClamping(
+					// Strain rate clamping is disabled by default...
+					bool enable_clamping_ = false,
+					// Default maximum strain rate (if clamping is enabled)...
+					const double &max_total_strain_rate_ = 5e-15) :
+				enable_clamping(enable_clamping_),
+				max_total_strain_rate(max_total_strain_rate_)
+			{  }
+
+			//! Equality comparison operator.
+			bool
+			operator==(
+					const StrainRateClamping &rhs) const;
+
+			//! Less than comparison operator.
+			bool
+			operator<(
+					const StrainRateClamping &rhs) const;
+
+			bool enable_clamping;
+			double max_total_strain_rate;
+
+		private:
+			/**
+			 * Strain rates (units 1/second) are typically much smaller than GPlatesMaths::EPSILON and
+			 * so we need to scale them before using the comparison functionality of GPlatesMaths::Real.
+			 */
+			static const double COMPARE_STRAIN_RATE_SCALE;
+
+		private: // Transcribe for sessions/projects...
+
+			friend class GPlatesScribe::Access;
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+		};
+
+
 		TopologyNetworkParams();
 
 
-		StrainRateSmoothing 
+		StrainRateSmoothing
 		get_strain_rate_smoothing() const
 		{
 			return d_strain_rate_smoothing;
@@ -66,6 +114,20 @@ namespace GPlatesAppLogic
 				StrainRateSmoothing strain_rate_smoothing)
 		{
 			d_strain_rate_smoothing = strain_rate_smoothing;
+		}
+
+
+		const StrainRateClamping &
+		get_strain_rate_clamping() const
+		{
+			return d_strain_rate_clamping;
+		}
+
+		void
+		set_strain_rate_clamping(
+				const StrainRateClamping &strain_rate_clamping)
+		{
+			d_strain_rate_clamping = strain_rate_clamping;
 		}
 
 
@@ -85,6 +147,11 @@ namespace GPlatesAppLogic
 		 * Whether, and how, to smooth the deformation strain rates.
 		 */
 		StrainRateSmoothing d_strain_rate_smoothing;
+
+		/**
+		 * Whether, and how much, to clamp the deformation strain rates.
+		 */
+		StrainRateClamping d_strain_rate_clamping;
 
 	private: // Transcribe for sessions/projects...
 

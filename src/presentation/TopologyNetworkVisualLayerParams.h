@@ -50,11 +50,18 @@ namespace GPlatesPresentation
 		typedef GPlatesUtils::non_null_intrusive_ptr<const TopologyNetworkVisualLayerParams> non_null_ptr_to_const_type;
 
 
-		enum ColourMode
+		enum TriangulationColourMode
 		{
-			COLOUR_DRAW_STYLE,
-			COLOUR_DILATATION_STRAIN_RATE,
-			COLOUR_SECOND_INVARIANT_STRAIN_RATE
+			TRIANGULATION_COLOUR_DRAW_STYLE,
+			TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE,
+			TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE
+		};
+
+		enum TriangulationDrawMode
+		{
+			TRIANGULATION_DRAW_BOUNDARY,
+			TRIANGULATION_DRAW_MESH,
+			TRIANGULATION_DRAW_FILL
 		};
 
 
@@ -67,17 +74,32 @@ namespace GPlatesPresentation
 		}
 
 
-		ColourMode
-		get_colour_mode() const
+		TriangulationColourMode
+		get_triangulation_colour_mode() const
 		{
-			return d_colour_mode;
+			return d_triangulation_colour_mode;
 		}
 
 		void
-		set_colour_mode(
-				ColourMode colour_mode)
+		set_triangulation_colour_mode(
+				TriangulationColourMode triangulation_colour_mode)
 		{
-			d_colour_mode = colour_mode;
+			d_triangulation_colour_mode = triangulation_colour_mode;
+			emit_modified();
+		}
+
+
+		TriangulationDrawMode
+		get_triangulation_draw_mode() const
+		{
+			return d_triangulation_draw_mode;
+		}
+
+		void
+		set_triangulation_draw_mode(
+				TriangulationDrawMode triangulation_draw_mode)
+		{
+			d_triangulation_draw_mode = triangulation_draw_mode;
 			emit_modified();
 		}
 
@@ -214,14 +236,14 @@ namespace GPlatesPresentation
 		bool
 		get_fill_triangulation() const
 		{
-			return d_fill_triangulation;
+			return d_triangulation_draw_mode == TRIANGULATION_DRAW_FILL;
 		}
 
 		void
 		set_fill_triangulation(
 				bool b)
 		{
-			d_fill_triangulation = b;
+			d_triangulation_draw_mode = b ? TRIANGULATION_DRAW_FILL : TRIANGULATION_DRAW_BOUNDARY;
 			emit_modified();
 		}
 
@@ -328,7 +350,8 @@ namespace GPlatesPresentation
 
 	private:
 
-		ColourMode d_colour_mode;
+		TriangulationColourMode d_triangulation_colour_mode;
+		TriangulationDrawMode d_triangulation_draw_mode;
 
 		//! Dilatation strain rate parameters.
 		double d_min_abs_dilatation;
@@ -348,7 +371,6 @@ namespace GPlatesPresentation
 
 		// The various options to show or hide.
 		bool d_show_segment_velocity;
-		bool d_fill_triangulation;
 		bool d_fill_rigid_blocks;
 
 		//! The opacity of the filled triangulation and rigid blocks in the range [0,1].
@@ -371,7 +393,13 @@ namespace GPlatesPresentation
 	GPlatesScribe::TranscribeResult
 	transcribe(
 			GPlatesScribe::Scribe &scribe,
-			TopologyNetworkVisualLayerParams::ColourMode &colour_mode,
+			TopologyNetworkVisualLayerParams::TriangulationColourMode &triangulation_colour_mode,
+			bool transcribed_construct_data);
+
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			TopologyNetworkVisualLayerParams::TriangulationDrawMode &triangulation_draw_mode,
 			bool transcribed_construct_data);
 }
 

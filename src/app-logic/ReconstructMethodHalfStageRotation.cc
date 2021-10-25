@@ -60,396 +60,6 @@ namespace GPlatesAppLogic
 	namespace
 	{
 		/**
-		 * The version 1 method of calculating half-stage rotations using only a single
-		 * half-stage rotation interval corresponding to the old enumeration "HalfStageRotation".
-		 */
-		GPlatesMaths::FiniteRotation
-		get_half_stage_rotation_version_1(
-				GPlatesModel::integer_plate_id_type left_plate_id,
-				GPlatesModel::integer_plate_id_type right_plate_id,
-				const double &reconstruction_time,
-				const ReconstructionTreeCreator &reconstruction_tree_creator)
-		{
-			//
-			// Here is the old inaccurate version 1 half-stage rotation formula...
-			//
-			// Rotation from present day (0Ma) to current reconstruction time 't' of mid-ocean ridge MOR
-			// with left/right plate ids 'L' and 'R':
-			//
-			// R(0->t,A->MOR)
-			// R(0->t,A->L) * R(0->t,L->MOR)
-			// R(0->t,A->L) * Half[R(0->t,L->R)] // Assumes L->R spreading from 0->t1 *and* t1->t2
-			// R(0->t,A->L) * Half[R(0->t,L->A) * R(0->t,A->R)]
-			// R(0->t,A->L) * Half[inverse[R(0->t,A->L)] * R(0->t,A->R)]
-			//
-			// ...where 'A' is the anchor plate id.
-			//
-
-			using namespace GPlatesMaths;
-
-			const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-					reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
-
-			const FiniteRotation left_rotation =
-					reconstruction_tree->get_composed_absolute_rotation(left_plate_id).first;
-			const FiniteRotation right_rotation =
-					reconstruction_tree->get_composed_absolute_rotation(right_plate_id).first;
-
-			const FiniteRotation left_to_right = compose(get_reverse(left_rotation), right_rotation);
-
-			if (represents_identity_rotation(left_to_right.unit_quat()))
-			{
-				return left_rotation;
-			}
-
-			const UnitQuaternion3D::RotationParams left_to_right_params =
-					left_to_right.unit_quat().get_rotation_params(boost::none);
-
-			// NOTE: Version 1 half-stage rotations only ever did symmetric spreading so
-			// we ignore the spreading asymmetry.
-			const real_t half_angle = 0.5 * left_to_right_params.angle;
-
-			const FiniteRotation half_rotation = 
-					FiniteRotation::create(
-							UnitQuaternion3D::create_rotation(
-									left_to_right_params.axis, 
-									half_angle),
-									left_to_right.axis_hint());
-
-			return compose(left_rotation, half_rotation);
-		}
-
-
-		/**
-		 * The version 1 method of reconstructing a geometry using only a single half-stage
-		 * rotation interval corresponding to the old enumeration "HalfStageRotation".
-		 */
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		reconstruct_as_half_stage_version_1(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				GPlatesModel::integer_plate_id_type left_plate_id,
-				GPlatesModel::integer_plate_id_type right_plate_id,
-				const double &reconstruction_time,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				bool reverse_reconstruct)
-		{
-			// Get the composed absolute rotation needed to bring a thing on that plate
-			// in the present day to this time.
-			GPlatesMaths::FiniteRotation rotation =
-					get_half_stage_rotation_version_1(
-							left_plate_id,
-							right_plate_id,
-							reconstruction_time,
-							reconstruction_tree_creator);
-
-			// Are we reversing reconstruction back to present day ?
-			if (reverse_reconstruct)
-			{
-				rotation = GPlatesMaths::get_reverse(rotation);
-			}
-
-			// Apply the rotation.
-			return rotation * geometry;
-		}
-
-
-		/**
-		 * The default time interval for calculating half-stage rotations.
-		 *
-		 * If present day to reconstruction time is greater than this interval then it will be
-		 * divided into multiple half-stage intervals of this size.
-		 *
-		 * This is small enough to get good accuracy but not too small that it requires an excessive
-		 * number of reconstruction trees to be calculated (one at end of each time interval).
-		 *
-		 * NOTE: This value should not be modified otherwise it will cause reconstructions of
-		 * half-stage features to be positioned incorrectly (this is because their present day
-		 * geometries have been reverse-reconstructed using this value).
-		 * If it needs to be modified then a new version should be implemented and associated with
-		 * a new enumeration in the 'gpml:ReconstructionMethod' property.
-		 */
-		const double DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_2 = 10.0;
-		const double DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_3 = 10.0;
-
-		/**
-		 * The version 2 method of calculating half-stage rotations using multiple fixed-size
-		 * half-stage rotation intervals corresponding to the enumeration "HalfStageRotationVersion2".
-		 */
-		GPlatesMaths::FiniteRotation
-		get_half_stage_rotation_version_2(
-				GPlatesModel::integer_plate_id_type left_plate_id,
-				GPlatesModel::integer_plate_id_type right_plate_id,
-				const double &spreading_asymmetry,
-				const double &reconstruction_time,
-				const ReconstructionTreeCreator &reconstruction_tree_creator)
-		{
-			return RotationUtils::get_half_stage_rotation(
-					reconstruction_tree_creator,
-					reconstruction_time,
-					left_plate_id,
-					right_plate_id,
-					spreading_asymmetry,
-					0.0/*geometry_import_time*/,
-					// Note: To ensure backward compatibility, must use a value that doesn't change...
-					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_2);
-		}
-
-		/**
-		 * The version 3 method of calculating half-stage rotations is similar to version 2 except
-		 * it only performs spreading from the 'gpml:geometryImportTime' instead of from present day.
-		 */
-		GPlatesMaths::FiniteRotation
-		get_half_stage_rotation_version_3(
-				GPlatesModel::integer_plate_id_type left_plate_id,
-				GPlatesModel::integer_plate_id_type right_plate_id,
-				const double &spreading_asymmetry,
-				const double &spreading_start_time,
-				const double &reconstruction_time,
-				const ReconstructionTreeCreator &reconstruction_tree_creator)
-		{
-			return RotationUtils::get_half_stage_rotation(
-					reconstruction_tree_creator,
-					reconstruction_time,
-					left_plate_id,
-					right_plate_id,
-					spreading_asymmetry,
-					spreading_start_time,
-					// Note: To ensure backward compatibility, must use a value that doesn't change...
-					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_3);
-		}
-
-
-		/**
-		 * The version 2 method of reconstructing a geometry using multiple fixed-size half-stage
-		 * rotation intervals corresponding to the enumeration "HalfStageRotationVersion2".
-		 */
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		reconstruct_as_half_stage_version_2(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				GPlatesModel::integer_plate_id_type left_plate_id,
-				GPlatesModel::integer_plate_id_type right_plate_id,
-				const double &reconstruction_time,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const double &spreading_asymmetry,
-				bool reverse_reconstruct)
-		{
-			return ReconstructUtils::reconstruct_as_half_stage(
-					geometry,
-					left_plate_id,
-					right_plate_id,
-					reconstruction_time,
-					reconstruction_tree_creator,
-					spreading_asymmetry,
-					0.0/*spreading_start_time*/,
-					// Note: To ensure backward compatibility, must use a value that doesn't change...
-					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_2,
-					reverse_reconstruct);
-		}
-
-		/**
-		 * The version 3 method of calculating half-stage rotations is similar to version 2 except
-		 * it only performs spreading from the 'gpml:geometryImportTime' instead of from present day.
-		 */
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		reconstruct_as_half_stage_version_3(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				GPlatesModel::integer_plate_id_type left_plate_id,
-				GPlatesModel::integer_plate_id_type right_plate_id,
-				const double &reconstruction_time,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const double &spreading_asymmetry,
-				const double &spreading_start_time,
-				bool reverse_reconstruct)
-		{
-			return ReconstructUtils::reconstruct_as_half_stage(
-					geometry,
-					left_plate_id,
-					right_plate_id,
-					reconstruction_time,
-					reconstruction_tree_creator,
-					spreading_asymmetry,
-					spreading_start_time,
-					// Note: To ensure backward compatibility, must use a value that doesn't change...
-					DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION_VERSION_3,
-					reverse_reconstruct);
-		}
-
-
-		/**
-		 * Calculate the half-stage rotation at the specified time using the specified reconstruction
-		 * properties (also selects appropriate version of half-stage rotation calculation to use).
-		 */
-		GPlatesMaths::FiniteRotation
-		get_half_stage_rotation(
-				GPlatesModel::integer_plate_id_type &left_plate_id,
-				GPlatesModel::integer_plate_id_type &right_plate_id,
-				const double &reconstruction_time,
-				const ReconstructionFeatureProperties &reconstruction_params,
-				const ReconstructionTreeCreator &reconstruction_tree_creator)
-		{
-			// If we can't get left/right plate IDs then we'll just use plate id zero (spin axis)
-			// which can still give a non-identity rotation if the anchor plate id is non-zero.
-			left_plate_id = 0;
-			right_plate_id = 0;
-			if (reconstruction_params.get_left_plate_id())
-			{
-				left_plate_id = reconstruction_params.get_left_plate_id().get();
-			}
-			if (reconstruction_params.get_right_plate_id())
-			{
-				right_plate_id = reconstruction_params.get_right_plate_id().get();
-			}
-
-			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_2 =
-					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion2");
-			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_3 =
-					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion3");
-
-			const boost::optional<GPlatesPropertyValues::EnumerationContent> reconstruction_method =
-					reconstruction_params.get_reconstruction_method();
-
-			// Get the half-stage rotation.
-			if (reconstruction_method == enumeration_half_stage_rotation_version_3 ||
-				reconstruction_method == enumeration_half_stage_rotation_version_2)
-			{
-				double spreading_asymmetry = 0.0;
-				if (reconstruction_params.get_spreading_asymmetry())
-				{
-					spreading_asymmetry = reconstruction_params.get_spreading_asymmetry().get();
-				}
-
-				if (reconstruction_method == enumeration_half_stage_rotation_version_3)
-				{
-					const boost::optional<GPlatesPropertyValues::GeoTimeInstant> geometry_import_time =
-							reconstruction_params.get_geometry_import_time();
-
-					double spreading_start_time = 0.0;
-					if (geometry_import_time &&
-						geometry_import_time->is_real())
-					{
-						spreading_start_time = geometry_import_time->value();
-					}
-
-					return get_half_stage_rotation_version_3(
-							left_plate_id,
-							right_plate_id,
-							spreading_asymmetry,
-							spreading_start_time,
-							reconstruction_time,
-							reconstruction_tree_creator);
-				}
-
-				return get_half_stage_rotation_version_2(
-						left_plate_id,
-						right_plate_id,
-						spreading_asymmetry,
-						reconstruction_time,
-						reconstruction_tree_creator);
-			}
-
-			//
-			// Revert to the version 1 method of calculating half-stage rotations using only a single
-			// half-stage rotation interval corresponding to the old enumeration "HalfStageRotation".
-			//
-			return get_half_stage_rotation_version_1(
-					left_plate_id,
-					right_plate_id,
-					reconstruction_time,
-					reconstruction_tree_creator);
-		}
-
-
-		/**
-		 * Reconstruct a geometry at the specified time using the specified reconstruction
-		 * properties (also selects appropriate version of half-stage rotation calculation to use).
-		 */
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		reconstruct_as_half_stage(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				const double &reconstruction_time,
-				const ReconstructionFeatureProperties &reconstruction_params,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				bool reverse_reconstruct)
-		{
-			// If we can't get left/right plate IDs then we'll just use plate id zero (spin axis)
-			// which can still give a non-identity rotation if the anchor plate id is non-zero.
-			GPlatesModel::integer_plate_id_type left_plate_id = 0;
-			GPlatesModel::integer_plate_id_type right_plate_id = 0;
-			if (reconstruction_params.get_left_plate_id())
-			{
-				left_plate_id = reconstruction_params.get_left_plate_id().get();
-			}
-			if (reconstruction_params.get_right_plate_id())
-			{
-				right_plate_id = reconstruction_params.get_right_plate_id().get();
-			}
-
-			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_2 =
-					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion2");
-			static GPlatesPropertyValues::EnumerationContent enumeration_half_stage_rotation_version_3 =
-					GPlatesPropertyValues::EnumerationContent("HalfStageRotationVersion3");
-
-			const boost::optional<GPlatesPropertyValues::EnumerationContent> reconstruction_method =
-					reconstruction_params.get_reconstruction_method();
-
-			// Get the half-stage rotation.
-			if (reconstruction_method == enumeration_half_stage_rotation_version_3 ||
-				reconstruction_method == enumeration_half_stage_rotation_version_2)
-			{
-				double spreading_asymmetry = 0.0;
-				if (reconstruction_params.get_spreading_asymmetry())
-				{
-					spreading_asymmetry = reconstruction_params.get_spreading_asymmetry().get();
-				}
-
-				if (reconstruction_method == enumeration_half_stage_rotation_version_3)
-				{
-					const boost::optional<GPlatesPropertyValues::GeoTimeInstant> geometry_import_time =
-							reconstruction_params.get_geometry_import_time();
-
-					double spreading_start_time = 0.0;
-					if (geometry_import_time &&
-						geometry_import_time->is_real())
-					{
-						spreading_start_time = geometry_import_time->value();
-					}
-
-					return reconstruct_as_half_stage_version_3(
-							geometry,
-							left_plate_id,
-							right_plate_id,
-							reconstruction_time,
-							reconstruction_tree_creator,
-							spreading_asymmetry,
-							spreading_start_time,
-							reverse_reconstruct);
-				}
-
-				return reconstruct_as_half_stage_version_2(
-						geometry,
-						left_plate_id,
-						right_plate_id,
-						reconstruction_time,
-						reconstruction_tree_creator,
-						spreading_asymmetry,
-						reverse_reconstruct);
-			}
-
-			//
-			// Revert to the version 1 method of reconstructing a geometry using only a single
-			// half-stage rotation interval corresponding to the old enumeration "HalfStageRotation".
-			//
-			return reconstruct_as_half_stage_version_1(
-					geometry,
-					left_plate_id,
-					right_plate_id,
-					reconstruction_time,
-					reconstruction_tree_creator,
-					reverse_reconstruct);
-		}
-
-
-		/**
 		 * The transform used to reconstruct by half-stage-rotation of left/right plate ids.
 		 */
 		class Transform :
@@ -765,15 +375,23 @@ namespace GPlatesAppLogic
 				}
 
 				// Get the half-stage rotation.
-				GPlatesModel::integer_plate_id_type left_plate_id;
-				GPlatesModel::integer_plate_id_type right_plate_id;
 				const GPlatesMaths::FiniteRotation finite_rotation =
-						get_half_stage_rotation(
-								left_plate_id,
-								right_plate_id,
+						RotationUtils::get_half_stage_rotation(
 								d_reconstruction_tree->get_reconstruction_time(),
 								d_reconstruction_params,
 								d_reconstruction_tree_creator);
+
+				// Get the left/right plate IDs.
+				GPlatesModel::integer_plate_id_type left_plate_id = 0;
+				GPlatesModel::integer_plate_id_type right_plate_id = 0;
+				if (d_reconstruction_params.get_left_plate_id())
+				{
+					left_plate_id = d_reconstruction_params.get_left_plate_id().get();
+				}
+				if (d_reconstruction_params.get_right_plate_id())
+				{
+					right_plate_id = d_reconstruction_params.get_right_plate_id().get();
+				}
 
 				d_reconstruction_rotation = Transform::create(
 						finite_rotation, left_plate_id, right_plate_id);
@@ -973,19 +591,13 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 	BOOST_FOREACH(const Geometry &present_day_geometry, present_day_geometries)
 	{
 		// Get the half-stage rotation.
-		GPlatesModel::integer_plate_id_type left_plate_id;
-		GPlatesModel::integer_plate_id_type right_plate_id;
 		const GPlatesMaths::FiniteRotation finite_rotation_1 =
-				get_half_stage_rotation(
-						left_plate_id,
-						right_plate_id,
+				RotationUtils::get_half_stage_rotation(
 						time_range.second/*young*/,
 						reconstruction_feature_properties,
 						context.reconstruction_tree_creator);
 		const GPlatesMaths::FiniteRotation finite_rotation_2 =
-				get_half_stage_rotation(
-						left_plate_id,
-						right_plate_id,
+				RotationUtils::get_half_stage_rotation(
 						time_range.first/*old*/,
 						reconstruction_feature_properties,
 						context.reconstruction_tree_creator);
@@ -997,9 +609,7 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 				? finite_rotation_1
 				: (GPlatesMaths::are_almost_exactly_equal(reconstruction_time, time_range.first/*old*/)
 						? finite_rotation_2
-						: get_half_stage_rotation(
-								left_plate_id,
-								right_plate_id,
+						: RotationUtils::get_half_stage_rotation(
 								reconstruction_time,
 								reconstruction_feature_properties,
 								context.reconstruction_tree_creator));
@@ -1079,7 +689,7 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_geometry(
 
 	reconstruction_feature_properties.visit_feature(get_feature_ref());
 
-	return reconstruct_as_half_stage(
+	return ReconstructUtils::reconstruct_as_half_stage(
 			geometry,
 			reconstruction_time,
 			reconstruction_feature_properties,

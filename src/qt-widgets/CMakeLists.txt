@@ -92,6 +92,9 @@ set(srcs
     ConfigureTextOverlayDialog.cc
     ConfigureTextOverlayDialog.h
     ConfigureTextOverlayDialogUi.ui
+    ConfigureVelocityLegendOverlayDialog.cc
+    ConfigureVelocityLegendOverlayDialog.h
+    ConfigureVelocityLegendOverlayDialogUi.ui
     ConfigValueEditorWidget.cc
     ConfigValueEditorWidget.h
     ConnectWFSDialog.cc

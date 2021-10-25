@@ -551,12 +551,14 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformed_point(
 	//   reconstruction_time + time_increment -> reconstruction_time                  , or
 	//   reconstruction_time                  -> reconstruction_time - time_increment .
 	//
-	// ...depending on 'reverse_deform'.
+	// ...for 'reverse_deform' being false and true respectively (reverse deform means forward in time).
 	//
-	// However, when 'reverse_deform' is false (ie, going backward in time) we'll need to reverse our rotations to get:
+	// However, when 'reverse_deform' is false (ie, going backward in time) we'll need to reverse its rotation to get:
 	//
 	//  backward in time:   reconstruction_time -> reconstruction_time + time_increment
 	//  forward  in time:   reconstruction_time -> reconstruction_time - time_increment
+	//
+	// ...for 'reverse_deform' being false and true respectively (reverse deform means forward in time).
 	//
 	const VelocityDeltaTime::Type velocity_delta_time_type =
 			reverse_deform ? VelocityDeltaTime::T_TO_T_MINUS_DELTA_T : VelocityDeltaTime::T_PLUS_DELTA_T_TO_T;
@@ -975,7 +977,14 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 {
 	PROFILE_FUNC();
 
-	d_delaunay_2 = boost::in_place(d_projection, d_reconstruction_time);
+	// See if strain rate clamping requested.
+	boost::optional<double> clamp_total_strain_rate;
+	if (get_strain_rate_clamping().enable_clamping)
+	{
+		clamp_total_strain_rate = get_strain_rate_clamping().max_total_strain_rate;
+	}
+
+	d_delaunay_2 = boost::in_place(d_projection, d_reconstruction_time, clamp_total_strain_rate);
 
 	// Improve performance by spatially sorting the delaunay points.
 	// This is what is done by the CGAL overload that inserts a *range* of points into a delauany triangulation.
@@ -1027,8 +1036,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 					vertex_index,
 					delaunay_point.point,
 					delaunay_point_2.lat_lon_point,
-					delaunay_point.plate_id,
-					delaunay_point.reconstruction_tree_creator);
+					delaunay_point.shared_reconstruct_info);
 
 			// Increment vertex index since vertex handle does not refer to an existing vertex position.
 			++vertex_index;
@@ -1042,7 +1050,8 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 		// sub-segments switching order of insertion from one reconstruction time to the next
 		// (since both sub-segments have the same end point position) - and this can manifest
 		// as randomly switching end point velocities (from one sub-segment plate id to the other).
-		else if (vertex_handle->get_plate_id() < delaunay_point.plate_id)
+		else if (vertex_handle->get_shared_reconstruct_info().is_lower_preference_than(
+				*delaunay_point.shared_reconstruct_info))
 		{
 			// Reset the extra info for this vertex.
 			vertex_handle->initialise(
@@ -1051,8 +1060,7 @@ GPlatesAppLogic::ResolvedTriangulation::Network::create_delaunay_2() const
 					vertex_handle->get_vertex_index(),
 					delaunay_point.point,
 					delaunay_point_2.lat_lon_point,
-					delaunay_point.plate_id,
-					delaunay_point.reconstruction_tree_creator);
+					delaunay_point.shared_reconstruct_info);
 		}
 
 		// The next insert vertex will start searching at the face of the last inserted vertex.

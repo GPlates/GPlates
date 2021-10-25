@@ -59,6 +59,9 @@
 #include "view-operations/RenderedArrowedPolyline.h"
 #include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedColouredEdgeSurfaceMesh.h"
+#include "view-operations/RenderedColouredMultiPointOnSphere.h"
+#include "view-operations/RenderedColouredPolygonOnSphere.h"
+#include "view-operations/RenderedColouredPolylineOnSphere.h"
 #include "view-operations/RenderedColouredTriangleSurfaceMesh.h"
 #include "view-operations/RenderedCrossSymbol.h"
 #include "view-operations/RenderedEllipse.h"
@@ -307,6 +310,77 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sph
 
 
 void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_multi_point_on_sphere(
+		const GPlatesViewOperations::RenderedColouredMultiPointOnSphere &rendered_coloured_multi_point_on_sphere)
+{
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
+	if (!d_render_settings.show_multipoints())
+	{
+		return;
+	}
+
+	// The multipoint and its associated per-point colours.
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
+			rendered_coloured_multi_point_on_sphere.get_multi_point_on_sphere();
+	const std::vector<ColourProxy> &point_colours = rendered_coloured_multi_point_on_sphere.get_point_colours();
+
+	const unsigned int num_points = multi_point_on_sphere->number_of_points();
+
+	// Each point must have an associated colour.
+	if (point_colours.size() != num_points)
+	{
+		return;
+	}
+
+	// Convert the point colours.
+	std::vector<Colour> vertex_colours;
+	vertex_colours.reserve(num_points);
+	for (unsigned int c = 0; c < num_points; ++c)
+	{
+		boost::optional<Colour> vertex_colour = get_vector_geometry_colour(point_colours[c]);
+		if (!vertex_colour)
+		{
+			// Should always get a valid vertex colour - if not then return without rendering.
+			return;
+		}
+
+		vertex_colours.push_back(vertex_colour.get());
+	}
+
+	const float point_size =
+			rendered_coloured_multi_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
+
+	// Get the stream for points of the current point size.
+	stream_primitives_type &stream =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_points_stream(point_size);
+
+	// Used to add points to the stream.
+	stream_primitives_type::Points stream_points(stream);
+
+	stream_points.begin_points();
+
+	GPlatesMaths::MultiPointOnSphere::const_iterator point_iter = multi_point_on_sphere->begin();
+	GPlatesMaths::MultiPointOnSphere::const_iterator point_end = multi_point_on_sphere->end();
+	for (unsigned int point_index = 0; point_iter != point_end; ++point_iter, ++point_index)
+	{
+		// Get the point position.
+		const GPlatesMaths::UnitVector3D &pos = point_iter->position_vector();
+
+		// Vertex representing the point's position and colour.
+		const coloured_vertex_type vertex(pos, Colour::to_rgba8(vertex_colours[point_index]));
+
+		stream_points.add_vertex(vertex);
+	}
+
+	stream_points.end_points();
+}
+
+
+void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 		const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 {
@@ -365,6 +439,64 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere
 			polyline_on_sphere->begin(),
 			polyline_on_sphere->end(),
 			rgba8_colour,
+			stream);
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_polyline_on_sphere(
+		const GPlatesViewOperations::RenderedColouredPolylineOnSphere &rendered_coloured_polyline_on_sphere)
+{
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
+	if (!d_render_settings.show_lines())
+	{
+		return;
+	}
+
+	// The polyline and its associated per-point colours.
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
+			rendered_coloured_polyline_on_sphere.get_polyline_on_sphere();
+	const std::vector<ColourProxy> &point_colours = rendered_coloured_polyline_on_sphere.get_point_colours();
+
+	const unsigned int num_points = polyline_on_sphere->number_of_vertices();
+
+	// Each point must have an associated colour.
+	if (point_colours.size() != num_points)
+	{
+		return;
+	}
+
+	// Convert the point colours.
+	std::vector<Colour> vertex_colours;
+	vertex_colours.reserve(num_points);
+	for (unsigned int c = 0; c < num_points; ++c)
+	{
+		boost::optional<Colour> vertex_colour = get_vector_geometry_colour(point_colours[c]);
+		if (!vertex_colour)
+		{
+			// Should always get a valid vertex colour - if not then return without rendering.
+			return;
+		}
+
+		vertex_colours.push_back(vertex_colour.get());
+	}
+
+	const float line_width =
+			rendered_coloured_polyline_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	// Get the stream for lines of the current line width.
+	stream_primitives_type &stream =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+
+	paint_vertex_coloured_great_circle_arcs(
+			polyline_on_sphere->begin(),
+			polyline_on_sphere->end(),
+			vertex_colours.begin(),
+			vertex_colours.end(),
 			stream);
 }
 
@@ -442,6 +574,70 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 				rgba8_colour,
 				stream);
 	}
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_polygon_on_sphere(
+		const GPlatesViewOperations::RenderedColouredPolygonOnSphere &rendered_coloured_polygon_on_sphere)
+{
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
+	if (!d_render_settings.show_polygons())
+	{
+		return;
+	}
+
+	// The polygon and its associated per-point colours.
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
+			rendered_coloured_polygon_on_sphere.get_polygon_on_sphere();
+	const std::vector<ColourProxy> &point_colours = rendered_coloured_polygon_on_sphere.get_point_colours();
+
+	const unsigned int num_points = polygon_on_sphere->number_of_vertices_in_exterior_ring();
+
+	// Each exterior ring point must have an associated colour.
+	//
+	// NOTE: Currently there are only scalar values for the exterior ring
+	// TODO: Add scalar values for interior rings also.
+	if (point_colours.size() != num_points)
+	{
+		return;
+	}
+
+	// Convert the point colours.
+	std::vector<Colour> vertex_colours;
+	vertex_colours.reserve(num_points);
+	for (unsigned int c = 0; c < num_points; ++c)
+	{
+		boost::optional<Colour> vertex_colour = get_vector_geometry_colour(point_colours[c]);
+		if (!vertex_colour)
+		{
+			// Should always get a valid vertex colour - if not then return without rendering.
+			return;
+		}
+
+		vertex_colours.push_back(vertex_colour.get());
+	}
+
+	const float line_width =
+			rendered_coloured_polygon_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	// Get the stream for lines of the current line width.
+	stream_primitives_type &stream =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+
+	// Paint the polygon's exterior ring.
+	paint_vertex_coloured_great_circle_arcs(
+			polygon_on_sphere->exterior_ring_begin(),
+			polygon_on_sphere->exterior_ring_end(),
+			vertex_colours.begin(),
+			vertex_colours.end(),
+			stream);
+
+	// TODO: Paint the interior rings once we've implemented scalar values for interior rings.
 }
 
 
@@ -553,7 +749,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surf
 
 		stream_lines.end_primitive();
 	}
-	else
+	else // edge colouring ...
 	{
 		// Used to add line strips to the stream.
 		stream_primitives_type::LineStrips stream_line_strips(stream);
@@ -683,7 +879,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_
 			}
 		}
 	}
-	else // vertex colouring ...
+	else // triangle colouring ...
 	{
 		// Iterate over the mesh triangles.
 		const unsigned int num_mesh_triangles = mesh_triangles.size();
@@ -2142,6 +2338,83 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
 
 		// Vertex representing the end point's position and colour.
 		stream_line_strips.add_vertex(coloured_vertex_type(end, rgba8_color));
+	}
+
+	stream_line_strips.end_line_strip();
+}
+
+
+template <typename GreatCircleArcForwardIter, typename VertexColourForwardIter>
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_vertex_coloured_great_circle_arcs(
+		GreatCircleArcForwardIter begin_arcs,
+		GreatCircleArcForwardIter end_arcs,
+		VertexColourForwardIter begin_vertex_colours,
+		VertexColourForwardIter end_vertex_colours,
+		stream_primitives_type &lines_stream)
+{
+	if (begin_arcs == end_arcs)
+	{
+		return;
+	}
+
+	// Used to add line strips to the stream.
+	stream_primitives_type::LineStrips stream_line_strips(lines_stream);
+
+	stream_line_strips.begin_line_strip();
+
+	// Add the first vertex of the sequence of great circle arcs.
+	stream_line_strips.add_vertex(
+			coloured_vertex_type(
+					begin_arcs->start_point().position_vector(),
+					Colour::to_rgba8(*begin_vertex_colours)));
+
+	// Iterate over the great circle arcs (and vertex colours).
+	//
+	// NOTE: The number of vertex colours
+	GreatCircleArcForwardIter gca_iter = begin_arcs;
+	VertexColourForwardIter vertex_colour_iter = begin_vertex_colours;
+	for ( ; gca_iter != end_arcs; ++gca_iter)
+	{
+		const GPlatesMaths::GreatCircleArc &gca = *gca_iter;
+
+		const Colour &arc_start_colour = *vertex_colour_iter;
+
+		// If a polygon ring then the last vertex colour will wraparound to the first vertex colour.
+		if (++vertex_colour_iter == end_vertex_colours)
+		{
+			vertex_colour_iter = begin_vertex_colours;
+		}
+		const Colour &arc_end_colour = *vertex_colour_iter;
+
+		// Tessellate the current arc if its two endpoints are far enough apart.
+		if (gca.dot_of_endpoints() < COSINE_GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD)
+		{
+			// Tessellate the current great circle arc.
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			tessellate(points, gca, GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD);
+
+			// Iterate over the subdivided points.
+			const unsigned int num_subdivided_edges = points.size() - 1;
+			const double inv_num_subdivided_edges = 1.0 / num_subdivided_edges;
+			for (unsigned int p = 1; p < num_subdivided_edges; ++p)
+			{
+				// Interpolate colour along arc.
+				const Colour colour = Colour::linearly_interpolate(
+						arc_start_colour,
+						arc_end_colour,
+						p * inv_num_subdivided_edges);
+
+				stream_line_strips.add_vertex(
+						coloured_vertex_type(points[p].position_vector(), Colour::to_rgba8(colour)));
+			}
+		}
+
+		// Get the end position of the great circle arc.
+		const GPlatesMaths::UnitVector3D &end = gca.end_point().position_vector();
+
+		// Vertex representing the end point's position and colour.
+		stream_line_strips.add_vertex(coloured_vertex_type(end, Colour::to_rgba8(arc_end_colour)));
 	}
 
 	stream_line_strips.end_line_strip();

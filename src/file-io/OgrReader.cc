@@ -35,6 +35,8 @@
 #include <QStringList>
 #include <QVariant>
 
+#include "Gdal.h"
+#include "GdalUtils.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
@@ -61,6 +63,7 @@
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
+#include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
@@ -76,6 +79,7 @@
 
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
+
 
 boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::OgrReader::s_property_mapper;
 
@@ -109,23 +113,34 @@ namespace
 
 
 	const GPlatesPropertyValues::GeoTimeInstant
+	create_geo_time_instant(
+			const double &time)
+	{
+		if (time < -998.9 && time > -1000.0)
+		{
+			// It's in the distant future, which is denoted in PLATES4 line-format
+			// files using times like -999.0 or -999.9.
+			return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
+		}
+		if (time > 998.9 && time < 1000.0)
+		{
+			// It's in the distant past, which is denoted in PLATES4 line-format files
+			// using times like 999.0 or 999.9.
+			return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
+		}
+
+		return GPlatesPropertyValues::GeoTimeInstant(time);
+	}
+
+	const GPlatesPropertyValues::GeoTimeInstant
 	create_begin_geo_time_instant(
 			const boost::optional<double> &time)
 	{
 		if (time)
 		{
-			if (*time < -998.9 && *time > -1000.0) {
-				// It's in the distant future, which is denoted in PLATES4 line-format
-				// files using times like -999.0 or -999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
-			}
-			if (*time > 998.9 && *time < 1000.0) {
-				// It's in the distant past, which is denoted in PLATES4 line-format files
-				// using times like 999.0 or 999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
-			}
-			return GPlatesPropertyValues::GeoTimeInstant(*time);
+			return create_geo_time_instant(time.get());
 		}
+
 		return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
 	}
 
@@ -135,18 +150,9 @@ namespace
 	{
 		if (time)
 		{
-			if (*time < -998.9 && *time > -1000.0) {
-				// It's in the distant future, which is denoted in PLATES4 line-format
-				// files using times like -999.0 or -999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
-			}
-			if (*time > 998.9 && *time < 1000.0) {
-				// It's in the distant past, which is denoted in PLATES4 line-format files
-				// using times like 999.0 or 999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
-			}
-			return GPlatesPropertyValues::GeoTimeInstant(*time);
+			return create_geo_time_instant(time.get());
 		}
+
 		return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
 	}
 
@@ -384,6 +390,20 @@ namespace
 	}
 
 	void
+	append_geometry_import_time_to_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &feature,
+		double geometry_import_time)
+	{
+		const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type geometry_import_time_property_value =
+				GPlatesModel::ModelUtils::create_gml_time_instant(
+						create_geo_time_instant(geometry_import_time));
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("geometryImportTime"),
+					geometry_import_time_property_value));
+	}
+
+	void
 	append_name_to_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
 		QString name)
@@ -421,6 +441,7 @@ namespace
 	 *		leftPlate
 	 *		rightPlate
 	 *		spreadingAsymmetry
+	 *		geometryImportTime
 	 *	from the feature given by @a feature_handle.
 	 *
 	 * This is used when re-mapping model properties from shapefile attributes.
@@ -440,6 +461,7 @@ namespace
 		property_name_list << QString("leftPlate");
 		property_name_list << QString("rightPlate");
 		property_name_list << QString("spreadingAsymmetry");
+		property_name_list << QString("geometryImportTime");
 
 		GPlatesModel::FeatureHandle::iterator p_iter = feature->begin();
 		GPlatesModel::FeatureHandle::iterator p_iter_end = feature->end();
@@ -678,8 +700,26 @@ namespace
 
 		}
 
+		it = model_to_attribute_map.find(
+					ShapefileAttributes::model_properties[ShapefileAttributes::GEOMETRY_IMPORT_TIME]);
 
-		
+		if (it != model_to_attribute_map.constEnd())
+		{
+			attribute = get_qvariant_from_finder(it.value(),feature);
+			bool ok;
+			double geometry_import_time = attribute.toDouble(&ok);
+			if (ok){
+				append_geometry_import_time_to_feature(feature,geometry_import_time);
+			}
+			else{
+				read_errors.d_warnings.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::InvalidShapefileGeometryImportTime,
+					GPlatesFileIO::ReadErrors::AttributeIgnored));
+			}
+		}
 	}
 
 	/**
@@ -862,18 +902,20 @@ GPlatesFileIO::OgrReader::OgrReader():
 	d_total_features(0),
 	d_current_coordinate_transformation(GPlatesPropertyValues::CoordinateTransformation::create())
 {
-	OGRRegisterAll();
+	GdalUtils::register_all_drivers();
 }
 
 GPlatesFileIO::OgrReader::~OgrReader()
 {
-	try{
-		if(d_data_source_ptr)
+	try
+	{
+		if (d_data_source_ptr)
 		{
-			OGRDataSource::DestroyDataSource(d_data_source_ptr);
+			GdalUtils::close_vector(d_data_source_ptr);
 		}
 	}
-	catch (...) {
+	catch (...)
+	{
 	}
 }
 
@@ -942,16 +984,15 @@ GPlatesFileIO::OgrReader::check_file_format(
 
 bool
 GPlatesFileIO::OgrReader::open_file(
-		const QString &filename)
+		const QString &filename,
+		ReadErrorAccumulation &read_errors)
 {
-
-	std::string fname = filename.toStdString();
-	
-	d_data_source_ptr = OGRSFDriverRegistrar::Open(fname.c_str());
+	d_data_source_ptr = GdalUtils::open_vector(filename, false/*update*/, &read_errors);
 	if	(d_data_source_ptr == NULL)
 	{
 		return false;
 	}
+
 	d_filename = filename;
 	return true;
 }
@@ -1017,7 +1058,9 @@ GPlatesFileIO::OgrReader::read_features(
 				QString feature_string = d_attributes[index].toString();
 				if (GPlatesFileIO::OgrUtils::feature_type_field_is_gpgim_type(d_model_to_attribute_map))
 				{
-					// FIXME: We should check for a valid feature type here.
+					// We've loosened the GPGIM loading constraints to allow any feature type
+					// (even if it's not defined in the GPGIM). So there's no need to check it's in the GPGIM.
+					// It still has to be in "<namespace_alias>:<name>" format though (but that's checked below).
 					d_feature_type_string = feature_string;
 				}
 				else
@@ -1546,7 +1589,9 @@ GPlatesFileIO::OgrReader::transform_and_check_coords(
 						location,
 						GPlatesFileIO::ReadErrors::InvalidOgrLatitude,
 						GPlatesFileIO::ReadErrors::GeometryIgnored));
-		qDebug() << "Invalid latitude: " << y;
+		// Increase precision to make sure numbers like 90.00000190700007 (an actual value in a Shapefile)
+		// don't get printed as 90.0.
+		qDebug() << "Invalid latitude: " << qSetRealNumberPrecision(16) << y;
 		return false;
 	}
 
@@ -1557,7 +1602,9 @@ GPlatesFileIO::OgrReader::transform_and_check_coords(
 						location,
 						GPlatesFileIO::ReadErrors::InvalidOgrLongitude,
 						GPlatesFileIO::ReadErrors::GeometryIgnored));
-		qDebug() << "Invalid longitude: " << x;
+		// Increase precision to make sure numbers very slightly less/greater than -360.0/360.0
+		// don't get printed -360.0/360.0.
+		qDebug() << "Invalid longitude: " << qSetRealNumberPrecision(16) << x;
 		return false;
 	}
 
@@ -1582,7 +1629,8 @@ GPlatesFileIO::OgrReader::read_file(
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
 	OgrReader reader;
-	if (!reader.open_file(absolute_path_filename)){
+	if (!reader.open_file(absolute_path_filename, read_errors))
+	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 
@@ -2261,7 +2309,7 @@ GPlatesFileIO::OgrReader::read_field_names(
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
 	OgrReader reader;
-	if (!reader.open_file(absolute_path_filename))
+	if (!reader.open_file(absolute_path_filename, read_errors))
 	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}

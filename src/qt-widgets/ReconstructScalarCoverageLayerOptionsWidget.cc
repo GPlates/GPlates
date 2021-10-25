@@ -155,8 +155,9 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::set_data(
 					layer_params->get_scalar_type();
 
 			scalar_type_combobox->clear();
-			const std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types =
-				layer_params->get_scalar_types();
+
+			std::vector<GPlatesPropertyValues::ValueObjectType> scalar_types;
+			layer_params->get_scalar_types(scalar_types);
 			for (int i = 0; i != static_cast<int>(scalar_types.size()); ++i)
 			{
 				const GPlatesPropertyValues::ValueObjectType &curr_scalar_type = scalar_types[i];

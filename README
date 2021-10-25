@@ -48,15 +48,9 @@ Compiling GPlates on Windows
 To compile GPlates on Microsoft Windows, you will need the programs and libraries
 as documented in the "Program and library dependencies" section in the "DEPS.Windows"
 file in this directory.
- * GLEW library (the OpenGL Extension Wrangler Library)
 
 To compile on Windows:
- * Edit the 'CMAKE_INCLUDE_PATH' environment variable to refer to the include paths for
-   Boost and GDAL packages you've installed.
- * The Gzip package should be found automatically if it's installed in 'C:/Program Files/GnuWin32/'.
- * Run the CMake program ('CMakeSetup.exe'). CMake 2.6.2 and above is fine.
-      Vista NOTE: You need to elevate permissions on 'CMakeSetup.exe' by
-      right-click->properties->compatibility(tab)->check "run this program as an administrator".
+ * Run the CMake GUI program.
  * Set both the 'source' and 'build' directories to the root GPlates source directory
    (the one that has 'src' as a sub-directory).
  * Click 'configure'.

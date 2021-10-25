@@ -89,7 +89,7 @@ namespace GPlatesAppLogic
 		typedef std::list<layer_ptr_type> layer_ptr_seq_type;
 
 		//! Typedef for a function that creates a weak reference to a layer.
-		typedef boost::function< Layer (const boost::shared_ptr<ReconstructGraphImpl::Layer>) >
+		typedef boost::function< Layer (const boost::shared_ptr<ReconstructGraphImpl::Layer> &) >
 			make_layer_fn_type;
 
 	public:

@@ -1205,7 +1205,7 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 			GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_polygon_meshes_in_layer =
 					reconstructed_polygon_meshes_layer_usage->get_reconstructed_static_polygon_meshes(
 							renderer,
-							d_age_grid_layer_usage/*reconstructing_with_age_grid*/,
+							static_cast<bool>(d_age_grid_layer_usage)/*reconstructing_with_age_grid*/,
 							reconstruction_time);
 
 			reconstructed_polygon_meshes.push_back(reconstructed_polygon_meshes_in_layer);

@@ -229,26 +229,58 @@ GPlatesFileIO::GDALRasterWriter::get_supported_formats(
 		RasterWriter::supported_formats_type &supported_formats)
 {
 	// Ensure all drivers have been registered.
-	GdalUtils::gdal_register_drivers();
+	GdalUtils::register_all_drivers();
 
-	// Add support for numerical rasters (eg, GMT grid/NetCDF files), written by GDAL.
+	// Add support for numerical rasters (eg, NetCDF/GMT files), written by GDAL.
 	// These formats can also support RGBA data such as GeoTIFF (*.tif) but have the advantage
 	// (due to GDAL) of also supporting georeferencing and spatial reference systems
 	// (unlike the RGBA raster writer above).
 
-	add_supported_format(
-			supported_formats,
-			"nc", // filename_extension
-			"NetCDF grid data", // format_description
-			"application/x-netcdf", // format_mime_type
-			InternalFormatInfo("netCDF"));
+	InternalFormatInfo netcdf_creation_options("netCDF");
+
+	// Add NetCDF compression options only if NetCDF4 if supported.
+	if (GDALDriver *netcdf_driver =
+		GetGDALDriverManager()->GetDriverByName(netcdf_creation_options.driver_name.c_str()))
+	{
+		// Get creation options as a string containing XML data.
+		const char *creation_options_metadata = netcdf_driver->GetMetadataItem(GDAL_DMD_CREATIONOPTIONLIST);
+		if (creation_options_metadata)
+		{
+			// Search for "NC4" which is a format only supported by NetCDF version 4.
+			if (QString(creation_options_metadata).contains("NC4"))
+			{
+				// General compression options.
+				std::vector<std::string> netcdf_compression_creation_options;
+				netcdf_compression_creation_options.push_back("FORMAT=NC4");
+				netcdf_compression_creation_options.push_back("COMPRESS=DEFLATE");
+				netcdf_compression_creation_options.push_back("ZLEVEL=3"); // 9 is best compression and 1 is least
+				netcdf_creation_options.set_compression_creation_options(netcdf_compression_creation_options);
+			}
+		}
+	}
 
 	add_supported_format(
 			supported_formats,
-			"grd", // filename_extension
-			"GMT grid data", // format_description
+			"nc", // filename_extension
+			"NetCDF/GMT grid data", // format_description
 			"application/x-netcdf", // format_mime_type
-			InternalFormatInfo("GMT"));
+			netcdf_creation_options);
+
+	//
+	// There is a separate "GMT" driver (separate from the "netCDF" driver) that the GDAL docs state:
+	//
+	//   "This driver is primarily intended to provide a mechanism for grid interchange with the GMT package"
+	// 
+	// ...however most users just use NetCDF ".nc" files and rename the extension to ".grd" since GMT
+	// supports NetCDF. So we'll just provide an option to write out NetCDF files as either ".nc" or ".grd"
+	// using the NetCDF driver and ignore the GMT driver.
+	//
+	add_supported_format(
+			supported_formats,
+			"grd", // filename_extension
+			"NetCDF/GMT grid data", // format_description
+			"application/x-netcdf", // format_mime_type
+			netcdf_creation_options);
 
 
 	InternalFormatInfo tiff_creation_options("GTiff");
@@ -386,7 +418,7 @@ GPlatesFileIO::GDALRasterWriter::GDALRasterWriter(
 	d_file_driver(NULL)
 {
 	// Ensure all drivers have been registered.
-	GdalUtils::gdal_register_drivers();
+	GdalUtils::register_all_drivers();
 
 	// Make sure the driver that will be used to write the filename supports 'CREATECOPY' so we
 	// can copy from our in-memory dataset to the file format's dataset.
@@ -459,7 +491,7 @@ GPlatesFileIO::GDALRasterWriter::GDALRasterWriter(
 			if (raster_band == NULL)
 			{
 				// Close in-memory dataset and set to NULL - calls to 'can_write()' will then return false.
-				GDALClose(d_in_memory_dataset);
+				GdalUtils::close_raster(d_in_memory_dataset);
 				d_in_memory_dataset = NULL;
 				qWarning() << "Unable to get in-memory raster band for writing rasters.";
 				return;
@@ -469,7 +501,7 @@ GPlatesFileIO::GDALRasterWriter::GDALRasterWriter(
 			if (raster_band->SetColorInterpretation(gdal_colour_interp[n - 1]) != CE_None)
 			{
 				// Close in-memory dataset and set to NULL - calls to 'can_write()' will then return false.
-				GDALClose(d_in_memory_dataset);
+				GdalUtils::close_raster(d_in_memory_dataset);
 				d_in_memory_dataset = NULL;
 				qWarning() << "Unable to set colour interpretation on in-memory raster band for writing rasters.";
 				return;
@@ -523,7 +555,7 @@ GPlatesFileIO::GDALRasterWriter::~GDALRasterWriter()
 		if (d_in_memory_dataset)
 		{
 			// Closes the dataset as well as all bands that were opened.
-			GDALClose(d_in_memory_dataset);
+			GdalUtils::close_raster(d_in_memory_dataset);
 		}
 	}
 	catch (...)
@@ -551,7 +583,7 @@ GPlatesFileIO::GDALRasterWriter::set_georeferencing(
 	double affine_geo_transform[6];
 
 	// Extract the affine transform parameters.
-	GPlatesPropertyValues::Georeferencing::parameters_type geo_parameters = georeferencing->parameters();
+	GPlatesPropertyValues::Georeferencing::parameters_type geo_parameters = georeferencing->get_parameters();
 	for (unsigned int i = 0; i != GPlatesPropertyValues::Georeferencing::parameters_type::NUM_COMPONENTS; ++i)
 	{
 		affine_geo_transform[i] = geo_parameters.components[i];
@@ -560,7 +592,7 @@ GPlatesFileIO::GDALRasterWriter::set_georeferencing(
 	if (d_in_memory_dataset->SetGeoTransform(affine_geo_transform) != CE_None)
 	{
 		// Close in-memory dataset and set to NULL - calls to 'can_write()' will then return false.
-		GDALClose(d_in_memory_dataset);
+		GdalUtils::close_raster(d_in_memory_dataset);
 		d_in_memory_dataset = NULL;
 		qWarning() << "Unable to set geoferencing on GDAL raster '" << d_filename << "'.";
 		return;
@@ -583,7 +615,7 @@ GPlatesFileIO::GDALRasterWriter::set_spatial_reference_system(
 	{
 		CPLFree(srcWKT);
 		// Close in-memory dataset and set to NULL - calls to 'can_write()' will then return false.
-		GDALClose(d_in_memory_dataset);
+		GdalUtils::close_raster(d_in_memory_dataset);
 		d_in_memory_dataset = NULL;
 		qWarning() << "Unable to extract WKT spatial reference system for GDAL raster '" << d_filename << "'.";
 		return;
@@ -593,7 +625,7 @@ GPlatesFileIO::GDALRasterWriter::set_spatial_reference_system(
 	{
 		CPLFree(srcWKT);
 		// Close in-memory dataset and set to NULL - calls to 'can_write()' will then return false.
-		GDALClose(d_in_memory_dataset);
+		GdalUtils::close_raster(d_in_memory_dataset);
 		d_in_memory_dataset = NULL;
 		qWarning() << "Unable to set spatial reference system for GDAL raster '" << d_filename << "'.";
 		return;
@@ -696,18 +728,18 @@ GPlatesFileIO::GDALRasterWriter::write_file()
 	if (file_dataset == NULL)
 	{
 		// Close in-memory dataset and set to NULL - calls to 'can_write()' will then return false.
-		GDALClose(d_in_memory_dataset);
+		GdalUtils::close_raster(d_in_memory_dataset);
 		d_in_memory_dataset = NULL;
 		qWarning() << "Unable to create GDAL raster file '" << d_filename << "' from in-memory raster.";
 		return false;
 	}
 
 	// Close file dataset to flush the written data to disk.
-	GDALClose(file_dataset);
+	GdalUtils::close_raster(file_dataset);
 	file_dataset = NULL;
 
 	// Close in-memory dataset and set to NULL - calls to 'can_write()' will then return false.
-	GDALClose(d_in_memory_dataset);
+	GdalUtils::close_raster(d_in_memory_dataset);
 	d_in_memory_dataset = NULL;
 
 	return true;

@@ -832,7 +832,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
 
 	// See if we've traversed deep enough in the cube mesh quad tree to require using a clip
 	// texture - this occurs because the cube mesh has nodes only to a certain depth.
-	const bool clip_to_tile_frustum = mesh_quad_tree_node.get_clip_texture_clip_space_transform();
+	const bool clip_to_tile_frustum = static_cast<bool>(
+			mesh_quad_tree_node.get_clip_texture_clip_space_transform());
 
 	// Prepare for rendering the current tile.
 	set_tile_state(

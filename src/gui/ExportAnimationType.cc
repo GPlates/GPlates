@@ -120,16 +120,16 @@ namespace GPlatesGui
 							"<li>Exports visible reconstructed scalar coverage layers.</li>"
 							"<li>Each geometry point exports a position and a scalar value.</li>"
 							"<li>Scalar values for the currently selected scalar type are exported.</li>"
-							"<li>Per-point deformation strain rates can also be exported.</li>"
+							"<li>Per-point deformation strain and strain rate can also be exported.</li>"
 							"</ul>"
 							"</body></html>");
 				export_type_description_map[DEFORMATION] =
 						QObject::tr(
 							"<html><body>"
-							"<p>Export deformation (dilatation strain rates).</p>"
+							"<p>Export deformation information.</p>"
 							"<ul>"
 							"<li>Exports visible reconstructed geometry layers connected to topology layers.</li>"
-							"<li>Each geometry point exports a position, dilatation strain rate and strain.</li>"
+							"<li>Each geometry point exports a position, strain and strain rate.</li>"
 							"</body></html>");
 				export_type_description_map[VELOCITIES] =
 						QObject::tr(
@@ -253,8 +253,8 @@ namespace GPlatesGui
 				export_format_description_map[TIFF]            =QObject::tr("Tagged Image File Format (*.tiff)");
 				export_format_description_map[XBM]             =QObject::tr("X11 Bitmap (*.xbm)");
 				export_format_description_map[XPM]             =QObject::tr("X11 Pixmap (*.xpm)");
-				export_format_description_map[NETCDF]          =QObject::tr("NetCDF (*.nc)");
-				export_format_description_map[GMT_NETCDF]      =QObject::tr("GMT NetCDF (*.grd)");
+				export_format_description_map[NETCDF_NC]       =QObject::tr("NetCDF/GMT (*.nc)");
+				export_format_description_map[NETCDF_GRD]      =QObject::tr("NetCDF/GMT (*.grd)");
 				export_format_description_map[GEOTIFF]         =QObject::tr("GeoTIFF (*.tif)");
 				export_format_description_map[ERDAS_IMAGINE]   =QObject::tr("Erdas Imagine (*.img)");
 				export_format_description_map[ERMAPPER]        =QObject::tr("ERMapper (*.ers)");
@@ -286,8 +286,8 @@ namespace GPlatesGui
 				export_format_filename_extension_map[TIFF]            ="tiff";
 				export_format_filename_extension_map[XBM]             ="xbm";
 				export_format_filename_extension_map[XPM]             ="xpm";
-				export_format_filename_extension_map[NETCDF]          ="nc";
-				export_format_filename_extension_map[GMT_NETCDF]      ="grd";
+				export_format_filename_extension_map[NETCDF_NC]       ="nc";
+				export_format_filename_extension_map[NETCDF_GRD]      ="grd";
 				export_format_filename_extension_map[GEOTIFF]         ="tif";
 				export_format_filename_extension_map[ERDAS_IMAGINE]   ="img";
 				export_format_filename_extension_map[ERMAPPER]        ="ers";

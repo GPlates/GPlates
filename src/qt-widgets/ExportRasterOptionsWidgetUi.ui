@@ -7,13 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>533</width>
-    <height>331</height>
+    <height>385</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>3</number>
+   </property>
+   <property name="margin">
+    <number>0</number>
+   </property>
    <item>
     <widget class="QWidget" name="resolution_options" native="true">
      <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -51,7 +57,7 @@
          <item>
           <widget class="QDoubleSpinBox" name="resolution_spin_box">
            <property name="decimals">
-            <number>5</number>
+            <number>6</number>
            </property>
            <property name="minimum">
             <double>0.000010000000000</double>
@@ -127,6 +133,9 @@
       <string>Exported Region</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_3">
+      <property name="spacing">
+       <number>2</number>
+      </property>
       <property name="leftMargin">
        <number>6</number>
       </property>
@@ -139,6 +148,41 @@
       <property name="bottomMargin">
        <number>1</number>
       </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QCheckBox" name="grid_line_registration_checkbox">
+          <property name="text">
+           <string>Grid line registration</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_5">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="push_button_help_grid_line_registration">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
       <item>
        <layout class="QGridLayout" name="gridLayout_2">
         <property name="verticalSpacing">
@@ -153,7 +197,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Top (lat):</string>
+           <string>Top latitude:</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -172,7 +216,7 @@
            <string>°</string>
           </property>
           <property name="decimals">
-           <number>4</number>
+           <number>6</number>
           </property>
           <property name="minimum">
            <double>-90.000000000000000</double>
@@ -201,7 +245,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Bottom (lat):</string>
+           <string>Bottom latitude:</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -220,7 +264,7 @@
            <string>°</string>
           </property>
           <property name="decimals">
-           <number>4</number>
+           <number>6</number>
           </property>
           <property name="minimum">
            <double>-90.000000000000000</double>
@@ -249,7 +293,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Left (lon):</string>
+           <string>Left longitude:</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -268,7 +312,7 @@
            <string>°</string>
           </property>
           <property name="decimals">
-           <number>4</number>
+           <number>6</number>
           </property>
           <property name="minimum">
            <double>-360.000000000000000</double>
@@ -297,7 +341,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Right (lon):</string>
+           <string>Right longitude:</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -316,7 +360,7 @@
            <string>°</string>
           </property>
           <property name="decimals">
-           <number>4</number>
+           <number>6</number>
           </property>
           <property name="minimum">
            <double>-360.000000000000000</double>
@@ -337,6 +381,26 @@
          </widget>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="lat_extents_label">
+        <property name="text">
+         <string>If top latitude is less than bottom latitude then raster is flipped vertically.</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="lon_extents_label">
+        <property name="text">
+         <string>If right longitude is less than left longitude then raster is flipped horizontally.</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">

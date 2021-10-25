@@ -27,11 +27,14 @@
 #include <QByteArray>
 #include <QDataStream>
 #include <QLocale>
+#include <QtGlobal>
 
 #include "TranscribeQt.h"
 
 #include "Scribe.h"
 #include "ScribeExceptions.h"
+
+#include "global/GPlatesAssert.h"
 
 
 namespace
@@ -45,7 +48,7 @@ namespace
 	const QLocale C_LOCALE(QLocale::c());
 
 	/**
-	 * The QDataStream serialisation version used for streaming QVariant.
+	 * The QDataStream serialisation version used for streaming QVariant and QDateTime.
 	 *
 	 * NOTE: We are using Qt version 4.4 data streams so the QDataStream::setFloatingPointPrecision()
 	 * function is not available (introduced in Qt 4.6).
@@ -55,16 +58,16 @@ namespace
 	 *
 	 * WARNING: Changing this version may break backward/forward compatibility of projects/sessions.
 	 */
-	const unsigned int QVARIANT_QT_STREAM_VERSION = QDataStream::Qt_4_4;
+	const unsigned int TRANSCRIBE_QT_STREAM_VERSION = QDataStream::Qt_4_4;
 
 	/**
-	 * The QDataStream byte order used for streaming QVariant.
+	 * The QDataStream byte order used for streaming QVariant and QDateTime.
 	 *
 	 * Most hardware is little endian so it's more efficient in general.
 	 *
 	 * WARNING: Changing this version will break backward/forward compatibility of projects/sessions.
 	 */
-	const QDataStream::ByteOrder QVARIANT_QT_STREAM_BYTE_ORDER = QDataStream::LittleEndian;
+	const QDataStream::ByteOrder TRANSCRIBE_QT_STREAM_BYTE_ORDER = QDataStream::LittleEndian;
 }
 
 
@@ -107,27 +110,155 @@ GPlatesScribe::transcribe(
 		QDateTime &qdatetime_object,
 		bool transcribed_construct_data)
 {
-	QString qdatetime_string;
+	// Starting with GPlates 2.1 we transcribe QDateTime by streaming to/from a QDataStream since
+	// this avoids all locale issues. GPlates 2.0 transcribed by converting QDateTime to a localised QString.
+	// However it only used the "C" locale (en_US) for the string *format* whereas the QDateTime
+	// object itself was still converted using the system locale.
+	//
+	// So we now have two versions:
+	// * version 1 - GPlates 2.1 (and above), and
+	// * version 0 - GPlates 2.0 (and below).
+	//
+	// When saving we write out both version 0 and 1 tags.
+	// When loading we attempt to load the version 1 tag, if that fails we then load version 0.
+	// This provides compatibility with GPlates 2.0 (and below) in that GPlates 2.0 can load a
+	// project/session we save (because we save version 0) and we can load projects/sessions it
+	// saves (because we can load version 0).
+	static const ObjectTag VERSION_0_OBJECT_TAG("string", 0/*tag_version*/);
+	static const ObjectTag VERSION_1_OBJECT_TAG("string", 1/*tag_version*/);
+
+	// This is the same as 'C_LOCALE.dateTimeFormat()' except with the " t" timezone part removed from the end.
+	// GPlates 2.0 (and below) used 'QDateTime::toString()' and 'QDateTime::fromString()' which, in Qt 4.x,
+	// don't support the timezone format 't' (Qt 5 supports it though) but QLocale does support it (in Qt 4.x).
+	// Since we now use QLocale for version 0 transcribing we don't want it to convert the 't' format
+	// otherwise GPlates 2.0 won't work (because it expects the 't' to be there and then ignores it).
+	// So we only include the 't' *after* we've converted our QDateTime object to a string when saving,
+	// and when loading we first remove the 't' *before* converting the string back to a QDateTime object.
+	static const QString VERSION_0_DATE_TIME_FORMAT("dddd, d MMMM yyyy HH:mm:ss");
 
 	if (scribe.is_saving())
 	{
-		qdatetime_string = qdatetime_object.toString(C_LOCALE.dateTimeFormat());
-	}
+		//
+		// Stream the QDateTime to an array using QDataStream.
+		//
+		QByteArray qdatetime_array;
+		QDataStream qdatetime_array_writer(&qdatetime_array, QIODevice::WriteOnly);
+		qdatetime_array_writer.setVersion(TRANSCRIBE_QT_STREAM_VERSION);
+		qdatetime_array_writer.setByteOrder(TRANSCRIBE_QT_STREAM_BYTE_ORDER);
 
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, qdatetime_string, "string"))
-	{
-		return scribe.get_transcribe_result();
+		// Convert to UTC since, prior to QDataStream version 13 (introduced in QT 5 - note we are using
+		// version 10 here), the conversion to UTC is not done internally when streaming - which means
+		// serialising in one time zone and deserialising in another is a problem when the QDateTime
+		// object has a local time spec (since the local time zones might be different when saving and loading).
+		//
+		// Note: We save a QVariant so we can test (on loading) that the correct object type (QDateTime) was loaded.
+		if (qdatetime_object.isValid())
+		{
+			qdatetime_array_writer << QVariant(qdatetime_object.toUTC());
+		}
+		else
+		{
+			// Just stream the invalid object - this is what Qt5 does inside its '<<' operator.
+			qdatetime_array_writer << QVariant(qdatetime_object);
+		}
+		// Also serialise whether the time spec is local or not so we can return to local time spec
+		// on deserialising (if needed).
+		// Note: We're ignoring the other time specs - the deserialised QDateTime will either be UTC or local.
+		qdatetime_array_writer << static_cast<bool>(qdatetime_object.timeSpec() == Qt::LocalTime);
+
+		// This assertion should never fail - QDataStream should never fail to write to a QByteArray.
+		GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+				qdatetime_array_writer.status() == QDataStream::Ok,
+				GPLATES_ASSERTION_SOURCE,
+				"Failed to stream QDateTime into QByteArray.");
+
+		scribe.save(TRANSCRIBE_SOURCE, qdatetime_array, VERSION_1_OBJECT_TAG);
+
+		//
+		// For compatibility with earlier versions (GPlates 2.0 and prior) write QDateTime as a string.
+		//
+		// See comment above 'VERSION_0_DATE_TIME_FORMAT' for explanation of the 't' manipulation.
+		const QString qdatetime_string = C_LOCALE.toString(qdatetime_object, VERSION_0_DATE_TIME_FORMAT);
+		const QString qdatetime_string_with_timezone = qdatetime_string + " t";
+		scribe.save(TRANSCRIBE_SOURCE, qdatetime_string_with_timezone, VERSION_0_OBJECT_TAG);
 	}
 
 	if (scribe.is_loading())
 	{
-		// Get the QDateTime from the encoded string.
-		qdatetime_object = QDateTime::fromString(qdatetime_string, C_LOCALE.dateTimeFormat());
-
-		// The QDateTime decode should have been successful.
-		if (!qdatetime_object.isValid())
+		//
+		// First attempt to load version 1, if that fails then load version 0.
+		//
+		QByteArray qdatetime_array;
+		if (scribe.transcribe(TRANSCRIBE_SOURCE, qdatetime_array, VERSION_1_OBJECT_TAG))
 		{
-			return TRANSCRIBE_INCOMPATIBLE;
+			//
+			// Stream QDateTime from an array using QDataStream.
+			//
+			QDataStream qdatetime_array_reader(&qdatetime_array, QIODevice::ReadOnly);
+			qdatetime_array_reader.setVersion(TRANSCRIBE_QT_STREAM_VERSION);
+			qdatetime_array_reader.setByteOrder(TRANSCRIBE_QT_STREAM_BYTE_ORDER);
+
+			// Read the UTC QDateTime and original time spec.
+			// Note: We use a QVariant so we can test that the correct object type (QDateTime) was loaded.
+			QVariant qdatetime_variant;
+			qdatetime_array_reader >> qdatetime_variant;
+			bool is_local_time_spec;
+			qdatetime_array_reader >> is_local_time_spec;
+
+			// If unable to stream QDateTime object then QByteArray must represent some other type of object.
+			//
+			// Note that we don't also test whether the QDateTime object itself is valid (upon successful streaming)
+			// since it's possible that an invalid QDateTime was saved in the first place.
+			if (qdatetime_array_reader.status() != QDataStream::Ok ||
+				qdatetime_variant.type() != int(QMetaType::QDateTime))
+			{
+				return TRANSCRIBE_INCOMPATIBLE;
+			}
+
+			qdatetime_object = qdatetime_variant.toDateTime();
+
+			// Convert from UTC to local time spec if the system that saved the project/session used a local time spec.
+			// Note that the local timezones on the save and load systems might be different though.
+			if (is_local_time_spec &&
+				// Avoid conversion if invalid object - this is what Qt5 does inside its '<<' operator...
+				qdatetime_object.isValid())
+			{
+				qdatetime_object = qdatetime_object.toLocalTime();
+			}
+		}
+		else
+		{
+			QString qdatetime_string_with_timezone;
+			if (scribe.transcribe(TRANSCRIBE_SOURCE, qdatetime_string_with_timezone, VERSION_0_OBJECT_TAG))
+			{
+				// See comment above 'VERSION_0_DATE_TIME_FORMAT' for explanation of the 't' manipulation.
+				QString qdatetime_string = qdatetime_string_with_timezone;
+				if (qdatetime_string.endsWith(" t"))
+				{
+					qdatetime_string.chop(2);
+				}
+
+				// Get the QDateTime from the encoded string.
+				qdatetime_object = C_LOCALE.toDateTime(qdatetime_string, VERSION_0_DATE_TIME_FORMAT);
+
+				// If QDateTime decode was not successful then try the old GPlates 2.0 decode
+				// (which incorrectly used the system locale).
+				if (!qdatetime_object.isValid())
+				{
+					// GPlates 2.0 incorrectly saved using the system locale (instead of "C" locale - which is always en_US).
+					// So, having failed above, we'll attempt to try again with the current system locale.
+					// For example, this helps if a user with a Chinese locale saved using GPlates 2.0 and loads using 2.1 (or later).
+					qdatetime_object = QDateTime::fromString(qdatetime_string, VERSION_0_DATE_TIME_FORMAT);
+					if (!qdatetime_object.isValid())
+					{
+						return TRANSCRIBE_INCOMPATIBLE;
+					}
+				}
+			}
+			else
+			{
+				return scribe.get_transcribe_result();
+			}
 		}
 	}
 
@@ -184,8 +315,8 @@ GPlatesScribe::transcribe(
 	{
 		// Used to write to the QByteArray.
 		QDataStream data_array_writer(&data_array, QIODevice::WriteOnly);
-		data_array_writer.setVersion(QVARIANT_QT_STREAM_VERSION);
-		data_array_writer.setByteOrder(QVARIANT_QT_STREAM_BYTE_ORDER);
+		data_array_writer.setVersion(TRANSCRIBE_QT_STREAM_VERSION);
+		data_array_writer.setByteOrder(TRANSCRIBE_QT_STREAM_BYTE_ORDER);
 
 		// Save the QVariant to the QByteArray.
 		data_array_writer << qvariant_object;
@@ -219,8 +350,8 @@ GPlatesScribe::transcribe(
 
 		// Used to read from the QByteArray.
 		QDataStream data_array_reader(&data_array, QIODevice::ReadOnly);
-		data_array_reader.setVersion(QVARIANT_QT_STREAM_VERSION);
-		data_array_reader.setByteOrder(QVARIANT_QT_STREAM_BYTE_ORDER);
+		data_array_reader.setVersion(TRANSCRIBE_QT_STREAM_VERSION);
+		data_array_reader.setByteOrder(TRANSCRIBE_QT_STREAM_BYTE_ORDER);
 
 		// Load the QVariant from the QByteArray into a temporary test QVariant.
 		QVariant test_save;
@@ -248,8 +379,8 @@ GPlatesScribe::transcribe(
 	{
 		// Used to read from the QByteArray.
 		QDataStream data_array_reader(&data_array, QIODevice::ReadOnly);
-		data_array_reader.setVersion(QVARIANT_QT_STREAM_VERSION);
-		data_array_reader.setByteOrder(QVARIANT_QT_STREAM_BYTE_ORDER);
+		data_array_reader.setVersion(TRANSCRIBE_QT_STREAM_VERSION);
+		data_array_reader.setByteOrder(TRANSCRIBE_QT_STREAM_BYTE_ORDER);
 
 		// Load the QVariant from the QByteArray.
 		data_array_reader >> qvariant_object;

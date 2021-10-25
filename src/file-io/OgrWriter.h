@@ -28,29 +28,15 @@
 #ifndef GPLATES_FILEIO_OGRWRITER_H
 #define GPLATES_FILEIO_OGRWRITER_H
 
-
-#ifdef HAVE_CONFIG_H
-// We're building on a UNIX-y system, and can thus expect "global/config.h".
-
-// On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
-// The "CMake" script should have determined which one to use.
-#include "global/config.h"
-#ifdef HAVE_GDAL_OGRSF_FRMTS_H
-#include <gdal/ogrsf_frmts.h>
-#else
-#include <ogrsf_frmts.h>
-#endif
-
-#else  // We're not building on a UNIX-y system.  We'll have to assume it's <ogrsf_frmts.h>.
-#include <ogrsf_frmts.h>
-#endif  // HAVE_CONFIG_H
-
 #include <vector>
 #include <QDebug>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "file-io/FeatureCollectionFileFormatConfigurations.h"
+#include "GdalUtils.h"
+#include "FeatureCollectionFileFormatConfigurations.h"
+#include "Ogr.h"
+
 #include "maths/DateLineWrapper.h"
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
@@ -131,7 +117,7 @@ namespace GPlatesFileIO
 		 * We have to instantiate a driver of the appropriate type (ESRI shapefile, OGR-GMT etc) before
 		 * we can create output files. 
 		 */
-		OGRSFDriver *d_ogr_driver_ptr;
+		GdalUtils::vector_data_driver_type *d_ogr_driver_ptr;
 
 
 		/**
@@ -159,12 +145,12 @@ namespace GPlatesFileIO
 		 */
 		bool d_wrap_to_dateline;
 
-		OGRDataSource *d_ogr_data_source_ptr;
+		GdalUtils::vector_data_source_type *d_ogr_data_source_ptr;
 
 		// Data source for each of the geometry types. 
-		OGRDataSource *d_ogr_point_data_source_ptr;
-		OGRDataSource *d_ogr_line_data_source_ptr;
-		OGRDataSource *d_ogr_polygon_data_source_ptr;
+		GdalUtils::vector_data_source_type *d_ogr_point_data_source_ptr;
+		GdalUtils::vector_data_source_type *d_ogr_line_data_source_ptr;
+		GdalUtils::vector_data_source_type *d_ogr_polygon_data_source_ptr;
 
 		/**
 		 * Pointers to the geometry layers. Not all geometry layers will be required, hence they're

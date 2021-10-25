@@ -66,7 +66,7 @@ namespace
 	 */
 	void
 	print_non_rotation_pole_line(
-			std::ostream &os,
+			QTextStream &os,
 			const QString &line,
 			bool grot_format)
 	{
@@ -75,7 +75,7 @@ namespace
 			os << "999 0.0 0.0 0.0 0.0 999 !";
 		}
 
-		os << line.toUtf8().data() << std::endl;
+		os << line.toUtf8().data() << endl;
 	}
 
 
@@ -84,7 +84,7 @@ namespace
 	 */
 	void
 	print_rotation_pole(
-			std::ostream &os,
+			QTextStream &os,
 			const GPlatesMaths::FiniteRotation &finite_rotation,
 			int moving_plate_id,
 			int fixed_plate_id,
@@ -139,17 +139,17 @@ namespace
 		static const unsigned PLATES_COORDINATE_FIELDWIDTH = 9;
 		static const unsigned PLATES_COORDINATE_PRECISION = 4;
 
-		os << GPlatesUtils::formatted_int_to_string(moving_plate_id, 3, '0')
+		os << GPlatesUtils::formatted_int_to_string(moving_plate_id, 3, '0').c_str()
 			<< " "
-			<< GPlatesUtils::formatted_double_to_string(time, 5, 2, true)
+			<< GPlatesUtils::formatted_double_to_string(time, 5, 2, true).c_str()
 			<< " "
-			<< GPlatesUtils::formatted_double_to_string(latitude, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true)
+			<< GPlatesUtils::formatted_double_to_string(latitude, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true).c_str()
 			<< " "
-			<< GPlatesUtils::formatted_double_to_string(longitude, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true)
+			<< GPlatesUtils::formatted_double_to_string(longitude, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true).c_str()
 			<< " "
-			<< GPlatesUtils::formatted_double_to_string(angle, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true)
+			<< GPlatesUtils::formatted_double_to_string(angle, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true).c_str()
 			<< "  "
-			<< GPlatesUtils::formatted_int_to_string(fixed_plate_id, 3, '0');
+			<< GPlatesUtils::formatted_int_to_string(fixed_plate_id, 3, '0').c_str();
 	}
 }
 
@@ -159,20 +159,21 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatWriter(
 		bool grot_format) :
 	d_grot_format(grot_format)
 {
-	d_output.reset(new std::ofstream(file_info.get_qfileinfo().filePath().toStdString().c_str()));
-
-	// Check whether the file could be opened for writing.
-	if (!(*d_output))
+	// Open the file.
+	d_output_file.reset( new QFile(file_info.get_qfileinfo().filePath()) );
+	if ( ! d_output_file->open(QIODevice::WriteOnly | QIODevice::Text) )
 	{
 		throw ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
-				file_info.get_qfileinfo().filePath());
+			file_info.get_qfileinfo().filePath());
 	}
+
+	d_output_stream.reset( new QTextStream(d_output_file.get()) );
 }
 
 
 void
 GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::print_rotations(
-		std::ostream &os,
+		QTextStream &os,
 		bool grot_format)
 {
 	std::list<ReconstructionPoleData>::const_iterator reconstruction_pole_data_iter = reconstruction_poles.begin();
@@ -191,7 +192,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 
 void
 GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::print_rotation(
-		std::ostream &os,
+		QTextStream &os,
 		const ReconstructionPoleData &reconstruction_pole_data,
 		bool grot_format)
 {
@@ -307,7 +308,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 	}
 
 
-	os << std::endl;
+	os << endl;
 }
 
 
@@ -349,7 +350,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::finalise_post_feature_properties(
 	// Print reconstruction poles when we can.
 	if (d_accum.have_sufficient_info_for_output())
 	{
-		d_accum.print_rotations(*d_output, d_grot_format);
+		d_accum.print_rotations(*d_output_stream, d_grot_format);
 	}
 }
 

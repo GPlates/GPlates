@@ -386,34 +386,6 @@ GPlatesOpenGL::GLScalarField3D::is_supported(
 			return false;
 		}
 
-		GLShaderSource surface_fill_mask_vertex_shader_source(SHADER_VERSION);
-		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
-		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_VERTEX_SHADER_SOURCE_FILE_NAME);
-
-		GLShaderSource surface_fill_mask_geometry_shader_source(SHADER_VERSION);
-		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
-		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_GEOMETRY_SHADER_SOURCE_FILE_NAME);
-
-		GLShaderSource surface_fill_mask_fragment_shader_source(SHADER_VERSION);
-		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
-		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-
-		// Attempt to create the test shader program.
-		if (!GLShaderProgramUtils::compile_and_link_vertex_geometry_fragment_program(
-				renderer,
-				surface_fill_mask_vertex_shader_source,
-				surface_fill_mask_geometry_shader_source,
-				surface_fill_mask_fragment_shader_source,
-				GLShaderProgramUtils::GeometryShaderProgramParameters(
-						SURFACE_FILL_MASK_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES)))
-		{
-			qWarning() << "3D scalar fields NOT supported by this graphics hardware - failed to compile surface fill mask shader program.";
-			return false;
-		}
-
 		// If we get this far then we have support.
 		supported = true;
 	}
@@ -498,6 +470,47 @@ GPlatesOpenGL::GLScalarField3D::supports_surface_fill_mask(
 			// Detach from the framebuffer object before it gets returned to the framebuffer object cache.
 			framebuffer_object->gl_detach_all(renderer);
 
+			return false;
+		}
+
+		//
+		// Try to compile our surface fill mask shader program.
+		//
+		// NOTE: Some Intel GPU systems are not respecting our "#version 120" GLSL shader declarations and
+		// hence preventing us from using deprecated functions like 'texture2D()' (which changed to 'texture()').
+		// In this case we'll turn off support for surface fill masks.
+		//
+		// TODO: May need to update OpenGL to use later GLSL versions, but this needs some care to
+		// make sure works on all hardware/platforms. May need this for MacOS X anyway which may lack support
+		// for compatibility profiles prior to "#version 150" (ie, OpenGL 3.2) in later MacOS versions -
+		// needs looking into.
+		//
+
+		GLShaderSource surface_fill_mask_vertex_shader_source(SHADER_VERSION);
+		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
+		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_VERTEX_SHADER_SOURCE_FILE_NAME);
+
+		GLShaderSource surface_fill_mask_geometry_shader_source(SHADER_VERSION);
+		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
+		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_GEOMETRY_SHADER_SOURCE_FILE_NAME);
+
+		GLShaderSource surface_fill_mask_fragment_shader_source(SHADER_VERSION);
+		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
+		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+
+		// Attempt to create the test shader program.
+		if (!GLShaderProgramUtils::compile_and_link_vertex_geometry_fragment_program(
+				renderer,
+				surface_fill_mask_vertex_shader_source,
+				surface_fill_mask_geometry_shader_source,
+				surface_fill_mask_fragment_shader_source,
+				GLShaderProgramUtils::GeometryShaderProgramParameters(
+						SURFACE_FILL_MASK_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES)))
+		{
+			qWarning() << "Scalar field surface polygon masking not supported: failed to compile surface fill mask shader program.";
 			return false;
 		}
 
@@ -1266,7 +1279,11 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 			// We're rendering to a render target so reset to the default OpenGL state...
 			true/*reset_to_default_state*/);
 
-	// We should always have a valid shader program but test just in case.
+	// We may not have a valid shader program if the geometry shader failed to compile for example.
+	//
+	// This seems to happen on some Intel GPU systems that are not respecting our "#version 120"
+	// GLSL shader declarations and hence preventing us from using deprecated functions like 'texture2D()'
+	// (which changed to 'texture()').
 	if (!d_render_surface_fill_mask_program_object)
 	{
 		return false;
@@ -1433,7 +1450,11 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_depth_range(
 			surface_fill_mask_texture->get_width().get());
 #endif
 
-	// We should always have valid shader programs but test just in case.
+	// We may not have a valid shader program if the geometry shader failed to compile for example.
+	//
+	// This seems to happen on some Intel GPU systems that are not respecting our "#version 120"
+	// GLSL shader declarations and hence preventing us from using deprecated functions like 'texture2D()'
+	// (which changed to 'texture()').
 	if (!d_render_volume_fill_wall_depth_range_program_object)
 	{
 		return false;
@@ -1597,7 +1618,11 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_surface_normal_and_depth
 	// GL_MODELVIEW and GL_PROJECTION matrices as well as the current viewport.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
-	// We should always have valid shader programs but test just in case.
+	// We may not have a valid shader program if the geometry shader failed to compile for example.
+	//
+	// This seems to happen on some Intel GPU systems that are not respecting our "#version 120"
+	// GLSL shader declarations and hence preventing us from using deprecated functions like 'texture2D()'
+	// (which changed to 'texture()').
 	if (!d_render_volume_fill_wall_surface_normals_program_object)
 	{
 		return false;
@@ -2915,7 +2940,7 @@ GPlatesOpenGL::GLScalarField3D::create_tile_meta_data_texture_array(
 			0, GL_RGB, GL_FLOAT, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -2962,7 +2987,7 @@ GPlatesOpenGL::GLScalarField3D::create_field_data_texture_array(
 			0, GL_RGBA, GL_FLOAT, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -3009,7 +3034,7 @@ GPlatesOpenGL::GLScalarField3D::create_mask_data_texture_array(
 			0, GL_RED, GL_FLOAT, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -3057,7 +3082,7 @@ GPlatesOpenGL::GLScalarField3D::create_depth_radius_to_layer_texture(
 			0, GL_RED, GL_FLOAT, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -3105,7 +3130,7 @@ GPlatesOpenGL::GLScalarField3D::create_colour_palette_texture(
 			0, GL_RGBA, GL_FLOAT, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 

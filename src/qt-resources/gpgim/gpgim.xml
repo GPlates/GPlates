@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet href="gpgim.xsl" type="text/xsl"?>
 <GPGIM
-	gpgim:version="1.6.0336"
+	gpgim:version="1.6.0338"
 	xmlns="http://www.gplates.org/gpgim"
 	xmlns:gpgim="http://www.gplates.org/gpgim"
 	xmlns:gpml="http://www.gplates.org/gplates"
@@ -870,7 +870,7 @@
 			<Type>gpml:TopologicalPolygon</Type>
 			<Type>gml:OrientableCurve</Type>
 			<Type>gml:LineString</Type>
-			<Multiplicity>0..1</Multiplicity>
+			<Multiplicity>0..*</Multiplicity>
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
 			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
 		</Property>
@@ -1620,7 +1620,7 @@
 		
 		<Property>
 			<Name>gpml:spreadingAsymmetry</Name>
-			<Description>The asymmetry of ridge spreading, in the range [-1,1], where the value 0 represents symmetric (half-stage) rotation.</Description>
+			<Description>The asymmetry of ridge spreading, in the range [-1,1], where the value 0 represents symmetric (half-stage) rotation, the value -1 represents zero stage rotation (left plate) and the value 1 represents full-stage rotation (right plate).</Description>
 			<Type>xsi:double</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>

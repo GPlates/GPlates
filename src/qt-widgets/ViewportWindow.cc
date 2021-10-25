@@ -713,6 +713,8 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 	// ----
 	QObject::connect(action_Configure_Text_Overlay, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_configure_text_overlay_dialog()));
+	QObject::connect(action_Configure_Velocity_Legend, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_configure_velocity_legend_overlay_dialog()));
 	QObject::connect(action_Configure_Graticules, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_configure_graticules_dialog()));
 	QObject::connect(action_Choose_Background_Colour, SIGNAL(triggered()),
@@ -1840,7 +1842,7 @@ void
 GPlatesQtWidgets::ViewportWindow::open_dataset_webpage()
 {
 	QDesktopServices::openUrl(
-			QUrl("http://www.earthbyte.org/gplates-2-0-software-and-data-sets"));
+			QUrl("http://www.earthbyte.org/gplates-2-1-software-and-data-sets"));
 }
 
 

@@ -31,6 +31,10 @@
 #ifndef GPLATES_FILEIO_GDAL_H
 #define GPLATES_FILEIO_GDAL_H
 
+// The <gdal_version.h> header is probably included indirectly below but we'll include here also
+// just in case. That way including "Gdal.h" ensures access to the version macros.
+#include "global/GdalVersion.h"
+
 
 #ifdef HAVE_CONFIG_H
 // We're building on a UNIX-y system, and can thus expect "global/config.h".
@@ -49,6 +53,5 @@
 #else  // We're not building on a UNIX-y system.  We'll have to assume it's <gdal_priv.h>.
 #include <gdal_priv.h>
 #endif  // HAVE_CONFIG_H
-
 
 #endif  // GPLATES_FILEIO_GDAL_H

@@ -120,8 +120,8 @@ namespace GPlatesOpenGL
 		/**
 		 * Implicit converting constructor when only a single shader source is required.
 		 *
-		 * NOTE: The char array pointed by @a shader_source must remain in existence after this call.
-		 * So it's best to only use string literals.
+		 * Note that the @a shader_source char array is copied internally, so it doesn't have to
+		 * remain in existence after this call.
 		 */
 		GLShaderSource(
 				const char *shader_source,
@@ -135,20 +135,21 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Adds a shader source code segment.
-		 *
-		 * NOTE: The char array pointed by @a shader_source must remain in existence after this call.
-		 * So it's best to only use string literals.
 		 */
 		void
 		add_code_segment(
 				const char *shader_source);
 
-		//! Adds a shader source code segment.
+		/**
+		 * Adds a shader source code segment.
+		 */
 		void
 		add_code_segment(
 				const QByteArray &shader_source);
 
-		//! Adds a shader source code segment from a file.
+		/**
+		 * Adds a shader source code segment from a file.
+		 */
 		void
 		add_code_segment_from_file(
 				const QString& shader_source_file_name);
@@ -157,13 +158,16 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns all shader source code segments.
 		 *
+		 * This includes the initial (first) segment containing the #version string and
+		 * any #extension strings found in subsequently added code segments.
+		 * Note that any #extension strings are copied to the initial segment and commented out of the
+		 * code segment they belong to. This is because #extension must not occur *after* any
+		 * non-preprocessor source code.
+		 *
 		 * Each code segment is guaranteed to have at least one line.
 		 */
-		const std::vector<CodeSegment> &
-		get_code_segments() const
-		{
-			return d_code_segments;
-		}
+		std::vector<CodeSegment>
+		get_code_segments() const;
 
 		//! Returns the shader version.
 		ShaderVersion
@@ -178,11 +182,24 @@ namespace GPlatesOpenGL
 		static const char *SHADER_VERSION_STRINGS[NUM_SHADER_VERSIONS];
 
 		ShaderVersion d_shader_version;
-		std::vector<CodeSegment> d_code_segments;
 
+		//! Code segment containing #version and any #extension found in code segments added by client.
+		CodeSegment d_initial_code_segment;
+
+		//! Code segments added by client.
+		std::vector<CodeSegment> d_added_code_segments;
+
+		/**
+		 * Do any processing of the code segment and then add it to our internal sequence.
+		 *
+		 * Processing includes: any #extension strings are copied to the initial segment and
+		 * commented out of the code segment they belong to. This is because #extension must not
+		 * occur *after* any non-preprocessor source code.
+		 */
 		void
-		add_code_segment(
-				const CodeSegment &code_segment);
+		add_processed_code_segment(
+				QByteArray source_code,
+				boost::optional<QString> source_file_name = boost::none);
 	};
 }
 

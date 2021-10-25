@@ -309,8 +309,8 @@ GPlatesQtWidgets::HellingerPickWidget::update_buttons()
 	button_renumber->setEnabled(!d_hellinger_model_ptr->segments_are_ordered());
 	button_clear->setEnabled(picks_loaded_);
 
-	button_remove_segment->setEnabled(d_selected_segment);
-	button_remove_pick->setEnabled(d_selected_pick);
+	button_remove_segment->setEnabled(static_cast<bool>(d_selected_segment));
+	button_remove_pick->setEnabled(static_cast<bool>(d_selected_pick));
 
 	button_edit_pick->setEnabled(d_selected_pick &&
 								 !d_hellinger_dialog_ptr->adjust_pole_tool_is_active());
@@ -650,8 +650,10 @@ GPlatesQtWidgets::HellingerPickWidget::store_expanded_status()
 	d_segment_expanded_status.clear();
 	for (int i = 0 ; i < count; ++i)
 	{
-		int segment = tree_widget->topLevelItem(i)->text(0).toInt();
-		d_segment_expanded_status.insert(std::make_pair<int,bool>(segment,tree_widget->topLevelItem(i)->isExpanded()));
+		d_segment_expanded_status.insert(
+				std::make_pair<int,bool>(
+						tree_widget->topLevelItem(i)->text(0).toInt()/*segment*/,
+						tree_widget->topLevelItem(i)->isExpanded()));
 	}
 }
 

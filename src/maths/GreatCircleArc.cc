@@ -56,6 +56,14 @@ namespace GPlatesMaths
 			// 'rotation_axis'.
 			Vector3D perp = Vector3D(test_point) - proj;
 
+			// If test point is aligned with great circle rotation axis then all points
+			// on great circle are the same distance from test point.
+			// So choose one arbitrarily.
+			if (perp.magSqrd() <= 0 /*note: this is an epsilon test*/)
+			{
+				return generate_perpendicular(great_circle_rotation_axis);
+			}
+
 			return perp.get_normalisation();
 		}
 
@@ -113,14 +121,24 @@ namespace GPlatesMaths
 
 				real_t closeness_a_to_b = dot(a, b);
 				real_t closeness_c_to_a = dot(c, a);
-				real_t closeness_c_to_b = dot(c, b);
 
+				// Is C closer to A than B is to A...
 				if (closeness_c_to_a.is_precisely_greater_than(closeness_a_to_b.dval()) &&
-					closeness_c_to_b.is_precisely_greater_than(closeness_a_to_b.dval())) {
+					// ...and does C lie on half-circle starting at A...
+					dot(cross(a, c), n).dval() >= 0) {
+
+					// NOTE: Previously we tested if C is closer to A than B is to A *and*
+					// if C is closer to B than A is to B. However that does not work in all cases,
+					// picture an arc with almost antipodal start and end points - most points
+					// on the arc's great circle but on the opposite half of the great circle
+					// will satisfy the above condition even though they are not *on* the arc
+					// (because the distance between A and B - the arc start and end points -
+					// is close to the maximum possible distance between any two points on the globe).
 
 					/*
-					 * C is closer to A than B is to A, and also closer to
-					 * B than A is to B, so C must lie _between_ A and B,
+					 * C is closer to A than B is to A, and
+					 * C lies on half-circle starting at A,
+					 * so C must lie _between_ A and B,
 					 * which means it lies on the GCA.
 					 *
 					 * Hence, C is the closest point on the GCA to
@@ -131,6 +149,8 @@ namespace GPlatesMaths
 					return GCA_ARC;
 
 				} else {
+
+					real_t closeness_c_to_b = dot(c, b);
 
 					/*
 					 * C does not lie between A and B, so either A or B
@@ -1012,7 +1032,7 @@ GPlatesMaths::maximum_distance(
 	if (maximum_distance_threshold)
 	{
 		minimum_distance_threshold_storage = AngularExtent::PI - maximum_distance_threshold.get();
-		minimum_distance_threshold = minimum_distance_threshold_storage;
+		minimum_distance_threshold = minimum_distance_threshold_storage.get();
 	}
 
 	const AngularDistance min_distance =
@@ -1056,7 +1076,7 @@ GPlatesMaths::maximum_distance(
 	if (maximum_distance_threshold)
 	{
 		minimum_distance_threshold_storage = AngularExtent::PI - maximum_distance_threshold.get();
-		minimum_distance_threshold = minimum_distance_threshold_storage;
+		minimum_distance_threshold = minimum_distance_threshold_storage.get();
 	}
 
 	const AngularDistance min_distance =

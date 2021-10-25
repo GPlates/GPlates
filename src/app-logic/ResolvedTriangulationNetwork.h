@@ -132,27 +132,16 @@ namespace GPlatesAppLogic
 
 				DelaunayPoint(
 						const GPlatesMaths::PointOnSphere &point_,
-						GPlatesModel::integer_plate_id_type plate_id_,
-						const ReconstructionTreeCreator &reconstruction_tree_creator_) :
+						const VertexSharedReconstructInfo::non_null_ptr_to_const_type &shared_reconstruct_info_) :
 					point(point_),
-					plate_id(plate_id_),
-					reconstruction_tree_creator(reconstruction_tree_creator_)
+					shared_reconstruct_info(shared_reconstruct_info_)
 				{  }
 
 				//! The reconstructed point-on-sphere associated with the delaunay vertex.
 				GPlatesMaths::PointOnSphere point;
 
-				//! The plate id associated with the delaunay vertex.
-				GPlatesModel::integer_plate_id_type plate_id;
-
-				/**
-				 * The rotation tree generator used to create reconstruction trees for the
-				 * ReconstructedFeatureGeometry associated with the delaunay vertex.
-				 *
-				 * This (shared) reconstruction tree creator is stored instead of the
-				 * ReconstructedFeatureGeometry itself in order to save memory.
-				 */
-				ReconstructionTreeCreator reconstruction_tree_creator;
+				// Shared information used to reconstruct geometry that this point came from.
+				VertexSharedReconstructInfo::non_null_ptr_to_const_type shared_reconstruct_info;
 			};
 
 
@@ -403,6 +392,15 @@ namespace GPlatesAppLogic
 			}
 
 			/**
+			 * Returns whether deformation strain rates are clamped (and, if so, by how much).
+			 */
+			TopologyNetworkParams::StrainRateClamping
+			get_strain_rate_clamping() const
+			{
+				return d_build_info.topology_network_params.get_strain_rate_clamping();
+			}
+
+			/**
 			 * Calculates the deformation at @a point in the network interpolated using
 			 * natural neighbour coordinates (if @a get_strain_rate_smoothing returns NATURAL_NEIGHBOUR_SMOOTHING),
 			 * or barycentric coordinates (if BARYCENTRIC_SMOOTHING), or using the constant (non-smoothed)
@@ -482,7 +480,7 @@ namespace GPlatesAppLogic
 
 
 			/**
-			 * Calculates the position that @a point deforms to using barycentric coordinates in the network.
+			 * Calculates the position that @a point deforms to.
 			 *
 			 * If @a point is inside the deforming region it will be deformed by the deformation of the
 			 * triangle containing it (and nearby triangles if using natural neighbour interpolation) and
@@ -999,7 +997,7 @@ namespace GPlatesAppLogic
 					delaunay_point_2_to_vertex_handle_map_type &delaunay_point_2_to_vertex_handle_map) const;
 
 			/**
-			 * Calculate the natural neighbour coorinates of the specified point.
+			 * Calculate the natural neighbour coordinates of the specified point.
 			 *
 			 * @a start_face_hint is an optional optimisation if you already know the delaunay face containing the point.
 			 *

@@ -784,16 +784,16 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 
 	// Listen for feature properties radio button selections.
 	QObject::connect(check_box_assign_reconstruction_plate_id, SIGNAL(toggled(bool)),
-			this, SLOT(react_feature_properties_options_radio_button(bool)));
+			this, SLOT(react_feature_properties_options_checkbox(bool)));
 	QObject::connect(check_box_assign_conjugate_plate_id, SIGNAL(toggled(bool)),
-			this, SLOT(react_feature_properties_options_radio_button(bool)));
+			this, SLOT(react_feature_properties_options_checkbox(bool)));
 	QObject::connect(check_box_assign_time_of_appearance, SIGNAL(toggled(bool)),
-			this, SLOT(react_feature_properties_options_radio_button(bool)));
+			this, SLOT(react_feature_properties_options_checkbox(bool)));
 	QObject::connect(check_box_assign_time_of_disappearance, SIGNAL(toggled(bool)),
-			this, SLOT(react_feature_properties_options_radio_button(bool)));
+			this, SLOT(react_feature_properties_options_checkbox(bool)));
 
 	QObject::connect(only_copy_suitable_properties_check_box, SIGNAL(toggled(bool)),
-			this, SLOT(react_feature_properties_options_radio_button(bool)));
+			this, SLOT(react_feature_properties_options_checkbox(bool)));
 
 	// Set the initial reconstruction time for the double spin box.
 	double_spin_box_reconstruction_time->setValue(d_spin_box_reconstruction_time);
@@ -1136,6 +1136,17 @@ void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_reconstruction_time_radio_button(
 		bool checked)
 {
+	// All radio buttons in the group are connected to the same slot (this method).
+	// Hence there will be *two* calls to this slot even though there's only *one* user action (clicking a button).
+	// One slot call is for the button that is toggled off and the other slot call for the button toggled on.
+	// However we handle all buttons in one call to this slot so it should only be called once.
+	// So we only look at one signal.
+	// We arbitrarily choose the signal from the button toggled *on* (*off* would have worked fine too).
+	if (!checked)
+	{
+		return;
+	}
+
 	if (radio_button_present_day->isChecked())
 	{
 		d_reconstruction_time_type = PRESENT_DAY_RECONSTRUCTION_TIME;
@@ -1178,6 +1189,12 @@ void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_partition_options_radio_button(
 		bool checked)
 {
+	// All radio buttons in the group are connected to the same slot (this method).
+	// Hence there will be *two* calls to this slot even though there's only *one* user action (clicking a button).
+	// One slot call is for the button that is toggled off and the other slot call for the button toggled on.
+	// However we handle all buttons in one call to this slot so it should only be called once.
+	// So we only look at one signal.
+	// We arbitrarily choose the signal from the button toggled *on* (*off* would have worked fine too).
 	if (!checked)
 	{
 		return;
@@ -1198,7 +1215,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_partition_options_ra
 
 
 void
-GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_feature_properties_options_radio_button(
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_feature_properties_options_checkbox(
 		bool checked)
 {
 	d_assign_reconstruction_plate_ids = check_box_assign_reconstruction_plate_id->isChecked();

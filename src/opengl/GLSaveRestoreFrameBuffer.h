@@ -156,7 +156,7 @@ namespace GPlatesOpenGL
 		bool
 		between_save_and_restore() const
 		{
-			return d_save_restore;
+			return static_cast<bool>(d_save_restore);
 		}
 
 		/**

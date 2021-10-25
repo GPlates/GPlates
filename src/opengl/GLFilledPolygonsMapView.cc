@@ -375,6 +375,36 @@ GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_triangle_to_
 
 
 void
+GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_triangle_to_mesh(
+		const QPointF &vertex1,
+		const QPointF &vertex2,
+		const QPointF &vertex3,
+		GPlatesGui::rgba8_t rgba8_vertex_color1,
+		GPlatesGui::rgba8_t rgba8_vertex_color2,
+		GPlatesGui::rgba8_t rgba8_vertex_color3)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_current_drawable,
+			GPLATES_ASSERTION_SOURCE);
+
+	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
+
+	// Alpha blending will be set up for pre-multiplied alpha.
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.x(), vertex1.y(), 0/*z*/, pre_multiply_alpha(rgba8_vertex_color1)));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.x(), vertex2.y(), 0/*z*/, pre_multiply_alpha(rgba8_vertex_color2)));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.x(), vertex3.y(), 0/*z*/, pre_multiply_alpha(rgba8_vertex_color3)));
+
+	d_drawable_vertex_elements.push_back(base_vertex_index);
+	d_drawable_vertex_elements.push_back(base_vertex_index + 1);
+	d_drawable_vertex_elements.push_back(base_vertex_index + 2);
+
+	// Update the current filled drawable.
+	d_current_drawable->end += 3;
+	d_current_drawable->count += 3;
+}
+
+
+void
 GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::begin_filled_drawable()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(

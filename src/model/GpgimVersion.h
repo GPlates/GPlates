@@ -100,7 +100,7 @@ namespace GPlatesModel
 		 * Returns the major version number in "<MAJOR>.<MINOR>.<REVISION>".
 		 */
 		unsigned int
-		major() const
+		get_major() const
 		{
 			return d_major;
 		}
@@ -110,7 +110,7 @@ namespace GPlatesModel
 		 * Returns the minor version number in "<MAJOR>.<MINOR>.<REVISION>".
 		 */
 		unsigned int
-		minor() const
+		get_minor() const
 		{
 			return d_minor;
 		}
@@ -123,7 +123,7 @@ namespace GPlatesModel
 		 * return the default revision for "1.6" which is 317.
 		 */
 		unsigned int
-		revision() const
+		get_revision() const
 		{
 			return d_revision;
 		}
@@ -141,7 +141,7 @@ namespace GPlatesModel
 		 * However the version string passed to @a create can be either "1.6.0317" or "1.6.317".
 		 */
 		QString
-		version_string() const;
+		get_version_string() const;
 
 
 		/**

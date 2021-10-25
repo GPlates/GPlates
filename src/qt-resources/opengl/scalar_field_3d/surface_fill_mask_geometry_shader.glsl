@@ -27,8 +27,10 @@
 // Geometry shader source code to render surface fill mask.
 //
 
-// "#extension" needs to be specified in the shader source *string* where it is used (this is not
-// documented in the GLSL spec but is mentioned at http://www.opengl.org/wiki/GLSL_Core_Language).
+// GPlates currently moves this to start of *first* source code string passed into glShaderSource.
+// This is because extension lines must not occur *after* any non-preprocessor source code.
+//
+// NOTE: Do not comment this out with a /**/ comment spanning multiple lines since GPlates does not detect that.
 #extension GL_EXT_geometry_shader4 : enable
 
 // The view projection matrices for rendering into each cube face.

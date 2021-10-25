@@ -93,7 +93,6 @@ namespace GPlatesFileIO
 
 		struct BadTokenException {  };
 		struct BadComponentsException {  };
-		struct MissingLabelSemiColonException {  };
 		struct PatternFillEncounteredException {  };
 
 
@@ -414,6 +413,36 @@ namespace GPlatesFileIO
 		};
 
 
+		//! Parsed as "C/M/Y/K" instead of "C M Y K".
+		struct CMYKTripletColourSpecification
+		{
+			typedef boost::tuple<const QString &> components_type;
+
+			static
+			inline
+			boost::optional<GPlatesGui::Colour>
+			convert(
+					const components_type& components)
+			{
+				const QString &token = get<0>(components);
+				if (!token.contains('/'))
+				{
+					throw BadTokenException();
+				}
+
+				// C/M/Y/K triplet.
+				QStringList subtokens = token.split('/');
+				if (subtokens.size() != 4)
+				{
+					throw BadTokenException();
+				}
+
+				// Convert the colour.
+				return convert_tokens<CMYKColourSpecification>(subtokens);
+			}
+		};
+
+
 		struct GreyColourSpecification
 		{
 			typedef boost::tuple<double> components_type;
@@ -494,6 +523,89 @@ namespace GPlatesFileIO
 
 
 		/**
+		 * Any colour without space-separated components that can be used in a regular CPT colour slice.
+		 *
+		 * Unlike space-separated colours (such as RGBColourSpecification), this format allows different
+		 * colour specifications to be mixed in a single colour slice (ie, different for lower and upper)
+		 * such as R/G/B for the lower colour and a GMT colour name for the upper colour.
+		 */
+		struct RegularCptSliceColourSpecification
+		{
+			typedef boost::tuple<const QString &> components_type;
+
+			static
+			inline
+			boost::optional<GPlatesGui::Colour>
+			convert(
+					const components_type &components)
+			{
+				const QString &token = get<0>(components);
+				if (token.contains('/'))
+				{
+					// R/G/B or C/M/Y/K triplet.
+					QStringList subtokens = token.split('/');
+					if (subtokens.size() == 3)
+					{
+						// Convert the R/G/B colour.
+						return convert_tokens<RGBColourSpecification>(subtokens);
+					}
+					else if (subtokens.size() == 4)
+					{
+						// Convert the C/M/Y/K colour.
+						return convert_tokens<CMYKColourSpecification>(subtokens);
+					}
+					else
+					{
+						throw BadTokenException();
+					}
+				}
+				else if (token.contains('-'))
+				{
+					// H-S-V triplet.
+					QStringList subtokens = token.split('-');
+					if (subtokens.size() != 3)
+					{
+						throw BadTokenException();
+					}
+
+					// Convert the colour.
+					return convert_tokens<HSVColourSpecification>(subtokens);
+				}
+				else
+				{
+					// Try parsing it as a single number.
+					try
+					{
+						double grey = parse_token<double>(token);
+						return make_grey_colour(grey);
+					}
+					catch (...)
+					{
+					}
+					
+					// See whether it's a GMT colour name.
+					try
+					{
+						return make_gmt_colour(token);
+					}
+					catch (...)
+					{
+					}
+
+					// If it starts with a p, let's assume it's a pattern fill.
+					if (is_pattern_fill_specification(token))
+					{
+						throw PatternFillEncounteredException();
+					}
+
+					// Don't know what we were given...
+					throw BadTokenException();
+				}
+			}
+		};
+
+
+		/**
 		 * Stores the state of the CPT parser as it proceeds through the file.
 		 */
 		template<class CptFileFormat>
@@ -510,7 +622,7 @@ namespace GPlatesFileIO
 				palette(palette_),
 				errors(errors_),
 				data_source(data_source_),
-				rgb(true),
+				colour_model(GPlatesGui::ColourModel::RGB),
 				any_successful_lines(false),
 				error_reported_for_current_line(false),
 				current_line_number(0),
@@ -534,9 +646,10 @@ namespace GPlatesFileIO
 			boost::shared_ptr<DataSource> data_source;
 
 			/**
-			 * The default is true. If false, the colour model is HSV.
+			 * Colour model as specified in CPT file.
+			 * The default is ColourModel::RGB.
 			 */
-			bool rgb;
+			GPlatesGui::ColourModel::Type colour_model;
 
 			/**
 			 * True if any non-comment lines have been successfully parsed.
@@ -577,9 +690,11 @@ namespace GPlatesFileIO
 				const QString &line,
 				ParserState<CptFileFormat> &parser_state)
 		{
-			// RGB or +RGB or HSV or +HSV.
-			static const QRegExp rgb_regex("\\+?RGB");
-			static const QRegExp hsv_regex("\\+?HSV");
+			// RGB or +RGB, or HSV or +HSV, or CMYK or +CMYK
+			// Also make case insensitive since CPT files exist with "hsv" for example.
+			static const QRegExp rgb_regex("\\+?RGB", Qt::CaseInsensitive);
+			static const QRegExp hsv_regex("\\+?HSV", Qt::CaseInsensitive);
+			static const QRegExp cmyk_regex("\\+?CMYK", Qt::CaseInsensitive);
 
 			if (line.startsWith("#"))
 			{
@@ -590,11 +705,15 @@ namespace GPlatesFileIO
 				{
 					if (rgb_regex.exactMatch(tokens.at(1)))
 					{
-						parser_state.rgb = true;
+						parser_state.colour_model = GPlatesGui::ColourModel::RGB;
 					}
 					else if (hsv_regex.exactMatch(tokens.at(1)))
 					{
-						parser_state.rgb = false;
+						parser_state.colour_model = GPlatesGui::ColourModel::HSV;
+					}
+					else if (cmyk_regex.exactMatch(tokens.at(1)))
+					{
+						parser_state.colour_model = GPlatesGui::ColourModel::CMYK;
 					}
 					else
 					{
@@ -707,17 +826,21 @@ namespace GPlatesFileIO
 		 */
 		template<class CptFileFormat>
 		bool
-		try_process_rgb_or_hsv_bfn(
+		try_process_rgb_or_hsv_or_cmyk_bfn(
 				const QStringList &tokens,
 				ParserState<CptFileFormat> &parser_state)
 		{
-			if (parser_state.rgb)
+			switch (parser_state.colour_model)
 			{
+			case GPlatesGui::ColourModel::RGB:
 				return try_process_bfn<CptFileFormat, RGBColourSpecification>(tokens, parser_state);
-			}
-			else
-			{
+
+			case GPlatesGui::ColourModel::HSV:
 				return try_process_bfn<CptFileFormat, HSVColourSpecification>(tokens, parser_state);
+
+			case GPlatesGui::ColourModel::CMYK:
+			default:
+				return try_process_bfn<CptFileFormat, CMYKColourSpecification>(tokens, parser_state);
 			}
 		}
 
@@ -729,13 +852,19 @@ namespace GPlatesFileIO
 		 *
 		 *		lower_value R G B upper_value R G B [a] [;label]
 		 *
-		 * if the ColourSpecification parameter is RGBColourSpecification.
+		 * if the ColourSpecification parameters are RGBColourSpecification, for example.
 		 * For other choices of ColourSpecification, R, G and B are replaced as appropriate.
+		 *
+		 * The format of the line can also have lower/upper colours that contain no spaces, such as:
+		 *
+		 *		lower_value R/G/B upper_value R/G/B [a] [;label]
+		 *
+		 * if the ColourSpecification parameters are RGBTripletColourSpecification, for example.
 		 *
 		 * If the line was successfully parsed, the function returns true and inserts a
 		 * new entry into the current colour palette.
 		 */
-		template<class ColourSpecification>
+		template <class ColourSpecification>
 		bool
 		try_process_regular_cpt_colour_slice(
 				const QStringList &tokens,
@@ -759,15 +888,16 @@ namespace GPlatesFileIO
 				// Lower value of z-slice.
 				double lower_value = parse_token<double>(tokens.at(0));
 
-				// First lot of colour components.
-				boost::optional<GPlatesGui::Colour> lower_colour = convert_tokens<ColourSpecification>(tokens, 1);
+				// Lower colour of z-slice.
+				boost::optional<GPlatesGui::Colour> lower_colour =
+						convert_tokens<colour_specification_type>(tokens, 1);
 
 				// Upper value of z-slice.
 				double upper_value = parse_token<double>(tokens.at(1 + NUM_COMPONENTS));
 
-				// Second lot of colour components.
+				// Upper colour of z-slice.
 				boost::optional<GPlatesGui::Colour> upper_colour =
-						convert_tokens<ColourSpecification>(tokens, 1 + NUM_COMPONENTS + 1);
+						convert_tokens<colour_specification_type>(tokens, 1 + NUM_COMPONENTS + 1);
 
 				// Parse the last 2 tokens, if any.
 				GPlatesGui::ColourScaleAnnotation::Type annotation = GPlatesGui::ColourScaleAnnotation::NONE;
@@ -796,7 +926,9 @@ namespace GPlatesFileIO
 						++current_token_index;
 						if (!label_token.startsWith(';'))
 						{
-							throw MissingLabelSemiColonException();
+							// We didn't encounter a semi-colon so its likely we are parsing the wrong
+							// colour specification - so just return failure so can try another one.
+							return false;
 						}
 
 						// If semi-colon is it's own token (ie, a space between it and label).
@@ -858,18 +990,6 @@ namespace GPlatesFileIO
 
 				return false;
 			}
-			catch (const MissingLabelSemiColonException &)
-			{
-				parser_state.errors.d_recoverable_errors.push_back(
-						make_read_error_occurrence(
-							parser_state.data_source,
-							parser_state.current_line_number,
-							ReadErrors::MissingLabelSemiColon,
-							ReadErrors::CptLineIgnored));
-				parser_state.error_reported_for_current_line = true;
-
-				return false;
-			}
 			catch (const GPlatesUtils::ParseError &)
 			{
 				parser_state.errors.d_recoverable_errors.push_back(
@@ -893,7 +1013,7 @@ namespace GPlatesFileIO
 		 * Delegates to the correct function depending on the current colour model.
 		 */
 		bool
-		try_process_regular_cpt_rgb_or_hsv_colour_slice(
+		try_process_regular_cpt_rgb_or_hsv_or_cmyk_colour_slice(
 				const QStringList &tokens,
 				ParserState<RegularCptFileFormat> &parser_state);
 
@@ -911,7 +1031,7 @@ namespace GPlatesFileIO
 		 *
 		 * The line is of the format:
 		 *
-		 *		key fill label
+		 *		key fill [;label]
 		 *
 		 * where the key must be greater than the previous key and the label is optional.
 		 * The fill is in a format specified in section 4.14 of the GMT docs
@@ -1062,11 +1182,12 @@ namespace GPlatesFileIO
 			{
 				// Note the use of the short-circuiting mechanism.
 				return try_process_categorical_cpt_colour_entry(tokens, parser_state) ||
-						try_process_rgb_or_hsv_bfn<CategoricalCptFileFormat<T> >(tokens, parser_state) ||
+						try_process_rgb_or_hsv_or_cmyk_bfn<CategoricalCptFileFormat<T> >(tokens, parser_state) ||
 
-						// R/G/B and H-S-V don't depend on COLOR_MODEL (like "R G B" and "H S V" do)...
+						// R/G/B and H-S-V and C/M/Y/K don't depend on COLOR_MODEL (like "R G B" and "H S V" and "C M Y K" do)...
 						try_process_bfn<CategoricalCptFileFormat<T>, RGBTripletColourSpecification>(tokens, parser_state) ||
 						try_process_bfn<CategoricalCptFileFormat<T>, HSVTripletColourSpecification>(tokens, parser_state) ||
+						try_process_bfn<CategoricalCptFileFormat<T>, CMYKTripletColourSpecification>(tokens, parser_state) ||
 
 						try_process_bfn<CategoricalCptFileFormat<T>, GMTNameColourSpecification>(tokens, parser_state) ||
 						try_process_bfn<CategoricalCptFileFormat<T>, CMYKColourSpecification>(tokens, parser_state) ||
@@ -1206,8 +1327,8 @@ namespace GPlatesFileIO
 			
 			if (parser_state.any_successful_lines)
 			{
-				// Remember whether the file was read using the RGB or HSV colour model.
-				palette->set_rgb_colour_model(parser_state.rgb);
+				// Remember whether the CPT file specified RGB, HSV or CMYK colour model.
+				palette->set_colour_model(parser_state.colour_model);
 
 				return palette;
 			}

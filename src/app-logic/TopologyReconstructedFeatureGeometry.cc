@@ -34,15 +34,15 @@
 GPlatesAppLogic::TopologyReconstructedFeatureGeometry::geometry_ptr_type
 GPlatesAppLogic::TopologyReconstructedFeatureGeometry::reconstructed_geometry() const
 {
-	boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> reconstructed_multipoint =
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> reconstructed_geom =
 			d_topology_reconstruct_geometry_time_span->get_geometry(get_reconstruction_time());
 
 	// We should not have been created if the geometry time span was not valid at the current reconstruction time.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			reconstructed_multipoint,
+			reconstructed_geom,
 			GPLATES_ASSERTION_SOURCE);
 
-	return reconstructed_multipoint.get();
+	return reconstructed_geom.get();
 }
 
 

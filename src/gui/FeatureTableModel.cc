@@ -164,7 +164,11 @@ namespace
 				// Otherwise, there wasn't a reconstruction plate ID.  Let's find
 				// the reconstruction plate ID the hard way -- by iterating through
 				// all the properties of the referenced feature.
-				return get_reconstruction_plate_id_from_properties(*weak_ref, true);
+				//
+				// Note: We don't print a debugging error message if a reconstruction plate ID
+				// is found in the feature but not the RFG because this can happen when the user
+				// first adds a reconstruction plate ID to a feature (that previously did not have one).
+				return get_reconstruction_plate_id_from_properties(*weak_ref);
 			}
 		}
 		return QVariant();

@@ -247,11 +247,11 @@ namespace GPlatesOpenGL
 			CubeQuadTreeNode(
 					const GLTransform::non_null_ptr_to_const_type &view_transform_,
 					const GLTransform::non_null_ptr_to_const_type &projection_transform_,
-					unsigned int quad_tree_depth_,
+					float level_of_detail_,
 					const tile_texture_cache_type::volatile_object_ptr_type &tile_texture_) :
 				d_view_transform(view_transform_),
 				d_projection_transform(projection_transform_),
-				d_quad_tree_depth(quad_tree_depth_),
+				d_level_of_detail(level_of_detail_),
 				d_tile_texture(tile_texture_)
 			{  }
 
@@ -261,8 +261,8 @@ namespace GPlatesOpenGL
 			//! Projection transform used to render source raster into current tile.
 			GLTransform::non_null_ptr_to_const_type d_projection_transform;
 
-			//! Used to determine rendering LOD.
-			unsigned int d_quad_tree_depth;
+			//! Rendering LOD.
+			float d_level_of_detail;
 
 			/**
 			 * Keeps tracks of whether the source data has changed underneath us
@@ -301,10 +301,10 @@ namespace GPlatesOpenGL
 			{  }
 
 			/**
-			 * We always return false for reconstructed rasters because it's costly to determine
-			 * if rendering into the current quad tree node will generate any raster data - and
-			 * this effort would be wasted if the client decides to continue traversing down the
-			 * quad tree (to get better raster resolution).
+			 * We always return false for reconstructed rasters because we need to rasterise polygon edges
+			 * accurately (eg, if user zooms in a lot) and there's no resolution limit on that.
+			 * Also the raster might be reconstructed with a higher resolution age grid and hence we
+			 * couldn't rely solely on the source raster resolution anyway.
 			 */
 			virtual
 			bool
@@ -347,10 +347,28 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Minimum tile texel dimension.
+		 *
+		 * If tile dimensions are too small then we end up requiring a lot more tiles to render since
+		 * there's no limit on how deep we can render (see 'QuadTreeNodeImp::is_leaf_node()' for more details).
+		 */
+		static const unsigned int MIN_TILE_TEXEL_DIMENSION;
+
+
+		/**
 		 * The reconstructed raster we are rendering into our cube map.
 		 */
 		GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type d_reconstructed_raster;
 
+
+		/**
+		 * If we increased the tile texel dimension then we need to adjust LOD correspondingly.
+		 *
+		 * Our (cube map) tile dimension can now be a power-of-two multiple of the reconstructed
+		 * raster's input source (cube map) tile dimension if the latter is found to be below
+		 * 'MIN_TILE_TEXEL_DIMENSION'. We account for this by adding a LOD offset to the final level-of-detail.
+		 */
+		int d_level_of_detail_offset_for_scaled_tile_dimension;
 
 		/**
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
@@ -391,6 +409,11 @@ namespace GPlatesOpenGL
 				const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &source_reconstructed_raster,
 				bool cache_tile_textures);
 
+		unsigned int
+		update_tile_texel_dimension(
+				GLRenderer &renderer,
+				unsigned int tile_texel_dimension);
+
 		boost::optional<GLTexture::shared_ptr_to_const_type>
 		get_tile_texture(
 				GLRenderer &renderer,
@@ -405,7 +428,7 @@ namespace GPlatesOpenGL
 
 		float
 		get_level_of_detail(
-				const CubeQuadTreeNode &tile) const;
+				unsigned int quad_tree_depth) const;
 
 		void
 		create_tile_texture(

@@ -684,6 +684,11 @@ namespace GPlatesAppLogic
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc);
+
 		private:
 			boost::optional<GPlatesModel::FeatureHandle::iterator> d_property;
 		};

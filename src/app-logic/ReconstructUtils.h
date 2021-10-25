@@ -334,37 +334,87 @@ namespace GPlatesAppLogic
 		 * that rotates from present day to the reconstruction time for which
 		 * @a reconstruction_tree was generated.
 		 * 
+		 * @a geometry can be any type supported by GPlatesMaths::FiniteRotation as in:
+		 *    operator*(GPlatesMaths::FiniteRotation, GeometryType)
+		 *
 		 * If @a reverse_reconstruct is true then @a geometry is assumed to be
 		 * at a non-present-day reconstruction time (the time at which
 		 * @a reconstruction_tree was generated to rotate to) and @a geometry
 		 * is then reverse rotated back to present day.
 		 */
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		reconstruct_by_plate_id(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				const GPlatesModel::integer_plate_id_type reconstruction_plate_id,
-				const ReconstructionTree &reconstruction_tree,
-				bool reverse_reconstruct = false);
-
-		/**
-		 * This is the same as the other overload of @a reconstruct (for @a GeometryOnSphere)
-		 * but this works with any type supported by GPlatesMaths::FiniteRotation as in:
-		 *    operator*(GPlatesMaths::FiniteRotation, GeometryType)
-		 */
 		template <class GeometryType>
 		GeometryType
 		reconstruct_by_plate_id(
 				const GeometryType &geometry,
-				GPlatesModel::integer_plate_id_type reconstruction_plate_id,
+				const GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 				const ReconstructionTree &reconstruction_tree,
-				bool reverse_reconstruct = false);
+				bool reverse_reconstruct = false)
+		{
+			// Get the composed absolute rotation needed to bring a thing on that plate
+			// in the present day to this time.
+			GPlatesMaths::FiniteRotation rotation =
+					reconstruction_tree.get_composed_absolute_rotation(
+							reconstruction_plate_id).first;
 
+			// Are we reversing reconstruction back to present day ?
+			if (reverse_reconstruct)
+			{
+				rotation = GPlatesMaths::get_reverse(rotation);
+			}
+			
+			// Apply the rotation.
+			return rotation * geometry;
+		}
+
+
+		/**
+		 * Reconstruct a present day @a geometry to the specified reconstruction time
+		 * using the specified reconstruction properties.
+		 * 
+		 * @a geometry can be any type supported by GPlatesMaths::FiniteRotation as in:
+		 *    operator*(GPlatesMaths::FiniteRotation, GeometryType)
+		 *
+		 * Also selects appropriate version of half-stage rotation calculation to use:
+		 *
+		 *   version 1: a single time interval, symmetric spreading that starts at present day.
+		 *   version 2: introduced multiple time intervals (10my each) and spreading asymmetry.
+		 *   version 3: introduced spreading start time (which is the geometry import time).
+		 */
+		template <class GeometryType>
+		GeometryType
+		reconstruct_as_half_stage(
+				const GeometryType &geometry,
+				const double &reconstruction_time,
+				const ReconstructionFeatureProperties &reconstruction_params,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				bool reverse_reconstruct = false)
+		{
+			// Get the composed absolute rotation needed to bring a thing on that plate
+			// in the present day to this time.
+			GPlatesMaths::FiniteRotation rotation =
+					RotationUtils::get_half_stage_rotation(
+							reconstruction_time,
+							reconstruction_params,
+							reconstruction_tree_creator);
+
+			// Are we reversing reconstruction back to present day ?
+			if (reverse_reconstruct)
+			{
+				rotation = GPlatesMaths::get_reverse(rotation);
+			}
+
+			// Apply the rotation.
+			return rotation * geometry;
+		}
 
 		/**
 		 * Reconstructs a present day @a geometry using @a reconstruction_tree
 		 * that rotates from present day to the reconstruction time for which
 		 * @a reconstruction_tree was generated, using the half-stage rotation 
 		 * reconstruction method.
+		 * 
+		 * @a geometry can be any type supported by GPlatesMaths::FiniteRotation as in:
+		 *    operator*(GPlatesMaths::FiniteRotation, GeometryType)
 		 *
 		 * @a spreading_asymmetry is in the range [-1,1] where the value 0 represents half-stage
 		 * rotation, the value 1 represents full-stage rotation (right plate) and the value -1
@@ -383,9 +433,10 @@ namespace GPlatesAppLogic
 		 * @a reconstruction_tree was generated to rotate to) and @a geometry
 		 * is then reverse rotated back to present day.
 		 */
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		template <class GeometryType>
+		GeometryType
 		reconstruct_as_half_stage(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+				const GeometryType &geometry,
 				const GPlatesModel::integer_plate_id_type left_plate_id,
 				const GPlatesModel::integer_plate_id_type right_plate_id,
 				const double &reconstruction_time,
@@ -393,69 +444,7 @@ namespace GPlatesAppLogic
 				const double &spreading_asymmetry = 0.0,
 				const double &spreading_start_time = 0.0,
 				const double &half_stage_rotation_interval = RotationUtils::DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION,
-				bool reverse_reconstruct = false);
-
-		/**
-		 * This is the same as the other overload of @a reconstruct (for @a GeometryOnSphere)
-		 * but this works with any type supported by GPlatesMaths::FiniteRotation as in:
-		 *    operator*(GPlatesMaths::FiniteRotation, GeometryType)
-		 */
-		template <class GeometryType>
-		GeometryType
-		reconstruct_as_half_stage(
-				const GeometryType &geometry,
-				GPlatesModel::integer_plate_id_type left_plate_id,
-				GPlatesModel::integer_plate_id_type right_plate_id,
-				const double &reconstruction_time,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const double &spreading_asymmetry = 0.0,
-				const double &spreading_start_time = 0.0,
-				const double &half_stage_rotation_interval = RotationUtils::DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION,
-				bool reverse_reconstruct = false);
-	}
-
-
-	//
-	// Implementation
-	//
-	namespace ReconstructUtils
-	{
-		template <class GeometryType>
-		GeometryType
-		reconstruct_by_plate_id(
-				const GeometryType &geometry,
-				GPlatesModel::integer_plate_id_type reconstruction_plate_id,
-				const ReconstructionTree &reconstruction_tree,
-				bool reverse_reconstruct)
-		{
-			// Get the composed absolute rotation needed to bring a thing on that plate
-			// in the present day to this time.
-			GPlatesMaths::FiniteRotation rotation =
-					reconstruction_tree.get_composed_absolute_rotation(
-							reconstruction_plate_id).first;
-
-			// Are we reversing reconstruction back to present day ?
-			if (reverse_reconstruct)
-			{
-				rotation = GPlatesMaths::get_reverse(rotation);
-			}
-			
-			// Apply the rotation.
-			return rotation * geometry;
-		}
-
-		template <class GeometryType>
-		GeometryType
-		reconstruct_as_half_stage(
-				const GeometryType &geometry,
-				GPlatesModel::integer_plate_id_type left_plate_id,
-				GPlatesModel::integer_plate_id_type right_plate_id,
-				const double &reconstruction_time,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const double &spreading_asymmetry,
-				const double &spreading_start_time,
-				const double &half_stage_rotation_interval,
-				bool reverse_reconstruct)
+				bool reverse_reconstruct = false)
 		{
 			// Get the composed absolute rotation needed to bring a thing on that plate
 			// in the present day to this time.
@@ -478,11 +467,7 @@ namespace GPlatesAppLogic
 			// Apply the rotation.
 			return rotation * geometry;
 		}
-
 	}
-
-
-
 }
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCTUTILS_H

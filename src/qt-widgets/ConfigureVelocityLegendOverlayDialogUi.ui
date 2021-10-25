@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ConfigureVelocityLegendOverlayDialog</class>
+ <widget class="QDialog" name="ConfigureVelocityLegendOverlayDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>675</width>
+    <height>409</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Configure Velocity Legend Overlay</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
+    <normaloff>:/GPlates-icon-160x160-opaque.png</normaloff>:/GPlates-icon-160x160-opaque.png</iconset>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QGroupBox" name="velocity_legend_overlay_groupbox">
+     <property name="title">
+      <string>&amp;Enable Velocity Legend Overlay</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="1" column="0" colspan="3">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_scale_colour">
+          <property name="text">
+           <string>Scale &amp;text colour:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="3">
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QLabel" name="label_scale_font">
+            <property name="text">
+             <string>Scale text &amp;font:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="scale_text_font_placeholder_widget" native="true"/>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>203</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item row="4" column="3">
+         <widget class="QCheckBox" name="checkbox_show_background">
+          <property name="text">
+           <string>&amp;Show background</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2" colspan="2">
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>338</width>
+            <height>13</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="2" column="0" rowspan="2">
+         <widget class="QLabel" name="label_arrow_colour">
+          <property name="text">
+           <string>A&amp;rrow colour:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1" colspan="2">
+         <widget class="QWidget" name="scale_text_colour_placeholder_widget" native="true"/>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_background_colour">
+          <property name="text">
+           <string>&amp;Background colour:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1" rowspan="2" colspan="2">
+         <widget class="QWidget" name="arrow_colour_placeholder_widget" native="true"/>
+        </item>
+        <item row="4" column="1" colspan="2">
+         <widget class="QWidget" name="background_colour_placeholder_widget" native="true"/>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_velocity_layer">
+          <property name="text">
+           <string>Velocity &amp;layer</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QWidget" name="widget_combo_placeholder" native="true"/>
+        </item>
+       </layout>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="anchor_label">
+        <property name="text">
+         <string>&amp;Anchor:</string>
+        </property>
+        <property name="buddy">
+         <cstring>anchor_combobox</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="anchor_combobox">
+        <item>
+         <property name="text">
+          <string>Top Left</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Top Right</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Bottom Left</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Bottom Right</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>164</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="3" column="0" colspan="3">
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="4" column="2">
+         <widget class="QSpinBox" name="spinbox_angle">
+          <property name="toolTip">
+           <string>Arrow orientation in degrees. Zero degrees is right-pointing horizontal arrow, angle measured clockwise.</string>
+          </property>
+          <property name="suffix">
+           <string/>
+          </property>
+          <property name="minimum">
+           <number>-360</number>
+          </property>
+          <property name="maximum">
+           <number>360</number>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <widget class="QSpinBox" name="spinbox_length">
+          <property name="minimum">
+           <number>10</number>
+          </property>
+          <property name="maximum">
+           <number>1000</number>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QRadioButton" name="radio_button_scale">
+          <property name="text">
+           <string>Use fi&amp;xed scale (cm/yr):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="vertical_offset_label">
+          <property name="text">
+           <string>&amp;Vertical offset:</string>
+          </property>
+          <property name="buddy">
+           <cstring>vertical_offset_spinbox</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QRadioButton" name="radio_button_arrow_length">
+          <property name="text">
+           <string>Use &amp;maximum arrow length (pixels)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2">
+         <widget class="QDoubleSpinBox" name="spinbox_scale"/>
+        </item>
+        <item row="2" column="4">
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="1" column="2">
+         <widget class="QSpinBox" name="vertical_offset_spinbox">
+          <property name="minimum">
+           <number>-10000</number>
+          </property>
+          <property name="maximum">
+           <number>10000</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="horizontal_offset_label">
+          <property name="text">
+           <string>&amp;Horizontal offset:</string>
+          </property>
+          <property name="buddy">
+           <cstring>horizontal_offset_spinbox</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QSpinBox" name="horizontal_offset_spinbox">
+          <property name="minimum">
+           <number>-10000</number>
+          </property>
+          <property name="maximum">
+           <number>10000</number>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Arro&amp;w orientation</string>
+          </property>
+          <property name="buddy">
+           <cstring>spinbox_angle</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="4">
+         <spacer name="horizontalSpacer_6">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="2" column="3">
+         <widget class="QPushButton" name="button_help_maximum_length">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="3" colspan="2">
+         <spacer name="horizontalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>28</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="0" column="3" colspan="2">
+         <spacer name="horizontalSpacer_5">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="3" column="3">
+         <widget class="QPushButton" name="button_help_fixed_scale">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+     <zorder>anchor_combobox</zorder>
+     <zorder>anchor_label</zorder>
+     <zorder></zorder>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="main_buttonbox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>velocity_legend_overlay_groupbox</tabstop>
+  <tabstop>checkbox_show_background</tabstop>
+  <tabstop>anchor_combobox</tabstop>
+  <tabstop>horizontal_offset_spinbox</tabstop>
+  <tabstop>vertical_offset_spinbox</tabstop>
+  <tabstop>radio_button_arrow_length</tabstop>
+  <tabstop>spinbox_length</tabstop>
+  <tabstop>radio_button_scale</tabstop>
+  <tabstop>spinbox_scale</tabstop>
+  <tabstop>spinbox_angle</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc"/>
+ </resources>
+ <connections/>
+</ui>

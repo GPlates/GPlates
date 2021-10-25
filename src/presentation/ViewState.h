@@ -78,6 +78,7 @@ namespace GPlatesGui
 	class SceneLightingParameters;
 	class TextOverlaySettings;
 	class TopologySectionsContainer;
+	class VelocityLegendOverlaySettings;
 	class ViewportProjection;
 	class ViewportZoom;
 
@@ -352,6 +353,12 @@ namespace GPlatesPresentation
 		const GPlatesGui::TextOverlaySettings &
 		get_text_overlay_settings() const;
 
+		GPlatesGui::VelocityLegendOverlaySettings &
+		get_velocity_legend_overlay_settings();
+
+		const GPlatesGui::VelocityLegendOverlaySettings &
+		get_velocity_legend_overlay_settings() const;
+
 
 		GPlatesGui::ExportAnimationRegistry &
 		get_export_animation_registry();
@@ -533,6 +540,11 @@ namespace GPlatesPresentation
 		 * Settings related to the overlay of text on top the map and the globe.
 		 */
 		boost::scoped_ptr<GPlatesGui::TextOverlaySettings> d_text_overlay_settings;
+
+		/**
+		 * Settings related to the overlay of a velocity scale legend.
+		 */
+		boost::scoped_ptr<GPlatesGui::VelocityLegendOverlaySettings> d_velocity_legend_overlay_settings;
 
 		/**
 		 * Stores information about the export animation types.

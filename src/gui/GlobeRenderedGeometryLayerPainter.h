@@ -167,13 +167,28 @@ namespace GPlatesGui
 
 		virtual
 		void
+		visit_rendered_coloured_multi_point_on_sphere(
+				const GPlatesViewOperations::RenderedColouredMultiPointOnSphere &rendered_coloured_multi_point_on_sphere);
+
+		virtual
+		void
 		visit_rendered_polyline_on_sphere(
 				const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere);
 
 		virtual
 		void
+		visit_rendered_coloured_polyline_on_sphere(
+				const GPlatesViewOperations::RenderedColouredPolylineOnSphere &rendered_coloured_polyline_on_sphere);
+
+		virtual
+		void
 		visit_rendered_polygon_on_sphere(
 				const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere);
+
+		virtual
+		void
+		visit_rendered_coloured_polygon_on_sphere(
+				const GPlatesViewOperations::RenderedColouredPolygonOnSphere &rendered_coloured_polygon_on_sphere);
 
 		virtual
 		void
@@ -436,6 +451,18 @@ namespace GPlatesGui
 				GreatCircleArcForwardIter begin_arcs,
 				GreatCircleArcForwardIter end_arcs,
 				rgba8_t rgba8_color,
+				stream_primitives_type &lines_stream);
+
+		/**
+		 * Paints great circle arcs of polylines and polygons with per-vertex colouring.
+		 */
+		template <typename GreatCircleArcForwardIter, typename VertexColourForwardIter>
+		void
+		paint_vertex_coloured_great_circle_arcs(
+				GreatCircleArcForwardIter begin_arcs,
+				GreatCircleArcForwardIter end_arcs,
+				VertexColourForwardIter begin_vertex_colours,
+				VertexColourForwardIter end_vertex_colours,
 				stream_primitives_type &lines_stream);
 
 		/**

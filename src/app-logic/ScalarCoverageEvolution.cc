@@ -67,8 +67,8 @@ namespace GPlatesAppLogic
 				const double &derivative_sign,
 				const double &initial_time,
 				const double &time_increment,
-				const boost::optional<DeformationStrain> *const initial_deformation_strain_rates,
-				const boost::optional<DeformationStrain> *const final_deformation_strain_rates)
+				const boost::optional<DeformationStrainRate> *const initial_deformation_strain_rates,
+				const boost::optional<DeformationStrainRate> *const final_deformation_strain_rates)
 		{
 			for (unsigned int n = 0; n < num_values; ++n)
 			{
@@ -89,8 +89,8 @@ namespace GPlatesAppLogic
 					continue;
 				}
 
-				const double initial_dilatation = initial_deformation_strain_rates[n]->get_dilatation();
-				const double final_dilatation = final_deformation_strain_rates[n]->get_dilatation();
+				const double initial_dilatation = initial_deformation_strain_rates[n]->get_strain_rate_dilatation();
+				const double final_dilatation = final_deformation_strain_rates[n]->get_strain_rate_dilatation();
 
 				const double K0 = time_increment * derivative_sign * derivative_function(
 						initial_time,
@@ -124,8 +124,8 @@ namespace GPlatesAppLogic
 				const double &derivative_sign,
 				const double &initial_time,
 				const double &time_increment,
-				const boost::optional<DeformationStrain> *const initial_deformation_strain_rates,
-				const boost::optional<DeformationStrain> *const final_deformation_strain_rates)
+				const boost::optional<DeformationStrainRate> *const initial_deformation_strain_rates,
+				const boost::optional<DeformationStrainRate> *const final_deformation_strain_rates)
 		{
 			for (unsigned int n = 0; n < num_values; ++n)
 			{
@@ -146,8 +146,8 @@ namespace GPlatesAppLogic
 					continue;
 				}
 
-				const double initial_dilatation = initial_deformation_strain_rates[n]->get_dilatation();
-				const double final_dilatation = final_deformation_strain_rates[n]->get_dilatation();
+				const double initial_dilatation = initial_deformation_strain_rates[n]->get_strain_rate_dilatation();
+				const double final_dilatation = final_deformation_strain_rates[n]->get_strain_rate_dilatation();
 
 				const double K0 = time_increment * derivative_sign * derivative_function(
 						initial_time,
@@ -185,18 +185,30 @@ GPlatesAppLogic::get_scalar_evolution_function(
 		const GPlatesPropertyValues::ValueObjectType &scalar_type,
 		const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params)
 {
-	static const GPlatesPropertyValues::ValueObjectType CRUSTAL_THICKNESS =
+	static const GPlatesPropertyValues::ValueObjectType CRUSTAL_THICKNESS_TYPE =
 			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThickness");
-	if (scalar_type == CRUSTAL_THICKNESS)
-	{
-		return scalar_evolution_function_type(&ScalarCoverageEvolution::crustal_thinning);
-	}
-
-	static const GPlatesPropertyValues::ValueObjectType CRUSTAL_THINNING_FACTOR =
+	static const GPlatesPropertyValues::ValueObjectType CRUSTAL_STRETCHING_FACTOR_TYPE =
+			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalStretchingFactor");
+	static const GPlatesPropertyValues::ValueObjectType CRUSTAL_THINNING_FACTOR_TYPE =
 			GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
-	if (scalar_type == CRUSTAL_THINNING_FACTOR)
+
+	if (scalar_type == CRUSTAL_THICKNESS_TYPE)
 	{
-		return scalar_evolution_function_type(&ScalarCoverageEvolution::crustal_thinning);
+		return scalar_evolution_function_type(
+				boost::bind(&ScalarCoverageEvolution::crustal_thinning, _1, _2, _3, _4, _5,
+						ScalarCoverageEvolution::CRUSTAL_THICKNESS));
+	}
+	else if (scalar_type == CRUSTAL_STRETCHING_FACTOR_TYPE)
+	{
+		return scalar_evolution_function_type(
+				boost::bind(&ScalarCoverageEvolution::crustal_thinning, _1, _2, _3, _4, _5,
+						ScalarCoverageEvolution::CRUSTAL_STRETCHING_FACTOR));
+	}
+	else if (scalar_type == CRUSTAL_THINNING_FACTOR_TYPE)
+	{
+		return scalar_evolution_function_type(
+				boost::bind(&ScalarCoverageEvolution::crustal_thinning, _1, _2, _3, _4, _5,
+						ScalarCoverageEvolution::CRUSTAL_THINNING_FACTOR));
 	}
 
 	// No evolution needed - scalar values don't change over time.
@@ -207,16 +219,23 @@ GPlatesAppLogic::get_scalar_evolution_function(
 void
 GPlatesAppLogic::ScalarCoverageEvolution::crustal_thinning(
 		std::vector< boost::optional<double> > &input_output_crustal_thickness,
-		const std::vector< boost::optional<DeformationStrain> > &initial_deformation_strain_rates,
-		const std::vector< boost::optional<DeformationStrain> > &final_deformation_strain_rates,
+		const std::vector< boost::optional<DeformationStrainRate> > &initial_deformation_strain_rates,
+		const std::vector< boost::optional<DeformationStrainRate> > &final_deformation_strain_rates,
 		const double &initial_time,
-		const double &final_time)
+		const double &final_time,
+		CrustalThicknessType crustal_thickness_type)
 {
 	// Input array sizes should match.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			input_output_crustal_thickness.size() == initial_deformation_strain_rates.size() &&
 				initial_deformation_strain_rates.size() == final_deformation_strain_rates.size(),
 			GPLATES_ASSERTION_SOURCE);
+
+	if (input_output_crustal_thickness.empty())
+	{
+		// If empty then avoid getting pointers to zeroth array elements (which would crash).
+		return;
+	}
 
 	double time_increment = final_time - initial_time;
 	double derivative_sign;
@@ -234,13 +253,81 @@ GPlatesAppLogic::ScalarCoverageEvolution::crustal_thinning(
 		derivative_sign = -1.0;
 	}
 
+	const unsigned int num_crustal_thicknesses = input_output_crustal_thickness.size();
+
+	// Convert from crustal thickness related scalar to crustal thickness (if necessary).
+	switch (crustal_thickness_type)
+	{
+	case CRUSTAL_STRETCHING_FACTOR:
+		for (unsigned int n = 0; n < num_crustal_thicknesses; ++n)
+		{
+			boost::optional<double> &crustal_thickness = input_output_crustal_thickness[n];
+			if (crustal_thickness)
+			{
+				// Convert from 'beta = Ti/T' to the thickness ratio 'T/Ti'.
+				crustal_thickness.get() = 1.0 / crustal_thickness.get();
+			}
+		}
+		break;
+
+	case CRUSTAL_THINNING_FACTOR:
+		for (unsigned int n = 0; n < num_crustal_thicknesses; ++n)
+		{
+			boost::optional<double> &crustal_thickness = input_output_crustal_thickness[n];
+			if (crustal_thickness)
+			{
+				// Convert from 'gamma = (1 - T/Ti)' to the thickness ratio 'T/Ti'.
+				crustal_thickness.get() = 1.0 - crustal_thickness.get();
+			}
+		}
+		break;
+
+	case CRUSTAL_THICKNESS:
+	default:
+		// Values are already thickness (or thickness ratio) so no change needed.
+		break;
+	}
+
 	runge_kutta_order_2(
 			&input_output_crustal_thickness[0],
-			input_output_crustal_thickness.size(),
+			num_crustal_thicknesses,
 			&crustal_thinning_derivative,
 			derivative_sign,
 			initial_time,
 			time_increment,
 			&initial_deformation_strain_rates[0],
 			&final_deformation_strain_rates[0]);
+
+	// Convert from crustal thickness back to crustal thickness related scalar (if necessary).
+	switch (crustal_thickness_type)
+	{
+	case CRUSTAL_STRETCHING_FACTOR:
+		for (unsigned int n = 0; n < num_crustal_thicknesses; ++n)
+		{
+			boost::optional<double> &crustal_thickness = input_output_crustal_thickness[n];
+			if (crustal_thickness)
+			{
+				// Convert from the thickness ratio 'T/Ti' back to 'beta = Ti/T'.
+				crustal_thickness.get() = 1.0 / crustal_thickness.get();
+			}
+		}
+		break;
+
+	case CRUSTAL_THINNING_FACTOR:
+		for (unsigned int n = 0; n < num_crustal_thicknesses; ++n)
+		{
+			boost::optional<double> &crustal_thickness = input_output_crustal_thickness[n];
+			if (crustal_thickness)
+			{
+				// Convert from the thickness ratio 'T/Ti' back to 'gamma = (1 - T/Ti)'.
+				crustal_thickness.get() = 1.0 - crustal_thickness.get();
+			}
+		}
+		break;
+
+	case CRUSTAL_THICKNESS:
+	default:
+		// Values are already thickness (or thickness ratio) so no change needed.
+		break;
+	}
 }

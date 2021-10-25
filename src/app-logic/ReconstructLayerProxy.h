@@ -490,7 +490,7 @@ namespace GPlatesAppLogic
 		get_topology_reconstructed_feature_time_spans(
 				std::vector<ReconstructContext::TopologyReconstructedFeatureTimeSpan> &topology_reconstructed_feature_time_spans)
 		{
-			return get_topology_reconstructed_feature_time_spans(
+			get_topology_reconstructed_feature_time_spans(
 					topology_reconstructed_feature_time_spans, d_current_reconstruct_params);
 		}
 
@@ -1304,6 +1304,14 @@ namespace GPlatesAppLogic
 		ReconstructionInfo
 		create_reconstruction_info(
 				const reconstruction_cache_key_type &reconstruction_cache_key);
+
+
+		/**
+		 * Utility method to get, or create, a reconstruct context for the specified reconstruct parameters.
+		 */
+		ReconstructContext::context_state_reference_type
+		get_or_create_reconstruct_context(
+				const ReconstructParams &reconstruct_params);
 	};
 }
 

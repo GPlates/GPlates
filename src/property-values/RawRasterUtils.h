@@ -733,11 +733,7 @@ namespace GPlatesPropertyValues
 
 
 		/**
-		 * Adds a no-data value to a raster - also converts no-data pixel values (in raster data)
-		 * from the value used to load the raster data to the value expected by the raster type.
-		 *
-		 * This is useful when you've loaded data into a raster and need to set the no-data value
-		 * that's appropriate for the data loaded.
+		 * Adds raster statistics to a raster.
 		 */
 		template<class RawRasterType>
 		void

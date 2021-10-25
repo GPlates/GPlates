@@ -58,9 +58,13 @@ namespace GPlatesQtWidgets
 
 	public:
 
+		/**
+		 * @a only_ok_button is useful when the parameters must be accepted by the user (ie, no cancel).
+		 */
 		explicit
 		SetTopologyReconstructionParametersDialog(
 				GPlatesAppLogic::ApplicationState &application_state,
+				bool only_ok_button = false,
 				QWidget *parent_ = NULL);
 
 		/**

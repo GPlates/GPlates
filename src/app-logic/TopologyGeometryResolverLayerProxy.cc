@@ -23,8 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <map>
+#include <utility>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 
 #include "TopologyGeometryResolverLayerProxy.h"
 
@@ -36,6 +39,93 @@
 #include "maths/MathsUtils.h"
 
 #include "model/FeatureHandle.h"
+
+
+namespace GPlatesAppLogic
+{
+	namespace
+	{
+		/**
+		 * This is a TEMPORARY HACK:
+		 *
+		 * Currently a feature cannot really be added to more than one feature collection because each
+		 * feature has a single parent (collection) pointer. Hence when a feature is added to a second
+		 * feature collection its parent pointer is overwritten. So if we create a temporary feature
+		 * collection and add a feature from an existing feature collection to it - then when we destroy
+		 * that temporary feature collection it will set the parent pointer of its features to NULL.
+		 * This means any subsequent modifications to those features (after temporary feature collection
+		 * is destroyed) will not result in notifications being sent to the original feature collection
+		 * callbacks (due to NULL parent pointer). This was first observed when moving vertices of a feature
+		 * used as a topological section in a topological network - vertex updates appeared to not
+		 * update the model (they were actually updating the model but none of the feature collection
+		 * callbacks were getting called).
+		 *
+		 * TODO: Remove this class when the Python API branch is fully merged to trunk - when that happens
+		 * we will have completed the half-finished restructure of the model, and there should be
+		 * support for multiple parents.
+		 */
+		class TemporaryFeatureCollection
+		{
+		public:
+
+			TemporaryFeatureCollection() :
+				d_temporary_feature_collection(GPlatesModel::FeatureCollectionHandle::create())
+			{  }
+
+			~TemporaryFeatureCollection()
+			{
+				// Destroy temporary feature collection first so that, when it removes child features,
+				// it sets their parent pointer to NULL.
+				d_temporary_feature_collection = boost::none;
+
+				// Restore the original feature collection parent pointers (and child indices).
+				BOOST_FOREACH(
+						const feature_original_parent_map_type::value_type &feature_original_parent,
+						d_feature_original_parents)
+				{
+					GPlatesModel::FeatureHandle::non_null_ptr_type feature = feature_original_parent.first;
+					const original_parent_type &original_parent = feature_original_parent.second;
+
+					feature->set_parent_ptr(original_parent.first, original_parent.second);
+				}
+			}
+
+			void
+			add(
+					const GPlatesModel::FeatureHandle::non_null_ptr_type &feature)
+			{
+				// Record the original feature collection parent (and child index).
+				d_feature_original_parents[feature] = std::make_pair(feature->parent_ptr(), feature->index_in_container());
+
+				// Add to the temporary feature collection.
+				d_temporary_feature_collection.get()->add(feature);
+			}
+
+			bool
+			empty() const
+			{
+				return d_temporary_feature_collection.get()->size() == 0;
+			}
+
+			GPlatesModel::FeatureCollectionHandle::weak_ref
+			get_ref()
+			{
+				return d_temporary_feature_collection.get()->reference();
+			}
+
+		private:
+			// Using boost::optional just so we can control when to destroy.
+			boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_temporary_feature_collection;
+
+			typedef std::pair<GPlatesModel::FeatureHandle::parent_type *, GPlatesModel::container_size_type>
+					original_parent_type;
+			typedef std::map<GPlatesModel::FeatureHandle::non_null_ptr_type, original_parent_type>
+					feature_original_parent_map_type;
+
+			feature_original_parent_map_type d_feature_original_parents;
+		};
+	}
+}
 
 
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::TopologyGeometryResolverLayerProxy() :
@@ -211,8 +301,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_se
 	}
 
 	// Gather only those features (into a temporary feature collection) that are referenced as topological sections.
-	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type topological_section_features_referenced =
-			GPlatesModel::FeatureCollectionHandle::create();
+	TemporaryFeatureCollection topological_section_features_referenced;
 	BOOST_FOREACH(
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &topological_geometry_feature_collection,
 			d_current_topological_geometry_feature_collections)
@@ -226,13 +315,13 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_se
 				const GPlatesModel::FeatureHandle::non_null_ptr_type feature = *feature_iter;
 				if (topological_sections_referenced.find(feature->feature_id()) != topological_sections_referenced.end())
 				{
-					topological_section_features_referenced->add(feature);
+					topological_section_features_referenced.add(feature);
 				}
 			}
 		}
 	}
 
-	if (topological_section_features_referenced->size() == 0)
+	if (topological_section_features_referenced.empty())
 	{
 		// There will be no resolved topological sections for this handle.
 		return ReconstructHandle::get_next_reconstruct_handle();
@@ -243,7 +332,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_se
 	// feature IDs we've cached for (we could do that though, but currently it's not really necessary).
 	return create_resolved_topological_lines(
 			resolved_topological_sections,
-			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(1, topological_section_features_referenced->reference()),
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(1, topological_section_features_referenced.get_ref()),
 			reconstruction_time);
 }
 

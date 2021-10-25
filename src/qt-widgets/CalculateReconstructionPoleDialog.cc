@@ -56,6 +56,9 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::CalculateReconstructionPole
 {
 	setupUi(this);
 
+	spinbox_plateid->setMinimum(0);
+	spinbox_plateid->setMaximum(0x7fffffff); // Max plate ID is signed 32-bit integer.
+
 	main_buttonbox->button(QDialogButtonBox::Save)->setText(tr("&Insert Pole in Rotation Model"));
 
 	QtWidgetUtils::add_widget_to_placeholder(

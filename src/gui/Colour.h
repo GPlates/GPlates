@@ -70,6 +70,21 @@ namespace GPlatesGui
 			v(v_),
 			a(a_)
 		{  }
+
+		/**
+		 * Linearly interpolate between two colours.
+		 * @param first The first colour to mix
+		 * @param second The second colour to mix
+		 * @param position A value between 0.0 and 1.0 (inclusive), which can be
+		 * interpreted as where the returned colour lies in the range between the
+		 * first colour and the second colour.
+		 */
+		static
+		HSVColour
+		linearly_interpolate(
+				const HSVColour &first,
+				const HSVColour &second,
+				const double &position);
 	};
 
 	struct CMYKColour
@@ -480,8 +495,6 @@ namespace GPlatesGui
 		 * @param position A value between 0.0 and 1.0 (inclusive), which can be
 		 * interpreted as where the returned colour lies in the range between the
 		 * first colour and the second colour.
-		 *
-		 * NOTE: The alpha values are ignored (the alpha of the returned colour is 1.0).
 		 */
 		static
 		Colour
@@ -489,6 +502,21 @@ namespace GPlatesGui
 				const Colour &first,
 				const Colour &second,
 				const double &position);
+
+		/**
+		 * Linearly interpolate between three colours.
+		 *
+		 * Similar to the other overload but the interpolation coefficients are
+		 * 'interp_first', 'interp_second' and '1 - interp_first - interp_second'.
+		 */
+		static
+		Colour
+		linearly_interpolate(
+				const Colour &first,
+				const Colour &second,
+				const Colour &third,
+				const double &interp_first,
+				const double &interp_second);
 
 		/**
 		 * Modulate/multiply two colours (including alpha channel).

@@ -95,6 +95,7 @@ namespace GPlatesFileIO
 			InvalidPlatepolygonBoundaryFeature,
 
 			// The following apply to OGR-supported file format import.
+			ErrorReadingVectorFile,
 			NoLayersFoundInFile,
 			MultipleLayersInFile,
 			ErrorReadingOgrLayer,
@@ -120,6 +121,7 @@ namespace GPlatesFileIO
 			InvalidOgrPolygon,
 			InvalidShapefileReconstructionMethod,
 			InvalidShapefileSpreadingAsymmetry,
+			InvalidShapefileGeometryImportTime,
 			UnableToMatchOgrGeometryWithFeature,
 			NoGeometriesFoundInMultiGeometry,
 			
@@ -203,7 +205,6 @@ namespace GPlatesFileIO
 			CptFileTypeNotDeduced,
 			UnrecognisedLabel,
 			PatternFillInLine,
-			MissingLabelSemiColon,
 
 			// The following are specific to Hellinger-fit-related file formats.
 			HellingerPickFormatError,
@@ -269,7 +270,6 @@ namespace GPlatesFileIO
 			PropertyConvertedFromTimeDependent,
 			PropertyConvertedBetweenTimeDependentTypes,
 			PropertyNotInterpreted,
-			FeatureNotInterpreted,
 			AttributesIgnored,
 			
 			// The following are specific to GMAP vgp files

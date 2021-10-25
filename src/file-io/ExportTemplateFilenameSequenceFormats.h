@@ -140,7 +140,7 @@ namespace GPlatesFileIO
 		{
 		public:
 			//! How this format varies.
-			static const Variation VARIATION_TYPE = IS_CONSTANT;
+			static const Variation VARIATION_TYPE;
 
 			/**
 			 * Returns true if the start of @a rest_of_filename_template matches
@@ -186,7 +186,7 @@ namespace GPlatesFileIO
 		{
 		public:
 			//! How this format varies.
-			static const Variation VARIATION_TYPE = IS_CONSTANT;
+			static const Variation VARIATION_TYPE;
 
 			/**
 			 * Returns true if the start of @a rest_of_filename_template matches
@@ -225,7 +225,7 @@ namespace GPlatesFileIO
 		{
 		public:
 			//! How this format varies.
-			static const Variation VARIATION_TYPE = IS_CONSTANT;
+			static const Variation VARIATION_TYPE;
 
 
 			/**
@@ -273,7 +273,7 @@ namespace GPlatesFileIO
 		{
 		public:
 			//! How this format varies.
-			static const Variation VARIATION_TYPE = IS_CONSTANT;
+			static const Variation VARIATION_TYPE;
 
 
 			/**
@@ -326,7 +326,7 @@ namespace GPlatesFileIO
 		{
 		public:
 			//! How this format varies.
-			static const Variation VARIATION_TYPE = VARIES_WITH_RECONSTRUCTION_TIME_OR_FRAME;
+			static const Variation VARIATION_TYPE;
 
 			/**
 			 * Returns true if the start of @a rest_of_filename_template matches
@@ -383,7 +383,7 @@ namespace GPlatesFileIO
 		{
 		public:
 			//! How this format varies.
-			static const Variation VARIATION_TYPE = VARIES_WITH_RECONSTRUCTION_TIME_OR_FRAME;
+			static const Variation VARIATION_TYPE;
 
 			/**
 			 * Returns true if the start of @a rest_of_filename_template matches
@@ -443,7 +443,7 @@ namespace GPlatesFileIO
 		{
 		public:
 			//! How this format varies.
-			static const Variation VARIATION_TYPE = VARIES_WITH_SEQUENCE_ITERATOR;
+			static const Variation VARIATION_TYPE;
 
 			/**
 			 * Returns true if the start of @a rest_of_filename_template matches

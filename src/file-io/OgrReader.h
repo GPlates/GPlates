@@ -34,25 +34,12 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#ifdef HAVE_CONFIG_H
-// We're building on a UNIX-y system, and can thus expect "global/config.h".
 
-// On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
-// The "CMake" script should have determined which one to use.
-#include "global/config.h"
-#ifdef HAVE_GDAL_OGRSF_FRMTS_H
-#include <gdal/ogrsf_frmts.h>
-#else
-#include <ogrsf_frmts.h>
-#endif
-
-#else  // We're not building on a UNIX-y system.  We'll have to assume it's <ogrsf_frmts.h>.
-#include <ogrsf_frmts.h>
-#endif  // HAVE_CONFIG_H
-
+#include "GdalUtils.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
 #include "File.h"
 #include "FileInfo.h"
+#include "Ogr.h"
 #include "PropertyMapper.h"
 #include "ReadErrorAccumulation.h"
 
@@ -155,7 +142,8 @@ namespace GPlatesFileIO
 
 		bool
 		open_file(
-				const QString &filename);
+				const QString &filename,
+				ReadErrorAccumulation &read_errors);
 
 		void
 		get_field_names(
@@ -307,7 +295,7 @@ namespace GPlatesFileIO
 
 		int d_num_layers;
 
-		OGRDataSource *d_data_source_ptr;
+		GdalUtils::vector_data_source_type *d_data_source_ptr;
 
 		OGRGeometry *d_geometry_ptr;
 
@@ -338,7 +326,7 @@ namespace GPlatesFileIO
 		unsigned d_loaded_geometries;
 
 		/// The total number of features in the file.
-		unsigned d_total_features;
+		GdalUtils::big_int_type d_total_features;
 
 		static boost::shared_ptr< PropertyMapper > s_property_mapper;
 

@@ -68,6 +68,13 @@ namespace GPlatesOpenGL
 			Framebuffer();
 
 			/**
+			 * Number of bits of sub-pixel precision in pixel rasterizer.
+			 *
+			 * OpenGL specifies a minimum of 4 bits, but most consumer hardware these days support 8 bits.
+			 */
+			GLuint gl_sub_pixel_bits;
+
+			/**
 			 * Simply GL_COLOR_ATTACHMENT0_EXT.
 			 *
 			 * This is here solely so we can include <GL/glew.h>, which defines

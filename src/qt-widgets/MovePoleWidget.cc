@@ -62,8 +62,8 @@ GPlatesQtWidgets::MovePoleWidget::MovePoleWidget(
 
 	// Initialise the widget state based on the pole.
 
-	enable_pole_checkbox->setChecked(d_pole);
-	pole_widget->setEnabled(d_pole);
+	enable_pole_checkbox->setChecked(static_cast<bool>(d_pole));
+	pole_widget->setEnabled(static_cast<bool>(d_pole));
 
 	// Enable stage pole button only if 'keep constrained' not checked and if a feature is focused.
 	keep_stage_pole_constrained_checkbox->setChecked(false);
@@ -185,7 +185,7 @@ GPlatesQtWidgets::MovePoleWidget::react_enable_pole_check_box_changed()
 	}
 
 	// Enable/disable ability to modify the pole.
-	pole_widget->setEnabled(d_pole);
+	pole_widget->setEnabled(static_cast<bool>(d_pole));
 
 	// Update the pole location according to the current stage pole of the focused feature (if focused).
 	if (enable_pole_checkbox->isChecked() &&
@@ -534,7 +534,7 @@ GPlatesQtWidgets::MovePoleWidget::set_pole_internal(
 			this, SLOT(react_longitude_spinbox_changed()));
 
 	// Enable or disable pole.
-	enable_pole_checkbox->setChecked(d_pole);
+	enable_pole_checkbox->setChecked(static_cast<bool>(d_pole));
 
 	if (d_pole)
 	{

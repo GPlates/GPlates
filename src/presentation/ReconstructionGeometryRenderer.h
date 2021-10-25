@@ -158,10 +158,10 @@ namespace GPlatesPresentation
 			//
 			// Topological network settings.
 			//
-			bool fill_topological_network_triangulation;
 			bool fill_topological_network_rigid_blocks;
 			bool show_topological_network_segment_velocity;
-			TopologyNetworkVisualLayerParams::ColourMode topological_network_triangulation_colour_mode;
+			TopologyNetworkVisualLayerParams::TriangulationColourMode topological_network_triangulation_colour_mode;
+			TopologyNetworkVisualLayerParams::TriangulationDrawMode topological_network_triangulation_draw_mode;
 			//! Delaunay triangulation colour palette.
 			boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> topological_network_triangulation_colour_palette;
 		};
@@ -514,14 +514,20 @@ namespace GPlatesPresentation
 		void
 		render_topological_network_delaunay_edges_smoothed_strain_rates(
 				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
-				const double &subdivide_edge_threshold_angle);
+				const double &subdivide_edge_threshold_angle,
+				bool only_boundary_edges = false);
 
 		void
 		render_topological_network_delaunay_edges_unsmoothed_strain_rates(
+				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
+				bool only_boundary_edges = false);
+
+		void
+		render_topological_network_delaunay_edges_using_draw_style(
 				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn);
 
 		void
-		render_topological_network_boundary(
+		render_topological_network_boundary_using_draw_style(
 				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn);
 
 		void

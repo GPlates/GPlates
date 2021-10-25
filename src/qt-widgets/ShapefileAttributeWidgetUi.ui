@@ -29,16 +29,7 @@
    <property name="spacing">
     <number>0</number>
    </property>
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
+   <property name="margin">
     <number>0</number>
    </property>
    <item>
@@ -277,6 +268,19 @@
         </item>
         <item row="12" column="1">
          <widget class="QComboBox" name="combo_spreading_asymmetry"/>
+        </item>
+        <item row="13" column="0">
+         <widget class="QLabel" name="label_geometry_import_time">
+          <property name="text">
+           <string>Geometry Import Time:</string>
+          </property>
+          <property name="buddy">
+           <cstring>combo_geometry_import_time</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="13" column="1">
+         <widget class="QComboBox" name="combo_geometry_import_time"/>
         </item>
        </layout>
       </item>

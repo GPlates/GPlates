@@ -34,6 +34,11 @@
 #include "global/GPlatesAssert.h"
 
 
+const GPlatesFileIO::ExportTemplateFilename::Format::Variation
+GPlatesFileIO::ExportTemplateFilename::PercentCharacterFormat::VARIATION_TYPE =
+		GPlatesFileIO::ExportTemplateFilename::Format::IS_CONSTANT;
+
+
 boost::optional<int>
 GPlatesFileIO::ExportTemplateFilename::PercentCharacterFormat::match_format(
 		const QString &rest_of_filename_template)
@@ -45,6 +50,11 @@ GPlatesFileIO::ExportTemplateFilename::PercentCharacterFormat::match_format(
 
 	return boost::none;
 }
+
+
+const GPlatesFileIO::ExportTemplateFilename::Format::Variation
+GPlatesFileIO::ExportTemplateFilename::PlaceholderFormat::VARIATION_TYPE =
+		GPlatesFileIO::ExportTemplateFilename::Format::IS_CONSTANT;
 
 
 boost::optional<int>
@@ -73,6 +83,11 @@ GPlatesFileIO::ExportTemplateFilename::PlaceholderFormat::expand_format_string(
 }
 
 
+const GPlatesFileIO::ExportTemplateFilename::Format::Variation
+GPlatesFileIO::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::VARIATION_TYPE =
+		GPlatesFileIO::ExportTemplateFilename::Format::IS_CONSTANT;
+
+
 boost::optional<int>
 GPlatesFileIO::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::match_format(
 		const QString &rest_of_filename_template)
@@ -96,6 +111,11 @@ GPlatesFileIO::ExportTemplateFilename::ReconstructionAnchorPlateIdFormat::expand
 }
 
 
+const GPlatesFileIO::ExportTemplateFilename::Format::Variation
+GPlatesFileIO::ExportTemplateFilename::DefaultReconstructionTreeLayerNameFormat::VARIATION_TYPE =
+		GPlatesFileIO::ExportTemplateFilename::Format::IS_CONSTANT;
+
+
 boost::optional<int>
 GPlatesFileIO::ExportTemplateFilename::DefaultReconstructionTreeLayerNameFormat::match_format(
 		const QString &rest_of_filename_template)
@@ -117,6 +137,11 @@ GPlatesFileIO::ExportTemplateFilename::DefaultReconstructionTreeLayerNameFormat:
 {
 	return d_default_recon_tree_layer_name;
 }
+
+
+const GPlatesFileIO::ExportTemplateFilename::Format::Variation
+GPlatesFileIO::ExportTemplateFilename::FrameNumberFormat::VARIATION_TYPE =
+		GPlatesFileIO::ExportTemplateFilename::Format::VARIES_WITH_RECONSTRUCTION_TIME_OR_FRAME;
 
 
 boost::optional<int>
@@ -181,6 +206,11 @@ GPlatesFileIO::ExportTemplateFilename::FrameNumberFormat::calc_max_digits(
 			d_max_digits < MAX_MAX_DIGITS,
 			GPLATES_ASSERTION_SOURCE);
 }
+
+
+const GPlatesFileIO::ExportTemplateFilename::Format::Variation
+GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::VARIATION_TYPE =
+		GPlatesFileIO::ExportTemplateFilename::Format::VARIES_WITH_RECONSTRUCTION_TIME_OR_FRAME;
 
 
 boost::optional<int>
@@ -261,6 +291,9 @@ GPlatesFileIO::ExportTemplateFilename::ReconstructionTimePrintfFormat::get_integ
 }
 
 
+const GPlatesFileIO::ExportTemplateFilename::Format::Variation
+GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::VARIATION_TYPE =
+		GPlatesFileIO::ExportTemplateFilename::Format::VARIES_WITH_SEQUENCE_ITERATOR;
 
 const QString GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::HOURS_MINS_SECS_WITH_DASHES_SPECIFIER = "%T";
 const QString GPlatesFileIO::ExportTemplateFilename::DateTimeFormat::YEAR_MONTH_DAY_WITH_DASHES_SPECIFIER = "%D";

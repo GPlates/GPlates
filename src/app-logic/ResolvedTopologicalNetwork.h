@@ -138,15 +138,6 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * This was previously in...
-		 *    get_resolved_topology_geometries_from_triangulation_2()
-		 * ...but that method has been removed so this method is just to keep the debugging
-		 * until it's not needed anymore (at which point this method should be removed).
-		 */
-		void
-		report_deformation_to_file() const;
-
-		/**
 		 * Get a non-null pointer to a const ResolvedTopologicalNetwork which points to this
 		 * instance.
 		 *

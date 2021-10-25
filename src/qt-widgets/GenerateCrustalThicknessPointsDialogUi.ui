@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>422</width>
-    <height>477</height>
+    <width>420</width>
+    <height>517</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,7 +16,7 @@
   <property name="sizeGripEnabled">
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_3">
+  <layout class="QVBoxLayout" name="verticalLayout_5">
    <item>
     <widget class="QStackedWidget" name="stacked_widget">
      <property name="currentIndex">
@@ -25,9 +25,9 @@
      <widget class="QWidget" name="page_generate_points">
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="2" column="0">
-        <widget class="QGroupBox" name="point_samples_group_box">
+        <widget class="QGroupBox" name="points_distribution_group_box">
          <property name="title">
-          <string>Uniform Point Distribution</string>
+          <string>Points Distribution</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout">
           <item>
@@ -81,7 +81,7 @@
             <item>
              <widget class="QLineEdit" name="point_density_spacing_line_edit">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -168,25 +168,47 @@
         </widget>
        </item>
        <item row="0" column="0">
-        <widget class="QGroupBox" name="crustal_thickness_group_box">
+        <widget class="QGroupBox" name="points_region_group_box">
          <property name="title">
-          <string>Iniital Crustal Thickness</string>
+          <string>Points Region</string>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
+         <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_4">
-            <item>
-             <widget class="QLabel" name="label_3">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Specify the region occupied by the points:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QGridLayout" name="gridLayout_5">
+            <item row="1" column="0">
+             <widget class="QRadioButton" name="lat_lon_extent_radio_button">
               <property name="text">
-               <string>Scalar Type:</string>
+               <string>Latitude/Longitude extent</string>
               </property>
              </widget>
             </item>
-            <item>
-             <widget class="QComboBox" name="crustal_scalar_type_combobox"/>
+            <item row="0" column="0">
+             <widget class="QRadioButton" name="focused_feature_radio_button">
+              <property name="text">
+               <string>Focused feature boundary</string>
+              </property>
+             </widget>
             </item>
-            <item>
-             <spacer name="horizontalSpacer_4">
+            <item row="0" column="2">
+             <widget class="QPushButton" name="push_button_help_points_region">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../qt-resources/qt_widgets.qrc">
+                <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <spacer name="horizontalSpacer_5">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -198,67 +220,272 @@
               </property>
              </spacer>
             </item>
-            <item>
-             <widget class="QPushButton" name="push_button_help_scalar_type">
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset resource="../qt-resources/qt_widgets.qrc">
-                <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
-              </property>
-             </widget>
-            </item>
            </layout>
           </item>
           <item>
-           <widget class="QWidget" name="crustal_thinning_factor_widget" native="true">
-            <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <widget class="QGroupBox" name="points_region_lat_lon_group_box">
+            <layout class="QVBoxLayout" name="verticalLayout_4">
              <property name="margin">
               <number>0</number>
              </property>
              <item>
-              <widget class="QLabel" name="label_5">
-               <property name="text">
-                <string>Thinning factor:</string>
+              <layout class="QGridLayout" name="gridLayout_4">
+               <property name="verticalSpacing">
+                <number>2</number>
                </property>
-              </widget>
+               <item row="0" column="0">
+                <widget class="QLabel" name="top_label">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Start latitude:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QDoubleSpinBox" name="top_extents_spinbox">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>2</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="suffix">
+                  <string>°</string>
+                 </property>
+                 <property name="decimals">
+                  <number>4</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-90.000000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>90.000000000000000</double>
+                 </property>
+                 <property name="value">
+                  <double>90.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QWidget" name="filler_widget_1" native="true">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                   <horstretch>3</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="bottom_label">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>End latitude:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QDoubleSpinBox" name="bottom_extents_spinbox">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>2</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="suffix">
+                  <string>°</string>
+                 </property>
+                 <property name="decimals">
+                  <number>4</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-90.000000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>90.000000000000000</double>
+                 </property>
+                 <property name="value">
+                  <double>-90.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QWidget" name="filler_widget_2" native="true">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                   <horstretch>3</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="left_label">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Start longitude:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QDoubleSpinBox" name="left_extents_spinbox">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>2</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="suffix">
+                  <string>°</string>
+                 </property>
+                 <property name="decimals">
+                  <number>4</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-360.000000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>360.000000000000000</double>
+                 </property>
+                 <property name="value">
+                  <double>-180.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
+                <widget class="QWidget" name="filler_widget_3" native="true">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                   <horstretch>3</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="right_label">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>End longitude:</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QDoubleSpinBox" name="right_extents_spinbox">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>2</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="suffix">
+                  <string>°</string>
+                 </property>
+                 <property name="decimals">
+                  <number>4</number>
+                 </property>
+                 <property name="minimum">
+                  <double>-360.000000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>360.000000000000000</double>
+                 </property>
+                 <property name="value">
+                  <double>180.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="2">
+                <widget class="QWidget" name="filler_widget_4" native="true">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                   <horstretch>3</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </item>
              <item>
-              <widget class="QDoubleSpinBox" name="crustal_thinning_factor_spin_box">
-               <property name="decimals">
-                <number>3</number>
-               </property>
-               <property name="minimum">
-                <double>0.001000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>1000.000000000000000</double>
-               </property>
-               <property name="singleStep">
-                <double>0.100000000000000</double>
-               </property>
-               <property name="value">
-                <double>1.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_5">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
+              <layout class="QHBoxLayout" name="horizontalLayout_4">
+               <item>
+                <widget class="QPushButton" name="use_global_extents_button">
+                 <property name="text">
+                  <string>Use &amp;Global Extents</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../qt-resources/qt_widgets.qrc">
+                   <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
+                 </property>
+                 <property name="autoDefault">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_4">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
              </item>
             </layout>
            </widget>
           </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="page_properties">
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="0" column="0">
+        <widget class="QGroupBox" name="crustal_thickness_group_box">
+         <property name="title">
+          <string>Initial Crustal Thickness</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
            <widget class="QWidget" name="crustal_thickness_widget" native="true">
             <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -291,7 +518,27 @@
              <item>
               <widget class="QLabel" name="label_4">
                <property name="text">
-                <string>kms</string>
+                <string>kms at</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="geometry_import_time_line_edit">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="ma_label">
+               <property name="text">
+                <string>Ma</string>
                </property>
               </widget>
              </item>
@@ -308,13 +555,24 @@
                </property>
               </spacer>
              </item>
+             <item>
+              <widget class="QPushButton" name="push_button_help_scalar_type">
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset resource="../qt-resources/qt_widgets.qrc">
+                 <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
           </item>
          </layout>
         </widget>
        </item>
-       <item row="3" column="0">
+       <item row="1" column="0">
         <widget class="QGroupBox" name="common_feature_properties_group_box">
          <property name="title">
           <string>Common Feature Properties</string>

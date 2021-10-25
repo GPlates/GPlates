@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_TIMEDEPENDENTRASTERPAGE_H
 
 #include <map>
+#include <vector>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -136,9 +137,10 @@ namespace GPlatesQtWidgets
 				QFileInfoList file_infos);
 
 		static
-		boost::optional<double>
-		deduce_time(
-				const QFileInfo &file_info);
+		void
+		deduce_times(
+				std::vector< boost::optional<double> > &times,
+				const QFileInfoList &file_infos);
 
 		unsigned int &d_raster_width;
 		unsigned int &d_raster_height;

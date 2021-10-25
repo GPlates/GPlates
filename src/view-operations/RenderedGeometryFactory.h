@@ -133,7 +133,9 @@ namespace GPlatesViewOperations
 		 * Creates a @a RenderedGeometry for a @a GeometryOnSphere.
 		 *
 		 * Both @a point_size_hint and @a line_width_hint are needed since
-		 * the caller may not know what type of geometry it passed us. 
+		 * the caller may not know what type of geometry it passed us.
+		 *
+		 * Note that @a symbol only applies to @a PointOnSphere geometries.
 		 */
 		RenderedGeometry
 		create_rendered_geometry_on_sphere(
@@ -201,6 +203,57 @@ namespace GPlatesViewOperations
 				float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
 				bool filled = false,
 				const GPlatesGui::Colour &fill_modulate_colour = DEFAULT_COLOUR);
+
+
+		/**
+		 * Creates a @a RenderedGeometry for a @a GeometryOnSphere with per-point colouring.
+		 *
+		 * Both @a point_size_hint and @a line_width_hint are needed since
+		 * the caller may not know what type of geometry it passed us.
+		 *
+		 * Note that @a symbol only applies to @a PointOnSphere geometries.
+		 */
+		RenderedGeometry
+		create_rendered_coloured_geometry_on_sphere(
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
+				const std::vector<GPlatesGui::ColourProxy> &point_colours,
+				float point_size_hint = DEFAULT_POINT_SIZE_HINT,
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
+				const boost::optional<GPlatesGui::Symbol> &symbol = boost::none);
+
+		/**
+		 * Creates a @a RenderedGeometry for a @a MultiPointOnSphere with per-point colouring.
+		 *
+		 * NOTE: The number of multipoint points must match the number of colours.
+		 */
+		RenderedGeometry
+		create_rendered_coloured_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type,
+				const std::vector<GPlatesGui::ColourProxy> &point_colours,
+				float point_size_hint = DEFAULT_POINT_SIZE_HINT);
+
+		/**
+		 * Creates a @a RenderedGeometry for a @a PolylineOnSphere with per-point colouring.
+		 *
+		 * NOTE: The number of polyline points must match the number of colours.
+		 */
+		RenderedGeometry
+		create_rendered_coloured_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+				const std::vector<GPlatesGui::ColourProxy> &point_colours,
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+
+		/**
+		 * Creates a @a RenderedGeometry for a @a PolygonOnSphere with per-point colouring.
+		 *
+		 * NOTE: The number of points in the *exterior* ring of polygon must match the number of colours.
+		 */
+		RenderedGeometry
+		create_rendered_coloured_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
+				const std::vector<GPlatesGui::ColourProxy> &point_colours,
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+
 
 		/**
 		 * Creates a @a RenderedGeometry for a coloured edge surface mesh.
@@ -416,6 +469,20 @@ namespace GPlatesViewOperations
 				const float ratio_arrowhead_size_to_globe_radius = DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS,
 				const float arrowline_width_hint = DEFAULT_LINE_WIDTH_HINT);
 
+
+		/**
+		* Creates a symbol defined by @a symbol that is centred at @a centre.
+		*
+		* Symbol will be rendered on a tangent plane at the centre.
+		*
+		* @a line_width_hint is used if symbol contains any lines (eg, cross symbol).
+		*/
+		RenderedGeometry
+		create_rendered_symbol(
+				const GPlatesMaths::PointOnSphere &centre,
+				const GPlatesGui::Symbol &symbol,
+				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
 
 		/**
 		* Creates a triangle centred at @a centre. Triangle will

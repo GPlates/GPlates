@@ -21,6 +21,7 @@ set(srcs
     Constants.h
     ControlFlowException.h
     ExternalResourceFailureException.h
+    GdalVersion.h
     GPlatesAssert.cc
     GPlatesAssert.h
     GPlatesException.cc

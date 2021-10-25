@@ -98,8 +98,8 @@ namespace GPlatesGui
 			XPM,
 
 			// Numerical raster formats.
-			NETCDF,
-			GMT_NETCDF,
+			NETCDF_NC,		 // NetCDF/GMT with '.nc' extension.
+			NETCDF_GRD,      // NetCDF/GMT with '.grd' extension.
 			GEOTIFF,
 			ERDAS_IMAGINE,
 			ERMAPPER,

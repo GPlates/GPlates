@@ -246,7 +246,7 @@ GPlatesOpenGL::GLLight::create_map_view_light_direction_cube_texture(
 	}
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 

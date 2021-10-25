@@ -205,8 +205,11 @@ GPlatesQtWidgets::RemappedColourPaletteWidget::set_parameters(
 			this, SLOT(handle_max_line_editing_finished()));
 	if (parameters.is_palette_range_mapped())
 	{
-		min_line_edit->setText(QString::number(parameters.get_palette_range().first, 'g'));
-		max_line_edit->setText(QString::number(parameters.get_palette_range().second, 'g'));
+		// Use same locale (to convert double to text) as line edit validator (to convert text to double).
+		min_line_edit->setText(
+				min_line_edit->validator()->locale().toString(parameters.get_palette_range().first, 'g'));
+		max_line_edit->setText(
+				min_line_edit->validator()->locale().toString(parameters.get_palette_range().second, 'g'));
 	}
 	QObject::connect(
 			min_line_edit, SIGNAL(editingFinished()),
@@ -318,14 +321,42 @@ GPlatesQtWidgets::RemappedColourPaletteWidget::handle_range_check_box_changed(
 void
 GPlatesQtWidgets::RemappedColourPaletteWidget::handle_min_line_editing_finished()
 {
-	Q_EMIT min_line_editing_finished(min_line_edit->text().toDouble());
+	const QString text = min_line_edit->text();
+
+	// Conversion to double assuming the system locale, falling back to C locale.
+	bool ok;
+	double value = min_line_edit->validator()->locale().toDouble(text, &ok);
+	if (!ok)
+	{
+		// It appears QString::toDouble() only uses C locale despite its documentation.
+		value = text.toDouble(&ok);
+	}
+
+	if (ok)
+	{
+		Q_EMIT min_line_editing_finished(value);
+	}
 }
 
 
 void
 GPlatesQtWidgets::RemappedColourPaletteWidget::handle_max_line_editing_finished()
 {
-	Q_EMIT max_line_editing_finished(max_line_edit->text().toDouble());
+	const QString text = max_line_edit->text();
+
+	// Conversion to double assuming the system locale, falling back to C locale.
+	bool ok;
+	double value = max_line_edit->validator()->locale().toDouble(text, &ok);
+	if (!ok)
+	{
+		// It appears QString::toDouble() only uses C locale despite its documentation.
+		value = text.toDouble(&ok);
+	}
+
+	if (ok)
+	{
+		Q_EMIT max_line_editing_finished(value);
+	}
 }
 
 

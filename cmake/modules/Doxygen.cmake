@@ -41,10 +41,9 @@ MACRO(GENERATE_DOCUMENTATION DOXYGEN_CONFIG_FILE_IN DOXYGEN_CONFIG_FILE)
                 # WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
             # Add target
-            # Best to remove 'html' subdirectory before running doxygen as I've heard it can cause problems.
-            # But CMake 2.4.7 cannot remove directories (only files) so we'll leave it.
             ADD_CUSTOM_TARGET(doc
-                #COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/html
+                # Best to remove 'html' subdirectory before running doxygen as I've heard it can cause problems...
+                COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/html
                 COMMAND ${DOXYGEN_EXECUTABLE} "${DOXYGEN_CONFIG_FILE}"
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 

@@ -131,6 +131,15 @@ namespace GPlatesPropertyValues
 			return d_target_srs;
 		}
 
+		/**
+		 * Returns true if both the source and target spatial reference systems are the same.
+		 */
+		bool
+		is_identity_transform() const
+		{
+			return !d_ogr_coordinate_transformation;
+		}
+
 
 		/**
 		 * Transform an (x,y[,z]) coordinate from the source to the target spatial reference system.

@@ -40,12 +40,8 @@ GPlatesViewOperations::ScalarField3DRenderParameters::ScalarField3DRenderParamet
 	d_isosurface_deviation_window_mode(ISOSURFACE_DEVIATION_WINDOW_MODE_NONE),
 	d_isosurface_colour_mode(ISOSURFACE_COLOUR_MODE_DEPTH),
 	d_cross_section_colour_mode(CROSS_SECTION_COLOUR_MODE_SCALAR),
-	d_scalar_colour_palette_parameters(
-			GPlatesGui::RasterColourPalette::create<double>(
-					GPlatesGui::BuiltinColourPalettes::create_scalar_colour_palette())),
-	d_gradient_colour_palette_parameters(
-			GPlatesGui::RasterColourPalette::create<double>(
-					GPlatesGui::BuiltinColourPalettes::create_gradient_colour_palette()))
+	d_scalar_colour_palette_parameters(create_default_scalar_colour_palette_parameters()),
+	d_gradient_colour_palette_parameters(create_default_gradient_colour_palette_parameters())
 {
 }
 
@@ -76,6 +72,24 @@ GPlatesViewOperations::ScalarField3DRenderParameters::ScalarField3DRenderParamet
 	d_quality_performance(quality_performance),
 	d_shader_test_variables(shader_test_variables)
 {
+}
+
+
+GPlatesPresentation::RemappedColourPaletteParameters
+GPlatesViewOperations::ScalarField3DRenderParameters::create_default_scalar_colour_palette_parameters()
+{
+	return GPlatesPresentation::RemappedColourPaletteParameters(
+			GPlatesGui::RasterColourPalette::create<double>(
+					GPlatesGui::BuiltinColourPalettes::create_scalar_colour_palette()));
+}
+
+
+GPlatesPresentation::RemappedColourPaletteParameters
+GPlatesViewOperations::ScalarField3DRenderParameters::create_default_gradient_colour_palette_parameters()
+{
+	return GPlatesPresentation::RemappedColourPaletteParameters(
+			GPlatesGui::RasterColourPalette::create<double>(
+					GPlatesGui::BuiltinColourPalettes::create_gradient_colour_palette()));
 }
 
 

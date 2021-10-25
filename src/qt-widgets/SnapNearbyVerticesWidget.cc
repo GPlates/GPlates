@@ -77,6 +77,10 @@ GPlatesQtWidgets::SnapNearbyVerticesWidget::SnapNearbyVerticesWidget(
 	d_feature_focus_ptr(&(view_state.get_feature_focus()))
 {
 	setupUi(this);
+
+	spinbox_plate_id->setMinimum(0);
+	spinbox_plate_id->setMaximum(0x7fffffff); // Max plate ID is signed 32-bit integer.
+
 	setup_connections();
 	set_default_widget_values();	
 }

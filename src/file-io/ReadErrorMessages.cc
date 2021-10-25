@@ -274,9 +274,6 @@ namespace
 		{ GPlatesFileIO::ReadErrors::PropertyNameNotRecognisedInFeatureType,
 				QT_TR_NOOP("Property name does not belong to the feature type"),
 				QT_TR_NOOP("A property name was found, but was not in the list of names associated with the feature's type.") },
-		{ GPlatesFileIO::ReadErrors::PropertyNameNotRecognisedInFeatureType,
-				QT_TR_NOOP("Property name does not belong to the feature type"),
-				QT_TR_NOOP("A property name was found, but was not in the list of names associated with the feature's type.") },
 		{ GPlatesFileIO::ReadErrors::TimeDependentPropertyStructuralElementNotFound,
 				QT_TR_NOOP("Time-dependent property structural element not found"),
 				QT_TR_NOOP("The property value is missing a time-dependent wrapper.") },
@@ -329,6 +326,9 @@ namespace
 				QT_TR_NOOP("The number of value components in range parameters does not match the number of lists in tuple.") },
 
 		// The following descriptions are related to ESRI shapefiles and other OGR-supported vector formats:
+		{ GPlatesFileIO::ReadErrors::ErrorReadingVectorFile,
+				QT_TR_NOOP("Error reading vector file."),
+				QT_TR_NOOP("An error was encountered while opening a vector file for reading.") },
 		{ GPlatesFileIO::ReadErrors::NoLayersFoundInFile,
 				QT_TR_NOOP("No layers found."),
 				QT_TR_NOOP("No layers were found in the shapefile.") },
@@ -401,6 +401,12 @@ namespace
 		{ GPlatesFileIO::ReadErrors::InvalidShapefileReconstructionMethod,
 				QT_TR_NOOP("Invalid reconstruction method."),
 				QT_TR_NOOP("An invalid reconstruction method was found.") },
+		{ GPlatesFileIO::ReadErrors::InvalidShapefileSpreadingAsymmetry,
+				QT_TR_NOOP("Invalid spreading asymmetry."),
+				QT_TR_NOOP("An invalid spreading asymmetry was found.") },
+		{ GPlatesFileIO::ReadErrors::InvalidShapefileGeometryImportTime,
+				QT_TR_NOOP("Invalid geometry import time."),
+				QT_TR_NOOP("An invalid geometry import time was found.") },
 		{ GPlatesFileIO::ReadErrors::UnableToMatchOgrGeometryWithFeature,
 				QT_TR_NOOP("Unable to match OGR geometry with feature."),
 				QT_TR_NOOP("The OGR geometry type is not compatible with the feature type.") },
@@ -482,9 +488,6 @@ namespace
 		{ GPlatesFileIO::ReadErrors::PatternFillInLine,
 				QT_TR_NOOP("Pattern fill in line."),
 				QT_TR_NOOP("Pattern fills are not supported.") },
-		{ GPlatesFileIO::ReadErrors::MissingLabelSemiColon,
-				QT_TR_NOOP("No semi-colon before label."),
-				QT_TR_NOOP("A label in a CPT file must start with a semi-colon.") },
 
 		//Errors relating to Hellinger-fit files.
 		{ GPlatesFileIO::ReadErrors::InvalidHellingerComFileFormat,
@@ -556,8 +559,6 @@ namespace
 				QT_TR_NOOP("The type of time-dependent property wrapper was changed.") },
 		{ GPlatesFileIO::ReadErrors::PropertyNotInterpreted,
 				QT_TR_NOOP("The property was not interpreted.") },
-		{ GPlatesFileIO::ReadErrors::FeatureNotInterpreted,
-				QT_TR_NOOP("The feature was not interpreted.") },
 		{ GPlatesFileIO::ReadErrors::AttributesIgnored,
 				QT_TR_NOOP("The attributes were ignored.") },
 

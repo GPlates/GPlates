@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <boost/foreach.hpp>
 #include <QListWidget>
 #include <QListWidgetItem>
@@ -95,8 +96,8 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
 
 	const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
 
-	const GPlatesModel::Gpgim::feature_type_seq_type &all_feature_types =
-			gpgim.get_concrete_feature_types();
+	GPlatesModel::Gpgim::feature_type_seq_type all_feature_types = gpgim.get_concrete_feature_types();
+	std::stable_sort(all_feature_types.begin(), all_feature_types.end());
 
 	// Iterate over all the feature types.
 	BOOST_FOREACH(const GPlatesModel::FeatureType &feature_type, all_feature_types)

@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -163,6 +163,7 @@
     <addaction name="menu_Camera_Zoom"/>
     <addaction name="separator"/>
     <addaction name="action_Configure_Text_Overlay"/>
+    <addaction name="action_Configure_Velocity_Legend"/>
     <addaction name="action_Configure_Graticules"/>
     <addaction name="action_Choose_Background_Colour"/>
     <addaction name="action_Show_Stars"/>
@@ -1212,6 +1213,11 @@
   <action name="action_Generate_Crustal_Thickness_Points">
    <property name="text">
     <string>Generate &amp;Crustal Thickness Points</string>
+   </property>
+  </action>
+  <action name="action_Configure_Velocity_Legend">
+   <property name="text">
+    <string>Configure Velocity Le&amp;gend...</string>
    </property>
   </action>
  </widget>

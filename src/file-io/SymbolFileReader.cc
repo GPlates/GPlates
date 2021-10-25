@@ -90,9 +90,9 @@ namespace
 			}
 		}
 
-		return std::make_pair<GPlatesModel::FeatureType,GPlatesGui::Symbol>
-				(feature_type,
-				 GPlatesGui::Symbol(*symbol_type,size_as_int,filled));
+		return std::make_pair<GPlatesModel::FeatureType,GPlatesGui::Symbol>(
+				GPlatesModel::FeatureType(feature_type),
+				GPlatesGui::Symbol(*symbol_type,size_as_int,filled));
 
 	}
 }
